@@ -67,6 +67,23 @@ describe('blog.detail leaf', () => {
     expect(res.data.slug).toBe('how-astryx-works');
   });
 
+  it('throws a coded error (not a raw TypeError) for a non-string slug', async () => {
+    // The dispatcher routes any truthy value into detail(); a public API
+    // caller could pass a non-string. It must surface a coded AstryxError,
+    // not a raw TypeError that the CLI downgrades to ERR_UNKNOWN — and it must
+    // fail fast, before any network fetch.
+    for (const bad of [null, 42, {}, [1]]) {
+      await expect(detail(/** @type {any} */ (bad))).rejects.toBeInstanceOf(
+        AstryxError,
+      );
+      await expect(detail(/** @type {any} */ (bad))).rejects.toMatchObject({
+        code: 'ERR_INVALID_ARGUMENT',
+      });
+    }
+    // No feed fetch should have happened for the invalid inputs.
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
   it('throws ERR_UNKNOWN_POST with suggestions for a bad slug', async () => {
     await expect(detail('does-not-exist')).rejects.toMatchObject({
       code: 'ERR_UNKNOWN_POST',

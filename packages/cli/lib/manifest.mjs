@@ -209,7 +209,15 @@ function describeCommand(cmd, root, jsonSupported) {
 
   if (EXAMPLES[name]) entry.examples = [...EXAMPLES[name]];
 
-  if (subcommands.length > 0) entry.subcommands = subcommands;
+  // Sort subcommands by name for a stable, agent-facing contract — the same
+  // guarantee the top-level command list makes. Otherwise Commander
+  // registration order leaks into the manifest and a pure reorder of
+  // `.command()` calls silently changes the output.
+  if (subcommands.length > 0) {
+    entry.subcommands = subcommands.sort((a, b) =>
+      /** @type {any} */ (a).name.localeCompare(/** @type {any} */ (b).name),
+    );
+  }
 
   return entry;
 }

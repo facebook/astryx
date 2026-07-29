@@ -18,13 +18,20 @@ Per-command input validation + write safety:
 - `layout`: rejects an unknown `--form` (`ERR_INVALID_OPTION`) and empty expression (`ERR_INVALID_ARGUMENT`).
 - `component --package <pkg> --showcase`/`--blocks`: route to the right leaf instead of falling back to `component.detail`.
 - `discover`/`docs` leaves: empty query/section errors instead of matching everything via `.includes('')`.
+- `blog()` detail: a non-string slug throws `ERR_INVALID_ARGUMENT` (was a raw `TypeError` the CLI downgraded to `ERR_UNKNOWN`), and fails fast before any network fetch.
+- `doctor`: no longer crashes (raw stack in human mode / `ERR_UNKNOWN` in `--json`) when multiple `astryx.config.*` files coexist — it reports a `config` FAIL. Version-alignment skips (info) instead of a spurious drift WARN with a `NaN.undefined.x` fix when either version isn't comparable semver (e.g. `workspace:*`).
+- `manifest`: subcommands are sorted by name (same stability guarantee the top-level command list makes), so reordering `.command()` calls can't silently change the agent-facing manifest.
+- `build`: the CLI wrapper now propagates the API's error `code` into the `--json` envelope (bogus `--type` / non-positive / non-integer `--limit` → `ERR_INVALID_ARGUMENT` instead of a generic `ERR_UNKNOWN`), and delegates `--limit` validation to the API (parity with `search`).
+- `layout check`: exits `1` in BOTH `--json` and human mode for an invalid (but parseable) layout — the exit code no longer depends on the output mode, so it works as a CI gate / agent check without parsing stdout.
+- `upgrade` config codemods: a `findConfigPath` throw (multiple `astryx.config.*` files) is surfaced as a structured per-codemod error instead of crashing the whole upgrade run — config codemods run before the strict loader, so this restores the per-codemod isolation every other failure path honors.
+- CLI dispatch: the belt-and-suspenders postAction "completed without emitting an envelope" error carries a `code` (`ERR_UNKNOWN`) so every error envelope is branchable on `code`.
 - `toErrorEnvelope`/`AstryxError`: attach `suggestions` only when it's a real array.
 
 Agent-docs data integrity:
 
 - `injectXdsBlock`/`removeXdsBlock` no longer drop, duplicate, or orphan user content on malformed managed blocks (END-before-START, duplicate/nested blocks, or a start marker with no end). They locate a single well-formed block (END searched after START) and refuse to touch an ambiguous/half-written file instead of corrupting it.
 
-Backfills api-level tests for the zero-coverage commands (`component`, `search`, `doctor`) and unit tests for `levenshteinDistance`, the error-envelope contract, path-safety symlink escapes, and the agent-docs malformed-block cases.
+Backfills api-level tests for the zero-coverage commands (`component`, `search`, `doctor`), the `discover`/`docs` dispatchers, the blog adapter/leaf/CLI wrapper, doctor degradation paths, manifest determinism + subcommand ordering, `build` error-code faithfulness, `layout check` exit-code parity, config-codemod isolation, a static guard that every inline error envelope carries a `code`, `isAstryxInitialized` malformed-marker resilience, and unit tests for `levenshteinDistance`, `checkGhCli`, the error-envelope contract, path-safety symlink escapes, and the agent-docs malformed-block cases.
 
 Codemod runner + integration loading:
 

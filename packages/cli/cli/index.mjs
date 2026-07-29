@@ -263,6 +263,10 @@ export async function createProgram() {
     console.log(JSON.stringify({
       apiVersion: API_VERSION,
       error: `Internal: '${fullName}' completed without emitting a JSON envelope`,
+      // `code` always appears on an error envelope so consumers can branch on
+      // it unconditionally. This belt-and-suspenders path is an internal
+      // condition, so it uses the generic ERR_UNKNOWN.
+      code: ERROR_CODES.ERR_UNKNOWN,
     }, null, 2));
     process.exit(1);
   });

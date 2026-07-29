@@ -138,6 +138,12 @@ export function registerLayout(program) {
         cliError(err.message, {suggestions: err.suggestions || [], code: err.code});
         return;
       }
+      // Exit code is the contract and must NOT depend on --json vs human: an
+      // invalid (but parseable) layout exits 1 in BOTH modes so `layout check`
+      // works as a CI gate / agent check without parsing stdout. Decide it
+      // before the JSON return (parity with doctor / validate-integration).
+      if (!result.data.valid) process.exitCode = 1;
+
       if (json) return jsonOut(result);
 
       const {valid, form, errors, warnings, compact, outline} = result.data;
@@ -148,7 +154,6 @@ export function registerLayout(program) {
           if (e.suggestions && e.suggestions.length > 0) humanLog(`    did you mean: ${e.suggestions.join(', ')}?`);
         }
         humanLog('');
-        process.exitCode = 1;
         return;
       }
       humanLog(`\n✓ Valid (parsed as ${form})`);

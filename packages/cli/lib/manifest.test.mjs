@@ -85,6 +85,24 @@ describe('manifest: drift guards', () => {
       }
     }
   });
+
+  it('sorts subcommands by name (stable, agent-facing order)', () => {
+    for (const entry of allEntries) {
+      if (!entry.subcommands) continue;
+      const names = entry.subcommands.map((s) => s.name);
+      expect(names, `subcommands of "${entry.name}" are not sorted`).toEqual(
+        [...names].sort((a, b) => a.localeCompare(b)),
+      );
+    }
+  });
+
+  it('is deterministic across builds', () => {
+    const again = buildManifest(program, {
+      jsonSupported: JSON_SUPPORTED,
+      version: '0.0.0-test',
+    });
+    expect(again).toEqual(manifest);
+  });
 });
 
 describe('manifest: shape', () => {

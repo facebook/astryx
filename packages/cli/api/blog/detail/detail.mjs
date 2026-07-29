@@ -23,6 +23,18 @@ import {loadFeed, fetchPostText} from '../_adapter.mjs';
  * @returns {Promise<import('../blog.type.mjs').BlogDetailResponse>}
  */
 export async function detail(slug) {
+  // Validate the slug type before any network work — the dispatcher routes
+  // any truthy value here, and a public API caller (`@astryxdesign/cli/api`)
+  // could pass a non-string. Without this guard `slug.toLowerCase()` throws a
+  // raw TypeError with no `.code`, which the CLI downgrades to ERR_UNKNOWN.
+  if (typeof slug !== 'string') {
+    throw new AstryxError(
+      `Invalid blog slug: ${String(slug)}`,
+      [],
+      ERROR_CODES.ERR_INVALID_ARGUMENT,
+    );
+  }
+
   const {feedUrl, posts} = await loadFeed();
 
   const normalized = slug.toLowerCase();

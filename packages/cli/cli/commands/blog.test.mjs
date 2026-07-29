@@ -85,4 +85,12 @@ describe('blog CLI — json-enabled', () => {
     expect(stdout).toMatch(/Astryx blog · feed:/);
     expect(stdout).toMatch(/how-astryx-works/);
   });
+
+  it('surfaces the API error code and exits non-zero for an unknown slug (--json)', async () => {
+    const {status, stdout} = await runCli(['blog', 'no-such-post', '--json']);
+    expect(status).not.toBe(0);
+    const env = JSON.parse(stdout);
+    expect(env.error).toBeDefined();
+    expect(env.code).toBe('ERR_UNKNOWN_POST');
+  });
 });

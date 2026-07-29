@@ -70,6 +70,61 @@ describe('runCodemods — unified config codemod path', () => {
     ).toContain('new-theme');
   });
 
+  it('surfaces a findConfigPath throw (multiple config files) as a structured error, not a crash', async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      JSON.stringify({name: 'consumer'}),
+    );
+    // Two config files → findConfigPath throws. Config codemods run before the
+    // strict project loader, so an uncaught throw here would abort the whole
+    // upgrade. It must degrade to a structured error and let the run continue.
+    fs.writeFileSync(
+      path.join(tmpDir, 'astryx.config.ts'),
+      `export default { theme: 'x' };\n`,
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'astryx.config.js'),
+      `export default { theme: 'x' };\n`,
+    );
+    const srcDir = path.join(tmpDir, 'src');
+    fs.mkdirSync(srcDir);
+    fs.writeFileSync(path.join(srcDir, 'a.tsx'), 'const a = 1;\n');
+
+    const versionManifests = [
+      {
+        version: '0.1.3',
+        transforms: [
+          {
+            name: 'cfg',
+            meta: {title: 'cfg', codemodType: 'config'},
+            transform: () => null,
+          },
+          // A code codemod that MUST still run after the config one fails.
+          {
+            name: 'code-after',
+            meta: {title: 'code after'},
+            transform: file =>
+              file.source.includes('const a')
+                ? file.source.replace('const a', 'const b')
+                : undefined,
+          },
+        ],
+      },
+    ];
+
+    // Must NOT throw; the multi-config problem is surfaced as a structured
+    // error, and the subsequent code codemod is still reached.
+    const result = await runCodemods(versionManifests, {
+      apply: false,
+      path: './src',
+      silent: true,
+    });
+    expect(
+      result.errors.some(e => /Multiple Astryx config files/.test(e.error)),
+    ).toBe(true);
+    expect(result.totalFilesChanged).toBe(1); // code-after previewed a change
+  });
+
   it('still runs core code codemods against source files', async () => {
     const srcDir = path.join(tmpDir, 'src');
     fs.mkdirSync(srcDir);

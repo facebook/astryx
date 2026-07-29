@@ -97,7 +97,23 @@ export function makeLog(silent) {
 export function runConfigCodemod(entry, {apply, log, jscodeshift}) {
   const {codemod, id, package: pkg} = entry;
   const name = `${pkg}:${id}`;
-  const configPath = findConfigPath(process.cwd());
+  // findConfigPath throws when multiple astryx.config.* files coexist. Config
+  // codemods run FIRST (before the strict project loader), so an uncaught throw
+  // here aborts the entire `astryx upgrade` with an un-coded error — breaking
+  // the per-codemod isolation every other failure path honors. Degrade it to a
+  // structured error so the run continues and reports it.
+  let configPath;
+  try {
+    configPath = findConfigPath(process.cwd());
+  } catch (err) {
+    const message = /** @type {any} */ (err).message;
+    log.error(`    ✗ astryx.config.* — ${message}`);
+    return {
+      filesChanged: 0,
+      writtenFiles: [],
+      errors: [{file: 'astryx.config.*', codemod: name, error: message}],
+    };
+  }
   if (!configPath) {
     log.info(`  ${codemod.title} — no astryx.config.* found; skipping.`);
     return {filesChanged: 0, writtenFiles: [], errors: []};
