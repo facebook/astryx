@@ -202,8 +202,11 @@ const styles = stylex.create({
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
   },
-  collapseChevronCollapsed: {
-    transform: 'rotate(180deg)',
+  collapseChevronExpanded: {
+    // Leading disclosure convention (matches TreeList/Table): the resting
+    // chevronRight points right (>) when collapsed; rotate it down (v) when
+    // expanded.
+    transform: 'rotate(90deg)',
   },
   headerCollapsible: {
     cursor: 'pointer',
@@ -873,9 +876,9 @@ export function CodeBlock({
             <span
               {...stylex.props(
                 styles.collapseChevron,
-                isCollapsed && styles.collapseChevronCollapsed,
+                !isCollapsed && styles.collapseChevronExpanded,
               )}>
-              <Icon icon="chevronDown" size="xsm" color="inherit" />
+              <Icon icon="chevronRight" size="xsm" color="inherit" />
             </span>
           )}
           {title}
