@@ -14,11 +14,27 @@
  */
 
 /**
+ * Quote a string for XLE/XLO output. The lexer (parse.mjs readString) has no
+ * escape mechanism — a quoted run ends at the next matching delimiter — so we
+ * pick the delimiter the string does NOT contain. This keeps the printed
+ * surface re-parseable (e.g. a Button `label="Don't panic"` must not emit
+ * `'Don't panic'`, which re-parses as a broken/unclosed token). A string
+ * containing BOTH quote kinds is unrepresentable without parser escape support
+ * and degrades to double-quotes (documented limitation).
+ * @param {string} str
+ * @returns {string}
+ */
+function quoteStr(str) {
+  return str.includes('"') && !str.includes("'") ? `'${str}'` : `"${str}"`;
+}
+
+/**
  * @param {import('./xle-ast').XLEValue} value
  * @returns {string}
  */
 function valueText(value) {
-  if (typeof value === 'string') return /[\s,'"]/.test(value) ? `'${value}'` : value;
+  if (typeof value === 'string')
+    return /[\s,'"]/.test(value) ? quoteStr(value) : value;
   if (typeof value === 'number' || typeof value === 'boolean') return String(value);
   if (value && /** @type {any} */ (value).idref) return `#${/** @type {any} */ (value).idref}`;
   if (Array.isArray(value)) return `[${value.map(valueText).join(',')}]`;
@@ -56,7 +72,7 @@ function attrTokens(node) {
 function slotTokensCompact(node) {
   return node.slots.map(slot => {
     if (slot.value == null) return `@${slot.key}`;
-    if (typeof slot.value === 'string') return `@${slot.key}='${slot.value}'`;
+    if (typeof slot.value === 'string') return `@${slot.key}=${quoteStr(slot.value)}`;
     if ('hint' in slot.value) return `@${slot.key}=${hintText(slot.value.hint)}`;
     if (/** @type {any} */ (slot.value).idref) return `@${slot.key}=#${/** @type {any} */ (slot.value).idref}`;
     if ('subexpr' in slot.value) return `@${slot.key}=(${siblingsCompact(slot.value.subexpr)})`;
@@ -72,8 +88,8 @@ function nodeCompact(node) {
   let out = node.name || '';
   if (node.id) out += `#${node.id}`;
   for (const mod of node.enumMods) out += `.${mod}`;
-  if (node.payload != null) out += `"${node.payload}"`;
-  if (node.payload2 != null) out += `:"${node.payload2}"`;
+  if (node.payload != null) out += quoteStr(node.payload);
+  if (node.payload2 != null) out += `:${quoteStr(node.payload2)}`;
   const attrs = [...attrTokens(node), ...slotTokensCompact(node)];
   if (attrs.length > 0) out += `[${attrs.join(' ')}]`;
   if (node.hint) out += hintText(node.hint);
@@ -139,8 +155,8 @@ function nodeOutlineLines(node, depth) {
   let line = node.name || '';
   if (node.id) line += `#${node.id}`;
   for (const mod of node.enumMods) line += `.${mod}`;
-  if (node.payload != null) line += ` "${node.payload}"`;
-  if (node.payload2 != null) line += ` :"${node.payload2}"`;
+  if (node.payload != null) line += ` ${quoteStr(node.payload)}`;
+  if (node.payload2 != null) line += ` :${quoteStr(node.payload2)}`;
   const attrs = attrTokens(node);
   if (attrs.length > 0) line += ' ' + attrs.join(' ');
   if (node.hint) line += ' ' + hintText(node.hint);
@@ -161,7 +177,7 @@ function nodeOutlineLines(node, depth) {
         for (const sub of sv.subexpr) lines.push(...itemOutlineLines(sub, depth + 2));
       }
     } else if (typeof sv === 'string') {
-      lines.push(`${pad}  ${slot.key}: "${sv}"`);
+      lines.push(`${pad}  ${slot.key}: ${quoteStr(sv)}`);
     } else if (sv && typeof sv === 'object' && 'hint' in sv) {
       lines.push(`${pad}  ${slot.key}: ${hintText(sv.hint)}`);
     } else if (sv && /** @type {any} */ (sv).idref) {

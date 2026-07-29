@@ -104,7 +104,11 @@ export function resolveTheme(cwd = process.cwd()) {
     }
   }
 
-  if (!specifier) {
+  // `astryx.theme` (package.json) and ASTRYX_THEME are user/third-party
+  // controlled and may be any value. Anything that isn't a usable non-empty
+  // string means "no theme" — degrade to null rather than crashing on
+  // specifier.startsWith(...) below. (Subsumes the empty-string case.)
+  if (typeof specifier !== 'string' || specifier.length === 0) {
     return null;
   }
 

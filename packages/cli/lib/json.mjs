@@ -94,11 +94,19 @@ export function humanWarn(...args) {
  * @returns {void}
  */
 export function jsonOut(response) {
-  process.__xdsJsonHandled = true;
   /** @type {any} */
   const envelope = {apiVersion: API_VERSION, type: response.type, data: response.data};
   if (response.meta !== undefined) envelope.meta = response.meta;
-  console.log(JSON.stringify(envelope, null, 2));
+  // Serialize BEFORE marking handled. If JSON.stringify throws (a circular
+  // reference or a BigInt in `data` — an author bug in a command's return
+  // value), the `__xdsJsonHandled` flag must stay unset so the bin error
+  // boundary is still free to emit a JSON error envelope. Setting the flag
+  // first leaves a --json consumer with empty stdout + exit 1 (an unparseable
+  // non-envelope), violating the "every --json emission is a single valid
+  // envelope" contract.
+  const out = JSON.stringify(envelope, null, 2);
+  process.__xdsJsonHandled = true;
+  console.log(out);
 }
 
 /**

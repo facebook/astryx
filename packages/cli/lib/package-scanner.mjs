@@ -39,13 +39,22 @@ export function scanDirectory(scanDir) {
     } catch {
       continue;
     }
-    if (!pkg.astryx || !pkg.astryx.docs) continue;
+    // `astryx.docs` is third-party-controlled (a dependency's package.json).
+    // A truthy non-string (number/array) would slip past `!pkg.astryx.docs`
+    // and crash path.resolve with a raw TypeError, taking down the whole scan.
+    // Skip it — discovery must degrade, not crash.
+    if (!pkg.astryx || typeof pkg.astryx.docs !== 'string') continue;
     const pkgDir = path.join(scanDir, entry.name);
     const docsDir = path.resolve(pkgDir, pkg.astryx.docs);
+    // Defense-in-depth: a dependency's docs dir must stay inside its own
+    // package (a `docs: "../../x"` shouldn't let the scanner walk arbitrary
+    // sibling dirs). Skip an escaping entry rather than surfacing foreign docs.
+    const pkgDirWithSep = pkgDir.endsWith(path.sep) ? pkgDir : pkgDir + path.sep;
+    if (docsDir !== pkgDir && !docsDir.startsWith(pkgDirWithSep)) continue;
     const components = discoverDocComponents(docsDir);
     if (components.length === 0) continue;
     packages.push({
-      name: pkg.name || entry.name,
+      name: String(pkg.name || entry.name),
       version: pkg.version,
       description: pkg.description,
       displayName: pkg.displayName,
