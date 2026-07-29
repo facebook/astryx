@@ -73,7 +73,7 @@ export const docs = {
       name: 'size',
       type: "'sm' | 'md'",
       description:
-        'Size variant controlling track dimensions. sm (32x20px) matches sm checkbox/radio vertical rhythm; md (40x24px, default) matches md checkbox/radio vertical rhythm. The thumb is the same size in both variants.',
+        'Size variant controlling track and thumb dimensions. sm (32x20px) matches sm checkbox/radio vertical rhythm; md (40x24px, default) matches md checkbox/radio vertical rhythm.',
       default: "'md'",
     },
     {

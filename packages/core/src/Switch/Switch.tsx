@@ -73,7 +73,7 @@ const trackSizeStyles = stylex.create({
   sm: {
     width: 32,
     height: 20,
-    padding: 3,
+    padding: 2,
   },
   md: {
     width: 40,
@@ -84,8 +84,8 @@ const trackSizeStyles = stylex.create({
 
 const thumbOffSizeStyles = stylex.create({
   sm: {
-    width: 16,
-    height: 16,
+    width: 14,
+    height: 14,
     transform: 'translateX(0)',
   },
   md: {
@@ -97,9 +97,9 @@ const thumbOffSizeStyles = stylex.create({
 
 const thumbOnSizeStyles = stylex.create({
   sm: {
-    width: 20,
-    height: 20,
-    transform: 'translateX(7px)',
+    width: 16,
+    height: 16,
+    transform: 'translateX(12px)',
   },
   md: {
     width: 20,
