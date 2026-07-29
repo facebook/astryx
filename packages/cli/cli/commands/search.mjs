@@ -38,7 +38,7 @@ export function registerSearch(program) {
     .option('--type <domain>', `Filter to one domain (${SEARCH_DOMAINS.join('|')})`)
     .option('--limit <n>', 'Max number of results (default 20)')
     .option('--detail', 'Verbose output (include import paths and match reason)')
-    .action(async (/** @type {string} */ query, /** @type {{type?: import('../../types/search').SearchDomain, limit?: string, detail?: boolean}} */ options) => {
+    .action(async (/** @type {string} */ query, /** @type {{type?: import('../../api/search/search.type.mjs').SearchDomain, limit?: string, detail?: boolean}} */ options) => {
       const json = program.opts().json || false;
 
       let limit = 20;
@@ -51,10 +51,10 @@ export function registerSearch(program) {
         limit = parsed;
       }
 
-      /** @type {import('../../types/search').SearchResponse} */
+      /** @type {import('../../api/search/search.type.mjs').SearchResponse} */
       let result;
       try {
-        result = /** @type {import('../../types/search').SearchResponse} */ (
+        result = /** @type {import('../../api/search/search.type.mjs').SearchResponse} */ (
           await searchApi(query, {
             cwd: process.cwd(),
             type: options.type,

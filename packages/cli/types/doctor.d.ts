@@ -3,40 +3,15 @@
 /**
  * Doctor command JSON responses.
  *
- * Invocation                  -> type discriminator
- * --------------------------------------------------
- * xds --json doctor           -> doctor
+ * NOTE: These types are colocated with the command implementation — the source
+ * of truth now lives in `../api/doctor/doctor.type.mjs` (JSDoc typedefs). This
+ * file re-exports them so the public `./types/doctor` entrypoint and the
+ * `types/index.d.ts` barrel keep working unchanged.
  */
 
-/** Outcome of a single diagnostic check. */
-export type DoctorStatus = 'pass' | 'warn' | 'fail' | 'info';
-
-/** A single diagnostic check result. */
-export interface DoctorCheck {
-  /** Stable machine-readable id (e.g. 'node-version'). */
-  id: string;
-  /** Human-readable check name. */
-  label: string;
-  status: DoctorStatus;
-  /** One-line result summary. */
-  message: string;
-  /** Actionable remediation, present when status is not 'pass'. */
-  fix?: string;
-}
-
-/** Aggregate counts per status. */
-export interface DoctorSummary {
-  pass: number;
-  warn: number;
-  fail: number;
-  info: number;
-}
-
-/** xds --json doctor */
-export interface DoctorResponse {
-  type: 'doctor';
-  data: {
-    checks: DoctorCheck[];
-    summary: DoctorSummary;
-  };
-}
+export type {
+  DoctorStatus,
+  DoctorCheck,
+  DoctorSummary,
+  DoctorResponse,
+} from '../api/doctor/doctor.type.mjs';
