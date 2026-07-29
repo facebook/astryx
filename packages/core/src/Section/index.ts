@@ -1,7 +1,5 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-'use client';
-
 /**
  * @file index.ts
  * @input Imports Section component
@@ -12,8 +10,4 @@
  */
 
 export {Section} from './Section';
-export type {
-  SectionProps,
-  SectionVariant,
-  SectionVariantMap,
-} from './Section';
+export type {SectionProps, SectionVariant, SectionVariantMap} from './Section';

@@ -1,7 +1,5 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-'use client';
-
 /**
  * @file index.ts
  * @input Imports from Divider.tsx
@@ -12,8 +10,4 @@
  */
 
 export {Divider} from './Divider';
-export type {
-  DividerProps,
-  DividerVariant,
-  DividerVariantMap,
-} from './Divider';
+export type {DividerProps, DividerVariant, DividerVariantMap} from './Divider';

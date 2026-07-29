@@ -1,7 +1,5 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-'use client';
-
 /**
  * @file index.ts
  * @input Imports Badge component and types from Badge.tsx
@@ -12,8 +10,4 @@
  */
 
 export {Badge} from './Badge';
-export type {
-  BadgeProps,
-  BadgeVariant,
-  BadgeVariantMap,
-} from './Badge';
+export type {BadgeProps, BadgeVariant, BadgeVariantMap} from './Badge';
