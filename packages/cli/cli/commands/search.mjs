@@ -41,15 +41,11 @@ export function registerSearch(program) {
     .action(async (/** @type {string} */ query, /** @type {{type?: import('../../api/search/search.type.mjs').SearchDomain, limit?: string, detail?: boolean}} */ options) => {
       const json = program.opts().json || false;
 
-      let limit = 20;
-      if (options.limit != null) {
-        const parsed = Number.parseInt(options.limit, 10);
-        if (!Number.isFinite(parsed) || parsed <= 0) {
-          cliError(`Invalid --limit value "${options.limit}". Must be a positive integer.`);
-          return;
-        }
-        limit = parsed;
-      }
+      // Parse --limit to a number; the API validates it (positive integer) and
+      // throws ERR_INVALID_ARGUMENT, so we pass NaN through rather than
+      // pre-rejecting with a generic code here.
+      const limit =
+        options.limit != null ? Number.parseInt(options.limit, 10) : 20;
 
       /** @type {import('../../api/search/search.type.mjs').SearchResponse} */
       let result;
@@ -63,7 +59,7 @@ export function registerSearch(program) {
         );
       } catch (e) {
         const err = /** @type {import('../../api/error.mjs').AstryxError} */ (e);
-        cliError(err.message, {suggestions: err.suggestions});
+        cliError(err.message, {suggestions: err.suggestions, code: err.code});
         return;
       }
 
