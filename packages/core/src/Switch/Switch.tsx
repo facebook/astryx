@@ -49,7 +49,7 @@ import {VisuallyHidden} from '../VisuallyHidden';
 
 const wrapperSizeStyles = stylex.create({
   sm: {
-    width: 34,
+    width: 32,
     height: 20,
   },
   md: {
@@ -60,7 +60,7 @@ const wrapperSizeStyles = stylex.create({
 
 const inputSizeStyles = stylex.create({
   sm: {
-    width: 34,
+    width: 32,
     height: 20,
   },
   md: {
@@ -71,7 +71,7 @@ const inputSizeStyles = stylex.create({
 
 const trackSizeStyles = stylex.create({
   sm: {
-    width: 34,
+    width: 32,
     height: 20,
     padding: 3,
   },
@@ -84,8 +84,8 @@ const trackSizeStyles = stylex.create({
 
 const thumbOffSizeStyles = stylex.create({
   sm: {
-    width: 12,
-    height: 12,
+    width: 16,
+    height: 16,
     transform: 'translateX(0)',
   },
   md: {
@@ -97,9 +97,9 @@ const thumbOffSizeStyles = stylex.create({
 
 const thumbOnSizeStyles = stylex.create({
   sm: {
-    width: 16,
-    height: 16,
-    transform: 'translateX(13px)',
+    width: 20,
+    height: 20,
+    transform: 'translateX(7px)',
   },
   md: {
     width: 20,
