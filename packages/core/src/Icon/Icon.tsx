@@ -24,6 +24,7 @@
 
 import React, {type ComponentType, type SVGProps} from 'react';
 import * as stylex from '@stylexjs/stylex';
+import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
 import {getIcon} from './globalIconRegistry';
 import type {IconName} from './globalIconRegistry';
@@ -244,6 +245,19 @@ export interface IconProps extends Omit<
    * ```
    */
   label?: string;
+  /**
+   * StyleX styles created via `stylex.create()`. Folded into the icon's own
+   * `stylex.props()` call (as the last argument) so it merges with the base
+   * color/size styles for optimal deduplication, matching how other Astryx
+   * components accept `xstyle`.
+   *
+   * @example
+   * ```
+   * const overrides = stylex.create({ root: { opacity: 0.5 } });
+   * <Icon icon="search" xstyle={overrides.root} />
+   * ```
+   */
+  xstyle?: StyleXStyles;
 }
 
 /**
@@ -283,6 +297,9 @@ export function Icon({
   size = 'md',
   label,
   ref,
+  className,
+  style,
+  xstyle,
   ...props
 }: IconProps) {
   // Derive ARIA from `label`: decorative (aria-hidden) by default, or a
@@ -297,6 +314,9 @@ export function Icon({
         color={color}
         size={size}
         a11yProps={a11yProps}
+        className={className}
+        style={style}
+        xstyle={xstyle}
         spanProps={props}
       />
     );
@@ -311,9 +331,16 @@ export function Icon({
       // BEFORE {...props} so an explicit aria-hidden/role/aria-label from the
       // consumer still wins as an escape hatch.
       {...a11yProps}
+      // The styling props (className, style, xstyle) are handled here so they
+      // COMPOSE with the internal classes/styles instead of clobbering them:
+      // xstyle folds into stylex.props, and className/style merge via
+      // mergeProps. The remaining rest props keep their prior last-spread
+      // precedence as escape hatches.
       {...mergeProps(
         themeProps('icon', {size, color}),
-        stylex.props(styles.root, colorStyles[color], sizeStyles[size]),
+        stylex.props(styles.root, colorStyles[color], sizeStyles[size], xstyle),
+        className ?? undefined,
+        style,
       )}
       {...props}
     />
@@ -338,12 +365,18 @@ function IconFromRegistry({
   color,
   size,
   a11yProps,
+  className,
+  style,
+  xstyle,
   spanProps,
 }: {
   name: IconName;
   color: IconColor;
   size: IconSize;
   a11yProps: {role: 'img'; 'aria-label': string} | {'aria-hidden': 'true'};
+  className?: string;
+  style?: React.CSSProperties;
+  xstyle?: StyleXStyles;
   spanProps?: Omit<SVGProps<SVGSVGElement>, 'ref' | 'color'>;
 }) {
   const resolvedIcon = getIcon(name);
@@ -352,6 +385,14 @@ function IconFromRegistry({
     return null;
   }
 
+  // The styling props (className, style, xstyle) are handled here so they
+  // COMPOSE with the internal astryx-icon + StyleX classes/styles instead of
+  // being shadowed by the later spread: xstyle folds into stylex.props, and
+  // className/style merge via mergeProps. Other span props keep their prior
+  // precedence (spread before the internal merge).
+  const restSpanProps =
+    (spanProps as React.HTMLAttributes<HTMLSpanElement>) ?? {};
+
   return (
     <span
       // Derived a11y — decorative (aria-hidden) by default, or a meaningful
@@ -359,10 +400,17 @@ function IconFromRegistry({
       // prop spread so consumers can still override it with explicit
       // aria-hidden/role/aria-label. This mirrors component-mode Icon.
       {...a11yProps}
-      {...(spanProps as React.HTMLAttributes<HTMLSpanElement>)}
+      {...restSpanProps}
       {...mergeProps(
         themeProps('icon', {size, color}),
-        stylex.props(styles.span, colorStyles[color], spanSizeStyles[size]),
+        stylex.props(
+          styles.span,
+          colorStyles[color],
+          spanSizeStyles[size],
+          xstyle,
+        ),
+        className ?? undefined,
+        style,
       )}>
       {resolvedIcon}
     </span>

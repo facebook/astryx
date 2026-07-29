@@ -23,6 +23,8 @@ export const docs = {
     targets: [
       {className: 'astryx-selector', visualProps: ['size', 'status']},
       {className: 'astryx-selector-option'},
+      {className: 'astryx-selector-clear-icon'},
+      {className: 'astryx-selector-indicator-icon', states: ['state']},
     ],
   },
   description: 'Dropdown selector for choosing from a list of options.',

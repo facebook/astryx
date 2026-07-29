@@ -11,6 +11,7 @@
 
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
+import * as stylex from '@stylexjs/stylex';
 import {TestIcon} from '../__tests__/TestIcon';
 import {Icon} from './Icon';
 
@@ -277,6 +278,94 @@ describe('Icon', () => {
         'role',
         'presentation',
       );
+    });
+  });
+
+  describe('styling prop handling', () => {
+    it('composes a consumer className with the internal classes (string mode)', () => {
+      render(
+        <Icon icon="check" className="consumer-target" data-testid="icon" />,
+      );
+      const icon = screen.getByTestId('icon');
+      // Consumer className must survive alongside the stable astryx-icon class
+      // and the StyleX classes — previously it was clobbered by the later
+      // internal spread.
+      expect(icon).toHaveClass('consumer-target');
+      expect(icon).toHaveClass('astryx-icon');
+      // At least one StyleX-generated class is still present.
+      expect(icon.className.split(' ').length).toBeGreaterThan(2);
+    });
+
+    it('forwards a consumer className in component (SVG) mode', () => {
+      render(
+        <Icon icon={TestIcon} className="consumer-target" data-testid="icon" />,
+      );
+      const icon = screen.getByTestId('icon');
+      expect(icon).toHaveClass('consumer-target');
+      expect(icon).toHaveClass('astryx-icon');
+    });
+
+    it('merges a consumer style onto the rendered element (string mode)', () => {
+      render(<Icon icon="check" style={{opacity: 0.5}} data-testid="icon" />);
+      expect(screen.getByTestId('icon')).toHaveStyle({opacity: '0.5'});
+    });
+
+    it('merges a consumer style onto the rendered element (component mode)', () => {
+      render(
+        <Icon icon={TestIcon} style={{opacity: 0.5}} data-testid="icon" />,
+      );
+      expect(screen.getByTestId('icon')).toHaveStyle({opacity: '0.5'});
+    });
+
+    it('applies xstyle to the rendered element (string mode)', () => {
+      const overrides = stylex.create({root: {opacity: 0.25}});
+      render(<Icon icon="check" xstyle={overrides.root} data-testid="icon" />);
+      const icon = screen.getByTestId('icon');
+      // xstyle is folded into stylex.props, so it contributes a StyleX class
+      // (and, in jsdom's stylex runtime, an inline style) alongside the base
+      // color/size classes rather than clobbering them.
+      expect(icon).toHaveClass('astryx-icon');
+      expect(icon).toHaveStyle({opacity: '0.25'});
+    });
+
+    it('applies xstyle to the rendered element (component mode)', () => {
+      const overrides = stylex.create({root: {opacity: 0.25}});
+      render(
+        <Icon icon={TestIcon} xstyle={overrides.root} data-testid="icon" />,
+      );
+      const icon = screen.getByTestId('icon');
+      expect(icon).toHaveClass('astryx-icon');
+      expect(icon).toHaveStyle({opacity: '0.25'});
+    });
+
+    it('leaves default rendering unchanged when no styling props are passed (string mode)', () => {
+      const {container} = render(
+        <Icon icon="check" size="sm" color="secondary" />,
+      );
+      const icon = container.querySelector('.astryx-icon') as HTMLElement;
+      const {container: refContainer} = render(
+        <Icon icon="check" size="sm" color="secondary" />,
+      );
+      const refIcon = refContainer.querySelector('.astryx-icon') as HTMLElement;
+      // Default output is identical to itself — the styling-prop handling adds
+      // nothing (no extra class, no inline style) unless a prop is passed.
+      expect(icon.className).toBe(refIcon.className);
+      expect(icon.getAttribute('style')).toBe(refIcon.getAttribute('style'));
+    });
+
+    it('leaves default rendering unchanged when no styling props are passed (component mode)', () => {
+      const {container} = render(
+        <Icon icon={TestIcon} size="sm" color="secondary" />,
+      );
+      const icon = container.querySelector('.astryx-icon') as HTMLElement;
+      const {container: refContainer} = render(
+        <Icon icon={TestIcon} size="sm" color="secondary" />,
+      );
+      const refIcon = refContainer.querySelector('.astryx-icon') as HTMLElement;
+      // SVGElement.className is an SVGAnimatedString, so compare the class
+      // attribute string rather than the property object.
+      expect(icon.getAttribute('class')).toBe(refIcon.getAttribute('class'));
+      expect(icon.getAttribute('style')).toBe(refIcon.getAttribute('style'));
     });
   });
 });

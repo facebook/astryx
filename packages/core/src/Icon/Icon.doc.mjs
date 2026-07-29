@@ -39,6 +39,12 @@ export const docs = {
       type: 'string',
       description: 'Accessible name for a MEANINGFUL, standalone icon (a status glyph or icon-only indicator with no adjacent text). Setting it exposes the icon to screen readers as role="img" with this text as the accessible name (aria-label) and removes the default aria-hidden. Omit it (default) for decorative icons and the icon stays hidden from assistive tech (aria-hidden="true"). This is the accessible-name / alt-text prop for icons: one prop instead of manually setting aria-label + role + aria-hidden. An empty string is treated as decorative. Do not set it when an interactive parent (Button, IconButton, link) already names the control.',
     },
+    {
+      name: 'xstyle',
+      type: 'StyleXStyles',
+      description:
+        'StyleX styles for customization (color, size, opacity). Folded into the icon\'s own stylex.props() call so it composes with the base color/size styles. Must be a stylex.create() value, not an inline style object like style={{}}.',
+    },
   ],
   theming: {
     targets: [
@@ -90,6 +96,12 @@ export const docsZh = {
       type: 'string',
       description: '有含义的独立图标的可访问名称（无相邻文字的状态图标或纯图标指示器）。设置后会将图标以 role="img" 暴露给辅助技术，并以该文本作为可访问名称（aria-label），同时移除默认的 aria-hidden。省略（默认）用于装饰性图标，图标对辅助技术保持隐藏（aria-hidden="true"）。空字符串按装饰性处理。当交互式父元素（Button、IconButton、链接）已命名该控件时请勿设置。',
     },
+    {
+      name: 'xstyle',
+      type: 'StyleXStyles',
+      description:
+        '用于自定义的 StyleX 样式（颜色、尺寸、不透明度）。会并入图标自身的 stylex.props() 调用，从而与基础的颜色/尺寸样式组合。必须是 stylex.create() 的值，而不是像 style={{}} 这样的内联样式对象。',
+    },
   ],
   theming: {
     targets: [
@@ -136,5 +148,6 @@ export const docsDense = {
     color: 'Color variant mapped to Astryx icon color tokens.',
     size: 'Icon size.',
     label: 'Accessible name for a meaningful, standalone icon. Sets role="img" + aria-label and drops the default aria-hidden. Omit (default) for decorative icons (stays aria-hidden). Empty string = decorative. The accessible-name/alt-text prop for icons.',
+    xstyle: 'StyleX styles (color, size, opacity) via stylex.create(); composes with the base color/size styles.',
   },
 };

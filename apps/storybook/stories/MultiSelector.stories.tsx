@@ -3,6 +3,7 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState} from 'react';
 import {MultiSelector} from '@astryxdesign/core/MultiSelector';
+import {Theme, defineTheme} from '@astryxdesign/core/theme';
 
 const meta: Meta<typeof MultiSelector> = {
   title: 'Core/MultiSelector',
@@ -470,4 +471,61 @@ export const StatusVariantComparison: Story = {
     );
   },
   decorators: [Story => <Story />],
+};
+
+/**
+ * Theme the clear and chevron glyphs precisely via `defineTheme`.
+ *
+ * - `components['multi-selector-clear-icon'].base` scopes overrides to the
+ *   clear icon itself (via the `astryx-multi-selector-clear-icon` target), so a
+ *   theme can recolor it, morph its color on hover, and resize it — without a
+ *   fragile descendant selector or raw CSS.
+ * - `components['multi-selector-indicator-icon']` scopes overrides to the
+ *   chevron, and its `state:expanded` restyles the open state, which the icon
+ *   reflects as a `data-state` attribute.
+ *
+ * Same-element rules in `@layer astryx-theme` win over each icon's own base
+ * color/size.
+ */
+const iconTheme = defineTheme({
+  name: 'multi-selector-icon-demo',
+  components: {
+    'multi-selector-clear-icon': {
+      base: {
+        width: '12px',
+        height: '12px',
+        fontSize: '12px',
+        color: 'var(--color-icon-secondary)',
+        ':hover': {color: 'var(--color-accent)'},
+      },
+    },
+    'multi-selector-indicator-icon': {
+      base: {
+        width: '14px',
+        height: '14px',
+        fontSize: '14px',
+        color: 'var(--color-icon-secondary)',
+      },
+      'state:expanded': {
+        color: 'var(--color-accent)',
+      },
+    },
+  },
+});
+
+export const ThemedIcons: Story = {
+  render: () => {
+    const [value, setValue] = useState<string[]>(['Apple', 'Banana']);
+    return (
+      <Theme theme={iconTheme} mode="light">
+        <MultiSelector
+          label="Icons themed (accent on hover/open)"
+          options={['Apple', 'Banana', 'Orange']}
+          value={value}
+          onChange={setValue}
+          hasClear
+        />
+      </Theme>
+    );
+  },
 };

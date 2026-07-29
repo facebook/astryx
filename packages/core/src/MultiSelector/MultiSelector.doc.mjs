@@ -21,6 +21,11 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-multi-selector', visualProps: ['size', 'status']},
+      {className: 'astryx-multi-selector-clear-icon'},
+      {
+        className: 'astryx-multi-selector-indicator-icon',
+        states: ['state'],
+      },
     ],
   },
   components: [

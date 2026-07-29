@@ -19,7 +19,10 @@ import {
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {MultiSelector} from './MultiSelector';
+import {Icon} from '../Icon';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
+import {defineTheme} from '../theme/defineTheme';
+import {generateThemeCSSFlat} from '../theme/generateThemeRules';
 
 // Module-level constants to satisfy @eslint-react/no-unstable-default-props.
 const ANNOUNCE_OPTIONS = ['Apple', 'Banana', 'Orange'] as const;
@@ -1312,11 +1315,16 @@ describe('MultiSelector', () => {
   });
 });
 
-
 describe('MultiSelector statusVariant forwarding', () => {
   it('defaults to attached (status renders with data-variant="attached")', () => {
     const {container} = render(
-      <MultiSelector label="Fruit" options={['Apple', 'Banana']} value={[]} onChange={() => {}} status={{type: 'error', message: 'Required'}} />,
+      <MultiSelector
+        label="Fruit"
+        options={['Apple', 'Banana']}
+        value={[]}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Required'}}
+      />,
     );
     expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
       'data-variant',
@@ -1326,11 +1334,240 @@ describe('MultiSelector statusVariant forwarding', () => {
 
   it('forwards statusVariant="detached" to the underlying Field status', () => {
     const {container} = render(
-      <MultiSelector label="Fruit" options={['Apple', 'Banana']} value={[]} onChange={() => {}} status={{type: 'error', message: 'Required'}} statusVariant="detached" />,
+      <MultiSelector
+        label="Fruit"
+        options={['Apple', 'Banana']}
+        value={[]}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Required'}}
+        statusVariant="detached"
+      />,
     );
     expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
       'data-variant',
       'detached',
     );
+  });
+});
+
+describe('MultiSelector clear icon theme target', () => {
+  const ICON_OPTIONS = ['Apple', 'Banana', 'Orange'];
+
+  // Resolve the clear glyph span (the astryx-icon element inside the clear
+  // button), independent of the theme target class.
+  const getClearIcon = (): HTMLElement => {
+    const button = screen.getByRole('button', {name: 'Clear all Fruit'});
+    const icon = button.querySelector('.astryx-icon');
+    if (icon == null) {
+      throw new Error('clear icon not found');
+    }
+    return icon as HTMLElement;
+  };
+
+  it('renders the astryx-multi-selector-clear-icon target on the clear glyph', () => {
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={ICON_OPTIONS}
+        value={['Banana']}
+        onChange={() => {}}
+        hasClear
+      />,
+    );
+    // The stable theme target lands on the icon element itself (not the
+    // button), so a theme can restyle just this glyph (color, size, hover)
+    // via `defineTheme` — a button-level target could not reach the icon's
+    // own color/size.
+    const icon = getClearIcon();
+    expect(icon).toHaveClass('astryx-multi-selector-clear-icon');
+    expect(icon).toHaveClass('astryx-icon');
+  });
+
+  it('keeps the clear button functional alongside the target', () => {
+    const onChange = vi.fn();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={ICON_OPTIONS}
+        value={['Banana']}
+        onChange={onChange}
+        hasClear
+      />,
+    );
+    const clear = screen.getByRole('button', {name: 'Clear all Fruit'});
+    expect(clear.tagName).toBe('BUTTON');
+    fireEvent.click(clear);
+    expect(onChange).toHaveBeenCalledWith([]);
+  });
+
+  it('renders the default icon (secondary color, sm size) byte-identically', () => {
+    // Pixel-identical default guard: the clear glyph must carry the exact same
+    // StyleX color/size classes as a standalone secondary/sm icon. The added
+    // target class is purely additive — it changes nothing until a theme
+    // targets it.
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={ICON_OPTIONS}
+        value={['Banana']}
+        onChange={() => {}}
+        hasClear
+      />,
+    );
+    const icon = getClearIcon();
+
+    const {container: refContainer} = render(
+      <Icon icon="close" size="sm" color="secondary" />,
+    );
+    const refIcon = refContainer.querySelector('.astryx-icon') as HTMLElement;
+
+    const styleClasses = (el: HTMLElement) =>
+      el.className
+        .split(' ')
+        .filter(c => c !== 'astryx-multi-selector-clear-icon')
+        .sort();
+
+    expect(styleClasses(icon)).toEqual(styleClasses(refIcon));
+  });
+
+  it('exposes multi-selector-clear-icon so a theme reaches the icon color, size, and hover', () => {
+    // jsdom cannot resolve the @layer cascade, so the DOM-class assertion above
+    // (target lands on the icon element) plus this generation assertion (the
+    // theme emits same-element icon rules in @layer astryx-theme) together
+    // prove the seam: a same-element theme rule wins over the icon's own
+    // base-layer color/size.
+    const theme = defineTheme({
+      name: 'multi-selector-clear-icon-test',
+      components: {
+        'multi-selector-clear-icon': {
+          base: {
+            width: '12px',
+            height: '12px',
+            fontSize: '12px',
+            color: 'var(--color-icon-secondary)',
+            ':hover': {color: 'var(--color-icon-primary)'},
+          },
+        },
+      },
+    });
+    const css = generateThemeCSSFlat(theme);
+    expect(css).toContain('.astryx-multi-selector-clear-icon {');
+    expect(css).toContain('width: 12px');
+    expect(css).toContain('height: 12px');
+    expect(css).toContain('.astryx-multi-selector-clear-icon:hover {');
+    expect(css).toContain('color: var(--color-icon-primary)');
+  });
+});
+
+describe('MultiSelector indicator (chevron) icon theme target', () => {
+  const ICON_OPTIONS = ['Apple', 'Banana', 'Orange'];
+
+  const getIndicatorIcon = (container: HTMLElement): HTMLElement => {
+    // The chevron is the only glyph carrying the indicator target class.
+    const icon = container.querySelector(
+      '.astryx-multi-selector-indicator-icon',
+    );
+    if (icon == null) {
+      throw new Error('indicator icon not found');
+    }
+    return icon as HTMLElement;
+  };
+
+  it('renders the astryx-multi-selector-indicator-icon target on the chevron glyph', () => {
+    const {container} = render(
+      <MultiSelector
+        label="Fruit"
+        options={ICON_OPTIONS}
+        value={[]}
+        onChange={() => {}}
+      />,
+    );
+    // The stable theme target lands on the icon element itself (not the trigger
+    // button), so a theme can restyle just this glyph (color, size, hover) —
+    // and each open/closed state — via `defineTheme`. A button-level target
+    // could not reach the icon's own color/size.
+    const icon = getIndicatorIcon(container);
+    expect(icon).toHaveClass('astryx-multi-selector-indicator-icon');
+    expect(icon).toHaveClass('astryx-icon');
+    // Open/closed state is reflected so a theme can target each state alone.
+    expect(icon).toHaveAttribute('data-state', 'collapsed');
+  });
+
+  it('reflects the expanded state on the chevron when the popover is open', async () => {
+    const user = userEvent.setup();
+    const {container} = render(
+      <MultiSelector
+        label="Fruit"
+        options={ICON_OPTIONS}
+        value={[]}
+        onChange={() => {}}
+      />,
+    );
+    await user.click(screen.getByRole('combobox'));
+    await waitFor(() => {
+      expect(getIndicatorIcon(container)).toHaveAttribute(
+        'data-state',
+        'expanded',
+      );
+    });
+  });
+
+  it('renders the default icon (inherit color, sm size) byte-identically', () => {
+    // Pixel-identical default guard: the chevron glyph must carry the exact
+    // same StyleX color/size classes as a standalone inherit/sm icon. The added
+    // target class + data-state are purely additive — they change nothing until
+    // a theme targets them.
+    const {container} = render(
+      <MultiSelector
+        label="Fruit"
+        options={ICON_OPTIONS}
+        value={[]}
+        onChange={() => {}}
+      />,
+    );
+    const icon = getIndicatorIcon(container);
+
+    const {container: refContainer} = render(
+      <Icon icon="chevronDown" size="sm" color="inherit" />,
+    );
+    const refIcon = refContainer.querySelector('.astryx-icon') as HTMLElement;
+
+    // Exclude the additive theme-target classes (the stable target + its
+    // reflected state class) so only the StyleX color/size classes remain.
+    const themeTargetClasses = new Set([
+      'astryx-multi-selector-indicator-icon',
+      'collapsed',
+      'expanded',
+    ]);
+    const styleClasses = (el: HTMLElement) =>
+      el.className
+        .split(' ')
+        .filter(c => !themeTargetClasses.has(c))
+        .sort();
+
+    expect(styleClasses(icon)).toEqual(styleClasses(refIcon));
+  });
+
+  it('exposes multi-selector-indicator-icon so a theme reaches the icon size and per-state color', () => {
+    // jsdom cannot resolve the @layer cascade, so the DOM-class assertions
+    // above (target lands on the icon element) plus this generation assertion
+    // (the theme emits same-element icon rules in @layer astryx-theme) together
+    // prove the seam: a same-element theme rule wins over the icon's own
+    // base-layer color/size.
+    const theme = defineTheme({
+      name: 'multi-selector-indicator-icon-test',
+      components: {
+        'multi-selector-indicator-icon': {
+          base: {width: '14px', height: '14px', fontSize: '14px'},
+          'state:expanded': {color: 'var(--color-icon-primary)'},
+        },
+      },
+    });
+    const css = generateThemeCSSFlat(theme);
+    expect(css).toContain('.astryx-multi-selector-indicator-icon {');
+    expect(css).toContain('width: 14px');
+    expect(css).toContain('height: 14px');
+    expect(css).toContain('.astryx-multi-selector-indicator-icon.expanded');
+    expect(css).toContain('color: var(--color-icon-primary)');
   });
 });

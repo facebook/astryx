@@ -1377,7 +1377,17 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
             onClick={handleClear}
             aria-label={t('@astryx.multiSelector.clearAll', {label})}
             {...stylex.props(styles.clearButton)}>
-            <Icon icon="close" size="sm" color="secondary" />
+            <Icon
+              icon="close"
+              size="sm"
+              color="secondary"
+              // Stable theme target on the clear glyph itself, so a theme can
+              // restyle just this icon (color, size, hover) via `defineTheme`.
+              // Same-element rules in @layer astryx-theme win over the icon's
+              // own base color/size, which a button-level target could not
+              // reach.
+              {...themeProps('multi-selector-clear-icon')}
+            />
           </button>
         )}
         <span
@@ -1393,7 +1403,19 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
               color={STATUS_ICON_COLOR_MAP[status.type]}
             />
           ) : (
-            <Icon icon="chevronDown" size="sm" color="inherit" />
+            <Icon
+              icon="chevronDown"
+              size="sm"
+              color="inherit"
+              // Stable theme target on the chevron glyph itself, so a theme can
+              // restyle just this icon (color, size, hover) — and its
+              // open/closed state — via `defineTheme`. Same-element rules in
+              // @layer astryx-theme win over the icon's own base color/size,
+              // which a button-level target could not reach.
+              {...themeProps('multi-selector-indicator-icon', {
+                state: popover.isOpen ? 'expanded' : 'collapsed',
+              })}
+            />
           )}
         </span>
       </div>
