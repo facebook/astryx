@@ -83,6 +83,11 @@ export interface TreeListProps extends BaseProps<HTMLDivElement> {
 const styles = stylex.create({
   root: {
     position: 'relative',
+    // Per-level indentation step. Public, themeable lever: a theme can retune
+    // the tree's indent metric (e.g. to `var(--spacing-5)`) via `defineTheme`
+    // on the `tree-list` target, and both the row margins (TreeListItem) and
+    // the guide-line offsets (TreeListBranches) read it so they stay aligned.
+    '--tree-list-indent': spacingVars['--spacing-4'],
   },
   list: {
     margin: 0,

@@ -432,25 +432,28 @@ describe('TreeList', () => {
 
     it("variant='noGuides' preserves per-level indentation on the rows", () => {
       // Indentation lives on the row's margin-inline-start (not the guide
-      // element), so it must survive when the connectors are suppressed. A
-      // deeper row is indented more than a shallower one.
+      // element), so it must survive when the connectors are suppressed. The
+      // per-row distance is published as the `--_tree-indent` custom property
+      // (not an inline longhand — see #4308), so the theme layer can override
+      // the `margin-inline-start` declaration. A deeper row is indented more
+      // than a shallower one.
       const {container} = render(
         <TreeList items={deepItems} variant="noGuides" />,
       );
-      const marginOf = (text: string): string => {
+      const indentOf = (text: string): string => {
         const li = screen.getByText(text).closest('li')!;
-        const styled = li.querySelector('[style*="margin-inline-start"]');
+        const styled = li.querySelector('[style*="--_tree-indent"]');
         return styled?.getAttribute('style') ?? '';
       };
       // Guides are gone…
       expect(container.querySelector('.astryx-tree-list-guide')).toBeNull();
-      // …but each level still carries an inline margin-inline-start, and the
-      // level multiplier grows with depth (0, 1, 2).
-      expect(marginOf('Root')).toContain('margin-inline-start');
-      expect(marginOf('Mid')).toContain('margin-inline-start');
-      expect(marginOf('Leaf')).toContain('margin-inline-start');
+      // …but each level still publishes an indent distance, and the level
+      // multiplier grows with depth (0, 1, 2).
+      expect(indentOf('Root')).toContain('--_tree-indent');
+      expect(indentOf('Mid')).toContain('--_tree-indent');
+      expect(indentOf('Leaf')).toContain('--_tree-indent');
       const level = (text: string): number => {
-        const m = /calc\((\d+)/.exec(marginOf(text));
+        const m = /calc\((\d+)/.exec(indentOf(text));
         return m ? Number(m[1]) : NaN;
       };
       expect(level('Mid')).toBeGreaterThan(level('Root'));
@@ -501,6 +504,43 @@ describe('TreeList', () => {
       const css = generateThemeCSSFlat(theme);
       expect(css).toContain('.astryx-tree-list-guide {');
       expect(css).toContain('display: none');
+    });
+  });
+
+  // ===========================================================================
+  // Indent lever (--tree-list-indent)
+  // ===========================================================================
+
+  describe('indent lever', () => {
+    it('lets a theme retune the indent step via the tree-list target', () => {
+      // The per-level step is a public, themeable var (default --spacing-4) set
+      // on the tree-list root, so a theme can retune the indent metric (e.g. to
+      // --spacing-5) via defineTheme. jsdom cannot resolve the @layer cascade,
+      // so the generated CSS is what proves the override reaches the lever.
+      const theme = defineTheme({
+        name: 'tree-list-indent-test',
+        components: {
+          'tree-list': {
+            base: {'--tree-list-indent': 'var(--spacing-5)'},
+          },
+        },
+      });
+      const css = generateThemeCSSFlat(theme);
+      expect(css).toContain('.astryx-tree-list {');
+      expect(css).toContain('--tree-list-indent: var(--spacing-5)');
+    });
+
+    it('rows consume the indent step in their published indent distance', () => {
+      // Each row's --_tree-indent is calc(level * var(--tree-list-indent)),
+      // so retuning the step scales every level uniformly.
+      render(<TreeList items={deepItems} variant="noGuides" />);
+      const indentOf = (text: string): string => {
+        const li = screen.getByText(text).closest('li')!;
+        const styled = li.querySelector('[style*="--_tree-indent"]');
+        return styled?.getAttribute('style') ?? '';
+      };
+      expect(indentOf('Mid')).toContain('var(--tree-list-indent)');
+      expect(indentOf('Leaf')).toContain('var(--tree-list-indent)');
     });
   });
 

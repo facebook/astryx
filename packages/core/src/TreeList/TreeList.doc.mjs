@@ -30,6 +30,9 @@ export const docs = {
       {className: 'astryx-tree-list-item-label', states: ['selected']},
       {className: 'astryx-tree-list-guide'},
     ],
+    vars: [
+      {name: '--tree-list-indent', description: 'Per-level indentation step. Each nesting level indents its rows by this distance, and the guide lines follow it so they stay aligned. Set it on the `tree-list` target to retune the metric (e.g. `var(--spacing-5)` for a wider indent).', default: 'var(--spacing-4)'},
+    ],
   },
   components: [
     {
@@ -103,6 +106,9 @@ export const docsZh = {
       {className: 'astryx-tree-list-chevron', states: ['state']},
       {className: 'astryx-tree-list-item-label', states: ['selected']},
       {className: 'astryx-tree-list-guide'},
+    ],
+    vars: [
+      {name: '--tree-list-indent', description: '每级缩进步长。每个嵌套层级的行按此距离缩进，引导线随之对齐。在 `tree-list` 目标上设置以调整该度量（例如用 `var(--spacing-5)` 获得更宽的缩进）。', default: 'var(--spacing-4)'},
     ],
   },
   components: [
