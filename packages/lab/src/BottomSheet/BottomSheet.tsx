@@ -53,18 +53,42 @@ const HEIGHT_BUDGETS = {
 
 export type BottomSheetHeight = keyof typeof HEIGHT_BUDGETS;
 
+// Sheets on wide touch devices (tablets) shouldn't stretch edge to edge;
+// cap and center them. Matches the `sm` layout breakpoint. On phones the
+// viewport is narrower than this, so the sheet stays full-width.
+const MAX_SHEET_WIDTH = 640;
+
 const styles = stylex.create({
-  // Inner wrapper that carries the live drag translate. Drawer owns the
-  // open/close slide on the <dialog> itself; this wrapper adds the gesture
-  // offset so the two transforms don't fight. Safe-area padding clears the
-  // home indicator on notched devices.
+  // Inner wrapper that carries the live drag translate AND the visible sheet
+  // surface (background, rounded top, width cap). The translate must live on
+  // the painted surface — not the <dialog> — so the whole sheet follows the
+  // swipe instead of the content sliding out of a fixed white panel. Drawer
+  // owns the open/close slide on the <dialog>; this wrapper adds the gesture
+  // offset within it so the two transforms don't fight. Safe-area padding
+  // clears the home indicator on notched devices.
   sheet: {
     display: 'flex',
     flexDirection: 'column',
     minHeight: 0,
     height: '100%',
+    width: '100%',
+    maxWidth: MAX_SHEET_WIDTH,
+    marginInline: 'auto',
+    backgroundColor: colorVars['--color-background-surface'],
+    borderStartStartRadius: radiusVars['--radius-page'],
+    borderStartEndRadius: radiusVars['--radius-page'],
+    overflow: 'hidden',
     paddingBlockEnd: `env(safe-area-inset-bottom, 0px)`,
     willChange: 'transform',
+  },
+  // Neutralize Drawer's <dialog> surface so only the swipeable wrapper paints.
+  // Without this the dialog's white background + shadow stay fixed while the
+  // wrapper slides, leaving a static panel behind the drag. The scrim behind
+  // the sheet provides the depth separation a shadow would.
+  dialogSurface: {
+    backgroundColor: 'transparent',
+    boxShadow: 'none',
+    borderBlockStartWidth: 0,
   },
   handleBar: {
     flexShrink: 0,
@@ -95,7 +119,6 @@ const styles = stylex.create({
     maxHeight: HEIGHT_BUDGETS.auto,
   },
 });
-
 export interface BottomSheetProps extends BaseProps<HTMLDialogElement> {
   /** Ref forwarded to the underlying <dialog> element. */
   ref?: React.Ref<HTMLDialogElement>;
@@ -178,7 +201,7 @@ export function BottomSheet({
       label={label}
       hasScrim
       hasCloseButton={false}
-      xstyle={height === 'auto' ? styles.autoHeight : undefined}
+      xstyle={[styles.dialogSurface, height === 'auto' && styles.autoHeight]}
       {...props}>
       <div
         data-astryx-sheet=""
