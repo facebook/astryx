@@ -781,13 +781,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       return [{value: SELECT_ALL_VALUE, label: selectAllLabel}, ...result];
     }
     return result;
-  }, [
-    searchQuery,
-    options,
-    selectedAtOpen,
-    hasSelectAll,
-    selectAllLabel,
-  ]);
+  }, [searchQuery, options, selectedAtOpen, hasSelectAll, selectAllLabel]);
 
   // Layer for dropdown positioning
   const handleLayerHide = useCallback(() => {
@@ -1319,7 +1313,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
             isDisabled && inputWrapperStyles.disabled,
             optimisticValue.length === 0 && styles.triggerPlaceholder,
             status && inputStatusBorderStyles[status.type],
-            status && inputStatusHoverShadowStyles[status.type],
+            status && !isDisabled && inputStatusHoverShadowStyles[status.type],
             inputGroup && groupStyles.inGroup,
             xstyle,
           ),

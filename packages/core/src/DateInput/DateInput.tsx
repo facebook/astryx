@@ -647,7 +647,9 @@ export function DateInput({
           sizeStyles[size],
           isEffectivelyDisabled && inputWrapperStyles.disabled,
           status && inputStatusBorderStyles[status.type],
-          status && inputStatusHoverShadowStyles[status.type],
+          status &&
+            !isEffectivelyDisabled &&
+            inputStatusHoverShadowStyles[status.type],
           status && inputStatusFocusWithinStyles[status.type],
           inputGroup && groupStyles.inGroup,
           xstyle,

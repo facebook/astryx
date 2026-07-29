@@ -739,7 +739,7 @@ export function Tokenizer<T extends SearchableItem>({
           isTruncated && styles.truncatedWrapper,
           isDisabled && inputWrapperStyles.disabled,
           status && inputStatusBorderStyles[status.type],
-          status && inputStatusHoverShadowStyles[status.type],
+          status && !isDisabled && inputStatusHoverShadowStyles[status.type],
           status && inputStatusFocusWithinStyles[status.type],
         ),
       )}>
@@ -837,7 +837,9 @@ export function Tokenizer<T extends SearchableItem>({
               isTruncated && styles.truncatedWrapper,
               isDisabled && inputWrapperStyles.disabled,
               status && inputStatusBorderStyles[status.type],
-              status && inputStatusHoverShadowStyles[status.type],
+              status &&
+                !isDisabled &&
+                inputStatusHoverShadowStyles[status.type],
               status && inputStatusFocusWithinStyles[status.type],
             ),
           )}>

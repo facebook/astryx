@@ -901,7 +901,9 @@ export function DateTimeInput({
               styles.dateWrapper,
               isEffectivelyDisabled && inputWrapperStyles.disabled,
               status && inputStatusBorderStyles[status.type],
-              status && inputStatusHoverShadowStyles[status.type],
+              status &&
+                !isEffectivelyDisabled &&
+                inputStatusHoverShadowStyles[status.type],
               status && inputStatusFocusWithinStyles[status.type],
             ),
           )}>
@@ -999,7 +1001,9 @@ export function DateTimeInput({
               styles.timeWrapper,
               isEffectivelyDisabled && inputWrapperStyles.disabled,
               status && inputStatusBorderStyles[status.type],
-              status && inputStatusHoverShadowStyles[status.type],
+              status &&
+                !isEffectivelyDisabled &&
+                inputStatusHoverShadowStyles[status.type],
               status && inputStatusFocusWithinStyles[status.type],
             ),
           )}>

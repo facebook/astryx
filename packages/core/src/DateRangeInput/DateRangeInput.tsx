@@ -560,7 +560,9 @@ export function DateRangeInput({
             sizeStyles[size],
             isEffectivelyDisabled && inputWrapperStyles.disabled,
             status && inputStatusBorderStyles[status.type],
-            status && inputStatusHoverShadowStyles[status.type],
+            status &&
+              !isEffectivelyDisabled &&
+              inputStatusHoverShadowStyles[status.type],
             status && inputStatusFocusWithinStyles[status.type],
             xstyle,
           ),

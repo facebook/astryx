@@ -1046,7 +1046,7 @@ export function Selector<T extends SelectorOptionType>(
             isDisabled && inputWrapperStyles.disabled,
             !selectedItem && styles.triggerPlaceholder,
             status && inputStatusBorderStyles[status.type],
-            status && inputStatusHoverShadowStyles[status.type],
+            status && !isDisabled && inputStatusHoverShadowStyles[status.type],
             inputGroup && groupStyles.inGroup,
             xstyle,
           ),

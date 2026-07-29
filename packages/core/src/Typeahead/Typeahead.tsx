@@ -421,7 +421,7 @@ export function Typeahead<T extends SearchableItem>({
             styles.wrapper,
             sizeStyle,
             status && inputStatusBorderStyles[status.type],
-            status && inputStatusHoverShadowStyles[status.type],
+            status && !isDisabled && inputStatusHoverShadowStyles[status.type],
             status && inputStatusFocusWithinStyles[status.type],
             isDisabled && inputWrapperStyles.disabled,
             inputGroup && groupStyles.inGroup,

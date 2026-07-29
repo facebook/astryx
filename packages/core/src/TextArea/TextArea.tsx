@@ -442,7 +442,9 @@ export function TextArea({
             textareaSizeStyles[size],
             effectivelyDisabled && inputWrapperStyles.disabled,
             status && inputStatusBorderStyles[status.type],
-            status && inputStatusHoverShadowStyles[status.type],
+            status &&
+              !effectivelyDisabled &&
+              inputStatusHoverShadowStyles[status.type],
             status && inputStatusFocusWithinStyles[status.type],
             xstyle,
           ),
