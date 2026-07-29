@@ -104,4 +104,14 @@ const s = stylex.create({ c: { boxShadow: elevationVars['--elevation-menu'] } })
     expect(out).not.toContain('elevationVars');
     expect(out).not.toContain('--elevation-menu');
   });
+
+  it('does not rewrite a longer token that shares a numeric-shadow prefix', async () => {
+    // Regression: `--shadow-1` matched inside `--shadow-10` → `--shadow-base0`.
+    expect(await applyTransform(`const x = "var(--shadow-10)";`)).toContain(
+      '--shadow-10',
+    );
+    expect(await applyTransform(`const x = "--elevation-baseX";`)).toContain(
+      '--elevation-baseX',
+    );
+  });
 });

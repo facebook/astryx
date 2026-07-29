@@ -318,4 +318,10 @@ const b = typeScaleVars;`;
     // All usages should be typeScaleVars
     expect((output.match(/typeScaleVars/g) || []).length).toBeGreaterThanOrEqual(2);
   });
+
+  it('does not rewrite a longer consumer token that shares a prefix', async () => {
+    // Regression: the boundary lookahead only bound to the last alternative.
+    const out = await applyTransform(`const x = "--color-wash-custom";`);
+    expect(out).toContain('--color-wash-custom');
+  });
 });

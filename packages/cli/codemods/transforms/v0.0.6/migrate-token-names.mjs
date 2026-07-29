@@ -108,10 +108,12 @@ const TOKEN_MAP = {
 // Uses negative lookahead for word-like chars to avoid partial matches
 // (e.g. --color-accent must not match inside --color-accent-deemphasized).
 const OLD_TOKENS_PATTERN = new RegExp(
-  Object.keys(TOKEN_MAP)
-    .sort((a, b) => b.length - a.length)
-    .map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-    .join('|') + '(?![a-zA-Z0-9_-])',
+  '(?:' +
+    Object.keys(TOKEN_MAP)
+      .sort((a, b) => b.length - a.length)
+      .map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+      .join('|') +
+    ')(?![a-zA-Z0-9_-])',
   'g',
 );
 

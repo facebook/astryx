@@ -31,11 +31,18 @@ const TOKEN_MAP = {
   '--radius-page': '--radius-4',
 };
 
-// Build a regex that matches any old token name (as a whole token, not substring)
+// Build a regex that matches any old token name as a WHOLE token, not a
+// prefix of a longer consumer-defined name. The right-boundary lookahead is
+// wrapped around the whole alternation (a bare `a|b|c(?!…)` would bind the
+// lookahead only to `c`, leaving the other tokens to match prefixes and
+// silently corrupt e.g. `--radius-container-custom`).
 const OLD_TOKENS_PATTERN = new RegExp(
-  Object.keys(TOKEN_MAP)
-    .map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-    .join('|'),
+  '(?:' +
+    Object.keys(TOKEN_MAP)
+      .sort((a, b) => b.length - a.length)
+      .map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+      .join('|') +
+    ')(?![a-zA-Z0-9_-])',
   'g',
 );
 

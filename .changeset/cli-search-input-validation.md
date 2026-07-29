@@ -50,6 +50,10 @@ Codemod runner + integration loading:
 - `resolvePackageDir` rejects an integration spec that isn't a bare package name (no `..`, no absolute, must stay in node_modules) — a config spec can no longer point the loader at an arbitrary module.
 - A broken integration manifest (throws on import or fails schema validation) no longer crashes `Project.load` (and thus every command). It's recorded and surfaced via `issues()`, restoring the documented skip+warn policy; other integrations still load.
 
+Codemod transforms (token migrations):
+
+- The `--radius-*`, `--shadow-*`/`--elevation-*`, and `--color-*` token-migration codemods no longer rewrite a longer consumer-defined token that merely shares a prefix (e.g. `--radius-container-custom` → `--radius-3-custom`, `--radius-innermost` → `--radius-0most`, `var(--shadow-10)` → `--shadow-base0`, `--color-positive-custom` → `--color-success-custom`). The boundary lookahead was binding only to the last alternative in the pattern (and two codemods had no boundary at all); it now wraps the whole alternation, so only exact token names migrate.
+
 Component discovery:
 
 - `readDocMeta` no longer reads a `group:`/`hidden:` field nested inside a `propDescriptions` block (a docsZh/docsDense translation export) as the component's group — that leaked a translated prop description as a group key in the default English `component --list` (e.g. a Chinese string appeared as a group). The field regexes now match top-level fields only (<=2 spaces).

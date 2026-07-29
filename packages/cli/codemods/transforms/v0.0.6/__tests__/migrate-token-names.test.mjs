@@ -264,4 +264,12 @@ describe('migrate-token-names', () => {
     expect(output).toContain('--ease-standard');
     expect(output).not.toContain('--easing-standard');
   });
+
+  it('does not rewrite a longer consumer token that shares a prefix', async () => {
+    // Regression: the boundary lookahead only bound to the last alternative,
+    // so `--color-positive` matched inside `--color-positive-custom`.
+    expect(await applyTransform(`const x = "--color-positive-custom";`)).toContain(
+      '--color-positive-custom',
+    );
+  });
 });

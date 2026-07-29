@@ -59,10 +59,12 @@ const IDENTIFIER_MAP = {
 };
 
 const OLD_TOKENS_PATTERN = new RegExp(
-  Object.keys(TOKEN_MAP)
-    .sort((a, b) => b.length - a.length)
-    .map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-    .join('|'),
+  '(?:' +
+    Object.keys(TOKEN_MAP)
+      .sort((a, b) => b.length - a.length)
+      .map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+      .join('|') +
+    ')(?![a-zA-Z0-9_-])',
   'g',
 );
 

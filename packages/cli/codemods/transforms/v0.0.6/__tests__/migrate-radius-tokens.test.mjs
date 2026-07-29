@@ -83,4 +83,16 @@ describe('migrate-radius-tokens', () => {
     const result = transform({source, path: 'test.tsx'}, api);
     expect(result).toBeUndefined();
   });
+
+  it('does not rewrite a longer consumer token that shares a prefix', async () => {
+    // Regression: `a|b|c(?!…)` bound the boundary lookahead only to the last
+    // alternative, so `--radius-container` matched inside a consumer's
+    // `--radius-container-custom` and corrupted it to `--radius-3-custom`.
+    expect(await applyTransform(`const x = "var(--radius-container-custom)";`)).toContain(
+      '--radius-container-custom',
+    );
+    expect(await applyTransform(`const x = "--radius-innermost";`)).toContain(
+      '--radius-innermost',
+    );
+  });
 });
