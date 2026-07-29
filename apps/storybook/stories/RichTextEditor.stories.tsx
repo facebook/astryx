@@ -26,6 +26,7 @@ const meta: Meta<typeof RichTextEditor> = {
     isOptional: {control: 'boolean'},
     hasMarkdownShortcuts: {control: 'boolean'},
     hasAutoFocus: {control: 'boolean'},
+    maxLength: {control: 'number'},
     size: {control: 'select', options: ['sm', 'md', 'lg']},
   },
 };
@@ -53,6 +54,15 @@ export const Required: Story = {
     label: 'Summary',
     isRequired: true,
     placeholder: 'Required field',
+  },
+};
+
+export const WithCharacterLimit: Story = {
+  args: {
+    label: 'Bio',
+    maxLength: 80,
+    description: 'A character counter appears below the editor when maxLength is set.',
+    placeholder: 'Type past 80 characters to see the counter turn red…',
   },
 };
 

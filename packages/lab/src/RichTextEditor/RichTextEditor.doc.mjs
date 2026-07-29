@@ -110,6 +110,12 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'maxLength',
+      type: 'number',
+      description:
+        'Maximum number of characters. When set, a character counter (current/max) is displayed below the editor. Like TextArea, does not enforce the limit natively; the counter shows error styling when the plain-text length exceeds the limit.',
+    },
+    {
       name: 'width',
       type: 'number | string',
       description:

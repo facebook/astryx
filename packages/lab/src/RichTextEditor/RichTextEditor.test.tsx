@@ -455,6 +455,43 @@ describe('RichTextEditor', () => {
     const text = state?.read(() => $getRoot().getTextContent());
     expect(text).toBe('Hello world');
   });
+
+  it('does not render a character counter when maxLength is not set', () => {
+    render(<RichTextEditor label="Notes" defaultValue={HELLO_STATE} />);
+    expect(screen.queryByText(/\d+\/\d+/)).not.toBeInTheDocument();
+  });
+
+  it('renders a character counter reflecting the seeded content length', async () => {
+    // HELLO_STATE is "Hello world" (11 chars).
+    render(
+      <RichTextEditor label="Notes" defaultValue={HELLO_STATE} maxLength={100} />,
+    );
+    await waitFor(() =>
+      expect(screen.getByText('11/100')).toBeInTheDocument(),
+    );
+  });
+
+  it('shows an over-limit counter when content exceeds maxLength', async () => {
+    // 11 chars with a limit of 5 -> over limit.
+    render(
+      <RichTextEditor label="Notes" defaultValue={HELLO_STATE} maxLength={5} />,
+    );
+    await waitFor(() => expect(screen.getByText('11/5')).toBeInTheDocument());
+    // aria-live region announces the overflow for screen readers.
+    expect(screen.getByText('6 characters over limit')).toBeInTheDocument();
+  });
+
+  it('associates the counter with the editor via aria-describedby', async () => {
+    render(
+      <RichTextEditor label="Notes" defaultValue={HELLO_STATE} maxLength={100} />,
+    );
+    const counter = await screen.findByText('11/100');
+    const describedBy = screen
+      .getByRole('textbox')
+      .getAttribute('aria-describedby');
+    expect(describedBy).toBeTruthy();
+    expect(describedBy!.split(' ')).toContain(counter.id);
+  });
 });
 
 describe('RichTextView', () => {
