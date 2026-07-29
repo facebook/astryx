@@ -23,11 +23,12 @@
  * checkmark uses the `check` icon from the active theme's icon registry.
  */
 
-import {useCallback, type ReactNode} from 'react';
+import {useCallback, type PointerEvent, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {Item} from '../Item';
 import {useDropdownMenuContext} from './DropdownMenuContext';
+import {focusMenuItemOnHover} from './menuItemHover';
 import {
   colorVars,
   spacingVars,
@@ -47,11 +48,6 @@ const styles = stylex.create({
     backgroundColor: {
       default: 'transparent',
       ':focus': colorVars['--color-overlay-hover'],
-    },
-    ':hover': {
-      '@media (hover: hover)': {
-        backgroundColor: colorVars['--color-overlay-hover'],
-      },
     },
     cursor: 'pointer',
     outline: 'none',
@@ -194,12 +190,18 @@ export function DropdownMenuCheckboxItem({
     }
   }, [isDisabled, onChange, value, hasCloseOnSelect, ctx]);
 
+  const handlePointerMove = useCallback(
+    (e: PointerEvent<HTMLElement>) => focusMenuItemOnHover(e, isDisabled),
+    [isDisabled],
+  );
+
   return (
     <Item
       {...rest}
       role="menuitemcheckbox"
       aria-checked={value}
       tabIndex={isDisabled ? undefined : -1}
+      onPointerMove={handlePointerMove}
       marker={
         <span
           aria-hidden="true"

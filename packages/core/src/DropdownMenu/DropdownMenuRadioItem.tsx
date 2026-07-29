@@ -21,11 +21,12 @@
  * has no registry glyph).
  */
 
-import {useCallback, type ReactNode} from 'react';
+import {useCallback, type PointerEvent, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {renderIconSlot, type IconType} from '../Icon';
 import {Item} from '../Item';
 import {useDropdownMenuContext} from './DropdownMenuContext';
+import {focusMenuItemOnHover} from './menuItemHover';
 import {
   colorVars,
   spacingVars,
@@ -45,11 +46,6 @@ const styles = stylex.create({
     backgroundColor: {
       default: 'transparent',
       ':focus': colorVars['--color-overlay-hover'],
-    },
-    ':hover': {
-      '@media (hover: hover)': {
-        backgroundColor: colorVars['--color-overlay-hover'],
-      },
     },
     cursor: 'pointer',
     outline: 'none',
@@ -188,12 +184,18 @@ export function DropdownMenuRadioItem({
     }
   }, [isDisabled, groupCtx, value, menuCtx]);
 
+  const handlePointerMove = useCallback(
+    (e: PointerEvent<HTMLElement>) => focusMenuItemOnHover(e, isDisabled),
+    [isDisabled],
+  );
+
   return (
     <Item
       {...rest}
       role="menuitemradio"
       aria-checked={isChecked}
       tabIndex={isDisabled ? undefined : -1}
+      onPointerMove={handlePointerMove}
       marker={
         <span
           aria-hidden="true"
