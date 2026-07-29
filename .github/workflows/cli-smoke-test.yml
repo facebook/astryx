@@ -33,6 +33,9 @@ jobs:
       - name: Typecheck JSON API types
         run: cd packages/cli && pnpm typecheck:json-api
 
+      - name: Check generated ./api types are current
+        run: cd packages/cli && pnpm check:api-types-current
+
       - name: CLI --json smoke test
         run: node .github/scripts/cli-json-smoke-test.mjs
 
