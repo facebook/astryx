@@ -115,7 +115,7 @@ const shapeStyles = stylex.create({
     borderRadius: radiusVars['--radius-element'],
   },
   square: {
-    borderRadius: 0,
+    borderRadius: radiusVars['--radius-none'],
   },
 });
 
