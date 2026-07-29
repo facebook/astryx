@@ -37,18 +37,38 @@ function withAstryx(nextConfig = {}) {
     webpack: (config, context) => {
       // Astryx packages are consumed from their `source` export (raw TS) so
       // the sandbox/docsite build straight from src without a prebuild step.
-      // Apply the `source` condition via a scoped, ALLOWLIST rule that only
-      // matches @astryxdesign packages — the global conditions stay as Next's
-      // defaults (webpack's `'...'` sentinel + react-server), which React JSX
-      // resolution depends on. Third-party deps (e.g. `lexical`, which also
-      // ships a `source` export) therefore resolve to their built output, not
-      // raw TS. This is robust to new third-party `source`-shipping deps.
+      // Apply the `source` condition via a scoped rule that matches
+      // @astryxdesign packages — the global conditions stay as Next's defaults
+      // (webpack's `'...'` sentinel + react-server), which React JSX resolution
+      // depends on.
+      //
+      // IMPORTANT: a rule's `resolve.conditionNames` governs how the MATCHED
+      // module resolves ITS OWN imports. So the @astryxdesign rule also decides
+      // how e.g. `@astryxdesign/lab/dist/RichTextEditor.js` resolves its
+      // `import 'lexical'`. `lexical` (and `@lexical/*`) ship a `source` export
+      // pointing at raw `.ts` (`./src/index.ts`), which Next's Babel cannot
+      // compile (it hits `declare` class fields → build failure). We must NOT
+      // let the `source` condition leak into those third-party imports.
+      //
+      // Fix: add a higher-precedence rule (unshifted AFTER the astryx rule, so
+      // it sits first in the array and wins) that matches lexical resources and
+      // forces the DEFAULT conditions — resolving them to built dist output
+      // regardless of which package imported them.
       config.module = config.module || {};
       config.module.rules = config.module.rules || [];
       config.module.rules.unshift({
         test: /[\\/]node_modules[\\/]@astryxdesign[\\/]/,
         resolve: {
           conditionNames: ['source', '...'],
+        },
+      });
+      // Force lexical + @lexical/* to their built output (skip the `source`
+      // raw-TS export). Placed first so it takes precedence over the
+      // @astryxdesign `source` rule for these third-party resources.
+      config.module.rules.unshift({
+        test: /[\\/]node_modules[\\/](lexical|@lexical[\\/][^\\/]+)[\\/]/,
+        resolve: {
+          conditionNames: ['...'],
         },
       });
 
