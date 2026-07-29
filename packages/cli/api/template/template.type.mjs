@@ -70,4 +70,16 @@
  * @property {number} data.filesCopied
  */
 
+/**
+ * Options for `template()`.
+ * @typedef {object} TemplateOptions
+ * @property {boolean} [list]
+ * @property {boolean} [skeleton]
+ * @property {boolean} [show]
+ * @property {'page' | 'block'} [type] Filter templates by kind: 'page' or 'block'. Only applies to list views.
+ * @property {string} [package] Narrow to templates from a specific package (id-only lookups across packages are ambiguous).
+ * @property {string} [targetPath]
+ * @property {string} [cwd]
+ */
+
 export {};

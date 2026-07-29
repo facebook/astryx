@@ -1,0 +1,24 @@
+/**
+ * @param {string} [name]
+ * @param {object} [options]
+ * @param {string} [options.cwd]
+ * @param {boolean} [options.list]
+ * @param {string} [options.category]
+ * @param {boolean} [options.params]
+ * @param {'full'|'compact'|'brief'} [options.detail] - Defaults to 'full' for a single hook, 'brief' for list views (list/category/no name), matching the CLI.
+ * @param {string} [options.lang]
+ * @param {boolean} [options.zh]
+ * @returns {Promise<{type: string, data: unknown}>}
+ */
+export function hook(name?: string, options?: {
+    cwd?: string | undefined;
+    list?: boolean | undefined;
+    category?: string | undefined;
+    params?: boolean | undefined;
+    detail?: "compact" | "full" | "brief" | undefined;
+    lang?: string | undefined;
+    zh?: boolean | undefined;
+}): Promise<{
+    type: string;
+    data: unknown;
+}>;

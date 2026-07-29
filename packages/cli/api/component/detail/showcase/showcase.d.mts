@@ -1,0 +1,19 @@
+/**
+ * Resolve and read a component's showcase block into the
+ * `component.detail.showcase` envelope. Throws ERR_NO_SHOWCASE when none
+ * matches. Pass `resolve: false` for owners that never carry a showcase
+ * (integration components) so we throw without scanning blocks.
+ * @param {string} componentName - bare name, echoed back as `data.component`
+ * @param {object} ctx
+ * @param {string} ctx.cwd
+ * @param {string} ctx.name - the caller's original input, used in the error message
+ * @param {string|null} [ctx.packageScope] - scope block discovery + the error to a package
+ * @param {boolean} [ctx.resolve] - when false, skip discovery and treat as not found
+ * @returns {Promise<import('../../component.type.mjs').ComponentDetailShowcaseResponse>}
+ */
+export function componentDetailShowcase(componentName: string, { cwd, name, packageScope, resolve }: {
+    cwd: string;
+    name: string;
+    packageScope?: string | null | undefined;
+    resolve?: boolean | undefined;
+}): Promise<import("../../component.type.mjs").ComponentDetailShowcaseResponse>;

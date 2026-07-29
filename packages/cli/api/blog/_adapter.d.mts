@@ -1,0 +1,18 @@
+/**
+ * Fetch the canonical feed and parse it into posts. Shared by both leaves; the
+ * envelope's `feedUrl` lets a caller hit the RSS feed directly.
+ * @returns {Promise<import('./blog.type.mjs').BlogListData>}
+ */
+export function loadFeed(): Promise<import("./blog.type.mjs").BlogListData>;
+/**
+ * Fetch a post's plaintext (.txt) alternate, refusing any non-canonical origin
+ * so even a tampered feed can't redirect the CLI to another host.
+ * @param {string} textUrl
+ * @returns {Promise<string>}
+ */
+export function fetchPostText(textUrl: string): Promise<string>;
+/**
+ * Canonical RSS feed URL. The feed is always the canonical site — there is no
+ * user-supplied URL — so both leaves can hit it directly.
+ */
+export const FEED_URL: string;

@@ -35,4 +35,12 @@
  * @property {string[]} data.foundation Always-on layout/typography/action component names.
  */
 
+/**
+ * Options for `build()`.
+ * @typedef {object} BuildOptions
+ * @property {string} [cwd]
+ * @property {import('../search/search.type.mjs').SearchDomain} [type]
+ * @property {number} [limit]
+ */
+
 export {};

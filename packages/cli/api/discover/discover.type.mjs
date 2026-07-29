@@ -61,4 +61,12 @@
  * @property {string} component
  */
 
+/**
+ * Options for `discover()`.
+ * @typedef {object} DiscoverOptions
+ * @property {boolean} [components]
+ * @property {string} [lang]
+ * @property {boolean} [zh]
+ */
+
 export {};

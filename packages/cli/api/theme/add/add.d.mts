@@ -1,0 +1,16 @@
+/**
+ * Copy a bundled theme's files into the consumer's project (defaults to
+ * `src/themes/<slug>/`). Writes are staged to temp files then renamed, rolling
+ * back partials on failure so a failed write never leaves a half-written theme.
+ * Throws AstryxError for an unknown slug, a target that escapes cwd, an existing
+ * file (without `overwrite`), a missing bundled file, or a write failure.
+ *
+ * @param {string} slug
+ * @param {{targetPath?: string, overwrite?: boolean, cwd?: string}} [options]
+ * @returns {Promise<import('../theme.type.mjs').ThemeAddResponse>}
+ */
+export function themeAdd(slug: string, options?: {
+    targetPath?: string;
+    overwrite?: boolean;
+    cwd?: string;
+}): Promise<import("../theme.type.mjs").ThemeAddResponse>;

@@ -1,0 +1,115 @@
+/**
+ * Identity for a template in package-scoped views. Core (built-in) templates
+ * have no `package` field; report them under @astryxdesign/core.
+ * @param {{package?: string}} t
+ * @returns {string}
+ */
+export function pkgOf(t: {
+    package?: string;
+}): string;
+/**
+ * Replace demo image references with a self-contained placeholder data URI so
+ * scaffolded pages render with zero setup. Builders drop in their own images.
+ *
+ * @param {string} source - Template source code.
+ * @returns {string} Source with demo image references replaced.
+ */
+export function stripTemplateAssetRefs(source: string): string;
+/**
+ * List the core page-template directory names (sorted). The `template --list`
+ * view discovers far more; this is the minimal core-page set `init` scaffolds
+ * from.
+ * @returns {string[]}
+ */
+export function listTemplates(): string[];
+/**
+ * @param {string} [cwd]
+ * @returns {Promise<DiscoveredTemplate[]>}
+ */
+export function discoverAll(cwd?: string): Promise<DiscoveredTemplate[]>;
+/**
+ * Like {@link discoverAll} but also returns integration-template discovery
+ * errors (missing same-stem source, missing `type`, load failure). Use this
+ * when the caller wants to warn about malformed integration templates.
+ *
+ * @param {string} [cwd]
+ * @returns {Promise<{templates: DiscoveredTemplate[], errors: TemplateDiscoveryError[]}>}
+ */
+export function discoverAllWithErrors(cwd?: string): Promise<{
+    templates: DiscoveredTemplate[];
+    errors: TemplateDiscoveryError[];
+}>;
+/**
+ * Discover the templates contributed by a SINGLE integration. Same per-template
+ * rules as {@link discoverIntegrationTemplates} (same-stem source required,
+ * page|block type required); broken templates are recorded in `errors` rather
+ * than thrown. Exposed for `validate-integration`.
+ *
+ * @param {{name?: string, __spec?: string, templates?: string}} integration
+ * @returns {Promise<{templates: DiscoveredTemplate[], errors: TemplateDiscoveryError[]}>}
+ */
+export function discoverIntegrationTemplatesForOne(integration: {
+    name?: string;
+    __spec?: string;
+    templates?: string;
+}): Promise<{
+    templates: DiscoveredTemplate[];
+    errors: TemplateDiscoveryError[];
+}>;
+/**
+ * @param {string} componentName
+ * @param {string} [cwd]
+ * @returns {Promise<DiscoveredTemplate[]>}
+ */
+export function findRelatedBlocks(componentName: string, cwd?: string): Promise<DiscoveredTemplate[]>;
+/**
+ * @param {string} componentName
+ * @param {string} [cwd]
+ * @param {{ package?: string }} [options] - When set, only search blocks from this package.
+ *   Core blocks have no `package` field; external blocks have `package` set to the npm name.
+ */
+export function findShowcase(componentName: string, cwd?: string, options?: {
+    package?: string;
+}): Promise<{
+    name: string;
+    aspectRatio: number | undefined;
+    filePath: string;
+    docPath: string;
+} | null>;
+/**
+ * @param {string} pagePath
+ * @returns {string[]}
+ */
+export function extractComponents(pagePath: string): string[];
+/**
+ * A discovered template (page or block), normalized across core, external, and
+ * integration sources. Not every source populates every field, so
+ * source-specific extras (`aspectRatio`, `isShowcase`, `package`) are optional.
+ */
+export type DiscoveredTemplate = {
+    type: "page" | "block";
+    dirName: string;
+    name: string;
+    description: string;
+    category?: string | undefined;
+    isReady?: boolean | undefined;
+    scaffold?: boolean | undefined;
+    aspectRatio?: number | undefined;
+    componentsUsed?: string[] | undefined;
+    isShowcase?: boolean | undefined;
+    filePath: string;
+    docPath: string;
+    package?: string | undefined;
+};
+/**
+ * An integration-template discovery error.
+ */
+export type TemplateDiscoveryError = {
+    package: string;
+    template?: string | undefined;
+    message: string;
+};
+/**
+ * The loaded metadata object from a template spec (loose — authored shape).
+ */
+export type TemplateDocModule = Record<string, any> | undefined | null;

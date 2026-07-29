@@ -1,0 +1,16 @@
+export class AstryxError extends Error {
+    /**
+     * @param {string} message
+     * @param {import('../types/base').Suggestion[]} [suggestions]
+     * @param {string} [code] - Stable error code. Defaults to ERR_UNKNOWN.
+     */
+    constructor(message: string, suggestions?: import("../types/base").Suggestion[], code?: string);
+    /** @type {import('../types/base').Suggestion[] | undefined} */
+    suggestions: import("../types/base").Suggestion[] | undefined;
+    /**
+     * Stable, machine-readable error code (error-codes.mjs). Consumers branch
+     * on this, never on the message text.
+     * @type {string}
+     */
+    code: string;
+}

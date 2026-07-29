@@ -1,0 +1,35 @@
+/**
+ * A single post as parsed from the canonical RSS feed.
+ */
+export type BlogPost = {
+    slug: string;
+    title: string;
+    description?: string | undefined;
+    date?: string | undefined;
+    type?: string | undefined;
+    authors?: string[] | undefined;
+    link?: string | undefined;
+    textUrl?: string | null | undefined;
+};
+export type BlogListData = {
+    feedUrl: string;
+    posts: BlogPost[];
+};
+export type BlogDetailData = BlogPost & {
+    feedUrl: string;
+    text: string;
+};
+/**
+ * `astryx --json blog` (no slug).
+ */
+export type BlogListResponse = {
+    type: "blog.list";
+    data: BlogListData;
+};
+/**
+ * `astryx --json blog <slug>`.
+ */
+export type BlogDetailResponse = {
+    type: "blog.detail";
+    data: BlogDetailData;
+};

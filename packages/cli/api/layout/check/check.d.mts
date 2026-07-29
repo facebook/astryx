@@ -1,0 +1,13 @@
+/**
+ * `astryx layout check "<expr>" [--form compact|outline]`
+ * Validates without expanding; echoes both canonical surfaces.
+ *
+ * @param {string} expression
+ * @param {{form?: 'compact'|'outline'|'auto', loose?: boolean, cwd?: string}} [options]
+ * @returns {Promise<import('../layout.type.mjs').LayoutCheckResponse>}
+ */
+export function layoutCheck(expression: string, options?: {
+    form?: "compact" | "outline" | "auto";
+    loose?: boolean;
+    cwd?: string;
+}): Promise<import("../layout.type.mjs").LayoutCheckResponse>;

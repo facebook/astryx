@@ -29,7 +29,7 @@ export {noopInitLogger} from './_adapter.mjs';
  * and `.InitLogger`). The canonical shapes stay central in types/api.d.ts +
  * api/init/init.type.mjs; these aliases just preserve the barrel's original type
  * surface after the split.
- * @typedef {import('../../types/api').InitOptions} InitOptions
+ * @typedef {import('./init.type.mjs').InitOptions} InitOptions
  * @typedef {import('./_adapter.mjs').InitLogger} InitLogger
  * @typedef {import('./init.type.mjs').InitRunData} InitRunData
  */

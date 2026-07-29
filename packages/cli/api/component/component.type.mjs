@@ -120,4 +120,21 @@
  * @property {string} category
  */
 
+/**
+ * Options for `component()`.
+ * @typedef {object} ComponentOptions
+ * @property {string} [cwd]
+ * @property {boolean} [list]
+ * @property {string} [category]
+ * @property {string} [package] Scope lookup to a specific external package (e.g. '@acme/xds-widgets').
+ * @property {boolean} [props]
+ * @property {boolean} [source]
+ * @property {boolean} [showcase]
+ * @property {boolean} [blocks] List example blocks for the component: showcase, examples, and related.
+ * @property {'full' | 'compact' | 'brief'} [detail]
+ * @property {string} [lang]
+ * @property {boolean} [zh]
+ * @property {boolean} [dense]
+ */
+
 export {};

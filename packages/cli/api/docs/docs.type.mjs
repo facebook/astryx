@@ -39,4 +39,12 @@
  * @property {import('../../../core/src/docs-types').ReferenceSection} data
  */
 
+/**
+ * Options for `docs()`.
+ * @typedef {object} DocsOptions
+ * @property {string} [lang]
+ * @property {boolean} [zh]
+ * @property {boolean} [dense]
+ */
+
 export {};

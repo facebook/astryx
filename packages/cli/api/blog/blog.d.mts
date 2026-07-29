@@ -1,0 +1,12 @@
+/**
+ * List posts (from the feed), or read one post (via its .txt alternate).
+ * Both envelopes carry `feedUrl` so a caller can hit the RSS feed directly.
+ * The feed is always the canonical site — there is no user-supplied URL.
+ *
+ * @param {string} [slug]
+ * @returns {Promise<import('./blog.type.mjs').BlogListResponse | import('./blog.type.mjs').BlogDetailResponse>}
+ */
+export function blog(slug?: string): Promise<import("./blog.type.mjs").BlogListResponse | import("./blog.type.mjs").BlogDetailResponse>;
+import { list } from './list/list.mjs';
+import { detail } from './detail/detail.mjs';
+export { list, detail };

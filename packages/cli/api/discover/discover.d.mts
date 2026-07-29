@@ -1,0 +1,18 @@
+/**
+ * @param {string} [query]
+ * @param {object} [options]
+ * @param {boolean} [options.components]
+ * @param {string} [options.lang]
+ * @param {boolean} [options.zh]
+ * @returns {Promise<
+ *   import('./discover.type.mjs').DiscoverListResponse |
+ *   import('./discover.type.mjs').DiscoverDetailResponse |
+ *   import('./discover.type.mjs').DiscoverDetailDocResponse |
+ *   import('./discover.type.mjs').DiscoverSearchResponse
+ * >}
+ */
+export function discover(query?: string, options?: {
+    components?: boolean | undefined;
+    lang?: string | undefined;
+    zh?: boolean | undefined;
+}): Promise<import("./discover.type.mjs").DiscoverListResponse | import("./discover.type.mjs").DiscoverDetailResponse | import("./discover.type.mjs").DiscoverDetailDocResponse | import("./discover.type.mjs").DiscoverSearchResponse>;

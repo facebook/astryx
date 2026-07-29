@@ -1,0 +1,16 @@
+/**
+ * The page-building assistant. No query → the playbook signal; a query → the
+ * grouped composition kit.
+ *
+ * @param {string} [query] what you're building (e.g. "analytics dashboard")
+ * @param {{cwd?: string, type?: import('../../types/search').SearchDomain, limit?: number}} [options]
+ * @returns {Promise<import('./build.type.mjs').BuildHelpResponse | import('./build.type.mjs').BuildKitResponse>}
+ */
+export function build(query?: string, options?: {
+    cwd?: string;
+    type?: import("../../types/search").SearchDomain;
+    limit?: number;
+}): Promise<import("./build.type.mjs").BuildHelpResponse | import("./build.type.mjs").BuildKitResponse>;
+import { buildHelp } from './help/help.mjs';
+import { buildKit } from './kit/kit.mjs';
+export { buildHelp, buildKit };

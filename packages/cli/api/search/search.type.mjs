@@ -36,4 +36,12 @@
  * @property {SearchResultEntry[]} data.results
  */
 
+/**
+ * Options for `search()`.
+ * @typedef {object} SearchOptions
+ * @property {string} [cwd]
+ * @property {SearchDomain} [type]
+ * @property {number} [limit]
+ */
+
 export {};

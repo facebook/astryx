@@ -362,7 +362,7 @@ export async function validateInstalledIntegration(spec, cwd = process.cwd()) {
  *
  * @param {string} [pkg] installed package name; omit to validate the cwd package
  * @param {{cwd?: string}} [options]
- * @returns {Promise<import('../../types/validate-integration').ValidateIntegrationResponse>}
+ * @returns {Promise<import('./validate-integration.type.mjs').ValidateIntegrationResponse>}
  */
 export async function validateIntegration(pkg, options = {}) {
   const {cwd = process.cwd()} = options;

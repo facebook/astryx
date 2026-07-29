@@ -36,7 +36,7 @@
       "import": "./lib/parse.mjs"
     },
     "./api": {
-      "types": "./types/api.d.ts",
+      "types": "./api/index.d.mts",
       "import": "./api/index.mjs"
     },
     "./config": {
@@ -83,8 +83,10 @@
     "astryx": "node bin/astryx.mjs",
     "postinstall": "node scripts/postinstall.mjs",
     "typecheck:template-docs": "tsc --project tsconfig.template-docs.json",
-    "typecheck:json-api": "tsc --project tsconfig.json-api.json && tsc --project tsconfig.api-contract.json",
-    "typecheck:strict": "tsc --project tsconfig.strict.json"
+    "typecheck:json-api": "tsc --project tsconfig.json-api.json",
+    "typecheck:strict": "tsc --project tsconfig.strict.json",
+    "gen:api-types": "node scripts/gen-api-types.mjs",
+    "check:api-types-current": "node scripts/gen-api-types.mjs && git diff --exit-code -- 'api/**/*.d.mts'"
   },
   "dependencies": {
     "commander": "^12.1.0",

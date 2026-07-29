@@ -76,4 +76,28 @@
  * @typedef {LayoutExpandResponse | LayoutCheckResponse | LayoutGrammarResponse} LayoutResponse
  */
 
+/**
+ * Options for `layoutExpand()`.
+ * @typedef {object} LayoutExpandOptions
+ * @property {string} [targetPath]
+ * @property {LayoutForm} [form]
+ * @property {boolean} [loose]
+ * @property {string} [name]
+ * @property {string} [cwd]
+ */
+
+/**
+ * Options for `layoutCheck()`.
+ * @typedef {object} LayoutCheckOptions
+ * @property {LayoutForm} [form]
+ * @property {boolean} [loose]
+ * @property {string} [cwd]
+ */
+
+/**
+ * Options for `layoutGrammar()`.
+ * @typedef {object} LayoutGrammarOptions
+ * @property {string} [cwd]
+ */
+
 export {};

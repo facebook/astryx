@@ -1,0 +1,19 @@
+/**
+ * `astryx layout expand "<expr>" [path]`
+ *
+ * @param {string} expression
+ * @param {object} [options]
+ * @param {string} [options.targetPath] - write TSX here (validated against cwd)
+ * @param {'compact'|'outline'|'auto'} [options.form]
+ * @param {boolean} [options.loose] - downgrade unknown {hints} to TODO warnings
+ * @param {string} [options.name] - generated component name
+ * @param {string} [options.cwd]
+ * @returns {Promise<import('../layout.type.mjs').LayoutExpandResponse>}
+ */
+export function layoutExpand(expression: string, options?: {
+    targetPath?: string | undefined;
+    form?: "compact" | "outline" | "auto" | undefined;
+    loose?: boolean | undefined;
+    name?: string | undefined;
+    cwd?: string | undefined;
+}): Promise<import("../layout.type.mjs").LayoutExpandResponse>;

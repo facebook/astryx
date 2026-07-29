@@ -1,0 +1,37 @@
+/**
+ * xds --json build (no query) — the "how to build a page" playbook signal.
+ */
+export type BuildHelpResponse = {
+    type: "build.help";
+    data: {
+        playbook: true;
+    };
+};
+/**
+ * xds --json build "<idea>" — the composition kit for what you're building.
+ *
+ * Entries are raw `SearchResultEntry` objects (no package-manager-prefixed
+ * command strings — the CLI adds those); `frame`/`foundation` are static
+ * component-name arrays surfaced on every kit.
+ */
+export type BuildKitResponse = {
+    type: "build.kit";
+    data: {
+        query: string;
+        hasResults: boolean;
+        directMatch: boolean;
+        pages: import("../../types/search").SearchResultEntry[];
+        blocks: import("../../types/search").SearchResultEntry[];
+        domain: import("../../types/search").SearchResultEntry[];
+        frame: string[];
+        foundation: string[];
+    };
+};
+/**
+ * Options for `build()`.
+ */
+export type BuildOptions = {
+    cwd?: string | undefined;
+    type?: import("../search/search.type.mjs").SearchDomain | undefined;
+    limit?: number | undefined;
+};

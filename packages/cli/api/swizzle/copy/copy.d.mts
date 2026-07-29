@@ -1,0 +1,27 @@
+/**
+ * Rewrite relative imports that point outside the component directory to use
+ * the OWNER package's subpaths. Imports within the copied directory (./x) are
+ * left untouched.
+ *
+ * e.g. with ownerPackage '@astryxdesign/core':
+ *      '../theme/tokens.stylex' -> '@astryxdesign/core/theme'
+ *      '../utils/mergeProps'     -> '@astryxdesign/core/utils'
+ *
+ * @param {string} content
+ * @param {string} [ownerPackage]
+ */
+export function rewriteImports(content: string, ownerPackage?: string): string;
+/**
+ * Copy one component's source into the consumer project for customization,
+ * rewriting escaping relative imports to the owner package's subpaths.
+ *
+ * @param {string} component bare or XDS-prefixed component name
+ * @param {{cwd?: string, output?: string, package?: string, overwrite?: boolean}} [options]
+ * @returns {Promise<import('../swizzle.type.mjs').SwizzleCopyResponse>}
+ */
+export function swizzleCopy(component: string, options?: {
+    cwd?: string;
+    output?: string;
+    package?: string;
+    overwrite?: boolean;
+}): Promise<import("../swizzle.type.mjs").SwizzleCopyResponse>;

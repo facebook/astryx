@@ -1,0 +1,37 @@
+/**
+ * @typedef {import('./_adapter.mjs').DiscoveredTemplate} DiscoveredTemplate
+ */
+/**
+ * @typedef {import('./_adapter.mjs').TemplateDiscoveryError} TemplateDiscoveryError
+ */
+/**
+ * @typedef {import('./_adapter.mjs').TemplateDocModule} TemplateDocModule
+ */
+/**
+ * @param {string} [name]
+ * @param {object} [options]
+ * @param {string} [options.targetPath]
+ * @param {boolean} [options.list]
+ * @param {boolean} [options.skeleton]
+ * @param {boolean} [options.show]
+ * @param {'page'|'block'} [options.type] - Filter list views / narrow lookups by template kind.
+ * @param {string} [options.package] - Narrow lookups to a specific package (id-only matches across packages are ambiguous).
+ * @param {string} [options.cwd]
+ * @returns {Promise<{type: string, data: unknown}>}
+ */
+export function template(name?: string, options?: {
+    targetPath?: string | undefined;
+    list?: boolean | undefined;
+    skeleton?: boolean | undefined;
+    show?: boolean | undefined;
+    type?: "page" | "block" | undefined;
+    package?: string | undefined;
+    cwd?: string | undefined;
+}): Promise<{
+    type: string;
+    data: unknown;
+}>;
+export type DiscoveredTemplate = import("./_adapter.mjs").DiscoveredTemplate;
+export type TemplateDiscoveryError = import("./_adapter.mjs").TemplateDiscoveryError;
+export type TemplateDocModule = import("./_adapter.mjs").TemplateDocModule;
+export { discoverAll, discoverAll as discoverTemplates, discoverAllWithErrors, discoverIntegrationTemplatesForOne, stripTemplateAssetRefs, listTemplates, findRelatedBlocks, findShowcase, extractComponents } from "./_adapter.mjs";

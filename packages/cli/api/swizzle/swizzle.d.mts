@@ -1,0 +1,16 @@
+/**
+ * List swizzlable components, or copy one component's source for customization.
+ *
+ * @param {string} [component] bare or XDS-prefixed component name; omit to list
+ * @param {{cwd?: string, output?: string, package?: string, list?: boolean, overwrite?: boolean}} [options]
+ * @returns {Promise<import('./swizzle.type.mjs').SwizzleListResponse | import('./swizzle.type.mjs').SwizzleCopyResponse>}
+ */
+export function swizzle(component?: string, options?: {
+    cwd?: string;
+    output?: string;
+    package?: string;
+    list?: boolean;
+    overwrite?: boolean;
+}): Promise<import("./swizzle.type.mjs").SwizzleListResponse | import("./swizzle.type.mjs").SwizzleCopyResponse>;
+export { rewriteImports };
+import { rewriteImports } from './copy/copy.mjs';

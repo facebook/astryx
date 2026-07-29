@@ -1,0 +1,30 @@
+/**
+ * @typedef {import('../component.type.mjs').ComponentListResponse} ComponentListResponse
+ * @typedef {import('../component.type.mjs').ComponentListEntry} ComponentListEntry
+ * @typedef {import('../component.type.mjs').ComponentBriefEntry} ComponentBriefEntry
+ */
+/**
+ * Build the `component.list` envelope. The list taxonomy is collapsed: all
+ * three detail levels emit ONE `component.list` type; the depth rides in
+ * `data.detail` and the grouped map in `data.components`.
+ * @param {string} coreDir
+ * @param {object} opts
+ * @param {string} opts.cwd
+ * @param {string} [opts.category] - Filter to a single category (group key).
+ * @param {'full'|'compact'|'brief'} opts.detail
+ * @param {boolean} opts.zh
+ * @param {boolean} opts.dense
+ * @param {string|null} opts.lang
+ * @returns {Promise<ComponentListResponse>}
+ */
+export function componentList(coreDir: string, { cwd, category, detail, zh, dense, lang }: {
+    cwd: string;
+    category?: string | undefined;
+    detail: "full" | "compact" | "brief";
+    zh: boolean;
+    dense: boolean;
+    lang: string | null;
+}): Promise<ComponentListResponse>;
+export type ComponentListResponse = import("../component.type.mjs").ComponentListResponse;
+export type ComponentListEntry = import("../component.type.mjs").ComponentListEntry;
+export type ComponentBriefEntry = import("../component.type.mjs").ComponentBriefEntry;

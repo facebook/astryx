@@ -79,4 +79,18 @@
  * @property {{status: 'up_to_date', from: string, to: string, agentDocs: AgentDocsSummary} | {status: 'no_codemods', from: string, to: string, agentDocs: AgentDocsSummary} | {status: 'config_fixable', from: string, to: string, configError: string, configCodemods: string[], suggestedCommand: string, message: string, note: string, agentDocs: AgentDocsSummary}} data
  */
 
+/**
+ * Options for `upgrade()`.
+ * @typedef {object} UpgradeOptions
+ * @property {string} [from] Version before the dependency bump (required unless `list`).
+ * @property {boolean} [apply] Write changes to disk (default: dry-run).
+ * @property {boolean} [force] Run codemods even if `from` >= installed.
+ * @property {string} [codemod] Run a single named transform.
+ * @property {string[]} [skipCodemod] Exclude named codemods (re-run past a failure).
+ * @property {string[]} [integration] Explicit integration package names / file paths.
+ * @property {string} [path] Source directory to scan (default `./src`).
+ * @property {boolean} [installDeps] Auto-install jscodeshift without prompting.
+ * @property {boolean} [list] Return the available codemods instead of running.
+ */
+
 export {};

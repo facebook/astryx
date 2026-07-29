@@ -37,4 +37,14 @@
  * @property {SwizzleFeedback} [data.feedback]
  */
 
+/**
+ * Options for `swizzle()`.
+ * @typedef {object} SwizzleOptions
+ * @property {string} [cwd]
+ * @property {string} [output] Output directory (must resolve inside cwd). Defaults to ./components/astryx.
+ * @property {string} [package] Scope to a specific owning package when a name is ambiguous.
+ * @property {boolean} [list] Force the list response even with a component argument.
+ * @property {boolean} [overwrite] Overwrite existing files instead of erroring.
+ */
+
 export {};

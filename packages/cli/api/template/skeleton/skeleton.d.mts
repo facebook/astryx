@@ -1,0 +1,9 @@
+/**
+ * Build the `template.skeleton` envelope for an already-resolved template.
+ * `match` may be undefined when `--skeleton` is run without a name — the same
+ * "specify a template name" error the dispatcher's resolution would surface.
+ * @param {import('../_adapter.mjs').DiscoveredTemplate | undefined} match
+ * @param {import('../_adapter.mjs').DiscoveredTemplate[]} templates
+ * @returns {import('../template.type.mjs').TemplateSkeletonResponse}
+ */
+export function templateSkeleton(match: import("../_adapter.mjs").DiscoveredTemplate | undefined, templates: import("../_adapter.mjs").DiscoveredTemplate[]): import("../template.type.mjs").TemplateSkeletonResponse;

@@ -63,7 +63,7 @@ export function getNextSteps(invocation) {
  * generic retry hint and continues without changing the exit code.
  *
  * @param {string} cwd
- * @param {import('../../../types/api').InitOptions} options
+ * @param {import('../init.type.mjs').InitOptions} options
  * @param {string} invocation
  * @param {import('../_adapter.mjs').InitLogger} logger
  * @param {import('../init.type.mjs').InitRunData} data
@@ -157,7 +157,7 @@ function applyTemplate(cwd, {templateName}, invocation, logger, data) {
  * emitted through `logger` (silent by default); unknown feature or template
  * names throw AstryxError with a stable code.
  *
- * @param {import('../../../types/api').InitOptions} [options]
+ * @param {import('../init.type.mjs').InitOptions} [options]
  * @param {{cwd?: string, logger?: import('../_adapter.mjs').InitLogger}} [ctx]
  * @returns {Promise<import('../init.type.mjs').InitRunResponse>}
  */

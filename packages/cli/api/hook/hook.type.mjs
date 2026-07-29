@@ -69,4 +69,16 @@
  * @property {HookParamDoc[]} data
  */
 
+/**
+ * Options for `hook()`.
+ * @typedef {object} HookOptions
+ * @property {string} [cwd]
+ * @property {boolean} [list]
+ * @property {string} [category]
+ * @property {boolean} [params]
+ * @property {'full' | 'compact' | 'brief'} [detail]
+ * @property {string} [lang]
+ * @property {boolean} [zh]
+ */
+
 export {};

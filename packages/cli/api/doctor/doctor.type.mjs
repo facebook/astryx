@@ -40,4 +40,10 @@
  * @property {DoctorSummary} data.summary
  */
 
+/**
+ * Options for `doctor()`.
+ * @typedef {object} DoctorOptions
+ * @property {string} [cwd]
+ */
+
 export {};

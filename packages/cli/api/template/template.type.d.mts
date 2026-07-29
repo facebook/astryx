@@ -1,0 +1,89 @@
+/**
+ * xds --json template [--list]
+ */
+export type TemplateListResponse = {
+    type: "template.list";
+    data: TemplateListEntry[];
+};
+export type TemplateListEntry = {
+    /**
+     * - Stable template id (relative path under the templates root, minus the .doc.* suffix).
+     */
+    id: string;
+    name: string;
+    /**
+     * - (deprecated) Alias of `name`, retained for back-compat.
+     */
+    displayName: string;
+    description: string;
+    type: "page" | "block";
+    /**
+     * - Owning package; core (built-in) templates report '@astryxdesign/core'.
+     */
+    package: string;
+    /**
+     * - Optional grouping/category label.
+     */
+    category?: string | undefined;
+    /**
+     * - Component display names the template composes.
+     */
+    componentsUsed?: string[] | undefined;
+    isReady: boolean;
+    scaffold?: boolean | undefined;
+};
+/**
+ * xds --json template <name>
+ */
+export type TemplateShowResponse = {
+    type: "template.show";
+    data: {
+        template: string;
+        description: string;
+        type: "page" | "block";
+        components: string[];
+        source: string;
+    };
+};
+/**
+ * xds --json template <name> --skeleton
+ */
+export type TemplateSkeletonResponse = {
+    type: "template.skeleton";
+    data: {
+        template: string;
+        description: string;
+        components: string[];
+        skeleton: string;
+    };
+};
+/**
+ * xds --json template <name> [path]
+ */
+export type TemplateCopyResponse = {
+    type: "template.copy";
+    data: {
+        template: string;
+        outputDir: string;
+        fileName: string;
+        filesCopied: number;
+    };
+};
+/**
+ * Options for `template()`.
+ */
+export type TemplateOptions = {
+    list?: boolean | undefined;
+    skeleton?: boolean | undefined;
+    show?: boolean | undefined;
+    /**
+     * Filter templates by kind: 'page' or 'block'. Only applies to list views.
+     */
+    type?: "page" | "block" | undefined;
+    /**
+     * Narrow to templates from a specific package (id-only lookups across packages are ambiguous).
+     */
+    package?: string | undefined;
+    targetPath?: string | undefined;
+    cwd?: string | undefined;
+};
