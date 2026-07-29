@@ -100,6 +100,18 @@ describe('json envelope shape', () => {
     const env = toErrorEnvelope('x', [{name: 'Button', reason: 'close match'}]);
     expect(env.suggestions).toEqual([{name: 'Button', reason: 'close match'}]);
   });
+
+  it('toErrorEnvelope omits suggestions for an empty array', () => {
+    expect('suggestions' in toErrorEnvelope('x', [])).toBe(false);
+  });
+
+  it('toErrorEnvelope drops non-array suggestions (only a real Suggestion[] is attached)', () => {
+    // The guard is `Array.isArray(...) && .length`, not a bare `?.length` — a
+    // string ("hello".length === 5) or a `{length: n}` object must NOT slip
+    // through as `suggestions`, which is contractually a Suggestion[].
+    expect('suggestions' in toErrorEnvelope('x', /** @type {any} */ ('hello'))).toBe(false);
+    expect('suggestions' in toErrorEnvelope('x', /** @type {any} */ ({length: 3}))).toBe(false);
+  });
 });
 
 describe('stdout discipline (humanLog / humanWarn)', () => {

@@ -33,6 +33,6 @@ export class AstryxError extends Error {
     super(message);
     this.name = 'AstryxError';
     this.code = code || ERROR_CODES.ERR_UNKNOWN;
-    if (suggestions?.length) this.suggestions = suggestions;
+    if (Array.isArray(suggestions) && suggestions.length) this.suggestions = suggestions;
   }
 }

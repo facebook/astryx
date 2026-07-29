@@ -27,6 +27,16 @@ import {resolveTopicDocs} from '../../_adapter.mjs';
  * @returns {Promise<import('../../docs.type.mjs').DocsDetailSectionResponse>}
  */
 export async function section(topic, sectionName, options = {}) {
+  // An empty section name must error, not resolve to the first section via
+  // `.includes('')`. The docs() dispatcher routes a falsy section to detail, but
+  // the leaf must be safe on its own.
+  if (!sectionName || !String(sectionName).trim()) {
+    throw new AstryxError(
+      'A section name is required',
+      undefined,
+      ERROR_CODES.ERR_UNKNOWN_SECTION,
+    );
+  }
   const {docsData} = await resolveTopicDocs(topic, options);
 
   const normalizedSection = sectionName.toLowerCase();

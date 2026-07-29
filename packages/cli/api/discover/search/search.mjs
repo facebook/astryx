@@ -39,6 +39,16 @@ import {ERROR_CODES} from '../../../lib/error-codes.mjs';
  * >}
  */
 export async function search(packages, query, {lang, zh}) {
+  // An empty query must error, not match every component via `.includes('')`
+  // (parity with the api/search leaf). The discover() dispatcher already routes
+  // an empty query to list, but the leaf must be safe on its own.
+  if (!query || !String(query).trim()) {
+    throw new AstryxError(
+      'A search query is required',
+      [{name: 'astryx discover button', reason: 'example'}],
+      ERROR_CODES.ERR_INVALID_ARGUMENT,
+    );
+  }
   const lower = query.toLowerCase();
 
   const exact = findComponent(packages, query);

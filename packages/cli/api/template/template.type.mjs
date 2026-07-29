@@ -79,6 +79,7 @@
  * @property {'page' | 'block'} [type] Filter templates by kind: 'page' or 'block'. Only applies to list views.
  * @property {string} [package] Narrow to templates from a specific package (id-only lookups across packages are ambiguous).
  * @property {string} [targetPath]
+ * @property {boolean} [overwrite] Overwrite an existing target file instead of erroring (ERR_FILE_EXISTS).
  * @property {string} [cwd]
  */
 

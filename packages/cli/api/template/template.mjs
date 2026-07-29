@@ -53,6 +53,7 @@ export {
  * @param {string} [name]
  * @param {object} [options]
  * @param {string} [options.targetPath]
+ * @param {boolean} [options.overwrite]
  * @param {boolean} [options.list]
  * @param {boolean} [options.skeleton]
  * @param {boolean} [options.show]
@@ -67,6 +68,7 @@ export async function template(name, options = {}) {
     skeleton = false,
     show = false,
     targetPath,
+    overwrite = false,
     type,
     package: packageFilter,
     cwd = process.cwd(),
@@ -111,5 +113,5 @@ export async function template(name, options = {}) {
     return templateShow(match);
   }
 
-  return templateCopy(match, {targetPath, cwd});
+  return templateCopy(match, {targetPath, cwd, overwrite});
 }

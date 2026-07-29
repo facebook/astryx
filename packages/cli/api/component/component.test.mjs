@@ -120,3 +120,30 @@ describe('component dispatcher — name resolution', () => {
     expect(err.code).toBe('ERR_UNKNOWN_PACKAGE');
   }, SLOW);
 });
+
+
+describe('component dispatcher — scoped --package routes all projections', () => {
+  const CORE = '@astryxdesign/core';
+
+  it('--package (core) routes --showcase like the no-scope path', async () => {
+    const ns = await component('Button', {cwd, showcase: true});
+    const sc = await component('Button', {cwd, package: CORE, showcase: true});
+    expect(sc.type).toBe(ns.type); // was silently component.detail before the fix
+  }, SLOW);
+
+  it('--package (core) routes --blocks like the no-scope path', async () => {
+    const ns = await component('Button', {cwd, blocks: true});
+    const sc = await component('Button', {cwd, package: CORE, blocks: true});
+    expect(sc.type).toBe(ns.type);
+    expect(sc.type).toBe('component.detail.blocks');
+  }, SLOW);
+
+  it('--package (core) still routes --source and --props', async () => {
+    expect((await component('Button', {cwd, package: CORE, source: true})).type).toBe(
+      'component.detail.source',
+    );
+    expect((await component('Button', {cwd, package: CORE, props: true})).type).toBe(
+      'component.detail.props',
+    );
+  }, SLOW);
+});

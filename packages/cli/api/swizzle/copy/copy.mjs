@@ -16,7 +16,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {resolveCore} from '../_adapter.mjs';
-import {assertWithin, PathSafetyError} from '../../../utils/path-safety.mjs';
+import {assertWithin, sanitizeName, PathSafetyError} from '../../../utils/path-safety.mjs';
 import {checkGhCli} from '../../../utils/github.mjs';
 import {Project} from '../../../lib/project.mjs';
 import {
@@ -152,6 +152,19 @@ export async function swizzleCopy(component, options = {}) {
   const {coreDir, components} = resolveCore(cwd);
 
   const dirName = component.replace(/^XDS/, '');
+
+  // The component name becomes a path segment in the output dir
+  // (path.join(outputBase, dirName)), so a name containing `..` or a separator
+  // would escape the assertWithin(output) guard. Reject it up front — a real
+  // component name is a bare identifier.
+  try {
+    sanitizeName(dirName, {label: 'component name'});
+  } catch (err) {
+    if (err instanceof PathSafetyError) {
+      throw new AstryxError(err.message, [], ERROR_CODES.ERR_PATH_TRAVERSAL);
+    }
+    throw err;
+  }
 
   const {loadedIntegrations, project} = await loadConfigSafely(cwd);
   const coreIssuesUrl = project

@@ -92,6 +92,22 @@ export function formatIssue(issue) {
  * @param {{form?: 'compact'|'outline'|'auto', loose?: boolean, cwd?: string}} [options]
  */
 export async function analyze(expression, {form = 'auto', loose = false, cwd = process.cwd()} = {}) {
+  // Validate inputs in the API (not just the CLI): an empty expression or an
+  // unknown --form must error, not silently parse as an empty/compact layout.
+  if (typeof expression !== 'string' || expression.trim() === '') {
+    throw new AstryxError(
+      'Layout expression is empty.',
+      undefined,
+      ERROR_CODES.ERR_INVALID_ARGUMENT,
+    );
+  }
+  if (form !== 'compact' && form !== 'outline' && form !== 'auto') {
+    throw new AstryxError(
+      `Invalid form "${form}". Must be one of: compact, outline, auto.`,
+      undefined,
+      ERROR_CODES.ERR_INVALID_OPTION,
+    );
+  }
   const registry = /** @type {import('../../lib/xle/xle-ast').Registry} */ (
     /** @type {unknown} */ (await buildRegistry({cwd}))
   );

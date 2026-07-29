@@ -108,6 +108,7 @@ export function registerTemplate(program) {
             type: /** @type {'page' | 'block' | undefined} */ (options.type),
             package: options.package,
             targetPath,
+            overwrite: options.overwrite,
             cwd: process.cwd(),
           })
         );

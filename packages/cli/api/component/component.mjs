@@ -120,6 +120,20 @@ export async function component(name, options = {}) {
           notFoundInPackage: scoped.kind === 'integration' ? packageScope : null,
         });
       }
+      // showcase/blocks were previously dropped on the scoped path — a
+      // `--package ... --showcase`/`--blocks` request silently fell through to
+      // component.detail. Route them to the same leaves the no-scope path uses.
+      // Core showcases carry no `package` field, so a core scope must NOT pass
+      // packageScope (findShowcase filters those out); integrations never carry
+      // a showcase, so skip discovery entirely.
+      if (showcase) {
+        return scoped.kind === 'core'
+          ? componentDetailShowcase(dirName, {cwd, name})
+          : componentDetailShowcase(dirName, {cwd, name, resolve: false});
+      }
+      if (blocks) {
+        return componentDetailBlocks(dirName);
+      }
       const docs = await loadComponentDoc(owner.docPath, docOpts);
       if (props) return componentDetailProps(docs);
       return componentDetail(docs, owner, dirName, coreDir);

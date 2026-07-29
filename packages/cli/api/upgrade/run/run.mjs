@@ -41,6 +41,7 @@ import {getCliInvocation} from '../../../utils/package-manager.mjs';
 import {ERROR_CODES} from '../../../lib/error-codes.mjs';
 import {AstryxError} from '../../error.mjs';
 import {logger} from '../../logger.mjs';
+import {assertWithin, PathSafetyError} from '../../../utils/path-safety.mjs';
 
 /**
  * Run the upgrade pipeline for a validated, non-list invocation. Returns the
@@ -53,10 +54,25 @@ import {logger} from '../../logger.mjs';
  */
 export async function run(options = {}, {cwd = process.cwd()} = {}) {
   // Resolve the source dir against the API's cwd (not process.cwd()) so a
-  // programmatic caller in another directory scans the right tree. The runners
-  // do path.resolve(srcPath); an already-absolute path is idempotent there, so
-  // this is byte-identical for the CLI (where cwd === process.cwd()).
-  const path_ = path.resolve(cwd, options.path ?? './src');
+  // programmatic caller in another directory scans the right tree. Confine it to
+  // cwd: --apply rewrites files in place, so a `..`-escaping or out-of-tree
+  // absolute --path must be rejected (parity with template/theme/swizzle/layout,
+  // and this is the most destructive command). allowAbsolute permits an absolute
+  // path that still resolves inside cwd.
+  let path_;
+  try {
+    path_ = assertWithin(options.path ?? './src', cwd, {
+      allowAbsolute: true,
+      label: 'source directory',
+    });
+  } catch (err) {
+    if (err instanceof PathSafetyError) {
+      logger.error(err.message);
+      logger.log('Aborted\n');
+      throw new AstryxError(err.message, undefined, ERROR_CODES.ERR_PATH_TRAVERSAL);
+    }
+    throw err;
+  }
   const apply = options.apply ?? false;
 
   const currentVersion = /** @type {string} */ (options.from);

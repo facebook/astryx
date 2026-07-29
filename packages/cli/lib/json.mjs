@@ -129,7 +129,7 @@ export function toErrorEnvelope(err, suggestions, code) {
     ERROR_CODES.ERR_UNKNOWN;
   /** @type {any} */
   const env = {apiVersion: API_VERSION, error: message, code: resolvedCode};
-  if (suggestions?.length) env.suggestions = suggestions;
+  if (Array.isArray(suggestions) && suggestions.length) env.suggestions = suggestions;
   return env;
 }
 

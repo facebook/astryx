@@ -239,3 +239,20 @@ describe('layoutGrammar', () => {
     expect(Object.values(result.data.aliases)).not.toContain(undefined);
   });
 });
+
+
+describe('layout — input validation (API matches CLI)', () => {
+  it('rejects an invalid --form value instead of silently parsing as compact', async () => {
+    await expect(layoutCheck('V > C', {form: /** @type {any} */ ('xml')})).rejects.toMatchObject({
+      code: 'ERR_INVALID_OPTION',
+    });
+    await expect(layoutExpand('V > C', {form: /** @type {any} */ ('nonsense')})).rejects.toMatchObject({
+      code: 'ERR_INVALID_OPTION',
+    });
+  });
+
+  it('rejects an empty expression at the API layer', async () => {
+    await expect(layoutCheck('')).rejects.toMatchObject({code: 'ERR_INVALID_ARGUMENT'});
+    await expect(layoutExpand('   ')).rejects.toMatchObject({code: 'ERR_INVALID_ARGUMENT'});
+  });
+});
