@@ -25,7 +25,7 @@ import {stripTemplateAssetRefs} from '../_adapter.mjs';
  * return the `template.copy` receipt.
  * @param {import('../_adapter.mjs').DiscoveredTemplate} match
  * @param {{targetPath: string, cwd: string}} ctx
- * @returns {import('../../../types/template').TemplateCopyResponse}
+ * @returns {import('../template.type.mjs').TemplateCopyResponse}
  */
 export function templateCopy(match, {targetPath, cwd}) {
   if (!fs.existsSync(match.filePath)) {

@@ -226,7 +226,7 @@ function extractSkeleton(source) {
  * "specify a template name" error the dispatcher's resolution would surface.
  * @param {import('../_adapter.mjs').DiscoveredTemplate | undefined} match
  * @param {import('../_adapter.mjs').DiscoveredTemplate[]} templates
- * @returns {import('../../../types/template').TemplateSkeletonResponse}
+ * @returns {import('../template.type.mjs').TemplateSkeletonResponse}
  */
 export function templateSkeleton(match, templates) {
   if (!match) {

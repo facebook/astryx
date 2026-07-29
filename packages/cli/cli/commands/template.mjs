@@ -34,10 +34,10 @@ export {discoverTemplates, listTemplates} from '../../api/template/template.mjs'
  * precise union so the switch below type-checks. Replace with the api's own
  * return type once it is tightened.
  * @typedef {(
- *   import('../../types/template').TemplateListResponse |
- *   import('../../types/template').TemplateShowResponse |
- *   import('../../types/template').TemplateSkeletonResponse |
- *   import('../../types/template').TemplateCopyResponse
+ *   import('../../api/template/template.type.mjs').TemplateListResponse |
+ *   import('../../api/template/template.type.mjs').TemplateShowResponse |
+ *   import('../../api/template/template.type.mjs').TemplateSkeletonResponse |
+ *   import('../../api/template/template.type.mjs').TemplateCopyResponse
  * )} TemplateResponse
  */
 
@@ -125,7 +125,7 @@ export function registerTemplate(program) {
         case 'template.list': {
           const pages = result.data.filter(t => t.type === 'page');
           const blocks = result.data.filter(t => t.type === 'block');
-          /** @param {import('../../types/template').TemplateListEntry} t */
+          /** @param {import('../../api/template/template.type.mjs').TemplateListEntry} t */
           const renderEntry = t => {
             const status = t.isReady ? '' : ' (WIP)';
             const pkg =
