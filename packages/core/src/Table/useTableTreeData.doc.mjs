@@ -65,6 +65,13 @@ export const docs = {
       description:
         'Column that carries the indent + expander. Defaults to the first column.',
     },
+    {
+      name: 'hasRowClickExpansion',
+      type: 'boolean',
+      description:
+        'When true, clicking anywhere on an expandable row toggles its expansion, in addition to the chevron. A pointer-only convenience: keyboard and assistive-tech users toggle via the chevron button. Clicks on interactive cell content (buttons, links, form controls) or a text selection do not toggle. Leaf rows stay inert, and it is a no-op on flat data.',
+      default: 'false',
+    },
   ],
   examples: [
     {
@@ -100,5 +107,7 @@ export const docsDense = {
       "aggregate state driving the header toggle: true (all) | false (none) | 'indeterminate' (some).",
     onExpandAll: 'expand every expandable row (header control)',
     onCollapseAll: 'collapse every row (header control)',
+    hasRowClickExpansion:
+      'true => clicking an expandable row body toggles it (in addition to the chevron). Leaves stay inert; no-op on flat data. Defaults to false.',
   },
 };
