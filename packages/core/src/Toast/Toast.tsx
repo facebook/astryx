@@ -217,7 +217,12 @@ export function Toast({
           isExiting && styles.exiting,
         ),
       )}>
-      <div {...stylex.props(styles.inner)}>
+      {/* astryx-toast-content: media-surface flip target (mediaSurfaceRegistry) */}
+      <div
+        {...mergeProps(
+          {className: 'astryx-toast-content'},
+          stylex.props(styles.inner),
+        )}>
         <div {...stylex.props(styles.content)}>{body}</div>
 
         <div {...stylex.props(styles.endContent)}>

@@ -29,6 +29,7 @@ import {
 } from '../Layer/useLayer';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import {themeProps} from '../utils/themeProps';
+import {mergeProps} from '../utils';
 import {
   colorVars,
   radiusVars,
@@ -515,7 +516,14 @@ export function useTooltip(options: TooltipOptions = {}): TooltipReturn {
       };
 
       return layer.render(
-        <div {...stylex.props(styles.content)}>{children}</div>,
+        // astryx-tooltip-content: media-surface flip target (mediaSurfaceRegistry)
+        <div
+          {...mergeProps(
+            {className: 'astryx-tooltip-content'},
+            stylex.props(styles.content),
+          )}>
+          {children}
+        </div>,
         renderProps,
       );
     },

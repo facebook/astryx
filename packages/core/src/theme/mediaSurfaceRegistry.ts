@@ -35,6 +35,17 @@ export type MediaSurface = 'inverted' | 'normal';
 
 export interface MediaSurfaceEntry {
   /**
+   * Stable class on the component's content wrapper — the element whose
+   * color-scheme is flipped for the inverted surface. This is deliberately
+   * NOT the component root: the root keeps the ambient scheme so its own
+   * `light-dark()` background resolves to an inverted panel, while the
+   * content inside flips. Components emit this class on that wrapper.
+   *
+   * <!-- SYNC: the component that renders `.<contentClass>` (e.g. Toast.tsx,
+   * useTooltip.tsx) -->
+   */
+  contentClass: string;
+  /**
    * Background applied to the component root when opted out to `normal`,
    * overriding the component's base inverted background.
    */
@@ -42,7 +53,7 @@ export interface MediaSurfaceEntry {
   /**
    * When set, the named variant always renders its content on a dark surface
    * regardless of ambient mode or opt-out (e.g. Toast `error`). Encoded via a
-   * `data-type` selector.
+   * `data-type` selector on the root.
    */
   alwaysDarkVariant?: string;
 }
@@ -55,10 +66,12 @@ export interface MediaSurfaceEntry {
  */
 export const mediaSurfaceRegistry: Record<string, MediaSurfaceEntry> = {
   toast: {
+    contentClass: 'astryx-toast-content',
     normalBackground: 'var(--color-background-popover)',
     alwaysDarkVariant: 'error',
   },
   tooltip: {
+    contentClass: 'astryx-tooltip-content',
     normalBackground: 'var(--color-background-popover)',
   },
 };

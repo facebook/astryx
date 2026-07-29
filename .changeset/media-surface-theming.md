@@ -3,5 +3,5 @@
 '@astryxdesign/cli': patch
 ---
 
-[feat] Theme-controlled media surfaces: Toast and Tooltip now share one CSS-only inverted-surface mechanism, and themes can opt a component out via `defineTheme({ surfaces: { toast: 'normal' } })`. This also fixes tooltips rendering dark-on-dark when nested inside an inverted Toast.
+[feat] Theme-controlled media surfaces: Toast and Tooltip now share one CSS-only inverted-surface mechanism, and themes can opt a component out via `defineTheme({ surfaces: { toast: 'normal' } })`. This also fixes tooltips rendering dark-on-dark when nested inside an inverted Toast. Non-breaking for stock themes; Tooltip now derives its inverted colors from `--color-background-inverted` / `--color-on-*` (matching Toast) instead of `--color-text-primary` / `--color-background-surface`, so a theme that set those to unusually divergent values may see a slightly different tooltip.
 @cixzhang

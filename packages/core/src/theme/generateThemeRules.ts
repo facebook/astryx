@@ -690,8 +690,8 @@ export function generateOnMediaCSS(theme: DefinedTheme): string {
  * tokens gets a 1:1 reflection on its toast/tooltip, and the build output
  * shows the concrete `color: var(--color-on-dark|light)` mapping.
  *
- * The flip is scoped to the component *content* (`.astryx-* > *`), not the
- * root, so the root's own `light-dark()` background resolves in the ambient
+ * The flip is scoped to the component's named content wrapper (e.g.
+ * `.astryx-toast-content`), not the root, so the root's own `light-dark()` background resolves in the ambient
  * scheme (that's what makes the panel visibly inverted). Direction is keyed on
  * the theme scope root's `data-theme` (explicit light/dark) and on
  * `prefers-color-scheme` (system, no explicit `data-theme`):
@@ -726,6 +726,9 @@ export function generateMediaSurfaceCSS(theme: DefinedTheme): string {
       continue;
     }
     const errorVariant = entry.alwaysDarkVariant;
+    // Target the component's named content wrapper — not `> *` — so the flip
+    // applies to exactly the surface element and never leaks to sibling nodes.
+    const content = `.${entry.contentClass}`;
 
     if (surfaces[component] === 'normal') {
       // Opt-out: a normal-surface background overrides the component's base
@@ -741,8 +744,8 @@ export function generateMediaSurfaceCSS(theme: DefinedTheme): string {
       // Inverted (default): the content flips opposite to ambient.
       invertedContentSelectors.push(
         errorVariant
-          ? `${cls(component)}:not([data-type="${errorVariant}"]) > *`
-          : `${cls(component)} > *`,
+          ? `${cls(component)}:not([data-type="${errorVariant}"]) ${content}`
+          : `${cls(component)} ${content}`,
       );
     }
 
@@ -750,7 +753,7 @@ export function generateMediaSurfaceCSS(theme: DefinedTheme): string {
     // ambient mode or opt-out.
     if (errorVariant) {
       errorAlwaysDark.push(
-        `${cls(component)}[data-type="${errorVariant}"] > *`,
+        `${cls(component)}[data-type="${errorVariant}"] ${content}`,
       );
     }
   }

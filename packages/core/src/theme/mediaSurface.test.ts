@@ -63,8 +63,10 @@ describe('generateMediaSurfaceCSS', () => {
     const theme = defineTheme({name: 'default-path'});
     const css = generateMediaSurfaceCSS(theme);
     // Content wrappers (not roots) flip, keyed on the scope root's data-theme.
-    expect(css).toContain('.astryx-toast:not([data-type="error"]) > *');
-    expect(css).toContain('.astryx-tooltip > *');
+    expect(css).toContain(
+      '.astryx-toast:not([data-type="error"]) .astryx-toast-content',
+    );
+    expect(css).toContain('.astryx-tooltip .astryx-tooltip-content');
     // Ambient light → on-dark tokens; ambient dark → on-light tokens.
     expect(css).toContain(':scope[data-theme="light"]');
     expect(css).toContain(':scope[data-theme="dark"]');
@@ -74,7 +76,9 @@ describe('generateMediaSurfaceCSS', () => {
     expect(css).toContain('@media (prefers-color-scheme: light)');
     expect(css).toContain('@media (prefers-color-scheme: dark)');
     // Error toast is always dark.
-    expect(css).toContain('.astryx-toast[data-type="error"] > *');
+    expect(css).toContain(
+      '.astryx-toast[data-type="error"] .astryx-toast-content',
+    );
     // Scoped to the theme.
     expect(css).toContain('@scope ([data-astryx-theme="default-path"])');
   });
@@ -99,11 +103,15 @@ describe('generateMediaSurfaceCSS', () => {
       `background: ${mediaSurfaceRegistry.toast.normalBackground}`,
     );
     // The opted-out toast content is NOT in an inverted flip block…
-    expect(css).not.toContain('.astryx-toast:not([data-type="error"]) > *');
+    expect(css).not.toContain(
+      '.astryx-toast:not([data-type="error"]) .astryx-toast-content',
+    );
     // …but its error variant still flips to dark.
-    expect(css).toContain('.astryx-toast[data-type="error"] > *');
+    expect(css).toContain(
+      '.astryx-toast[data-type="error"] .astryx-toast-content',
+    );
     // Tooltip (still inverted) keeps its content flip.
-    expect(css).toContain('.astryx-tooltip > *');
+    expect(css).toContain('.astryx-tooltip .astryx-tooltip-content');
     expect(css).toContain('@scope ([data-astryx-theme="optout"])');
   });
 
@@ -111,14 +119,18 @@ describe('generateMediaSurfaceCSS', () => {
     const theme = defineTheme({name: 'ttopt', surfaces: {tooltip: 'normal'}});
     const css = generateMediaSurfaceCSS(theme);
     expect(css).toContain('.astryx-tooltip {');
-    expect(css).not.toContain('.astryx-tooltip > *');
+    expect(css).not.toContain('.astryx-tooltip .astryx-tooltip-content');
     // Toast (still inverted) keeps its content flip.
-    expect(css).toContain('.astryx-toast:not([data-type="error"]) > *');
+    expect(css).toContain(
+      '.astryx-toast:not([data-type="error"]) .astryx-toast-content',
+    );
   });
 
   it('is included in the full theme CSS output', () => {
     const theme = defineTheme({name: 'full'});
     const {component} = generateThemeCSS(theme);
-    expect(component).toContain('.astryx-toast:not([data-type="error"]) > *');
+    expect(component).toContain(
+      '.astryx-toast:not([data-type="error"]) .astryx-toast-content',
+    );
   });
 });
