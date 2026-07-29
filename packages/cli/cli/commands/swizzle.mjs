@@ -30,7 +30,7 @@ export function registerSwizzle(program) {
       const json = program.opts().json || false;
       const run = getCliInvocation();
 
-      /** @type {import('../../types/swizzle').SwizzleListResponse | import('../../types/swizzle').SwizzleCopyResponse} */
+      /** @type {import('../../api/swizzle/swizzle.type.mjs').SwizzleListResponse | import('../../api/swizzle/swizzle.type.mjs').SwizzleCopyResponse} */
       let result;
       try {
         result = await swizzleApi(component, {

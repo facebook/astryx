@@ -139,7 +139,7 @@ function isExcludedFromCopy(file) {
  *
  * @param {string} component bare or XDS-prefixed component name
  * @param {{cwd?: string, output?: string, package?: string, overwrite?: boolean}} [options]
- * @returns {Promise<import('../../../types/swizzle').SwizzleCopyResponse>}
+ * @returns {Promise<import('../swizzle.type.mjs').SwizzleCopyResponse>}
  */
 export async function swizzleCopy(component, options = {}) {
   const {
@@ -258,7 +258,7 @@ export async function swizzleCopy(component, options = {}) {
   );
   const feedback = buildFeedback(dirName, owner.issuesUrl);
 
-  /** @type {import('../../../types/swizzle').SwizzleCopyResponse['data']} */
+  /** @type {import('../swizzle.type.mjs').SwizzleCopyResponse['data']} */
   const data = {
     component: dirName,
     package: owner.package,

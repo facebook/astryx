@@ -3,39 +3,13 @@
 /**
  * Swizzle command JSON responses.
  *
- * Invocation                                 -> type discriminator
- * ------------------------------------------------------------------
- * xds --json swizzle [--list]               -> swizzle.list
- * xds --json swizzle <component>            -> swizzle.copy
- * (not found)                               -> CLIError
+ * The shapes now live next to the API as the source of truth in
+ * `api/swizzle/swizzle.type.mjs`. This barrel re-exports them so existing
+ * `./types/swizzle` consumers (types/index.d.ts, types/api.d.ts) stay stable.
  */
 
-/** xds --json swizzle [--list] */
-export interface SwizzleListResponse {
-  type: 'swizzle.list';
-  data: string[];
-}
-
-/** Maintainer feedback note emitted after a successful swizzle. */
-export interface SwizzleFeedback {
-  /** Where to report the gap that led to swizzling. */
-  issuesUrl: string;
-  /** Ready-to-run `gh issue create` command, when `gh` is available. */
-  ghCommand?: string;
-}
-
-/** xds --json swizzle <component> */
-export interface SwizzleCopyResponse {
-  type: 'swizzle.copy';
-  data: {
-    component: string;
-    /** Owner package the component source was copied from. */
-    package: string;
-    outputDir: string;
-    filesCopied: number;
-    files: string[];
-    /** Whether any copied file uses StyleX (requires build-time setup). */
-    usesStyleX: boolean;
-    feedback?: SwizzleFeedback;
-  };
-}
+export type {
+  SwizzleListResponse,
+  SwizzleFeedback,
+  SwizzleCopyResponse,
+} from '../api/swizzle/swizzle.type.mjs';
