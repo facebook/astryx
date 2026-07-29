@@ -59,6 +59,7 @@ import {
 import {
   MENU_ITEM_ROLES,
   MENU_ITEM_SELECTOR,
+  MENU_BOUNDARY_SELECTOR,
 } from '../DropdownMenu/menuItemRoles';
 import type {DropdownMenuOption} from '../DropdownMenu/DropdownMenu';
 
@@ -515,21 +516,15 @@ function BreadcrumbMenuTrigger({
     handleKeyDown: listNavKeyDown,
     focusFirst,
     focusItem,
+    ownsEvent,
+    getItems: getMenuItems,
   } = useListFocus<HTMLDivElement>({
     itemSelector: MENU_ITEM_SELECTOR,
+    boundarySelector: MENU_BOUNDARY_SELECTOR,
     wrap: false,
     onEscape: closeMenu,
   });
 
-  const getMenuItems = useCallback(
-    (): HTMLElement[] =>
-      listRef.current
-        ? Array.from(
-            listRef.current.querySelectorAll<HTMLElement>(MENU_ITEM_SELECTOR),
-          )
-        : [],
-    [listRef],
-  );
   const typeahead = useTypeahead({
     getItemLabels: () => getMenuItems().map(el => el.textContent),
     onMatch: focusItem,
@@ -542,6 +537,11 @@ function BreadcrumbMenuTrigger({
 
   const listKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
+      // A submenu flyout renders inline inside this menu; its key events bubble
+      // up here. Let that level own them — only handle events from this level.
+      if (!ownsEvent(e)) {
+        return;
+      }
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         const focused = document.activeElement as HTMLElement | null;
@@ -564,7 +564,7 @@ function BreadcrumbMenuTrigger({
       }
       listNavKeyDown(e);
     },
-    [listNavKeyDown, closeMenu, typeahead],
+    [listNavKeyDown, closeMenu, typeahead, ownsEvent],
   );
 
   const openAndFocus = useCallback(() => {

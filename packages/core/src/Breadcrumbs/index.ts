@@ -35,6 +35,10 @@ export {
   DropdownMenuRadioItem as BreadcrumbMenuRadioItem,
   type DropdownMenuRadioItemProps as BreadcrumbMenuRadioItemProps,
 } from '../DropdownMenu/DropdownMenuRadioItem';
+export {
+  DropdownMenuSubMenu as BreadcrumbMenuSubMenu,
+  type DropdownMenuSubMenuProps as BreadcrumbMenuSubMenuProps,
+} from '../DropdownMenu/DropdownMenuSubMenu';
 export type {
   DropdownMenuOption as BreadcrumbMenuOption,
   DropdownMenuItemData as BreadcrumbMenuItemData,

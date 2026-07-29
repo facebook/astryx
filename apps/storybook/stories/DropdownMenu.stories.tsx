@@ -8,6 +8,7 @@ import {
   DropdownMenuCheckboxItem,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
+  DropdownMenuSubMenu,
 } from '@astryxdesign/core/DropdownMenu';
 import {Divider} from '@astryxdesign/core/Divider';
 import {
@@ -653,6 +654,99 @@ export const LabSelectableSizes: Story = {
       description: {
         story:
           'The checkbox/radio control size is derived from the menu item size — a `sm` menu renders the small (18px) control, `md`/`lg` render the standard (22px) control. On coarse-pointer (touch) devices the control swaps to the inline-end of the row.',
+      },
+    },
+  },
+};
+
+export const Submenu: Story = {
+  render: () => (
+    <DropdownMenu button={{label: 'Actions'}}>
+      <DropdownMenuItem icon={PencilIcon} label="Rename" onClick={() => {}} />
+      <DropdownMenuSubMenu icon={FolderPlusIcon} label="Move to">
+        <DropdownMenuItem label="Folder A" onClick={() => {}} />
+        <DropdownMenuItem label="Folder B" onClick={() => {}} />
+        <DropdownMenuItem label="Folder C" onClick={() => {}} />
+      </DropdownMenuSubMenu>
+      <DropdownMenuItem icon={TrashIcon} label="Delete" onClick={() => {}} />
+    </DropdownMenu>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'DropdownMenuSubMenu is a single menu row that reveals a nested flyout of its own children. Hover or Right arrow (Left in RTL) / Enter / Space opens it and moves focus to its first item; Left arrow / Escape closes it and returns focus to the trigger. The flyout opens inline-end by default and auto-flips at the viewport edge.',
+      },
+    },
+  },
+};
+
+export const NestedSubmenu: Story = {
+  render: () => (
+    <DropdownMenu button={{label: 'Share'}}>
+      <DropdownMenuItem icon={ShareIcon} label="Copy link" onClick={() => {}} />
+      <DropdownMenuSubMenu label="Share to">
+        <DropdownMenuItem label="Email" onClick={() => {}} />
+        <DropdownMenuSubMenu label="Team">
+          <DropdownMenuItem label="Design" onClick={() => {}} />
+          <DropdownMenuItem label="Engineering" onClick={() => {}} />
+        </DropdownMenuSubMenu>
+      </DropdownMenuSubMenu>
+    </DropdownMenu>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Submenus nest to arbitrary depth — each level owns its own roving focus and positioning layer.',
+      },
+    },
+  },
+};
+
+export const SubmenuAsyncSpinner: Story = {
+  render: () => (
+    <DropdownMenu button={{label: 'Actions'}}>
+      <DropdownMenuItem label="Rename" onClick={() => {}} />
+      <DropdownMenuSubMenu label="Move to" hasSpinner>
+        <DropdownMenuItem label="Loading…" isDisabled onClick={() => {}} />
+      </DropdownMenuSubMenu>
+    </DropdownMenu>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'A submenu row can show a spinner in place of the caret via `hasSpinner`, e.g. while a lazy submenu\u2019s children load.',
+      },
+    },
+  },
+};
+
+export const SubmenuDataDriven: Story = {
+  render: () => (
+    <DropdownMenu
+      button={{label: 'Actions'}}
+      items={[
+        {label: 'Rename', onClick: () => {}},
+        {
+          label: 'Move to',
+          icon: FolderPlusIcon,
+          items: [
+            {label: 'Folder A', onClick: () => {}},
+            {label: 'Folder B', onClick: () => {}},
+          ],
+        },
+        {type: 'divider'},
+        {label: 'Delete', onClick: () => {}},
+      ]}
+    />
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Data-driven parity: give a menu item a nested `items` array and it becomes a submenu automatically — no separate item type.',
       },
     },
   },

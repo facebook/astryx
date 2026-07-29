@@ -20,3 +20,12 @@ export const MENU_ITEM_ROLES: ReadonlySet<string> = new Set([
 export const MENU_ITEM_SELECTOR: string = [...MENU_ITEM_ROLES]
   .map(role => `[role="${role}"]:not([aria-disabled="true"])`)
   .join(',');
+
+/**
+ * Boundary selector for a single menu level. A menu and its submenu flyouts
+ * both use `role="menu"`, and flyouts render inline (native popover, not a
+ * portal), so a nested menu's items and key events would otherwise be picked
+ * up by the parent. Pass this as `useListFocus`'s `boundarySelector` so each
+ * level scopes item collection and key handling to its own container.
+ */
+export const MENU_BOUNDARY_SELECTOR = '[role="menu"]';
