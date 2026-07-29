@@ -111,9 +111,12 @@ export interface UseInputStatusIconReturn {
    */
   statusIcon: ReactNode;
   /**
-   * ID to add to the input's `aria-describedby` when the status is surfaced
-   * only through the tooltip, so screen readers announce it. `undefined`
-   * otherwise (the message box owns the description in attached/detached).
+   * ID to add to the input's `aria-describedby` when — and only when — the
+   * status is surfaced through a rendered tooltip layer (the `tooltip` variant
+   * with a message). It is `undefined` in every other case (no status, no
+   * message, `attached`/`detached`, or inside a group), so call-sites can drop
+   * it straight into their described-by list without a dangling reference: the
+   * id is present exactly when its tooltip element is in the DOM.
    */
   describedBy: string | undefined;
 }
