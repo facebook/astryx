@@ -715,3 +715,45 @@ describe('inspectAgentDocs', () => {
     expect(res.status).toBe('current');
   });
 });
+
+describe('injectXdsBlock / removeXdsBlock — malformed managed blocks (no user-content loss)', () => {
+  const S = '<!-- ASTRYX:START -->';
+  const E = '<!-- ASTRYX:END -->';
+  const BLOCK = `${S}\nNEW\n${E}`;
+
+  it('does not duplicate user content when END precedes START', () => {
+    const f = path.join(tmpDir, 'a.md');
+    fs.writeFileSync(f, `# Doc\nUSER-A\n${E}\nUSER-B\n${S}\nUSER-C\n`);
+    removeXdsBlock(f);
+    const c = fs.readFileSync(f, 'utf-8');
+    expect((c.match(/USER-B/g) || []).length).toBeLessThanOrEqual(1);
+  });
+
+  it('refuses (throws) instead of orphaning a second block when duplicates exist', () => {
+    const f = path.join(tmpDir, 'b.md');
+    fs.writeFileSync(f, `# Doc\n${S}\nB1\n${E}\nMID\n${S}\nB2\n${E}\nTAIL\n`);
+    expect(() => injectXdsBlock(f, BLOCK)).toThrow(/multiple|malformed/i);
+    // file left untouched for the user to fix
+    expect(fs.readFileSync(f, 'utf-8')).toContain('MID');
+    expect(fs.readFileSync(f, 'utf-8')).toContain('TAIL');
+  });
+
+  it('refuses to append a second block when a START has no matching END', () => {
+    const f = path.join(tmpDir, 'c.md');
+    fs.writeFileSync(f, `# Doc\nUSER1\n${S}\nOLD (no end)\nUSER2\n`);
+    expect(() => injectXdsBlock(f, BLOCK)).toThrow(/end marker|malformed|no matching/i);
+    expect((fs.readFileSync(f, 'utf-8').match(/ASTRYX:START/g) || []).length).toBe(1);
+  });
+
+  it('replaces a single well-formed block idempotently, preserving surrounding content', () => {
+    const f = path.join(tmpDir, 'ok.md');
+    fs.writeFileSync(f, `# Doc\nUSER\n${S}\nOLD\n${E}\nTAIL\n`);
+    injectXdsBlock(f, BLOCK);
+    const c = fs.readFileSync(f, 'utf-8');
+    expect((c.match(/ASTRYX:START/g) || []).length).toBe(1);
+    expect(c).toContain('NEW');
+    expect(c).toContain('USER');
+    expect(c).toContain('TAIL');
+    expect(c).not.toContain('OLD');
+  });
+});

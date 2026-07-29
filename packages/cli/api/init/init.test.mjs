@@ -156,3 +156,28 @@ describe('init() — logger', () => {
     expect(text).toContain(getNextSteps('npx astryx')[2].slice(0, 20));
   });
 });
+
+describe('init() — write-path safety', () => {
+  it('template scaffold refuses to clobber an existing page.tsx', async () => {
+    const dest = path.join(tmpDir, 'src', 'pages', 'blank');
+    fs.mkdirSync(dest, {recursive: true});
+    fs.writeFileSync(path.join(dest, 'page.tsx'), 'MY EXISTING FILE');
+    await expect(
+      init({features: 'template', templateName: 'blank'}, {cwd: tmpDir}),
+    ).rejects.toMatchObject({code: ERROR_CODES.ERR_FILE_EXISTS});
+    // user's file is untouched
+    expect(fs.readFileSync(path.join(dest, 'page.tsx'), 'utf8')).toBe('MY EXISTING FILE');
+  });
+
+  it('throws ERR_UNKNOWN_AGENT for an unknown --agent value', async () => {
+    await expect(
+      init({features: 'agents', agent: 'claud'}, {cwd: tmpDir}),
+    ).rejects.toMatchObject({code: ERROR_CODES.ERR_UNKNOWN_AGENT});
+  });
+
+  it('rejects a traversal templateName before any write (ERR_UNKNOWN_TEMPLATE)', async () => {
+    await expect(
+      init({features: 'template', templateName: '../../etc/evil'}, {cwd: tmpDir}),
+    ).rejects.toMatchObject({code: ERROR_CODES.ERR_UNKNOWN_TEMPLATE});
+  });
+});

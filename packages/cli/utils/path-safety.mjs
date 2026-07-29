@@ -13,6 +13,7 @@
  */
 
 import * as path from 'node:path';
+import * as fs from 'node:fs';
 
 /**
  * Error thrown by path-safety guards. Carries a stable `code`
@@ -58,6 +59,12 @@ export function assertWithin(targetPath, rootDir, options = {}) {
     throw new PathSafetyError(`Invalid ${label}: must be a non-empty string`, 'PATH_INVALID');
   }
 
+  // A NUL byte can't be a real path; reject it up front rather than letting it
+  // reach the fs layer (defense in depth, matches sanitizeName).
+  if (targetPath.includes('\0')) {
+    throw new PathSafetyError(`Invalid ${label}: contains a NUL byte`, 'PATH_INVALID');
+  }
+
   if (path.isAbsolute(targetPath) && !allowAbsolute) {
     throw new PathSafetyError(
       `Invalid ${label} "${targetPath}": absolute paths are not allowed. ` +
@@ -78,6 +85,35 @@ export function assertWithin(targetPath, rootDir, options = {}) {
         `(${absRoot}). Path traversal is not allowed.`,
       'PATH_TRAVERSAL',
     );
+  }
+
+  // path.resolve is purely lexical — it does NOT follow symlinks, so a symlink
+  // INSIDE the root that points outside would pass the check above while the
+  // real write lands outside root. Canonicalize the deepest EXISTING ancestor
+  // (the target itself usually doesn't exist yet) and re-check against the
+  // realpath'd root. This closes the symlink-escape hole for every command that
+  // writes through this guard.
+  try {
+    const realRoot = fs.realpathSync(absRoot);
+    let existing = resolved;
+    while (!fs.existsSync(existing)) {
+      const parent = path.dirname(existing);
+      if (parent === existing) break;
+      existing = parent;
+    }
+    const realExisting = fs.realpathSync(existing);
+    const realRootWithSep = realRoot.endsWith(path.sep) ? realRoot : realRoot + path.sep;
+    if (realExisting !== realRoot && !realExisting.startsWith(realRootWithSep)) {
+      throw new PathSafetyError(
+        `Invalid ${label} "${targetPath}": resolves outside the project root ` +
+          `(${absRoot}) via a symlink. Path traversal is not allowed.`,
+        'PATH_TRAVERSAL',
+      );
+    }
+  } catch (err) {
+    if (err instanceof PathSafetyError) throw err;
+    // realpath can fail if the root doesn't exist (ENOENT) or on a race; fall
+    // back to the lexical result already validated above rather than crash.
   }
 
   return resolved;

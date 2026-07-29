@@ -26,6 +26,7 @@ import {ERROR_CODES} from '../../../lib/error-codes.mjs';
 import {logger} from '../../logger.mjs';
 
 const VALID_FEATURES = ['agents', 'theme', 'template'];
+const VALID_AGENTS = ['claude', 'cursor', 'codex', 'hermes', 'all'];
 
 /**
  * Build the "Next steps" lines printed at the end of `astryx init`.
@@ -68,6 +69,16 @@ export function getNextSteps(invocation) {
  * @param {import('../init.type.mjs').InitRunData} data
  */
 function applyAgents(cwd, options, invocation, data) {
+  // Validate --agent up front (a hard error, not a swallowed install failure).
+  // ERR_UNKNOWN_AGENT was defined but never wired — a typo like `--agent claud`
+  // otherwise silently fell back to writing AGENTS.md. Mirrors --features.
+  if (options.agent && !VALID_AGENTS.includes(options.agent)) {
+    throw new AstryxError(
+      `Unknown agent "${options.agent}". Valid agents: ${VALID_AGENTS.join(', ')}`,
+      undefined,
+      ERROR_CODES.ERR_UNKNOWN_AGENT,
+    );
+  }
   try {
     const paths = options.agentDocsPath
       ? Array.isArray(options.agentDocsPath)
@@ -140,8 +151,19 @@ function applyTemplate(cwd, {templateName}, invocation, data) {
 
   const outputDir = path.resolve(cwd, `./src/pages/${templateName}`);
   const srcPath = path.join(CLI_ROOT, 'templates', 'pages', templateName, 'page.tsx');
+  const destFile = path.join(outputDir, 'page.tsx');
+  // Don't clobber a user's existing page — same guard the peer template/copy and
+  // theme/add write-leaves apply (init is a public API surface too).
+  if (fs.existsSync(destFile)) {
+    const relDest = path.relative(cwd, destFile) || destFile;
+    throw new AstryxError(
+      `Refusing to overwrite existing file ${relDest}.`,
+      undefined,
+      ERROR_CODES.ERR_FILE_EXISTS,
+    );
+  }
   fs.mkdirSync(outputDir, {recursive: true});
-  fs.copyFileSync(srcPath, path.join(outputDir, 'page.tsx'));
+  fs.copyFileSync(srcPath, destFile);
   const rel = path.relative(cwd, outputDir);
   logger.log(`✓ Template created at ${rel}/page.tsx`);
   data.template = 'created';

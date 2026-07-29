@@ -135,3 +135,31 @@ describe('isFilePathArg', () => {
     expect(isFilePathArg(null)).toBe(false);
   });
 });
+
+describe('assertWithin — symlink escape (realpath guard)', () => {
+  let root;
+  let outside;
+  beforeEach(() => {
+    root = fs.mkdtempSync(path.join(os.tmpdir(), 'aw-root-'));
+    outside = fs.mkdtempSync(path.join(os.tmpdir(), 'aw-out-'));
+  });
+  afterEach(() => {
+    fs.rmSync(root, {recursive: true, force: true});
+    fs.rmSync(outside, {recursive: true, force: true});
+  });
+
+  it('rejects a path that traverses a symlink pointing outside root', () => {
+    fs.symlinkSync(outside, path.join(root, 'link'));
+    // path.resolve is lexical and would pass this; the realpath check must catch it.
+    expect(() => assertWithin('link/evil.txt', root)).toThrow(PathSafetyError);
+    expect(() => assertWithin('link/evil.txt', root)).toThrow(/outside|symlink|traversal/i);
+  });
+
+  it('still accepts a legit non-existent nested path inside root', () => {
+    expect(assertWithin('a/b/c.txt', root)).toBe(path.join(root, 'a', 'b', 'c.txt'));
+  });
+
+  it('rejects a NUL byte in the path', () => {
+    expect(() => assertWithin('a\u0000b', root)).toThrow(PathSafetyError);
+  });
+});

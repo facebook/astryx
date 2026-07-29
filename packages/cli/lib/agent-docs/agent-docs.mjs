@@ -41,6 +41,45 @@ const LEGACY_MARKER_START = '<!-- XDS:START -->';
 const LEGACY_MARKER_END = '<!-- XDS:END -->';
 
 /**
+ * Locate the single well-formed managed block in `content`.
+ *
+ * A naive `indexOf(START)` + `indexOf(END)` corrupts user content on malformed
+ * input: an END that appears before START makes the slice boundaries overlap
+ * (duplicating text), and a stray START with no END silently looks like "no
+ * block" so a fresh block gets appended below the broken one. This searches for
+ * END strictly *after* START (so the boundaries can never cross) and refuses to
+ * touch a file that has more than one START of the same kind — better to ask the
+ * user to fix an ambiguous file than to guess and drop their content.
+ *
+ * @param {string} content
+ * @returns {{start: number, end: number} | null} start = index of START marker;
+ *   end = index just past the END marker. null when there is no block. Throws on
+ *   an ambiguous file (duplicate/nested START markers).
+ */
+function findManagedBlock(content) {
+  for (const [start, end] of [
+    [MARKER_START, MARKER_END],
+    [LEGACY_MARKER_START, LEGACY_MARKER_END],
+  ]) {
+    const startIdx = content.indexOf(start);
+    if (startIdx === -1) continue;
+    // Search for END after START so end > start is guaranteed.
+    const endIdx = content.indexOf(end, startIdx + start.length);
+    if (endIdx === -1) continue; // START without a matching END → treat as no block
+    // A second START of the same kind means the file is ambiguous (duplicate or
+    // nested block). Refuse rather than orphan/mangle content.
+    if (content.indexOf(start, startIdx + start.length) !== -1) {
+      throw new Error(
+        `Malformed agent-docs block: multiple "${start}" markers found. ` +
+          `Remove the duplicate/broken block manually, then re-run.`,
+      );
+    }
+    return {start: startIdx, end: endIdx + end.length};
+  }
+  return null;
+}
+
+/**
  * Agent tool presets — maps tool names to their file search paths.
  * Order matters: first existing file wins, last entry is the default (created if none exist).
  */
@@ -392,21 +431,22 @@ export function injectXdsBlock(filePath, compressedIndex, {createIfMissing = fal
   if (fs.existsSync(filePath)) {
     content = fs.readFileSync(filePath, 'utf-8');
 
-    // Find existing section — try new markers first, fall back to legacy XDS markers
-    let startIdx = content.indexOf(MARKER_START);
-    let endIdx = content.indexOf(MARKER_END);
-    let markerEndLength = MARKER_END.length;
-    if (startIdx === -1) {
-      startIdx = content.indexOf(LEGACY_MARKER_START);
-      endIdx = content.indexOf(LEGACY_MARKER_END);
-      markerEndLength = LEGACY_MARKER_END.length;
-    }
+    // Find existing section (new or legacy markers), well-formed only.
+    const block = findManagedBlock(content);
 
-    if (startIdx !== -1 && endIdx !== -1) {
+    if (block) {
       content =
-        content.slice(0, startIdx) +
+        content.slice(0, block.start) +
         compressedIndex +
-        content.slice(endIdx + markerEndLength);
+        content.slice(block.end);
+    } else if (content.includes(MARKER_START) || content.includes(LEGACY_MARKER_START)) {
+      // A START with no matching END (e.g. an interrupted previous write). Don't
+      // append a second block below the broken one — that leaves two STARTs the
+      // tool can never converge. Refuse and ask the user to clean it up.
+      throw new Error(
+        `Malformed agent-docs block: found a start marker with no matching end ` +
+          `in ${filePath}. Remove the incomplete block manually, then re-run.`,
+      );
     } else if (onlyReplace) {
       // File exists but has no Astryx markers — skip it
       return false;
@@ -471,20 +511,12 @@ export function removeXdsBlock(filePath, {deleteIfEmpty = false} = {}) {
   if (!fs.existsSync(filePath)) return false;
 
   let content = fs.readFileSync(filePath, 'utf-8');
-  // Find existing section — try new markers first, fall back to legacy
-  let startIdx = content.indexOf(MARKER_START);
-  let endIdx = content.indexOf(MARKER_END);
-  let markerEndLen = MARKER_END.length;
-  if (startIdx === -1) {
-    startIdx = content.indexOf(LEGACY_MARKER_START);
-    endIdx = content.indexOf(LEGACY_MARKER_END);
-    markerEndLen = LEGACY_MARKER_END.length;
-  }
+  // Find existing section (new or legacy markers), well-formed only.
+  const block = findManagedBlock(content);
+  if (!block) return false;
 
-  if (startIdx === -1 || endIdx === -1) return false;
-
-  const before = content.slice(0, startIdx).trimEnd();
-  const after = content.slice(endIdx + markerEndLen).trimStart();
+  const before = content.slice(0, block.start).trimEnd();
+  const after = content.slice(block.end).trimStart();
   content = before + (after ? '\n\n' + after : '') + '\n';
 
   if (deleteIfEmpty) {
