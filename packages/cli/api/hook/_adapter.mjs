@@ -42,7 +42,7 @@ export function resolveCoreDir(cwd) {
  * @param {string} coreDir
  * @param {string} name
  * @param {{zh?: boolean, lang?: string|null}} [opts]
- * @returns {Promise<import('../../types/hook').HookDoc>}
+ * @returns {Promise<import('./hook.type.mjs').HookDoc>}
  */
 export async function resolveHookDoc(coreDir, name, {zh = false, lang = null} = {}) {
   const docPath = findHookDoc(coreDir, name);

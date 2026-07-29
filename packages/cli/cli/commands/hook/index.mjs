@@ -22,12 +22,12 @@ import {findRelatedBlocks} from '../../../api/template/template.mjs';
 /**
  * The api layer's hook() widens its return to `{type: string, data: unknown}`,
  * so annotate the command-local result with the precise discriminated union from
- * src/types/hook to get narrowing + typed data.
+ * the colocated api/hook/hook.type.mjs to get narrowing + typed data.
  *
  * @typedef {(
- *   | import('../../../types/hook').HookListResponse
- *   | import('../../../types/hook').HookDetailResponse
- *   | import('../../../types/hook').HookDetailParamsResponse
+ *   | import('../../../api/hook/hook.type.mjs').HookListResponse
+ *   | import('../../../api/hook/hook.type.mjs').HookDetailResponse
+ *   | import('../../../api/hook/hook.type.mjs').HookDetailParamsResponse
  * )} HookResult
  */
 
