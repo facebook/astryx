@@ -212,21 +212,6 @@ const styles = stylex.create({
     whiteSpace: 'nowrap',
     borderWidth: 0,
   },
-  // Visually hidden trigger button. It carries the accessible role, name, and
-  // ARIA while staying out of view; the visible focus feedback lives on the
-  // container's :focus-within border. Kept as a sibling (not a wrapper) of the
-  // other controls so no interactive element nests inside another.
-  srOnlyButton: {
-    position: 'absolute',
-    width: 1,
-    height: 1,
-    padding: 0,
-    margin: -1,
-    overflow: 'hidden',
-    clip: 'rect(0, 0, 0, 0)',
-    whiteSpace: 'nowrap',
-    borderWidth: 0,
-  },
   placeholderText: {
     fontFamily: typographyVars['--font-family-body'],
     fontSize: {
@@ -460,9 +445,10 @@ export function FileInput({
   const announce = useAnnounce();
 
   // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
-  // tooltip listeners attach to the focusable trigger button and it stays
-  // perceivable via aria-disabled instead of the native disabled attribute.
-  // Opening the picker is blocked by the isDisabled guards in the handlers.
+  // tooltip listeners attach to the visible container (which stays hoverable)
+  // and the trigger stays perceivable via aria-disabled instead of the native
+  // disabled attribute. Opening the picker is blocked by the isDisabled guards
+  // in the handlers.
   const showsDisabledMessage = isDisabled && !!disabledMessage;
   const disabledMessageTooltip = useTooltip({
     placement: 'above',
@@ -759,7 +745,15 @@ export function FileInput({
       labelTooltip={labelTooltip}
       width={width}>
       <div
-        ref={containerRef}
+        ref={el => {
+          containerRef.current = el;
+          // Anchor + hover/focus listeners for the disabled-message tooltip on
+          // the visible container (the focusable trigger is visually hidden, so
+          // anchoring there would place the tooltip at a 1px box). focusin
+          // bubbles from the trigger button, so the tooltip still opens on
+          // keyboard focus. Handlers are gated internally by isEnabled.
+          disabledMessageTooltip.ref(el);
+        }}
         onClick={!isDisabled ? onContainerClick : undefined}
         onMouseUp={!isDisabled ? onContainerMouseUp : undefined}
         {...dragDropProps}
@@ -781,40 +775,36 @@ export function FileInput({
             ARIA. Kept as a sibling of the clear/status controls inside a
             non-interactive container, so no interactive element nests inside
             another (WCAG 4.1.2). The visible focus feedback is the container's
-            :focus-within border. */}
-        <button
-          ref={el => {
-            // Anchor + hover/focus listeners for the disabled-message tooltip
-            // need a focusable/hoverable trigger, which this button provides.
-            // Handlers are gated internally by isEnabled, so attaching
-            // unconditionally is safe.
-            disabledMessageTooltip.ref(el);
-          }}
-          type="button"
-          // With a disabledMessage the trigger keeps focusability via
-          // aria-disabled so the reason is focus-discoverable; opening the
-          // picker is still blocked by the isDisabled guards in the handlers.
-          // Otherwise the native disabled attribute removes it from the tab
-          // order.
-          disabled={isDisabled && !showsDisabledMessage}
-          tabIndex={isDisabled && !showsDisabledMessage ? -1 : 0}
-          aria-disabled={showsDisabledMessage ? 'true' : undefined}
-          onClick={handleClick}
-          onKeyDown={handleKeyDown}
-          // aria-label suppresses child content from the accessible name, so
-          // compose the selected filenames into it — otherwise a screen-reader
-          // user refocusing the control hears only the field label and cannot
-          // tell what (if anything) is attached.
-          aria-label={
-            hasFiles && fileNames
-              ? t('@astryx.fileInput.triggerWithFiles', {label, fileNames})
-              : label
-          }
-          aria-busy={isLoading || undefined}
-          aria-describedby={ariaDescribedBy}
-          aria-invalid={status?.type === 'error' ? 'true' : undefined}
-          {...stylex.props(styles.srOnlyButton)}
-        />
+            :focus-within border; the surface click is handled by the container
+            (VisuallyHidden disables the button's own pointer events), and
+            keyboard activation still fires here. */}
+        <VisuallyHidden>
+          <button
+            type="button"
+            // With a disabledMessage the trigger keeps focusability via
+            // aria-disabled so the reason is focus-discoverable; opening the
+            // picker is still blocked by the isDisabled guards in the handlers.
+            // Otherwise the native disabled attribute removes it from the tab
+            // order.
+            disabled={isDisabled && !showsDisabledMessage}
+            tabIndex={isDisabled && !showsDisabledMessage ? -1 : 0}
+            aria-disabled={showsDisabledMessage ? 'true' : undefined}
+            onClick={handleClick}
+            onKeyDown={handleKeyDown}
+            // aria-label suppresses child content from the accessible name, so
+            // compose the selected filenames into it — otherwise a
+            // screen-reader user refocusing the control hears only the field
+            // label and cannot tell what (if anything) is attached.
+            aria-label={
+              hasFiles && fileNames
+                ? t('@astryx.fileInput.triggerWithFiles', {label, fileNames})
+                : label
+            }
+            aria-busy={isLoading || undefined}
+            aria-describedby={ariaDescribedBy}
+            aria-invalid={status?.type === 'error' ? 'true' : undefined}
+          />
+        </VisuallyHidden>
         <input
           {...rest}
           ref={mergeRefs(ref, inputRef)}
