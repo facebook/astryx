@@ -341,6 +341,7 @@ describe('RichTextEditor', () => {
     expect(typeof ref.current?.focus).toBe('function');
     expect(typeof ref.current?.clear).toBe('function');
     expect(typeof ref.current?.getEditorState).toBe('function');
+    expect(typeof ref.current?.getMarkdown).toBe('function');
     expect(typeof ref.current?.getEditor).toBe('function');
   });
 
@@ -373,6 +374,56 @@ describe('RichTextEditor', () => {
     const editor = ref.current?.getEditor();
     expect(editor).toBeDefined();
     expect(typeof editor?.update).toBe('function');
+  });
+
+  it('ref.getMarkdown() serializes plain text content', () => {
+    const ref = createRef<RichTextEditorRef>();
+    render(
+      <RichTextEditor ref={ref} label="Notes" defaultValue={HELLO_STATE} />,
+    );
+    expect(ref.current?.getMarkdown()).toBe('Hello world');
+  });
+
+  it('ref.getMarkdown() serializes a heading with the default transformers', async () => {
+    const ref = createRef<RichTextEditorRef>();
+    let editorRef: LexicalEditor | undefined;
+    render(
+      <RichTextEditor
+        ref={ref}
+        label="Notes"
+        plugins={<CaptureEditor onReady={e => (editorRef = e)} />}
+      />,
+    );
+    await waitFor(() => expect(editorRef).toBeDefined());
+    editorRef!.update(() => {
+      $convertFromMarkdownString('# Title', TRANSFORMERS);
+    });
+    await waitFor(() =>
+      expect(ref.current?.getMarkdown()).toBe('# Title'),
+    );
+  });
+
+  it('ref.getMarkdown() honors a custom transformers prop', async () => {
+    // With an empty transformers set, a heading node cannot be represented in
+    // markdown, so its text is emitted as a plain paragraph (no "# "). This
+    // proves getMarkdown() uses the same transformers the editor is
+    // configured with, not a hardcoded default.
+    const ref = createRef<RichTextEditorRef>();
+    let editorRef: LexicalEditor | undefined;
+    render(
+      <RichTextEditor
+        ref={ref}
+        label="Notes"
+        transformers={[]}
+        plugins={<CaptureEditor onReady={e => (editorRef = e)} />}
+      />,
+    );
+    await waitFor(() => expect(editorRef).toBeDefined());
+    // Seed a heading node directly (bypassing shortcuts) using the full set.
+    editorRef!.update(() => {
+      $convertFromMarkdownString('# Title', TRANSFORMERS);
+    });
+    await waitFor(() => expect(ref.current?.getMarkdown()).toBe('Title'));
   });
 
   it('ref.clear() resets the editor to a single empty paragraph', async () => {
