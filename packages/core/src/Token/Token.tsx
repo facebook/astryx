@@ -5,7 +5,7 @@
 /**
  * @file Token.tsx
  * @input Uses React, ReactNode, StyleXStyles
- * @output Exports Token component, TokenProps, TokenColor types
+ * @output Exports Token component, TokenProps, TokenColor, TokenColorMap types
  * @position Core implementation; consumed by index.ts, tested by Token.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -41,20 +41,37 @@ import {useTranslator} from '../i18n';
 // =============================================================================
 
 /**
- * Available color variants for the token.
+ * Extensible color map for Token.
+ *
+ * Theme packages can add custom colors via TypeScript module augmentation:
+ * @example
+ * ```
+ * declare module '@astryxdesign/core/Token' {
+ *   interface TokenColorMap {
+ *     brand: true;
+ *   }
+ * }
+ * ```
  */
-export type TokenColor =
-  | 'default'
-  | 'red'
-  | 'orange'
-  | 'yellow'
-  | 'green'
-  | 'teal'
-  | 'cyan'
-  | 'blue'
-  | 'purple'
-  | 'pink'
-  | 'gray';
+export interface TokenColorMap {
+  default: true;
+  red: true;
+  orange: true;
+  yellow: true;
+  green: true;
+  teal: true;
+  cyan: true;
+  blue: true;
+  purple: true;
+  pink: true;
+  gray: true;
+}
+
+/**
+ * Token color type derived from TokenColorMap.
+ * Extensible via module augmentation of TokenColorMap.
+ */
+export type TokenColor = keyof TokenColorMap;
 
 export type TokenSize = 'sm' | 'md' | 'lg';
 

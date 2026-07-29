@@ -12,4 +12,4 @@
  */
 
 export {Token} from './Token';
-export type {TokenProps, TokenColor, TokenSize} from './Token';
+export type {TokenProps, TokenColor, TokenColorMap, TokenSize} from './Token';
