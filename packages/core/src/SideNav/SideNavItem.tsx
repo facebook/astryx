@@ -356,6 +356,8 @@ export function SideNavItem({
   size = 'md',
   'data-testid': testId,
   ref,
+  xstyle,
+  ...rest
 }: SideNavItemProps) {
   const t = useTranslator();
   const {isCollapsed} = useSideNavCollapse();
@@ -502,7 +504,7 @@ export function SideNavItem({
     // Items with children: popover trigger + popover
     if (hasChildren) {
       return (
-        <div {...stylex.props(styles.root)}>
+        <div {...stylex.props(styles.root, xstyle)}>
           <button
             ref={mergeRefs(ref, popover.triggerRef)}
             type="button"
@@ -554,7 +556,7 @@ export function SideNavItem({
     );
 
     return (
-      <div ref={itemRef} {...stylex.props(styles.root)}>
+      <div ref={itemRef} {...stylex.props(styles.root, xstyle)}>
         {collapsedElement}
         <Tooltip content={label} placement="end" anchorRef={itemRef} />
       </div>
@@ -670,7 +672,7 @@ export function SideNavItem({
   }
 
   const item = (
-    <div ref={itemRef} {...stylex.props(styles.root)}>
+    <div ref={itemRef} {...stylex.props(styles.root, xstyle)}>
       {itemElement}
       {hasChildren && !isCollapsed && (
         <div
