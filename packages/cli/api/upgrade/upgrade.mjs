@@ -40,7 +40,7 @@ export {refreshAgentDocs} from './_adapter.mjs';
  *
  * @param {UpgradeOptions} [options]
  * @param {{cwd?: string, logger?: import('../../lib/term-log.mjs').CliLogger}} [ctx]
- * @returns {Promise<import('../../types/upgrade').UpgradeListResponse | import('../../types/upgrade').UpgradeStatusResponse | import('../../types/upgrade').UpgradeRunResponse>}
+ * @returns {Promise<import('./upgrade.type.mjs').UpgradeListResponse | import('./upgrade.type.mjs').UpgradeStatusResponse | import('./upgrade.type.mjs').UpgradeRunResponse>}
  */
 export async function upgrade(options = {}, {cwd = process.cwd(), logger = noopLogger} = {}) {
   logger.intro('Upgrade');

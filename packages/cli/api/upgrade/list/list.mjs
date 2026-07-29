@@ -14,7 +14,7 @@ import {noopLogger} from '../../../lib/term-log.mjs';
 /**
  * List every available codemod (oldest→newest).
  * @param {{logger?: import('../../../lib/term-log.mjs').CliLogger}} [ctx]
- * @returns {Promise<import('../../../types/upgrade').UpgradeListResponse>}
+ * @returns {Promise<import('../upgrade.type.mjs').UpgradeListResponse>}
  */
 export async function list({logger = noopLogger} = {}) {
   const codemods = await collectAllCodemods();

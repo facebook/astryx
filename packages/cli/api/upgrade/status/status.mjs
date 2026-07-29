@@ -20,9 +20,9 @@ import {noopLogger} from '../../../lib/term-log.mjs';
 
 /**
  * `--from` is at/after the installed target (and no `--force`): nothing to run.
- * @param {{from: string, to: string, agentDocs: import('../../../types/upgrade').AgentDocsSummary}} data
+ * @param {{from: string, to: string, agentDocs: import('../upgrade.type.mjs').AgentDocsSummary}} data
  * @param {import('../../../lib/term-log.mjs').CliLogger} [logger]
- * @returns {import('../../../types/upgrade').UpgradeStatusResponse}
+ * @returns {import('../upgrade.type.mjs').UpgradeStatusResponse}
  */
 export function statusUpToDate({from, to, agentDocs}, logger = noopLogger) {
   logger.success('Already up to date — no codemods to run.');
@@ -33,9 +33,9 @@ export function statusUpToDate({from, to, agentDocs}, logger = noopLogger) {
 
 /**
  * No core or integration codemods apply to the requested version range.
- * @param {{from: string, to: string, agentDocs: import('../../../types/upgrade').AgentDocsSummary}} data
+ * @param {{from: string, to: string, agentDocs: import('../upgrade.type.mjs').AgentDocsSummary}} data
  * @param {import('../../../lib/term-log.mjs').CliLogger} [logger]
- * @returns {import('../../../types/upgrade').UpgradeStatusResponse}
+ * @returns {import('../upgrade.type.mjs').UpgradeStatusResponse}
  */
 export function statusNoCodemods({from, to, agentDocs}, logger = noopLogger) {
   logger.success('No codemods available for this version range.');
@@ -47,9 +47,9 @@ export function statusNoCodemods({from, to, agentDocs}, logger = noopLogger) {
  * DRY-RUN only: the consumer's astryx.config fails strict validation, but a
  * pending core CONFIG codemod previewed a change that would repair it. Preview
  * the fix + report the exact `--apply` command; integrations are skipped here.
- * @param {{from: string, to: string, configError: string, configCodemods: string[], agentDocs: import('../../../types/upgrade').AgentDocsSummary}} data
+ * @param {{from: string, to: string, configError: string, configCodemods: string[], agentDocs: import('../upgrade.type.mjs').AgentDocsSummary}} data
  * @param {import('../../../lib/term-log.mjs').CliLogger} [logger]
- * @returns {import('../../../types/upgrade').UpgradeStatusResponse}
+ * @returns {import('../upgrade.type.mjs').UpgradeStatusResponse}
  */
 export function statusConfigFixable({from, to, configError, configCodemods, agentDocs}, logger = noopLogger) {
   const codemodFlags = configCodemods.map(name => `--codemod ${name}`).join(' ');

@@ -49,7 +49,7 @@ import {noopLogger} from '../../../lib/term-log.mjs';
  *
  * @param {import('../_adapter.mjs').UpgradeOptions} [options]
  * @param {{cwd?: string, logger?: import('../../../lib/term-log.mjs').CliLogger}} [ctx]
- * @returns {Promise<import('../../../types/upgrade').UpgradeStatusResponse | import('../../../types/upgrade').UpgradeRunResponse>}
+ * @returns {Promise<import('../upgrade.type.mjs').UpgradeStatusResponse | import('../upgrade.type.mjs').UpgradeRunResponse>}
  */
 export async function run(options = {}, {cwd = process.cwd(), logger = noopLogger} = {}) {
   // Resolve the source dir against the API's cwd (not process.cwd()) so a
@@ -196,7 +196,7 @@ export async function run(options = {}, {cwd = process.cwd(), logger = noopLogge
   }
 
   /**
-   * @type {{from: string, to: string, codemods: number, integrations: string[], agentDocsRefreshed: boolean, agentDocs: import('../../../types/upgrade').AgentDocsSummary, filesChanged?: number, transformsApplied?: number, errors?: Array<{file: string, codemod: string, error: string}>}}
+   * @type {{from: string, to: string, codemods: number, integrations: string[], agentDocsRefreshed: boolean, agentDocs: import('../upgrade.type.mjs').AgentDocsSummary, filesChanged?: number, transformsApplied?: number, errors?: Array<{file: string, codemod: string, error: string}>}}
    */
   const receipt = {
     from: currentVersion,
@@ -250,6 +250,6 @@ export async function run(options = {}, {cwd = process.cwd(), logger = noopLogge
   logger.outro(apply ? 'Upgrade complete' : 'Dry run complete');
   return {
     type: 'upgrade.run',
-    data: /** @type {import('../../../types/upgrade').UpgradeRunResponse['data']} */ (/** @type {unknown} */ (receipt)),
+    data: /** @type {import('../upgrade.type.mjs').UpgradeRunResponse['data']} */ (/** @type {unknown} */ (receipt)),
   };
 }

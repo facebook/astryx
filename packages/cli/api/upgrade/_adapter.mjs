@@ -146,11 +146,11 @@ export async function runPostCodemodHooks(hooks, context, logger) {
  * EVERY upgrade path, including the no-codemods short-circuits (#4168).
  *
  * @param {{cwd: string, installedVersion: string, apply: boolean, logger?: import('../../lib/term-log.mjs').CliLogger}} ctx
- * @returns {import('../../types/upgrade').AgentDocsSummary}
+ * @returns {import('./upgrade.type.mjs').AgentDocsSummary}
  */
 export function refreshAgentDocs({cwd, installedVersion, apply, logger = noopLogger}) {
   const inspection = inspectAgentDocs(cwd, installedVersion);
-  /** @type {import('../../types/upgrade').AgentDocsSummary} */
+  /** @type {import('./upgrade.type.mjs').AgentDocsSummary} */
   const summary = {
     status: inspection.status,
     installedVersion,

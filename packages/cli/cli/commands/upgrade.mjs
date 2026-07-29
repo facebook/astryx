@@ -43,7 +43,7 @@ export function registerUpgrade(program) {
         const json = program.opts().json || false;
         const logger = json ? noopLogger : termLogger;
 
-        /** @type {import('../../types/upgrade').UpgradeListResponse | import('../../types/upgrade').UpgradeStatusResponse | import('../../types/upgrade').UpgradeRunResponse} */
+        /** @type {import('../../api/upgrade/upgrade.type.mjs').UpgradeListResponse | import('../../api/upgrade/upgrade.type.mjs').UpgradeStatusResponse | import('../../api/upgrade/upgrade.type.mjs').UpgradeRunResponse} */
         let result;
         try {
           result = await upgradeApi(options, {cwd: process.cwd(), logger});
