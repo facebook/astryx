@@ -729,7 +729,7 @@ importers:
   packages/themes/butter:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.1.9
+        specifier: '>=0.1.9 <1.0.0'
         version: link:../../core
       lucide-react:
         specifier: ^1.18.0
@@ -745,7 +745,7 @@ importers:
   packages/themes/chocolate:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.1.9
+        specifier: '>=0.1.9 <1.0.0'
         version: link:../../core
       lucide-react:
         specifier: ^1.18.0
@@ -761,7 +761,7 @@ importers:
   packages/themes/gothic:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.1.9
+        specifier: '>=0.1.9 <1.0.0'
         version: link:../../core
       lucide-react:
         specifier: ^1.18.0
@@ -777,7 +777,7 @@ importers:
   packages/themes/matcha:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.1.9
+        specifier: '>=0.1.9 <1.0.0'
         version: link:../../core
       lucide-react:
         specifier: ^1.18.0
@@ -793,7 +793,7 @@ importers:
   packages/themes/neutral:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.1.9
+        specifier: '>=0.1.9 <1.0.0'
         version: link:../../core
       lucide-react:
         specifier: ^1.18.0
@@ -809,7 +809,7 @@ importers:
   packages/themes/stone:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.1.9
+        specifier: '>=0.1.9 <1.0.0'
         version: link:../../core
       lucide-react:
         specifier: ^1.18.0
@@ -825,7 +825,7 @@ importers:
   packages/themes/y2k:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.1.9
+        specifier: '>=0.1.9 <1.0.0'
         version: link:../../core
       lucide-react:
         specifier: ^1.18.0
