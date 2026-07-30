@@ -127,20 +127,19 @@ Edit `targets.json`. Each entry is:
 }
 ```
 
-## known-not-rtl.json — cosmetic labelling only
+## No allowlist — any not-RTL is a failure
 
-`known-not-rtl.json` lists components auto-discovery is **expected** to flag as
-not-RTL because the RTL migration hasn't reached them yet. It **only** labels a
-finding as `known` vs a `surprise` in the scorecard — it **never** suppresses a
-finding or changes the exit code. Remove entries as they gain RTL support; a new
-not-RTL component that isn't on the list shows up as a **surprise**, which is the
-signal worth acting on.
+The RTL migration is complete: every component's directional icons mirror
+correctly, so the audit runs with **no allowlist**. Any component auto-discovery
+scores not-RTL is a real regression (a **surprise**) and should be fixed, not
+excused. There is deliberately no mechanism to mark a not-RTL component as
+"expected" — such a mechanism would be a built-in way to silence a genuine
+future regression.
 
 ## Soft-gated — pending a stability window
 
-The `pr-rtl` CI job runs with `continue-on-error: true`. On current `main`,
-auto-discovery legitimately flags the untackled components (that's correct — they
-aren't fixed yet), so the job would be red; soft-gating surfaces the scorecard
-without blocking merges. To promote to a required check once stable and once the
-known-not-rtl list is empty: drop `continue-on-error` from the `pr-rtl` job in
+The `pr-rtl` CI job runs with `continue-on-error: true`: a finding surfaces the
+scorecard in the job summary but does not block merges while the audit is
+observed for flake over a stability window. To promote to a required check once
+stable: drop `continue-on-error` from the `pr-rtl` job in
 `.github/workflows/ci.yml` and add it to the required checks.

@@ -1,6 +1,0 @@
-{
-  "_comment": "Cosmetic labeling only. Components auto-discovery is EXPECTED to flag as not-RTL because the RTL migration has not reached them yet. This list NEVER suppresses a finding or changes the exit code \u2014 it only lets the scorecard label an expected finding vs a surprise (a newly-regressed or newly-shipped component). Remove entries as they get RTL support. (treelist: its disclosure chevron is being fixed on a separate branch.)",
-  "components": [
-    "treelist"
-  ]
-}

@@ -45,7 +45,6 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const DIST = getArg('storybook-dir') || 'apps/storybook/dist';
 const OUT = getArg('output') || 'rtl-audit-report.json';
 const TARGETS_PATH = getArg('targets') || path.join(HERE, 'targets.json');
-const KNOWN_PATH = path.join(HERE, 'known-not-rtl.json');
 const FILTER = (getArg('filter') || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
 const AUTO_ONLY = hasFlag('auto-only');
 const CURATED_ONLY = hasFlag('curated-only');
@@ -453,8 +452,6 @@ function componentFromId(id) {
     console.error('FATAL: cannot read index.json:', String(e).slice(0, 120));
     process.exit(2);
   }
-  let known = [];
-  try { known = JSON.parse(fs.readFileSync(KNOWN_PATH, 'utf8')).components || []; } catch {}
 
   // ---- (A) auto-discovery over all core-* stories ----
   const autoResults = [];
@@ -475,8 +472,7 @@ function componentFromId(id) {
         const card = await autoD1(page, port, id, comp);
         autoResults.push(card);
         if (card.verdict !== 'N-A') {
-          const tag = known.includes(comp) ? ' [known-not-rtl]' : '';
-          console.error(`AUTO ${card.verdict.toUpperCase().padEnd(4)} ${comp.padEnd(24)} icons=${card.icons}${tag}`);
+          console.error(`AUTO ${card.verdict.toUpperCase().padEnd(4)} ${comp.padEnd(24)} icons=${card.icons}`);
         }
       } catch (e) {
         autoResults.push({component: comp, storyId: id, dim: 'D1', verdict: 'ERROR', notes: [String(e).slice(0, 160)], icons: 0});
@@ -513,11 +509,12 @@ function componentFromId(id) {
   server.close();
 
   const autoFails = autoResults.filter(r => r.verdict === 'fail' || r.verdict === 'ERROR');
-  const surprises = autoFails.filter(r => !known.includes(r.component));
+  // No allowlist: every not-RTL component is a surprise. The RTL migration is
+  // complete, so any directional icon that fails to mirror is a real regression.
+  const surprises = autoFails;
   const report = {
     generatedAt: new Date().toISOString(),
     dist: DIST,
-    knownNotRtl: known,
     autoDiscovery: {
       total: autoResults.length,
       applicable: autoResults.filter(r => r.verdict !== 'N-A').length,
