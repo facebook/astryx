@@ -56,18 +56,26 @@ import {VisuallyHidden} from '../VisuallyHidden';
 const COUNTER_WARNING_THRESHOLD = 0.8;
 
 const styles = stylex.create({
+  // The wrapper is a bare positioning context. The <textarea> spans the full
+  // container and carries its own internal padding; icons, status/spinner, and
+  // the character counter are absolutely-positioned overlays anchored to the
+  // container corners. This keeps the native resize grip in the true
+  // bottom-right corner and lets the scrollbar represent the full input area.
   wrapper: {
     zIndex: 1,
-    alignItems: 'flex-start',
-    paddingBlock: spacingVars['--spacing-1'],
+    display: 'block',
+    padding: 0,
   },
   textarea: {
     display: 'block',
-    flex: 1,
+    width: '100%',
+    boxSizing: 'border-box',
     minWidth: 0,
     borderWidth: 0,
     borderStyle: 'none',
-    padding: 0,
+    // Base internal padding; overlays get their own reserved space below.
+    paddingBlock: spacingVars['--spacing-1'],
+    paddingInline: spacingVars['--spacing-3'],
     fontFamily: typographyVars['--font-family-body'],
     fontSize: {
       default: typeScaleVars['--text-body-size'],
@@ -85,28 +93,48 @@ const styles = stylex.create({
   textareaDisabled: {
     cursor: 'not-allowed',
   },
-  counter: {
+  // Reserve start padding so text clears the start icon.
+  // 12px inset + 16px icon (sm) + 8px gap = 36px (--spacing-9)
+  textareaWithStartIcon: {
+    paddingInlineStart: spacingVars['--spacing-9'],
+  },
+  // Reserve end padding so text clears the status icon / spinner overlay.
+  // 12px inset + 20px icon (md) + 4px gap = 36px (--spacing-9)
+  textareaWithStatus: {
+    paddingInlineEnd: spacingVars['--spacing-9'],
+  },
+  // Reserve bottom padding so text clears the character counter overlay.
+  textareaWithCounter: {
+    paddingBottom: spacingVars['--spacing-7'],
+  },
+  startIcon: {
+    position: 'absolute',
+    top: spacingVars['--spacing-2'],
+    insetInlineStart: spacingVars['--spacing-3'],
+    pointerEvents: 'none',
     display: 'flex',
-    justifyContent: 'flex-end',
-    marginTop: spacingVars['--spacing-1'],
+  },
+  endSlot: {
+    position: 'absolute',
+    top: spacingVars['--spacing-2'],
+    insetInlineEnd: spacingVars['--spacing-3'],
+    pointerEvents: 'none',
+    display: 'flex',
+  },
+  // Character counter lives inside the input container, anchored bottom-right
+  // underneath the textarea. insetInlineEnd clears the native resize grip.
+  counter: {
+    position: 'absolute',
+    bottom: spacingVars['--spacing-1'],
+    insetInlineEnd: spacingVars['--spacing-5'],
+    pointerEvents: 'none',
     fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-supporting-size'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
     color: colorVars['--color-text-secondary'],
   },
   counterError: {
     color: colorVars['--color-error'],
-  },
-  statusIcon: {
-    position: 'absolute',
-    top: spacingVars['--spacing-2'],
-    insetInlineEnd: spacingVars['--spacing-2'],
-    pointerEvents: 'none',
-    display: 'flex',
-  },
-  textareaWithStatus: {
-    // Reserve space so text doesn't flow under the absolutely-positioned icon.
-    // 20px (icon md) + 4px gap = 24px (--spacing-6)
-    paddingInlineEnd: spacingVars['--spacing-6'],
   },
 });
 
@@ -434,7 +462,6 @@ export function TextArea({
           stylex.props(
             inputWrapperStyles.base,
             styles.wrapper,
-            textareaSizeStyles[size],
             effectivelyDisabled && inputWrapperStyles.disabled,
             status && inputStatusBorderStyles[status.type],
             status &&
@@ -446,8 +473,11 @@ export function TextArea({
           className,
           style,
         )}>
-        {startIcon &&
-          renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
+        {startIcon && (
+          <span {...stylex.props(styles.startIcon)}>
+            {renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
+          </span>
+        )}
         <textarea
           {...rest}
           ref={mergeRefs(ref, textareaRef)}
@@ -480,32 +510,39 @@ export function TextArea({
           aria-busy={isBusy || undefined}
           {...stylex.props(
             styles.textarea,
+            textareaSizeStyles[size],
             effectivelyDisabled && styles.textareaDisabled,
-            status && styles.textareaWithStatus,
+            Boolean(startIcon) && styles.textareaWithStartIcon,
+            (status || isBusy) && styles.textareaWithStatus,
+            maxLength != null && styles.textareaWithCounter,
           )}
         />
-        {isBusy && <Spinner size="sm" />}
+        {isBusy && (
+          <span {...stylex.props(styles.endSlot)}>
+            <Spinner size="sm" />
+          </span>
+        )}
         {statusIcon && (
-          <span {...stylex.props(styles.statusIcon)}>{statusIcon}</span>
+          <span {...stylex.props(styles.endSlot)}>{statusIcon}</span>
+        )}
+        {maxLength != null && (
+          <div
+            id={counterID}
+            {...stylex.props(
+              styles.counter,
+              optimisticValue.length > maxLength && styles.counterError,
+            )}>
+            {optimisticValue.length}/{maxLength}
+            <VisuallyHidden aria-live="polite">
+              {optimisticValue.length >= maxLength * COUNTER_WARNING_THRESHOLD
+                ? optimisticValue.length > maxLength
+                  ? `${optimisticValue.length - maxLength} characters over limit`
+                  : `${maxLength - optimisticValue.length} characters remaining`
+                : ''}
+            </VisuallyHidden>
+          </div>
         )}
       </div>
-      {maxLength != null && (
-        <div
-          id={counterID}
-          {...stylex.props(
-            styles.counter,
-            optimisticValue.length > maxLength && styles.counterError,
-          )}>
-          {optimisticValue.length}/{maxLength}
-          <VisuallyHidden aria-live="polite">
-            {optimisticValue.length >= maxLength * COUNTER_WARNING_THRESHOLD
-              ? optimisticValue.length > maxLength
-                ? `${optimisticValue.length - maxLength} characters over limit`
-                : `${maxLength - optimisticValue.length} characters remaining`
-              : ''}
-          </VisuallyHidden>
-        </div>
-      )}
       {showsDisabledMessage &&
         disabledMessageTooltip.renderTooltip(disabledMessage)}
     </Field>

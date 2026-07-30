@@ -535,6 +535,22 @@ describe('TextArea', () => {
       expect(counter).toHaveAttribute('id');
       expect(describedBy).toContain(counter.id);
     });
+
+    it('renders the counter inside the input container (same wrapper as textarea)', () => {
+      render(
+        <TextArea
+          label="Description"
+          value="Hello"
+          onChange={() => {}}
+          maxLength={50}
+        />,
+      );
+      const textarea = screen.getByRole('textbox');
+      const counter = screen.getByText('5/50');
+      // The counter now lives inside the bordered input container as a sibling
+      // overlay of the textarea, not below it as an out-of-container element.
+      expect(textarea.parentElement).toBe(counter.parentElement);
+    });
   });
 
   describe('hasAutoFocus prop', () => {
@@ -737,11 +753,15 @@ describe('TextArea', () => {
   });
 });
 
-
 describe('TextArea statusVariant forwarding', () => {
   it('defaults to attached (status renders with data-variant="attached")', () => {
     const {container} = render(
-      <TextArea label="Bio" value="" onChange={() => {}} status={{type: 'error', message: 'Required'}} />,
+      <TextArea
+        label="Bio"
+        value=""
+        onChange={() => {}}
+        status={{type: 'error', message: 'Required'}}
+      />,
     );
     expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
       'data-variant',
@@ -751,7 +771,13 @@ describe('TextArea statusVariant forwarding', () => {
 
   it('forwards statusVariant="detached" to the underlying Field status', () => {
     const {container} = render(
-      <TextArea label="Bio" value="" onChange={() => {}} status={{type: 'error', message: 'Required'}} statusVariant="detached" />,
+      <TextArea
+        label="Bio"
+        value=""
+        onChange={() => {}}
+        status={{type: 'error', message: 'Required'}}
+        statusVariant="detached"
+      />,
     );
     expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
       'data-variant',
