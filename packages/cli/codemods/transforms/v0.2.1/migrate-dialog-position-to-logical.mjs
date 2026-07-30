@@ -2,7 +2,7 @@
 
 /**
  * @file Codemod: Migrate Dialog position left/right -> start/end
- * @see https://github.com/facebook/astryx/pull/PR_PLACEHOLDER
+ * @see https://github.com/facebook/astryx/pull/4568
  *
  * The Dialog `position` prop's physical `left`/`right` offsets are deprecated
  * in favor of the logical `start`/`end` offsets. `start`/`end` map to
@@ -33,7 +33,7 @@ export const meta = {
     'start/end map to inset-inline-start/end and mirror under RTL; the ' +
     'physical left/right are deprecated (still work, removed in a future ' +
     'major). Optional — adopt at your own pace.',
-  pr: '#PR_PLACEHOLDER',
+  pr: '#4568',
   isOptional: true,
 };
 
