@@ -201,6 +201,73 @@ describe('ResizeHandle', () => {
     expect(document.body.style.userSelect).toBe('');
   });
 
+  // --- RTL pointer-drag direction ---
+
+  it('drives the region with the raw pointer delta under LTR', () => {
+    const resizable: ResizableProps = {
+      _size: 200,
+      _isCollapsed: false,
+      _onResizeStart: vi.fn(),
+      _onResizeMove: vi.fn(),
+      _onResizeEnd: vi.fn(),
+      _minSizePx: 100,
+      _maxSizePx: 400,
+      _snaps: [],
+      _collapsedSize: 40,
+      _collapsible: false,
+      _isResizableProps: true,
+    };
+    render(<ResizeHandle resizable={resizable} label="Resize" />);
+    const hitArea = screen.getByRole('separator')
+      .firstElementChild as HTMLElement;
+
+    fireEvent.pointerDown(hitArea, {clientX: 0, clientY: 0});
+    // Pointer moves +40px to the right → panel grows by +40 under LTR.
+    fireEvent.pointerMove(window, {clientX: 40, clientY: 0});
+    expect(resizable._onResizeMove).toHaveBeenLastCalledWith(40);
+  });
+
+  it('inverts the pointer delta under RTL so dragging resizes intuitively', () => {
+    const resizable: ResizableProps = {
+      _size: 200,
+      _isCollapsed: false,
+      _onResizeStart: vi.fn(),
+      _onResizeMove: vi.fn(),
+      _onResizeEnd: vi.fn(),
+      _minSizePx: 100,
+      _maxSizePx: 400,
+      _snaps: [],
+      _collapsedSize: 40,
+      _collapsible: false,
+      _isResizableProps: true,
+    };
+    // Under RTL the start panel sits on the RIGHT, so a pointer move to the
+    // right (+clientX) must SHRINK it — the delta is inverted. The handle reads
+    // its own computed `direction` via getRTLMultiplier(); jsdom doesn't resolve
+    // inherited `direction`, so force it on the separator (the handle element),
+    // mirroring the Slider RTL pointer-mapping test precedent.
+    render(<ResizeHandle resizable={resizable} label="Resize" />);
+    const separator = screen.getByRole('separator');
+    const hitArea = separator.firstElementChild as HTMLElement;
+
+    const realGetComputedStyle = window.getComputedStyle;
+    const gcsSpy = vi
+      .spyOn(window, 'getComputedStyle')
+      .mockImplementation((el: Element, pseudo?: string | null) => {
+        if (el === separator) {
+          return {direction: 'rtl'} as CSSStyleDeclaration;
+        }
+        return realGetComputedStyle(el, pseudo ?? undefined);
+      });
+
+    fireEvent.pointerDown(hitArea, {clientX: 0, clientY: 0});
+    // Same +40px physical move as LTR, but mirrored → −40 delta under RTL.
+    fireEvent.pointerMove(window, {clientX: 40, clientY: 0});
+    expect(resizable._onResizeMove).toHaveBeenLastCalledWith(-40);
+
+    gcsSpy.mockRestore();
+  });
+
   // --- Prop composition (ordering choice: handler sits after {...props}) ---
 
   it('runs a consumer onKeyDown alongside keyboard resizing', () => {

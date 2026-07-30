@@ -58,12 +58,25 @@ function resolveEffectiveSide(
 /**
  * Hit area bias percentage. When the pill is off-center, the grab zone
  * shifts ~2:1 toward the pill so users can reach the visible grip easily.
+ *
+ * The hit area's left edge starts at 50% of the handle, so a `translateX(-50%)`
+ * centers it. Biasing toward the inline-START side means translating further
+ * (−66.67%); toward inline-END means less (−33.33%). Because `translateX` is
+ * physical (screen-space) but `start`/`end` are logical, the RTL bias is the
+ * mirror of the LTR bias about the −50% center. `ltr`/`rtl` return the physical
+ * percentage for each direction so the dynamic style can pick per-`dir`.
  */
-function hitAreaBias(effectiveSide: 'start' | 'end' | 'center'): string {
+function hitAreaBias(effectiveSide: 'start' | 'end' | 'center'): {
+  ltr: string;
+  rtl: string;
+} {
   if (effectiveSide === 'center') {
-    return '50%';
+    return {ltr: '50%', rtl: '50%'};
   }
-  return effectiveSide === 'start' ? '66.67%' : '33.33%';
+  // start -> more negative under LTR, less negative under RTL (mirrored).
+  return effectiveSide === 'start'
+    ? {ltr: '66.67%', rtl: '33.33%'}
+    : {ltr: '33.33%', rtl: '66.67%'};
 }
 
 const styles = stylex.create({
@@ -102,8 +115,8 @@ const styles = stylex.create({
   },
   overlayVertical: {
     insetBlockEnd: 0,
-    left: 0,
-    right: 0,
+    insetInlineStart: 0,
+    insetInlineEnd: 0,
     height: 'var(--resize-handle-hit-area, 16px)',
   },
   horizontal: {
@@ -145,13 +158,13 @@ const styles = stylex.create({
     width: spacingVars['--spacing-4'],
     top: 0,
     bottom: 0,
-    left: '50%',
+    insetInlineStart: '50%',
     cursor: 'col-resize',
   },
   hitAreaVertical: {
     height: spacingVars['--spacing-4'],
-    left: 0,
-    right: 0,
+    insetInlineStart: 0,
+    insetInlineEnd: 0,
     top: '50%',
     cursor: 'row-resize',
   },
@@ -167,7 +180,7 @@ const styles = stylex.create({
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
     top: '50%',
-    left: '50%',
+    insetInlineStart: '50%',
     transform: 'translate(-50%, -50%)',
   },
   pillHorizontal: {
@@ -193,14 +206,21 @@ const styles = stylex.create({
 // Dynamic styles — avoids inline style overrides.
 // Each axis gets its own function since StyleX requires static structure.
 const dynamicStyles = stylex.create({
-  hitAreaBiasX: (pct: string) => ({
-    transform: `translateX(-${pct})`,
+  // Hit-area bias. `translateX`/`translateY` is physical, but the bias target
+  // (start/end) is logical, so under RTL the horizontal bias mirrors about the
+  // −50% center — hence the per-`dir` transform. Vertical bias has no RTL
+  // dependence (block axis), so both values are identical there.
+  hitAreaBiasX: (pct: {ltr: string; rtl: string}) => ({
+    transform: {
+      default: `translateX(-${pct.ltr})`,
+      ':is([dir="rtl"] *)': `translateX(-${pct.rtl})`,
+    },
   }),
-  hitAreaBiasY: (pct: string) => ({
-    transform: `translateY(-${pct})`,
+  hitAreaBiasY: (pct: {ltr: string; rtl: string}) => ({
+    transform: `translateY(-${pct.ltr})`,
   }),
   pillOffsetX: (dir: number) => ({
-    left: 0,
+    insetInlineStart: 0,
     transform: `translate(calc(${dir} * (100% + ${spacingVars['--spacing-1']})), -50%)`,
   }),
   // Vertical offset: no rotation — use explicit landscape dimensions.
