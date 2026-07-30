@@ -105,12 +105,45 @@ export type DialogVariant = keyof DialogVariantMap;
 export type DialogPurpose = 'required' | 'form' | 'info';
 
 /**
- * Position configuration for static dialog positioning
+ * Position configuration for static dialog positioning.
+ *
+ * Prefer the logical `start`/`end` offsets over physical `left`/`right`:
+ * `start`/`end` mirror automatically under RTL (they map to
+ * `inset-inline-start` / `inset-inline-end`), so a dialog anchored to the
+ * inline-start edge stays anchored to the start edge in both LTR and RTL.
+ * The physical `left`/`right` offsets are retained for backward compatibility
+ * but are deprecated and never mirror.
  */
 export interface DialogPosition {
   bottom?: number | string;
+  /**
+   * @deprecated Use `start`/`end` instead. `left`/`right` will be removed in a
+   * future major. They remain PHYSICAL (do not mirror under RTL) for
+   * backward-compat: a `left` offset is always the visual-left edge in both
+   * LTR and RTL. If both `start` and `left` (or `end` and `right`) are set,
+   * the logical value wins.
+   */
   left?: number | string;
+  /**
+   * @deprecated Use `start`/`end` instead. `left`/`right` will be removed in a
+   * future major. They remain PHYSICAL (do not mirror under RTL) for
+   * backward-compat: a `right` offset is always the visual-right edge in both
+   * LTR and RTL. If both `end` and `right` (or `start` and `left`) are set,
+   * the logical value wins.
+   */
   right?: number | string;
+  /**
+   * Logical inline-start offset (maps to `inset-inline-start`). Mirrors under
+   * RTL — the preferred replacement for the physical `left`. If both `start`
+   * and `left` are provided, `start` wins.
+   */
+  start?: number | string;
+  /**
+   * Logical inline-end offset (maps to `inset-inline-end`). Mirrors under RTL
+   * — the preferred replacement for the physical `right`. If both `end` and
+   * `right` are provided, `end` wins.
+   */
+  end?: number | string;
   top?: number | string;
 }
 
@@ -219,19 +252,39 @@ const dynamicStyles = stylex.create({
     right: number | string | undefined,
     bottom: number | string | undefined,
     left: number | string | undefined,
+    start: number | string | undefined,
+    end: number | string | undefined,
   ) => ({
-    // When position is set, disable auto margin and use fixed positioning
+    // When position is set, disable auto margin and use fixed positioning.
+    //
+    // Precedence: the logical offset (start/end) wins over its physical
+    // counterpart (left/right). Logical start/end emit inset-inline-start/end
+    // and MIRROR under RTL (preferred); the deprecated physical left/right
+    // emit left/right and NEVER mirror. When a logical offset is provided its
+    // physical counterpart is suppressed (null → omitted) so they can't fight.
+    // A consumer using ONLY left/right keeps EXACTLY today's behavior.
+    // NOTE: this must stay an inline object literal — StyleX cannot analyze a
+    // delegated helper. The identical logic is unit-tested via the exported
+    // resolveDialogPositionOffsets() below; keep the two in sync.
     margin: 0,
     top: top !== undefined ? formatPosition(top) : 'auto',
-    // consumer-facing DialogPosition API — physical by contract; logical
-    // start/end migration tracked separately in the Dialog position deprecation PR
-    // eslint-disable-next-line @astryx/no-physical-properties
-    right: right !== undefined ? formatPosition(right) : 'auto',
+    insetInlineStart: start !== undefined ? formatPosition(start) : 'auto',
+    insetInlineEnd: end !== undefined ? formatPosition(end) : 'auto',
+    // eslint-disable-next-line @astryx/no-physical-properties -- deprecated consumer-facing DialogPosition.right; physical by contract, superseded by logical `end`
+    right:
+      end !== undefined
+        ? null
+        : right !== undefined
+          ? formatPosition(right)
+          : 'auto',
     bottom: bottom !== undefined ? formatPosition(bottom) : 'auto',
-    // consumer-facing DialogPosition API — physical by contract; logical
-    // start/end migration tracked separately in the Dialog position deprecation PR
-    // eslint-disable-next-line @astryx/no-physical-properties
-    left: left !== undefined ? formatPosition(left) : 'auto',
+    // eslint-disable-next-line @astryx/no-physical-properties -- deprecated consumer-facing DialogPosition.left; physical by contract, superseded by logical `start`
+    left:
+      start !== undefined
+        ? null
+        : left !== undefined
+          ? formatPosition(left)
+          : 'auto',
   }),
 });
 
@@ -243,6 +296,66 @@ function formatPosition(value: number | string | undefined): string | null {
     return null;
   }
   return typeof value === 'number' ? `${value}px` : value;
+}
+
+/**
+ * Resolved CSS offsets for a Dialog `position`, after applying the
+ * logical-over-physical precedence rule. Exported for unit testing.
+ *
+ * @property top/bottom - block offsets, unchanged (`auto` when unset).
+ * @property insetInlineStart/insetInlineEnd - LOGICAL inline offsets from
+ *   `start`/`end`; these mirror under RTL. `auto` when the logical offset is
+ *   unset.
+ * @property left/right - DEPRECATED physical inline offsets; these do NOT
+ *   mirror. Resolve to their value (or `auto` when unset) unless the logical
+ *   counterpart (`start`/`end`) is set, in which case they are suppressed
+ *   (`null`, omitted by StyleX) so the logical offset wins cleanly.
+ */
+export interface ResolvedDialogPositionOffsets {
+  top: string | null;
+  right: string | null;
+  bottom: string | null;
+  left: string | null;
+  insetInlineStart: string | null;
+  insetInlineEnd: string | null;
+}
+
+/**
+ * Map a {@link DialogPosition} to resolved CSS offsets, applying the
+ * precedence rule: when both a logical offset (`start`/`end`) and its physical
+ * counterpart (`left`/`right`) are provided, the LOGICAL offset wins and the
+ * physical one is suppressed. A consumer using ONLY `left`/`right` gets exactly
+ * the pre-deprecation behavior — a physical, non-mirroring offset with an
+ * `auto` fallback — so the deprecation is non-breaking.
+ *
+ * @see DialogPosition
+ */
+export function resolveDialogPositionOffsets(
+  position: DialogPosition,
+): ResolvedDialogPositionOffsets {
+  const {top, right, bottom, left, start, end} = position;
+  const useLogicalStart = start !== undefined;
+  const useLogicalEnd = end !== undefined;
+
+  return {
+    top: top !== undefined ? formatPosition(top) : 'auto',
+    // Logical offsets mirror under RTL (preferred replacements).
+    insetInlineStart: useLogicalStart ? formatPosition(start) : 'auto',
+    insetInlineEnd: useLogicalEnd ? formatPosition(end) : 'auto',
+    // Deprecated physical offsets never mirror; suppressed when the logical
+    // counterpart is set so the two can't fight.
+    right: useLogicalEnd
+      ? null
+      : right !== undefined
+        ? formatPosition(right)
+        : 'auto',
+    bottom: bottom !== undefined ? formatPosition(bottom) : 'auto',
+    left: useLogicalStart
+      ? null
+      : left !== undefined
+        ? formatPosition(left)
+        : 'auto',
+  };
 }
 
 export interface DialogProps extends BaseProps<HTMLDialogElement> {
@@ -643,6 +756,8 @@ export function Dialog({
               position?.right,
               position?.bottom,
               position?.left,
+              position?.start,
+              position?.end,
             ),
           isFullscreen && styles.fullscreen,
           xstyle,

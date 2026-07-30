@@ -74,7 +74,13 @@ export const docs = {
     {
       name: 'position',
       type: 'DialogPosition',
-      description: 'Static position for the dialog; centered by default when omitted.',
+      description:
+        'Static position for the dialog; centered by default when omitted. ' +
+        'Prefer the logical `start`/`end` offsets (they map to ' +
+        'inset-inline-start/end and mirror under RTL) over the deprecated ' +
+        'physical `left`/`right`, which never mirror and will be removed in a ' +
+        'future major. If both a logical offset and its physical counterpart ' +
+        'are set, the logical one wins.',
     },
     {
       name: 'variant',
