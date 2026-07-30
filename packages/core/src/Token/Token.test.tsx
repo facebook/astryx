@@ -416,6 +416,59 @@ describe('Token link with remove button', () => {
     expect(handleLinkClick).not.toHaveBeenCalled();
   });
 
+  it('cmd/ctrl+click on the container opens the link in a new tab', () => {
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+    render(
+      <Token
+        label="Tag"
+        href="/test"
+        onRemove={() => {}}
+        icon={<span data-testid="icon">★</span>}
+      />,
+    );
+
+    // Clicking the surface (not the anchor) with a modifier opens a new tab
+    // rather than navigating in place — provided by useClickableContainer.
+    fireEvent.click(screen.getByTestId('icon'), {metaKey: true});
+    expect(openSpy).toHaveBeenCalledWith('/test', '_blank', 'noopener');
+    openSpy.mockRestore();
+  });
+
+  it('middle-click on the container opens the link in a new tab', () => {
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+    render(
+      <Token
+        label="Tag"
+        href="/test"
+        onRemove={() => {}}
+        icon={<span data-testid="icon">★</span>}
+      />,
+    );
+
+    fireEvent.mouseUp(screen.getByTestId('icon'), {button: 1});
+    expect(openSpy).toHaveBeenCalledWith('/test', '_blank', 'noopener');
+    openSpy.mockRestore();
+  });
+
+  it('a modified click that opens a new tab does not fire onRemove', () => {
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+    const handleRemove = vi.fn();
+    render(
+      <Token
+        label="Tag"
+        href="/test"
+        onRemove={handleRemove}
+        icon={<span data-testid="icon">★</span>}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId('icon'), {metaKey: true});
+    fireEvent.mouseUp(screen.getByTestId('icon'), {button: 1});
+    expect(handleRemove).not.toHaveBeenCalled();
+    expect(openSpy).toHaveBeenCalledTimes(2);
+    openSpy.mockRestore();
+  });
+
   it('link without onRemove still renders the anchor as the root', () => {
     const {container} = render(<Token label="Link" href="/test" />);
     expect(container.firstElementChild?.tagName).toBe('A');

@@ -9,6 +9,7 @@
  * @position Core implementation; consumed by index.ts, tested by Token.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
+ * - /packages/core/src/Token/TokenLink.tsx (interactive wrapper for href+onRemove)
  * - /packages/core/src/Token/Token.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/Token/Token.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Token/index.ts (exports if types change)
@@ -32,6 +33,7 @@ import {Icon} from '../Icon';
 import {mergeProps} from '../utils';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import {useInteractiveRole} from '../hooks/useInteractiveRole';
+import {TokenLink} from './TokenLink';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
@@ -411,21 +413,31 @@ export function Token({
     }
 
     // With a remove button, the link cannot be the root — nesting a <button>
-    // inside an <a> is invalid HTML (WCAG 4.1.2). Mirror the onClick branch:
-    // a <span> container with an invisible link and the remove button as
-    // siblings. Container clicks outside the link delegate to it.
-    const handleContainerClick = (e: React.MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (target.closest('button, a')) {
-        return;
-      }
-      e.currentTarget.querySelector('a')?.click();
-    };
-
+    // inside an <a> is invalid HTML (WCAG 4.1.2). Delegate to TokenLink, a
+    // non-presentational wrapper that renders a <span> container with the link
+    // and the remove button as siblings and wires up useClickableContainer so
+    // the whole token surface activates the link (including middle-click and
+    // cmd/ctrl-click to open in a new tab). Token itself stays presentational
+    // (no refs/effects) per the @astryx/presentational-component rule.
     return (
-      <span
+      <TokenLink
         ref={ref}
-        onClick={isDisabled ? undefined : handleContainerClick}
+        href={href as string}
+        isDisabled={isDisabled}
+        LinkComponent={LinkComponent}
+        icon={icon}
+        endContent={endContent}
+        removeButton={removeButton}
+        linkStyleProps={stylex.props(styles.invisibleButton)}
+        labelContent={
+          <span
+            {...stylex.props(
+              styles.label,
+              isLabelHidden && styles.labelHidden,
+            )}>
+            {label}
+          </span>
+        }
         {...sharedProps}
         {...mergeProps(
           themeProps('token', {color, size}),
@@ -440,23 +452,8 @@ export function Token({
           ),
           className,
           style,
-        )}>
-        {icon}
-        <LinkComponent
-          href={href as string}
-          aria-disabled={isDisabled || undefined}
-          {...stylex.props(styles.invisibleButton)}>
-          <span
-            {...stylex.props(
-              styles.label,
-              isLabelHidden && styles.labelHidden,
-            )}>
-            {label}
-          </span>
-        </LinkComponent>
-        {endContent}
-        {removeButton}
-      </span>
+        )}
+      />
     );
   }
 
