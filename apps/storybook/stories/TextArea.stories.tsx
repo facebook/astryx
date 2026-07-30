@@ -4,6 +4,8 @@ import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {TextArea} from '@astryxdesign/core/TextArea';
 import {TextInput} from '@astryxdesign/core/TextInput';
+import {Selector} from '@astryxdesign/core/Selector';
+import {FormLayout} from '@astryxdesign/core/FormLayout';
 import {
   DocumentTextIcon,
   ChatBubbleLeftIcon,
@@ -641,7 +643,8 @@ export const StatusVariantComparison: Story = {
     const [a, setA] = useState('Too short');
     const [b, setB] = useState('Too short');
     return (
-      <div style={{display: 'flex', flexDirection: 'column', gap: 24, width: 320}}>
+      <div
+        style={{display: 'flex', flexDirection: 'column', gap: 24, width: 320}}>
         <TextArea
           label="Attached (default)"
           value={a}
@@ -655,6 +658,51 @@ export const StatusVariantComparison: Story = {
           status={{type: 'error', message: 'Must be at least 50 characters'}}
           statusVariant="detached"
         />
+      </div>
+    );
+  },
+};
+
+// TextArea composed with other inputs in a vertical FormLayout, to validate
+// that its label, control edges, and internal content align with sibling
+// inputs (TextInput, Selector) now that the textarea spans the full container.
+export const VerticalFormAlignment: Story = {
+  name: 'Vertical Form Alignment',
+  render: () => {
+    const [name, setName] = useState('');
+    const [visibility, setVisibility] = useState('public');
+    const [summary, setSummary] = useState('');
+    const [bio, setBio] = useState('Design systems engineer.');
+    return (
+      <div style={{width: 360}}>
+        <FormLayout>
+          <TextInput label="Display name" value={name} onChange={setName} />
+          <Selector
+            label="Visibility"
+            value={visibility}
+            onChange={v => setVisibility(v as string)}
+            options={[
+              {label: 'Public', value: 'public'},
+              {label: 'Followers only', value: 'followers'},
+              {label: 'Private', value: 'private'},
+            ]}
+          />
+          <TextArea
+            label="Summary"
+            value={summary}
+            onChange={setSummary}
+            placeholder="A short one-liner"
+            maxLength={80}
+          />
+          <TextArea
+            label="Bio"
+            value={bio}
+            onChange={setBio}
+            rows={4}
+            description="Tell people a bit about yourself."
+            maxLength={200}
+          />
+        </FormLayout>
       </div>
     );
   },
