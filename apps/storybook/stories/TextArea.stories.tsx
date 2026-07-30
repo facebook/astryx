@@ -485,6 +485,56 @@ export const TooltipWithOptional: Story = {
   },
 };
 
+export const Loading: Story = {
+  render: args => {
+    const [value, setValue] = useState(args.value ?? 'Saving your changes…');
+    return <TextArea {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Description',
+    placeholder: 'Enter a description...',
+    isLoading: true,
+  },
+};
+
+// While busy, the loading spinner takes the end slot; the status icon is
+// suppressed so the two never overlap. Toggle isLoading to see the spinner
+// give way to the status icon in the same anchored position.
+export const LoadingWithStatus: Story = {
+  render: () => {
+    const [value, setValue] = useState('Too short');
+    const [isLoading, setIsLoading] = useState(true);
+    return (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 12,
+          width: 360,
+        }}>
+        <label style={{display: 'flex', alignItems: 'center', gap: 8}}>
+          <input
+            type="checkbox"
+            checked={isLoading}
+            onChange={e => setIsLoading(e.target.checked)}
+          />
+          isLoading
+        </label>
+        <TextArea
+          label="Description"
+          value={value}
+          onChange={setValue}
+          isLoading={isLoading}
+          status={{
+            type: 'error',
+            message: 'Description must be at least 50 characters',
+          }}
+        />
+      </div>
+    );
+  },
+};
+
 export const CombinedFeatures: Story = {
   render: () => {
     const [value, setValue] = useState('');

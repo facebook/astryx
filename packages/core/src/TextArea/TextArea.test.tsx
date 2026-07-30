@@ -335,6 +335,21 @@ describe('TextArea', () => {
       expect(messageElement).toHaveAttribute('id');
       expect(describedBy).toContain(messageElement.id);
     });
+
+    it('shows the loading spinner instead of the status icon while busy', () => {
+      render(
+        <TextArea
+          label="Description"
+          value=""
+          onChange={() => {}}
+          isLoading
+          status={{type: 'error'}}
+        />,
+      );
+      // The busy spinner (role="status") takes the end slot; the status icon
+      // is suppressed so the two never overlap.
+      expect(screen.getByRole('status')).toBeInTheDocument();
+    });
   });
 
   it('renders tooltip info icon when labelTooltip is provided', () => {

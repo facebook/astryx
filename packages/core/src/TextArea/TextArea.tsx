@@ -522,13 +522,14 @@ export function TextArea({
             maxLength != null && styles.textareaWithCounter,
           )}
         />
-        {isBusy && (
+        {isBusy ? (
           <span {...stylex.props(styles.endSlot)}>
             <Spinner size="sm" />
           </span>
-        )}
-        {statusIcon && (
-          <span {...stylex.props(styles.endSlot)}>{statusIcon}</span>
+        ) : (
+          statusIcon && (
+            <span {...stylex.props(styles.endSlot)}>{statusIcon}</span>
+          )
         )}
         {maxLength != null && (
           <div
