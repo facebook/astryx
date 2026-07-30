@@ -62,4 +62,22 @@ describe('docs() dispatcher routing', () => {
       code: 'ERR_UNKNOWN_SECTION',
     });
   }, SLOW);
+
+  it('non-string topic -> ERR_UNKNOWN_TOPIC (not a raw TypeError)', async () => {
+    for (const bad of [123, {}, ['tokens'], true]) {
+      const err = await docs(/** @type {any} */ (bad)).catch(e => e);
+      expect(err).toBeInstanceOf(AstryxError);
+      expect(err.code).toBe('ERR_UNKNOWN_TOPIC');
+    }
+  }, SLOW);
+
+  it('non-string section -> ERR_UNKNOWN_SECTION (not a raw TypeError)', async () => {
+    const {data} = await docs();
+    const topic = data[0].topic;
+    for (const bad of [456, {}, ['x']]) {
+      const err = await docs(topic, /** @type {any} */ (bad)).catch(e => e);
+      expect(err).toBeInstanceOf(AstryxError);
+      expect(err.code).toBe('ERR_UNKNOWN_SECTION');
+    }
+  }, SLOW);
 });

@@ -21,6 +21,8 @@ import {list} from './list/list.mjs';
 import {detail} from './detail/detail.mjs';
 import {doc} from './detail/doc/doc.mjs';
 import {search} from './search/search.mjs';
+import {AstryxError} from '../error.mjs';
+import {ERROR_CODES} from '../../lib/error-codes.mjs';
 
 /**
  * @param {string} [query]
@@ -46,6 +48,17 @@ export async function discover(query, options = {}) {
 
   // No query: the full package list.
   if (!query) return list(packages, {configured});
+
+  // A non-string (truthy) query would crash `.startsWith`/`.indexOf` below
+  // with a raw TypeError (no ERR_* code → downgrades to ERR_UNKNOWN). The CLI
+  // only ever passes a string, but the public API must fail with a code.
+  if (typeof query !== 'string') {
+    throw new AstryxError(
+      `Invalid query "${String(query)}"`,
+      undefined,
+      ERROR_CODES.ERR_INVALID_ARGUMENT,
+    );
+  }
 
   // Scoped package query: @scope/name or @scope/name/Component
   if (query.startsWith('@')) {

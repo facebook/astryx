@@ -712,9 +712,11 @@ export function expand(doc, registry, options = {}) {
       ]
     : [];
 
-  const needsFragment = doc.roots.length + (doc.overlays.length > 0 ? 1 : 0) > 1
-    || doc.roots.length > 1
-    || (doc.overlays.length > 0);
+  // Count top-level elements *after* group/repeat expansion — a single root
+  // item can still emit multiple siblings (`B*3`, `(a + b)`), which need a
+  // fragment wrapper to be valid JSX.
+  const topLevelRoots = emitter.flattenItems(doc.roots).length;
+  const needsFragment = topLevelRoots + (doc.overlays.length > 0 ? 1 : 0) > 1;
 
   const body = [];
   if (needsFragment) {

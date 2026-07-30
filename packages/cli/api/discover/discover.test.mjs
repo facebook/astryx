@@ -80,4 +80,12 @@ describe('discover() dispatcher routing', () => {
     expect(err.code).toMatch(/^ERR_/);
     expect(err.code).not.toBe('ERR_UNKNOWN');
   });
+
+  it('non-string query -> ERR_INVALID_ARGUMENT (not a raw TypeError)', async () => {
+    for (const bad of [123, {}, ['x'], true]) {
+      const err = await discover(/** @type {any} */ (bad)).catch(e => e);
+      expect(err).toBeInstanceOf(AstryxError);
+      expect(err.code).toBe('ERR_INVALID_ARGUMENT');
+    }
+  });
 });

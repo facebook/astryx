@@ -116,6 +116,17 @@ export async function resolveTopicDocs(topic, options = {}) {
   const effectiveLang = lang || (dense ? 'dense' : zh ? 'zh' : null);
   const topics = discoverTopics();
 
+  // A public API caller could pass a non-string topic; `.toLowerCase()` below
+  // would throw a raw TypeError (no ERR_* code → downgrades to ERR_UNKNOWN).
+  // Surface the same stable code the unknown-topic path uses.
+  if (typeof topic !== 'string') {
+    throw new AstryxError(
+      `Unknown topic "${String(topic)}"`,
+      Object.keys(topics).map(t => ({name: t, reason: 'available topic'})),
+      ERROR_CODES.ERR_UNKNOWN_TOPIC,
+    );
+  }
+
   const normalized = topic.toLowerCase();
   if (!topics[normalized]) {
     throw new AstryxError(

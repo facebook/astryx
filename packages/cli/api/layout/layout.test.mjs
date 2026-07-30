@@ -152,6 +152,19 @@ describe('layoutExpand', () => {
     });
   });
 
+  it('wraps top-level repeats and groups in a fragment (valid JSX)', async () => {
+    for (const expr of ['B"Sign in"*3', '(B"a" + B"b")', '(B"a" + B"b")*2']) {
+      const {data} = await layoutExpand(expr);
+      expectValidTsx(data.code);
+      expect(data.code).toContain('<>');
+    }
+  }, SLOW);
+
+  it('wraps a top-level outline repeat block in a fragment', async () => {
+    const {data} = await layoutExpand('repeat 3:\n  B "x"', {form: 'outline'});
+    expectValidTsx(data.code);
+  }, SLOW);
+
   it('emits JSX-safe TSX for text payloads containing < and >', async () => {
     const result = await layoutExpand('Text"5 < 3 and 3 > 1"');
     expectValidTsx(result.data.code);

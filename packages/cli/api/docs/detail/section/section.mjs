@@ -29,8 +29,9 @@ import {resolveTopicDocs} from '../../_adapter.mjs';
 export async function section(topic, sectionName, options = {}) {
   // An empty section name must error, not resolve to the first section via
   // `.includes('')`. The docs() dispatcher routes a falsy section to detail, but
-  // the leaf must be safe on its own.
-  if (!sectionName || !String(sectionName).trim()) {
+  // the leaf must be safe on its own. A non-string would also throw a raw
+  // TypeError below (`.toLowerCase()`) → downgrades to ERR_UNKNOWN.
+  if (typeof sectionName !== 'string' || !sectionName.trim()) {
     throw new AstryxError(
       'A section name is required',
       undefined,
