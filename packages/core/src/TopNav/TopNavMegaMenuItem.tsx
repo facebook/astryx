@@ -193,6 +193,8 @@ export function TopNavMegaMenuItem({
   as,
   tabIndex,
   xstyle,
+  className,
+  style,
 }: TopNavMegaMenuItemProps) {
   const renderMode = useTopNavRenderMode();
   const LinkComponent = useLinkComponent(as);
@@ -217,6 +219,8 @@ export function TopNavMegaMenuItem({
         {...mergeProps(
           themeProps('top-nav-mega-menu-item', {mode: 'drawer'}),
           stylex.props(navItemStyles.item, styles.drawerItem, xstyle),
+          className,
+          style,
         )}>
         {icon && <div {...stylex.props(styles.drawerItemIcon)}>{icon}</div>}
         <div {...stylex.props(styles.drawerItemContent)}>
@@ -244,6 +248,8 @@ export function TopNavMegaMenuItem({
       {...mergeProps(
         themeProps('top-nav-mega-menu-item'),
         focusOutlineProps.focusVisible(styles.desktop, xstyle),
+        className,
+        style,
       )}>
       {icon && <div {...stylex.props(styles.desktopIcon)}>{icon}</div>}
       <div {...stylex.props(styles.desktopContent)}>

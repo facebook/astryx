@@ -104,25 +104,30 @@ Recommends adding `letterSpacing` when `fontSize` is defined (common design patt
 
 **Strict mode only.** Helps catch missing letter-spacing in compact text elements.
 
-### `@astryx/require-xstyle-passthrough`
+### `@astryx/require-baseprops-passthrough`
 
-Ensures a component actually forwards the `xstyle` styling prop it accepts via `BaseProps`.
-A component's props may promise consumers an `xstyle` escape hatch, but the implementation
-can silently drop it in two ways:
+Ensures a component actually forwards the styling props it accepts via `BaseProps`:
+`xstyle`, `className`, and `style`. A component's props may promise consumers these
+escape hatches, but the implementation can silently drop them:
 
-- **Unused** — `xstyle` is destructured but never referenced, so the override is dropped.
-- **Not forwarded** — `xstyle` is neither destructured nor threaded anywhere. Because
-  `xstyle` is a StyleX style object (not a DOM attribute), it cannot ride a `{...rest}`
-  spread onto a native element — it renders inert — and with no rest at all it is dropped.
+- **Unused** — a styling prop is destructured but never referenced, so the override is dropped.
+- **Not forwarded** — a styling prop the type promises is never destructured and never reaches
+  the root element.
 
-The rule also flags `className`/`style` when they are destructured but left unused (these
-*can* survive a rest spread, so their leak case is not flagged). Fix by threading `xstyle`
-into the root `stylex.props(...)` / `mergeProps(...)` call, or forwarding it to a composed
-Astryx component via `xstyle={...}` / a rest spread onto that component.
+Forwarding paths differ by what each prop *is*:
+
+- `className` and `style` are real DOM attributes, so they survive a `{...rest}` spread onto
+  the root element (native or composed) — that counts as forwarding them.
+- `xstyle` is a StyleX style object, **not** a DOM attribute. It cannot ride a `{...rest}`
+  spread onto a native element (it renders inert); the only valid un-destructured path is a
+  rest spread onto a composed Astryx component, which re-accepts `xstyle` via its own `BaseProps`.
+
+Fix by threading each prop into the root `mergeProps(...)` / `stylex.props(...)` call, or
+forwarding to a composed component.
 
 Scoped to public components (those with a `.displayName`). Opt out by omitting the prop from
-the type, e.g. `Omit<BaseProps, 'xstyle'>` (as `VisuallyHidden` does), or mark an
-intentionally-unused binding with a leading underscore (`className: _className`).
+the type, e.g. `Omit<BaseProps, 'xstyle' | 'className' | 'style'>` (as `VisuallyHidden` does),
+or mark an intentionally-unused binding with a leading underscore (`className: _className`).
 
 ## Usage
 
