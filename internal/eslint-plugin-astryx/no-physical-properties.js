@@ -15,11 +15,11 @@
  *      (e.g. `textAlign: 'left'`, `float: 'right'`, `clear: 'left'`). The
  *      suggested fix replaces only the value; the key is left alone.
  *
- * SEVERITY: shipped at `warn` in BOTH the `strict` and `recommended` tiers
- *   (see index.js). The core package still has known un-migrated Phase-4
- *   physical properties (Calendar radii, Slider positioning, Table gradients)
- *   that would break CI if this were an `error`. Ship at warn until RTL Phase 4
- *   (Calendar/Slider/Table) migration lands; flip to error afterward.
+ * SEVERITY: shipped at `error` in BOTH the `strict` and `recommended` tiers
+ *   (see index.js). The RTL physical→logical migration is complete across the
+ *   core package (Calendar radii, Slider positioning, Table gradients, and the
+ *   final component sweep all landed), so this rule now gates against
+ *   regressions instead of merely warning.
  *
  * AUTOFIX: this rule is fixable (`meta.fixable: 'code'`).
  *   - VALUE-BASED fixes are always safe: only the value literal is replaced.

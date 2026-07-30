@@ -223,9 +223,9 @@ const dynamicStyles = stylex.create({
     // When position is set, disable auto margin and use fixed positioning
     margin: 0,
     top: top !== undefined ? formatPosition(top) : 'auto',
-    right: right !== undefined ? formatPosition(right) : 'auto',
+    insetInlineEnd: right !== undefined ? formatPosition(right) : 'auto',
     bottom: bottom !== undefined ? formatPosition(bottom) : 'auto',
-    left: left !== undefined ? formatPosition(left) : 'auto',
+    insetInlineStart: left !== undefined ? formatPosition(left) : 'auto',
   }),
 });
 

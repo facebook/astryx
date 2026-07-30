@@ -215,7 +215,7 @@ const dynamicStyles = stylex.create({
   }),
   statusPosition: (size: number) => ({
     bottom: size * CIRCLE_EDGE_OFFSET_RATIO,
-    right: size * CIRCLE_EDGE_OFFSET_RATIO,
+    insetInlineEnd: size * CIRCLE_EDGE_OFFSET_RATIO,
     transform: 'translate(50%, 50%)',
   }),
 });

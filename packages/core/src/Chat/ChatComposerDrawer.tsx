@@ -104,8 +104,8 @@ const styles = stylex.create({
     // opaque or translucent.
     backgroundColor: colorVars['--color-background-surface'],
     backgroundImage: `linear-gradient(${colorVars['--color-background-muted']}, ${colorVars['--color-background-muted']})`,
-    borderTopLeftRadius: radiusVars['--radius-chat'],
-    borderTopRightRadius: radiusVars['--radius-chat'],
+    borderStartStartRadius: radiusVars['--radius-chat'],
+    borderStartEndRadius: radiusVars['--radius-chat'],
   },
 
   // Toggle row — both the bar handle and badge+label live in the

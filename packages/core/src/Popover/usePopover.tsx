@@ -47,7 +47,7 @@ const styles = stylex.create({
   closeButtonWrapper: {
     position: 'absolute',
     bottom: 0,
-    left: '50%',
+    insetInlineStart: '50%',
     transform: 'translate(-50%, 100%)',
     zIndex: 1,
     // sr-only by default
