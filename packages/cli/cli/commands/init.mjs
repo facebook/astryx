@@ -15,7 +15,7 @@
  */
 
 import {init} from '../../api/init/init.mjs';
-import {humanLog} from '../../lib/json.mjs';
+import {logger} from '../../api/logger.mjs';
 import {cliError} from '../../lib/cli-error.mjs';
 
 /**
@@ -31,12 +31,12 @@ export function registerInit(program) {
     .option('--agent <tool>', 'Target AI tool for agent docs: claude, cursor, codex, hermes, all')
     .option('--agent-docs-path <path...>', 'Explicit file path(s) for agent docs')
     .action(async (/** @type {import('../../api/init/init.mjs').InitOptions} */ options) => {
-      // Plain logger: init's output is flat humanLog lines (stdout) + raw
-      // console.error (stderr), never the clack-style term-log.
-      /** @type {import('../../api/init/init.mjs').InitLogger} */
-      const logger = {log: humanLog, error: m => console.error(m)};
+      // init has no --json mode: enable human output (log → stdout via humanLog,
+      // warn/error → stderr). humanLog still self-suppresses under a global
+      // --json flag, so a JSON envelope can never be corrupted.
+      logger.setSilent(false);
       try {
-        const receipt = await init(options, {cwd: process.cwd(), logger});
+        const receipt = await init(options, {cwd: process.cwd()});
         // A path-safety failure already printed its error but the run
         // continued; reflect it in the exit code (historical soft-error policy).
         if (receipt.type === 'init.run' && receipt.data.docsError?.kind === 'path-safety') {

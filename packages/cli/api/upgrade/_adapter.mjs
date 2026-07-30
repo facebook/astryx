@@ -10,7 +10,7 @@
  * codemod runners. Leaves call these helpers and PROJECT the results into their
  * one response type; the dispatcher (`upgrade.mjs`) routes.
  *
- * Progress is emitted through an injected `logger` (silent by default), so the
+ * Progress is emitted through the shared `logger` (silent by default), so the
  * CLI keeps its exact output while a programmatic caller stays quiet.
  */
 
@@ -31,7 +31,7 @@ import {formatCliCommand} from '../../utils/package-manager.mjs';
 import {Project} from '../../lib/project.mjs';
 import {loadIntegrations} from '../../lib/integrations.mjs';
 import {warnOnIntegrationIssues} from '../../lib/integration-warnings.mjs';
-import {noopLogger} from '../../lib/term-log.mjs';
+import {logger} from '../logger.mjs';
 
 const execFileAsync = promisify(execFile);
 
@@ -97,9 +97,8 @@ export function uniqueFiles(files) {
  * Dry-run PREVIEWS (buildCommand still called, so a throw fails); apply executes.
  * @param {import('../../types/config').PostCodemodHook[]} hooks
  * @param {{packageDir: string, files: string[], apply: boolean}} context
- * @param {import('../../lib/term-log.mjs').CliLogger} logger
  */
-export async function runPostCodemodHooks(hooks, context, logger) {
+export async function runPostCodemodHooks(hooks, context) {
   if (!hooks || hooks.length === 0) return;
   const {packageDir, files, apply} = context;
 
@@ -114,13 +113,13 @@ export async function runPostCodemodHooks(hooks, context, logger) {
 
     const cmd = await hook.buildCommand({packageDir, files});
     if (!cmd) {
-      logger.info(`Post-codemod hook ${label} produced no command; skipping.`);
+      logger.log(`Post-codemod hook ${label} produced no command; skipping.`);
       continue;
     }
 
     if (!apply) {
       const preview = [cmd.command, ...(cmd.args ?? [])].join(' ');
-      logger.info(`Post-codemod hook ${label} (dry run): ${preview}`);
+      logger.log(`Post-codemod hook ${label} (dry run): ${preview}`);
       continue;
     }
 
@@ -136,7 +135,7 @@ export async function runPostCodemodHooks(hooks, context, logger) {
         env: {...process.env, ...(cmd.options?.env ?? {})},
       }),
     );
-    logger.success(`Post-codemod hook ${label} completed.`);
+    logger.log(`✓ Post-codemod hook ${label} completed.`);
   }
 }
 
@@ -145,10 +144,10 @@ export async function runPostCodemodHooks(hooks, context, logger) {
  * bump. The block documents the INSTALLED library, so it must be re-synced on
  * EVERY upgrade path, including the no-codemods short-circuits (#4168).
  *
- * @param {{cwd: string, installedVersion: string, apply: boolean, logger?: import('../../lib/term-log.mjs').CliLogger}} ctx
+ * @param {{cwd: string, installedVersion: string, apply: boolean}} ctx
  * @returns {import('./upgrade.type.mjs').AgentDocsSummary}
  */
-export function refreshAgentDocs({cwd, installedVersion, apply, logger = noopLogger}) {
+export function refreshAgentDocs({cwd, installedVersion, apply}) {
   const inspection = inspectAgentDocs(cwd, installedVersion);
   /** @type {import('./upgrade.type.mjs').AgentDocsSummary} */
   const summary = {
@@ -192,8 +191,8 @@ export function refreshAgentDocs({cwd, installedVersion, apply, logger = noopLog
     summary.files = written;
     if (summary.refreshed) {
       summary.action = 'refreshed';
-      logger.success(
-        `Agent docs refreshed → v${installedVersion} (from ${fromLabel}): ${written.join(', ')}`,
+      logger.log(
+        `✓ Agent docs refreshed → v${installedVersion} (from ${fromLabel}): ${written.join(', ')}`,
       );
     } else {
       summary.action = 'error';
@@ -242,26 +241,26 @@ export async function getCoreVersionManifests(from, to) {
 
 /**
  * Ensure jscodeshift is available before running codemods.
- * @param {{installDeps?: boolean, logger?: import('../../lib/term-log.mjs').CliLogger}} [options]
+ * @param {{installDeps?: boolean}} [options]
  * @returns {Promise<boolean>}
  */
-export async function ensureCodemodDeps({installDeps, logger = noopLogger} = {}) {
-  return ensureJscodeshift({installDeps, silent: logger === noopLogger});
+export async function ensureCodemodDeps({installDeps} = {}) {
+  return ensureJscodeshift({installDeps, silent: logger.silent});
 }
 
 /**
  * Run the CORE registry codemods. Runs BEFORE the config is loaded so a core
  * CONFIG codemod can repair a config the strict loader would otherwise reject.
  * @param {CoreVersionManifest[]} versionManifests
- * @param {{apply: boolean, path: string, codemod?: string, skipCodemods: Set<string>, logger?: import('../../lib/term-log.mjs').CliLogger}} options
+ * @param {{apply: boolean, path: string, codemod?: string, skipCodemods: Set<string>}} options
  */
-export async function runCoreCodemods(versionManifests, {apply, path: srcPath, codemod, skipCodemods, logger = noopLogger}) {
+export async function runCoreCodemods(versionManifests, {apply, path: srcPath, codemod, skipCodemods}) {
   return runCodemods(versionManifests, {
     apply,
     path: srcPath,
     codemod,
     skipCodemods,
-    silent: logger === noopLogger,
+    silent: logger.silent,
   });
 }
 
@@ -288,12 +287,11 @@ export async function loadProjectContext(cwd, extraIntegrationSpecs = []) {
  * nudge must not fail the upgrade) and is suppressed for --json/programmatic
  * callers (the silent logger).
  * @param {Array<import('../../lib/integrations.mjs').LoadedIntegration>} integrations
- * @param {import('../../lib/term-log.mjs').CliLogger} [logger]
  * @returns {Promise<void>}
  */
-export async function warnIntegrationIssues(integrations, logger = noopLogger) {
+export async function warnIntegrationIssues(integrations) {
   try {
-    await warnOnIntegrationIssues(integrations, {json: logger === noopLogger});
+    await warnOnIntegrationIssues(integrations, {json: logger.silent});
   } catch {
     // Never let the nudge break the upgrade.
   }
@@ -333,9 +331,9 @@ export async function selectIntegrationCodemodsFor(integrations, from, to) {
 /**
  * Run the file-based INTEGRATION codemods (config codemods first, then code).
  * @param {Array<{version: string, codemods: import('../../types/codemod').CodemodEntry[]}>} versionGroups
- * @param {{apply: boolean, path: string, codemod?: string, skipCodemods: Set<string>, logger?: import('../../lib/term-log.mjs').CliLogger}} options
+ * @param {{apply: boolean, path: string, codemod?: string, skipCodemods: Set<string>}} options
  */
-export async function runIntegrationCodemodsStep(versionGroups, {apply, path: srcPath, codemod, skipCodemods, logger = noopLogger}) {
+export async function runIntegrationCodemodsStep(versionGroups, {apply, path: srcPath, codemod, skipCodemods}) {
   const jscodeshift = (await import('jscodeshift')).default;
   return runIntegrationCodemods(versionGroups, {
     apply,
@@ -343,6 +341,6 @@ export async function runIntegrationCodemodsStep(versionGroups, {apply, path: sr
     codemod,
     skipCodemods,
     jscodeshift,
-    silent: logger === noopLogger,
+    silent: logger.silent,
   });
 }

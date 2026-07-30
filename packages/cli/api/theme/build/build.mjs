@@ -13,7 +13,7 @@
  *
  * It performs the writes and returns a `theme.build` receipt, or `null` when
  * the theme produced no CSS (nothing to build). Errors throw AstryxError (with
- * a stable code). Human progress is emitted through the injected `logger`
+ * a stable code). Human progress is emitted through the shared `logger`
  * (silent by default), so the CLI keeps its exact output while a programmatic
  * caller stays quiet.
  */
@@ -29,6 +29,7 @@ import {
 } from '../../../utils/path-safety.mjs';
 import {ERROR_CODES} from '../../../lib/error-codes.mjs';
 import {AstryxError} from '../../error.mjs';
+import {logger} from '../../logger.mjs';
 
 // Import shared theme processing from core. `astryx theme build` MUST produce the
 // exact same CSS as the `<Theme>` runtime, so it has exactly one generation
@@ -754,34 +755,18 @@ function validatePrivateVars(themeDef) {
 }
 
 /**
- * @typedef {object} ThemeBuildLogger
- * @property {(m?: string) => void} log   - stdout (install/receipt lines)
- * @property {(m?: string) => void} warn  - stderr (component-override warnings)
- * @property {(m?: string) => void} error - stderr (private-var errors)
- */
-
-/**
- * No-op logger — the default so a programmatic caller stays silent. The CLI
- * injects a real logger (humanLog / console.warn / console.error) in human
- * mode, and this same no-op shape in --json mode so human chatter never
- * corrupts the single JSON envelope.
- * @type {ThemeBuildLogger}
- */
-const noopLogger = {log() {}, warn() {}, error() {}};
-
-/**
  * Compile a defineTheme file to CSS + JS + .d.ts (and an optional
  * `.variants.d.ts`). Performs the writes and returns a `theme.build` receipt,
  * or `null` when the theme produced no CSS (nothing to build). Throws
- * AstryxError (stable code) on failure. Progress is emitted through `logger`
- * (silent by default).
+ * AstryxError (stable code) on failure. Progress is emitted through the shared
+ * `logger` (silent by default).
  *
  * @param {string} file - Theme file path, resolved against `cwd`.
  * @param {{out?: string}} [options] - `out` overrides the output CSS path.
- * @param {{cwd?: string, logger?: ThemeBuildLogger}} [ctx]
+ * @param {{cwd?: string}} [ctx]
  * @returns {Promise<import('../theme.type.mjs').ThemeBuildResponse | null>}
  */
-export async function themeBuild(file, options = {}, {cwd = process.cwd(), logger = noopLogger} = {}) {
+export async function themeBuild(file, options = {}, {cwd = process.cwd()} = {}) {
   const filePath = path.resolve(cwd, file);
 
   if (!fs.existsSync(filePath)) {

@@ -39,6 +39,13 @@ export {
   summarizeIssues,
 } from './integration/validate-integration.mjs';
 export {AstryxError} from './error.mjs';
+// The one shared logger: the `logger` instance side-effecting commands write
+// through, plus its generated `Logger` type. Part of the public surface so an
+// embedder can enable/inspect output.
+export {logger} from './logger.mjs';
+/**
+ * @typedef {import('./logger.mjs').Logger} Logger
+ */
 
 // ── Types (re-exported from each command's colocated `.type.mjs`) ─────
 // Runtime no-ops (the .type.mjs files are `export {}`); tsc carries these

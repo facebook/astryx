@@ -13,6 +13,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
 import {init, getNextSteps} from './init.mjs';
+import {logger} from '../logger.mjs';
 import {AstryxError} from '../error.mjs';
 import {ERROR_CODES} from '../../lib/error-codes.mjs';
 
@@ -135,11 +136,19 @@ describe('init() — logger', () => {
     expect(err).toEqual([]);
   });
 
-  it('emits the install line + full next-steps through the injected logger', async () => {
+  it('emits the install line + full next-steps through the shared logger', async () => {
     /** @type {string[]} */
     const lines = [];
-    const logger = {log: m => lines.push(m ?? ''), error: m => lines.push(`ERR:${m}`)};
-    await init({}, {cwd: tmpDir, logger});
+    const logSpy = vi.spyOn(console, 'log').mockImplementation((...a) => lines.push(a.join(' ')));
+    const errSpy = vi.spyOn(console, 'error').mockImplementation((...a) => lines.push(`ERR:${a.join(' ')}`));
+    logger.setSilent(false);
+    try {
+      await init({}, {cwd: tmpDir});
+    } finally {
+      logger.setSilent(true);
+      logSpy.mockRestore();
+      errSpy.mockRestore();
+    }
     const text = lines.join('\n');
     expect(text).toContain('✓ AI agent docs installed → AGENTS.md');
     expect(text).toContain('  Next steps:');

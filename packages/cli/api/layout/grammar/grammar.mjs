@@ -9,7 +9,7 @@
  * @position api — leaf over lib/xle/registry
  */
 
-import {buildRegistry, ALIAS_TABLE} from '../../../lib/xle/registry.mjs';
+import {buildRegistry} from '../../../lib/xle/registry.mjs';
 
 /**
  * `astryx layout grammar` — the agent cheatsheet, with the alias table
@@ -84,5 +84,3 @@ ALIASES (full component names always valid; XDS prefix optional)
 
   return {type: 'layout.grammar', data: {text, aliases: Object.fromEntries(registry.aliases)}};
 }
-
-export {ALIAS_TABLE};

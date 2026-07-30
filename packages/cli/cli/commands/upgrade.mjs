@@ -13,7 +13,7 @@
  */
 
 import {jsonOut, jsonError} from '../../lib/json.mjs';
-import {termLogger, noopLogger} from '../../lib/term-log.mjs';
+import {logger} from '../../api/logger.mjs';
 import {AstryxError} from '../../api/error.mjs';
 import {upgrade as upgradeApi} from '../../api/upgrade/upgrade.mjs';
 
@@ -41,12 +41,12 @@ export function registerUpgrade(program) {
        */
       async options => {
         const json = program.opts().json || false;
-        const logger = json ? noopLogger : termLogger;
+        logger.setSilent(json);
 
         /** @type {import('../../api/upgrade/upgrade.type.mjs').UpgradeListResponse | import('../../api/upgrade/upgrade.type.mjs').UpgradeStatusResponse | import('../../api/upgrade/upgrade.type.mjs').UpgradeRunResponse} */
         let result;
         try {
-          result = await upgradeApi(options, {cwd: process.cwd(), logger});
+          result = await upgradeApi(options, {cwd: process.cwd()});
         } catch (e) {
           // Handled failures throw AstryxError: --json emits the structured
           // envelope (byte-identical to the old inline jsonError) + exits 1;
