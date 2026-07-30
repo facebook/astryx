@@ -70,9 +70,9 @@ export default defineConfig(
       "!packages/cli/bin/**/*.mjs",
       "**/*.test-violations.tsx",
       "apps/example-nextjs/*.js",
-      // Generated declaration files (e.g. the CLI's committed `./api` type
-      // surface emitted from JSDoc by `gen:api-types`). Like `**/*.d.ts`, these
-      // are build artifacts — not hand-authored source to lint.
+      // Generated declaration files (e.g. the CLI's `./api` type surface emitted
+      // from JSDoc by `sync:api-types` at prepack). Like `**/*.d.ts`, these are
+      // build artifacts — not hand-authored source to lint.
       "**/*.d.mts",
       "**/next-env.d.ts",
       "**/.next/**",
