@@ -109,14 +109,17 @@ fs.writeFileSync(
     {
       // Inherit the repo's lib/target/@types/node. `bundler` resolution is the
       // modern default this package targets; skipLibCheck OFF so the packed
-      // declarations are fully checked. Module resolution finds the throwaway
-      // node_modules beside this tsconfig automatically.
+      // declarations are fully checked. `source` condition lets `@astryxdesign/core`
+      // subpaths (e.g. /authoring) resolve from core's src without a build — the
+      // `test` job doesn't build, and src/dist declare identical types (dist is
+      // compiled from src). A published consumer resolves the same types via dist.
       extends: '../../../tsconfig.json',
       compilerOptions: {
         noEmit: true,
         skipLibCheck: false,
         module: 'esnext',
         moduleResolution: 'bundler',
+        customConditions: ['source'],
         types: ['node'],
       },
       files: ['scenario.ts'],
