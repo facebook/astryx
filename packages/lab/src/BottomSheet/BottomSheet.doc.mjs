@@ -46,11 +46,11 @@ export const docs = {
     },
   ],
   usage: {
-    description: 'A mobile touch surface for filters, actions, and detail views that should rise from the bottom of the screen. The sheet is modal: focus is trapped while open and restored to the opener on close, and Escape dismisses — so the swipe gesture always has a keyboard equivalent. Content padding clears the home indicator via env(safe-area-inset-bottom).',
+    description: 'A mobile touch surface for filters, actions, and detail views that should rise from the bottom of the screen. The sheet is modal: focus is trapped while open and restored to the opener on close, and Escape dismisses, so the swipe gesture always has a keyboard equivalent. Content padding clears the home indicator via env(safe-area-inset-bottom).',
     bestPractices: [
       { guidance: true, description: 'Use for mobile-first surfaces (filters, share sheets, quick actions) where the content should rise from the bottom edge.' },
       { guidance: true, description: 'Keep the caller as the source of truth: derive isOpen from state and clear it in onOpenChange.' },
-      { guidance: true, description: "Pick a height that fits the content — 'auto' for short sheets, 'medium'/'tall' for lists and forms." },
+      { guidance: true, description: "Pick a height that fits the content: 'auto' for short sheets, 'medium'/'tall' for lists and forms." },
       { guidance: false, description: 'Use a BottomSheet for desktop inspectors or master-detail; use Drawer (side="end", hasScrim={false}) instead.' },
     ],
   },
