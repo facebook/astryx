@@ -9,7 +9,7 @@ export const docs = {
     {
       name: 'options',
       type: 'UseSheetGesturesOptions',
-      description: 'isOpen and onDismiss. Internal to BottomSheet — not exported from the lab entry point.',
+      description: 'isOpen and onDismiss. Internal to BottomSheet; not exported from the lab entry point.',
       required: true,
     },
   ],
@@ -25,7 +25,7 @@ export const docs = {
       'Drag-to-dismiss machinery for the bottom sheet. Tracks a pointer drag down the block axis, translates the sliding surface live, and on release either dismisses (past a distance or velocity threshold) or springs back to fully open. Pointer-events based (one path for mouse + touch), SSR-safe, and respects prefers-reduced-motion. Escape (routed by the owning dialog) provides the keyboard equivalent of the swipe.',
     bestPractices: [
       { guidance: true, description: 'Spread handleProps on the grab-handle element and contentProps on the sliding surface (the panel that carries the translate).' },
-      { guidance: false, description: 'Wire onDismiss to anything other than the owning sheet close — it fires when a swipe crosses the dismiss threshold.' },
+      { guidance: false, description: 'Wire onDismiss to anything other than the owning sheet close; it fires when a swipe crosses the dismiss threshold.' },
     ],
   },
 };
