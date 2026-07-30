@@ -10,7 +10,11 @@
  * - Premultiplied alpha setup (correct compositing over page)
  * - Shader compilation helpers
  * - Smoothstep circle fragment for crisp point sprites
+ * - Hex-to-GL color conversion via the shared @astryxdesign/core/utils/color
+ *   parsers (fallback instead of NaN)
  */
+
+import {parseHex, toGLFloats} from '@astryxdesign/core/utils';
 
 /** Compile a WebGL shader, returns null on failure */
 export function compileShader(
@@ -56,10 +60,12 @@ export function createProgram(
   return p;
 }
 
-/** Parse hex (#RRGGBB) to [r, g, b] floats 0-1 */
+/**
+ * Parse a hex color (`#rgb`, `#rgba`, `#rrggbb`, `#rrggbbaa`) to [r, g, b]
+ * floats 0-1. Unparseable input returns a neutral fallback instead of NaN.
+ */
 export function hexToGL(hex: string): [number, number, number] {
-  const n = parseInt(hex.replace('#', ''), 16);
-  return [(n >> 16) / 255, ((n >> 8) & 0xff) / 255, (n & 0xff) / 255];
+  return toGLFloats(parseHex(hex));
 }
 
 /** DPR with supersampling for crisp circles */

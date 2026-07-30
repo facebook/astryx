@@ -5,7 +5,7 @@
  *
  * Two distribution modes:
  * - Unbuilt: Theme generates CSS and injects a <style> tag at runtime
- * - Built: `npx astryx theme build` pre-compiles to a CSS file; Theme just
+ * - Built: `astryx theme build` pre-compiles to a CSS file; Theme just
  *   sets the data-astryx-theme attribute
  *
  * Token values can be:

@@ -8,11 +8,17 @@ export const docs = {
   displayName: 'Dropdown Menu Item',
   isHiddenFromOverview: true,
   description: 'Helper component for custom item rendering with consistent styling.',
+  playground: {
+    // Standalone DropdownMenuItem has no required props, so the properties-tab
+    // preview renders an empty row without seeded content. Seed a label and
+    // description so the preview is meaningful.
+    defaults: {label: 'Edit', description: 'Modify this item'},
+  },
   props: [
     {
       name: 'icon',
       type: 'IconType',
-      description: 'Icon to display before the label. See `npx astryx docs icons` for valid semantic names.',
+      description: 'Icon to display before the label. See `astryx docs icons` for valid semantic names.',
     },
     {
       name: 'label',

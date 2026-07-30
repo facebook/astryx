@@ -216,6 +216,66 @@ describe('Stepper', () => {
     );
   });
 
+  it('keeps the progress bar progress-colored regardless of status, recoloring only the indicator', () => {
+    // Baseline: a completed step with no status.
+    const baseline = render(
+      <Stepper activeStep={1}>
+        <Step step={0} label="A" data-testid="base" />
+      </Stepper>,
+    );
+    const baseStep = baseline.getByTestId('base');
+    const baseBar = baseStep.querySelector('.astryx-step-bar') as HTMLElement;
+    const baseIndicator = baseStep.querySelector('svg')
+      ?.parentElement as HTMLElement;
+
+    // Same completed step, now with a semantic status.
+    const themed = render(
+      <Stepper activeStep={1}>
+        <Step step={0} label="A" status="error" data-testid="themed" />
+      </Stepper>,
+    );
+    const themedStep = themed.getByTestId('themed');
+    const themedBar = themedStep.querySelector(
+      '.astryx-step-bar',
+    ) as HTMLElement;
+    const themedIndicator = themedStep.querySelector('svg')
+      ?.parentElement as HTMLElement;
+
+    // Bar coloring must be identical — status must NOT recolor the bar
+    // (always --color-accent when filled / --color-border when incomplete).
+    expect(themedBar.className).toBe(baseBar.className);
+
+    // The indicator, however, must pick up the status color.
+    expect(themedIndicator.className).not.toBe(baseIndicator.className);
+  });
+
+  it('keeps an incomplete step bar border-colored regardless of status', () => {
+    // Baseline: a not-started step with no status.
+    const baseline = render(
+      <Stepper activeStep={0}>
+        <Step step={0} label="A" data-testid="base-active" />
+        <Step step={1} label="B" data-testid="base" />
+      </Stepper>,
+    );
+    const baseBar = baseline
+      .getByTestId('base')
+      .querySelector('.astryx-step-bar') as HTMLElement;
+
+    // Same not-started step, now with a semantic status.
+    const themed = render(
+      <Stepper activeStep={0}>
+        <Step step={0} label="A" data-testid="themed-active" />
+        <Step step={1} label="B" status="warning" data-testid="themed" />
+      </Stepper>,
+    );
+    const themedBar = themed
+      .getByTestId('themed')
+      .querySelector('.astryx-step-bar') as HTMLElement;
+
+    // Incomplete bar stays border-colored — status must not recolor it.
+    expect(themedBar.className).toBe(baseBar.className);
+  });
+
   it('does not set a status data attribute when status is unset', () => {
     render(
       <Stepper activeStep={0}>
@@ -277,5 +337,79 @@ describe('Stepper', () => {
       </Stepper>,
     );
     expect(screen.getByTestId('pay-icon')).toBeInTheDocument();
+  });
+
+  it('renders a distinct indicator glyph per status on non-current steps', () => {
+    // All steps completed (activeStep past them) so none is the current step.
+    render(
+      <Stepper activeStep={4}>
+        <Step step={0} label="A" status="success" data-testid="s-success" />
+        <Step step={1} label="B" status="warning" data-testid="s-warning" />
+        <Step step={2} label="C" status="error" data-testid="s-error" />
+        <Step step={3} label="D" data-testid="s-plain" />
+      </Stepper>,
+    );
+
+    const indicatorClass = (testid: string) =>
+      (
+        screen.getByTestId(testid).querySelector('svg')
+          ?.parentElement as HTMLElement
+      ).className;
+
+    // Each status renders an svg indicator (no number badge)...
+    expect(screen.getByTestId('s-success').querySelector('svg')).toBeTruthy();
+    expect(screen.getByTestId('s-warning').querySelector('svg')).toBeTruthy();
+    expect(screen.getByTestId('s-error').querySelector('svg')).toBeTruthy();
+
+    // ...and each status tints the indicator differently from the others and
+    // from the plain completed (accent) step.
+    const classes = new Set([
+      indicatorClass('s-success'),
+      indicatorClass('s-warning'),
+      indicatorClass('s-error'),
+      indicatorClass('s-plain'),
+    ]);
+    expect(classes.size).toBe(4);
+  });
+
+  it('lets the current step keep its ring indicator regardless of status', () => {
+    // A current step with no status.
+    const plain = render(
+      <Stepper activeStep={0}>
+        <Step step={0} label="A" data-testid="plain" />
+      </Stepper>,
+    );
+    const plainIndicator = (
+      plain.getByTestId('plain').querySelector('svg')
+        ?.parentElement as HTMLElement
+    ).className;
+
+    // The same current step, now with status="success": the indicator must be
+    // unchanged (the current-step ring replaces any status glyph).
+    const themed = render(
+      <Stepper activeStep={0}>
+        <Step step={0} label="A" status="success" data-testid="themed" />
+      </Stepper>,
+    );
+    const themedIndicator = (
+      themed.getByTestId('themed').querySelector('svg')
+        ?.parentElement as HTMLElement
+    ).className;
+
+    expect(themedIndicator).toBe(plainIndicator);
+  });
+
+  it('replaces the number badge with a status glyph on not-started steps', () => {
+    render(
+      <Stepper activeStep={0}>
+        <Step step={0} label="A" data-testid="current" />
+        <Step step={1} label="B" status="error" data-testid="future" />
+      </Stepper>,
+    );
+    const future = screen.getByTestId('future');
+    // The not-started step would normally show its number ("2"); with a status
+    // glyph it shows an icon instead.
+    expect(future.textContent).not.toContain('2');
+    expect(future.querySelector('svg')).toBeTruthy();
   });
 });

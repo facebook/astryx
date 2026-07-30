@@ -9,7 +9,7 @@
  * SYNC: When modified, update /packages/vega/README.md
  */
 
-import React, {useEffect, useRef} from 'react';
+import React, {useEffect, useEffectEvent, useRef} from 'react';
 import {parse, View} from 'vega';
 import {compile} from 'vega-lite';
 import {parseSchema} from './schema';
@@ -36,8 +36,9 @@ import type {VegaChartProps, VegaSpec, VegaLiteSpec} from './types';
  * it when `spec`, `parseConfig`, `parseOptions`, or `viewOptions` changes,
  * and calls `view.finalize()` on cleanup to release all runtime resources.
  *
- * Callbacks (`onReady`, `onError`) are stable across renders via refs --
- * you don't need to memoize them. Pass stable references (or `useMemo`)
+ * Callbacks (`onReady`, `onError`) are non-reactive Effect Events -- they
+ * always see the latest props and never re-run the View lifecycle, so you
+ * don't need to memoize them. Pass stable references (or `useMemo`)
  * for `parseConfig`, `parseOptions`, `viewOptions`, and `data` to avoid
  * unnecessary re-renders.
  *
@@ -80,17 +81,21 @@ export function VegaChart({
   className,
   style,
   ref,
-  onReady,
-  onError,
+  onReady: onReadyProp,
+  onError: onErrorProp,
   ...props
 }: VegaChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Keep callbacks in refs so they don't need to be in the dep array.
-  const onReadyRef = useRef(onReady);
-  const onErrorRef = useRef(onError);
-  onReadyRef.current = onReady;
-  onErrorRef.current = onError;
+  // The Effect fires these callbacks without treating them as reactive
+  // dependencies, so the View isn't torn down and rebuilt when a parent
+  // passes fresh inline callbacks on every render.
+  const onReady = useEffectEvent((view: View) => {
+    onReadyProp?.(view);
+  });
+  const onError = useEffectEvent((error: Error) => {
+    onErrorProp?.(error);
+  });
 
   useEffect(() => {
     const container = containerRef.current;
@@ -103,9 +108,7 @@ export function VegaChart({
 
     const fail = (err: unknown) => {
       if (!cancelled) {
-        onErrorRef.current?.(
-          err instanceof Error ? err : new Error(String(err)),
-        );
+        onError(err instanceof Error ? err : new Error(String(err)));
       }
     };
 
@@ -149,7 +152,7 @@ export function VegaChart({
             return;
           }
           if (view) {
-            onReadyRef.current?.(view);
+            onReady(view);
           }
         })
         .catch(fail);

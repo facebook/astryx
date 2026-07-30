@@ -166,7 +166,7 @@ const styles = stylex.create({
   indeterminateMark: {
     display: 'none',
     backgroundColor: colorVars['--color-on-accent'],
-    borderRadius: 1,
+    borderRadius: radiusVars['--radius-full'],
   },
   indeterminateMarkVisible: {
     display: 'block',
@@ -198,12 +198,12 @@ const wrapperSizeStyles = stylex.create({
 
 const checkboxSizeStyles = stylex.create({
   sm: {
-    width: 18,
-    height: 18,
+    width: 20,
+    height: 20,
   },
   md: {
-    width: 22,
-    height: 22,
+    width: 24,
+    height: 24,
   },
 });
 

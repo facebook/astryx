@@ -196,7 +196,7 @@ export const neutralTheme = defineTheme({
     '--color-warning-muted': ['#f8da9d', '#deb4333D'],
 
     // Border
-    '--color-border': ['#ebebeb', '#FFFFFF1A'],
+    '--color-border': ['#00000014', '#FFFFFF1A'],
     '--color-border-emphasized': ['#d4d4d4', '#525252'],
 
     // Effects

@@ -13,6 +13,7 @@ import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {TestIcon} from '../__tests__/TestIcon';
+import {InputGroup} from '../InputGroup';
 import {TextInput} from './TextInput';
 
 // Mock showPopover/hidePopover since jsdom does not implement them. Used by the
@@ -227,6 +228,26 @@ describe('TextInput', () => {
         />,
       );
       expect(screen.getByText('Invalid email address')).toBeInTheDocument();
+    });
+
+    it('has no dangling aria-describedby ids inside InputGroup (WCAG 1.3.1)', () => {
+      // Inside an InputGroup no Field renders, so the status message element
+      // does not exist; aria-describedby must not reference its id.
+      render(
+        <InputGroup label="Contact">
+          <TextInput
+            label="Email"
+            value=""
+            onChange={() => {}}
+            status={{type: 'error', message: 'Invalid email address'}}
+          />
+        </InputGroup>,
+      );
+      const input = screen.getByRole('textbox');
+      const describedBy = input.getAttribute('aria-describedby') ?? '';
+      for (const idToken of describedBy.split(/\s+/).filter(Boolean)) {
+        expect(document.getElementById(idToken)).not.toBeNull();
+      }
     });
 
     it('does not render status message when not provided', () => {
@@ -657,5 +678,134 @@ describe('TextInput', () => {
       expect(input).toBeDisabled();
       expect(input).not.toHaveAttribute('aria-disabled');
     });
+  });
+});
+
+describe('TextInput statusVariant forwarding', () => {
+  it('defaults to attached (status renders with data-variant="attached")', () => {
+    const {container} = render(
+      <TextInput
+        label="Email"
+        value=""
+        onChange={() => {}}
+        status={{type: 'error', message: 'Invalid email'}}
+      />,
+    );
+    expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+      'data-variant',
+      'attached',
+    );
+  });
+
+  it('forwards statusVariant="detached" to the underlying Field status', () => {
+    const {container} = render(
+      <TextInput
+        label="Email"
+        value=""
+        onChange={() => {}}
+        status={{type: 'error', message: 'Invalid email'}}
+        statusVariant="detached"
+      />,
+    );
+    expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+      'data-variant',
+      'detached',
+    );
+  });
+
+  it('renders no message box for statusVariant="tooltip"', () => {
+    const {container} = render(
+      <TextInput
+        label="Email"
+        value=""
+        onChange={() => {}}
+        status={{type: 'error', message: 'Invalid email'}}
+        statusVariant="tooltip"
+      />,
+    );
+    expect(
+      container.querySelector('.astryx-field-status'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('surfaces the status message in a tooltip for statusVariant="tooltip"', () => {
+    render(
+      <TextInput
+        label="Email"
+        value=""
+        onChange={() => {}}
+        status={{type: 'error', message: 'Invalid email'}}
+        statusVariant="tooltip"
+      />,
+    );
+    const tooltip = screen.getByRole('tooltip', h);
+    expect(tooltip).toHaveTextContent('Invalid email');
+  });
+
+  it('describes the input by the status tooltip for statusVariant="tooltip"', () => {
+    render(
+      <TextInput
+        label="Email"
+        value=""
+        onChange={() => {}}
+        status={{type: 'error', message: 'Invalid email'}}
+        statusVariant="tooltip"
+      />,
+    );
+    const input = screen.getByRole('textbox');
+    const tooltip = screen.getByRole('tooltip', h);
+    expect(input.getAttribute('aria-describedby')).toContain(tooltip.id);
+  });
+
+  it('renders the tooltip status affordance as a focusable button (WCAG 2.1.1)', () => {
+    render(
+      <TextInput
+        label="Email"
+        value=""
+        onChange={() => {}}
+        status={{type: 'error', message: 'Invalid email'}}
+        statusVariant="tooltip"
+      />,
+    );
+    // The status affordance is a real button with an accessible name naming
+    // the status type (WCAG 4.1.2), so keyboard-only users (no AT) can reach it.
+    const statusButton = screen.getByRole('button', {name: /error details/i});
+    expect(statusButton).toBeInTheDocument();
+    expect(statusButton).toHaveAttribute('type', 'button');
+  });
+
+  it('opens the status tooltip on keyboard focus for statusVariant="tooltip"', async () => {
+    const user = userEvent.setup();
+    render(
+      <TextInput
+        label="Email"
+        value=""
+        onChange={() => {}}
+        status={{type: 'error', message: 'Invalid email'}}
+        statusVariant="tooltip"
+      />,
+    );
+    const tooltip = screen.getByRole('tooltip', h);
+    // Tab from the input to the status button; keyboard focus reveals the tip.
+    await user.tab();
+    await user.tab();
+    await waitFor(() => {
+      expect(tooltip).toHaveAttribute('popover-open');
+    });
+  });
+
+  it('describes the status button by the tooltip content for statusVariant="tooltip"', () => {
+    render(
+      <TextInput
+        label="Email"
+        value=""
+        onChange={() => {}}
+        status={{type: 'error', message: 'Invalid email'}}
+        statusVariant="tooltip"
+      />,
+    );
+    const statusButton = screen.getByRole('button', {name: /error details/i});
+    const tooltip = screen.getByRole('tooltip', h);
+    expect(statusButton.getAttribute('aria-describedby')).toContain(tooltip.id);
   });
 });

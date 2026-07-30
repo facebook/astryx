@@ -40,7 +40,7 @@ export default function TypeaheadItemShowcase() {
         renderItem={(item: PersonItem) => (
           <TypeaheadItem
             item={item}
-            icon={<Avatar name={item.label} size="small" />}
+            icon={<Avatar name={item.label} size="md" />}
             description={item.auxiliaryData.role}
           />
         )}

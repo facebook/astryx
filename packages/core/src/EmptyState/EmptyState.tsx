@@ -105,7 +105,10 @@ export interface EmptyStateProps extends BaseProps<HTMLDivElement> {
   actions?: ReactNode;
   /**
    * Semantic heading level for the title element.
-   * Controls the rendered HTML tag (h1–h6) to fit the document outline.
+   * Controls only the rendered HTML tag (h1–h6) so the title fits the
+   * document outline. This is a semantic change for accessibility and does
+   * not change the visual size of the title, which stays fixed regardless
+   * of level.
    * @default 3
    */
   headingLevel?: 1 | 2 | 3 | 4 | 5 | 6;

@@ -274,10 +274,7 @@ export function BaseStylesPanel({
     <VStack gap={5}>
       {/* Color */}
       <VStack gap={3}>
-        <HStack
-          vAlign="center"
-          justify="between"
-          xstyle={styles.headerSpace}>
+        <HStack vAlign="center" justify="between" xstyle={styles.headerSpace}>
           <Text type="label" color="secondary">
             Create from accent
           </Text>
@@ -323,6 +320,8 @@ export function BaseStylesPanel({
               '--color-neutral',
               '--color-background-card',
               '--color-background-surface',
+              '--color-background-body',
+              '--color-background-muted',
               '--color-text-primary',
             ].map(tokenName => (
               <ColorSwatch

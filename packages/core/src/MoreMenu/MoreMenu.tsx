@@ -26,6 +26,7 @@ import type {DropdownMenuOption} from '../DropdownMenu';
 import type {ButtonVariant, ButtonSize} from '../Button';
 import type {BaseProps} from '../BaseProps';
 import {stableClassName} from '../naming';
+import {useTranslator} from '../i18n';
 
 export interface MoreMenuProps extends Pick<
   BaseProps,
@@ -102,7 +103,7 @@ export interface MoreMenuProps extends Pick<
  */
 export function MoreMenu({
   items,
-  label = 'More options',
+  label: labelFromProps,
   variant = 'ghost',
   size: sizeProp,
   icon,
@@ -115,6 +116,8 @@ export function MoreMenu({
   'data-testid': testId,
   ref,
 }: MoreMenuProps) {
+  const t = useTranslator();
+  const label = labelFromProps ?? t('@astryx.moreMenu.label');
   const size = useSize(sizeProp, 'md');
   const moreIcon = getIcon('moreHorizontal');
 

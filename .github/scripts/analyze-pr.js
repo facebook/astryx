@@ -5,7 +5,7 @@
 /**
  * @description Analyzes PR changes to detect new/modified components and gather stats
  * @input --base <branch> --head <ref> --output <file>
- * @output JSON file with component analysis
+ * @output JSON file with component analysis; exits non-zero if the base...head diff fails (e.g. shallow clone without a merge base)
  */
 
 const fs = require('node:fs');
@@ -46,8 +46,12 @@ function getChangedFiles() {
     );
     return output.trim().split('\n').filter(Boolean);
   } catch (e) {
-    console.error('Error getting changed files:', e.message);
-    return [];
+    // A failed diff (e.g. no merge base on a too-shallow clone) is not the
+    // same as "no changes" — fail loudly instead of publishing an empty
+    // analysis report that looks legitimate.
+    console.error(`::error::git diff ${baseBranch}...${headRef} failed: ${e.message}`);
+    console.error('The clone is likely too shallow to contain the merge base (see fetch-depth in ci.yml).');
+    process.exit(1);
   }
 }
 

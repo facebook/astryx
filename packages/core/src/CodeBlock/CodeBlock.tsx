@@ -45,6 +45,7 @@ import type {SyntaxToken, TokenLine} from './tokenizer';
 import {ensureHighlightStyles} from './highlightStyles';
 import {applyHighlightRangesChunked} from './highlightRanges';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 import {SyntaxTheme, type SyntaxThemeDefinition} from '../theme/syntax';
 
 // ---------------------------------------------------------------------------
@@ -85,6 +86,23 @@ const dynamicStyles = stylex.create({
   gutterWidth: (digits: number) => ({
     '--_codeblock-gutter-width': `${digits}ch`,
   }),
+});
+
+// Light reveal so the leading chevron eases into view instead of popping in.
+// Growing the chevron's own footprint (width + inline margin) from zero slides
+// the title into place instead of snapping it over, and clipping keeps the
+// glyph from spilling while it's mid-reveal.
+const chevronReveal = stylex.keyframes({
+  from: {
+    width: 0,
+    marginInlineEnd: 0,
+    opacity: 0,
+  },
+  to: {
+    width: '14px',
+    marginInlineEnd: spacingVars['--spacing-1'],
+    opacity: 1,
+  },
 });
 
 const styles = stylex.create({
@@ -132,7 +150,6 @@ const styles = stylex.create({
   headerTitle: {
     display: 'flex',
     alignItems: 'center',
-    gap: spacingVars['--spacing-1'],
     fontSize: typeScaleVars['--text-supporting-size'],
     fontFamily: typographyVars['--font-family-code'],
     fontWeight: fontWeightVars['--font-weight-medium'],
@@ -172,13 +189,24 @@ const styles = stylex.create({
     flexShrink: 0,
     width: '14px',
     height: '14px',
+    marginInlineEnd: spacingVars['--spacing-1'],
+    overflow: 'hidden',
     color: 'var(--color-syntax-comment)',
+    animationName: {
+      default: chevronReveal,
+      '@media (prefers-reduced-motion: reduce)': 'none',
+    },
+    animationDuration: durationVars['--duration-medium'],
+    animationTimingFunction: easeVars['--ease-standard'],
     transitionProperty: 'transform',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
   },
-  collapseChevronCollapsed: {
-    transform: 'rotate(180deg)',
+  collapseChevronExpanded: {
+    // Leading disclosure convention (matches TreeList/Table): the resting
+    // chevronRight points right (>) when collapsed; rotate it down (v) when
+    // expanded.
+    transform: 'rotate(90deg)',
   },
   headerCollapsible: {
     cursor: 'pointer',
@@ -295,7 +323,7 @@ const styles = stylex.create({
   copyButtonAbsolute: {
     position: 'absolute',
     top: spacingVars['--spacing-2'],
-    right: spacingVars['--spacing-2'],
+    insetInlineEnd: spacingVars['--spacing-2'],
   },
 });
 
@@ -718,6 +746,7 @@ export function CodeBlock({
   ref,
   ...props
 }: CodeBlockProps) {
+  const t = useTranslator();
   const [copied, setCopied] = useState(false);
   const copyResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const announce = useAnnounce();
@@ -805,7 +834,9 @@ export function CodeBlock({
         e.stopPropagation();
         void handleCopy();
       }}
-      aria-label={copied ? 'Copied' : 'Copy code'}
+      aria-label={
+        copied ? t('@astryx.codeBlock.copied') : t('@astryx.codeBlock.copyCode')
+      }
       {...stylex.props(
         styles.copyButton,
         !showHeader && styles.copyButtonAbsolute,
@@ -841,18 +872,18 @@ export function CodeBlock({
           canCollapse && styles.headerCollapsible,
         )}>
         <span {...stylex.props(styles.headerTitle)}>
-          {title}
-          {title && languageLabel ? ' — ' : ''}
-          {languageLabel}
           {canCollapse && (
             <span
               {...stylex.props(
                 styles.collapseChevron,
-                isCollapsed && styles.collapseChevronCollapsed,
+                !isCollapsed && styles.collapseChevronExpanded,
               )}>
-              <Icon icon="chevronDown" size="xsm" color="inherit" />
+              <Icon icon="chevronRight" size="xsm" color="inherit" />
             </span>
           )}
+          {title}
+          {title && languageLabel ? ' — ' : ''}
+          {languageLabel}
         </span>
       </div>
       {copyButtonEl}
@@ -868,7 +899,7 @@ export function CodeBlock({
       // create duplicate same-named landmarks (axe: landmark-unique).
       tabIndex={0}
       role="group"
-      aria-label={languageLabel ?? 'Code'}
+      aria-label={languageLabel ?? t('@astryx.codeBlock.code')}
       {...mergeProps(stylex.props(styles.scrollContainer), {
         style: scrollStyle,
       })}>
@@ -921,6 +952,12 @@ export function CodeBlock({
       {canCollapse ? (
         <div
           id={regionId}
+          // While collapsed, the region is only hidden visually (0fr grid
+          // row); inert also removes it from the tab order and accessibility
+          // tree so keyboard users cannot Tab into the invisible scroll
+          // container (tabIndex=0). aria-controls pointing at an inert
+          // element remains a valid, resolvable reference.
+          inert={isCollapsed ? true : undefined}
           {...stylex.props(
             styles.collapseGrid,
             isCollapsed && styles.collapseGridCollapsed,

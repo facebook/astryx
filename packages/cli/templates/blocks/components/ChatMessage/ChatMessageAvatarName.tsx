@@ -17,7 +17,7 @@ export default function ChatMessageAvatarName() {
     <ChatMessageList style={{maxWidth: 500}}>
       <ChatMessage
         sender="assistant"
-        avatar={<Avatar name="Agent" size="small" />}>
+        avatar={<Avatar name="Agent" size="md" />}>
         <ChatMessageBubble
           name={
             <Text type="supporting" weight="semibold" color="secondary">
@@ -50,7 +50,7 @@ export default function ChatMessageAvatarName() {
       </ChatMessage>
       <ChatMessage
         sender="assistant"
-        avatar={<Avatar name="Agent" size="small" />}>
+        avatar={<Avatar name="Agent" size="md" />}>
         <ChatMessageBubble
           name={
             <Text type="supporting" weight="semibold" color="secondary">

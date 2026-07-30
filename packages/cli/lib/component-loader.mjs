@@ -1,0 +1,223 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+/**
+ * @file Component doc loader — load and merge translations
+ */
+
+import {pathToFileURL} from 'node:url';
+import {importUserModule} from './module-loader.mjs';
+import {formatZodError} from './config-schema.mjs';
+import {ComponentDocSchema} from '../schemas/doc-schema.mjs';
+
+/**
+ * Load a component doc through the shared load/validation boundary.
+ *
+ * This is the typed counterpart to {@link loadDocs}: it loads `.doc.ts` via
+ * jiti (and `.doc.mjs`/`.doc.js` via native import) and validates against
+ * {@link ComponentDocSchema}. That schema accepts BOTH formats, so this loader
+ * reads whichever the file uses:
+ *   - NEW: the factory default export
+ *     (`export default createComponentDoc({...})` / `createFunctionDoc` /
+ *     `createDoc`) — the same single-export convention
+ *     {@link loadModuleWithSchema} uses for config/integration/template. These
+ *     carry a stamped `type` and validate against the matching per-kind schema.
+ *   - OLD: the legacy loose `export const docs = {...}` (no `type`), validated
+ *     against the permissive legacy union.
+ * The default export wins when both are present. Throws a readable
+ * `formatZodError`-style message on failure. Translations (`docsZh`/
+ * `docsDense`) are merged exactly as {@link loadDocs} does so callers see
+ * identical output.
+ *
+ * @param {string} docPath absolute path to a `.doc.{ts,mjs,js}` file
+ * @param {{zh?: boolean, dense?: boolean, lang?: string}} [opts]
+ * @returns {Promise<object>} the validated (and optionally translated) doc
+ */
+export async function loadComponentDoc(
+  docPath,
+  {zh = false, dense = false, lang} = {},
+) {
+  const mod = await importUserModule(docPath);
+  /** @type {any} */
+  const authored = mod?.default ?? mod?.docs;
+
+  const result = ComponentDocSchema.safeParse(authored);
+  if (!result.success) {
+    throw new Error(formatZodError(docPath, result.error));
+  }
+  const docs = authored;
+
+  const locale = lang || (dense ? 'dense' : zh ? 'zh' : null);
+  if (!locale) return docs;
+
+  const translationKey =
+    locale === 'zh' ? 'docsZh' : locale === 'dense' ? 'docsDense' : null;
+  if (!translationKey || !mod[translationKey]) return docs;
+
+  /** @type {any} */
+  const translation = mod[translationKey];
+  if (translation.props || translation.components?.some((/** @type {any} */ c) => c.props)) {
+    return translation;
+  }
+  return mergeTranslation(docs, translation);
+}
+
+/**
+ * @param {any} docs
+ * @param {any} translation
+ * @returns {any}
+ */
+export function mergeTranslation(docs, translation) {
+  if (!translation) return docs;
+
+  /** @type {any} */
+  const merged = {...docs};
+
+  // Merge prose into usage
+  if (merged.usage) {
+    merged.usage = {...merged.usage};
+    if (translation.usage?.description) merged.usage.description = translation.usage.description;
+    else if (translation.description) merged.usage.description = translation.description;
+    if (translation.usage?.bestPractices) merged.usage.bestPractices = translation.usage.bestPractices;
+  }
+
+  // Legacy top-level fields (for docsZh that are full ComponentDoc clones)
+  if (translation.description && !merged.usage) merged.description = translation.description;
+
+  // Merge prop descriptions for single-component docs
+  if (translation.propDescriptions && merged.props) {
+    merged.props = merged.props.map((/** @type {any} */ prop) => {
+      const desc = translation.propDescriptions[prop.name];
+      return desc != null ? {...prop, description: desc} : prop;
+    });
+  }
+
+  // Merge hook param descriptions (HookTranslationDoc). Params are an array of
+  // {name, type, description, required}; override description by name where the
+  // translation has an entry. Names may include dots (e.g. 'options.isActive');
+  // the lookup is keyed by the exact param name.
+  if (translation.paramDescriptions && merged.params) {
+    merged.params = merged.params.map((/** @type {any} */ param) => {
+      const desc = translation.paramDescriptions[param.name];
+      return desc != null ? {...param, description: desc} : param;
+    });
+  }
+
+  // Merge hook return descriptions (HookTranslationDoc). Returns are an array
+  // of {name, type, description}; override description by name where present.
+  if (translation.returnDescriptions && merged.returns) {
+    merged.returns = merged.returns.map((/** @type {any} */ ret) => {
+      const desc = translation.returnDescriptions[ret.name];
+      return desc != null ? {...ret, description: desc} : ret;
+    });
+  }
+
+  // Merge sub-component translations
+  if (translation.components && merged.components) {
+    merged.components = merged.components.map((/** @type {any} */ comp, /** @type {any} */ i) => {
+      const trans = translation.components.find((/** @type {any} */ t) => t.name === comp.name)
+        || translation.components[i];
+      if (!trans) return comp;
+
+      const mergedComp = {...comp};
+      if (trans.description) mergedComp.description = trans.description;
+      if (trans.propDescriptions && comp.props) {
+        mergedComp.props = comp.props.map((/** @type {any} */ prop) => {
+          const desc = trans.propDescriptions[prop.name];
+          return desc != null ? {...prop, description: desc} : prop;
+        });
+      }
+      return mergedComp;
+    });
+  }
+
+  return merged;
+}
+
+/**
+ * Load the typed docs object from a .doc.mjs file.
+ * Supports --lang flag: 'zh' for Chinese, 'dense' for compressed format.
+ * Also supports legacy --zh and --dense flags.
+ * Translations are merged onto the base docs, keeping structure intact.
+ * @param {string} readmePath
+ * @param {{zh?: boolean, dense?: boolean, lang?: string}} [opts]
+ * @returns {Promise<any>}
+ */
+export async function loadDocs(readmePath, {zh = false, dense = false, lang} = {}) {
+  const mod = await import(pathToFileURL(readmePath).href);
+  const docs = mod.docs;
+
+  // Resolve which translation to use (--lang takes priority over legacy flags)
+  const locale = lang || (dense ? 'dense' : zh ? 'zh' : null);
+  if (!locale) return docs;
+
+  const translationKey = locale === 'zh' ? 'docsZh' : locale === 'dense' ? 'docsDense' : null;
+  if (!translationKey || !mod[translationKey]) return docs;
+
+  const translation = mod[translationKey];
+
+  // A full ComponentDoc-shaped translation (legacy docsZh shape) used to be
+  // returned wholesale. That made it a REPLACEMENT, not an overlay: any prop
+  // the translation had not caught up with simply ceased to exist —
+  // `component Button --zh` silently omitted `isInterruptible` and
+  // `isIconOnly`. A reader of the translated docs cannot discover a prop that
+  // is not there. Overlay it instead, so an untranslated prop falls back to
+  // its English entry. (Same principle as the reference-doc overlays, #2182.)
+  if (translation.props || translation.components?.some((/** @type {any} */ c) => c.props)) {
+    return overlayComponentDoc(docs, translation);
+  }
+
+  // Otherwise it's a TranslationDoc — merge it onto docs
+  return mergeTranslation(docs, translation);
+}
+
+/**
+ * Overlay a full-ComponentDoc-shaped translation onto the English doc.
+ *
+ * Base order and completeness win; the translation supplies text for the
+ * entries it covers. Props are matched by name, never by position, so a
+ * translation that is missing entries (or lists them in another order) can no
+ * longer drop or misattribute one.
+ *
+ * @param {any} docs Base (English) component doc.
+ * @param {any} translation Translated doc, possibly covering only some props.
+ * @returns {any} Merged doc with every base prop present.
+ */
+function overlayComponentDoc(docs, translation) {
+  /** Merge one prop list: keep base entries and order, translate what's covered.
+   * @param {any[] | undefined} baseProps
+   * @param {any[] | undefined} tProps
+   */
+  const overlayProps = (baseProps, tProps) => {
+    if (!baseProps) return baseProps;
+    const byName = new Map((tProps ?? []).map((/** @type {any} */ p) => [p.name, p]));
+    return baseProps.map((/** @type {any} */ prop) => {
+      const t = byName.get(prop.name);
+      // Take the translated text, but never let it drop the prop's contract
+      // (type/default/required stay authoritative from the English doc).
+      return t ? {...prop, ...t, name: prop.name, type: prop.type} : prop;
+    });
+  };
+
+  const merged = {...docs, ...translation};
+
+  merged.props = overlayProps(docs.props, translation.props);
+
+  if (docs.components) {
+    const tByName = new Map(
+      (translation.components ?? []).map((/** @type {any} */ c) => [c.name, c]),
+    );
+    merged.components = docs.components.map((/** @type {any} */ base) => {
+      const t = tByName.get(base.name);
+      if (!t) return base;
+      return {...base, ...t, props: overlayProps(base.props, t.props)};
+    });
+  }
+
+  return merged;
+}
+
+/**
+ * Find the doc file for a component, checking both top-level
+ * and nested directories. Prefers {Name}.doc.mjs, then README.md
+ * (for backward compatibility).
+ */

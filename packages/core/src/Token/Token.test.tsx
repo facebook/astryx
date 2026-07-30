@@ -13,6 +13,7 @@ import {describe, it, expect, vi} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Token} from './Token';
+import type {TokenColor} from './Token';
 
 describe('Token', () => {
   it('renders with label', () => {
@@ -49,6 +50,23 @@ describe('Token', () => {
       expect(screen.getByText(color)).toBeInTheDocument();
       unmount();
     }
+  });
+
+  it('reflects a custom (theme-augmented) color as a class and data attribute', () => {
+    // Themes extend TokenColorMap via module augmentation and supply the
+    // styling through generated theme CSS; the runtime just forwards the
+    // value as the stable class + data-color reflection so the theme
+    // selector can match. Cast simulates a consumer-augmented color.
+    render(
+      <Token
+        label="Brand"
+        color={'brand' as TokenColor}
+        data-testid="token-custom"
+      />,
+    );
+    const token = screen.getByTestId('token-custom');
+    expect(token).toHaveClass('astryx-token', 'brand');
+    expect(token).toHaveAttribute('data-color', 'brand');
   });
 
   it('renders as a span with invisible button when onClick is provided', () => {
@@ -135,10 +153,7 @@ describe('Token', () => {
 
   it('renders endContent', () => {
     render(
-      <Token
-        label="Token"
-        endContent={<span data-testid="end">End</span>}
-      />,
+      <Token label="Token" endContent={<span data-testid="end">End</span>} />,
     );
     expect(screen.getByTestId('end')).toBeInTheDocument();
     expect(screen.getByText('End')).toBeInTheDocument();
@@ -241,12 +256,7 @@ describe('Token accessibility', () => {
 
   it('disables both buttons when isDisabled is true', () => {
     render(
-      <Token
-        label="Token"
-        onClick={() => {}}
-        onRemove={() => {}}
-        isDisabled
-      />,
+      <Token label="Token" onClick={() => {}} onRemove={() => {}} isDisabled />,
     );
     const buttons = screen.getAllByRole('button');
     for (const button of buttons) {
@@ -355,11 +365,7 @@ describe('Token focus outline', () => {
   it('invisible button does not show its own focus outline', async () => {
     const user = userEvent.setup();
     render(
-      <Token
-        label="Focusable"
-        onClick={() => {}}
-        data-testid="focus-token"
-      />,
+      <Token label="Focusable" onClick={() => {}} data-testid="focus-token" />,
     );
     const button = screen.getByRole('button', {name: 'Focusable'});
     await user.tab();

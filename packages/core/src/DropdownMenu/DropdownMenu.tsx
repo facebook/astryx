@@ -39,6 +39,11 @@ import type {IconType} from '../Icon';
 
 import {renderDropdownItems} from './renderDropdownItems';
 import {
+  MENU_ITEM_ROLES,
+  MENU_ITEM_SELECTOR,
+  MENU_BOUNDARY_SELECTOR,
+} from './menuItemRoles';
+import {
   DropdownMenuContext,
   type DropdownMenuContextValue,
 } from './DropdownMenuContext';
@@ -55,6 +60,7 @@ import {
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 const styles = stylex.create({
   dropdown: {
@@ -98,6 +104,12 @@ export interface DropdownMenuItemData {
   onClick?: () => void;
   isDisabled?: boolean;
   icon?: ReactNode | IconType;
+  /**
+   * Nested submenu entries. When present, this row becomes a submenu (a
+   * flyout revealing `items`) instead of a leaf action — no separate item
+   * "type" is needed. Data-mode parity for the compound DropdownMenuSubMenu API.
+   */
+  items?: DropdownMenuOption[];
 }
 
 export interface DropdownMenuDivider {
@@ -111,9 +123,7 @@ export interface DropdownMenuSection {
 }
 
 export type DropdownMenuOption =
-  | DropdownMenuItemData
-  | DropdownMenuDivider
-  | DropdownMenuSection;
+  DropdownMenuItemData | DropdownMenuDivider | DropdownMenuSection;
 
 // =============================================================================
 // Props
@@ -149,8 +159,7 @@ interface DropdownMenuCompoundProps extends DropdownMenuBaseProps {
 }
 
 export type DropdownMenuProps =
-  | DropdownMenuDataProps
-  | DropdownMenuCompoundProps;
+  DropdownMenuDataProps | DropdownMenuCompoundProps;
 
 // =============================================================================
 // DropdownMenu
@@ -176,10 +185,13 @@ export type DropdownMenuProps =
  * />
  * ```
  */
-const DEFAULT_BUTTON = {label: 'Menu'} as const;
+// When the consumer doesn't pass `button`, the default label is looked up
+// at render time so it respects the active InternationalizationProvider
+// locale.
+const DEFAULT_BUTTON_I18N_KEY = '@astryx.dropdownMenu.label' as const;
 
 export function DropdownMenu({
-  button = DEFAULT_BUTTON,
+  button: buttonFromProps,
   isMenuOpen: controlledIsOpen,
   onOpenChange,
   menuWidth,
@@ -192,11 +204,22 @@ export function DropdownMenu({
   'data-testid': testId,
   ...props
 }: DropdownMenuProps) {
+  const t = useTranslator();
+  const button = buttonFromProps ?? {label: t(DEFAULT_BUTTON_I18N_KEY)};
+
   const items = ('items' in props ? props.items : undefined) ?? [];
   const children = props.children;
 
+  // Extract BaseProps pass-throughs (aria-*, id, event handlers) from the
+  // discriminated-union rest bag so they can be forwarded to the menu element.
+  const {
+    items: _items,
+    children: _children,
+    ...rest
+  } = props as Record<string, unknown>;
+
   const menuId = useId();
-  const menuSize = button?.size ?? 'md';
+  const menuSize = button.size ?? 'md';
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   // Open state
@@ -251,31 +274,27 @@ export function DropdownMenu({
     popover.hide();
   }, [popover]);
 
-  // Single keyboard navigation path for both modes
+  // Single keyboard navigation path for both modes.
+  // The selector matches plain items plus selectable items
+  // (menuitemradio/menuitemcheckbox) so lab checkbox/radio rows are reachable
+  // and roved to alongside plain items — not just role="menuitem".
   const {
     listRef,
     handleKeyDown: listNavKeyDown,
     focusFirst,
     focusItem,
+    ownsEvent,
+    getItems: getMenuItems,
   } = useListFocus<HTMLDivElement>({
-    itemSelector: '[role="menuitem"]:not([aria-disabled="true"])',
+    itemSelector: MENU_ITEM_SELECTOR,
+    boundarySelector: MENU_BOUNDARY_SELECTOR,
     wrap: false,
     onEscape: closeMenu,
   });
 
   // First-character typeahead over the (enabled) menu items — jump to the next
-  // item whose label starts with the typed text (menus-11).
-  const getMenuItems = useCallback(
-    (): HTMLElement[] =>
-      listRef.current
-        ? Array.from(
-            listRef.current.querySelectorAll<HTMLElement>(
-              '[role="menuitem"]:not([aria-disabled="true"])',
-            ),
-          )
-        : [],
-    [listRef],
-  );
+  // item whose label starts with the typed text (menus-11). Reuses the hook's
+  // scoped item collection so an inline submenu flyout's items aren't swept in.
   const typeahead = useTypeahead({
     getItemLabels: () => getMenuItems().map(el => el.textContent),
     onMatch: focusItem,
@@ -301,10 +320,18 @@ export function DropdownMenu({
   // Extend useListFocus with Enter/Space activation + typeahead
   const listKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
+      // A submenu flyout renders inline inside this menu; its key events bubble
+      // up here. Let that level own them — only handle events from this level.
+      if (!ownsEvent(e)) {
+        return;
+      }
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         const focused = document.activeElement as HTMLElement | null;
-        if (focused?.getAttribute('role') === 'menuitem') {
+        if (
+          focused &&
+          MENU_ITEM_ROLES.has(focused.getAttribute('role') ?? '')
+        ) {
           focused.click();
         }
         return;
@@ -325,7 +352,7 @@ export function DropdownMenu({
       }
       listNavKeyDown(e);
     },
-    [listNavKeyDown, closeMenu, typeahead],
+    [listNavKeyDown, closeMenu, typeahead, ownsEvent],
   );
 
   const openAndFocus = useCallback(() => {
@@ -426,6 +453,7 @@ export function DropdownMenu({
 
       {popover.render(
         <div
+          {...rest}
           ref={listRef}
           id={menuId}
           role="menu"

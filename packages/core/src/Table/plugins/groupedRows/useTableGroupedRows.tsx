@@ -20,7 +20,9 @@ import {
   fontWeightVars,
 } from '../../../theme/tokens.stylex';
 import {Icon} from '../../../Icon';
+import {rtlStyles} from '../../../utils';
 import type {TablePlugin} from '../../types';
+import {useTranslator} from '../../../i18n';
 
 // A synthetic group-header row injected into the flattened data. Real rows
 // never carry this marker.
@@ -180,7 +182,7 @@ const styles = stylex.create({
  * pass all three to `<Table>`.
  *
  * @example
- * ```tsx
+ * ```
  * const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
  * const grouped = useTableGroupedRows({
  *   data: rows,
@@ -205,6 +207,7 @@ const styles = stylex.create({
 export function useTableGroupedRows<T extends Record<string, unknown>>(
   config: UseTableGroupedRowsConfig<T>,
 ): UseTableGroupedRowsResult<T> {
+  const t = useTranslator();
   const {
     data,
     groupBy,
@@ -305,7 +308,7 @@ export function useTableGroupedRows<T extends Record<string, unknown>>(
             onClick: toggle,
             'aria-expanded': !collapsed,
           },
-          styles: [...props.styles, styles.headerRow],
+          xstyle: [...props.xstyle, styles.headerRow],
           children: (
             // colSpan larger than the column count is clamped by the browser
             // to the actual number of columns, so the header always spans the
@@ -323,16 +326,22 @@ export function useTableGroupedRows<T extends Record<string, unknown>>(
                   }}
                   aria-label={
                     collapsed
-                      ? `Expand group ${header.groupKey}`
-                      : `Collapse group ${header.groupKey}`
+                      ? t('@astryx.tableGroupedRows.expandGroup', {
+                          groupKey: header.groupKey,
+                        })
+                      : t('@astryx.tableGroupedRows.collapseGroup', {
+                          groupKey: header.groupKey,
+                        })
                   }
                   aria-expanded={!collapsed}>
-                  <span
-                    {...stylex.props(
-                      styles.chevronIcon,
-                      !collapsed && styles.chevronExpanded,
-                    )}>
-                    <Icon icon="chevronRight" size="xsm" />
+                  <span {...stylex.props(rtlStyles.mirror)}>
+                    <span
+                      {...stylex.props(
+                        styles.chevronIcon,
+                        !collapsed && styles.chevronExpanded,
+                      )}>
+                      <Icon icon="chevronRight" size="xsm" />
+                    </span>
                   </span>
                 </button>
                 {content}
@@ -342,7 +351,7 @@ export function useTableGroupedRows<T extends Record<string, unknown>>(
         };
       },
     }),
-    [collapsedGroups, onToggleGroup, renderGroupHeader],
+    [collapsedGroups, onToggleGroup, renderGroupHeader, t],
   );
 
   return {plugin, data: flattened, idKey};

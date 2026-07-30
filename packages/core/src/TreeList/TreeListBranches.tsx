@@ -16,6 +16,7 @@
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
+import {themeProps} from '../utils/themeProps';
 
 const LINE_WIDTH = 1;
 
@@ -25,8 +26,10 @@ const LINE_WIDTH = 1;
  */
 const BRANCH_MARGIN = `calc(${spacingVars['--spacing-2']} + ${spacingVars['--spacing-0-5']})`;
 
-/** Per-level indent width, matching --spacing-4 (16px). */
-const LEVEL_INDENT = spacingVars['--spacing-4'];
+/** Per-level indent width. Reads the public, themeable `--tree-list-indent`
+ * lever set on the tree-list root (default `--spacing-4`, 16px), so the guide
+ * lines stay aligned with the row indent when a theme retunes the step. */
+const LEVEL_INDENT = 'var(--tree-list-indent)';
 
 const styles = stylex.create({
   container: {
@@ -36,10 +39,10 @@ const styles = stylex.create({
   },
   verticalLine: {
     borderRadius: 1,
-    left: 0,
+    insetInlineStart: 0,
     margin: 'auto',
     position: 'absolute',
-    right: 0,
+    insetInlineEnd: 0,
     width: LINE_WIDTH,
     backgroundColor: colorVars['--color-border-emphasized'],
   },
@@ -65,6 +68,11 @@ interface TreeListBranchesProps {
 /**
  * Renders vertical lines showing parent-child relationships in the tree.
  * Positioned in a full-height container to span the entire item including children.
+ *
+ * The line element carries the stable `astryx-tree-list-guide` theme target so a
+ * theme can recolor or hide the connectors via `defineTheme` (e.g.
+ * `backgroundColor` or `display: 'none'`) instead of hiding the built-in guides
+ * and reimplementing them.
  */
 export function TreeListBranches({
   ancestorsIsLast,
@@ -86,11 +94,14 @@ export function TreeListBranches({
               key={level}
               {...mergeProps(stylex.props(styles.container), {
                 style: {
-                  left: branchOffset,
+                  insetInlineStart: branchOffset,
                 },
               })}>
               <div
-                {...stylex.props(styles.verticalLine, styles.verticalFull)}
+                {...mergeProps(
+                  themeProps('tree-list-guide'),
+                  stylex.props(styles.verticalLine, styles.verticalFull),
+                )}
               />
             </div>
           )
@@ -100,10 +111,15 @@ export function TreeListBranches({
         <div
           {...mergeProps(stylex.props(styles.container), {
             style: {
-              left: `calc(${BRANCH_MARGIN} + ${nestedLevel - 1} * ${LEVEL_INDENT})`,
+              insetInlineStart: `calc(${BRANCH_MARGIN} + ${nestedLevel - 1} * ${LEVEL_INDENT})`,
             },
           })}>
-          <div {...stylex.props(styles.verticalLine, styles.verticalFull)} />
+          <div
+            {...mergeProps(
+              themeProps('tree-list-guide'),
+              stylex.props(styles.verticalLine, styles.verticalFull),
+            )}
+          />
         </div>
       )}
     </>

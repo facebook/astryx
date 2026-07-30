@@ -4,7 +4,10 @@ import * as stylex from '@stylexjs/stylex';
 import {AvatarGroup, AvatarGroupOverflow} from '@astryxdesign/core/AvatarGroup';
 import {Avatar} from '@astryxdesign/core/Avatar';
 import {StatusDot} from '@astryxdesign/core/StatusDot';
-import {spacingVars, typographyVars} from '@astryxdesign/core/theme/tokens.stylex';
+import {
+  spacingVars,
+  typographyVars,
+} from '@astryxdesign/core/theme/tokens.stylex';
 
 const USERS = [
   {name: 'Alice Johnson', src: 'https://i.pravatar.cc/150?img=1', key: 'alice'},
@@ -37,7 +40,7 @@ const meta: Meta<typeof AvatarGroup> = {
   argTypes: {
     size: {
       control: 'select',
-      options: ['tiny', 'xsmall', 'small', 'medium', 'large'],
+      options: ['xsm', 'sm', 'md', 'lg', 'xl'],
       description: 'Size applied to all child avatars',
     },
   },
@@ -49,7 +52,7 @@ type Story = StoryObj<typeof AvatarGroup>;
 /** Basic avatar group showing all members. */
 export const Default: Story = {
   render: () => (
-    <AvatarGroup size="medium">
+    <AvatarGroup size="lg">
       {USERS.slice(0, 3).map(u => (
         <Avatar key={u.key} src={u.src} name={u.name} />
       ))}
@@ -60,7 +63,7 @@ export const Default: Story = {
 /** Sliced to 3 with "+N" overflow indicator. */
 export const WithOverflow: Story = {
   render: () => (
-    <AvatarGroup size="medium">
+    <AvatarGroup size="lg">
       {USERS.slice(0, 3).map(u => (
         <Avatar key={u.key} src={u.src} name={u.name} />
       ))}
@@ -72,7 +75,7 @@ export const WithOverflow: Story = {
 /** Clickable overflow indicator. */
 export const ClickableOverflow: Story = {
   render: () => (
-    <AvatarGroup size="medium">
+    <AvatarGroup size="lg">
       {USERS.slice(0, 3).map(u => (
         <Avatar key={u.key} src={u.src} name={u.name} />
       ))}
@@ -87,7 +90,7 @@ export const ClickableOverflow: Story = {
 /** Server-side total count (47 participants, only 3 rendered). */
 export const ServerSideCount: Story = {
   render: () => (
-    <AvatarGroup size="medium">
+    <AvatarGroup size="lg">
       {USERS.slice(0, 3).map(u => (
         <Avatar key={u.key} src={u.src} name={u.name} />
       ))}
@@ -99,7 +102,7 @@ export const ServerSideCount: Story = {
 /** Per-avatar status dots — just works with compositional API. */
 export const WithStatusDots: Story = {
   render: () => (
-    <AvatarGroup size="medium">
+    <AvatarGroup size="lg">
       <Avatar
         src="https://i.pravatar.cc/150?img=1"
         name="Alice"
@@ -123,7 +126,7 @@ export const WithStatusDots: Story = {
 export const AllSizes: Story = {
   render: () => (
     <div {...stylex.props(storyStyles.storyWrapper)}>
-      {(['tiny', 'xsmall', 'small', 'medium', 'large'] as const).map(size => (
+      {(['xsm', 'sm', 'md', 'lg', 'xl'] as const).map(size => (
         <div key={size}>
           <h4 {...stylex.props(storyStyles.heading)}>{size}</h4>
           <AvatarGroup size={size}>
@@ -141,7 +144,7 @@ export const AllSizes: Story = {
 /** Initials fallback when no images provided. */
 export const InitialsFallback: Story = {
   render: () => (
-    <AvatarGroup size="medium">
+    <AvatarGroup size="lg">
       {USERS.slice(0, 4).map(u => (
         <Avatar key={u.key} name={u.name} />
       ))}
@@ -153,7 +156,7 @@ export const InitialsFallback: Story = {
 /** Single avatar — no overlap applied. */
 export const SingleAvatar: Story = {
   render: () => (
-    <AvatarGroup size="medium">
+    <AvatarGroup size="lg">
       <Avatar src="https://i.pravatar.cc/150?img=1" name="Alice Johnson" />
     </AvatarGroup>
   ),
@@ -162,7 +165,7 @@ export const SingleAvatar: Story = {
 /** Large overflow count (99+). */
 export const LargeOverflowCount: Story = {
   render: () => (
-    <AvatarGroup size="medium">
+    <AvatarGroup size="lg">
       {USERS.slice(0, 3).map(u => (
         <Avatar key={u.key} src={u.src} name={u.name} />
       ))}
@@ -171,10 +174,42 @@ export const LargeOverflowCount: Story = {
   ),
 };
 
+/**
+ * Short counts stay a circle; long counts grow into a pill.
+ *
+ * The indicator uses a minimum width equal to the avatar size, so a small
+ * `+5` renders as a circle, while a wide `+4912` grows horizontally into a
+ * stadium/pill so the number always fits with comfortable padding.
+ */
+export const CircleToPill: Story = {
+  render: () => (
+    <div {...stylex.props(storyStyles.storyWrapper)}>
+      <div>
+        <h4 {...stylex.props(storyStyles.heading)}>Short count (circle)</h4>
+        <AvatarGroup size="md">
+          {USERS.slice(0, 3).map(u => (
+            <Avatar key={u.key} src={u.src} name={u.name} />
+          ))}
+          <AvatarGroupOverflow count={5} />
+        </AvatarGroup>
+      </div>
+      <div>
+        <h4 {...stylex.props(storyStyles.heading)}>Long count (pill)</h4>
+        <AvatarGroup size="md">
+          {USERS.slice(0, 3).map(u => (
+            <Avatar key={u.key} src={u.src} name={u.name} />
+          ))}
+          <AvatarGroupOverflow count={4912} />
+        </AvatarGroup>
+      </div>
+    </div>
+  ),
+};
+
 /** Zero overflow count edge case. */
 export const ZeroOverflow: Story = {
   render: () => (
-    <AvatarGroup size="medium">
+    <AvatarGroup size="lg">
       {USERS.slice(0, 3).map(u => (
         <Avatar key={u.key} src={u.src} name={u.name} />
       ))}
@@ -187,7 +222,7 @@ export const ZeroOverflow: Story = {
 export const NarrowContainer: Story = {
   render: () => (
     <div style={{width: 120, border: '1px dashed grey', padding: 8}}>
-      <AvatarGroup size="medium">
+      <AvatarGroup size="lg">
         {USERS.slice(0, 5).map(u => (
           <Avatar key={u.key} src={u.src} name={u.name} />
         ))}
@@ -206,7 +241,7 @@ export const ManyAvatars: Story = {
       src: `https://i.pravatar.cc/150?img=${(i % 70) + 1}`,
     }));
     return (
-      <AvatarGroup size="small">
+      <AvatarGroup size="md">
         {manyUsers.map(u => (
           <Avatar key={u.key} src={u.src} name={u.name} />
         ))}
@@ -214,4 +249,52 @@ export const ManyAvatars: Story = {
       </AvatarGroup>
     );
   },
+};
+
+/**
+ * Interactive avatars — a mix of links (`href`) and buttons (`onClick`) plus an
+ * interactive overflow. The whole group is a single Tab stop: Tab into it once,
+ * then use ArrowLeft/ArrowRight to move focus between avatars and the overflow
+ * button. Screen readers hear a keyboard hint from the group.
+ */
+export const Interactive: Story = {
+  render: () => (
+    <AvatarGroup size="lg" aria-label="Project team">
+      <Avatar
+        src={USERS[0].src}
+        name={USERS[0].name}
+        href="https://example.com/users/alice"
+      />
+      <Avatar
+        src={USERS[1].src}
+        name={USERS[1].name}
+        href="https://example.com/users/bob"
+      />
+      <Avatar
+        src={USERS[2].src}
+        name={USERS[2].name}
+        onClick={() => alert(`Open ${USERS[2].name}`)}
+      />
+      <AvatarGroupOverflow
+        count={USERS.length - 3}
+        onClick={() => alert('Show all members')}
+      />
+    </AvatarGroup>
+  ),
+};
+
+/**
+ * Static facepile (no href/onClick) — unchanged behavior. Not focusable, no Tab
+ * stop, no keyboard hint. Shown here alongside the interactive variant for
+ * contrast.
+ */
+export const StaticFacepile: Story = {
+  render: () => (
+    <AvatarGroup size="lg">
+      {USERS.slice(0, 4).map(u => (
+        <Avatar key={u.key} src={u.src} name={u.name} />
+      ))}
+      <AvatarGroupOverflow count={USERS.length - 4} />
+    </AvatarGroup>
+  ),
 };

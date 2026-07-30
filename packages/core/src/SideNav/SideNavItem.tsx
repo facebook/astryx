@@ -54,6 +54,7 @@ import {getIcon} from '../Icon/globalIconRegistry';
 import {useSideNavRenderMode} from './SideNavRenderContext';
 import {useAppShellMobile} from '../AppShell/AppShellMobileContext';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 // =============================================================================
 // Styles
@@ -355,7 +356,10 @@ export function SideNavItem({
   size = 'md',
   'data-testid': testId,
   ref,
+  xstyle,
+  ...rest
 }: SideNavItemProps) {
+  const t = useTranslator();
   const {isCollapsed} = useSideNavCollapse();
   const renderMode = useSideNavRenderMode();
   const {closeMobileNav} = useAppShellMobile();
@@ -500,7 +504,7 @@ export function SideNavItem({
     // Items with children: popover trigger + popover
     if (hasChildren) {
       return (
-        <div {...stylex.props(styles.root)}>
+        <div {...stylex.props(styles.root, xstyle)}>
           <button
             ref={mergeRefs(ref, popover.triggerRef)}
             type="button"
@@ -552,7 +556,7 @@ export function SideNavItem({
     );
 
     return (
-      <div ref={itemRef} {...stylex.props(styles.root)}>
+      <div ref={itemRef} {...stylex.props(styles.root, xstyle)}>
         {collapsedElement}
         <Tooltip content={label} placement="end" anchorRef={itemRef} />
       </div>
@@ -626,7 +630,11 @@ export function SideNavItem({
         <button
           type="button"
           onClick={handleToggleClick}
-          aria-label={isItemCollapsed ? `Expand ${label}` : `Collapse ${label}`}
+          aria-label={
+            isItemCollapsed
+              ? t('@astryx.sideNavItem.expand', {label})
+              : t('@astryx.sideNavItem.collapse', {label})
+          }
           aria-expanded={!isItemCollapsed}
           aria-controls={`${id}-children`}
           {...stylex.props(styles.expandToggle)}>
@@ -664,7 +672,7 @@ export function SideNavItem({
   }
 
   const item = (
-    <div ref={itemRef} {...stylex.props(styles.root)}>
+    <div ref={itemRef} {...stylex.props(styles.root, xstyle)}>
       {itemElement}
       {hasChildren && !isCollapsed && (
         <div

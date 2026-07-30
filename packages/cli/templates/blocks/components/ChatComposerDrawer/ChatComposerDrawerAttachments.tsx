@@ -43,7 +43,7 @@ const IMAGE_ATTACHMENTS = [
 
 export default function ChatComposerDrawerAttachments() {
   return (
-    <Stack direction="vertical" gap={4} width={480}>
+    <Stack direction="vertical" gap={4} width={450} maxWidth="100%">
       <ChatComposer
         onSubmit={() => {}}
         drawer={

@@ -4,12 +4,7 @@
 
 import {useState} from 'react';
 
-import {
-  VStack,
-  HStack,
-  Layout,
-  LayoutContent,
-} from '@astryxdesign/core/Layout';
+import {VStack, HStack, Layout, LayoutContent} from '@astryxdesign/core/Layout';
 import {Text, Heading} from '@astryxdesign/core/Text';
 import {Card} from '@astryxdesign/core/Card';
 import {Grid, GridSpan} from '@astryxdesign/core/Grid';
@@ -642,7 +637,7 @@ function AssetRow({
       label={<Text weight="bold">{ticker}</Text>}
       description={name}
       href="#"
-      startContent={<Avatar name={ticker} size="small" />}
+      startContent={<Avatar name={ticker} size="md" />}
       endContent={
         <VStack gap={0} hAlign="end">
           <Text type="body">{value}</Text>
@@ -693,10 +688,7 @@ export default function DashboardPortfolioTemplate() {
             {/* KPI metric cards */}
             <Grid columns={{minWidth: 280, repeat: 'fit'}} gap={4}>
               {Array.from({length: Math.ceil(metrics.length / 2)}, (_, i) => (
-                <Grid
-                  key={i}
-                  columns={{minWidth: 280, repeat: 'fit'}}
-                  gap={4}>
+                <Grid key={i} columns={{minWidth: 280, repeat: 'fit'}} gap={4}>
                   {metrics.slice(i * 2, i * 2 + 2).map(m => (
                     <MetricCard key={m.label} {...m} />
                   ))}

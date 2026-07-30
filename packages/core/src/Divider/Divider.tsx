@@ -172,6 +172,7 @@ export function Divider({
   return (
     <div
       ref={ref}
+      {...props}
       role="separator"
       aria-orientation={orientation}
       {...mergeProps(
@@ -186,8 +187,7 @@ export function Divider({
         ),
         className,
         style,
-      )}
-      {...props}>
+      )}>
       <div
         {...stylex.props(
           isHorizontal ? lineStyles.horizontalLine : lineStyles.verticalLine,

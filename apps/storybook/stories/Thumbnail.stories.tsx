@@ -25,6 +25,11 @@ const meta: Meta<typeof Thumbnail> = {
       control: 'boolean',
       description: 'Whether the thumbnail is disabled',
     },
+    showRemoveOn: {
+      control: 'inline-radio',
+      options: ['always', 'hover'],
+      description: 'When the remove button is visible',
+    },
   },
 };
 
@@ -67,8 +72,49 @@ export const WithRemove: Story = {
         src={LIGHT_IMAGE}
         alt="Removable thumbnail"
         label="photo.png"
+        showRemoveOn="always"
         onRemove={() => setVisible(false)}
       />
+    );
+  },
+};
+
+export const RemoveOnHover: Story = {
+  name: 'Remove on hover',
+  render: () => {
+    const initial = [
+      {id: 1, src: LIGHT_IMAGE, label: 'light.jpg', alt: 'Light image'},
+      {id: 2, src: WARM_IMAGE, label: 'warm.jpg', alt: 'Warm tones'},
+      {id: 3, src: MIXED_IMAGE, label: 'mixed.jpg', alt: 'Mixed tones'},
+    ];
+    const [items, setItems] = useState(initial);
+    return (
+      <div>
+        <p style={{fontSize: 12, color: '#888', marginBottom: 8}}>
+          Remove button is hidden until you hover the thumbnail (or focus it
+          with the keyboard).
+        </p>
+        <div style={{display: 'flex', gap: 8, alignItems: 'flex-start'}}>
+          {items.map(item => (
+            <Thumbnail
+              key={item.id}
+              src={item.src}
+              alt={item.alt}
+              label={item.label}
+              showRemoveOn="hover"
+              onRemove={() =>
+                setItems(prev => prev.filter(i => i.id !== item.id))
+              }
+            />
+          ))}
+          {items.length === 0 && (
+            <p style={{color: '#888', fontSize: 12}}>
+              All removed.{' '}
+              <button onClick={() => setItems(initial)}>Reset</button>
+            </p>
+          )}
+        </div>
+      </div>
     );
   },
 };
@@ -88,6 +134,7 @@ export const WithCaption: Story = {
         src={WARM_IMAGE}
         alt="Photo with metadata"
         label="screenshot.png"
+        showRemoveOn="always"
         onRemove={() => setVisible(false)}
       />
     );
@@ -133,7 +180,11 @@ export const Placeholder: Story = {
       );
     }
     return (
-      <Thumbnail label="report.pdf" onRemove={() => setVisible(false)} />
+      <Thumbnail
+        label="report.pdf"
+        showRemoveOn="always"
+        onRemove={() => setVisible(false)}
+      />
     );
   },
 };
@@ -171,6 +222,7 @@ export const MediaModeTest: Story = {
               src={item.src}
               alt={item.alt}
               label={item.label}
+              showRemoveOn="always"
               onRemove={() =>
                 setItems(prev => prev.filter(i => i.label !== item.label))
               }
@@ -204,6 +256,7 @@ export const Gallery: Story = {
             src={item.src}
             alt={item.label}
             label={item.label}
+            showRemoveOn="always"
             onRemove={() =>
               setItems(prev => prev.filter(i => i.id !== item.id))
             }

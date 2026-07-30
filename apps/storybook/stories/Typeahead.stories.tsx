@@ -221,3 +221,29 @@ export const WithStartIcon: Story = {
   },
   name: 'With Start Icon',
 };
+
+export const StatusVariantComparison: Story = {
+  render: () => {
+    const [a, setA] = useState<SearchableItem | null>(null);
+    const [b, setB] = useState<SearchableItem | null>(null);
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: 24, width: 300}}>
+        <Typeahead
+          label="Attached (default)"
+          searchSource={fruitSource}
+          value={a}
+          onChange={setA}
+          status={{type: 'error', message: 'Please make a selection'}}
+        />
+        <Typeahead
+          label="Detached"
+          searchSource={fruitSource}
+          value={b}
+          onChange={setB}
+          status={{type: 'error', message: 'Please make a selection'}}
+          statusVariant="detached"
+        />
+      </div>
+    );
+  },
+};

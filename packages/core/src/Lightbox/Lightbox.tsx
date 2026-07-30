@@ -32,9 +32,10 @@ import {IconButton} from '../IconButton';
 import {useAnnounce} from '../hooks/useAnnounce';
 import {useScrollLock} from '../hooks/useScrollLock';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs, rtlStyles} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 /**
  * Media type for lightbox items.
@@ -198,7 +199,7 @@ const styles = stylex.create({
   closeButton: {
     position: 'absolute',
     top: spacingVars['--spacing-3'],
-    right: spacingVars['--spacing-3'],
+    insetInlineEnd: spacingVars['--spacing-3'],
     zIndex: 1,
   },
   navButton: {
@@ -208,15 +209,15 @@ const styles = stylex.create({
     zIndex: 1,
   },
   navPrev: {
-    left: spacingVars['--spacing-3'],
+    insetInlineStart: spacingVars['--spacing-3'],
   },
   navNext: {
-    right: spacingVars['--spacing-3'],
+    insetInlineEnd: spacingVars['--spacing-3'],
   },
   counter: {
     position: 'absolute',
     top: spacingVars['--spacing-3'],
-    left: spacingVars['--spacing-3'],
+    insetInlineStart: spacingVars['--spacing-3'],
     color: colorVars['--color-on-dark'],
     fontSize: typeScaleVars['--text-body-size'],
     lineHeight: typeScaleVars['--text-body-leading'],
@@ -282,6 +283,7 @@ export function Lightbox({
   onKeyDown: onKeyDownProp,
   ...props
 }: LightboxProps) {
+  const t = useTranslator();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const imageWrapperRef = useRef<HTMLDivElement>(null);
   const triggerElementRef = useRef<Element | null>(null);
@@ -504,7 +506,7 @@ export function Lightbox({
         handleKeyDown(e);
         onKeyDownProp?.(e);
       }}
-      aria-label={currentItem.alt || 'Media viewer'}
+      aria-label={currentItem.alt || t('@astryx.lightbox.mediaViewer')}
       {...mergeProps(
         themeProps('lightbox'),
         stylex.props(styles.dialog, xstyle),
@@ -517,7 +519,7 @@ export function Lightbox({
         <div {...stylex.props(styles.closeButton)}>
           <IconButton
             icon={<Icon icon="close" size="sm" color="inherit" />}
-            label="Close"
+            label={t('@astryx.lightbox.close')}
             variant="ghost"
             onClick={handleClose}
             xstyle={styles.controlButton}
@@ -530,8 +532,12 @@ export function Lightbox({
         {isGallery && (
           <div {...stylex.props(styles.navButton, styles.navPrev)}>
             <IconButton
-              icon={<Icon icon="chevronLeft" size="sm" color="inherit" />}
-              label="Previous"
+              icon={
+                <span {...stylex.props(rtlStyles.mirror)}>
+                  <Icon icon="chevronLeft" size="sm" color="inherit" />
+                </span>
+              }
+              label={t('@astryx.lightbox.previous')}
               variant="ghost"
               isDisabled={!canPrev}
               onClick={goToPrev}
@@ -585,8 +591,12 @@ export function Lightbox({
         {isGallery && (
           <div {...stylex.props(styles.navButton, styles.navNext)}>
             <IconButton
-              icon={<Icon icon="chevronRight" size="sm" color="inherit" />}
-              label="Next"
+              icon={
+                <span {...stylex.props(rtlStyles.mirror)}>
+                  <Icon icon="chevronRight" size="sm" color="inherit" />
+                </span>
+              }
+              label={t('@astryx.lightbox.next')}
               variant="ghost"
               isDisabled={!canNext}
               onClick={goToNext}

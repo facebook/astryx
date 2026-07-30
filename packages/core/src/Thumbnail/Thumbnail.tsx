@@ -4,14 +4,18 @@
 
 /**
  * @file Thumbnail.tsx
- * @input Uses React, stylex, Button, Skeleton, Spinner, MediaTheme, useImageMode
+ * @input Uses React, stylex, Button, Skeleton, Spinner
  * @output Exports Thumbnail component, ThumbnailProps
  * @position Core implementation; consumed by index.ts
  *
  * Square preview card for image attachments. Shows a skeleton shimmer while
  * the image loads, the image on success, or a placeholder on failure.
- * Uses useImageMode (APCA) to detect image luminance so the overlaid
- * remove button always has sufficient contrast.
+ * The overlaid remove button sits on a fixed --color-overlay scrim with an
+ * --color-on-dark icon so it always has sufficient contrast against the image.
+ *
+ * Images without `alt` are explicitly decorative (alt="" +
+ * role="presentation" + aria-hidden, matching Avatar). A dev-time warning
+ * fires once when `src` is set with no `alt` and no other name source.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Thumbnail/Thumbnail.doc.mjs
@@ -26,7 +30,6 @@ import {
   colorVars,
   radiusVars,
   spacingVars,
-  shadowVars,
   durationVars,
   easeVars,
 } from '../theme/tokens.stylex';
@@ -35,14 +38,12 @@ import {Icon} from '../Icon';
 import {Skeleton} from '../Skeleton';
 import {Spinner} from '../Spinner';
 import {Tooltip} from '../Tooltip/Tooltip';
-import {MediaTheme} from '../theme/MediaTheme';
-import {useImageMode} from '../hooks/useImageMode';
+import {useDevWarning} from '../hooks/useDevWarning';
 import type {BaseProps} from '../BaseProps';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
-
-/** Sample the region behind the remove button (20px button, 4px inset, in 64px container). */
-const BUTTON_REGION = {x: 0.5, y: 0.06, width: 0.44, height: 0.44};
+import {useTranslator} from '../i18n';
+import {thumbnailScope} from './thumbnail.markers.stylex';
 
 export interface ThumbnailProps extends BaseProps<HTMLDivElement> {
   /** Ref forwarded to the root element */
@@ -53,7 +54,14 @@ export interface ThumbnailProps extends BaseProps<HTMLDivElement> {
    */
   src?: string;
   /**
-   * Alt text for the image. Required for accessibility when `src` is provided.
+   * Alt text for the image.
+   *
+   * When omitted, the image is explicitly decorative (`alt=""` +
+   * `role="presentation"` + `aria-hidden`, matching Avatar) and hidden from
+   * assistive technology. Provide `alt` whenever the image conveys content;
+   * without it, screen reader users only hear the `label` (file name), or a
+   * generic "thumbnail" if `label` is also missing — which triggers a
+   * dev-time warning.
    */
   alt?: string;
   /**
@@ -89,6 +97,17 @@ export interface ThumbnailProps extends BaseProps<HTMLDivElement> {
    * @default false
    */
   isDisabled?: boolean;
+  /**
+   * When the remove button is visible.
+   * - `'hover'` — the button is revealed on hover, and on keyboard focus so
+   *   it stays reachable. On any touch-capable device it stays visible.
+   *   This is the default.
+   * - `'always'` — the button is always shown.
+   *
+   * Only has an effect when `onRemove` is set.
+   * @default 'hover'
+   */
+  showRemoveOn?: 'always' | 'hover';
   /**
    * Test ID for testing frameworks.
    */
@@ -139,22 +158,6 @@ const styles = stylex.create({
   },
   interactive: {
     cursor: 'pointer',
-    transitionProperty: 'opacity, box-shadow',
-    transitionDuration: durationVars['--duration-fast'],
-    transitionTimingFunction: easeVars['--ease-standard'],
-    boxShadow: {
-      default: 'none',
-      ':hover': {
-        '@media (hover: hover)': shadowVars['--shadow-med'],
-      },
-    },
-    opacity: {
-      default: 1,
-      ':hover': {
-        '@media (hover: hover)': 0.85,
-      },
-      ':active': 0.75,
-    },
     outline: {
       default: null,
       ':has(:focus-visible)': `2px solid ${colorVars['--color-accent']}`,
@@ -162,6 +165,33 @@ const styles = stylex.create({
     outlineOffset: {
       default: '0',
       ':has(:focus-visible)': '2px',
+    },
+  },
+  // Hover/pressed overlay — the exact same treatment as ClickableCard and
+  // SelectableCard. A transparent `::after` tints on hover/press instead of
+  // shifting shadow or opacity. Guarded by @media (hover: hover) so touch
+  // devices don't show a stuck hover state; active/pressed works everywhere.
+  overlay: {
+    '::after': {
+      content: '""',
+      position: 'absolute',
+      inset: 0,
+      borderRadius: 'inherit',
+      pointerEvents: 'none',
+      transitionProperty: 'background-color',
+      transitionDuration: durationVars['--duration-fast'],
+      transitionTimingFunction: easeVars['--ease-standard'],
+      backgroundColor: 'transparent',
+    },
+    ':active::after': {
+      backgroundColor: colorVars['--color-overlay-pressed'],
+    },
+  },
+  hoverOnPointer: {
+    '@media (hover: hover)': {
+      ':hover::after': {
+        backgroundColor: colorVars['--color-overlay-hover'],
+      },
     },
   },
   interactiveButton: {
@@ -174,14 +204,22 @@ const styles = stylex.create({
     overflow: 'hidden',
   },
 
-  removeButtonOverrides: {
+  removeSlot: {
     position: 'absolute',
     top: spacingVars['--spacing-1'],
-    right: spacingVars['--spacing-1'],
+    insetInlineEnd: spacingVars['--spacing-1'],
     zIndex: 1,
+    lineHeight: 0,
+  },
+  removeButtonOverrides: {
     '--_button-radius': `calc(${radiusVars['--radius-element']} - ${spacingVars['--spacing-1']})`,
     height: 20,
     minWidth: 20,
+    // Fixed colors instead of luminance-adapting theme: a translucent scrim
+    // (--color-overlay) plus an --color-on-dark icon reads on any image
+    // without sampling pixel brightness.
+    backgroundColor: colorVars['--color-overlay'],
+    color: colorVars['--color-on-dark'],
   },
   disabled: {
     opacity: 0.5,
@@ -197,6 +235,28 @@ const styles = stylex.create({
     borderRadius: 'inherit',
     zIndex: 1,
     lineHeight: 0,
+  },
+  // showRemoveOn="hover": the remove button is hidden at rest and revealed
+  // when the thumbnail is hovered or when focus enters it (keyboard). Only
+  // opacity is animated — the button stays mounted and focusable so tabbing
+  // to it triggers the :focus-within reveal. Any touch-capable device (incl.
+  // hybrid laptops that also report hover) keeps the button visible so the
+  // remove path is never gated behind an unavailable hover.
+  removeOnHover: {
+    opacity: {
+      default: 0,
+      [stylex.when.ancestor(':hover', thumbnailScope)]: {
+        '@media (hover: hover)': 1,
+      },
+      [stylex.when.ancestor(':focus-within', thumbnailScope)]: 1,
+      '@media (any-pointer: coarse)': 1,
+    },
+    transitionProperty: 'opacity',
+    transitionDuration: {
+      default: durationVars['--duration-fast'],
+      '@media (prefers-reduced-motion: reduce)': '0s',
+    },
+    transitionTimingFunction: easeVars['--ease-standard'],
   },
 });
 
@@ -226,15 +286,18 @@ function ImagePlaceholder() {
  *
  * Shows a skeleton shimmer while the image loads, the image on success, or
  * a placeholder icon on failure / when no src is provided. An overlaid
- * remove button appears when `onRemove` is set.
+ * remove button appears when `onRemove` is set — revealed on hover or
+ * keyboard focus by default (`showRemoveOn`), or always shown.
  *
- * Uses `useImageMode` (APCA) to detect image luminance and `MediaTheme`
- * to ensure the remove button always has sufficient contrast against the image.
+ * The remove button uses a fixed `--color-overlay` scrim with an
+ * `--color-on-dark` icon so it stays legible on any image without sampling
+ * the image's luminance.
  *
  * @example
  * ```
  * <Thumbnail src="/photo.jpg" alt="Vacation photo" onRemove={() => {}} />
  * <Thumbnail src="/preview.png" alt="Preview" onClick={() => {}} label="preview.png" />
+ * <Thumbnail src="/logo.png" alt="Logo" onRemove={() => {}} showRemoveOn="always" />
  * ```
  */
 export function Thumbnail({
@@ -245,6 +308,7 @@ export function Thumbnail({
   onClick,
   isLoading = false,
   isDisabled = false,
+  showRemoveOn = 'hover',
   xstyle,
   className,
   style,
@@ -252,7 +316,7 @@ export function Thumbnail({
   ref,
   ...props
 }: ThumbnailProps) {
-  const imageMode = useImageMode(src, {region: BUTTON_REGION, fallback: null});
+  const t = useTranslator();
 
   const hasSrc = src != null;
   const showSkeleton = isLoading && !hasSrc;
@@ -260,13 +324,47 @@ export function Thumbnail({
   const showUploadOverlay = isLoading && hasSrc;
   const showPlaceholder = !isLoading && !hasSrc;
   const isInteractive = onClick != null && !isDisabled && !isLoading;
+  const hasRemove = onRemove != null && !isDisabled;
+  const isHoverReveal = hasRemove && showRemoveOn === 'hover';
   const accessibleName =
-    label && alt ? `${label} — ${alt}` : (label ?? alt ?? 'thumbnail');
+    label && alt
+      ? `${label} — ${alt}`
+      : (label ?? alt ?? t('@astryx.thumbnail.fallbackName'));
+
+  // Without `alt`, the image is explicitly decorative rather than silently
+  // empty-alt, matching Avatar's handling of unnamed images.
+  const isImageDecorative = !alt;
+
+  // Dev-time guardrail: `src` with no `alt` hides the image from assistive
+  // technology. That is fine when the thumbnail is otherwise named — `label`
+  // (or a consumer-provided aria name) becomes the group's accessible name —
+  // but with no name source at all the group falls back to a generic
+  // "thumbnail".
+  const hasNameSource =
+    alt != null ||
+    label != null ||
+    props['aria-label'] != null ||
+    props['aria-labelledby'] != null;
+  useDevWarning(
+    'Thumbnail',
+    '`src` is set without `alt` or `label`. The image is ' +
+      'treated as decorative and hidden from assistive technology, and ' +
+      'the thumbnail falls back to a generic "thumbnail" name. Pass ' +
+      '`alt` to describe the image content, or `label` (file name) to ' +
+      'name the thumbnail.',
+    hasSrc && !hasNameSource,
+  );
 
   const imageContent = (
     <>
       {showImage && (
-        <img src={src} alt={alt ?? ''} {...stylex.props(styles.image)} />
+        <img
+          src={src}
+          alt={alt ?? ''}
+          role={isImageDecorative ? 'presentation' : undefined}
+          aria-hidden={isImageDecorative || undefined}
+          {...stylex.props(styles.image)}
+        />
       )}
       {showSkeleton && <Skeleton radius={2} />}
       {showPlaceholder && (
@@ -277,11 +375,15 @@ export function Thumbnail({
     </>
   );
 
-  const removeButtonEl =
-    onRemove != null && !isDisabled ? (
+  const removeButtonEl = hasRemove ? (
+    <div
+      {...stylex.props(
+        styles.removeSlot,
+        isHoverReveal && styles.removeOnHover,
+      )}>
       <Button
         icon={<Icon icon="close" size="xsm" />}
-        label={`Remove ${accessibleName}`}
+        label={t('@astryx.thumbnail.remove', {accessibleName})}
         variant="secondary"
         size="sm"
         isIconOnly
@@ -291,7 +393,8 @@ export function Thumbnail({
         }}
         xstyle={styles.removeButtonOverrides}
       />
-    ) : null;
+    </div>
+  ) : null;
 
   const thumbnail = (
     <div
@@ -309,13 +412,16 @@ export function Thumbnail({
       <div
         {...stylex.props(
           styles.imageContainer,
+          isHoverReveal && thumbnailScope,
           isInteractive && styles.interactive,
+          isInteractive && styles.overlay,
+          isInteractive && styles.hoverOnPointer,
         )}>
         {isInteractive ? (
           <button
             type="button"
             onClick={onClick}
-            aria-label={`Open ${accessibleName}`}
+            aria-label={t('@astryx.thumbnail.open', {accessibleName})}
             {...stylex.props(styles.interactiveButton)}>
             {imageContent}
           </button>
@@ -328,11 +434,7 @@ export function Thumbnail({
             <Spinner size="sm" shade="onMedia" />
           </div>
         )}
-        {removeButtonEl != null && imageMode != null ? (
-          <MediaTheme mode={imageMode}>{removeButtonEl}</MediaTheme>
-        ) : (
-          removeButtonEl
-        )}
+        {removeButtonEl}
       </div>
     </div>
   );

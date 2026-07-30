@@ -31,18 +31,13 @@ describe('Item', () => {
   });
 
   it('renders marker', () => {
-    render(
-      <Item label="Item" marker={<span data-testid="marker">•</span>} />,
-    );
+    render(<Item label="Item" marker={<span data-testid="marker">•</span>} />);
     expect(screen.getByTestId('marker')).toBeInTheDocument();
   });
 
   it('renders startContent', () => {
     render(
-      <Item
-        label="Item"
-        startContent={<span data-testid="avatar">A</span>}
-      />,
+      <Item label="Item" startContent={<span data-testid="avatar">A</span>} />,
     );
     expect(screen.getByTestId('avatar')).toBeInTheDocument();
   });
@@ -255,12 +250,7 @@ describe('Item', () => {
   it('does not fire onClick when disabled item is clicked', async () => {
     const onClick = vi.fn();
     render(
-      <Item
-        label="Disabled"
-        onClick={onClick}
-        isDisabled
-        data-testid="item"
-      />,
+      <Item label="Disabled" onClick={onClick} isDisabled data-testid="item" />,
     );
     const item = screen.getByTestId('item');
     item.dispatchEvent(new MouseEvent('click', {bubbles: true}));
@@ -276,14 +266,46 @@ describe('Item', () => {
   // Selected state
   // ===========================================================================
 
-  it('applies aria-selected when isSelected', () => {
+  it('conveys selection via aria-current on the default div root', () => {
+    // aria-selected is invalid ARIA on a generic div (axe: aria-allowed-attr),
+    // so selection is exposed via aria-current, which is valid on any element.
     render(<Item label="Selected" isSelected data-testid="item" />);
-    expect(screen.getByTestId('item')).toHaveAttribute('aria-selected', 'true');
+    const item = screen.getByTestId('item');
+    expect(item).not.toHaveAttribute('aria-selected');
+    expect(item).toHaveAttribute('aria-current', 'true');
   });
 
-  it('does not apply aria-selected when not selected', () => {
-    render(<Item label="Not Selected" data-testid="item" />);
-    expect(screen.getByTestId('item')).not.toHaveAttribute('aria-selected');
+  it('applies aria-selected (not aria-current) when the role permits it', () => {
+    render(
+      <Item label="Selected" isSelected role="option" data-testid="item" />,
+    );
+    const item = screen.getByTestId('item');
+    expect(item).toHaveAttribute('aria-selected', 'true');
+    // A permitted role uses aria-selected; aria-current would be redundant.
+    expect(item).not.toHaveAttribute('aria-current');
+  });
+
+  it('falls back to aria-current when the role does not permit aria-selected', () => {
+    render(
+      <Item label="Selected" isSelected role="menuitem" data-testid="item" />,
+    );
+    const item = screen.getByTestId('item');
+    expect(item).not.toHaveAttribute('aria-selected');
+    expect(item).toHaveAttribute('aria-current', 'true');
+  });
+
+  it('applies neither aria-selected nor aria-current when not selected', () => {
+    render(<Item label="Not Selected" role="option" data-testid="item" />);
+    const item = screen.getByTestId('item');
+    expect(item).not.toHaveAttribute('aria-selected');
+    expect(item).not.toHaveAttribute('aria-current');
+  });
+
+  it('lets a consumer-provided aria-current win over the selection default', () => {
+    render(
+      <Item label="Step" isSelected aria-current="step" data-testid="item" />,
+    );
+    expect(screen.getByTestId('item')).toHaveAttribute('aria-current', 'step');
   });
 
   // ===========================================================================

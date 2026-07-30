@@ -1,5 +1,238 @@
 # @xds/core
 
+# 0.1.9
+
+#### New Features
+
+- Avatar: add a `tooltip?: string | boolean` prop for a name-on-hover tooltip. Omitting it (or `true`) shows the avatar's `name` on hover and keyboard focus; a string shows that text instead (no need to wrap in `Tooltip`); `false` disables it. Avatar owns the tooltip via the existing Tooltip hook, so there's no extra wrapper DOM. Because this adds a default tooltip to every existing named Avatar, set `tooltip={false}` when you supply your own `Tooltip`/`HoverCard` overlay. The root `aria-label` (`alt || name`) is unchanged; the default name tooltip is visual-only (no `aria-describedby` double-announce), while a custom string tooltip is exposed as a description. Decorative avatars (no `name`/`alt`) get no tooltip. (#4164)
+- BreadcrumbItem gains a `menu` prop that turns a crumb into a menu trigger for switching between sibling destinations. It accepts the same item API as DropdownMenu/MoreMenu/ContextMenu (a `DropdownMenuOption[]` array or composed item children), so existing menu-item definitions drop into a breadcrumb with no rewrite. The item components are also re-exported under `Breadcrumb*` aliases.
+- Calendar: make the today/selected day-cell ring precisely themeable. The day cell now reflects a compound `marker` state (`today-only` / `today-in-range`) that maps 1:1 to the treatment actually drawn, so `defineTheme({components: {'calendar-day': {'marker:today-only': {...}}}})` targets exactly those states without over-matching or needing a `:not()` exclusion. Default rendering is unchanged.
+- Calendar: add a dedicated `astryx-calendar-nav` theme target for the prev/next month-nav buttons, so consumers can theme the nav controls (color, radius, per-direction, disabled edge) without reaching every Button via the global `astryx-button` handle. Reflects `nav` (prev/next) and the `disabled` state as data attributes.
+- ChatComposer: make custom inputs first-class. `useChatComposerContext()` and its types are now public, so any input in the `input` slot can read `value`/`onChange`/`onSubmit`/`canSend`/`placeholder`/`isDisabled` and drive the shell's send button. Inputs can register a focus control on `inputControlRef` so click-to-focus works for any input shape (not just `contenteditable`/`textarea`); the shell keeps a DOM-query fallback for uninstrumented inputs.
+- ChatComposerInput: add an `onKeyDown` seam so consumers can host platform- or app-specific key handling — e.g. `preventDefault()` Enter to insert a newline on a touch keyboard, or submit on Cmd/Ctrl+Enter. Enter also no longer submits mid-IME-composition.
+- CommandPalette: add a dedicated `astryx-command-palette-group-heading` theme target on the group heading, so consumers can theme just the heading (e.g. its padding or typography) via `defineTheme` instead of a fragile structural selector. The group root keeps its own `astryx-command-palette-group` target.
+- DateInput gains a `format` prop for the committed date value, reusing Timestamp's `format` vocabulary so the same literal renders the same date shape in both components. Named values are `date_long` (the default, "March 21, 2026"), `date` ("Mar 21, 2026"), `date_weekday` ("Wed, Mar 21, 2026"), and `system_date` ("2026-03-21"); a `(value) => string` function is also accepted for custom output. The `date_long` default is byte-identical to DateInput's previous long-month rendering, so existing usage is unchanged. This also extends Timestamp with two new shared members, `date_long` and `date_weekday`, giving the two components full value parity on the date-only formats. Formatting applies only to the committed value, never to text being typed.
+- Add an `elevation` prop to configurable surfaces — Card, ClickableCard, SelectableCard, Button, IconButton, ButtonGroup, and Banner take the full `'none' | 'low' | 'med' | 'high'` scale; ChatComposer takes `'none' | 'low'`. Defaults preserve today's appearance (`none` everywhere except ChatComposer's `low`), so nothing changes unless you opt in. (#4146)
+- OverflowList: add `maxVisibleItems` to cap the number of visible items (the ceiling partner to `minVisibleItems`) and `maxRows` for bounded multi-row wrapping — items wrap onto up to N rows, then collapse into the overflow indicator. Both props are optional and default to off, so single-line behavior is unchanged. See #4176.
+- Add `useTableRowStatus`, a plugin that prepends a narrow column
+  signaling per-row status.
+- Thumbnail: add `showRemoveOn` prop — `'hover'` (default) reveals the remove button on hover or keyboard focus and keeps it visible on touch; `'always'` shows it at rest.
+- Table tree: add an optional expand-all/collapse-all header control (#4142)
+  `useTableTreeState` now returns an aggregate `isAllExpanded` state (`true` / `false` / `'indeterminate'`) and threads `expandAll` / `collapseAll` into `treeConfig`. `useTableTreeData` gains a `hasExpandAllControl` prop: when set, it renders an expand-all/collapse-all toggle in the tree column header, wired to that state, so consumers no longer need to hand-roll external buttons. Flat data stays a full no-op. This is the first affordance folded in from `useTableRowExpansion` as part of converging the two tree plugins.
+- TreeList: add a dedicated `astryx-tree-list-chevron` theme target for the expand/collapse toggle, so consumers can theme the chevron (color, per open/closed state) via `defineTheme` instead of reaching it through the functional `[data-tree-toggle]` attribute. Reflects the open/closed state as a `data-state` attribute (`expanded`/`collapsed`); the functional `data-tree-toggle` hook is unchanged.
+- TreeList: add a stable `astryx-tree-list-guide` theme target on the hierarchy guide (connector) line elements, so consumers can recolor or hide the guides through `defineTheme` (e.g. `backgroundColor`, or `display: 'none'` to hide them) instead of hiding the built-in connectors and reimplementing them with unlayered CSS.
+- TreeList: add a dedicated `astryx-tree-list-item-label` theme target on the item's label text, so consumers can theme just the label (e.g. bold the selected item's label) via `defineTheme` instead of a fragile `button:not([data-tree-toggle]) > span` structural selector. Reflects the row's `selected` state as a `data-selected` attribute on the label.
+
+#### Fixes
+
+- AvatarStatusDot: pair each variant with a distinct built-in shape — success stays a filled dot, neutral renders as a ring, error gets a minus bar — so status no longer relies on colour alone (WCAG 2.1 SC 1.4.1, #4143). A rendered `icon` replaces the shape glyph at sizes where icons fit; themes can target the new stable `astryx-avatar-status-dot-glyph` class and its `data-shape` attribute — a stroked inline `<svg>` painted from the dot's `currentColor`.
+- Button: link-rendered buttons (`href`) now expose `aria-busy` while loading, matching the `<button>` branch. Previously an interruptible loading link showed the spinner and announced "Loading" but carried no machine-readable busy state.
+- Calendar only marks in-month date cells as today, preventing duplicate today indicators in multi-month views.
+- Carousel: slides now expose APG slide semantics (role=group, aria-roledescription="slide", "Slide N of M" labels) instead of anonymous divs.
+- Honor `prefers-reduced-motion` in ChatToolCalls (chevron rotation, expand/collapse), ChatLayoutScrollButton (pill show/hide), and ChatDictationButton (equalizer bars).
+- Chat/useChatStreamScroll: the scroll-follow spring now respects `prefers-reduced-motion` — locked following, `scrollToBottom()`, and `lock()` fall back to the existing instant jump, so the transcript still tracks the bottom without animated travel. Follow-up promised in #3800.
+- Chat: the composer drawer toggle now references its disclosed content via aria-controls, so assistive tech can navigate from the toggle to the drawer.
+- ChatSendButton now forwards `className`, `style`, and pass-through attributes (`data-*`, `aria-*`, and other rest props) to the rendered button. Previously these were silently dropped. (#4190)
+- Chat: tool-call error details are now exposed to screen readers and keyboard users instead of living only in a hover-only title attribute.
+- CheckboxInput: the indeterminate mark now uses the `--radius-full` token instead of a hardcoded radius, for token consistency. No visual change.
+- CheckboxList: items with rich (non-string) labels can now provide an accessibleLabel so their checkbox no longer announces as the literal "Checkbox".
+- CodeBlock: collapsed code regions are now inert, so keyboard focus can no longer land on the invisible scroll container while collapsed.
+- CommandPalette: forward BaseProps pass-through attributes (className, style, xstyle, data-_, aria-_) to the underlying Dialog. Previously these were silently dropped.
+- CommandPalette: the search input (role=combobox) now has an accessible name by default, from the new label prop or the visible placeholder. Previously screen readers announced a nameless combobox.
+- DateTimeInput: ArrowDown (and Alt+ArrowDown) in the date field now opens the calendar popover from the keyboard, matching DateInput and the advertised combobox pattern.
+- Dialog: modals are now automatically labelled by their DialogHeader title via aria-labelledby, matching AlertDialog. Unnamed open dialogs warn in development.
+- Dialog: the entry animation is disabled under prefers-reduced-motion, matching the Layer animation guards.
+- Fix Divider rest-prop spread order so consumer-passed HTML attributes cannot overwrite the component's `role="separator"` or `aria-orientation`.
+- FieldLabel now forwards className, style, xstyle, and pass-through attributes (data-_, aria-_, event handlers) to the rendered element. Previously these were accepted by the type but silently dropped.
+- Field/FieldStatus: status and error messages are now announced through persistent live regions, so they are reliably read by screen readers regardless of when they appear.
+- FileInput: the trigger's accessible name now includes the selected filenames, so screen-reader users can review what is attached when refocusing the control.
+- Prevent PowerSearch edit popover from closing when selecting multi-select options via Enter (#4245)
+- Selector/MultiSelector: PageUp/PageDown now jump the active option to the first/last match while searching, complementing Home/End which stay on text-caret movement.
+- HoverCard: popups now expose a named dialog when the new label prop is set, and honest group semantics otherwise. Previously every hover card announced as an unnamed dialog.
+- Item: aria-selected is now emitted only when the item's role permits it (option, tab, treeitem, grid cells), removing invalid ARIA from plain list items.
+- MobileNav: the toggle button now exposes `aria-expanded` and references the nav drawer via `aria-controls`, so screen-reader users can tell whether the drawer is open and what the button controls. (#3721)
+- MultiSelector: searching within the options popover now announces the number of matching results ("3 results" / "No results found") to screen readers, mirroring Selector and Typeahead. Previously filtering happened silently.
+- SideNav/TopNav: collapsed heading popovers no longer wrap their menus in a modal dialog, and the heading button is no longer an invalid child of the menu.
+- Slider now clamps controlled values to its minimum and maximum before positioning the thumb and exposing ARIA values.
+- Slider: required sliders now convey the required state to screen readers through the thumb's accessible description (aria-required is invalid on the slider role).
+- Make the CLI's `.mjs` sources fully strict-typecheckable (checkJs + JSDoc)
+  Annotated the entire CLI package so `tsconfig.strict.json` (full `strict` `checkJs` over `src`, `bin`, `scripts`, `docs`, and the emitted `templates`) reports zero errors — down from 1717. Fixes are JSDoc-only: no runtime logic changed, `.mjs` stays `.mjs`. Strict checking also surfaced and corrected several type-contract drifts: the `upgrade.run` response type (declared a `depsUpdated` field the command never emits, and omitted the real `integrations`/`filesChanged`/`transformsApplied`/`errors`), registered the emitted `theme.list`/`theme.add`/`layout.*` response types in the `--json` envelope union, and added `category?` to `ReferenceSection` in core's docs types (reference docs already emit it).
+- Table: the selection plugin accepts getRowLabel so row checkboxes announce which row they select, instead of an undifferentiated "Select row".
+- Text: an explicit `size` now overrides the font-size of a themed `type`. The `size` class lived in a lower cascade layer (`astryx-base`) than a theme's per-type font-size rule (`astryx-theme`), so `<Text type="supporting" size="xsm">` silently kept the type's size. Themes now re-emit the size classes in the theme layer so `size` wins as documented.
+- Thumbnail: replace the hover box-shadow on interactive tiles with the same `::after` overlay treatment ClickableCard and SelectableCard use. All three now tint on hover with `--color-overlay-hover` (and `--color-overlay-pressed` on press), so interactive feedback is consistent across the card family.
+- Thumbnail/TopNavMegaMenuFeaturedCard: images without alt text are now explicitly decorative instead of silently empty-alt, matching Avatar's handling.
+- Thumbnail: the overlaid remove button now uses a fixed `--color-overlay` scrim with an `--color-on-dark` icon instead of adapting to the image's luminance, so it has reliable contrast on any image.
+- Tokenizer: adding and removing tokens (including Backspace on an empty input) is now announced to screen readers. Previously tokens appeared and disappeared silently.
+- TopNav: TopNavMegaMenu triggers now expose aria-controls, and the panel is a labeled group instead of an invalid modal-dialog-wrapped menu.
+- TopNav: TopNavMenu popups now expose proper menu semantics (no modal dialog wrapper) with the full APG keyboard pattern (roving tabindex, arrow keys, typeahead).
+
+#### Documentation
+
+- docs(Tokenizer, PowerSearch): document and test the existing startIcon prop
+  Both components have shipped a working `startIcon?: ReactNode | IconType` prop for a while (`PowerSearch` forwards it verbatim to the internal `Tokenizer`, and it's already exercised in Storybook), but neither's `.doc.mjs` documented it and neither had test coverage — so it was invisible to `astryx component <Name> --dense`, the docsite props table, and anyone (human or AI) relying on those as the source of truth. No behavior change; adds the missing props-table entries (en/zh/dense) and colocated tests confirming the icon renders and forwards correctly.
+
+#### Other Changes
+
+- Compact per-row status signal (error, warning, unread, etc.) without a
+  dedicated status column: a colored status dot by default, or an icon when provided.
+- `getStatus(item)` maps a row to `{color, icon?, label?}`, or `null` for no
+  indicator. `color` accepts a semantic status name (`success`/`error`/`warning`/`accent`/`red`/`green`/etc.) mapped to a theme token, or a raw CSS color as an escape hatch.
+- `icon` renders the status as a shape signifier instead of the dot, which is
+  more accessible than color alone when multiple statuses coexist. `label` supplies the accessible name.
+- Memoize `getStatus` with `useCallback` for a stable plugin identity.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @AKnassa
+- @bhamodi
+- @cixzhang
+- @ejc3
+- @freddymeta
+- @HelloOjasMutreja
+- @humbertovirtudes
+- @josephfarina
+- @kentonquatman
+- @Kevinjohn
+- @saadpocalypse
+- @yyq1025
+
+---
+
+# 0.1.8
+
+#### Breaking Changes
+
+- Avatar and AvatarGroup adopt Icon's abbreviated size scale — `size` now takes `xsm`/`sm`/`md`/`lg`/`xl` instead of `tiny`/`xsmall`/`small`/`medium`/`large`. Pixel values are unchanged (20/24/36/48/128px) and the default is now `md` (still 36px, formerly `small`). Avatar's tiers stay larger than Icon's because avatars align with media rather than glyphs. Run `astryx upgrade` to migrate call sites. (#2672)
+
+#### New Features
+
+- Collapsible: the content area now anchors body typography (font family, size, weight, line-height) instead of inheriting from its surroundings, and exposes a stable `astryx-collapsible-content` theme target so revealed text can be themed externally.
+- Collapsible: add an `isDisabled` prop to disable a single item. A disabled item's trigger can't be toggled and is dimmed; following the system-wide disabled convention it uses `aria-disabled` (not the native `disabled` attribute) and drops out of the tab order, staying perceivable to assistive tech. Disabling doesn't collapse an already-open item. Works standalone and inside CollapsibleGroup.
+- `@astryxdesign/core`'s `docs.mjs` now redirects to the CLI so agents converge on a single documentation entry point (`astryx docs` / `astryx init`) instead of a large standalone script. (#4207)
+- DropdownMenu selectable items: add `DropdownMenuCheckboxItem` (independent toggle, `role="menuitemcheckbox"`) and `DropdownMenuRadioGroup` + `DropdownMenuRadioItem` (single-select, `role="menuitemradio"`). The control size derives from the menu's item size and swaps to the row's inline-end on touch. They also work inside `ContextMenu` (re-exported as `ContextMenuCheckboxItem` / `ContextMenuRadioGroup` / `ContextMenuRadioItem`). Both menus' keyboard/typeahead/activation now recognize the selectable roles, and the menu context (`DropdownMenuContext`, `useDropdownMenuContext`, `DropdownMenuSize`) is exported for building custom menu items. See #3829.
+- Icon: add an optional `label` prop for the accessible name. Setting it makes a standalone icon meaningful (`role="img"` + `aria-label`, no `aria-hidden`), collapsing the old three-attribute dance into one prop; omitting it (or passing `''`) keeps the decorative default (`aria-hidden`).
+- "Foolproof init": both `@astryxdesign/core` and `@astryxdesign/cli` now print a postinstall nudge pointing you to `npx @astryxdesign/cli init`, `astryx` commands nudge you to finish setup until init has run, and `astryx init` runs non-interactively (no TTY required) so it works in CI and agent environments. (#4147, #4153, #4154, #4155)
+- Outline: keyboard navigation, navigate callbacks, and scroll-scoping props (#2527)
+  Layers the public API deferred out of #2746 onto the scroll-spy engine and click-lock that already shipped. No visual change.
+- Table: add a tree-data plugin — `useTableTreeState` and `useTableTreeData` — for rendering and managing hierarchical (parent/child) rows, expansion state, and flattening. Exported from `@astryxdesign/core/Table`. (#3789)
+
+#### Fixes
+
+- `AvatarGroupOverflow` now grows into a pill for long `+N` counts so the number never clips.
+  The indicator was a fixed-size circle, so wide counts (e.g. `+4912`) overflowed and crowded the edges. It now uses a minimum width equal to the avatar size plus horizontal padding: short counts (`+5`) stay a perfect circle, while longer counts grow horizontally into a stadium/pill and remain legible. No new public props.
+- Carousel now scrolls horizontally when you hold Shift and scroll the mouse wheel. Trackpad users already got horizontal scroll for free; this brings standard mouse (vertical-only wheel) users to parity using the established Shift + wheel convention. Native trackpad horizontal scrolling and the prev/next buttons are unchanged.
+- Citation: a non-interactive citation (no `source.url`) now keeps the default cursor instead of showing a pointer, so only linked citations look clickable. The pointer cursor is applied alongside the existing hover treatment for both the `label` and `number` variants (#4134).
+- Stop suggesting bare `npx astryx` before the CLI is installed — it resolves to an unrelated package on the npm registry.
+  The CLI now emits an install-aware invocation everywhere it prints a command:
+- Icon: size variants (`xsm`/`sm`/`md`/`lg`) now use `rem` instead of hardcoded `px`, so icons scale in step with text when the document/root `font-size` changes — matching the rest of the design system's rem-based type scale. Fixes #4092.
+- Guard useTableRowExpansionState tree walks against cyclic data (#3971)
+  The `depthMap`, flattened `data`, and `allExpandableKeys` walks now track the ancestor keys on the current path and skip edges that point back at an ancestor, so self-referential or cyclic row data terminates instead of overflowing the stack.
+- Route the Table sortable plugin's header-button aria-labels ("Sort by …", "… sorted …", "… priority … of …") through `useTranslator()` with new `@astryx.table.sort.sortBy` / `sortedBy` / `sortedByWithPriority` / `direction.*` catalog keys, so they localize like the sort menu labels already do (#3618, tracker #3636). The direction word resolves through its own key rather than interpolating the raw enum value. English output is unchanged.
+- Table: the tree row expander's `aria-label` is now localized through `useTranslator()` instead of a hardcoded English string, so expand/collapse controls announce in the app's language. (#4149)
+- TabList `hasDivider` reserves a gap so the hover pill and adjacent buttons no longer touch the underline
+  A divided TabList now reserves 4px between the tabs and the divider rail. The hover highlight sits clear of the underline, and a same-size Button placed alongside the tabs aligns to the tab baseline instead of butting the rail — so a `md` tab strip pairs with a `md` button. The selected indicator still rests on the rail. Non-divided tab lists are unchanged. TabList inside a `Toolbar` with `dividers={['bottom']}` gets the same alignment via the toolbar's own spacing.
+- TreeList: focusing a parent row no longer leaks the focus-visible outline onto its descendant rows — each row's ring now resolves from its own nearest treeitem instead of matching any focused ancestor (#4130)
+
+#### Documentation
+
+- DropdownMenu and DropdownMenuItem: seed playground defaults so the docsite properties-tab preview renders real content instead of an empty trigger.
+
+#### Other Changes
+
+- Installed / global / dev runs suggest `<pm> astryx <cmd>` (e.g. `pnpm exec astryx …`), unchanged.
+- One-off runs (launched via `npx`/`pnpm dlx`/`yarn dlx`/`bunx`) suggest the scoped package `<dlx> @astryxdesign/cli <cmd>`, which always resolves to us.
+- Improved translator context in the shipped English catalog (`packages/core/locales/en.json`) descriptions. Sharpened ~172 entries — added screen-reader-only clarifications, ICU-composition examples, polysemy warnings, and set-pairing notes — so translators working in Crowdin get better context. No changes to `defaultMessage` values, keys, or runtime API.
+- **Keyboard navigation** — the outline is now a single tab stop (roving tabindex via `useListFocus`), seated on the _active_ heading per WAI-ARIA, so tabbing into a table of contents while reading section 7 lands on section 7 rather than sending the reader back to section 1. Arrow keys move between headings, Home/End jump to the ends, and Enter/Space activate. A 40-heading table of contents costs one Tab press instead of 40, and Tab still leaves the outline in one press.
+- **`onNavigateStart(id)` / `onNavigateEnd(id)`** — fire around the smooth scroll started by a click or keyboard activation, so an app can drive an arrival effect. `onNavigateEnd` resolves on `scrollend` where supported and on a settle timeout where it is not (Safari), so it also fires correctly when reduced motion collapses the scroll into an instant jump. It fires exactly once for every `onNavigateStart` — including when the user interrupts the scroll — so a "navigating" state can never leak.
+- **`offset`** — the height of a fixed header overlaying the top of the scroll root. It shifts both the activation line **and** the scroll landing by the same amount, so a heading activates exactly where navigating to it puts it: below the header, not hidden underneath it. It composes with each heading's own `scroll-margin-top` (the header, then the breathing room below it) rather than replacing it — leave `offset` at 0 when nothing overlays the content and let `scroll-margin-top` do the work, since the browser already honors it.
+- **`scrollContainerRef`** — scope scroll tracking to a specific container instead of auto-detecting the nearest scrollable ancestor. Fixes the table of contents whose highlight never moves inside a split pane, modal, or dashboard panel. The default (viewport) path is unchanged.
+- **`hasScrollOnClick`** (default `true`) — set to `false` to own the scrolling yourself; the outline still updates the active item, the hash, and the navigate callbacks.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @AKnassa
+- @cixzhang
+- @ernestt
+- @is-jain
+- @joeyfarina
+- @josephfarina
+- @MeGaurav4
+- @nynexman4464
+
+---
+
+# 0.1.7
+
+#### Breaking Changes
+
+- Table plugin render-prop interfaces (`TableRenderProps`, `HeaderRowRenderProps`, `HeaderCellRenderProps`, `BodyRowRenderProps`, `BodyCellRenderProps`, `ScrollWrapperRenderProps`) and the `scrollWrapper` component contract rename their StyleX array field `styles` → `xstyle`, matching the prop name sub-components receive it under. Custom plugin authors: rename `props.styles` reads and `styles:` writes in transform functions (#3679)
+  **Codemod:** `npx astryx upgrade --codemod rename-table-renderprops-styles-to-xstyle`
+
+#### New Features
+
+- Export the authoring factories from `@astryxdesign/core`: `createConfig` at `@astryxdesign/core/config` and `createIntegration`/`createPageTemplate`/`createBlockTemplate`/`createComponentDoc`/`createFunctionDoc`/`createDoc` at `@astryxdesign/core/authoring`. Authoring a config or integration no longer requires depending on the CLI. Existing `@astryxdesign/cli/*` imports keep working via re-export.
+- Button: new `width` prop following the input field width convention (`SizeValue`: numbers are pixels, strings are used as-is). `width="100%"` removes the need for a `width: '100%'` xstyle override or a stretch layout wrapper for full-width CTAs in auth forms, dialogs, and mobile layouts (#2600).
+- **Astryx components are now translatable.** Wrap your app in `<InternationalizationProvider locale="...">` and pass one or more locale catalogs to render astryx UI in the language of your choice; call `useTranslator()` inside your own components to translate consumer strings against the active locale. Astryx ships an English catalog with BCP 47 regional fallback (e.g. `pt-BR` → `pt` → `en`), so consumers who never render a provider see today's English strings unchanged.
+- **Translation coverage now spans the full component set** — PowerSearch (UI chrome, value-editor labels/placeholders, the 21 built-in operator labels, and ICU-pluralized result counts), plus AlertDialog, AppShell, Banner, Breadcrumbs, Calendar, Chat, CommandPalette, ContextMenu, date/time inputs, Dialog, DropdownMenu, Lightbox, Link, Markdown, mobile/side/top nav, Outline, Popover, Resizable, Selector/MultiSelector, Table (and its filter/selection/sort plugins), Toast, Tokenizer, Typeahead, and related interactive affordances. Placeholder strings that used `...` are normalized to `…` (U+2026) in the English catalog; consumers who snapshot-test the exact three-dot form will see a diff, and consumers passing an explicit `placeholder` are unaffected.
+- Two i18n-related **type refinements** (source-compatible for existing usage): `PowerSearchOperator` is now a discriminated union — `{key, value, label}` (raw text) or `{key, value, i18nKey}` (astryx-translated); passing `label` compiles and behaves unchanged, while a bare `{key, value}` (neither `label` nor `i18nKey`) becomes a compile-time error. `Markdown.renderBlock` gains a `t: TranslatorFn` parameter threaded from the top-level `Markdown`; direct `renderBlock` consumers pass a translator.
+- New ESLint rules in `@astryx/eslint-plugin-astryx` (`astryx.configs.strict` / `recommended`): `@astryx/i18n-key-format` enforces camelCase path segments for `@astryx.*` catalog keys, and `@astryx/no-hardcoded-i18n-string` flags hardcoded English string literals on user-facing props — now also inside ternaries, logical expressions, and template literals (e.g. `aria-label={isOpen ? 'Close' : 'Open'}`). Both are filesystem-agnostic; downstream packages can enable them with the standard `files` / `ignores` pattern and will see additional violations flagged after upgrading.
+
+#### Fixes
+
+- Fix Banner chevron transition to honor `prefers-reduced-motion: reduce`.
+- Round the trailing corner of the last ButtonGroup member, even when it renders a layer (#2508)
+  ButtonGroup keyed its trailing border-radius off `:last-child`. But several members render an invisible layer element _after_ their button — a `Button` with a `tooltip` returns `button + tooltip layer`, and `DropdownMenu` returns `trigger + popover`, both rendered inline by `useLayer` rather than portaled. The layer took the `:last-child` slot, so the real trailing button silently kept square outer corners and the group ended in a flat-edged stub.
+- Calendar: month navigation now announces the newly visible month (e.g. "March 2026") to screen readers via a polite live region. Previously the grid changed silently. (#3724)
+- Chat: opening a conversation that already has content (history, replay, session switching) no longer spring-scrolls from the top — the first fill positions instantly, whether the content is present at mount or arrives asynchronously. Subsequent growth (streaming) springs as before. `useChatStreamScroll`'s `scrollToBottom` accepts `{behavior: 'instant'}` for one-frame programmatic jumps, mirroring the DOM's `scrollTo({behavior})`. Exports the `ChatScrollToBottomOptions` type. (#3795)
+- CheckboxInput/Switch: descriptions stay linked via aria-describedby when the label is visually hidden, instead of being orphaned in the DOM.
+- CodeBlock keeps line numbers aligned with wrapped lines when `isWrapped` is enabled
+- Forward rest props in Dialog and DialogHeader. DialogHeader now passes through data-testid, aria-*, and other attributes. Dialog's inline path forwards all rest props. Standard path spreads rest before contract props so onClick, onCancel, aria-modal, and role cannot be clobbered.
+- Anchor --dense / --zh doc overlays to their base sections (#2182)
+  The compressed and translated reference docs were merged into the base doc **by array position**, so an overlay whose sections were ordered differently — or which omitted one — grafted every title onto the wrong body.
+- FileInput: don't drop the drag-over highlight when dragging over dropzone children
+  Dragging a file across the dropzone's own icon/text fired a dragleave on the container and cleared the drag-over state, so the "Drop files here" highlight flickered mid-drag. A dragleave whose relatedTarget is still inside the dropzone is now ignored; only actually exiting the dropzone ends the drag-over state.
+- Fix consumer rest props clobbering component contract props in ButtonGroup, Calendar, and Carousel
+  Components that set `role`, `aria-roledescription`, or `onKeyDown` on their root element now spread `{...rest}` before those props so a consumer cannot accidentally override the component's semantic contract. `onKeyDown` is composed via `composeEventHandlers` so both the consumer's and the component's handlers fire.
+- Kbd: pass-through props no longer clobber the computed role and spoken accessible name (rest-spread precedence corrected, mirroring Avatar).
+- Layer: centered layers near a viewport edge no longer render clipped (#3671). Flip fallbacks are a no-op for center alignment, so centered placements now append span-based `position-try-fallbacks` that slide the layer along its alignment axis.
+- Link: disabled links no longer carry a live href/onClick — programmatic focus or AT activation can no longer trigger navigation.
+- Selector: searching within the options popover now announces the number of matching results ("3 results" / "No results found") to screen readers, mirroring Typeahead. Previously filtering happened silently. (#3725)
+- Table now honors the standard root styling props: `className`, `style`, `xstyle`, `id`, `aria-*`, `data-*`, and other HTML attributes reach the root `<table>` element instead of being silently dropped. `tableProps` is deprecated (still works, loses conflicts to direct props); the computed column min-width still wins over a consumer `style.minWidth`, but no longer clobbers it when columns compute none (#3679)
+- Timestamp: the absolute-time tooltip is now reachable by keyboard — the timestamp is focusable while a tooltip is attached, per WCAG content-on-hover requirements.
+- TopNav: the `<nav>` landmark now defaults its accessible name to "Top navigation" when the `label` prop is omitted, matching SideNav ("Side navigation"), Breadcrumbs, and Pagination. Previously an omitted `label` shipped an unnamed navigation landmark, leaving screen-reader users with multiple indistinguishable "navigation" landmarks on pages that compose SideNav + TopNav + Breadcrumbs. An explicit `label` still wins.
+
+#### Documentation
+
+- Point AI agents to the CLI from the core README.
+  `@astryxdesign/core`'s README now leads with a callout telling AI agents to run `npx astryx init` first, which installs the CLI's component index into `AGENTS.md`/`CLAUDE.md`. In an isolated cold-start test, this took agents from 0/5 to 4/5 on discovering and using the CLI (matching the AGENTS.md ceiling); a first-run nudge alone did 0/5.
+- Surface literal values for union types in component docs (#1645)
+  Prop docs named their union types without ever showing the values behind them — `gap: SpacingStep`, `align: GridAlignment`, `sort: TableSortState<TSortKey>`, `status: InputStatus`. Readers without an IDE (agents especially) had to guess, and guessed wrong: `gap={16}` (pixels, not a scale step), `direction: 'desc'` (the type says `'descending'`).
+
+#### Other Changes
+
+- Migrate the duplicated charts/lab color parsers onto the shared `@astryxdesign/core/utils/color` module: adds `toGLFloats(rgba)` for RGBA→GL float conversion with a neutral non-NaN fallback, replacing the four `hexToGL` copies, and rebuilds `lerpHex`/`hexAlpha` on `parseHex`/`formatHex`/`parseColor`/`formatColor` (#3739)
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @AKnassa
+- @arham766
+- @bhamodi
+- @cixzhang
+- @ejhammond
+- @jiunshinn
+- @joeyfarina
+- @nynexman4464
+- @yyq1025
+- @zeroryu
+
+---
+
 # 0.1.6
 
 #### New Features

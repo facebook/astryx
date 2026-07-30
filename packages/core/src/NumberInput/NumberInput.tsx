@@ -27,7 +27,6 @@ import {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {IconName} from '../Icon';
 import {
   colorVars,
   sizeVars,
@@ -39,11 +38,11 @@ import {
 import {
   Field,
   type InputStatus,
-  type InputStatusType,
   inputWrapperStyles,
   inputStatusBorderStyles,
   inputStatusHoverShadowStyles,
   inputStatusFocusWithinStyles,
+  type FieldStatusVariant,
 } from '../Field';
 import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {VisuallyHidden} from '../VisuallyHidden';
@@ -51,6 +50,7 @@ import {useTooltip} from '../Tooltip';
 import {getInputARIA} from '../utils';
 import {useSize} from '../SizeContext/SizeContext';
 import {useInputContainer} from '../hooks/useInputContainer';
+import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
 
 const styles = stylex.create({
@@ -135,6 +135,7 @@ import {mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 interface NumberInputPropsBase extends Omit<
   BaseProps,
@@ -206,6 +207,14 @@ interface NumberInputPropsBase extends Omit<
    * If message is provided, displays a floating message box below the input.
    */
   status?: InputStatus;
+  /**
+   * How the status message is placed relative to the input.
+   * - 'attached': message overlaps directly below the input (bordered treatment)
+   * - 'detached': message floats below as a separate element with spacing
+   * - 'tooltip': no message box; the status icon becomes a focusable info-tip button that reveals the message on hover, keyboard focus, or tap
+   * @default 'attached'
+   */
+  statusVariant?: FieldStatusVariant;
   /**
    * The size of the input.
    * - 'sm': Compact size (28px height)
@@ -310,8 +319,7 @@ type NumberInputPropsClearable = NumberInputPropsBase & {
 };
 
 export type NumberInputProps =
-  | NumberInputPropsNonClearable
-  | NumberInputPropsClearable;
+  NumberInputPropsNonClearable | NumberInputPropsClearable;
 
 /**
  * Parse and validate a string input as a number.
@@ -374,6 +382,7 @@ export function NumberInput({
   startIcon,
   labelIcon,
   status,
+  statusVariant = 'attached',
   size: sizeProp,
   onChange,
   value,
@@ -399,11 +408,13 @@ export function NumberInput({
   ref,
   ...rest
 }: NumberInputProps) {
+  const t = useTranslator();
   const size = useSize(sizeProp, 'md');
   const id = useId();
   const inputLabelID = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
+  const unitsID = useId();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const inputGroup = useInputGroup();
@@ -425,26 +436,26 @@ export function NumberInput({
     isEnabled: showsDisabledMessage,
   });
 
-  const statusIconMap: Record<InputStatusType, IconName> = {
-    warning: 'warning',
-    error: 'error',
-    success: 'success',
-  };
-
-  const statusIconColorMap: Record<
-    InputStatusType,
-    'warning' | 'error' | 'success'
-  > = {
-    warning: 'warning',
-    error: 'error',
-    success: 'success',
-  };
+  const {statusIcon, describedBy: statusTooltipDescribedBy} =
+    useInputStatusIcon({
+      status,
+      statusVariant,
+      isInGroup: !!inputGroup,
+    });
 
   const {ariaLabelledBy, ariaDescribedBy} = getInputARIA(
     inputLabelID,
     [
       description ? descriptionID : null,
-      status?.message ? statusMessageID : null,
+      // The status message element is rendered by Field, which is skipped
+      // inside an InputGroup — only reference it when it actually exists.
+      !inputGroup && statusVariant !== 'tooltip' && status?.message
+        ? statusMessageID
+        : null,
+      // The tooltip variant renders no message box; describe the input by the
+      // tooltip's content instead so the status is still announced.
+      statusTooltipDescribedBy,
+      units ? unitsID : null,
       showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
     ],
     inputGroup,
@@ -604,7 +615,7 @@ export function NumberInput({
           sizeStyles[size],
           isDisabled && inputWrapperStyles.disabled,
           status && inputStatusBorderStyles[status.type],
-          status && inputStatusHoverShadowStyles[status.type],
+          status && !isDisabled && inputStatusHoverShadowStyles[status.type],
           status && inputStatusFocusWithinStyles[status.type],
           inputGroup && groupStyles.inGroup,
           xstyle,
@@ -650,7 +661,11 @@ export function NumberInput({
           !isInputValid && styles.inputInvalid,
         )}
       />
-      {units && <span {...stylex.props(styles.units)}>{units}</span>}
+      {units && (
+        <span id={unitsID} {...stylex.props(styles.units)}>
+          {units}
+        </span>
+      )}
       {/*
         Live region announcing invalid typed input to assistive technology.
         The value silently reverts on blur, so without this a screen-reader
@@ -663,18 +678,12 @@ export function NumberInput({
         <button
           type="button"
           onClick={handleClear}
-          aria-label={`Clear ${label}`}
+          aria-label={t('@astryx.numberInput.clearLabel', {label})}
           {...stylex.props(styles.clearButton)}>
           <Icon icon="close" size="sm" color="secondary" />
         </button>
       )}
-      {status && !inputGroup && (
-        <Icon
-          icon={statusIconMap[status.type]}
-          size="md"
-          color={statusIconColorMap[status.type]}
-        />
-      )}
+      {statusIcon}
     </div>
   );
 
@@ -708,6 +717,7 @@ export function NumberInput({
             }
           : undefined
       }
+      statusVariant={statusVariant}
       labelTooltip={labelTooltip}
       width={width}>
       {inputWrapper}

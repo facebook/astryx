@@ -37,6 +37,7 @@ import {
   inputStatusBorderStyles,
   inputStatusHoverShadowStyles,
   inputWrapperStyles,
+  type FieldStatusVariant,
 } from '../Field';
 import {Divider} from '../Divider';
 import {Spinner} from '../Spinner';
@@ -76,6 +77,7 @@ import {themeProps} from '../utils/themeProps';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
 import {VisuallyHidden} from '../VisuallyHidden';
+import {useTranslator} from '../i18n';
 
 // Sentinel value for the select-all item in keyboard navigation
 const SELECT_ALL_VALUE = '__xds_select_all__';
@@ -478,6 +480,13 @@ export interface MultiSelectorProps<
    * Status indicator for the selector.
    */
   status?: MultiSelectorStatus;
+  /**
+   * How the status message is placed relative to the input.
+   * - 'attached': message overlaps directly below the input (bordered treatment)
+   * - 'detached': message floats below as a separate element with spacing
+   * @default 'attached'
+   */
+  statusVariant?: FieldStatusVariant;
 
   /**
    * Width of the field. Numbers are treated as pixels, strings are used as-is
@@ -561,6 +570,35 @@ export interface MultiSelectorProps<
   'data-testid'?: string;
 }
 
+// Case-insensitive substring match for a single option. The one predicate used
+// by both the flat filter (count + keyboard nav) and the grouped renderer, so
+// what is shown while searching stays in lockstep with the announced count.
+function optionMatchesQuery(
+  option: MultiSelectorOptionData,
+  query: string,
+): boolean {
+  if (!query) {
+    return true;
+  }
+  return (option.label ?? option.value)
+    .toLowerCase()
+    .includes(query.toLowerCase());
+}
+
+// Case-insensitive substring filter over the selectable options. Shared by the
+// `filteredItems` memo (rendering) and the search-change handler, which needs
+// the count for the *next* query synchronously to announce it exactly once per
+// keystroke rather than reacting to state in an effect.
+function filterOptionsByQuery(
+  items: MultiSelectorOptionData[],
+  query: string,
+): MultiSelectorOptionData[] {
+  if (!query) {
+    return items;
+  }
+  return items.filter(item => optionMatchesQuery(item, query));
+}
+
 /**
  * A multi-select dropdown component with checkboxes for choosing
  * multiple items from a list of options.
@@ -589,16 +627,17 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   onChange,
   changeAction,
   isLoading = false,
-  placeholder = 'Select...',
+  placeholder: placeholderFromProps,
   size: sizeProp,
   status,
+  statusVariant = 'attached',
   labelTooltip,
   startIcon,
   hasClear = false,
   hasSelectAll = false,
-  selectAllLabel = 'Select all',
+  selectAllLabel: selectAllLabelFromProps,
   hasSearch = false,
-  searchPlaceholder = 'Search...',
+  searchPlaceholder: searchPlaceholderFromProps,
   triggerDisplay = 'count',
   maxBadges = 3,
   renderOption,
@@ -610,6 +649,13 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   className,
   style,
 }: MultiSelectorProps<T>) {
+  const t = useTranslator();
+  const placeholder =
+    placeholderFromProps ?? t('@astryx.multiSelector.selectPlaceholder');
+  const selectAllLabel =
+    selectAllLabelFromProps ?? t('@astryx.multiSelector.selectAll');
+  const searchPlaceholder =
+    searchPlaceholderFromProps ?? t('@astryx.multiSelector.searchPlaceholder');
   const size = useSize(sizeProp, 'md');
   const triggerId = useId();
   const listboxId = useId();
@@ -684,47 +730,32 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   );
 
   // Filter items by search query
-  const filteredItems = useMemo(() => {
-    if (!searchQuery) {
-      return selectableItems;
-    }
-    const query = searchQuery.toLowerCase();
-    return selectableItems.filter(item =>
-      (item.label ?? item.value).toLowerCase().includes(query),
-    );
-  }, [selectableItems, searchQuery]);
+  const filteredItems = useMemo(
+    () => filterOptionsByQuery(selectableItems, searchQuery),
+    [selectableItems, searchQuery],
+  );
 
   // Single source of truth for item order. Both the hook (keyboard navigation)
   // and renderOptions (DOM rendering) consume this list — no independent sorting.
-  // Selected-at-open items are placed first within each group/section.
+  // Selected-at-open items are placed first within each group/section, and the
+  // same walk applies while searching so group structure survives filtering
+  // (only matching items are kept; the query is empty in non-search mode).
   const sortedItems = useMemo(() => {
     const selectedSet = selectedAtOpen ?? new Set<string>();
-    if (searchQuery) {
-      const selected = filteredItems.filter(item =>
-        selectedSet.has(item.value),
-      );
-      const unselected = filteredItems.filter(
-        item => !selectedSet.has(item.value),
-      );
-      const items = [...selected, ...unselected];
-      if (hasSelectAll) {
-        return [{value: SELECT_ALL_VALUE, label: selectAllLabel}, ...items];
-      }
-      return items;
-    }
-    // For non-search mode, flatten options in the same order as renderOptions
     const result: MultiSelectorOptionData[] = [];
     let pendingFlat: MultiSelectorOptionData[] = [];
+
+    const orderSelectedFirst = (items: MultiSelectorOptionData[]) => {
+      const selected = items.filter(item => selectedSet.has(item.value));
+      const unselected = items.filter(item => !selectedSet.has(item.value));
+      return [...selected, ...unselected];
+    };
 
     const flushFlat = () => {
       if (pendingFlat.length === 0) {
         return;
       }
-      const selected = pendingFlat.filter(item => selectedSet.has(item.value));
-      const unselected = pendingFlat.filter(
-        item => !selectedSet.has(item.value),
-      );
-      result.push(...selected, ...unselected);
+      result.push(...orderSelectedFirst(pendingFlat));
       pendingFlat = [];
     };
 
@@ -733,16 +764,15 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         flushFlat();
       } else if (isSection(option)) {
         flushFlat();
-        const sectionOptions = option.options.map(opt => normalizeOption(opt));
-        const selected = sectionOptions.filter(item =>
-          selectedSet.has(item.value),
-        );
-        const unselected = sectionOptions.filter(
-          item => !selectedSet.has(item.value),
-        );
-        result.push(...selected, ...unselected);
+        const sectionOptions = option.options
+          .map(opt => normalizeOption(opt))
+          .filter(opt => optionMatchesQuery(opt, searchQuery));
+        result.push(...orderSelectedFirst(sectionOptions));
       } else if (isOptionData(option)) {
-        pendingFlat.push(normalizeOption(option));
+        const normalized = normalizeOption(option);
+        if (optionMatchesQuery(normalized, searchQuery)) {
+          pendingFlat.push(normalized);
+        }
       }
     }
     flushFlat();
@@ -751,21 +781,17 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       return [{value: SELECT_ALL_VALUE, label: selectAllLabel}, ...result];
     }
     return result;
-  }, [
-    filteredItems,
-    searchQuery,
-    options,
-    selectedAtOpen,
-    hasSelectAll,
-    selectAllLabel,
-  ]);
+  }, [searchQuery, options, selectedAtOpen, hasSelectAll, selectAllLabel]);
 
   // Layer for dropdown positioning
   const handleLayerHide = useCallback(() => {
     setSearchQuery('');
     setSelectedAtOpen(null);
+    // Clear any lingering result count when the popover closes so stale status
+    // text does not linger in the a11y tree.
+    announce('');
     triggerRef.current?.focus();
-  }, []);
+  }, [announce]);
 
   const popover = usePopover({
     hasLightDismiss: true,
@@ -784,6 +810,30 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     }
     // eslint-disable-next-line @eslint-react/exhaustive-deps -- mount-only: isDefaultOpen is not reactive
   }, []);
+
+  // Announce the filtered result count from the query-change handler (matching
+  // BaseTypeahead) rather than a reactive effect: computing the count for the
+  // next query here fires the announcement exactly once per keystroke and does
+  // not re-speak on unrelated re-renders. Reuses the announce instance shared
+  // with the selection-count announcements above.
+  const handleSearchChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const nextQuery = event.target.value;
+      setSearchQuery(nextQuery);
+      if (nextQuery.length === 0) {
+        // Emptying the query clears the region rather than announcing a count.
+        announce('');
+        return;
+      }
+      const count = filterOptionsByQuery(selectableItems, nextQuery).length;
+      announce(
+        count === 0
+          ? 'No results found'
+          : `${count} result${count === 1 ? '' : 's'}`,
+      );
+    },
+    [announce, selectableItems],
+  );
 
   // Handle toggle
   // Clear all selected values. Shared by the clear button and the keyboard
@@ -1030,17 +1080,20 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
               ? getItemId(highlightedIndex)
               : undefined
           }
-          aria-label="Search options"
+          aria-label={t('@astryx.multiSelector.searchOptions')}
           type="text"
           value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
+          onChange={handleSearchChange}
           onKeyDown={e => {
             // Arrow keys navigate options; Enter toggles; Escape/Tab close.
             // Space and Home/End are left to the input (type a space / move
-            // the caret), not forwarded to option navigation.
+            // the caret) per the APG editable combobox; PageUp/PageDown are
+            // the sanctioned substitute for jumping to the first/last option.
             if (
               e.key === 'ArrowDown' ||
               e.key === 'ArrowUp' ||
+              e.key === 'PageUp' ||
+              e.key === 'PageDown' ||
               e.key === 'Enter' ||
               e.key === 'Escape' ||
               e.key === 'Tab'
@@ -1059,10 +1112,12 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     listboxId,
     searchQuery,
     searchPlaceholder,
+    handleSearchChange,
     onKeyDown,
     popover.isOpen,
     highlightedIndex,
     getItemId,
+    t,
   ]);
 
   // Render an individual item (index-based)
@@ -1166,15 +1221,12 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       return elements;
     }
 
-    if (searchQuery) {
-      for (let i = cursor; i < sortedItems.length; i++) {
-        elements.push(renderItem(sortedItems[i], i));
-      }
-      return elements;
-    }
-
-    // Non-search: consume items from sortedItems in order, interleaving
-    // structural elements (dividers, section headers) from the options prop.
+    // Consume items from sortedItems in order, interleaving structural elements
+    // (dividers, section headers) from the options prop. While searching, only
+    // matching items are present in sortedItems, so a section consumes just its
+    // matches and is skipped entirely when none match — no header left standing
+    // over nothing, and the cursor stays aligned with the combobox indices.
+    const isSearching = Boolean(searchQuery);
     let pendingCount = 0;
 
     const flushPending = () => {
@@ -1190,12 +1242,25 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
 
       if (isDivider(option)) {
         flushPending();
-        elements.push(<Divider key={`divider-${i}`} xstyle={styles.divider} />);
+        // A standalone divider between groups would orphan itself once its
+        // neighbors are filtered out, so skip it while searching.
+        if (!isSearching) {
+          elements.push(
+            <Divider key={`divider-${i}`} xstyle={styles.divider} />,
+          );
+        }
       } else if (isSection(option)) {
         flushPending();
-        const count = option.options.length;
+        const matchCount = isSearching
+          ? option.options.filter(opt =>
+              optionMatchesQuery(normalizeOption(opt), searchQuery),
+            ).length
+          : option.options.length;
+        if (matchCount === 0) {
+          continue;
+        }
         const sectionItems: ReactNode[] = [];
-        for (let j = 0; j < count; j++) {
+        for (let j = 0; j < matchCount; j++) {
           sectionItems.push(renderItem(sortedItems[cursor], cursor));
           cursor++;
         }
@@ -1214,7 +1279,12 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           </div>,
         );
       } else if (isOptionData(option)) {
-        pendingCount++;
+        if (
+          !isSearching ||
+          optionMatchesQuery(normalizeOption(option), searchQuery)
+        ) {
+          pendingCount++;
+        }
       }
     }
     flushPending();
@@ -1243,7 +1313,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
             isDisabled && inputWrapperStyles.disabled,
             optimisticValue.length === 0 && styles.triggerPlaceholder,
             status && inputStatusBorderStyles[status.type],
-            status && inputStatusHoverShadowStyles[status.type],
+            status && !isDisabled && inputStatusHoverShadowStyles[status.type],
             inputGroup && groupStyles.inGroup,
             xstyle,
           ),
@@ -1305,9 +1375,19 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           <button
             type="button"
             onClick={handleClear}
-            aria-label={`Clear all ${label}`}
+            aria-label={t('@astryx.multiSelector.clearAll', {label})}
             {...stylex.props(styles.clearButton)}>
-            <Icon icon="close" size="sm" color="secondary" />
+            <Icon
+              icon="close"
+              size="sm"
+              color="secondary"
+              // Stable theme target on the clear glyph itself, so a theme can
+              // restyle just this icon (color, size, hover) via `defineTheme`.
+              // Same-element rules in @layer astryx-theme win over the icon's
+              // own base color/size, which a button-level target could not
+              // reach.
+              {...themeProps('multi-selector-clear-icon')}
+            />
           </button>
         )}
         <span
@@ -1323,7 +1403,19 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
               color={STATUS_ICON_COLOR_MAP[status.type]}
             />
           ) : (
-            <Icon icon="chevronDown" size="sm" color="inherit" />
+            <Icon
+              icon="chevronDown"
+              size="sm"
+              color="inherit"
+              // Stable theme target on the chevron glyph itself, so a theme can
+              // restyle just this icon (color, size, hover) — and its
+              // open/closed state — via `defineTheme`. Same-element rules in
+              // @layer astryx-theme win over the icon's own base color/size,
+              // which a button-level target could not reach.
+              {...themeProps('multi-selector-indicator-icon', {
+                state: popover.isOpen ? 'expanded' : 'collapsed',
+              })}
+            />
           )}
         </span>
       </div>
@@ -1374,6 +1466,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
             }
           : undefined
       }
+      statusVariant={statusVariant}
       labelTooltip={labelTooltip}
       width={width}>
       {multiSelectorContent}

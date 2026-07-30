@@ -107,6 +107,13 @@ export const docs = {
         'Status indicator that applies a colored border and icon. An optional message is displayed in a floating box below the textarea.',
     },
     {
+      name: 'statusVariant',
+      type: "'attached' | 'detached' | 'tooltip'",
+      description:
+        'How the status message is placed relative to the input. attached overlaps directly below the input (bordered treatment); detached floats below as a separate element with spacing; tooltip hides the message box and surfaces it in a tooltip on the status icon.',
+      default: "'attached'",
+    },
+    {
       name: 'labelTooltip',
       type: 'string',
       description:
@@ -116,7 +123,7 @@ export const docs = {
       name: 'startIcon',
       type: 'IconType',
       description:
-        'Icon component rendered inside the leading edge of the textarea wrapper. See `npx astryx docs icons` for valid semantic names.',
+        'Icon component rendered inside the leading edge of the textarea wrapper. See `astryx docs icons` for valid semantic names.',
     },
     {
       name: 'hasSpellCheck',
@@ -146,6 +153,12 @@ export const docs = {
       type: 'string',
       description:
         'HTML name attribute for the textarea element, useful for form submissions.',
+    },
+    {
+      name: 'width',
+      type: 'SizeValue',
+      description:
+        'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
     },
     {
       name: 'onFocus',
@@ -280,6 +293,13 @@ export const docsZh = {
       description: '应用彩色边框和图标的状态指示器。可选消息显示在文本域下方的浮动框中。',
     },
     {
+      name: 'statusVariant',
+      type: "'attached' | 'detached' | 'tooltip'",
+      description:
+        '状态消息相对于输入框的放置方式。attached 直接叠加在输入框下方（带边框处理）；detached 作为独立元素浮于下方并留有间距；tooltip 隐藏消息框，并在状态图标上以提示气泡形式显示。',
+      default: "'attached'",
+    },
+    {
       name: 'labelTooltip',
       type: 'string',
       description: '在标签末尾的信息图标中显示的工具提示文本。',
@@ -389,6 +409,7 @@ export const docsDense = {
     rows: 'Visible text rows.',
     maxLength: 'Max chars allowed. Shows counter (current/max) below textarea. No native enforcement.',
     status: 'Colored border+icon status. Optional floating message below textarea.',
+    statusVariant: 'How status message is placed: attached overlaps below input; detached floats below w/ spacing; tooltip hides the box and shows it on the status icon.',
     labelTooltip: 'Tooltip in info icon at label end.',
     startIcon: 'Icon inside leading edge of textarea wrapper.',
     hasSpellCheck: 'Enables/disables browser spell checking.',

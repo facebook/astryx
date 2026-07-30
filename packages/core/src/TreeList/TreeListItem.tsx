@@ -25,12 +25,12 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import {getIcon} from '../Icon/globalIconRegistry';
-import {mergeProps} from '../utils';
+import {mergeProps, rtlStyles} from '../utils';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import {TreeListBranches} from './TreeListBranches';
-import type {TreeListDensity} from './TreeListTypes';
-import {treeItemScope} from './treeListItem.markers.stylex';
+import type {TreeListDensity, TreeListVariant} from './TreeListTypes';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 // =============================================================================
 // Styles
@@ -46,6 +46,19 @@ const styles = stylex.create({
     // The treeitem row is the roving-tabindex focus owner; suppress the
     // native focus ring in favor of the row's :focus-visible outline below.
     outline: 'none',
+    // Publish this row's own focus state as an inheritable CSS variable
+    // instead of matching it via an ancestor selector. Every nested <li>
+    // redeclares these vars (default: 'none' / '0'), so a descendant row's
+    // default shadows an ancestor's active value — the ring can never leak
+    // past the nearest containing treeitem, however deep the tree nests.
+    '--_tree-focus-outline': {
+      default: 'none',
+      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
+    },
+    '--_tree-focus-outline-offset': {
+      default: '0',
+      ':focus-visible': '2px',
+    },
   },
   childGroup: {
     margin: 0,
@@ -69,6 +82,12 @@ const styles = stylex.create({
     position: 'relative',
     boxSizing: 'border-box',
     textAlign: 'start',
+    // Per-level indent. Declared here (not inline) so it lives in
+    // `@layer astryx-base` and the theme layer can override it in normal
+    // cascade order — an inline longhand would outrank every layer. The row
+    // publishes only the computed distance as `--_tree-indent`; the per-level
+    // step is the public `--tree-list-indent` lever (see TreeList `root`).
+    marginInlineStart: 'var(--_tree-indent, 0px)',
   },
   interactive: {
     cursor: 'pointer',
@@ -85,17 +104,14 @@ const styles = stylex.create({
   },
   focusVisibleOutline: {
     outline: {
-      default: 'none',
-      // Focus lives on the treeitem row (the <li>) via roving tabindex.
-      // Scoped to the row's OWN treeitem so focusing a parent does not leak
-      // the ring onto descendant rows. Also support inner focusable actions.
-      [stylex.when.ancestor(':focus-visible', treeItemScope)]:
-        `2px solid ${colorVars['--color-accent']}`,
+      // Reads the row's own --_tree-focus-outline (published on the <li> in
+      // `wrapper`), which resolves to the nearest containing treeitem only.
+      default: 'var(--_tree-focus-outline, none)',
+      // Also support inner focusable actions.
       ':has(:focus-visible)': `2px solid ${colorVars['--color-accent']}`,
     },
     outlineOffset: {
-      default: '0',
-      [stylex.when.ancestor(':focus-visible', treeItemScope)]: '2px',
+      default: 'var(--_tree-focus-outline-offset, 0)',
       ':has(:focus-visible)': '2px',
     },
   },
@@ -236,6 +252,11 @@ const descriptionSizeStyles = stylex.create({
   },
 });
 
+// `CSSProperties` has no index signature for custom properties, so the row's
+// inline style — which publishes the computed indent distance as the private
+// `--_tree-indent` — needs this augmentation to typecheck.
+type IndentStyle = React.CSSProperties & Record<'--_tree-indent', string>;
+
 // =============================================================================
 // Types
 // =============================================================================
@@ -258,6 +279,12 @@ export interface TreeListItemInternalProps {
   isExpanded: boolean;
   onToggle?: (id: string) => void;
   density: TreeListDensity;
+  /**
+   * Guide-line visual treatment. `noGuides` suppresses the connector lines;
+   * indentation is unaffected (it lives on the row's `marginLeft`, not the
+   * guide element).
+   */
+  variant: TreeListVariant;
   /** Pre-rendered children subtree (rendered by the parent recursion) */
   renderedChildren?: ReactNode;
   /** 1-based position of this item among its siblings (aria-posinset). */
@@ -294,11 +321,13 @@ export function TreeListItem({
   isExpanded,
   onToggle,
   density,
+  variant,
   renderedChildren,
   posInSet,
   setSize,
   isTabbable,
 }: TreeListItemInternalProps) {
+  const t = useTranslator();
   const labelId = useId();
   const descriptionId = useId();
   const LinkComponent = useLinkComponent();
@@ -335,13 +364,35 @@ export function TreeListItem({
     return undefined;
   }, [onClick, hasChildren, onToggle, id, isDisabled]);
 
-  const computedMarginLeft = hasChildren
-    ? `calc(${nestedLevel} * ${spacingVars['--spacing-4']})`
-    : `calc(${nestedLevel} * ${spacingVars['--spacing-4']} + ${spacingVars['--spacing-4']} + ${spacingVars['--spacing-2']})`;
+  // Per-level indent distance. The per-level step is the public, themeable
+  // `--tree-list-indent` lever (default `--spacing-4`, set on the tree-list
+  // root). Leaves add a fixed chevron-column offset (chevron width + gap) so
+  // their labels line up with sibling parents' labels; that offset is tied to
+  // the chevron's own dimensions, not the indent step, so it does not scale
+  // with the lever. Published as the private `--_tree-indent` and consumed by
+  // `contentWrapper`'s stylesheet `margin-inline-start` (kept out of the inline
+  // style so the theme layer can override it — see #4308).
+  const indentDistance = hasChildren
+    ? `calc(${nestedLevel} * var(--tree-list-indent))`
+    : `calc(${nestedLevel} * var(--tree-list-indent) + ${spacingVars['--spacing-4']} + ${spacingVars['--spacing-2']})`;
+  const indentStyle: IndentStyle = {'--_tree-indent': indentDistance};
 
   const labelAndDescription = (
     <>
-      <span id={labelId} {...stylex.props(styles.label)}>
+      <span
+        id={labelId}
+        {...mergeProps(
+          // Stable theme target for the item's label text. The label carries no
+          // themeable handle today, so a theme can only reach it through a
+          // fragile structural selector (a content button's first span). This
+          // adds an `astryx-tree-list-item-label` class and reflects the row's
+          // `selected` state so a theme can, e.g., bold just the selected
+          // item's label via `defineTheme`.
+          themeProps('tree-list-item-label', {
+            selected: isSelected ? 'selected' : null,
+          }),
+          stylex.props(styles.label),
+        )}>
         {label}
       </span>
       {description != null && (
@@ -355,12 +406,14 @@ export function TreeListItem({
   );
 
   const chevronIcon = (
-    <span
-      {...stylex.props(
-        styles.chevronSvg,
-        isExpanded ? styles.chevronExpanded : styles.chevronCollapsed,
-      )}>
-      {getIcon('chevronRight')}
+    <span {...stylex.props(rtlStyles.mirror)}>
+      <span
+        {...stylex.props(
+          styles.chevronSvg,
+          isExpanded ? styles.chevronExpanded : styles.chevronCollapsed,
+        )}>
+        {getIcon('chevronRight')}
+      </span>
     </span>
   );
 
@@ -374,18 +427,39 @@ export function TreeListItem({
       <button
         type="button"
         aria-expanded={isExpanded}
-        aria-label="Toggle children"
+        aria-label={t('@astryx.treeList.toggleChildren')}
+        // Stable identity for TreeList's activateItem selector — do not
+        // remove without also updating TreeList.tsx.
+        data-tree-toggle=""
         disabled={isDisabled}
         // Roving tabindex lives on the treeitem row; the chevron toggle is not
         // a separate tab stop. Row-level Enter/Space forwards to this button.
         tabIndex={-1}
         onClick={handleToggle}
-        {...stylex.props(styles.chevronButton)}>
+        {...mergeProps(
+          // Stable theme target for the expand/collapse control. `data-tree-toggle`
+          // stays as the functional activation hook; this adds a themeable
+          // `astryx-tree-list-chevron` class and reflects the open/closed state so
+          // a theme can restyle the toggle (and each state) without a fragile
+          // `[data-tree-toggle]` selector.
+          themeProps('tree-list-chevron', {
+            state: isExpanded ? 'expanded' : 'collapsed',
+          }),
+          stylex.props(styles.chevronButton),
+        )}>
         {chevronIcon}
       </button>
     ) : (
       // Non-interactive chevron only when toggling is not wired up at all
-      <span {...stylex.props(styles.chevronContainer)}>{chevronIcon}</span>
+      <span
+        {...mergeProps(
+          themeProps('tree-list-chevron', {
+            state: isExpanded ? 'expanded' : 'collapsed',
+          }),
+          stylex.props(styles.chevronContainer),
+        )}>
+        {chevronIcon}
+      </span>
     )
   ) : null;
 
@@ -446,14 +520,16 @@ export function TreeListItem({
       data-tree-id={id}
       data-tree-level={nestedLevel + 1}
       data-tree-disabled={isDisabled || undefined}
-      {...stylex.props(styles.wrapper, treeItemScope)}>
-      <div {...stylex.props(styles.treeBranches)}>
-        <TreeListBranches
-          ancestorsIsLast={ancestorsIsLast}
-          isLast={isLast}
-          nestedLevel={nestedLevel}
-        />
-      </div>
+      {...stylex.props(styles.wrapper)}>
+      {variant !== 'noGuides' && (
+        <div {...stylex.props(styles.treeBranches)}>
+          <TreeListBranches
+            ancestorsIsLast={ancestorsIsLast}
+            isLast={isLast}
+            nestedLevel={nestedLevel}
+          />
+        </div>
+      )}
       <div {...stylex.props(styles.rowWrapper)}>
         <div
           {...mergeProps(
@@ -473,7 +549,7 @@ export function TreeListItem({
               isSelected && styles.selected,
             ),
           )}
-          style={{marginLeft: computedMarginLeft}}
+          style={indentStyle}
           onClick={handleClick}>
           {innerContent}
         </div>

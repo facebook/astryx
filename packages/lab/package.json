@@ -1,6 +1,6 @@
 {
   "name": "@astryxdesign/lab",
-  "version": "0.1.6",
+  "version": "0.1.9",
   "private": true,
   "description": "Experimental Astryx components — published to npm only under the @canary dist-tag for early testing; never released as a stable (latest) version.",
   "author": "Meta Open Source",
@@ -53,13 +53,22 @@
     "test": "vitest run --root ../..",
     "test:watch": "vitest --root ../..",
     "lint": "eslint src",
+    "typecheck:docs": "tsc --project tsconfig.docs.json",
     "typecheck": "tsc --project tsconfig.json --noEmit"
   },
   "peerDependencies": {
     "@stylexjs/stylex": ">=0.10.0",
-    "@astryxdesign/core": "0.1.6",
+    "@astryxdesign/core": "0.1.9",
     "react": ">=19.0.0",
-    "react-dom": ">=19.0.0"
+    "react-dom": ">=19.0.0",
+    "lexical": "^0.46.0",
+    "@lexical/react": "^0.46.0",
+    "@lexical/markdown": "^0.46.0",
+    "@lexical/link": "^0.46.0",
+    "@lexical/list": "^0.46.0",
+    "@lexical/rich-text": "^0.46.0",
+    "@lexical/code": "^0.46.0",
+    "@lexical/utils": "^0.46.0"
   },
   "dependencies": {
     "d3-array": "^3.2.4",
@@ -67,9 +76,43 @@
     "d3-shape": "^3.2.0"
   },
   "devDependencies": {
+    "@lexical/code": "^0.46.0",
+    "@lexical/link": "^0.46.0",
+    "@lexical/list": "^0.46.0",
+    "@lexical/markdown": "^0.46.0",
+    "@lexical/react": "^0.46.0",
+    "@lexical/rich-text": "^0.46.0",
+    "@lexical/utils": "^0.46.0",
     "@types/d3-array": "^3.2.2",
     "@types/d3-scale": "^4.0.9",
     "@types/d3-shape": "^3.1.8",
+    "lexical": "^0.46.0",
     "rimraf": "^6.0.1"
+  },
+  "peerDependenciesMeta": {
+    "lexical": {
+      "optional": true
+    },
+    "@lexical/react": {
+      "optional": true
+    },
+    "@lexical/markdown": {
+      "optional": true
+    },
+    "@lexical/link": {
+      "optional": true
+    },
+    "@lexical/list": {
+      "optional": true
+    },
+    "@lexical/rich-text": {
+      "optional": true
+    },
+    "@lexical/code": {
+      "optional": true
+    },
+    "@lexical/utils": {
+      "optional": true
+    }
   }
 }

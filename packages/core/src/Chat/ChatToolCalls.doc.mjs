@@ -38,7 +38,7 @@ export const docs = {
       name: 'calls',
       type: 'ChatToolCallItem[]',
       description:
-        'Array of tool call data. Each item has name, status, target, duration, node, additions, deletions, stats, errorMessage, resultDetail, key, and data.',
+        "Array of tool call data. Each item has name, status, target, duration, node, additions, deletions, stats, errorMessage, resultDetail, key, and data. status is one of 'pending', 'running', 'complete', or 'error' (defaults to 'complete').",
       required: true,
     },
     {

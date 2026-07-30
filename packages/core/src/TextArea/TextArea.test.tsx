@@ -10,11 +10,19 @@
  */
 
 import {useState} from 'react';
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {TestIcon} from '../__tests__/TestIcon';
 import {TextArea} from './TextArea';
+import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
+
+// FieldStatus announces status messages through the persistent useAnnounce
+// singletons; remove them between tests so role/aria-live queries in this
+// file never match a leftover region.
+afterEach(() => {
+  __resetLiveRegionsForTest();
+});
 
 // Mock showPopover/hidePopover since jsdom does not implement them. Used by the
 // disabledMessage tooltip.
@@ -726,5 +734,28 @@ describe('TextArea', () => {
       expect(textarea).toBeDisabled();
       expect(textarea).not.toHaveAttribute('aria-disabled');
     });
+  });
+});
+
+
+describe('TextArea statusVariant forwarding', () => {
+  it('defaults to attached (status renders with data-variant="attached")', () => {
+    const {container} = render(
+      <TextArea label="Bio" value="" onChange={() => {}} status={{type: 'error', message: 'Required'}} />,
+    );
+    expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+      'data-variant',
+      'attached',
+    );
+  });
+
+  it('forwards statusVariant="detached" to the underlying Field status', () => {
+    const {container} = render(
+      <TextArea label="Bio" value="" onChange={() => {}} status={{type: 'error', message: 'Required'}} statusVariant="detached" />,
+    );
+    expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+      'data-variant',
+      'detached',
+    );
   });
 });

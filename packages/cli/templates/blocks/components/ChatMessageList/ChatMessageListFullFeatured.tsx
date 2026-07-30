@@ -42,7 +42,7 @@ export default function ChatMessageListFullFeatured() {
 
         <ChatMessage
           sender="assistant"
-          avatar={<Avatar name="Agent" size="small" />}>
+          avatar={<Avatar name="Agent" size="md" />}>
           <ChatMessageBubble group="first">
             <Markdown density="compact">
               {`Sure! Here's the key pattern from **useReducer.ts**:`}

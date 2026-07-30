@@ -46,6 +46,11 @@ import {
   DropdownMenuContext,
   type DropdownMenuContextValue,
 } from '../DropdownMenu/DropdownMenuContext';
+import {
+  MENU_ITEM_ROLES,
+  MENU_ITEM_SELECTOR,
+  MENU_BOUNDARY_SELECTOR,
+} from '../DropdownMenu/menuItemRoles';
 import {useListFocus} from '../hooks/useListFocus';
 import {useTypeahead} from '../hooks/useTypeahead';
 import {useLongPress} from '../hooks/useLongPress';
@@ -62,6 +67,7 @@ import {mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {StyleXStyles} from '../theme/types';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 import type {
   DropdownMenuOption,
   DropdownMenuItemData,
@@ -205,7 +211,7 @@ export function ContextMenu({
   children,
   menuWidth,
   size = 'md',
-  label = 'Context menu',
+  label: labelFromProps,
   isDisabled = false,
   onOpenChange,
   ref,
@@ -216,6 +222,8 @@ export function ContextMenu({
   'data-testid': testId,
   ...props
 }: ContextMenuProps) {
+  const t = useTranslator();
+  const label = labelFromProps ?? t('@astryx.contextMenu.label');
   const items = ('items' in props ? props.items : undefined) ?? [];
   const menuContent = 'menuContent' in props ? props.menuContent : undefined;
 
@@ -261,24 +269,18 @@ export function ContextMenu({
     handleKeyDown: listNavKeyDown,
     focusFirst,
     focusItem,
+    ownsEvent,
+    getItems: getMenuItems,
   } = useListFocus<HTMLDivElement>({
-    itemSelector: '[role="menuitem"]:not([aria-disabled="true"])',
+    itemSelector: MENU_ITEM_SELECTOR,
+    boundarySelector: MENU_BOUNDARY_SELECTOR,
     wrap: false,
     onEscape: closeMenu,
   });
 
-  // First-character typeahead over the enabled menu items (menus-11).
-  const getMenuItems = useCallback(
-    (): HTMLElement[] =>
-      listRef.current
-        ? Array.from(
-            listRef.current.querySelectorAll<HTMLElement>(
-              '[role="menuitem"]:not([aria-disabled="true"])',
-            ),
-          )
-        : [],
-    [listRef],
-  );
+  // First-character typeahead over the enabled menu items (menus-11). Reuses
+  // the hook's scoped item collection so an inline submenu flyout's items
+  // aren't swept in.
   const typeahead = useTypeahead({
     getItemLabels: () => getMenuItems().map(el => el.textContent),
     onMatch: focusItem,
@@ -335,10 +337,18 @@ export function ContextMenu({
 
   const listKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
+      // A submenu flyout renders inline inside this menu; its key events bubble
+      // up here. Let that level own them — only handle events from this level.
+      if (!ownsEvent(e)) {
+        return;
+      }
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         const focused = document.activeElement as HTMLElement | null;
-        if (focused?.getAttribute('role') === 'menuitem') {
+        if (
+          focused &&
+          MENU_ITEM_ROLES.has(focused.getAttribute('role') ?? '')
+        ) {
           focused.click();
         }
         return;
@@ -349,7 +359,7 @@ export function ContextMenu({
       }
       listNavKeyDown(e);
     },
-    [listNavKeyDown, typeahead],
+    [listNavKeyDown, typeahead, ownsEvent],
   );
 
   // Place the zero-size cursor anchor at a point in the trigger's local

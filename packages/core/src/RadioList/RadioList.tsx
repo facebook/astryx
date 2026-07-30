@@ -146,8 +146,8 @@ export interface RadioListProps extends Omit<
   status?: InputStatus;
   /**
    * The size of the radio controls.
-   * - 'sm': Compact size (18px radio, 20px wrapper)
-   * - 'md': Default size (22px radio, 24px wrapper)
+   * - 'sm': Compact size (20px radio)
+   * - 'md': Default size (24px radio)
    * @default 'md'
    */
   size?: RadioListSize;

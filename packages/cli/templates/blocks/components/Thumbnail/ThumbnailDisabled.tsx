@@ -23,9 +23,14 @@ export default function ThumbnailDisabled() {
             src={GOLDEN_SUNSET}
             alt="Golden sunset over mountains"
             label="golden-sunset.jpg"
+            showRemoveOn="always"
             onRemove={() => {}}
           />
-          <Thumbnail label="document.pdf" onRemove={() => {}} />
+          <Thumbnail
+            label="document.pdf"
+            showRemoveOn="always"
+            onRemove={() => {}}
+          />
         </Stack>
       </Stack>
       <Stack direction="vertical" gap={1}>

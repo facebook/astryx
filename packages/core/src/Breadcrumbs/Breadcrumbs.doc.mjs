@@ -30,6 +30,8 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-breadcrumb-item'},
+      {className: 'astryx-breadcrumb-item-menu-trigger'},
+      {className: 'astryx-breadcrumb-menu'},
       {className: 'astryx-breadcrumbs', visualProps: ['variant']},
     ],
   },

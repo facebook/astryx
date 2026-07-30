@@ -10,6 +10,7 @@ import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Divider} from '../Divider';
 import {DropdownMenuItem} from './DropdownMenuItem';
+import {DropdownMenuSubMenu} from './DropdownMenuSubMenu';
 import {
   spacingVars,
   typographyVars,
@@ -49,18 +50,14 @@ function getSectionKey(section: DropdownMenuSection, index: number): string {
  * Converts data-driven items into DropdownMenuItem components,
  * so both modes share the same rendering and keyboard navigation path.
  */
-export function renderDropdownItems(
-  items: DropdownMenuOption[],
-): ReactNode {
+export function renderDropdownItems(items: DropdownMenuOption[]): ReactNode {
   const elements: ReactNode[] = [];
 
   for (let i = 0; i < items.length; i++) {
     const option = items[i];
 
     if ('type' in option && option.type === 'divider') {
-      elements.push(
-        <Divider key={`divider-${i}`} xstyle={styles.divider} />,
-      );
+      elements.push(<Divider key={`divider-${i}`} xstyle={styles.divider} />);
     } else if ('type' in option && option.type === 'section') {
       elements.push(
         <div
@@ -84,15 +81,32 @@ export function renderDropdownItems(
         </div>,
       );
     } else if (!('type' in option)) {
-      elements.push(
-        <DropdownMenuItem
-          key={getItemKey(option)}
-          icon={option.icon}
-          label={option.label}
-          onClick={option.onClick}
-          isDisabled={option.isDisabled}
-        />,
-      );
+      // A plain item that declares nested `items` becomes a submenu (data-mode
+      // parity with the compound DropdownMenuSubMenu API); otherwise it's a
+      // leaf. renderDropdownItems owns the recursion and hands the rendered
+      // children to DropdownMenuSubMenu — so DropdownMenuSubMenu never imports
+      // this module back (no import cycle).
+      if (option.items && option.items.length > 0) {
+        elements.push(
+          <DropdownMenuSubMenu
+            key={getItemKey(option)}
+            icon={option.icon}
+            label={option.label}
+            isDisabled={option.isDisabled}>
+            {renderDropdownItems(option.items)}
+          </DropdownMenuSubMenu>,
+        );
+      } else {
+        elements.push(
+          <DropdownMenuItem
+            key={getItemKey(option)}
+            icon={option.icon}
+            label={option.label}
+            onClick={option.onClick}
+            isDisabled={option.isDisabled}
+          />,
+        );
+      }
     }
   }
 

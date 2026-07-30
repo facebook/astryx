@@ -2,15 +2,26 @@
 
 Core UI components, theme system, and utilities for the Astryx design system. For project setup, see [Quick Start](#quick-start) below.
 
+> **Building with an AI agent?** Add the CLI, then run `init`:
+>
+> ```bash
+> npm install -D @astryxdesign/cli   # or: pnpm add -D / yarn add -D / bun add -d
+> npx astryx init                    # resolves to the CLI you just installed
+> ```
+>
+> `init` writes the Astryx component index into your `AGENTS.md`/`CLAUDE.md` so your agent discovers components, templates, and design tokens instead of guessing. Need a single command without installing? Use the scoped package directly — `npx @astryxdesign/cli <cmd>` (or `pnpm dlx`/`bunx @astryxdesign/cli`). Bare `npx astryx` only works once `@astryxdesign/cli` is a dependency; before that npm resolves it to an unrelated package. See [XDS CLI](#xds-cli).
+
 ## Component Docs
 
-Look up any component's full API (props, types, best practices, and theming):
+Look up any component's full API (props, variants, examples, best practices, and theming) via the Astryx CLI:
 
 ```bash
-node node_modules/@astryxdesign/core/docs.mjs Button        # full docs for a component
-node node_modules/@astryxdesign/core/docs.mjs --list         # list all components
-node node_modules/@astryxdesign/core/docs.mjs --list --brief  # brief summaries
+npx @astryxdesign/cli init                   # one-time: writes the component guide into AGENTS.md / CLAUDE.md
+npx @astryxdesign/cli component Button        # full docs for a component
+npx @astryxdesign/cli component --list        # list all components
 ```
+
+> Use the scoped `@astryxdesign/cli` to run without installing; bare `npx astryx` only resolves once the CLI is a dependency.
 
 ## Page Layouts
 
@@ -23,9 +34,9 @@ global navigation.
 Requires `@astryxdesign/cli` (`npm install -D @astryxdesign/cli`):
 
 ```bash
-npx astryx template --list              # browse all page and block templates
-npx astryx template dashboard           # emit full page source
-npx astryx template settings --skeleton # layout skeleton with spatial annotations
+astryx template --list              # browse all page and block templates
+astryx template dashboard           # emit full page source
+astryx template settings --skeleton # layout skeleton with spatial annotations
 ```
 
 ## Astryx CLI
@@ -33,18 +44,20 @@ npx astryx template settings --skeleton # layout skeleton with spatial annotatio
 The CLI (`@astryxdesign/cli`) provides additional tooling:
 
 ```bash
-npx astryx --help                       # full listing of all commands
-npx astryx component Button             # full docs + related block templates
-npx astryx docs                         # reference docs (principles, tokens, theming, styling)
-npx astryx docs theme                   # theming guide (Theme, defineTheme, light/dark)
-npx astryx docs tokens                  # spacing, color, radius, typography token reference
-npx astryx init                         # initialize Astryx in your project
-npx astryx theme build                  # build theme CSS for production
-npx astryx swizzle Button               # eject component source for customization
-npx astryx upgrade --apply              # run codemods to migrate between versions
-npx astryx discover                     # discover external Astryx packages
-npx astryx gap-report                   # report a missing capability
+astryx --help                       # full listing of all commands
+astryx component Button             # full docs + related block templates
+astryx docs                         # reference docs (principles, tokens, theming, styling)
+astryx docs theme                   # theming guide (Theme, defineTheme, light/dark)
+astryx docs tokens                  # spacing, color, radius, typography token reference
+astryx init                         # initialize Astryx in your project
+astryx theme build                  # build theme CSS for production
+astryx swizzle Button               # eject component source for customization
+astryx upgrade --apply              # run codemods to migrate between versions
+astryx discover                     # discover external Astryx packages
+astryx gap-report                   # report a missing capability
 ```
+
+> Prefix these with your runner: `npx astryx …` / `pnpm exec astryx …` once the CLI is installed, or `npx @astryxdesign/cli …` to run without installing.
 
 ## Related Packages
 

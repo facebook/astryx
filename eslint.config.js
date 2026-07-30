@@ -60,7 +60,13 @@ export default defineConfig(
       // (see the dedicated CLI block lower down). Scoped to packages/cli on
       // purpose — other packages' .mjs stay unlinted (#2468).
       "**/*.mjs",
-      "!packages/cli/src/**/*.mjs",
+      "!packages/cli/api/**/*.mjs",
+      "!packages/cli/cli/**/*.mjs",
+      "!packages/cli/codemods/**/*.mjs",
+      "!packages/cli/authoring/**/*.mjs",
+      "!packages/cli/lib/**/*.mjs",
+      "!packages/cli/utils/**/*.mjs",
+      "!packages/cli/schemas/**/*.mjs",
       "!packages/cli/bin/**/*.mjs",
       "**/*.test-violations.tsx",
       "apps/example-nextjs/*.js",
@@ -174,6 +180,15 @@ export default defineConfig(
           'Carousel/Carousel',
         ],
       }],
+    },
+  },
+  // The i18n runtime itself defines the message strings the rest of the
+  // package resolves against; a "hardcoded string" check against it would be
+  // circular. Turn off @astryx/no-hardcoded-i18n-string just for this dir.
+  {
+    files: ["packages/core/src/i18n/**/*.{ts,tsx}"],
+    rules: {
+      '@astryx/no-hardcoded-i18n-string': 'off',
     },
   },
   // React bug-prevention rules - applies to core package
@@ -305,7 +320,16 @@ export default defineConfig(
   // .mjs sources a Node language environment and enforces the JSON-stdout
   // contract (#2467) at author time via @astryx/no-raw-console-cli.
   {
-    files: ["packages/cli/src/**/*.mjs", "packages/cli/bin/**/*.mjs"],
+    files: [
+      "packages/cli/api/**/*.mjs",
+      "packages/cli/cli/**/*.mjs",
+      "packages/cli/codemods/**/*.mjs",
+      "packages/cli/authoring/**/*.mjs",
+      "packages/cli/lib/**/*.mjs",
+      "packages/cli/utils/**/*.mjs",
+      "packages/cli/schemas/**/*.mjs",
+      "packages/cli/bin/**/*.mjs",
+    ],
     plugins: {
       '@astryx': astryxEslintPlugin,
     },
@@ -351,7 +375,16 @@ export default defineConfig(
   // Copyright header for CLI .mjs sources (the main copyright block only
   // covers .ts/.tsx).
   {
-    files: ["packages/cli/src/**/*.mjs", "packages/cli/bin/**/*.mjs"],
+    files: [
+      "packages/cli/api/**/*.mjs",
+      "packages/cli/cli/**/*.mjs",
+      "packages/cli/codemods/**/*.mjs",
+      "packages/cli/authoring/**/*.mjs",
+      "packages/cli/lib/**/*.mjs",
+      "packages/cli/utils/**/*.mjs",
+      "packages/cli/schemas/**/*.mjs",
+      "packages/cli/bin/**/*.mjs",
+    ],
     plugins: {
       '@astryx': astryxEslintPlugin,
     },

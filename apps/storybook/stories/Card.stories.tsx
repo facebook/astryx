@@ -75,6 +75,11 @@ const meta: Meta<typeof Card> = {
       control: {type: 'range', min: 100, max: 600, step: 10},
       description: 'Minimum height in pixels',
     },
+    elevation: {
+      control: {type: 'inline-radio'},
+      options: ['none', 'low', 'med', 'high'],
+      description: 'Resting shadow depth',
+    },
   },
 };
 
@@ -109,6 +114,28 @@ export const WithSimpleContent: Story = {
   ),
 };
 
+export const Elevations: Story = {
+  render: () => (
+    <div {...stylex.props(styles.storyWrapper)}>
+      {(['none', 'low', 'med', 'high'] as const).map(elevation => (
+        <VStack key={elevation} gap={2}>
+          <p {...stylex.props(styles.heading)}>
+            elevation=&quot;{elevation}&quot;
+          </p>
+          <Card width={220} elevation={elevation}>
+            <VStack gap={1}>
+              <Heading level={3}>{elevation}</Heading>
+              <p {...stylex.props(styles.text, styles.textSecondary)}>
+                Resting at the {elevation} shadow level.
+              </p>
+            </VStack>
+          </Card>
+        </VStack>
+      ))}
+    </div>
+  ),
+};
+
 export const WithInnerLayout: Story = {
   render: () => (
     <Card width={350}>
@@ -121,8 +148,8 @@ export const WithInnerLayout: Story = {
         content={
           <LayoutContent>
             <p {...stylex.props(styles.text, styles.textSecondary)}>
-              When using Layout, the layout uses negative margin to escape
-              the container padding, then manages its own padding.
+              When using Layout, the layout uses negative margin to escape the
+              container padding, then manages its own padding.
             </p>
           </LayoutContent>
         }

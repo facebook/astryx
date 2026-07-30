@@ -25,7 +25,7 @@ export default function AvatarGroupOverflowShowcase() {
         <Text type="supporting" color="secondary">
           Default overflow
         </Text>
-        <AvatarGroup size="medium">
+        <AvatarGroup size="lg">
           {USERS.map(user => (
             <Avatar key={user.name} name={user.name} />
           ))}
@@ -36,7 +36,7 @@ export default function AvatarGroupOverflowShowcase() {
         <Text type="supporting" color="secondary">
           Custom count text
         </Text>
-        <AvatarGroup size="medium">
+        <AvatarGroup size="lg">
           {USERS.slice(0, 2).map(user => (
             <Avatar key={user.name} name={user.name} />
           ))}

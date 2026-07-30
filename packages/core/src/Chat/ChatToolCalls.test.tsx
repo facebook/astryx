@@ -133,6 +133,70 @@ describe('ChatToolCalls', () => {
     expect(panel).toHaveTextContent('file contents here');
   });
 
+  it('exposes the error message as text without requiring hover', () => {
+    render(
+      <ChatToolCalls
+        calls={[
+          {
+            name: 'bash',
+            status: 'error',
+            errorMessage: 'Command exited with code 1',
+          },
+        ]}
+      />,
+    );
+    // The message must exist as real (screen-reader-visible) text content,
+    // not only inside a hover-only title attribute.
+    expect(screen.getByText(/Command exited with code 1/)).toBeInTheDocument();
+  });
+
+  it('includes the error message in the accessible name of an expandable error row', () => {
+    render(
+      <ChatToolCalls
+        calls={[
+          {
+            name: 'bash',
+            status: 'error',
+            errorMessage: 'Command exited with code 1',
+            resultDetail: <div>stderr output</div>,
+          },
+        ]}
+      />,
+    );
+    expect(
+      screen.getByRole('button', {name: /Command exited with code 1/}),
+    ).toBeInTheDocument();
+  });
+
+  it('keeps the hover tooltip on the error status icon', () => {
+    const {container} = render(
+      <ChatToolCalls
+        calls={[
+          {
+            name: 'bash',
+            status: 'error',
+            errorMessage: 'Command exited with code 1',
+          },
+        ]}
+      />,
+    );
+    expect(
+      container.querySelector('[title="Command exited with code 1"]'),
+    ).not.toBeNull();
+  });
+
+  it('renders no error text for non-error calls', () => {
+    render(
+      <ChatToolCalls
+        calls={[
+          {name: 'bash', status: 'complete', errorMessage: 'stale message'},
+        ]}
+      />,
+    );
+    expect(screen.queryByText(/stale message/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Error:/)).not.toBeInTheDocument();
+  });
+
   it('points the group header aria-controls at the content region', () => {
     render(
       <ChatToolCalls

@@ -169,6 +169,7 @@ export function SegmentedControlItem({
   icon,
   isDisabled = false,
   onClick: onClickProp,
+  xstyle,
   ...rest
 }: SegmentedControlItemProps) {
   const ctx = useSegmentedControlContext();
@@ -228,6 +229,7 @@ export function SegmentedControlItem({
           isSelected && styles.selected,
           !isSelected && !isItemDisabled && styles.hover,
           isItemDisabled && styles.disabled,
+          xstyle,
         ),
       )}>
       {iconElement}

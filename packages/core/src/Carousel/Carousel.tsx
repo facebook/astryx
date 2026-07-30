@@ -7,8 +7,12 @@
  * @input Uses React, StyleX, useScrollOverflow, useLayer, Button, Icon, theme tokens
  * @output Exports Carousel component
  * @position Horizontal scroll container with fade-edge overflow indication,
- *   optional prev/next buttons on the top layer, scroll-snap, and a 1px
- *   visual bleed allowance for child selection indicators.
+ *   optional prev/next buttons on the top layer, scroll-snap, a 1px
+ *   visual bleed allowance for child selection indicators, and Shift + wheel
+ *   mapping so mouse users can scroll horizontally. Exposes APG
+ *   carousel semantics: the root is a labelled region with
+ *   aria-roledescription="carousel" and each item wrapper is a group with
+ *   aria-roledescription="slide" named "Slide N of M".
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Carousel/index.ts (exports)
@@ -16,7 +20,14 @@
  * - /packages/cli/templates/blocks/components/Carousel/ (showcase blocks)
  */
 
-import {type ReactNode, useRef, useCallback, useEffect, Children} from 'react';
+import {
+  type ReactNode,
+  useRef,
+  useCallback,
+  useEffect,
+  Children,
+  isValidElement,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   spacingVars,
@@ -30,10 +41,12 @@ import {Button} from '../Button';
 import {Icon} from '../Icon';
 import {useLayer} from '../Layer';
 import {useScrollOverflow} from '../hooks/useScrollOverflow';
+import {isRtlElement} from '../hooks/isRtlElement';
 import type {BaseProps} from '../BaseProps';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs, rtlStyles} from '../utils';
 import type {SpacingStep} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 export interface CarouselProps extends BaseProps<HTMLDivElement> {
   ref?: React.Ref<HTMLDivElement>;
@@ -154,10 +167,16 @@ const styles = stylex.create({
     transitionTimingFunction: easeVars['--ease-standard'],
   },
   buttonPillStart: {
-    transform: 'translateX(-50%)',
+    transform: {
+      default: 'translateX(-50%)',
+      ':is([dir="rtl"] *)': 'translateX(50%)',
+    },
   },
   buttonPillEnd: {
-    transform: 'translateX(50%)',
+    transform: {
+      default: 'translateX(50%)',
+      ':is([dir="rtl"] *)': 'translateX(-50%)',
+    },
   },
   buttonHidden: {
     opacity: 0,
@@ -256,15 +275,22 @@ export function Carousel({
   hasEdgeFade = true,
   hasSnap = false,
   padding,
-  'aria-label': ariaLabel = 'Carousel',
+  'aria-label': ariaLabelFromProps,
   xstyle,
   className,
   style,
   'data-testid': testId,
   ...htmlProps
 }: CarouselProps) {
+  const t = useTranslator();
+  const ariaLabel = ariaLabelFromProps ?? t('@astryx.carousel.label');
   const scrollElRef = useRef<HTMLElement | null>(null);
   const {scrollRef, overflowStart, overflowEnd} = useScrollOverflow();
+
+  // Children.toArray drops null/undefined/boolean children and assigns
+  // stable keys, so slide numbering ("Slide N of M") matches what actually
+  // renders even when some children are conditionally omitted.
+  const slides = Children.toArray(children);
 
   const layer = useLayer({
     mode: 'context',
@@ -287,6 +313,31 @@ export function Carousel({
     [scrollRef],
   );
 
+  // Map Shift + vertical wheel to horizontal scroll. Trackpads emit
+  // horizontal deltas natively, but a standard mouse only produces deltaY —
+  // so mouse users can't wheel-scroll a horizontal container. Shift + wheel
+  // is the long-established convention for horizontal scroll containers; we
+  // honor it by translating the vertical delta into a horizontal scroll.
+  //
+  // Only kicks in when Shift is held and the wheel is purely vertical
+  // (deltaX === 0), so native trackpad horizontal scrolling is untouched.
+  const handleWheel = useCallback((event: React.WheelEvent<HTMLDivElement>) => {
+    if (!event.shiftKey || event.deltaY === 0 || event.deltaX !== 0) {
+      return;
+    }
+    const el = scrollElRef.current;
+    if (!el) {
+      return;
+    }
+    // Nothing to scroll horizontally — let the event fall through so the page
+    // can scroll as it normally would.
+    if (el.scrollWidth <= el.clientWidth) {
+      return;
+    }
+    event.preventDefault();
+    el.scrollBy({left: event.deltaY, behavior: 'auto'});
+  }, []);
+
   const scrollBy = useCallback((direction: -1 | 1) => {
     const el = scrollElRef.current;
     if (!el) {
@@ -303,7 +354,11 @@ export function Carousel({
       typeof window.matchMedia === 'function' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     el.scrollBy({
-      left: direction * Math.max(amount, itemWidth),
+      // `direction` is the logical intent (-1 = toward content start, +1 =
+      // toward content end). Under RTL the scroll axis is inverted (start is
+      // scrollLeft 0, the end is negative), so flip the physical delta sign.
+      left:
+        (isRtlElement(el) ? -1 : 1) * direction * Math.max(amount, itemWidth),
       behavior: prefersReducedMotion ? 'auto' : 'smooth',
     });
   }, []);
@@ -330,19 +385,20 @@ export function Carousel({
     <div
       ref={mergeRefs(ref, layer.ref as React.Ref<HTMLDivElement>)}
       data-testid={testId}
-      role="region"
-      aria-label={ariaLabel}
-      aria-roledescription="carousel"
+      {...htmlProps}
       {...mergeProps(
         themeProps('carousel'),
         stylex.props(styles.root, xstyle),
         className,
         style,
       )}
-      {...htmlProps}>
+      role="region"
+      aria-label={ariaLabel}
+      aria-roledescription="carousel">
       <div
         ref={composedRef}
         tabIndex={0}
+        onWheel={handleWheel}
         {...stylex.props(
           styles.scroller,
           gapStyles[gap],
@@ -350,8 +406,23 @@ export function Carousel({
           hasSnap && styles.snap,
           fadeStyle,
         )}>
-        {Children.map(children, child => (
-          <div {...stylex.props(styles.item)}>{child}</div>
+        {slides.map((child, index) => (
+          // APG carousel pattern: each slide container is a group with
+          // aria-roledescription="slide" and an "N of M" accessible name so
+          // ATs announce slide boundaries and position instead of anonymous
+          // generics.
+          <div
+            // eslint-disable-next-line @eslint-react/no-array-index-key -- index fallback only applies to text/number children, which are positional by definition; elements keep their Children.toArray keys
+            key={isValidElement(child) ? child.key : index}
+            role="group"
+            aria-roledescription="slide"
+            aria-label={t('@astryx.carousel.slideLabel', {
+              current: index + 1,
+              total: slides.length,
+            })}
+            {...stylex.props(styles.item)}>
+            {child}
+          </div>
         ))}
       </div>
 
@@ -365,8 +436,12 @@ export function Carousel({
                 !overflowStart && styles.buttonHidden,
               )}>
               <Button
-                icon={<Icon icon="chevronLeft" size="xsm" />}
-                label="Scroll left"
+                icon={
+                  <span {...stylex.props(rtlStyles.mirror)}>
+                    <Icon icon="chevronLeft" size="xsm" />
+                  </span>
+                }
+                label={t('@astryx.carousel.scrollLeft')}
                 variant="ghost"
                 size="sm"
                 isIconOnly
@@ -386,8 +461,12 @@ export function Carousel({
                 !overflowEnd && styles.buttonHidden,
               )}>
               <Button
-                icon={<Icon icon="chevronRight" size="xsm" />}
-                label="Scroll right"
+                icon={
+                  <span {...stylex.props(rtlStyles.mirror)}>
+                    <Icon icon="chevronRight" size="xsm" />
+                  </span>
+                }
+                label={t('@astryx.carousel.scrollRight')}
                 variant="ghost"
                 size="sm"
                 isIconOnly

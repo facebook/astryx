@@ -4,6 +4,7 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {
   ChatComposer,
   ChatComposerDrawer,
+  ChatComposerInput,
   ChatSendButton,
 } from '@astryxdesign/core/Chat';
 import {Token} from '@astryxdesign/core/Token';
@@ -91,6 +92,42 @@ export const Simplest: Story = {
       }}
     />
   ),
+};
+
+/**
+ * Platform-specific Enter behavior. Pass a custom `ChatComposerInput` in the
+ * `input` slot and handle keys through `onKeyDown` — the single seam for
+ * platform quirks. Here, on a touch keyboard we `preventDefault()` Enter so a
+ * soft-keyboard Return inserts a newline instead of sending (and never strands
+ * a multi-line prompt); on a pointer device Enter sends as usual. The same
+ * seam covers shortcuts like Cmd/Ctrl+Enter — just call submit yourself.
+ * IME composition is always respected regardless.
+ */
+export const EnterBehavior: Story = {
+  render: () => {
+    const isCoarsePointer =
+      typeof window !== 'undefined' &&
+      window.matchMedia?.('(pointer: coarse)').matches;
+    return (
+      <ChatComposer
+        onSubmit={value => console.log('Submit:', value)}
+        input={
+          <ChatComposerInput
+            placeholder={
+              isCoarsePointer
+                ? 'Enter inserts a newline on touch — use Send'
+                : 'Enter sends; Shift+Enter for a newline'
+            }
+            onKeyDown={e => {
+              if (isCoarsePointer && e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+              }
+            }}
+          />
+        }
+      />
+    );
+  },
 };
 
 /** With streaming state and stop button */
@@ -361,9 +398,7 @@ export const Feedback: Story = {
             <div style={{width: '100%'}}>
               <List>
                 <ListItem
-                  label={
-                    <Text weight="bold">Do you want to proceed?</Text>
-                  }
+                  label={<Text weight="bold">Do you want to proceed?</Text>}
                 />
                 {options.map(opt => (
                   <ListItem
@@ -386,4 +421,19 @@ export const Feedback: Story = {
       />
     );
   },
+};
+
+/**
+ * Flat composer — `elevation="none"` drops the resting shadow so depth comes
+ * from the border and focus ring instead. The default is `low` (raised).
+ */
+export const Flat: Story = {
+  render: () => (
+    <ChatComposer
+      elevation="none"
+      onSubmit={value => {
+        console.log('Submit:', value);
+      }}
+    />
+  ),
 };

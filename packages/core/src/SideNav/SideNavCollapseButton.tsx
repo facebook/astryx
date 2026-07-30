@@ -23,13 +23,14 @@ import {durationVars, easeVars} from '../theme/tokens.stylex';
 import {getIcon} from '../Icon/globalIconRegistry';
 import {Button} from '../Button';
 import type {BaseProps} from '../BaseProps';
-import {composeEventHandlers} from '../utils';
+import {composeEventHandlers, rtlStyles} from '../utils';
 import {
   useSideNavCollapse,
   type SideNavCollapseState,
   type SideNavImperativeCollapseHandle,
 } from './SideNavCollapseContext';
 import {useAppShellMobile} from '../AppShell/AppShellMobileContext';
+import {useTranslator} from '../i18n';
 
 // =============================================================================
 // Styles
@@ -105,6 +106,7 @@ export function SideNavCollapseButton({
   onClick: onClickProp,
   ...props
 }: SideNavCollapseButtonProps) {
+  const t = useTranslator();
   const {isCollapsed, toggle, isCollapsible} =
     useSideNavCollapseState(handleRef);
   const {isMobile} = useAppShellMobile();
@@ -118,18 +120,25 @@ export function SideNavCollapseButton({
   return (
     <Button
       ref={ref}
-      label={label ?? (isCollapsed ? 'Expand sidebar' : 'Collapse sidebar')}
+      label={
+        label ??
+        (isCollapsed
+          ? t('@astryx.sideNavCollapseButton.expandSidebar')
+          : t('@astryx.sideNavCollapseButton.collapseSidebar'))
+      }
       variant="ghost"
       {...props}
       onClick={composeEventHandlers(onClickProp, toggle)}
       icon={
         children ?? (
-          <span
-            {...stylex.props(
-              styles.chevron,
-              isCollapsed && styles.chevronCollapsed,
-            )}>
-            {getIcon('chevronLeft')}
+          <span {...stylex.props(rtlStyles.mirror)}>
+            <span
+              {...stylex.props(
+                styles.chevron,
+                isCollapsed && styles.chevronCollapsed,
+              )}>
+              {getIcon('chevronLeft')}
+            </span>
           </span>
         )
       }

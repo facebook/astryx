@@ -1,0 +1,162 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+import {describe, it, expect} from 'vitest';
+import type {ReactElement} from 'react';
+import {render, screen} from '@testing-library/react';
+import {TextInput} from '../TextInput/TextInput';
+import {TextArea} from '../TextArea/TextArea';
+import {NumberInput} from '../NumberInput/NumberInput';
+import {DateInput} from '../DateInput/DateInput';
+import {DateRangeInput} from '../DateRangeInput/DateRangeInput';
+import {TimeInput} from '../TimeInput/TimeInput';
+import {FileInput} from '../FileInput/FileInput';
+import type {FieldStatusVariant} from '../FieldStatus/FieldStatus';
+
+// Every id referenced by an aria-describedby must resolve to an element in the
+// document (WCAG 1.3.1) — a described-by pointing at a non-rendered node is a
+// dangling reference. The tooltip variant is the interesting case: it swaps the
+// message box for a tooltip layer, so the referenced ids change per variant.
+function expectNoDanglingDescribedBy(root: HTMLElement) {
+  for (const el of Array.from(root.querySelectorAll('[aria-describedby]'))) {
+    const value = el.getAttribute('aria-describedby') ?? '';
+    for (const id of value.split(/\s+/).filter(Boolean)) {
+      expect(
+        document.getElementById(id),
+        `dangling aria-describedby id "${id}" on <${el.tagName.toLowerCase()}>`,
+      ).not.toBeNull();
+    }
+  }
+}
+
+const VARIANTS: FieldStatusVariant[] = ['attached', 'detached', 'tooltip'];
+
+const INPUTS: [string, (variant: FieldStatusVariant) => ReactElement][] = [
+  [
+    'TextInput',
+    v => (
+      <TextInput
+        label="Field"
+        value=""
+        onChange={() => {}}
+        status={{type: 'error', message: 'Message'}}
+        statusVariant={v}
+      />
+    ),
+  ],
+  [
+    'TextArea',
+    v => (
+      <TextArea
+        label="Field"
+        value=""
+        onChange={() => {}}
+        status={{type: 'error', message: 'Message'}}
+        statusVariant={v}
+      />
+    ),
+  ],
+  [
+    'NumberInput',
+    v => (
+      <NumberInput
+        label="Field"
+        value={undefined}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Message'}}
+        statusVariant={v}
+      />
+    ),
+  ],
+  [
+    'DateInput',
+    v => (
+      <DateInput
+        label="Field"
+        value={undefined}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Message'}}
+        statusVariant={v}
+      />
+    ),
+  ],
+  [
+    'DateRangeInput',
+    v => (
+      <DateRangeInput
+        label="Field"
+        value={null}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Message'}}
+        statusVariant={v}
+      />
+    ),
+  ],
+  [
+    'TimeInput',
+    v => (
+      <TimeInput
+        label="Field"
+        value={undefined}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Message'}}
+        statusVariant={v}
+      />
+    ),
+  ],
+  [
+    'FileInput',
+    v => (
+      <FileInput
+        label="Field"
+        value={null}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Message'}}
+        statusVariant={v}
+      />
+    ),
+  ],
+];
+
+describe('useInputStatusIcon — no dangling aria-describedby (WCAG 1.3.1)', () => {
+  for (const [name, make] of INPUTS) {
+    for (const variant of VARIANTS) {
+      it(`${name} / statusVariant="${variant}"`, () => {
+        const {container} = render(make(variant));
+        expectNoDanglingDescribedBy(container);
+      });
+    }
+  }
+
+  it('tooltip variant links the input to the rendered tooltip element', () => {
+    render(
+      <TextInput
+        label="Field"
+        value=""
+        onChange={() => {}}
+        status={{type: 'error', message: 'Message'}}
+        statusVariant="tooltip"
+      />,
+    );
+    const input = screen.getByRole('textbox');
+    const tooltip = screen.getByRole('tooltip', {hidden: true});
+    expect(input.getAttribute('aria-describedby')).toContain(tooltip.id);
+  });
+
+  it('does not render a tooltip (or reference one) when there is no message', () => {
+    // No message → the tooltip variant renders no tooltip layer and no
+    // described-by should point at a non-existent status element.
+    const {container} = render(
+      <TextInput
+        label="Field"
+        value=""
+        onChange={() => {}}
+        status={{type: 'error'}}
+        statusVariant="tooltip"
+      />,
+    );
+    expect(
+      screen.queryByRole('tooltip', {hidden: true}),
+    ).not.toBeInTheDocument();
+    expectNoDanglingDescribedBy(container);
+  });
+});

@@ -17,7 +17,7 @@ export default function ChatMessageBubbleGrouping() {
     <ChatMessageList style={{maxWidth: 500}}>
       <ChatMessage
         sender="assistant"
-        avatar={<Avatar name="Agent" size="small" />}>
+        avatar={<Avatar name="Agent" size="md" />}>
         <ChatMessageBubble
           group="first"
           name={

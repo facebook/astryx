@@ -44,6 +44,7 @@ import {mergeProps} from '../utils';
 import {computeTargetAndRel} from './computeTargetAndRel';
 import {useInteractiveRole} from '../hooks/useInteractiveRole';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 /**
  * Base link styles
@@ -299,7 +300,7 @@ export function Link({
   hasUnderline = false,
   isDisabled = false,
   isExternalLink = false,
-  newTabLabel = '(opens in new tab)',
+  newTabLabel: newTabLabelFromProps,
   target: targetFromProps,
   onClick,
   tooltip,
@@ -318,6 +319,8 @@ export function Link({
   ref,
   ...props
 }: LinkProps) {
+  const t = useTranslator();
+  const newTabLabel = newTabLabelFromProps ?? t('@astryx.link.newTab');
   const LinkComponent = useLinkComponent(as);
   const role = useInteractiveRole({href, onClick, isDisabled});
   // Determine target and rel based on isExternalLink

@@ -124,8 +124,15 @@ export const docs = {
     },
     {
       name: 'status',
-      type: 'InputStatus',
+      type: "{type: 'warning' | 'error' | 'success', message?: string}",
       description: 'Status indicator for error, warning, or success states.',
+    },
+    {
+      name: 'statusVariant',
+      type: "'attached' | 'detached' | 'tooltip'",
+      description:
+        'How the status message is placed relative to the input. attached overlaps directly below the input (bordered treatment); detached floats below as a separate element with spacing; tooltip hides the message box and surfaces it in a tooltip on the status icon.',
+      default: "'attached'",
     },
     {
       name: 'labelTooltip',
@@ -139,6 +146,12 @@ export const docs = {
       default: '2',
     },
     {
+      name: 'width',
+      type: 'SizeValue',
+      description:
+        'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description: 'StyleX styles for layout customization.',
@@ -147,6 +160,8 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-date-range-input', visualProps: ['size', 'status']},
+      {className: 'astryx-date-range-input-toggle-icon', states: ['state']},
+      {className: 'astryx-date-range-input-clear-icon'},
     ],
   },
   usage: {
@@ -296,6 +311,7 @@ export const docsDense = {
     placeholder: 'placeholder when empty',
     size: 'trigger size',
     status: 'error/warning/success status',
+    statusVariant: 'How status message is placed: attached overlaps below input; detached floats below w/ spacing; tooltip hides the box and shows it on the status icon.',
     labelTooltip: 'tooltip via info icon at label end',
     numberOfMonths: 'months in calendar (default 2)',
     changeAction:

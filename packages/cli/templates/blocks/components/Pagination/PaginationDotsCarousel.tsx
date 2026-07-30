@@ -62,12 +62,8 @@ export default function PaginationDotsCarousel() {
         <Stack direction="vertical" gap={3}>
           <Stars count={review.stars} />
           <Text type="body">{review.quote}</Text>
-          <Stack
-            direction="horizontal"
-            gap={3}
-            vAlign="center"
-            hAlign="start">
-            <Avatar name={review.name} size="small" />
+          <Stack direction="horizontal" gap={3} vAlign="center" hAlign="start">
+            <Avatar name={review.name} size="md" />
             <Stack direction="vertical" gap={0}>
               <Text type="supporting" weight="bold">
                 {review.name}

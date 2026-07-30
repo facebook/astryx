@@ -148,7 +148,7 @@ function App() {
           type: 'code',
           lang: 'bash',
           label: 'Scaffold with CLI',
-          code: 'npx astryx theme',
+          code: 'astryx theme',
         },
       ],
     },
@@ -287,7 +287,7 @@ const brandTheme = defineTheme({
         },
         {
           type: 'prose',
-          text: 'Run `npx astryx component <Name>` to see a component\'s theming targets, public CSS variables, and which standard CSS properties are supported.',
+          text: 'Run `astryx component <Name>` to see a component\'s theming targets, public CSS variables, and which standard CSS properties are supported.',
         },
         {
           type: 'list',
@@ -361,13 +361,13 @@ const brandTheme = defineTheme({
       content: [
         {
           type: 'prose',
-          text: '`npx astryx theme build` compiles a defineTheme file into production-ready artifacts. Recommended for SSR apps (Next.js, Remix) where styles must be present on first paint.',
+          text: '`astryx theme build` compiles a defineTheme file into production-ready artifacts. Recommended for SSR apps (Next.js, Remix) where styles must be present on first paint.',
         },
         {
           type: 'code',
           lang: 'bash',
           label: 'Build a theme',
-          code: 'npx astryx theme build ./src/themes/ocean.ts',
+          code: 'astryx theme build ./src/themes/ocean.ts',
         },
         {
           type: 'prose',
@@ -432,7 +432,7 @@ import './themes/ocean.css';
             [
               'Import (custom theme)',
               'defineTheme() directly',
-              "Built .js + .css from `npx astryx theme build`",
+              "Built .js + .css from `astryx theme build`",
             ],
             [
               'How it works',
@@ -462,7 +462,7 @@ import './themes/ocean.css';
           items: [
             'Use the /built subpath + theme.css for production SSR apps.',
             'Use runtime themes during development for fast iteration.',
-            'Run `npx astryx theme build` for custom themes to get the built artifacts.',
+            'Run `astryx theme build` for custom themes to get the built artifacts.',
           ],
         },
         {
@@ -610,7 +610,7 @@ function ChartConfig() {
         },
         {
           type: 'prose',
-          text: 'See `npx astryx docs styling-libraries` for styling-library interop and `npx astryx docs tokens` for the full token reference.',
+          text: 'See `astryx docs styling-libraries` for styling-library interop and `astryx docs tokens` for the full token reference.',
         },
       ],
     },

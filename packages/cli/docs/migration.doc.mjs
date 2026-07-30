@@ -54,18 +54,18 @@ export const docs = {
           type: 'code',
           lang: 'bash',
           label: 'Migration-oriented CLI pass',
-          code: `npx astryx docs migration
-npx astryx docs theme
-npx astryx docs styling
-npx astryx template --list --type block
-npx astryx template AppShellTopNavWithSideNav --skeleton
-npx astryx template PopoverSettingsPanel --skeleton
-npx astryx component AppShell
-npx astryx component SideNav
-npx astryx component TopNav
-npx astryx component CommandPalette
-npx astryx component Button
-npx astryx component TextInput`,
+          code: `astryx docs migration
+astryx docs theme
+astryx docs styling
+astryx template --list --type block
+astryx template AppShellTopNavWithSideNav --skeleton
+astryx template PopoverSettingsPanel --skeleton
+astryx component AppShell
+astryx component SideNav
+astryx component TopNav
+astryx component CommandPalette
+astryx component Button
+astryx component TextInput`,
         },
         {
           type: 'prose',
@@ -75,8 +75,8 @@ npx astryx component TextInput`,
           type: 'code',
           lang: 'bash',
           label: 'Dense and JSON modes',
-          code: `npx astryx docs migration --dense
-npx astryx component Button --json`,
+          code: `astryx docs migration --dense
+astryx component Button --json`,
         },
       ],
     },
@@ -371,10 +371,10 @@ if (getComputedStyle(button).paddingInline === '0px') {
           code: `We are migrating this existing Tailwind/shadcn app to Astryx incrementally.
 
 First run:
-- npx astryx docs migration --dense
-- npx astryx docs theme --dense
-- npx astryx docs styling --dense
-- npx astryx template AppShellTopNavWithSideNav --skeleton
+- astryx docs migration --dense
+- astryx docs theme --dense
+- astryx docs styling --dense
+- astryx template AppShellTopNavWithSideNav --skeleton
 
 Then migrate one route or shell surface at a time. Keep business logic and routing intact. Replace shadcn/Radix/Tailwind primitives with Astryx components, remove hardcoded colors, verify light and dark mode, and take screenshots before moving to the next surface.`,
         },

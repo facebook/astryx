@@ -3,6 +3,7 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState} from 'react';
 import {MultiSelector} from '@astryxdesign/core/MultiSelector';
+import {Theme, defineTheme} from '@astryxdesign/core/theme';
 
 const meta: Meta<typeof MultiSelector> = {
   title: 'Core/MultiSelector',
@@ -66,6 +67,42 @@ export const Sections: Story = {
     return (
       <MultiSelector
         label="Permissions"
+        options={[
+          {
+            type: 'section',
+            title: 'Read',
+            options: [
+              {value: 'read_posts', label: 'Read posts'},
+              {value: 'read_comments', label: 'Read comments'},
+              {value: 'read_users', label: 'Read users'},
+            ],
+          },
+          {
+            type: 'section',
+            title: 'Write',
+            options: [
+              {value: 'write_posts', label: 'Write posts'},
+              {value: 'write_comments', label: 'Write comments'},
+            ],
+          },
+        ]}
+        value={value}
+        onChange={setValue}
+        placeholder="Select permissions..."
+      />
+    );
+  },
+  decorators: [Story => <Story />],
+};
+
+// Searchable with sections: filtering keeps group headers and drops empty groups
+export const SearchableSections: Story = {
+  render: () => {
+    const [value, setValue] = useState<string[]>([]);
+    return (
+      <MultiSelector
+        label="Permissions"
+        hasSearch
         options={[
           {
             type: 'section',
@@ -403,5 +440,92 @@ export const Clearable: Story = {
   args: {
     label: 'Technologies',
     placeholder: 'Select technologies...',
+  },
+};
+
+export const StatusVariantComparison: Story = {
+  render: () => {
+    const [a, setA] = useState<string[]>([]);
+    const [b, setB] = useState<string[]>([]);
+    return (
+      <div
+        style={{display: 'flex', flexDirection: 'column', gap: 24, width: 300}}>
+        <MultiSelector
+          label="Attached (default)"
+          options={['Name', 'Email', 'Role']}
+          value={a}
+          onChange={setA}
+          status={{type: 'error', message: 'Select at least one column'}}
+          placeholder="Select..."
+        />
+        <MultiSelector
+          label="Detached"
+          options={['Name', 'Email', 'Role']}
+          value={b}
+          onChange={setB}
+          status={{type: 'error', message: 'Select at least one column'}}
+          statusVariant="detached"
+          placeholder="Select..."
+        />
+      </div>
+    );
+  },
+  decorators: [Story => <Story />],
+};
+
+/**
+ * Theme the clear and chevron glyphs precisely via `defineTheme`.
+ *
+ * - `components['multi-selector-clear-icon'].base` scopes overrides to the
+ *   clear icon itself (via the `astryx-multi-selector-clear-icon` target), so a
+ *   theme can recolor it, morph its color on hover, and resize it — without a
+ *   fragile descendant selector or raw CSS.
+ * - `components['multi-selector-indicator-icon']` scopes overrides to the
+ *   chevron, and its `state:expanded` restyles the open state, which the icon
+ *   reflects as a `data-state` attribute.
+ *
+ * Same-element rules in `@layer astryx-theme` win over each icon's own base
+ * color/size.
+ */
+const iconTheme = defineTheme({
+  name: 'multi-selector-icon-demo',
+  components: {
+    'multi-selector-clear-icon': {
+      base: {
+        width: '12px',
+        height: '12px',
+        fontSize: '12px',
+        color: 'var(--color-icon-secondary)',
+        ':hover': {color: 'var(--color-accent)'},
+      },
+    },
+    'multi-selector-indicator-icon': {
+      base: {
+        width: '14px',
+        height: '14px',
+        fontSize: '14px',
+        color: 'var(--color-icon-secondary)',
+      },
+      'state:expanded': {
+        color: 'var(--color-accent)',
+      },
+    },
+  },
+});
+
+export const ThemedIcons: Story = {
+  render: () => {
+    const [value, setValue] = useState<string[]>(['Apple', 'Banana']);
+    return (
+      <Theme theme={iconTheme} mode="light">
+        <MultiSelector
+          label="Icons themed (accent on hover/open)"
+          options={['Apple', 'Banana', 'Orange']}
+          value={value}
+          onChange={setValue}
+          hasClear
+        />
+      </Theme>
+    );
   },
 };

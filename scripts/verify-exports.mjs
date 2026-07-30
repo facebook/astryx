@@ -13,7 +13,7 @@
  */
 
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
-import { join, resolve, dirname } from 'node:path';
+import { join, resolve, dirname, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -63,6 +63,36 @@ function checkFile(pkgDir, filePath) {
 }
 
 /**
+ * Node exports subpath wildcard (one `*` in both key and value). We list the
+ * value's directory and require at least one file matches prefix+suffix.
+ * Any match that resolves outside pkgDir (via `..`) is rejected.
+ */
+function checkWildcard(pkgDir, exportValue) {
+  const i = exportValue.indexOf('*');
+  const prefix = exportValue.slice(0, i);
+  const suffix = exportValue.slice(i + 1);
+  const scanDir = prefix.endsWith('/')
+    ? resolve(pkgDir, prefix)
+    : dirname(resolve(pkgDir, prefix));
+  const nameStart = prefix.endsWith('/') ? '' : prefix.slice(prefix.lastIndexOf('/') + 1);
+
+  let matches = 0;
+  try {
+    for (const entry of readdirSync(scanDir, { withFileTypes: true })) {
+      if (!entry.isFile()) continue;
+      if (!entry.name.startsWith(nameStart) || !entry.name.endsWith(suffix)) continue;
+      if (entry.name.length <= nameStart.length + suffix.length) continue; // empty capture
+      const abs = resolve(scanDir, entry.name);
+      if (relative(pkgDir, abs).startsWith('..')) continue; // must stay inside pkg
+      matches++;
+    }
+  } catch {
+    return false;
+  }
+  return matches > 0;
+}
+
+/**
  * Recursively check an exports map value.
  * Handles string paths, conditional objects, and nested structures.
  */
@@ -70,11 +100,14 @@ function checkExportsValue(pkgDir, pkgName, exportKey, value, parentCondition) {
   const errors = [];
 
   if (typeof value === 'string') {
-    if (!checkFile(pkgDir, value)) {
+    const isWildcard =
+      exportKey.split('*').length === 2 && value.split('*').length === 2;
+    const ok = isWildcard ? checkWildcard(pkgDir, value) : checkFile(pkgDir, value);
+    if (!ok) {
       const label = parentCondition
         ? `exports["${exportKey}"].${parentCondition}`
         : `exports["${exportKey}"]`;
-      errors.push(`  ✗ ${label} → ${value} (file not found)`);
+      errors.push(`  ✗ ${label} → ${value} (${isWildcard ? 'no files match pattern' : 'file not found'})`);
     }
   } else if (typeof value === 'object' && value !== null) {
     for (const [condition, conditionValue] of Object.entries(value)) {

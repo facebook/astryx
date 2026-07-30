@@ -180,6 +180,34 @@ export const StandaloneCollapsible: Story = {
   ),
 };
 
+export const Disabled: Story = {
+  name: 'Disabled item',
+  render: () => (
+    <VStack gap={2}>
+      <Card>
+        <Collapsible trigger="Enabled — click to toggle">
+          <p {...stylex.props(styles.text)}>This section can be toggled.</p>
+        </Collapsible>
+      </Card>
+      <Card>
+        <Collapsible trigger="Disabled — can't be toggled" isDisabled>
+          <p {...stylex.props(styles.text)}>
+            The trigger is non-interactive and dimmed.
+          </p>
+        </Collapsible>
+      </Card>
+      <Card>
+        <Collapsible trigger="Disabled but open" isDisabled defaultIsOpen>
+          <p {...stylex.props(styles.text)}>
+            Disabling doesn't collapse an already-open item; the content stays
+            visible.
+          </p>
+        </Collapsible>
+      </Card>
+    </VStack>
+  ),
+};
+
 export const WithoutCard: Story = {
   name: 'Without Card (standalone)',
   render: () => (

@@ -1,0 +1,43 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
+# Crowdin upload — push the canonical English source strings to Crowdin whenever
+# packages/core/locales/en.json changes on main. Translators pick up new strings
+# from Crowdin; translations flow back via crowdin-download.yml.
+#
+# Uses the Crowdin CLI action (mastodon-style) rather than the Crowdin GitHub
+# App, so the whole integration lives in this repo as reviewable YAML.
+name: Crowdin Upload
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/core/locales/en.json'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: crowdin-upload
+  cancel-in-progress: false
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      # crowdin/github-action@v2.16.4 — pinned by SHA per repo policy.
+      - name: Upload sources to Crowdin
+        uses: crowdin/github-action@e0c8f73cdc0fafde9396e056c5038217000a32d1
+        with:
+          upload_sources: true
+          upload_translations: false
+          download_translations: false
+          push_translations: false
+          create_pull_request: false
+        env:
+          CROWDIN_PROJECT_ID: ${{ vars.CROWDIN_PROJECT_ID }}
+          CROWDIN_PERSONAL_TOKEN: ${{ secrets.CROWDIN_PERSONAL_TOKEN }}

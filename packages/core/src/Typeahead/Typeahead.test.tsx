@@ -171,6 +171,33 @@ describe('BaseTypeahead', () => {
     });
   });
 
+  describe('empty results active descendant (#4059)', () => {
+    it('does not set aria-activedescendant when search has 0 results', async () => {
+      render(
+        <BaseTypeahead
+          searchSource={fruitSource}
+          value={null}
+          onChange={() => {}}
+          debounceMs={0}
+        />,
+      );
+      const input = screen.getByRole('combobox');
+      fireEvent.change(input, {target: {value: 'zzzzz'}});
+
+      await waitFor(() => {
+        expect(input).not.toHaveAttribute('aria-activedescendant');
+      });
+
+      // Press ArrowDown — should NOT set aria-activedescendant to option-0
+      fireEvent.keyDown(input, {key: 'ArrowDown'});
+      expect(input).not.toHaveAttribute('aria-activedescendant');
+
+      // Press Home — should NOT set aria-activedescendant
+      fireEvent.keyDown(input, {key: 'Home'});
+      expect(input).not.toHaveAttribute('aria-activedescendant');
+    });
+  });
+
   it('disables input when isDisabled', () => {
     render(
       <BaseTypeahead
@@ -946,5 +973,28 @@ describe('Typeahead disabledMessage', () => {
     const input = screen.getByRole('combobox');
     expect(input).toBeDisabled();
     expect(input).not.toHaveAttribute('aria-disabled');
+  });
+});
+
+
+describe('Typeahead statusVariant forwarding', () => {
+  it('defaults to attached (status renders with data-variant="attached")', () => {
+    const {container} = render(
+      <Typeahead label="Fruit" searchSource={fruitSource} value={null} onChange={() => {}} status={{type: 'error', message: 'Required'}} />,
+    );
+    expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+      'data-variant',
+      'attached',
+    );
+  });
+
+  it('forwards statusVariant="detached" to the underlying Field status', () => {
+    const {container} = render(
+      <Typeahead label="Fruit" searchSource={fruitSource} value={null} onChange={() => {}} status={{type: 'error', message: 'Required'}} statusVariant="detached" />,
+    );
+    expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+      'data-variant',
+      'detached',
+    );
   });
 });

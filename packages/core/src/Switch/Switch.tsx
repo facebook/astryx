@@ -47,17 +47,75 @@ import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 import {VisuallyHidden} from '../VisuallyHidden';
 
-// Fixed dimensions: 40px width, 24px height, 16px thumb (off), 20px thumb (on)
-const SWITCH_WIDTH = 40;
-const SWITCH_HEIGHT = 24;
-const THUMB_SIZE_OFF = 16;
-const THUMB_SIZE_ON = 20;
-const TRACK_PADDING = 4;
-// Padding between thumb right edge and track inner edge when on
-const ON_RIGHT_PADDING = 2;
-// Travel distance for on state: positions thumb with ON_RIGHT_PADDING from right edge
-const THUMB_TRAVEL_ON =
-  SWITCH_WIDTH - TRACK_PADDING - THUMB_SIZE_ON - ON_RIGHT_PADDING;
+const wrapperSizeStyles = stylex.create({
+  sm: {
+    width: 32,
+    height: 20,
+  },
+  md: {
+    width: 40,
+    height: 24,
+  },
+});
+
+const inputSizeStyles = stylex.create({
+  sm: {
+    width: 32,
+    height: 20,
+  },
+  md: {
+    width: 40,
+    height: 24,
+  },
+});
+
+const trackSizeStyles = stylex.create({
+  sm: {
+    width: 32,
+    height: 20,
+    padding: 2,
+  },
+  md: {
+    width: 40,
+    height: 24,
+    padding: 4,
+  },
+});
+
+const thumbOffSizeStyles = stylex.create({
+  sm: {
+    width: 14,
+    height: 14,
+    transform: 'translateX(0)',
+  },
+  md: {
+    width: 16,
+    height: 16,
+    transform: 'translateX(0)',
+  },
+});
+
+const thumbOnSizeStyles = stylex.create({
+  sm: {
+    width: 16,
+    height: 16,
+    transform: 'translateX(12px)',
+  },
+  md: {
+    width: 20,
+    height: 20,
+    transform: 'translateX(14px)',
+  },
+});
+
+const labelWrapperSizeStyles = stylex.create({
+  sm: {
+    minHeight: 20,
+  },
+  md: {
+    minHeight: 24,
+  },
+});
 
 const styles = stylex.create({
   container: {
@@ -77,8 +135,6 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     flexShrink: 0,
-    width: SWITCH_WIDTH,
-    height: SWITCH_HEIGHT,
     isolation: 'isolate',
   },
   input: {
@@ -88,8 +144,6 @@ const styles = stylex.create({
     opacity: 0,
     cursor: 'pointer',
     zIndex: 1,
-    width: SWITCH_WIDTH,
-    height: SWITCH_HEIGHT,
   },
   inputDisabled: {
     cursor: 'not-allowed',
@@ -100,9 +154,6 @@ const styles = stylex.create({
   track: {
     display: 'flex',
     alignItems: 'center',
-    width: SWITCH_WIDTH,
-    height: SWITCH_HEIGHT,
-    padding: TRACK_PADDING,
     borderRadius: radiusVars['--radius-full'],
     transitionProperty: 'background-color',
     transitionDuration: {
@@ -159,22 +210,11 @@ const styles = stylex.create({
     },
     transitionTimingFunction: easeVars['--ease-standard'],
   },
-  thumbOff: {
-    width: THUMB_SIZE_OFF,
-    height: THUMB_SIZE_OFF,
-    transform: 'translateX(0)',
-  },
-  thumbOn: {
-    width: THUMB_SIZE_ON,
-    height: THUMB_SIZE_ON,
-    transform: `translateX(${THUMB_TRAVEL_ON}px)`,
-  },
   labelWrapper: {
     display: 'flex',
     flexDirection: 'column',
     gap: spacingVars['--spacing-0-5'],
     justifyContent: 'center',
-    minHeight: SWITCH_HEIGHT,
   },
   description: {
     fontFamily: typographyVars['--font-family-body'],
@@ -313,6 +353,13 @@ export interface SwitchProps extends Omit<BaseProps, 'onChange'> {
    * When set with a message, displays a colored message box below the switch.
    */
   status?: InputStatus;
+  /**
+   * Size variant controlling track and thumb dimensions.
+   * - 'sm': 34x20px (matches sm checkbox/radio vertical rhythm)
+   * - 'md': 40x24px (default, matches md checkbox/radio vertical rhythm)
+   * @default 'md'
+   */
+  size?: 'sm' | 'md';
 }
 
 // Dynamic field width (number -> px, string used as-is).
@@ -358,6 +405,7 @@ export function Switch({
   labelPosition = 'end',
   labelSpacing = 'hug',
   status,
+  size = 'md',
   width,
   xstyle,
   className,
@@ -410,7 +458,7 @@ export function Switch({
     describedByParts.length > 0 ? describedByParts.join(' ') : undefined;
 
   const switchElement = (
-    <div {...stylex.props(styles.switchWrapper)}>
+    <div {...stylex.props(styles.switchWrapper, wrapperSizeStyles[size])}>
       <input
         ref={mergeRefs(ref, disabledMessageTooltip.positionRef)}
         id={id}
@@ -447,6 +495,7 @@ export function Switch({
         aria-busy={isBusy || undefined}
         {...stylex.props(
           styles.input,
+          inputSizeStyles[size],
           isDisabled && styles.inputDisabled,
           isBusy && styles.inputBusy,
         )}
@@ -457,9 +506,11 @@ export function Switch({
           themeProps('switch', {
             checked: isOn ? 'checked' : null,
             disabled: isDisabled ? 'disabled' : null,
+            size,
           }),
           stylex.props(
             styles.track,
+            trackSizeStyles[size],
             isOn ? styles.trackOn : styles.trackOff,
             !isDisabled && styles.trackFocus,
             isDisabled && styles.trackDisabled,
@@ -468,8 +519,14 @@ export function Switch({
         )}>
         <div
           {...mergeProps(
-            themeProps('switch-thumb', {checked: isOn ? 'checked' : null}),
-            stylex.props(styles.thumb, isOn ? styles.thumbOn : styles.thumbOff),
+            themeProps('switch-thumb', {
+              checked: isOn ? 'checked' : null,
+              size,
+            }),
+            stylex.props(
+              styles.thumb,
+              isOn ? thumbOnSizeStyles[size] : thumbOffSizeStyles[size],
+            ),
           )}>
           {isBusy && <Spinner size="sm" />}
         </div>
@@ -479,7 +536,7 @@ export function Switch({
   );
 
   const labelElement = (
-    <div {...stylex.props(styles.labelWrapper)}>
+    <div {...stylex.props(styles.labelWrapper, labelWrapperSizeStyles[size])}>
       <FieldLabel
         label={label}
         inputID={id}

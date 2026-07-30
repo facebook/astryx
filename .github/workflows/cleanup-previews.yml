@@ -88,8 +88,24 @@ jobs:
             mapfile -t PR_DIRS < <(ls pr/ 2>/dev/null)
             echo "Found ${#PR_DIRS[@]} PR preview(s)"
 
-            # Get open PR numbers
-            OPEN_PRS=$(gh pr list --repo "$GITHUB_REPOSITORY" --state open --json number --jq '.[].number' || true)
+            # Get open PR numbers. --limit is REQUIRED: `gh pr list` defaults to
+            # 30 results, so without it any still-open PR outside the newest 30
+            # is absent from this list, mistaken for closed, and its preview
+            # wrongly deleted. The repo routinely has >100 open PRs, so cap high.
+            #
+            # A failed/empty fetch is fatal to guard against: if OPEN_PRS is
+            # empty, every preview looks "closed" and the whole pr/ tree gets
+            # deleted. Only proceed when we have a confirmed non-empty list.
+            if OPEN_PRS=$(gh pr list --repo "$GITHUB_REPOSITORY" --state open --limit 1000 --json number --jq '.[].number'); then
+              OPEN_PR_COUNT=$(echo "$OPEN_PRS" | grep -c '[0-9]' || true)
+            else
+              OPEN_PR_COUNT=0
+            fi
+
+            if [ "$OPEN_PR_COUNT" -eq 0 ]; then
+              echo "  Could not fetch open PRs (or none open) — skipping PR cleanup this run to avoid mass-deleting live previews"
+              PR_DIRS=()
+            fi
 
             for pr_num in "${PR_DIRS[@]}"; do
               if echo "$OPEN_PRS" | grep -qx "$pr_num"; then
