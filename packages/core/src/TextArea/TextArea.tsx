@@ -65,6 +65,11 @@ const styles = stylex.create({
     zIndex: 1,
     display: 'block',
     padding: 0,
+    // Internal inline padding for the textarea's text. Defined on the wrapper
+    // so the counter (a sibling overlay) inherits the same value and stays
+    // aligned with the text edge. Kept as an internal var so it can later be
+    // driven by a theme "padding" translation without touching either child.
+    '--_textarea-inline-padding': spacingVars['--spacing-2'],
   },
   textarea: {
     display: 'block',
@@ -75,7 +80,7 @@ const styles = stylex.create({
     borderStyle: 'none',
     // Base internal padding; overlays get their own reserved space below.
     paddingBlock: spacingVars['--spacing-1'],
-    paddingInline: spacingVars['--spacing-2'],
+    paddingInline: 'var(--_textarea-inline-padding)',
     fontFamily: typographyVars['--font-family-body'],
     fontSize: {
       default: typeScaleVars['--text-body-size'],
@@ -94,14 +99,14 @@ const styles = stylex.create({
     cursor: 'not-allowed',
   },
   // Reserve start padding so text clears the start icon.
-  // 8px inset + 16px icon (sm) + 8px gap = 32px (--spacing-8)
+  // inline inset + 16px icon (sm) + 8px gap
   textareaWithStartIcon: {
-    paddingInlineStart: spacingVars['--spacing-8'],
+    paddingInlineStart: `calc(var(--_textarea-inline-padding) + ${spacingVars['--spacing-6']})`,
   },
   // Reserve end padding so text clears the status icon / spinner overlay.
-  // 8px inset + 20px icon (md) + 4px gap = 32px (--spacing-8)
+  // inline inset + 20px icon (md) + 4px gap
   textareaWithStatus: {
-    paddingInlineEnd: spacingVars['--spacing-8'],
+    paddingInlineEnd: `calc(var(--_textarea-inline-padding) + ${spacingVars['--spacing-6']})`,
   },
   // Reserve bottom padding so text clears the character counter overlay.
   textareaWithCounter: {
@@ -110,23 +115,23 @@ const styles = stylex.create({
   startIcon: {
     position: 'absolute',
     top: spacingVars['--spacing-2'],
-    insetInlineStart: spacingVars['--spacing-2'],
+    insetInlineStart: 'var(--_textarea-inline-padding)',
     pointerEvents: 'none',
     display: 'flex',
   },
   endSlot: {
     position: 'absolute',
     top: spacingVars['--spacing-2'],
-    insetInlineEnd: spacingVars['--spacing-2'],
+    insetInlineEnd: 'var(--_textarea-inline-padding)',
     pointerEvents: 'none',
     display: 'flex',
   },
   // Character counter lives inside the input container, anchored bottom-right
-  // underneath the textarea. insetInlineEnd clears the native resize grip.
+  // underneath the textarea, aligned to the same inline inset as the text.
   counter: {
     position: 'absolute',
     bottom: spacingVars['--spacing-1'],
-    insetInlineEnd: spacingVars['--spacing-5'],
+    insetInlineEnd: 'var(--_textarea-inline-padding)',
     pointerEvents: 'none',
     fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-supporting-size'],
