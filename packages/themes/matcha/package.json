@@ -51,7 +51,7 @@
     "lucide-react": "^1.18.0"
   },
   "peerDependencies": {
-    "@astryxdesign/core": "0.1.9",
+    "@astryxdesign/core": ">=0.1.9 <1.0.0",
     "react": ">=19"
   },
   "devDependencies": {

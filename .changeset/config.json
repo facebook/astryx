@@ -20,5 +20,8 @@
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": ["@astryxdesign/storybook", "@astryxdesign/sandbox"]
+  "ignore": ["@astryxdesign/storybook", "@astryxdesign/sandbox"],
+  "___experimentalUnsafeOptions_WILL_CHANGE_IN_PATCH": {
+    "onlyUpdatePeerDependentsWhenOutOfRange": true
+  }
 }
