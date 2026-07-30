@@ -27,28 +27,34 @@
  * - /apps/storybook/stories/BottomSheet.stories.tsx (examples and visual coverage)
  */
 
-import {type ReactNode} from 'react';
+import {useCallback, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '@astryxdesign/core';
 import {
   colorVars,
   radiusVars,
+  sizeVars,
   spacingVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
 import {mergeProps, themeProps} from '@astryxdesign/core/utils';
 import {Drawer} from '../Drawer';
 import {useSheetGestures} from './useSheetGestures';
 
+// Detent fractions of the viewport the sheet can rest at, ascending
+// (mid <-> full). Matches the ratified mobile-prototype exploration.
+const SNAP_FRACTIONS = [0.5, 0.92];
+
 /**
- * Height budget for each named size. `medium`/`tall` track the viewport so
- * the sheet scales with the device; `short` is a fixed peek height. `auto`
- * is handled separately (fits content, capped at the `tall` budget).
+ * Height budget for each named size, as a fraction of the viewport:
+ * - `hug` — fits its content, never taller than 90%.
+ * - `capped` — a scrolling mid-height panel (62%).
+ * - `tall` — a pinned near-full panel (92%); use when content streams in so
+ *   the sheet doesn't resize under the user.
  */
 const HEIGHT_BUDGETS = {
-  short: '240px',
-  medium: '50dvh',
-  tall: '90dvh',
-  auto: '90dvh',
+  hug: '90dvh', // upper bound only; the sheet hugs its content beneath it
+  capped: '62dvh',
+  tall: '92dvh',
 } as const;
 
 export type BottomSheetHeight = keyof typeof HEIGHT_BUDGETS;
@@ -57,6 +63,44 @@ export type BottomSheetHeight = keyof typeof HEIGHT_BUDGETS;
 // cap and center them. Matches the `sm` layout breakpoint. On phones the
 // viewport is narrower than this, so the sheet stays full-width.
 const MAX_SHEET_WIDTH = 640;
+
+// Grab-handle sizing, on the spacing scale. The pill sits in a short reserved
+// row right under the sheet's rounded top, but the pointer hit box is a
+// comfortable 44px (`--spacing-11`; Apple HIG, well above WCAG 2.2 SC 2.5.8's
+// 24px floor). The hit box is anchored at the top so the pill stays visible;
+// its extra height overlaps the content via a negative bottom margin — so the
+// large target reserves only a short row in layout. That reserved space was
+// the gap between the handle and the heading.
+// Grab-handle sizing, on the spacing scale. The pill sits in a short reserved
+// row right under the sheet's rounded top, but the pointer hit box is a tall,
+// full-width 48px strip (`--spacing-12`; twice WCAG 2.2 SC 2.5.8's 24px floor)
+// so it's easy to land on. The <dialog> clips overflow above the rounded top,
+// so the extra target height extends DOWNWARD, overlapping the top of the
+// content via a negative bottom margin — the hit box grows without reserving
+// layout space or leaving a gap before the heading.
+const HANDLE_HIT_HEIGHT = spacingVars['--spacing-12']; // 48px target strip
+const HANDLE_PILL_INSET = spacingVars['--spacing-3']; // 12px above the pill
+// Overlap = hit height − reserved row (48 − 20). Expressed as tokens so it
+// tracks the scale rather than a magic pixel value.
+const HANDLE_OVERLAP = `calc(-1 * (${spacingVars['--spacing-12']} - ${spacingVars['--spacing-5']}))`;
+
+/**
+ * Default snap detents in px, resolved against the *visual* viewport (like
+ * iOS detents), so a mid rest point is ~half the screen regardless of the
+ * sheet's own height budget. Read lazily at drag start — no persistent
+ * listener — so it reflects the live viewport after a rotation or the
+ * virtual keyboard opening. SSR-safe: returns `[]` off the client, so the
+ * gesture hook simply has no extra detents until the first interaction. The
+ * hook keeps only detents shorter than the measured sheet and always treats
+ * the full height as the tallest detent.
+ */
+function defaultSnapHeights(): number[] {
+  if (typeof window === 'undefined') {
+    return [];
+  }
+  const vh = window.visualViewport?.height ?? window.innerHeight;
+  return SNAP_FRACTIONS.map(f => f * vh);
+}
 
 const styles = stylex.create({
   // Inner wrapper that carries the live drag translate AND the visible sheet
@@ -90,18 +134,33 @@ const styles = stylex.create({
     boxShadow: 'none',
     borderBlockStartWidth: 0,
   },
+  // Scrim fade hint: the scrim is Drawer's ::backdrop. We override its opacity
+  // with a custom property (default 1, so the resting/open scrim is unchanged)
+  // that the drag handler lowers toward 0 as the sheet enters the close zone —
+  // a live cue that releasing will dismiss. Drawer's own opacity transition on
+  // the ::backdrop eases the value back when the drag ends.
+  scrimFade: {
+    '::backdrop': {
+      opacity: 'var(--_sheet-scrim-opacity, 1)',
+    },
+  },
   handleBar: {
     flexShrink: 0,
     display: 'flex',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'center',
-    paddingBlock: spacingVars['--spacing-2'],
+    // 44px pointer hit box that overlaps into the top of the content via a
+    // negative bottom margin, so only a short row is reserved in layout — no
+    // gap before the heading. The pill is anchored near the top of the box.
+    height: HANDLE_HIT_HEIGHT,
+    paddingBlockStart: HANDLE_PILL_INSET,
+    marginBlockEnd: HANDLE_OVERLAP,
     touchAction: 'none',
     cursor: 'grab',
   },
   handlePill: {
-    width: 36,
-    height: 4,
+    width: sizeVars['--size-element-lg'],
+    height: spacingVars['--spacing-1'],
     borderRadius: radiusVars['--radius-full'],
     backgroundColor: colorVars['--color-border'],
   },
@@ -110,13 +169,16 @@ const styles = stylex.create({
     minHeight: 0,
     overflowY: 'auto',
     overscrollBehavior: 'contain',
+    // Allow native vertical scrolling of the content; the overscroll-at-top
+    // pull-down is handled via pointer events, not by blocking touch-action.
+    touchAction: 'pan-y',
   },
-  // `auto` fits content instead of filling the height budget; the budget
-  // becomes an upper bound. Applied to the <dialog> (overrides Drawer's
+  // `hug` fits the content instead of filling the height budget; the budget
+  // becomes an upper bound (90%). Applied to the <dialog> (overrides Drawer's
   // block-size treatment, which is applied earlier in the props chain).
-  autoHeight: {
+  hugHeight: {
     height: 'fit-content',
-    maxHeight: HEIGHT_BUDGETS.auto,
+    maxHeight: HEIGHT_BUDGETS.hug,
   },
 });
 export interface BottomSheetProps extends BaseProps<HTMLDialogElement> {
@@ -143,17 +205,20 @@ export interface BottomSheetProps extends BaseProps<HTMLDialogElement> {
   children: ReactNode;
 
   /**
-   * How tall the sheet is:
-   * - `'short'` — a fixed peek height
-   * - `'medium'` — half the viewport
-   * - `'tall'` — nearly the full viewport
-   * - `'auto'` — fits its content, capped at the `'tall'` budget
+   * How tall the sheet is. A named budget, or any explicit height:
+   * - `'hug'` — fits its content, never taller than 90% of the viewport.
+   * - `'capped'` — a scrolling mid-height panel (~62%).
+   * - `'tall'` — a pinned near-full panel (~92%); use when content streams in
+   *   so the sheet doesn't resize under the user.
+   * - a `number` (px) or CSS length string (e.g. `'70dvh'`, `480`) for a
+   *   custom budget, mirroring `Drawer`'s `size` / `Dialog`'s `maxHeight`.
    *
-   * On viewports shorter than the budget the sheet fills the available
-   * height.
-   * @default 'medium'
+   * The user can still drag between snap points regardless of the starting
+   * height. On viewports shorter than the budget the sheet fills the
+   * available height.
+   * @default 'capped'
    */
-  height?: BottomSheetHeight;
+  height?: BottomSheetHeight | number | string;
 
   /** Test ID for the root element. */
   'data-testid'?: string;
@@ -182,26 +247,58 @@ export function BottomSheet({
   onOpenChange,
   label,
   children,
-  height = 'medium',
+  height = 'capped',
   xstyle,
   ...props
 }: BottomSheetProps) {
-  const close = () => onOpenChange(false);
-  const {contentProps, handleProps} = useSheetGestures({
+  const dialogRef = useRef<HTMLDialogElement | null>(null);
+  const close = useCallback(() => onOpenChange(false), [onOpenChange]);
+
+  // Drive the scrim opacity from drag progress via a CSS variable on the
+  // <dialog>, set imperatively so a 60fps drag doesn't re-render React. The
+  // scrim (Drawer's ::backdrop) reads this var, fading out as the drag enters
+  // the close zone to signal that releasing will dismiss.
+  const handleDragProgress = useCallback((dismissProgress: number) => {
+    dialogRef.current?.style.setProperty(
+      '--_sheet-scrim-opacity',
+      String(1 - dismissProgress),
+    );
+  }, []);
+
+  const {contentProps, handleProps, bodyProps, isDragging} = useSheetGestures({
     isOpen,
     onDismiss: close,
+    snapHeights: defaultSnapHeights,
+    onDragProgress: handleDragProgress,
   });
+
+  // Resolve the height budget: a named key maps to its viewport fraction, and
+  // any other value (px number or CSS length) passes straight through to
+  // Drawer's `size`. `hug` is the only budget that fits content beneath the
+  // cap rather than filling it.
+  const isNamed = typeof height === 'string' && height in HEIGHT_BUDGETS;
+  const sizeValue = isNamed
+    ? HEIGHT_BUDGETS[height as BottomSheetHeight]
+    : height;
+  const isHug = height === 'hug';
 
   return (
     <Drawer
+      ref={dialogRef}
       isOpen={isOpen}
       onClose={close}
       side="bottom"
-      size={HEIGHT_BUDGETS[height]}
+      size={sizeValue}
       label={label}
       hasScrim
       hasCloseButton={false}
-      xstyle={[styles.dialogSurface, height === 'auto' && styles.autoHeight]}
+      xstyle={[
+        styles.dialogSurface,
+        // Only override the scrim opacity while dragging, so Drawer's own
+        // @starting-style entrance fade runs untouched on open.
+        isDragging && styles.scrimFade,
+        isHug && styles.hugHeight,
+      ]}
       {...props}>
       <div
         data-astryx-sheet=""
@@ -217,7 +314,12 @@ export function BottomSheet({
           aria-hidden="true">
           <div {...stylex.props(styles.handlePill)} />
         </div>
-        <div {...stylex.props(styles.body)}>{children}</div>
+        <div
+          data-astryx-sheet-body=""
+          {...stylex.props(styles.body)}
+          {...bodyProps}>
+          {children}
+        </div>
       </div>
     </Drawer>
   );

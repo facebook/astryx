@@ -156,7 +156,23 @@ describe('BottomSheet', () => {
 
   describe('height', () => {
     it('renders for each named height without error', () => {
-      for (const height of ['short', 'medium', 'tall', 'auto'] as const) {
+      for (const height of ['hug', 'capped', 'tall'] as const) {
+        const {unmount} = render(
+          <BottomSheet
+            isOpen
+            onOpenChange={() => {}}
+            label="Filters"
+            height={height}>
+            Content
+          </BottomSheet>,
+        );
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+        unmount();
+      }
+    });
+
+    it('accepts a freeform height (number or CSS length)', () => {
+      for (const height of [480, '70dvh'] as const) {
         const {unmount} = render(
           <BottomSheet
             isOpen
