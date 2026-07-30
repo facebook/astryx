@@ -56,27 +56,27 @@ function resolveEffectiveSide(
 }
 
 /**
- * Hit area bias percentage. When the pill is off-center, the grab zone
- * shifts ~2:1 toward the pill so users can reach the visible grip easily.
+ * Hit-area inline bias, expressed as a fraction of the pill's per-side offset.
  *
- * The hit area's left edge starts at 50% of the handle, so a `translateX(-50%)`
- * centers it. Biasing toward the inline-START side means translating further
- * (−66.67%); toward inline-END means less (−33.33%). Because `translateX` is
- * physical (screen-space) but `start`/`end` are logical, the RTL bias is the
- * mirror of the LTR bias about the −50% center. `ltr`/`rtl` return the physical
- * percentage for each direction so the dynamic style can pick per-`dir`.
+ * The visible pill is placed by `pillOffsetX`/`pillOffsetY`: anchored at the
+ * divider's inline-start edge and pushed one grip-width-plus-gap toward the
+ * panel side via a PHYSICAL translate (dir −1 = start, +1 = end). Because that
+ * offset is physical, the pill sits on the same physical side of the divider in
+ * both LTR and RTL. The grab zone must sit OVER that pill, so it has to use the
+ * exact same anchor + physical-offset construction as the pill (just wider) —
+ * anchoring the hit area at the divider centre (`insetInlineStart: 50%`) and
+ * biasing with a percentage translate mixes a logical anchor (which flips under
+ * RTL) with a physical translate (which doesn't), leaving the grab zone stranded
+ * to one side under RTL. Returning the pill's `dir` here lets the hit area reuse
+ * `pillOffsetX`/`pillOffsetY` so the two elements are positioned identically.
  */
-function hitAreaBias(effectiveSide: 'start' | 'end' | 'center'): {
-  ltr: string;
-  rtl: string;
-} {
+function hitAreaBiasDir(
+  effectiveSide: 'start' | 'end' | 'center',
+): number | null {
   if (effectiveSide === 'center') {
-    return {ltr: '50%', rtl: '50%'};
+    return null;
   }
-  // start -> more negative under LTR, less negative under RTL (mirrored).
-  return effectiveSide === 'start'
-    ? {ltr: '66.67%', rtl: '33.33%'}
-    : {ltr: '33.33%', rtl: '66.67%'};
+  return effectiveSide === 'start' ? -1 : 1;
 }
 
 const styles = stylex.create({
@@ -158,15 +158,23 @@ const styles = stylex.create({
     width: spacingVars['--spacing-4'],
     top: 0,
     bottom: 0,
-    insetInlineStart: '50%',
     cursor: 'col-resize',
   },
   hitAreaVertical: {
     height: spacingVars['--spacing-4'],
     insetInlineStart: 0,
     insetInlineEnd: 0,
-    top: '50%',
     cursor: 'row-resize',
+  },
+  // Centered grab zone (pillPlacement 'center' / no bias): sit the hit area on
+  // the divider itself. Anchored logically so it centers in both directions.
+  hitAreaCenteredX: {
+    insetInlineStart: '50%',
+    transform: 'translateX(-50%)',
+  },
+  hitAreaCenteredY: {
+    insetBlockStart: '50%',
+    transform: 'translateY(-50%)',
   },
 
   // Pill base — themes target .astryx-resize-handle-pill for size/shape.
@@ -206,18 +214,29 @@ const styles = stylex.create({
 // Dynamic styles — avoids inline style overrides.
 // Each axis gets its own function since StyleX requires static structure.
 const dynamicStyles = stylex.create({
-  // Hit-area bias. `translateX`/`translateY` is physical, but the bias target
-  // (start/end) is logical, so under RTL the horizontal bias mirrors about the
-  // −50% center — hence the per-`dir` transform. Vertical bias has no RTL
-  // dependence (block axis), so both values are identical there.
-  hitAreaBiasX: (pct: {ltr: string; rtl: string}) => ({
+  // Hit-area inline offset — mirrors the pill's `pillOffsetX`/`pillOffsetY`
+  // construction so the grab zone sits centred on the visible pill in BOTH
+  // directions. Both anchor at the divider's inline-start edge
+  // (`insetInlineStart: 0`) and travel toward the panel side with the SAME
+  // physical translate `dir * (gripWidth + gap)`, so they share the pill's
+  // near edge. The hit area is wider, so it also shifts by half the width
+  // difference `(16px − 3px) / 2 = 6.5px` to align the two CENTRES. That
+  // centring shift is along the inline axis (a box grows from its inline-start
+  // edge toward inline-end), so it must flip physical sign under RTL — unlike
+  // the `dir * (...)` travel, which is physical and identical in both
+  // directions because the pill's own offset is physical. Mixing the previous
+  // divider-relative `50%` anchor with a percentage translate stranded the grab
+  // zone to one side under RTL; this construction keeps it on the pill.
+  hitAreaOffsetX: (dir: number) => ({
+    insetInlineStart: 0,
     transform: {
-      default: `translateX(-${pct.ltr})`,
-      ':is([dir="rtl"] *)': `translateX(-${pct.rtl})`,
+      default: `translate(calc(${dir} * (3px + ${spacingVars['--spacing-1']}) - 6.5px), -50%)`,
+      ':is([dir="rtl"] *)': `translate(calc(${dir} * (3px + ${spacingVars['--spacing-1']}) + 6.5px), -50%)`,
     },
   }),
-  hitAreaBiasY: (pct: {ltr: string; rtl: string}) => ({
-    transform: `translateY(-${pct.ltr})`,
+  hitAreaOffsetY: (dir: number) => ({
+    insetBlockStart: 0,
+    transform: `translate(-50%, calc(${dir} * (3px + ${spacingVars['--spacing-1']}) - 6.5px))`,
   }),
   pillOffsetX: (dir: number) => ({
     insetInlineStart: 0,
@@ -353,6 +372,9 @@ export function ResizeHandle({
     isReversed,
     resizable?._isCollapsed ?? false,
   );
+  // Physical offset direction shared by the pill and the grab zone (null =
+  // centered / no bias). Keeps the two positioned identically in LTR and RTL.
+  const hitBiasDir = hitAreaBiasDir(effectiveSide);
 
   const getRTLMultiplier = useCallback((): number => {
     const el = handleRef.current;
@@ -558,9 +580,17 @@ export function ResizeHandle({
         {...stylex.props(
           styles.hitArea,
           isHorizontal ? styles.hitAreaHorizontal : styles.hitAreaVertical,
-          isHorizontal
-            ? dynamicStyles.hitAreaBiasX(hitAreaBias(effectiveSide))
-            : dynamicStyles.hitAreaBiasY(hitAreaBias(effectiveSide)),
+          // Bias the grab zone to sit over the visible pill. When the pill is
+          // centered (no bias) just center the hit area on the divider; when
+          // it's offset to a panel side, reuse the pill's physical-offset
+          // construction so the two stay aligned in LTR and RTL alike.
+          hitBiasDir == null
+            ? isHorizontal
+              ? styles.hitAreaCenteredX
+              : styles.hitAreaCenteredY
+            : isHorizontal
+              ? dynamicStyles.hitAreaOffsetX(hitBiasDir)
+              : dynamicStyles.hitAreaOffsetY(hitBiasDir),
           isDisabled && styles.disabled,
         )}
         onPointerDown={handlePointerDown}

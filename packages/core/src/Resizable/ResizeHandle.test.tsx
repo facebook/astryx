@@ -268,6 +268,33 @@ describe('ResizeHandle', () => {
     gcsSpy.mockRestore();
   });
 
+  // --- Hit-area geometry (grab zone tracks the visible pill) ---
+
+  it('anchors the biased grab zone with the pill offset and a dir-flipped centering shift', () => {
+    // For an off-center pill the hit area must reuse the pill's physical offset
+    // construction (anchored at insetInlineStart:0) rather than a divider-
+    // relative 50% anchor + percentage bias, so the two stay aligned in LTR and
+    // RTL. The half-width-difference centering shift (6.5px) is inline, so it
+    // flips physical sign under RTL: `- 6.5px` (LTR) vs `+ 6.5px` (RTL). See the
+    // Playwright measurement (hitArea.center === pill.center, 0px offset in both
+    // directions) for the geometric proof; here we lock the transform shape.
+    render(<Harness handleProps={{pillPlacement: 'start'}} />);
+    const hitArea = getSeparator().firstElementChild as HTMLElement;
+    expect(hitArea.className).toContain('hitAreaOffsetX');
+    const style = hitArea.getAttribute('style') ?? '';
+    // LTR (default) branch subtracts the centering shift; RTL branch adds it.
+    expect(style).toContain('- 6.5px');
+    expect(style).toContain('+ 6.5px');
+  });
+
+  it('centers the grab zone on the divider when the pill is centered (no bias)', () => {
+    render(<Harness handleProps={{pillPlacement: 'center'}} />);
+    const hitArea = getSeparator().firstElementChild as HTMLElement;
+    // No physical offset — a plain logical centering class, no biased transform.
+    expect(hitArea.className).toContain('hitAreaCenteredX');
+    expect(hitArea.className).not.toContain('hitAreaOffsetX');
+  });
+
   // --- Prop composition (ordering choice: handler sits after {...props}) ---
 
   it('runs a consumer onKeyDown alongside keyboard resizing', () => {
