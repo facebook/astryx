@@ -145,7 +145,7 @@ export interface DropdownMenuRadioItemProps extends Omit<
  *
  * @example
  * ```
- * <DropdownMenuRadioGroup value={sort} onChange={setSort} aria-label="Sort by">
+ * <DropdownMenuRadioGroup value={sort} onChange={setSort} label="Sort by">
  *   <DropdownMenuRadioItem value="newest" label="Newest" />
  *   <DropdownMenuRadioItem value="oldest" label="Oldest" icon="clock" />
  * </DropdownMenuRadioGroup>

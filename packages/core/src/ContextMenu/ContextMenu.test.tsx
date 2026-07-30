@@ -567,7 +567,7 @@ describe('ContextMenu selectable items', () => {
             <ContextMenuRadioGroup
               value="name"
               onChange={() => {}}
-              aria-label="Sort by">
+              label="Sort by">
               <ContextMenuRadioItem value="name" label="Sort by name" />
               <ContextMenuRadioItem value="date" label="Sort by date" />
             </ContextMenuRadioGroup>
@@ -602,7 +602,7 @@ describe('ContextMenu selectable items', () => {
             <ContextMenuRadioGroup
               value="name"
               onChange={onSort}
-              aria-label="Sort by">
+              label="Sort by">
               <ContextMenuRadioItem value="name" label="Sort by name" />
               <ContextMenuRadioItem value="date" label="Sort by date" />
             </ContextMenuRadioGroup>
