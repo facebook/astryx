@@ -2,11 +2,14 @@
 '@astryxdesign/cli': patch
 ---
 
-[refactor] CLI Phase 3 — functions own their types, and the public `./api` type surface is generated from them.
+[refactor] CLI — the public `@astryxdesign/cli/api` type surface is now generated from the runtime JSDoc, and the injectable logger is consolidated into one `Logger`.
 
-- **Colocation:** every command's type shapes live in `api/<cmd>/<cmd>.type.mjs` (the source of truth); each leaf's `@returns` references it, and the central `types/<cmd>.d.ts` files become thin re-exports. Covers all commands (component, hook, docs, discover, template, swizzle, build, upgrade, init, layout, theme, search, doctor, blog, validate-integration) plus their `*Options`.
-- **Generation:** `exports["./api"].types` now points at `api/index.d.mts`, generated from the JSDoc via `pnpm gen:api-types` (committed alongside the sources; kept fresh by the `check:api-types-current` CI guard). The hand-written `types/api.d.ts` and the `api.contract.assert.ts` guard are retired — obsolete once the published types derive from the runtime source.
-- **No public-surface downgrade:** every previously-exported name (18 functions + 15 `*Options` + `AstryxError`) still resolves from `./api`; the generated surface additionally exposes `themeAdd`/`themeList`/`listThemes` and the response types the hand-written file had omitted.
+Consumer-visible changes to `@astryxdesign/cli/api` (types only — runtime imports are unchanged):
 
-Types-only reorg — no runtime change.
+- **Precise return types.** `component`, `docs`, `blog`, `discover`, `build`, `swizzle`, `upgrade`, `init`, and `themeBuild` previously resolved to `Promise<any>`; they now return their precise `{ type, data }` response unions. Code that leaned on `any` may surface new (correct) type errors.
+- **Response types are now exported by name** — e.g. `ComponentDetailResponse`, `SearchResponse`, `UpgradeRunResponse` — alongside `themeAdd`/`themeList`/`listThemes` and a new shared `logger` value + `Logger` type.
+- **Breaking:** the per-command return-union aliases `ComponentResult`, `DiscoverResult`, `DocsResult`, `HookResult`, and `TemplateResult` are no longer exported. Use `Awaited<ReturnType<typeof component>>` (still works), or import the member response types directly.
+
+Internally, the three divergent loggers (`CliLogger`, `InitLogger`, `ThemeBuildLogger`) collapse into one `Logger`; the logger was never part of the public type surface, so this is transparent to callers.
+
 @josephfarina
