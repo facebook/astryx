@@ -361,10 +361,12 @@ export interface RichTextEditorProps extends Omit<
  * `plugins` to layer richer behaviour (toolbars, mentions, hover cards) on top
  * without forking.
  *
+ * The forwarded `RichTextEditorRef` exposes imperative `focus()` and `clear()`
+ * methods for callers that manage the editor from outside.
+ *
  * @example
  * ```
  * import {RichTextEditor, type RichTextEditorRef} from '@astryxdesign/lab';
- *
  * const ref = useRef<RichTextEditorRef>(null);
  * <RichTextEditor
  *   ref={ref}
@@ -372,7 +374,6 @@ export interface RichTextEditorProps extends Omit<
  *   placeholder="Write something..."
  *   onChange={state => save(JSON.stringify(state.toJSON()))}
  * />
- * // Later: ref.current?.focus(); ref.current?.clear();
  * ```
  */
 export const RichTextEditor = forwardRef<
