@@ -1,8 +1,10 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+'use client';
+
 /**
  * @file FieldLabel.tsx
- * @input Uses React, Icon, IconType
+ * @input Uses React, Icon, IconType, useTranslator
  * @output Exports FieldLabel component, FieldLabelProps
  * @position Core label implementation; used by Field, CheckboxInput, Switch
  *
@@ -10,6 +12,7 @@
  * - /packages/core/src/Field/Field.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/Field/index.ts (exports if types change)
  * - /packages/cli/templates/blocks/components/Field/ (showcase blocks)
+ * - /packages/core/locales/en.json (@astryx.field.required / @astryx.field.optional)
  */
 
 import type {ReactNode} from 'react';
@@ -26,12 +29,13 @@ import {
 } from '../theme/tokens.stylex';
 import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {Tooltip} from '../Tooltip';
+import {useTranslator} from '../i18n';
 import {themeProps} from '../utils/themeProps';
 
 const styles = stylex.create({
   label: {
     display: 'flex',
-    alignItems: 'center',
+    alignItems: 'baseline',
     gap: spacingVars['--spacing-1'],
     fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-label-size'],
@@ -39,6 +43,14 @@ const styles = stylex.create({
     fontWeight: fontWeightVars['--font-weight-medium'],
     color: colorVars['--color-text-secondary'],
     cursor: 'pointer',
+  },
+  // The label row baseline-aligns its text so the label and the smaller
+  // optional/required indicator share a common baseline (centering floated the
+  // smaller indicator upward). Icons carry no text baseline, so keep them
+  // vertically centered against the label instead of baseline-aligned.
+  iconSlot: {
+    display: 'inline-flex',
+    alignSelf: 'center',
   },
   labelDisabled: {
     color: colorVars['--color-text-disabled'],
@@ -177,7 +189,12 @@ export function FieldLabel({
   ref,
   ...rest
 }: FieldLabelProps) {
-  const statusText = isOptional ? 'Optional' : isRequired ? 'Required' : null;
+  const t = useTranslator();
+  const statusText = isOptional
+    ? t('@astryx.field.optional')
+    : isRequired
+      ? t('@astryx.field.required')
+      : null;
 
   // A group label (e.g. for a radiogroup) must not be a literal `<label>`
   // element: a `<label>` semantically names a single form control and can't be
@@ -187,7 +204,11 @@ export function FieldLabel({
 
   const labelContent = (
     <>
-      {labelIcon && renderIconSlot(labelIcon, {size: 'sm', color: 'inherit'})}
+      {labelIcon && (
+        <span {...stylex.props(styles.iconSlot)}>
+          {renderIconSlot(labelIcon, {size: 'sm', color: 'inherit'})}
+        </span>
+      )}
       {label}
       {statusText && (
         <span {...stylex.props(styles.optionalRequired)}>
@@ -196,9 +217,11 @@ export function FieldLabel({
         </span>
       )}
       {labelTooltip && (
-        <Tooltip content={labelTooltip} placement="above">
-          <Icon icon="info" size="sm" color="inherit" />
-        </Tooltip>
+        <span {...stylex.props(styles.iconSlot)}>
+          <Tooltip content={labelTooltip} placement="above">
+            <Icon icon="info" size="sm" color="inherit" />
+          </Tooltip>
+        </span>
       )}
     </>
   );

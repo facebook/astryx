@@ -12,6 +12,7 @@
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {TestIcon} from '../__tests__/TestIcon';
+import {InternationalizationProvider} from '../i18n';
 import {FieldLabel} from './FieldLabel';
 
 describe('FieldLabel', () => {
@@ -34,6 +35,30 @@ describe('FieldLabel', () => {
   it('renders Required text when isRequired is true', () => {
     render(<FieldLabel label="Name" inputID="name-input" isRequired />);
     expect(screen.getByText(/Required/)).toBeInTheDocument();
+  });
+
+  it('localizes the required indicator via the i18n provider', () => {
+    render(
+      <InternationalizationProvider
+        locale="fr"
+        overrides={{fr: {'@astryx.field.required': 'Obligatoire'}}}>
+        <FieldLabel label="Nom" inputID="name-input" isRequired />
+      </InternationalizationProvider>,
+    );
+    expect(screen.getByText(/Obligatoire/)).toBeInTheDocument();
+    expect(screen.queryByText(/Required/)).not.toBeInTheDocument();
+  });
+
+  it('localizes the optional indicator via the i18n provider', () => {
+    render(
+      <InternationalizationProvider
+        locale="fr"
+        overrides={{fr: {'@astryx.field.optional': 'Facultatif'}}}>
+        <FieldLabel label="Nom" inputID="name-input" isOptional />
+      </InternationalizationProvider>,
+    );
+    expect(screen.getByText(/Facultatif/)).toBeInTheDocument();
+    expect(screen.queryByText(/Optional/)).not.toBeInTheDocument();
   });
 
   it('shows Optional when both isOptional and isRequired are true', () => {
