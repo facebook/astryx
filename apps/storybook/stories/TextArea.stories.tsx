@@ -497,9 +497,9 @@ export const Loading: Story = {
   },
 };
 
-// While busy, the loading spinner takes the end slot; the status icon is
-// suppressed so the two never overlap. Toggle isLoading to see the spinner
-// give way to the status icon in the same anchored position.
+// The loading spinner and status icon share the end slot and render side by
+// side (matching TextInput/DateInput/TimeInput), not mutually exclusively.
+// Toggle isLoading to see the spinner appear beside the status icon.
 export const LoadingWithStatus: Story = {
   render: () => {
     const [value, setValue] = useState('Too short');

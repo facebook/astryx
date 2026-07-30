@@ -108,6 +108,11 @@ const styles = stylex.create({
   textareaWithStatus: {
     paddingInlineEnd: `calc(var(--_textarea-inline-padding) + ${spacingVars['--spacing-6']})`,
   },
+  // Reserve wider end padding when the spinner AND status icon both show.
+  // inline inset + 16px spinner + 8px gap + 20px icon + 4px gap
+  textareaWithBusyStatus: {
+    paddingInlineEnd: `calc(var(--_textarea-inline-padding) + ${spacingVars['--spacing-12']})`,
+  },
   // Reserve bottom padding so text clears the character counter overlay.
   textareaWithCounter: {
     paddingBottom: spacingVars['--spacing-7'],
@@ -125,6 +130,8 @@ const styles = stylex.create({
     insetInlineEnd: 'var(--_textarea-inline-padding)',
     pointerEvents: 'none',
     display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-2'],
   },
   // Character counter lives inside the input container, anchored bottom-right
   // underneath the textarea, aligned to the same inline inset as the text.
@@ -519,17 +526,15 @@ export function TextArea({
             effectivelyDisabled && styles.textareaDisabled,
             Boolean(startIcon) && styles.textareaWithStartIcon,
             (status || isBusy) && styles.textareaWithStatus,
+            isBusy && !!statusIcon && styles.textareaWithBusyStatus,
             maxLength != null && styles.textareaWithCounter,
           )}
         />
-        {isBusy ? (
+        {(isBusy || statusIcon) && (
           <span {...stylex.props(styles.endSlot)}>
-            <Spinner size="sm" />
+            {isBusy && <Spinner size="sm" />}
+            {statusIcon}
           </span>
-        ) : (
-          statusIcon && (
-            <span {...stylex.props(styles.endSlot)}>{statusIcon}</span>
-          )
         )}
         {maxLength != null && (
           <div

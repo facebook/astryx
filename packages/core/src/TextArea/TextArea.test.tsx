@@ -336,8 +336,8 @@ describe('TextArea', () => {
       expect(describedBy).toContain(messageElement.id);
     });
 
-    it('shows the loading spinner instead of the status icon while busy', () => {
-      render(
+    it('shows both the loading spinner and the status icon while busy', () => {
+      const {container} = render(
         <TextArea
           label="Description"
           value=""
@@ -346,9 +346,11 @@ describe('TextArea', () => {
           status={{type: 'error'}}
         />,
       );
-      // The busy spinner (role="status") takes the end slot; the status icon
-      // is suppressed so the two never overlap.
+      // Matches the other inputs: spinner (role="status") and the status icon
+      // render side by side in the end slot, not mutually exclusively.
       expect(screen.getByRole('status')).toBeInTheDocument();
+      // Status icon svg is also present alongside the spinner.
+      expect(container.querySelectorAll('svg').length).toBeGreaterThan(0);
     });
   });
 
