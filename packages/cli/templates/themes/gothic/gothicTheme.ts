@@ -10,6 +10,13 @@
  * Categorical colors follow a pastel-on-dark pattern (light backgrounds
  * with dark text) — same in any system color preference.
  *
+ * Contrast promises (WCAG 2.1 AA, both system modes):
+ * - text-{hue} inks hold >=4.8:1 on their own pastel background
+ * - icon-{hue} inks are mid-tone ramp stops holding >=3.3:1 on the
+ *   near-black page (standalone Icon usage renders there, not on pastels)
+ * - text-secondary holds >=4.5:1 even on washed popover surfaces
+ * - inverted (Toast) surfaces are dark, so --color-on-dark text holds AA
+ *
  * Uses Manufacturing Consent for headings and Fustat for body text.
  */
 
@@ -21,14 +28,16 @@ import {gothicIconRegistry} from './icons';
  * categorical palette: deep purples (cathedral), blood crimson (tags),
  * aged gold (numbers), forest moss (strings), midnight indigo (functions).
  *
- * Single values (no tuples) since this is a dark-only theme.
+ * Single values (no tuples) since this is a dark-only theme. Every stop
+ * holds >=4.5:1 on the code background; the dimmest stops (comment,
+ * punctuation) sit just past that floor, not at primary-text strength.
  */
 const gothicSyntax = defineSyntaxTheme({
   name: 'xds-gothic',
   tokens: {
     keyword: '#c39adb', // Cathedral plum
     string: '#a3c987', // Forest moss
-    comment: '#6b7079', // Faded ink
+    comment: '#7e8690', // Faded ink (neutral T65 — 5.1:1 on the code bg)
     number: '#dec074', // Aged gold
     function: '#8aa1d8', // Midnight indigo
     type: '#c39adb', // Cathedral plum
@@ -92,8 +101,11 @@ export const gothicTheme = defineTheme({
     '--color-background-muted': '#24292D',
 
     // Text
+    // text-secondary rides a half-step above the #96A0AB core stop
+    // (neutral T80+) so it keeps 4.5:1 on washed popover surfaces
+    // (popover + accent-muted composites to #3d4246 → 4.95:1).
     '--color-text-primary': '#E8F1F6',
-    '--color-text-secondary': '#96A0AB',
+    '--color-text-secondary': '#adb6c0',
     '--color-text-disabled': '#495056',
     '--color-text-accent': '#E8F1F6',
     '--color-on-dark': '#E8F1F6',
@@ -110,9 +122,14 @@ export const gothicTheme = defineTheme({
     '--color-icon-disabled': '#495056',
 
     // Surface variants
+    // Inverted (Toast) surfaces must be DARK: components paint them with
+    // --color-on-dark text, so on a dark-only theme they render as an
+    // elevated slate (12.8:1 with on-dark) and the error toast as deep
+    // rose madder (7.0:1 with on-dark) rather than the cream panel.
     '--color-background-card': '#1a1d20',
     '--color-background-popover': '#24292D',
-    '--color-background-inverted': '#E8F1F6',
+    '--color-background-inverted': '#24292D',
+    '--color-background-error-inverted': '#8d2d4c',
 
     // Status / Sentiment — dusty pastels matching the categorical
     // pattern. Used for status surfaces, destructive button bg, etc.
@@ -137,18 +154,22 @@ export const gothicTheme = defineTheme({
     // Hand-tuned dusty pastels (T75 with reduced chroma) — confident
     // but never bright. Neutral is a dark slate with white text — the
     // "no-color" variant earns its hierarchy by matching the page mood.
+    // Two ink roles per hue: text-{hue} stays a deep T15–T20 ink for
+    // >=4.8:1 on its own pastel; icon-{hue} is a mid-tone ramp stop
+    // (T35–T55 per hue) because standalone icons render on the
+    // near-black page and need >=3.3:1 there.
     // =========================================================================
 
     // Blue (periwinkle midnight)
     '--color-background-blue': '#a3b5d6',
     '--color-border-blue': '#8696b8',
-    '--color-icon-blue': '#2a3b6e',
+    '--color-icon-blue': '#5462ab',
     '--color-text-blue': '#1f2c54',
 
     // Cyan (cathedral mist)
     '--color-background-cyan': '#a3c2cf',
     '--color-border-cyan': '#86a4b1',
-    '--color-icon-cyan': '#2a5e75',
+    '--color-icon-cyan': '#3a6e85',
     '--color-text-cyan': '#204858',
 
     // Gray (dark slate — special: dark bg + light text)
@@ -160,44 +181,44 @@ export const gothicTheme = defineTheme({
     // Green (sage moss)
     '--color-background-green': '#b3c79a',
     '--color-border-green': '#96a880',
-    '--color-icon-green': '#3a5e2c',
+    '--color-icon-green': '#557c44',
     '--color-text-green': '#244023',
 
     // Orange (warm tan)
     '--color-background-orange': '#d3b89a',
     '--color-border-orange': '#b6987d',
-    '--color-icon-orange': '#8a4818',
+    '--color-icon-orange': '#9a5824',
     '--color-text-orange': '#6e3812',
 
     // Pink (dusty rose)
     '--color-background-pink': '#c89aab',
     '--color-border-pink': '#aa7d8e',
-    '--color-icon-pink': '#8d2d4c',
-    '--color-text-pink': '#71223c',
+    '--color-icon-pink': '#a04a6e',
+    '--color-text-pink': '#661e36',
 
     // Purple (muted plum)
     '--color-background-purple': '#b29bc4',
     '--color-border-purple': '#947da6',
-    '--color-icon-purple': '#5a2370',
+    '--color-icon-purple': '#9352ad',
     '--color-text-purple': '#481b58',
 
     // Red (dusty rose)
     '--color-background-red': '#c6a6a2',
     '--color-border-red': '#a48581',
-    '--color-icon-red': '#5e3a35',
+    '--color-icon-red': '#896a5b',
     '--color-text-red': '#4a2520',
 
     // Teal (sage verdigris)
     '--color-background-teal': '#a3c2b6',
     '--color-border-teal': '#86a499',
-    '--color-icon-teal': '#1f5e52',
+    '--color-icon-teal': '#3a7b6c',
     '--color-text-teal': '#174a40',
 
     // Yellow (aged gold)
     '--color-background-yellow': '#d3c490',
     '--color-border-yellow': '#b6a775',
     '--color-icon-yellow': '#876515',
-    '--color-text-yellow': '#6c5010',
+    '--color-text-yellow': '#614708',
 
     // =========================================================================
     // Radius — subtle rounding (original gothic)

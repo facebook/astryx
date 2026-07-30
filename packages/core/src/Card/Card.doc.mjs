@@ -64,7 +64,7 @@ export const docs = {
       name: 'variant',
       type: "'default' | 'transparent' | 'muted' | 'blue' | 'cyan' | 'gray' | 'green' | 'orange' | 'pink' | 'purple' | 'red' | 'teal' | 'yellow'",
       description:
-        'Background color variant. `default` uses the standard card background. `transparent` drops the background entirely. `muted` uses the muted background for de-emphasised cards. The non-semantic variants use the corresponding `--color-background-<name>` token.',
+        'Background color variant. `default` uses the standard card background. `transparent` drops the background entirely. `muted` uses the muted background for de-emphasised cards. The non-semantic variants use the corresponding `--color-background-<name>` token and re-bind the text tokens to the matching `--color-text-<name>` so content stays WCAG-readable on the tint.',
       default: "'default'",
     },
     {
@@ -177,7 +177,7 @@ export const docsDense = {
     minHeight: 'min card height',
     children: 'content inside card',
     padding: 'internal padding via spacing scale',
-    variant: 'background color variant; `default` = standard card bg, `transparent` = no background at all, `muted` = muted bg for de-emphasised cards; non-semantic variants use the corresponding `--color-background-<name>` token',
+    variant: 'background color variant; `default` = standard card bg, `transparent` = no background at all, `muted` = muted bg for de-emphasised cards; non-semantic variants use the corresponding `--color-background-<name>` token and re-bind text tokens to `--color-text-<name>`',
     elevation: 'resting shadow depth: none (flat) | low | med | high (shadow token scale). Raise only to float above content.',
   },
 };

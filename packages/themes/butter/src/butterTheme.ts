@@ -17,6 +17,12 @@
  * ThemePalettePreview so card / badge / banner / strip render the
  * same values). Regen via scripts/butter-palette-gen.mjs if sources
  * change.
+ *
+ * Contrast promises (WCAG 2.1 AA, audited by internal/theme-contrast):
+ * body text >= 4.5:1 on every neutral surface in both modes; categorical
+ * ink >= 4.5:1 on its own pill (T25-on-T90 light, T80-on-T25 dark);
+ * categorical icons >= 3:1 on body/surface; badge/banner labels sit on
+ * the vivid brand fills as dark ink (>= 4.5:1).
  */
 
 import {defineTheme, defineSyntaxTheme} from '@astryxdesign/core/theme';
@@ -74,7 +80,9 @@ export const butterTheme = defineTheme({
     // Core semantic — accent is the exact brand #225BFF
     // =========================================================================
     '--color-accent': ['#225BFF', '#FDEE8C'],
-    '--color-accent-muted': ['#225BFF33', '#FDEE8C40'],
+    // Dark selection wash is 12% butter — any stronger and the yellow
+    // lifts the composite past what secondary text can clear at 4.5:1.
+    '--color-accent-muted': ['#225BFF33', '#FDEE8C1F'],
     '--color-neutral': ['#1d1c110F', '#f3f2e21A'],
     '--color-background-surface': ['#FFFFFF', '#2E2117'],
     '--color-background-body': ['#FDFBE4', '#261A13'],
@@ -83,9 +91,11 @@ export const butterTheme = defineTheme({
     '--color-overlay-pressed': ['#1d1c111A', '#f3f2e21A'],
     '--color-background-muted': ['#f3f2e2', '#3A2A1F'],
 
-    // Text — warm neutral
+    // Text — warm neutral. Dark secondary sits at T-lifted #bbbaab so it
+    // still clears 4.5:1 on the accent-muted selection wash (popover worst
+    // case ~4.9:1) while staying clearly quieter than primary.
     '--color-text-primary': ['#1d1c11', '#f3f2e2'],
-    '--color-text-secondary': ['#605f52', '#adac9e'],
+    '--color-text-secondary': ['#605f52', '#bbbaab'],
     '--color-text-disabled': ['#adac9e', '#605f52'],
     '--color-text-accent': ['#225BFF', '#FDEE8C'],
     '--color-on-dark': '#ffffff',
@@ -134,69 +144,73 @@ export const butterTheme = defineTheme({
     '--size-element-lg': '48px',
 
     // =========================================================================
-    // Categorical — same values in light and dark mode (curated dark mode
-    // keeps the same pastel backgrounds + dark text as light mode).
+    // Categorical — mirrored ramp stops per mode: light mode is T25 ink on a
+    // T90 pill (T80 border); dark mode flips to T80 ink on a T25 pill (T35
+    // border) so pills read as tinted panels on the brown surfaces. Ink on
+    // pill >= 4.5:1 and icon on body/surface >= 3:1 in both modes; the T80
+    // inks also clear 4.5:1 on the status-muted washes (FieldStatus).
     // =========================================================================
 
     // Blue
-    '--color-background-blue': ['#dbe1ff', '#dbe1ff'],
-    '--color-border-blue': ['#bdc5eb', '#bdc5eb'],
-    '--color-icon-blue': ['#203a6c', '#203a6c'],
-    '--color-text-blue': ['#203a6c', '#203a6c'],
+    '--color-background-blue': ['#dbe1ff', '#203a6c'],
+    '--color-border-blue': ['#bdc5eb', '#41517d'],
+    '--color-icon-blue': ['#203a6c', '#bdc5eb'],
+    '--color-text-blue': ['#203a6c', '#bdc5eb'],
 
     // Cyan
-    '--color-background-cyan': ['#a9eff0', '#a9eff0'],
-    '--color-border-cyan': ['#8dd2d3', '#8dd2d3'],
-    '--color-icon-cyan': ['#004649', '#004649'],
-    '--color-text-cyan': ['#004649', '#004649'],
+    '--color-background-cyan': ['#a9eff0', '#004649'],
+    '--color-border-cyan': ['#8dd2d3', '#005e61'],
+    '--color-icon-cyan': ['#004649', '#8dd2d3'],
+    '--color-text-cyan': ['#004649', '#8dd2d3'],
 
-    // Gray (uses the neutral palette)
-    '--color-background-gray': ['#f0edd4', '#f0edd4'],
-    '--color-border-gray': ['#d6d3b8', '#d6d3b8'],
-    '--color-icon-gray': ['#4a4732', '#4a4732'],
-    '--color-text-gray': ['#4a4732', '#4a4732'],
+    // Gray (warm neutral family — not in butterPalettes; stops eyeballed
+    // to the same T90/T80/T35/T25 positions as the ramped hues)
+    '--color-background-gray': ['#f0edd4', '#4a4732'],
+    '--color-border-gray': ['#d6d3b8', '#625f4a'],
+    '--color-icon-gray': ['#4a4732', '#d6d3b8'],
+    '--color-text-gray': ['#4a4732', '#d6d3b8'],
 
     // Green
-    '--color-background-green': ['#c1efb8', '#c1efb8'],
-    '--color-border-green': ['#a5d29d', '#a5d29d'],
-    '--color-icon-green': ['#004800', '#004800'],
-    '--color-text-green': ['#004800', '#004800'],
+    '--color-background-green': ['#c1efb8', '#004800'],
+    '--color-border-green': ['#a5d29d', '#1f5f1f'],
+    '--color-icon-green': ['#004800', '#a5d29d'],
+    '--color-text-green': ['#004800', '#a5d29d'],
 
     // Orange
-    '--color-background-orange': ['#ffdcb6', '#ffdcb6'],
-    '--color-border-orange': ['#f2bd81', '#f2bd81'],
-    '--color-icon-orange': ['#622e00', '#622e00'],
-    '--color-text-orange': ['#622e00', '#622e00'],
+    '--color-background-orange': ['#ffdcb6', '#622e00'],
+    '--color-border-orange': ['#f2bd81', '#794700'],
+    '--color-icon-orange': ['#622e00', '#f2bd81'],
+    '--color-text-orange': ['#622e00', '#f2bd81'],
 
     // Pink
-    '--color-background-pink': ['#ffd5fb', '#ffd5fb'],
-    '--color-border-pink': ['#f0b3e8', '#f0b3e8'],
-    '--color-icon-pink': ['#6c0a68', '#6c0a68'],
-    '--color-text-pink': ['#6c0a68', '#6c0a68'],
+    '--color-background-pink': ['#ffd5fb', '#6c0a68'],
+    '--color-border-pink': ['#f0b3e8', '#80357a'],
+    '--color-icon-pink': ['#6c0a68', '#f0b3e8'],
+    '--color-text-pink': ['#6c0a68', '#f0b3e8'],
 
     // Purple
-    '--color-background-purple': ['#f2daff', '#f2daff'],
-    '--color-border-purple': ['#ddb9f6', '#ddb9f6'],
-    '--color-icon-purple': ['#52237b', '#52237b'],
-    '--color-text-purple': ['#52237b', '#52237b'],
+    '--color-background-purple': ['#f2daff', '#52237b'],
+    '--color-border-purple': ['#ddb9f6', '#69408b'],
+    '--color-icon-purple': ['#52237b', '#ddb9f6'],
+    '--color-text-purple': ['#52237b', '#ddb9f6'],
 
     // Red
-    '--color-background-red': ['#ffdad3', '#ffdad3'],
-    '--color-border-red': ['#f4b8ae', '#f4b8ae'],
-    '--color-icon-red': ['#6d211c', '#6d211c'],
-    '--color-text-red': ['#6d211c', '#6d211c'],
+    '--color-background-red': ['#ffdad3', '#6d211c'],
+    '--color-border-red': ['#f4b8ae', '#823f36'],
+    '--color-icon-red': ['#6d211c', '#f4b8ae'],
+    '--color-text-red': ['#6d211c', '#f4b8ae'],
 
     // Teal
-    '--color-background-teal': ['#b0f0d7', '#b0f0d7'],
-    '--color-border-teal': ['#94d3bb', '#94d3bb'],
-    '--color-icon-teal': ['#00482d', '#00482d'],
-    '--color-text-teal': ['#00482d', '#00482d'],
+    '--color-background-teal': ['#b0f0d7', '#00482d'],
+    '--color-border-teal': ['#94d3bb', '#005f45'],
+    '--color-icon-teal': ['#00482d', '#94d3bb'],
+    '--color-text-teal': ['#00482d', '#94d3bb'],
 
     // Yellow
-    '--color-background-yellow': ['#feee7b', '#feee7b'],
-    '--color-border-yellow': ['#d6c957', '#d6c957'],
-    '--color-icon-yellow': ['#413e00', '#413e00'],
-    '--color-text-yellow': ['#413e00', '#413e00'],
+    '--color-background-yellow': ['#feee7b', '#413e00'],
+    '--color-border-yellow': ['#d6c957', '#575600'],
+    '--color-icon-yellow': ['#413e00', '#d6c957'],
+    '--color-text-yellow': ['#413e00', '#d6c957'],
 
     // =========================================================================
     // Radius
@@ -291,15 +305,19 @@ export const butterTheme = defineTheme({
         paddingBlock: '0',
         paddingInline: 'var(--spacing-3)',
       },
-      // Vivid semantic badges — pinned to the brand colors from the spec.
-      // Info uses the Blue palette source (NOT the brand accent #225BFF).
+      // Vivid semantic badges — fills pinned to the brand colors from the
+      // spec; labels are all dark ink (the warning/success dark-on-bright
+      // treatment extended to info/error, which white text can't clear at
+      // 4.5:1). Info uses the Blue palette source (NOT the accent #225BFF).
       'variant:info': {
         backgroundColor: '#4883fd',
-        color: '#ffffff',
+        color: '#1d1c11',
       },
       'variant:neutral': {
         backgroundColor: '#ffee7b',
-        color: '#225BFF',
+        // Brand accent nudged between ramp T45/T40 — the lightest blue
+        // that clears 4.5:1 (with margin) on the butter-yellow pill.
+        color: '#0f55f9',
       },
       'variant:success': {
         backgroundColor: '#91D143',
@@ -311,20 +329,21 @@ export const butterTheme = defineTheme({
       },
       'variant:error': {
         backgroundColor: '#fc473b',
-        color: '#ffffff',
+        color: '#1d1c11',
       },
     },
 
     // Banner backgrounds match the semantic badge fills.
     // Banner status colors — override the muted tokens locally so the
     // header (which reads --color-*-muted via StyleX) renders vivid fills
-    // matching the badge palette. Scoped to the banner root, doesn't leak.
+    // matching the badge palette, with the same dark-ink text/icons as
+    // the badges. Scoped to the banner root, doesn't leak.
     banner: {
       'status:info': {
         '--color-accent-muted': '#4883fd',
-        '--color-text-primary': '#ffffff',
-        '--color-text-secondary': '#ffffff',
-        '--color-accent': '#ffffff',
+        '--color-text-primary': '#1d1c11',
+        '--color-text-secondary': '#1d1c11',
+        '--color-accent': '#1d1c11',
       },
       'status:success': {
         '--color-success-muted': '#91D143',
@@ -340,76 +359,79 @@ export const butterTheme = defineTheme({
       },
       'status:error': {
         '--color-error-muted': '#fc473b',
-        '--color-text-primary': '#ffffff',
-        '--color-text-secondary': '#ffffff',
-        '--color-error': '#ffffff',
+        '--color-text-primary': '#1d1c11',
+        '--color-text-secondary': '#1d1c11',
+        '--color-error': '#1d1c11',
       },
     },
 
+    // Tinted cards keep the warm neutral ink (core would rebind card text
+    // to the hue inks) — mode-aware so dark mode reads light ink on the
+    // now-dark categorical pills instead of ink-on-ink.
     card: {
       base: {
         borderRadius: 'var(--radius-container)',
         padding: 'var(--spacing-4)',
       },
       'variant:info': {
-        '--color-text-primary': '#1d1c11',
-        '--color-text-secondary': '#605f52',
+        '--color-text-primary': 'light-dark(#1d1c11, #f3f2e2)',
+        '--color-text-secondary': 'light-dark(#605f52, #bbbaab)',
       },
       'variant:success': {
-        '--color-text-primary': '#1d1c11',
-        '--color-text-secondary': '#605f52',
+        '--color-text-primary': 'light-dark(#1d1c11, #f3f2e2)',
+        '--color-text-secondary': 'light-dark(#605f52, #bbbaab)',
       },
       'variant:warning': {
-        '--color-text-primary': '#1d1c11',
-        '--color-text-secondary': '#605f52',
+        '--color-text-primary': 'light-dark(#1d1c11, #f3f2e2)',
+        '--color-text-secondary': 'light-dark(#605f52, #bbbaab)',
       },
       'variant:error': {
-        '--color-text-primary': '#1d1c11',
-        '--color-text-secondary': '#605f52',
+        '--color-text-primary': 'light-dark(#1d1c11, #f3f2e2)',
+        '--color-text-secondary': 'light-dark(#605f52, #bbbaab)',
       },
       'variant:blue': {
-        '--color-text-primary': '#1d1c11',
-        '--color-text-secondary': '#605f52',
+        '--color-text-primary': 'light-dark(#1d1c11, #f3f2e2)',
+        '--color-text-secondary': 'light-dark(#605f52, #bbbaab)',
       },
       'variant:cyan': {
-        '--color-text-primary': '#1d1c11',
-        '--color-text-secondary': '#605f52',
+        '--color-text-primary': 'light-dark(#1d1c11, #f3f2e2)',
+        '--color-text-secondary': 'light-dark(#605f52, #bbbaab)',
       },
       'variant:gray': {
-        '--color-text-primary': '#1d1c11',
-        '--color-text-secondary': '#605f52',
+        '--color-text-primary': 'light-dark(#1d1c11, #f3f2e2)',
+        '--color-text-secondary': 'light-dark(#605f52, #bbbaab)',
       },
       'variant:green': {
-        '--color-text-primary': '#1d1c11',
-        '--color-text-secondary': '#605f52',
+        '--color-text-primary': 'light-dark(#1d1c11, #f3f2e2)',
+        '--color-text-secondary': 'light-dark(#605f52, #bbbaab)',
       },
       'variant:orange': {
-        '--color-text-primary': '#1d1c11',
-        '--color-text-secondary': '#605f52',
+        '--color-text-primary': 'light-dark(#1d1c11, #f3f2e2)',
+        '--color-text-secondary': 'light-dark(#605f52, #bbbaab)',
       },
       'variant:pink': {
-        '--color-text-primary': '#1d1c11',
-        '--color-text-secondary': '#605f52',
+        '--color-text-primary': 'light-dark(#1d1c11, #f3f2e2)',
+        '--color-text-secondary': 'light-dark(#605f52, #bbbaab)',
       },
       'variant:purple': {
-        '--color-text-primary': '#1d1c11',
-        '--color-text-secondary': '#605f52',
+        '--color-text-primary': 'light-dark(#1d1c11, #f3f2e2)',
+        '--color-text-secondary': 'light-dark(#605f52, #bbbaab)',
       },
       'variant:red': {
-        '--color-text-primary': '#1d1c11',
-        '--color-text-secondary': '#605f52',
+        '--color-text-primary': 'light-dark(#1d1c11, #f3f2e2)',
+        '--color-text-secondary': 'light-dark(#605f52, #bbbaab)',
       },
       'variant:teal': {
-        '--color-text-primary': '#1d1c11',
-        '--color-text-secondary': '#605f52',
+        '--color-text-primary': 'light-dark(#1d1c11, #f3f2e2)',
+        '--color-text-secondary': 'light-dark(#605f52, #bbbaab)',
       },
       'variant:yellow': {
-        '--color-text-primary': '#1d1c11',
-        '--color-text-secondary': '#605f52',
+        '--color-text-primary': 'light-dark(#1d1c11, #f3f2e2)',
+        '--color-text-secondary': 'light-dark(#605f52, #bbbaab)',
       },
       'variant:muted': {
-        '--color-text-primary': '#1d1c11',
-        '--color-text-secondary': '#605f52',
+        '--color-text-primary': 'light-dark(#1d1c11, #f3f2e2)',
+        '--color-text-secondary': 'light-dark(#605f52, #bbbaab)',
       },
     },
 
@@ -452,7 +474,7 @@ export const butterTheme = defineTheme({
       },
       'type:error': {
         backgroundColor: '#fc473b',
-        color: '#ffffff',
+        color: '#1d1c11',
       },
     },
 
