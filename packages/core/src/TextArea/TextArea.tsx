@@ -75,7 +75,7 @@ const styles = stylex.create({
     borderStyle: 'none',
     // Base internal padding; overlays get their own reserved space below.
     paddingBlock: spacingVars['--spacing-1'],
-    paddingInline: spacingVars['--spacing-3'],
+    paddingInline: spacingVars['--spacing-2'],
     fontFamily: typographyVars['--font-family-body'],
     fontSize: {
       default: typeScaleVars['--text-body-size'],
@@ -94,14 +94,14 @@ const styles = stylex.create({
     cursor: 'not-allowed',
   },
   // Reserve start padding so text clears the start icon.
-  // 12px inset + 16px icon (sm) + 8px gap = 36px (--spacing-9)
+  // 8px inset + 16px icon (sm) + 8px gap = 32px (--spacing-8)
   textareaWithStartIcon: {
-    paddingInlineStart: spacingVars['--spacing-9'],
+    paddingInlineStart: spacingVars['--spacing-8'],
   },
   // Reserve end padding so text clears the status icon / spinner overlay.
-  // 12px inset + 20px icon (md) + 4px gap = 36px (--spacing-9)
+  // 8px inset + 20px icon (md) + 4px gap = 32px (--spacing-8)
   textareaWithStatus: {
-    paddingInlineEnd: spacingVars['--spacing-9'],
+    paddingInlineEnd: spacingVars['--spacing-8'],
   },
   // Reserve bottom padding so text clears the character counter overlay.
   textareaWithCounter: {
@@ -110,14 +110,14 @@ const styles = stylex.create({
   startIcon: {
     position: 'absolute',
     top: spacingVars['--spacing-2'],
-    insetInlineStart: spacingVars['--spacing-3'],
+    insetInlineStart: spacingVars['--spacing-2'],
     pointerEvents: 'none',
     display: 'flex',
   },
   endSlot: {
     position: 'absolute',
     top: spacingVars['--spacing-2'],
-    insetInlineEnd: spacingVars['--spacing-3'],
+    insetInlineEnd: spacingVars['--spacing-2'],
     pointerEvents: 'none',
     display: 'flex',
   },
