@@ -117,7 +117,6 @@ fs.writeFileSync(
         skipLibCheck: false,
         module: 'esnext',
         moduleResolution: 'bundler',
-        customConditions: ['source'],
         types: ['node'],
       },
       files: ['scenario.ts'],
@@ -132,7 +131,14 @@ const res = spawnSync(tsc, ['--project', path.join(VERIFY_DIR, 'tsconfig.json')]
   cwd: ROOT,
   encoding: 'utf8',
 });
-const errors = (res.stdout || '').split('\n').filter(line => /error TS/.test(line));
+if (res.error) fail('failed to run tsc', String(res.error));
+const output = `${res.stdout || ''}\n${res.stderr || ''}`;
+const errors = output.split('\n').filter(line => /error TS/.test(line));
+// Fail closed: a non-zero exit with no parseable diagnostics still means the
+// packaged surface did not cleanly type-check.
+if (res.status !== 0 && errors.length === 0) {
+  fail('tsc exited non-zero while checking the packaged ./api surface', output.trim());
+}
 if (errors.length > 0) {
   fail('a consumer of the packaged @astryxdesign/cli/api does not type-check', errors.join('\n'));
 }
