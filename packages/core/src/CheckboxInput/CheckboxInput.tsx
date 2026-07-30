@@ -158,7 +158,15 @@ const styles = stylex.create({
   },
   checkmark: {
     display: 'none',
-    color: colorVars['--color-on-accent'],
+    color: {
+      default: colorVars['--color-on-accent'],
+      // Forced colors (Windows High Contrast) does not reliably force an SVG
+      // stroke painted with currentColor, so the check stays the same white as
+      // the flattened (Canvas) box fill — a white check on a white box.
+      // CanvasText keeps it perceivable on the Canvas box, matching the
+      // indeterminate mark (WCAG 1.4.11).
+      '@media (forced-colors: active)': 'CanvasText',
+    },
   },
   checkmarkVisible: {
     display: 'block',
@@ -169,9 +177,8 @@ const styles = stylex.create({
       default: colorVars['--color-on-accent'],
       // Forced colors (Windows High Contrast) strips painted backgrounds,
       // which would make the indeterminate bar invisible; CanvasText keeps it
-      // perceivable on the Canvas box fill (WCAG 1.4.11). The checkmark needs
-      // no equivalent — it strokes with currentColor, which forced colors
-      // maps to a visible system color.
+      // perceivable on the Canvas box fill (WCAG 1.4.11). The checkmark carries
+      // the matching CanvasText treatment on its own style.
       '@media (forced-colors: active)': 'CanvasText',
     },
     borderRadius: radiusVars['--radius-full'],

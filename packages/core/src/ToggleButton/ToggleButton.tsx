@@ -40,6 +40,13 @@ import {themeProps} from '../utils/themeProps';
  */
 const pressedStyles = stylex.create({
   background: {
+    // forced-color-adjust must be `none` here: ToggleButton renders a <button>,
+    // and the UA keeps native form-control colors (ButtonFace surface) for it
+    // under forced colors, ignoring the authored Highlight fill — the label kept
+    // its HighlightText color, giving white text on a white surface. Opting the
+    // pressed button out of UA remapping makes both the Highlight surface and
+    // the HighlightText label render as authored, restoring figure-ground.
+    forcedColorAdjust: 'none',
     backgroundColor: {
       default: colorVars['--color-overlay-pressed'],
       // Forced colors (Windows High Contrast) strips the painted pressed

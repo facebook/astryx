@@ -196,8 +196,14 @@ const styles = stylex.create({
       // Off = empty (Canvas) track; on = Highlight track, so the two states
       // stay distinguishable under forced colors.
       '@media (forced-colors: active)': 'Canvas',
+      // The ancestor-hover tint is a non-system color-mix, and its rule
+      // outranks the plain forced-colors rule above. Left ungated it would
+      // reassert on hover under forced colors, where the UA flattens the
+      // color-mix back to Canvas — so the HighlightText thumb would sit on a
+      // white track (white-on-white). Gating on `forced-colors: none` keeps
+      // the tint out of forced colors and lets the system-color track stand.
       [stylex.when.ancestor(':hover', switchScope)]: {
-        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-background-gray']}, ${colorVars['--color-tint-hover']} 5%)`,
+        '@media (hover: hover) and (forced-colors: none)': `color-mix(in srgb, ${colorVars['--color-background-gray']}, ${colorVars['--color-tint-hover']} 5%)`,
       },
     },
   },
@@ -205,8 +211,10 @@ const styles = stylex.create({
     backgroundColor: {
       default: colorVars['--color-accent'],
       '@media (forced-colors: active)': 'Highlight',
+      // See trackOff: gate the hover tint out of forced colors so it cannot
+      // flatten the Highlight track to white under the HighlightText thumb.
       [stylex.when.ancestor(':hover', switchScope)]: {
-        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-tint-hover']} 15%)`,
+        '@media (hover: hover) and (forced-colors: none)': `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-tint-hover']} 15%)`,
       },
     },
   },

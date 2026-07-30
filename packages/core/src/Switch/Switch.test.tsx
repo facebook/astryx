@@ -13,7 +13,10 @@ import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Switch} from './Switch';
-import {getForcedColorsRules} from '../__tests__/forcedColors';
+import {
+  getAllInjectedCss,
+  getForcedColorsRules,
+} from '../__tests__/forcedColors';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 
 afterEach(() => {
@@ -696,5 +699,18 @@ describe('forced colors (WCAG 1.4.11)', () => {
     expect(css).toContain('background-color: highlighttext;');
     // Disabled affordance (opacity dimming does not survive forcing).
     expect(css).toContain('border-color: graytext;');
+  });
+
+  it('gates the hover tint out of forced colors so the thumb stays visible on hover', () => {
+    render(<Switch label="Notifications" value={true} onChange={() => {}} />);
+    // The ancestor-hover tint is a non-system color-mix whose rule outranks the
+    // plain forced-colors track rule. It is gated behind `forced-colors: none`
+    // so it cannot reassert on hover and flatten the Highlight track to white
+    // under the HighlightText thumb (white-on-white).
+    expect(getAllInjectedCss()).toContain(
+      '(hover: hover) and (forced-colors: none)',
+    );
+    // And the tint never leaks into the forced-colors output.
+    expect(getForcedColorsRules()).not.toContain('color-mix');
   });
 });

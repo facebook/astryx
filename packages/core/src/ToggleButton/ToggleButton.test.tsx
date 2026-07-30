@@ -14,7 +14,10 @@ import userEvent from '@testing-library/user-event';
 import {useState, type MouseEvent} from 'react';
 import {ToggleButton} from './ToggleButton';
 import {ToggleButtonGroup} from './ToggleButtonGroup';
-import {getForcedColorsRules} from '../__tests__/forcedColors';
+import {
+  getAllInjectedCss,
+  getForcedColorsRules,
+} from '../__tests__/forcedColors';
 
 // =============================================================================
 // ToggleButton — Standalone
@@ -531,5 +534,10 @@ describe('forced colors (WCAG 1.4.11)', () => {
     // lose all pressed indication).
     expect(css).toContain('background-color: highlight;');
     expect(css).toContain('color: highlighttext;');
+    // ToggleButton renders a <button>; without opting out of UA remapping it
+    // keeps the native ButtonFace surface and ignores the Highlight fill,
+    // leaving HighlightText text on a white surface. forced-color-adjust: none
+    // makes both render as authored.
+    expect(getAllInjectedCss()).toContain('forced-color-adjust: none;');
   });
 });

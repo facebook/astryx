@@ -554,8 +554,15 @@ describe('forced colors (WCAG 1.4.11)', () => {
       <CheckboxInput label="All" value="indeterminate" onChange={() => {}} />,
     );
     // The painted indeterminate bar would be stripped to Canvas (invisible);
-    // CanvasText keeps it perceivable. The checkmark needs no rule — it
-    // strokes with currentColor, which forced colors maps for us.
+    // CanvasText keeps it perceivable.
     expect(getForcedColorsRules()).toContain('background-color: canvastext;');
+  });
+
+  it('compiles a forced-colors color so the checkmark survives Windows High Contrast', () => {
+    render(<CheckboxInput label="Accept" value={true} onChange={() => {}} />);
+    // The check strokes with currentColor; forced colors leaves it the same
+    // white as the flattened box, so it needs its own CanvasText color to stay
+    // perceivable on the Canvas box.
+    expect(getForcedColorsRules()).toContain('color: canvastext;');
   });
 });

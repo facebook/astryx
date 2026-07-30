@@ -14,7 +14,10 @@ import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {SegmentedControl} from './SegmentedControl';
 import {SegmentedControlItem} from './SegmentedControlItem';
-import {getForcedColorsRules} from '../__tests__/forcedColors';
+import {
+  getAllInjectedCss,
+  getForcedColorsRules,
+} from '../__tests__/forcedColors';
 
 // Mock showPopover/hidePopover (not implemented in jsdom) so the tooltip layer
 // reflects its open state via a `popover-open` attribute the tests can assert.
@@ -798,5 +801,10 @@ describe('forced colors (WCAG 1.4.11)', () => {
     // HighlightText marks the selected segment.
     expect(css).toContain('background-color: highlight;');
     expect(css).toContain('color: highlighttext;');
+    // The segment is a <button>; without opting out of UA remapping it keeps
+    // the native ButtonFace surface and ignores the Highlight fill, leaving
+    // HighlightText text on a white surface. forced-color-adjust: none makes
+    // both render as authored.
+    expect(getAllInjectedCss()).toContain('forced-color-adjust: none;');
   });
 });

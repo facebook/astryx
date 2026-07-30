@@ -107,6 +107,14 @@ const styles = stylex.create({
     // and box shadow, which would leave the selected segment with no state
     // indication beyond font weight. Highlight/HighlightText is the platform
     // convention for a selected item (WCAG 1.4.11).
+    //
+    // forced-color-adjust must be `none` here: the segment is a <button>, and
+    // the UA keeps native form-control colors (ButtonFace surface) for it under
+    // forced colors, ignoring the authored Highlight fill — the label kept its
+    // HighlightText color, giving white text on a white surface. Opting the
+    // selected segment out of UA remapping makes both the Highlight surface and
+    // the HighlightText label render as authored, restoring figure-ground.
+    forcedColorAdjust: 'none',
     color: {
       default: colorVars['--color-text-primary'],
       '@media (forced-colors: active)': 'HighlightText',
