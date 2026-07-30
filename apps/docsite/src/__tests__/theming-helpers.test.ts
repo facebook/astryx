@@ -1,5 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import {readFileSync} from 'node:fs';
+import {dirname, join} from 'node:path';
+import {fileURLToPath} from 'node:url';
 import {describe, expect, it} from 'vitest';
 import type {PropDoc, ThemingDoc} from '../generated/componentRegistry';
 import {
@@ -124,5 +127,23 @@ describe('theming helpers — publicVars', () => {
 
   it('returns empty when a component exposes no vars', () => {
     expect(publicVars({targets: []})).toEqual([]);
+  });
+});
+
+describe('theming section — canary gating', () => {
+  const source = readFileSync(
+    join(
+      dirname(fileURLToPath(import.meta.url)),
+      '../components/component-detail/Theming.tsx',
+    ),
+    'utf8',
+  );
+
+  it('renders the section only on canary builds', () => {
+    expect(source).toContain("CURRENT_TARGET !== 'canary'");
+  });
+
+  it('shows an experimental notice about the theming API', () => {
+    expect(source).toMatch(/theming API is experimental/i);
   });
 });

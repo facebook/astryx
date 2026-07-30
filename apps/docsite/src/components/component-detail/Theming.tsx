@@ -19,10 +19,12 @@ import {Heading, Text} from '@astryxdesign/core/Text';
 import {VStack} from '@astryxdesign/core/Layout';
 import {Section} from '@astryxdesign/core/Section';
 import {Table, pixel} from '@astryxdesign/core/Table';
+import {Banner} from '@astryxdesign/core/Banner';
 import {useMediaQuery} from '@astryxdesign/core/hooks';
 import {Divider} from '@astryxdesign/core';
 import {CodeExampleBlock} from '../CodeExampleBlock';
 import {MarkdownText} from '../MarkdownText';
+import {CURRENT_TARGET} from '../../lib/docsVersions';
 import type {
   PropDoc,
   ThemingDoc,
@@ -251,6 +253,12 @@ interface ThemingProps {
 }
 
 export function Theming({theming, props}: ThemingProps) {
+  // Canary-only while the theming API is hardened. Production (`latest`) hides
+  // the section entirely rather than documenting an unstable contract.
+  if (CURRENT_TARGET !== 'canary') {
+    return null;
+  }
+
   const hasTargets = theming.targets.length > 0;
   const vars = publicVars(theming);
   const hasVars = vars.length > 0;
@@ -268,6 +276,12 @@ export function Theming({theming, props}: ThemingProps) {
           <Heading level={2} type="display-3">
             Theming
           </Heading>
+          <Banner
+            container="card"
+            status="warning"
+            title="Experimental"
+            description="The theming API is experimental and not yet guaranteed — targets, keys, and CSS variables may change while we harden the theme system."
+          />
           <Text type="large" weight="normal">
             Restyle this component with a <Text type="code">defineTheme</Text>{' '}
             config. Target the component through the keys below, or override the
