@@ -731,6 +731,10 @@ importers:
       react-dom:
         specifier: '>=19.0.0'
         version: 19.2.7(react@19.2.7)
+    devDependencies:
+      rimraf:
+        specifier: ^6.0.1
+        version: 6.1.3
 
   packages/themes/butter:
     dependencies:
