@@ -81,6 +81,7 @@ jobs:
           echo "deploy=true" >> "$GITHUB_OUTPUT"
 
       - name: Download Storybook artifact
+        id: dl-storybook
         if: steps.parse.outputs.deploy == 'true'
         uses: actions/download-artifact@v8
         with:
@@ -88,8 +89,13 @@ jobs:
           path: storybook-dist
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
+        # Don't red-X the run if the artifact is gone (expired past retention, or
+        # a run that never produced it). The verify step below turns a missing
+        # artifact into a clean skip, not a failure — a preview is best-effort.
+        continue-on-error: true
 
       - name: Download Sandbox artifact
+        id: dl-sandbox
         if: steps.parse.outputs.deploy == 'true'
         uses: actions/download-artifact@v8
         with:
@@ -97,9 +103,25 @@ jobs:
           path: sandbox-dist
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+      - name: Verify preview artifacts are present
+        id: verify
+        if: steps.parse.outputs.deploy == 'true'
+        run: |
+          # A missing/expired artifact is not an error — deploy is best-effort.
+          # Skip cleanly (green) with a warning rather than failing CI for every
+          # contributor. Both dirs must exist AND be non-empty to deploy.
+          if [ -d storybook-dist ] && [ -n "$(ls -A storybook-dist 2>/dev/null)" ] && \
+             [ -d sandbox-dist ] && [ -n "$(ls -A sandbox-dist 2>/dev/null)" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Preview artifacts missing or empty (likely expired past retention) — skipping preview deploy for this run."
+          fi
 
       - name: Deploy PR preview to GitHub Pages
-        if: steps.parse.outputs.deploy == 'true'
+        if: steps.parse.outputs.deploy == 'true' && steps.verify.outputs.ready == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ steps.parse.outputs.pr_number }}
