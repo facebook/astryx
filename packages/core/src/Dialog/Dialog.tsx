@@ -223,9 +223,15 @@ const dynamicStyles = stylex.create({
     // When position is set, disable auto margin and use fixed positioning
     margin: 0,
     top: top !== undefined ? formatPosition(top) : 'auto',
-    insetInlineEnd: right !== undefined ? formatPosition(right) : 'auto',
+    // consumer-facing DialogPosition API — physical by contract; logical
+    // start/end migration tracked separately in the Dialog position deprecation PR
+    // eslint-disable-next-line @astryx/no-physical-properties
+    right: right !== undefined ? formatPosition(right) : 'auto',
     bottom: bottom !== undefined ? formatPosition(bottom) : 'auto',
-    insetInlineStart: left !== undefined ? formatPosition(left) : 'auto',
+    // consumer-facing DialogPosition API — physical by contract; logical
+    // start/end migration tracked separately in the Dialog position deprecation PR
+    // eslint-disable-next-line @astryx/no-physical-properties
+    left: left !== undefined ? formatPosition(left) : 'auto',
   }),
 });
 
