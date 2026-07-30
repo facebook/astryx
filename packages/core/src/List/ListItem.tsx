@@ -76,15 +76,15 @@ export interface ListItemProps extends BaseProps<HTMLLIElement> {
   onClick?: (e: React.MouseEvent) => void;
 
   /**
-   * Declares that a nested control inside the item (e.g. a checkbox in
-   * `startContent`) already provides keyboard access to the same action as
-   * `onClick`. When set, the item skips the invisible-button pattern and
-   * applies `onClick` as a pointer-only container click instead, so the row
-   * adds no second tab stop for the same action (WCAG 4.1.2 — one focusable
-   * control per option). Only affects `onClick`; ignored with `href`.
-   * @default false
+   * Ref to a nested control inside the item (e.g. a checkbox in
+   * `startContent`) that already provides the item's keyboard access and
+   * action. When set, the item becomes an enlarged click/tap target that
+   * delegates surface clicks to that control via the `useClickableContainer`
+   * pattern: it renders no invisible button/anchor, so the row adds no second
+   * tab stop (WCAG 4.1.2 — one focusable control per option). Mutually
+   * exclusive with `onClick`/`href` — when set those are ignored.
    */
-  hasNestedKeyboardControl?: boolean;
+  interactiveRef?: React.RefObject<HTMLElement | null>;
 
   /**
    * URL for link items. Renders an invisible anchor element.
@@ -210,7 +210,7 @@ export function ListItem({
   startContent,
   endContent,
   onClick,
-  hasNestedKeyboardControl = false,
+  interactiveRef,
   href,
   target,
   rel,
@@ -251,7 +251,7 @@ export function ListItem({
       description={description}
       endContent={endContent}
       onClick={onClick}
-      hasNestedKeyboardControl={hasNestedKeyboardControl}
+      interactiveRef={interactiveRef}
       href={href}
       target={target as '_blank' | '_self'}
       rel={rel}
