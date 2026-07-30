@@ -430,10 +430,11 @@ export function TopNavMenu({
   if (renderMode === 'drawer') {
     return (
       <div
-        {...mergeProps(stylex.props(drawerStyles.section, xstyle), {
+        {...mergeProps(
+          stylex.props(drawerStyles.section, xstyle),
           className,
           style,
-        })}>
+        )}>
         <button
           type="button"
           onClick={() => setDrawerExpanded(v => !v)}
