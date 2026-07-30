@@ -55,7 +55,7 @@ export const docs = {
       name: 'isTimezoneShown',
       type: 'boolean',
       description:
-        'Whether to append the timezone abbreviation to the visible text. Applies to the date_time and time formats; system_* formats stay machine-readable and never carry one. Use tooltipEntries to control the tooltip’s time zones.',
+        'Whether to append the timezone abbreviation to the visible text. Applies to the date_time and time formats; system_* formats stay machine-readable and never carry one. Use tooltipEntries to control the tooltip\'s time zones.',
       default: 'false',
     },
     {
