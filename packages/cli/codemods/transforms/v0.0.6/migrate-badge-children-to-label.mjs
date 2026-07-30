@@ -39,6 +39,14 @@ export default function transformer(file, api) {
       // Skip if already self-closing or no children
       if (children.length === 0) return;
 
+      // Skip if a `label` prop is already present — pushing another would emit
+      // a duplicate JSX attribute (invalid React). The existing label wins.
+      const hasLabel = path.node.openingElement.attributes.some(
+        (/** @type {any} */ attr) =>
+          attr.type === 'JSXAttribute' && attr.name?.name === 'label',
+      );
+      if (hasLabel) return;
+
       // Filter out whitespace-only JSXText nodes
       const meaningful = children.filter(
         (/** @type {any} */ c) => !(c.type === 'JSXText' && !c.value.trim()),
