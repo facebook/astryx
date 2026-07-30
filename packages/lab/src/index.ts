@@ -246,4 +246,7 @@ export {
   RichTextView,
   type RichTextViewProps,
   sharedEditorTheme,
+  markdownToEditorStateJSON,
+  editorStateJSONToMarkdown,
+  type MarkdownSerializerOptions,
 } from './RichTextEditor';

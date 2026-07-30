@@ -22,6 +22,10 @@ import {
 } from '@lexical/markdown';
 import {RichTextEditor, type RichTextEditorRef} from './RichTextEditor';
 import {RichTextView} from './RichTextView';
+import {
+  markdownToEditorStateJSON,
+  editorStateJSONToMarkdown,
+} from './markdownSerializers';
 
 // Small plugin that captures the editor instance so tests can drive real
 // Lexical updates (jsdom does not implement contenteditable editing).
@@ -659,5 +663,44 @@ describe('RichTextView', () => {
   it('renders nothing (no crash) on malformed JSON with no fallback', () => {
     expect(() => render(<RichTextView value={'garbage'} />)).not.toThrow();
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+  });
+});
+
+describe('markdown serializers', () => {
+  it('markdownToEditorStateJSON produces a heading node from "# "', () => {
+    const json = markdownToEditorStateJSON('# Title');
+    const parsed = JSON.parse(json);
+    const first = parsed.root.children[0];
+    expect(first.type).toBe('heading');
+    expect(first.tag).toBe('h1');
+    expect(first.children[0].text).toBe('Title');
+  });
+
+  it('editorStateJSONToMarkdown round-trips a heading back to "# "', () => {
+    const json = markdownToEditorStateJSON('# Title');
+    expect(editorStateJSONToMarkdown(json)).toBe('# Title');
+  });
+
+  it('markdown round-trips through both helpers', () => {
+    const md = '# Heading\n\nSome **bold** text';
+    const json = markdownToEditorStateJSON(md);
+    expect(editorStateJSONToMarkdown(json)).toBe(md);
+  });
+
+  it('honors a custom (empty) transformers set — no heading syntax', () => {
+    // With no transformers, "# Title" is not recognized as a heading; it stays
+    // a plain paragraph, so serializing back yields the literal text.
+    const json = markdownToEditorStateJSON('# Title', {transformers: []});
+    const parsed = JSON.parse(json);
+    expect(parsed.root.children[0].type).toBe('paragraph');
+    expect(parsed.root.children[0].children[0].text).toBe('# Title');
+  });
+
+  it('produces JSON consumable as RichTextEditor defaultValue', async () => {
+    const value = markdownToEditorStateJSON('Hello world');
+    render(<RichTextEditor label="Notes" defaultValue={value} />);
+    await waitFor(() =>
+      expect(screen.getByRole('textbox').textContent).toContain('Hello world'),
+    );
   });
 });

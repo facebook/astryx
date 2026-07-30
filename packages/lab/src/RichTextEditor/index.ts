@@ -26,3 +26,9 @@ export {RichTextView} from './RichTextView';
 export type {RichTextViewProps} from './RichTextView';
 
 export {sharedEditorTheme} from './editorTheme';
+
+export {
+  markdownToEditorStateJSON,
+  editorStateJSONToMarkdown,
+} from './markdownSerializers';
+export type {MarkdownSerializerOptions} from './markdownSerializers';

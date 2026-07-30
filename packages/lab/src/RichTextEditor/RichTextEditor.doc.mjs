@@ -156,6 +156,11 @@ export const docs = {
           'Use a ref (RichTextEditorRef) to imperatively focus(), clear(), read the state via getEditorState(), serialize to Markdown via getMarkdown() or HTML via getHTML(), or reach the LexicalEditor via getEditor(). The handle is available after mount. getMarkdown() uses the same transformers prop the editor is configured with. focus() and clear() are no-ops when the editor is read-only or disabled, and clear() resets to a single empty paragraph.',
       },
       {
+        guidance: true,
+        description:
+          'To produce a defaultValue from Markdown without mounting an editor (e.g. on the server), use markdownToEditorStateJSON(markdown). Convert the other way with editorStateJSONToMarkdown(json). Both run headless via @lexical/headless and accept the same transformers/nodes options as the editor.',
+      },
+      {
         guidance: false,
         description:
           'Use for single-line input or plain text; use TextInput or TextArea for those.',

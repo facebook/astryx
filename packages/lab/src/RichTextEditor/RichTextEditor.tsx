@@ -76,11 +76,8 @@ import {
   type Transformer,
 } from '@lexical/markdown';
 export type {Transformer} from '@lexical/markdown';
-import {ListNode, ListItemNode} from '@lexical/list';
-import {HeadingNode, QuoteNode} from '@lexical/rich-text';
-import {LinkNode, AutoLinkNode} from '@lexical/link';
-import {CodeNode, CodeHighlightNode} from '@lexical/code';
 import {$generateHtmlFromNodes} from '@lexical/html';
+import {DEFAULT_NODES} from './editorNodes';
 import type {
   EditorState,
   Klass,
@@ -184,18 +181,6 @@ const sizeStyles = stylex.create({
     paddingBlock: spacingVars['--spacing-2'],
   },
 });
-
-/** The default OSS node set registered with the editor. */
-const DEFAULT_NODES: ReadonlyArray<Klass<LexicalNode>> = [
-  HeadingNode,
-  QuoteNode,
-  ListNode,
-  ListItemNode,
-  LinkNode,
-  AutoLinkNode,
-  CodeNode,
-  CodeHighlightNode,
-];
 
 /**
  * Fraction of `maxLength` at which the character counter begins announcing
