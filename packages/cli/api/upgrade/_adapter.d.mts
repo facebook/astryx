@@ -37,26 +37,24 @@ export function uniqueFiles(files: (string | null | undefined | false)[] | undef
  * Dry-run PREVIEWS (buildCommand still called, so a throw fails); apply executes.
  * @param {import('../../types/config').PostCodemodHook[]} hooks
  * @param {{packageDir: string, files: string[], apply: boolean}} context
- * @param {import('../../lib/term-log.mjs').CliLogger} logger
  */
 export function runPostCodemodHooks(hooks: import("../../types/config").PostCodemodHook[], context: {
     packageDir: string;
     files: string[];
     apply: boolean;
-}, logger: import("../../lib/term-log.mjs").CliLogger): Promise<void>;
+}): Promise<void>;
 /**
  * Refresh (or, in dry-run, report) the managed agent-docs block after a version
  * bump. The block documents the INSTALLED library, so it must be re-synced on
  * EVERY upgrade path, including the no-codemods short-circuits (#4168).
  *
- * @param {{cwd: string, installedVersion: string, apply: boolean, logger?: import('../../lib/term-log.mjs').CliLogger}} ctx
+ * @param {{cwd: string, installedVersion: string, apply: boolean}} ctx
  * @returns {import('./upgrade.type.mjs').AgentDocsSummary}
  */
-export function refreshAgentDocs({ cwd, installedVersion, apply, logger }: {
+export function refreshAgentDocs({ cwd, installedVersion, apply }: {
     cwd: string;
     installedVersion: string;
     apply: boolean;
-    logger?: import("../../lib/term-log.mjs").CliLogger;
 }): import("./upgrade.type.mjs").AgentDocsSummary;
 /**
  * Every registered codemod (oldest→newest) for `upgrade --list`. Registry walk
@@ -79,25 +77,23 @@ export function collectAllCodemods(): Promise<Array<{
 export function getCoreVersionManifests(from: string, to: string): Promise<CoreVersionManifest[]>;
 /**
  * Ensure jscodeshift is available before running codemods.
- * @param {{installDeps?: boolean, logger?: import('../../lib/term-log.mjs').CliLogger}} [options]
+ * @param {{installDeps?: boolean}} [options]
  * @returns {Promise<boolean>}
  */
-export function ensureCodemodDeps({ installDeps, logger }?: {
+export function ensureCodemodDeps({ installDeps }?: {
     installDeps?: boolean;
-    logger?: import("../../lib/term-log.mjs").CliLogger;
 }): Promise<boolean>;
 /**
  * Run the CORE registry codemods. Runs BEFORE the config is loaded so a core
  * CONFIG codemod can repair a config the strict loader would otherwise reject.
  * @param {CoreVersionManifest[]} versionManifests
- * @param {{apply: boolean, path: string, codemod?: string, skipCodemods: Set<string>, logger?: import('../../lib/term-log.mjs').CliLogger}} options
+ * @param {{apply: boolean, path: string, codemod?: string, skipCodemods: Set<string>}} options
  */
-export function runCoreCodemods(versionManifests: CoreVersionManifest[], { apply, path: srcPath, codemod, skipCodemods, logger }: {
+export function runCoreCodemods(versionManifests: CoreVersionManifest[], { apply, path: srcPath, codemod, skipCodemods }: {
     apply: boolean;
     path: string;
     codemod?: string;
     skipCodemods: Set<string>;
-    logger?: import("../../lib/term-log.mjs").CliLogger;
 }): Promise<{
     totalFilesChanged: number;
     totalTransformsApplied: number;
@@ -139,10 +135,9 @@ export function loadProjectContext(cwd: string, extraIntegrationSpecs?: string[]
  * nudge must not fail the upgrade) and is suppressed for --json/programmatic
  * callers (the silent logger).
  * @param {Array<import('../../lib/integrations.mjs').LoadedIntegration>} integrations
- * @param {import('../../lib/term-log.mjs').CliLogger} [logger]
  * @returns {Promise<void>}
  */
-export function warnIntegrationIssues(integrations: Array<import("../../lib/integrations.mjs").LoadedIntegration>, logger?: import("../../lib/term-log.mjs").CliLogger): Promise<void>;
+export function warnIntegrationIssues(integrations: Array<import("../../lib/integrations.mjs").LoadedIntegration>): Promise<void>;
 /**
  * Discover + select the integration codemods that apply in the (from, to]
  * range. An integration whose codemods fail to load is SKIPPED (a definition
@@ -159,17 +154,16 @@ export function selectIntegrationCodemodsFor(integrations: Array<import("../../l
 /**
  * Run the file-based INTEGRATION codemods (config codemods first, then code).
  * @param {Array<{version: string, codemods: import('../../types/codemod').CodemodEntry[]}>} versionGroups
- * @param {{apply: boolean, path: string, codemod?: string, skipCodemods: Set<string>, logger?: import('../../lib/term-log.mjs').CliLogger}} options
+ * @param {{apply: boolean, path: string, codemod?: string, skipCodemods: Set<string>}} options
  */
 export function runIntegrationCodemodsStep(versionGroups: Array<{
     version: string;
     codemods: import("../../types/codemod").CodemodEntry[];
-}>, { apply, path: srcPath, codemod, skipCodemods, logger }: {
+}>, { apply, path: srcPath, codemod, skipCodemods }: {
     apply: boolean;
     path: string;
     codemod?: string;
     skipCodemods: Set<string>;
-    logger?: import("../../lib/term-log.mjs").CliLogger;
 }): Promise<{
     totalFilesChanged: number;
     totalTransformsApplied: number;

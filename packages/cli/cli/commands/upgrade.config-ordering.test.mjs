@@ -44,7 +44,9 @@ beforeEach(() => {
   stdoutCalls = [];
   exitCode = undefined;
   vi.spyOn(console, 'log').mockImplementation((...a) => logCalls.push(a.join(' ')));
-  vi.spyOn(console, 'error').mockImplementation(() => {});
+  // Warnings/errors go to stderr (console.error) — capture them too so the
+  // human-output assertions see guidance lines regardless of channel.
+  vi.spyOn(console, 'error').mockImplementation((...a) => logCalls.push(a.join(' ')));
   vi.spyOn(process.stdout, 'write').mockImplementation(chunk => {
     stdoutCalls.push(typeof chunk === 'string' ? chunk : chunk.toString());
     return true;

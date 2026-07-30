@@ -1,11 +1,10 @@
 /**
  * Remove the managed agent-docs block and return an `init.remove` receipt.
- * Progress is emitted through `logger` (silent by default).
+ * Progress is emitted through the shared `logger` (silent by default).
  *
- * @param {{cwd?: string, logger?: import('../_adapter.mjs').InitLogger}} [ctx]
+ * @param {{cwd?: string}} [ctx]
  * @returns {Promise<import('../init.type.mjs').InitRemoveResponse>}
  */
-export function remove({ cwd, logger }?: {
+export function remove({ cwd }?: {
     cwd?: string;
-    logger?: import("../_adapter.mjs").InitLogger;
 }): Promise<import("../init.type.mjs").InitRemoveResponse>;

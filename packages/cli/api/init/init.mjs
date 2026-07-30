@@ -18,7 +18,6 @@
 
 import {run} from './run/run.mjs';
 import {remove} from './remove/remove.mjs';
-import {logger} from '../logger.mjs';
 
 export {getNextSteps} from './run/run.mjs';
 

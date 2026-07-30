@@ -10,7 +10,7 @@
 export function list({ cwd, category, detail, zh, lang }?: {
     cwd?: string | undefined;
     category?: string | undefined;
-    detail?: "compact" | "full" | "brief" | "names" | undefined;
+    detail?: "compact" | "names" | "full" | "brief" | undefined;
     zh?: boolean | undefined;
     lang?: string | null | undefined;
 }): Promise<import("../hook.type.mjs").HookListResponse>;

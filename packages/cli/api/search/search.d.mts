@@ -58,7 +58,7 @@ export function scoreCandidate(term: string, { name, keywords, description, pros
  */
 export function search(query: string, options?: {
     cwd?: string | undefined;
-    type?: "component" | "hook" | "doc" | "template" | undefined;
+    type?: "component" | "template" | "hook" | "doc" | undefined;
     limit?: number | undefined;
 }): Promise<{
     type: "search";

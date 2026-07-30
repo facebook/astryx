@@ -46,7 +46,24 @@ function copyDts(src, dest) {
   }
 }
 
+/**
+ * Recursively delete every `.d.mts` under `dir` so a regen builds from pure
+ * `.mjs` source. Committed declarations sit next to their `.mjs`, and tsc would
+ * otherwise resolve an import to the stale `.d.mts` instead of re-inferring from
+ * the (possibly edited) source — making generation non-idempotent.
+ * @param {string} dir
+ */
+function cleanDts(dir) {
+  if (!fs.existsSync(dir)) return;
+  for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
+    const p = path.join(dir, entry.name);
+    if (entry.isDirectory()) cleanDts(p);
+    else if (entry.name.endsWith('.d.mts')) fs.rmSync(p);
+  }
+}
+
 fs.rmSync(TMP, {recursive: true, force: true});
+cleanDts(DEST_API);
 execFileSync('pnpm', ['exec', 'tsc', '--project', 'tsconfig.api-dts.json'], {
   cwd: CLI_ROOT,
   stdio: 'inherit',

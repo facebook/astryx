@@ -19,10 +19,9 @@ export function getNextSteps(invocation: string): string[];
  * names throw AstryxError with a stable code.
  *
  * @param {import('../init.type.mjs').InitOptions} [options]
- * @param {{cwd?: string, logger?: import('../_adapter.mjs').InitLogger}} [ctx]
+ * @param {{cwd?: string}} [ctx]
  * @returns {Promise<import('../init.type.mjs').InitRunResponse>}
  */
-export function run(options?: import("../init.type.mjs").InitOptions, { cwd, logger }?: {
+export function run(options?: import("../init.type.mjs").InitOptions, { cwd }?: {
     cwd?: string;
-    logger?: import("../_adapter.mjs").InitLogger;
 }): Promise<import("../init.type.mjs").InitRunResponse>;

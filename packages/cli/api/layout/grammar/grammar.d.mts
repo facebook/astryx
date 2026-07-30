@@ -8,5 +8,3 @@
 export function layoutGrammar(options?: {
     cwd?: string;
 }): Promise<import("../layout.type.mjs").LayoutGrammarResponse>;
-export { ALIAS_TABLE };
-import { ALIAS_TABLE } from '../../../lib/xle/registry.mjs';

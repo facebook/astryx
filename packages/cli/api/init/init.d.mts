@@ -1,11 +1,8 @@
 /**
  * Re-exported types so callers can keep referencing them off the init barrel
- * (e.g. cli/commands/init.mjs uses `import('../../api/init/init.mjs').InitOptions`
- * and `.InitLogger`). The canonical shapes stay central in types/api.d.ts +
- * api/init/init.type.mjs; these aliases just preserve the barrel's original type
- * surface after the split.
+ * (e.g. cli/commands/init.mjs uses `import('../../api/init/init.mjs').InitOptions`).
+ * The canonical shapes stay colocated in api/init/init.type.mjs.
  * @typedef {import('./init.type.mjs').InitOptions} InitOptions
- * @typedef {import('./_adapter.mjs').InitLogger} InitLogger
  * @typedef {import('./init.type.mjs').InitRunData} InitRunData
  */
 /**
@@ -16,36 +13,22 @@
  * code.
  *
  * @param {InitOptions} [options]
- * @param {{cwd?: string, logger?: InitLogger}} [ctx]
+ * @param {{cwd?: string}} [ctx]
  * @returns {Promise<import('./init.type.mjs').InitRunResponse | import('./init.type.mjs').InitRemoveResponse>}
  */
-export function init(options?: InitOptions, { cwd, logger }?: {
+export function init(options?: InitOptions, { cwd }?: {
     cwd?: string;
-    logger?: InitLogger;
 }): Promise<import("./init.type.mjs").InitRunResponse | import("./init.type.mjs").InitRemoveResponse>;
 export { getNextSteps } from "./run/run.mjs";
-export { noopInitLogger } from "./_adapter.mjs";
 /**
  * Re-exported types so callers can keep referencing them off the init barrel
- * (e.g. cli/commands/init.mjs uses `import('../../api/init/init.mjs').InitOptions`
- * and `.InitLogger`). The canonical shapes stay central in types/api.d.ts +
- * api/init/init.type.mjs; these aliases just preserve the barrel's original type
- * surface after the split.
+ * (e.g. cli/commands/init.mjs uses `import('../../api/init/init.mjs').InitOptions`).
+ * The canonical shapes stay colocated in api/init/init.type.mjs.
  */
 export type InitOptions = import("./init.type.mjs").InitOptions;
 /**
  * Re-exported types so callers can keep referencing them off the init barrel
- * (e.g. cli/commands/init.mjs uses `import('../../api/init/init.mjs').InitOptions`
- * and `.InitLogger`). The canonical shapes stay central in types/api.d.ts +
- * api/init/init.type.mjs; these aliases just preserve the barrel's original type
- * surface after the split.
- */
-export type InitLogger = import("./_adapter.mjs").InitLogger;
-/**
- * Re-exported types so callers can keep referencing them off the init barrel
- * (e.g. cli/commands/init.mjs uses `import('../../api/init/init.mjs').InitOptions`
- * and `.InitLogger`). The canonical shapes stay central in types/api.d.ts +
- * api/init/init.type.mjs; these aliases just preserve the barrel's original type
- * surface after the split.
+ * (e.g. cli/commands/init.mjs uses `import('../../api/init/init.mjs').InitOptions`).
+ * The canonical shapes stay colocated in api/init/init.type.mjs.
  */
 export type InitRunData = import("./init.type.mjs").InitRunData;
