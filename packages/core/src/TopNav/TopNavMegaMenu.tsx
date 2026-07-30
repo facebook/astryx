@@ -139,7 +139,10 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-6'],
     paddingBlock: spacingVars['--spacing-3'],
     paddingInline: spacingVars['--spacing-3'],
-    maxWidth: 960,
+    // Clamp to the viewport (minus a gutter) so the anchored panel never
+    // overflows the screen edge on narrow viewports; caps at 960px otherwise.
+    maxWidth: `min(960px, calc(100dvw - ${spacingVars['--spacing-6']}))`,
+    boxSizing: 'border-box',
   },
   menuWrapper: {
     flexGrow: 2,
