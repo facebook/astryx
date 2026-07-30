@@ -3,3 +3,4 @@
 # regenerated automatically at `prepack` so the published tarball always ships
 # a fresh, in-sync type surface. Run `pnpm sync:api-types` to produce them locally.
 api/**/*.d.mts
+.api-verify/

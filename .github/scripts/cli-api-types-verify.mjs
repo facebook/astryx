@@ -6,22 +6,24 @@
  *
  * The `./api` declarations (`api/**\/*.d.mts`) are generated from the JSDoc in
  * `api/**\/*.mjs` at `prepack` — they are NOT committed. This test proves the
- * surface a consumer actually installs is correct, by exercising the real
- * publish path end to end:
+ * surface a consumer actually installs is correct, end to end:
  *
  *   1. `pnpm pack` the CLI (fires `prepack` → `sync:api-types`), producing the
  *      exact tarball that would be published.
- *   2. Extract it and assert `api/index.d.mts` is present.
+ *   2. Extract it into a throwaway `node_modules/@astryxdesign/cli` and assert
+ *      `api/index.d.mts` is present. `@astryxdesign/core` is linked as a sibling
+ *      so the packed declarations' `../../../core/src` specifiers resolve just
+ *      like a real install.
  *   3. Type-check a representative consumer import against the packed package
- *      under `strict` + `skipLibCheck:false`, so a stale, missing, malformed,
- *      or internal-leaking surface fails here — before it can ship.
+ *      with `skipLibCheck` OFF, so a stale, missing, malformed, or internal-
+ *      `lib`-leaking surface fails here — before it can ship. The scenario's
+ *      tsconfig extends the repo base so lib/target/@types/node are inherited.
  *
  * Usage: node .github/scripts/cli-api-types-verify.mjs
  */
 
 import {execFileSync, spawnSync} from 'node:child_process';
 import * as fs from 'node:fs';
-import * as os from 'node:os';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
@@ -29,22 +31,30 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '../..');
 const CLI_DIR = path.join(ROOT, 'packages/cli');
 const CORE_DIR = path.join(ROOT, 'packages/core');
+// Scratch area inside the repo so the repo tsconfig (lib/target/@types/node) and
+// the workspace's installed typescript are all inherited without any setup.
+const VERIFY_DIR = path.join(CLI_DIR, '.api-verify');
 
+function cleanup() {
+  fs.rmSync(VERIFY_DIR, {recursive: true, force: true});
+}
 function fail(msg, detail) {
   console.error(`\u2717 ${msg}`);
   if (detail) console.error(detail);
+  cleanup();
   process.exit(1);
 }
+process.on('exit', cleanup);
 
-const work = fs.mkdtempSync(path.join(os.tmpdir(), 'cli-api-verify-'));
-process.on('exit', () => fs.rmSync(work, {recursive: true, force: true}));
+cleanup();
+const nm = path.join(VERIFY_DIR, 'node_modules', '@astryxdesign');
+fs.mkdirSync(nm, {recursive: true});
 
-// 1. Pack the CLI — this fires `prepack` (sync:api-types), so the tarball
-//    carries a freshly generated ./api surface.
-console.log('Packing @astryxdesign/cli (fires prepack → sync:api-types)...');
+// 1. Pack (fires prepack → sync:api-types).
+console.log('Packing @astryxdesign/cli (fires prepack \u2192 sync:api-types)...');
 let packed;
 try {
-  const out = execFileSync('pnpm', ['pack', '--pack-destination', work], {
+  const out = execFileSync('pnpm', ['pack', '--pack-destination', VERIFY_DIR], {
     cwd: CLI_DIR,
     encoding: 'utf8',
   });
@@ -52,42 +62,20 @@ try {
 } catch (e) {
   fail('pnpm pack failed', e.stdout || e.message);
 }
-const tarball = path.isAbsolute(packed) ? packed : path.join(work, path.basename(packed));
+const tarball = path.isAbsolute(packed) ? packed : path.join(VERIFY_DIR, path.basename(packed));
 if (!fs.existsSync(tarball)) fail(`packed tarball not found at ${tarball}`);
 
-// 2. Extract into a fake consumer's node_modules and assert the entry exists.
-const consumer = path.join(work, 'consumer');
-const pkgDir = path.join(consumer, 'node_modules', '@astryxdesign', 'cli');
+// 2. Extract into node_modules/@astryxdesign/cli; link core as a sibling.
+const pkgDir = path.join(nm, 'cli');
 fs.mkdirSync(pkgDir, {recursive: true});
 execFileSync('tar', ['-xzf', tarball, '-C', pkgDir, '--strip-components=1']);
-
-const entry = path.join(pkgDir, 'api', 'index.d.mts');
-if (!fs.existsSync(entry)) {
-  fail('packaged tarball is missing api/index.d.mts — the ./api types did not ship');
+if (!fs.existsSync(path.join(pkgDir, 'api', 'index.d.mts'))) {
+  fail('packaged tarball is missing api/index.d.mts \u2014 the ./api types did not ship');
 }
 console.log('\u2713 tarball ships api/index.d.mts');
+fs.symlinkSync(CORE_DIR, path.join(nm, 'core'), 'dir');
 
-// Link @astryxdesign/core (a peer the ./api types reference) so resolution is real.
-fs.symlinkSync(CORE_DIR, path.join(consumer, 'node_modules', '@astryxdesign', 'core'), 'dir');
-// node types + a minimal undici stub so @types/node resolves.
-fs.mkdirSync(path.join(consumer, 'node_modules', '@types'), {recursive: true});
-fs.symlinkSync(
-  path.join(ROOT, 'node_modules', '@types', 'node'),
-  path.join(consumer, 'node_modules', '@types', 'node'),
-  'dir',
-);
-fs.mkdirSync(path.join(consumer, 'node_modules', 'undici-types'), {recursive: true});
-fs.writeFileSync(path.join(consumer, 'node_modules', 'undici-types', 'index.d.ts'), 'export {}\n');
-fs.writeFileSync(
-  path.join(consumer, 'node_modules', 'undici-types', 'package.json'),
-  '{"name":"undici-types","version":"0.0.0","types":"index.d.ts"}',
-);
-fs.writeFileSync(
-  path.join(consumer, 'package.json'),
-  '{"name":"consumer","version":"1.0.0","type":"module","private":true}',
-);
-
-// 3. Type-check a representative consumer import against the packed types.
+// 3. Type-check a representative consumer against the packed types.
 const scenario = `
 import {
   component, docs, blog, discover, template, hook, search, build, swizzle,
@@ -114,22 +102,22 @@ async function main() {
 void main;
 export {};
 `;
-fs.writeFileSync(path.join(consumer, 'scenario.ts'), scenario);
+fs.writeFileSync(path.join(VERIFY_DIR, 'scenario.ts'), scenario);
 fs.writeFileSync(
-  path.join(consumer, 'tsconfig.json'),
+  path.join(VERIFY_DIR, 'tsconfig.json'),
   JSON.stringify(
     {
-      // `bundler` resolution is the modern default (Vite/Next/tsup/etc.) and the
-      // baseline this package targets. `skipLibCheck:false` forces TS to fully
-      // check inside the packaged declarations, so a stale, missing, malformed,
-      // or internal-`lib`-leaking surface fails here.
+      // Inherit the repo's lib/target/@types/node. `bundler` resolution is the
+      // modern default this package targets; skipLibCheck OFF so the packed
+      // declarations are fully checked. Module resolution finds the throwaway
+      // node_modules beside this tsconfig automatically.
+      extends: '../../../tsconfig.json',
       compilerOptions: {
-        strict: true,
-        skipLibCheck: false,
         noEmit: true,
+        skipLibCheck: false,
         module: 'esnext',
         moduleResolution: 'bundler',
-        target: 'es2022',
+        customConditions: ['source'],
         types: ['node'],
       },
       files: ['scenario.ts'],
@@ -140,18 +128,13 @@ fs.writeFileSync(
 );
 
 const tsc = path.join(ROOT, 'node_modules', '.bin', 'tsc');
-const res = spawnSync(tsc, ['--project', 'tsconfig.json'], {cwd: consumer, encoding: 'utf8'});
-// Ignore harness-only noise from the minimal undici stub / @types/node globals.
-const errors = (res.stdout || '')
-  .split('\n')
-  .filter(line => /error TS/.test(line))
-  .filter(line => !/undici-types|@types\/node/.test(line));
-
+const res = spawnSync(tsc, ['--project', path.join(VERIFY_DIR, 'tsconfig.json')], {
+  cwd: ROOT,
+  encoding: 'utf8',
+});
+const errors = (res.stdout || '').split('\n').filter(line => /error TS/.test(line));
 if (errors.length > 0) {
-  fail(
-    'a consumer of the packaged @astryxdesign/cli/api does not type-check',
-    errors.join('\n'),
-  );
+  fail('a consumer of the packaged @astryxdesign/cli/api does not type-check', errors.join('\n'));
 }
 
 console.log('\u2713 packaged @astryxdesign/cli/api type-checks for a strict consumer');
