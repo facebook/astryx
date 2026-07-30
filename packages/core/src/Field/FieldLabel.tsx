@@ -35,7 +35,7 @@ import {themeProps} from '../utils/themeProps';
 const styles = stylex.create({
   label: {
     display: 'flex',
-    alignItems: 'baseline',
+    alignItems: 'center',
     gap: spacingVars['--spacing-1'],
     fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-label-size'],
@@ -43,14 +43,6 @@ const styles = stylex.create({
     fontWeight: fontWeightVars['--font-weight-medium'],
     color: colorVars['--color-text-secondary'],
     cursor: 'pointer',
-  },
-  // The label row baseline-aligns its text so the label and the smaller
-  // optional/required indicator share a common baseline (centering floated the
-  // smaller indicator upward). Icons carry no text baseline, so keep them
-  // vertically centered against the label instead of baseline-aligned.
-  iconSlot: {
-    display: 'inline-flex',
-    alignSelf: 'center',
   },
   labelDisabled: {
     color: colorVars['--color-text-disabled'],
@@ -204,11 +196,7 @@ export function FieldLabel({
 
   const labelContent = (
     <>
-      {labelIcon && (
-        <span {...stylex.props(styles.iconSlot)}>
-          {renderIconSlot(labelIcon, {size: 'sm', color: 'inherit'})}
-        </span>
-      )}
+      {labelIcon && renderIconSlot(labelIcon, {size: 'sm', color: 'inherit'})}
       {label}
       {statusText && (
         <span {...stylex.props(styles.optionalRequired)}>
@@ -217,11 +205,9 @@ export function FieldLabel({
         </span>
       )}
       {labelTooltip && (
-        <span {...stylex.props(styles.iconSlot)}>
-          <Tooltip content={labelTooltip} placement="above">
-            <Icon icon="info" size="sm" color="inherit" />
-          </Tooltip>
-        </span>
+        <Tooltip content={labelTooltip} placement="above">
+          <Icon icon="info" size="sm" color="inherit" />
+        </Tooltip>
       )}
     </>
   );
