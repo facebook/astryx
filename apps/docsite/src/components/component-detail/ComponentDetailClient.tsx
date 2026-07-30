@@ -16,6 +16,7 @@ import {TabList, Tab} from '@astryxdesign/core/TabList';
 import {ShowcasePreview} from './ShowcasePreview';
 import {ComponentPreviewTheme} from './ComponentPreviewTheme';
 import {BestPractices} from './BestPractices';
+import {Theming} from './Theming';
 import {HookSignature} from './HookSignature';
 import {ExampleBlock} from './ExampleBlock';
 import {MarkdownText} from '../MarkdownText';
@@ -116,6 +117,10 @@ function OverviewContent({
 
       {!isHook && !hasInteractivePlayground(comp) && comp.props.length > 0 && (
         <PropsTable props={comp.props} heading="Props" />
+      )}
+
+      {!isHook && comp.theming && (
+        <Theming theming={comp.theming} props={comp.props} />
       )}
 
       {(exampleRegistry[comp.name] || []).length > 0 && (
