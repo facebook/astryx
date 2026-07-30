@@ -429,12 +429,7 @@ export function TopNavMenu({
   // Drawer mode: collapsible section
   if (renderMode === 'drawer') {
     return (
-      <div
-        {...mergeProps(
-          stylex.props(drawerStyles.section, xstyle),
-          className,
-          style,
-        )}>
+      <div {...stylex.props(drawerStyles.section)}>
         <button
           type="button"
           onClick={() => setDrawerExpanded(v => !v)}
@@ -489,7 +484,10 @@ export function TopNavMenu({
     );
   }
 
-  // Default: desktop popover
+  // Default: desktop popover. Consumer styling (xstyle/className/style) targets
+  // the top-bar trigger button — the one stable surface across renders. Drawer
+  // and mobile-bar modes render structurally different elements, so applying
+  // consumer styling there would be ambiguous; they are left unstyled.
   return (
     <>
       <button

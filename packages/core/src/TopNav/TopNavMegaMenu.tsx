@@ -348,16 +348,7 @@ export function TopNavMegaMenu({
   // Drawer mode — inline collapsible
   // =========================================================================
   if (renderMode === 'drawer') {
-    return (
-      <DrawerMegaMenu
-        label={label}
-        items={items}
-        featured={featured}
-        xstyle={xstyle}
-        className={className}
-        style={style}
-      />
-    );
+    return <DrawerMegaMenu label={label} items={items} featured={featured} />;
   }
 
   // =========================================================================
@@ -538,6 +529,10 @@ function DefaultMegaMenu({
     };
   }, [clearTimeouts]);
 
+  // Consumer styling (xstyle/className/style) targets the top-bar trigger
+  // button — the one stable surface across renders. Drawer and mobile-bar modes
+  // render structurally different elements, so applying consumer styling there
+  // would be ambiguous; they are left unstyled.
   return (
     <>
       <button
@@ -609,23 +604,12 @@ function DrawerMegaMenu({
   label,
   items,
   featured,
-  xstyle,
-  className,
-  style,
-}: Pick<
-  TopNavMegaMenuProps,
-  'label' | 'items' | 'featured' | 'xstyle' | 'className' | 'style'
->) {
+}: Pick<TopNavMegaMenuProps, 'label' | 'items' | 'featured'>) {
   const [isExpanded, setIsExpanded] = useState(false);
   const menuId = `mega-menu-${label.toLowerCase().replace(/\s+/g, '-')}`;
 
   return (
-    <div
-      {...mergeProps(
-        stylex.props(styles.drawerSection, xstyle),
-        className,
-        style,
-      )}>
+    <div {...stylex.props(styles.drawerSection)}>
       {/* Header toggle — same pattern as TopNavMenu drawer */}
       <button
         type="button"
