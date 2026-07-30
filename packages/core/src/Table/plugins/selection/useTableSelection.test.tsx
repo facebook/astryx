@@ -224,7 +224,7 @@ describe('useTableSelection', () => {
 
     const initialProps: BodyRowRenderProps = {
       htmlProps: {},
-      styles: [],
+      xstyle: [],
       children: null,
     };
     const row = document.createElement('tr');
