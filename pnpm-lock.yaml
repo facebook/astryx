@@ -716,6 +716,9 @@ importers:
       '@lexical/rich-text':
         specifier: ^0.46.0
         version: 0.46.0(typescript@6.0.3)
+      '@lexical/selection':
+        specifier: ^0.46.0
+        version: 0.46.0(typescript@6.0.3)
       '@lexical/utils':
         specifier: ^0.46.0
         version: 0.46.0(typescript@6.0.3)

@@ -249,4 +249,6 @@ export {
   markdownToEditorStateJSON,
   editorStateJSONToMarkdown,
   type MarkdownSerializerOptions,
+  RichTextEditorToolbar,
+  type RichTextEditorToolbarProps,
 } from './RichTextEditor';

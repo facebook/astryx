@@ -161,6 +161,11 @@ export const docs = {
           'To produce a defaultValue from Markdown without mounting an editor (e.g. on the server), use markdownToEditorStateJSON(markdown). Convert the other way with editorStateJSONToMarkdown(json). Both run headless via @lexical/headless and accept the same transformers/nodes options as the editor.',
       },
       {
+        guidance: true,
+        description:
+          'Add a formatting toolbar by rendering RichTextEditorToolbar in the plugins slot: plugins={<RichTextEditorToolbar />}. It is built from Astryx Toolbar/ToggleButton primitives (so it matches the theme), syncs active states to the selection, and covers bold/italic/underline/strikethrough/code, headings, quote, lists, and undo/redo. Compose extra controls via its endContent prop.',
+      },
+      {
         guidance: false,
         description:
           'Use for single-line input or plain text; use TextInput or TextArea for those.',

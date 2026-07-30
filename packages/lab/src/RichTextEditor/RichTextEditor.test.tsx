@@ -26,6 +26,7 @@ import {
   markdownToEditorStateJSON,
   editorStateJSONToMarkdown,
 } from './markdownSerializers';
+import {RichTextEditorToolbar} from './RichTextEditorToolbar';
 
 // Small plugin that captures the editor instance so tests can drive real
 // Lexical updates (jsdom does not implement contenteditable editing).
@@ -702,5 +703,83 @@ describe('markdown serializers', () => {
     await waitFor(() =>
       expect(screen.getByRole('textbox').textContent).toContain('Hello world'),
     );
+  });
+});
+
+describe('RichTextEditorToolbar', () => {
+  it('renders inside the editor plugins slot with formatting controls', () => {
+    render(
+      <RichTextEditor label="Notes" plugins={<RichTextEditorToolbar />} />,
+    );
+    // Toolbar landmark with its accessible label.
+    expect(
+      screen.getByRole('toolbar', {name: 'Text formatting'}),
+    ).toBeInTheDocument();
+    // A representative set of format buttons are present and labelled.
+    for (const name of [
+      'Bold',
+      'Italic',
+      'Underline',
+      'Strikethrough',
+      'Inline code',
+      'Quote',
+      'Bulleted list',
+      'Numbered list',
+      'Undo',
+      'Redo',
+    ]) {
+      expect(screen.getByRole('button', {name})).toBeInTheDocument();
+    }
+  });
+
+  it('renders one heading button per configured level', () => {
+    render(
+      <RichTextEditor
+        label="Notes"
+        plugins={<RichTextEditorToolbar headingLevels={['h1', 'h2']} />}
+      />,
+    );
+    expect(screen.getByRole('button', {name: 'Heading 1'})).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Heading 2'})).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: 'Heading 3'}),
+    ).not.toBeInTheDocument();
+  });
+
+  it('accepts a custom accessible label', () => {
+    render(
+      <RichTextEditor
+        label="Notes"
+        plugins={<RichTextEditorToolbar label="Editor controls" />}
+      />,
+    );
+    expect(
+      screen.getByRole('toolbar', {name: 'Editor controls'}),
+    ).toBeInTheDocument();
+  });
+
+  it('renders composed endContent', () => {
+    render(
+      <RichTextEditor
+        label="Notes"
+        plugins={
+          <RichTextEditorToolbar
+            endContent={<button type="button">Custom</button>}
+          />
+        }
+      />,
+    );
+    expect(screen.getByRole('button', {name: 'Custom'})).toBeInTheDocument();
+  });
+
+  it('disables formatting controls when the editor is read-only', () => {
+    render(
+      <RichTextEditor
+        label="Notes"
+        isReadOnly
+        plugins={<RichTextEditorToolbar />}
+      />,
+    );
+    expect(screen.getByRole('button', {name: 'Bold'})).toBeDisabled();
   });
 });

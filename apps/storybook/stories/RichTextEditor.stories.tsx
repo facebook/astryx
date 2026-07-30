@@ -7,6 +7,7 @@ import {
   RichTextView,
   markdownToEditorStateJSON,
   editorStateJSONToMarkdown,
+  RichTextEditorToolbar,
   type RichTextEditorRef,
 } from '@astryxdesign/lab';
 import type {EditorState} from 'lexical';
@@ -40,6 +41,14 @@ export const Default: Story = {
   args: {
     label: 'Notes',
     placeholder: 'Write something…',
+  },
+};
+
+export const WithToolbar: Story = {
+  args: {
+    label: 'Notes',
+    placeholder: 'Format with the toolbar above…',
+    plugins: <RichTextEditorToolbar />,
   },
 };
 
