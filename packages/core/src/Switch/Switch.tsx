@@ -99,12 +99,23 @@ const thumbOnSizeStyles = stylex.create({
   sm: {
     width: 16,
     height: 16,
-    transform: 'translateX(12px)',
+    // The thumb rests at the inline-start edge (flex-start, which flexbox
+    // already mirrors under RTL). The on-state travel toward the inline-end
+    // edge is a physical translateX, so it must flip sign under RTL — right
+    // in LTR, left in RTL — so the switch mirrors per convention (Material,
+    // iOS): off-thumb on the reading-start side, on-thumb on the reading-end.
+    transform: {
+      default: 'translateX(12px)',
+      ':is([dir="rtl"] *)': 'translateX(-12px)',
+    },
   },
   md: {
     width: 20,
     height: 20,
-    transform: 'translateX(14px)',
+    transform: {
+      default: 'translateX(14px)',
+      ':is([dir="rtl"] *)': 'translateX(-14px)',
+    },
   },
 });
 

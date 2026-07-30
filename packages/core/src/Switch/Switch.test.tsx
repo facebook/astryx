@@ -658,6 +658,58 @@ describe('Switch', () => {
     });
   });
 
+  describe('RTL thumb travel direction', () => {
+    // StyleX injects atomic rules into the document; scan them so we can assert
+    // the direction-aware transform without relying on jsdom to resolve the
+    // `:is([dir="rtl"] *)` descendant selector against computed style.
+    function injectedCss(): string {
+      let out = '';
+      for (const sheet of Array.from(document.styleSheets)) {
+        try {
+          for (const rule of Array.from(sheet.cssRules)) {
+            out += rule.cssText + '\n';
+          }
+        } catch {
+          // ignore cross-origin sheets
+        }
+      }
+      out += Array.from(document.querySelectorAll('style'))
+        .map(s => s.textContent || '')
+        .join('\n');
+      return out;
+    }
+
+    it('applies a distinct thumb style when on vs off (on-travel is wired)', () => {
+      const on = render(<Switch label="On" value={true} onChange={() => {}} />);
+      const off = render(
+        <Switch label="Off" value={false} onChange={() => {}} />,
+      );
+      const onThumb = on.container.querySelector(
+        '[class*="thumbOnSizeStyles"]',
+      );
+      const offThumb = off.container.querySelector(
+        '[class*="thumbOffSizeStyles"]',
+      );
+      expect(onThumb).not.toBeNull();
+      expect(offThumb).not.toBeNull();
+      expect(onThumb!.getAttribute('class')).not.toBe(
+        offThumb!.getAttribute('class'),
+      );
+    });
+
+    it('mirrors the on-state thumb travel under RTL (negative translateX)', () => {
+      render(<Switch label="Toggle" value={true} onChange={() => {}} />);
+      const css = injectedCss();
+      // LTR on-travel moves the thumb toward the physical right (positive px).
+      expect(css).toMatch(/transform:\s*translateX\(1[24]px\)/);
+      // RTL mirrors it: the on-thumb lands on the inline-end (physical left)
+      // side, so the travel flips sign, scoped to `[dir="rtl"]`.
+      expect(css).toMatch(
+        /:is\(\[dir="rtl"\][^)]*\)[^{]*\{\s*transform:\s*translateX\(-1[24]px\)/,
+      );
+    });
+  });
+
   describe('rest forwarding', () => {
     it('forwards data-testid, id, and aria-* to the root element', () => {
       const {container} = render(
