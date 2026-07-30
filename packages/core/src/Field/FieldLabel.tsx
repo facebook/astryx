@@ -1,8 +1,10 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+'use client';
+
 /**
  * @file FieldLabel.tsx
- * @input Uses React, Icon, IconType
+ * @input Uses React, Icon, IconType, useTranslator (i18n)
  * @output Exports FieldLabel component, FieldLabelProps
  * @position Core label implementation; used by Field, CheckboxInput, Switch
  *
@@ -27,6 +29,7 @@ import {
 import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {Tooltip} from '../Tooltip';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 const styles = stylex.create({
   label: {
@@ -177,7 +180,13 @@ export function FieldLabel({
   ref,
   ...rest
 }: FieldLabelProps) {
-  const statusText = isOptional ? 'Optional' : isRequired ? 'Required' : null;
+  const t = useTranslator();
+
+  const statusText = isOptional
+    ? t('@astryx.fieldLabel.optional')
+    : isRequired
+      ? t('@astryx.fieldLabel.required')
+      : null;
 
   // A group label (e.g. for a radiogroup) must not be a literal `<label>`
   // element: a `<label>` semantically names a single form control and can't be

@@ -747,6 +747,14 @@
     "defaultMessage": "Code",
     "description": "Screen-reader-only fallback name for a code-snippet scroll container when the code's language is unknown. \"Code\" = source code, not secret code or code of conduct."
   },
+  "@astryx.fieldLabel.optional": {
+    "defaultMessage": "Optional",
+    "description": "Visible indicator next to a field label (after a `∙` separator) showing the field may be left blank. Pairs with `fieldLabel.required`; a field shows at most one of the two. Very short."
+  },
+  "@astryx.fieldLabel.required": {
+    "defaultMessage": "Required",
+    "description": "Visible indicator next to a field label (after a `∙` separator) showing the field must be filled in. Pairs with `fieldLabel.optional`. The screen-reader mirror on the FileInput trigger is `fileInput.required`. Very short."
+  },
   "@astryx.fileInput.clearLabel": {
     "defaultMessage": "Clear {label}",
     "description": "Screen-reader-only label on the X that removes the selected file from a FileInput. Example: `Clear Attachment`, `Clear Résumé`."

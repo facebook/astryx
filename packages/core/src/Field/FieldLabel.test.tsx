@@ -2,7 +2,8 @@
 
 /**
  * @file FieldLabel.test.tsx
- * @input Uses vitest, @testing-library/react, FieldLabel component
+ * @input Uses vitest, @testing-library/react, FieldLabel component,
+ *   InternationalizationProvider (i18n)
  * @output Unit tests for FieldLabel component behavior
  * @position Testing; validates FieldLabel.tsx implementation
  *
@@ -12,6 +13,7 @@
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {TestIcon} from '../__tests__/TestIcon';
+import {InternationalizationProvider} from '../i18n';
 import {FieldLabel} from './FieldLabel';
 
 describe('FieldLabel', () => {
@@ -93,5 +95,41 @@ describe('FieldLabel', () => {
     expect(screen.getByText(/Optional/)).toBeInTheDocument();
     // Info icon should be present
     expect(document.querySelector('svg')).toBeInTheDocument();
+  });
+});
+
+// =============================================================================
+// i18n (the visible Optional/Required indicators route through the catalog)
+// =============================================================================
+
+describe('FieldLabel — i18n', () => {
+  it('localizes the Optional indicator via @astryx.fieldLabel.optional', () => {
+    render(
+      <InternationalizationProvider
+        locale="fr"
+        overrides={{
+          fr: {'@astryx.fieldLabel.optional': 'Facultatif'},
+        }}>
+        <FieldLabel label="Nom" inputID="name-input" isOptional />
+      </InternationalizationProvider>,
+    );
+
+    expect(screen.getByText(/Facultatif/)).toBeInTheDocument();
+    expect(screen.queryByText(/Optional/)).not.toBeInTheDocument();
+  });
+
+  it('localizes the Required indicator via @astryx.fieldLabel.required', () => {
+    render(
+      <InternationalizationProvider
+        locale="fr"
+        overrides={{
+          fr: {'@astryx.fieldLabel.required': 'Obligatoire'},
+        }}>
+        <FieldLabel label="Nom" inputID="name-input" isRequired />
+      </InternationalizationProvider>,
+    );
+
+    expect(screen.getByText(/Obligatoire/)).toBeInTheDocument();
+    expect(screen.queryByText(/Required/)).not.toBeInTheDocument();
   });
 });
