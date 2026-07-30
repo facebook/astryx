@@ -194,6 +194,14 @@ export const ImperativeRef = {
           <button
             type="button"
             onClick={() => {
+              const html = ref.current?.getHTML();
+              setReadout(`getHTML():\n${html}`);
+            }}>
+            getHTML()
+          </button>
+          <button
+            type="button"
+            onClick={() => {
               const editor = ref.current?.getEditor();
               setReadout(
                 `getEditor() -> ${editor ? 'LexicalEditor instance ✓' : 'null'}`,

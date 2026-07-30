@@ -342,6 +342,7 @@ describe('RichTextEditor', () => {
     expect(typeof ref.current?.clear).toBe('function');
     expect(typeof ref.current?.getEditorState).toBe('function');
     expect(typeof ref.current?.getMarkdown).toBe('function');
+    expect(typeof ref.current?.getHTML).toBe('function');
     expect(typeof ref.current?.getEditor).toBe('function');
   });
 
@@ -424,6 +425,18 @@ describe('RichTextEditor', () => {
       $convertFromMarkdownString('# Title', TRANSFORMERS);
     });
     await waitFor(() => expect(ref.current?.getMarkdown()).toBe('Title'));
+  });
+
+  it('ref.getHTML() serializes content to an HTML string', () => {
+    const ref = createRef<RichTextEditorRef>();
+    render(
+      <RichTextEditor ref={ref} label="Notes" defaultValue={HELLO_STATE} />,
+    );
+    const html = ref.current?.getHTML();
+    expect(typeof html).toBe('string');
+    // A paragraph with the seeded text renders as a <p> containing "Hello world".
+    expect(html).toContain('<p');
+    expect(html).toContain('Hello world');
   });
 
   it('ref.clear() resets the editor to a single empty paragraph', async () => {

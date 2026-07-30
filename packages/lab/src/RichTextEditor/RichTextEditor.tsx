@@ -80,6 +80,7 @@ import {ListNode, ListItemNode} from '@lexical/list';
 import {HeadingNode, QuoteNode} from '@lexical/rich-text';
 import {LinkNode, AutoLinkNode} from '@lexical/link';
 import {CodeNode, CodeHighlightNode} from '@lexical/code';
+import {$generateHtmlFromNodes} from '@lexical/html';
 import type {
   EditorState,
   Klass,
@@ -237,6 +238,12 @@ export interface RichTextEditorRef {
    * `$convertToMarkdownString` run in a read context.
    */
   getMarkdown: () => string;
+  /**
+   * Serialize the current content to an HTML string via
+   * `$generateHtmlFromNodes`. Requires a DOM (available in the browser and in
+   * jsdom-based tests). Useful for copy/paste, email, or non-Lexical consumers.
+   */
+  getHTML: () => string;
   /**
    * Access the underlying `LexicalEditor` instance for advanced use cases
    * (custom commands, listeners, node transforms).
@@ -632,6 +639,11 @@ function EditorRefBridge({
         editor
           .getEditorState()
           .read(() => $convertToMarkdownString(transformers)),
+      getHTML: () =>
+        // $generateHtmlFromNodes serializes the whole document (null selection)
+        // to HTML; must run in a read context and requires a DOM.
+        // `@lexical/html` is a subpackage (built dist) — safe.
+        editor.getEditorState().read(() => $generateHtmlFromNodes(editor, null)),
       getEditor: () => editor,
     }),
     [editor, editable, transformers],

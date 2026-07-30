@@ -64,6 +64,7 @@
     "lexical": "^0.46.0",
     "@lexical/react": "^0.46.0",
     "@lexical/markdown": "^0.46.0",
+    "@lexical/html": "^0.46.0",
     "@lexical/link": "^0.46.0",
     "@lexical/list": "^0.46.0",
     "@lexical/rich-text": "^0.46.0",
@@ -77,6 +78,7 @@
   },
   "devDependencies": {
     "@lexical/code": "^0.46.0",
+    "@lexical/html": "^0.46.0",
     "@lexical/link": "^0.46.0",
     "@lexical/list": "^0.46.0",
     "@lexical/markdown": "^0.46.0",
@@ -96,6 +98,9 @@
       "optional": true
     },
     "@lexical/markdown": {
+      "optional": true
+    },
+    "@lexical/html": {
       "optional": true
     },
     "@lexical/link": {
