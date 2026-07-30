@@ -217,6 +217,18 @@ const normalTooltipTheme = defineTheme({
   name: 'tooltip-normal-surface',
   extends: neutralTheme,
   surfaces: {tooltip: 'normal'},
+  // Opting out disables the inversion; the theme owns the tooltip surface via
+  // ordinary component overrides. The content already reads
+  // `--color-text-primary`, correct on a non-inverted surface, so only the
+  // background/border need setting.
+  components: {
+    tooltip: {
+      base: {
+        backgroundColor: 'var(--color-background-popover)',
+        border: '1px solid var(--color-border)',
+      },
+    },
+  },
 });
 
 export const ThemedSurfaceOptOut: Story = {
@@ -302,8 +314,10 @@ export const InsideInvertedToast: Story = {
           of rendering dark-on-dark when nested inside the toast&apos;s already
           inverted surface.
         </p>
-        <div style={{padding: '60px 40px'}}>
-          <Theme theme={neutralTheme} mode="light">
+        <Theme theme={neutralTheme} mode="light">
+          {/* Leave room below the toast so the pinned `below` tooltip has
+              space to render on-screen. */}
+          <div style={{padding: '40px 40px 220px'}}>
             <Toast
               type="info"
               body="Workspace restored."
@@ -314,13 +328,13 @@ export const InsideInvertedToast: Story = {
                 <Tooltip
                   content="This tooltip is nested in the toast"
                   isOpen
-                  placement="above">
+                  placement="below">
                   <Button label="Details" variant="ghost" size="sm" />
                 </Tooltip>
               }
             />
-          </Theme>
-        </div>
+          </div>
+        </Theme>
       </Stack>
     );
   },

@@ -28,8 +28,9 @@
  * - `inverted` — content renders on an inverted surface (the default): its
  *   `color-scheme` flips opposite to the ambient mode and the theme's on-dark
  *   / on-light tokens apply.
- * - `normal` — content uses the app's ordinary surface tokens: no flip, no
- *   token re-pointing. This is the consolidation opt-out.
+ * - `normal` — the inversion is disabled; the theme owns the component's
+ *   surface through the ordinary `components.<name>` overrides. This is the
+ *   consolidation opt-out.
  */
 export type MediaSurface = 'inverted' | 'normal';
 
@@ -46,14 +47,9 @@ export interface MediaSurfaceEntry {
    */
   contentClass: string;
   /**
-   * Background applied to the component root when opted out to `normal`,
-   * overriding the component's base inverted background.
-   */
-  normalBackground: string;
-  /**
    * When set, the named variant always renders its content on a dark surface
-   * regardless of ambient mode or opt-out (e.g. Toast `error`). Encoded via a
-   * `data-type` selector on the root.
+   * regardless of ambient mode (e.g. Toast `error`), unless the component is
+   * opted out. Encoded via a `data-type` selector on the root.
    */
   alwaysDarkVariant?: string;
 }
@@ -67,12 +63,10 @@ export interface MediaSurfaceEntry {
 export const mediaSurfaceRegistry: Record<string, MediaSurfaceEntry> = {
   toast: {
     contentClass: 'astryx-toast-content',
-    normalBackground: 'var(--color-background-popover)',
     alwaysDarkVariant: 'error',
   },
   tooltip: {
     contentClass: 'astryx-tooltip-content',
-    normalBackground: 'var(--color-background-popover)',
   },
 };
 

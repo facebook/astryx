@@ -349,7 +349,8 @@ export interface DefineThemeInput {
    * Some components (Toast, Tooltip) render their content on an *inverted*
    * surface by default — a high-contrast panel whose `color-scheme` flips
    * opposite to the ambient mode. Set a component to `'normal'` to opt it
-   * out, so it uses the app's ordinary surface tokens instead. This is the
+   * out: the inversion is disabled and the theme then owns that component's
+   * surface through the ordinary `components.<name>` overrides. This is the
    * sanctioned path for apps consolidating onto Astryx whose existing
    * toast/tooltip designs are not media-inverted.
    *
@@ -357,10 +358,18 @@ export interface DefineThemeInput {
    *
    * @example
    * ```tsx
-   * surfaces: {
-   *   toast: 'normal',   // use my normal surface, not the inverted one
-   *   tooltip: 'inverted', // keep the default (could be omitted)
-   * }
+   * defineTheme({
+   *   name: 'my-app',
+   *   // Disable the inverted toast surface…
+   *   surfaces: {toast: 'normal'},
+   *   // …then style it like any other component.
+   *   components: {
+   *     toast: {
+   *       base: {backgroundColor: 'var(--color-background-popover)'},
+   *       'type:error': {backgroundColor: 'var(--color-error-muted)'},
+   *     },
+   *   },
+   * });
    * ```
    */
   surfaces?: Partial<Record<MediaSurfaceComponent, MediaSurface>>;

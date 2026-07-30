@@ -706,10 +706,13 @@ export function generateOnMediaCSS(theme: DefinedTheme): string {
  * `prefers-color-scheme`; pass an explicit `mode` to a nested `Theme` to pin
  * the inversion direction for content rendered directly under it.
  *
- * A theme opts a component out with `surfaces: { toast: 'normal' }`: the
- * inverted block is simply not emitted for it, and a normal-surface background
- * overrides the component's base inverted background. Toast's error variant
- * always stays on a dark surface.
+ * A theme opts a component out with `surfaces: { toast: 'normal' }`: no
+ * inverted (or error-always-dark) block is emitted for it at all. The theme
+ * then owns that component's surface through the ordinary `components.<name>`
+ * overrides (e.g. `components: { toast: { base: { backgroundColor: ... } } }`),
+ * which the generator never competes with. When inverted (the default),
+ * Toast's error variant always stays on a dark surface regardless of ambient
+ * mode.
  *
  * <!-- SYNC: packages/core/src/theme/mediaSurfaceRegistry.ts -->
  */
@@ -724,7 +727,6 @@ export function generateMediaSurfaceCSS(theme: DefinedTheme): string {
   const cls = (c: string) => `.${classPrefix}-${c}`;
 
   const invertedContentSelectors: string[] = [];
-  const normalBgRules: string[] = [];
   const errorAlwaysDark: string[] = [];
 
   for (const component of mediaSurfaceComponents()) {
@@ -732,32 +734,30 @@ export function generateMediaSurfaceCSS(theme: DefinedTheme): string {
     if (!entry) {
       continue;
     }
+
+    // Opt-out: skip the inversion entirely (including the always-dark error
+    // variant). The component keeps its base surface until the theme sets its
+    // own via a `components.<name>` override — opting out is a deliberate,
+    // two-part theme decision, so the generator emits nothing here and never
+    // competes with that override.
+    if (surfaces[component] === 'normal') {
+      continue;
+    }
+
     const errorVariant = entry.alwaysDarkVariant;
     // Target the component's named content wrapper — not `> *` — so the flip
     // applies to exactly the surface element and never leaks to sibling nodes.
     const content = `.${entry.contentClass}`;
 
-    if (surfaces[component] === 'normal') {
-      // Opt-out: a normal-surface background overrides the component's base
-      // inverted background. Nothing paints the content as inverted, so no
-      // token reset is needed.
-      const rootSelector = errorVariant
-        ? `${cls(component)}:not([data-type="${errorVariant}"])`
-        : cls(component);
-      normalBgRules.push(
-        `  ${rootSelector} {\n    background: ${entry.normalBackground};\n  }`,
-      );
-    } else {
-      // Inverted (default): the content flips opposite to ambient.
-      invertedContentSelectors.push(
-        errorVariant
-          ? `${cls(component)}:not([data-type="${errorVariant}"]) ${content}`
-          : `${cls(component)} ${content}`,
-      );
-    }
+    // Inverted (default): the content flips opposite to ambient.
+    invertedContentSelectors.push(
+      errorVariant
+        ? `${cls(component)}:not([data-type="${errorVariant}"]) ${content}`
+        : `${cls(component)} ${content}`,
+    );
 
     // The always-dark variant (Toast error) is inverted-dark regardless of
-    // ambient mode or opt-out.
+    // ambient mode.
     if (errorVariant) {
       errorAlwaysDark.push(
         `${cls(component)}[data-type="${errorVariant}"] ${content}`,
@@ -804,10 +804,6 @@ export function generateMediaSurfaceCSS(theme: DefinedTheme): string {
   if (errorAlwaysDark.length > 0) {
     const list = errorAlwaysDark.join(',\n  ');
     blocks.push(scoped(`  :is(\n  ${list}\n  ) {\n${decls(onDark)}\n  }`));
-  }
-
-  if (normalBgRules.length > 0) {
-    blocks.push(scoped(normalBgRules.join('\n\n')));
   }
 
   return blocks.join('\n\n');

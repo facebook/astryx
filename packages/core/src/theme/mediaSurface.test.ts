@@ -6,11 +6,7 @@ import {
   generateMediaSurfaceCSS,
   generateThemeCSS,
 } from './defineTheme';
-import {
-  mediaSurfaceRegistry,
-  mediaSurfaceComponents,
-  getMediaSurface,
-} from './mediaSurfaceRegistry';
+import {mediaSurfaceComponents, getMediaSurface} from './mediaSurfaceRegistry';
 
 describe('mediaSurfaceRegistry', () => {
   it('registers toast and tooltip as inverted-capable', () => {
@@ -94,35 +90,28 @@ describe('generateMediaSurfaceCSS', () => {
     expect(css).toContain('--color-accent: #01579B');
   });
 
-  it('opts a component out: emits a normal-surface background, no content flip', () => {
+  it('opts a component out: emits nothing for it (theme owns the surface)', () => {
     const theme = defineTheme({name: 'optout', surfaces: {toast: 'normal'}});
     const css = generateMediaSurfaceCSS(theme);
-    // Non-error root gets the normal background instead of inverting.
-    expect(css).toContain('.astryx-toast:not([data-type="error"]) {');
-    expect(css).toContain(
-      `background: ${mediaSurfaceRegistry.toast.normalBackground}`,
-    );
-    // The opted-out toast content is NOT in an inverted flip block…
-    expect(css).not.toContain(
-      '.astryx-toast:not([data-type="error"]) .astryx-toast-content',
-    );
-    // …but its error variant still flips to dark.
-    expect(css).toContain(
-      '.astryx-toast[data-type="error"] .astryx-toast-content',
-    );
+    // No toast rules at all — not the info flip, not the error-always-dark
+    // block, not a background. The theme controls the toast surface via its
+    // own components.toast override, which the generator must not compete with.
+    expect(css).not.toContain('.astryx-toast');
     // Tooltip (still inverted) keeps its content flip.
     expect(css).toContain('.astryx-tooltip .astryx-tooltip-content');
     expect(css).toContain('@scope ([data-astryx-theme="optout"])');
   });
 
-  it('opts tooltip out with a whole-component background (no error variant)', () => {
+  it('opts tooltip out: emits nothing for tooltip, toast still inverts', () => {
     const theme = defineTheme({name: 'ttopt', surfaces: {tooltip: 'normal'}});
     const css = generateMediaSurfaceCSS(theme);
-    expect(css).toContain('.astryx-tooltip {');
-    expect(css).not.toContain('.astryx-tooltip .astryx-tooltip-content');
-    // Toast (still inverted) keeps its content flip.
+    expect(css).not.toContain('.astryx-tooltip');
+    // Toast (still inverted) keeps its content flip + error block.
     expect(css).toContain(
       '.astryx-toast:not([data-type="error"]) .astryx-toast-content',
+    );
+    expect(css).toContain(
+      '.astryx-toast[data-type="error"] .astryx-toast-content',
     );
   });
 
