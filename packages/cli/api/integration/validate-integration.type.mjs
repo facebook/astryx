@@ -8,6 +8,22 @@
  */
 
 /**
+ * A loaded integration manifest — the shape `validateLoadedIntegration` accepts.
+ * Colocated here (rather than referencing the internal `lib/integrations`
+ * module) so the generated public `./api` surface stays self-contained.
+ * @typedef {object} LoadedIntegration
+ * @property {string} name
+ * @property {string} [version]
+ * @property {string} [components]
+ * @property {string} [templates]
+ * @property {string} [codemods]
+ * @property {string} [issuesUrl]
+ * @property {string} __spec
+ * @property {string} __packageDir
+ * @property {string} __manifestFile
+ */
+
+/**
  * Options for `validateIntegration()`.
  * @typedef {object} ValidateIntegrationOptions
  * @property {string} [cwd]

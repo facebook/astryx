@@ -1,5 +1,5 @@
 /**
- * @typedef {import('./_adapter.mjs').UpgradeOptions} UpgradeOptions
+ * @typedef {import('./upgrade.type.mjs').UpgradeOptions} UpgradeOptions
  */
 /**
  * Run the upgrade pipeline. Validates the invocation, then dispatches to the
@@ -13,4 +13,4 @@
 export function upgrade(options?: UpgradeOptions, { cwd }?: {
     cwd?: string;
 }): Promise<import("./upgrade.type.mjs").UpgradeListResponse | import("./upgrade.type.mjs").UpgradeStatusResponse | import("./upgrade.type.mjs").UpgradeRunResponse>;
-export type UpgradeOptions = import("./_adapter.mjs").UpgradeOptions;
+export type UpgradeOptions = import("./upgrade.type.mjs").UpgradeOptions;

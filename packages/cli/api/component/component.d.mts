@@ -36,10 +36,3 @@ export function component(name?: string, options?: {
     zh?: boolean | undefined;
     dense?: boolean | undefined;
 }): Promise<(import("./component.type.mjs").ComponentListResponse | import("./component.type.mjs").ComponentDetailResponse | import("./component.type.mjs").ComponentDetailPropsResponse | import("./component.type.mjs").ComponentDetailSourceResponse | import("./component.type.mjs").ComponentDetailShowcaseResponse | import("./component.type.mjs").ComponentDetailBlocksResponse)>;
-import { componentList } from './list/list.mjs';
-import { componentDetail } from './detail/detail.mjs';
-import { componentDetailProps } from './detail/props/props.mjs';
-import { componentDetailSource } from './detail/source/source.mjs';
-import { componentDetailShowcase } from './detail/showcase/showcase.mjs';
-import { componentDetailBlocks } from './detail/blocks/blocks.mjs';
-export { componentList, componentDetail, componentDetailProps, componentDetailSource, componentDetailShowcase, componentDetailBlocks };

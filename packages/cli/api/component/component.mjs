@@ -34,15 +34,6 @@ import {componentDetailSource} from './detail/source/source.mjs';
 import {componentDetailShowcase} from './detail/showcase/showcase.mjs';
 import {componentDetailBlocks} from './detail/blocks/blocks.mjs';
 
-export {
-  componentList,
-  componentDetail,
-  componentDetailProps,
-  componentDetailSource,
-  componentDetailShowcase,
-  componentDetailBlocks,
-};
-
 /**
  * @param {string} [name]
  * @param {object} [options]

@@ -1,4 +1,20 @@
 /**
+ * A loaded integration manifest — the shape `validateLoadedIntegration` accepts.
+ * Colocated here (rather than referencing the internal `lib/integrations`
+ * module) so the generated public `./api` surface stays self-contained.
+ */
+export type LoadedIntegration = {
+    name: string;
+    version?: string | undefined;
+    components?: string | undefined;
+    templates?: string | undefined;
+    codemods?: string | undefined;
+    issuesUrl?: string | undefined;
+    __spec: string;
+    __packageDir: string;
+    __manifestFile: string;
+};
+/**
  * Options for `validateIntegration()`.
  */
 export type ValidateIntegrationOptions = {

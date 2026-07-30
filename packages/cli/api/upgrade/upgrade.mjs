@@ -29,7 +29,7 @@ import {logger} from '../logger.mjs';
 
 
 /**
- * @typedef {import('./_adapter.mjs').UpgradeOptions} UpgradeOptions
+ * @typedef {import('./upgrade.type.mjs').UpgradeOptions} UpgradeOptions
  */
 
 /**

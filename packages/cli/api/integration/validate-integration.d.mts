@@ -12,10 +12,10 @@
  * contribution checks (roots + codemods/templates/components) because those can
  * regress independently of the manifest (a deleted directory, a broken template).
  *
- * @param {import('../../lib/integrations.mjs').LoadedIntegration} loaded loaded-integration-shaped object
+ * @param {import('./validate-integration.type.mjs').LoadedIntegration} loaded loaded-integration-shaped object
  * @returns {Promise<Issue[]>}
  */
-export function validateLoadedIntegration(loaded: import("../../lib/integrations.mjs").LoadedIntegration): Promise<Issue[]>;
+export function validateLoadedIntegration(loaded: import("./validate-integration.type.mjs").LoadedIntegration): Promise<Issue[]>;
 /**
  * Validate the LOCAL integration package rooted at `cwd`: nearest package.json
  * + a single sibling astryx.integration.{ts,mjs,js}. A missing manifest yields
