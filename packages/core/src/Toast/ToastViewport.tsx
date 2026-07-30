@@ -185,21 +185,54 @@ export function ToastViewport({
     [],
   );
 
-  const addToast = useCallback((entry: ToastEntry) => {
-    setToasts(prev => {
+  // Announce toasts through the persistent singleton live regions. Each
+  // <Toast> also renders its own role="status"/"alert" region, but that region
+  // is "born with content" — mounted together with its text — which many
+  // screen readers do not announce (see useAnnounce.ts); the singleton regions
+  // are mounted empty and only mutated afterwards, so they are what actually
+  // guarantees the announcement (the per-toast markup is kept for browse-mode
+  // discoverability). The announcement happens in addToast — the imperative
+  // dispatch path invoked once per useToast() call from an event handler,
+  // never from render — so each toast is announced exactly once by
+  // construction, independent of the React render lifecycle (StrictMode
+  // double-render/double-effect, viewport remounts, and unrelated list
+  // re-renders never re-announce). It is client-only (addToast never runs
+  // during SSR), so it is SSR-safe.
+  const announce = useAnnounce();
+
+  const addToast = useCallback(
+    (entry: ToastEntry) => {
       const {uniqueID, collisionBehavior = 'overwrite'} = entry.options;
-      if (uniqueID) {
-        const existing = prev.find(t => t.options.uniqueID === uniqueID);
-        if (existing) {
-          if (collisionBehavior === 'ignore') {
-            return prev;
-          }
-          return prev.map(t => (t.options.uniqueID === uniqueID ? entry : t));
-        }
+      // Resolve an ignored collision synchronously against the committed list
+      // so a suppressed toast is neither shown nor announced. The remaining
+      // announce + setToasts run outside the setToasts updater, which React may
+      // invoke more than once — keeping the announcement exactly-once.
+      if (
+        uniqueID &&
+        collisionBehavior === 'ignore' &&
+        toastsRef.current.some(t => t.options.uniqueID === uniqueID)
+      ) {
+        return;
       }
-      return [...prev, entry];
-    });
-  }, []);
+      const text = getNodeText(entry.options.body);
+      if (text) {
+        // Error toasts map to the assertive region (role="alert"); everything
+        // else to the polite region (role="status") — mirrors Toast.tsx.
+        announce(text, entry.options.type === 'error' ? 'assertive' : 'polite');
+      }
+      setToasts(prev => {
+        if (uniqueID) {
+          const existing = prev.find(t => t.options.uniqueID === uniqueID);
+          if (existing) {
+            // An ignored collision already returned above; overwrite in place.
+            return prev.map(t => (t.options.uniqueID === uniqueID ? entry : t));
+          }
+        }
+        return [...prev, entry];
+      });
+    },
+    [announce],
+  );
 
   const removeToast = useCallback((id: string, reason: ToastDismissReason) => {
     // An exiting toast stays in toastsRef until its exit transition ends, so
@@ -301,41 +334,6 @@ export function ToastViewport({
   const findByUniqueID = useCallback((uid: string) => {
     return toastsRef.current.find(t => t.options.uniqueID === uid);
   }, []);
-
-  // Mirror each toast's text through the persistent singleton live regions.
-  // Each <Toast> also renders its own role="status"/"alert" live region, but
-  // that region is "born with content" — mounted together with its text —
-  // which many screen readers do not announce (see useAnnounce.ts). The
-  // singleton regions are mounted empty and only mutated afterwards, so this
-  // is what actually guarantees the announcement; the per-toast markup is
-  // kept for browse-mode discoverability. Runs in an effect (client-only, so
-  // SSR-safe) and dedupes by toast id + text so a toast is announced once
-  // when added and once per content update — never on unrelated re-renders.
-  const announce = useAnnounce();
-  const announcedRef = useRef<Map<string, string>>(new Map());
-  useEffect(() => {
-    const announced = announcedRef.current;
-    const liveIds = new Set<string>();
-    for (const entry of toasts) {
-      liveIds.add(entry.id);
-      const text = getNodeText(entry.options.body);
-      if (announced.get(entry.id) === text) {
-        continue;
-      }
-      announced.set(entry.id, text);
-      if (text) {
-        // Match the per-toast role mapping: error toasts render role="alert"
-        // (assertive), everything else role="status" (polite).
-        announce(text, entry.options.type === 'error' ? 'assertive' : 'polite');
-      }
-    }
-    // Forget removed toasts so their ids don't accumulate.
-    for (const id of announced.keys()) {
-      if (!liveIds.has(id)) {
-        announced.delete(id);
-      }
-    }
-  }, [toasts, announce]);
 
   const contextValue = useMemo<ToastContextValue>(
     () => ({addToast, removeToast, findByUniqueID}),

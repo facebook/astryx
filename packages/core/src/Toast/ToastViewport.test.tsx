@@ -3,10 +3,13 @@
 /**
  * @file ToastViewport.test.tsx
  * @input Uses vitest, @testing-library/react, ToastViewport + useToast
- * @output Unit tests for toast keyboard reach and focus management
- * @position Testing; validates ToastViewport.tsx + Toast.tsx focus behavior
+ * @output Unit tests for toast keyboard reach, focus management, and
+ *   screen-reader announcements
+ * @position Testing; validates ToastViewport.tsx + Toast.tsx focus behavior and
+ *   the announce-at-dispatch flow through the singleton live regions
  *
- * SYNC: When ToastViewport.tsx or Toast.tsx focus handling changes, update these tests
+ * SYNC: When ToastViewport.tsx / Toast.tsx focus handling or the toast
+ *   announcement flow changes, update these tests
  */
 
 import {describe, it, expect, vi, beforeAll, afterEach} from 'vitest';
@@ -19,10 +22,36 @@ import {
   within,
 } from '@testing-library/react';
 import React from 'react';
-import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
+import {type AnnounceFn, __resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {ToastViewport} from './ToastViewport';
 import {useToast} from './useToast';
 import type {ToastOptions} from './types';
+
+// Spy on the announcement sink so tests can prove a toast is announced exactly
+// once. The mock wraps the real useAnnounce, so the singleton live regions are
+// still populated (the region-content assertions below depend on it) while
+// every call is also recorded on announceSpy.
+const {announceSpy} = vi.hoisted(() => ({announceSpy: vi.fn()}));
+vi.mock('../hooks/useAnnounce', async importActual => {
+  const actual = await importActual<{
+    useAnnounce: () => AnnounceFn;
+    __resetLiveRegionsForTest: () => void;
+  }>();
+  const {useCallback} = await import('react');
+  return {
+    ...actual,
+    useAnnounce: (): AnnounceFn => {
+      const realAnnounce = actual.useAnnounce();
+      return useCallback<AnnounceFn>(
+        (message, politeness) => {
+          announceSpy(message, politeness);
+          realAnnounce(message, politeness);
+        },
+        [realAnnounce],
+      );
+    },
+  };
+});
 
 // Popover API is not implemented in jsdom.
 beforeAll(() => {
@@ -36,6 +65,7 @@ beforeAll(() => {
 // render — reset them so text from one test never leaks into the next.
 afterEach(() => {
   __resetLiveRegionsForTest();
+  announceSpy.mockClear();
 });
 
 // Module-level constant default props (avoids unstable-default-props lint).
@@ -251,12 +281,29 @@ describe('toast announcements via singleton live regions', () => {
   const ERROR_TOAST: ToastOptions = {body: 'Upload failed', type: 'error'};
   const SAVING_V1: ToastOptions = {uniqueID: 'save', body: 'Saving changes'};
   const SAVING_V2: ToastOptions = {uniqueID: 'save', body: 'Changes saved'};
+  const IGNORE_KEPT: ToastOptions = {
+    uniqueID: 'dup',
+    collisionBehavior: 'ignore',
+    body: 'Kept',
+  };
+  const IGNORE_DROPPED: ToastOptions = {
+    uniqueID: 'dup',
+    collisionBehavior: 'ignore',
+    body: 'Dropped',
+  };
 
   it('announces an info toast politely with its flattened text content', async () => {
     renderViewport(<ShowToastButton options={RICH_INFO} triggerLabel="Show" />);
     act(() => {
       fireEvent.click(screen.getByText('Show'));
     });
+    // Announced synchronously at dispatch, exactly once.
+    expect(announceSpy).toHaveBeenCalledTimes(1);
+    expect(announceSpy).toHaveBeenCalledWith(
+      'Update ready Restart to apply',
+      'polite',
+    );
+    // The flattened text reaches the polite singleton region (the sink).
     await waitFor(() => {
       expect(politeRegion()).toHaveTextContent('Update ready Restart to apply');
     });
@@ -271,10 +318,30 @@ describe('toast announcements via singleton live regions', () => {
     act(() => {
       fireEvent.click(screen.getByText('Show'));
     });
+    expect(announceSpy).toHaveBeenCalledTimes(1);
+    expect(announceSpy).toHaveBeenCalledWith('Upload failed', 'assertive');
     await waitFor(() => {
       expect(assertiveRegion()).toHaveTextContent('Upload failed');
     });
     expect(politeRegion()).toHaveTextContent('');
+  });
+
+  it('announces exactly once at dispatch, even under StrictMode', () => {
+    render(
+      <React.StrictMode>
+        <ToastViewport isTopLayer={false}>
+          <ShowToastButton options={INFO_A} triggerLabel="Show" />
+        </ToastViewport>
+      </React.StrictMode>,
+    );
+    act(() => {
+      fireEvent.click(screen.getByText('Show'));
+    });
+    // The announcement lives in the imperative dispatch path (addToast), not a
+    // render effect, so StrictMode's double render and double-invoked state
+    // updater cannot announce the same toast twice.
+    expect(announceSpy).toHaveBeenCalledTimes(1);
+    expect(announceSpy).toHaveBeenCalledWith('Toast A', 'polite');
   });
 
   it('re-announces a uniqueID toast when its content is overwritten', async () => {
@@ -287,14 +354,15 @@ describe('toast announcements via singleton live regions', () => {
     act(() => {
       fireEvent.click(screen.getByText('Show v1'));
     });
-    await waitFor(() => {
-      expect(politeRegion()).toHaveTextContent('Saving changes');
-    });
-    // Overwriting via uniqueID replaces the toast in place — the new content
-    // must be announced again.
+    expect(announceSpy).toHaveBeenCalledTimes(1);
+    expect(announceSpy).toHaveBeenLastCalledWith('Saving changes', 'polite');
+    // Overwriting via uniqueID replaces the toast in place — the new content is
+    // a fresh dispatch and must be announced again.
     act(() => {
       fireEvent.click(screen.getByText('Show v2'));
     });
+    expect(announceSpy).toHaveBeenCalledTimes(2);
+    expect(announceSpy).toHaveBeenLastCalledWith('Changes saved', 'polite');
     await waitFor(() => {
       expect(politeRegion()).toHaveTextContent('Changes saved');
     });
@@ -305,7 +373,7 @@ describe('toast announcements via singleton live regions', () => {
     ).toHaveLength(1);
   });
 
-  it('does not re-announce an unchanged toast when an unrelated render occurs', async () => {
+  it('does not re-announce an unchanged toast when an unrelated render occurs', () => {
     renderViewport(
       <>
         <ShowToastButton options={INFO_A} triggerLabel="Show A" />
@@ -315,21 +383,43 @@ describe('toast announcements via singleton live regions', () => {
     act(() => {
       fireEvent.click(screen.getByText('Show A'));
     });
-    await waitFor(() => {
-      expect(politeRegion()).toHaveTextContent('Toast A');
-    });
+    expect(announceSpy).toHaveBeenCalledTimes(1);
     // A second toast arriving re-renders the viewport with a new toast list.
-    // Toast A's text is unchanged, so it must not be announced again — an
-    // announcement starts by synchronously clearing the region, so the polite
-    // region still holding "Toast A" proves no re-announcement began.
+    // Toast A is not re-dispatched, so it must not be announced again — only
+    // the newly dispatched toast produces a call.
     act(() => {
       fireEvent.click(screen.getByText('Show B'));
     });
-    expect(politeRegion()).toHaveTextContent('Toast A');
-    await waitFor(() => {
-      expect(assertiveRegion()).toHaveTextContent('Upload failed');
+    expect(announceSpy).toHaveBeenCalledTimes(2);
+    expect(announceSpy).toHaveBeenNthCalledWith(1, 'Toast A', 'polite');
+    expect(announceSpy).toHaveBeenNthCalledWith(
+      2,
+      'Upload failed',
+      'assertive',
+    );
+  });
+
+  it('does not announce a toast whose uniqueID collision is ignored', () => {
+    renderViewport(
+      <>
+        <ShowToastButton options={IGNORE_KEPT} triggerLabel="Show 1" />
+        <ShowToastButton options={IGNORE_DROPPED} triggerLabel="Show 2" />
+      </>,
+    );
+    act(() => {
+      fireEvent.click(screen.getByText('Show 1'));
     });
-    expect(politeRegion()).toHaveTextContent('Toast A');
+    expect(announceSpy).toHaveBeenCalledTimes(1);
+    expect(announceSpy).toHaveBeenLastCalledWith('Kept', 'polite');
+    // The colliding toast is suppressed (collisionBehavior: 'ignore'), so it is
+    // neither shown nor announced.
+    act(() => {
+      fireEvent.click(screen.getByText('Show 2'));
+    });
+    expect(announceSpy).toHaveBeenCalledTimes(1);
+    const viewport = screen.getByRole('region', {name: 'Notifications'});
+    expect(within(viewport).getByText('Kept')).toBeInTheDocument();
+    expect(within(viewport).queryByText('Dropped')).not.toBeInTheDocument();
   });
 });
 
