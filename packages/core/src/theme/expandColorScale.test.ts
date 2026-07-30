@@ -3,6 +3,7 @@
 import {describe, it, expect} from 'vitest';
 import {expandColorScale, ensureContrastTone} from './expandColorScale';
 import {contrastRatio, compositeOver} from './contrast';
+import {hexToHct, tonalPalette} from './hct';
 import {defineTheme} from './defineTheme';
 import {generateThemeRules} from './generateThemeRules';
 import {resolveThemeTokens} from './tokens';
@@ -453,5 +454,46 @@ describe('ensureContrastTone', () => {
     // 22:1 is unreachable; the loop must stop at pure black.
     expect(ensureContrastTone(282, 8, 70, -1, '#FFFFFF', 22)).toBe('#000000');
     expect(ensureContrastTone(282, 8, 30, 1, '#000000', 22)).toBe('#FFFFFF');
+  });
+});
+
+// =============================================================================
+// --color-border-emphasized: concrete before/after delta
+// =============================================================================
+//
+// This is the one generated token whose emitted VALUE changes. Every other
+// token is byte-identical to the pre-change output; they only gained the
+// assertions above. Before this change the token was emitted directly as the
+// neutral-variant palette's tone 70 (light) / 30 (dark) — `ld(NV[70], NV[30])`.
+// Those preferred tones land BELOW the WCAG 1.4.11 3:1 floor against the
+// generated surface, so the generator now tone-bumps them until they clear
+// 3:1. These tests reconstruct the exact old output and lock in the delta so
+// the correction can't silently regress to the sub-3:1 value.
+describe('--color-border-emphasized WCAG 1.4.11 correction (before/after)', () => {
+  const config = {accent: '#0064E0'} as const; // docs default, cool neutrals
+  const NEUTRAL_VARIANT_CHROMA_COOL = 8; // NEUTRAL_VARIANT_CHROMA.cool
+  const {hue} = hexToHct(config.accent);
+  // Exactly what the pre-change generator emitted: NV[70] light / NV[30] dark.
+  const nv = tonalPalette(hue, NEUTRAL_VARIANT_CHROMA_COOL);
+  const tokens = expandColorScale(config);
+
+  it('light: old NV[70] (~2.24:1) is corrected to >= 3:1', () => {
+    const surface = resolveToken(tokens, '--color-background-surface', 0);
+    const oldValue = nv[70];
+    const newValue = resolveToken(tokens, '--color-border-emphasized', 0);
+    expect(contrastRatio(oldValue, surface)).toBeCloseTo(2.24, 1);
+    expect(contrastRatio(oldValue, surface)).toBeLessThan(3);
+    expect(newValue).not.toBe(oldValue);
+    expect(contrastRatio(newValue, surface)).toBeGreaterThanOrEqual(3);
+  });
+
+  it('dark: old NV[30] (~1.84:1) is corrected to >= 3:1', () => {
+    const surface = resolveToken(tokens, '--color-background-surface', 1);
+    const oldValue = nv[30];
+    const newValue = resolveToken(tokens, '--color-border-emphasized', 1);
+    expect(contrastRatio(oldValue, surface)).toBeCloseTo(1.84, 1);
+    expect(contrastRatio(oldValue, surface)).toBeLessThan(3);
+    expect(newValue).not.toBe(oldValue);
+    expect(contrastRatio(newValue, surface)).toBeGreaterThanOrEqual(3);
   });
 });
