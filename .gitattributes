@@ -3,3 +3,8 @@ internal/vibe-tests/.baseline/components/ui/** linguist-generated=true binary
 
 # Lock files
 pnpm-lock.yaml linguist-generated=true
+
+# Generated CLI ./api type declarations (emitted from JSDoc by
+# packages/cli/scripts/gen-api-types.mjs; committed so consumers get types
+# without a build). Collapse their diffs and exclude from language stats.
+packages/cli/api/**/*.d.mts linguist-generated=true
