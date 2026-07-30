@@ -310,16 +310,24 @@ export function useTableStickyColumns<T extends Record<string, unknown>>(
       const {hasStart: hs, hasEnd: he} = stateRef.current;
       const maxScroll = el.scrollWidth - el.clientWidth;
       const hasOverflow = maxScroll > 1;
+      // RTL-safe scroll position. Spec-compliant browsers report a NEGATIVE
+      // scrollLeft under RTL (0 at the inline-start edge, decreasing toward the
+      // inline-end edge), so a raw `scrollLeft > 1` start test would never fire
+      // and the end test would be wrong-signed. Math.abs collapses both
+      // conventions to a distance-from-inline-start, matching the repo's own
+      // useScrollOverflow (overflowStart/overflowEnd use Math.abs, tolerance 1).
+      // No-op under LTR where scrollLeft is already >= 0.
+      const pos = Math.abs(el.scrollLeft);
       if (hs) {
         el.style.setProperty(
           SHADOW_VAR_START,
-          hasOverflow && el.scrollLeft > 1 ? '1' : '0',
+          hasOverflow && pos > 1 ? '1' : '0',
         );
       }
       if (he) {
         el.style.setProperty(
           SHADOW_VAR_END,
-          hasOverflow && el.scrollLeft < maxScroll - 1 ? '1' : '0',
+          hasOverflow && pos < maxScroll - 1 ? '1' : '0',
         );
       }
     };
