@@ -524,6 +524,34 @@ jobs:
                 const passes = a.results.filter(x => x.verdict === "pass").map(x => x.component);
                 out.push(`RTL-ready (D1 pass): ${passes.join(", ") || "—"}.`);
                 out.push("");
+                const pm = r.positionalMirror;
+                if (pm) {
+                  out.push("### Positional-mirror (D5, all core stories)");
+                  out.push("");
+                  out.push("Catches a logical anchor (insetInlineStart/End) paired with an UNFLIPPED physical transform (translate/translateX) → element lands on the wrong side in RTL. Lint can\u2019t see this (each prop is individually fine). Tolerance " + pm.tolerancePx + "px, degenerate-parent guard (<8px) applied.");
+                  out.push("");
+                  out.push(`**${pm.pass} pass · ${pm.fail} FAIL · ${pm.na} N-A** (of ${pm.total} core stories scanned).`);
+                  out.push("");
+                  const pmFails = pm.results.filter(x => x.verdict === "fail" || x.verdict === "ERROR");
+                  if (pmFails.length) {
+                    out.push("| Story | Element | LTR relCenterX | RTL relCenterX | \u0394 (px) |");
+                    out.push("|-------|---------|----------------|----------------|--------|");
+                    for (const c of pmFails) {
+                      for (const f of (c.fails || [])) {
+                        out.push(`| ${c.storyId} | \`${f.cls || f.tag}\` | ${f.ltrRelCenterX} | ${f.rtlRelCenterX} (exp ~${f.expectedRtlCenterX}) | ${f.delta} |`);
+                      }
+                      if (!(c.fails || []).length) out.push(`| ${c.storyId} | (error) | — | — | ${(c.notes||[]).join("; ")} |`);
+                    }
+                    out.push("");
+                    if (pm.knownRealPending && pm.knownRealPending.length) {
+                      out.push("> **Known real bug pending a fix branch:** " + pm.knownRealPending.join("; ") + ". This is a genuine RTL bug on `main`, not a false positive — it clears once that branch lands. Soft-gate = non-blocking.");
+                      out.push("");
+                    }
+                  } else {
+                    out.push("_No positional-mirror FAILs._");
+                    out.push("");
+                  }
+                }
                 out.push("### Curated precision (D2 order / D3 behavior / D4 overlay)");
                 out.push("");
                 out.push("| Component | Rollup | Dimensions |");
