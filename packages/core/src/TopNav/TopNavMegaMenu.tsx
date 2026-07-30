@@ -141,7 +141,7 @@ const styles = stylex.create({
     paddingInline: spacingVars['--spacing-3'],
     // Clamp to the viewport (minus a gutter) so the anchored panel never
     // overflows the screen edge on narrow viewports; caps at 960px otherwise.
-    maxWidth: `min(960px, calc(100dvw - ${spacingVars['--spacing-6']}))`,
+    maxWidth: `min(960px, calc(100dvw - ${spacingVars['--spacing-4']}))`,
     boxSizing: 'border-box',
   },
   menuWrapper: {
