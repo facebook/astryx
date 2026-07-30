@@ -25,6 +25,7 @@ import type {
   TreeListItemData,
   TreeListDensity,
   TreeListVariant,
+  TreeListEndContentReveal,
 } from './TreeListTypes';
 import {themeProps} from '../utils/themeProps';
 import {useTreeFocus} from '../hooks/useTreeFocus';
@@ -33,7 +34,11 @@ import {useTreeFocus} from '../hooks/useTreeFocus';
 // Types
 // =============================================================================
 
-export {type TreeListDensity, type TreeListVariant} from './TreeListTypes';
+export {
+  type TreeListDensity,
+  type TreeListVariant,
+  type TreeListEndContentReveal,
+} from './TreeListTypes';
 
 export interface TreeListProps extends BaseProps<HTMLDivElement> {
   /** Ref forwarded to the root element */
@@ -63,6 +68,21 @@ export interface TreeListProps extends BaseProps<HTMLDivElement> {
    * @default 'lineGuides'
    */
   variant?: TreeListVariant;
+
+  /**
+   * When each row's `endContent` is visible.
+   * - `always`: shown at rest (default)
+   * - `hover`: hidden at rest, revealed when the row is hovered or when focus
+   *   enters it (keyboard), and kept visible on touch devices. Use for
+   *   secondary row actions (e.g. a delete button) that would otherwise add
+   *   visual noise at rest. Do not hide a row's only or primary affordance
+   *   this way — keep essential controls with `always`.
+   *
+   * The reveal is CSS-driven and keyed to the row via a scoped marker, so a
+   * nested tree's rows react to their own hover/focus, not an ancestor row's.
+   * @default 'always'
+   */
+  endContentReveal?: TreeListEndContentReveal;
 
   /**
    * Header content rendered above the tree list.
@@ -176,6 +196,7 @@ export function TreeList({
   items,
   density = 'balanced',
   variant = 'lineGuides',
+  endContentReveal = 'always',
   header,
   xstyle,
   className,
@@ -296,6 +317,7 @@ export function TreeList({
           onToggle={handleToggle}
           density={density}
           variant={variant}
+          endContentReveal={endContentReveal}
           renderedChildren={renderedChildren}
           posInSet={index + 1}
           setSize={items.length}

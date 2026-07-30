@@ -61,6 +61,13 @@ export const docs = {
           default: "'lineGuides'",
         },
         {
+          name: 'endContentReveal',
+          type: "'always' | 'hover'",
+          description:
+            "When each row's endContent is visible. always shows it at rest; hover hides it and reveals it on row hover or keyboard focus (kept visible on touch). Use for secondary row actions — keep essential controls on always.",
+          default: "'always'",
+        },
+        {
           name: 'header',
           type: 'ReactNode',
           description:
@@ -82,6 +89,7 @@ export const docs = {
     bestPractices: [
       {guidance: true, description: 'Provide meaningful labels and icons for each node to make the hierarchy easy to scan.'},
       {guidance: true, description: 'Pre-expand important branches so users see key content immediately.'},
+      {guidance: true, description: 'Use endContentReveal="hover" for secondary row actions (like delete) to reduce visual noise — it still reveals on keyboard focus and stays visible on touch.'},
       {guidance: false, description: 'Nest more than 4–5 levels deep; flatten the structure or use a different pattern.'},
       {guidance: false, description: 'Use a tree for flat, non-hierarchical data; use a List instead.'},
     ],
@@ -139,6 +147,13 @@ export const docsZh = {
           default: "'lineGuides'",
         },
         {
+          name: 'endContentReveal',
+          type: "'always' | 'hover'",
+          description:
+            '每行 endContent 的显示时机。always 始终显示；hover 在悬停或键盘聚焦时显示（触摸设备保持可见）。用于次要行操作——重要控件请使用 always。',
+          default: "'always'",
+        },
+        {
           name: 'header',
           type: 'ReactNode',
           description:
@@ -183,6 +198,7 @@ export const docsDense = {
     items: 'Recursive tree item data w/ id, label, optional children + isExpanded.',
     density: 'Spacing density for items.',
     variant: 'Guide-line treatment: lineGuides shows connectors, noGuides hides them (indent kept). Orthogonal to density.',
+    endContentReveal: 'When row endContent shows: always (at rest) | hover (reveal on row hover/focus, stays visible on touch). For secondary row actions.',
     header: 'Header content, linked to tree via aria-labelledby.',
     xstyle: 'StyleX styles for layout. Must be stylex.create() value.',
   },
@@ -195,6 +211,7 @@ export const docsDense = {
         items: 'Recursive tree item data w/ id, label, optional children + isExpanded.',
         density: 'Spacing density for items.',
         variant: 'Guide-line treatment: lineGuides shows connectors, noGuides hides them (indent kept). Orthogonal to density.',
+        endContentReveal: 'When row endContent shows: always (at rest) | hover (reveal on row hover/focus, stays visible on touch). For secondary row actions.',
         header: 'Header content, linked to tree via aria-labelledby.',
         xstyle: 'StyleX styles for layout. Must be stylex.create() value.',
       },

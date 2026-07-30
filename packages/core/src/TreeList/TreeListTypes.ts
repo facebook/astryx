@@ -3,7 +3,7 @@
 /**
  * @file TreeListTypes.ts
  * @input Uses React types
- * @output Exports TreeListItemData, TreeListDensity, TreeListVariant types
+ * @output Exports TreeListItemData, TreeListDensity, TreeListVariant, TreeListEndContentReveal types
  * @position Type definitions; consumed by TreeList.tsx, TreeListItem.tsx, index.ts
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -15,6 +15,14 @@ import type {ReactNode} from 'react';
 
 /** Spacing density for tree list items. */
 export type TreeListDensity = 'compact' | 'balanced' | 'spacious';
+
+/**
+ * When a row's `endContent` is visible.
+ * - `always`: shown at rest (default; the pre-existing behavior)
+ * - `hover`: hidden at rest, revealed when the row is hovered or when focus
+ *   enters it (keyboard), and kept visible on touch devices
+ */
+export type TreeListEndContentReveal = 'always' | 'hover';
 
 /**
  * Extensible variant map for TreeList.

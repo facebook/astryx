@@ -381,6 +381,63 @@ describe('TreeList', () => {
     expect(screen.getByTestId('badge')).toBeInTheDocument();
   });
 
+  it('keeps endContent mounted and queryable with endContentReveal="hover"', () => {
+    // The reveal is opacity-driven (CSS), never display/unmount — so the
+    // content (and any action inside it) stays in the DOM and the a11y tree
+    // at rest, and a focusable child can trigger the row's :focus-within
+    // reveal. Assert the mounted/accessible contract rather than computed
+    // opacity (jsdom does not resolve stylex.when.ancestor selectors).
+    const items: TreeListItemData[] = [
+      {
+        id: 'a',
+        label: 'With Action',
+        endContent: (
+          <button type="button" data-testid="row-action">
+            Delete
+          </button>
+        ),
+      },
+    ];
+    render(<TreeList items={items} endContentReveal="hover" />);
+    const action = screen.getByTestId('row-action');
+    expect(action).toBeInTheDocument();
+    // Focusable at rest so tabbing to it reveals the endContent (no negative
+    // tabindex, not visibility:hidden which would drop it from tab order).
+    expect(action).not.toHaveAttribute('tabindex', '-1');
+  });
+
+  it('applies a distinct endContent class only when endContentReveal="hover"', () => {
+    const items: TreeListItemData[] = [
+      {id: 'a', label: 'Row', endContent: <span data-testid="ec">x</span>},
+    ];
+    const {rerender} = render(
+      <TreeList items={items} endContentReveal="always" />,
+    );
+    const alwaysClass = screen.getByTestId('ec').parentElement?.className ?? '';
+
+    rerender(<TreeList items={items} endContentReveal="hover" />);
+    const hoverClass = screen.getByTestId('ec').parentElement?.className ?? '';
+
+    // The hover variant adds the reveal style, so the endContent wrapper's
+    // class list differs from the always variant.
+    expect(hoverClass).not.toBe(alwaysClass);
+  });
+
+  it('defaults endContentReveal to "always" (endContent visible at rest)', () => {
+    const items: TreeListItemData[] = [
+      {id: 'a', label: 'Row', endContent: <span data-testid="ec">x</span>},
+    ];
+    const {rerender} = render(<TreeList items={items} />);
+    const defaultClass =
+      screen.getByTestId('ec').parentElement?.className ?? '';
+
+    rerender(<TreeList items={items} endContentReveal="always" />);
+    const alwaysClass = screen.getByTestId('ec').parentElement?.className ?? '';
+
+    // Omitting the prop matches an explicit "always".
+    expect(defaultClass).toBe(alwaysClass);
+  });
+
   // ===========================================================================
   // Density
   // ===========================================================================

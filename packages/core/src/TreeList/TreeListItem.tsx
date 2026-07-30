@@ -4,7 +4,7 @@
 
 /**
  * @file TreeListItem.tsx
- * @input Uses React, StyleX, theme tokens, TreeListBranches
+ * @input Uses React, StyleX, theme tokens, TreeListBranches, treeItemScope marker
  * @output Exports TreeListItem component (internal, not publicly exported)
  * @position Internal implementation; consumed by TreeList.tsx
  *
@@ -28,7 +28,12 @@ import {getIcon} from '../Icon/globalIconRegistry';
 import {mergeProps, rtlStyles} from '../utils';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import {TreeListBranches} from './TreeListBranches';
-import type {TreeListDensity, TreeListVariant} from './TreeListTypes';
+import type {
+  TreeListDensity,
+  TreeListVariant,
+  TreeListEndContentReveal,
+} from './TreeListTypes';
+import {treeItemScope} from './treeList.markers.stylex';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
@@ -174,6 +179,30 @@ const styles = stylex.create({
     alignItems: 'center',
     marginInlineStart: 'auto',
   },
+  // endContentReveal="hover": endContent is hidden at rest and revealed when
+  // the row is hovered or when focus enters it (keyboard). Only opacity is
+  // animated — the content stays mounted and focusable so tabbing to an action
+  // inside it triggers the row's :focus-within reveal (a visibility:hidden or
+  // display:none element could never receive focus to reveal itself). Keyed to
+  // this row via `treeItemScope` so a nested tree's rows react to their own
+  // hover/focus, not an ancestor row's. Any touch-capable device keeps it
+  // visible so the action is never gated behind an unavailable hover.
+  endContentHoverReveal: {
+    opacity: {
+      default: 0,
+      [stylex.when.ancestor(':hover', treeItemScope)]: {
+        '@media (hover: hover)': 1,
+      },
+      [stylex.when.ancestor(':focus-within', treeItemScope)]: 1,
+      '@media (any-pointer: coarse)': 1,
+    },
+    transitionProperty: 'opacity',
+    transitionDuration: {
+      default: durationVars['--duration-fast'],
+      '@media (prefers-reduced-motion: reduce)': '0s',
+    },
+    transitionTimingFunction: easeVars['--ease-standard'],
+  },
   chevronContainer: {
     flexShrink: 0,
     display: 'flex',
@@ -285,6 +314,12 @@ export interface TreeListItemInternalProps {
    * guide element).
    */
   variant: TreeListVariant;
+  /**
+   * When this row's `endContent` is visible. `hover` hides it at rest and
+   * reveals it on row hover or keyboard focus-within (kept visible on touch).
+   * @default 'always'
+   */
+  endContentReveal?: TreeListEndContentReveal;
   /** Pre-rendered children subtree (rendered by the parent recursion) */
   renderedChildren?: ReactNode;
   /** 1-based position of this item among its siblings (aria-posinset). */
@@ -322,6 +357,7 @@ export function TreeListItem({
   onToggle,
   density,
   variant,
+  endContentReveal = 'always',
   renderedChildren,
   posInSet,
   setSize,
@@ -499,7 +535,13 @@ export function TreeListItem({
         <span {...stylex.props(styles.content)}>{labelAndDescription}</span>
       )}
       {endContent != null && (
-        <span {...stylex.props(styles.endContent)}>{endContent}</span>
+        <span
+          {...stylex.props(
+            styles.endContent,
+            endContentReveal === 'hover' && styles.endContentHoverReveal,
+          )}>
+          {endContent}
+        </span>
       )}
     </>
   );
@@ -547,6 +589,9 @@ export function TreeListItem({
                 styles.focusVisibleOutline,
               isDisabled && styles.disabled,
               isSelected && styles.selected,
+              // Scope marker so this row's endContent hover/focus reveal keys
+              // off THIS row only (not an outer container or an ancestor row).
+              endContentReveal === 'hover' && treeItemScope,
             ),
           )}
           style={indentStyle}
