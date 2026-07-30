@@ -129,9 +129,9 @@ jobs:
         if: needs.check-scope.outputs.docsite_only != 'true'
         run: node scripts/sync-exports.js --check
 
-      - name: Check generated CLI ./api types are in sync
+      - name: Verify the published CLI ./api type surface
         if: needs.check-scope.outputs.docsite_only != 'true'
-        run: cd packages/cli && pnpm sync:api-types:check
+        run: node .github/scripts/cli-api-types-verify.mjs
 
       - name: Check token docs are in sync
         if: needs.check-scope.outputs.docsite_only != 'true'

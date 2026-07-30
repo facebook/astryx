@@ -86,7 +86,7 @@
     "typecheck:json-api": "tsc --project tsconfig.json-api.json",
     "typecheck:strict": "tsc --project tsconfig.strict.json",
     "sync:api-types": "node scripts/sync-api-types.mjs",
-    "sync:api-types:check": "node scripts/sync-api-types.mjs --check"
+    "prepack": "pnpm sync:api-types"
   },
   "dependencies": {
     "commander": "^12.1.0",

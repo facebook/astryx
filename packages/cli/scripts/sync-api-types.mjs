@@ -11,10 +11,11 @@
  * shared `types` declarations resolve). `api/index.d.mts` is the entry that
  * `package.json` exports["./api"].types points at.
  *
- * Run `pnpm sync:api-types` to regenerate. `pnpm sync:api-types --check` (the
- * `sync:api-types:check` script, run in CI) regenerates in place and exits 1 if
- * the committed declarations drifted — the same generate/verify pair as
- * `sync:exports`.
+ * The emitted `api/**\/*.d.mts` are NOT committed (they're gitignored, like the
+ * other packages' `dist/`). This script runs automatically at `prepack`, so
+ * `pnpm pack`/`pnpm publish` always ships a freshly generated, in-sync surface.
+ * Run `pnpm sync:api-types` to produce them locally; the published surface is
+ * verified end-to-end by `.github/scripts/cli-api-types-verify.mjs`.
  *
  * @position packages/cli/scripts — build tooling; not shipped runtime
  */
@@ -23,8 +24,6 @@ import {execFileSync} from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
-
-const CHECK_MODE = process.argv.includes('--check');
 
 const CLI_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const TMP = '/tmp/astryx-dts-build';
@@ -87,20 +86,4 @@ if (!fs.existsSync(EMITTED_API)) {
 }
 copyDts(EMITTED_API, DEST_API);
 fs.rmSync(TMP, {recursive: true, force: true});
-
-if (CHECK_MODE) {
-  const drifted = execFileSync('git', ['diff', '--name-only', '--', 'api/**/*.d.mts'], {
-    cwd: CLI_ROOT,
-    encoding: 'utf8',
-  }).trim();
-  if (drifted) {
-    console.error(
-      'Generated ./api declarations are out of date. Run `pnpm sync:api-types` and commit:\n' +
-        drifted,
-    );
-    process.exit(1);
-  }
-  console.log('./api declarations are up to date.');
-} else {
-  console.log('Synced ./api declarations from the JSDoc source of truth.');
-}
+console.log('Synced ./api declarations from the JSDoc source of truth.');
