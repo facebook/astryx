@@ -12,6 +12,7 @@ export const docs = {
     bestPractices: [
       {guidance: true, description: 'Use for plan pickers, filter chips, or option grids.'},
       {guidance: true, description: 'For single-select track one ID; for multi-select use a Set.'},
+      {guidance: true, description: 'When focused, toggle selection with Space or Enter.'},
       {guidance: false, description: 'Use for navigation; use ClickableCard for that.'},
     ],
     anatomy: [
@@ -62,6 +63,7 @@ export const docsDense = {
     bestPractices: [
       {guidance: true, description: 'Use for plan pickers, filter chips, option grids.'},
       {guidance: true, description: 'For single-select track one ID; for multi-select use a Set.'},
+      {guidance: true, description: 'When focused, toggle selection with Space or Enter.'},
       {guidance: false, description: 'Use for navigation; use ClickableCard instead.'},
     ],
   },
