@@ -2,8 +2,8 @@
 
 /**
  * @file Colocated types for the `init` command — source of truth for the init
- * API response receipts. Re-exported by types/init.d.ts (and, transitively,
- * types/api.d.ts). Options live in types/api.d.ts (like UpgradeOptions).
+ * API response receipts and options. Re-exported by types/init.d.ts; the public
+ * `./api` type surface regenerates from this JSDoc.
  */
 
 /**

@@ -5,7 +5,7 @@
  *
  * The source of truth is colocated with the API leaves in
  * `api/theme/theme.type.mjs` (functions own their types). This file keeps the
- * `@astryxdesign/cli/api` public surface (`types/api.d.ts`) and the CLI consumer
+ * `./types/theme` consumers (and the `@astryxdesign/cli` `./json` surface)
  * resolving the same type names without duplicating the shapes.
  */
 

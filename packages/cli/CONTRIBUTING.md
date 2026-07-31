@@ -52,13 +52,13 @@ packages/cli/
     manifest.mjs               # CLI-special: reflects the command tree (injects `program`)
   utils/                       # small pure helpers (package-manager, path-safety, ...)
   schemas/                     # zod/JSON schemas
-  types/                       # hand-written .d.ts (see Roadmap: migrating to generated)
-    api.d.ts                   # API function signatures + AstryxError
+  types/                       # public type surface
+    *.type.mjs (in api/)       # source of truth — colocated JSDoc; ./api regenerates from it
     base.d.ts                  # CLIError, CLIResult<T>, CLIResponse (structural — no central union)
-    component.d.ts             # ComponentListResponse, ComponentDetailResponse, ...
-    build.d.ts                 # BuildKitResponse, BuildHelpResponse
-    swizzle.d.ts               # SwizzleListResponse, SwizzleCopyResponse
-    ...                        # one .d.ts per command; index.d.ts is the barrel
+    component.d.ts             # re-export barrel: ComponentListResponse, ComponentDetailResponse, ...
+    build.d.ts                 # re-export barrel: BuildKitResponse, BuildHelpResponse
+    swizzle.d.ts               # re-export barrel: SwizzleListResponse, SwizzleCopyResponse
+    ...                        # one barrel per command; index.d.ts is the ./json barrel
   bin/ scripts/ docs/ templates/
 ```
 
@@ -219,14 +219,13 @@ packages/cli/templates/{name}/
 
 1. Add the option to the API function in `api/{command}/{command}.mjs`
 2. Pass it through from the CLI handler in `cli/commands/{command}.mjs`
-3. Update the types in `types/api.d.ts` (add to the options interface)
-4. If it produces a new response type, add its interface to `types/{command}.d.ts` and reference it from the function's `@returns` (no central union to update)
+3. Add the option to the `{Command}Options` typedef in `api/{command}/{command}.type.mjs` — this JSDoc is the source of truth; the public `./api` type surface regenerates from it via `pnpm sync:api-types`
 
 ### Adding a new response type (e.g. `component.detail.variants`)
 
 1. Add the logic in `api/{command}/{command}.mjs` — return `{type: 'component.detail.variants', data: ...}`
-2. Add a TypeScript interface in `types/{command}.d.ts`
-3. Reference it from the function's `@returns` (and the result union in `types/api.d.ts`) — there is no central `CLIAnyResponse` to update
+2. Add a `@typedef` for it in `api/{command}/{command}.type.mjs` (the colocated source of truth)
+3. Reference it from the function's `@returns` — there is no central union to update; the `./api` type surface regenerates from the JSDoc
 4. The parity test will auto-detect the new type and verify API=CLI
 
 ### Renaming or removing a response type

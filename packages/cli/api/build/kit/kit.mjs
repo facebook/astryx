@@ -45,8 +45,8 @@ const ALWAYS = new Set([...FRAME, ...FOUNDATION]);
 export async function buildKit(query, options = {}) {
   const {cwd = process.cwd(), type, limit = 60} = options;
   // search()'s JSDoc @returns widens results to object[]; the SearchResponse
-  // shape is the contract (api.d.ts). Cast locally rather than tightening the
-  // search @returns (a separate follow-up).
+  // shape is the contract (api/search/search.type.mjs). Cast locally rather than
+  // tightening the search @returns (a separate follow-up).
   const result = /** @type {import('../../../types/search').SearchResponse} */ (
     await search(query, {cwd, type, limit})
   );

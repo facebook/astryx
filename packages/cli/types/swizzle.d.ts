@@ -5,7 +5,7 @@
  *
  * The shapes now live next to the API as the source of truth in
  * `api/swizzle/swizzle.type.mjs`. This barrel re-exports them so existing
- * `./types/swizzle` consumers (types/index.d.ts, types/api.d.ts) stay stable.
+ * `./types/swizzle` consumers (types/index.d.ts) stay stable.
  */
 
 export type {

@@ -3,7 +3,7 @@
 /**
  * @file Barrel for the `component` command's JSON response types. The source of
  * truth now lives beside the API at `api/component/component.type.mjs`; this thin
- * re-export keeps `types/api.d.ts` and external `@astryxdesign/cli` consumers
+ * re-export keeps existing `./types/component` consumers (types/index.d.ts)
  * resolving these names unchanged.
  */
 
