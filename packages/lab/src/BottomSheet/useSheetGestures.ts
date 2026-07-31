@@ -36,6 +36,7 @@ import {
   type CSSProperties,
   type PointerEvent as ReactPointerEvent,
 } from 'react';
+import {computeDetentOffsets, resolveSettleOffset} from './snapOffsets';
 
 // A "flick" is a fast gesture that dismisses (down) or expands (up),
 // independent of where the drag ends. To avoid firing on small quick
@@ -48,11 +49,16 @@ const FLICK_MIN_DISTANCE = 48; // px traveled during the gesture
 const DISMISS_OVERSHOOT_RATIO = 0.4;
 // Within this many px of a detent, the live drag is magnetically eased toward
 // it so it "clicks" into place instead of hovering just off the mark.
-const MAGNET_RANGE = 28;
-// Rubber-band resistance when dragging past the tallest detent (above the
-// top): the surface still moves, but at a fraction of the finger so it feels
-// tethered, then springs back to the top on release.
+const MAGNET_RANGE = 40;
+// Rubber-band resistance when dragging up past fully-open: the surface still
+// moves, but at a fraction of the finger so it feels tethered, then springs
+// back on release. Capped at OVERSCROLL_MAX, which the sheet reserves as extra
+// bottom padding so the lift reveals padding rather than clipping the top.
 const OVERSCROLL_RESISTANCE = 0.35;
+// SYNC: must match OVERSCROLL_PADDING in BottomSheet.tsx (the reserved bottom
+// padding the lift reveals). Kept as a local const rather than a shared import
+// so it can be used inside stylex.create there.
+const OVERSCROLL_MAX = 48;
 
 // Fire a short haptic tick when settling on a detent, where supported. iOS
 // Safari does NOT implement navigator.vibrate (its Taptic engine isn't exposed
@@ -137,6 +143,12 @@ export interface SheetBodyProps {
 }
 
 export interface UseSheetGesturesResult {
+  /**
+   * Callback ref for the sheet surface. The hook observes it (ResizeObserver)
+   * to keep the fully-open height current, so detents stay correct across
+   * rotation / viewport changes without re-measuring mid-drag.
+   */
+  sheetRef: (node: HTMLElement | null) => void;
   /** Spread on the sliding surface: live translate + touch-action guard. */
   contentProps: SheetContentProps;
   /** Spread on the grab-handle element: pointer drag handlers. */
@@ -160,13 +172,6 @@ function prefersReducedMotion(): boolean {
     return false;
   }
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-}
-
-function nearest(value: number, candidates: number[]): number {
-  return candidates.reduce(
-    (best, c) => (Math.abs(c - value) < Math.abs(best - value) ? c : best),
-    candidates[0],
-  );
 }
 
 /**
@@ -222,6 +227,33 @@ export function useSheetGestures({
     baseOffset: number;
   } | null>(null);
 
+  // Fully-open sheet height, kept current by a ResizeObserver on the surface
+  // (see sheetRef below). Locked in at this measured value for the duration of
+  // a drag, so detents don't shift under the finger; re-derived when the
+  // element resizes (rotation, dynamic viewport, keyboard).
+  const sheetHeightRef = useRef(0);
+  const observerRef = useRef<ResizeObserver | null>(null);
+  const sheetRef = useCallback((node: HTMLElement | null) => {
+    observerRef.current?.disconnect();
+    observerRef.current = null;
+    if (!node || typeof ResizeObserver === 'undefined') {
+      if (node) {
+        sheetHeightRef.current = node.getBoundingClientRect().height;
+      }
+      return;
+    }
+    sheetHeightRef.current = node.getBoundingClientRect().height;
+    const ro = new ResizeObserver(entries => {
+      const box = entries[0]?.contentRect;
+      if (box && box.height > 0) {
+        sheetHeightRef.current = box.height;
+      }
+    });
+    ro.observe(node);
+    observerRef.current = ro;
+  }, []);
+  useEffect(() => () => observerRef.current?.disconnect(), []);
+
   // Reset to the tallest detent each time the sheet re-opens.
   useEffect(() => {
     if (isOpen) {
@@ -231,7 +263,12 @@ export function useSheetGestures({
     }
   }, [isOpen]);
 
+  // The fully-open height for detent math. Prefer the ResizeObserver-locked
+  // value; fall back to a live measure if the observer hasn't reported yet.
   const measureHeight = useCallback((el: HTMLElement | null): number => {
+    if (sheetHeightRef.current > 0) {
+      return sheetHeightRef.current;
+    }
     const sheet = el?.closest<HTMLElement>('[data-astryx-sheet]') ?? el;
     return sheet?.getBoundingClientRect().height ?? 0;
   }, []);
@@ -241,11 +278,7 @@ export function useSheetGestures({
   // Snap heights are resolved lazily here (at drag start) so they reflect the
   // current viewport without a persistent listener.
   const detentOffsets = useCallback((height: number): number[] => {
-    const heights = (snapHeightsRef.current?.() ?? []).filter(
-      h => h > 0 && h < height,
-    );
-    const offsets = heights.map(h => height - h);
-    return [0, ...offsets].sort((a, b) => a - b);
+    return computeDetentOffsets(height, snapHeightsRef.current?.() ?? []);
   }, []);
 
   const settleFromDrag = useCallback(
@@ -281,26 +314,9 @@ export function useSheetGestures({
         onDismissRef.current();
         return;
       }
-      // Settle to the nearest detent, but never past the starting detent in
-      // the direction of the drag. Otherwise, on a sheet whose detents are far
-      // apart, a downward drag that doesn't quite reach the halfway point
-      // would snap back UP to where it started — reading as "it ignored my
-      // swipe". Restricting the candidates to detents at/below (drag down) or
-      // at/above (drag up) the start makes any committed drag move at least to
-      // the next detent that way.
-      let candidates = offsets;
-      if (dir > 0) {
-        const downward = offsets.filter(o => o >= baseOffset);
-        if (downward.length > 0) {
-          candidates = downward;
-        }
-      } else if (dir < 0) {
-        const upward = offsets.filter(o => o <= baseOffset);
-        if (upward.length > 0) {
-          candidates = upward;
-        }
-      }
-      const target = nearest(offset, candidates);
+      // Settle to the nearest detent in the drag direction (never back past
+      // the starting detent), de-duped and direction-clamped by the util.
+      const target = resolveSettleOffset(offset, offsets, dir, baseOffset);
       setSettledOffset(target);
       onSnapRef.current?.(height - target);
       // Haptic "tick" when landing on a different detent (where supported).
@@ -362,14 +378,22 @@ export function useSheetGestures({
 
       // Raw offset from the tallest detent: base (resting detent) + this drag.
       const raw = state.baseOffset + delta;
+      const maxDetentOffset = offsets[offsets.length - 1];
       let next: number;
       if (raw < 0) {
-        // Dragging past the top: allow it, but with rubber-band resistance so
-        // the surface feels tethered. It springs back to the top on release.
-        next = raw * OVERSCROLL_RESISTANCE;
+        // Dragging up past fully-open: damp it and cap it at the overscroll
+        // allowance (the sheet carries extra bottom padding equal to
+        // OVERSCROLL_MAX, so this lift reveals that padding rather than
+        // clipping the top). Springs back to 0 on release.
+        next = Math.max(-OVERSCROLL_MAX, raw * OVERSCROLL_RESISTANCE);
+      } else if (raw > maxDetentOffset) {
+        // Past the shortest detent = heading into the dismiss zone. Don't
+        // magnetize here — that would fight a deliberate drag-to-close by
+        // yanking the sheet back up to the detent.
+        next = raw;
       } else {
-        // Magnetically ease toward a nearby detent so the sheet "clicks" into
-        // place instead of hovering just off the mark.
+        // Between detents: magnetically ease toward a nearby one so the sheet
+        // "clicks" into place instead of hovering just off the mark.
         next = magnetize(raw, offsets);
       }
       setDragOffset(next);
@@ -459,18 +483,14 @@ export function useSheetGestures({
           armed.scroller.closest<HTMLElement>('[data-astryx-sheet]') ??
           armed.scroller;
         armedBodyRef.current = null;
-        beginDrag(
-          event,
-          sheetEl.getBoundingClientRect().height || 0,
-          armed.startCoord,
-        );
+        beginDrag(event, measureHeight(sheetEl), armed.startCoord);
         handlePointerMove(event);
       } else if (delta < 0) {
         // Upward move = the user is scrolling; disarm so we don't hijack it.
         armedBodyRef.current = null;
       }
     },
-    [beginDrag, handlePointerMove],
+    [beginDrag, handlePointerMove, measureHeight],
   );
 
   const handleBodyEnd = useCallback(
@@ -523,6 +543,7 @@ export function useSheetGestures({
   );
 
   return {
+    sheetRef,
     contentProps,
     handleProps,
     bodyProps,

@@ -41,8 +41,11 @@ import {Drawer} from '../Drawer';
 import {useSheetGestures} from './useSheetGestures';
 
 // Detent fractions of the viewport the sheet can rest at, ascending
-// (mid <-> full). Matches the ratified mobile-prototype exploration.
-const SNAP_FRACTIONS = [0.5, 0.92];
+// (peek <-> mid <-> full). Near-duplicate detents (e.g. a content-hugging
+// height that lands next to one of these) are de-duped downstream, so it's
+// safe to offer a full set; the gesture hook keeps only those shorter than
+// the rendered sheet.
+const SNAP_FRACTIONS = [0.3, 0.6, 0.92];
 
 /**
  * Height budget for each named size, as a fraction of the viewport:
@@ -63,6 +66,12 @@ export type BottomSheetHeight = keyof typeof HEIGHT_BUDGETS;
 // cap and center them. Matches the `sm` layout breakpoint. On phones the
 // viewport is narrower than this, so the sheet stays full-width.
 const MAX_SHEET_WIDTH = 640;
+
+// Overscroll allowance (px): the sheet extends this much lower than the
+// viewport as reserved bottom padding, so a small upward drag past fully-open
+// reveals padding instead of clipping the top. Passed to the gesture hook as
+// its overscroll cap so the drag limit and the reserved padding stay in step.
+const OVERSCROLL_PADDING = 48;
 
 // Grab-handle sizing, on the spacing scale. The pill sits in a short reserved
 // row right under the sheet's rounded top, but the pointer hit box is a
@@ -122,7 +131,10 @@ const styles = stylex.create({
     borderStartStartRadius: radiusVars['--radius-page'],
     borderStartEndRadius: radiusVars['--radius-page'],
     overflow: 'hidden',
-    paddingBlockEnd: `env(safe-area-inset-bottom, 0px)`,
+    // Home-indicator clearance plus an overscroll allowance: the sheet extends
+    // OVERSCROLL_MAX px lower than the viewport so a small upward drag past
+    // fully-open reveals this reserved padding instead of clipping the top.
+    paddingBlockEnd: `calc(env(safe-area-inset-bottom, 0px) + ${OVERSCROLL_PADDING}px)`,
     willChange: 'transform',
   },
   // Neutralize Drawer's <dialog> surface so only the swipeable wrapper paints.
@@ -265,12 +277,13 @@ export function BottomSheet({
     );
   }, []);
 
-  const {contentProps, handleProps, bodyProps, isDragging} = useSheetGestures({
-    isOpen,
-    onDismiss: close,
-    snapHeights: defaultSnapHeights,
-    onDragProgress: handleDragProgress,
-  });
+  const {contentProps, handleProps, bodyProps, isDragging, sheetRef} =
+    useSheetGestures({
+      isOpen,
+      onDismiss: close,
+      snapHeights: defaultSnapHeights,
+      onDragProgress: handleDragProgress,
+    });
 
   // Resolve the height budget: a named key maps to its viewport fraction, and
   // any other value (px number or CSS length) passes straight through to
@@ -301,6 +314,7 @@ export function BottomSheet({
       ]}
       {...props}>
       <div
+        ref={sheetRef}
         data-astryx-sheet=""
         {...mergeProps(
           themeProps('bottom-sheet'),

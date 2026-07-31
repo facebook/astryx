@@ -205,16 +205,17 @@ describe('useSheetGestures', () => {
   });
 
   it('magnetically settles the live drag onto a nearby detent', () => {
-    // Detents for a 400px sheet with a 200px snap -> offsets [0, 200]. A live
-    // drag that lands within MAGNET_RANGE (28px) of the 200 detent should be
-    // eased toward it rather than sitting at the raw finger position.
-    const {hook} = setup({snapHeights: () => [200]});
+    // Detents for a 400px sheet with snaps 300 and 200 -> visible-height snaps
+    // become offsets [0, 100, 200]. Approaching the middle detent (offset 100)
+    // from just below (raw ~90) — inside MAGNET_RANGE and BELOW the shortest
+    // detent so the between-detents magnet applies — should ease toward 100.
+    const {hook} = setup({snapHeights: () => [200, 300]});
     const t = makeTarget();
     down(hook, 0, 0, t);
-    move(hook, 210, 100, t); // raw offset 210, 10px from the 200 detent
+    move(hook, 90, 100, t); // raw offset 90, 10px from the 100 detent
     const off = hook.result.current.dragOffset;
-    expect(off).toBeLessThan(210); // pulled toward 200
-    expect(off).toBeGreaterThanOrEqual(200);
+    expect(off).toBeGreaterThan(90); // pulled up toward 100
+    expect(off).toBeLessThanOrEqual(100);
   });
 
   it('translates the surface live during a drag', () => {
