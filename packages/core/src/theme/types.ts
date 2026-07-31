@@ -15,11 +15,7 @@
  * Raw CSS values (e.g. '800') are accepted as an escape hatch.
  */
 export type FontWeight =
-  | 'normal'
-  | 'medium'
-  | 'semibold'
-  | 'bold'
-  | (string & {});
+  'normal' | 'medium' | 'semibold' | 'bold' | (string & {});
 
 /**
  * A typography role declaration (body, heading, or code).
@@ -155,15 +151,49 @@ export type TextSize =
 export type TextWeight = 'normal' | 'medium' | 'semibold' | 'bold';
 
 /**
- * Text color variants for Text/Heading
+ * Extensible map of text color variants for Text/Heading.
+ *
+ * Themes add custom colors via component overrides in defineTheme; a custom
+ * color renders with the `primary` baseline color from StyleX and receives its
+ * actual color from theme CSS (`.astryx-text.<color>` / `.astryx-heading.<color>`),
+ * exactly like custom text `type`s.
+ *
+ * To add type-safe custom colors, use module augmentation — the same technique
+ * as `ButtonVariantMap` etc.:
+ * ```ts
+ * declare module '@astryxdesign/core/Text' {
+ *   interface TextColorMap {
+ *     brand: true;
+ *     danger: true;
+ *   }
+ * }
+ * ```
+ *
+ * `astryx theme build` generates these augmentations automatically when it
+ * detects new `color:*` values in a theme's Text/Heading component overrides.
  */
-export type TextColor =
-  | 'primary'
-  | 'secondary'
-  | 'disabled'
-  | 'placeholder'
-  | 'accent'
-  | 'inherit';
+export interface TextColorMap {
+  primary: true;
+  secondary: true;
+  disabled: true;
+  placeholder: true;
+  accent: true;
+  inherit: true;
+}
+
+/**
+ * Built-in text color variants for Text/Heading. The concrete keys that ship
+ * with the design system, independent of theme augmentation — used where a
+ * value must be one of the real StyleX color styles (see `resolveStyleColor`).
+ */
+export type BuiltinTextColor =
+  'primary' | 'secondary' | 'disabled' | 'placeholder' | 'accent' | 'inherit';
+
+/**
+ * Text color variants for Text/Heading. Extensible via module augmentation of
+ * `TextColorMap`.
+ */
+export type TextColor = keyof TextColorMap;
 
 /**
  * Display mode for Text/Heading

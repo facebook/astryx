@@ -9,6 +9,7 @@ import {render, screen} from '@testing-library/react';
 import {describe, it, expect} from 'vitest';
 import {Text} from './Text';
 import type {TextType} from './Text';
+import type {TextColor} from '../theme/types';
 
 describe('Text', () => {
   describe('rendering', () => {
@@ -231,5 +232,46 @@ describe('Text custom types', () => {
       </Text>,
     );
     expect(screen.getByText('Muted').className).toContain('secondary');
+  });
+});
+
+describe('Text custom colors', () => {
+  it('renders a custom color as a stable class for theme CSS to target', () => {
+    // A theme adds a custom color (e.g. via TextColorMap augmentation +
+    // defineTheme). The rendered element carries the color as a class
+    // (astryx-text.<color>) so `.astryx-text.brand { color: ... }` from the
+    // theme applies — mirroring how custom `type`s work.
+    render(<Text color={'brand' as TextColor}>Branded</Text>);
+    const el = screen.getByText('Branded');
+    expect(el.className).toContain('astryx-text');
+    expect(el.className).toContain('brand');
+  });
+
+  it('does not crash on a custom color (falls back to the primary StyleX baseline)', () => {
+    // colorStyles has no entry for a custom color; the component must resolve a
+    // built-in baseline instead of indexing undefined. Built-in `primary` is
+    // the baseline, so both share its StyleX color class.
+    render(
+      <>
+        <Text color={'brand' as TextColor}>Custom</Text>
+        <Text color="primary">Builtin</Text>
+      </>,
+    );
+    const custom = screen.getByText('Custom');
+    const builtin = screen.getByText('Builtin');
+    // Neither throws, and the custom color reuses primary's baseline StyleX
+    // class (the real color comes from theme CSS via the `brand` class).
+    const primaryAtomic = builtin.className
+      .split(/\s+/)
+      .filter(c => c.startsWith('x'));
+    expect(primaryAtomic.length).toBeGreaterThan(0);
+    for (const cls of primaryAtomic) {
+      expect(custom.className).toContain(cls);
+    }
+  });
+
+  it('still applies built-in colors directly', () => {
+    render(<Text color="accent">Accent</Text>);
+    expect(screen.getByText('Accent').className).toContain('accent');
   });
 });
