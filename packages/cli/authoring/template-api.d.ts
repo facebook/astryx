@@ -1,21 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * The template-authoring surface moved to `@astryxdesign/core/authoring`.
- * Re-exported here so existing `@astryxdesign/cli/template` type imports keep
- * resolving.
+ * Back-compat shim for `@astryxdesign/cli/template` type imports. The template
+ * vocabulary now lives in `./doctypes/types`; this re-export keeps existing
+ * references resolving. Removed by the PR 2 import-path codemod.
  */
-export type {
-  AstryxTemplatePreview,
-  AstryxTemplateInput,
-  AstryxPageTemplateInput,
-  AstryxBlockTemplateInput,
-  AstryxPageTemplate,
-  AstryxBlockTemplate,
-  AstryxTemplate,
-} from '@astryxdesign/core/authoring';
-
-export {
-  createPageTemplate,
-  createBlockTemplate,
-} from '@astryxdesign/core/authoring';
+export type * from './doctypes/types';

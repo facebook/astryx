@@ -3,7 +3,6 @@
 import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {pathToFileURL} from 'node:url';
 import {Project} from '../../foundation/config/project.mjs';
 import {
   discoverIntegrationCodemods,
@@ -50,14 +49,6 @@ function scaffold(codemodFiles) {
 
 // Resolve the codemod helper module to an absolute file:// URL so codemod
 // modules in the temp package can import it without node_modules wiring.
-// vitest reports import.meta.url as an http:// URL, so derive the on-disk path
-// from the vitest cwd (the repo root) instead.
-const codemodModulePath = path.resolve(
-  process.cwd(),
-  'packages/cli/authoring/codemod.mjs',
-);
-const codemodModuleUrl = pathToFileURL(codemodModulePath).href;
-
 beforeEach(() => {
   originalCwd = process.cwd();
   tmpDir = fs.mkdtempSync(path.join(process.cwd(), '.astryx-codemod-test-'));
@@ -73,11 +64,11 @@ describe('integration codemod discovery', () => {
   it('discovers a code codemod and runs it for an applicable --from', async () => {
     scaffold({
       '0.2.0/drop-foo.mjs': `
-        import {createCodemod} from ${JSON.stringify(codemodModuleUrl)};
-        export default createCodemod({
+        export default {
+          type: 'code',
           title: 'Drop foo',
           transform: (file) => file.source.replace(/foo/g, 'bar'),
-        });
+        };
       `,
     });
 
@@ -124,11 +115,11 @@ describe('integration codemod discovery', () => {
   it('discovers and runs a config codemod against astryx.config.*', async () => {
     scaffold({
       '0.2.0/bump-config.mjs': `
-        import {createConfigCodemod} from ${JSON.stringify(codemodModuleUrl)};
-        export default createConfigCodemod({
+        export default {
+          type: 'config',
           title: 'Bump config',
           transform: (file) => file.source.replace('consumer-old', 'consumer-new'),
-        });
+        };
       `,
     });
     // Make the config file a transform target. (Project.load only needs a valid
@@ -164,9 +155,9 @@ describe('integration codemod discovery', () => {
       '0.2.0/broken.mjs': `export const notDefault = 1;\n`,
     });
     const project = await Project.load(tmpDir);
-    // Validation now happens at the LOAD boundary (loadModuleWithSchema against
-    // CodemodEnvelopeSchema); a missing default export is a schema-invalid
-    // failure rather than the old bespoke "must default-export" message.
+    // Validation now happens at the LOAD boundary (loadModuleWithParser +
+    // parseCodemod); a missing default export is a schema-invalid failure
+    // rather than the old bespoke "must default-export" message.
     await expect(
       discoverIntegrationCodemods(project.loadedIntegrations),
     ).rejects.toThrow(/is invalid/i);
@@ -218,12 +209,10 @@ describe('integration codemod discovery', () => {
   it('fails discovery on a duplicate id across versions within a package', async () => {
     scaffold({
       '0.2.0/dup.mjs': `
-        import {createCodemod} from ${JSON.stringify(codemodModuleUrl)};
-        export default createCodemod({title: 'a', transform: () => null});
+        export default {type: 'code', title: 'a', transform: () => null};
       `,
       '0.3.0/dup.mjs': `
-        import {createCodemod} from ${JSON.stringify(codemodModuleUrl)};
-        export default createCodemod({title: 'b', transform: () => null});
+        export default {type: 'code', title: 'b', transform: () => null};
       `,
     });
     const project = await Project.load(tmpDir);

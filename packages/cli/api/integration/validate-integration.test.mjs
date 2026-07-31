@@ -12,7 +12,6 @@
 import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {pathToFileURL} from 'node:url';
 import {
   validateLocalIntegration,
   validateInstalledIntegration,
@@ -20,12 +19,6 @@ import {
 } from './validate-integration.mjs';
 
 let tmpDir;
-
-// Absolute file:// URL to the codemod helper so codemod modules in the temp
-// package can import createCodemod without node_modules wiring.
-const codemodModuleUrl = pathToFileURL(
-  path.resolve(process.cwd(), 'packages/cli/authoring/codemod.mjs'),
-).href;
 
 beforeEach(() => {
   tmpDir = fs.mkdtempSync(path.join(process.cwd(), '.astryx-validate-it-'));
@@ -64,8 +57,7 @@ describe('validate-integration API', () => {
     fs.mkdirSync(cmDir, {recursive: true});
     fs.writeFileSync(
       path.join(cmDir, 'drop-foo.mjs'),
-      `import {createCodemod} from ${JSON.stringify(codemodModuleUrl)};\n` +
-        `export default createCodemod({ title: 'Drop foo', transform: (file) => file.source });\n`,
+      `export default { type: 'code', title: 'Drop foo', transform: (file) => file.source };\n`,
     );
 
     const result = await validateLocalIntegration(pkgDir);

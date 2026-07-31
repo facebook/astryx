@@ -19,8 +19,8 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {createJiti} from 'jiti';
-import {loadModuleWithSchema} from '../../foundation/fs/module-loader.mjs';
-import {TemplateEnvelopeSchema} from '../../foundation/schemas/template-schema.mjs';
+import {loadModuleWithParser} from '../../foundation/fs/module-loader.mjs';
+import {parseTemplate} from '../../authoring/doctypes/template/parse.mjs';
 import {CLI_ROOT, discoverExternalPackages} from '../../foundation/fs/paths.mjs';
 import {Project} from '../../foundation/config/project.mjs';
 
@@ -72,8 +72,9 @@ export function pkgOf(t) {
 
 /**
  * Canonical basename suffixes for template-spec files, in precedence order.
- * A template spec exports a `createBlockTemplate`/`createPageTemplate` result
- * (a scaffoldable TEMPLATE), so `.template.*` is the descriptive family name.
+ * A template spec is a scaffoldable TEMPLATE (a plain object stamped with a
+ * `type` of `'page'` or `'block'`), so `.template.*` is the descriptive family
+ * name.
  */
 const TEMPLATE_SUFFIXES = ['.template.ts', '.template.mjs', '.template.js'];
 
@@ -122,7 +123,7 @@ function getJiti() {
  * Load an integration template doc module and validate it against the template
  * envelope at the load boundary. Default export only — `.ts` via jiti,
  * `.mjs`/`.js` via dynamic import. Throws (caught by discovery) if the default
- * export is missing or fails {@link TemplateEnvelopeSchema}. NOTE: the built-in
+ * export is missing or fails {@link parseTemplate}. NOTE: the built-in
  * core templates use `export const doc = {...}` and are loaded by a different
  * function ({@link loadDocModule}) — this path is for INTEGRATION templates.
  *
@@ -130,7 +131,7 @@ function getJiti() {
  * @param {string} [label]
  */
 async function loadIntegrationDoc(file, label) {
-  return loadModuleWithSchema(file, TemplateEnvelopeSchema, {label});
+  return loadModuleWithParser(file, parseTemplate, {label});
 }
 
 const TEMPLATES_DIR = path.join(CLI_ROOT, 'assets', 'templates');
@@ -185,8 +186,8 @@ export function stripTemplateAssetRefs(source) {
  * Load a template-spec module and return its metadata object. Supports both
  * families of suffix:
  *   - Legacy `.doc.*` core/external specs export `export const doc = {...}`.
- *   - Specs authored with `createPageTemplate`/`createBlockTemplate` export the
- *     stamped object as the default export.
+ *   - Canonical `.template.*` specs export the stamped object (`type: 'page' |
+ *     'block'`) as the default export.
  * Prefers the default export, falling back to the named `doc` export, so a
  * `Foo.template.ts` (default export) is read identically to a legacy
  * `Foo.doc.mjs` (`doc` export). `.ts` is loaded via jiti; `.mjs`/`.js` via a
@@ -543,7 +544,7 @@ export async function discoverIntegrationTemplatesForOne(integration) {
       errors.push({
         package: pkgLabel,
         template: id,
-        message: `Template "${id}" is missing a "type" of "page" or "block". Author it with createPageTemplate/createBlockTemplate.`,
+        message: `Template "${id}" is missing a "type" of "page" or "block". Stamp the default export with type: 'page' or type: 'block'.`,
       });
       continue;
     }

@@ -11,10 +11,9 @@
  * where `<version>` is the immediate folder name (e.g. "0.2.0") and `<id>` is
  * the codemod module's relative path under that version folder WITHOUT its
  * extension (kebab-case; may include nested segments like "config/rename").
- * Each module DEFAULT-EXPORTS a codemod envelope — typically a `createCodemod`
- * / `createConfigCodemod` result, though any plain object matching
- * {@link CodemodEnvelopeSchema} is accepted. Validation happens here at the
- * load boundary via `loadModuleWithSchema`, not in the factories.
+ * Each module DEFAULT-EXPORTS a codemod envelope — a plain object stamped with
+ * a `type` of `'code'` or `'config'`. Validation happens here at the load
+ * boundary via `loadModuleWithParser` + `parseCodemod`.
  *
  * Version selection mirrors the core registry's getTransformsBetween(from,to):
  * a codemod under folder X runs when upgrading to include X.
@@ -26,8 +25,8 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {loadModuleWithSchema} from '../../foundation/fs/module-loader.mjs';
-import {CodemodEnvelopeSchema} from '../../authoring/codemod.mjs';
+import {loadModuleWithParser} from '../../foundation/fs/module-loader.mjs';
+import {parseCodemod} from '../../authoring/codemod/parse.mjs';
 import {semverCompare} from '../../foundation/env/semver.mjs';
 
 /** File extensions recognized as codemod modules. */
@@ -125,7 +124,7 @@ export async function discoverIntegrationCodemods(loadedIntegrations = []) {
         }
         idToVersion.set(id, version);
 
-        const codemod = await loadModuleWithSchema(file, CodemodEnvelopeSchema, {
+        const codemod = await loadModuleWithParser(file, parseCodemod, {
           label,
         });
 

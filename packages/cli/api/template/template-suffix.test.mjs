@@ -4,8 +4,8 @@
  * @file The canonical `.template.{ts,mjs,js}` suffix is discovered identically
  * to the legacy `.doc.{ts,mjs,js}` suffix.
  *
- * Template-spec files are named for what they are: a scaffoldable TEMPLATE that
- * exports `createBlockTemplate`/`createPageTemplate`. The `.doc.*` suffix was
+ * Template-spec files are named for what they are: a scaffoldable TEMPLATE
+ * stamped with `type: 'page' | 'block'`. The `.doc.*` suffix was
  * inherited from the component-doc convention and is still accepted during the
  * transition. These tests stand up integration templates and external blocks in
  * both families and assert byte-for-byte-equivalent discovery + scaffolding.
@@ -20,9 +20,6 @@ import {
   findShowcase,
   findRelatedBlocks,
 } from './template.mjs';
-
-/** Absolute path to the CLI package so fixtures can import /authoring/template.mjs. */
-const CLI_PKG = path.resolve(import.meta.dirname, '..', '..');
 
 let tmpDir;
 let originalCwd;
@@ -55,8 +52,8 @@ function installWidgets(consumerDir) {
 }
 
 /**
- * Write a template-spec file (default-export createPageTemplate/BlockTemplate)
- * plus its same-stem `.tsx` source under the templates root.
+ * Write a template-spec file (default-export a stamped `type: 'page' | 'block'`
+ * object) plus its same-stem `.tsx` source under the templates root.
  * @param {string} pkgDir
  * @param {string} id
  * @param {{kind: 'page'|'block', suffix: string}} opts
@@ -64,12 +61,9 @@ function installWidgets(consumerDir) {
 function writeTemplate(pkgDir, id, {kind, suffix}) {
   const docPath = path.join(pkgDir, 'templates', `${id}${suffix}`);
   fs.mkdirSync(path.dirname(docPath), {recursive: true});
-  const create =
-    kind === 'page' ? 'createPageTemplate' : 'createBlockTemplate';
   fs.writeFileSync(
     docPath,
-    `import {${create}} from '${CLI_PKG}/authoring/template.mjs';\n` +
-      `export default ${create}({name: '${id} name', description: '${id} desc'});\n`,
+    `export default {type: '${kind}', name: '${id} name', description: '${id} desc'};\n`,
   );
   fs.writeFileSync(
     path.join(pkgDir, 'templates', `${id}.tsx`),
@@ -172,19 +166,19 @@ describe('external showcase blocks: .template.* discovered like legacy .doc.*', 
     const extDir = path.join(tmpDir, 'node_modules', '@test', 'ext');
     const blocksDir = path.join(extDir, 'blocks', 'components');
 
-    // Foo showcase — canonical .template.ts (default-export createBlockTemplate).
+    // Foo showcase — canonical .template.ts (stamped type: 'block' default export).
     const fooDir = path.join(blocksDir, 'Foo');
     fs.mkdirSync(fooDir, {recursive: true});
     fs.writeFileSync(
       path.join(fooDir, 'FooShowcase.template.ts'),
-      `import {createBlockTemplate} from '${CLI_PKG}/authoring/template.mjs';\n` +
-        `export default createBlockTemplate({\n` +
+      `export default {\n` +
+        `  type: 'block',\n` +
         `  name: 'Foo — Showcase',\n` +
         `  description: 'Foo showcase.',\n` +
         `  isShowcase: true,\n` +
         `  aspectRatio: 16 / 9,\n` +
         `  componentsUsed: ['Foo'],\n` +
-        `});\n`,
+        `};\n`,
     );
     fs.writeFileSync(
       path.join(fooDir, 'FooShowcase.tsx'),

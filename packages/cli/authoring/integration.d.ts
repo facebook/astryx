@@ -1,16 +1,19 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * The integration-manifest authoring surface moved to
- * `@astryxdesign/core/authoring`. `AstryxIntegration` and `createIntegration`
- * are re-exported here so existing `@astryxdesign/cli/integration` type imports
- * keep resolving. `AstryxIntegrationIssue` stays in the CLI — it is an internal
- * validation type, not part of the authoring surface.
+ * Back-compat shim for the `@astryxdesign/cli/integration` type import. The
+ * integration MANIFEST type now lives in `./integration/type`; this re-export
+ * keeps existing references resolving. Removed by the PR 2 import-path codemod.
+ *
+ * `AstryxIntegrationIssue` is NOT part of the authoring surface — it is an
+ * internal CLI validation type. It is defined here (not in `./integration/type`
+ * and not re-exported from the `./index` barrel) so the existing
+ * `authoring/integration` imports keep resolving until PR 2/3 relocate it to a
+ * validation home.
  */
-export type {AstryxIntegration} from '@astryxdesign/core/authoring';
-export {createIntegration} from '@astryxdesign/core/authoring';
+export type * from './integration/type';
 
-/** An issue surfaced by an integration. */
+/** An issue surfaced by an integration (internal CLI validation type). */
 export interface AstryxIntegrationIssue {
   code: string;
   severity: 'warning' | 'error';

@@ -1,26 +1,26 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/**
+ * @file Colocated tests for the doc load boundary. `parseDoc` dispatches on the
+ * stamped `type` to the per-kind parsers and falls back to legacy shape-sniffing
+ * for unstamped docs — its acceptance set matches the old permissive
+ * `ComponentDocSchema` exactly, so every existing `.doc.*` keeps loading. Zod is
+ * sealed inside the parsers; authors write a plain object and stamp `type`
+ * directly (no factory). The end-to-end `loadComponentDoc` cases lock that both
+ * the stamped default export and the legacy `export const docs = {}` load.
+ */
+
 import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {
-  createComponentDoc,
-  createFunctionDoc,
-  createDoc,
-  ComponentDocSchema,
-  ComponentDocKindSchema,
-  FunctionDocKindSchema,
-  GenericDocKindSchema,
-} from './doc.mjs';
-import {loadComponentDoc} from '../foundation/discovery/component-loader.mjs';
-
-// The factories are stamp-only (like createConfig / createBlockTemplate): they
-// inject a `type` discriminant and are otherwise identity, performing NO
-// runtime validation. Validation happens at the LOAD boundary
-// (loadComponentDoc runs the loaded value through ComponentDocSchema), so the
-// rejection cases assert the schema rejects rather than the factory throwing.
+import {parseDoc} from './parse.mjs';
+import {parseComponent} from './component/parse.mjs';
+import {parseHook} from './hook/parse.mjs';
+import {parseReference} from './reference/parse.mjs';
+import {loadComponentDoc} from '../../foundation/discovery/component-loader.mjs';
 
 const goodComponent = {
+  type: 'component',
   name: 'Widget',
   displayName: 'Widget',
   description: 'A small widget.',
@@ -31,6 +31,7 @@ const goodComponent = {
 };
 
 const goodFunction = {
+  type: 'function',
   name: 'useThing',
   displayName: 'useThing',
   description: 'A thing hook.',
@@ -39,55 +40,36 @@ const goodFunction = {
 };
 
 const goodGeneric = {
+  type: 'generic',
   name: 'Theming',
   displayName: 'Theming',
   description: 'How theming works.',
 };
 
-describe('doc factories (stamp-only)', () => {
-  it('createComponentDoc stamps type: component and is otherwise identity', () => {
-    const doc = createComponentDoc(goodComponent);
-    expect(doc.type).toBe('component');
-    const {type, ...rest} = doc;
-    expect(rest).toEqual(goodComponent);
+/** Run parseDoc and return the thrown message (asserting it throws). */
+function reason(value, label = 'doc') {
+  try {
+    parseDoc(value, label);
+  } catch (err) {
+    return err instanceof Error ? err.message : String(err);
+  }
+  throw new Error('expected parseDoc to throw');
+}
+
+describe('per-kind parsers (stamped format)', () => {
+  it('parseComponent accepts a valid component doc', () => {
+    expect(() => parseComponent(goodComponent)).not.toThrow();
   });
 
-  it('createFunctionDoc stamps type: function and is otherwise identity', () => {
-    const doc = createFunctionDoc(goodFunction);
-    expect(doc.type).toBe('function');
-    const {type, ...rest} = doc;
-    expect(rest).toEqual(goodFunction);
-  });
-
-  it('createDoc stamps type: generic and is otherwise identity', () => {
-    const doc = createDoc(goodGeneric);
-    expect(doc.type).toBe('generic');
-    const {type, ...rest} = doc;
-    expect(rest).toEqual(goodGeneric);
-  });
-
-  it('does NOT validate — stamps invalid shapes unchanged', () => {
-    const bogus = {group: 'Buttons'}; // no name
-    expect(createComponentDoc(bogus)).toEqual({...bogus, type: 'component'});
-  });
-});
-
-describe('per-kind schemas (new stamped format)', () => {
-  it('ComponentDocKindSchema accepts a valid component doc', () => {
+  it('parseComponent rejects a missing name with a readable message', () => {
     expect(() =>
-      ComponentDocKindSchema.parse(createComponentDoc(goodComponent)),
-    ).not.toThrow();
-  });
-
-  it('ComponentDocKindSchema rejects a missing name with a readable message', () => {
-    expect(() =>
-      ComponentDocKindSchema.parse({type: 'component', name: '', props: []}),
+      parseComponent({type: 'component', name: '', props: []}),
     ).toThrow(/name is required/);
   });
 
-  it('ComponentDocKindSchema rejects a prop missing its type with a readable message', () => {
+  it('parseComponent rejects a prop missing its type', () => {
     expect(() =>
-      ComponentDocKindSchema.parse({
+      parseComponent({
         type: 'component',
         name: 'Widget',
         props: [{name: 'label', description: 'no type'}],
@@ -95,9 +77,9 @@ describe('per-kind schemas (new stamped format)', () => {
     ).toThrow(/type/);
   });
 
-  it('ComponentDocKindSchema surfaces the custom message for an empty prop type', () => {
+  it('parseComponent surfaces the custom message for an empty prop type', () => {
     expect(() =>
-      ComponentDocKindSchema.parse({
+      parseComponent({
         type: 'component',
         name: 'Widget',
         props: [{name: 'label', type: '', description: 'empty type'}],
@@ -105,82 +87,71 @@ describe('per-kind schemas (new stamped format)', () => {
     ).toThrow(/prop type is required/);
   });
 
-  it('FunctionDocKindSchema accepts a valid function doc', () => {
-    expect(() =>
-      FunctionDocKindSchema.parse(createFunctionDoc(goodFunction)),
-    ).not.toThrow();
+  it('parseHook accepts a valid function doc', () => {
+    expect(() => parseHook(goodFunction)).not.toThrow();
   });
 
-  it('FunctionDocKindSchema rejects a function doc missing returns', () => {
+  it('parseHook rejects a function doc missing returns', () => {
     expect(() =>
-      FunctionDocKindSchema.parse({
-        type: 'function',
-        name: 'useThing',
-        params: [],
-      }),
+      parseHook({type: 'function', name: 'useThing', params: []}),
     ).toThrow();
   });
 
-  it('GenericDocKindSchema accepts a valid generic doc', () => {
-    expect(() =>
-      GenericDocKindSchema.parse(createDoc(goodGeneric)),
-    ).not.toThrow();
+  it('parseReference accepts a valid generic doc', () => {
+    expect(() => parseReference(goodGeneric)).not.toThrow();
   });
 
   it('keeps nested rich blobs loose (usage/theming/playground passthrough)', () => {
-    const doc = createComponentDoc({
-      ...goodComponent,
-      usage: {description: 'Use it.', anatomy: [{name: 'root'}]},
-      theming: {targets: [{className: 'astryx-widget'}]},
-      playground: {defaults: {label: 'Hi'}},
-      examples: [{title: 'Basic', code: '<Widget />'}],
-    });
-    expect(() => ComponentDocKindSchema.parse(doc)).not.toThrow();
+    expect(() =>
+      parseComponent({
+        ...goodComponent,
+        usage: {description: 'Use it.', anatomy: [{name: 'root'}]},
+        theming: {targets: [{className: 'astryx-widget'}]},
+        playground: {defaults: {label: 'Hi'}},
+        examples: [{title: 'Basic', code: '<Widget />'}],
+      }),
+    ).not.toThrow();
   });
 
   it('accepts parent + relatedDocs on the shared base', () => {
-    const doc = createComponentDoc({
+    const parsed = parseComponent({
       ...goodComponent,
       parent: 'WidgetGroup',
       relatedDocs: ['Gauge', 'useThing'],
       group: 'Widgets',
     });
-    const parsed = ComponentDocKindSchema.parse(doc);
     expect(parsed.parent).toBe('WidgetGroup');
     expect(parsed.relatedDocs).toEqual(['Gauge', 'useThing']);
   });
 });
 
-describe('ComponentDocSchema (load-boundary, both formats)', () => {
-  it('accepts a stamped component doc via the per-kind schema', () => {
-    expect(() =>
-      ComponentDocSchema.parse(createComponentDoc(goodComponent)),
-    ).not.toThrow();
+describe('parseDoc (load boundary, both formats)', () => {
+  it('accepts a stamped component doc', () => {
+    expect(() => parseDoc(goodComponent)).not.toThrow();
   });
 
   it('accepts a stamped function doc', () => {
-    expect(() =>
-      ComponentDocSchema.parse(createFunctionDoc(goodFunction)),
-    ).not.toThrow();
+    expect(() => parseDoc(goodFunction)).not.toThrow();
   });
 
   it('accepts a stamped generic doc', () => {
-    expect(() =>
-      ComponentDocSchema.parse(createDoc(goodGeneric)),
-    ).not.toThrow();
+    expect(() => parseDoc(goodGeneric)).not.toThrow();
   });
 
   it('accepts the OLD loose single-component shape (no type)', () => {
-    expect(() => ComponentDocSchema.parse(goodComponent)).not.toThrow();
+    const {type, ...loose} = goodComponent;
+    expect(() => parseDoc(loose)).not.toThrow();
   });
 
   it('accepts the OLD loose multi-component shape (components[])', () => {
     const multi = {
       name: 'Table',
       displayName: 'Table',
-      components: [{name: 'TableRow', displayName: 'Table Row', description: 'A row.'}],
+      components: [
+        {name: 'TableRow', displayName: 'Table Row', description: 'A row.'},
+      ],
     };
-    expect(() => ComponentDocSchema.parse(multi)).not.toThrow();
+    expect(() => parseDoc(multi)).not.toThrow();
   });
 
   it('accepts the OLD loose sub-component shape (subComponentOf)', () => {
@@ -191,7 +162,7 @@ describe('ComponentDocSchema (load-boundary, both formats)', () => {
       description: 'A gauge item.',
       props: [{name: 'item', type: 'Item', description: 'The item.'}],
     };
-    expect(() => ComponentDocSchema.parse(sub)).not.toThrow();
+    expect(() => parseDoc(sub)).not.toThrow();
   });
 
   it('accepts the OLD loose standalone-hook shape (params + returns, no type)', () => {
@@ -201,7 +172,7 @@ describe('ComponentDocSchema (load-boundary, both formats)', () => {
       params: [{name: 'q', type: 'string', description: 'query'}],
       returns: [{name: 'value', type: 'boolean', description: 'match'}],
     };
-    expect(() => ComponentDocSchema.parse(hook)).not.toThrow();
+    expect(() => parseDoc(hook)).not.toThrow();
   });
 
   it('accepts BOTH parent and legacy subComponentOf', () => {
@@ -212,8 +183,8 @@ describe('ComponentDocSchema (load-boundary, both formats)', () => {
       description: 'sub',
       props: [],
     };
-    expect(() => ComponentDocSchema.parse(withParent)).not.toThrow();
-    expect(() => ComponentDocSchema.parse(withSubComponentOf)).not.toThrow();
+    expect(() => parseDoc(withParent)).not.toThrow();
+    expect(() => parseDoc(withSubComponentOf)).not.toThrow();
   });
 
   it('accepts BOTH relatedDocs and legacy relatedComponents/relatedHooks', () => {
@@ -226,15 +197,14 @@ describe('ComponentDocSchema (load-boundary, both formats)', () => {
       relatedHooks: ['useOther'],
     };
     const modern = {...goodComponent, relatedDocs: ['Gauge', 'useThing']};
-    expect(() => ComponentDocSchema.parse(legacy)).not.toThrow();
-    expect(() =>
-      ComponentDocSchema.parse(createComponentDoc(modern)),
-    ).not.toThrow();
+    expect(() => parseDoc(legacy)).not.toThrow();
+    expect(() => parseDoc(modern)).not.toThrow();
   });
 
   it('passes through loose extras (usage, playground, theming, importPath, showcase)', () => {
-    const loose = {
-      ...goodComponent,
+    const {type, ...base} = goodComponent;
+    const parsed = parseDoc({
+      ...base,
       usage: {description: 'Use it wisely.'},
       playground: {defaults: {label: 'Hi'}},
       theming: {targets: [{className: 'astryx-widget'}]},
@@ -243,24 +213,21 @@ describe('ComponentDocSchema (load-boundary, both formats)', () => {
       isHiddenFromOverview: true,
       importPath: '@astryxdesign/core/Widget',
       showcase: 'WidgetHero',
-    };
-    const parsed = ComponentDocSchema.parse(loose);
+    });
     expect(parsed.importPath).toBe('@astryxdesign/core/Widget');
     expect(parsed.showcase).toBe('WidgetHero');
   });
 
   it('rejects a doc with no name', () => {
-    expect(() => ComponentDocSchema.parse({props: []})).toThrow();
+    expect(() => parseDoc({props: []})).toThrow();
   });
 
   it('rejects an empty name with a readable message', () => {
-    expect(() => ComponentDocSchema.parse({name: '', props: []})).toThrow(
-      /name is required/,
-    );
+    expect(reason({name: '', props: []})).toMatch(/name is required/);
   });
 });
 
-describe('loadComponentDoc (load boundary)', () => {
+describe('loadComponentDoc (end-to-end load boundary)', () => {
   let tmpDir;
 
   beforeEach(() => {
@@ -271,22 +238,20 @@ describe('loadComponentDoc (load boundary)', () => {
     fs.rmSync(tmpDir, {recursive: true, force: true});
   });
 
-  const docModule = () => JSON.stringify(path.resolve(import.meta.dirname, 'doc.mjs'));
-
-  it('loads a .doc.ts fixture via jiti (createComponentDoc default export)', async () => {
-    const file = path.join(tmpDir, 'Widget.doc.ts');
+  it('loads a stamped component .doc.mjs default export', async () => {
+    const file = path.join(tmpDir, 'Widget.doc.mjs');
     fs.writeFileSync(
       file,
       [
-        `import {createComponentDoc} from ${docModule()};`,
-        'export default createComponentDoc({',
+        'export default {',
+        "  type: 'component',",
         "  name: 'Widget',",
         "  displayName: 'Widget',",
         "  description: 'A small widget.',",
         '  props: [',
         "    {name: 'label', type: 'string', description: 'Visible label.', required: true},",
         '  ],',
-        '});',
+        '};',
       ].join('\n'),
     );
     const docs = await loadComponentDoc(file);
@@ -295,18 +260,18 @@ describe('loadComponentDoc (load boundary)', () => {
     expect(docs.props).toHaveLength(1);
   });
 
-  it('loads a .doc.ts fixture via jiti (createFunctionDoc default export)', async () => {
-    const file = path.join(tmpDir, 'useThing.doc.ts');
+  it('loads a stamped function .doc.mjs default export', async () => {
+    const file = path.join(tmpDir, 'useThing.doc.mjs');
     fs.writeFileSync(
       file,
       [
-        `import {createFunctionDoc} from ${docModule()};`,
-        'export default createFunctionDoc({',
+        'export default {',
+        "  type: 'function',",
         "  name: 'useThing',",
         "  displayName: 'useThing',",
         "  params: [{name: 'input', type: 'string', description: 'The input.'}],",
         "  returns: [{name: 'value', type: 'string', description: 'The result.'}],",
-        '});',
+        '};',
       ].join('\n'),
     );
     const docs = await loadComponentDoc(file);
@@ -315,17 +280,17 @@ describe('loadComponentDoc (load boundary)', () => {
     expect(docs.returns).toHaveLength(1);
   });
 
-  it('loads a .doc.ts fixture via jiti (createDoc generic default export)', async () => {
-    const file = path.join(tmpDir, 'Theming.doc.ts');
+  it('loads a stamped generic .doc.mjs default export', async () => {
+    const file = path.join(tmpDir, 'Theming.doc.mjs');
     fs.writeFileSync(
       file,
       [
-        `import {createDoc} from ${docModule()};`,
-        'export default createDoc({',
+        'export default {',
+        "  type: 'generic',",
         "  name: 'Theming',",
         "  displayName: 'Theming',",
         "  description: 'How theming works.',",
-        '});',
+        '};',
       ].join('\n'),
     );
     const docs = await loadComponentDoc(file);

@@ -21,7 +21,7 @@
     "foundation/response/json.mjs",
     "clients/cli/lib/manifest.mjs",
     "api/json/parse.mjs",
-    "authoring/config.mjs",
+    "authoring/config/parse.mjs",
     "../core/src/docs-types.ts"
   ]
 }
