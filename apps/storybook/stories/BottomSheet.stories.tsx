@@ -106,7 +106,7 @@ export const HugHeight: Story = {
             <VStack gap={4}>
               <Heading level={3}>Add a comment</Heading>
               <Text type="supporting" color="secondary">
-                The sheet fits its content, up to 90% of the viewport.
+                The sheet fits its content, up to 92% of the viewport.
               </Text>
               <Divider />
               <TextInput label="Title" value="" />

@@ -53,13 +53,13 @@ const SNAP_FRACTIONS = [0.14, 0.5, 0.92];
 
 /**
  * Height budget for each named size, as a fraction of the viewport:
- * - `hug` — fits its content, never taller than 90%.
+ * - `hug` — fits its content, never taller than 92%.
  * - `capped` — a scrolling mid-height panel (62%).
  * - `tall` — a pinned near-full panel (92%); use when content streams in so
  *   the sheet doesn't resize under the user.
  */
 const HEIGHT_BUDGETS = {
-  hug: '90dvh', // upper bound only; the sheet hugs its content beneath it
+  hug: '92dvh', // upper bound only; the sheet hugs its content beneath it
   capped: '62dvh',
   tall: '92dvh',
 } as const;
@@ -240,7 +240,7 @@ export interface BottomSheetProps extends BaseProps<HTMLDialogElement> {
 
   /**
    * How tall the sheet is. A named budget, or any explicit height:
-   * - `'hug'` — fits its content, never taller than 90% of the viewport.
+   * - `'hug'` — fits its content, never taller than 92% of the viewport.
    * - `'capped'` — a scrolling mid-height panel (~62%).
    * - `'tall'` — a pinned near-full panel (~92%); use when content streams in
    *   so the sheet doesn't resize under the user.

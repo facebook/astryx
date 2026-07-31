@@ -41,7 +41,7 @@ export const docs = {
     {
       name: 'height',
       type: "'hug' | 'capped' | 'tall' | number | string",
-      description: "How tall the sheet is. Named budgets: 'hug' fits its content up to 90% of the viewport, 'capped' is a scrolling mid-height panel (~62%), and 'tall' is a pinned near-full panel (~92%) for content that streams in. Or pass a number (px) / CSS length for a custom budget. The user can drag between snap points regardless. On shorter viewports the sheet fills the available height.",
+      description: "How tall the sheet is. Named budgets: 'hug' fits its content up to 92% of the viewport, 'capped' is a scrolling mid-height panel (~62%), and 'tall' is a pinned near-full panel (~92%) for content that streams in. Or pass a number (px) / CSS length for a custom budget. The user can drag between snap points regardless. On shorter viewports the sheet fills the available height.",
       default: "'capped'",
     },
   ],
