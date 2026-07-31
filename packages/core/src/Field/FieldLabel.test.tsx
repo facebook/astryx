@@ -11,6 +11,7 @@
 
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import {TestIcon} from '../__tests__/TestIcon';
 import {InternationalizationProvider} from '../i18n';
 import {FieldLabel} from './FieldLabel';
@@ -118,5 +119,61 @@ describe('FieldLabel', () => {
     expect(screen.getByText(/Optional/)).toBeInTheDocument();
     // Info icon should be present
     expect(document.querySelector('svg')).toBeInTheDocument();
+  });
+
+  describe('description click forwarding', () => {
+    // Renders a real control with the target id so click-forwarding has
+    // something to hit, alongside the label whose description forwards clicks.
+    function renderWithControl(props: {
+      hasClickableDescription?: boolean;
+      isGroupLabel?: boolean;
+    }) {
+      const onClick = vi.fn();
+      render(
+        <>
+          <input id="ctrl" type="checkbox" onClick={onClick} />
+          <FieldLabel
+            label="Notify"
+            inputID="ctrl"
+            description="We'll email you"
+            descriptionID="ctrl-desc"
+            {...props}
+          />
+        </>,
+      );
+      return onClick;
+    }
+
+    it('forwards a description click to the control when hasClickableDescription is set', async () => {
+      const user = userEvent.setup();
+      const onClick = renderWithControl({hasClickableDescription: true});
+      await user.click(screen.getByText("We'll email you"));
+      expect(onClick).toHaveBeenCalledTimes(1);
+    });
+
+    it('does NOT forward description clicks by default (text-input path)', async () => {
+      const user = userEvent.setup();
+      const onClick = renderWithControl({});
+      await user.click(screen.getByText("We'll email you"));
+      expect(onClick).not.toHaveBeenCalled();
+    });
+
+    it('does NOT forward description clicks for a group label', async () => {
+      const user = userEvent.setup();
+      const onClick = renderWithControl({
+        hasClickableDescription: true,
+        isGroupLabel: true,
+      });
+      await user.click(screen.getByText("We'll email you"));
+      expect(onClick).not.toHaveBeenCalled();
+    });
+
+    it('keeps the description a sibling of the label (not nested inside it)', () => {
+      renderWithControl({hasClickableDescription: true});
+      const description = screen.getByText("We'll email you");
+      // The description must not live inside the <label> — nesting it there
+      // would fold it into the control's accessible name.
+      expect(description.closest('label')).toBeNull();
+    });
   });
 });

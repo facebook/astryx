@@ -76,6 +76,11 @@ const styles = stylex.create({
     fontWeight: fontWeightVars['--font-weight-normal'],
     color: colorVars['--color-text-secondary'],
   },
+  // When the description forwards clicks to a click-activatable control
+  // (checkbox/switch), it reads as part of the same hit target as the label.
+  descriptionClickable: {
+    cursor: 'pointer',
+  },
 });
 
 export interface FieldLabelProps extends BaseProps<HTMLLabelElement> {
@@ -147,6 +152,21 @@ export interface FieldLabelProps extends BaseProps<HTMLLabelElement> {
    * ID for the description element (for aria-describedby on the input).
    */
   descriptionID?: string;
+  /**
+   * When true, clicking the description toggles/activates the associated
+   * control — for click-activatable single controls (checkbox, switch) whose
+   * whole label area should be a hit target. The description stays a sibling
+   * `<span>` (NOT nested in the `<label>`), so it is never folded into the
+   * control's accessible name; it forwards clicks to the input by id instead.
+   *
+   * Leave `false` for text inputs (TextInput, Selector, etc.): clicking a text
+   * input's label only focuses it — there's no toggle benefit — and nesting or
+   * forwarding the description would only risk polluting the accessible name.
+   * Also ignored for group labels (`isGroupLabel`), which name a group, not a
+   * single control.
+   * @default false
+   */
+  hasClickableDescription?: boolean;
 }
 
 /**
@@ -175,6 +195,7 @@ export function FieldLabel({
   labelTooltip,
   description,
   descriptionID,
+  hasClickableDescription = false,
   className,
   style,
   xstyle,
@@ -193,6 +214,33 @@ export function FieldLabel({
   // associated with a group. Render it as a `<span>` instead, keeping all the
   // label styling and slots. The group references it via `aria-labelledby`.
   const LabelElement = isGroupLabel ? 'span' : 'label';
+
+  // Whether the description should forward clicks to the control. Only for a
+  // single, click-activatable control (checkbox/switch) — never a group label
+  // (which names a group, not one control) and never without an input to
+  // target. The description stays a sibling `<span>`, so this is what makes it
+  // part of the label's hit target WITHOUT nesting it in the `<label>` (which
+  // would fold it into the control's accessible name and double-announce it
+  // alongside aria-describedby).
+  const forwardsDescriptionClick =
+    hasClickableDescription && !isGroupLabel && inputID != null;
+
+  // Mouse-only convenience: clicking the description clicks the associated
+  // control, mirroring native label-click. Keyboard users already toggle via
+  // the control itself (the description is supplementary, not focusable), and
+  // the label text keeps native `htmlFor` activation — so this adds no new tab
+  // stop and no a11y-tree change. Guarded so a click that lands on an
+  // interactive element inside a ReactNode description isn't hijacked.
+  const handleDescriptionClick = (e: React.MouseEvent<HTMLSpanElement>) => {
+    if (e.defaultPrevented || e.target !== e.currentTarget) {
+      return;
+    }
+    const doc = e.currentTarget.ownerDocument;
+    const control = doc.getElementById(inputID);
+    if (control != null) {
+      control.click();
+    }
+  };
 
   const labelContent = (
     <>
@@ -237,7 +285,14 @@ export function FieldLabel({
       {description && (
         <span
           id={descriptionID}
-          {...stylex.props(styles.description, isLabelHidden && styles.srOnly)}>
+          onClick={
+            forwardsDescriptionClick ? handleDescriptionClick : undefined
+          }
+          {...stylex.props(
+            styles.description,
+            forwardsDescriptionClick && styles.descriptionClickable,
+            isLabelHidden && styles.srOnly,
+          )}>
           {description}
         </span>
       )}

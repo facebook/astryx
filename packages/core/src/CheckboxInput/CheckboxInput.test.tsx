@@ -144,6 +144,39 @@ describe('CheckboxInput', () => {
     expect(checkbox).toHaveAttribute('aria-describedby', description.id);
   });
 
+  it('toggles when clicking on the description', async () => {
+    const user = userEvent.setup();
+    const handleChange = vi.fn();
+    render(
+      <CheckboxInput
+        label="Subscribe"
+        description="Receive weekly updates"
+        value={false}
+        onChange={handleChange}
+      />,
+    );
+    await user.click(screen.getByText('Receive weekly updates'));
+    expect(handleChange).toHaveBeenCalledWith(true, expect.any(Object));
+  });
+
+  it('does not fold the description into the checkbox accessible name', () => {
+    // The description stays a sibling of the <label>, so it must NOT become
+    // part of the checkbox's accessible name (which is computed from the
+    // associated label). It belongs in the accessible DESCRIPTION only
+    // (via aria-describedby) — otherwise screen readers announce it twice.
+    render(
+      <CheckboxInput
+        label="Email notifications"
+        description="We'll send weekly digests"
+        value={false}
+        onChange={() => {}}
+      />,
+    );
+    const checkbox = screen.getByRole('checkbox');
+    expect(checkbox).toHaveAccessibleName('Email notifications');
+    expect(checkbox).toHaveAccessibleDescription("We'll send weekly digests");
+  });
+
   it('is disabled when isDisabled prop is true', () => {
     render(
       <CheckboxInput
