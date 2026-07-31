@@ -22,14 +22,14 @@
  * A handful of files legitimately write raw stdout — the JSON envelope writers
  * and the banner — and are exempt:
  *   - packages/cli/lib/json.mjs       (defines humanLog / jsonOut)
- *   - packages/cli/cli/index.mjs      (wiring / banner)
- *   - packages/cli/bin/astryx.mjs     (entrypoint / error boundary)
+ *   - packages/cli/clients/cli/index.mjs      (wiring / banner)
+ *   - packages/cli/clients/cli/bin/astryx.mjs (entrypoint / error boundary)
  */
 
 const EXEMPT_SUFFIXES = [
   'packages/cli/lib/json.mjs',
-  'packages/cli/cli/index.mjs',
-  'packages/cli/bin/astryx.mjs',
+  'packages/cli/clients/cli/index.mjs',
+  'packages/cli/clients/cli/bin/astryx.mjs',
 ];
 
 function isExempt(filename) {

@@ -61,13 +61,13 @@ export default defineConfig(
       // purpose — other packages' .mjs stay unlinted (#2468).
       "**/*.mjs",
       "!packages/cli/api/**/*.mjs",
-      "!packages/cli/cli/**/*.mjs",
+      "!packages/cli/clients/cli/**/*.mjs",
       "!packages/cli/assets/codemods/**/*.mjs",
       "!packages/cli/authoring/**/*.mjs",
       "!packages/cli/lib/**/*.mjs",
       "!packages/cli/utils/**/*.mjs",
       "!packages/cli/schemas/**/*.mjs",
-      "!packages/cli/bin/**/*.mjs",
+      "!packages/cli/clients/cli/bin/**/*.mjs",
       "**/*.test-violations.tsx",
       "apps/example-nextjs/*.js",
       // Generated declaration files (e.g. the CLI's `./api` type surface emitted
@@ -336,13 +336,13 @@ export default defineConfig(
   {
     files: [
       "packages/cli/api/**/*.mjs",
-      "packages/cli/cli/**/*.mjs",
+      "packages/cli/clients/cli/**/*.mjs",
       "packages/cli/assets/codemods/**/*.mjs",
       "packages/cli/authoring/**/*.mjs",
       "packages/cli/lib/**/*.mjs",
       "packages/cli/utils/**/*.mjs",
       "packages/cli/schemas/**/*.mjs",
-      "packages/cli/bin/**/*.mjs",
+      "packages/cli/clients/cli/bin/**/*.mjs",
     ],
     plugins: {
       '@astryx': astryxEslintPlugin,
@@ -391,13 +391,13 @@ export default defineConfig(
   {
     files: [
       "packages/cli/api/**/*.mjs",
-      "packages/cli/cli/**/*.mjs",
+      "packages/cli/clients/cli/**/*.mjs",
       "packages/cli/assets/codemods/**/*.mjs",
       "packages/cli/authoring/**/*.mjs",
       "packages/cli/lib/**/*.mjs",
       "packages/cli/utils/**/*.mjs",
       "packages/cli/schemas/**/*.mjs",
-      "packages/cli/bin/**/*.mjs",
+      "packages/cli/clients/cli/bin/**/*.mjs",
     ],
     plugins: {
       '@astryx': astryxEslintPlugin,

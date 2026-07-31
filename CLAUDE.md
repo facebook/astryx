@@ -119,7 +119,7 @@ Documentation lives in two places:
 <!-- ASTRYX-CLI:START -->
 
 Astryx CLI|Run from repo root. Load agent docs before any component work.
-ASTRYX="node packages/cli/bin/astryx.mjs"
+ASTRYX="node packages/cli/clients/cli/bin/astryx.mjs"
 BOOTSTRAP (run every branch, <500ms):
 $ASTRYX help # discover all commands and options
 $ASTRYX docs # list available doc topics
