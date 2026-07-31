@@ -47,7 +47,7 @@
     "@types/lz-string": "^1.5.0",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
-    "autoprefixer": "^10.5.2",
+    "autoprefixer": "^10.5.4",
     "typescript": "^6.0.3",
     "vitest": "^4.1.9"
   },
