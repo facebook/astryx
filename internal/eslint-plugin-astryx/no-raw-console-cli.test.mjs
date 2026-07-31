@@ -49,7 +49,7 @@ ruleTester.run('no-raw-console-cli', rule, {
     // Exemption is path-suffix based and tolerant of Windows separators
     {
       code: `console.log('raw');`,
-      filename: 'C:\\repo\\packages\\cli\\lib\\json.mjs',
+      filename: 'C:\\repo\\packages\\cli\\foundation\\response\\json.mjs',
     },
   ],
   invalid: [

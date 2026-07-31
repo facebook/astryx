@@ -2,7 +2,7 @@
 
 /**
  * @file Colocated types for the `hook` command — source of truth for its JSON
- * responses (mirrored by `../../types/hook.d.ts`).
+ * responses (re-exported by the `./json` barrel at `../json/index.d.ts`).
  *
  * Detail-level contract for list views (brief < compact < full):
  *   --detail brief    Names only. Smallest, most scannable. (DEFAULT for --list)
