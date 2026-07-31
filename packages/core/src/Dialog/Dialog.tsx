@@ -107,29 +107,19 @@ export type DialogPurpose = 'required' | 'form' | 'info';
 /**
  * Position configuration for static dialog positioning.
  *
- * Prefer the logical `start`/`end` offsets over physical `left`/`right`:
- * `start`/`end` mirror automatically under RTL (they map to
- * `inset-inline-start` / `inset-inline-end`), so a dialog anchored to the
- * inline-start edge stays anchored to the start edge in both LTR and RTL.
- * The physical `left`/`right` offsets are retained for backward compatibility
- * but are deprecated and never mirror.
+ * Prefer logical `start`/`end` — they map correctly under RTL. Physical
+ * `left`/`right` are deprecated and do not mirror.
  */
 export interface DialogPosition {
   bottom?: number | string;
   /**
-   * @deprecated Use `start`/`end` instead. `left`/`right` will be removed in a
-   * future major. They remain PHYSICAL (do not mirror under RTL) for
-   * backward-compat: a `left` offset is always the visual-left edge in both
-   * LTR and RTL. If both `start` and `left` (or `end` and `right`) are set,
-   * the logical value wins.
+   * @deprecated Use `start` instead. Physical (never mirrors under RTL),
+   * kept for backward-compat; removed in a future major. `start` wins if both.
    */
   left?: number | string;
   /**
-   * @deprecated Use `start`/`end` instead. `left`/`right` will be removed in a
-   * future major. They remain PHYSICAL (do not mirror under RTL) for
-   * backward-compat: a `right` offset is always the visual-right edge in both
-   * LTR and RTL. If both `end` and `right` (or `start` and `left`) are set,
-   * the logical value wins.
+   * @deprecated Use `end` instead. Physical (never mirrors under RTL),
+   * kept for backward-compat; removed in a future major. `end` wins if both.
    */
   right?: number | string;
   /**
@@ -257,15 +247,10 @@ const dynamicStyles = stylex.create({
   ) => ({
     // When position is set, disable auto margin and use fixed positioning.
     //
-    // Precedence: the logical offset (start/end) wins over its physical
-    // counterpart (left/right). Logical start/end emit inset-inline-start/end
-    // and MIRROR under RTL (preferred); the deprecated physical left/right
-    // emit left/right and NEVER mirror. When a logical offset is provided its
-    // physical counterpart is suppressed (null → omitted) so they can't fight.
-    // A consumer using ONLY left/right keeps EXACTLY today's behavior.
-    // NOTE: this must stay an inline object literal — StyleX cannot analyze a
-    // delegated helper. The identical logic is unit-tested via the exported
-    // resolveDialogPositionOffsets() below; keep the two in sync.
+    // Logical start/end wins over physical left/right and suppresses it
+    // (null → omitted) so they can't conflict; left/right-only is unchanged.
+    // Keep this an inline literal (StyleX can't analyze a helper); logic is
+    // unit-tested via resolveDialogPositionOffsets() below — keep in sync.
     margin: 0,
     top: top !== undefined ? formatPosition(top) : 'auto',
     insetInlineStart: start !== undefined ? formatPosition(start) : 'auto',
