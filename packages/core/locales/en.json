@@ -911,6 +911,18 @@
     "defaultMessage": "Clear {label}",
     "description": "Screen-reader-only label on the X that clears the value from a TimeInput. Example: `Clear Start time`."
   },
+  "@astryx.timestamp.copyValue": {
+    "defaultMessage": "Copy {value}",
+    "description": "Aria label on a Timestamp copyable-hover-card row's copy button, in its default state. `value` is the formatted instant that row shows (e.g. `Copy February 19, 2026 at 5:00:00 PM UTC`). Imperative verb. Pairs with `timestamp.copied` (post-click state)."
+  },
+  "@astryx.timestamp.copied": {
+    "defaultMessage": "Copied",
+    "description": "Aria label on a Timestamp copy button for ~1.5s after a successful copy, and the text announced to a polite live region. Past-participle (\"has been copied\"); pairs with `timestamp.copyValue`."
+  },
+  "@astryx.timestamp.detailsLabel": {
+    "defaultMessage": "Timestamp details",
+    "description": "Accessible name for the Timestamp copyable hover card popup, which lists the instant in the configured time zones/formats with a copy button per row."
+  },
   "@astryx.token.remove": {
     "defaultMessage": "Remove {label}",
     "description": "Screen-reader-only label on the \"×\" on an individual Token/chip. Example: `Remove John Smith`, `Remove Active`. Imperative verb."

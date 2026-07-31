@@ -52,6 +52,13 @@ export const docs = {
         "Lines to show in the hover tooltip, so one instant can be read in several time zones and/or formats at once. Each entry is one line, in the order given. Omit timezoneID (or pass 'local') for the viewer's own zone; format defaults to the full absolute style and also accepts 'full' alongside every non-relative TimestampFormat. Configuring entries also attaches the tooltip to absolute formats, which otherwise have none.",
     },
     {
+      name: 'hasCopyableEntries',
+      type: 'boolean',
+      description:
+        'Whether to present the tooltip lines in an interactive hover card whose rows are individually copy-to-clipboard, instead of the read-only tooltip. The rows are the same lines the tooltip would show (the default absolute line, or the ones from tooltipEntries), so one instant can be read and copied in several zones/formats at once. Opens on hover and keyboard focus, with a dashed-underline affordance. Purely additive: false keeps the read-only tooltip, and hasTooltip={false} still suppresses the card.',
+      default: 'false',
+    },
+    {
       name: 'isTimezoneShown',
       type: 'boolean',
       description:
@@ -91,6 +98,7 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-timestamp', visualProps: ['type', 'color', 'format']},
+      {className: 'astryx-timestamp-copy-button'},
     ],
   },
   usage: {
@@ -103,6 +111,7 @@ export const docs = {
       {guidance: true, description: 'Use tooltipEntries when readers must compare zones, such as an incident log where the reader\'s time and the event\'s origin zone both matter.'},
       {guidance: true, description: 'Label every entry once a tooltip shows more than one zone; a bare abbreviation is not always recognizable (Tokyo renders as "GMT+9", not "JST").'},
       {guidance: true, description: 'Use isLive for active dashboards or real-time feeds so the relative time stays accurate without a page refresh.'},
+      {guidance: true, description: 'Enable hasCopyableEntries when readers need to grab an exact value — an incident log or deploy record where someone pastes the UTC time or Unix seconds elsewhere; the same tooltipEntries lines become copy-to-clipboard rows.'},
       {guidance: false, description: 'Don\'t display raw Unix timestamps or ISO strings to users; always pass them through Timestamp to get a human-readable format.'},
       {guidance: false, description: 'Avoid system_date or system_time formats in user-facing UI; they are meant for developer tools, logs, and machine-readable contexts.'},
       {guidance: false, description: 'Don\'t disable the tooltip on relative timestamps; users expect to hover for the full date when they see "3 hours ago".'},
@@ -113,6 +122,7 @@ export const docs = {
       {name: 'Formatted text', required: true, description: 'The rendered date, time, or relative label like "2 hours ago" or "Mar 21, 2025".'},
       {name: 'Tooltip', required: false, description: 'A hover card showing the full absolute date and time when the display is relative, or the lines configured via tooltipEntries.'},
       {name: 'Tooltip entry', required: false, description: 'One line of the tooltip: an optional label beside the instant rendered in one time zone and format.'},
+      {name: 'Copy button', required: false, description: 'Per-row copy-to-clipboard button in the hasCopyableEntries hover card; copies that line\'s formatted value.'},
     ],
   },
 };
@@ -126,6 +136,8 @@ export const docsZh = {
     hasTooltip: '\u60ac\u505c\u65f6\u662f\u5426\u663e\u793a\u5305\u542b\u5b8c\u6574\u65e5\u671f/\u65f6\u95f4\u7684\u5de5\u5177\u63d0\u793a\uff08\u76f8\u5bf9\u65f6\u95f4\u6a21\u5f0f\uff09\u3002',
     tooltipEntries:
       '\u5de5\u5177\u63d0\u793a\u4e2d\u8981\u663e\u793a\u7684\u884c\uff0c\u7528\u4e8e\u540c\u65f6\u5c55\u793a\u591a\u4e2a\u65f6\u533a\u548c/\u6216\u591a\u79cd\u683c\u5f0f\u3002\u6bcf\u9879\u4e3a\u4e00\u884c\uff0c\u6309\u987a\u5e8f\u6e32\u67d3\uff1b\u7701\u7565 timezoneID\uff08\u6216\u4f20\u5165 \'local\'\uff09\u8868\u793a\u67e5\u770b\u8005\u672c\u5730\u65f6\u533a\u3002\u914d\u7f6e\u540e\uff0c\u7edd\u5bf9\u65f6\u95f4\u683c\u5f0f\u4e5f\u4f1a\u663e\u793a\u5de5\u5177\u63d0\u793a\u3002',
+    hasCopyableEntries:
+      '\u662f\u5426\u5c06\u5de5\u5177\u63d0\u793a\u7684\u5404\u884c\u5c55\u793a\u4e3a\u53ef\u4ea4\u4e92\u7684\u60ac\u505c\u5361\u7247\uff0c\u6bcf\u884c\u5747\u53ef\u5355\u72ec\u590d\u5236\u5230\u526a\u8d34\u677f\uff0c\u800c\u975e\u53ea\u8bfb\u5de5\u5177\u63d0\u793a\u3002\u5185\u5bb9\u4e0e\u5de5\u5177\u63d0\u793a\u76f8\u540c\uff08\u9ed8\u8ba4\u7edd\u5bf9\u65f6\u95f4\u884c\uff0c\u6216 tooltipEntries \u914d\u7f6e\u7684\u884c\uff09\uff1b\u60ac\u505c\u548c\u952e\u76d8\u7126\u70b9\u65f6\u5f00\u542f\uff0c\u5e26\u865a\u7ebf\u4e0b\u5212\u7ebf\u63d0\u793a\u3002\u7eaf\u7c98\u52a0\u529f\u80fd\uff1afalse \u4fdd\u6301\u53ea\u8bfb\u5de5\u5177\u63d0\u793a\uff0chasTooltip={false} \u4ecd\u4f1a\u6291\u5236\u5361\u7247\u3002',
     isTimezoneShown:
       '\u662f\u5426\u5728\u53ef\u89c1\u6587\u672c\u540e\u9644\u52a0\u65f6\u533a\u7f29\u5199\uff08\u4ec5 date_time \u548c time\uff1bsystem_* \u683c\u5f0f\u4e0d\u9644\u52a0\uff09\u3002',
     isLive: '\u76f8\u5bf9\u65f6\u95f4\u662f\u5426\u5b9e\u65f6\u66f4\u65b0\u3002',
@@ -144,6 +156,7 @@ export const docsZh = {
       {guidance: true, description: 'Use tooltipEntries when readers must compare zones, such as an incident log where the reader\'s time and the event\'s origin zone both matter.'},
       {guidance: true, description: 'Label every entry once a tooltip shows more than one zone; a bare abbreviation is not always recognizable (Tokyo renders as "GMT+9", not "JST").'},
       {guidance: true, description: 'Use isLive for active dashboards or real-time feeds so the relative time stays accurate without a page refresh.'},
+      {guidance: true, description: 'Enable hasCopyableEntries when readers need to grab an exact value — an incident log or deploy record where someone pastes the UTC time or Unix seconds elsewhere; the same tooltipEntries lines become copy-to-clipboard rows.'},
       {guidance: false, description: 'Don\'t display raw Unix timestamps or ISO strings to users; always pass them through Timestamp to get a human-readable format.'},
       {guidance: false, description: 'Avoid system_date or system_time formats in user-facing UI; they are meant for developer tools, logs, and machine-readable contexts.'},
       {guidance: false, description: 'Don\'t disable the tooltip on relative timestamps; users expect to hover for the full date when they see "3 hours ago".'},
@@ -154,13 +167,14 @@ export const docsZh = {
       {name: 'Formatted text', required: true, description: 'The rendered date, time, or relative label like "2 hours ago" or "Mar 21, 2025".'},
       {name: 'Tooltip', required: false, description: 'A hover card showing the full absolute date and time when the display is relative, or the lines configured via tooltipEntries.'},
       {name: 'Tooltip entry', required: false, description: 'One line of the tooltip: an optional label beside the instant rendered in one time zone and format.'},
+      {name: 'Copy button', required: false, description: 'Per-row copy-to-clipboard button in the hasCopyableEntries hover card; copies that line\'s formatted value.'},
     ],
   },
 };
 
 /** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
-  description: 'formatted timestamp with relative/absolute/auto modes, live updates, timezone display, multi-zone tooltip',
+  description: 'formatted timestamp with relative/absolute/auto modes, live updates, timezone display, multi-zone tooltip, optional copyable hover card',
   usage: {
     description:
       'Timestamp formats a date or time into readable text. Use for creation dates, update times, or schedules; relative for recency, absolute for precision, auto to switch automatically.',
@@ -185,6 +199,8 @@ export const docsDense = {
     hasTooltip: 'show full time tooltip on hover (relative mode)',
     tooltipEntries:
       "tooltip lines across zones/formats: [{timezoneID?, format?, label?}]; timezoneID omitted or 'local' = viewer zone, format defaults to 'full'; also enables the tooltip on absolute formats",
+    hasCopyableEntries:
+      'present the tooltip lines in an interactive hover card with a per-row copy-to-clipboard button (same lines as the tooltip); opens on hover + focus; additive, default read-only tooltip unchanged',
     isTimezoneShown:
       'append timezone abbreviation to visible text (date_time and time only)',
     isLive: 'live-update relative time',

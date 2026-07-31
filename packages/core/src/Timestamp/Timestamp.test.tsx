@@ -1,10 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {render, screen, act, waitFor} from '@testing-library/react';
+import {render, screen, act, waitFor, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Timestamp} from './Timestamp';
 import {formatTooltipLines} from './tooltipEntries';
+import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
+import {InternationalizationProvider} from '../i18n';
 
 describe('Timestamp', () => {
   beforeEach(() => {
@@ -856,6 +858,145 @@ describe('Timestamp', () => {
       expect(line.value).toBe(
         screen.getByTestId('ts').getAttribute('aria-label'),
       );
+    });
+  });
+
+  describe('hasCopyableEntries', () => {
+    const VALUE = '2026-02-19T17:00:00Z';
+
+    const originalShowPopover = HTMLElement.prototype.showPopover;
+    const originalHidePopover = HTMLElement.prototype.hidePopover;
+
+    beforeEach(() => {
+      // The card content renders inline in a (mocked) popover, so its rows are
+      // in the DOM without opening it. Real timers so RTL's findBy* and the
+      // async clipboard write resolve (the outer beforeEach installs fake ones).
+      vi.useRealTimers();
+      HTMLElement.prototype.showPopover = vi.fn();
+      HTMLElement.prototype.hidePopover = vi.fn();
+      // jsdom does not implement the async Clipboard API.
+      Object.defineProperty(navigator, 'clipboard', {
+        value: {writeText: vi.fn().mockResolvedValue(undefined)},
+        configurable: true,
+      });
+    });
+
+    afterEach(() => {
+      HTMLElement.prototype.showPopover = originalShowPopover;
+      HTMLElement.prototype.hidePopover = originalHidePopover;
+      __resetLiveRegionsForTest();
+    });
+
+    it('presents the configured entries as a named hover card with a copy button per row', async () => {
+      render(
+        <Timestamp
+          value={VALUE}
+          format="relative"
+          hasCopyableEntries
+          tooltipEntries={[{label: 'Local'}, {timezoneID: 'UTC', label: 'UTC'}]}
+        />,
+      );
+      // No read-only tooltip in the copyable path.
+      expect(
+        screen.queryByRole('tooltip', {hidden: true}),
+      ).not.toBeInTheDocument();
+      const card = await screen.findByRole('dialog', {hidden: true});
+      expect(card).toHaveAttribute('aria-label', 'Timestamp details');
+      const rows = card.querySelectorAll('dd');
+      expect(rows).toHaveLength(2);
+      const copyButtons = card.querySelectorAll('button');
+      expect(copyButtons).toHaveLength(2);
+    });
+
+    it("copies that row's value and flips the button to the copied state", async () => {
+      render(
+        <Timestamp
+          value={VALUE}
+          format="relative"
+          hasCopyableEntries
+          tooltipEntries={[
+            {label: 'Local', timezoneID: 'UTC', format: 'system_date_time'},
+            {label: 'Unix', format: 'system_date_time', timezoneID: 'UTC'},
+          ]}
+        />,
+      );
+      const card = await screen.findByRole('dialog', {hidden: true});
+      const [firstRowValue] = Array.from(card.querySelectorAll('dd')).map(
+        el => el.textContent ?? '',
+      );
+      const copyButton = card.querySelectorAll('button')[0];
+
+      fireEvent.click(copyButton);
+      expect(navigator.clipboard.writeText).toHaveBeenCalledWith(firstRowValue);
+
+      // The button announces and flips its icon/label to the copied state.
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', {name: 'Copied', hidden: true}),
+        ).toBeInTheDocument();
+      });
+    });
+
+    it('announces the copy to a polite live region through the i18n catalog', async () => {
+      render(
+        <InternationalizationProvider
+          locale="fr"
+          overrides={{fr: {'@astryx.timestamp.copied': 'Copié'}}}>
+          <Timestamp
+            value={VALUE}
+            format="relative"
+            hasCopyableEntries
+            tooltipEntries={[{timezoneID: 'UTC', label: 'UTC'}]}
+          />
+        </InternationalizationProvider>,
+      );
+      const card = await screen.findByRole('dialog', {hidden: true});
+      fireEvent.click(card.querySelector('button')!);
+      await waitFor(() => {
+        expect(
+          document.querySelector('[data-astryx-live-region="polite"]'),
+        ).toHaveTextContent('Copié');
+      });
+    });
+
+    it('shows a copy button on the single default line when no entries are configured', async () => {
+      render(<Timestamp value={VALUE} format="relative" hasCopyableEntries />);
+      const card = await screen.findByRole('dialog', {hidden: true});
+      expect(card.querySelectorAll('dd')).toHaveLength(1);
+      // The one copy button has a discernible accessible name.
+      const button = card.querySelector('button')!;
+      expect(button.getAttribute('aria-label')).toMatch(/^Copy /);
+    });
+
+    it('falls back to the read-only tooltip when hasCopyableEntries is false', async () => {
+      render(
+        <Timestamp
+          value={VALUE}
+          format="relative"
+          tooltipEntries={[{timezoneID: 'UTC', label: 'UTC'}]}
+        />,
+      );
+      // The default path renders the plain tooltip, not a dialog card.
+      expect(
+        await screen.findByRole('tooltip', {hidden: true}),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole('dialog', {hidden: true})).toBeNull();
+      expect(screen.queryByRole('button', {hidden: true})).toBeNull();
+    });
+
+    it('stays inert when hasTooltip is false even with hasCopyableEntries', () => {
+      render(
+        <Timestamp
+          value={VALUE}
+          format="relative"
+          hasCopyableEntries
+          hasTooltip={false}
+          tooltipEntries={[{timezoneID: 'UTC', label: 'UTC'}]}
+          data-testid="ts"
+        />,
+      );
+      expect(screen.queryByRole('dialog', {hidden: true})).toBeNull();
+      expect(screen.getByTestId('ts').tagName).toBe('TIME');
     });
   });
 });

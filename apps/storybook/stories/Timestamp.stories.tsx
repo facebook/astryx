@@ -234,6 +234,54 @@ export const TooltipTimezones: Story = {
   ),
 };
 
+export const CopyableHoverCard: Story = {
+  name: 'Copyable hover card',
+  render: () => (
+    <div style={{display: 'flex', flexDirection: 'column', gap: '32px'}}>
+      <div>
+        <Text type="supporting" color="secondary">
+          Local, UTC, another zone, and Unix seconds — hover or tab, then copy
+          any row
+        </Text>
+        <div>
+          <Timestamp
+            value="2026-02-19T17:00:00Z"
+            format="relative"
+            hasCopyableEntries
+            tooltipEntries={[
+              {label: 'Local'},
+              {timezoneID: 'UTC', label: 'UTC'},
+              {
+                timezoneID: 'Asia/Tokyo',
+                format: 'date_time',
+                label: 'Tokyo',
+              },
+              {
+                timezoneID: 'UTC',
+                format: 'system_date_time',
+                label: 'ISO (UTC)',
+              },
+            ]}
+          />
+        </div>
+      </div>
+      <div>
+        <Text type="supporting" color="secondary">
+          No entries configured — the single default absolute line is still
+          copyable
+        </Text>
+        <div>
+          <Timestamp
+            value="2026-02-19T17:00:00Z"
+            format="relative"
+            hasCopyableEntries
+          />
+        </div>
+      </div>
+    </div>
+  ),
+};
+
 export const SystemFormats: Story = {
   render: () => (
     <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>

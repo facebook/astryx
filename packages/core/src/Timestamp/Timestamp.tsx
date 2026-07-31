@@ -16,18 +16,33 @@
  * - /packages/cli/assets/templates/blocks/components/Timestamp/ (showcase blocks)
  */
 
-import {useEffect, useRef, useState, lazy, Suspense, Fragment} from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  lazy,
+  Suspense,
+  Fragment,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Text} from '../Text';
 import type {TextType, TextSize, TextColor, TextWeight} from '../theme/types';
 import {mergeProps, mergeRefs} from '../utils';
 import {useDevWarning} from '../hooks/useDevWarning';
+import {useAnnounce} from '../hooks/useAnnounce';
+import {useTranslator} from '../i18n';
+import {Icon} from '../Icon';
+import {HoverCard} from '../HoverCard';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
-import {colorVars, spacingVars} from '../theme/tokens.stylex';
+import {colorVars, radiusVars, spacingVars} from '../theme/tokens.stylex';
 import {formatInstant} from './formatInstant';
 import {formatTooltipLines} from './tooltipEntries';
-import type {TimestampTooltipEntry} from './tooltipEntries';
+import type {
+  TimestampTooltipEntry,
+  TimestampTooltipLine,
+} from './tooltipEntries';
 
 const LazyXDSTooltip = lazy(async () =>
   import('../Tooltip/Tooltip').then(mod => ({default: mod.Tooltip})),
@@ -102,6 +117,34 @@ export interface TimestampProps extends BaseProps<HTMLTimeElement> {
    * ```
    */
   tooltipEntries?: ReadonlyArray<TimestampTooltipEntry>;
+  /**
+   * Whether to present the tooltip lines in an interactive hover card whose
+   * rows are individually copy-to-clipboard, instead of the read-only tooltip.
+   *
+   * The rows are the exact same lines the tooltip would show (the default
+   * absolute line, or the ones configured via `tooltipEntries`), so one
+   * instant can be read — and copied — in several time zones and/or formats at
+   * once. The card opens on hover and on keyboard focus, and carries a dashed
+   * underline to signal it is interactive.
+   *
+   * Purely additive: with the default `false` the timestamp shows the same
+   * read-only tooltip it always has, gated by `hasTooltip`/`tooltipEntries`.
+   * `hasTooltip={false}` still suppresses the card.
+   *
+   * @default false
+   * @example
+   * ```
+   * <Timestamp
+   *   value={deployedAt}
+   *   hasCopyableEntries
+   *   tooltipEntries={[
+   *     {label: 'Your time'},
+   *     {timezoneID: 'UTC', label: 'UTC'},
+   *   ]}
+   * />
+   * ```
+   */
+  hasCopyableEntries?: boolean;
   /**
    * Whether to append the timezone abbreviation after the timestamp text.
    * Applies to the date_time and time formats. The system_* formats stay
@@ -190,6 +233,56 @@ const styles = stylex.create({
     marginBlock: 0,
     // <dd> carries a 40px inline start margin from the UA stylesheet.
     marginInline: 0,
+  },
+  // Copyable hover card: one row per line, each pairing the labelled instant
+  // with a copy button. A grid gives the label / value / button columns a
+  // shared, content-sized rhythm across rows.
+  cardRows: {
+    display: 'grid',
+    gridTemplateColumns: 'auto 1fr auto',
+    alignItems: 'center',
+    columnGap: spacingVars['--spacing-2'],
+    rowGap: spacingVars['--spacing-1'],
+    marginBlock: 0,
+    marginInline: 0,
+  },
+  cardLabel: {
+    marginBlock: 0,
+    marginInline: 0,
+    paddingInlineEnd: {
+      default: 0,
+      ':not(:empty)': spacingVars['--spacing-1'],
+    },
+  },
+  cardValue: {
+    marginBlock: 0,
+    marginInline: 0,
+    whiteSpace: 'nowrap',
+  },
+  copyButton: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacingVars['--spacing-1'],
+    border: 'none',
+    borderRadius: radiusVars['--radius-inner'],
+    backgroundColor: {
+      default: 'transparent',
+      '@media (hover: hover)': {
+        ':hover': colorVars['--color-overlay-hover'],
+      },
+    },
+    color: 'inherit',
+    cursor: 'pointer',
+    lineHeight: 0,
+    outline: {
+      default: null,
+      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
+    },
+    outlineOffset: {
+      default: '0',
+      ':focus-visible': '2px',
+    },
   },
 });
 
@@ -320,6 +413,76 @@ function isAbsoluteFormat(
   return format !== 'relative' && format !== 'auto';
 }
 
+/** How long the copied checkmark stays before reverting to the copy icon. */
+const COPY_FEEDBACK_MS = 1500;
+
+/**
+ * One copyable row of the hover card: the labelled instant plus a button that
+ * writes that line's value to the clipboard.
+ *
+ * Mirrors CodeBlock's copy affordance — `navigator.clipboard.writeText`, an
+ * icon that flips `copy` → `check` for a moment, a polite live-region
+ * announcement, and a silent no-op when the clipboard rejects.
+ */
+function CopyableEntryRow({line}: {line: TimestampTooltipLine}) {
+  const t = useTranslator();
+  const announce = useAnnounce();
+  const [copied, setCopied] = useState(false);
+  const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (resetTimerRef.current != null) {
+        clearTimeout(resetTimerRef.current);
+      }
+    };
+  }, []);
+
+  const handleCopy = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(line.value);
+      setCopied(true);
+      // A swapped aria-label alone isn't reliably announced, so confirm the
+      // copy via a polite live region (matching CodeBlock).
+      announce(t('@astryx.timestamp.copied'));
+      // Restart the reset timer on every copy so a rapid re-copy isn't
+      // reverted early by the previous click's timer.
+      if (resetTimerRef.current != null) {
+        clearTimeout(resetTimerRef.current);
+      }
+      resetTimerRef.current = setTimeout(() => {
+        resetTimerRef.current = null;
+        setCopied(false);
+      }, COPY_FEEDBACK_MS);
+    } catch {
+      // Clipboard failures leave the copied state unchanged.
+    }
+  }, [line.value, announce, t]);
+
+  return (
+    <>
+      <dt {...stylex.props(styles.cardLabel)}>{line.label ?? ''}</dt>
+      <dd {...stylex.props(styles.cardValue)}>{line.value}</dd>
+      <button
+        type="button"
+        onClick={() => {
+          void handleCopy();
+        }}
+        aria-label={
+          copied
+            ? t('@astryx.timestamp.copied')
+            : t('@astryx.timestamp.copyValue', {value: line.value})
+        }
+        {...mergeProps(
+          themeProps('timestamp-copy-button'),
+          stylex.props(styles.copyButton),
+        )}>
+        <Icon icon={copied ? 'check' : 'copy'} size="sm" color="inherit" />
+      </button>
+    </>
+  );
+}
+
 // =============================================================================
 // Component
 // =============================================================================
@@ -346,6 +509,7 @@ export function Timestamp({
   autoThreshold = DEFAULT_AUTO_THRESHOLD,
   hasTooltip = true,
   tooltipEntries,
+  hasCopyableEntries = false,
   isTimezoneShown = false,
   isLive = false,
   type = 'supporting',
@@ -358,6 +522,7 @@ export function Timestamp({
   ref,
   'data-testid': testId,
 }: TimestampProps) {
+  const t = useTranslator();
   const timeRef = useRef<HTMLTimeElement>(null);
   const [now, setNow] = useState(() => new Date());
 
@@ -430,6 +595,18 @@ export function Timestamp({
   const showTooltip =
     hasTooltip && (effectiveFormat === 'relative' || entries !== undefined);
 
+  // The opt-in copyable presentation only applies once a tooltip would show at
+  // all — it upgrades the same lines from read-only to copyable, never adds a
+  // surface where there was none.
+  const showCopyableCard = showTooltip && hasCopyableEntries;
+
+  // The rows both surfaces render: the configured entries, or the single
+  // default absolute line the tooltip has always shown when none are set.
+  const lines: ReadonlyArray<TimestampTooltipLine> =
+    entries === undefined
+      ? [{value: fullAbsoluteText}]
+      : formatTooltipLines(date, entries);
+
   const timestampProps = mergeProps(
     themeProps('timestamp', {format: effectiveFormat}),
     {className, style},
@@ -454,14 +631,43 @@ export function Timestamp({
         // <time> is not focusable, so without a tab stop sighted keyboard
         // users could never reveal the tooltip (WCAG 1.4.13 / 2.1.1). Only
         // add the tab stop while a tooltip is actually attached — no
-        // gratuitous tab stops otherwise.
+        // gratuitous tab stops otherwise. The copyable card carries its own
+        // dashed-underline affordance, so it skips the tooltip focus ring.
         tabIndex={showTooltip ? 0 : undefined}
         data-testid={testId}
-        {...stylex.props(styles.time, showTooltip && styles.focusable)}>
+        {...stylex.props(
+          styles.time,
+          showTooltip && !showCopyableCard && styles.focusable,
+        )}>
         {displayText}
       </time>
     </Text>
   );
+
+  if (showCopyableCard) {
+    // Each line becomes a labelled row with its own copy button. Opens on
+    // hover and on keyboard focus (the <time> tab stop above), with the
+    // dashed-underline affordance signalling it is interactive.
+    const cardContent = (
+      <dl {...stylex.props(styles.cardRows)}>
+        {lines.map((line, index) => (
+          // eslint-disable-next-line @eslint-react/no-array-index-key -- rows are fixed positional slots and two entries may legitimately be identical
+          <CopyableEntryRow key={index} line={line} />
+        ))}
+      </dl>
+    );
+
+    return (
+      <HoverCard
+        content={cardContent}
+        placement="above"
+        focusTrigger="always"
+        hasHoverIndication
+        label={t('@astryx.timestamp.detailsLabel')}>
+        {timeElement}
+      </HoverCard>
+    );
+  }
 
   if (showTooltip) {
     // Built inside the branch so a timestamp without a tooltip allocates none
@@ -472,7 +678,7 @@ export function Timestamp({
         fullAbsoluteText
       ) : (
         <dl {...stylex.props(styles.tooltipLines)}>
-          {formatTooltipLines(date, entries).map((line, index) => (
+          {lines.map((line, index) => (
             // eslint-disable-next-line @eslint-react/no-array-index-key -- tooltip lines are fixed positional slots and two entries may legitimately be identical
             <Fragment key={index}>
               <dt {...stylex.props(styles.tooltipLabel)}>{line.label ?? ''}</dt>
