@@ -30,8 +30,8 @@ const IMPERATIVE_REF_COMPONENTS = new Set([
 ]);
 
 /**
- * @param {import('../../../../authoring/codemod/type.d.ts').AstryxCodemodFile} file
- * @param {import('../../../../authoring/codemod/type.d.ts').CodemodTransformApi} api
+ * @param {import('../../../../authoring/codemod/type').AstryxCodemodFile} file
+ * @param {import('../../../../authoring/codemod/type').CodemodTransformApi} api
  * @returns {string | null | undefined}
  */
 export default function transformer(file, api) {

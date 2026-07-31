@@ -230,7 +230,7 @@ export function migrateThemeSelectors(/** @type {any} */ source) {
 }
 
 /**
- * @param {import('../../../../authoring/codemod/type.d.ts').AstryxCodemodFile} file
+ * @param {import('../../../../authoring/codemod/type').AstryxCodemodFile} file
  * @returns {string | null | undefined}
  */
 export default function transformer(file) {

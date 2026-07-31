@@ -40,27 +40,27 @@
       "import": "./api/index.mjs"
     },
     "./authoring": {
-      "types": "./authoring/index.d.ts",
+      "types": "./authoring/index.ts",
       "import": "./authoring/index.mjs"
     },
     "./config": {
-      "types": "./authoring/config/type.d.ts",
+      "types": "./authoring/config/type.ts",
       "import": "./authoring/config/parse.mjs"
     },
     "./integration": {
-      "types": "./authoring/integration/type.d.ts",
+      "types": "./authoring/integration/type.ts",
       "import": "./authoring/integration/parse.mjs"
     },
     "./doc": {
-      "types": "./authoring/doctypes/types.d.ts",
+      "types": "./authoring/doctypes/types.ts",
       "import": "./authoring/doctypes/parse.mjs"
     },
     "./template": {
-      "types": "./authoring/doctypes/types.d.ts",
+      "types": "./authoring/doctypes/types.ts",
       "import": "./authoring/doctypes/template/parse.mjs"
     },
     "./codemod": {
-      "types": "./authoring/codemod/type.d.ts",
+      "types": "./authoring/codemod/type.ts",
       "import": "./authoring/codemod/parse.mjs"
     },
     "./xle": {
