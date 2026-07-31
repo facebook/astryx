@@ -7,7 +7,19 @@ export const docs = {
   displayName: 'Dialog',
   group: 'Dialog',
   category: 'Overlay',
-  keywords: ["dialog","modal","popup","overlay","lightbox","alert","confirm","prompt","backdrop","focus trap","imperative"],
+  keywords: [
+    'dialog',
+    'modal',
+    'popup',
+    'overlay',
+    'lightbox',
+    'alert',
+    'confirm',
+    'prompt',
+    'backdrop',
+    'focus trap',
+    'imperative',
+  ],
   // Intentionally a contained isInline preview, not playground.overlay: the
   // component stays visible on load and knobs stay live, whereas a real
   // showModal() overlay makes the page inert — see PlaygroundConfig.overlay
@@ -19,20 +31,30 @@ export const docs = {
       onOpenChange: undefined,
       width: 400,
       children: {
-        __element: 'VStack', props: {gap: 2}, children: [
+        __element: 'VStack',
+        props: {gap: 2},
+        children: [
           {__element: 'Heading', props: {level: 3}, children: 'Dialog Title'},
-          {__element: 'Text', props: {type: 'body'}, children: 'Are you sure you want to proceed? This action can be undone later from settings.'},
+          {
+            __element: 'Text',
+            props: {type: 'body'},
+            children:
+              'Are you sure you want to proceed? This action can be undone later from settings.',
+          },
         ],
       },
     },
   },
   theming: {
     container: true,
-    targets: [
-      {className: 'astryx-dialog', visualProps: ['variant']},
-    ],
+    targets: [{className: 'astryx-dialog', visualProps: ['variant']}],
     vars: [
-      {name: '--_dialog-radius', description: 'Border radius of the dialog', default: 'var(--radius-container)', private: true},
+      {
+        name: '--_dialog-radius',
+        description: 'Border radius of the dialog',
+        default: 'var(--radius-container)',
+        private: true,
+      },
     ],
     derived: [
       {property: 'borderRadius', vars: ['--_dialog-radius']},
@@ -74,47 +96,101 @@ export const docs = {
     {
       name: 'position',
       type: 'DialogPosition',
-      description: 'Static position for the dialog; centered by default when omitted.',
+      description:
+        'Static position for the dialog; centered by default when omitted.',
     },
     {
       name: 'variant',
       type: "'standard' | 'fullscreen'",
-      description: 'Dialog variant: fullscreen expands to fill the entire viewport.',
+      description:
+        'Dialog variant: fullscreen expands to fill the entire viewport.',
       default: "'standard'",
     },
     {
       name: 'purpose',
       type: "'required' | 'form' | 'info'",
-      description: 'Controls dismissal behavior: required disables Escape and backdrop click; form disables backdrop click after interaction; info allows both.',
+      description:
+        'Controls dismissal behavior: required disables Escape and backdrop click; form disables backdrop click after interaction; info allows both.',
       default: "'info'",
     },
     {
       name: 'isInline',
       type: 'boolean',
-      description: 'Renders dialog content inline without the <dialog> element, backdrop, or modal behavior. For documentation previews and showcases only.',
+      description:
+        'Renders dialog content inline without the <dialog> element, backdrop, or modal behavior. For documentation previews and showcases only.',
       default: 'false',
     },
   ],
   components: [
     {name: 'DialogHeader'},
+    {name: 'DialogHeroHeader'},
     {name: 'useImperativeDialog'},
   ],
   usage: {
-    description: 'Dialog displays a modal overlay that blocks interaction with the page until the user responds. Use it for delete confirmations, edit forms, terms acceptance, or any decision that should not be skipped.\n\nFor cases where you want to show a dialog without managing open state, use the `useImperativeDialog` hook: call `dialog.show(content)` and render `dialog.element` in your tree.',
+    description:
+      'Dialog displays a modal overlay that blocks interaction with the page until the user responds. Use it for delete confirmations, edit forms, terms acceptance, or any decision that should not be skipped.\n\nFor cases where you want to show a dialog without managing open state, use the `useImperativeDialog` hook: call `dialog.show(content)` and render `dialog.element` in your tree.',
     bestPractices: [
-      { guidance: true, description: 'Choose the right purpose: info for dismissable content, form to prevent accidental backdrop dismissal, required when the user must respond.' },
-      { guidance: true, description: 'Include a clear title in the header so users immediately understand what the dialog is asking.' },
-      { guidance: true, description: 'Use purpose="form" for dialogs with inputs so the user can\'t accidentally lose data by clicking the backdrop.' },
-      { guidance: true, description: 'Keep dialogs focused on a single task; if the content grows beyond what fits, consider a full page instead.' },
-      { guidance: false, description: 'Use a dialog for simple messages that could be shown inline or as a toast notification.' },
-      { guidance: false, description: 'Nest dialogs inside other dialogs; restructure the flow into steps within a single dialog instead.' },
-      { guidance: false, description: 'Use the fullscreen variant for simple confirmations; it is meant for complex content like editors or long forms.' },
+      {
+        guidance: true,
+        description:
+          'Choose the right purpose: info for dismissable content, form to prevent accidental backdrop dismissal, required when the user must respond.',
+      },
+      {
+        guidance: true,
+        description:
+          'Include a clear title in the header so users immediately understand what the dialog is asking.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use purpose="form" for dialogs with inputs so the user can\'t accidentally lose data by clicking the backdrop.',
+      },
+      {
+        guidance: true,
+        description:
+          'Keep dialogs focused on a single task; if the content grows beyond what fits, consider a full page instead.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use a dialog for simple messages that could be shown inline or as a toast notification.',
+      },
+      {
+        guidance: false,
+        description:
+          'Nest dialogs inside other dialogs; restructure the flow into steps within a single dialog instead.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use the fullscreen variant for simple confirmations; it is meant for complex content like editors or long forms.',
+      },
     ],
     anatomy: [
-      {name: 'Header', required: true, description: 'Title, optional subtitle, and close button. The title receives focus on open and labels the dialog via aria-labelledby.'},
-      {name: 'Body', required: true, description: 'The main content area: text, forms, lists, or any layout.'},
-      {name: 'Footer', required: false, description: 'Action buttons like Save/Cancel or Accept/Decline, aligned to the end.'},
-      {name: 'Backdrop', required: true, description: 'Semi-transparent overlay behind the dialog that blocks page interaction.'},
+      {
+        name: 'Header',
+        required: true,
+        description:
+          'Title, optional subtitle, and close button. The title receives focus on open and labels the dialog via aria-labelledby. Use DialogHeader for the compact treatment, or DialogHeroHeader for a prominent hero header on featured/onboarding dialogs.',
+      },
+      {
+        name: 'Body',
+        required: true,
+        description:
+          'The main content area: text, forms, lists, or any layout.',
+      },
+      {
+        name: 'Footer',
+        required: false,
+        description:
+          'Action buttons like Save/Cancel or Accept/Decline, aligned to the end.',
+      },
+      {
+        name: 'Backdrop',
+        required: true,
+        description:
+          'Semi-transparent overlay behind the dialog that blocks page interaction.',
+      },
     ],
   },
 };
@@ -122,38 +198,117 @@ export const docs = {
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsZh = {
   usage: {
-    description: 'Dialog displays a modal overlay that blocks interaction with the page until the user responds. Use it for delete confirmations, edit forms, terms acceptance, or any decision that should not be skipped.',
+    description:
+      'Dialog displays a modal overlay that blocks interaction with the page until the user responds. Use it for delete confirmations, edit forms, terms acceptance, or any decision that should not be skipped.',
     bestPractices: [
-      { guidance: true, description: 'Choose the right purpose: info for dismissable content, form to prevent accidental backdrop dismissal, required when the user must respond.' },
-      { guidance: true, description: 'Include a clear title in the header so users immediately understand what the dialog is asking.' },
-      { guidance: true, description: 'Use purpose="form" for dialogs with inputs so the user can\'t accidentally lose data by clicking the backdrop.' },
-      { guidance: true, description: 'Keep dialogs focused on a single task; if the content grows beyond what fits, consider a full page instead.' },
-      { guidance: false, description: 'Use a dialog for simple messages that could be shown inline or as a toast notification.' },
-      { guidance: false, description: 'Nest dialogs inside other dialogs; restructure the flow into steps within a single dialog instead.' },
-      { guidance: false, description: 'Use the fullscreen variant for simple confirmations; it is meant for complex content like editors or long forms.' },
+      {
+        guidance: true,
+        description:
+          'Choose the right purpose: info for dismissable content, form to prevent accidental backdrop dismissal, required when the user must respond.',
+      },
+      {
+        guidance: true,
+        description:
+          'Include a clear title in the header so users immediately understand what the dialog is asking.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use purpose="form" for dialogs with inputs so the user can\'t accidentally lose data by clicking the backdrop.',
+      },
+      {
+        guidance: true,
+        description:
+          'Keep dialogs focused on a single task; if the content grows beyond what fits, consider a full page instead.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use a dialog for simple messages that could be shown inline or as a toast notification.',
+      },
+      {
+        guidance: false,
+        description:
+          'Nest dialogs inside other dialogs; restructure the flow into steps within a single dialog instead.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use the fullscreen variant for simple confirmations; it is meant for complex content like editors or long forms.',
+      },
     ],
     anatomy: [
-      {name: 'Header', required: true, description: 'Title, optional subtitle, and close button. The title receives focus on open and labels the dialog via aria-labelledby.'},
-      {name: 'Body', required: true, description: 'The main content area: text, forms, lists, or any layout.'},
-      {name: 'Footer', required: false, description: 'Action buttons like Save/Cancel or Accept/Decline, aligned to the end.'},
-      {name: 'Backdrop', required: true, description: 'Semi-transparent overlay behind the dialog that blocks page interaction.'},
+      {
+        name: 'Header',
+        required: true,
+        description:
+          'Title, optional subtitle, and close button. The title receives focus on open and labels the dialog via aria-labelledby. Use DialogHeader for the compact treatment, or DialogHeroHeader for a prominent hero header on featured/onboarding dialogs.',
+      },
+      {
+        name: 'Body',
+        required: true,
+        description:
+          'The main content area: text, forms, lists, or any layout.',
+      },
+      {
+        name: 'Footer',
+        required: false,
+        description:
+          'Action buttons like Save/Cancel or Accept/Decline, aligned to the end.',
+      },
+      {
+        name: 'Backdrop',
+        required: true,
+        description:
+          'Semi-transparent overlay behind the dialog that blocks page interaction.',
+      },
     ],
   },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
-  description: 'modal overlay that blocks page interaction until the user responds',
+  description:
+    'modal overlay that blocks page interaction until the user responds',
   usage: {
-    description: 'Dialog displays a modal overlay that blocks page interaction. Use for delete confirmations, edit forms, terms acceptance.',
+    description:
+      'Dialog displays a modal overlay that blocks page interaction. Use for delete confirmations, edit forms, terms acceptance.',
     bestPractices: [
-      { guidance: true, description: 'Choose the right purpose: info for dismissable content, form to prevent accidental backdrop dismissal, required when user must respond.' },
-      { guidance: true, description: 'Include a clear title in the header so users immediately understand what the dialog is asking.' },
-      { guidance: true, description: 'Use purpose="form" for dialogs with inputs so user can\'t accidentally lose data by clicking the backdrop.' },
-      { guidance: true, description: 'Keep dialogs focused on a single task; if content grows beyond what fits, consider a full page instead.' },
-      { guidance: false, description: 'Use a dialog for simple messages that could be shown inline or as a toast notification.' },
-      { guidance: false, description: 'Nest dialogs inside other dialogs; restructure the flow into steps within a single dialog instead.' },
-      { guidance: false, description: 'Use the fullscreen variant for simple confirmations; it\'s meant for complex content like editors or long forms.' },
+      {
+        guidance: true,
+        description:
+          'Choose the right purpose: info for dismissable content, form to prevent accidental backdrop dismissal, required when user must respond.',
+      },
+      {
+        guidance: true,
+        description:
+          'Include a clear title in the header so users immediately understand what the dialog is asking.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use purpose="form" for dialogs with inputs so user can\'t accidentally lose data by clicking the backdrop.',
+      },
+      {
+        guidance: true,
+        description:
+          'Keep dialogs focused on a single task; if content grows beyond what fits, consider a full page instead.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use a dialog for simple messages that could be shown inline or as a toast notification.',
+      },
+      {
+        guidance: false,
+        description:
+          'Nest dialogs inside other dialogs; restructure the flow into steps within a single dialog instead.',
+      },
+      {
+        guidance: false,
+        description:
+          "Use the fullscreen variant for simple confirmations; it's meant for complex content like editors or long forms.",
+      },
     ],
   },
 };

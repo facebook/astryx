@@ -26,45 +26,132 @@
  */
 export const ALIAS_TABLE = {
   // Layout core
-  A: 'AppShell', L: 'Layout', LH: 'LayoutHeader', LC: 'LayoutContent',
-  LF: 'LayoutFooter', LP: 'LayoutPanel', V: 'VStack', H: 'HStack',
-  SI: 'StackItem', G: 'Grid', GS: 'GridSpan', S: 'Section', Ctr: 'Center',
-  F: 'FormLayout', D: 'Divider', Tbar: 'Toolbar', AR: 'AspectRatio',
+  A: 'AppShell',
+  L: 'Layout',
+  LH: 'LayoutHeader',
+  LC: 'LayoutContent',
+  LF: 'LayoutFooter',
+  LP: 'LayoutPanel',
+  V: 'VStack',
+  H: 'HStack',
+  SI: 'StackItem',
+  G: 'Grid',
+  GS: 'GridSpan',
+  S: 'Section',
+  Ctr: 'Center',
+  F: 'FormLayout',
+  D: 'Divider',
+  Tbar: 'Toolbar',
+  AR: 'AspectRatio',
   // Navigation
-  TN: 'TopNav', TNH: 'TopNavHeading', TNI: 'TopNavItem',
-  SN: 'SideNav', SNI: 'SideNavItem', SNS: 'SideNavSection', SNH: 'SideNavHeading',
-  MN: 'MobileNav', MNT: 'MobileNavToggle',
-  BC: 'Breadcrumbs', BCI: 'BreadcrumbItem',
-  TL: 'TabList', Tab: 'Tab', PG: 'Pagination',
-  SG: 'SegmentedControl', SGI: 'SegmentedControlItem',
+  TN: 'TopNav',
+  TNH: 'TopNavHeading',
+  TNI: 'TopNavItem',
+  SN: 'SideNav',
+  SNI: 'SideNavItem',
+  SNS: 'SideNavSection',
+  SNH: 'SideNavHeading',
+  MN: 'MobileNav',
+  MNT: 'MobileNavToggle',
+  BC: 'Breadcrumbs',
+  BCI: 'BreadcrumbItem',
+  TL: 'TabList',
+  Tab: 'Tab',
+  PG: 'Pagination',
+  SG: 'SegmentedControl',
+  SGI: 'SegmentedControlItem',
   // Data display
-  T: 'Table', TH: 'TableHeader', TB: 'TableBody', TF: 'TableFooter',
-  TR: 'TableRow', TC: 'TableCell', TD: 'TableCell', THC: 'TableHeaderCell',
-  UL: 'List', LI: 'ListItem', ML: 'MetadataList', MLI: 'MetadataListItem',
-  C: 'Card', CC: 'ClickableCard', ES: 'EmptyState', Bd: 'Badge',
-  SD: 'StatusDot', Av: 'Avatar', AvG: 'AvatarGroup', Tmb: 'Thumbnail',
-  Ts: 'Timestamp', OFL: 'OverflowList', Cs: 'Carousel', It: 'Item',
+  T: 'Table',
+  TH: 'TableHeader',
+  TB: 'TableBody',
+  TF: 'TableFooter',
+  TR: 'TableRow',
+  TC: 'TableCell',
+  TD: 'TableCell',
+  THC: 'TableHeaderCell',
+  UL: 'List',
+  LI: 'ListItem',
+  ML: 'MetadataList',
+  MLI: 'MetadataListItem',
+  C: 'Card',
+  CC: 'ClickableCard',
+  ES: 'EmptyState',
+  Bd: 'Badge',
+  SD: 'StatusDot',
+  Av: 'Avatar',
+  AvG: 'AvatarGroup',
+  Tmb: 'Thumbnail',
+  Ts: 'Timestamp',
+  OFL: 'OverflowList',
+  Cs: 'Carousel',
+  It: 'Item',
   // Forms & inputs
-  Fd: 'Field', IG: 'InputGroup', IGT: 'InputGroupText',
-  TI: 'TextInput', TA: 'TextArea', NI: 'NumberInput',
-  DI: 'DateInput', DR: 'DateRangeInput', DT: 'DateTimeInput', TM: 'TimeInput',
-  FI: 'FileInput', CB: 'CheckboxInput', CL: 'CheckboxList', CLI: 'CheckboxListItem',
-  RL: 'RadioList', RLI: 'RadioListItem', SW: 'Switch', SL: 'Slider',
-  SE: 'Selector', MS: 'MultiSelector', TY: 'Typeahead', Tkz: 'Tokenizer',
-  PS: 'PowerSearch', CAL: 'Calendar',
+  Fd: 'Field',
+  IG: 'InputGroup',
+  IGT: 'InputGroupText',
+  TI: 'TextInput',
+  TA: 'TextArea',
+  NI: 'NumberInput',
+  DI: 'DateInput',
+  DR: 'DateRangeInput',
+  DT: 'DateTimeInput',
+  TM: 'TimeInput',
+  FI: 'FileInput',
+  CB: 'CheckboxInput',
+  CL: 'CheckboxList',
+  CLI: 'CheckboxListItem',
+  RL: 'RadioList',
+  RLI: 'RadioListItem',
+  SW: 'Switch',
+  SL: 'Slider',
+  SE: 'Selector',
+  MS: 'MultiSelector',
+  TY: 'Typeahead',
+  Tkz: 'Tokenizer',
+  PS: 'PowerSearch',
+  CAL: 'Calendar',
   // Overlay & feedback
-  Dlg: 'Dialog', DH: 'DialogHeader', AD: 'AlertDialog',
-  Po: 'Popover', HC: 'HoverCard', Tt: 'Tooltip', Bn: 'Banner', Ov: 'Overlay',
-  CM: 'ContextMenu', DM: 'DropdownMenu', MM: 'MoreMenu', CP: 'CommandPalette',
-  Col: 'Collapsible', ColG: 'CollapsibleGroup',
-  Sp: 'Spinner', PB: 'ProgressBar', Sk: 'Skeleton',
+  Dlg: 'Dialog',
+  DH: 'DialogHeader',
+  DHH: 'DialogHeroHeader',
+  AD: 'AlertDialog',
+  Po: 'Popover',
+  HC: 'HoverCard',
+  Tt: 'Tooltip',
+  Bn: 'Banner',
+  Ov: 'Overlay',
+  CM: 'ContextMenu',
+  DM: 'DropdownMenu',
+  MM: 'MoreMenu',
+  CP: 'CommandPalette',
+  Col: 'Collapsible',
+  ColG: 'CollapsibleGroup',
+  Sp: 'Spinner',
+  PB: 'ProgressBar',
+  Sk: 'Skeleton',
   // Content & chat
-  Tx: 'Text', Hd: 'Heading', MD: 'Markdown', Cd: 'CodeBlock', BQ: 'Blockquote',
-  K: 'Kbd', Ic: 'Icon', Lk: 'Link', Tk: 'Token',
-  B: 'Button', IB: 'IconButton', BG: 'ButtonGroup', Tg: 'ToggleButton', TgG: 'ToggleButtonGroup',
-  ChL: 'ChatLayout', ChML: 'ChatMessageList', ChM: 'ChatMessage',
-  ChB: 'ChatMessageBubble', ChC: 'ChatComposer', ChCD: 'ChatComposerDrawer',
-  ChS: 'ChatSystemMessage', ChT: 'ChatToolCalls',
+  Tx: 'Text',
+  Hd: 'Heading',
+  MD: 'Markdown',
+  Cd: 'CodeBlock',
+  BQ: 'Blockquote',
+  K: 'Kbd',
+  Ic: 'Icon',
+  Lk: 'Link',
+  Tk: 'Token',
+  B: 'Button',
+  IB: 'IconButton',
+  BG: 'ButtonGroup',
+  Tg: 'ToggleButton',
+  TgG: 'ToggleButtonGroup',
+  ChL: 'ChatLayout',
+  ChML: 'ChatMessageList',
+  ChM: 'ChatMessage',
+  ChB: 'ChatMessageBubble',
+  ChC: 'ChatComposer',
+  ChCD: 'ChatComposerDrawer',
+  ChS: 'ChatSystemMessage',
+  ChT: 'ChatToolCalls',
 };
 
 /** SpacingStep — the canonical spacing enum (matches the doc.mjs prose). */
@@ -89,8 +176,14 @@ export function parseEnumValues(type) {
   const values = [];
   for (const part of parts) {
     const str = part.match(/^'([^']*)'$/) || part.match(/^"([^"]*)"$/);
-    if (str) { values.push(str[1]); continue; }
-    if (/^\d+(\.\d+)?$/.test(part)) { values.push(Number(part)); continue; }
+    if (str) {
+      values.push(str[1]);
+      continue;
+    }
+    if (/^\d+(\.\d+)?$/.test(part)) {
+      values.push(Number(part));
+      continue;
+    }
     return null; // union of non-literal types (e.g. number|string) — not an enum
   }
   return values;
@@ -155,7 +248,9 @@ export function serializeRegistry(registry) {
       dirName: c.dirName,
       importPath: c.importPath,
       undocumented: c.undocumented || false,
-      props: /** @type {Array<Record<string, unknown>>} */ (/** @type {unknown} */ ([...c.props.values()])),
+      props: /** @type {Array<Record<string, unknown>>} */ (
+        /** @type {unknown} */ ([...c.props.values()])
+      ),
     })),
     aliases: [...registry.aliases.entries()],
     componentNames: registry.componentNames,
@@ -175,7 +270,9 @@ export function hydrateRegistry(json) {
     /** @type {Map<string, import('./xle-ast').RegistryProp>} */
     const props = new Map();
     for (const p of c.props) {
-      const prop = /** @type {import('./xle-ast').RegistryProp} */ (/** @type {unknown} */ (p));
+      const prop = /** @type {import('./xle-ast').RegistryProp} */ (
+        /** @type {unknown} */ (p)
+      );
       props.set(String(p.name), prop);
     }
     components.set(c.name, {

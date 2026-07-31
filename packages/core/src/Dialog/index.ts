@@ -5,7 +5,7 @@
 /**
  * @file index.ts
  * @input Imports Dialog component and types from Dialog.tsx
- * @output Exports Dialog, DialogHeader, and related types
+ * @output Exports Dialog, DialogHeader, DialogHeroHeader, and related types
  * @position Component entry point; re-exported by /packages/core/src/index.ts
  *
  * SYNC: When modified, update this header and /packages/core/src/Dialog/Dialog.doc.mjs
@@ -22,6 +22,9 @@ export type {
 
 export {DialogHeader} from './DialogHeader';
 export type {DialogHeaderProps} from './DialogHeader';
+
+export {DialogHeroHeader} from './DialogHeroHeader';
+export type {DialogHeroHeaderProps} from './DialogHeroHeader';
 
 export {useImperativeDialog} from './useImperativeDialog';
 export type {ImperativeDialogReturn} from './useImperativeDialog';
