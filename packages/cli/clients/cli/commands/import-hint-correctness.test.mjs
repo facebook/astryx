@@ -22,7 +22,7 @@ import {
   discoverComponents,
   findComponentSource,
 } from './component/index.mjs';
-import {findCoreDir} from '../../../utils/paths.mjs';
+import {findCoreDir} from '../../../foundation/fs/paths.mjs';
 import {runCli} from '../../../test-utils/run-cli.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));

@@ -4,7 +4,7 @@ import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {pathToFileURL} from 'node:url';
-import {Project} from '../../lib/project.mjs';
+import {Project} from '../../foundation/config/project.mjs';
 import {
   discoverIntegrationCodemods,
   selectIntegrationCodemods,

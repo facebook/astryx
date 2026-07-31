@@ -5,8 +5,8 @@
  */
 
 import {pathToFileURL} from 'node:url';
-import {importUserModule} from './module-loader.mjs';
-import {formatZodError} from './config-schema.mjs';
+import {importUserModule} from '../fs/module-loader.mjs';
+import {formatZodError} from '../config/config-schema.mjs';
 import {ComponentDocSchema} from '../schemas/doc-schema.mjs';
 
 /**

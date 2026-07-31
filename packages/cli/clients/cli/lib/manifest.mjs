@@ -34,7 +34,7 @@
  * @position consumed by the bare `astryx --json` action and the `manifest` command
  */
 
-import {API_VERSION} from '../../../lib/json.mjs';
+import {API_VERSION} from '../../../foundation/response/json.mjs';
 
 /**
  * Response `type` discriminators each fully-qualified command can emit in

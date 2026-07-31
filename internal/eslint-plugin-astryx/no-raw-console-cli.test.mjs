@@ -34,7 +34,7 @@ ruleTester.run('no-raw-console-cli', rule, {
     // Exempt: lib/json.mjs defines the raw writers
     {
       code: `console.log('raw');`,
-      filename: '/repo/packages/cli/lib/json.mjs',
+      filename: '/repo/packages/cli/foundation/response/json.mjs',
     },
     // Exempt: cli/index.mjs (wiring / banner)
     {

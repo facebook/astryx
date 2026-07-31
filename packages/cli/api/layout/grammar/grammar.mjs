@@ -9,7 +9,7 @@
  * @position api — leaf over lib/xle/registry
  */
 
-import {buildRegistry} from '../../../lib/xle/registry.mjs';
+import {buildRegistry} from '../../../foundation/xle/registry.mjs';
 
 /**
  * `astryx layout grammar` — the agent cheatsheet, with the alias table

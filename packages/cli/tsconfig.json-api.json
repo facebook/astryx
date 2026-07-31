@@ -10,8 +10,8 @@
   },
   "include": [
     "types/**/*.d.ts",
-    "lib/json.mjs",
-    "lib/manifest.mjs",
+    "foundation/response/json.mjs",
+    "clients/cli/lib/manifest.mjs",
     "lib/parse.mjs",
     "authoring/config.mjs",
     "../core/src/docs-types.ts"

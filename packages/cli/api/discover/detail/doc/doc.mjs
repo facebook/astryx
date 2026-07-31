@@ -14,9 +14,9 @@
  */
 
 import {findComponent, loadValidatedDoc} from '../../_adapter.mjs';
-import {levenshteinDistance} from '../../../../lib/string-utils.mjs';
+import {levenshteinDistance} from '../../../../foundation/text/string-utils.mjs';
 import {AstryxError} from '../../../error.mjs';
-import {ERROR_CODES} from '../../../../lib/error-codes.mjs';
+import {ERROR_CODES} from '../../../../foundation/response/error-codes.mjs';
 
 /**
  * Wrap an already-resolved component in the discover.detail.doc envelope by

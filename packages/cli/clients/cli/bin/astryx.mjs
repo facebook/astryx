@@ -31,7 +31,7 @@ const importSrc = rel =>
   import(pathToFileURL(join(binDir, '..', rel)).href);
 
 const {isNodeVersionSupported, unsupportedNodeMessage} =
-  await importSrc('../../lib/node-version.mjs');
+  await importSrc('../../foundation/env/node-version.mjs');
 
 if (!isNodeVersionSupported(process.versions.node)) {
   const msg = unsupportedNodeMessage(process.versions.node);
@@ -56,7 +56,7 @@ if (!isNodeVersionSupported(process.versions.node)) {
 // Imports that transitively load `styleText` must happen AFTER the gate above,
 // so they are dynamically imported here rather than at the top of the module.
 const {program} = await importSrc('index.mjs');
-const {isJsonMode, toErrorEnvelope} = await importSrc('../../lib/json.mjs');
+const {isJsonMode, toErrorEnvelope} = await importSrc('../../foundation/response/json.mjs');
 const {handleCommanderError} = await importSrc('lib/json-shim.mjs');
 
 /**

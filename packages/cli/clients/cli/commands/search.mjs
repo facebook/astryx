@@ -16,8 +16,8 @@
  *   astryx search button --json          Typed JSON envelope
  */
 
-import {getCliInvocation, formatCliCommand} from '../../../utils/package-manager.mjs';
-import {jsonOut, humanLog} from '../../../lib/json.mjs';
+import {getCliInvocation, formatCliCommand} from '../../../foundation/env/package-manager.mjs';
+import {jsonOut, humanLog} from '../../../foundation/response/json.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {search as searchApi, SEARCH_DOMAINS} from '../../../api/search/search.mjs';
 

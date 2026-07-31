@@ -10,9 +10,9 @@
  * commands for the caller's package manager.
  */
 
-import {jsonOut, humanLog} from '../../../lib/json.mjs';
+import {jsonOut, humanLog} from '../../../foundation/response/json.mjs';
 import {cliError} from '../lib/cli-error.mjs';
-import {getCliInvocation} from '../../../utils/package-manager.mjs';
+import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
 import {swizzle as swizzleApi} from '../../../api/swizzle/swizzle.mjs';
 
 /**

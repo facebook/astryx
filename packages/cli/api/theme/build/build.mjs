@@ -22,12 +22,12 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {pathToFileURL, fileURLToPath} from 'node:url';
 import {createJiti} from 'jiti';
-import {getCliInvocation} from '../../../utils/package-manager.mjs';
+import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
 import {
   sanitizeName,
   PathSafetyError,
-} from '../../../utils/path-safety.mjs';
-import {ERROR_CODES} from '../../../lib/error-codes.mjs';
+} from '../../../foundation/fs/path-safety.mjs';
+import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {AstryxError} from '../../error.mjs';
 import {logger} from '../../logger.mjs';
 

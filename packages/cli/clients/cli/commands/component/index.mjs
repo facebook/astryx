@@ -6,10 +6,10 @@
  * Global options: --detail full|compact|brief, --lang en|zh|dense
  */
 
-import {findCoreDir} from '../../../../utils/paths.mjs';
+import {findCoreDir} from '../../../../foundation/fs/paths.mjs';
 import {
   resolveImportPath,
-} from '../../../../lib/component-discovery.mjs';
+} from '../../../../foundation/discovery/component-discovery.mjs';
 import {
   formatFull,
   formatCompact,
@@ -18,14 +18,14 @@ import {
   formatBriefAll,
 } from '../../lib/component-format.mjs';
 import {resolveTheme} from '../../lib/resolve-theme.mjs';
-import {getCliInvocation} from '../../../../utils/package-manager.mjs';
-import {jsonOut, humanLog} from '../../../../lib/json.mjs';
+import {getCliInvocation} from '../../../../foundation/env/package-manager.mjs';
+import {jsonOut, humanLog} from '../../../../foundation/response/json.mjs';
 import {cliError} from '../../lib/cli-error.mjs';
-import {ERROR_CODES} from '../../../../lib/error-codes.mjs';
+import {ERROR_CODES} from '../../../../foundation/response/error-codes.mjs';
 import {component as componentApi} from '../../../../api/component/component.mjs';
 import {findRelatedBlocks} from '../../../../api/template/template.mjs';
-import {Project} from '../../../../lib/project.mjs';
-import {warnOnIntegrationIssues} from '../../../../lib/integration-warnings.mjs';
+import {Project} from '../../../../foundation/config/project.mjs';
+import {warnOnIntegrationIssues} from '../../../../foundation/integrations/integration-warnings.mjs';
 
 /**
  * The api layer's component() widens its return to `{type: string, data: unknown}`,
@@ -280,8 +280,8 @@ export function registerComponent(program) {
 
 // Re-export lib functions for backward compatibility
 // (agent-docs.mjs, tests, and generate-skill-doc.sh import from here)
-export {discoverComponents, discoverExternalComponents, discoverExternalComponentsGrouped, findComponentReadme, findComponentSource, findExternalComponentDoc, resolveImportPath} from '../../../../lib/component-discovery.mjs';
-export {discoverExternalPackages} from '../../../../utils/paths.mjs';
-export {loadDocs} from '../../../../lib/component-loader.mjs';
+export {discoverComponents, discoverExternalComponents, discoverExternalComponentsGrouped, findComponentReadme, findComponentSource, findExternalComponentDoc, resolveImportPath} from '../../../../foundation/discovery/component-discovery.mjs';
+export {discoverExternalPackages} from '../../../../foundation/fs/paths.mjs';
+export {loadDocs} from '../../../../foundation/discovery/component-loader.mjs';
 export {formatFull, formatCompact, formatBrief, formatProps, formatBriefAll} from '../../lib/component-format.mjs';
-export {levenshteinDistance, findClosestComponents, searchComponents} from '../../../../lib/string-utils.mjs';
+export {levenshteinDistance, findClosestComponents, searchComponents} from '../../../../foundation/text/string-utils.mjs';

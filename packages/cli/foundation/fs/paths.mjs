@@ -13,7 +13,7 @@ import {fileURLToPath} from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /** Root of the @astryxdesign/cli package */
-export const CLI_ROOT = path.resolve(__dirname, '..');
+export const CLI_ROOT = path.resolve(__dirname, '..', '..');
 
 /**
  * Find packages/core directory by walking up from startDir.

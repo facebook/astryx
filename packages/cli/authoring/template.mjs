@@ -12,4 +12,4 @@
  */
 
 export {createPageTemplate, createBlockTemplate} from '@astryxdesign/core/authoring';
-export {BaseTemplateSchema, TemplateEnvelopeSchema} from '../schemas/template-schema.mjs';
+export {BaseTemplateSchema, TemplateEnvelopeSchema} from '../foundation/schemas/template-schema.mjs';

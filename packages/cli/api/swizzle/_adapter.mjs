@@ -11,8 +11,8 @@
  * (ERR_CORE_NOT_FOUND) when core can't be located.
  */
 
-import {findCoreDir, listComponents} from '../../utils/paths.mjs';
-import {ERROR_CODES} from '../../lib/error-codes.mjs';
+import {findCoreDir, listComponents} from '../../foundation/fs/paths.mjs';
+import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 import {AstryxError} from '../error.mjs';
 
 /**

@@ -9,9 +9,9 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {CLI_ROOT} from '../../utils/paths.mjs';
+import {CLI_ROOT} from '../../foundation/fs/paths.mjs';
 import {AstryxError} from '../error.mjs';
-import {ERROR_CODES} from '../../lib/error-codes.mjs';
+import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 
 /** Directory holding the generated theme bundle. */
 export const THEMES_DIR = path.join(CLI_ROOT, 'assets', 'templates', 'themes');

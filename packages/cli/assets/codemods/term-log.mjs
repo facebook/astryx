@@ -16,7 +16,7 @@
  * they write through the shared `logger` (api/logger.mjs).
  */
 
-import {humanLog} from '../../lib/json.mjs';
+import {humanLog} from '../../foundation/response/json.mjs';
 
 /** @param {unknown} msg */
 const toStr = (msg) => (msg === undefined || msg === null ? '' : String(msg));

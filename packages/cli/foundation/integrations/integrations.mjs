@@ -12,8 +12,8 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {AstryxIntegrationSchema} from './config-schema.mjs';
-import {loadModuleWithSchema, findPresentFiles} from './module-loader.mjs';
+import {AstryxIntegrationSchema} from '../config/config-schema.mjs';
+import {loadModuleWithSchema, findPresentFiles} from '../fs/module-loader.mjs';
 
 /**
  * A fully-resolved, loaded integration. Identity (`name`, `version`) comes from
@@ -59,7 +59,7 @@ export function findManifestPaths(dir) {
  * for validate-integration.
  * @param {string} file absolute manifest path
  * @param {string} [label] used in error messages
- * @returns {Promise<import('../types/integration').AstryxIntegration>}
+ * @returns {Promise<import('../../types/integration').AstryxIntegration>}
  */
 export async function loadManifestObject(file, label = 'integration manifest') {
   return loadModuleWithSchema(file, AstryxIntegrationSchema, {label});

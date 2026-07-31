@@ -17,8 +17,8 @@ import * as os from 'node:os';
 import {upgrade} from './upgrade.mjs';
 import {logger} from '../logger.mjs';
 import {AstryxError} from '../error.mjs';
-import {ERROR_CODES} from '../../lib/error-codes.mjs';
-import {generateCompressedIndex} from '../../lib/agent-docs/agent-docs.mjs';
+import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
+import {generateCompressedIndex} from '../../foundation/agent-docs/agent-docs.mjs';
 
 vi.setConfig({testTimeout: 30000});
 

@@ -6,7 +6,7 @@ import * as path from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {Project, DEFAULT_ISSUES_URL, findConfigPath} from './project.mjs';
 import {InMemoryConfigCache} from './config-cache.mjs';
-import * as componentDiscovery from './component-discovery.mjs';
+import * as componentDiscovery from '../discovery/component-discovery.mjs';
 
 let tmpDir;
 let originalCwd;

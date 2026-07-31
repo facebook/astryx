@@ -17,7 +17,7 @@
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {cliError, assertOrExit, cliExit} from './cli-error.mjs';
-import {setJsonMode, API_VERSION} from '../../../lib/json.mjs';
+import {setJsonMode, API_VERSION} from '../../../foundation/response/json.mjs';
 
 describe('cliError — human mode', () => {
   let stderr;

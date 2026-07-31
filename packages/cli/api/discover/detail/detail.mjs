@@ -9,7 +9,7 @@
 
 import {toEntry} from '../_adapter.mjs';
 import {AstryxError} from '../../error.mjs';
-import {ERROR_CODES} from '../../../lib/error-codes.mjs';
+import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 
 /**
  * Build the discover.detail response for a scoped package name. Throws

@@ -26,9 +26,9 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {loadModuleWithSchema} from '../../lib/module-loader.mjs';
+import {loadModuleWithSchema} from '../../foundation/fs/module-loader.mjs';
 import {CodemodEnvelopeSchema} from '../../authoring/codemod.mjs';
-import {semverCompare} from '../../utils/semver.mjs';
+import {semverCompare} from '../../foundation/env/semver.mjs';
 
 /** File extensions recognized as codemod modules. */
 const CODEMOD_EXTENSIONS = ['.ts', '.mjs', '.js'];

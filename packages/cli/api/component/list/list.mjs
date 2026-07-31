@@ -18,9 +18,9 @@ import {
   discoverIntegrationComponents,
   findComponentReadme,
   resolveImportPath,
-} from '../../../lib/component-discovery.mjs';
-import {discoverExternalPackages} from '../../../utils/paths.mjs';
-import {ERROR_CODES} from '../../../lib/error-codes.mjs';
+} from '../../../foundation/discovery/component-discovery.mjs';
+import {discoverExternalPackages} from '../../../foundation/fs/paths.mjs';
+import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {AstryxError} from '../../error.mjs';
 import {loadComponentDoc, loadIntegrationsSafely} from '../_adapter.mjs';
 

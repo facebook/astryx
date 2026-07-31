@@ -12,8 +12,8 @@
  *   astryx docs <topic> <section>        Print one section
  */
 
-import {getCliInvocation} from '../../../utils/package-manager.mjs';
-import {jsonOut, humanLog} from '../../../lib/json.mjs';
+import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
+import {jsonOut, humanLog} from '../../../foundation/response/json.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {docs as docsApi} from '../../../api/docs/docs.mjs';
 

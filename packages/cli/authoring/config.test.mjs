@@ -6,7 +6,7 @@ import {createIntegration} from './integration.mjs';
 import {
   AstryxConfigSchema,
   AstryxIntegrationSchema,
-} from '../lib/config-schema.mjs';
+} from '../foundation/config/config-schema.mjs';
 
 // createConfig/createIntegration are now pure typed-identity helpers: they
 // return their argument unchanged and perform NO runtime validation. Validation

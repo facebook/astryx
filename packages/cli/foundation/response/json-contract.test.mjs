@@ -27,7 +27,7 @@ import {
 } from './json.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CLI = path.resolve(__dirname, '..', 'clients', 'cli', 'bin', 'astryx.mjs');
+const CLI = path.resolve(__dirname, '..', '..', 'clients', 'cli', 'bin', 'astryx.mjs');
 
 function runCli(args) {
   return spawnSync(process.execPath, [CLI, ...args], {

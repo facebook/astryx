@@ -6,7 +6,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {levenshteinDistance} from './string-utils.mjs';
+import {levenshteinDistance} from '../text/string-utils.mjs';
 
 const SKIP_DIRS = new Set(['utils', '__tests__', 'node_modules']);
 

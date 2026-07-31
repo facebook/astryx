@@ -14,7 +14,7 @@
  */
 
 import {AstryxError} from '../../../error.mjs';
-import {ERROR_CODES} from '../../../../lib/error-codes.mjs';
+import {ERROR_CODES} from '../../../../foundation/response/error-codes.mjs';
 import {resolveTopicDocs} from '../../_adapter.mjs';
 
 /**

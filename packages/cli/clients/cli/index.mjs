@@ -17,14 +17,14 @@ import {fileURLToPath} from 'node:url';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {checkForUpdate} from './lib/update-check.mjs';
-import {getCliInvocation} from '../../utils/package-manager.mjs';
-import {API_VERSION, setJsonMode} from '../../lib/json.mjs';
+import {getCliInvocation} from '../../foundation/env/package-manager.mjs';
+import {API_VERSION, setJsonMode} from '../../foundation/response/json.mjs';
 import {buildManifest} from './lib/manifest.mjs';
 import {cliError} from './lib/cli-error.mjs';
-import {ERROR_CODES} from '../../lib/error-codes.mjs';
-import {levenshteinDistance} from '../../lib/string-utils.mjs';
+import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
+import {levenshteinDistance} from '../../foundation/text/string-utils.mjs';
 import {installJsonShim} from './lib/json-shim.mjs';
-import {isAstryxInitialized} from '../../lib/agent-docs/agent-docs.mjs';
+import {isAstryxInitialized} from '../../foundation/agent-docs/agent-docs.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 

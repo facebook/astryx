@@ -14,7 +14,7 @@
  * an integration package is not a failure).
  */
 
-import {jsonOut, humanLog} from '../../../lib/json.mjs';
+import {jsonOut, humanLog} from '../../../foundation/response/json.mjs';
 import {
   validateIntegration,
   summarizeIssues,

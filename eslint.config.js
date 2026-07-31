@@ -66,7 +66,7 @@ export default defineConfig(
       "!packages/cli/authoring/**/*.mjs",
       "!packages/cli/lib/**/*.mjs",
       "!packages/cli/utils/**/*.mjs",
-      "!packages/cli/schemas/**/*.mjs",
+      "!packages/cli/foundation/**/*.mjs",
       "!packages/cli/clients/cli/bin/**/*.mjs",
       "**/*.test-violations.tsx",
       "apps/example-nextjs/*.js",
@@ -341,7 +341,7 @@ export default defineConfig(
       "packages/cli/authoring/**/*.mjs",
       "packages/cli/lib/**/*.mjs",
       "packages/cli/utils/**/*.mjs",
-      "packages/cli/schemas/**/*.mjs",
+      "packages/cli/foundation/**/*.mjs",
       "packages/cli/clients/cli/bin/**/*.mjs",
     ],
     plugins: {
@@ -396,7 +396,7 @@ export default defineConfig(
       "packages/cli/authoring/**/*.mjs",
       "packages/cli/lib/**/*.mjs",
       "packages/cli/utils/**/*.mjs",
-      "packages/cli/schemas/**/*.mjs",
+      "packages/cli/foundation/**/*.mjs",
       "packages/cli/clients/cli/bin/**/*.mjs",
     ],
     plugins: {

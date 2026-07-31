@@ -12,8 +12,8 @@
  * (never in the API payload) via formatCliCommand/getCliInvocation.
  */
 
-import {getCliInvocation, formatCliCommand} from '../../../utils/package-manager.mjs';
-import {jsonOut, humanLog} from '../../../lib/json.mjs';
+import {getCliInvocation, formatCliCommand} from '../../../foundation/env/package-manager.mjs';
+import {jsonOut, humanLog} from '../../../foundation/response/json.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {build as buildApi} from '../../../api/build/build.mjs';
 

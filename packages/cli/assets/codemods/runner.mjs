@@ -11,7 +11,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as p from './term-log.mjs';
-import {humanLog} from '../../lib/json.mjs';
+import {humanLog} from '../../foundation/response/json.mjs';
 import {runConfigCodemod} from './run-codemod.mjs';
 
 // Known corruption patterns that indicate a broken transform.

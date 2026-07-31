@@ -19,7 +19,7 @@ import * as path from 'node:path';
 import {pathToFileURL} from 'node:url';
 import * as fs from 'node:fs';
 import {createJiti} from 'jiti';
-import {formatZodError} from './config-schema.mjs';
+import {formatZodError} from '../config/config-schema.mjs';
 
 /** @type {ReturnType<typeof createJiti> | undefined} */
 let jitiInstance;

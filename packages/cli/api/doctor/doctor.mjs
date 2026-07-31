@@ -24,11 +24,11 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {createRequire} from 'node:module';
 
-import {MIN_NODE_VERSION, isNodeVersionSupported} from '../../lib/node-version.mjs';
-import {CLI_ROOT, findCoreDir} from '../../utils/paths.mjs';
-import {detectPackageManager, getCliInvocation} from '../../utils/package-manager.mjs';
-import {findConfigPath, Project} from '../../lib/project.mjs';
-import {semverCompare, isValidSemver} from '../../utils/semver.mjs';
+import {MIN_NODE_VERSION, isNodeVersionSupported} from '../../foundation/env/node-version.mjs';
+import {CLI_ROOT, findCoreDir} from '../../foundation/fs/paths.mjs';
+import {detectPackageManager, getCliInvocation} from '../../foundation/env/package-manager.mjs';
+import {findConfigPath, Project} from '../../foundation/config/project.mjs';
+import {semverCompare, isValidSemver} from '../../foundation/env/semver.mjs';
 
 const _require = createRequire(import.meta.url);
 

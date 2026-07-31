@@ -11,10 +11,10 @@
  */
 
 import {formatFull, formatBrief, formatCompact} from '../lib/component-format.mjs';
-import {jsonOut, humanLog} from '../../../lib/json.mjs';
+import {jsonOut, humanLog} from '../../../foundation/response/json.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {discover as discoverApi} from '../../../api/discover/discover.mjs';
-import {getCliInvocation} from '../../../utils/package-manager.mjs';
+import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
 
 /**
  * @param {import('commander').Command} program

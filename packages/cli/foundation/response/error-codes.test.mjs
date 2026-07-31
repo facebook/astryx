@@ -16,7 +16,7 @@
 
 import {describe, it, expect} from 'vitest';
 import {ERROR_CODES, isErrorCode, allErrorCodes} from './error-codes.mjs';
-import {runCli} from '../test-utils/run-cli.mjs';
+import {runCli} from '../../test-utils/run-cli.mjs';
 
 /** Parse the JSON envelope from stdout. Throws if stdout isn't clean JSON. */
 function envelope(stdout) {

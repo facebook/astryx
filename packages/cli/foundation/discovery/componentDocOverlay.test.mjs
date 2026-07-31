@@ -29,6 +29,7 @@ const CORE_SRC = path.join(
   import.meta.dirname,
   '..',
   '..',
+  '..',
   'core',
   'src',
 );

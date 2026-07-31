@@ -12,7 +12,7 @@
  *   astryx upgrade --from <old-version> --path <source-dir> --apply
  */
 
-import {jsonOut, jsonError} from '../../../lib/json.mjs';
+import {jsonOut, jsonError} from '../../../foundation/response/json.mjs';
 import {logger} from '../../../api/logger.mjs';
 import {AstryxError} from '../../../api/error.mjs';
 import {upgrade as upgradeApi} from '../../../api/upgrade/upgrade.mjs';

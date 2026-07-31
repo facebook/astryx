@@ -13,8 +13,8 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {semverGt} from '../../../utils/semver.mjs';
-import {getCliInvocation} from '../../../utils/package-manager.mjs';
+import {semverGt} from '../../../foundation/env/semver.mjs';
+import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
 
 /**
  * Read the latest available version from local signals.

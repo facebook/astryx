@@ -11,7 +11,7 @@
  * @position api — leaf over ../_adapter.mjs + lib/xle/print
  */
 
-import {toCompact, toOutline} from '../../../lib/xle/print.mjs';
+import {toCompact, toOutline} from '../../../foundation/xle/print.mjs';
 import {analyze, formatIssue} from '../_adapter.mjs';
 
 /**
