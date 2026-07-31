@@ -269,9 +269,7 @@ plugin.configs.strict = {
     '@astryx/no-hardcoded-anchor': 'error',
     '@astryx/no-raw-paragraph': 'error',
     '@astryx/no-border-shorthand': 'error',
-    // RTL physical→logical migration is complete across the core package
-    // (Calendar radii, Slider positioning, Table gradients, and the final
-    // component sweep all landed). This rule now gates against regressions.
+    // RTL physical→logical migration complete; errors to prevent regressions.
     '@astryx/no-physical-properties': 'error',
     '@astryx/no-react-namespace-hooks': 'error',
     '@astryx/require-base-props': 'error',
@@ -298,8 +296,7 @@ plugin.configs.recommended = {
     '@astryx/no-hardcoded-anchor': 'warn',
     '@astryx/no-raw-paragraph': 'warn',
     '@astryx/no-border-shorthand': 'warn',
-    // RTL physical→logical migration is complete; this rule now errors to
-    // gate against regressions (see strict tier for details).
+    // RTL physical→logical migration complete; errors to prevent regressions.
     '@astryx/no-physical-properties': 'error',
     '@astryx/no-react-namespace-hooks': 'error',
     '@astryx/require-base-props': 'warn',

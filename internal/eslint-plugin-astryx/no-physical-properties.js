@@ -15,11 +15,9 @@
  *      (e.g. `textAlign: 'left'`, `float: 'right'`, `clear: 'left'`). The
  *      suggested fix replaces only the value; the key is left alone.
  *
- * SEVERITY: shipped at `error` in BOTH the `strict` and `recommended` tiers
- *   (see index.js). The RTL physical→logical migration is complete across the
- *   core package (Calendar radii, Slider positioning, Table gradients, and the
- *   final component sweep all landed), so this rule now gates against
- *   regressions instead of merely warning.
+ * SEVERITY: shipped at `error` in both the `strict` and `recommended` tiers
+ *   (see index.js). The RTL physical→logical migration is complete, so this
+ *   rule gates against regressions rather than merely warning.
  *
  * AUTOFIX: this rule is fixable (`meta.fixable: 'code'`).
  *   - VALUE-BASED fixes are always safe: only the value literal is replaced.

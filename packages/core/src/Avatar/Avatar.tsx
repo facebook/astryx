@@ -216,11 +216,8 @@ const dynamicStyles = stylex.create({
   statusPosition: (size: number) => ({
     bottom: size * CIRCLE_EDGE_OFFSET_RATIO,
     insetInlineEnd: size * CIRCLE_EDGE_OFFSET_RATIO,
-    // The dot overhangs the bottom-inline-END corner. `insetInlineEnd` moves
-    // the anchor to the right edge in LTR / left edge in RTL, so the outward
-    // push must mirror too: +X (rightward) in LTR, −X (leftward) in RTL.
-    // Y (+50%, downward) is direction-neutral. See MobileNav/Carousel for the
-    // same `:is([dir="rtl"] *)` idiom.
+    // `insetInlineEnd` anchors to the right edge in LTR / left in RTL, so the
+    // outward push must mirror too: +X in LTR, −X in RTL (Y is unaffected).
     transform: {
       default: 'translate(50%, 50%)',
       ':is([dir="rtl"] *)': 'translate(-50%, 50%)',
