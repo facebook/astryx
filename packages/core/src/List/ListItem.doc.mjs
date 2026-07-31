@@ -62,7 +62,7 @@ export const docs = {
     {
       name: 'interactiveRef',
       type: 'RefObject<HTMLElement | null>',
-      description: 'Ref to a nested control (e.g. a checkbox in startContent) that owns the item\'s keyboard access and action. The row becomes an enlarged click/tap target that delegates surface clicks to it (useClickableContainer) and renders no invisible button/anchor, so the row adds no second tab stop (WCAG 4.1.2). Mutually exclusive with onClick/href — those are ignored when set.',
+      description: 'Ref to a nested control (e.g. a checkbox in startContent) that owns the item\'s keyboard access and action. The row becomes an enlarged click/tap target that delegates surface clicks to it (useClickableContainer) and renders no invisible button/anchor, so the row adds no second tab stop (WCAG 4.1.2). Mutually exclusive with onClick/href; those are ignored when set.',
     },
     {
       name: 'href',
