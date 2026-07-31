@@ -32,8 +32,8 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {findPresentFiles, loadModuleWithSchema} from '../fs/module-loader.mjs';
-import {AstryxConfigSchema} from './config-schema.mjs';
+import {findPresentFiles, loadModuleWithParser} from '../fs/module-loader.mjs';
+import {parseConfig} from '../../authoring/config/parse.mjs';
 import {loadIntegrations} from '../integrations/integrations.mjs';
 import {
   CORE_PACKAGE,
@@ -206,7 +206,7 @@ export class Project {
     let loadedIntegrations = [];
 
     if (configPath) {
-      config = await loadModuleWithSchema(configPath, AstryxConfigSchema, {
+      config = await loadModuleWithParser(configPath, parseConfig, {
         label: 'astryx.config',
       });
       const configDir = path.dirname(configPath);

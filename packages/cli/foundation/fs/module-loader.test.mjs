@@ -7,7 +7,7 @@ import {z} from 'zod';
 import {
   findPresentFiles,
   importUserModule,
-  loadModuleWithSchema,
+  loadModuleWithParser,
 } from './module-loader.mjs';
 
 let tmpDir;
@@ -63,7 +63,7 @@ describe('importUserModule', () => {
   });
 });
 
-describe('loadModuleWithSchema', () => {
+describe('loadModuleWithParser', () => {
   // Temp module files live under a repo-local dir (not /tmp): Vite's dynamic
   // import blocks /tmp, so we mirror the existing repo-local temp pattern.
   const schema = z
@@ -73,10 +73,28 @@ describe('loadModuleWithSchema', () => {
     })
     .strict();
 
-  it('returns the parsed default export when it satisfies the schema', async () => {
+  /**
+   * A stand-in authoring parser: validates via a sealed schema and, on failure,
+   * throws the same `<label> is invalid: …` line the real parsers throw. Zod
+   * stays inside the parser — `loadModuleWithParser` never sees it.
+   * @param {unknown} input
+   * @param {string} [label]
+   */
+  function parse(input, label = 'value') {
+    const result = schema.safeParse(input);
+    if (!result.success) {
+      const issues = result.error.issues
+        .map(i => `${i.path.length ? i.path.join('.') : '(root)'}: ${i.message}`)
+        .join('; ');
+      throw new Error(`${label} is invalid: ${issues}`);
+    }
+    return result.data;
+  }
+
+  it('returns the parsed default export when it satisfies the parser', async () => {
     const file = path.join(tmpDir, 'valid.mjs');
     fs.writeFileSync(file, `export default {name: 'ok', count: 3};\n`);
-    const value = await loadModuleWithSchema(file, schema, {label: 'thing'});
+    const value = await loadModuleWithParser(file, parse, {label: 'thing'});
     expect(value).toEqual({name: 'ok', count: 3});
   });
 
@@ -84,22 +102,22 @@ describe('loadModuleWithSchema', () => {
     const file = path.join(tmpDir, 'no-default.mjs');
     fs.writeFileSync(file, `export const named = {name: 'x'};\n`);
     await expect(
-      loadModuleWithSchema(file, schema, {label: 'thing'}),
+      loadModuleWithParser(file, parse, {label: 'thing'}),
     ).rejects.toThrow(/thing is invalid/i);
   });
 
-  it('throws a readable error when the default export fails the schema', async () => {
+  it('throws a readable error when the default export fails the parser', async () => {
     const file = path.join(tmpDir, 'invalid.mjs');
     fs.writeFileSync(file, `export default {count: 'not-a-number'};\n`);
     await expect(
-      loadModuleWithSchema(file, schema, {label: 'thing'}),
+      loadModuleWithParser(file, parse, {label: 'thing'}),
     ).rejects.toThrow(/thing is invalid:.*name/i);
   });
 
   it('falls back to the file path in the message when no label is given', async () => {
     const file = path.join(tmpDir, 'unlabeled.mjs');
     fs.writeFileSync(file, `export default {bogus: true};\n`);
-    await expect(loadModuleWithSchema(file, schema)).rejects.toThrow(
+    await expect(loadModuleWithParser(file, parse)).rejects.toThrow(
       new RegExp(`${path.basename(file)} is invalid`),
     );
   });

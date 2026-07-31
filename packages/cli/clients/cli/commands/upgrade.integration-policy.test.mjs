@@ -15,7 +15,6 @@
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {pathToFileURL} from 'node:url';
 import {Command} from 'commander';
 import {registerUpgrade} from './upgrade.mjs';
 
@@ -24,10 +23,6 @@ let originalCwd;
 let logCalls;
 let errCalls;
 let exitCode;
-
-const codemodModuleUrl = pathToFileURL(
-  path.resolve(process.cwd(), 'packages/cli/authoring/codemod.mjs'),
-).href;
 
 beforeEach(() => {
   originalCwd = process.cwd();
@@ -153,8 +148,7 @@ describe('upgrade integration error policy (skip + warn)', () => {
   it('runs a healthy integration codemod for an applicable range', async () => {
     scaffoldIntegration({
       '0.2.0/drop-foo.mjs':
-        `import {createCodemod} from ${JSON.stringify(codemodModuleUrl)};\n` +
-        `export default createCodemod({ title: 'Drop foo', transform: (file) => file.source.replace(/foo/g, 'bar') });\n`,
+        `export default { type: 'code', title: 'Drop foo', transform: (file) => file.source.replace(/foo/g, 'bar') };\n`,
     });
     writeInstalledCore('0.2.0');
     writeSource();
@@ -178,8 +172,7 @@ describe('upgrade integration error policy (skip + warn)', () => {
   it('--skip-codemod excludes a named integration codemod', async () => {
     scaffoldIntegration({
       '0.2.0/drop-foo.mjs':
-        `import {createCodemod} from ${JSON.stringify(codemodModuleUrl)};\n` +
-        `export default createCodemod({ title: 'Drop foo', transform: (file) => file.source.replace(/foo/g, 'bar') });\n`,
+        `export default { type: 'code', title: 'Drop foo', transform: (file) => file.source.replace(/foo/g, 'bar') };\n`,
     });
     writeInstalledCore('0.2.0');
     writeSource();

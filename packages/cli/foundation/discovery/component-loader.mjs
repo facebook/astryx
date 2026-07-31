@@ -6,21 +6,19 @@
 
 import {pathToFileURL} from 'node:url';
 import {importUserModule} from '../fs/module-loader.mjs';
-import {formatZodError} from '../config/config-schema.mjs';
-import {ComponentDocSchema} from '../schemas/doc-schema.mjs';
+import {parseDoc} from '../../authoring/doctypes/parse.mjs';
 
 /**
  * Load a component doc through the shared load/validation boundary.
  *
  * This is the typed counterpart to {@link loadDocs}: it loads `.doc.ts` via
- * jiti (and `.doc.mjs`/`.doc.js` via native import) and validates against
- * {@link ComponentDocSchema}. That schema accepts BOTH formats, so this loader
- * reads whichever the file uses:
- *   - NEW: the factory default export
- *     (`export default createComponentDoc({...})` / `createFunctionDoc` /
- *     `createDoc`) — the same single-export convention
- *     {@link loadModuleWithSchema} uses for config/integration/template. These
- *     carry a stamped `type` and validate against the matching per-kind schema.
+ * jiti (and `.doc.mjs`/`.doc.js` via native import) and validates via
+ * `parseDoc`, which accepts BOTH formats, so this loader reads whichever the
+ * file uses:
+ *   - NEW: a stamped default export (`export default {type: 'component', ...}`
+ *     / `'function'` / `'generic'`) — the same single-export convention the
+ *     other authoring parsers use for config/integration/template. These carry
+ *     a stamped `type` and validate against the matching per-kind parser.
  *   - OLD: the legacy loose `export const docs = {...}` (no `type`), validated
  *     against the permissive legacy union.
  * The default export wins when both are present. Throws a readable
@@ -40,10 +38,7 @@ export async function loadComponentDoc(
   /** @type {any} */
   const authored = mod?.default ?? mod?.docs;
 
-  const result = ComponentDocSchema.safeParse(authored);
-  if (!result.success) {
-    throw new Error(formatZodError(docPath, result.error));
-  }
+  parseDoc(authored, docPath);
   const docs = authored;
 
   const locale = lang || (dense ? 'dense' : zh ? 'zh' : null);

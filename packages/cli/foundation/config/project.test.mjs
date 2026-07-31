@@ -3,19 +3,12 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {pathToFileURL} from 'node:url';
 import {Project, DEFAULT_ISSUES_URL, findConfigPath} from './project.mjs';
 import {InMemoryConfigCache} from './config-cache.mjs';
 import * as componentDiscovery from '../discovery/component-discovery.mjs';
 
 let tmpDir;
 let originalCwd;
-
-const codemodModulePath = path.resolve(
-  process.cwd(),
-  'packages/cli/authoring/codemod.mjs',
-);
-const codemodModuleUrl = pathToFileURL(codemodModulePath).href;
 
 /**
  * Scaffold a consumer project (package.json + astryx.config.mjs) under a
@@ -101,8 +94,7 @@ function scaffold({
     } else {
       fs.writeFileSync(
         path.join(cmDir, 'drop-foo.mjs'),
-        `import {createCodemod} from ${JSON.stringify(codemodModuleUrl)};\n` +
-          `export default createCodemod({ title: 'Drop foo', transform: (file) => file.source });\n`,
+        `export default { type: 'code', title: 'Drop foo', transform: (file) => file.source };\n`,
       );
     }
   }

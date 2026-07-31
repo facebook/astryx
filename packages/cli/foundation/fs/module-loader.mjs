@@ -9,17 +9,16 @@
  * load-precedence order. These helpers centralize that so the two callers stay
  * in lockstep.
  *
- * `loadModuleWithSchema` builds on these primitives to provide the single
+ * `loadModuleWithParser` builds on these primitives to provide the single
  * load/validation boundary shared by config, integration, codemod, and
- * template discovery: import the module, take its default export, and validate
- * it against the expected zod schema.
+ * template discovery: import the module, take its default export, and hand it
+ * to the authoring parser (which seals its own zod schema).
  */
 
 import * as path from 'node:path';
 import {pathToFileURL} from 'node:url';
 import * as fs from 'node:fs';
 import {createJiti} from 'jiti';
-import {formatZodError} from '../config/config-schema.mjs';
 
 /** @type {ReturnType<typeof createJiti> | undefined} */
 let jitiInstance;
@@ -58,24 +57,20 @@ export function findPresentFiles(dir, basenames) {
 
 /**
  * Import a user-authored module, take its default export, and validate it
- * against a zod schema. This is the single load/validation boundary for all
- * user-authored modules (config, integration, codemod, template): execute the
- * module, take the default export, validate it against the expected schema.
- * Throws a clear, readable error if the default export is missing or fails
- * validation.
+ * through an authoring parser. This is the single load/validation boundary for
+ * all user-authored modules (config, integration, codemod, template): execute
+ * the module, take the default export, and hand it to the parser, which returns
+ * the typed value or throws a clear, readable error. Zod stays sealed inside
+ * the parser — this boundary never touches it.
  *
- * @template {import('zod').ZodType} S
+ * @template T
  * @param {string} file absolute path
- * @param {S} schema
+ * @param {(input: unknown, label?: string) => T} parse an authoring parser
+ *   (parseConfig, parseIntegration, parseCodemod, parseTemplate)
  * @param {{label?: string}} [opts] label used in error messages
- * @returns {Promise<import('zod').infer<S>>} parsed + typed value
+ * @returns {Promise<T>} parsed + typed value
  */
-export async function loadModuleWithSchema(file, schema, {label} = {}) {
+export async function loadModuleWithParser(file, parse, {label} = {}) {
   const mod = await importUserModule(file);
-  const exported = mod?.default;
-  const result = schema.safeParse(exported);
-  if (!result.success) {
-    throw new Error(formatZodError(label ?? file, result.error));
-  }
-  return result.data;
+  return parse(mod?.default, label ?? file);
 }
