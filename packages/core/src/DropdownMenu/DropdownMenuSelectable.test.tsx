@@ -78,6 +78,37 @@ describe('DropdownMenuCheckboxItem', () => {
     expect(onChangeSpy).toHaveBeenCalledWith(true);
   });
 
+  it('keeps the composed checkbox decorative (row is the only announced control)', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'View'}}>
+        <DropdownMenuCheckboxItem label="Show archived" value={true} />
+      </DropdownMenu>,
+    );
+    await user.click(screen.getByRole('button', {name: /View/}));
+
+    // The row owns role="menuitemcheckbox" — it is the single such control.
+    expect(
+      screen.getAllByRole('menuitemcheckbox', {hidden: true}),
+    ).toHaveLength(1);
+
+    // The composed CheckboxInput is present in the DOM but sits inside an
+    // `aria-hidden` + `inert` subtree: it contributes nothing to the row's
+    // accessible name and its native <input> is out of the tab order and the
+    // accessibility tree, so it is not a second announced/focusable control.
+    // (Browsers enforce inert; jsdom does not model its a11y removal, so this
+    // asserts the aria-hidden/inert boundary directly rather than via role.)
+    const row = screen.getByRole('menuitemcheckbox', {
+      name: /Show archived/,
+      hidden: true,
+    });
+    const input = row.querySelector('input[type="checkbox"]');
+    expect(input).not.toBeNull();
+    const marker = input?.closest('[inert]');
+    expect(marker).not.toBeNull();
+    expect(marker).toHaveAttribute('aria-hidden', 'true');
+  });
+
   it('does not toggle when disabled', async () => {
     const user = userEvent.setup();
     const onChangeSpy = vi.fn();

@@ -4,39 +4,39 @@
 
 /**
  * @file DropdownMenuCheckboxItem.tsx
- * @input React, stylex, Item + Icon + DropdownMenu context + tokens from core
+ * @input React, stylex, Item + CheckboxInput + DropdownMenu context + tokens from core
  * @output DropdownMenuCheckboxItem — a standalone checkable menu item.
  * @position Sub-component; used inside DropdownMenu.
  *
  * A menu item that toggles an independent boolean (role="menuitemcheckbox").
- * Unlike CheckboxInput, there is no nested native <input>: the row itself owns
- * the role and aria-checked, per the WAI-ARIA menuitemcheckbox pattern.
- * Keyboard navigation (arrows/typeahead) and Enter/Space activation come from
- * the parent DropdownMenu's useListFocus + activation path, which matches
- * menuitemcheckbox alongside plain menuitem rows.
+ * Unlike CheckboxInput, there is no nested native <input> that participates in
+ * accessibility: the row itself owns the role and aria-checked, per the
+ * WAI-ARIA menuitemcheckbox pattern. Keyboard navigation (arrows/typeahead) and
+ * Enter/Space activation come from the parent DropdownMenu's useListFocus +
+ * activation path, which matches menuitemcheckbox alongside plain menuitem rows.
  *
- * The square checkbox visual is decorative (aria-hidden) — the row owns the
- * checked state. Its size is derived from the menu's item size (a `sm` menu
- * gets the compact control; `md`/`lg` get the standard one) and it swaps to the
- * inline-end of the row on coarse-pointer (touch) devices via CSS `order`, so
- * it lands where selection toggles are conventionally placed on mobile. The
- * checkmark uses the `check` icon from the active theme's icon registry.
+ * The checkbox visual composes the real CheckboxInput primitive so its checkmark
+ * matches CheckboxListItem and picks up the standard `checkbox` theming slots.
+ * It is purely decorative: the composed control is wrapped in an element that is
+ * both `aria-hidden` and `inert`, so it contributes nothing to the row's
+ * accessible name, and its native <input> and sr-only label stay out of the tab
+ * order and the accessibility tree while pointer clicks fall through to the row
+ * — the same shim MultiSelector uses. The row owns the checked state and
+ * accessible name. The control size is derived from the menu's item size (a
+ * `sm` menu gets the compact control; `md`/`lg` get the standard one) and it
+ * swaps to the inline-end of the row on coarse-pointer (touch) devices via CSS
+ * `order`, so it lands where selection toggles are conventionally placed on
+ * mobile.
  */
 
 import {useCallback, type PointerEvent, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {Icon, renderIconSlot, type IconType} from '../Icon';
+import {renderIconSlot, type IconType} from '../Icon';
+import {CheckboxInput} from '../CheckboxInput/CheckboxInput';
 import {Item} from '../Item';
 import {useDropdownMenuContext} from './DropdownMenuContext';
 import {focusMenuItemOnHover} from './menuItemHover';
-import {
-  colorVars,
-  spacingVars,
-  radiusVars,
-  durationVars,
-  easeVars,
-  borderVars,
-} from '../theme/tokens.stylex';
+import {colorVars, spacingVars} from '../theme/tokens.stylex';
 import {mergeProps, themeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 
@@ -58,22 +58,13 @@ const styles = stylex.create({
   },
   // Rendered in Item's `marker` slot as a raw flex child, so `order` moves it
   // relative to the label within the row. On touch it moves to the inline-end.
-  box: {
+  // `aria-hidden` + `inert` + pointer-events:none keep the composed CheckboxInput
+  // decorative: it adds no accessible name, and clicks fall through to the row,
+  // which owns the role and activation.
+  markerBox: {
     display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
     flexShrink: 0,
-    boxSizing: 'border-box',
-    borderWidth: borderVars['--border-width'],
-    borderStyle: 'solid',
-    borderRadius: radiusVars['--radius-inner'],
-    color: colorVars['--color-on-accent'],
-    transitionProperty: 'background-color, border-color',
-    transitionDuration: {
-      default: durationVars['--duration-fast'],
-      '@media (prefers-reduced-motion: reduce)': '0s',
-    },
-    transitionTimingFunction: easeVars['--ease-standard'],
+    pointerEvents: 'none',
     order: {
       default: 0,
       '@media (pointer: coarse)': 1,
@@ -83,19 +74,6 @@ const styles = stylex.create({
       '@media (pointer: coarse)': 'auto',
     },
   },
-  unchecked: {
-    borderColor: colorVars['--color-border-emphasized'],
-    backgroundColor: colorVars['--color-background-surface'],
-  },
-  checked: {
-    borderColor: colorVars['--color-accent'],
-    backgroundColor: colorVars['--color-accent'],
-  },
-});
-
-const boxSizeStyles = stylex.create({
-  sm: {width: 18, height: 18},
-  md: {width: 22, height: 22},
 });
 
 export interface DropdownMenuCheckboxItemProps extends Omit<
@@ -180,6 +158,12 @@ export function DropdownMenuCheckboxItem({
   const menuSize = ctx?.menuSize ?? 'md';
   const controlSize = menuSize === 'sm' ? 'sm' : 'md';
 
+  // The composed checkbox is decorative and inert, so its label never reaches
+  // the accessibility tree — the row's `label` prop provides the announced
+  // name. CheckboxInput still requires a string label, so pass one through when
+  // the row label is a plain string.
+  const checkboxLabel = typeof label === 'string' ? label : '';
+
   const handleClick = useCallback(() => {
     if (isDisabled) {
       return;
@@ -203,22 +187,15 @@ export function DropdownMenuCheckboxItem({
       tabIndex={isDisabled ? undefined : -1}
       onPointerMove={handlePointerMove}
       marker={
-        <span
-          aria-hidden="true"
-          {...mergeProps(
-            themeProps('dropdown-menu-checkbox', {
-              size: controlSize,
-              checked: value ? 'checked' : null,
-              disabled: isDisabled ? 'disabled' : null,
-            }),
-            stylex.props(
-              styles.box,
-              boxSizeStyles[controlSize],
-              value ? styles.checked : styles.unchecked,
-            ),
-          )}>
-          {value && <Icon icon="check" size="sm" color="inherit" />}
-        </span>
+        <div aria-hidden="true" inert {...stylex.props(styles.markerBox)}>
+          <CheckboxInput
+            label={checkboxLabel}
+            isLabelHidden
+            value={value}
+            isDisabled={isDisabled}
+            size={controlSize}
+          />
+        </div>
       }
       startContent={
         icon
