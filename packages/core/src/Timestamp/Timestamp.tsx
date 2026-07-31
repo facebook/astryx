@@ -247,6 +247,10 @@ const styles = stylex.create({
     marginInline: 0,
   },
   cardLabel: {
+    // The card renders on --color-background-surface (not the inverted
+    // tooltip palette), so set explicit text colors instead of inheriting an
+    // ambient one that fails contrast against the surface.
+    color: colorVars['--color-text-secondary'],
     marginBlock: 0,
     marginInline: 0,
     paddingInlineEnd: {
@@ -255,6 +259,7 @@ const styles = stylex.create({
     },
   },
   cardValue: {
+    color: colorVars['--color-text-primary'],
     marginBlock: 0,
     marginInline: 0,
     whiteSpace: 'nowrap',
@@ -272,7 +277,7 @@ const styles = stylex.create({
         ':hover': colorVars['--color-overlay-hover'],
       },
     },
-    color: 'inherit',
+    color: colorVars['--color-text-primary'],
     cursor: 'pointer',
     lineHeight: 0,
     outline: {
