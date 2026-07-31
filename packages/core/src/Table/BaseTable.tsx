@@ -243,6 +243,17 @@ function TableRowInner<T extends Record<string, unknown>>({
     </RowComponent>
   );
 
+  // afterRow: plugins (e.g. row expansion) can append a full-width detail
+  // panel `<tr>` after the row. Rendered as a sibling fragment.
+  if (rowRenderProps.afterRow) {
+    return (
+      <>
+        {row}
+        {rowRenderProps.afterRow}
+      </>
+    );
+  }
+
   return row;
 }
 

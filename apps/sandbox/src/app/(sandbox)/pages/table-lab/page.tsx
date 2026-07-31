@@ -46,7 +46,6 @@ import {
   useTableColumnResize,
   useTableStickyColumns,
   useTableRowExpansion,
-  useTableRowExpansionState,
   useTableGroupedRows,
   useTableRowIndex,
   useTableRowStatus,
@@ -205,16 +204,27 @@ function useLabPlugins({
     endKeys: ['joined'],
   });
 
-  // --- row expansion (flat rows; no real tree in the synthetic data) ---
+  // --- row expansion (detail panel below the row) ---
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
-  const {expansionConfig} = useTableRowExpansionState<LabRow>({
-    baseData: dataAfterPage,
-    getChildren: () => [],
-    getRowKey: item => item.id,
+  const rowExpansionPlugin = useTableRowExpansion<LabRow>({
     expandedKeys,
-    setExpandedKeys,
+    onToggle: key =>
+      setExpandedKeys(prev => {
+        const next = new Set(prev);
+        if (next.has(key)) {
+          next.delete(key);
+        } else {
+          next.add(key);
+        }
+        return next;
+      }),
+    getRowKey: item => item.id,
+    renderExpanded: item => (
+      <Text type="body" color="secondary">
+        {`Details for ${item.name}`}
+      </Text>
+    ),
   });
-  const rowExpansionPlugin = useTableRowExpansion(expansionConfig);
   if (enabled.rowExpansion) {
     summary.push(`${expandedKeys.size} expanded`);
   }
