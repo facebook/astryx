@@ -71,7 +71,7 @@ export default function SettingsTemplate() {
   return (
     <Layout
       height="fill"
-      contentWidth={1440}
+      shellWidth={1440}
       header={
         <LayoutHeader hasDivider>
           <HStack vAlign="center">
