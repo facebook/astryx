@@ -474,11 +474,9 @@ export function TextArea({
           stylex.props(
             inputWrapperStyles.base,
             styles.wrapper,
-            effectivelyDisabled && inputWrapperStyles.disabled,
+            isDisabled && inputWrapperStyles.disabled,
             status && inputStatusBorderStyles[status.type],
-            status &&
-              !effectivelyDisabled &&
-              inputStatusHoverShadowStyles[status.type],
+            status && !isDisabled && inputStatusHoverShadowStyles[status.type],
             status && inputStatusFocusWithinStyles[status.type],
             xstyle,
           ),
@@ -523,7 +521,7 @@ export function TextArea({
           {...stylex.props(
             styles.textarea,
             textareaSizeStyles[size],
-            effectivelyDisabled && styles.textareaDisabled,
+            isDisabled && styles.textareaDisabled,
             Boolean(startIcon) && styles.textareaWithStartIcon,
             (status || isBusy) && styles.textareaWithStatus,
             isBusy && !!statusIcon && styles.textareaWithBusyStatus,
