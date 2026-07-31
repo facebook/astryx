@@ -38,19 +38,19 @@ export const docs = {
     },
     {
       name: 'padding',
-      type: 'SpacingStep',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
       description:
         'Inner padding on all sides, using the spacing scale (0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10). Matches the padding prop on Stack, Card, LayoutContent, and LayoutPanel. Pass as a JSX number expression e.g. padding={3}.',
     },
     {
       name: 'paddingInline',
-      type: 'SpacingStep',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
       description:
         'Inline (horizontal) padding, using the spacing scale. Overrides padding on the inline axis when both are set.',
     },
     {
       name: 'paddingBlock',
-      type: 'SpacingStep',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
       description:
         'Block (vertical) padding, using the spacing scale. Overrides padding on the block axis when both are set.',
     },
@@ -115,18 +115,18 @@ export const docsZh = {
     {name: 'height', type: 'number | string', description: '容器高度（px 或 CSS 值）。'},
     {
       name: 'padding',
-      type: 'SpacingStep',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
       description:
         '所有方向的内边距，使用间距刻度（0、0.5、1、1.5、2、3、4、5、6、8、10）。与 Stack、Card、LayoutContent 和 LayoutPanel 的 padding 属性一致。在 JSX 中使用数字表达式 e.g. padding={3}。',
     },
     {
       name: 'paddingInline',
-      type: 'SpacingStep',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
       description: '行内（水平）内边距，使用间距刻度。两者同时设置时在行内轴上覆盖 padding。',
     },
     {
       name: 'paddingBlock',
-      type: 'SpacingStep',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
       description: '块（垂直）内边距，使用间距刻度。两者同时设置时在块轴上覆盖 padding。',
     },
     {name: 'isInline', type: 'boolean', description: '使用 inline-flex（适用于文本/图标）。', default: 'false'},
