@@ -104,38 +104,37 @@ export type DialogVariant = keyof DialogVariantMap;
  */
 export type DialogPurpose = 'required' | 'form' | 'info';
 
-/**
- * Position configuration for static dialog positioning.
- *
- * Prefer logical `start`/`end` — they map correctly under RTL. Physical
- * `left`/`right` are deprecated and do not mirror.
- */
-export interface DialogPosition {
-  bottom?: number | string;
-  /**
-   * @deprecated Use `start` instead. Physical (never mirrors under RTL),
-   * kept for backward-compat; removed in a future major. `start` wins if both.
-   */
-  left?: number | string;
-  /**
-   * @deprecated Use `end` instead. Physical (never mirrors under RTL),
-   * kept for backward-compat; removed in a future major. `end` wins if both.
-   */
-  right?: number | string;
-  /**
-   * Logical inline-start offset (maps to `inset-inline-start`). Mirrors under
-   * RTL — the preferred replacement for the physical `left`. If both `start`
-   * and `left` are provided, `start` wins.
-   */
-  start?: number | string;
-  /**
-   * Logical inline-end offset (maps to `inset-inline-end`). Mirrors under RTL
-   * — the preferred replacement for the physical `right`. If both `end` and
-   * `right` are provided, `end` wins.
-   */
-  end?: number | string;
+/** Block-axis offsets — always allowed, independent of inline direction. */
+interface DialogBlockPosition {
   top?: number | string;
+  bottom?: number | string;
 }
+
+/**
+ * Static position for a dialog. The inline axis is logical XOR physical — the
+ * type forbids mixing the two, so a single dialog can't be positioned both ways:
+ * - Logical `start`/`end` map to `inset-inline-*` and mirror under RTL (preferred).
+ * - Physical `left`/`right` are deprecated, do not mirror, and are removed in a
+ *   future major.
+ * Block-axis `top`/`bottom` may be combined with either.
+ */
+export type DialogPosition =
+  | (DialogBlockPosition & {
+      /** Logical inline-start offset (`inset-inline-start`); mirrors under RTL. */
+      start?: number | string;
+      /** Logical inline-end offset (`inset-inline-end`); mirrors under RTL. */
+      end?: number | string;
+      left?: never;
+      right?: never;
+    })
+  | (DialogBlockPosition & {
+      /** @deprecated Use `start`. Physical (never mirrors); removed in a future major. */
+      left?: number | string;
+      /** @deprecated Use `end`. Physical (never mirrors); removed in a future major. */
+      right?: number | string;
+      start?: never;
+      end?: never;
+    });
 
 const enterDirectional = stylex.keyframes({
   from: {
@@ -238,17 +237,17 @@ const dynamicStyles = stylex.create({
     maxHeight: typeof maxHeight === 'number' ? `${maxHeight}px` : maxHeight,
   }),
   position: (
-    top: string | null,
-    insetInlineStart: string | null,
-    insetInlineEnd: string | null,
-    right: string | null,
-    bottom: string | null,
-    left: string | null,
+    top: string,
+    insetInlineStart: string,
+    insetInlineEnd: string,
+    right: string,
+    bottom: string,
+    left: string,
   ) => ({
-    // Assigns pre-resolved offsets from resolveDialogPositionOffsets() (the
-    // single source of the logical-over-physical precedence + RTL mapping).
-    // This literal has no logic — StyleX can't analyze a helper, so the values
-    // are computed at the call site and passed in.
+    // Assigns pre-resolved offsets from resolveDialogPositionOffsets(). This
+    // literal has no logic — StyleX can't analyze a helper, so the values
+    // (logical start/end → inset-inline-*, physical left/right, `auto`
+    // fallbacks) are computed at the call site and passed in.
     margin: 0,
     top,
     insetInlineStart,
@@ -264,49 +263,33 @@ const dynamicStyles = stylex.create({
 /**
  * Format position value - numbers become pixels, strings pass through, undefined becomes null
  */
-function formatPosition(value: number | string | undefined): string | null {
-  if (value === undefined) {
-    return null;
-  }
+function formatPosition(value: number | string): string {
   return typeof value === 'number' ? `${value}px` : value;
 }
 
 /**
- * Map a {@link DialogPosition} to resolved CSS offsets, applying the
- * precedence rule: when both a logical offset (`start`/`end`) and its physical
- * counterpart (`left`/`right`) are provided, the LOGICAL offset wins and the
- * physical one is suppressed. A consumer using ONLY `left`/`right` gets exactly
- * the pre-deprecation behavior — a physical, non-mirroring offset with an
- * `auto` fallback — so the deprecation is non-breaking.
+ * Map a {@link DialogPosition} to resolved CSS offsets. Logical `start`/`end`
+ * become `inset-inline-*` (mirror under RTL); physical `left`/`right` stay
+ * physical. The union type guarantees at most one inline pair is set, so no
+ * precedence is needed — each unset offset falls back to `auto`.
  *
  * Not re-exported from the package; internal to Dialog. Directly unit-tested
- * so the precedence logic is verified without StyleX class compilation.
+ * so the mapping is verified without StyleX class compilation.
  *
  * @see DialogPosition
  */
 export function resolveDialogPositionOffsets(position: DialogPosition) {
-  const {top, right, bottom, left, start, end} = position;
-  const useLogicalStart = start !== undefined;
-  const useLogicalEnd = end !== undefined;
+  const {top, bottom, start, end, left, right} = position;
 
   return {
     top: top !== undefined ? formatPosition(top) : 'auto',
-    // Logical offsets mirror under RTL (preferred replacements).
-    insetInlineStart: useLogicalStart ? formatPosition(start) : 'auto',
-    insetInlineEnd: useLogicalEnd ? formatPosition(end) : 'auto',
-    // Deprecated physical offsets never mirror; suppressed when the logical
-    // counterpart is set so the two can't fight.
-    right: useLogicalEnd
-      ? null
-      : right !== undefined
-        ? formatPosition(right)
-        : 'auto',
     bottom: bottom !== undefined ? formatPosition(bottom) : 'auto',
-    left: useLogicalStart
-      ? null
-      : left !== undefined
-        ? formatPosition(left)
-        : 'auto',
+    // Logical offsets mirror under RTL (preferred replacements).
+    insetInlineStart: start !== undefined ? formatPosition(start) : 'auto',
+    insetInlineEnd: end !== undefined ? formatPosition(end) : 'auto',
+    // Deprecated physical offsets never mirror.
+    left: left !== undefined ? formatPosition(left) : 'auto',
+    right: right !== undefined ? formatPosition(right) : 'auto',
   };
 }
 

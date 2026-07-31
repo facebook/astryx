@@ -222,25 +222,26 @@ describe('Dialog', () => {
     });
   });
 
-  // Precedence + physical-vs-logical mapping is verified against the pure
-  // resolver so we can assert the exact emitted CSS offsets without relying on
-  // StyleX class compilation or a browser.
-  describe('resolveDialogPositionOffsets (position precedence + RTL mapping)', () => {
+  // Physical-vs-logical mapping is verified against the pure resolver so we can
+  // assert the exact emitted CSS offsets without relying on StyleX class
+  // compilation or a browser. The public DialogPosition union forbids mixing
+  // logical and physical inline offsets (enforced at compile time, below), so
+  // the resolver has no precedence logic — it just maps what it's given.
+  describe('resolveDialogPositionOffsets (physical-vs-logical mapping)', () => {
     it('maps logical start/end to inset-inline offsets (mirror under RTL)', () => {
       // insetInlineStart/End are direction-relative: the browser resolves them
       // to left/right per `dir`, so the same value mirrors under RTL.
       const offsets = resolveDialogPositionOffsets({start: 20, end: 40});
       expect(offsets.insetInlineStart).toBe('20px');
       expect(offsets.insetInlineEnd).toBe('40px');
-      // Physical offsets are suppressed so they can't fight the logical ones.
-      expect(offsets.left).toBeNull();
-      expect(offsets.right).toBeNull();
+      // No physical offsets requested → auto.
+      expect(offsets.left).toBe('auto');
+      expect(offsets.right).toBe('auto');
     });
 
     it('keeps physical left/right physical — they do NOT mirror', () => {
-      // Only physical props set: emit left/right unchanged. There is no
-      // inset-inline value driving direction, so this offset is the visual-left
-      // / visual-right edge in BOTH LTR and RTL (unchanged from pre-deprecation).
+      // Physical props are the visual-left / visual-right edge in BOTH LTR and
+      // RTL (unchanged from pre-deprecation).
       const offsets = resolveDialogPositionOffsets({left: 20, right: 40});
       expect(offsets.left).toBe('20px');
       expect(offsets.right).toBe('40px');
@@ -249,42 +250,24 @@ describe('Dialog', () => {
       expect(offsets.insetInlineEnd).toBe('auto');
     });
 
-    it('lets the logical offset win when both logical and physical are set', () => {
-      const offsets = resolveDialogPositionOffsets({
-        start: 5,
-        left: 99,
-        end: 7,
-        right: 88,
-      });
-      // Logical wins…
-      expect(offsets.insetInlineStart).toBe('5px');
-      expect(offsets.insetInlineEnd).toBe('7px');
-      // …and the physical counterpart is suppressed (not emitted).
-      expect(offsets.left).toBeNull();
-      expect(offsets.right).toBeNull();
-    });
-
-    it('resolves each side independently (start logical, right physical)', () => {
-      const offsets = resolveDialogPositionOffsets({start: 12, right: 30});
+    it('combines block-axis top/bottom with an inline pair', () => {
+      const offsets = resolveDialogPositionOffsets({top: 100, start: 12});
+      expect(offsets.top).toBe('100px');
       expect(offsets.insetInlineStart).toBe('12px');
-      expect(offsets.left).toBeNull();
-      // right has no logical counterpart set → stays physical.
-      expect(offsets.right).toBe('30px');
+      // Everything unset falls back to auto — no mirroring for a logical-only
+      // consumer's physical slots.
+      expect(offsets.bottom).toBe('auto');
+      expect(offsets.left).toBe('auto');
+      expect(offsets.right).toBe('auto');
       expect(offsets.insetInlineEnd).toBe('auto');
     });
 
     it('is non-breaking: physical-only offsets match pre-deprecation output', () => {
-      // Pre-deprecation, dynamicStyles.position emitted:
-      //   {margin:0, top, right(||auto), bottom, left(||auto)} with no
-      //   inset-inline props driving direction. A physical-only consumer must
-      //   still get physical left/right with an `auto` fallback and no logical
-      //   offset that would mirror.
       const offsets = resolveDialogPositionOffsets({top: 100, right: 20});
       expect(offsets.top).toBe('100px');
       expect(offsets.right).toBe('20px');
       expect(offsets.left).toBe('auto');
       expect(offsets.bottom).toBe('auto');
-      // No mirroring: inset-inline stays auto for a physical-only consumer.
       expect(offsets.insetInlineStart).toBe('auto');
       expect(offsets.insetInlineEnd).toBe('auto');
     });
@@ -297,6 +280,16 @@ describe('Dialog', () => {
       const physical = resolveDialogPositionOffsets({left: '5vw', top: '10vh'});
       expect(physical.left).toBe('5vw');
       expect(physical.top).toBe('10vh');
+    });
+
+    it('forbids mixing logical and physical inline offsets at compile time', () => {
+      // The union type makes a mixed inline pair a type error — a single dialog
+      // cannot be positioned both logically and physically. These would not
+      // compile (kept as documentation of the enforced contract):
+      // @ts-expect-error start (logical) cannot combine with left (physical)
+      resolveDialogPositionOffsets({start: 5, left: 99});
+      // @ts-expect-error end (logical) cannot combine with right (physical)
+      resolveDialogPositionOffsets({end: 7, right: 88});
     });
   });
 
