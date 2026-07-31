@@ -474,11 +474,19 @@ export function DropdownMenuSubMenu(
   );
 
   const endAffordance = hasSpinner ? (
-    <span {...stylex.props(triggerStyles.caret)}>
+    <span
+      {...mergeProps(
+        themeProps('dropdown-menu-indicator-icon'),
+        stylex.props(triggerStyles.caret),
+      )}>
       <Spinner size="sm" />
     </span>
   ) : (
-    <span {...stylex.props(triggerStyles.caret)}>
+    <span
+      {...mergeProps(
+        themeProps('dropdown-menu-indicator-icon'),
+        stylex.props(triggerStyles.caret),
+      )}>
       <Icon icon="chevronRight" size="sm" color="secondary" />
     </span>
   );

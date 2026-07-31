@@ -661,3 +661,20 @@ describe('DropdownMenuSubMenu accessibility (WCAG 2.2 / APG)', () => {
     });
   });
 });
+
+describe('DropdownMenuSubMenu theming slots', () => {
+  it('exposes a themeable slot on the submenu indicator icon', async () => {
+    const user = userEvent.setup();
+    render(<MoveMenu />);
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    const trigger = screen.getByRole('menuitem', {
+      name: /Move to/,
+      hidden: true,
+    });
+    // The indicator-icon slot wraps the chevron affordance inside the trigger
+    // row.
+    expect(
+      trigger.querySelector('.astryx-dropdown-menu-indicator-icon'),
+    ).toBeInTheDocument();
+  });
+});

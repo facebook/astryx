@@ -212,7 +212,16 @@ export function DropdownMenuRadioItem({
             ),
           )}>
           {isChecked && (
-            <span {...stylex.props(styles.dot, dotSizeStyles[controlSize])} />
+            <span
+              {...mergeProps(
+                themeProps('dropdown-menu-radio-dot', {
+                  size: controlSize,
+                  checked: 'checked',
+                  disabled: isDisabled ? 'disabled' : null,
+                }),
+                stylex.props(styles.dot, dotSizeStyles[controlSize]),
+              )}
+            />
           )}
         </span>
       }

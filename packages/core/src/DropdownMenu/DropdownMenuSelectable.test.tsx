@@ -128,6 +128,39 @@ describe('DropdownMenuRadioGroup / RadioItem', () => {
     ).toBeInTheDocument();
   });
 
+  it('exposes a themeable slot on the checked radio dot', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Sort'}}>
+        <DropdownMenuRadioGroup
+          value="newest"
+          onChange={() => {}}
+          label="Sort by">
+          <DropdownMenuRadioItem value="newest" label="Newest" />
+          <DropdownMenuRadioItem value="oldest" label="Oldest" />
+        </DropdownMenuRadioGroup>
+      </DropdownMenu>,
+    );
+    await user.click(screen.getByRole('button', {name: /Sort/}));
+    const checked = screen.getByRole('menuitemradio', {
+      name: 'Newest',
+      hidden: true,
+    });
+    const dot = checked.querySelector('.astryx-dropdown-menu-radio-dot');
+    expect(dot).toBeInTheDocument();
+    // Mirrors the radio container's visual props/states for consistent theming.
+    expect(dot).toHaveAttribute('data-size', 'md');
+    expect(dot).toHaveAttribute('data-checked', 'checked');
+    // The unchecked radio has no dot, so no dot slot either.
+    const unchecked = screen.getByRole('menuitemradio', {
+      name: 'Oldest',
+      hidden: true,
+    });
+    expect(
+      unchecked.querySelector('.astryx-dropdown-menu-radio-dot'),
+    ).not.toBeInTheDocument();
+  });
+
   it('calls onChange with the selected value', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();

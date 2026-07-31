@@ -17,6 +17,7 @@ import {
   typeScaleVars,
   colorVars,
 } from '../theme/tokens.stylex';
+import {mergeProps, themeProps} from '../utils';
 import type {
   DropdownMenuItemData,
   DropdownMenuOption,
@@ -57,7 +58,13 @@ export function renderDropdownItems(items: DropdownMenuOption[]): ReactNode {
     const option = items[i];
 
     if ('type' in option && option.type === 'divider') {
-      elements.push(<Divider key={`divider-${i}`} xstyle={styles.divider} />);
+      elements.push(
+        <Divider
+          key={`divider-${i}`}
+          xstyle={styles.divider}
+          {...themeProps('dropdown-menu-divider')}
+        />,
+      );
     } else if ('type' in option && option.type === 'section') {
       elements.push(
         <div
@@ -65,7 +72,12 @@ export function renderDropdownItems(items: DropdownMenuOption[]): ReactNode {
           role="group"
           aria-label={option.title}>
           {option.title && (
-            <div {...stylex.props(styles.sectionHeading)} aria-hidden="true">
+            <div
+              aria-hidden="true"
+              {...mergeProps(
+                themeProps('dropdown-menu-section-heading'),
+                stylex.props(styles.sectionHeading),
+              )}>
               {option.title}
             </div>
           )}

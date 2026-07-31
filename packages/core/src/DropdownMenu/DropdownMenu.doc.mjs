@@ -35,6 +35,14 @@ export const docs = {
         visualProps: ['size'],
         states: ['checked', 'disabled'],
       },
+      {
+        className: 'astryx-dropdown-menu-radio-dot',
+        visualProps: ['size'],
+        states: ['checked', 'disabled'],
+      },
+      {className: 'astryx-dropdown-menu-section-heading'},
+      {className: 'astryx-dropdown-menu-divider'},
+      {className: 'astryx-dropdown-menu-indicator-icon'},
     ],
     vars: [
       {name: '--_dropdown-menu-radius', description: 'Border radius of the menu popup', default: 'var(--radius-element)', private: true},
