@@ -125,4 +125,21 @@ describe('VStack', () => {
     );
     expect(container.firstChild).toBeInTheDocument();
   });
+
+  it('inherits isSticky/stickyOffset from Stack', () => {
+    const {rerender} = render(
+      <VStack data-testid="vstack">
+        <div>Item</div>
+      </VStack>,
+    );
+    const plain = screen.getByTestId('vstack').className;
+    rerender(
+      <VStack isSticky stickyOffset={8} data-testid="vstack">
+        <div>Item</div>
+      </VStack>,
+    );
+    const sticky = screen.getByTestId('vstack').className;
+    expect(sticky).not.toBe('');
+    expect(sticky).not.toBe(plain);
+  });
 });

@@ -54,6 +54,20 @@ export const docs = {
           default: 'false',
         },
         {
+          name: 'isSticky',
+          type: 'boolean',
+          description:
+            'Pins the stack to the block-start edge of its scroll container (position: sticky) so it stays in view while a sibling scrolls. Also sets align-self: flex-start so the stack does not stretch its flex/grid track. Pair with stickyOffset.',
+          default: 'false',
+        },
+        {
+          name: 'stickyOffset',
+          type: 'SpacingStep',
+          description:
+            'Block-start inset applied while isSticky is set, using the spacing scale (0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10). Sticks this far below the container edge instead of flush. No effect without isSticky.',
+          default: '0',
+        },
+        {
           name: 'width',
           type: 'SizeValue',
           description: "Width of the stack container. Numbers are treated as pixels, strings are used as-is (e.g., '100%').",
@@ -155,6 +169,20 @@ export const docs = {
           description:
             'Enables scrollable overflow (overflow: auto). Matches isScrollable on LayoutContent and LayoutPanel.',
           default: 'false',
+        },
+        {
+          name: 'isSticky',
+          type: 'boolean',
+          description:
+            'Pins the stack to the block-start edge of its scroll container (position: sticky) so it stays in view while a sibling scrolls. Also sets align-self: flex-start so the stack does not stretch its flex/grid track. Pair with stickyOffset.',
+          default: 'false',
+        },
+        {
+          name: 'stickyOffset',
+          type: 'SpacingStep',
+          description:
+            'Block-start inset applied while isSticky is set, using the spacing scale (0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10). Sticks this far below the container edge instead of flush. No effect without isSticky.',
+          default: '0',
         },
         {
           name: 'width',
@@ -331,6 +359,20 @@ export const docsZh = {
           default: "'nowrap'",
         },
         {
+          name: 'isSticky',
+          type: 'boolean',
+          description:
+            '将堆叠固定到其滚动容器的块起始（顶部）边缘（position: sticky），使其在同级元素滚动时保持可见。同时设置 align-self: flex-start，避免堆叠在 flex/grid 轨道中被拉伸。与 stickyOffset 搭配使用。',
+          default: 'false',
+        },
+        {
+          name: 'stickyOffset',
+          type: 'SpacingStep',
+          description:
+            '当 isSticky 生效时应用的块起始内偏移，使用间距步进（0、0.5、1、1.5、2、3、4、5、6、8、10）。使堆叠固定在距容器边缘该间距处而非紧贴边缘。未设置 isSticky 时无效。',
+          default: '0',
+        },
+        {
           name: 'as',
           type: 'ElementType',
           description: '作为堆叠容器渲染的 HTML 元素。',
@@ -398,6 +440,20 @@ export const docsZh = {
           type: "'nowrap' | 'wrap' | 'wrap-reverse'",
           description: 'Flex 换行行为。',
           default: "'nowrap'",
+        },
+        {
+          name: 'isSticky',
+          type: 'boolean',
+          description:
+            '将堆叠固定到其滚动容器的块起始（顶部）边缘（position: sticky），使其在同级元素滚动时保持可见。同时设置 align-self: flex-start，避免堆叠在 flex/grid 轨道中被拉伸。与 stickyOffset 搭配使用。',
+          default: 'false',
+        },
+        {
+          name: 'stickyOffset',
+          type: 'SpacingStep',
+          description:
+            '当 isSticky 生效时应用的块起始内偏移，使用间距步进（0、0.5、1、1.5、2、3、4、5、6、8、10）。使堆叠固定在距容器边缘该间距处而非紧贴边缘。未设置 isSticky 时无效。',
+          default: '0',
         },
         {
           name: 'as',
@@ -484,6 +540,8 @@ export const docsDense = {
         justify: 'Main-axis alignment alias for hAlign. Mirrors CSS justify-content.',
         align: 'Cross-axis alignment alias for vAlign. Mirrors CSS align-items.',
         wrap: 'Flex wrap behavior.',
+        isSticky: 'position: sticky + align-self: flex-start so the stack stays in view while a sibling scrolls. Pair with stickyOffset.',
+        stickyOffset: 'Block-start inset (spacing step) while isSticky is set. No effect without isSticky.',
         as: 'HTML element to render as container.',
         children: 'Stack content.',
         xstyle: 'StyleX layout styles; must be stylex.create() value.',
@@ -503,6 +561,8 @@ export const docsDense = {
         justify: 'Main-axis alignment alias for vAlign. Mirrors CSS justify-content.',
         align: 'Cross-axis alignment alias for hAlign. Mirrors CSS align-items.',
         wrap: 'Flex wrap behavior.',
+        isSticky: 'position: sticky + align-self: flex-start so the stack stays in view while a sibling scrolls. Pair with stickyOffset.',
+        stickyOffset: 'Block-start inset (spacing step) while isSticky is set. No effect without isSticky.',
         as: 'HTML element to render as container.',
         children: 'Stack content.',
       },

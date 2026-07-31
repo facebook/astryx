@@ -126,4 +126,21 @@ describe('HStack', () => {
     );
     expect(container.firstChild).toBeInTheDocument();
   });
+
+  it('inherits isSticky/stickyOffset from Stack', () => {
+    const {rerender} = render(
+      <HStack data-testid="hstack">
+        <div>Item</div>
+      </HStack>,
+    );
+    const plain = screen.getByTestId('hstack').className;
+    rerender(
+      <HStack isSticky stickyOffset={4} data-testid="hstack">
+        <div>Item</div>
+      </HStack>,
+    );
+    const sticky = screen.getByTestId('hstack').className;
+    expect(sticky).not.toBe('');
+    expect(sticky).not.toBe(plain);
+  });
 });

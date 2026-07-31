@@ -314,4 +314,53 @@ describe('Stack', () => {
     const withScroll = screen.getByTestId('stack').className;
     expect(withScroll).not.toBe(withoutScroll);
   });
+
+  it('applies a sticky class when isSticky is set', () => {
+    const {rerender} = render(
+      <Stack data-testid="stack">
+        <div>Item</div>
+      </Stack>,
+    );
+    const withoutSticky = screen.getByTestId('stack').className;
+    rerender(
+      <Stack isSticky data-testid="stack">
+        <div>Item</div>
+      </Stack>,
+    );
+    const withSticky = screen.getByTestId('stack').className;
+    expect(withSticky).not.toBe('');
+    expect(withSticky).not.toBe(withoutSticky);
+  });
+
+  it('applies a distinct class for a non-zero stickyOffset', () => {
+    const {rerender} = render(
+      <Stack isSticky data-testid="stack">
+        <div>Item</div>
+      </Stack>,
+    );
+    const defaultOffset = screen.getByTestId('stack').className;
+    rerender(
+      <Stack isSticky stickyOffset={8} data-testid="stack">
+        <div>Item</div>
+      </Stack>,
+    );
+    const withOffset = screen.getByTestId('stack').className;
+    expect(withOffset).not.toBe(defaultOffset);
+  });
+
+  it('ignores stickyOffset when isSticky is not set', () => {
+    const {rerender} = render(
+      <Stack data-testid="stack">
+        <div>Item</div>
+      </Stack>,
+    );
+    const plain = screen.getByTestId('stack').className;
+    rerender(
+      <Stack stickyOffset={8} data-testid="stack">
+        <div>Item</div>
+      </Stack>,
+    );
+    const offsetOnly = screen.getByTestId('stack').className;
+    expect(offsetOnly).toBe(plain);
+  });
 });
