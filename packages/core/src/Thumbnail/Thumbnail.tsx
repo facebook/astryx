@@ -39,11 +39,11 @@ import {Skeleton} from '../Skeleton';
 import {Spinner} from '../Spinner';
 import {Tooltip} from '../Tooltip/Tooltip';
 import {useDevWarning} from '../hooks/useDevWarning';
+import {useContainerReveal} from '../hooks/useContainerReveal';
 import type {BaseProps} from '../BaseProps';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
-import {thumbnailScope} from './thumbnail.markers.stylex';
 
 export interface ThumbnailProps extends BaseProps<HTMLDivElement> {
   /** Ref forwarded to the root element */
@@ -236,28 +236,6 @@ const styles = stylex.create({
     zIndex: 1,
     lineHeight: 0,
   },
-  // showRemoveOn="hover": the remove button is hidden at rest and revealed
-  // when the thumbnail is hovered or when focus enters it (keyboard). Only
-  // opacity is animated — the button stays mounted and focusable so tabbing
-  // to it triggers the :focus-within reveal. Any touch-capable device (incl.
-  // hybrid laptops that also report hover) keeps the button visible so the
-  // remove path is never gated behind an unavailable hover.
-  removeOnHover: {
-    opacity: {
-      default: 0,
-      [stylex.when.ancestor(':hover', thumbnailScope)]: {
-        '@media (hover: hover)': 1,
-      },
-      [stylex.when.ancestor(':focus-within', thumbnailScope)]: 1,
-      '@media (any-pointer: coarse)': 1,
-    },
-    transitionProperty: 'opacity',
-    transitionDuration: {
-      default: durationVars['--duration-fast'],
-      '@media (prefers-reduced-motion: reduce)': '0s',
-    },
-    transitionTimingFunction: easeVars['--ease-standard'],
-  },
 });
 
 // =============================================================================
@@ -326,6 +304,9 @@ export function Thumbnail({
   const isInteractive = onClick != null && !isDisabled && !isLoading;
   const hasRemove = onRemove != null && !isDisabled;
   const isHoverReveal = hasRemove && showRemoveOn === 'hover';
+  const {getContainerProps, getContentRevealProps} = useContainerReveal({
+    isEnabled: isHoverReveal,
+  });
   const accessibleName =
     label && alt
       ? `${label} — ${alt}`
@@ -377,9 +358,12 @@ export function Thumbnail({
 
   const removeButtonEl = hasRemove ? (
     <div
-      {...stylex.props(
-        styles.removeSlot,
-        isHoverReveal && styles.removeOnHover,
+      {...mergeProps(
+        stylex.props(styles.removeSlot),
+        // The remove button is absolutely positioned in the corner, so it is
+        // already out of flow — an opacity-only reveal (layout preserved)
+        // matches its overlay placement instead of the clip recipe.
+        isHoverReveal ? getContentRevealProps({isLayoutPreserved: true}) : {},
       )}>
       <Button
         icon={<Icon icon="close" size="xsm" />}
@@ -410,12 +394,14 @@ export function Thumbnail({
       )}
       {...props}>
       <div
-        {...stylex.props(
-          styles.imageContainer,
-          isHoverReveal && thumbnailScope,
-          isInteractive && styles.interactive,
-          isInteractive && styles.overlay,
-          isInteractive && styles.hoverOnPointer,
+        {...mergeProps(
+          stylex.props(
+            styles.imageContainer,
+            isInteractive && styles.interactive,
+            isInteractive && styles.overlay,
+            isInteractive && styles.hoverOnPointer,
+          ),
+          isHoverReveal ? getContainerProps() : {},
         )}>
         {isInteractive ? (
           <button

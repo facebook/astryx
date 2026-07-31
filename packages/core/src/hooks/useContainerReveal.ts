@@ -27,7 +27,7 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/hooks/index.ts (export)
- * - scripts/gen-container-reveal-pool.mjs (if the slot shape changes)
+ * - containerReveal.pool.stylex.ts (if the slot shape changes)
  */
 
 import {useState, useEffect, type CSSProperties} from 'react';
@@ -148,8 +148,8 @@ export function useContainerReveal(
   useDevWarning(
     'useContainerReveal',
     `More than ${POOL_SIZE} reveal containers are mounted at once; nested ` +
-      `containers beyond the pool may share a marker. Increase POOL_SIZE in ` +
-      `scripts/gen-container-reveal-pool.mjs and regenerate.`,
+      `containers beyond the pool may share a marker. Add markers to ` +
+      `containerReveal.pool.stylex.ts and raise POOL_SIZE.`,
     claim?.isExhausted ?? false,
   );
 
