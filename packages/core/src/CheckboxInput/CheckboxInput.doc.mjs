@@ -31,7 +31,8 @@ export const docs = {
     {
       name: 'description',
       type: 'string',
-      description: 'Description text displayed below the label.',
+      description:
+        'Description text displayed below the label. Part of the clickable label region: clicking it toggles the checkbox, same as clicking the label text.',
     },
     {
       name: 'value',

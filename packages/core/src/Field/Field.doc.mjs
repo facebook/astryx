@@ -77,7 +77,8 @@ export const docs = {
     {
       name: 'description',
       type: 'string',
-      description: 'Description text displayed between the label and input.',
+      description:
+        'Description text displayed between the label and input. For a single-control field (not isGroupLabel), it is part of the label\'s clickable region, same as the label text. Stays a plain sibling of the label for group fields (isGroupLabel), since there is no single control to activate.',
     },
     {
       name: 'descriptionID',

@@ -35,8 +35,17 @@ import {themeProps} from '../utils/themeProps';
 const styles = stylex.create({
   label: {
     display: 'flex',
+    // Wraps so the (optional) description, forced onto its own line via
+    // descriptionNested's flexBasis: '100%' below, can be a real DOM child of
+    // <label> rather than a sibling — a click anywhere in it then activates
+    // the single control the label names, the same as clicking the label
+    // text itself. columnGap keeps the row's icon/text/status/tooltip
+    // spacing unchanged; rowGap matches the tighter spacing
+    // CheckboxInput/Switch previously supplied via an external wrapper.
+    flexWrap: 'wrap',
     alignItems: 'center',
-    gap: spacingVars['--spacing-1'],
+    columnGap: spacingVars['--spacing-1'],
+    rowGap: spacingVars['--spacing-0-5'],
     fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-label-size'],
     lineHeight: typeScaleVars['--text-label-leading'],
@@ -75,6 +84,11 @@ const styles = stylex.create({
     lineHeight: typeScaleVars['--text-supporting-leading'],
     fontWeight: fontWeightVars['--font-weight-normal'],
     color: colorVars['--color-text-secondary'],
+  },
+  // Forces the description onto its own line within the wrapping <label>
+  // (see styles.label) instead of trailing the row on the same line.
+  descriptionNested: {
+    flexBasis: '100%',
   },
 });
 
@@ -212,6 +226,25 @@ export function FieldLabel({
     </>
   );
 
+  const descriptionText = description && (
+    <span
+      id={descriptionID}
+      {...stylex.props(
+        styles.description,
+        // Nested inside <label> (not isGroupLabel) so a click anywhere in the
+        // description also activates the single control it names, matching
+        // the label text's own hit area. flexBasis: '100%' (via
+        // descriptionNested) forces it onto its own line within the
+        // wrapping <label> instead of trailing the row. A group label has no
+        // single input to activate, so its description stays a plain
+        // sibling below, unaffected by the label's flex layout.
+        !isGroupLabel && styles.descriptionNested,
+        isLabelHidden && styles.srOnly,
+      )}>
+      {description}
+    </span>
+  );
+
   return (
     <>
       <LabelElement
@@ -233,14 +266,9 @@ export function FieldLabel({
           style,
         )}>
         {labelContent}
+        {!isGroupLabel && descriptionText}
       </LabelElement>
-      {description && (
-        <span
-          id={descriptionID}
-          {...stylex.props(styles.description, isLabelHidden && styles.srOnly)}>
-          {description}
-        </span>
-      )}
+      {isGroupLabel && descriptionText}
     </>
   );
 }
