@@ -75,9 +75,9 @@ function errorMessage(err) {
 
 /**
  * An integration issue tagged with the owner package. The base
- * {@link import('../../types/integration').AstryxIntegrationIssue} fields plus the
+ * {@link import('../../authoring/integration').AstryxIntegrationIssue} fields plus the
  * `package` that produced it, which Project tracks for routing/dedup.
- * @typedef {import('../../types/integration').AstryxIntegrationIssue & {package: string}} ProjectIntegrationIssue
+ * @typedef {import('../../authoring/integration').AstryxIntegrationIssue & {package: string}} ProjectIntegrationIssue
  */
 
 /** Conventional config basenames, in load-precedence order. */
@@ -136,7 +136,7 @@ export class Project {
   #cwd;
   /** @type {string|null} */
   #configPath;
-  /** @type {import('../../types/config').AstryxConfig} */
+  /** @type {import('../../authoring/config').AstryxConfig} */
   #config;
   /** @type {string[]} */
   #integrations;
@@ -160,7 +160,7 @@ export class Project {
    * @param {object} init
    * @param {string} init.cwd
    * @param {string|null} init.configPath
-   * @param {import('../../types/config').AstryxConfig} init.config validated AstryxConfig surface
+   * @param {import('../../authoring/config').AstryxConfig} init.config validated AstryxConfig surface
    * @param {string[]} init.integrations
    * @param {import('../integrations/integrations.mjs').LoadedIntegration[]} init.loadedIntegrations
    * @param {import('./config-cache.mjs').ConfigCache} init.cache
@@ -198,7 +198,7 @@ export class Project {
     const configPath = findConfigPath(cwd);
     const hash = configContentHash(configPath);
 
-    /** @type {import('../../types/config').AstryxConfig} */
+    /** @type {import('../../authoring/config').AstryxConfig} */
     let config = {integrations: []};
     /** @type {string[]} */
     let integrations = [];
@@ -230,7 +230,7 @@ export class Project {
   /**
    * The validated config surface (same data loadConfig returned, minus the
    * resolved `loadedIntegrations` which is exposed separately).
-   * @returns {import('../../types/config').AstryxConfig}
+   * @returns {import('../../authoring/config').AstryxConfig}
    */
   get config() {
     return this.#config;
@@ -281,7 +281,7 @@ export class Project {
   /**
    * Record a single integration issue, deduped by (package, code, message).
    * @param {string} pkg
-   * @param {import('../../types/integration').AstryxIntegrationIssue} issue
+   * @param {import('../../authoring/integration').AstryxIntegrationIssue} issue
    */
   #pushIssue(pkg, issue) {
     const code = issue?.code ?? 'unknown';
@@ -531,7 +531,7 @@ export class Project {
    * When called directly, also validates any configured integration not yet
    * visited by a discovery call, so the returned set is complete on demand.
    *
-   * @returns {Promise<import('../../types/integration').AstryxIntegrationIssue[]>}
+   * @returns {Promise<import('../../authoring/integration').AstryxIntegrationIssue[]>}
    */
   async issues() {
     for (const integration of this.#loadedIntegrations) {

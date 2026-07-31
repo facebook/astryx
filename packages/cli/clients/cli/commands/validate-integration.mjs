@@ -22,7 +22,7 @@ import {
 
 /**
  * Render a validation result for humans.
- * @param {import('../../../types/validate-integration').ValidateIntegrationResponse['data']} data
+ * @param {import('../../../api/integration/validate-integration.type.mjs').ValidateIntegrationResponse['data']} data
  */
 function printHuman(data) {
   const label =

@@ -45,8 +45,8 @@ const TARGET_PROP = 'labelSpacing';
 const TARGET_COMPONENTS = new Set(['Switch']);
 
 /**
- * @param {import('../../../../types/codemod.d.ts').AstryxCodemodFile} file
- * @param {import('../../../../types/codemod.d.ts').CodemodTransformApi} api
+ * @param {import('../../../../authoring/codemod.d.ts').AstryxCodemodFile} file
+ * @param {import('../../../../authoring/codemod.d.ts').CodemodTransformApi} api
  * @returns {string | null | undefined}
  */
 export default function transformer(file, api) {

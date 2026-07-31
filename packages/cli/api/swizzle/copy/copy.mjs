@@ -17,7 +17,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {resolveCore} from '../_adapter.mjs';
 import {assertWithin, sanitizeName, PathSafetyError} from '../../../foundation/fs/path-safety.mjs';
-import {checkGhCli} from '../../../utils/github.mjs';
+import {checkGhCli} from '../_github.mjs';
 import {Project} from '../../../foundation/config/project.mjs';
 import {
   CORE_PACKAGE,

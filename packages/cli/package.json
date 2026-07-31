@@ -32,31 +32,31 @@
   "exports": {
     ".": "./clients/cli/bin/astryx.mjs",
     "./json": {
-      "types": "./types/index.d.ts",
-      "import": "./lib/parse.mjs"
+      "types": "./api/json/index.d.ts",
+      "import": "./api/json/parse.mjs"
     },
     "./api": {
       "types": "./api/index.d.mts",
       "import": "./api/index.mjs"
     },
     "./config": {
-      "types": "./types/config.d.ts",
+      "types": "./authoring/config.d.ts",
       "import": "./authoring/config.mjs"
     },
     "./integration": {
-      "types": "./types/integration.d.ts",
+      "types": "./authoring/integration.d.ts",
       "import": "./authoring/integration.mjs"
     },
     "./doc": {
-      "types": "./types/doc.d.ts",
+      "types": "./authoring/doc.d.ts",
       "import": "./authoring/doc.mjs"
     },
     "./template": {
-      "types": "./types/template-api.d.ts",
+      "types": "./authoring/template-api.d.ts",
       "import": "./authoring/template.mjs"
     },
     "./codemod": {
-      "types": "./types/codemod.d.ts",
+      "types": "./authoring/codemod.d.ts",
       "import": "./authoring/codemod.mjs"
     },
     "./xle": {
@@ -69,10 +69,7 @@
     "api",
     "assets",
     "authoring",
-    "lib",
-    "utils",
-    "types",
-    "schemas",
+    "foundation",
     "scripts/postinstall.mjs",
     "CHANGELOG.md"
   ],

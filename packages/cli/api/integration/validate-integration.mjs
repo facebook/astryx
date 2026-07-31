@@ -34,7 +34,7 @@ import {discoverIntegrationTemplatesForOne} from '../template/template.mjs';
 import * as componentDiscovery from '../../foundation/discovery/component-discovery.mjs';
 
 /**
- * @typedef {import('../../types/integration').AstryxIntegrationIssue} Issue
+ * @typedef {import('../../authoring/integration').AstryxIntegrationIssue} Issue
  */
 
 /**

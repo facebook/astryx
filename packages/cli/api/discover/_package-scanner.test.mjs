@@ -15,7 +15,7 @@ import {
   scanDirectory,
   scanAllPackages,
   findComponentInPackages,
-} from './package-scanner.mjs';
+} from './_package-scanner.mjs';
 
 let tmp;
 afterEach(() => {

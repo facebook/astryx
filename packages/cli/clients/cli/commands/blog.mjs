@@ -20,7 +20,7 @@ import {cliError} from '../lib/cli-error.mjs';
 import {blog as blogApi} from '../../../api/blog/blog.mjs';
 
 /**
- * @param {import('../../../types/blog').BlogListData} data
+ * @param {import('../../../api/blog/blog.type.mjs').BlogListData} data
  * @param {string} run
  */
 function formatList({feedUrl, posts}, run) {
@@ -49,7 +49,7 @@ export function registerBlog(program) {
     .description('Read the Astryx blog from the published feed')
     .action(async (/** @type {string | undefined} */ slug) => {
       const run = getRunPrefix();
-      /** @type {import('../../../types/blog').BlogListResponse | import('../../../types/blog').BlogDetailResponse} */
+      /** @type {import('../../../api/blog/blog.type.mjs').BlogListResponse | import('../../../api/blog/blog.type.mjs').BlogDetailResponse} */
       let result;
       try {
         result = await blogApi(slug);

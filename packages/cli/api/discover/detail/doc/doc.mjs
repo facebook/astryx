@@ -36,7 +36,7 @@ export async function docFromResult(result, opts) {
  * (ERR_UNKNOWN_COMPONENT) — with substring/fuzzy suggestions — when the
  * component is not in the package.
  *
- * @param {import('../../../../lib/package-scanner.mjs').ScannedPackage[]} packages
+ * @param {import('../../_package-scanner.mjs').ScannedPackage[]} packages
  * @param {string} pkgName
  * @param {string} compName
  * @param {{lang?: string | null, zh?: boolean}} opts

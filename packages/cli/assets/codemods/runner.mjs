@@ -120,7 +120,7 @@ function findSourceFiles(dir) {
  *
  * @param {string} result - The transformed source code
  * @param {string} source - The original source code
- * @param {import('../../types/codemod.d.ts').JscodeshiftFactory} j - jscodeshift instance (with parser configured)
+ * @param {import('../../authoring/codemod.d.ts').JscodeshiftFactory} j - jscodeshift instance (with parser configured)
  * @param {{parse?: boolean}} [options]
  * @returns {{ valid: true } | { valid: false, reason: string }}
  */
@@ -173,9 +173,9 @@ export function validateOutput(result, source, j, {parse = true} = {}) {
  * with the same `(file, api) => string | null | undefined` contract used by
  * `createConfigCodemod`.
  *
- * @param {{name: string, transform: import('../../types/codemod.d.ts').CodemodTransform, meta: {title: string, description?: string, fileExtensions?: string[], codemodType?: string}, optional?: boolean}} transformEntry
+ * @param {{name: string, transform: import('../../authoring/codemod.d.ts').CodemodTransform, meta: {title: string, description?: string, fileExtensions?: string[], codemodType?: string}, optional?: boolean}} transformEntry
  * @param {string} version
- * @returns {import('../../types/codemod.d.ts').CodemodEntry}
+ * @returns {import('../../authoring/codemod.d.ts').CodemodEntry}
  */
 function toUnifiedEntry(transformEntry, version) {
   const {name, transform, meta, optional} = transformEntry;
@@ -197,7 +197,7 @@ function toUnifiedEntry(transformEntry, version) {
 /**
  * Run codemods against source files.
  *
- * @param {Array<{version: string, transforms: Array<{name: string, transform: import('../../types/codemod.d.ts').CodemodTransform, meta: {title: string, description?: string, fileExtensions?: string[], codemodType?: string}, optional?: boolean}>}>} versionManifests
+ * @param {Array<{version: string, transforms: Array<{name: string, transform: import('../../authoring/codemod.d.ts').CodemodTransform, meta: {title: string, description?: string, fileExtensions?: string[], codemodType?: string}, optional?: boolean}>}>} versionManifests
  * @param {object} options
  * @param {boolean} options.apply - Write changes to disk
  * @param {string} options.path - Source directory to scan
@@ -250,7 +250,7 @@ export async function runCodemods(
 
   // Dynamically import jscodeshift
   const jscodeshift =
-    /** @type {import('../../types/codemod.d.ts').JscodeshiftFactory} */ (
+    /** @type {import('../../authoring/codemod.d.ts').JscodeshiftFactory} */ (
       (await import('jscodeshift')).default
     );
 

@@ -19,13 +19,13 @@ import {Project} from '../../foundation/config/project.mjs';
 import {
   scanAllPackages,
   findComponentInPackages,
-} from '../../lib/package-scanner.mjs';
+} from './_package-scanner.mjs';
 import {loadDocs} from '../../foundation/discovery/component-loader.mjs';
 import {AstryxError} from '../error.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 
 /**
- * @typedef {import('../../lib/package-scanner.mjs').ScannedPackage} ScannedPackage
+ * @typedef {import('./_package-scanner.mjs').ScannedPackage} ScannedPackage
  */
 
 /**

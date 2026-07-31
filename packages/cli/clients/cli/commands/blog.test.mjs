@@ -11,7 +11,7 @@
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {runCli} from '../../../test-utils/run-cli.mjs';
-import {SITE_URL} from '../../../lib/site.mjs';
+import {SITE_URL} from '../../../api/blog/_site.mjs';
 
 const FEED = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
