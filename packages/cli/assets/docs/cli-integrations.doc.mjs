@@ -29,7 +29,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'typescript',
-          code: "import {createConfig} from '@astryxdesign/core/config';\n\nexport default createConfig({\n  integrations: ['@acme/astryx-widgets'],\n});",
+          code: "// astryx.config.ts\nexport default {\n  integrations: ['@acme/astryx-widgets'],\n};",
         },
         {
           type: 'prose',
@@ -53,11 +53,11 @@ export const docs = {
         {
           type: 'code',
           lang: 'typescript',
-          code: "// astryx.integration.ts\nimport {createIntegration} from '@astryxdesign/core/authoring';\n\nexport default createIntegration({\n  components: './components',\n  templates: './templates',\n  codemods: './codemods',\n  issuesUrl: 'https://github.com/acme/widgets/issues',\n});",
+          code: "// astryx.integration.ts\nexport default {\n  components: './components',\n  templates: './templates',\n  codemods: './codemods',\n  issuesUrl: 'https://github.com/acme/widgets/issues',\n};",
         },
         {
           type: 'prose',
-          text: 'Every field is optional. Declare only the contribution roots your package ships. `createIntegration` is a type-preserving helper for editor autocomplete and type-checking. It lives in `@astryxdesign/core/authoring` and is also re-exported from `@astryxdesign/cli/integration` for back-compat.',
+          text: 'Every field is optional. Declare only the contribution roots your package ships. There is no factory to call. Write a plain object, and for editor autocomplete and type-checking annotate it with the `AstryxIntegration` type exported from `@astryxdesign/cli/authoring`.',
         },
       ],
     },
@@ -72,7 +72,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'typescript',
-          code: "// AcmeCarousel.doc.ts\nimport {createComponentDoc} from '@astryxdesign/core/authoring';\n\nexport default createComponentDoc({\n  name: 'AcmeCarousel',\n  description: 'A carousel that cycles through slides.',\n  // props, usage, examples, ...\n});",
+          code: "// AcmeCarousel.doc.ts\nexport default {\n  type: 'component',\n  name: 'AcmeCarousel',\n  description: 'A carousel that cycles through slides.',\n  // props, usage, examples, ...\n};",
         },
       ],
     },
@@ -82,12 +82,12 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Templates are usually not exported from the package directly. Instead, consumers browse them through the CLI and materialize them into their app. Define a template with `createPageTemplate` (full pages) or `createBlockTemplate` (smaller chunks) in a `.template.{ts,mjs,js}` file next to the source, for example `AcmeLandingPage.tsx` and `AcmeLandingPage.template.ts`.',
+          text: 'Templates are usually not exported from the package directly. Instead, consumers browse them through the CLI and materialize them into their app. Define a template as a plain object stamped with `type: \'page\'` (full pages) or `type: \'block\'` (smaller chunks) in a `.template.{ts,mjs,js}` file next to the source, for example `AcmeLandingPage.tsx` and `AcmeLandingPage.template.ts`.',
         },
         {
           type: 'code',
           lang: 'typescript',
-          code: "// AcmeLandingPage.template.ts\nimport {createPageTemplate} from '@astryxdesign/core/authoring';\n\nexport default createPageTemplate({\n  // name, description, preview, ...\n});",
+          code: "// AcmeLandingPage.template.ts\nexport default {\n  type: 'page',\n  // name, description, preview, ...\n};",
         },
         {
           type: 'prose',
@@ -115,16 +115,16 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Ship codemods so `astryx upgrade` can migrate consumers across breaking changes in your package. Point the integration file\u2019s `codemods` field at your codemods root, and author each one with `createCodemod` (transforms source files) or `createConfigCodemod` (rewrites the consumer\u2019s `astryx.config`).',
+          text: 'Ship codemods so `astryx upgrade` can migrate consumers across breaking changes in your package. Point the integration file\u2019s `codemods` field at your codemods root, and author each one as a plain object stamped with `type: \'code\'` (transforms source files) or `type: \'config\'` (rewrites the consumer\u2019s `astryx.config`).',
         },
         {
           type: 'code',
           lang: 'typescript',
-          code: "// codemods/v2-rename-prop.ts\nimport {createCodemod} from '@astryxdesign/cli/codemod';\n\nexport default createCodemod({\n  // version, description, transform, ...\n});",
+          code: "// codemods/v2-rename-prop.ts\nexport default {\n  type: 'code',\n  // title, description, transform, ...\n};",
         },
         {
           type: 'prose',
-          text: 'The codemod helpers live in `@astryxdesign/cli/codemod`, not `@astryxdesign/core/authoring` like the doc, integration, and template helpers. Consumers can also run their own post-codemod hooks, such as a reinstall or rebuild, via `hooks.postCodemod` in their `astryx.config`.',
+          text: 'All authoring types (for docs, integrations, templates, and codemods) are exported from `@astryxdesign/cli/authoring`: `AstryxComponentDoc`, `AstryxIntegration`, `AstryxTemplate`, `AstryxCodemod`, and `AstryxConfig`. Consumers can also run their own post-codemod hooks, such as a reinstall or rebuild, via `hooks.postCodemod` in their `astryx.config`.',
         },
       ],
     },
@@ -134,7 +134,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Every CLI command loads the consumer\u2019s `astryx.config`, resolves each listed integration\u2019s manifest from `node_modules`, and discovers its contributions. Everything is validated against one strict schema at the load boundary. The `create*` helpers do not validate. They are identity functions whose value is their TypeScript surface, so validation happens when the CLI loads the file, not when you author it.',
+          text: 'Every CLI command loads the consumer\u2019s `astryx.config`, resolves each listed integration\u2019s manifest from `node_modules`, and discovers its contributions. Everything is validated against one strict schema at the load boundary: the CLI parses each file through `@astryxdesign/cli/authoring` when it loads it, not when you author it. There are no factories; you write a plain object and stamp its `type`.',
         },
         {
           type: 'prose',

@@ -139,7 +139,7 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
 
   /** @type {Array<import('../../../foundation/integrations/integrations.mjs').LoadedIntegration>} */
   let integrations;
-  /** @type {import('../../../authoring/config').PostCodemodHook[]} */
+  /** @type {import('../../../authoring/config/type').PostCodemodHook[]} */
   let postCodemodHooks;
   try {
     const projectContext = await loadProjectContext(cwd, options.integration ?? []);

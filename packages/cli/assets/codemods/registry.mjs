@@ -24,6 +24,7 @@ const registry = new Map([
   ['0.1.7', () => import('./transforms/v0.1.7/index.mjs')],
   ['0.1.8', () => import('./transforms/v0.1.8/index.mjs')],
   ['0.2.0', () => import('./transforms/v0.2.0/index.mjs')],
+  ['0.3.0', () => import('./transforms/v0.3.0/index.mjs')],
 ]);
 
 // Re-export from the shared utility so registry callers and other consumers
@@ -46,13 +47,13 @@ export const latestVersion = versions[versions.length - 1];
  *
  * @param {string} from - Current version (exclusive)
  * @param {string} to - Target version (inclusive)
- * @returns {Promise<Array<{version: string, transforms: Array<{name: string, transform: import('../../authoring/codemod.d.ts').CodemodTransform, meta: {title: string, description?: string}}>}>>}
+ * @returns {Promise<Array<{version: string, transforms: Array<{name: string, transform: import('../../authoring/codemod/type.d.ts').CodemodTransform, meta: {title: string, description?: string}}>}>>}
  */
 export async function getTransformsBetween(from, to) {
   const applicable = versions.filter(
     v => semverCompare(v, from) > 0 && semverCompare(v, to) <= 0,
   );
-  /** @type {Array<{version: string, transforms: Array<{name: string, transform: import('../../authoring/codemod.d.ts').CodemodTransform, meta: {title: string, description?: string}}>}>} */
+  /** @type {Array<{version: string, transforms: Array<{name: string, transform: import('../../authoring/codemod/type.d.ts').CodemodTransform, meta: {title: string, description?: string}}>}>} */
   const results = [];
 
   for (const version of applicable) {

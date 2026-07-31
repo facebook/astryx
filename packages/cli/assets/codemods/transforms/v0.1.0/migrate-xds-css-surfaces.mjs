@@ -105,7 +105,7 @@ const REPLACEMENTS = [
 ];
 
 /**
- * @param {import('../../../../authoring/codemod.d.ts').AstryxCodemodFile} file
+ * @param {import('../../../../authoring/codemod/type.d.ts').AstryxCodemodFile} file
  * @returns {string | null | undefined}
  */
 export default function transformer(file /*, api */) {
