@@ -807,6 +807,38 @@
     "defaultMessage": "Clear {label}",
     "description": "Screen-reader-only label on the X that removes the selected file from a FileInput. Example: `Clear Attachment`, `Clear Résumé`."
   },
+  "@astryx.fileInput.dropHint": {
+    "defaultMessage": "Drop files here",
+    "description": "Text shown in the dropzone area when a user is dragging files over the FileInput."
+  },
+  "@astryx.fileInput.errorInvalidType": {
+    "defaultMessage": "\"{fileName}\" is not an accepted file type",
+    "description": "Validation error shown when a selected file does not match the accepted types."
+  },
+  "@astryx.fileInput.errorMaxFiles": {
+    "defaultMessage": "Maximum {maxFiles} files allowed",
+    "description": "Validation error shown when the number of selected files exceeds the maximum."
+  },
+  "@astryx.fileInput.errorMaxSize": {
+    "defaultMessage": "\"{fileName}\" exceeds {maxSize} limit",
+    "description": "Validation error shown when a selected file exceeds the maximum size. {maxSize} is a formatted size string like \"2.0 MB\"."
+  },
+  "@astryx.fileInput.fileSelected": {
+    "defaultMessage": "1 file selected: {fileName}",
+    "description": "Live-region announcement when a single file is successfully selected."
+  },
+  "@astryx.fileInput.filesSelected": {
+    "defaultMessage": "{count} files selected",
+    "description": "Live-region announcement when multiple files are successfully selected."
+  },
+  "@astryx.fileInput.placeholder": {
+    "defaultMessage": "Choose file",
+    "description": "Default placeholder text shown when no file is selected in a single-file FileInput."
+  },
+  "@astryx.fileInput.placeholderMultiple": {
+    "defaultMessage": "Choose files",
+    "description": "Default placeholder text shown when no files are selected in a multi-file FileInput."
+  },
   "@astryx.fileInput.required": {
     "defaultMessage": "Required",
     "description": "Screen-reader-only description on the FileInput trigger indicating the field must be filled in. Mirrors the visible `Required` indicator next to the field label; conveyed via description because aria-required is not supported on role=\"button\"."
