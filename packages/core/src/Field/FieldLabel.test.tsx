@@ -182,7 +182,9 @@ describe('FieldLabel', () => {
 
   it('does not toggle the checkbox when a link inside the description is clicked', async () => {
     const user = userEvent.setup();
-    const handleLinkClick = vi.fn(e => e.preventDefault());
+    const handleLinkClick = vi.fn((e: React.MouseEvent<HTMLAnchorElement>) =>
+      e.preventDefault(),
+    );
     function Example() {
       const [checked, setChecked] = useState(false);
       return (
