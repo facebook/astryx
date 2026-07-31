@@ -851,6 +851,14 @@
     "defaultMessage": "Expand all rows",
     "description": "Aria label for the Table tree-data header toggle when rows are collapsed and clicking it expands them."
   },
+  "@astryx.textArea.charactersRemaining": {
+    "defaultMessage": "{count, number} {count, plural, one {character} other {characters}} remaining",
+    "description": "Screen-reader-only announcement of how many characters the user can still type before hitting a TextArea's maxLength. Announced politely as the count nears the limit. `{count}` is the number remaining — example: `12 characters remaining`."
+  },
+  "@astryx.textArea.charactersOverLimit": {
+    "defaultMessage": "{count, number} {count, plural, one {character} other {characters}} over the limit",
+    "description": "Screen-reader-only assertive announcement when the user has typed past a TextArea's maxLength. `{count}` is how many characters over — example: `3 characters over the limit`."
+  },
   "@astryx.textInput.clearLabel": {
     "defaultMessage": "Clear {label}",
     "description": "Screen-reader-only label on the X that clears the value from a TextInput. Example: `Clear Email`, `Clear Name`."

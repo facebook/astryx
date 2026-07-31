@@ -647,6 +647,23 @@ export const MaxLengthWithValue: Story = {
   },
 };
 
+// When the value exceeds maxLength the counter turns red AND shows a warning
+// icon, so the over-limit state isn't conveyed by color alone (WCAG 1.4.1).
+// Screen-reader users hear the over-limit count announced as they type.
+export const MaxLengthOverLimit: Story = {
+  render: args => {
+    const [value, setValue] = useState(
+      args.value ??
+        'This bio is intentionally longer than the limit to show the over-limit state.',
+    );
+    return <TextArea {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Bio',
+    maxLength: 50,
+  },
+};
+
 export const MaxLengthVariations: Story = {
   render: () => {
     const [short, setShort] = useState('');

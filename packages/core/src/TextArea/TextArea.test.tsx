@@ -523,7 +523,70 @@ describe('TextArea', () => {
       expect(screen.getByText('5/50')).toBeInTheDocument();
     });
 
-    it('counter has aria-live region for screen reader announcements', () => {
+    it('announces remaining characters politely as the value nears the limit', async () => {
+      const user = userEvent.setup();
+      function Wrapper() {
+        const [val, setVal] = useState('x'.repeat(44));
+        return (
+          <TextArea
+            label="Description"
+            value={val}
+            onChange={setVal}
+            maxLength={50}
+          />
+        );
+      }
+      render(<Wrapper />);
+      // Type one more char to cross into the "near the limit" zone (45/50).
+      await user.type(screen.getByRole('textbox'), 'x');
+      const politeRegion = () =>
+        document.querySelector('[data-astryx-live-region="polite"]');
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('5 characters remaining');
+      });
+    });
+
+    it('announces over-limit assertively once the value exceeds the max', async () => {
+      const user = userEvent.setup();
+      function Wrapper() {
+        const [val, setVal] = useState('x'.repeat(50));
+        return (
+          <TextArea
+            label="Description"
+            value={val}
+            onChange={setVal}
+            maxLength={50}
+          />
+        );
+      }
+      render(<Wrapper />);
+      await user.type(screen.getByRole('textbox'), 'x');
+      const assertiveRegion = () =>
+        document.querySelector('[data-astryx-live-region="assertive"]');
+      await waitFor(() => {
+        expect(assertiveRegion()).toHaveTextContent(
+          '1 character over the limit',
+        );
+      });
+    });
+
+    it('shows a non-color over-limit indicator icon when exceeded', () => {
+      const {container} = render(
+        <TextArea
+          label="Description"
+          value={'x'.repeat(55)}
+          onChange={() => {}}
+          maxLength={50}
+        />,
+      );
+      // The counter renders a warning icon (a shape cue) alongside the red
+      // count, so the over-limit state is not conveyed by color alone.
+      const counter = screen.getByText('55/50').closest('div');
+      expect(counter?.querySelector('svg')).toBeInTheDocument();
+      expect(container).toBeInTheDocument();
+    });
+
+    it('does not show the over-limit indicator icon within the limit', () => {
       render(
         <TextArea
           label="Description"
@@ -532,9 +595,8 @@ describe('TextArea', () => {
           maxLength={50}
         />,
       );
-      const liveRegion = document.querySelector('[aria-live="polite"]');
-      expect(liveRegion).toBeInTheDocument();
-      expect(liveRegion).toHaveTextContent('5 characters remaining');
+      const counter = screen.getByText('45/50').closest('div');
+      expect(counter?.querySelector('svg')).not.toBeInTheDocument();
     });
 
     it('counter is linked to textarea via aria-describedby', () => {

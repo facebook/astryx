@@ -21,6 +21,7 @@ import {
   useOptimistic,
   useTransition,
   useRef,
+  useCallback,
   type ChangeEvent,
   type ClipboardEvent,
   type FocusEvent,
@@ -41,7 +42,7 @@ import {
   inputStatusFocusWithinStyles,
   type FieldStatusVariant,
 } from '../Field';
-import {renderIconSlot, type IconType} from '../Icon';
+import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {Spinner} from '../Spinner';
 import {useTooltip} from '../Tooltip';
 import {mergeProps, mergeRefs} from '../utils';
@@ -49,9 +50,10 @@ import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {useInputContainer} from '../hooks/useInputContainer';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
+import {useAnnounce} from '../hooks/useAnnounce';
 import {useSize} from '../SizeContext/SizeContext';
 import {themeProps} from '../utils/themeProps';
-import {VisuallyHidden} from '../VisuallyHidden';
+import {useTranslator} from '../i18n';
 
 const COUNTER_WARNING_THRESHOLD = 0.8;
 
@@ -140,6 +142,9 @@ const styles = stylex.create({
     bottom: spacingVars['--spacing-1'],
     insetInlineEnd: 'var(--_textarea-inline-padding)',
     pointerEvents: 'none',
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-1'],
     fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-supporting-size'],
     lineHeight: typeScaleVars['--text-supporting-leading'],
@@ -366,12 +371,17 @@ export function TextArea({
   ...rest
 }: TextAreaProps) {
   const size = useSize(sizeProp, 'md');
+  const t = useTranslator();
+  const announce = useAnnounce();
   const id = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
   const counterID = useId();
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  // Tracks the counter "zone" last announced (under / near / over) so we only
+  // announce on a zone change, not on every keystroke.
+  const counterZoneRef = useRef<'under' | 'near' | 'over' | null>(null);
 
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
@@ -410,6 +420,43 @@ export function TextArea({
       .filter(Boolean)
       .join(' ') || undefined;
 
+  // Announce the character-count status through the shared live region, but
+  // only when the value crosses into a new zone (near the limit / over the
+  // limit) so we don't speak on every keystroke. Over-limit is assertive (an
+  // error the user should hear immediately); nearing the limit is polite.
+  const announceCounter = useCallback(
+    (length: number) => {
+      if (maxLength == null) {
+        return;
+      }
+      const zone: 'under' | 'near' | 'over' =
+        length > maxLength
+          ? 'over'
+          : length >= maxLength * COUNTER_WARNING_THRESHOLD
+            ? 'near'
+            : 'under';
+      if (zone === counterZoneRef.current) {
+        return;
+      }
+      counterZoneRef.current = zone;
+      if (zone === 'over') {
+        announce(
+          t('@astryx.textArea.charactersOverLimit', {
+            count: length - maxLength,
+          }),
+          'assertive',
+        );
+      } else if (zone === 'near') {
+        announce(
+          t('@astryx.textArea.charactersRemaining', {
+            count: maxLength - length,
+          }),
+        );
+      }
+    },
+    [announce, t, maxLength],
+  );
+
   const handleChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     // Value can't change while showing a disabled message (the field is
     // read-only and non-native-disabled), but guard the handler too so the
@@ -418,6 +465,7 @@ export function TextArea({
       return;
     }
     const newValue = e.target.value;
+    announceCounter(newValue.length);
     onChange?.(newValue, e);
     if (changeAction && !e.defaultPrevented) {
       startTransition(async () => {
@@ -541,14 +589,13 @@ export function TextArea({
               styles.counter,
               optimisticValue.length > maxLength && styles.counterError,
             )}>
+            {optimisticValue.length > maxLength && (
+              // Non-color cue so the over-limit state isn't conveyed by the red
+              // color alone (WCAG 1.4.1). Decorative — the count text and the
+              // live-region announcement carry the meaning.
+              <Icon icon="warning" size="sm" />
+            )}
             {optimisticValue.length}/{maxLength}
-            <VisuallyHidden aria-live="polite">
-              {optimisticValue.length >= maxLength * COUNTER_WARNING_THRESHOLD
-                ? optimisticValue.length > maxLength
-                  ? `${optimisticValue.length - maxLength} characters over limit`
-                  : `${maxLength - optimisticValue.length} characters remaining`
-                : ''}
-            </VisuallyHidden>
           </div>
         )}
       </div>
