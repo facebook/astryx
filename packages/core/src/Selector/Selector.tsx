@@ -193,8 +193,19 @@ const styles = stylex.create({
   },
   // Search input
   searchWrapper: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-2'],
     paddingBlock: spacingVars['--spacing-1'],
+  },
+  // Decorative adornment beside the search input (searchStartContent /
+  // searchEndContent). Non-interactive; the input owns focus + combobox role.
+  searchAdornment: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    flexShrink: 0,
+    color: colorVars['--color-icon-secondary'],
   },
   searchInput: {
     boxSizing: 'border-box',
@@ -477,6 +488,22 @@ interface SelectorPropsBase<
   searchPlaceholder?: string;
 
   /**
+   * Content rendered at the inline-start of the search input (only when
+   * `hasSearch`). Typically a search/magnifier `Icon`. Purely decorative —
+   * it sits beside the input inside the search row and does not receive focus,
+   * so the input keeps its combobox role and behavior.
+   */
+  searchStartContent?: ReactNode;
+
+  /**
+   * Content rendered at the inline-end of the search input (only when
+   * `hasSearch`). For a non-interactive adornment (e.g. a hint). For an
+   * interactive clear affordance, drive the value via `onChange` — this slot
+   * is not wired to the search query.
+   */
+  searchEndContent?: ReactNode;
+
+  /**
    * Position placement relative to the trigger.
    *
    * Omit to use the selector's default selected-item overlay behavior: the
@@ -615,6 +642,8 @@ export function Selector<T extends SelectorOptionType>(
     renderOption,
     hasSearch = false,
     searchPlaceholder: searchPlaceholderFromProps,
+    searchStartContent,
+    searchEndContent,
     placement,
     isDefaultOpen = false,
     'data-testid': testId,
@@ -857,6 +886,11 @@ export function Selector<T extends SelectorOptionType>(
     }
     return (
       <div {...stylex.props(styles.searchWrapper)}>
+        {searchStartContent != null && (
+          <span aria-hidden="true" {...stylex.props(styles.searchAdornment)}>
+            {searchStartContent}
+          </span>
+        )}
         <input
           ref={searchRef}
           id={searchId}
@@ -897,6 +931,11 @@ export function Selector<T extends SelectorOptionType>(
           placeholder={searchPlaceholder}
           {...stylex.props(styles.searchInput)}
         />
+        {searchEndContent != null && (
+          <span aria-hidden="true" {...stylex.props(styles.searchAdornment)}>
+            {searchEndContent}
+          </span>
+        )}
       </div>
     );
   }, [
@@ -905,6 +944,8 @@ export function Selector<T extends SelectorOptionType>(
     listboxId,
     searchQuery,
     searchPlaceholder,
+    searchStartContent,
+    searchEndContent,
     handleSearchChange,
     onKeyDown,
     popover.isOpen,

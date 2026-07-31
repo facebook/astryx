@@ -601,6 +601,30 @@ describe('MultiSelector', () => {
     expect(searchInput).toHaveAttribute('aria-autocomplete', 'list');
   });
 
+  it('renders searchStartContent / searchEndContent beside the input', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+        searchStartContent={<span data-testid="search-start">S</span>}
+        searchEndContent={<span data-testid="search-end">E</span>}
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    const start = screen.getByTestId('search-start');
+    const end = screen.getByTestId('search-end');
+    expect(start).toBeInTheDocument();
+    expect(end).toBeInTheDocument();
+    // Decorative — must not be exposed as controls; the input stays the sole
+    // combobox.
+    expect(start.closest('[aria-hidden="true"]')).not.toBeNull();
+    expect(end.closest('[aria-hidden="true"]')).not.toBeNull();
+  });
+
   it('filters options when searching', async () => {
     const user = userEvent.setup();
     render(

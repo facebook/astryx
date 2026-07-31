@@ -696,6 +696,45 @@ describe('Selector', () => {
       ).toBeInTheDocument();
     });
 
+    it('renders searchStartContent / searchEndContent beside the input', async () => {
+      const user = userEvent.setup();
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Apple"
+          onChange={() => {}}
+          hasSearch
+          searchStartContent={<span data-testid="search-start">S</span>}
+          searchEndContent={<span data-testid="search-end">E</span>}
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      const start = screen.getByTestId('search-start');
+      const end = screen.getByTestId('search-end');
+      expect(start).toBeInTheDocument();
+      expect(end).toBeInTheDocument();
+      // Adornments are decorative — they must not be exposed as controls, so
+      // the search input stays the sole combobox in the popup.
+      expect(start.closest('[aria-hidden="true"]')).not.toBeNull();
+      expect(end.closest('[aria-hidden="true"]')).not.toBeNull();
+    });
+
+    it('does not render search adornments when hasSearch is false', () => {
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Apple"
+          onChange={() => {}}
+          searchStartContent={<span data-testid="search-start">S</span>}
+        />,
+      );
+      // The whole search row is gated on hasSearch, so the adornment never
+      // renders without it.
+      expect(screen.queryByTestId('search-start')).not.toBeInTheDocument();
+    });
+
     describe('result announcements', () => {
       it('announces the match count politely while searching', async () => {
         const user = userEvent.setup();

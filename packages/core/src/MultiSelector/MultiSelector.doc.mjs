@@ -114,6 +114,18 @@ export const docs = {
           default: "'Search...'",
         },
         {
+          name: 'searchStartContent',
+          type: 'ReactNode',
+          description:
+            'Decorative content at the inline-start of the search input (only with hasSearch), e.g. a search Icon. Non-interactive; the input keeps its combobox role.',
+        },
+        {
+          name: 'searchEndContent',
+          type: 'ReactNode',
+          description:
+            'Decorative content at the inline-end of the search input (only with hasSearch). Not wired to the search query.',
+        },
+        {
           name: 'isDisabled',
           type: 'boolean',
           description: 'Disables the selector.',

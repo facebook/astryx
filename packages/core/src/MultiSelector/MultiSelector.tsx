@@ -212,8 +212,19 @@ const styles = stylex.create({
 
   // Search input
   searchWrapper: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-2'],
     paddingBlock: spacingVars['--spacing-1'],
+  },
+  // Decorative adornment beside the search input (searchStartContent /
+  // searchEndContent). Non-interactive; the input owns focus + combobox role.
+  searchAdornment: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    flexShrink: 0,
+    color: colorVars['--color-icon-secondary'],
   },
   searchInput: {
     boxSizing: 'border-box',
@@ -537,6 +548,21 @@ export interface MultiSelectorProps<
   searchPlaceholder?: string;
 
   /**
+   * Content rendered at the inline-start of the search input (only when
+   * `hasSearch`). Typically a search/magnifier `Icon`. Purely decorative —
+   * it sits beside the input and does not receive focus, so the input keeps
+   * its combobox role and behavior.
+   */
+  searchStartContent?: ReactNode;
+
+  /**
+   * Content rendered at the inline-end of the search input (only when
+   * `hasSearch`). For a non-interactive adornment; not wired to the search
+   * query.
+   */
+  searchEndContent?: ReactNode;
+
+  /**
    * How to display selected items in the trigger.
    * - 'count': "3 selected"
    * - 'labels': "Name, Email, +3"
@@ -639,6 +665,8 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   selectAllLabel: selectAllLabelFromProps,
   hasSearch = false,
   searchPlaceholder: searchPlaceholderFromProps,
+  searchStartContent,
+  searchEndContent,
   triggerDisplay = 'count',
   maxBadges = 3,
   renderOption,
@@ -1066,6 +1094,11 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     }
     return (
       <div {...stylex.props(styles.searchWrapper)}>
+        {searchStartContent != null && (
+          <span aria-hidden="true" {...stylex.props(styles.searchAdornment)}>
+            {searchStartContent}
+          </span>
+        )}
         <input
           ref={searchRef}
           id={searchId}
@@ -1105,6 +1138,11 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           placeholder={searchPlaceholder}
           {...stylex.props(styles.searchInput)}
         />
+        {searchEndContent != null && (
+          <span aria-hidden="true" {...stylex.props(styles.searchAdornment)}>
+            {searchEndContent}
+          </span>
+        )}
       </div>
     );
   }, [
@@ -1113,6 +1151,8 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     listboxId,
     searchQuery,
     searchPlaceholder,
+    searchStartContent,
+    searchEndContent,
     handleSearchChange,
     onKeyDown,
     popover.isOpen,
