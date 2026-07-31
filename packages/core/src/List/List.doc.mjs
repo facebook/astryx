@@ -42,6 +42,13 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'isEdgeAligned',
+      type: 'boolean',
+      description:
+        "Align item content flush with the container edge by cancelling the items' built-in horizontal inset with a matching negative margin. Tracks density automatically (8px for compact and balanced, 12px for spacious). Use when the list sits under a section heading so row text lines up with the heading text.",
+      default: 'false',
+    },
+    {
       name: 'header',
       type: 'ReactNode',
       description: 'Header content, associated with the list via aria-labelledby.',
