@@ -261,4 +261,13 @@ export const defaultIcons: IconRegistry = {
       <path d="M12 18v4m-4 0h8" />
     </svg>
   ),
+
+  /** 🔊 — speaker (audio output / text-to-speech) */
+  speaker: (
+    <svg {...svgProps}>
+      <path d="M11 5 6 9H2v6h4l5 4V5z" />
+      <path d="M15.5 8.5a5 5 0 0 1 0 7" />
+      <path d="M18.5 5.5a9 9 0 0 1 0 13" />
+    </svg>
+  ),
 };
