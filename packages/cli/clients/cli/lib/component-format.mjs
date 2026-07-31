@@ -4,9 +4,9 @@
  * @file Component doc formatting — render ComponentDoc objects to text
  */
 
-import {discoverComponents, findComponentReadme, resolveImportPath} from '../../../lib/component-discovery.mjs';
-import {loadDocs} from '../../../lib/component-loader.mjs';
-import {getCliInvocation} from '../../../utils/package-manager.mjs';
+import {discoverComponents, findComponentReadme, resolveImportPath} from '../../../foundation/discovery/component-discovery.mjs';
+import {loadDocs} from '../../../foundation/discovery/component-loader.mjs';
+import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
 
 /**
  * Derive the `defineTheme` component-override key from a theming target.

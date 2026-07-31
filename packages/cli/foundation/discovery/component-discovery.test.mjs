@@ -28,8 +28,8 @@ import {
   discoverOwnedComponents,
 } from './component-discovery.mjs';
 
-// packages/cli/lib/ -> up 3 = repo root (has packages/core).
-const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
+// packages/cli/foundation/discovery/ -> up 4 = repo root (has packages/core).
+const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 const CORE = path.join(REPO, 'packages', 'core');
 
 const SLOW = 30_000;

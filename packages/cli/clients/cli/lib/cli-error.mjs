@@ -50,8 +50,8 @@
  * NEVER add ad-hoc fields. NEVER vary the shape. Consumers depend on it.
  */
 
-import {isJsonMode, jsonError as _jsonError, humanWarn} from '../../../lib/json.mjs';
-import {ERROR_CODES} from '../../../lib/error-codes.mjs';
+import {isJsonMode, jsonError as _jsonError, humanWarn} from '../../../foundation/response/json.mjs';
+import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 
 /**
  * Suggestion object — matches the shape used by API errors and the JSON

@@ -13,7 +13,7 @@ import {
   findComponentSource,
   resolveImportPath,
 } from './component-discovery.mjs';
-import {findCoreDir} from '../utils/paths.mjs';
+import {findCoreDir} from '../fs/paths.mjs';
 
 describe('findComponentSource resolves .ts-authored sources', () => {
   const coreDir = findCoreDir();

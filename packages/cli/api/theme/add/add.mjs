@@ -9,9 +9,9 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {assertWithin, PathSafetyError} from '../../../utils/path-safety.mjs';
+import {assertWithin, PathSafetyError} from '../../../foundation/fs/path-safety.mjs';
 import {AstryxError} from '../../error.mjs';
-import {ERROR_CODES} from '../../../lib/error-codes.mjs';
+import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {THEMES_DIR, listThemes, findTheme} from '../_adapter.mjs';
 
 // Stripped from scaffolded files so the consumer's copy doesn't carry our

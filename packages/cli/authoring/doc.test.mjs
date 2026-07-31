@@ -12,7 +12,7 @@ import {
   FunctionDocKindSchema,
   GenericDocKindSchema,
 } from './doc.mjs';
-import {loadComponentDoc} from '../lib/component-loader.mjs';
+import {loadComponentDoc} from '../foundation/discovery/component-loader.mjs';
 
 // The factories are stamp-only (like createConfig / createBlockTemplate): they
 // inject a `type` discriminant and are otherwise identity, performing NO

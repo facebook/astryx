@@ -12,7 +12,7 @@
  * Every leaf is also re-exported for direct scripting use.
  */
 
-import {ERROR_CODES} from '../../lib/error-codes.mjs';
+import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 import {AstryxError} from '../error.mjs';
 import {
   CORE_PACKAGE,

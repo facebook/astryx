@@ -17,13 +17,13 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import {findCoreDir} from '../../utils/paths.mjs';
+import {findCoreDir} from '../fs/paths.mjs';
 import {
   discoverComponents,
   findComponentReadme,
   resolveImportPath,
-} from '../component-discovery.mjs';
-import {loadDocs} from '../component-loader.mjs';
+} from '../discovery/component-discovery.mjs';
+import {loadDocs} from '../discovery/component-loader.mjs';
 import {
   ALIAS_TABLE,
   normalizeName,

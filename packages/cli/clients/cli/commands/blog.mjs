@@ -14,8 +14,8 @@
  *   astryx blog --json             Structured list/detail envelope
  */
 
-import {getRunPrefix} from '../../../utils/package-manager.mjs';
-import {humanLog, jsonOut} from '../../../lib/json.mjs';
+import {getRunPrefix} from '../../../foundation/env/package-manager.mjs';
+import {humanLog, jsonOut} from '../../../foundation/response/json.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {blog as blogApi} from '../../../api/blog/blog.mjs';
 

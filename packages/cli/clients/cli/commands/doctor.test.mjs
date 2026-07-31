@@ -20,7 +20,7 @@ import {
   checkPeerDeps,
   checkPackageManager,
 } from '../../../api/doctor/doctor.mjs';
-import {MIN_NODE_VERSION} from '../../../lib/node-version.mjs';
+import {MIN_NODE_VERSION} from '../../../foundation/env/node-version.mjs';
 
 let tmpDir;
 let logCalls;

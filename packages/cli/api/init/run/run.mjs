@@ -16,13 +16,13 @@
 
 import * as path from 'node:path';
 import * as fs from 'node:fs';
-import {CLI_ROOT} from '../../../utils/paths.mjs';
-import {PathSafetyError} from '../../../utils/path-safety.mjs';
-import {getCliInvocation} from '../../../utils/package-manager.mjs';
-import {installAgentDocs} from '../../../lib/agent-docs/agent-docs.mjs';
+import {CLI_ROOT} from '../../../foundation/fs/paths.mjs';
+import {PathSafetyError} from '../../../foundation/fs/path-safety.mjs';
+import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
+import {installAgentDocs} from '../../../foundation/agent-docs/agent-docs.mjs';
 import {listTemplates} from '../../template/template.mjs';
 import {AstryxError} from '../../error.mjs';
-import {ERROR_CODES} from '../../../lib/error-codes.mjs';
+import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {logger} from '../../logger.mjs';
 
 const VALID_FEATURES = ['agents', 'theme', 'template'];

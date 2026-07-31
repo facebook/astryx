@@ -26,11 +26,11 @@ import {
   selectIntegrationCodemods,
 } from '../../assets/codemods/integration-discovery.mjs';
 import {runIntegrationCodemods} from '../../assets/codemods/integration-runner.mjs';
-import {installAgentDocs, inspectAgentDocs} from '../../lib/agent-docs/agent-docs.mjs';
-import {formatCliCommand} from '../../utils/package-manager.mjs';
-import {Project} from '../../lib/project.mjs';
-import {loadIntegrations} from '../../lib/integrations.mjs';
-import {warnOnIntegrationIssues} from '../../lib/integration-warnings.mjs';
+import {installAgentDocs, inspectAgentDocs} from '../../foundation/agent-docs/agent-docs.mjs';
+import {formatCliCommand} from '../../foundation/env/package-manager.mjs';
+import {Project} from '../../foundation/config/project.mjs';
+import {loadIntegrations} from '../../foundation/integrations/integrations.mjs';
+import {warnOnIntegrationIssues} from '../../foundation/integrations/integration-warnings.mjs';
 import {logger} from '../logger.mjs';
 
 const execFileAsync = promisify(execFile);
@@ -269,7 +269,7 @@ export async function runCoreCodemods(versionManifests, {apply, path: srcPath, c
  * the run leaf decides between the config_fixable preview and a hard abort.
  * @param {string} cwd
  * @param {string[]} [extraIntegrationSpecs] explicit `--integration` specs
- * @returns {Promise<{postCodemodHooks: import('../../types/config').PostCodemodHook[], integrations: import('../../lib/integrations.mjs').LoadedIntegration[]}>}
+ * @returns {Promise<{postCodemodHooks: import('../../types/config').PostCodemodHook[], integrations: import('../../foundation/integrations/integrations.mjs').LoadedIntegration[]}>}
  */
 export async function loadProjectContext(cwd, extraIntegrationSpecs = []) {
   const project = await Project.load(cwd);
@@ -286,7 +286,7 @@ export async function loadProjectContext(cwd, extraIntegrationSpecs = []) {
  * Non-blocking nudge for integration validation issues. Never throws (a broken
  * nudge must not fail the upgrade) and is suppressed for --json/programmatic
  * callers (the silent logger).
- * @param {Array<import('../../lib/integrations.mjs').LoadedIntegration>} integrations
+ * @param {Array<import('../../foundation/integrations/integrations.mjs').LoadedIntegration>} integrations
  * @returns {Promise<void>}
  */
 export async function warnIntegrationIssues(integrations) {
@@ -301,7 +301,7 @@ export async function warnIntegrationIssues(integrations) {
  * Discover + select the integration codemods that apply in the (from, to]
  * range. An integration whose codemods fail to load is SKIPPED (a definition
  * error is surfaced by the nudge, not a hard failure of the upgrade).
- * @param {Array<import('../../lib/integrations.mjs').LoadedIntegration>} integrations
+ * @param {Array<import('../../foundation/integrations/integrations.mjs').LoadedIntegration>} integrations
  * @param {string} from
  * @param {string} to
  * @returns {Promise<Array<{version: string, codemods: import('../../types/codemod').CodemodEntry[]}>>}

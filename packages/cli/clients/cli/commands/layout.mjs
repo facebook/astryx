@@ -13,9 +13,9 @@
  */
 
 import * as fs from 'node:fs';
-import {jsonOut, humanLog} from '../../../lib/json.mjs';
+import {jsonOut, humanLog} from '../../../foundation/response/json.mjs';
 import {cliError} from '../lib/cli-error.mjs';
-import {ERROR_CODES} from '../../../lib/error-codes.mjs';
+import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {layoutExpand, layoutCheck, layoutGrammar} from '../../../api/layout/layout.mjs';
 
 /**

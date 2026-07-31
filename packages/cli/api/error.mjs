@@ -11,7 +11,7 @@
  * to `ERR_UNKNOWN` so older throw sites still produce a valid envelope.
  */
 
-import {ERROR_CODES} from '../lib/error-codes.mjs';
+import {ERROR_CODES} from '../foundation/response/error-codes.mjs';
 
 export class AstryxError extends Error {
   /** @type {import('../types/base').Suggestion[] | undefined} */

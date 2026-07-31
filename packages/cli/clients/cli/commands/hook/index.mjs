@@ -12,10 +12,10 @@ import {
   formatHookBrief,
   formatHookParams,
 } from '../../lib/hook-format.mjs';
-import {getCliInvocation} from '../../../../utils/package-manager.mjs';
-import {jsonOut, humanLog} from '../../../../lib/json.mjs';
+import {getCliInvocation} from '../../../../foundation/env/package-manager.mjs';
+import {jsonOut, humanLog} from '../../../../foundation/response/json.mjs';
 import {cliError} from '../../lib/cli-error.mjs';
-import {ERROR_CODES} from '../../../../lib/error-codes.mjs';
+import {ERROR_CODES} from '../../../../foundation/response/error-codes.mjs';
 import {hook as hookApi} from '../../../../api/hook/hook.mjs';
 import {findRelatedBlocks} from '../../../../api/template/template.mjs';
 
@@ -178,8 +178,8 @@ export function registerHook(program) {
 }
 
 // Re-export lib functions for external consumers
-export {discoverHooks, findHookDoc, getAllHookNames} from '../../../../lib/hook-discovery.mjs';
-export {loadDocs} from '../../../../lib/component-loader.mjs';
+export {discoverHooks, findHookDoc, getAllHookNames} from '../../../../foundation/discovery/hook-discovery.mjs';
+export {loadDocs} from '../../../../foundation/discovery/component-loader.mjs';
 export {
   formatHookFull,
   formatHookCompact,

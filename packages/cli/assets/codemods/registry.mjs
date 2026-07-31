@@ -28,7 +28,7 @@ const registry = new Map([
 
 // Re-export from the shared utility so registry callers and other consumers
 // (upgrade gate, update-check) all use the same comparator.
-import {semverCompare} from '../../utils/semver.mjs';
+import {semverCompare} from '../../foundation/env/semver.mjs';
 
 /**
  * All registered versions, sorted ascending.

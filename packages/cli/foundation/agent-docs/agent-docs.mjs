@@ -20,11 +20,11 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {findCoreDir, CLI_ROOT} from '../../utils/paths.mjs';
-import {assertWithin} from '../../utils/path-safety.mjs';
-import {getCliInvocation} from '../../utils/package-manager.mjs';
-import {discoverComponents} from '../../lib/component-discovery.mjs';
-import {humanLog} from '../../lib/json.mjs';
+import {findCoreDir, CLI_ROOT} from '../fs/paths.mjs';
+import {assertWithin} from '../fs/path-safety.mjs';
+import {getCliInvocation} from '../env/package-manager.mjs';
+import {discoverComponents} from '../discovery/component-discovery.mjs';
+import {humanLog} from '../response/json.mjs';
 
 const AGENTS_MD = 'AGENTS.md';
 const CLAUDE_MD = 'CLAUDE.md';

@@ -10,7 +10,7 @@ import {
   findIntegrationComponentDoc,
   findIntegrationComponentSource,
   CORE_PACKAGE,
-} from '../../../lib/component-discovery.mjs';
+} from '../../../foundation/discovery/component-discovery.mjs';
 
 // The api `component()` reads integrations via Project.load(). In the vitest
 // environment, Vite's `server.fs.allow` only permits loading modules from
@@ -20,7 +20,7 @@ import {
 // produces) while keeping the integration's `components` dir on disk under
 // node_modules so its `.doc.mjs` files load normally.
 const projectLoadMock = vi.fn();
-vi.mock('../../../lib/project.mjs', () => ({
+vi.mock('../../../foundation/config/project.mjs', () => ({
   Project: {load: (...args) => projectLoadMock(...args)},
 }));
 

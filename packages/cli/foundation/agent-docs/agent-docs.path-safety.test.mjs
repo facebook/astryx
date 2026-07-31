@@ -16,7 +16,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
 import {installAgentDocs} from './agent-docs.mjs';
-import {PathSafetyError} from '../../utils/path-safety.mjs';
+import {PathSafetyError} from '../fs/path-safety.mjs';
 
 let tmpDir;
 beforeEach(() => {

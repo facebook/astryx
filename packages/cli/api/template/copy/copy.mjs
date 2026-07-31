@@ -15,9 +15,9 @@ import {
   assertWithin,
   isFilePathArg,
   PathSafetyError,
-} from '../../../utils/path-safety.mjs';
+} from '../../../foundation/fs/path-safety.mjs';
 import {AstryxError} from '../../error.mjs';
-import {ERROR_CODES} from '../../../lib/error-codes.mjs';
+import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {stripTemplateAssetRefs} from '../_adapter.mjs';
 
 /**

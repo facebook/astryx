@@ -18,7 +18,7 @@ import {list} from './list/list.mjs';
 import {detail as detailLeaf} from './detail/detail.mjs';
 import {params as paramsLeaf} from './detail/params/params.mjs';
 import {AstryxError} from '../error.mjs';
-import {ERROR_CODES} from '../../lib/error-codes.mjs';
+import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 
 /**
  * @param {string} [name]

@@ -9,8 +9,8 @@
  * - Brief: signature line with import hint, description, key params
  */
 
-import {discoverHooks, findHookDoc} from '../../../lib/hook-discovery.mjs';
-import {loadDocs} from '../../../lib/component-loader.mjs';
+import {discoverHooks, findHookDoc} from '../../../foundation/discovery/hook-discovery.mjs';
+import {loadDocs} from '../../../foundation/discovery/component-loader.mjs';
 import {mdCell} from './component-format.mjs';
 
 /**

@@ -6,13 +6,13 @@
 
 import * as path from 'node:path';
 import * as fs from 'node:fs';
-import {jsonOut, humanLog} from '../../../lib/json.mjs';
+import {jsonOut, humanLog} from '../../../foundation/response/json.mjs';
 import {cliError} from '../lib/cli-error.mjs';
-import {ERROR_CODES} from '../../../lib/error-codes.mjs';
+import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {template as templateApi} from '../../../api/template/template.mjs';
-import {Project} from '../../../lib/project.mjs';
-import {warnOnIntegrationIssues} from '../../../lib/integration-warnings.mjs';
-import {getCliInvocation} from '../../../utils/package-manager.mjs';
+import {Project} from '../../../foundation/config/project.mjs';
+import {warnOnIntegrationIssues} from '../../../foundation/integrations/integration-warnings.mjs';
+import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
 
 export {discoverTemplates, listTemplates} from '../../../api/template/template.mjs';
 
@@ -69,7 +69,7 @@ export function registerTemplate(program) {
       try {
         const project = await Project.load(process.cwd());
         await warnOnIntegrationIssues(
-          /** @type {Array<import('../../../lib/integrations.mjs').LoadedIntegration>} */ (
+          /** @type {Array<import('../../../foundation/integrations/integrations.mjs').LoadedIntegration>} */ (
             project.loadedIntegrations
           ),
           {json},
@@ -209,7 +209,7 @@ async function detectTemplateCollision(name, targetPath) {
   const resolved = path.resolve(process.cwd(), targetPath);
 
   // File-arg branch: targetPath looks like `./foo.tsx`.
-  const {isFilePathArg} = await import('../../../utils/path-safety.mjs');
+  const {isFilePathArg} = await import('../../../foundation/fs/path-safety.mjs');
   let dest;
   if (isFilePathArg(targetPath)) {
     dest = resolved;

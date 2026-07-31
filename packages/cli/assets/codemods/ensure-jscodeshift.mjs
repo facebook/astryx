@@ -12,7 +12,7 @@
 
 import {execSync} from 'node:child_process';
 import * as p from './term-log.mjs';
-import {detectPackageManager} from '../../utils/package-manager.mjs';
+import {detectPackageManager} from '../../foundation/env/package-manager.mjs';
 
 /**
  * @param {object} [options]

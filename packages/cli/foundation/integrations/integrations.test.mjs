@@ -3,9 +3,9 @@
 import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {Project} from './project.mjs';
+import {Project} from '../config/project.mjs';
 import {loadIntegrations, resolvePackageDir} from './integrations.mjs';
-import {discover} from '../api/discover/discover.mjs';
+import {discover} from '../../api/discover/discover.mjs';
 
 let tmpDir;
 let originalCwd;

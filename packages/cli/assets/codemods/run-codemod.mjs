@@ -30,7 +30,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as p from './term-log.mjs';
-import {findConfigPath} from '../../lib/project.mjs';
+import {findConfigPath} from '../../foundation/config/project.mjs';
 import {fixDirectiveCorruption, validateOutput, IGNORED_DIRS} from './runner.mjs';
 
 export const DEFAULT_CODE_EXTENSIONS = [

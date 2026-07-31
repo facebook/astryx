@@ -12,7 +12,7 @@
  * Threading a logger through agent-docs is a separate cleanup.
  */
 
-import {removeAgentDocs} from '../../../lib/agent-docs/agent-docs.mjs';
+import {removeAgentDocs} from '../../../foundation/agent-docs/agent-docs.mjs';
 import {logger} from '../../logger.mjs';
 
 /**

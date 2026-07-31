@@ -11,7 +11,7 @@
  */
 
 import {runChecks} from '../../../api/doctor/doctor.mjs';
-import {jsonOut, humanLog} from '../../../lib/json.mjs';
+import {jsonOut, humanLog} from '../../../foundation/response/json.mjs';
 
 /** Status → human glyph (monochrome, matching the rest of the CLI). */
 const GLYPH = {

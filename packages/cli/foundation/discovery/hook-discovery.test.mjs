@@ -14,7 +14,7 @@ import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {discoverHooks, findHookDoc, getAllHookNames} from './hook-discovery.mjs';
 
-const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
+const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 const CORE = path.join(REPO, 'packages', 'core');
 const SLOW = 30_000;
 

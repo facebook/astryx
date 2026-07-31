@@ -24,4 +24,4 @@ export {
   StampedDocSchema,
   LegacyDocSchema,
   ComponentDocSchema,
-} from '../schemas/doc-schema.mjs';
+} from '../foundation/schemas/doc-schema.mjs';

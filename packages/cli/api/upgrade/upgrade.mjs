@@ -21,9 +21,9 @@
 
 import {list} from './list/list.mjs';
 import {run} from './run/run.mjs';
-import {isValidSemver} from '../../utils/semver.mjs';
-import {getCliInvocation} from '../../utils/package-manager.mjs';
-import {ERROR_CODES} from '../../lib/error-codes.mjs';
+import {isValidSemver} from '../../foundation/env/semver.mjs';
+import {getCliInvocation} from '../../foundation/env/package-manager.mjs';
+import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 import {AstryxError} from '../error.mjs';
 import {logger} from '../logger.mjs';
 

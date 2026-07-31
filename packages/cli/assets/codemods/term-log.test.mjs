@@ -11,7 +11,7 @@
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import * as p from './term-log.mjs';
-import {setJsonMode} from '../../lib/json.mjs';
+import {setJsonMode} from '../../foundation/response/json.mjs';
 
 let logSpy;
 let errSpy;

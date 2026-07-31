@@ -36,8 +36,8 @@
  * through verbatim outside of --json mode.
  */
 
-import {API_VERSION, isJsonMode, toErrorEnvelope} from '../../../lib/json.mjs';
-import {ERROR_CODES} from '../../../lib/error-codes.mjs';
+import {API_VERSION, isJsonMode, toErrorEnvelope} from '../../../foundation/response/json.mjs';
+import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 
 /**
  * Cheap argv check used before preAction has had a chance to engage

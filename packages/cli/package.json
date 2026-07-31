@@ -60,8 +60,8 @@
       "import": "./authoring/codemod.mjs"
     },
     "./xle": {
-      "types": "./lib/xle/browser.d.ts",
-      "import": "./lib/xle/browser.mjs"
+      "types": "./foundation/xle/browser.d.ts",
+      "import": "./foundation/xle/browser.mjs"
     }
   },
   "files": [

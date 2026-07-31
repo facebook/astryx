@@ -36,12 +36,12 @@ import {
   statusNoCodemods,
   statusConfigFixable,
 } from '../status/status.mjs';
-import {semverGte} from '../../../utils/semver.mjs';
-import {getCliInvocation} from '../../../utils/package-manager.mjs';
-import {ERROR_CODES} from '../../../lib/error-codes.mjs';
+import {semverGte} from '../../../foundation/env/semver.mjs';
+import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
+import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {AstryxError} from '../../error.mjs';
 import {logger} from '../../logger.mjs';
-import {assertWithin, PathSafetyError} from '../../../utils/path-safety.mjs';
+import {assertWithin, PathSafetyError} from '../../../foundation/fs/path-safety.mjs';
 
 /**
  * Run the upgrade pipeline for a validated, non-list invocation. Returns the
@@ -137,7 +137,7 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
   });
   const coreResult = codemodResult && 'totalFilesChanged' in codemodResult ? codemodResult : null;
 
-  /** @type {Array<import('../../../lib/integrations.mjs').LoadedIntegration>} */
+  /** @type {Array<import('../../../foundation/integrations/integrations.mjs').LoadedIntegration>} */
   let integrations;
   /** @type {import('../../../types/config').PostCodemodHook[]} */
   let postCodemodHooks;

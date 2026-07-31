@@ -32,25 +32,25 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {findPresentFiles, loadModuleWithSchema} from './module-loader.mjs';
+import {findPresentFiles, loadModuleWithSchema} from '../fs/module-loader.mjs';
 import {AstryxConfigSchema} from './config-schema.mjs';
-import {loadIntegrations} from './integrations.mjs';
+import {loadIntegrations} from '../integrations/integrations.mjs';
 import {
   CORE_PACKAGE,
   discoverOwnedComponents,
   discoverIntegrationComponents,
-} from './component-discovery.mjs';
-import {findCoreDir} from '../utils/paths.mjs';
+} from '../discovery/component-discovery.mjs';
+import {findCoreDir} from '../fs/paths.mjs';
 import {
   discoverTemplates,
   discoverIntegrationTemplatesForOne,
-} from '../api/template/template.mjs';
-import {getTransformsBetween} from '../assets/codemods/registry.mjs';
+} from '../../api/template/template.mjs';
+import {getTransformsBetween} from '../../assets/codemods/registry.mjs';
 import {
   discoverIntegrationCodemods,
   selectIntegrationCodemods,
-} from '../assets/codemods/integration-discovery.mjs';
-import {validateLoadedIntegration} from '../api/integration/validate-integration.mjs';
+} from '../../assets/codemods/integration-discovery.mjs';
+import {validateLoadedIntegration} from '../../api/integration/validate-integration.mjs';
 import {
   InMemoryConfigCache,
   cacheKey,
@@ -75,9 +75,9 @@ function errorMessage(err) {
 
 /**
  * An integration issue tagged with the owner package. The base
- * {@link import('../types/integration').AstryxIntegrationIssue} fields plus the
+ * {@link import('../../types/integration').AstryxIntegrationIssue} fields plus the
  * `package` that produced it, which Project tracks for routing/dedup.
- * @typedef {import('../types/integration').AstryxIntegrationIssue & {package: string}} ProjectIntegrationIssue
+ * @typedef {import('../../types/integration').AstryxIntegrationIssue & {package: string}} ProjectIntegrationIssue
  */
 
 /** Conventional config basenames, in load-precedence order. */
@@ -136,11 +136,11 @@ export class Project {
   #cwd;
   /** @type {string|null} */
   #configPath;
-  /** @type {import('../types/config').AstryxConfig} */
+  /** @type {import('../../types/config').AstryxConfig} */
   #config;
   /** @type {string[]} */
   #integrations;
-  /** @type {import('./integrations.mjs').LoadedIntegration[]} */
+  /** @type {import('../integrations/integrations.mjs').LoadedIntegration[]} */
   #loadedIntegrations;
   /** @type {import('./config-cache.mjs').ConfigCache} */
   #cache;
@@ -160,9 +160,9 @@ export class Project {
    * @param {object} init
    * @param {string} init.cwd
    * @param {string|null} init.configPath
-   * @param {import('../types/config').AstryxConfig} init.config validated AstryxConfig surface
+   * @param {import('../../types/config').AstryxConfig} init.config validated AstryxConfig surface
    * @param {string[]} init.integrations
-   * @param {import('./integrations.mjs').LoadedIntegration[]} init.loadedIntegrations
+   * @param {import('../integrations/integrations.mjs').LoadedIntegration[]} init.loadedIntegrations
    * @param {import('./config-cache.mjs').ConfigCache} init.cache
    * @param {string} init.hash config content hash
    */
@@ -198,11 +198,11 @@ export class Project {
     const configPath = findConfigPath(cwd);
     const hash = configContentHash(configPath);
 
-    /** @type {import('../types/config').AstryxConfig} */
+    /** @type {import('../../types/config').AstryxConfig} */
     let config = {integrations: []};
     /** @type {string[]} */
     let integrations = [];
-    /** @type {import('./integrations.mjs').LoadedIntegration[]} */
+    /** @type {import('../integrations/integrations.mjs').LoadedIntegration[]} */
     let loadedIntegrations = [];
 
     if (configPath) {
@@ -230,7 +230,7 @@ export class Project {
   /**
    * The validated config surface (same data loadConfig returned, minus the
    * resolved `loadedIntegrations` which is exposed separately).
-   * @returns {import('../types/config').AstryxConfig}
+   * @returns {import('../../types/config').AstryxConfig}
    */
   get config() {
     return this.#config;
@@ -241,7 +241,7 @@ export class Project {
     return this.#integrations;
   }
 
-  /** Resolved loaded integrations (lib/integrations.mjs shape). @returns {import('./integrations.mjs').LoadedIntegration[]} */
+  /** Resolved loaded integrations (lib/integrations.mjs shape). @returns {import('../integrations/integrations.mjs').LoadedIntegration[]} */
   get loadedIntegrations() {
     return this.#loadedIntegrations;
   }
@@ -281,7 +281,7 @@ export class Project {
   /**
    * Record a single integration issue, deduped by (package, code, message).
    * @param {string} pkg
-   * @param {import('../types/integration').AstryxIntegrationIssue} issue
+   * @param {import('../../types/integration').AstryxIntegrationIssue} issue
    */
   #pushIssue(pkg, issue) {
     const code = issue?.code ?? 'unknown';
@@ -299,7 +299,7 @@ export class Project {
   }
 
   /** Package label for a loaded integration.
-   * @param {import('./integrations.mjs').LoadedIntegration} integration
+   * @param {import('../integrations/integrations.mjs').LoadedIntegration} integration
    * @returns {string}
    */
   #pkgLabel(integration) {
@@ -310,7 +310,7 @@ export class Project {
    * Validate one loaded integration and collect any issues. Marks the
    * integration visited so issues() won't redo the work. Best-effort: a
    * validator throwing is itself recorded as an issue, never propagated.
-   * @param {import('./integrations.mjs').LoadedIntegration} integration
+   * @param {import('../integrations/integrations.mjs').LoadedIntegration} integration
    */
   async #collectIssues(integration) {
     const pkg = this.#pkgLabel(integration);
@@ -471,7 +471,7 @@ export class Project {
 
       // Discover integration codemods per integration so a single broken
       // integration is skipped (issue collected) without losing the others.
-      /** @type {import('./integrations.mjs').LoadedIntegration[]} */
+      /** @type {import('../integrations/integrations.mjs').LoadedIntegration[]} */
       const good = [];
       for (const integration of this.#loadedIntegrations) {
         await this.#collectIssues(integration);
@@ -531,7 +531,7 @@ export class Project {
    * When called directly, also validates any configured integration not yet
    * visited by a discovery call, so the returned set is complete on demand.
    *
-   * @returns {Promise<import('../types/integration').AstryxIntegrationIssue[]>}
+   * @returns {Promise<import('../../types/integration').AstryxIntegrationIssue[]>}
    */
   async issues() {
     for (const integration of this.#loadedIntegrations) {

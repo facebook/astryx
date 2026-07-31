@@ -14,7 +14,7 @@
  */
 
 import {AstryxError} from '../error.mjs';
-import {ERROR_CODES} from '../../lib/error-codes.mjs';
+import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 import {SITE_URL, SITE_ORIGIN} from '../../lib/site.mjs';
 
 /** Abort a feed/post fetch that hangs, and cap how much we'll read. */
