@@ -9,7 +9,7 @@
     "customConditions": ["source"]
   },
   "include": [
-    "api/json/index.d.ts",
+    "api/json/index.ts",
     "foundation/response/base.d.ts",
     "foundation/response/error-codes.d.ts",
     "clients/cli/lib/manifest.d.ts",
