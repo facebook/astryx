@@ -119,11 +119,12 @@ const styles = stylex.create({
     lineHeight: 'inherit',
     color: 'inherit',
     cursor: 'pointer',
-    outline: {
-      default: 'none',
-      ':focus-visible': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: '0',
+    // The wrapper (inputWrapperStyles.base) renders the focus ring via
+    // :focus-within when this button is focused, matching
+    // TextInput/NumberInput/Selector. The button must not draw its own
+    // :focus-visible outline or the two stack into a doubled ring over the
+    // trigger.
+    outline: 'none',
     borderRadius: radiusVars['--radius-element'],
   },
   triggerPlaceholder: {
