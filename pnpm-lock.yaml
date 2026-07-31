@@ -578,6 +578,9 @@ importers:
         specifier: '>=19.0.0'
         version: 19.2.7(react@19.2.7)
     devDependencies:
+      '@astryxdesign/cli':
+        specifier: workspace:*
+        version: link:../cli
       '@types/d3-scale':
         specifier: ^4.0.9
         version: 4.0.9
@@ -631,6 +634,9 @@ importers:
         specifier: '>=19.0.0'
         version: 19.2.7(react@19.2.7)
     devDependencies:
+      '@astryxdesign/cli':
+        specifier: workspace:*
+        version: link:../cli
       '@babel/cli':
         specifier: ^8.0.4
         version: 8.0.4(@babel/core@7.29.7)
@@ -683,6 +689,9 @@ importers:
         specifier: '>=19.0.0'
         version: 19.2.7(react@19.2.7)
     devDependencies:
+      '@astryxdesign/cli':
+        specifier: workspace:*
+        version: link:../cli
       '@lexical/code':
         specifier: ^0.46.0
         version: 0.46.0(typescript@6.0.3)

@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../../../core/src/docs-types.ts').ReferenceTranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ReferenceTranslationDoc} */
 
 export const docsZh = {
   description: 'Theme 提供者、自定义主题、亮/暗模式和组件样式覆盖。',

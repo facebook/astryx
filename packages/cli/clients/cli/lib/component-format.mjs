@@ -19,7 +19,7 @@ import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
  * Keep the `astryx-` literal in sync with packages/core/src/naming.ts
  * (NAMESPACE / classPrefix), the same way build-theme.mjs mirrors it.
  * <!-- SYNC: packages/core/src/naming.ts (namespace prefix source of truth) -->
- * @param {import('../../../../core/src/docs-types').ThemingTarget} target
+ * @param {import('@astryxdesign/cli/authoring').ThemingTarget} target
  * @returns {string}
  */
 function targetKey(target) {
@@ -31,7 +31,7 @@ function dataAttrForName(name) {
   return `data-${name.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase()}`;
 }
 
-/** @param {import('../../../../core/src/docs-types').ThemingTarget} target @returns {string[]} */
+/** @param {import('@astryxdesign/cli/authoring').ThemingTarget} target @returns {string[]} */
 function getTargetDataAttributes(target) {
   return [
     ...(target.visualProps || []).map(dataAttrForName),
@@ -54,7 +54,7 @@ export function mdCell(value) {
   return String(value ?? '').replace(/\|/g, '\\|');
 }
 
-/** @param {import('../../../../core/src/docs-types').PropDoc[]} [props] @returns {string} */
+/** @param {import('@astryxdesign/cli/authoring').PropDoc[]} [props] @returns {string} */
 function formatPropsTable(props) {
   if (!props || props.length === 0) return '';
   /** @type {string[]} */
@@ -102,7 +102,7 @@ function formatSubComponent(comp) {
  * the visualProps and the variant prop in the component's props list.
  * Returns an array of variant strings from the `variant` prop type,
  * or the variants from target visualProps.
- * @param {import('../../../../core/src/docs-types').ThemingTarget} target
+ * @param {import('@astryxdesign/cli/authoring').ThemingTarget} target
  * @param {any} docs
  * @returns {string[]}
  */
@@ -128,7 +128,7 @@ function getTargetVariants(target, docs) {
 
 /**
  * Get the state classes for a theming target from the states field.
- * @param {import('../../../../core/src/docs-types').ThemingTarget} target
+ * @param {import('@astryxdesign/cli/authoring').ThemingTarget} target
  * @returns {string[]}
  */
 function getTargetStates(target) {

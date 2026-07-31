@@ -78,6 +78,7 @@
     "d3-shape": "^3.2.0"
   },
   "devDependencies": {
+    "@astryxdesign/cli": "workspace:*",
     "@lexical/code": "^0.46.0",
     "@lexical/headless": "^0.46.0",
     "@lexical/html": "^0.46.0",

@@ -68,6 +68,7 @@
     "d3-shape": "^3.2.0"
   },
   "devDependencies": {
+    "@astryxdesign/cli": "workspace:*",
     "@types/d3-scale": "^4.0.9",
     "@types/d3-shape": "^3.1.8"
   }

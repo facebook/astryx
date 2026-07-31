@@ -173,7 +173,10 @@ export * from './theme';
 // Internationalization
 export * from './i18n';
 
-// Doc types — for external library authors writing .doc.mjs files
+// Doc types — for external library authors writing .doc.mjs files.
+// @deprecated Import these from `@astryxdesign/cli/authoring` instead. These
+// re-exports are kept for one release cycle and will be removed; `astryx upgrade`
+// repoints them automatically.
 export type {
   ComponentDoc,
   SingleComponentDoc,
@@ -189,4 +192,4 @@ export type {
   ReferenceSection,
   ContentBlock,
   TokenPreviewType,
-} from './docs-types';
+} from '@astryxdesign/cli/authoring';

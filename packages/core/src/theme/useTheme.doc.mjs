@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').HookDoc} */
+/** @type {import('@astryxdesign/cli/authoring').HookDoc} */
 export const docs = {
   name: 'useTheme',
   displayName: 'useTheme',
@@ -87,7 +87,7 @@ export const docs = {
   importPath: '@astryxdesign/core/theme',
 };
 
-/** @type {import('../docs-types').HookTranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').HookTranslationDoc} */
 export const docsDense = {
   description:
     'Programmatic access to theme tokens for SVG/canvas/charts needing JS values instead of CSS vars.',

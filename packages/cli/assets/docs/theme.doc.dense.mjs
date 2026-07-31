@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../../../core/src/docs-types.ts').ReferenceTranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ReferenceTranslationDoc} */
 
 export const docsDense = {
   description: 'Theme provider, custom themes, light/dark, component overrides',

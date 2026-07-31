@@ -5,7 +5,7 @@
 // Run: node scripts/generate-token-docs.mjs
 // Total: 184 tokens across 12 categories.
 
-/** @type {import('../../../core/src/docs-types.ts').ReferenceDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ReferenceDoc} */
 
 export const docs = {
   "name": "tokens",
