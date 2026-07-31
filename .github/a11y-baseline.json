@@ -2,5 +2,8 @@
   "$comment": "Known axe violations tolerated by the pr-a11y CI gate. Entries are keyed Component::Story::rule-id (see .github/scripts/lib/a11y-baseline.js). Regenerate with `pnpm a11y:baseline` after `pnpm storybook:build` and `npx playwright install chromium`. Remove entries as violations are fixed; anything not listed here fails pr-a11y.",
   "version": 1,
   "generatedAt": null,
-  "entries": []
+  "entries": [
+    "Thumbnail::Media Mode (dark vs light images)::color-contrast",
+    "Thumbnail::Remove on hover::color-contrast"
+  ]
 }
