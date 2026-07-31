@@ -79,7 +79,7 @@ export function findSourceFiles(dir) {
 /**
  * No-op log surface for silent (`--json`) mode.
  * @param {boolean} silent
- * @returns {import('../../authoring/codemod.d.ts').CliLog}
+ * @returns {import('../../authoring/codemod/type.d.ts').CliLog}
  */
 export function makeLog(silent) {
   return silent
@@ -90,9 +90,9 @@ export function makeLog(silent) {
 /**
  * Apply a config codemod to the consumer's astryx.config.* file.
  *
- * @param {import('../../authoring/codemod.d.ts').CodemodEntry} entry normalized codemod entry {id, codemod, package}
- * @param {{apply: boolean, log: import('../../authoring/codemod.d.ts').CliLog, jscodeshift: import('../../authoring/codemod.d.ts').JscodeshiftFactory}} ctx
- * @returns {import('../../authoring/codemod.d.ts').CodemodRunResult}
+ * @param {import('../../authoring/codemod/type.d.ts').CodemodEntry} entry normalized codemod entry {id, codemod, package}
+ * @param {{apply: boolean, log: import('../../authoring/codemod/type.d.ts').CliLog, jscodeshift: import('../../authoring/codemod/type.d.ts').JscodeshiftFactory}} ctx
+ * @returns {import('../../authoring/codemod/type.d.ts').CodemodRunResult}
  */
 export function runConfigCodemod(entry, {apply, log, jscodeshift}) {
   const {codemod, id, package: pkg} = entry;
@@ -170,10 +170,10 @@ export function runConfigCodemod(entry, {apply, log, jscodeshift}) {
 /**
  * Apply a code codemod to discovered source files.
  *
- * @param {import('../../authoring/codemod.d.ts').CodemodEntry} entry normalized codemod entry {id, codemod, package}
+ * @param {import('../../authoring/codemod/type.d.ts').CodemodEntry} entry normalized codemod entry {id, codemod, package}
  * @param {string[]} files
- * @param {{apply: boolean, log: import('../../authoring/codemod.d.ts').CliLog, jscodeshift: import('../../authoring/codemod.d.ts').JscodeshiftFactory}} ctx
- * @returns {import('../../authoring/codemod.d.ts').CodemodRunResult}
+ * @param {{apply: boolean, log: import('../../authoring/codemod/type.d.ts').CliLog, jscodeshift: import('../../authoring/codemod/type.d.ts').JscodeshiftFactory}} ctx
+ * @returns {import('../../authoring/codemod/type.d.ts').CodemodRunResult}
  */
 export function runCodeCodemod(entry, files, {apply, log, jscodeshift}) {
   const {codemod, id, package: pkg} = entry;

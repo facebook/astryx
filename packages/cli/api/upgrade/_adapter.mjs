@@ -38,7 +38,7 @@ const execFileAsync = promisify(execFile);
 /**
  * @typedef {object} CoreTransformEntry
  * @property {string} name
- * @property {import('../../authoring/codemod').CodemodTransform} transform
+ * @property {import('../../authoring/codemod/type').CodemodTransform} transform
  * @property {{title: string, description?: string, pr?: string, codemodType?: string}} meta
  * @property {boolean} [optional]
  */
@@ -95,7 +95,7 @@ export function uniqueFiles(files) {
 /**
  * Run the app config's post-codemod hooks (config.hooks.postCodemod).
  * Dry-run PREVIEWS (buildCommand still called, so a throw fails); apply executes.
- * @param {import('../../authoring/config').PostCodemodHook[]} hooks
+ * @param {import('../../authoring/config/type').PostCodemodHook[]} hooks
  * @param {{packageDir: string, files: string[], apply: boolean}} context
  */
 export async function runPostCodemodHooks(hooks, context) {
@@ -269,7 +269,7 @@ export async function runCoreCodemods(versionManifests, {apply, path: srcPath, c
  * the run leaf decides between the config_fixable preview and a hard abort.
  * @param {string} cwd
  * @param {string[]} [extraIntegrationSpecs] explicit `--integration` specs
- * @returns {Promise<{postCodemodHooks: import('../../authoring/config').PostCodemodHook[], integrations: import('../../foundation/integrations/integrations.mjs').LoadedIntegration[]}>}
+ * @returns {Promise<{postCodemodHooks: import('../../authoring/config/type').PostCodemodHook[], integrations: import('../../foundation/integrations/integrations.mjs').LoadedIntegration[]}>}
  */
 export async function loadProjectContext(cwd, extraIntegrationSpecs = []) {
   const project = await Project.load(cwd);
@@ -304,17 +304,17 @@ export async function warnIntegrationIssues(integrations) {
  * @param {Array<import('../../foundation/integrations/integrations.mjs').LoadedIntegration>} integrations
  * @param {string} from
  * @param {string} to
- * @returns {Promise<Array<{version: string, codemods: import('../../authoring/codemod').CodemodEntry[]}>>}
+ * @returns {Promise<Array<{version: string, codemods: import('../../authoring/codemod/type').CodemodEntry[]}>>}
  */
 export async function selectIntegrationCodemodsFor(integrations, from, to) {
-  /** @type {Map<string, Array<import('../../authoring/codemod').CodemodEntry>>} */
+  /** @type {Map<string, Array<import('../../authoring/codemod/type').CodemodEntry>>} */
   const integrationCodemodsByVersion = new Map();
   for (const integration of integrations) {
     if (!integration?.codemods) continue;
     try {
       const byVersion = await discoverIntegrationCodemods([integration]);
       for (const [version, rawList] of byVersion) {
-        const list = /** @type {Array<import('../../authoring/codemod').CodemodEntry>} */ (/** @type {unknown} */ (rawList));
+        const list = /** @type {Array<import('../../authoring/codemod/type').CodemodEntry>} */ (/** @type {unknown} */ (rawList));
         const existing = integrationCodemodsByVersion.get(version);
         if (existing) existing.push(...list);
         else integrationCodemodsByVersion.set(version, [...list]);
@@ -323,14 +323,14 @@ export async function selectIntegrationCodemodsFor(integrations, from, to) {
       // Skip this integration's codemods (definition error); nudge above surfaces it.
     }
   }
-  return /** @type {Array<{version: string, codemods: import('../../authoring/codemod').CodemodEntry[]}>} */ (
+  return /** @type {Array<{version: string, codemods: import('../../authoring/codemod/type').CodemodEntry[]}>} */ (
     selectIntegrationCodemods(integrationCodemodsByVersion, from, to)
   );
 }
 
 /**
  * Run the file-based INTEGRATION codemods (config codemods first, then code).
- * @param {Array<{version: string, codemods: import('../../authoring/codemod').CodemodEntry[]}>} versionGroups
+ * @param {Array<{version: string, codemods: import('../../authoring/codemod/type').CodemodEntry[]}>} versionGroups
  * @param {{apply: boolean, path: string, codemod?: string, skipCodemods: Set<string>}} options
  */
 export async function runIntegrationCodemodsStep(versionGroups, {apply, path: srcPath, codemod, skipCodemods}) {
