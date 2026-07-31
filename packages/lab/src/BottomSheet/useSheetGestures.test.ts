@@ -307,4 +307,86 @@ describe('useSheetGestures', () => {
       expect(hook.result.current.isDragging).toBe(false);
     });
   });
+
+  describe('body touch handoff', () => {
+    // Attach a real DOM node via the body ref, then dispatch touch events. The
+    // hook's non-passive touchmove listener is how the handoff works on touch
+    // devices (pointer events get cancelled once native panning starts).
+    function makeScroller(opts: {
+      scrollTop: number;
+      clientHeight: number;
+      scrollHeight: number;
+    }) {
+      const sheet = makeTarget();
+      const el = document.createElement('div');
+      Object.defineProperty(el, 'scrollTop', {
+        value: opts.scrollTop,
+        writable: true,
+      });
+      Object.defineProperty(el, 'clientHeight', {value: opts.clientHeight});
+      Object.defineProperty(el, 'scrollHeight', {value: opts.scrollHeight});
+      el.getBoundingClientRect = () => ({height: SHEET_HEIGHT}) as DOMRect;
+      el.closest = ((sel: string) =>
+        sel === '[data-astryx-sheet]' ? sheet : null) as HTMLElement['closest'];
+      sheet.appendChild(el);
+      document.body.appendChild(sheet);
+      return el;
+    }
+    function touch(el: HTMLElement, type: string, y: number, id = 1) {
+      const ev = new Event(type, {bubbles: true, cancelable: true});
+      // jsdom lacks TouchEvent; attach the fields the handler reads.
+      Object.defineProperty(ev, 'changedTouches', {
+        value: [{identifier: id, clientY: y}],
+      });
+      Object.defineProperty(ev, 'currentTarget', {value: el});
+      el.dispatchEvent(ev);
+      return ev;
+    }
+
+    it('promotes a top pull-down (touch) into a sheet drag', () => {
+      const {hook} = setup({snapHeights: () => [200]});
+      const el = makeScroller({
+        scrollTop: 0,
+        clientHeight: 200,
+        scrollHeight: 800,
+      });
+      act(() => hook.result.current.bodyProps.ref(el));
+      act(() => {
+        touch(el, 'touchstart', 0);
+        touch(el, 'touchmove', 50);
+      });
+      expect(hook.result.current.isDragging).toBe(true);
+    });
+
+    it('promotes a bottom pull-up (touch) into a sheet drag', () => {
+      const {hook} = setup({snapHeights: () => [200]});
+      // scrolled to the bottom: scrollTop + clientHeight === scrollHeight
+      const el = makeScroller({
+        scrollTop: 600,
+        clientHeight: 200,
+        scrollHeight: 800,
+      });
+      act(() => hook.result.current.bodyProps.ref(el));
+      act(() => {
+        touch(el, 'touchstart', 300);
+        touch(el, 'touchmove', 250); // pull up
+      });
+      expect(hook.result.current.isDragging).toBe(true);
+    });
+
+    it('leaves native scrolling alone in the middle of the content', () => {
+      const {hook} = setup({snapHeights: () => [200]});
+      const el = makeScroller({
+        scrollTop: 300,
+        clientHeight: 200,
+        scrollHeight: 800,
+      });
+      act(() => hook.result.current.bodyProps.ref(el));
+      act(() => {
+        touch(el, 'touchstart', 300);
+        touch(el, 'touchmove', 250);
+      });
+      expect(hook.result.current.isDragging).toBe(false);
+    });
+  });
 });

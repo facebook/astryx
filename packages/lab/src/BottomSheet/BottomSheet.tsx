@@ -222,9 +222,13 @@ const styles = stylex.create({
     flexGrow: 1,
     minHeight: 0,
     overflowY: 'auto',
-    overscrollBehavior: 'contain',
-    // Allow native vertical scrolling of the content; the overscroll-at-top
-    // pull-down is handled via pointer events, not by blocking touch-action.
+    // No overscroll bounce inside the sheet — a pull-down at the top edge is
+    // handed off to the sheet drag (see useSheetGestures' touch handling)
+    // rather than rubber-banding the content.
+    overscrollBehavior: 'none',
+    // Allow native vertical scrolling of the content; the at-top pull-down is
+    // intercepted via a non-passive touchmove listener, not by blocking
+    // touch-action (which would suppress scrolling entirely).
     touchAction: 'pan-y',
   },
   // `hug` fits the content instead of filling the budget; the budget becomes

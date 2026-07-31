@@ -136,6 +136,7 @@ export interface SheetHandleProps {
 }
 
 export interface SheetBodyProps {
+  ref: (node: HTMLElement | null) => void;
   onPointerDown: (event: ReactPointerEvent) => void;
   onPointerMove: (event: ReactPointerEvent) => void;
   onPointerUp: (event: ReactPointerEvent) => void;
@@ -503,6 +504,157 @@ export function useSheetGestures({
     [endDrag],
   );
 
+  // Touch handoff for the body: pointer events are cancelled by the browser
+  // once it starts a native vertical pan, so on touch devices the pointer path
+  // above never sees the at-top pull-down. A non-passive `touchmove` listener
+  // is the reliable way to intercept it: when the content is scrolled to the
+  // top and the finger moves DOWN, preventDefault() stops the native scroll and
+  // we drive the sheet drag through the same math as a pointer drag, by
+  // adapting the Touch into the minimal shape the pointer handlers read
+  // (pointerId / clientY / timeStamp / currentTarget).
+  const bodyNodeRef = useRef<HTMLElement | null>(null);
+  const touchDragRef = useRef<{
+    id: number;
+    startY: number;
+    top: boolean;
+    bottom: boolean;
+  } | null>(null);
+  const prevTouchHandlers = useRef<{
+    start: (e: TouchEvent) => void;
+    move: (e: TouchEvent) => void;
+    end: (e: TouchEvent) => void;
+  } | null>(null);
+
+  // Latest values the touch handlers need, without re-binding listeners.
+  const beginDragRef = useRef(beginDrag);
+  const pointerMoveRef = useRef(handlePointerMove);
+  const endDragRef = useRef(endDrag);
+  const measureHeightRef = useRef(measureHeight);
+  useEffect(() => {
+    beginDragRef.current = beginDrag;
+    pointerMoveRef.current = handlePointerMove;
+    endDragRef.current = endDrag;
+    measureHeightRef.current = measureHeight;
+  });
+
+  const bodyRef = useCallback((node: HTMLElement | null) => {
+    const asPointer = (touch: Touch, target: HTMLElement) =>
+      ({
+        pointerId: touch.identifier,
+        clientY: touch.clientY,
+        timeStamp: Date.now(),
+        currentTarget: target,
+        setPointerCapture: () => {},
+        releasePointerCapture: () => {},
+      }) as unknown as ReactPointerEvent;
+
+    const atTop = (el: HTMLElement) => el.scrollTop <= 0;
+    const atBottom = (el: HTMLElement) =>
+      el.scrollTop + el.clientHeight >= el.scrollHeight - 1;
+
+    const onTouchStart = (event: TouchEvent) => {
+      const scroller = event.currentTarget as HTMLElement;
+      const touch = event.changedTouches[0];
+      // Arm only at a scroll edge; from mid-content this is an ordinary scroll.
+      // At the top, a pull DOWN hands off (collapse); at the bottom, a pull UP
+      // hands off (expand). Record the edge so the move handler matches it.
+      if (!touch) {
+        touchDragRef.current = null;
+        return;
+      }
+      const top = atTop(scroller);
+      const bottom = atBottom(scroller);
+      if (!top && !bottom) {
+        touchDragRef.current = null;
+        return;
+      }
+      touchDragRef.current = {
+        id: touch.identifier,
+        startY: touch.clientY,
+        top,
+        bottom,
+      };
+    };
+
+    const onTouchMove = (event: TouchEvent) => {
+      const scroller = event.currentTarget as HTMLElement;
+      // Already dragging the sheet from the body — keep translating.
+      if (dragStateRef.current) {
+        const t = [...event.changedTouches].find(
+          x => x.identifier === dragStateRef.current?.pointerId,
+        );
+        if (t) {
+          event.preventDefault();
+          pointerMoveRef.current(asPointer(t, scroller));
+        }
+        return;
+      }
+      const armed = touchDragRef.current;
+      if (!armed) {
+        return;
+      }
+      const t = [...event.changedTouches].find(x => x.identifier === armed.id);
+      if (!t) {
+        return;
+      }
+      const delta = t.clientY - armed.startY;
+      // Promote to a sheet drag on a pull that opposes the armed edge and can
+      // no longer scroll that way: at the top, a downward pull (delta > 0)
+      // collapses; at the bottom, an upward pull (delta < 0) expands. The
+      // opposite direction is a real scroll, so disarm and let it through.
+      const pullDownAtTop = armed.top && delta > 0 && atTop(scroller);
+      const pullUpAtBottom = armed.bottom && delta < 0 && atBottom(scroller);
+      if (pullDownAtTop || pullUpAtBottom) {
+        event.preventDefault();
+        const sheetEl =
+          scroller.closest<HTMLElement>('[data-astryx-sheet]') ?? scroller;
+        touchDragRef.current = null;
+        beginDragRef.current(
+          asPointer(t, scroller),
+          measureHeightRef.current(sheetEl),
+          armed.startY,
+        );
+        pointerMoveRef.current(asPointer(t, scroller));
+      } else if ((armed.top && delta < 0) || (armed.bottom && delta > 0)) {
+        // Scrolling away from the armed edge; hand back to native scroll.
+        touchDragRef.current = null;
+      }
+    };
+
+    const onTouchEnd = (event: TouchEvent) => {
+      touchDragRef.current = null;
+      if (dragStateRef.current) {
+        const t = event.changedTouches[0];
+        if (t) {
+          endDragRef.current(asPointer(t, event.currentTarget as HTMLElement));
+        }
+      }
+    };
+
+    const prev = bodyNodeRef.current;
+    if (prev && prevTouchHandlers.current) {
+      const h = prevTouchHandlers.current;
+      prev.removeEventListener('touchstart', h.start);
+      prev.removeEventListener('touchmove', h.move);
+      prev.removeEventListener('touchend', h.end);
+      prev.removeEventListener('touchcancel', h.end);
+    }
+    bodyNodeRef.current = node;
+    if (node) {
+      node.addEventListener('touchstart', onTouchStart, {passive: true});
+      node.addEventListener('touchmove', onTouchMove, {passive: false});
+      node.addEventListener('touchend', onTouchEnd, {passive: true});
+      node.addEventListener('touchcancel', onTouchEnd, {passive: true});
+      prevTouchHandlers.current = {
+        start: onTouchStart,
+        move: onTouchMove,
+        end: onTouchEnd,
+      };
+    } else {
+      prevTouchHandlers.current = null;
+    }
+  }, []);
+
   const reducedMotion = useMemo(prefersReducedMotion, [isOpen]);
 
   // While dragging, follow the finger; otherwise rest at the settled detent.
@@ -534,12 +686,13 @@ export function useSheetGestures({
 
   const bodyProps = useMemo<SheetBodyProps>(
     () => ({
+      ref: bodyRef,
       onPointerDown: handleBodyPointerDown,
       onPointerMove: handleBodyPointerMove,
       onPointerUp: handleBodyEnd,
       onPointerCancel: handleBodyEnd,
     }),
-    [handleBodyPointerDown, handleBodyPointerMove, handleBodyEnd],
+    [bodyRef, handleBodyPointerDown, handleBodyPointerMove, handleBodyEnd],
   );
 
   return {
