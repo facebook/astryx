@@ -30,7 +30,7 @@ import {
   radiusVars,
   spacingVars,
 } from '../theme/tokens.stylex';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs, rtlStyles} from '../utils';
 import type {ResizableProps} from './useResizable';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
@@ -167,11 +167,8 @@ const styles = stylex.create({
     cursor: 'row-resize',
   },
   // Centered grab zone (pillPlacement 'center' / no bias): sit the hit area on
-  // the divider itself. Anchored logically so it centers in both directions.
-  hitAreaCenteredX: {
-    insetInlineStart: '50%',
-    transform: 'translateX(-50%)',
-  },
+  // the divider itself. Inline centering comes from rtlStyles.centerInline at
+  // the call site (correct in LTR and RTL); this block owns only the block axis.
   hitAreaCenteredY: {
     insetBlockStart: '50%',
     transform: 'translateY(-50%)',
@@ -188,8 +185,6 @@ const styles = stylex.create({
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
     top: '50%',
-    insetInlineStart: '50%',
-    transform: 'translate(-50%, -50%)',
   },
   pillHorizontal: {
     width: 3,
@@ -586,7 +581,7 @@ export function ResizeHandle({
           // construction so the two stay aligned in LTR and RTL alike.
           hitBiasDir == null
             ? isHorizontal
-              ? styles.hitAreaCenteredX
+              ? rtlStyles.centerInline('0px')
               : styles.hitAreaCenteredY
             : isHorizontal
               ? dynamicStyles.hitAreaOffsetX(hitBiasDir)
@@ -609,14 +604,15 @@ export function ResizeHandle({
             stylex.props(
               styles.pill,
               isHorizontal ? styles.pillHorizontal : styles.pillVertical,
-              effectiveSide !== 'center' &&
-                (isHorizontal
+              effectiveSide === 'center'
+                ? rtlStyles.centerInline('-50%')
+                : isHorizontal
                   ? dynamicStyles.pillOffsetX(
                       effectiveSide === 'start' ? -1 : 1,
                     )
                   : dynamicStyles.pillOffsetY(
                       effectiveSide === 'start' ? -1 : 1,
-                    )),
+                    ),
               isAlwaysVisible ? styles.pillVisible : styles.pillHidden,
               isInteracting && !isDragging && styles.pillHover,
               isDragging && styles.pillActive,

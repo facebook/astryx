@@ -226,7 +226,7 @@ const dynamicStyles = stylex.create({
 
 const cellAlignStyles = stylex.create({
   center: {textAlign: 'center'},
-  right: {textAlign: 'right'},
+  end: {textAlign: 'end'},
 });
 
 const styles = stylex.create({
@@ -1436,7 +1436,7 @@ function renderBlock(
                     xstyle={[
                       dynamicStyles.cellMinWidth(`${colMinWidths[i]}px`),
                       node.alignments[i] === 'center' && cellAlignStyles.center,
-                      node.alignments[i] === 'right' && cellAlignStyles.right,
+                      node.alignments[i] === 'right' && cellAlignStyles.end,
                     ]}>
                     {h.children.map((c, j) =>
                       renderInline(
@@ -1462,7 +1462,7 @@ function renderBlock(
                     key={j}
                     xstyle={[
                       node.alignments[j] === 'center' && cellAlignStyles.center,
-                      node.alignments[j] === 'right' && cellAlignStyles.right,
+                      node.alignments[j] === 'right' && cellAlignStyles.end,
                     ]}>
                     {cell.children.map((c, k) =>
                       renderInline(

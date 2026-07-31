@@ -215,8 +215,13 @@ const dynamicStyles = stylex.create({
   }),
   statusPosition: (size: number) => ({
     bottom: size * CIRCLE_EDGE_OFFSET_RATIO,
-    right: size * CIRCLE_EDGE_OFFSET_RATIO,
-    transform: 'translate(50%, 50%)',
+    insetInlineEnd: size * CIRCLE_EDGE_OFFSET_RATIO,
+    // `insetInlineEnd` anchors to the right edge in LTR / left in RTL, so the
+    // outward push must mirror too: +X in LTR, −X in RTL (Y is unaffected).
+    transform: {
+      default: 'translate(50%, 50%)',
+      ':is([dir="rtl"] *)': 'translate(-50%, 50%)',
+    },
   }),
 });
 

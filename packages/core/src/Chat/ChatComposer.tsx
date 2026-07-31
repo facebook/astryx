@@ -230,16 +230,16 @@ const styles = stylex.create({
     paddingBlockEnd:
       'calc(var(--_chat-composer-padding) + var(--_chat-composer-radius))',
     marginBlockEnd: 'calc(-1 * var(--_chat-composer-radius))',
-    borderTopLeftRadius: 'var(--_chat-composer-radius)',
-    borderTopRightRadius: 'var(--_chat-composer-radius)',
+    borderStartStartRadius: 'var(--_chat-composer-radius)',
+    borderStartEndRadius: 'var(--_chat-composer-radius)',
   },
   statusBottom: {
     paddingBlockStart:
       'calc(var(--_chat-composer-padding) + var(--_chat-composer-radius))',
     paddingBlockEnd: 'var(--_chat-composer-padding)',
     marginBlockStart: 'calc(-1 * var(--_chat-composer-radius))',
-    borderBottomLeftRadius: 'var(--_chat-composer-radius)',
-    borderBottomRightRadius: 'var(--_chat-composer-radius)',
+    borderEndStartRadius: 'var(--_chat-composer-radius)',
+    borderEndEndRadius: 'var(--_chat-composer-radius)',
   },
   statusError: {
     backgroundColor: colorVars['--color-error-muted'],

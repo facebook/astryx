@@ -290,8 +290,9 @@ describe('ResizeHandle', () => {
   it('centers the grab zone on the divider when the pill is centered (no bias)', () => {
     render(<Harness handleProps={{pillPlacement: 'center'}} />);
     const hitArea = getSeparator().firstElementChild as HTMLElement;
-    // No physical offset — a plain logical centering class, no biased transform.
-    expect(hitArea.className).toContain('hitAreaCenteredX');
+    // Centered via the shared rtlStyles.centerInline helper (direction-symmetric
+    // left+translateX), not a biased offset.
+    expect(hitArea.className).toContain('centerInline');
     expect(hitArea.className).not.toContain('hitAreaOffsetX');
   });
 
