@@ -25,7 +25,7 @@ import * as path from 'node:path';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '../..');
-const CLI = path.join(ROOT, 'packages/cli/bin/astryx.mjs');
+const CLI = path.join(ROOT, 'packages/cli/clients/cli/bin/astryx.mjs');
 
 let passed = 0;
 let failed = 0;
