@@ -24,7 +24,12 @@ import React, {
   type MouseEvent,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {colorVars, spacingVars, typeScaleVars} from '../theme/tokens.stylex';
+import {
+  colorVars,
+  spacingVars,
+  typeScaleVars,
+  fontWeightVars,
+} from '../theme/tokens.stylex';
 import {BreadcrumbContext} from './Breadcrumbs';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
@@ -127,7 +132,7 @@ const itemStyles = stylex.create({
     color: colorVars['--color-text-secondary'],
   },
   current: {
-    fontWeight: 'inherit',
+    fontWeight: fontWeightVars['--font-weight-semibold'],
   },
   defaultCurrent: {
     color: colorVars['--color-text-primary'],
