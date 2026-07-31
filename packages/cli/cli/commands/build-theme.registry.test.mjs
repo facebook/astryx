@@ -1,8 +1,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Regression test for issue #4109: theme-build component-override keys
- * must match the class names components actually render.
+ * @file Regression test for issues #4109 and #4110: theme-build
+ * component-override keys must match the class names components actually
+ * render — in BOTH directions.
  *
  * `astryx theme build` emits a component override as a `.astryx-<key>` rule,
  * where `<key>` is the theme's `components` key passed through verbatim
@@ -12,15 +13,25 @@
  * component really renders, or the emitted rule is a dead selector that
  * silently does nothing.
  *
- * The registry had de-hyphenated keys for every multi-word component
- * (`textinput`, `dateinput`, `numberinput`, `timeinput`, `appshell`,
- * `aspectratio`, `checkboxinput`, `dropdownmenu`, `formlayout`, `mobilenav`,
- * `moremenu`, `radiolist`, `sidenav`, `tablist`, `topnav`), while the
- * components render the hyphenated class (`astryx-text-input`, etc.). Authors
- * following the registry shipped dead `.astryx-textinput` rules.
+ * #4109 (forward direction): the registry had de-hyphenated keys for every
+ * multi-word component (`textinput`, `dateinput`, `numberinput`, `timeinput`,
+ * `appshell`, `aspectratio`, `checkboxinput`, `dropdownmenu`, `formlayout`,
+ * `mobilenav`, `moremenu`, `radiolist`, `sidenav`, `tablist`, `topnav`), while
+ * the components render the hyphenated class (`astryx-text-input`, etc.).
+ * Authors following the registry shipped dead `.astryx-textinput` rules.
  *
- * Source of truth = the class the component renders, captured in each
- * component's `{Name}.doc.mjs` `theming.targets[].className` (itself guarded
+ * #4110 (reverse direction): the registry lagged core — it held ~53 keys while
+ * the docs declared ~195 theming targets, so overrides of real, rendered
+ * classes (`top-nav-heading`, `progressbar-track`, `field-status`, whole
+ * components like `hovercard`, `toolbar`, `tree-list`, …) drew a false
+ * "Unknown component" warning with did-you-mean steering AWAY from correct
+ * keys, and stale visualProps drew false "Unknown prop" warnings. The repo's
+ * own shipped themes (butter, stone) tripped both. The registry must cover
+ * every documented target, with each key's visualProps mirroring the doc
+ * target entry verbatim.
+ *
+ * Source of truth = the class the component renders, captured in
+ * `theming.targets[].className` of the `*.doc.mjs` files (itself guarded
  * against the real `themeProps()`/`stableClassName()` call sites by
  * packages/core/src/theme/themingTargets.test.ts).
  */
@@ -29,7 +40,7 @@ import {describe, it, expect, beforeAll} from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
-import {fileURLToPath} from 'node:url';
+import {fileURLToPath, pathToFileURL} from 'node:url';
 import {ensureCoreBuilt} from './ensure-core-built.mjs';
 import {runCli} from '../../test-utils/run-cli.mjs';
 
@@ -38,36 +49,64 @@ const CORE_SRC = path.resolve(HERE, '../../../core/src');
 const BUILD_THEME_SRC = path.resolve(HERE, '../../api/theme/build/build.mjs');
 
 /**
- * Extract the KNOWN_COMPONENTS registry keys from the build-theme source.
- * Reading the source (rather than importing the un-exported constant) keeps
- * this test decoupled from the module's private surface.
+ * Extract the KNOWN_COMPONENTS registry from the build-theme source as a
+ * `Map<key, visualProps[]>`. Reading the source (rather than importing the
+ * un-exported constant) keeps this test decoupled from the module's private
+ * surface. Registry entries are single-line `key: ['prop', …],` pairs, so a
+ * line-anchored regex captures both the key and its props array.
  */
-function knownComponentKeys() {
+function knownComponentEntries() {
   const src = fs.readFileSync(BUILD_THEME_SRC, 'utf8');
   const start = src.indexOf('const KNOWN_COMPONENTS = {');
   expect(start).toBeGreaterThan(-1);
   const end = src.indexOf('};', start);
   const block = src.slice(start, end);
-  const keys = new Set();
-  const re = /^\s*'?([a-z][a-z0-9-]*)'?\s*:/gm;
+  const entries = new Map();
+  const re = /^\s*'?([a-z][a-z0-9-]*)'?\s*:\s*\[([^\]]*)\]/gm;
   let m;
   while ((m = re.exec(block)) !== null) {
-    keys.add(m[1]);
+    const props = [...m[2].matchAll(/'([^']+)'/g)].map(p => p[1]);
+    entries.set(m[1], props);
   }
-  return keys;
+  return entries;
+}
+
+/** The KNOWN_COMPONENTS registry keys (see knownComponentEntries). */
+function knownComponentKeys() {
+  return new Set(knownComponentEntries().keys());
 }
 
 /**
- * The set of real override keys: every `theming.targets[].className` across the
- * component docs, with the `astryx-` prefix stripped. This is the canonical
- * source of truth for what selectors the theme build should emit.
+ * Every `*.doc.mjs` file under core src, recursively. Theming targets live in
+ * the per-component doc AND in sub-component docs (`TopNav/TopNavHeading.doc.mjs`,
+ * `Avatar/AvatarStatusDot.doc.mjs`, …), so a scan that only reads
+ * `<Dir>/<Dir>.doc.mjs` misses most of the documented surface.
+ */
+function allDocFiles() {
+  const files = [];
+  const walk = dir => {
+    for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(full);
+      } else if (entry.name.endsWith('.doc.mjs')) {
+        files.push(full);
+      }
+    }
+  };
+  walk(CORE_SRC);
+  return files;
+}
+
+/**
+ * The set of real override keys: every `theming.targets[].className` across
+ * ALL component docs (including sub-component docs), with the `astryx-` prefix
+ * stripped. This is the canonical source of truth for what selectors the theme
+ * build should emit.
  */
 function realOverrideKeys() {
   const keys = new Set();
-  for (const dir of fs.readdirSync(CORE_SRC, {withFileTypes: true})) {
-    if (!dir.isDirectory()) continue;
-    const docFile = path.join(CORE_SRC, dir.name, `${dir.name}.doc.mjs`);
-    if (!fs.existsSync(docFile)) continue;
+  for (const docFile of allDocFiles()) {
     const text = fs.readFileSync(docFile, 'utf8');
     const themingIdx = text.indexOf('theming');
     if (themingIdx === -1) continue;
@@ -79,6 +118,31 @@ function realOverrideKeys() {
     }
   }
   return keys;
+}
+
+/**
+ * The documented theming targets as `Map<key, visualProps[]>` — every
+ * `theming.targets[]` entry across ALL `*.doc.mjs` files, keyed by className
+ * with the `astryx-` prefix stripped, with the entry's `visualProps` VERBATIM
+ * (`[]` when omitted). Imports the doc modules' `docs` export — exactly what
+ * the CLI itself resolves (loadKnownValues) — rather than regex-scanning, so
+ * the arrays compared against the registry are the real values.
+ */
+let _docTargetsPromise;
+function docThemingTargets() {
+  _docTargetsPromise ??= (async () => {
+    const targets = new Map();
+    for (const docFile of allDocFiles()) {
+      const mod = await import(pathToFileURL(docFile).href);
+      for (const target of mod.docs?.theming?.targets ?? []) {
+        if (!target.className) continue;
+        const key = target.className.replace(/^astryx-/, '');
+        targets.set(key, target.visualProps ?? []);
+      }
+    }
+    return targets;
+  })();
+  return _docTargetsPromise;
 }
 
 /**
@@ -156,6 +220,75 @@ describe('theme-build KNOWN_COMPONENTS registry (#4109)', () => {
 
     const orphanTargets = [...targets].filter(k => !rendered.has(k));
     expect(orphanTargets).toEqual([]);
+  });
+
+  it('every documented theming target has a registry entry (#4110, reverse direction)', async () => {
+    // The forward checks above stop the registry from inventing keys; this
+    // stops it from LAGGING core. A documented, rendered target missing from
+    // the registry makes the validator emit a false "Unknown component"
+    // warning (with did-you-mean steering away from the correct key) and
+    // skips prop validation for it — the drift class of #4110.
+    const known = knownComponentKeys();
+    const targets = await docThemingTargets();
+
+    const missing = [...targets.keys()].filter(k => !known.has(k)).sort();
+    expect(missing).toEqual([]);
+  });
+
+  it('registry visualProps mirror the doc target visualProps verbatim (#4110)', async () => {
+    // The registry's per-key prop list is what "Unknown prop" warnings are
+    // judged against. A list that drifts from the doc target's visualProps
+    // turns legitimate overrides into false warnings (e.g. the stale
+    // `selector: ['type', 'size', 'color']` flagged the shipped themes'
+    // `status:*` overrides). Compare VERBATIM — same names, same order — so
+    // any drift on either side surfaces here.
+    const known = knownComponentEntries();
+    const targets = await docThemingTargets();
+
+    const mismatched = [...targets.entries()]
+      .filter(([key, visualProps]) => {
+        if (!known.has(key)) return false; // covered by the reverse check
+        return JSON.stringify(known.get(key)) !== JSON.stringify(visualProps);
+      })
+      .map(([key, visualProps]) => ({
+        key,
+        registry: known.get(key),
+        doc: visualProps,
+      }));
+    expect(mismatched).toEqual([]);
+  });
+});
+
+describe('shipped themes validate clean against the registry (#4110)', () => {
+  // The repo's own themes are real-world fixtures for the registry: they
+  // override documented, rendered targets (`top-nav-heading`,
+  // `progressbar-track`, `field-status`, …) and prop values the docs declare
+  // (`status:*` on inputs, bare `selected` state on `top-nav-item`). A
+  // registry that covers the documented surface must build them without a
+  // single "Unknown component" / "Unknown prop" warning.
+  let tmpDir;
+  let themeBuild;
+  beforeAll(async () => {
+    ensureCoreBuilt();
+    // Import AFTER core is guaranteed built: build.mjs captures core's
+    // generator in a top-level await at first import.
+    ({themeBuild} = await import('../../api/theme/build/build.mjs'));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-4110-'));
+  }, 200_000);
+
+  it.each([
+    ['butter', '../../../themes/butter/src/butterTheme.ts'],
+    ['stone', '../../../themes/stone/src/stoneTheme.ts'],
+  ])('the %s theme builds with zero validation warnings', async (name, rel) => {
+    const themeFile = path.resolve(HERE, rel);
+    const result = await themeBuild(
+      themeFile,
+      {out: path.join(tmpDir, `${name}.css`)},
+      {cwd: tmpDir},
+    );
+
+    expect(result?.type).toBe('theme.build');
+    expect(result?.data.warnings).toEqual([]);
   });
 });
 
