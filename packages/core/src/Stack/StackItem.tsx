@@ -19,14 +19,10 @@ import {
   type StackItemCrossAlignSelf,
   type StackItemSize,
 } from './stackItem.stylex';
+import type {FlexFactor} from '../Layout/flex.stylex';
+import type {SizeValue} from '../utils/types';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
-
-const overflowStyles = stylex.create({
-  scrollable: {
-    overflow: 'auto',
-  },
-});
 
 export interface StackItemProps extends BaseProps<HTMLElement> {
   /** Ref forwarded to the root element */
@@ -42,9 +38,36 @@ export interface StackItemProps extends BaseProps<HTMLElement> {
    * - `static`: Uses intrinsic size, won't grow or shrink (default)
    * - `fill`: Grows to fill remaining space
    *
+   * Coarse preset. `grow` / `shrink` / `basis` are layered on top of it and
+   * win on the properties they set, so `size="fill" shrink={false}` grows but
+   * never shrinks. `size` is applied even when unset (as `static`), so reach
+   * for the finer props whenever you need to override just one axis of it.
+   *
    * @default "static"
    */
   size?: StackItemSize;
+
+  /**
+   * Whether the item grows to absorb free space along the main axis
+   * (`flex-grow`). `true` is `1`; pass a number for a custom factor.
+   *
+   * Overrides the `flex-grow` implied by `size`.
+   */
+  grow?: FlexFactor;
+
+  /**
+   * Whether the item shrinks when space runs short (`flex-shrink`).
+   * `true` is `1`, `false` is `0` — the "fixed size column" idiom.
+   *
+   * Overrides the `flex-shrink` implied by `size` (which is `0` by default).
+   */
+  shrink?: FlexFactor;
+
+  /**
+   * Initial main-axis size before growing/shrinking (`flex-basis`).
+   * Numbers are treated as pixels, strings are used as-is.
+   */
+  basis?: SizeValue;
 
   /**
    * Enables scrollable overflow (`overflow: auto`) for the item.
@@ -82,11 +105,20 @@ export interface StackItemProps extends BaseProps<HTMLElement> {
  *   <StackItem size="fill">Content</StackItem>
  *   <StackItem size="static">Actions</StackItem>
  * </HStack>
+ *
+ * // Fixed sidebar + detail column that takes the rest and scrolls on its own
+ * <HStack height="100%">
+ *   <StackItem basis={240} shrink={false}>Sidebar</StackItem>
+ *   <StackItem grow basis={320} isScrollable>Detail</StackItem>
+ * </HStack>
  * ```
  */
 export function StackItem({
   crossAlignSelf,
   size,
+  grow,
+  shrink,
+  basis,
   isScrollable,
   as: element = 'div',
   xstyle,
@@ -97,8 +129,14 @@ export function StackItem({
   ...props
 }: StackItemProps) {
   const stylexProps = stylex.props(
-    ...stackItem({crossAlignSelf, size}),
-    isScrollable && overflowStyles.scrollable,
+    ...stackItem({
+      crossAlignSelf,
+      size,
+      grow,
+      shrink,
+      basis,
+      isScrollable,
+    }),
     xstyle,
   );
 

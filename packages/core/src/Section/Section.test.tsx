@@ -177,3 +177,148 @@ describe('Section', () => {
     expect(screen.getByText('Inner')).toBeInTheDocument();
   });
 });
+
+/**
+ * isScrollable + flex-item props (issue #2623).
+ *
+ * Section renders two boxes:
+ * - the OUTER box is the flex child (sizing + padding-escape margins)
+ * - the INNER box is the painted surface (padding, variant background, dividers)
+ *
+ * Flex-item props must land on the outer box; overflow must land on the inner
+ * box (the inner is `height: 100%` and carries the background + dividers, so
+ * scrolling the outer would drag them out of view).
+ *
+ * `grow` / `shrink` are static atomic classes for the boolean (0/1) cases, so
+ * they are asserted through the computed value; a custom numeric factor and
+ * `basis` fall back to a dynamic style (a CSS custom property in `style`).
+ */
+describe('Section isScrollable + flex-item props', () => {
+  const boxes = (container: HTMLElement) => {
+    const outer = container.firstElementChild as HTMLElement;
+    const inner = outer.firstElementChild as HTMLElement;
+    return {outer, inner};
+  };
+
+  it('scrolls the inner painted surface, not the outer box', () => {
+    const {container} = render(<Section isScrollable>Content</Section>);
+    const {outer, inner} = boxes(container);
+    expect(getComputedStyle(inner).overflow).toBe('auto');
+    expect(getComputedStyle(outer).overflow).not.toBe('auto');
+  });
+
+  it('applies the flex min-size reset to the outer box when scrollable', () => {
+    // Flex items default to `min-height: auto`, which refuses to shrink below
+    // content — a scroll region inside a Stack never scrolls without this.
+    const {container} = render(<Section isScrollable>Content</Section>);
+    const {outer} = boxes(container);
+    expect(getComputedStyle(outer).minHeight).toBe('0');
+    expect(getComputedStyle(outer).minWidth).toBe('0');
+  });
+
+  it('lets an explicit minHeight win over the scroll min-size reset', () => {
+    const {container} = render(
+      <Section isScrollable minHeight={200}>
+        Content
+      </Section>,
+    );
+    const {outer} = boxes(container);
+    // The reset must not clobber a minHeight the caller asked for.
+    expect(outer.getAttribute('style')).toContain('--x-minHeight: 200px');
+    expect(getComputedStyle(outer).minHeight).not.toBe('0');
+    // ...and the reset still frees the inline axis.
+    expect(getComputedStyle(outer).minWidth).toBe('0');
+  });
+
+  it('does not apply the min-size reset by default', () => {
+    const {container} = render(<Section>Content</Section>);
+    const {outer} = boxes(container);
+    expect(getComputedStyle(outer).minHeight).not.toBe('0');
+  });
+
+  it('puts grow/shrink/basis on the outer box (the flex child)', () => {
+    const {container} = render(
+      <Section grow shrink={false} basis={320}>
+        Content
+      </Section>,
+    );
+    const {outer, inner} = boxes(container);
+    expect(getComputedStyle(outer).flexGrow).toBe('1');
+    expect(getComputedStyle(outer).flexShrink).toBe('0');
+    expect(outer.getAttribute('style')).toContain('--x-flexBasis: 320px');
+    expect(inner.getAttribute('style')).toBeNull();
+  });
+
+  it('emits no inline custom property for boolean grow/shrink', () => {
+    // The common case is a plain static class: no custom property, fully
+    // cacheable CSS.
+    const {container} = render(
+      <Section grow shrink={false}>
+        Content
+      </Section>,
+    );
+    const outerStyle = boxes(container).outer.getAttribute('style') ?? '';
+    expect(outerStyle).not.toContain('--x-flexGrow');
+    expect(outerStyle).not.toContain('--x-flexShrink');
+  });
+
+  it('falls back to a dynamic style for custom numeric factors', () => {
+    const {container} = render(
+      <Section grow={2} shrink={3}>
+        Content
+      </Section>,
+    );
+    const outerStyle = boxes(container).outer.getAttribute('style') ?? '';
+    expect(outerStyle).toContain('--x-flexGrow: 2');
+    expect(outerStyle).toContain('--x-flexShrink: 3');
+  });
+
+  it('accepts a string basis', () => {
+    const {container} = render(<Section basis="50%">Content</Section>);
+    const outerStyle = boxes(container).outer.getAttribute('style') ?? '';
+    expect(outerStyle).toContain('--x-flexBasis: 50%');
+  });
+
+  it('emits no flex declarations by default', () => {
+    const {container} = render(<Section>Content</Section>);
+    const {outer} = boxes(container);
+    expect(outer.getAttribute('style') ?? '').not.toContain('--x-flex');
+    expect(getComputedStyle(outer).flexGrow).not.toBe('1');
+  });
+
+  it('does not leak the new props to the DOM', () => {
+    const {container} = render(
+      <Section isScrollable grow shrink={false} basis={320}>
+        Content
+      </Section>,
+    );
+    const {outer} = boxes(container);
+    for (const attr of ['isscrollable', 'grow', 'shrink', 'basis']) {
+      expect(outer.hasAttribute(attr)).toBe(false);
+    }
+  });
+
+  it('composes the file-explorer column recipe', () => {
+    // The dogfood case from #2623: a fixed-width, self-scrolling column with
+    // an end divider inside a horizontally scrolling strip.
+    const {container} = render(
+      <Section
+        width={240}
+        padding={2}
+        variant="transparent"
+        dividers={['end']}
+        shrink={false}
+        isScrollable>
+        Content
+      </Section>,
+    );
+    const {outer, inner} = boxes(container);
+    expect(getComputedStyle(outer).flexShrink).toBe('0');
+    expect(outer.getAttribute('style')).toContain('--x-width: 240px');
+    expect(getComputedStyle(outer).minHeight).toBe('0');
+    expect(getComputedStyle(inner).overflow).toBe('auto');
+    // The divider still lives on the painted surface, so it stays put while
+    // the content scrolls underneath it.
+    expect(getComputedStyle(inner).borderInlineEndWidth).toBe('1px');
+  });
+});
