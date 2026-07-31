@@ -614,9 +614,6 @@ export function CheckboxInput({
             labelIcon={labelIcon}
             description={description}
             descriptionID={descriptionID}
-            // Clicking the description toggles the checkbox (it stays a sibling
-            // of the label, so it never pollutes the checkbox's accessible name).
-            hasClickableDescription
           />
         </div>
       </div>

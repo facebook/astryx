@@ -31,6 +31,7 @@ import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {Tooltip} from '../Tooltip';
 import {useTranslator} from '../i18n';
 import {themeProps} from '../utils/themeProps';
+import {INTERACTIVE_SELECTORS, FOCUS_INPUT_TYPES} from '../hooks';
 
 const styles = stylex.create({
   label: {
@@ -152,21 +153,6 @@ export interface FieldLabelProps extends BaseProps<HTMLLabelElement> {
    * ID for the description element (for aria-describedby on the input).
    */
   descriptionID?: string;
-  /**
-   * When true, clicking the description toggles/activates the associated
-   * control — for click-activatable single controls (checkbox, switch) whose
-   * whole label area should be a hit target. The description stays a sibling
-   * `<span>` (NOT nested in the `<label>`), so it is never folded into the
-   * control's accessible name; it forwards clicks to the input by id instead.
-   *
-   * Leave `false` for text inputs (TextInput, Selector, etc.): clicking a text
-   * input's label only focuses it — there's no toggle benefit — and nesting or
-   * forwarding the description would only risk polluting the accessible name.
-   * Also ignored for group labels (`isGroupLabel`), which name a group, not a
-   * single control.
-   * @default false
-   */
-  hasClickableDescription?: boolean;
 }
 
 /**
@@ -195,7 +181,6 @@ export function FieldLabel({
   labelTooltip,
   description,
   descriptionID,
-  hasClickableDescription = false,
   className,
   style,
   xstyle,
@@ -215,29 +200,45 @@ export function FieldLabel({
   // label styling and slots. The group references it via `aria-labelledby`.
   const LabelElement = isGroupLabel ? 'span' : 'label';
 
-  // Whether the description should forward clicks to the control. Only for a
-  // single, click-activatable control (checkbox/switch) — never a group label
-  // (which names a group, not one control) and never without an input to
-  // target. The description stays a sibling `<span>`, so this is what makes it
-  // part of the label's hit target WITHOUT nesting it in the `<label>` (which
-  // would fold it into the control's accessible name and double-announce it
-  // alongside aria-describedby).
-  const forwardsDescriptionClick =
-    hasClickableDescription && !isGroupLabel && inputID != null;
+  // Clicking the description forwards to the associated control, so the whole
+  // label area (label text + description) is one hit target — mirroring native
+  // `<label>` click behavior, which the description can't get from `htmlFor`
+  // because it stays a sibling `<span>` (nesting it in the `<label>` would fold
+  // it into the control's accessible name and double-announce it alongside
+  // `aria-describedby`). A group label names a group, not one control, so it
+  // has nothing to forward to.
+  const forwardsDescriptionClick = !isGroupLabel && inputID != null;
 
-  // Mouse-only convenience: clicking the description clicks the associated
-  // control, mirroring native label-click. Keyboard users already toggle via
-  // the control itself (the description is supplementary, not focusable), and
-  // the label text keeps native `htmlFor` activation — so this adds no new tab
-  // stop and no a11y-tree change. Guarded so a click that lands on an
-  // interactive element inside a ReactNode description isn't hijacked.
+  // Forward a description click to the control: `.focus()` for text-like
+  // inputs (matching a native label click — no toggle to trigger) and
+  // `.click()` for click-activatable controls (checkbox/switch). Skipped when
+  // the click lands on interactive content inside a ReactNode description
+  // (a link, button, etc.), so that content handles its own click. Keyboard
+  // users are unaffected: the description is not focusable and adds no tab
+  // stop, and the label text keeps native `htmlFor` activation.
   const handleDescriptionClick = (e: React.MouseEvent<HTMLSpanElement>) => {
-    if (e.defaultPrevented || e.target !== e.currentTarget) {
+    if (e.defaultPrevented) {
       return;
     }
-    const doc = e.currentTarget.ownerDocument;
-    const control = doc.getElementById(inputID);
-    if (control != null) {
+    const container = e.currentTarget;
+    const eventTarget = e.target;
+    if (
+      eventTarget instanceof Element &&
+      eventTarget !== container &&
+      eventTarget.closest(INTERACTIVE_SELECTORS) != null
+    ) {
+      return;
+    }
+    const control = container.ownerDocument.getElementById(inputID);
+    if (control == null) {
+      return;
+    }
+    if (
+      control instanceof HTMLInputElement &&
+      FOCUS_INPUT_TYPES.has(control.type)
+    ) {
+      control.focus();
+    } else {
       control.click();
     }
   };

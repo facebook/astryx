@@ -608,9 +608,6 @@ export function Switch({
         labelTooltip={labelTooltip}
         description={description}
         descriptionID={descriptionID}
-        // Clicking the description toggles the switch (it stays a sibling of
-        // the label, so it never pollutes the switch's accessible name).
-        hasClickableDescription
       />
     </div>
   );

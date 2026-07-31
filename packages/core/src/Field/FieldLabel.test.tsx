@@ -125,51 +125,72 @@ describe('FieldLabel', () => {
     // Renders a real control with the target id so click-forwarding has
     // something to hit, alongside the label whose description forwards clicks.
     function renderWithControl(props: {
-      hasClickableDescription?: boolean;
       isGroupLabel?: boolean;
+      controlType?: string;
+      description?: React.ReactNode;
     }) {
+      const {isGroupLabel, controlType = 'checkbox', description} = props;
       const onClick = vi.fn();
       render(
         <>
-          <input id="ctrl" type="checkbox" onClick={onClick} />
+          <input id="ctrl" type={controlType} onClick={onClick} />
           <FieldLabel
             label="Notify"
             inputID="ctrl"
-            description="We'll email you"
+            description={description ?? "We'll email you"}
             descriptionID="ctrl-desc"
-            {...props}
+            isGroupLabel={isGroupLabel}
           />
         </>,
       );
       return onClick;
     }
 
-    it('forwards a description click to the control when hasClickableDescription is set', async () => {
+    it('forwards a description click to a click-activatable control (checkbox)', async () => {
       const user = userEvent.setup();
-      const onClick = renderWithControl({hasClickableDescription: true});
+      const onClick = renderWithControl({controlType: 'checkbox'});
       await user.click(screen.getByText("We'll email you"));
       expect(onClick).toHaveBeenCalledTimes(1);
     });
 
-    it('does NOT forward description clicks by default (text-input path)', async () => {
+    it('focuses (does not click) a text input on description click', async () => {
       const user = userEvent.setup();
-      const onClick = renderWithControl({});
+      const onClick = renderWithControl({controlType: 'text'});
       await user.click(screen.getByText("We'll email you"));
+      // Text inputs focus rather than click — matching native label behavior,
+      // so no synthetic click fires but the control receives focus.
       expect(onClick).not.toHaveBeenCalled();
+      expect(document.getElementById('ctrl')).toHaveFocus();
     });
 
     it('does NOT forward description clicks for a group label', async () => {
       const user = userEvent.setup();
-      const onClick = renderWithControl({
-        hasClickableDescription: true,
-        isGroupLabel: true,
-      });
+      const onClick = renderWithControl({isGroupLabel: true});
       await user.click(screen.getByText("We'll email you"));
       expect(onClick).not.toHaveBeenCalled();
     });
 
+    it('does NOT hijack clicks on interactive content inside the description', async () => {
+      const user = userEvent.setup();
+      const linkClick = vi.fn();
+      const onClick = renderWithControl({
+        description: (
+          <>
+            See our{' '}
+            <a href="#terms" onClick={linkClick}>
+              terms
+            </a>
+          </>
+        ),
+      });
+      await user.click(screen.getByRole('link', {name: 'terms'}));
+      // The nested link handles its own click; the control is not toggled.
+      expect(linkClick).toHaveBeenCalledTimes(1);
+      expect(onClick).not.toHaveBeenCalled();
+    });
+
     it('keeps the description a sibling of the label (not nested inside it)', () => {
-      renderWithControl({hasClickableDescription: true});
+      renderWithControl({});
       const description = screen.getByText("We'll email you");
       // The description must not live inside the <label> — nesting it there
       // would fold it into the control's accessible name.
