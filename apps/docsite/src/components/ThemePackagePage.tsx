@@ -40,9 +40,10 @@ import commandBlockStyles from './ThemeCommandBlock.module.css';
 const THEME_SHOWCASE_SOURCE =
   templates.find(t => t.slug === 'theme-showcase')?.source ?? '';
 
-// CDN host for the per-theme picker banners (same host as the showcase
-// product photos), so the artwork can be updated without a code change.
-const PICKER_CDN = 'https://lookaside.facebook.com/assets/astryx';
+// Local per-theme artwork used by the picker banners and showcase product
+// photos. Keeping these assets same-origin avoids flaky cross-browser CDN
+// fetches on /themes.
+const THEME_ASSETS = '/theme-assets';
 
 // Gallery order — themes are listed in the same canonical visual-
 // closeness order used elsewhere (most restrained → most expressive).
@@ -296,51 +297,51 @@ const styles = stylex.create({
   // Per-theme bespoke picker artwork — one rule per theme that
   // has a custom photo (vs. the multi-radial-gradient default).
   // Each rule sets the picker card's background to a dedicated
-  // theme-<slug>-picker.png banner hosted on the Astryx asset CDN
-  // (see PICKER_CDN). These are SEPARATE files from the
-  // theme-<slug>-preview.png images used on the /themes overview +
+  // theme-<slug>-picker.webp banner served from /theme-assets.
+  // These are SEPARATE files from the theme-<slug>-preview.png images
+  // used on the /themes overview +
   // detail page hero — these picker assets are sized and
   // art-directed for the small 120px-tall picker card.
   // background-size:cover so each image always fills the card
   // regardless of the source's intrinsic dimensions.
   surfaceButter: {
     backgroundColor: 'transparent',
-    backgroundImage: `url(${PICKER_CDN}/theme-butter-picker.png)`,
+    backgroundImage: `url(${THEME_ASSETS}/theme-butter-picker.webp)`,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
     backgroundRepeat: 'no-repeat',
   },
   surfaceGothic: {
     backgroundColor: 'transparent',
-    backgroundImage: `url(${PICKER_CDN}/theme-gothic-picker.png)`,
+    backgroundImage: `url(${THEME_ASSETS}/theme-gothic-picker.webp)`,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
     backgroundRepeat: 'no-repeat',
   },
   surfaceY2k: {
     backgroundColor: 'transparent',
-    backgroundImage: `url(${PICKER_CDN}/theme-y2k-picker.png)`,
+    backgroundImage: `url(${THEME_ASSETS}/theme-y2k-picker.webp)`,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
     backgroundRepeat: 'no-repeat',
   },
   surfaceStone: {
     backgroundColor: 'transparent',
-    backgroundImage: `url(${PICKER_CDN}/theme-stone-picker.png)`,
+    backgroundImage: `url(${THEME_ASSETS}/theme-stone-picker.webp)`,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
     backgroundRepeat: 'no-repeat',
   },
   surfaceNeutral: {
     backgroundColor: 'transparent',
-    backgroundImage: `url(${PICKER_CDN}/theme-neutral-picker.png)`,
+    backgroundImage: `url(${THEME_ASSETS}/theme-neutral-picker.webp)`,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
     backgroundRepeat: 'no-repeat',
   },
   surfaceMatcha: {
     backgroundColor: 'transparent',
-    backgroundImage: `url(${PICKER_CDN}/theme-matcha-picker.png)`,
+    backgroundImage: `url(${THEME_ASSETS}/theme-matcha-picker.webp)`,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
     backgroundRepeat: 'no-repeat',
@@ -500,9 +501,9 @@ const styles = stylex.create({
 // can swap the card's `surface` (background image) and the `label`
 // color (most use labelAccent so the wordmark reads as a brand
 // signature on top of the photo). Adding artwork for a new theme
-// is a two-step addition: upload a theme-<slug>-picker.png banner to
-// the asset CDN (PICKER_CDN) + add a `surface<Name>` rule into the
-// styles block above, then reference both here.
+// is a two-step addition: add a theme-<slug>-picker.webp banner under
+// /public/theme-assets + add a `surface<Name>` rule into the styles
+// block above, then reference both here.
 const PICKER_OVERRIDES: Record<
   string,
   {surface: StyleXStyles; label?: StyleXStyles}
