@@ -35,7 +35,7 @@ export * from './Chat';
 // Drawer — experimental overlay panel
 export {Drawer, type DrawerProps} from './Drawer';
 
-// BottomSheet — mobile touch sheet built on the Drawer <dialog> engine
+// BottomSheet — mobile touch sheet on a native modal <dialog>
 export {BottomSheet, type BottomSheetProps} from './BottomSheet';
 
 // Stat — experimental KPI/metric display

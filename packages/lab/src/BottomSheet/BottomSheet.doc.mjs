@@ -12,7 +12,7 @@ export const docs = {
       {className: 'astryx-bottom-sheet', visualProps: []},
     ],
   },
-  description: 'A mobile touch sheet that rises from the bottom edge, with a grab handle, drag-to-resize snap points, and swipe-to-dismiss. Built on the Drawer <dialog> engine.',
+  description: 'A mobile touch sheet that rises from the bottom edge, with a grab handle, drag-to-resize snap points, and swipe-to-dismiss. Built on a native modal <dialog>.',
   props: [
     {
       name: 'isOpen',
@@ -41,7 +41,7 @@ export const docs = {
     {
       name: 'height',
       type: "'hug' | 'capped' | 'tall' | number | string",
-      description: "How tall the sheet is. Named budgets: 'hug' fits its content up to 90% of the viewport, 'capped' is a scrolling mid-height panel (~62%), and 'tall' is a pinned near-full panel (~92%) for content that streams in. Or pass a number (px) / CSS length for a custom budget, mirroring Drawer's size / Dialog's maxHeight. The user can drag between snap points regardless. On shorter viewports the sheet fills the available height.",
+      description: "How tall the sheet is. Named budgets: 'hug' fits its content up to 90% of the viewport, 'capped' is a scrolling mid-height panel (~62%), and 'tall' is a pinned near-full panel (~92%) for content that streams in. Or pass a number (px) / CSS length for a custom budget. The user can drag between snap points regardless. On shorter viewports the sheet fills the available height.",
       default: "'capped'",
     },
   ],
@@ -92,7 +92,7 @@ export const docs = {
 
 /** @type {import('../../../core/src/docs-types').TranslationDoc} */
 export const docsDense = {
-  description: 'mobile touch sheet rising from the bottom edge (built on the Drawer <dialog> engine): grab handle, drag-to-resize snap points, swipe-to-dismiss, named height scale',
+  description: 'mobile touch sheet rising from the bottom edge (native modal <dialog>): grab handle, drag-to-resize snap points, swipe-to-dismiss, named height scale',
   usage: {
     description: 'Mobile surface for filters, actions, and detail views. Drag the handle to resize between snap points; flick down to dismiss, up to expand. Modal: focus trap + restore, and Escape dismisses so swipe has a keyboard equivalent. Content clears the home indicator via safe-area inset.',
     bestPractices: [
