@@ -284,28 +284,6 @@ function formatPosition(value: number | string | undefined): string | null {
 }
 
 /**
- * Resolved CSS offsets for a Dialog `position`, after applying the
- * logical-over-physical precedence rule. Exported for unit testing.
- *
- * @property top/bottom - block offsets, unchanged (`auto` when unset).
- * @property insetInlineStart/insetInlineEnd - LOGICAL inline offsets from
- *   `start`/`end`; these mirror under RTL. `auto` when the logical offset is
- *   unset.
- * @property left/right - DEPRECATED physical inline offsets; these do NOT
- *   mirror. Resolve to their value (or `auto` when unset) unless the logical
- *   counterpart (`start`/`end`) is set, in which case they are suppressed
- *   (`null`, omitted by StyleX) so the logical offset wins cleanly.
- */
-export interface ResolvedDialogPositionOffsets {
-  top: string | null;
-  right: string | null;
-  bottom: string | null;
-  left: string | null;
-  insetInlineStart: string | null;
-  insetInlineEnd: string | null;
-}
-
-/**
  * Map a {@link DialogPosition} to resolved CSS offsets, applying the
  * precedence rule: when both a logical offset (`start`/`end`) and its physical
  * counterpart (`left`/`right`) are provided, the LOGICAL offset wins and the
@@ -313,11 +291,12 @@ export interface ResolvedDialogPositionOffsets {
  * the pre-deprecation behavior — a physical, non-mirroring offset with an
  * `auto` fallback — so the deprecation is non-breaking.
  *
+ * Not exported from the package; kept internal to unit-test the precedence
+ * logic that the inline StyleX literal above applies at runtime.
+ *
  * @see DialogPosition
  */
-export function resolveDialogPositionOffsets(
-  position: DialogPosition,
-): ResolvedDialogPositionOffsets {
+export function resolveDialogPositionOffsets(position: DialogPosition) {
   const {top, right, bottom, left, start, end} = position;
   const useLogicalStart = start !== undefined;
   const useLogicalEnd = end !== undefined;
