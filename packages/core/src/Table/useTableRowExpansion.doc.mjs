@@ -7,7 +7,7 @@ export const docs = {
   subComponentOf: 'Table',
   displayName: 'useTableRowExpansion',
   description:
-    'Hook that returns a TablePlugin implementing expandable rows with inherited columns. Child rows use the same columns as their parents, indented by depth. Clicking the chevron (or right-click context menu) toggles expansion. Pair with useTableRowExpansionState, which flattens the tree and derives this config (expand/collapse handlers + expand-all state) from a single expandedKeys set. Converging with useTableTreeData: new tree tables should prefer useTableTreeData + useTableTreeState, which cover the same affordances with a cycle guard and fine-grained re-render. See the migration example below.',
+    'Deprecated: use useTableTreeData + useTableTreeState instead. Hook that returns a TablePlugin implementing expandable rows with inherited columns. Child rows use the same columns as their parents, indented by depth. Clicking the chevron (or right-click context menu) toggles expansion. Pair with useTableRowExpansionState, which flattens the tree and derives this config (expand/collapse handlers + expand-all state) from a single expandedKeys set. Converging with useTableTreeData: new tree tables should prefer useTableTreeData + useTableTreeState, which cover the same affordances with a cycle guard and fine-grained re-render. See the migration example below.',
   props: [
     {
       name: 'expandedKeys',
@@ -118,7 +118,7 @@ const tree = useTableTreeData({
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description:
-    'Returns a TablePlugin for expandable rows w/ inherited columns. Child rows reuse parent columns, indented by depth. Chevron click (or right-click menu) toggles expansion. Pair w/ useTableRowExpansionState, which flattens the tree + derives this config from one expandedKeys set.',
+    'Deprecated: use useTableTreeData + useTableTreeState instead. Returns a TablePlugin for expandable rows w/ inherited columns. Child rows reuse parent columns, indented by depth. Chevron click (or right-click menu) toggles expansion. Pair w/ useTableRowExpansionState, which flattens the tree + derives this config from one expandedKeys set.',
   propDescriptions: {
     expandedKeys: 'Set of currently-expanded row keys.',
     onToggle: 'Called when a row expansion is toggled.',
