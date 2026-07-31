@@ -38,10 +38,9 @@ import {
 } from 'react';
 import {computeDetentOffsets, resolveSettleOffset} from './snapOffsets';
 
-// A "flick" is a fast gesture that dismisses (down) or expands (up),
-// independent of where the drag ends. To avoid firing on small quick
-// adjustments it must clear BOTH a speed and a distance floor — matching the
-// common touch-sheet convention (a quick, deliberate throw, not a nudge).
+// A flick (fast throw) dismisses (down) or expands (up) regardless of where
+// it ends. Requires both a speed and a distance floor so a small nudge
+// doesn't trigger it.
 const FLICK_VELOCITY = 1.2; // px/ms
 const FLICK_MIN_DISTANCE = 48; // px traveled during the gesture
 // On a slow drag below the shortest detent, dismiss once dragged past it by
@@ -50,20 +49,17 @@ const DISMISS_OVERSHOOT_RATIO = 0.4;
 // Within this many px of a detent, the live drag is magnetically eased toward
 // it so it "clicks" into place instead of hovering just off the mark.
 const MAGNET_RANGE = 40;
-// Rubber-band resistance when dragging up past fully-open: the surface still
-// moves, but at a fraction of the finger so it feels tethered, then springs
-// back on release. Capped at OVERSCROLL_MAX, which the sheet reserves as extra
-// bottom padding so the lift reveals padding rather than clipping the top.
+// Rubber-band factor for dragging up past fully-open, capped at OVERSCROLL_MAX
+// (the sheet reserves that much bottom padding for the lift to reveal).
 const OVERSCROLL_RESISTANCE = 0.35;
 // SYNC: must match OVERSCROLL_PADDING in BottomSheet.tsx (the reserved bottom
 // padding the lift reveals). Kept as a local const rather than a shared import
 // so it can be used inside stylex.create there.
 const OVERSCROLL_MAX = 48;
 
-// Fire a short haptic tick when settling on a detent, where supported. iOS
-// Safari does NOT implement navigator.vibrate (its Taptic engine isn't exposed
-// to the web), so this is effectively an Android-Chrome progressive
-// enhancement — a no-op elsewhere. Skipped under reduced-motion.
+// Short haptic tick on detent settle where supported. iOS Safari doesn't
+// expose navigator.vibrate, so this is a no-op there; skipped under
+// reduced-motion.
 function hapticTick(): void {
   if (
     typeof navigator === 'undefined' ||
@@ -205,7 +201,6 @@ export function useSheetGestures({
   const [settledOffset, setSettledOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
 
-  // Latest callback refs so pointer handlers stay stable across renders.
   const onDismissRef = useRef(onDismiss);
   const onSnapRef = useRef(onSnap);
   const onDragProgressRef = useRef(onDragProgress);
@@ -228,10 +223,8 @@ export function useSheetGestures({
     baseOffset: number;
   } | null>(null);
 
-  // Fully-open sheet height, kept current by a ResizeObserver on the surface
-  // (see sheetRef below). Locked in at this measured value for the duration of
-  // a drag, so detents don't shift under the finger; re-derived when the
-  // element resizes (rotation, dynamic viewport, keyboard).
+  // Fully-open height, tracked by a ResizeObserver (see sheetRef) so detents
+  // stay correct across rotation / viewport changes without re-measuring.
   const sheetHeightRef = useRef(0);
   const sheetElRef = useRef<HTMLElement | null>(null);
   const observerRef = useRef<ResizeObserver | null>(null);
@@ -299,7 +292,6 @@ export function useSheetGestures({
       const speed = Math.abs(velocity);
       const isFlick = speed > FLICK_VELOCITY && travel > FLICK_MIN_DISTANCE;
 
-      // Fast downward flick = swipe-to-close, regardless of position.
       if (dir > 0 && isFlick) {
         onDismissRef.current();
         return;
@@ -312,7 +304,6 @@ export function useSheetGestures({
         hapticTick();
         return;
       }
-      // Slow drag dragged well past the shortest detent = dismiss.
       if (offset > maxOffset + shortestDetentHeight * DISMISS_OVERSHOOT_RATIO) {
         onDismissRef.current();
         return;
@@ -347,10 +338,8 @@ export function useSheetGestures({
         height: sheetHeight,
         baseOffset: settledOffset,
       };
-      // Seed the live drag offset at the current resting detent so the switch
-      // from `settledOffset` to `dragOffset` (when isDragging flips true) is a
-      // no-op. Without this the sheet jumps to the tallest detent for one
-      // frame before the first pointermove corrects it.
+      // Seed dragOffset at the resting detent so flipping isDragging doesn't
+      // jump the sheet to fully-open for one frame.
       setDragOffset(settledOffset);
       setIsDragging(true);
     },
@@ -379,31 +368,23 @@ export function useSheetGestures({
       }
       const offsets = detentOffsets(state.height);
 
-      // Raw offset from the tallest detent: base (resting detent) + this drag.
       const raw = state.baseOffset + delta;
       const maxDetentOffset = offsets[offsets.length - 1];
       let next: number;
       if (raw < 0) {
-        // Dragging up past fully-open: damp it and cap it at the overscroll
-        // allowance (the sheet carries extra bottom padding equal to
-        // OVERSCROLL_MAX, so this lift reveals that padding rather than
-        // clipping the top). Springs back to 0 on release.
+        // Up past fully-open: damped + capped rubber-band; springs back on release.
         next = Math.max(-OVERSCROLL_MAX, raw * OVERSCROLL_RESISTANCE);
       } else if (raw > maxDetentOffset) {
-        // Past the shortest detent = heading into the dismiss zone. Don't
-        // magnetize here — that would fight a deliberate drag-to-close by
-        // yanking the sheet back up to the detent.
+        // In the dismiss zone: no magnet, so it doesn't fight a drag-to-close.
         next = raw;
       } else {
-        // Between detents: magnetically ease toward a nearby one so the sheet
-        // "clicks" into place instead of hovering just off the mark.
+        // Between detents: magnetically ease toward a nearby one.
         next = magnetize(raw, offsets);
       }
       setDragOffset(next);
 
-      // Report how far into the "close zone" the drag is (0 above the shortest
-      // detent, ramping to 1 at the dismiss threshold) so the owner can fade
-      // the scrim as a visual hint that releasing here will close the sheet.
+      // Report dismiss progress (0 at the shortest detent, 1 at the threshold)
+      // so the owner can fade the scrim.
       const floorOffset = offsets[offsets.length - 1];
       const shortestDetentHeight = state.height - floorOffset;
       const dismissAt =
@@ -442,12 +423,9 @@ export function useSheetGestures({
     [settleFromDrag],
   );
 
-  // Body pull-down: when the scrollable content is at the very top, a
-  // downward pull "overscrolls" into a sheet drag — a larger, more forgiving
-  // drag target than the handle alone. Armed on pointer-down (only at the
-  // scroll top); the first downward move promotes it to a real drag, while an
-  // upward move (or any move when not at the top) leaves native scrolling
-  // untouched.
+  // Pointer path for the body at-top pull-down (desktop / mouse). Touch uses
+  // the non-passive listener below, since pointer events are cancelled once a
+  // native pan starts.
   const armedBodyRef = useRef<{
     pointerId: number;
     startCoord: number;
@@ -469,7 +447,6 @@ export function useSheetGestures({
 
   const handleBodyPointerMove = useCallback(
     (event: ReactPointerEvent) => {
-      // Already dragging the sheet (promoted from the body) — keep translating.
       if (dragStateRef.current) {
         handlePointerMove(event);
         return;
@@ -503,14 +480,9 @@ export function useSheetGestures({
     [endDrag],
   );
 
-  // Touch handoff for the body: pointer events are cancelled by the browser
-  // once it starts a native vertical pan, so on touch devices the pointer path
-  // above never sees the at-top pull-down. A non-passive `touchmove` listener
-  // is the reliable way to intercept it: when the content is scrolled to the
-  // top and the finger moves DOWN, preventDefault() stops the native scroll and
-  // we drive the sheet drag through the same math as a pointer drag, by
-  // adapting the Touch into the minimal shape the pointer handlers read
-  // (pointerId / clientY / timeStamp / currentTarget).
+  // Non-passive touchmove is the reliable scroll<->drag handoff on touch:
+  // preventDefault() at a scroll edge stops the native scroll and drives the
+  // sheet drag through the pointer math (Touch adapted to the fields it reads).
   const bodyNodeRef = useRef<HTMLElement | null>(null);
   const touchDragRef = useRef<{
     id: number;
@@ -524,7 +496,6 @@ export function useSheetGestures({
     end: (e: TouchEvent) => void;
   } | null>(null);
 
-  // Latest values the touch handlers need, without re-binding listeners.
   const beginDragRef = useRef(beginDrag);
   const pointerMoveRef = useRef(handlePointerMove);
   const endDragRef = useRef(endDrag);
@@ -577,7 +548,6 @@ export function useSheetGestures({
 
     const onTouchMove = (event: TouchEvent) => {
       const scroller = event.currentTarget as HTMLElement;
-      // Already dragging the sheet from the body — keep translating.
       if (dragStateRef.current) {
         const t = [...event.changedTouches].find(
           x => x.identifier === dragStateRef.current?.pointerId,

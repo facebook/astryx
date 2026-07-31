@@ -44,11 +44,10 @@ import {useDevWarning, useScrollLock} from '@astryxdesign/core/hooks';
 import {mergeProps, mergeRefs, themeProps} from '@astryxdesign/core/utils';
 import {useSheetGestures} from './useSheetGestures';
 
-// Detent fractions of the viewport the sheet can rest at, ascending
-// (peek <-> mid <-> full). Near-duplicate detents (e.g. a content-hugging
-// height that lands next to one of these) are de-duped downstream, so it's
-// safe to offer a full set; the gesture hook keeps only those shorter than
-// the rendered sheet.
+// Detent fractions of the viewport, ascending (peek / mid / full). Detents
+// that land within DETENT_DEDUP_PX of each other (e.g. a hug height next to a
+// snap) are de-duped in the gesture hook, and any taller than the sheet are
+// dropped, so a full set is safe to offer.
 const SNAP_FRACTIONS = [0.3, 0.6, 0.92];
 
 /**
@@ -66,10 +65,8 @@ const HEIGHT_BUDGETS = {
 
 export type BottomSheetHeight = keyof typeof HEIGHT_BUDGETS;
 
-// Overscroll allowance (px): the sheet extends this much lower than its budget
-// as reserved bottom padding, so a small upward drag past fully-open reveals
-// this padding instead of a gap. Reused across several rules + synced to the
-// gesture cap, so it stays a named constant.
+// px the sheet extends below its budget as reserved padding, revealed by an
+// upward overdrag rather than showing a gap.
 // SYNC: must match OVERSCROLL_MAX in useSheetGestures.ts (the drag cap).
 const OVERSCROLL_PADDING = 48;
 
@@ -89,10 +86,9 @@ function defaultSnapHeights(): number[] {
 }
 
 const styles = stylex.create({
-  // The modal <dialog> is a full-viewport, transparent shell. It provides the
-  // top layer + focus trap + ::backdrop scrim, but paints nothing itself and
-  // does not clip — so the sheet inside can translate freely (including a
-  // little past fully-open) without hitting a fixed dialog edge.
+  // A full-viewport transparent shell: it supplies the top layer, focus trap,
+  // and ::backdrop scrim but paints nothing and doesn't clip, so the sheet can
+  // translate past fully-open without hitting a fixed dialog edge.
   dialog: {
     position: 'fixed',
     inset: 0,
@@ -105,7 +101,6 @@ const styles = stylex.create({
     border: 'none',
     backgroundColor: 'transparent',
     overflow: 'visible',
-    // Let touches fall through the empty area above the sheet to the scrim.
     pointerEvents: 'none',
     display: 'none',
     outline: 'none',
@@ -113,9 +108,8 @@ const styles = stylex.create({
   dialogOpen: {
     display: 'block',
   },
-  // The ::backdrop scrim, owned here so the drag-fade is first-class. Opacity
-  // is driven by a custom property the gesture handler lowers as a drag nears
-  // dismissal; @starting-style animates the entrance fade-in.
+  // Opacity is a var the drag handler lowers toward dismissal;
+  // @starting-style animates the entrance fade-in.
   scrim: {
     '::backdrop': {
       backgroundColor: colorVars['--color-overlay'],
@@ -133,8 +127,6 @@ const styles = stylex.create({
       },
     },
   },
-  // Positions the sheet at the bottom edge of the transparent shell and
-  // re-enables pointer events on the sheet itself.
   positioner: {
     position: 'absolute',
     insetInline: 0,
@@ -143,8 +135,6 @@ const styles = stylex.create({
     justifyContent: 'center',
     pointerEvents: 'none',
   },
-  // The visible sheet surface: background, rounded top, width cap. Carries the
-  // live drag translate (via contentProps) and the slide-in on open.
   sheet: {
     pointerEvents: 'auto',
     boxSizing: 'border-box',
@@ -152,8 +142,6 @@ const styles = stylex.create({
     flexDirection: 'column',
     minHeight: 0,
     width: '100%',
-    // Cap + center on wide touch devices (tablets) so the sheet doesn't
-    // stretch edge to edge; phones are narrower than this so stay full-width.
     maxWidth: 640,
     backgroundColor: colorVars['--color-background-surface'],
     borderStartStartRadius: radiusVars['--radius-page'],
@@ -170,7 +158,6 @@ const styles = stylex.create({
     // `hugHeight`) so the visible height is unchanged.
     paddingBlockEnd: `calc(env(safe-area-inset-bottom, 0px) + ${OVERSCROLL_PADDING}px)`,
     marginBlockEnd: `${-OVERSCROLL_PADDING}px`,
-    // Slide in from below on open; @starting-style covers the entry.
     transform: {
       default: 'translateY(0)',
       '@starting-style': 'translateY(100%)',
@@ -183,7 +170,6 @@ const styles = stylex.create({
       transitionDuration: '0.01s',
     },
   },
-  // Closing: slide back down under the bottom edge.
   sheetClosing: {
     transform: 'translateY(100%)',
   },
@@ -192,10 +178,8 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    // The whole strip is the drag target — a generous 48px (top of the spacing
-    // scale; above Apple's 44px HIG target and twice WCAG 2.2 SC 2.5.8's 24px
-    // floor), with the pill centered. A full, honest strip (no negative-margin
-    // overlap) so the target is exactly as tall as it looks.
+    // The whole strip is the drag target: 48px (top of the spacing scale,
+    // above Apple's 44px / WCAG 2.5.8's 24px), no overlap tricks.
     height: spacingVars['--spacing-12'],
     touchAction: 'none',
     cursor: 'grab',
@@ -219,10 +203,8 @@ const styles = stylex.create({
     // touch-action (which would suppress scrolling entirely).
     touchAction: 'pan-y',
   },
-  // `hug` fits the content instead of filling the budget; the budget becomes
-  // an upper bound (90%). Both budgets add the overdrag padding back to the
-  // height so the visible sheet (height minus the off-screen padding) matches
-  // the intended budget.
+  // Both budgets add the overdrag padding back to the height so the visible
+  // height (minus the off-screen padding) matches the intended budget.
   budget: {
     height: `calc(var(--_sheet-budget) + ${OVERSCROLL_PADDING}px)`,
   },
@@ -309,10 +291,7 @@ export function BottomSheet({
   const sheetNodeRef = useRef<HTMLDivElement | null>(null);
   const close = useCallback(() => onOpenChange(false), [onOpenChange]);
 
-  // Drive the scrim opacity from drag progress via a CSS variable on the
-  // <dialog>, set imperatively so a 60fps drag doesn't re-render React. The
-  // ::backdrop reads this var, fading out as a drag nears dismissal to signal
-  // that releasing will close.
+  // Set imperatively (not via state) so a 60fps drag doesn't re-render.
   const handleDragProgress = useCallback((dismissProgress: number) => {
     dialogRef.current?.style.setProperty(
       '--_sheet-scrim-opacity',
@@ -327,8 +306,8 @@ export function BottomSheet({
     onDragProgress: handleDragProgress,
   });
 
-  // Open/close the native modal dialog. showModal() puts it in the top layer
-  // with a focus trap and ::backdrop; on close we restore focus to the opener.
+  // showModal() enters the top layer with a focus trap + ::backdrop; on close
+  // we animate out (below) then restore focus to the opener.
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) {
@@ -339,11 +318,8 @@ export function BottomSheet({
       dialog.style.setProperty('--_sheet-scrim-opacity', '1');
       if (!dialog.open) {
         dialog.showModal();
-        // Match Dialog's focus contract: land initial focus at the top of the
-        // sheet (its panel) so assistive tech reads from the label rather than
-        // jumping into the first control — unless a descendant opts in with
-        // `data-autofocus`. showModal() focuses the first tabbable element by
-        // default, so we override that here.
+        // Override showModal()'s default (first tabbable) to land on the panel,
+        // so AT reads from the label — unless a descendant sets data-autofocus.
         const autofocus = dialog.querySelector<HTMLElement>('[data-autofocus]');
         if (autofocus) {
           autofocus.focus();
@@ -352,11 +328,9 @@ export function BottomSheet({
         }
       }
     } else if (dialog.open) {
-      // Animate out before releasing the top layer: the `sheetClosing` style
-      // (applied on this render because isOpen is false) slides the sheet back
-      // down; we wait for that transition to finish, then close() and restore
-      // focus. A timeout backstops browsers/environments that don't fire
-      // transitionend (e.g. reduced motion, or the tab hidden).
+      // Wait for the slide-out (sheetClosing, applied this render) before
+      // close() releases the top layer. Timeout backstops a missing
+      // transitionend (reduced motion, hidden tab).
       const sheet = sheetNodeRef.current;
       let done = false;
       const finish = () => {
@@ -390,10 +364,8 @@ export function BottomSheet({
 
   useScrollLock(isOpen);
 
-  // Enforce an accessible name, like a modal Dialog: the sheet has no built-in
-  // heading to derive one from, so an empty `label` leaves it unnamed for
-  // assistive tech. `label` is a required prop, but JS callers can still pass
-  // an empty string — warn in development.
+  // Enforce an accessible name: label is required by types, but a JS caller
+  // can still pass an empty string, leaving the sheet unnamed.
   useDevWarning(
     'BottomSheet',
     'requires a non-empty `label` for an accessible name; the open sheet ' +
@@ -401,7 +373,6 @@ export function BottomSheet({
     isOpen && !label,
   );
 
-  // Native Escape (dialog `cancel`) and scrim click both request close.
   const handleCancel = useCallback(
     (event: React.SyntheticEvent<HTMLDialogElement>) => {
       event.preventDefault();
@@ -409,9 +380,8 @@ export function BottomSheet({
     },
     [close],
   );
-  // Escape via keydown as well: the native <dialog> `cancel` event covers
-  // browsers, but keeping an explicit handler makes dismissal robust (and
-  // testable) even where `cancel` isn't synthesized.
+  // Explicit Escape handler in addition to the native `cancel` event, for
+  // environments that don't synthesize `cancel`.
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLDialogElement>) => {
       if (event.key === 'Escape') {
@@ -421,8 +391,6 @@ export function BottomSheet({
     },
     [close],
   );
-  // A click whose target is the <dialog> itself is a ::backdrop (scrim) click;
-  // clicks on the sheet content target the sheet, not the dialog.
   const handleClick = useCallback(
     (event: React.MouseEvent<HTMLDialogElement>) => {
       if (event.target === event.currentTarget) {
@@ -432,8 +400,6 @@ export function BottomSheet({
     [close],
   );
 
-  // Resolve the height budget: a named key maps to its viewport fraction, and
-  // any other value (px number or CSS length) passes straight through.
   const isNamed = typeof height === 'string' && height in HEIGHT_BUDGETS;
   const budget = isNamed
     ? HEIGHT_BUDGETS[height as BottomSheetHeight]
@@ -444,9 +410,10 @@ export function BottomSheet({
 
   return (
     <dialog
-      {...mergeProps(
-        themeProps('bottom-sheet'),
-        stylex.props(styles.dialog, isOpen && styles.dialogOpen, styles.scrim),
+      {...stylex.props(
+        styles.dialog,
+        isOpen && styles.dialogOpen,
+        styles.scrim,
       )}
       ref={mergeRefs(ref, dialogRef)}
       aria-label={label}
@@ -461,17 +428,17 @@ export function BottomSheet({
           data-astryx-sheet=""
           tabIndex={-1}
           {...mergeProps(
+            themeProps('bottom-sheet'),
             stylex.props(
               styles.sheet,
               isHug ? styles.hugHeight : styles.budget,
               !isOpen && styles.sheetClosing,
               xstyle,
             ),
+            undefined,
             {
-              style: {
-                ['--_sheet-budget' as string]: budget,
-                ...contentProps.style,
-              },
+              ['--_sheet-budget' as string]: budget,
+              ...contentProps.style,
             },
           )}>
           <div
