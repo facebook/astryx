@@ -1241,6 +1241,36 @@ describe('Selector statusVariant forwarding', () => {
       'detached',
     );
   });
+
+  it('keeps the on-field status icon for the attached variant', () => {
+    const {container} = render(
+      <Selector
+        label="Fruit"
+        options={['Apple', 'Banana']}
+        status={{type: 'error', message: 'Required'}}
+      />,
+    );
+    // Attached: the status glyph replaces the chevron indicator on the field.
+    expect(
+      container.querySelector('.astryx-selector-indicator-icon'),
+    ).toBeNull();
+  });
+
+  it('suppresses the on-field status icon for the detached variant', () => {
+    const {container} = render(
+      <Selector
+        label="Fruit"
+        options={['Apple', 'Banana']}
+        status={{type: 'error', message: 'Required'}}
+        statusVariant="detached"
+      />,
+    );
+    // Detached: the message box below carries its own leading icon, so the
+    // field keeps its chevron indicator rather than duplicating the glyph.
+    expect(
+      container.querySelector('.astryx-selector-indicator-icon'),
+    ).not.toBeNull();
+  });
 });
 
 describe('Selector clear icon theme target', () => {

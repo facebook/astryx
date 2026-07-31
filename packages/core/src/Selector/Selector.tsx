@@ -1032,6 +1032,10 @@ export function Selector<T extends SelectorOptionType>(
     return elements;
   }, [options, renderItem, hasSearch, searchQuery, filteredItems]);
 
+  // The detached message box renders its own leading status icon, so the
+  // on-field icon would duplicate it — keep the chevron indicator instead.
+  const showStatusIcon = status != null && statusVariant !== 'detached';
+
   const selectorContent = (
     <>
       <div
@@ -1132,10 +1136,10 @@ export function Selector<T extends SelectorOptionType>(
         <span
           {...stylex.props(
             styles.triggerIcon,
-            !status && popover.isOpen && styles.triggerIconOpen,
-            status && styles.triggerIconStatus,
+            !showStatusIcon && popover.isOpen && styles.triggerIconOpen,
+            showStatusIcon && styles.triggerIconStatus,
           )}>
-          {status ? (
+          {showStatusIcon ? (
             <Icon
               icon={STATUS_ICON_MAP[status.type]}
               size="sm"
