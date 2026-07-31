@@ -32,6 +32,12 @@ const meta: Meta<typeof List> = {
       control: 'boolean',
       description: 'Whether to show dividers between items',
     },
+    isEdgeAligned: {
+      control: 'boolean',
+      description:
+        "Cancel the items' built-in horizontal inset so row text aligns " +
+        'flush with the container edge',
+    },
     listStyle: {
       control: 'select',
       options: ['none', 'disc', 'decimal', 'circle'],
@@ -110,6 +116,45 @@ export const Spacious: Story = {
       />
     </List>
   ),
+};
+
+export const EdgeAligned: Story = {
+  render: args => (
+    <div>
+      <Text type="label" size="lg">
+        Order items
+      </Text>
+      <List isEdgeAligned {...args}>
+        <ListItem
+          label="Solstice Mug"
+          description="Ceramic, 12 oz"
+          onClick={() => {}}
+        />
+        <ListItem
+          label="Meridian Notebook"
+          description="Dot grid, A5"
+          onClick={() => {}}
+        />
+        <ListItem
+          label="Field Pen"
+          description="0.5 mm, black ink"
+          onClick={() => {}}
+        />
+      </List>
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "isEdgeAligned cancels the items' built-in horizontal inset " +
+          'with a matching negative margin so row text aligns flush with ' +
+          'full-bleed siblings like the heading above. The cancelling ' +
+          'margin tracks density (8px for compact/balanced, 12px for ' +
+          'spacious).',
+      },
+    },
+  },
 };
 
 export const Interactive: Story = {

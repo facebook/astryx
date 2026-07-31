@@ -59,6 +59,18 @@ export interface ListProps extends BaseProps<
   hasDividers?: boolean;
 
   /**
+   * Aligns list item content flush with the container edge by cancelling
+   * the items' built-in horizontal inset with a matching negative margin.
+   * Use when the list sits under full-bleed sibling content such as a
+   * section heading, so row text lines up optically with the heading text.
+   * Tracks the density-dependent inset automatically (8px for compact and
+   * balanced, 12px for spacious). Hover and selection backgrounds still
+   * extend past the text by that inset.
+   * @default false
+   */
+  isEdgeAligned?: boolean;
+
+  /**
    * Header content rendered above the list.
    * Semantically associated via aria-labelledby.
    */
@@ -104,6 +116,18 @@ const styles = stylex.create({
   withDividers: {
     gap: 0,
   },
+  // isEdgeAligned cancels the inline inset that Item applies to each row so
+  // row text aligns flush with sibling full-bleed content (e.g. a section
+  // heading). The negative margin mirrors Item's own density-dependent
+  // paddingInline (--spacing-2, or --spacing-3 for spacious), not the
+  // container padding vars: the goal is optical alignment with siblings,
+  // not a container bleed like Table/Divider.
+  edgeAligned: {
+    marginInline: `calc(-1 * ${spacingVars['--spacing-2']})`,
+  },
+  edgeAlignedSpacious: {
+    marginInline: `calc(-1 * ${spacingVars['--spacing-3']})`,
+  },
   withCounter: {
     counterReset: 'astryx-list',
   },
@@ -128,6 +152,10 @@ const dynamicStyles = stylex.create({
  * Renders semantic `<ul>` or `<ol>` elements with configurable density,
  * dividers, marker styles, and an optional header.
  *
+ * Set `isEdgeAligned` when the list sits under full-bleed content such as a
+ * section heading; it cancels the items' built-in inline inset so row text
+ * aligns flush with the container edge.
+ *
  * @example
  * ```
  * <List>
@@ -144,6 +172,7 @@ export function List({
   children,
   density = 'balanced',
   hasDividers = false,
+  isEdgeAligned = false,
   header,
   listStyle = 'none',
   start,
@@ -186,6 +215,10 @@ export function List({
         stylex.props(
           styles.list,
           hasDividers && styles.withDividers,
+          isEdgeAligned &&
+            (density === 'spacious'
+              ? styles.edgeAlignedSpacious
+              : styles.edgeAligned),
           listStyle !== 'none' &&
             (start != null && start !== 1
               ? dynamicStyles.counterStart(start - 1)

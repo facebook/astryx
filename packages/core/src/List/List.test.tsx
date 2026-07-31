@@ -256,6 +256,69 @@ describe('List', () => {
   });
 
   // ===========================================================================
+  // Edge alignment
+  // ===========================================================================
+
+  it('does not apply edge-aligned styles by default', () => {
+    const {container} = render(
+      <List>
+        <ListItem label="Item" />
+      </List>,
+    );
+    const ul = container.querySelector('ul')!;
+    expect(ul.className).not.toContain('edgeAligned');
+  });
+
+  it('applies the base negative inset when isEdgeAligned (balanced)', () => {
+    const {container} = render(
+      <List isEdgeAligned>
+        <ListItem label="Item" />
+      </List>,
+    );
+    const ul = container.querySelector('ul')!;
+    expect(ul.className).toContain('edgeAligned');
+    expect(ul.className).not.toContain('edgeAlignedSpacious');
+  });
+
+  it('applies the base negative inset when isEdgeAligned (compact)', () => {
+    // Compact shares the balanced 8px inline inset; only paddingBlock
+    // differs between the two densities in Item.
+    const {container} = render(
+      <List isEdgeAligned density="compact">
+        <ListItem label="Item" />
+      </List>,
+    );
+    const ul = container.querySelector('ul')!;
+    expect(ul.className).toContain('edgeAligned');
+    expect(ul.className).not.toContain('edgeAlignedSpacious');
+  });
+
+  it('applies the spacious negative inset when isEdgeAligned (spacious)', () => {
+    // Spacious density widens the Item inline inset to 12px, so the
+    // cancelling margin must widen with it.
+    const {container} = render(
+      <List isEdgeAligned density="spacious">
+        <ListItem label="Item" />
+      </List>,
+    );
+    const ul = container.querySelector('ul')!;
+    expect(ul.className).toContain('edgeAlignedSpacious');
+  });
+
+  it('pulls only the list element, not the header, when isEdgeAligned', () => {
+    // The negative margin lives on the <ul>, so the header keeps its
+    // position and the row text aligns up to it.
+    const {container} = render(
+      <List isEdgeAligned header={<span>Items</span>}>
+        <ListItem label="Item" />
+      </List>,
+    );
+    const ul = container.querySelector('ul')!;
+    expect(ul.className).toContain('edgeAligned');
+    expect(ul.parentElement?.className).not.toContain('edgeAligned');
+  });
+
+  // ===========================================================================
   // Dividers
   // ===========================================================================
 
