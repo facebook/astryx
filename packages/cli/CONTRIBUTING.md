@@ -10,63 +10,50 @@ The CLI is a thin wrapper around type-safe API functions. Each command follows t
 User calls API function        User runs CLI
         |                            |
         v                            v
-  api/component.mjs ◄──────── commands/component/index.mjs
+  api/component/component.mjs ◄─ clients/cli/commands/component/index.mjs
         |                            |
         v                            v
-  { type, data }              jsonOut(type, data) or formatText(data)
+  { type, data }              jsonOut(response) or formatText(data)
 ```
 
 Both paths run identical code. The CLI handler just adds argument parsing and output formatting.
 
-The package is organized into pillars (no `src/` — it was dissolved in the reorg). The
-top-level directory _is_ the module boundary:
+The package is organized into four product surfaces plus a shared substrate (no
+`src/` — it was dissolved in the reorg). The top-level directory _is_ the module boundary:
 
 ```
 packages/cli/
   api/                         # Programmatic API (exported as @astryxdesign/cli/api)
-    index.mjs                  # barrel: component, docs, blog, discover, template,
-                               #   theme, hook, search, build, swizzle, doctor,
-                               #   layout*, validateIntegration, AstryxError
-    error.mjs                  # AstryxError class (carries .suggestions + .code)
-    component/component.mjs    # component(name?, opts?) → { type, data }
-    docs/docs.mjs              # docs(topic?, section?, opts?) → { type, data }
-    build/build.mjs            # build(query, opts?) → build.kit | build.help (raw entries)
-    swizzle/swizzle.mjs        # swizzle(component?, opts?) → receipt (side effect in API)
-    integration/               # validateIntegration(pkg?, opts?) → integration.validate
-    ...                        # one dir per command surface
-  cli/                         # CLI layer — MUST NOT be imported by api/
-    index.mjs                  # program setup + JSON_SUPPORTED set + fallback hook
-    commands/                  # thin wrappers: parse args → one API call → render
-      component/index.mjs      # calls api/component
-      swizzle.mjs              # thin: calls api/swizzle, renders receipt + error codes
-      build.mjs                # thin: calls api/build, renders kit (pm-prefixing lives here)
-      upgrade.mjs              # side-effect (codemods) — API extraction pending (see Roadmap)
-      build-theme.mjs          # side-effect (theme→CSS/TS) — API extraction pending
-      init.mjs                 # interactive prompts stay CLI-side; core → api/init pending
-  codemods/                    # version-to-version migrations (consumed by upgrade)
-  authoring/                   # component/doc authoring scaffolds
-  lib/                         # shared infra (NOT a data API)
-    json.mjs                   # jsonOut(type, data), jsonError(msg) — internal
-    parse.mjs                  # parseResponse, isError, assertResponse — consumer
-    agent-docs/                # ~700-line doc generator/injector (shared: init/upgrade/hook)
-    manifest.mjs               # CLI-special: reflects the command tree (injects `program`)
-  utils/                       # small pure helpers (package-manager, path-safety, ...)
-  schemas/                     # zod/JSON schemas
-  types/                       # public type surface
-    *.type.mjs (in api/)       # source of truth — colocated JSDoc; ./api regenerates from it
-    base.d.ts                  # CLIError, CLIResult<T>, CLIResponse (structural — no central union)
-    component.d.ts             # re-export barrel: ComponentListResponse, ComponentDetailResponse, ...
-    build.d.ts                 # re-export barrel: BuildKitResponse, BuildHelpResponse
-    swizzle.d.ts               # re-export barrel: SwizzleListResponse, SwizzleCopyResponse
-    ...                        # one barrel per command; index.d.ts is the ./json barrel
-  bin/ scripts/ docs/ templates/
+    index.mjs                  # barrel: command functions + re-exported .type.mjs types
+    error.mjs  logger.mjs      # AstryxError (.suggestions + .code); the injectable logger
+    component/component.mjs    # one dir per command; colocated <cmd>.type.mjs + tests
+    json/                      # the ./json consumer surface — parse.mjs + index.d.ts
+    ...                        # command-internal helpers take a `_` prefix (_adapter, _site, …)
+  clients/                     # user-facing apps over api/ — MUST NOT be imported by api/
+    cli/                       # the CLI app (room for a future clients/interactive/)
+      bin/astryx.mjs           # entry: Node-version gate + top-level error boundary
+      index.mjs                # program setup + JSON_SUPPORTED set + fallback hook
+      commands/                # thin wrappers: parse args → one API call → render
+      lib/                     # CLI-only support (cli-error, manifest, *-format, json-shim, …)
+  authoring/                   # public authoring surface + colocated .d.ts
+                               #   (./config ./doc ./template ./codemod ./integration)
+  assets/                      # data/content the CLI ships
+    codemods/  docs/  templates/
+  foundation/                  # shared substrate (proven used by 2+ surfaces), by concern
+    response/                  # json.mjs (emitter), parse's contract, base.d.ts, error-codes
+    config/  discovery/  integrations/  text/  fs/  env/
+    agent-docs/                # doc generator/injector (shared: init/upgrade/hook)
+    schemas/                   # zod/JSON schemas
+    xle/                       # the ./xle layout engine (self-contained, extract-ready)
+  scripts/  test-utils/        # package tooling + the in-process CLI test harness
 ```
 
-**Hard boundary:** `api/` never imports from `cli/`. The API is the reusable core;
+**Hard boundary:** `api/` never imports from `clients/`. The API is the reusable core;
 the CLI is one consumer of it. Anything shared by both (doc generation, manifest,
-package-manager detection) lives in `lib/` or `utils/`, not `cli/`. Side-effecting
-commands perform the effect _in the API_ and return a `{type, data}` receipt; the CLI
-only chooses how to render it and what exit code to set.
+package-manager detection) lives in `foundation/` (or, if CLI-only, in `clients/cli/lib/`),
+never in a place `api/` would reach up into. Side-effecting commands perform the effect
+_in the API_ and return a `{type, data}` receipt; the CLI only chooses how to render it
+and what exit code to set.
 
 ## Adding a new command
 
@@ -192,7 +179,7 @@ If the component has no `.doc.mjs`, `astryx component {Name}` returns a clean er
 
 ### Adding a new doc topic
 
-1. Add `{topic}.doc.mjs` in `packages/cli/docs/`
+1. Add `{topic}.doc.mjs` in `packages/cli/assets/docs/`
 2. Done — auto-discovered by `astryx docs` and the `docs()` API function
 
 ### Adding a new template
@@ -200,13 +187,13 @@ If the component has no `.doc.mjs`, `astryx component {Name}` returns a clean er
 Every template is exactly **two files** — no exceptions:
 
 ```
-packages/cli/templates/{name}/
+packages/cli/assets/templates/{name}/
 ├── page.tsx              ← the template code (single self-contained file)
 └── template.doc.mjs      ← metadata (name, description, isReady)
 ```
 
-1. Create `packages/cli/templates/{name}/page.tsx` with a default-exported React component
-2. Create `packages/cli/templates/{name}/template.doc.mjs` with a `doc` export (`TemplateDoc`)
+1. Create `packages/cli/assets/templates/{name}/page.tsx` with a default-exported React component
+2. Create `packages/cli/assets/templates/{name}/template.doc.mjs` with a `doc` export (`TemplateDoc`)
 3. Done — auto-discovered by `astryx template --list` and the `template()` API function
 
 **Rules:**
@@ -305,9 +292,9 @@ if (!json) p.log.step('Running...');
 
 The CLI ships as hand-written `.mjs` (no build step) but is type-checked with
 TypeScript's `checkJs` against the JSDoc annotations in the source. `tsconfig.strict.json`
-runs the compiler over the **whole package** — every pillar (`api`, `cli`, `codemods`,
-`authoring`, `lib`, `utils`, `types`, `schemas`), plus `bin`, `scripts`, `docs`, and the
-emitted `templates` (including their `.tsx` source) — under full `strict`, including
+runs the compiler over the **whole package** — every surface (`api`, `clients`,
+`authoring`, `foundation`) plus the `assets/` content (codemods, docs, and the emitted
+`templates` `.tsx` source) and `scripts` — under full `strict`, including
 `noImplicitAny`, so an un-annotated parameter is an error.
 
 ```bash
