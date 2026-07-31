@@ -214,3 +214,35 @@ export const IndeterminateVariants: Story = {
     </div>
   ),
 };
+
+export const WithTargetMarker: Story = {
+  args: {
+    value: 45,
+    label: 'Fundraiser',
+    hasValueLabel: true,
+    markers: [{value: 80, label: 'Goal'}],
+  },
+};
+
+export const WithMultipleMarkers: Story = {
+  args: {
+    value: 55,
+    label: 'Quarterly milestones',
+    hasValueLabel: true,
+    markers: [
+      {value: 25, label: 'Q1 target'},
+      {value: 50, label: 'Q2 target'},
+      {value: 80, label: 'Stretch goal'},
+    ],
+  },
+};
+
+export const ProgressPastMarker: Story = {
+  args: {
+    value: 92,
+    label: 'Budget used',
+    hasValueLabel: true,
+    variant: 'warning',
+    markers: [{value: 75, label: 'Budget cap'}],
+  },
+};

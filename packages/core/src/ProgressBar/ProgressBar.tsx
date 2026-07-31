@@ -40,6 +40,27 @@ import type {ProgressBarVariantMap} from './index';
  */
 export type ProgressBarVariant = keyof ProgressBarVariantMap;
 
+/**
+ * A fixed target marker drawn on the progress track.
+ *
+ * Positioned by `value` in the same `0..max` scale as the bar's `value` prop —
+ * mirroring the object shape of Slider's `marks` so the two APIs stay
+ * consistent and this is extensible to visible labels later.
+ */
+export interface ProgressBarMarker {
+  /**
+   * Position of the marker in the same `0..max` scale as `value`. Values
+   * outside the range are clamped to the track edges.
+   */
+  value: number;
+  /**
+   * Names the marker for assistive tech. When provided, it becomes the
+   * marker's `aria-label`; otherwise the marker is purely decorative. It is
+   * not rendered as visible text (reserved for a future visible-label option).
+   */
+  label?: string;
+}
+
 export interface ProgressBarProps extends BaseProps<HTMLDivElement> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLDivElement>;
@@ -87,6 +108,14 @@ export interface ProgressBarProps extends BaseProps<HTMLDivElement> {
    * @default false
    */
   isIndeterminate?: boolean;
+  /**
+   * Target markers drawn on the track at fixed points in the same `0..max`
+   * scale as `value` — e.g. a goal line. Markers stay visible whether progress
+   * is below or past them. Each marker's optional `label` names it for assistive
+   * tech; it is not rendered as visible text (reserved for a future visible-label
+   * option). Ignored when `isIndeterminate` is true.
+   */
+  markers?: ReadonlyArray<ProgressBarMarker>;
   /**
    * When true, the progress bar is visually disabled — the fill bar and
    * text use disabled colors. Use for canceled or inactive operations.
@@ -171,6 +200,7 @@ const styles = stylex.create({
     borderWidth: 0,
   },
   track: {
+    position: 'relative',
     width: '100%',
     height: '8px',
     backgroundColor: colorVars['--color-background-muted'],
@@ -198,6 +228,21 @@ const styles = stylex.create({
     },
     animationTimingFunction: 'ease-in-out',
     animationIterationCount: 'infinite',
+  },
+  // Target markers sit above the fill (later in flow, so higher in the paint
+  // order) and span the full track height, staying visible whether progress
+  // is below or past them. Centered on their position via a translate that
+  // mirrors under RTL, matching how Slider positions its marks.
+  marker: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 2,
+    backgroundColor: colorVars['--color-border-emphasized'],
+    transform: {
+      default: 'translateX(-50%)',
+      ':is([dir="rtl"] *)': 'translateX(50%)',
+    },
   },
 });
 
@@ -236,7 +281,8 @@ function defaultFormatValueLabel(value: number, max: number): string {
  *
  * ProgressBar is intentionally minimal — compose additional labels, status
  * icons, and descriptions alongside the bar using layout components rather
- * than adding props to ProgressBar itself.
+ * than adding props to ProgressBar itself. The exception is on-track content
+ * like `markers`, which must live inside the track and be positioned by value.
  *
  * Styles use Astryx theme tokens via StyleX.
  * Wrap your app in <Theme> to apply a theme.
@@ -248,6 +294,7 @@ function defaultFormatValueLabel(value: number, max: number): string {
  * <ProgressBar value={3.2} max={5} label="Disk usage" hasValueLabel
  *   formatValueLabel={(v, m) => `${v} GB / ${m} GB`} />
  * <ProgressBar value={30} label="Canceled" isDisabled hasValueLabel />
+ * <ProgressBar value={45} label="Fundraiser" markers={[{value: 80, label: 'Goal'}]} />
  * ```
  */
 export function ProgressBar({
@@ -260,6 +307,7 @@ export function ProgressBar({
   variant = 'accent',
   isIndeterminate = false,
   isDisabled = false,
+  markers,
   xstyle,
   className,
   style,
@@ -281,6 +329,20 @@ export function ProgressBar({
   const showValueLabel = hasValueLabel && !isIndeterminate;
 
   const fillVariant = isDisabled ? 'disabled' : variant;
+
+  // Markers make no sense without a determinate value, so they are only drawn
+  // in determinate mode. Non-finite marker values are dropped; the rest are
+  // clamped to the track edges, matching the bar's own `clampedValue`.
+  const resolvedMarkers =
+    !isIndeterminate && markers
+      ? markers
+          .filter(marker => Number.isFinite(marker.value))
+          .map(marker => {
+            const clamped = Math.min(Math.max(0, marker.value), safeMax);
+            const pct = safeMax > 0 ? (clamped / safeMax) * 100 : 0;
+            return {value: marker.value, label: marker.label, pct};
+          })
+      : [];
 
   return (
     <div
@@ -350,6 +412,21 @@ export function ProgressBar({
             style={{width: `${percentage}%`}}
           />
         )}
+        {/* Target markers, layered above the fill so they show whether progress
+            is below or past them. Decorative by default (aria-hidden); a marker
+            with a `label` exposes it to assistive tech via aria-label instead. */}
+        {resolvedMarkers.map(marker => (
+          <span
+            key={`${marker.value}:${marker.label ?? ''}`}
+            aria-hidden={marker.label == null ? true : undefined}
+            aria-label={marker.label}
+            {...mergeProps(
+              themeProps('progressbar-marker'),
+              stylex.props(styles.marker),
+            )}
+            style={{insetInlineStart: `${marker.pct}%`}}
+          />
+        ))}
       </div>
     </div>
   );

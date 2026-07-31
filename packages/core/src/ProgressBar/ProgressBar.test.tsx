@@ -277,4 +277,145 @@ describe('ProgressBar', () => {
       expect(css).toMatch(/:is\(\[dir="rtl"\][^)]*\)[^{]*\{\s*animation-name:/);
     });
   });
+
+  // Target markers
+  describe('target markers', () => {
+    const MARKER = '.astryx-progressbar-marker';
+
+    it('renders no marker elements when markers is omitted', () => {
+      const {container} = render(<ProgressBar value={50} label="Progress" />);
+      expect(container.querySelectorAll(MARKER)).toHaveLength(0);
+    });
+
+    it('renders no marker elements for an empty markers array', () => {
+      const {container} = render(
+        <ProgressBar value={50} label="Progress" markers={[]} />,
+      );
+      expect(container.querySelectorAll(MARKER)).toHaveLength(0);
+    });
+
+    it('renders a marker at the position matching its value', () => {
+      const {container} = render(
+        <ProgressBar value={40} label="Progress" markers={[{value: 80}]} />,
+      );
+      const markers = container.querySelectorAll<HTMLElement>(MARKER);
+      expect(markers).toHaveLength(1);
+      // value 80 of max 100 -> 80% along the track (RTL-safe logical property).
+      expect(markers[0].style.insetInlineStart).toBe('80%');
+    });
+
+    it('positions markers relative to a custom max', () => {
+      const {container} = render(
+        <ProgressBar value={1} max={5} label="Steps" markers={[{value: 4}]} />,
+      );
+      const markers = container.querySelectorAll<HTMLElement>(MARKER);
+      // value 4 of max 5 -> 80%.
+      expect(markers[0].style.insetInlineStart).toBe('80%');
+    });
+
+    it('keeps a marker past the current value visible', () => {
+      // A marker beyond the fill still renders — it layers above the fill.
+      const {container} = render(
+        <ProgressBar value={20} label="Progress" markers={[{value: 90}]} />,
+      );
+      const markers = container.querySelectorAll<HTMLElement>(MARKER);
+      expect(markers).toHaveLength(1);
+      expect(markers[0].style.insetInlineStart).toBe('90%');
+    });
+
+    it('renders multiple markers', () => {
+      const {container} = render(
+        <ProgressBar
+          value={50}
+          label="Progress"
+          markers={[{value: 25}, {value: 50}, {value: 80}]}
+        />,
+      );
+      expect(container.querySelectorAll(MARKER)).toHaveLength(3);
+    });
+
+    it('clamps out-of-range marker positions to the track edges', () => {
+      const {container} = render(
+        <ProgressBar
+          value={50}
+          label="Progress"
+          markers={[{value: -10}, {value: 150}]}
+        />,
+      );
+      const markers = container.querySelectorAll<HTMLElement>(MARKER);
+      expect(markers).toHaveLength(2);
+      expect(markers[0].style.insetInlineStart).toBe('0%');
+      expect(markers[1].style.insetInlineStart).toBe('100%');
+    });
+
+    it('drops non-finite marker values', () => {
+      const {container} = render(
+        <ProgressBar
+          value={50}
+          label="Progress"
+          markers={[{value: NaN}, {value: Infinity}, {value: 60}]}
+        />,
+      );
+      const markers = container.querySelectorAll<HTMLElement>(MARKER);
+      expect(markers).toHaveLength(1);
+      expect(markers[0].style.insetInlineStart).toBe('60%');
+    });
+
+    it('does not render markers in indeterminate mode', () => {
+      const {container} = render(
+        <ProgressBar
+          isIndeterminate
+          label="Loading"
+          markers={[{value: 80}]}
+        />,
+      );
+      expect(container.querySelectorAll(MARKER)).toHaveLength(0);
+    });
+
+    it('marks a label-less marker as decorative (aria-hidden)', () => {
+      const {container} = render(
+        <ProgressBar value={50} label="Progress" markers={[{value: 80}]} />,
+      );
+      const marker = container.querySelector<HTMLElement>(MARKER);
+      expect(marker).toHaveAttribute('aria-hidden', 'true');
+      expect(marker).not.toHaveAttribute('aria-label');
+    });
+
+    it('exposes a labeled marker to assistive tech via aria-label', () => {
+      const {container} = render(
+        <ProgressBar
+          value={50}
+          label="Progress"
+          markers={[{value: 80, label: 'Goal'}]}
+        />,
+      );
+      const marker = container.querySelector<HTMLElement>(MARKER);
+      expect(marker).toHaveAttribute('aria-label', 'Goal');
+      expect(marker).not.toHaveAttribute('aria-hidden');
+    });
+
+    it('does not add marker info to the progressbar aria-valuetext', () => {
+      render(
+        <ProgressBar
+          value={50}
+          label="Progress"
+          markers={[{value: 80, label: 'Goal'}]}
+        />,
+      );
+      const progressbar = screen.getByRole('progressbar');
+      expect(progressbar.getAttribute('aria-valuetext')).toBe('50%');
+    });
+
+    it('leaves the fill as the first track child (markers come after)', () => {
+      // Guards the existing `firstElementChild` fill assertions elsewhere.
+      const {container} = render(
+        <ProgressBar value={50} label="Progress" markers={[{value: 80}]} />,
+      );
+      const progressbar = screen.getByRole('progressbar');
+      const fill = progressbar.firstElementChild as HTMLElement;
+      expect(fill.style.width).toBe('50%');
+      expect(fill.classList.contains('astryx-progressbar-marker')).toBe(false);
+      expect(container.querySelectorAll(MARKER)).toHaveLength(1);
+    });
+  });
 });
