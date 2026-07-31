@@ -32,7 +32,7 @@
   "exports": {
     ".": "./clients/cli/bin/astryx.mjs",
     "./json": {
-      "types": "./api/json/index.d.ts",
+      "types": "./api/json/index.ts",
       "import": "./api/json/parse.mjs"
     },
     "./api": {
