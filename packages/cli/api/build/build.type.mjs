@@ -28,9 +28,9 @@
  * @property {string} data.query
  * @property {boolean} data.hasResults False when search returned nothing (renderer shows "No matches").
  * @property {boolean} data.directMatch True when the top page template is a confident direct match.
- * @property {import('../../types/search').SearchResultEntry[]} data.pages Closest page templates (≤3).
- * @property {import('../../types/search').SearchResultEntry[]} data.blocks Drop-in block patterns covering parts of the idea (≤5).
- * @property {import('../../types/search').SearchResultEntry[]} data.domain Idea-specific components/hooks (≤6), excluding frame/foundation.
+ * @property {import('../search/search.type.mjs').SearchResultEntry[]} data.pages Closest page templates (≤3).
+ * @property {import('../search/search.type.mjs').SearchResultEntry[]} data.blocks Drop-in block patterns covering parts of the idea (≤5).
+ * @property {import('../search/search.type.mjs').SearchResultEntry[]} data.domain Idea-specific components/hooks (≤6), excluding frame/foundation.
  * @property {string[]} data.frame Always-on page-shell component names.
  * @property {string[]} data.foundation Always-on layout/typography/action component names.
  */

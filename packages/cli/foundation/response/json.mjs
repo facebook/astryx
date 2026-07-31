@@ -120,10 +120,10 @@ export function jsonOut(response) {
  * consumers can branch on it unconditionally.
  *
  * @param {unknown} err
- * @param {import('../../types/base').Suggestion[]} [suggestions]
+ * @param {import('./base').Suggestion[]} [suggestions]
  * @param {string} [code] - Explicit stable error code. Overrides any code
  *   carried on a thrown Error.
- * @returns {{apiVersion: number, error: string, code: string, suggestions?: import('../../types/base').Suggestion[]}}
+ * @returns {{apiVersion: number, error: string, code: string, suggestions?: import('./base').Suggestion[]}}
  */
 export function toErrorEnvelope(err, suggestions, code) {
   const message =
@@ -144,7 +144,7 @@ export function toErrorEnvelope(err, suggestions, code) {
 /**
  * Output a structured JSON error and exit.
  * @param {string} message
- * @param {import('../../types/base').Suggestion[]} [suggestions]
+ * @param {import('./base').Suggestion[]} [suggestions]
  * @param {string} [code] - Stable machine-readable error code (error-codes.mjs).
  */
 export function jsonError(message, suggestions, code) {

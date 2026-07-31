@@ -59,7 +59,7 @@ export function findManifestPaths(dir) {
  * for validate-integration.
  * @param {string} file absolute manifest path
  * @param {string} [label] used in error messages
- * @returns {Promise<import('../../types/integration').AstryxIntegration>}
+ * @returns {Promise<import('../../authoring/integration').AstryxIntegration>}
  */
 export async function loadManifestObject(file, label = 'integration manifest') {
   return loadModuleWithSchema(file, AstryxIntegrationSchema, {label});

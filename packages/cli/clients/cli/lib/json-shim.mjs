@@ -103,7 +103,7 @@ export function buildHelpEnvelope(cmd) {
  * for both success and error).
  *
  * @param {string} message
- * @param {import('../../../types/base').Suggestion[]} [suggestions]
+ * @param {import('../../../foundation/response/base').Suggestion[]} [suggestions]
  * @param {string} [code] - Stable machine-readable error code (error-codes.mjs).
  */
 function emitJsonError(message, suggestions, code) {

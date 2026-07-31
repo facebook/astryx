@@ -21,7 +21,7 @@ import {AstryxError} from '../../error.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 
 /**
- * @typedef {import('../../../lib/package-scanner.mjs').ScannedPackage} ScannedPackage
+ * @typedef {import('../_package-scanner.mjs').ScannedPackage} ScannedPackage
  */
 
 /**

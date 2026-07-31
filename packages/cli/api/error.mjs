@@ -14,7 +14,7 @@
 import {ERROR_CODES} from '../foundation/response/error-codes.mjs';
 
 export class AstryxError extends Error {
-  /** @type {import('../types/base').Suggestion[] | undefined} */
+  /** @type {import('../foundation/response/base').Suggestion[] | undefined} */
   suggestions;
 
   /**
@@ -26,7 +26,7 @@ export class AstryxError extends Error {
 
   /**
    * @param {string} message
-   * @param {import('../types/base').Suggestion[]} [suggestions]
+   * @param {import('../foundation/response/base').Suggestion[]} [suggestions]
    * @param {string} [code] - Stable error code. Defaults to ERR_UNKNOWN.
    */
   constructor(message, suggestions, code) {

@@ -113,7 +113,7 @@ const EXAMPLES = {
  * option takes a value (boolean vs string), surfaces `choices` and `default`.
  *
  * @param {import('commander').Option} opt
- * @returns {import('../../../types/manifest').ManifestOption}
+ * @returns {import('./manifest').ManifestOption}
  */
 function describeOption(opt) {
   const o = /** @type {any} */ (opt);
@@ -137,7 +137,7 @@ function describeOption(opt) {
 /**
  * Map a Commander positional argument to an arg descriptor.
  * @param {import('commander').Argument} arg
- * @returns {import('../../../types/manifest').ManifestArgument}
+ * @returns {import('./manifest').ManifestArgument}
  */
 function describeArgument(arg) {
   const a = /** @type {any} */ (arg);
@@ -173,7 +173,7 @@ function fullName(cmd, root) {
  * @param {import('commander').Command} cmd
  * @param {import('commander').Command} root
  * @param {Set<string>} jsonSupported  fully-qualified names that support --json
- * @returns {import('../../../types/manifest').ManifestCommand | null}  null for hidden/internal commands
+ * @returns {import('./manifest').ManifestCommand | null}  null for hidden/internal commands
  */
 function describeCommand(cmd, root, jsonSupported) {
   const name = fullName(cmd, root);
@@ -228,7 +228,7 @@ function describeCommand(cmd, root, jsonSupported) {
  * command entry doesn't repeat them.
  *
  * @param {import('commander').Command} program
- * @returns {import('../../../types/manifest').ManifestOption[]}
+ * @returns {import('./manifest').ManifestOption[]}
  */
 function describeGlobalOptions(program) {
   const opts = (program.options || []).map(describeOption);
@@ -251,7 +251,7 @@ function describeGlobalOptions(program) {
  * @param {object} [opts]
  * @param {Set<string>} [opts.jsonSupported]  the JSON_SUPPORTED allowlist
  * @param {string} [opts.version]  CLI version (defaults to program.version())
- * @returns {import('../../../types/manifest').CLIManifest}  the manifest `data` payload (sans envelope)
+ * @returns {import('./manifest').CLIManifest}  the manifest `data` payload (sans envelope)
  */
 export function buildManifest(program, opts = {}) {
   const jsonSupported = opts.jsonSupported || new Set();

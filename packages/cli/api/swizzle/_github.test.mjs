@@ -12,7 +12,7 @@
 
 import {describe, it, expect, vi, afterEach} from 'vitest';
 import {execFileSync} from 'node:child_process';
-import {checkGhCli} from './github.mjs';
+import {checkGhCli} from './_github.mjs';
 
 vi.mock('node:child_process', () => ({execFileSync: vi.fn()}));
 

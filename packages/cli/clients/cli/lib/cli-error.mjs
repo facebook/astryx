@@ -56,7 +56,7 @@ import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 /**
  * Suggestion object — matches the shape used by API errors and the JSON
  * envelope's `suggestions` field. Canonical definition lives in types/base.
- * @typedef {import('../../../types/base').Suggestion} Suggestion
+ * @typedef {import('../../../foundation/response/base').Suggestion} Suggestion
  */
 
 /**

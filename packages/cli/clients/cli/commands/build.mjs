@@ -61,7 +61,7 @@ export function registerBuild(program) {
     .option('--type <domain>', 'Filter the kit to one domain (component|hook|template)')
     .option('--limit <n>', 'Max candidates to draw from (default 60)')
     .option('--detail', 'Verbose output (include import paths and match reason)')
-    .action(async (/** @type {string | undefined} */ query, /** @type {{type?: import('../../../types/search').SearchDomain, limit?: string, detail?: boolean}} */ options) => {
+    .action(async (/** @type {string | undefined} */ query, /** @type {{type?: import('../../../api/search/search.type.mjs').SearchDomain, limit?: string, detail?: boolean}} */ options) => {
       const run = getCliInvocation();
       const json = program.opts().json || false;
 
@@ -105,7 +105,7 @@ export function registerBuild(program) {
         return;
       }
 
-      const printItem = (/** @type {import('../../../types/search').SearchResultEntry} */ r, /** @type {string} */ label) => {
+      const printItem = (/** @type {import('../../../api/search/search.type.mjs').SearchResultEntry} */ r, /** @type {string} */ label) => {
         const display = r.domain === 'template' && r.displayName ? r.displayName : r.name;
         humanLog('');
         humanLog(`  [${label}] ${display}`);

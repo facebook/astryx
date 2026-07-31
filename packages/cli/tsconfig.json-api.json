@@ -9,10 +9,18 @@
     "customConditions": ["source"]
   },
   "include": [
-    "types/**/*.d.ts",
+    "api/json/index.d.ts",
+    "foundation/response/base.d.ts",
+    "foundation/response/error-codes.d.ts",
+    "clients/cli/lib/manifest.d.ts",
+    "authoring/config.d.ts",
+    "authoring/doc.d.ts",
+    "authoring/template-api.d.ts",
+    "authoring/integration.d.ts",
+    "authoring/codemod.d.ts",
     "foundation/response/json.mjs",
     "clients/cli/lib/manifest.mjs",
-    "lib/parse.mjs",
+    "api/json/parse.mjs",
     "authoring/config.mjs",
     "../core/src/docs-types.ts"
   ]

@@ -16,7 +16,7 @@ import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
  * AstryxError (ERR_UNKNOWN_PACKAGE) — with the available packages as
  * suggestions — when no package matches.
  *
- * @param {import('../../../lib/package-scanner.mjs').ScannedPackage[]} packages
+ * @param {import('../_package-scanner.mjs').ScannedPackage[]} packages
  * @param {string} query scoped package name, e.g. `@scope/name`
  * @returns {import('../discover.type.mjs').DiscoverDetailResponse}
  */

@@ -46,13 +46,13 @@ export const latestVersion = versions[versions.length - 1];
  *
  * @param {string} from - Current version (exclusive)
  * @param {string} to - Target version (inclusive)
- * @returns {Promise<Array<{version: string, transforms: Array<{name: string, transform: import('../../types/codemod.d.ts').CodemodTransform, meta: {title: string, description?: string}}>}>>}
+ * @returns {Promise<Array<{version: string, transforms: Array<{name: string, transform: import('../../authoring/codemod.d.ts').CodemodTransform, meta: {title: string, description?: string}}>}>>}
  */
 export async function getTransformsBetween(from, to) {
   const applicable = versions.filter(
     v => semverCompare(v, from) > 0 && semverCompare(v, to) <= 0,
   );
-  /** @type {Array<{version: string, transforms: Array<{name: string, transform: import('../../types/codemod.d.ts').CodemodTransform, meta: {title: string, description?: string}}>}>} */
+  /** @type {Array<{version: string, transforms: Array<{name: string, transform: import('../../authoring/codemod.d.ts').CodemodTransform, meta: {title: string, description?: string}}>}>} */
   const results = [];
 
   for (const version of applicable) {

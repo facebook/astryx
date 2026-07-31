@@ -65,12 +65,12 @@ export const CodemodEnvelopeSchema = z.discriminatedUnion('type', [
  * Define a file-transforming codemod. Stamp-only: returns the definition with
  * `type: 'code'` injected. Validation happens at the load boundary.
  *
- * @template {import('../types/codemod').AstryxCodemodDef} T
+ * @template {import('./codemod').AstryxCodemodDef} T
  * @param {T} def
- * @returns {import('../types/codemod').AstryxCodemod}
+ * @returns {import('./codemod').AstryxCodemod}
  */
 export function createCodemod(def) {
-  return /** @type {import('../types/codemod').AstryxCodemod} */ ({
+  return /** @type {import('./codemod').AstryxCodemod} */ ({
     ...def,
     type: 'code',
   });
@@ -81,12 +81,12 @@ export function createCodemod(def) {
  * returns the definition with `type: 'config'` injected. Validation happens at
  * the load boundary.
  *
- * @template {import('../types/codemod').AstryxConfigCodemodDef} T
+ * @template {import('./codemod').AstryxConfigCodemodDef} T
  * @param {T} def
- * @returns {import('../types/codemod').AstryxConfigCodemod}
+ * @returns {import('./codemod').AstryxConfigCodemod}
  */
 export function createConfigCodemod(def) {
-  return /** @type {import('../types/codemod').AstryxConfigCodemod} */ ({
+  return /** @type {import('./codemod').AstryxConfigCodemod} */ ({
     ...def,
     type: 'config',
   });
