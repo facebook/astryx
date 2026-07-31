@@ -3,7 +3,7 @@
 /**
  * @file docs.list leaf — enumerate the available reference-doc topics.
  *
- * @input Reads packages/cli/docs/{topic}.doc.mjs via the shared adapter's
+ * @input Reads packages/cli/assets/docs/{topic}.doc.mjs via the shared adapter's
  *   topic discovery. Each topic's English `description` is read directly; the
  *   listing never applies --dense/--zh overlays.
  * @output { type: 'docs.list', data: DocsListEntry[] } — one entry per topic,

@@ -45,11 +45,11 @@ import {
   discoverTemplates,
   discoverIntegrationTemplatesForOne,
 } from '../api/template/template.mjs';
-import {getTransformsBetween} from '../codemods/registry.mjs';
+import {getTransformsBetween} from '../assets/codemods/registry.mjs';
 import {
   discoverIntegrationCodemods,
   selectIntegrationCodemods,
-} from '../codemods/integration-discovery.mjs';
+} from '../assets/codemods/integration-discovery.mjs';
 import {validateLoadedIntegration} from '../api/integration/validate-integration.mjs';
 import {
   InMemoryConfigCache,

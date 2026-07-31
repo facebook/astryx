@@ -150,7 +150,7 @@ function applyTemplate(cwd, {templateName}, invocation, data) {
   }
 
   const outputDir = path.resolve(cwd, `./src/pages/${templateName}`);
-  const srcPath = path.join(CLI_ROOT, 'templates', 'pages', templateName, 'page.tsx');
+  const srcPath = path.join(CLI_ROOT, 'assets', 'templates', 'pages', templateName, 'page.tsx');
   const destFile = path.join(outputDir, 'page.tsx');
   // Don't clobber a user's existing page — same guard the peer template/copy and
   // theme/add write-leaves apply (init is a public API surface too).

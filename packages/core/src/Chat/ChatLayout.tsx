@@ -26,7 +26,7 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Chat/index.ts (exports)
  * - /apps/storybook/stories/ChatLayout.stories.tsx
- * - /packages/cli/templates/blocks/components/ChatLayout/ (block examples)
+ * - /packages/cli/assets/templates/blocks/components/ChatLayout/ (block examples)
  */
 
 import {type ReactNode, useMemo, useRef} from 'react';

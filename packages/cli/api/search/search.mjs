@@ -45,7 +45,7 @@ import {discoverTemplates, extractComponents} from '../template/template.mjs';
 import {AstryxError} from '../error.mjs';
 import {ERROR_CODES} from '../../lib/error-codes.mjs';
 
-const DOCS_DIR = path.join(CLI_ROOT, 'docs');
+const DOCS_DIR = path.join(CLI_ROOT, 'assets', 'docs');
 
 /**
  * A search candidate gathered from one content domain. Extra underscore-

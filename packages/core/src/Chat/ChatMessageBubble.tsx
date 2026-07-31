@@ -22,7 +22,7 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Chat/index.ts (exports)
  * - /apps/storybook/stories/Chat.stories.tsx
- * - /packages/cli/templates/blocks/components/ChatMessageBubble/ (block examples)
+ * - /packages/cli/assets/templates/blocks/components/ChatMessageBubble/ (block examples)
  */
 
 import type {ReactNode} from 'react';

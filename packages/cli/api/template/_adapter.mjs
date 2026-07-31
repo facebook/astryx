@@ -133,7 +133,7 @@ async function loadIntegrationDoc(file, label) {
   return loadModuleWithSchema(file, TemplateEnvelopeSchema, {label});
 }
 
-const TEMPLATES_DIR = path.join(CLI_ROOT, 'templates');
+const TEMPLATES_DIR = path.join(CLI_ROOT, 'assets', 'templates');
 const PAGES_DIR = path.join(TEMPLATES_DIR, 'pages');
 const BLOCKS_DIR = path.join(TEMPLATES_DIR, 'blocks');
 

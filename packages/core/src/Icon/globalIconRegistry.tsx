@@ -23,7 +23,7 @@ import {defaultIcons} from './defaultIcons';
  * These represent the functional purpose of each icon, not a specific
  * visual representation. Themes provide the actual icon components.
  */
-// SYNC: packages/cli/docs/icons.doc.mjs — update USAGE_HINTS when adding names
+// SYNC: packages/cli/assets/docs/icons.doc.mjs — update USAGE_HINTS when adding names
 export type IconName =
   | 'close'
   | 'chevronDown'

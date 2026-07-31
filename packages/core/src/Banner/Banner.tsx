@@ -28,7 +28,7 @@
  * - /packages/core/src/Banner/Banner.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Banner/index.ts (exports if types change)
  * - /apps/storybook/stories/Banner.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Banner/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Banner/ (showcase blocks)
  */
 
 import {useId, useState, type ReactNode} from 'react';

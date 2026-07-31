@@ -808,7 +808,7 @@ export interface ReferenceTranslationDoc {
 /**
  * Documentation for a page template.
  *
- * Every template directory under `packages/cli/templates/` has a
+ * Every template directory under `packages/cli/assets/templates/` has a
  * `template.doc.mjs` that exports a single `doc` constant:
  *
  *   /** @type {import('@astryxdesign/core').TemplateDoc} *\/
