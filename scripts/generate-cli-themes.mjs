@@ -18,6 +18,7 @@ const CLI_THEMES_OUT = path.join(
   REPO_ROOT,
   'packages',
   'cli',
+  'assets',
   'templates',
   'themes',
 );

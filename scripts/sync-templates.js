@@ -17,7 +17,7 @@ const path = require('node:path');
 
 const COPYRIGHT = '// Copyright (c) Meta Platforms, Inc. and affiliates.\n\n';
 const ROOT = path.resolve(__dirname, '..');
-const TEMPLATES_DIR = path.join(ROOT, 'packages', 'cli', 'templates');
+const TEMPLATES_DIR = path.join(ROOT, 'packages', 'cli', 'assets', 'templates');
 const PAGES_DIR = path.join(TEMPLATES_DIR, 'pages');
 const BLOCKS_DIR = path.join(TEMPLATES_DIR, 'blocks');
 const SANDBOX_DIR = path.join(ROOT, 'apps', 'sandbox');

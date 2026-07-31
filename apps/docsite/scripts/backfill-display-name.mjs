@@ -48,7 +48,7 @@ const DOCSITE_ROOT = path.resolve(__dirname, '..');
 const REPO_ROOT = path.resolve(DOCSITE_ROOT, '..', '..');
 
 const SCAN_ROOTS = [
-  path.join(REPO_ROOT, 'packages', 'cli', 'templates'),
+  path.join(REPO_ROOT, 'packages', 'cli', 'assets', 'templates'),
   path.join(REPO_ROOT, 'packages', 'core', 'src'),
   path.join(REPO_ROOT, 'packages', 'lab', 'src'),
 ];
