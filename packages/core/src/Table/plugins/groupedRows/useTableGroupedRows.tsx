@@ -190,7 +190,7 @@ const styles = stylex.create({
  * data rows while keeping the header visible.
  *
  * Mirrors other controlled Table state helpers: the consumer owns the
- * `collapsedGroups` set and this hook returns `{data, plugin, idKey}` —
+ * `collapsedGroups` set and this hook returns `{data, plugin, idKey}`:
  * pass all three to `<Table>`.
  *
  * @example
