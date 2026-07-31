@@ -49,9 +49,16 @@ const IMPORT_SOURCES = new Set([
 const TARGET_IMPORTED_NAMES = new Set(['Dialog']);
 
 /** Physical -> logical key rename for the position object. */
-const KEY_RENAME = {left: 'start', right: 'end'};
+const KEY_RENAME = /** @type {Record<string, string>} */ ({
+  left: 'start',
+  right: 'end',
+});
 
-/** Read a static (non-computed) object-property key name. */
+/**
+ * Read a static (non-computed) object-property key name.
+ * @param {any} key
+ * @returns {string | null}
+ */
 function keyName(key) {
   if (!key) return null;
   if (key.type === 'Identifier') return key.name;
@@ -61,7 +68,7 @@ function keyName(key) {
 
 /**
  * @param {import('../../../types/codemod').AstryxCodemodFile} file
- * @param {import('../../../types/codemod').AstryxCodemodApi} api
+ * @param {import('../../../types/codemod').CodemodTransformApi} api
  * @returns {string | null | undefined}
  */
 export default function transformer(file, api) {
