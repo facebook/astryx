@@ -31,15 +31,15 @@ import {
  * Optional codemods (isOptional) are skipped unless explicitly requested via
  * `codemod` (matched against the codemod id).
  *
- * @param {Array<{version: string, codemods: Array<import('../../authoring/codemod/type.d.ts').CodemodEntry>}>} versionGroups
+ * @param {Array<{version: string, codemods: Array<import('../../authoring/codemod/type').CodemodEntry>}>} versionGroups
  * @param {object} options
  * @param {boolean} options.apply
  * @param {string} options.path source directory to scan
  * @param {string} [options.codemod] run only this codemod id
  * @param {Set<string>} [options.skipCodemods] codemod ids to exclude
- * @param {import('../../authoring/codemod/type.d.ts').JscodeshiftFactory} options.jscodeshift
+ * @param {import('../../authoring/codemod/type').JscodeshiftFactory} options.jscodeshift
  * @param {boolean} [options.silent]
- * @returns {{totalFilesChanged: number, totalTransformsApplied: number, writtenFiles: string[], errors: Array<{file: string, codemod: string, error: string}>, skippedOptional: Array<import('../../authoring/codemod/type.d.ts').CodemodEntry>}}
+ * @returns {{totalFilesChanged: number, totalTransformsApplied: number, writtenFiles: string[], errors: Array<{file: string, codemod: string, error: string}>, skippedOptional: Array<import('../../authoring/codemod/type').CodemodEntry>}}
  */
 export function runIntegrationCodemods(
   versionGroups,
@@ -53,13 +53,13 @@ export function runIntegrationCodemods(
   const writtenFiles = [];
   /** @type {Array<{file: string, codemod: string, error: string}>} */
   const errors = [];
-  /** @type {Array<import('../../authoring/codemod/type.d.ts').CodemodEntry>} */
+  /** @type {Array<import('../../authoring/codemod/type').CodemodEntry>} */
   const skippedOptional = [];
 
   // Flatten and split by type, preserving version ordering.
-  /** @type {Array<import('../../authoring/codemod/type.d.ts').CodemodEntry>} */
+  /** @type {Array<import('../../authoring/codemod/type').CodemodEntry>} */
   const configEntries = [];
-  /** @type {Array<import('../../authoring/codemod/type.d.ts').CodemodEntry>} */
+  /** @type {Array<import('../../authoring/codemod/type').CodemodEntry>} */
   const codeEntries = [];
   for (const {version, codemods} of versionGroups) {
     for (const entry of codemods) {
