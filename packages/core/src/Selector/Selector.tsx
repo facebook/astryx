@@ -638,6 +638,7 @@ export function Selector<T extends SelectorOptionType>(
   const descriptionId = useId();
   const statusMessageId = useId();
   const inputLabelId = useId();
+  const fieldLabelId = useId();
   const searchId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -672,6 +673,12 @@ export function Selector<T extends SelectorOptionType>(
     ],
     inputGroup,
   );
+
+  // When standalone (no InputGroup), the trigger needs an explicit
+  // aria-labelledby pointing at the Field label so the accessible name
+  // resolves to the label text. The combobox role is not name-from-content,
+  // so the visible placeholder text does not name it.
+  const triggerLabelledBy = inputGroup ? ariaLabelledBy : fieldLabelId;
 
   // Flatten options for keyboard navigation
   const selectableItems = useMemo(
@@ -1087,7 +1094,7 @@ export function Selector<T extends SelectorOptionType>(
               : undefined
           }
           aria-describedby={ariaDescribedBy}
-          aria-labelledby={ariaLabelledBy}
+          aria-labelledby={triggerLabelledBy}
           aria-required={isRequired ? 'true' : undefined}
           aria-invalid={status?.type === 'error' ? 'true' : undefined}
           aria-busy={isBusy || undefined}
@@ -1212,6 +1219,7 @@ export function Selector<T extends SelectorOptionType>(
       isLabelHidden={isLabelHidden}
       description={description}
       inputID={triggerId}
+      labelID={fieldLabelId}
       descriptionID={description ? descriptionId : undefined}
       isOptional={isOptional}
       isRequired={isRequired}
