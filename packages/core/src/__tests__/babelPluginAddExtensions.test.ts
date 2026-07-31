@@ -50,6 +50,13 @@ beforeAll(() => {
     path.join(fixtureDir, 'dir', 'index.ts'),
     'export const y = 2;\n',
   );
+  // `both` exists as a file AND a directory-with-index — the file must win.
+  fs.writeFileSync(path.join(fixtureDir, 'both.ts'), 'export const b = 3;\n');
+  fs.mkdirSync(path.join(fixtureDir, 'both'));
+  fs.writeFileSync(
+    path.join(fixtureDir, 'both', 'index.ts'),
+    'export const bi = 4;\n',
+  );
   // The importing file itself never needs to exist — the plugin only uses
   // its dirname as the resolution base.
   entry = path.join(fixtureDir, 'entry.ts');
@@ -104,6 +111,39 @@ describe('babel-plugin-add-extensions', () => {
       });
       expect(code).toMatch(/import\(['"]\.\/mod\.js['"]\)/);
     });
+
+    it('prefers the file over a same-named directory index', () => {
+      const code = transform("const p = import('./both');", entry);
+      expect(code).toMatch(/import\(['"]\.\/both\.js['"]\)/);
+    });
+
+    it("rewrites a dynamic import of '.' to './index.js'", () => {
+      const code = transform("const p = import('.');", entry);
+      expect(code).toMatch(/import\(['"]\.\/index\.js['"]\)/);
+    });
+
+    it('rewrites every dynamic import in a file', () => {
+      const code = transform(
+        "const a = import('./mod');\nconst b = import('./dir');",
+        entry,
+      );
+      expect(code).toMatch(/import\(['"]\.\/mod\.js['"]\)/);
+      expect(code).toMatch(/import\(['"]\.\/dir\/index\.js['"]\)/);
+    });
+
+    it('leaves a dynamic import() of a skipped extension alone', () => {
+      const code = transform("const p = import('./data.json');", entry);
+      expect(code).toMatch(/import\(['"]\.\/data\.json['"]\)/);
+    });
+
+    it('does not touch call expressions that are not import()', () => {
+      const code = transform(
+        "myImport('./mod');\nregistry.import('./mod');",
+        entry,
+      );
+      expect(code).toContain("myImport('./mod')");
+      expect(code).toContain("registry.import('./mod')");
+    });
   });
 
   describe('static declarations (pre-existing behavior)', () => {
@@ -140,6 +180,11 @@ describe('babel-plugin-add-extensions', () => {
     it('appends .js even when no source sibling exists (fallback branch)', () => {
       const code = transform("import {z} from './does-not-exist';", entry);
       expect(code).toMatch(/from ['"]\.\/does-not-exist\.js['"]/);
+    });
+
+    it('leaves declarations without a source untouched', () => {
+      const code = transform('export const a = 1;', entry);
+      expect(code).toContain('export const a = 1;');
     });
   });
 });

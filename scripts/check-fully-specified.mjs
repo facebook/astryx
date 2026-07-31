@@ -28,14 +28,17 @@ import {fileURLToPath} from 'node:url';
 // A relative specifier is fine once it ends in an explicit extension.
 const FULLY_SPECIFIED = /\.(?:js|mjs|cjs|json|css)$/;
 
-// The three syntactic homes of a specifier in emitted ESM:
+// The syntactic homes of a specifier in emitted ESM:
 //   import/export ... from './x'
-//   import './x'     (side-effect import)
-//   import('./x')    (dynamic import)
+//   import './x'       (side-effect import)
+//   import('./x')      (dynamic import)
+//   import(`./x`)      (no-substitution template — a static specifier in
+//                       disguise; templates with `${` stay computed and exempt)
 const SPECIFIER_PATTERNS = [
   /\bfrom\s*["'](\.\.?\/[^"']*)["']/g,
   /\bimport\s+["'](\.\.?\/[^"']*)["']/g,
   /\bimport\(\s*["'](\.\.?\/[^"']*)["']\s*\)/g,
+  /\bimport\(\s*`(\.\.?\/[^`$]*)`\s*\)/g,
 ];
 
 const COMMENT_LINE = /^\s*(?:\*|\/\/|\/\*)/;
@@ -71,16 +74,20 @@ function walk(dir) {
   return results;
 }
 
-/** Scan every runtime file under `distDir`; return [{file, specifiers}]. */
+/**
+ * Scan every runtime file under `distDir`; return
+ * {checked, offenders: [{file, specifiers}]}.
+ */
 export function findOffenders(distDir) {
+  const files = walk(distDir);
   const offenders = [];
-  for (const file of walk(distDir)) {
+  for (const file of files) {
     const specifiers = scanSource(fs.readFileSync(file, 'utf-8'));
     if (specifiers.length > 0) {
       offenders.push({file: path.relative(distDir, file), specifiers});
     }
   }
-  return offenders;
+  return {checked: files.length, offenders};
 }
 
 function main() {
@@ -92,8 +99,7 @@ function main() {
     process.exit(1);
   }
 
-  const files = walk(distDir);
-  const offenders = findOffenders(distDir);
+  const {checked, offenders} = findOffenders(distDir);
 
   if (offenders.length > 0) {
     console.error('❌ Extensionless relative specifiers in build output:\n');
@@ -114,7 +120,7 @@ function main() {
   }
 
   console.log(
-    `✅ ${files.length} dist file(s) checked — every relative specifier is fully specified.`,
+    `✅ ${checked} dist file(s) checked — every relative specifier is fully specified.`,
   );
 }
 
