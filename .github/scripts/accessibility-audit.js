@@ -34,8 +34,13 @@ const hasFlag = (name) => args.includes(`--${name}`);
 
 const storybookDir = getArg('storybook-dir') || 'apps/storybook/dist';
 const outputFile = getArg('output') || 'a11y-report.json';
-const componentsArg = getArg('components') || '';
-const components = componentsArg.split(',').filter(Boolean);
+const componentsArg = getArg('components');
+const components = (componentsArg || '').split(',').filter(Boolean);
+// --components present but EMPTY means the caller derived an explicit empty
+// audit set (pr-a11y on a PR whose core/src changes map to no component —
+// e.g. a shared test file). Audit nothing and pass. Only an ABSENT flag
+// means "all stories" (the a11y-weekly contract).
+const emptyComponentSet = componentsArg !== null && components.length === 0;
 const baselineFile = getArg('baseline');
 const failOnNew = hasFlag('fail-on-new');
 const updateBaseline = hasFlag('update-baseline');
@@ -108,6 +113,17 @@ async function getStories(storybookPath) {
 
 async function runAccessibilityAudit() {
   console.log('Starting accessibility audit...');
+
+  if (emptyComponentSet) {
+    console.log('No components to audit (--components is empty) — skipping.');
+    const report = {
+      components: {},
+      summary: { componentsAudited: 0, totalViolations: 0 },
+    };
+    fs.writeFileSync(outputFile, JSON.stringify(report, null, 2));
+    return report;
+  }
+
   console.log(`Components to audit: ${components.length > 0 ? components.join(', ') : 'all affected'}`);
 
   const storybookPath = path.resolve(process.cwd(), storybookDir);
