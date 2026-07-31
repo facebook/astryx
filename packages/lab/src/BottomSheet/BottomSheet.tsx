@@ -89,7 +89,10 @@ function defaultSnapHeights(): number[] {
 const styles = stylex.create({
   // A full-viewport transparent shell: it supplies the top layer, focus trap,
   // and ::backdrop scrim but paints nothing and doesn't clip, so the sheet can
-  // translate past fully-open without hitting a fixed dialog edge.
+  // translate past fully-open without hitting a fixed dialog edge. It stays
+  // hit-testable (no pointer-events:none) so taps on the transparent area
+  // reach onClick and dismiss the sheet — the positioner below passes those
+  // taps through to here, while the sheet itself re-enables pointer events.
   dialog: {
     position: 'fixed',
     inset: 0,
@@ -102,7 +105,6 @@ const styles = stylex.create({
     border: 'none',
     backgroundColor: 'transparent',
     overflow: 'visible',
-    pointerEvents: 'none',
     display: 'none',
     outline: 'none',
   },

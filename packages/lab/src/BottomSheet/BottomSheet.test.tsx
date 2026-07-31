@@ -134,6 +134,19 @@ describe('BottomSheet', () => {
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
+  it('does not dismiss when the sheet surface itself is clicked', () => {
+    const onOpenChange = vi.fn();
+    render(
+      <BottomSheet isOpen onOpenChange={onOpenChange} label="Filters">
+        Content
+      </BottomSheet>,
+    );
+    // Only a click that lands on the dialog (the transparent area) dismisses;
+    // clicks bubbling up from the sheet must not.
+    fireEvent.click(screen.getByText('Content'));
+    expect(onOpenChange).not.toHaveBeenCalled();
+  });
+
   describe('grab handle', () => {
     it('renders a decorative handle hidden from assistive tech', () => {
       render(
