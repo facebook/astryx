@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'AlertDialog',
@@ -120,7 +120,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').TranslationDoc} */
 export const docsDense = {
   description: 'Confirms destructive/irreversible action before it happens (delete, revoke access, discard unsaved changes).',
   usage: {

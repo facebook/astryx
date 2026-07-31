@@ -4,7 +4,7 @@
  * @file Icons reference doc: semantic icon names available in Astryx
  */
 
-/** @type {import('../../../core/src/docs-types.ts').ReferenceDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ReferenceDoc} */
 export const docs = {
   name: 'icons',
   title: 'Icons',

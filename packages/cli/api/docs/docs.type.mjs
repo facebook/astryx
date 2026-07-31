@@ -29,14 +29,14 @@
  * xds --json docs <topic>
  * @typedef {object} DocsDetailResponse
  * @property {'docs.detail'} type
- * @property {import('../../../core/src/docs-types').ReferenceDoc} data
+ * @property {import('@astryxdesign/cli/authoring').ReferenceDoc} data
  */
 
 /**
  * xds --json docs <topic> <section>
  * @typedef {object} DocsDetailSectionResponse
  * @property {'docs.detail.section'} type
- * @property {import('../../../core/src/docs-types').ReferenceSection} data
+ * @property {import('@astryxdesign/cli/authoring').ReferenceSection} data
  */
 
 /**

@@ -33,10 +33,10 @@ This means:
 
 ## Writing `docs` (English)
 
-See `docs-types.ts` for the full type definition.
+See `@astryxdesign/cli/authoring` for the full type definitions.
 
 ```js
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docs = {
   name: 'Button',
   description:
@@ -79,7 +79,7 @@ Translations use the `TranslationDoc` type. Only prose fields, no structure.
 // See .context/decisions/dense-compression-protocol.md
 // -------------------------------------------------------
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').TranslationDoc} */
 export const docsDense = {
   description: 'multi-variant btn w/ loading state',
   features: [
@@ -120,7 +120,7 @@ astryx --detail compact --lang dense component Button  # Compact + compressed
 
 ## Reference Docs (non-component)
 
-Reference docs (tokens, principles, theme) use a different type: `ReferenceDoc` from `docs-types.ts`.
+Reference docs (tokens, principles, theme) use a different type: `ReferenceDoc` from `@astryxdesign/cli/authoring`.
 
 They live in `packages/cli/docs/` as `.doc.mjs` files with translations in `*.doc.dense.mjs` and `*.doc.zh.mjs`.
 

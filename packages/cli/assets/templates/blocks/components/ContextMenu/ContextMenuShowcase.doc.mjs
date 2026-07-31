@@ -1,5 +1,5 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
-/** @type {import('../../../../../../core/src/docs-types.ts').TemplateDoc} */
+/** @type {import('@astryxdesign/cli/authoring').TemplateDoc} */
 export const doc = {
   type: 'block',
   exampleFor: 'ContextMenu',

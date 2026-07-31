@@ -46,7 +46,7 @@ function formatTableCompact(headers, rows) {
 }
 
 /**
- * @param {import('../../../../core/src/docs-types').ContentBlock} block
+ * @param {import('@astryxdesign/cli/authoring').ContentBlock} block
  * @param {'full' | 'compact' | 'brief'} detail
  * @returns {string | null}
  */
@@ -88,7 +88,7 @@ function formatBlock(block, detail) {
 }
 
 /**
- * @param {import('../../../../core/src/docs-types').ReferenceSection} section
+ * @param {import('@astryxdesign/cli/authoring').ReferenceSection} section
  * @param {'full' | 'compact' | 'brief'} detail
  * @returns {string}
  */
@@ -107,7 +107,7 @@ function formatSection(section, detail) {
 }
 
 /**
- * @param {import('../../../../core/src/docs-types').ReferenceDoc} docs
+ * @param {import('@astryxdesign/cli/authoring').ReferenceDoc} docs
  * @param {'full' | 'compact' | 'brief'} detail
  * @returns {string}
  */

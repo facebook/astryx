@@ -197,7 +197,7 @@ for (const group of groups) {
 
   const rows = pairs.map(([name, value]) => group.formatRow(name, value));
 
-  /** @type {import('../../core/src/docs-types').ContentBlock[]} */
+  /** @type {import('@astryxdesign/cli/authoring').ContentBlock[]} */
   const content = [
     {type: 'prose', text: group.description},
     {type: 'table', headers: group.headers, rows},
@@ -257,7 +257,7 @@ const output = `\
 // Run: node scripts/generate-token-docs.mjs
 // Total: ${totalTokens} tokens across ${groups.length} categories.
 
-/** @type {import('../../core/src/docs-types').ReferenceDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ReferenceDoc} */
 
 export const docs = ${JSON.stringify(
   {

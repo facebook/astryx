@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../../../core/src/docs-types.ts').ReferenceTranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ReferenceTranslationDoc} */
 
 export const docsZh = {
   description: '间距、颜色、圆角、排版和阴影设计令牌参考。',

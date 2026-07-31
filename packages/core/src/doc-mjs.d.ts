@@ -11,7 +11,7 @@
  */
 
 declare module '*.doc.mjs' {
-  import type {ComponentDoc, TranslationDoc} from './docs-types';
+  import type {ComponentDoc, TranslationDoc} from '@astryxdesign/cli/authoring';
 
   export const docs: ComponentDoc;
   export const docsZh: ComponentDoc;

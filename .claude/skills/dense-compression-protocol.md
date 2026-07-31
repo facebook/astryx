@@ -9,7 +9,7 @@ Produce a `docsDense` `TranslationDoc` that compresses the prose of a component'
 ## TranslationDoc Shape
 
 ```js
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').TranslationDoc} */
 export const docsDense = {
   description: 'compressed component description',
   features: ['compressed feature 1', 'compressed feature 2'],

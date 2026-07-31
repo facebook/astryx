@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docs = {
   name: 'SelectableCard',
   displayName: 'Selectable Card',
@@ -54,7 +54,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').TranslationDoc} */
 export const docsDense = {
   description: 'Card toggling between selected/unselected states w/ accent border. For navigation use ClickableCard instead.',
   usage: {

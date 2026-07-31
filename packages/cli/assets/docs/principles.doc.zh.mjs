@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../../../core/src/docs-types.ts').ReferenceTranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ReferenceTranslationDoc} */
 
 export const docsZh = {
   description: 'XDS 核心设计原则和规则。',

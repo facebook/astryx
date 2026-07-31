@@ -71,7 +71,7 @@ export async function loadReferenceDocs(docPath, {lang} = {}) {
     ...docs,
     description: translation.description || docs.description,
     sections: docs.sections.map(
-      (/** @type {import('../../../core/src/docs-types').ReferenceSection} */ section) => {
+      (/** @type {import('@astryxdesign/cli/authoring').ReferenceSection} */ section) => {
         const ts = bySection.get(section.title);
         if (!ts) return section;
         return {
@@ -79,7 +79,7 @@ export async function loadReferenceDocs(docPath, {lang} = {}) {
           title: ts.title || section.title,
           content: section.content.map(
             (
-              /** @type {import('../../../core/src/docs-types').ContentBlock} */ block,
+              /** @type {import('@astryxdesign/cli/authoring').ContentBlock} */ block,
               /** @type {number} */ bi,
             ) => {
               const tb = ts.content?.[bi];
