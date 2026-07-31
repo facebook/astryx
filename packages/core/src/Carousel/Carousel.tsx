@@ -17,7 +17,7 @@
  * SYNC: When modified, update:
  * - /packages/core/src/Carousel/index.ts (exports)
  * - /apps/storybook/stories/Carousel.stories.tsx
- * - /packages/cli/templates/blocks/components/Carousel/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Carousel/ (showcase blocks)
  */
 
 import {

@@ -13,7 +13,7 @@
  * - /packages/core/src/Item/Item.test.tsx
  * - /packages/core/src/Item/index.ts
  * - /apps/storybook/stories/Item.stories.tsx
- * - /packages/cli/templates/blocks/components/Item/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Item/ (showcase blocks)
  */
 
 import {useRef, type ReactNode} from 'react';

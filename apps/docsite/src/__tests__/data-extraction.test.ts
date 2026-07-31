@@ -896,7 +896,10 @@ describe('exampleRegistry', () => {
 // "Selectable Card Multi".
 describe('block example title convention', () => {
   const blocksDir = fileURLToPath(
-    new URL('../../../../packages/cli/templates/blocks', import.meta.url),
+    new URL(
+      '../../../../packages/cli/assets/templates/blocks',
+      import.meta.url,
+    ),
   );
 
   function displayNameOf(relPath: string): string | null {

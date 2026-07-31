@@ -4,7 +4,7 @@
 
 /**
  * @file generate-token-docs.mjs
- * @description Generates packages/cli/docs/tokens.doc.mjs from the source of
+ * @description Generates packages/cli/assets/docs/tokens.doc.mjs from the source of
  *   truth: packages/core/src/theme/tokens.stylex.ts
  *
  * Run: node scripts/generate-token-docs.mjs
@@ -24,7 +24,7 @@ const TOKENS_SRC = resolve(
   ROOT,
   'packages/core/src/theme/tokens.stylex.ts',
 );
-const TOKENS_DOC = resolve(ROOT, 'packages/cli/docs/tokens.doc.mjs');
+const TOKENS_DOC = resolve(ROOT, 'packages/cli/assets/docs/tokens.doc.mjs');
 
 // ---------------------------------------------------------------------------
 // 1. Parse token groups from source

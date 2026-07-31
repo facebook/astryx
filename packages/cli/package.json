@@ -68,15 +68,13 @@
     "bin",
     "api",
     "cli",
-    "codemods",
+    "assets",
     "authoring",
     "lib",
     "utils",
     "types",
     "schemas",
     "scripts/postinstall.mjs",
-    "templates",
-    "docs",
     "CHANGELOG.md"
   ],
   "scripts": {

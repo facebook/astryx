@@ -13,7 +13,7 @@
  * - /packages/core/src/Avatar/Avatar.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/Avatar/index.ts (exports if types change)
  * - /apps/storybook/stories/Avatar.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Avatar/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Avatar/ (showcase blocks)
  *
  * Last synced props: alt, fallbackSrc, name, size, src, status, href, as, target, rel, onClick
  */
@@ -215,7 +215,7 @@ const dynamicStyles = stylex.create({
   }),
   statusPosition: (size: number) => ({
     bottom: size * CIRCLE_EDGE_OFFSET_RATIO,
-    right: size * CIRCLE_EDGE_OFFSET_RATIO,
+    insetInlineEnd: size * CIRCLE_EDGE_OFFSET_RATIO,
     transform: 'translate(50%, 50%)',
   }),
 });

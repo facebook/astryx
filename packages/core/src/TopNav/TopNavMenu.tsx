@@ -13,7 +13,7 @@
  * - /packages/core/src/TopNav/TopNav.doc.mjs
  * - /packages/core/src/TopNav/TopNavMenu.test.tsx
  * - /packages/core/src/TopNav/index.ts
- * - /packages/cli/templates/blocks/components/TopNav/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/TopNav/ (showcase blocks)
  */
 
 import React, {

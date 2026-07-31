@@ -6,7 +6,7 @@ import {describe, it, expect} from 'vitest';
 
 describe('@astryxdesign/cli Theme Manifest & Template Validation', () => {
   const manifestPath = path.resolve(
-    'packages/cli/templates/themes/manifest.json',
+    'packages/cli/assets/templates/themes/manifest.json',
   );
 
   it('validates theme manifest existence and structure', () => {

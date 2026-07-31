@@ -18,14 +18,14 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
-import {ensureJscodeshift} from '../../codemods/ensure-jscodeshift.mjs';
-import {getTransformsBetween, latestVersion} from '../../codemods/registry.mjs';
-import {runCodemods} from '../../codemods/runner.mjs';
+import {ensureJscodeshift} from '../../assets/codemods/ensure-jscodeshift.mjs';
+import {getTransformsBetween, latestVersion} from '../../assets/codemods/registry.mjs';
+import {runCodemods} from '../../assets/codemods/runner.mjs';
 import {
   discoverIntegrationCodemods,
   selectIntegrationCodemods,
-} from '../../codemods/integration-discovery.mjs';
-import {runIntegrationCodemods} from '../../codemods/integration-runner.mjs';
+} from '../../assets/codemods/integration-discovery.mjs';
+import {runIntegrationCodemods} from '../../assets/codemods/integration-runner.mjs';
 import {installAgentDocs, inspectAgentDocs} from '../../lib/agent-docs/agent-docs.mjs';
 import {formatCliCommand} from '../../utils/package-manager.mjs';
 import {Project} from '../../lib/project.mjs';

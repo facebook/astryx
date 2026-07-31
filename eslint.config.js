@@ -62,7 +62,7 @@ export default defineConfig(
       "**/*.mjs",
       "!packages/cli/api/**/*.mjs",
       "!packages/cli/cli/**/*.mjs",
-      "!packages/cli/codemods/**/*.mjs",
+      "!packages/cli/assets/codemods/**/*.mjs",
       "!packages/cli/authoring/**/*.mjs",
       "!packages/cli/lib/**/*.mjs",
       "!packages/cli/utils/**/*.mjs",
@@ -323,7 +323,7 @@ export default defineConfig(
       "apps/sandbox/**/*.{ts,tsx}",
       "apps/example-*/**/*.{ts,tsx}",
       "internal/**/*.{ts,tsx}",
-      "packages/cli/templates/**/*.{ts,tsx}",
+      "packages/cli/assets/templates/**/*.{ts,tsx}",
     ],
     rules: {
       "no-console": "off",
@@ -337,7 +337,7 @@ export default defineConfig(
     files: [
       "packages/cli/api/**/*.mjs",
       "packages/cli/cli/**/*.mjs",
-      "packages/cli/codemods/**/*.mjs",
+      "packages/cli/assets/codemods/**/*.mjs",
       "packages/cli/authoring/**/*.mjs",
       "packages/cli/lib/**/*.mjs",
       "packages/cli/utils/**/*.mjs",
@@ -392,7 +392,7 @@ export default defineConfig(
     files: [
       "packages/cli/api/**/*.mjs",
       "packages/cli/cli/**/*.mjs",
-      "packages/cli/codemods/**/*.mjs",
+      "packages/cli/assets/codemods/**/*.mjs",
       "packages/cli/authoring/**/*.mjs",
       "packages/cli/lib/**/*.mjs",
       "packages/cli/utils/**/*.mjs",

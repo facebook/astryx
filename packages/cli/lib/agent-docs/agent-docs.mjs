@@ -377,7 +377,7 @@ export function generateCompressedIndex(version, {coreDir, invocation = getCliIn
   lines.push('  search "<query>"   find any component / hook / doc / template / block');
   lines.push(`  component --list   ${componentCount} components by category`);
   lines.push('  template --list    page + block recipes');
-  const docsDir = path.join(CLI_ROOT, 'docs');
+  const docsDir = path.join(CLI_ROOT, 'assets', 'docs');
   if (fs.existsSync(docsDir)) {
     const topics = fs.readdirSync(docsDir)
       .map(f => f.match(/^(\w+)\.doc\.mjs$/))

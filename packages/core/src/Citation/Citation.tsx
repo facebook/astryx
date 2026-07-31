@@ -13,7 +13,7 @@
  * - /packages/core/src/Citation/Citation.doc.mjs (props table, features)
  * - /packages/core/src/Citation/Citation.test.tsx (tests for new/changed behavior)
  * - /apps/storybook/stories/Citation.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Citation/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Citation/ (showcase blocks)
  */
 
 import type React from 'react';

@@ -13,8 +13,6 @@
     "api/**/*.ts",
     "cli/**/*.mjs",
     "cli/**/*.ts",
-    "codemods/**/*.mjs",
-    "codemods/**/*.ts",
     "lib/**/*.mjs",
     "lib/**/*.ts",
     "utils/**/*.mjs",
@@ -26,10 +24,9 @@
     "authoring/**/*.ts",
     "bin/**/*.mjs",
     "scripts/**/*.mjs",
-    "docs/**/*.mjs",
-    "templates/**/*.mjs",
-    "templates/**/*.ts",
-    "templates/**/*.tsx"
+    "assets/**/*.mjs",
+    "assets/**/*.ts",
+    "assets/**/*.tsx"
   ],
   "exclude": ["**/*.test.mjs"]
 }
