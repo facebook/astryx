@@ -223,6 +223,12 @@ export const categories: SandboxCategory[] = [
           'Write compressed XLE/XLO layout expressions and expand them to TSX with live token metrics',
       },
       {
+        name: 'ChatLayout Playground',
+        href: '/pages/chat-playground/',
+        description:
+          'Toggle ChatLayout across empty, short, long, and streaming states to eyeball scroll and dock behavior',
+      },
+      {
         name: 'CodeBlock Perf',
         href: '/pages/codeblock-perf/',
         description: 'Compare highlight modes and scroll performance',
