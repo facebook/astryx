@@ -238,38 +238,26 @@ const dynamicStyles = stylex.create({
     maxHeight: typeof maxHeight === 'number' ? `${maxHeight}px` : maxHeight,
   }),
   position: (
-    top: number | string | undefined,
-    right: number | string | undefined,
-    bottom: number | string | undefined,
-    left: number | string | undefined,
-    start: number | string | undefined,
-    end: number | string | undefined,
+    top: string | null,
+    insetInlineStart: string | null,
+    insetInlineEnd: string | null,
+    right: string | null,
+    bottom: string | null,
+    left: string | null,
   ) => ({
-    // When position is set, disable auto margin and use fixed positioning.
-    //
-    // Logical start/end wins over physical left/right and suppresses it
-    // (null → omitted) so they can't conflict; left/right-only is unchanged.
-    // Keep this an inline literal (StyleX can't analyze a helper); logic is
-    // unit-tested via resolveDialogPositionOffsets() below — keep in sync.
+    // Assigns pre-resolved offsets from resolveDialogPositionOffsets() (the
+    // single source of the logical-over-physical precedence + RTL mapping).
+    // This literal has no logic — StyleX can't analyze a helper, so the values
+    // are computed at the call site and passed in.
     margin: 0,
-    top: top !== undefined ? formatPosition(top) : 'auto',
-    insetInlineStart: start !== undefined ? formatPosition(start) : 'auto',
-    insetInlineEnd: end !== undefined ? formatPosition(end) : 'auto',
+    top,
+    insetInlineStart,
+    insetInlineEnd,
     // eslint-disable-next-line @astryx/no-physical-properties -- deprecated consumer-facing DialogPosition.right; physical by contract, superseded by logical `end`
-    right:
-      end !== undefined
-        ? null
-        : right !== undefined
-          ? formatPosition(right)
-          : 'auto',
-    bottom: bottom !== undefined ? formatPosition(bottom) : 'auto',
+    right,
+    bottom,
     // eslint-disable-next-line @astryx/no-physical-properties -- deprecated consumer-facing DialogPosition.left; physical by contract, superseded by logical `start`
-    left:
-      start !== undefined
-        ? null
-        : left !== undefined
-          ? formatPosition(left)
-          : 'auto',
+    left,
   }),
 });
 
@@ -291,8 +279,8 @@ function formatPosition(value: number | string | undefined): string | null {
  * the pre-deprecation behavior — a physical, non-mirroring offset with an
  * `auto` fallback — so the deprecation is non-breaking.
  *
- * Not exported from the package; kept internal to unit-test the precedence
- * logic that the inline StyleX literal above applies at runtime.
+ * Not re-exported from the package; internal to Dialog. Directly unit-tested
+ * so the precedence logic is verified without StyleX class compilation.
  *
  * @see DialogPosition
  */
@@ -715,14 +703,17 @@ export function Dialog({
           styles.backdrop,
           !isFullscreen && dynamicStyles.sizing(width, maxHeight),
           hasPosition &&
-            dynamicStyles.position(
-              position?.top,
-              position?.right,
-              position?.bottom,
-              position?.left,
-              position?.start,
-              position?.end,
-            ),
+            (() => {
+              const o = resolveDialogPositionOffsets(position);
+              return dynamicStyles.position(
+                o.top,
+                o.insetInlineStart,
+                o.insetInlineEnd,
+                o.right,
+                o.bottom,
+                o.left,
+              );
+            })(),
           isFullscreen && styles.fullscreen,
           xstyle,
         ),
