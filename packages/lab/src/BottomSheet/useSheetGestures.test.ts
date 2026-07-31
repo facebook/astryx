@@ -78,6 +78,9 @@ type Hook = {
 };
 
 function down(hook: Hook, y: number, t: number, target: HTMLElement) {
+  // Register the sheet element the way the component does on mount, so the
+  // hook can measure its height (it no longer queries the DOM for it).
+  act(() => hook.result.current.sheetRef(target));
   act(() =>
     hook.result.current.handleProps.onPointerDown(pointerEvent(y, t, target)),
   );
@@ -272,6 +275,9 @@ describe('useSheetGestures', () => {
       return body;
     }
     function bodyDown(hook: Hook, y: number, t: number, el: HTMLElement) {
+      // Register a sheet element so the hook can measure height (it reads the
+      // tracked node, not the DOM). The body stands in with the right height.
+      act(() => hook.result.current.sheetRef(el));
       act(() =>
         hook.result.current.bodyProps.onPointerDown(pointerEvent(y, t, el)),
       );
@@ -350,6 +356,7 @@ describe('useSheetGestures', () => {
         clientHeight: 200,
         scrollHeight: 800,
       });
+      act(() => hook.result.current.sheetRef(el));
       act(() => hook.result.current.bodyProps.ref(el));
       act(() => {
         touch(el, 'touchstart', 0);
@@ -366,6 +373,7 @@ describe('useSheetGestures', () => {
         clientHeight: 200,
         scrollHeight: 800,
       });
+      act(() => hook.result.current.sheetRef(el));
       act(() => hook.result.current.bodyProps.ref(el));
       act(() => {
         touch(el, 'touchstart', 300);
@@ -381,6 +389,7 @@ describe('useSheetGestures', () => {
         clientHeight: 200,
         scrollHeight: 800,
       });
+      act(() => hook.result.current.sheetRef(el));
       act(() => hook.result.current.bodyProps.ref(el));
       act(() => {
         touch(el, 'touchstart', 300);

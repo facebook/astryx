@@ -233,10 +233,12 @@ export function useSheetGestures({
   // a drag, so detents don't shift under the finger; re-derived when the
   // element resizes (rotation, dynamic viewport, keyboard).
   const sheetHeightRef = useRef(0);
+  const sheetElRef = useRef<HTMLElement | null>(null);
   const observerRef = useRef<ResizeObserver | null>(null);
   const sheetRef = useCallback((node: HTMLElement | null) => {
     observerRef.current?.disconnect();
     observerRef.current = null;
+    sheetElRef.current = node;
     if (!node || typeof ResizeObserver === 'undefined') {
       if (node) {
         sheetHeightRef.current = node.getBoundingClientRect().height;
@@ -265,13 +267,13 @@ export function useSheetGestures({
   }, [isOpen]);
 
   // The fully-open height for detent math. Prefer the ResizeObserver-locked
-  // value; fall back to a live measure if the observer hasn't reported yet.
-  const measureHeight = useCallback((el: HTMLElement | null): number => {
+  // value; fall back to a live measure of the tracked sheet element if the
+  // observer hasn't reported yet.
+  const measureHeight = useCallback((): number => {
     if (sheetHeightRef.current > 0) {
       return sheetHeightRef.current;
     }
-    const sheet = el?.closest<HTMLElement>('[data-astryx-sheet]') ?? el;
-    return sheet?.getBoundingClientRect().height ?? 0;
+    return sheetElRef.current?.getBoundingClientRect().height ?? 0;
   }, []);
 
   // Detent translate offsets (px) from the tallest detent, ascending. The
@@ -357,7 +359,7 @@ export function useSheetGestures({
 
   const handlePointerDown = useCallback(
     (event: ReactPointerEvent) => {
-      beginDrag(event, measureHeight(event.currentTarget as HTMLElement));
+      beginDrag(event, measureHeight());
     },
     [beginDrag, measureHeight],
   );
@@ -480,11 +482,8 @@ export function useSheetGestures({
       if (delta > 0 && armed.scroller.scrollTop <= 0) {
         // Downward pull at the top: promote to a sheet drag, anchored at the
         // original pointer-down position so the pull distance carries over.
-        const sheetEl =
-          armed.scroller.closest<HTMLElement>('[data-astryx-sheet]') ??
-          armed.scroller;
         armedBodyRef.current = null;
-        beginDrag(event, measureHeight(sheetEl), armed.startCoord);
+        beginDrag(event, measureHeight(), armed.startCoord);
         handlePointerMove(event);
       } else if (delta < 0) {
         // Upward move = the user is scrolling; disarm so we don't hijack it.
@@ -606,12 +605,10 @@ export function useSheetGestures({
       const pullUpAtBottom = armed.bottom && delta < 0 && atBottom(scroller);
       if (pullDownAtTop || pullUpAtBottom) {
         event.preventDefault();
-        const sheetEl =
-          scroller.closest<HTMLElement>('[data-astryx-sheet]') ?? scroller;
         touchDragRef.current = null;
         beginDragRef.current(
           asPointer(t, scroller),
-          measureHeightRef.current(sheetEl),
+          measureHeightRef.current(),
           armed.startY,
         );
         pointerMoveRef.current(asPointer(t, scroller));

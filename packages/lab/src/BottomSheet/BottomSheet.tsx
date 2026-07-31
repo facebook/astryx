@@ -66,28 +66,12 @@ const HEIGHT_BUDGETS = {
 
 export type BottomSheetHeight = keyof typeof HEIGHT_BUDGETS;
 
-// Sheets on wide touch devices (tablets) shouldn't stretch edge to edge; cap
-// and center them. On phones the viewport is narrower than this, so the sheet
-// stays full-width.
-const MAX_SHEET_WIDTH = 640;
-
 // Overscroll allowance (px): the sheet extends this much lower than its budget
 // as reserved bottom padding, so a small upward drag past fully-open reveals
-// this padding instead of a gap.
+// this padding instead of a gap. Reused across several rules + synced to the
+// gesture cap, so it stays a named constant.
 // SYNC: must match OVERSCROLL_MAX in useSheetGestures.ts (the drag cap).
 const OVERSCROLL_PADDING = 48;
-
-// Backstop for the slide-out transition when releasing the modal on close, a
-// touch above `--duration-medium` (410ms) so `transitionend` normally fires
-// first and this only covers environments that don't emit it.
-const CLOSE_ANIMATION_MS = 450;
-
-// Grab-handle sizing. The whole strip is the drag target — a generous 48px
-// (`--spacing-12`, the top of the scale; above Apple's 44px HIG target and
-// twice WCAG 2.2 SC 2.5.8's 24px floor) with the pill centered in it. A full,
-// honest strip (no negative-margin overlap tricks) so the target is exactly
-// as tall as it looks and can't be undercut by the content below.
-const HANDLE_HIT_HEIGHT = spacingVars['--spacing-12']; // 48px target strip
 
 /**
  * Default snap detents in px, resolved against the *visual* viewport (like iOS
@@ -168,7 +152,9 @@ const styles = stylex.create({
     flexDirection: 'column',
     minHeight: 0,
     width: '100%',
-    maxWidth: MAX_SHEET_WIDTH,
+    // Cap + center on wide touch devices (tablets) so the sheet doesn't
+    // stretch edge to edge; phones are narrower than this so stay full-width.
+    maxWidth: 640,
     backgroundColor: colorVars['--color-background-surface'],
     borderStartStartRadius: radiusVars['--radius-page'],
     borderStartEndRadius: radiusVars['--radius-page'],
@@ -206,9 +192,11 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    // The full strip is the drag target — tall and centered so it's easy to
-    // grab and reads clearly as the resize affordance.
-    height: HANDLE_HIT_HEIGHT,
+    // The whole strip is the drag target — a generous 48px (top of the spacing
+    // scale; above Apple's 44px HIG target and twice WCAG 2.2 SC 2.5.8's 24px
+    // floor), with the pill centered. A full, honest strip (no negative-margin
+    // overlap) so the target is exactly as tall as it looks.
+    height: spacingVars['--spacing-12'],
     touchAction: 'none',
     cursor: 'grab',
   },
@@ -390,7 +378,9 @@ export function BottomSheet({
         }
       };
       sheet?.addEventListener('transitionend', onEnd);
-      const timer = setTimeout(finish, CLOSE_ANIMATION_MS);
+      // Backstop above --duration-medium (410ms) so transitionend normally
+      // fires first; this only covers environments that don't emit it.
+      const timer = setTimeout(finish, 450);
       return () => {
         clearTimeout(timer);
         sheet?.removeEventListener('transitionend', onEnd);
@@ -491,10 +481,7 @@ export function BottomSheet({
             aria-hidden="true">
             <div {...stylex.props(styles.handlePill)} />
           </div>
-          <div
-            data-astryx-sheet-body=""
-            {...stylex.props(styles.body)}
-            {...bodyProps}>
+          <div {...stylex.props(styles.body)} {...bodyProps}>
             {children}
           </div>
         </div>
