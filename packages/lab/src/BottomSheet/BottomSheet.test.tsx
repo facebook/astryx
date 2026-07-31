@@ -51,10 +51,17 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+function getSheet(): HTMLElement {
+  const sheet = document.querySelector<HTMLElement>('.astryx-bottom-sheet');
+  if (!sheet) {
+    throw new Error('sheet panel not found');
+  }
+  return sheet;
+}
+
+// The grab handle is the panel's first child (decorative, aria-hidden).
 function getHandle(): HTMLElement {
-  const handle = document.querySelector<HTMLElement>(
-    '[data-astryx-sheet-handle]',
-  );
+  const handle = getSheet().querySelector<HTMLElement>('[aria-hidden="true"]');
   if (!handle) {
     throw new Error('grab handle not found');
   }
@@ -230,7 +237,7 @@ describe('BottomSheet', () => {
           <button type="button">First action</button>
         </BottomSheet>,
       );
-      const panel = document.querySelector('[data-astryx-sheet]');
+      const panel = getSheet();
       expect(document.activeElement).toBe(panel);
       expect(document.activeElement).not.toBe(
         screen.getByRole('button', {name: 'First action'}),

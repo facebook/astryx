@@ -36,7 +36,6 @@ function pointerEvent(
 
 function makeTarget(): HTMLElement {
   const el = document.createElement('div');
-  el.setAttribute('data-astryx-sheet', '');
   el.setPointerCapture = vi.fn();
   el.releasePointerCapture = vi.fn();
   el.getBoundingClientRect = () => ({height: SHEET_HEIGHT}) as DOMRect;
@@ -189,22 +188,37 @@ describe('useSheetGestures', () => {
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 
-  it('reports dismiss progress ramping 0->1 through the close zone', () => {
-    const onDragProgress = vi.fn();
-    // Sheet height 400, one detent at 200 -> shortest-detent offset = 200,
-    // dismiss threshold = 200 + 0.4*200 = 280. Close zone spans offsets
-    // 200..280.
-    const {hook} = setup({snapHeights: () => [200], onDragProgress});
+  it('fades the scrim from full to hidden as it collapses onto the peek detent', () => {
+    const onScrimOpacity = vi.fn();
+    // Sheet 400, detents at 200 and 300 -> offsets [0, 100, 200]. The fade
+    // spans the mid detent (offset 100) to the peek detent (offset 200):
+    // full at/above 100, hidden at/below 200.
+    const {hook} = setup({snapHeights: () => [200, 300], onScrimOpacity});
     const t = makeTarget();
     down(hook, 0, 0, t);
-    move(hook, 100, 200, t); // offset 100, above the detent -> 0
-    move(hook, 240, 600, t); // offset 240, halfway into the zone -> ~0.5
-    move(hook, 320, 1000, t); // offset 320, past threshold -> clamped 1
-    const values = onDragProgress.mock.calls.map(c => c[0]);
-    expect(values[0]).toBe(0);
+    move(hook, 60, 200, t); // offset 60, above the mid detent -> full
+    move(hook, 150, 600, t); // offset 150, halfway through the fade -> ~0.5
+    move(hook, 220, 1000, t); // offset 220, past the peek -> hidden
+    const values = onScrimOpacity.mock.calls.map(c => c[0]);
+    expect(values[0]).toBe(1);
     expect(values[1]).toBeGreaterThan(0.4);
     expect(values[1]).toBeLessThan(0.6);
-    expect(values[values.length - 1]).toBe(1);
+    expect(values[values.length - 1]).toBe(0);
+  });
+
+  it('keeps the scrim hidden when settled at the peek detent', () => {
+    const onScrimOpacity = vi.fn();
+    const {hook} = setup({snapHeights: () => [200, 300], onScrimOpacity});
+    const t = makeTarget();
+    // Slow drag down to the peek detent (offset 200).
+    down(hook, 0, 0, t);
+    move(hook, 100, 400, t);
+    move(hook, 200, 900, t);
+    up(hook, 200, 1400, t);
+    expect(hook.result.current.settledOffset).toBe(200);
+    // Last reported opacity (on settle) is hidden.
+    const values = onScrimOpacity.mock.calls.map(c => c[0]);
+    expect(values[values.length - 1]).toBe(0);
   });
 
   it('magnetically settles the live drag onto a nearby detent', () => {
@@ -261,7 +275,6 @@ describe('useSheetGestures', () => {
     // A scrollable body element nested inside the sheet, with a settable
     // scrollTop so we can simulate "at the top" vs "scrolled".
     function makeBody(scrollTop: number) {
-      const sheet = makeTarget();
       const body = document.createElement('div');
       Object.defineProperty(body, 'scrollTop', {
         value: scrollTop,
@@ -270,8 +283,6 @@ describe('useSheetGestures', () => {
       body.setPointerCapture = vi.fn();
       body.releasePointerCapture = vi.fn();
       body.getBoundingClientRect = () => ({height: SHEET_HEIGHT}) as DOMRect;
-      body.closest = ((sel: string) =>
-        sel === '[data-astryx-sheet]' ? sheet : null) as HTMLElement['closest'];
       return body;
     }
     function bodyDown(hook: Hook, y: number, t: number, el: HTMLElement) {
@@ -332,8 +343,6 @@ describe('useSheetGestures', () => {
       Object.defineProperty(el, 'clientHeight', {value: opts.clientHeight});
       Object.defineProperty(el, 'scrollHeight', {value: opts.scrollHeight});
       el.getBoundingClientRect = () => ({height: SHEET_HEIGHT}) as DOMRect;
-      el.closest = ((sel: string) =>
-        sel === '[data-astryx-sheet]' ? sheet : null) as HTMLElement['closest'];
       sheet.appendChild(el);
       document.body.appendChild(sheet);
       return el;

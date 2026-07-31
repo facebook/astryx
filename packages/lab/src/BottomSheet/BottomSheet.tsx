@@ -47,8 +47,9 @@ import {useSheetGestures} from './useSheetGestures';
 // Detent fractions of the viewport, ascending (peek / mid / full). Detents
 // that land within DETENT_DEDUP_PX of each other (e.g. a hug height next to a
 // snap) are de-duped in the gesture hook, and any taller than the sheet are
-// dropped, so a full set is safe to offer.
-const SNAP_FRACTIONS = [0.3, 0.6, 0.92];
+// dropped, so a full set is safe to offer. The shortest is a glance "peek";
+// the scrim hides as the sheet collapses onto it (see onScrimOpacity).
+const SNAP_FRACTIONS = [0.14, 0.5, 0.92];
 
 /**
  * Height budget for each named size, as a fraction of the viewport:
@@ -291,11 +292,12 @@ export function BottomSheet({
   const sheetNodeRef = useRef<HTMLDivElement | null>(null);
   const close = useCallback(() => onOpenChange(false), [onOpenChange]);
 
-  // Set imperatively (not via state) so a 60fps drag doesn't re-render.
-  const handleDragProgress = useCallback((dismissProgress: number) => {
+  // Set imperatively (not via state) so a 60fps drag doesn't re-render. The
+  // hook reports the scrim opacity for the current detent (hidden at the peek).
+  const handleScrimOpacity = useCallback((opacity: number) => {
     dialogRef.current?.style.setProperty(
       '--_sheet-scrim-opacity',
-      String(1 - dismissProgress),
+      String(opacity),
     );
   }, []);
 
@@ -303,7 +305,7 @@ export function BottomSheet({
     isOpen,
     onDismiss: close,
     snapHeights: defaultSnapHeights,
-    onDragProgress: handleDragProgress,
+    onScrimOpacity: handleScrimOpacity,
   });
 
   // showModal() enters the top layer with a focus trap + ::backdrop; on close
@@ -425,7 +427,6 @@ export function BottomSheet({
       <div {...stylex.props(styles.positioner)}>
         <div
           ref={mergeRefs(sheetRef, sheetNodeRef)}
-          data-astryx-sheet=""
           tabIndex={-1}
           {...mergeProps(
             themeProps('bottom-sheet'),
@@ -442,7 +443,6 @@ export function BottomSheet({
             },
           )}>
           <div
-            data-astryx-sheet-handle=""
             {...stylex.props(styles.handleBar)}
             {...handleProps}
             aria-hidden="true">

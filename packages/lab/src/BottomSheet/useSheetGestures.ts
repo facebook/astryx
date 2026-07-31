@@ -36,7 +36,11 @@ import {
   type CSSProperties,
   type PointerEvent as ReactPointerEvent,
 } from 'react';
-import {computeDetentOffsets, resolveSettleOffset} from './snapOffsets';
+import {
+  computeDetentOffsets,
+  resolveSettleOffset,
+  scrimOpacityForOffset,
+} from './snapOffsets';
 
 // A flick (fast throw) dismisses (down) or expands (up) regardless of where
 // it ends. Requires both a speed and a distance floor so a small nudge
@@ -112,11 +116,13 @@ export interface UseSheetGesturesOptions {
   /** Notified when the settled detent height (px) changes. */
   onSnap?: (heightPx: number) => void;
   /**
-   * Called on every drag frame with how close the sheet is to dismissing:
-   * 0 while at or above the shortest detent, ramping to 1 as the drag crosses
-   * into the close zone below it. Drives affordances like fading the scrim.
+   * Called with the scrim opacity the sheet should show (1 = fully visible,
+   * 0 = hidden) as the drag moves and on settle. Full while the sheet is at
+   * or above its mid detent, fading to 0 as it collapses onto the shortest
+   * "peek" detent — so a glance-height sheet reveals the content behind — and
+   * on the dismiss overshoot. Lets the owner mirror it onto the scrim.
    */
-  onDragProgress?: (dismissProgress: number) => void;
+  onScrimOpacity?: (opacity: number) => void;
 }
 
 export interface SheetContentProps {
@@ -195,7 +201,7 @@ export function useSheetGestures({
   onDismiss,
   snapHeights,
   onSnap,
-  onDragProgress,
+  onScrimOpacity,
 }: UseSheetGesturesOptions): UseSheetGesturesResult {
   const [dragOffset, setDragOffset] = useState(0);
   const [settledOffset, setSettledOffset] = useState(0);
@@ -203,12 +209,12 @@ export function useSheetGestures({
 
   const onDismissRef = useRef(onDismiss);
   const onSnapRef = useRef(onSnap);
-  const onDragProgressRef = useRef(onDragProgress);
+  const onScrimOpacityRef = useRef(onScrimOpacity);
   const snapHeightsRef = useRef(snapHeights);
   useEffect(() => {
     onDismissRef.current = onDismiss;
     onSnapRef.current = onSnap;
-    onDragProgressRef.current = onDragProgress;
+    onScrimOpacityRef.current = onScrimOpacity;
     snapHeightsRef.current = snapHeights;
   });
 
@@ -301,6 +307,7 @@ export function useSheetGestures({
       if (dir < 0 && isFlick) {
         setSettledOffset(0);
         onSnapRef.current?.(height);
+        onScrimOpacityRef.current?.(1);
         hapticTick();
         return;
       }
@@ -313,6 +320,12 @@ export function useSheetGestures({
       const target = resolveSettleOffset(offset, offsets, dir, baseOffset);
       setSettledOffset(target);
       onSnapRef.current?.(height - target);
+      // Keep the scrim in sync with the resting detent (hidden at the peek).
+      const dismissOffset =
+        maxOffset + shortestDetentHeight * DISMISS_OVERSHOOT_RATIO;
+      onScrimOpacityRef.current?.(
+        scrimOpacityForOffset(target, offsets, dismissOffset),
+      );
       // Haptic "tick" when landing on a different detent (where supported).
       if (target !== baseOffset) {
         hapticTick();
@@ -383,15 +396,16 @@ export function useSheetGestures({
       }
       setDragOffset(next);
 
-      // Report dismiss progress (0 at the shortest detent, 1 at the threshold)
-      // so the owner can fade the scrim.
+      // Mirror the scrim to the live drag: full at/above the mid detent,
+      // fading to hidden as it collapses onto the peek detent and through the
+      // dismiss overshoot.
       const floorOffset = offsets[offsets.length - 1];
       const shortestDetentHeight = state.height - floorOffset;
-      const dismissAt =
+      const dismissOffset =
         floorOffset + shortestDetentHeight * DISMISS_OVERSHOOT_RATIO;
-      const zone = dismissAt - floorOffset;
-      const progress = zone > 0 ? (next - floorOffset) / zone : 0;
-      onDragProgressRef.current?.(Math.min(1, Math.max(0, progress)));
+      onScrimOpacityRef.current?.(
+        scrimOpacityForOffset(next, offsets, dismissOffset),
+      );
     },
     [detentOffsets],
   );
@@ -409,8 +423,6 @@ export function useSheetGestures({
       const dir = delta === 0 ? 0 : delta > 0 ? 1 : -1;
       dragStateRef.current = null;
       setIsDragging(false);
-      // Clear the close-zone hint; if we don't dismiss, the scrim restores.
-      onDragProgressRef.current?.(0);
       settleFromDrag(
         offset,
         state.velocity,

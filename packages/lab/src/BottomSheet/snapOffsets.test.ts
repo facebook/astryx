@@ -15,6 +15,7 @@ import {
   computeDetentOffsets,
   nearestOffset,
   resolveSettleOffset,
+  scrimOpacityForOffset,
   DETENT_DEDUP_PX,
 } from './snapOffsets';
 
@@ -95,6 +96,46 @@ describe('resolveSettleOffset', () => {
 
   it('with no direction, picks the plain nearest', () => {
     expect(resolveSettleOffset(180, offsets, 0, 200)).toBe(200);
+  });
+});
+
+describe('scrimOpacityForOffset', () => {
+  describe('with a peek detent (>= 2 detents)', () => {
+    const offsets = [0, 100, 200]; // full, mid, peek
+    const dismissOffset = 280;
+
+    it('is full at or above the mid detent', () => {
+      expect(scrimOpacityForOffset(0, offsets, dismissOffset)).toBe(1);
+      expect(scrimOpacityForOffset(100, offsets, dismissOffset)).toBe(1);
+      expect(scrimOpacityForOffset(60, offsets, dismissOffset)).toBe(1);
+    });
+
+    it('fades linearly from the mid detent to the peek', () => {
+      expect(scrimOpacityForOffset(150, offsets, dismissOffset)).toBeCloseTo(
+        0.5,
+      );
+    });
+
+    it('is hidden at or below the peek detent', () => {
+      expect(scrimOpacityForOffset(200, offsets, dismissOffset)).toBe(0);
+      expect(scrimOpacityForOffset(240, offsets, dismissOffset)).toBe(0);
+    });
+  });
+
+  describe('with a single detent (no peek)', () => {
+    const offsets = [0];
+    const dismissOffset = 160;
+
+    it('stays full until the drag begins collapsing', () => {
+      expect(scrimOpacityForOffset(0, offsets, dismissOffset)).toBe(1);
+    });
+
+    it('fades across the dismiss overshoot toward the threshold', () => {
+      expect(scrimOpacityForOffset(80, offsets, dismissOffset)).toBeCloseTo(
+        0.5,
+      );
+      expect(scrimOpacityForOffset(160, offsets, dismissOffset)).toBe(0);
+    });
   });
 });
 

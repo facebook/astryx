@@ -74,6 +74,31 @@ export function nearestOffset(
 }
 
 /**
+ * Scrim opacity (1 = fully visible, 0 = hidden) for a drag/settle `offset`.
+ * The scrim stays full while the sheet is at or above its second-shortest
+ * detent, then fades to 0 as it collapses onto the shortest ("peek") detent —
+ * a glance state that reveals the content behind — and stays hidden below it.
+ * A single-detent sheet has no peek, so it instead fades across the dismiss
+ * overshoot toward `dismissOffset`.
+ */
+export function scrimOpacityForOffset(
+  offset: number,
+  offsets: readonly number[],
+  dismissOffset: number,
+): number {
+  const shortest = offsets[offsets.length - 1];
+  const fadeStart = offsets.length >= 2 ? offsets[offsets.length - 2] : 0;
+  const fadeEnd = offsets.length >= 2 ? shortest : dismissOffset;
+  if (offset <= fadeStart) {
+    return 1;
+  }
+  if (offset >= fadeEnd) {
+    return 0;
+  }
+  return 1 - (offset - fadeStart) / (fadeEnd - fadeStart);
+}
+
+/**
  * Settle target for a released drag. Restricts candidates to the drag
  * direction so a committed drag never snaps *back past* where it started
  * (a down-drag settles at/below the start, an up-drag at/above), then picks
