@@ -89,12 +89,12 @@ describe('DropdownMenuSubMenu', () => {
       name: /Move to/,
       hidden: true,
     });
-    // The menu focuses its first item (Rename) on open via rAF; wait for that
-    // to settle before moving focus to the submenu trigger, so the deferred
-    // focus can't steal it back mid-test.
+    // A pointer open focuses the menu container via rAF (#4477); wait for
+    // that to settle before moving focus to the submenu trigger, so the
+    // deferred focus can't steal it back mid-test.
     await waitFor(() => {
       expect(
-        screen.getByRole('menuitem', {name: 'Rename', hidden: true}),
+        screen.getByRole('menu', {name: 'Actions', hidden: true}),
       ).toHaveFocus();
     });
     trigger.focus();
@@ -176,11 +176,12 @@ describe('DropdownMenuSubMenu', () => {
       name: /Move to/,
       hidden: true,
     });
-    // Let the root menu's open-focus (Rename, via rAF) settle before moving
-    // focus to the submenu trigger, so it can't steal focus back mid-test.
+    // Let the root menu's pointer-open focus (the container, via rAF) settle
+    // before moving focus to the submenu trigger, so it can't steal focus
+    // back mid-test.
     await waitFor(() => {
       expect(
-        screen.getByRole('menuitem', {name: 'Rename', hidden: true}),
+        screen.getByRole('menu', {name: 'Actions', hidden: true}),
       ).toHaveFocus();
     });
     trigger.focus();
@@ -234,6 +235,13 @@ describe('DropdownMenuSubMenu', () => {
     const trigger = screen.getByRole('menuitem', {
       name: /Move to/,
       hidden: true,
+    });
+    // Let the pointer-open container focus (rAF, #4477) settle so it can't
+    // steal focus from the manually focused trigger mid-test.
+    await waitFor(() => {
+      expect(
+        screen.getByRole('menu', {name: 'Actions', hidden: true}),
+      ).toHaveFocus();
     });
     trigger.focus();
     await user.keyboard('{ArrowRight}');
@@ -334,13 +342,20 @@ describe('DropdownMenu data-driven submenus', () => {
       />,
     );
     await user.click(screen.getByRole('button', {name: /Actions/}));
+    // Pointer open focuses the container (#4477); the first ArrowDown then
+    // moves onto Rename.
+    await waitFor(() => {
+      expect(
+        screen.getByRole('menu', {name: 'Actions', hidden: true}),
+      ).toHaveFocus();
+    });
+    await user.keyboard('{ArrowDown}');
     await waitFor(() => {
       expect(
         screen.getByRole('menuitem', {name: 'Rename', hidden: true}),
       ).toHaveFocus();
     });
-    // Rename → Move to → Delete (three ArrowDowns, no stalling on hidden
-    // flyout items).
+    // Rename → Move to → Delete (no stalling on hidden flyout items).
     await user.keyboard('{ArrowDown}');
     await waitFor(() => {
       expect(
@@ -372,7 +387,7 @@ describe('DropdownMenuSubMenu accessibility (WCAG 2.2 / APG)', () => {
     });
     await waitFor(() => {
       expect(
-        screen.getByRole('menuitem', {name: 'Rename', hidden: true}),
+        screen.getByRole('menu', {name: 'Actions', hidden: true}),
       ).toHaveFocus();
     });
     trigger.focus();
@@ -408,6 +423,13 @@ describe('DropdownMenuSubMenu accessibility (WCAG 2.2 / APG)', () => {
     const trigger = screen.getByRole('menuitem', {
       name: /Move to/,
       hidden: true,
+    });
+    // Let the pointer-open container focus (rAF, #4477) settle so it can't
+    // steal focus from the manually focused trigger mid-test.
+    await waitFor(() => {
+      expect(
+        screen.getByRole('menu', {name: 'Actions', hidden: true}),
+      ).toHaveFocus();
     });
     trigger.focus();
     await user.keyboard('{ArrowRight}');
@@ -463,11 +485,12 @@ describe('DropdownMenuSubMenu accessibility (WCAG 2.2 / APG)', () => {
       name: /Share to/,
       hidden: true,
     });
-    // Let the root menu's open-focus (Copy link, via rAF) settle first so it
-    // can't steal focus back after we move to the submenu trigger.
+    // Let the root menu's pointer-open focus (the container, via rAF, #4477)
+    // settle first so it can't steal focus back after we move to the submenu
+    // trigger.
     await waitFor(() => {
       expect(
-        screen.getByRole('menuitem', {name: 'Copy link', hidden: true}),
+        screen.getByRole('menu', {name: 'Share', hidden: true}),
       ).toHaveFocus();
     });
     shareTo.focus();
@@ -584,7 +607,7 @@ describe('DropdownMenuSubMenu accessibility (WCAG 2.2 / APG)', () => {
     });
     await waitFor(() => {
       expect(
-        screen.getByRole('menuitem', {name: 'Rename', hidden: true}),
+        screen.getByRole('menu', {name: 'Actions', hidden: true}),
       ).toHaveFocus();
     });
     trigger.focus();
@@ -649,6 +672,13 @@ describe('DropdownMenuSubMenu accessibility (WCAG 2.2 / APG)', () => {
     const trigger = screen.getByRole('menuitem', {
       name: /Move to/,
       hidden: true,
+    });
+    // Let the pointer-open container focus (rAF, #4477) settle so it can't
+    // steal focus from the manually focused trigger mid-test.
+    await waitFor(() => {
+      expect(
+        screen.getByRole('menu', {name: 'Actions', hidden: true}),
+      ).toHaveFocus();
     });
     trigger.focus();
     await user.keyboard('{ArrowRight}');
