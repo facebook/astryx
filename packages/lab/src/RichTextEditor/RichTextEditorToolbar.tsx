@@ -24,6 +24,13 @@
  * `@lexical/*` are OPTIONAL peer dependencies — install them to use this.
  * Behavior mirrors the Lexical playground toolbar (selection sync + format
  * commands); the UI is built from Astryx primitives so it matches the theme.
+ *
+ * ICONS: Each control resolves its glyph through the core icon registry under a
+ * stable `richtext:*` key (see {@link RICHTEXT_ICON_KEYS}), falling back to the
+ * bundled inline SVGs below. A theme can restyle any glyph by registering its
+ * own icon for that key — no need to fork the toolbar:
+ *   import {registerIcons} from '@astryxdesign/core/Icon';
+ *   registerIcons({'richtext:bold': <MyBoldIcon />});
  */
 
 import {useCallback, useEffect, useState, type ReactNode} from 'react';
@@ -47,6 +54,7 @@ import {$getNearestNodeOfType, mergeRegister} from '@lexical/utils';
 import {Toolbar} from '@astryxdesign/core/Toolbar';
 import {ToggleButton} from '@astryxdesign/core/ToggleButton';
 import {Divider} from '@astryxdesign/core/Divider';
+import {getExtendedIcon} from '@astryxdesign/core/Icon';
 import {
   FORMAT_TEXT_COMMAND,
   UNDO_COMMAND,
@@ -62,13 +70,7 @@ import {
 
 /** Block types the toolbar can toggle. */
 type BlockType =
-  | 'paragraph'
-  | 'h1'
-  | 'h2'
-  | 'h3'
-  | 'quote'
-  | 'bullet'
-  | 'number';
+  'paragraph' | 'h1' | 'h2' | 'h3' | 'quote' | 'bullet' | 'number';
 
 const HEADING_LABELS: Record<'h1' | 'h2' | 'h3', string> = {
   h1: 'Heading 1',
@@ -76,10 +78,41 @@ const HEADING_LABELS: Record<'h1' | 'h2' | 'h3', string> = {
   h3: 'Heading 3',
 };
 
-/** 16px inline icons — no external icon dependency. */
-const icons: Record<string, ReactNode> = {
+/**
+ * Stable icon-registry keys for the toolbar's controls. Themes can override any
+ * of these via `registerIcons({'richtext:bold': <MyIcon />})` from
+ * `@astryxdesign/core/Icon`. Keys are namespaced (`richtext:*`) to avoid
+ * collisions with the core semantic icon set.
+ */
+export const RICHTEXT_ICON_KEYS = {
+  bold: 'richtext:bold',
+  italic: 'richtext:italic',
+  underline: 'richtext:underline',
+  strikethrough: 'richtext:strikethrough',
+  code: 'richtext:code',
+  h1: 'richtext:h1',
+  h2: 'richtext:h2',
+  h3: 'richtext:h3',
+  quote: 'richtext:quote',
+  bullet: 'richtext:bullet',
+  number: 'richtext:number',
+  undo: 'richtext:undo',
+  redo: 'richtext:redo',
+} as const;
+
+/**
+ * Bundled 16px inline default icons — no external icon dependency. These are
+ * the fallbacks used when a theme hasn't registered an override for the
+ * corresponding {@link RICHTEXT_ICON_KEYS} entry.
+ */
+const defaultToolbarIcons: Record<string, ReactNode> = {
   bold: (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true">
       <path
         d="M6 4h7a4 4 0 0 1 0 8H6zM6 12h8a4 4 0 0 1 0 8H6z"
         stroke="currentColor"
@@ -89,7 +122,12 @@ const icons: Record<string, ReactNode> = {
     </svg>
   ),
   italic: (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true">
       <path
         d="M10 4h6M8 20h6M14 4l-4 16"
         stroke="currentColor"
@@ -99,7 +137,12 @@ const icons: Record<string, ReactNode> = {
     </svg>
   ),
   underline: (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true">
       <path
         d="M6 4v6a6 6 0 0 0 12 0V4M5 21h14"
         stroke="currentColor"
@@ -109,7 +152,12 @@ const icons: Record<string, ReactNode> = {
     </svg>
   ),
   strikethrough: (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true">
       <path
         d="M4 12h16M8 6a4 3 0 0 1 8 0M8 16a4 3 0 0 0 8 0"
         stroke="currentColor"
@@ -119,7 +167,12 @@ const icons: Record<string, ReactNode> = {
     </svg>
   ),
   code: (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true">
       <path
         d="M9 8l-4 4 4 4M15 8l4 4-4 4"
         stroke="currentColor"
@@ -133,7 +186,12 @@ const icons: Record<string, ReactNode> = {
   h2: <TextGlyph label="H2" />,
   h3: <TextGlyph label="H3" />,
   quote: (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true">
       <path
         d="M6 17h3l2-4V7H5v6h3zM15 17h3l2-4V7h-6v6h3z"
         stroke="currentColor"
@@ -143,23 +201,54 @@ const icons: Record<string, ReactNode> = {
     </svg>
   ),
   bullet: (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M9 6h11M9 12h11M9 18h11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true">
+      <path
+        d="M9 6h11M9 12h11M9 18h11"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
       <circle cx="4.5" cy="6" r="1.5" fill="currentColor" />
       <circle cx="4.5" cy="12" r="1.5" fill="currentColor" />
       <circle cx="4.5" cy="18" r="1.5" fill="currentColor" />
     </svg>
   ),
   number: (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M10 6h10M10 12h10M10 18h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-      <text x="2" y="8" fontSize="6" fill="currentColor">1</text>
-      <text x="2" y="14" fontSize="6" fill="currentColor">2</text>
-      <text x="2" y="20" fontSize="6" fill="currentColor">3</text>
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true">
+      <path
+        d="M10 6h10M10 12h10M10 18h10"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <text x="2" y="8" fontSize="6" fill="currentColor">
+        1
+      </text>
+      <text x="2" y="14" fontSize="6" fill="currentColor">
+        2
+      </text>
+      <text x="2" y="20" fontSize="6" fill="currentColor">
+        3
+      </text>
     </svg>
   ),
   undo: (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true">
       <path
         d="M9 7L4 12l5 5M4 12h11a5 5 0 0 1 0 10"
         stroke="currentColor"
@@ -170,7 +259,12 @@ const icons: Record<string, ReactNode> = {
     </svg>
   ),
   redo: (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true">
       <path
         d="M15 7l5 5-5 5M20 12H9a5 5 0 0 0 0 10"
         stroke="currentColor"
@@ -195,6 +289,14 @@ function TextGlyph({label}: {label: string}) {
       {label}
     </span>
   );
+}
+
+/**
+ * Resolve a toolbar glyph: prefer a theme-registered icon for the stable
+ * `richtext:*` key, otherwise fall back to the bundled inline default.
+ */
+function resolveIcon(name: keyof typeof RICHTEXT_ICON_KEYS): ReactNode {
+  return getExtendedIcon(RICHTEXT_ICON_KEYS[name], defaultToolbarIcons[name]);
 }
 
 export interface RichTextEditorToolbarProps {
@@ -277,7 +379,9 @@ export function RichTextEditorToolbar({
         : anchorNode.getTopLevelElementOrThrow();
     if ($isListNode(element)) {
       const parentList = $getNearestNodeOfType<ListNode>(anchorNode, ListNode);
-      const type = parentList ? parentList.getListType() : element.getListType();
+      const type = parentList
+        ? parentList.getListType()
+        : element.getListType();
       setBlockType(type === 'number' ? 'number' : 'bullet');
     } else if ($isHeadingNode(element)) {
       setBlockType(element.getTag() as BlockType);
@@ -303,7 +407,7 @@ export function RichTextEditorToolbar({
       ),
       editor.registerCommand(
         CAN_UNDO_COMMAND,
-        (payload) => {
+        payload => {
           setCanUndo(payload);
           return false;
         },
@@ -311,13 +415,13 @@ export function RichTextEditorToolbar({
       ),
       editor.registerCommand(
         CAN_REDO_COMMAND,
-        (payload) => {
+        payload => {
           setCanRedo(payload);
           return false;
         },
         COMMAND_PRIORITY_CRITICAL,
       ),
-      editor.registerEditableListener((editable) => {
+      editor.registerEditableListener(editable => {
         setIsEditable(editable);
       }),
     );
@@ -379,7 +483,7 @@ export function RichTextEditorToolbar({
         <>
           <ToggleButton
             label="Undo"
-            icon={icons.undo}
+            icon={resolveIcon('undo')}
             isIconOnly
             isPressed={false}
             isDisabled={!isEditable || !canUndo}
@@ -389,7 +493,7 @@ export function RichTextEditorToolbar({
           />
           <ToggleButton
             label="Redo"
-            icon={icons.redo}
+            icon={resolveIcon('redo')}
             isIconOnly
             isPressed={false}
             isDisabled={!isEditable || !canRedo}
@@ -400,7 +504,7 @@ export function RichTextEditorToolbar({
           <Divider orientation="vertical" />
           <ToggleButton
             label="Bold"
-            icon={icons.bold}
+            icon={resolveIcon('bold')}
             isIconOnly
             isPressed={activeFormats.has('bold')}
             isDisabled={!isEditable}
@@ -408,7 +512,7 @@ export function RichTextEditorToolbar({
           />
           <ToggleButton
             label="Italic"
-            icon={icons.italic}
+            icon={resolveIcon('italic')}
             isIconOnly
             isPressed={activeFormats.has('italic')}
             isDisabled={!isEditable}
@@ -416,7 +520,7 @@ export function RichTextEditorToolbar({
           />
           <ToggleButton
             label="Underline"
-            icon={icons.underline}
+            icon={resolveIcon('underline')}
             isIconOnly
             isPressed={activeFormats.has('underline')}
             isDisabled={!isEditable}
@@ -424,7 +528,7 @@ export function RichTextEditorToolbar({
           />
           <ToggleButton
             label="Strikethrough"
-            icon={icons.strikethrough}
+            icon={resolveIcon('strikethrough')}
             isIconOnly
             isPressed={activeFormats.has('strikethrough')}
             isDisabled={!isEditable}
@@ -432,18 +536,18 @@ export function RichTextEditorToolbar({
           />
           <ToggleButton
             label="Inline code"
-            icon={icons.code}
+            icon={resolveIcon('code')}
             isIconOnly
             isPressed={activeFormats.has('code')}
             isDisabled={!isEditable}
             onPressedChange={() => toggleInlineFormat('code')}
           />
           <Divider orientation="vertical" />
-          {headingLevels.map((level) => (
+          {headingLevels.map(level => (
             <ToggleButton
               key={level}
               label={HEADING_LABELS[level]}
-              icon={icons[level]}
+              icon={resolveIcon(level)}
               isIconOnly
               isPressed={blockType === level}
               isDisabled={!isEditable}
@@ -452,7 +556,7 @@ export function RichTextEditorToolbar({
           ))}
           <ToggleButton
             label="Quote"
-            icon={icons.quote}
+            icon={resolveIcon('quote')}
             isIconOnly
             isPressed={blockType === 'quote'}
             isDisabled={!isEditable}
@@ -461,7 +565,7 @@ export function RichTextEditorToolbar({
           <Divider orientation="vertical" />
           <ToggleButton
             label="Bulleted list"
-            icon={icons.bullet}
+            icon={resolveIcon('bullet')}
             isIconOnly
             isPressed={blockType === 'bullet'}
             isDisabled={!isEditable}
@@ -469,7 +573,7 @@ export function RichTextEditorToolbar({
           />
           <ToggleButton
             label="Numbered list"
-            icon={icons.number}
+            icon={resolveIcon('number')}
             isIconOnly
             isPressed={blockType === 'number'}
             isDisabled={!isEditable}

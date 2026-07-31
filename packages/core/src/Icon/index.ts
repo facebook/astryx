@@ -20,10 +20,12 @@ export {
   registerIcons,
   getIconRegistry,
   getIcon,
+  getExtendedIcon,
   resetIcons,
 } from './globalIconRegistry';
 export type {
   IconName,
+  ExtendedIconName,
   IconRegistry,
   IconRegistrySource,
 } from './globalIconRegistry';

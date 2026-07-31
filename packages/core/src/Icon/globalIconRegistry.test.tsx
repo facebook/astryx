@@ -9,6 +9,7 @@ import {
   registerIcons,
   getIconRegistry,
   getIcon,
+  getExtendedIcon,
   resetIcons,
 } from './globalIconRegistry';
 
@@ -122,5 +123,39 @@ describe('iconRegistry (global, RSC-compatible)', () => {
     resetIcons();
     // Should fall back to default
     expect(getIcon('close')).not.toBe('custom');
+  });
+
+  describe('extension keys', () => {
+    it('registers and resolves library-contributed keys', () => {
+      registerIcons({'richtext:bold': 'my-bold'});
+      expect(getIcon('richtext:bold')).toBe('my-bold');
+      expect(getExtendedIcon('richtext:bold')).toBe('my-bold');
+    });
+
+    it('getExtendedIcon returns the caller fallback when unregistered', () => {
+      expect(getExtendedIcon('richtext:bold', 'inline-svg')).toBe('inline-svg');
+    });
+
+    it('getExtendedIcon prefers a registered icon over the fallback', () => {
+      registerIcons({'richtext:bold': 'theme-bold'});
+      expect(getExtendedIcon('richtext:bold', 'inline-svg')).toBe('theme-bold');
+    });
+
+    it('getExtendedIcon still resolves built-in defaults', () => {
+      expect(getExtendedIcon('close', 'fallback')).toBe(defaultIcons.close);
+    });
+
+    it('extension keys do not leak into the built-in registry snapshot', () => {
+      registerIcons({'richtext:bold': 'my-bold'});
+      // getIconRegistry() is the built-in IconName snapshot; extension keys
+      // are resolved via getIcon/getExtendedIcon, not surfaced here.
+      expect(Object.keys(getIconRegistry())).toEqual(Object.keys(defaultIcons));
+    });
+
+    it('extension keys are cleared by resetIcons', () => {
+      registerIcons({'richtext:bold': 'my-bold'});
+      resetIcons();
+      expect(getExtendedIcon('richtext:bold', 'fallback')).toBe('fallback');
+    });
   });
 });

@@ -56,6 +56,17 @@ export type IconName =
   | 'microphone';
 
 /**
+ * A semantic icon name — either one of the built-in {@link IconName}s or an
+ * arbitrary string key contributed by a library/app.
+ *
+ * The `(string & {})` intersection keeps the built-in names available for
+ * autocomplete while still allowing any string, so downstream libraries can
+ * register and resolve their own keys (e.g. `'richtext:bold'`) without having
+ * to widen the core `IconName` union.
+ */
+export type ExtendedIconName = IconName | (string & {});
+
+/**
  * Icon registry mapping semantic names to React nodes.
  */
 export type IconRegistry = Record<IconName, ReactNode>;
@@ -66,7 +77,7 @@ export type IconRegistrySource = DefinedTheme | string | null | undefined;
 // Global Registry
 // =============================================================================
 
-let globalRegistry: Partial<IconRegistry> = {};
+let globalRegistry: Record<string, ReactNode> = {};
 
 function getThemeIconOverrides(
   source: IconRegistrySource,
@@ -95,8 +106,19 @@ function getThemeIconOverrides(
  * import { brandIcons } from './brand-icons';
  * registerIcons(brandIcons);
  * ```
+ *
+ * Libraries may also register their own extension keys (any string), so a
+ * theme can override them the same way it overrides built-in icons:
+ * @example
+ * ```
+ * // In a library that ships its own icons:
+ * registerIcons({ 'richtext:bold': <MyBoldIcon /> });
+ * // resolve with getIcon('richtext:bold')
+ * ```
  */
-export function registerIcons(icons: Partial<IconRegistry>): void {
+export function registerIcons(
+  icons: Partial<Record<ExtendedIconName, ReactNode>>,
+): void {
   warnOnce(
     'icon-registry:global-register-icons',
     'Icon',
@@ -118,7 +140,10 @@ export function getIconRegistry(
 ): Readonly<IconRegistry> {
   const registry = {...defaultIcons};
 
-  for (const name of Object.keys(globalRegistry) as IconName[]) {
+  // Only surface built-in IconName keys here — extension keys registered by
+  // libraries are resolved via getIcon/getExtendedIcon and intentionally kept
+  // out of the typed IconRegistry snapshot.
+  for (const name of Object.keys(defaultIcons) as IconName[]) {
     registry[name] = globalRegistry[name] ?? defaultIcons[name];
   }
 
@@ -137,13 +162,51 @@ export function getIconRegistry(
  *
  * Works in both server and client environments.
  * Falls back to built-in default icons when no override is registered.
+ *
+ * Accepts extension keys (any string) in addition to the built-in
+ * {@link IconName}s — useful for library-contributed icons. For a
+ * caller-supplied fallback when a key isn't registered, use
+ * {@link getExtendedIcon}.
  */
 export function getIcon(
-  name: IconName,
+  name: ExtendedIconName,
   source?: IconRegistrySource,
 ): ReactNode {
   const themeIcons = getThemeIconOverrides(source);
-  return themeIcons?.[name] ?? globalRegistry[name] ?? defaultIcons[name];
+  return (
+    themeIcons?.[name as IconName] ??
+    globalRegistry[name] ??
+    defaultIcons[name as IconName]
+  );
+}
+
+/**
+ * Resolve an extension icon by an arbitrary string key, falling back to a
+ * caller-supplied default when nothing is registered.
+ *
+ * This is the seam libraries use to make their own icons themeable: ship the
+ * inline SVG as `fallback`, resolve through this function, and a theme can
+ * override the key via {@link registerIcons} without the library having to
+ * widen the core {@link IconName} union.
+ *
+ * @example
+ * ```
+ * // Library default, overridable by a theme registering 'richtext:bold':
+ * getExtendedIcon('richtext:bold', <BoldGlyph />)
+ * ```
+ */
+export function getExtendedIcon(
+  name: ExtendedIconName,
+  fallback?: ReactNode,
+  source?: IconRegistrySource,
+): ReactNode {
+  const themeIcons = getThemeIconOverrides(source);
+  return (
+    themeIcons?.[name as IconName] ??
+    globalRegistry[name] ??
+    defaultIcons[name as IconName] ??
+    fallback
+  );
 }
 
 /**
