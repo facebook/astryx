@@ -15,6 +15,8 @@ const meta: Meta<typeof Timestamp> = {
         'relative',
         'auto',
         'date',
+        'date_long',
+        'date_weekday',
         'date_time',
         'time',
         'system_date',
@@ -122,6 +124,20 @@ export const DateFormat: Story = {
   },
 };
 
+export const DateLongFormat: Story = {
+  args: {
+    value: '2026-02-19T17:00:00Z',
+    format: 'date_long',
+  },
+};
+
+export const DateWeekdayFormat: Story = {
+  args: {
+    value: '2026-02-19T17:00:00Z',
+    format: 'date_weekday',
+  },
+};
+
 export const DateTimeFormat: Story = {
   args: {
     value: '2026-02-19T17:00:00Z',
@@ -142,6 +158,80 @@ export const TimeFormat: Story = {
     value: '2026-02-19T17:00:00Z',
     format: 'time',
   },
+};
+
+export const TooltipTimezones: Story = {
+  name: 'Tooltip — multiple time zones',
+  render: () => (
+    <div style={{display: 'flex', flexDirection: 'column', gap: '32px'}}>
+      <div>
+        <Text type="supporting" color="secondary">
+          Local + UTC, default format — hover or tab to the timestamp
+        </Text>
+        <div>
+          <Timestamp
+            value="2026-02-19T17:00:00Z"
+            format="relative"
+            tooltipEntries={[
+              {label: 'Local'},
+              {timezoneID: 'UTC', label: 'UTC'},
+            ]}
+          />
+        </div>
+      </div>
+      <div>
+        <Text type="supporting" color="secondary">
+          Three labelled zones — the widest case the 300px tooltip holds
+        </Text>
+        <div>
+          <Timestamp
+            value="2026-02-19T17:00:00Z"
+            format="date"
+            tooltipEntries={[
+              {
+                timezoneID: 'America/New_York',
+                format: 'date_time',
+                label: 'New York',
+              },
+              {
+                timezoneID: 'Europe/London',
+                format: 'date_time',
+                label: 'London',
+              },
+              {timezoneID: 'Asia/Tokyo', format: 'date_time', label: 'Tokyo'},
+            ]}
+          />
+        </div>
+      </div>
+      <div>
+        <Text type="supporting" color="secondary">
+          One zone, two formats — friendly line plus a machine-precise line
+        </Text>
+        <div>
+          <Timestamp
+            value="2026-02-19T17:00:00Z"
+            format="date_time"
+            tooltipEntries={[
+              {format: 'full'},
+              {format: 'system_date_time', label: 'ISO'},
+            ]}
+          />
+        </div>
+      </div>
+      <div>
+        <Text type="supporting" color="secondary">
+          UTC only — an audit log that never shows local time
+        </Text>
+        <div>
+          <Timestamp
+            value="2026-02-19T17:00:00Z"
+            format="date_time"
+            tooltipEntries={[{timezoneID: 'UTC', label: 'UTC'}]}
+          />
+        </div>
+      </div>
+    </div>
+  ),
 };
 
 export const SystemFormats: Story = {
@@ -197,6 +287,18 @@ export const AllFormats: Story = {
             date:{' '}
           </Text>
           <Timestamp value={date} format="date" />
+        </div>
+        <div>
+          <Text type="label" color="secondary">
+            date_long:{' '}
+          </Text>
+          <Timestamp value={date} format="date_long" />
+        </div>
+        <div>
+          <Text type="label" color="secondary">
+            date_weekday:{' '}
+          </Text>
+          <Timestamp value={date} format="date_weekday" />
         </div>
         <div>
           <Text type="label" color="secondary">

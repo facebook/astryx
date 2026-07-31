@@ -8,19 +8,19 @@
  */
 
 /**
- * Semantic color status for a step. Controls **color only** — it maps directly
- * onto the Astryx global semantic color tokens and does not change layout,
- * iconography, or behavior.
+ * Semantic status for a step, mapped directly onto the Astryx global semantic
+ * tokens. In the default `auto` indicator mode it sets both the indicator color
+ * and a matching glyph (see below); it never recolors the connector/track.
  *
  * Plain string values aligned with the global token semantics:
- * - 'accent'  → `--color-accent`  (default emphasis / in-progress)
- * - 'success' → `--color-success` (a positively-resolved step)
- * - 'warning' → `--color-warning` (needs attention)
- * - 'error'   → `--color-error`   (must be resolved)
+ * - 'accent'  → `--color-accent`  (default emphasis / in-progress; color only)
+ * - 'success' → `--color-success` (green check-circle glyph)
+ * - 'warning' → `--color-warning` (shared Input `warning` glyph)
+ * - 'error'   → `--color-error`   (shared Input `error` glyph)
  *
  * `status` is intentionally NOT a lifecycle enum (completed/active/etc.) — the
- * step's progress is derived from the parent's `activeStep`. Use `status` only
- * when you want to tint a step with a specific semantic color, e.g.
- * `status="error"`.
+ * step's progress is derived from the parent's `activeStep`. The current
+ * (in-progress) step always keeps its current-step indicator regardless of
+ * `status`.
  */
 export type StepStatus = 'accent' | 'success' | 'warning' | 'error';

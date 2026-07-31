@@ -24,7 +24,7 @@ export default function AvatarGroupOverflowCustomText() {
       <Text type="supporting" color="secondary">
         Team members
       </Text>
-      <AvatarGroup size="medium">
+      <AvatarGroup size="lg">
         {TEAM.map(member => (
           <Avatar key={member.name} name={member.name} />
         ))}

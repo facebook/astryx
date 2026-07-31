@@ -37,6 +37,24 @@ export const docs = {
       description: 'Minimum container height (px or CSS value).',
     },
     {
+      name: 'padding',
+      type: 'SpacingStep',
+      description:
+        'Inner padding on all sides, using the spacing scale (0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10). Matches the padding prop on Stack, Card, LayoutContent, and LayoutPanel. Pass as a JSX number expression e.g. padding={3}.',
+    },
+    {
+      name: 'paddingInline',
+      type: 'SpacingStep',
+      description:
+        'Inline (horizontal) padding, using the spacing scale. Overrides padding on the inline axis when both are set.',
+    },
+    {
+      name: 'paddingBlock',
+      type: 'SpacingStep',
+      description:
+        'Block (vertical) padding, using the spacing scale. Overrides padding on the block axis when both are set.',
+    },
+    {
       name: 'isInline',
       type: 'boolean',
       description: 'Use inline-flex (useful for text/icons).',
@@ -95,6 +113,22 @@ export const docsZh = {
     {name: 'axis', type: "'both' | 'horizontal' | 'vertical'", description: '居中的方向。', default: "'both'"},
     {name: 'width', type: 'number | string', description: '容器宽度（px 或 CSS 值）。'},
     {name: 'height', type: 'number | string', description: '容器高度（px 或 CSS 值）。'},
+    {
+      name: 'padding',
+      type: 'SpacingStep',
+      description:
+        '所有方向的内边距，使用间距刻度（0、0.5、1、1.5、2、3、4、5、6、8、10）。与 Stack、Card、LayoutContent 和 LayoutPanel 的 padding 属性一致。在 JSX 中使用数字表达式 e.g. padding={3}。',
+    },
+    {
+      name: 'paddingInline',
+      type: 'SpacingStep',
+      description: '行内（水平）内边距，使用间距刻度。两者同时设置时在行内轴上覆盖 padding。',
+    },
+    {
+      name: 'paddingBlock',
+      type: 'SpacingStep',
+      description: '块（垂直）内边距，使用间距刻度。两者同时设置时在块轴上覆盖 padding。',
+    },
     {name: 'isInline', type: 'boolean', description: '使用 inline-flex（适用于文本/图标）。', default: 'false'},
     {name: 'children', type: 'ReactNode', description: '要居中的内容。'},
     {
@@ -134,6 +168,10 @@ export const docsDense = {
     axis: 'centering direction(s)',
     width: 'container width (px or CSS)',
     height: 'container height (px or CSS)',
+    padding:
+      'inner padding on all sides (spacing step: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10)',
+    paddingInline: 'inline (horizontal) padding; overrides padding on that axis',
+    paddingBlock: 'block (vertical) padding; overrides padding on that axis',
     isInline: 'use inline-flex for text/icons',
     children: 'content to center',
     xstyle: 'StyleX styles for layout (margins, positioning, sizing); must be stylex.create() value',

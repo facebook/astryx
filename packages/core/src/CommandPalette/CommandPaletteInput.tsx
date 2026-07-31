@@ -27,6 +27,7 @@ import {useCommandPaletteContext} from './CommandPaletteContext';
 import {useDialogContext} from '../Dialog/DialogContext';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 const styles = stylex.create({
   wrapper: {
@@ -109,6 +110,13 @@ export interface CommandPaletteInputProps extends Omit<
   placeholder?: string;
 
   /**
+   * Accessible label for the combobox input, announced by screen readers.
+   * Falls back to the placeholder text (`'Search…'` by default), since a
+   * placeholder alone is not a reliable accessible name.
+   */
+  label?: string;
+
+  /**
    * Whether to auto-focus the input when mounted.
    * @default true
    */
@@ -147,7 +155,8 @@ export interface CommandPaletteInputProps extends Omit<
 export function CommandPaletteInput({
   value: controlledValue,
   onValueChange,
-  placeholder = 'Search...',
+  placeholder: placeholderFromProps,
+  label,
   hasAutoFocus = true,
   endContent,
   onChange,
@@ -156,6 +165,9 @@ export function CommandPaletteInput({
   xstyle,
   ...props
 }: CommandPaletteInputProps) {
+  const t = useTranslator();
+  const placeholder =
+    placeholderFromProps ?? t('@astryx.commandPalette.input.placeholder');
   const ctx = useCommandPaletteContext();
   const dialogContext = useDialogContext();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -211,6 +223,9 @@ export function CommandPaletteInput({
             ? ctx.getItemId(ctx.highlightedIndex)
             : undefined
         }
+        // A placeholder alone is not a reliable accessible name; give the
+        // combobox an explicit one (consumer aria-label via rest props wins).
+        aria-label={label ?? placeholder}
         placeholder={placeholder}
         value={value}
         data-autofocus={effectiveAutoFocus || undefined}

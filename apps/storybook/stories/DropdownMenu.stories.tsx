@@ -2,7 +2,14 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState} from 'react';
-import {DropdownMenu, DropdownMenuItem} from '@astryxdesign/core/DropdownMenu';
+import {
+  DropdownMenu,
+  DropdownMenuItem,
+  DropdownMenuCheckboxItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSubMenu,
+} from '@astryxdesign/core/DropdownMenu';
 import {Divider} from '@astryxdesign/core/Divider';
 import {
   PencilIcon,
@@ -546,6 +553,191 @@ export const RTL: Story = {
       description: {
         story:
           'In RTL contexts (CSS direction property or dir attribute) the menu right-edge-aligns to the trigger and grows toward the left — the logical mirror of the LTR default (#3389). Both direction mechanisms are shown; the popover inherits direction from the trigger subtree and the self-* position-area keywords mirror it in pure CSS.',
+      },
+    },
+  },
+};
+
+// =============================================================================
+// Lab — selectable items (#3829)
+// =============================================================================
+
+export const LabCheckboxItems: Story = {
+  render: function LabCheckboxItemsStory() {
+    const [showArchived, setShowArchived] = useState(false);
+    const [showDrafts, setShowDrafts] = useState(true);
+    return (
+      <DropdownMenu button={{label: 'View'}}>
+        <DropdownMenuCheckboxItem
+          label="Show archived"
+          value={showArchived}
+          onChange={setShowArchived}
+        />
+        <DropdownMenuCheckboxItem
+          label="Show drafts"
+          description="Include unpublished items"
+          value={showDrafts}
+          onChange={setShowDrafts}
+        />
+      </DropdownMenu>
+    );
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'DropdownMenuCheckboxItem — independent toggles (role="menuitemcheckbox"). The menu stays open on toggle by default so several can be flipped at once.',
+      },
+    },
+  },
+};
+
+export const LabRadioGroup: Story = {
+  render: function LabRadioGroupStory() {
+    const [sort, setSort] = useState('newest');
+    return (
+      <DropdownMenu button={{label: 'Sort'}}>
+        <DropdownMenuRadioGroup value={sort} onChange={setSort} label="Sort by">
+          <DropdownMenuRadioItem value="newest" label="Newest" />
+          <DropdownMenuRadioItem value="oldest" label="Oldest" />
+          <DropdownMenuRadioItem
+            value="az"
+            label="Alphabetical"
+            description="A → Z"
+          />
+        </DropdownMenuRadioGroup>
+      </DropdownMenu>
+    );
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'DropdownMenuRadioGroup + DropdownMenuRadioItem — single-select group (role="menuitemradio"). Selecting closes the menu by default.',
+      },
+    },
+  },
+};
+
+export const LabSelectableSizes: Story = {
+  render: function LabSelectableSizesStory() {
+    const [sm, setSm] = useState('a');
+    const [lg, setLg] = useState('a');
+    return (
+      <div style={{display: 'flex', gap: 24}}>
+        <DropdownMenu button={{label: 'Small menu', size: 'sm'}}>
+          <DropdownMenuRadioGroup value={sm} onChange={setSm} label="Small">
+            <DropdownMenuRadioItem value="a" label="Option A" />
+            <DropdownMenuRadioItem value="b" label="Option B" />
+          </DropdownMenuRadioGroup>
+        </DropdownMenu>
+        <DropdownMenu button={{label: 'Large menu', size: 'lg'}}>
+          <DropdownMenuRadioGroup value={lg} onChange={setLg} label="Large">
+            <DropdownMenuRadioItem value="a" label="Option A" />
+            <DropdownMenuRadioItem value="b" label="Option B" />
+          </DropdownMenuRadioGroup>
+        </DropdownMenu>
+      </div>
+    );
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'The checkbox/radio control size is derived from the menu item size — a `sm` menu renders the small (18px) control, `md`/`lg` render the standard (22px) control. On coarse-pointer (touch) devices the control swaps to the inline-end of the row.',
+      },
+    },
+  },
+};
+
+export const Submenu: Story = {
+  render: () => (
+    <DropdownMenu button={{label: 'Actions'}}>
+      <DropdownMenuItem icon={PencilIcon} label="Rename" onClick={() => {}} />
+      <DropdownMenuSubMenu icon={FolderPlusIcon} label="Move to">
+        <DropdownMenuItem label="Folder A" onClick={() => {}} />
+        <DropdownMenuItem label="Folder B" onClick={() => {}} />
+        <DropdownMenuItem label="Folder C" onClick={() => {}} />
+      </DropdownMenuSubMenu>
+      <DropdownMenuItem icon={TrashIcon} label="Delete" onClick={() => {}} />
+    </DropdownMenu>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'DropdownMenuSubMenu is a single menu row that reveals a nested flyout of its own children. Hover or Right arrow (Left in RTL) / Enter / Space opens it and moves focus to its first item; Left arrow / Escape closes it and returns focus to the trigger. The flyout opens inline-end by default and auto-flips at the viewport edge.',
+      },
+    },
+  },
+};
+
+export const NestedSubmenu: Story = {
+  render: () => (
+    <DropdownMenu button={{label: 'Share'}}>
+      <DropdownMenuItem icon={ShareIcon} label="Copy link" onClick={() => {}} />
+      <DropdownMenuSubMenu label="Share to">
+        <DropdownMenuItem label="Email" onClick={() => {}} />
+        <DropdownMenuSubMenu label="Team">
+          <DropdownMenuItem label="Design" onClick={() => {}} />
+          <DropdownMenuItem label="Engineering" onClick={() => {}} />
+        </DropdownMenuSubMenu>
+      </DropdownMenuSubMenu>
+    </DropdownMenu>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Submenus nest to arbitrary depth — each level owns its own roving focus and positioning layer.',
+      },
+    },
+  },
+};
+
+export const SubmenuAsyncSpinner: Story = {
+  render: () => (
+    <DropdownMenu button={{label: 'Actions'}}>
+      <DropdownMenuItem label="Rename" onClick={() => {}} />
+      <DropdownMenuSubMenu label="Move to" hasSpinner>
+        <DropdownMenuItem label="Loading…" isDisabled onClick={() => {}} />
+      </DropdownMenuSubMenu>
+    </DropdownMenu>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'A submenu row can show a spinner in place of the caret via `hasSpinner`, e.g. while a lazy submenu\u2019s children load.',
+      },
+    },
+  },
+};
+
+export const SubmenuDataDriven: Story = {
+  render: () => (
+    <DropdownMenu
+      button={{label: 'Actions'}}
+      items={[
+        {label: 'Rename', onClick: () => {}},
+        {
+          label: 'Move to',
+          icon: FolderPlusIcon,
+          items: [
+            {label: 'Folder A', onClick: () => {}},
+            {label: 'Folder B', onClick: () => {}},
+          ],
+        },
+        {type: 'divider'},
+        {label: 'Delete', onClick: () => {}},
+      ]}
+    />
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Data-driven parity: give a menu item a nested `items` array and it becomes a submenu automatically — no separate item type.',
       },
     },
   },

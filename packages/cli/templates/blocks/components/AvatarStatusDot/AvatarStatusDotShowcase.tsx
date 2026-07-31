@@ -10,17 +10,17 @@ export default function AvatarStatusDotShowcase() {
     <HStack gap={4} vAlign="center">
       <Avatar
         name="Online User"
-        size="large"
+        size="xl"
         status={<AvatarStatusDot variant="success" label="Online" />}
       />
       <Avatar
         name="Away User"
-        size="large"
+        size="xl"
         status={<AvatarStatusDot variant="neutral" label="Away" />}
       />
       <Avatar
         name="Busy User"
-        size="large"
+        size="xl"
         status={<AvatarStatusDot variant="error" label="Busy" />}
       />
     </HStack>

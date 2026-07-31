@@ -338,17 +338,13 @@ const columns: TableColumn<IncidentRow>[] = [
     key: 'product',
     header: 'Product',
     width: proportional(2),
-    renderCell: (item: IncidentRow) => (
-      <Text type="body">{item.product}</Text>
-    ),
+    renderCell: (item: IncidentRow) => <Text type="body">{item.product}</Text>,
   },
   {
     key: 'title',
     header: 'Description',
     width: proportional(5),
-    renderCell: (item: IncidentRow) => (
-      <Text type="body">{item.title}</Text>
-    ),
+    renderCell: (item: IncidentRow) => <Text type="body">{item.title}</Text>,
   },
   {
     key: 'startTime',
@@ -362,9 +358,7 @@ const columns: TableColumn<IncidentRow>[] = [
     key: 'duration',
     header: 'Duration',
     width: pixel(100),
-    renderCell: (item: IncidentRow) => (
-      <Text type="body">{item.duration}</Text>
-    ),
+    renderCell: (item: IncidentRow) => <Text type="body">{item.duration}</Text>,
   },
   {
     key: 'oncall',
@@ -375,7 +369,7 @@ const columns: TableColumn<IncidentRow>[] = [
         <Avatar
           name={item.oncall}
           src={ONCALL_AVATARS[item.oncall]}
-          size="xsmall"
+          size="sm"
         />
         <Text type="body">{item.oncall}</Text>
       </HStack>
@@ -396,9 +390,7 @@ const columns: TableColumn<IncidentRow>[] = [
     key: 'date',
     header: 'Date',
     width: pixel(110),
-    renderCell: (item: IncidentRow) => (
-      <Text type="body">{item.date}</Text>
-    ),
+    renderCell: (item: IncidentRow) => <Text type="body">{item.date}</Text>,
   },
 ];
 

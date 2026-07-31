@@ -55,16 +55,11 @@ export default function TabListTabsWithActions() {
         <Button
           label="Filter"
           variant="ghost"
-          size="sm"
+          size="lg"
           icon={FilterIcon}
           isIconOnly
         />
-        <Button
-          label="New item"
-          variant="primary"
-          size="sm"
-          icon={PlusIcon}
-        />
+        <Button label="New item" variant="primary" size="lg" icon={PlusIcon} />
       </div>
     </TabList>
   );

@@ -68,3 +68,6 @@ yarn.lock
 .node-version
 .tool-versions
 mise.toml
+
+# Generated i18n artifacts (rebuilt from en.json)
+packages/core/locales/pseudo.json

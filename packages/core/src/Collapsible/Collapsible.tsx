@@ -39,6 +39,7 @@ import {
   durationVars,
   easeVars,
 } from '../theme/tokens.stylex';
+
 import {useCollapsible} from './useCollapsible';
 import {CollapsibleGroupPresentationContext} from './CollapsibleGroupContext';
 import {getIcon} from '../Icon/globalIconRegistry';
@@ -50,7 +51,12 @@ const styles = stylex.create({
   root: {
     width: '100%',
   },
-  // Trigger button — full width, flex row, no browser button styling
+  // Trigger button — full width, flex row, no browser button styling.
+  // Anchors heading-adjacent typography (body family, large size, semibold)
+  // so the label reads as a section header regardless of where the
+  // Collapsible is placed. External themes retarget it independently from the
+  // content via the `astryx-collapsible-trigger` target — e.g. a heading font
+  // on the trigger while the content stays on the body font.
   trigger: {
     all: 'unset',
     boxSizing: 'border-box',
@@ -81,6 +87,13 @@ const styles = stylex.create({
     textBoxEdge: 'cap alphabetic',
     textBoxTrim: 'trim-both',
   },
+  // Disabled trigger — non-interactive, dimmed. Native `disabled` on the
+  // button blocks click + keyboard activation; these styles restore the
+  // visual affordance that `all: unset` wipes.
+  triggerDisabled: {
+    cursor: 'not-allowed',
+    opacity: 0.5,
+  },
   // Chevron indicator
   chevron: {
     display: 'inline-flex',
@@ -102,8 +115,17 @@ const styles = stylex.create({
   contentHidden: {
     display: 'none',
   },
+  // Anchors body typography so revealed text renders at the system's body
+  // scale (family/size/weight/leading) instead of inheriting from wherever
+  // the Collapsible is placed. External themes override via the
+  // `astryx-collapsible-content` target, independently from the trigger.
   content: {
     paddingBlockStart: spacingVars['--spacing-1'],
+    fontFamily: typographyVars['--font-family-body'],
+    fontSize: typeScaleVars['--text-body-size'],
+    fontWeight: typeScaleVars['--text-body-weight'],
+    lineHeight: typeScaleVars['--text-body-leading'],
+    color: colorVars['--color-text-primary'],
   },
   // Group divider chrome — a hairline above every item except the first.
   // The group's wrapper (or 'all' mode) owns the outer edges.
@@ -167,6 +189,17 @@ export interface CollapsibleProps extends BaseProps {
   isOpen?: boolean;
 
   /**
+   * Whether the collapsible is disabled. A disabled item can't be toggled —
+   * its trigger is non-interactive and dimmed. Following the system-wide
+   * disabled convention, the trigger uses `aria-disabled` (not the native
+   * `disabled` attribute) and drops out of the tab order, staying perceivable
+   * to assistive tech. The content stays in whatever open state it was;
+   * disabling doesn't collapse an already-open item.
+   * @default false
+   */
+  isDisabled?: boolean;
+
+  /**
    * Callback when the open state changes.
    */
   onOpenChange?: (isOpen: boolean) => void;
@@ -225,6 +258,7 @@ export function Collapsible({
   children,
   defaultIsOpen,
   isOpen: controlledIsOpen,
+  isDisabled = false,
   onOpenChange,
   value,
   ref,
@@ -243,6 +277,17 @@ export function Collapsible({
     isCollapsible: collapsibleConfig,
     value,
   });
+
+  // Activation is blocked by this guard rather than the native `disabled`
+  // attribute, so the trigger keeps `aria-disabled` semantics and stays
+  // discoverable. A native `disabled` button would silently swallow events
+  // (e.g. a wrapping tooltip's hover) — the system-wide disabled convention.
+  const handleToggle = () => {
+    if (isDisabled) {
+      return;
+    }
+    toggle();
+  };
 
   const presentation = use(CollapsibleGroupPresentationContext);
   const isDivided = presentation?.hasDividers ?? false;
@@ -268,12 +313,25 @@ export function Collapsible({
       {...props}>
       <button
         type="button"
-        onClick={toggle}
+        onClick={handleToggle}
+        aria-disabled={isDisabled || undefined}
         aria-expanded={isOpen}
         aria-controls={contentId}
-        {...stylex.props(
-          styles.trigger,
-          density != null && triggerDensity[density],
+        // A disabled trigger drops out of the tab order so it isn't a silently
+        // dead tab stop; activation stays blocked by the handleToggle guard,
+        // and aria-disabled keeps the state perceivable to assistive tech —
+        // the system-wide disabled convention (never native `disabled`, which
+        // would swallow events like a wrapping tooltip's hover).
+        tabIndex={isDisabled ? -1 : undefined}
+        {...mergeProps(
+          themeProps('collapsible-trigger', {
+            density: density ?? undefined,
+          }),
+          stylex.props(
+            styles.trigger,
+            density != null && triggerDensity[density],
+            isDisabled && styles.triggerDisabled,
+          ),
         )}>
         <span {...stylex.props(styles.triggerLabel)}>{trigger}</span>
         <span
@@ -286,10 +344,15 @@ export function Collapsible({
       </button>
       <div
         id={contentId}
-        {...stylex.props(
-          styles.content,
-          density != null && contentDensity[density],
-          !isOpen && styles.contentHidden,
+        {...mergeProps(
+          themeProps('collapsible-content', {
+            density: density ?? undefined,
+          }),
+          stylex.props(
+            styles.content,
+            density != null && contentDensity[density],
+            !isOpen && styles.contentHidden,
+          ),
         )}>
         {presentation != null ? (
           <CollapsibleGroupPresentationContext value={null}>

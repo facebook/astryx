@@ -8,7 +8,7 @@ import {Stack} from '@astryxdesign/core/Layout';
 
 export default function ChatComposerDrawerCollapsible() {
   return (
-    <Stack direction="vertical" gap={4} width={480}>
+    <Stack direction="vertical" gap={4} width={450} maxWidth="100%">
       <ChatComposer
         onSubmit={() => {}}
         drawer={

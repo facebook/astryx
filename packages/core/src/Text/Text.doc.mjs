@@ -23,8 +23,8 @@ export const docs = {
   props: [
     {
       name: 'type',
-      type: "'body' | 'large' | 'label' | 'supporting' | 'code' | 'display-1' | 'display-2' | 'display-3'",
-      description: 'Semantic text type. Determines size, weight, and line-height from the theme. Note: this prop is called `type`, not `variant`.',
+      type: "'body' | 'large' | 'label' | 'supporting' | 'code' | 'display-1' | 'display-2' | 'display-3' | 'inherit'",
+      description: "Semantic text type. Determines size, weight, and line-height from the theme. 'inherit' takes all three from the surrounding text instead. Themes may add custom types. Note: this prop is called `type`, not `variant`.",
       default: "'body'",
     },
     {
@@ -41,7 +41,7 @@ export const docs = {
     {
       name: 'color',
       type: "'primary' | 'secondary' | 'disabled' | 'placeholder' | 'accent' | 'inherit'",
-      description: "Text color. Defaults to 'secondary' for the 'supporting' type, 'primary' for all others.",
+      description: "Text color. Defaults to 'secondary' for the 'supporting' type, 'primary' for all others. Themes may add custom colors.",
     },
     {
       name: 'weight',

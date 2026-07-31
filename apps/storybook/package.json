@@ -23,6 +23,8 @@
     "vega-lite": "^6.4.3"
   },
   "devDependencies": {
+    "@lexical/headless": "^0.46.0",
+    "@lexical/markdown": "^0.46.0",
     "@storybook/addon-docs": "^10.4.6",
     "@storybook/addon-links": "^10.4.6",
     "@storybook/react": "^10.4.6",

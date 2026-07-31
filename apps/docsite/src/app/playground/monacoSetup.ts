@@ -4,15 +4,27 @@
  * @file monacoSetup.ts
  * @input The Monaco runtime instance passed to the editor's onMount
  * @output Self-hosted loader config + TypeScript-service setup with Astryx typedefs
+ *   + the Prettier document formatter ("Format code" / Shift+Alt+F)
  * @position Playground Code editor — keeps Monaco wiring out of PlaygroundClient.
  *
  * Configures Monaco's TypeScript service with real Astryx type definitions loaded
  * from a pre-built JSON bundle (generated at build time), so the editor offers
  * accurate autocomplete and diagnostics for @astryxdesign/core, React, StyleX, and icons.
+ *
+ * Also registers Prettier (see ./formatCode) as the document formatter, which is
+ * what powers both the "Format code" toolbar button and Monaco's built-in
+ * Shift+Alt+F keybinding. This is the ONLY seam between the playground and that
+ * formatter — PlaygroundClient's `onMount` calls `configureMonaco` and nothing
+ * else — so `src/__tests__/playground-format.test.ts` pins the registration here
+ * to stop the feature being silently unwired.
  */
 
 import {loader} from '@monaco-editor/react';
 import type * as MonacoTypes from 'monaco-editor';
+import {
+  registerPrettierFormatter,
+  type FormatFailureHandler,
+} from './formatCode';
 
 // Self-host Monaco from public/monaco/vs — corpnet blocks the default CDN.
 if (typeof window !== 'undefined') {
@@ -39,12 +51,33 @@ export type MonacoInstance = typeof MonacoTypes & {
   };
 };
 
+/** Options for {@link configureMonaco}. */
+export type ConfigureMonacoOptions = {
+  /**
+   * Called when the "Format code" action could not run because Prettier itself
+   * failed to load — never for a user syntax error. Optional: formatCode always
+   * warns to the console regardless, this is for a user-visible surface.
+   */
+  onFormatFailure?: FormatFailureHandler;
+};
+
 /**
  * Configure Monaco's TypeScript service with real Astryx type definitions.
  * Loads .d.ts files from a pre-built JSON bundle (generated at build time).
+ * Also registers Prettier as the document formatter.
+ *
+ * Safe to call on every editor mount: `registerPrettierFormatter` de-dupes on
+ * the Monaco instance itself, so neither a remount (React's dev-mode double
+ * effect) nor a Fast Refresh re-evaluation of this module can stack duplicate
+ * providers.
  */
-export function configureMonaco(monaco: MonacoInstance) {
+export function configureMonaco(
+  monaco: MonacoInstance,
+  options: ConfigureMonacoOptions = {},
+) {
   const ts = monaco.languages.typescript.typescriptDefaults;
+
+  registerPrettierFormatter(monaco, options.onFormatFailure);
 
   ts.setCompilerOptions({
     target: monaco.languages.typescript.ScriptTarget.ESNext,

@@ -76,6 +76,17 @@ export interface ListItemProps extends BaseProps<HTMLLIElement> {
   onClick?: (e: React.MouseEvent) => void;
 
   /**
+   * Ref to a nested control inside the item (e.g. a checkbox in
+   * `startContent`) that already provides the item's keyboard access and
+   * action. When set, the item becomes an enlarged click/tap target that
+   * delegates surface clicks to that control via the `useClickableContainer`
+   * pattern: it renders no invisible button/anchor, so the row adds no second
+   * tab stop (WCAG 4.1.2 — one focusable control per option). Mutually
+   * exclusive with `onClick`/`href` — when set those are ignored.
+   */
+  interactiveRef?: React.RefObject<HTMLElement | null>;
+
+  /**
    * URL for link items. Renders an invisible anchor element.
    * Automatically enables hover/press styles when provided.
    */
@@ -199,6 +210,7 @@ export function ListItem({
   startContent,
   endContent,
   onClick,
+  interactiveRef,
   href,
   target,
   rel,
@@ -239,6 +251,7 @@ export function ListItem({
       description={description}
       endContent={endContent}
       onClick={onClick}
+      interactiveRef={interactiveRef}
       href={href}
       target={target as '_blank' | '_self'}
       rel={rel}

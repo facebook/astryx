@@ -10,10 +10,12 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {TreeList} from './TreeList';
 import type {TreeListItemData} from './TreeListTypes';
+import {defineTheme} from '../theme/defineTheme';
+import {generateThemeCSSFlat} from '../theme/generateThemeRules';
 
 const simpleItems: TreeListItemData[] = [
   {id: 'a', label: 'Item A'},
@@ -252,6 +254,37 @@ describe('TreeList', () => {
   });
 
   // ===========================================================================
+  // Focus-visible outline scoping (regression: focusing a parent row must not
+  // leak the ring onto descendant rows — see #4130)
+  // ===========================================================================
+
+  it('scopes the focus-visible outline to the focused row, not its descendants', () => {
+    render(<TreeList items={deepItems} />);
+    const root = screen.getByText('Root').closest('li')!;
+    const mid = screen.getByText('Mid').closest('li')!;
+    const leaf = screen.getByText('Leaf').closest('li')!;
+
+    // A keydown before .focus() establishes keyboard modality so jsdom's
+    // :focus-visible heuristic applies deterministically, regardless of
+    // pointer events left over from other tests in this file.
+    fireEvent.keyDown(document.body, {key: 'Tab'});
+    root.focus();
+    expect(root).toHaveFocus();
+
+    expect(
+      getComputedStyle(root).getPropertyValue('--_tree-focus-outline'),
+    ).toContain('solid');
+    // Mid and Leaf are DOM descendants of Root's <li> (nested <ul role="group">
+    // subtrees) — their own outline var must stay unset, not inherit Root's.
+    expect(
+      getComputedStyle(mid).getPropertyValue('--_tree-focus-outline'),
+    ).toBe('none');
+    expect(
+      getComputedStyle(leaf).getPropertyValue('--_tree-focus-outline'),
+    ).toBe('none');
+  });
+
+  // ===========================================================================
   // Interactive items
   // ===========================================================================
 
@@ -363,6 +396,155 @@ describe('TreeList', () => {
   });
 
   // ===========================================================================
+  // Variant (guide lines)
+  // ===========================================================================
+
+  describe('variant', () => {
+    it('renders guide lines by default', () => {
+      const {container} = render(<TreeList items={nestedItemsExpanded} />);
+      expect(container.querySelector('.astryx-tree-list-guide')).not.toBeNull();
+    });
+
+    it("variant='lineGuides' renders guide lines (explicit == default)", () => {
+      const {container} = render(
+        <TreeList items={nestedItemsExpanded} variant="lineGuides" />,
+      );
+      expect(container.querySelector('.astryx-tree-list-guide')).not.toBeNull();
+    });
+
+    it("variant='noGuides' renders NO guide lines", () => {
+      const {container} = render(
+        <TreeList items={nestedItemsExpanded} variant="noGuides" />,
+      );
+      expect(container.querySelector('.astryx-tree-list-guide')).toBeNull();
+    });
+
+    it("variant='noGuides' preserves the tree structure and items", () => {
+      render(<TreeList items={nestedItemsExpanded} variant="noGuides" />);
+      // Rows, roles, and nesting are all intact — only the connectors are gone.
+      expect(screen.getByRole('tree')).toBeInTheDocument();
+      expect(screen.getAllByRole('treeitem')).toHaveLength(4);
+      expect(screen.getByText('Parent')).toBeInTheDocument();
+      expect(screen.getByText('Child 1')).toBeInTheDocument();
+      expect(screen.getByText('Child 2')).toBeInTheDocument();
+      expect(screen.getByText('Sibling')).toBeInTheDocument();
+    });
+
+    it("variant='noGuides' preserves per-level indentation on the rows", () => {
+      // Indentation lives on the row's margin-inline-start (not the guide
+      // element), so it must survive when the connectors are suppressed. The
+      // per-row distance is published as the `--_tree-indent` custom property
+      // (not an inline longhand — see #4308), so the theme layer can override
+      // the `margin-inline-start` declaration. A deeper row is indented more
+      // than a shallower one.
+      const {container} = render(
+        <TreeList items={deepItems} variant="noGuides" />,
+      );
+      const indentOf = (text: string): string => {
+        const li = screen.getByText(text).closest('li')!;
+        const styled = li.querySelector('[style*="--_tree-indent"]');
+        return styled?.getAttribute('style') ?? '';
+      };
+      // Guides are gone…
+      expect(container.querySelector('.astryx-tree-list-guide')).toBeNull();
+      // …but each level still publishes an indent distance, and the level
+      // multiplier grows with depth (0, 1, 2).
+      expect(indentOf('Root')).toContain('--_tree-indent');
+      expect(indentOf('Mid')).toContain('--_tree-indent');
+      expect(indentOf('Leaf')).toContain('--_tree-indent');
+      const level = (text: string): number => {
+        const m = /calc\((\d+)/.exec(indentOf(text));
+        return m ? Number(m[1]) : NaN;
+      };
+      expect(level('Mid')).toBeGreaterThan(level('Root'));
+      expect(level('Leaf')).toBeGreaterThan(level('Mid'));
+    });
+  });
+
+  // ===========================================================================
+  // Guide theme target
+  // ===========================================================================
+
+  describe('guide theme target', () => {
+    it('renders the astryx-tree-list-guide target on the connector lines', () => {
+      const {container} = render(<TreeList items={nestedItemsExpanded} />);
+      const guide = container.querySelector('.astryx-tree-list-guide');
+      // A dedicated, stable target so a theme can recolor or hide the guides
+      // without hiding the built-in connectors and reimplementing them.
+      expect(guide).not.toBeNull();
+    });
+
+    it('exposes tree-list-guide as a themeable defineTheme target', () => {
+      // jsdom cannot resolve the @layer cascade, so the generated CSS is what
+      // proves a theme override reaches the guide element.
+      const theme = defineTheme({
+        name: 'tree-list-guide-test',
+        components: {
+          'tree-list-guide': {
+            base: {backgroundColor: 'var(--color-accent)'},
+          },
+        },
+      });
+      const css = generateThemeCSSFlat(theme);
+      expect(css).toContain('.astryx-tree-list-guide {');
+      expect(css).toContain('background-color: var(--color-accent)');
+    });
+
+    it('lets a theme hide the guides via display: none on the target', () => {
+      // Hiding the guides is done through the theme target, not a prop — the
+      // theme rule lands in @layer astryx-theme, above StyleX's base layer.
+      const theme = defineTheme({
+        name: 'tree-list-guide-hidden-test',
+        components: {
+          'tree-list-guide': {
+            base: {display: 'none'},
+          },
+        },
+      });
+      const css = generateThemeCSSFlat(theme);
+      expect(css).toContain('.astryx-tree-list-guide {');
+      expect(css).toContain('display: none');
+    });
+  });
+
+  // ===========================================================================
+  // Indent lever (--tree-list-indent)
+  // ===========================================================================
+
+  describe('indent lever', () => {
+    it('lets a theme retune the indent step via the tree-list target', () => {
+      // The per-level step is a public, themeable var (default --spacing-4) set
+      // on the tree-list root, so a theme can retune the indent metric (e.g. to
+      // --spacing-5) via defineTheme. jsdom cannot resolve the @layer cascade,
+      // so the generated CSS is what proves the override reaches the lever.
+      const theme = defineTheme({
+        name: 'tree-list-indent-test',
+        components: {
+          'tree-list': {
+            base: {'--tree-list-indent': 'var(--spacing-5)'},
+          },
+        },
+      });
+      const css = generateThemeCSSFlat(theme);
+      expect(css).toContain('.astryx-tree-list {');
+      expect(css).toContain('--tree-list-indent: var(--spacing-5)');
+    });
+
+    it('rows consume the indent step in their published indent distance', () => {
+      // Each row's --_tree-indent is calc(level * var(--tree-list-indent)),
+      // so retuning the step scales every level uniformly.
+      render(<TreeList items={deepItems} variant="noGuides" />);
+      const indentOf = (text: string): string => {
+        const li = screen.getByText(text).closest('li')!;
+        const styled = li.querySelector('[style*="--_tree-indent"]');
+        return styled?.getAttribute('style') ?? '';
+      };
+      expect(indentOf('Mid')).toContain('var(--tree-list-indent)');
+      expect(indentOf('Leaf')).toContain('var(--tree-list-indent)');
+    });
+  });
+
+  // ===========================================================================
   // xds class name
   // ===========================================================================
 
@@ -370,6 +552,127 @@ describe('TreeList', () => {
     render(<TreeList items={simpleItems} data-testid="tree" />);
     const root = screen.getByTestId('tree');
     expect(root.className).toContain('astryx-tree-list');
+  });
+
+  // ===========================================================================
+  // Chevron theme target
+  // ===========================================================================
+
+  describe('chevron theme target', () => {
+    it('renders the astryx-tree-list-chevron target on the toggle button', () => {
+      render(<TreeList items={nestedItems} />);
+      const toggle = screen
+        .getByText('Parent')
+        .closest('li')!
+        .querySelector('[data-tree-toggle]')!;
+
+      // Dedicated, stable theme target on the expand/collapse control, so a
+      // theme can restyle the chevron without a fragile [data-tree-toggle] hook.
+      expect(toggle).toHaveClass('astryx-tree-list-chevron');
+      // Open/closed state is reflected so a theme can target each state alone.
+      expect(toggle).toHaveAttribute('data-state', 'collapsed');
+    });
+
+    it('reflects the expanded state on the toggle when open', () => {
+      render(<TreeList items={nestedItemsExpanded} />);
+      const toggle = screen
+        .getByText('Parent')
+        .closest('li')!
+        .querySelector('[data-tree-toggle]')!;
+
+      expect(toggle).toHaveClass('astryx-tree-list-chevron');
+      expect(toggle).toHaveAttribute('data-state', 'expanded');
+    });
+
+    it('keeps the functional data-tree-toggle hook alongside the new target', () => {
+      // The theme target is additive — the toggle is still a real <button> and
+      // still carries the functional activation attribute TreeList relies on.
+      render(<TreeList items={nestedItems} />);
+      const toggle = screen
+        .getByText('Parent')
+        .closest('li')!
+        .querySelector('[data-tree-toggle]')!;
+      expect(toggle.tagName).toBe('BUTTON');
+      expect(toggle).toHaveAttribute('data-tree-toggle');
+    });
+
+    it('exposes tree-list-chevron as a themeable defineTheme target', () => {
+      // The generated CSS is what proves the target is reachable by a theme:
+      // jsdom cannot resolve the @layer cascade, so the DOM-class assertions
+      // above and this generation assertion together cover the seam.
+      const theme = defineTheme({
+        name: 'tree-list-chevron-test',
+        components: {
+          'tree-list-chevron': {
+            base: {color: 'var(--color-accent)'},
+            'state:expanded': {color: 'var(--color-text-primary)'},
+          },
+        },
+      });
+      const css = generateThemeCSSFlat(theme);
+      expect(css).toContain('.astryx-tree-list-chevron {');
+      expect(css).toContain('color: var(--color-accent)');
+      expect(css).toContain('.astryx-tree-list-chevron.expanded');
+      expect(css).toContain('color: var(--color-text-primary)');
+    });
+  });
+
+  // ===========================================================================
+  // Item label theme target
+  // ===========================================================================
+
+  describe('item label theme target', () => {
+    it('renders the astryx-tree-list-item-label target on the label span', () => {
+      render(<TreeList items={simpleItems} />);
+      const label = screen.getByText('Item A');
+
+      // Dedicated, stable theme target on the label text, so a theme can style
+      // just the label without a fragile `button:not([data-tree-toggle]) > span`
+      // structural selector.
+      expect(label).toHaveClass('astryx-tree-list-item-label');
+      // A non-selected item's label carries no selected reflection.
+      expect(label).not.toHaveAttribute('data-selected');
+    });
+
+    it('reflects the selected state on the selected item label', () => {
+      render(
+        <TreeList items={[{id: 'a', label: 'Item A', isSelected: true}]} />,
+      );
+      const label = screen.getByText('Item A');
+      expect(label).toHaveClass('astryx-tree-list-item-label');
+      expect(label).toHaveAttribute('data-selected', 'selected');
+    });
+
+    it('keeps the label linked to its row via aria-labelledby', () => {
+      // The theme target is additive — the label still owns the id the
+      // interactive row references for its accessible name.
+      render(
+        <TreeList items={[{id: 'a', label: 'Item A', onClick: () => {}}]} />,
+      );
+      const label = screen.getByText('Item A');
+      const action = screen.getByRole('button');
+      expect(action).toHaveAttribute('aria-labelledby', label.id);
+    });
+
+    it('exposes tree-list-item-label as a themeable defineTheme target', () => {
+      // The generated CSS is what proves the target is reachable by a theme:
+      // jsdom cannot resolve the @layer cascade, so the DOM-class assertions
+      // above and this generation assertion together cover the seam.
+      const theme = defineTheme({
+        name: 'tree-list-item-label-test',
+        components: {
+          'tree-list-item-label': {
+            base: {color: 'var(--color-text-primary)'},
+            selected: {fontWeight: 'var(--font-weight-bold)'},
+          },
+        },
+      });
+      const css = generateThemeCSSFlat(theme);
+      expect(css).toContain('.astryx-tree-list-item-label {');
+      expect(css).toContain('color: var(--color-text-primary)');
+      expect(css).toContain('.astryx-tree-list-item-label.selected');
+      expect(css).toContain('font-weight: var(--font-weight-bold)');
+    });
   });
 
   // ===========================================================================

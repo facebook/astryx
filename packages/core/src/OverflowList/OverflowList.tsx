@@ -9,8 +9,9 @@
  * @position Core implementation; consumed by index.ts
  *
  * Renders a horizontal list of items, hiding those that don't fit in the
- * available width and optionally showing an overflow indicator.
- * Uses a hidden measurement container to avoid flickering.
+ * available width and optionally showing an overflow indicator. Supports an
+ * optional item cap (`maxVisibleItems`) and bounded multi-row wrapping
+ * (`maxRows`). Uses a hidden measurement container to avoid flickering.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/OverflowList/index.ts (exports if types change)
@@ -34,6 +35,14 @@ const styles = stylex.create({
     whiteSpace: 'nowrap',
     minWidth: 0,
   },
+  containerMultiRow: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    alignContent: 'flex-start',
+    overflow: 'hidden',
+    whiteSpace: 'normal',
+    minWidth: 0,
+  },
   fillParent: {
     width: '100%',
   },
@@ -50,6 +59,12 @@ const styles = stylex.create({
   measureIndicator: {
     display: 'inline-flex',
   },
+});
+
+const multiRowHeight = stylex.create({
+  height: (maxRows: number, rowHeight: number, gapPx: number) => ({
+    maxHeight: `calc(${rowHeight}px * ${maxRows} + ${gapPx}px * ${maxRows - 1})`,
+  }),
 });
 
 const gapStyles = stylex.create({
@@ -111,6 +126,24 @@ export interface OverflowListProps extends BaseProps<HTMLDivElement> {
    * @default 0
    */
   minVisibleItems?: number;
+
+  /**
+   * Maximum number of items to ever show, even when they all fit. The ceiling
+   * partner to `minVisibleItems`; extra items collapse into the overflow
+   * indicator. Leave undefined for no cap. If it is less than
+   * `minVisibleItems`, the floor wins (and a dev-only warning is logged).
+   * @default undefined
+   */
+  maxVisibleItems?: number;
+
+  /**
+   * Wrap items across up to this many rows before collapsing the remainder
+   * into the overflow indicator. Leave undefined (or set `1`) for the default
+   * single-line behavior. A number, not a boolean — unbounded wrapping is a
+   * plain flex-wrap layout, not overflow collapse. Assumes uniform row height.
+   * @default undefined
+   */
+  maxRows?: number;
 
   /**
    * Which end to collapse items from.
@@ -180,6 +213,8 @@ export function OverflowList({
   children,
   gap = 2,
   minVisibleItems = 0,
+  maxVisibleItems,
+  maxRows,
   collapseFrom = 'end',
   behavior = 'observeSelf',
   overflowRenderer,
@@ -195,16 +230,17 @@ export function OverflowList({
   const gapPx = spacingToPx[gap];
 
   const observeParent = behavior === 'observeParent';
+  const isMultiRow = maxRows != null && maxRows > 1;
 
-  const {containerRef, measureRef, visibleCount, hasOverflow} = useOverflow(
-    itemCount,
-    {
+  const {containerRef, measureRef, visibleCount, hasOverflow, rowHeight} =
+    useOverflow(itemCount, {
       gap: gapPx,
       minVisibleItems,
+      maxVisibleItems,
+      maxRows,
       collapseFrom,
       behavior,
-    },
-  );
+    });
 
   const allItems: OverflowItem[] = childArray.map((child, index) => ({
     child,
@@ -248,8 +284,12 @@ export function OverflowList({
         {...mergeProps(
           themeProps('overflow-list'),
           stylex.props(
-            styles.container,
+            isMultiRow ? styles.containerMultiRow : styles.container,
             gapStyles[gap],
+            isMultiRow &&
+              rowHeight > 0 &&
+              maxRows != null &&
+              multiRowHeight.height(maxRows, rowHeight, gapPx),
             observeParent && hasOverflow && styles.fillParent,
             xstyle,
           ),

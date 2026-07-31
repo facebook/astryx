@@ -9,10 +9,22 @@
  * SYNC: When Field.tsx changes, update tests to match new behavior
  */
 
-import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {describe, it, expect, vi, afterEach} from 'vitest';
+import {render, screen, waitFor} from '@testing-library/react';
 import {Field} from './Field';
 import {FormLayoutContext} from '../FormLayout/FormLayoutContext';
+import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
+
+function politeRegion(): HTMLElement | null {
+  return document.querySelector('[data-astryx-live-region="polite"]');
+}
+function assertiveRegion(): HTMLElement | null {
+  return document.querySelector('[data-astryx-live-region="assertive"]');
+}
+
+afterEach(() => {
+  __resetLiveRegionsForTest();
+});
 
 describe('Field', () => {
   it('renders with label', () => {
@@ -228,7 +240,11 @@ describe('Field', () => {
     expect(document.querySelector('svg')).not.toBeInTheDocument();
   });
 
-  it('status has role="alert" and aria-live="assertive" for error type', () => {
+  // The status message is announced through the persistent useAnnounce live
+  // regions rather than role/aria-live on the (conditionally mounted)
+  // FieldStatus element itself — regions born with their content are not
+  // reliably announced by assistive technology.
+  it('announces error status assertively via the persistent live region', async () => {
     render(
       <Field
         label="Email"
@@ -237,12 +253,13 @@ describe('Field', () => {
         <input id="email-input" />
       </Field>,
     );
-    const status = screen.getByRole('alert');
-    expect(status).toHaveTextContent('Invalid email');
-    expect(status).toHaveAttribute('aria-live', 'assertive');
+    expect(screen.getByText('Invalid email')).not.toHaveAttribute('role');
+    await waitFor(() => {
+      expect(assertiveRegion()).toHaveTextContent('Invalid email');
+    });
   });
 
-  it('status has role="status" and aria-live="polite" for warning type', () => {
+  it('announces warning status politely via the persistent live region', async () => {
     render(
       <Field
         label="Email"
@@ -251,9 +268,34 @@ describe('Field', () => {
         <input id="email-input" />
       </Field>,
     );
-    const status = screen.getByRole('status');
-    expect(status).toHaveTextContent('Check this');
-    expect(status).toHaveAttribute('aria-live', 'polite');
+    expect(screen.getByText('Check this')).not.toHaveAttribute('aria-live');
+    await waitFor(() => {
+      expect(politeRegion()).toHaveTextContent('Check this');
+    });
+  });
+
+  // Regression: the status live region must NOT be born together with its
+  // content. A message that appears after mount (the common validation flow)
+  // has to land in the persistent announce region.
+  it('announces a status message that appears after mount', async () => {
+    const {rerender} = render(
+      <Field label="Email" inputID="email-input">
+        <input id="email-input" />
+      </Field>,
+    );
+    expect(assertiveRegion()).toBeNull();
+
+    rerender(
+      <Field
+        label="Email"
+        inputID="email-input"
+        status={{type: 'error', message: 'Email is required'}}>
+        <input id="email-input" />
+      </Field>,
+    );
+    await waitFor(() => {
+      expect(assertiveRegion()).toHaveTextContent('Email is required');
+    });
   });
 
   it('auto-generates description ID as {inputID}-desc when descriptionID is not provided', () => {
@@ -277,7 +319,10 @@ describe('Field', () => {
         <input id="my-input" />
       </Field>,
     );
-    expect(screen.getByRole('alert')).toHaveAttribute('id', 'my-input-status');
+    expect(screen.getByText('Required')).toHaveAttribute(
+      'id',
+      'my-input-status',
+    );
   });
 
   it('warns when isOptional and isRequired are both set', () => {
@@ -421,7 +466,7 @@ describe('Field', () => {
         </Field>,
         {wrapper: horizontalLabelsWrapper},
       );
-      const statusEl = screen.getByRole('alert');
+      const statusEl = screen.getByText('Required');
       const inputEl = screen.getByTestId('email');
       // Both status and input should be inside the same wrapper div (column 2)
       expect(statusEl.parentElement).toBe(inputEl.parentElement);

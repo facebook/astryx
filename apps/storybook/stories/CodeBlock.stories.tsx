@@ -43,6 +43,8 @@ const meta: Meta<typeof CodeBlock> = {
     hasLineNumbers: {control: 'boolean'},
     hasCopyButton: {control: 'boolean'},
     isWrapped: {control: 'boolean'},
+    isCollapsible: {control: 'boolean'},
+    collapsibleThreshold: {control: 'number'},
   },
 };
 
@@ -306,5 +308,15 @@ export const ContainerSection: Story = {
     title: 'useUser.ts',
     width: '100%',
     container: 'section',
+  },
+};
+
+export const Collapsible: Story = {
+  args: {
+    code: tsExample,
+    language: 'typescript',
+    title: 'useUser.ts',
+    hasLineNumbers: true,
+    isCollapsible: true,
   },
 };

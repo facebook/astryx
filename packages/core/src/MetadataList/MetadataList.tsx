@@ -4,7 +4,7 @@
 
 /**
  * @file MetadataList.tsx
- * @input Uses React, ReactNode, StyleXStyles, theme tokens, MetadataListContext
+ * @input Uses React, ReactNode, StyleXStyles, theme tokens, MetadataListContext, i18n (useTranslator)
  * @output Exports MetadataList component, MetadataListProps, MetadataListColumns types
  * @position Core implementation; consumed by index.ts, tested by MetadataList.test.tsx
  *
@@ -31,6 +31,7 @@ import {
 import type {BaseProps} from '../BaseProps';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 // =============================================================================
 // Types
@@ -197,6 +198,7 @@ export function MetadataList({
   const labelConfig = label ?? (isMultiColumn ? LABEL_TOP : LABEL_START);
   const [isShowAll, setIsShowAll] = useState(false);
   const contentId = useId();
+  const t = useTranslator();
 
   const contextValue = useMemo(
     () => ({
@@ -283,7 +285,9 @@ export function MetadataList({
             aria-expanded={isShowAll}
             onClick={() => setIsShowAll(prev => !prev)}
             {...stylex.props(styles.toggleButton)}>
-            {isShowAll ? 'Show less' : 'Show more'}
+            {isShowAll
+              ? t('@astryx.metadataList.showLess')
+              : t('@astryx.metadataList.showMore')}
           </button>
         )}
       </div>

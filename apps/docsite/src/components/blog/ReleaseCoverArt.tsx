@@ -37,9 +37,17 @@ const styles = stylex.create({
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: '1.8cqw',
     overflow: 'hidden',
     userSelect: 'none',
+  },
+  // Carries the vertical gap. Must be a child of root, not root itself: an
+  // element isn't its own container, so `gap: cqw` on root resolves against the
+  // viewport instead of the cover width and wouldn't scale in a small preview.
+  content: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '1.8cqw',
   },
   row: {
     display: 'flex',
@@ -80,23 +88,25 @@ export function ReleaseCoverArt({
 
   return (
     <div {...stylex.props(styles.root)} role="presentation" aria-hidden="true">
-      <div {...stylex.props(styles.row)}>
-        {segments.map((segment, i) => (
-          <Fragment key={i}>
-            {i > 0 ? (
-              <svg {...stylex.props(styles.mark)} viewBox="0 0 40 40">
-                <path d={MARK_PATH} />
-              </svg>
-            ) : null}
-            <Text type="code" weight="semibold" xstyle={styles.version}>
-              {segment}
-            </Text>
-          </Fragment>
-        ))}
+      <div {...stylex.props(styles.content)}>
+        <div {...stylex.props(styles.row)}>
+          {segments.map((segment, i) => (
+            <Fragment key={i}>
+              {i > 0 ? (
+                <svg {...stylex.props(styles.mark)} viewBox="0 0 40 40">
+                  <path d={MARK_PATH} />
+                </svg>
+              ) : null}
+              <Text type="code" weight="semibold" xstyle={styles.version}>
+                {segment}
+              </Text>
+            </Fragment>
+          ))}
+        </div>
+        <Text type="code" color="secondary" as="div" xstyle={styles.handle}>
+          {packageName}
+        </Text>
       </div>
-      <Text type="code" color="secondary" as="div" xstyle={styles.handle}>
-        {packageName}
-      </Text>
     </div>
   );
 }

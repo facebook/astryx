@@ -132,6 +132,18 @@ const indeterminateSlide = stylex.keyframes({
   },
 });
 
+// RTL: mirror the slide so the indeterminate bar travels along the reading
+// flow (inline-start → inline-end, i.e. right → left) instead of always
+// physically left → right. The magnitudes mirror the LTR keyframe.
+const indeterminateSlideRtl = stylex.keyframes({
+  '0%': {
+    transform: 'translateX(100%)',
+  },
+  '100%': {
+    transform: 'translateX(-250%)',
+  },
+});
+
 // =============================================================================
 // Styles
 // =============================================================================
@@ -196,7 +208,10 @@ const styles = stylex.create({
     height: '100%',
     width: '40%',
     borderRadius: radiusVars['--radius-full'],
-    animationName: indeterminateSlide,
+    animationName: {
+      default: indeterminateSlide,
+      ':is([dir="rtl"] *)': indeterminateSlideRtl,
+    },
     animationDuration: {
       default: '1.5s',
       '@media (prefers-reduced-motion: reduce)': '3s',

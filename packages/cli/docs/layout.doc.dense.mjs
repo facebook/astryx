@@ -7,6 +7,7 @@ export const docsDense = {
     'frame-first app layout: shell choice, region budgets, cards vs rows',
   sections: [
     {
+      section: 'Frame First',
       title: 'Frame First',
       content: [
         {
@@ -26,6 +27,7 @@ export const docsDense = {
       ],
     },
     {
+      section: 'App Archetypes',
       title: 'App Archetypes',
       content: [
         {
@@ -40,6 +42,7 @@ export const docsDense = {
       ],
     },
     {
+      section: 'Cards vs Rows',
       title: 'Cards vs Rows',
       content: [
         {
@@ -67,6 +70,7 @@ export const docsDense = {
       ],
     },
     {
+      section: 'Panels and Inspectors',
       title: 'Panels and Inspectors',
       content: [
         {
@@ -77,6 +81,7 @@ export const docsDense = {
       ],
     },
     {
+      section: 'Responsive Contract',
       title: 'Responsive Contract',
       content: [
         {

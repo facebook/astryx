@@ -37,7 +37,7 @@ export default function ChatMessageMultiBubble() {
       </ChatMessage>
       <ChatMessage
         sender="assistant"
-        avatar={<Avatar name="Agent" size="small" />}>
+        avatar={<Avatar name="Agent" size="md" />}>
         <ChatMessageBubble
           group="first"
           name={

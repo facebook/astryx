@@ -980,3 +980,33 @@ describe('ToggleButtonGroup vertical example', () => {
     expect(vertical!.source).toContain('type="multiple"');
   });
 });
+
+// ── LinkProvider utility page (#2733) ──────────────────────────────────────
+// LinkProvider is a non-visual provider: its page renders the hook-style
+// static layout (props table on the main page, no interactive playground).
+// That layout keys off `category: 'Utility'` with no curated playground, and
+// still needs props and an example block to have content to show.
+describe('LinkProvider utility page', () => {
+  const linkProvider = components['@astryxdesign/core'].find(
+    c => c.name === 'LinkProvider',
+  );
+
+  it('is a Utility entry without a curated playground', () => {
+    expect(linkProvider).toBeDefined();
+    expect(linkProvider!.category).toBe('Utility');
+    expect(linkProvider!.params).toBeNull();
+    expect(linkProvider!.playground).toBeNull();
+  });
+
+  it('documents props for the static props table', () => {
+    const propNames = linkProvider!.props.map(p => p.name);
+    expect(propNames).toContain('component');
+    expect(propNames).toContain('children');
+  });
+
+  it('registers an example block demonstrating a custom link component', () => {
+    const examples = exampleRegistry['LinkProvider'] ?? [];
+    expect(examples.length).toBeGreaterThanOrEqual(1);
+    expect(examples[0].source).toContain('<LinkProvider component=');
+  });
+});

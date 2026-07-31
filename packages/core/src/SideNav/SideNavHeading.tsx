@@ -44,6 +44,7 @@ import type {BaseProps} from '../BaseProps';
 import {useMenuHover} from '../hooks/useMenuHover';
 import {NavHeadingCloseContext} from '../NavMenu/NavMenuContext';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 // =============================================================================
 // Styles
@@ -342,13 +343,18 @@ export function SideNavHeading({
   ref,
   ...props
 }: SideNavHeadingProps) {
+  const t = useTranslator();
   const LinkComponent = useLinkComponent(as);
   const {isCollapsed} = useSideNavCollapse();
   const rootRef = useRef<HTMLDivElement>(null);
   const collapsedItemRef = useRef<HTMLElement>(null);
 
   const popover = usePopover({
-    dialogLabel: 'Navigation menu',
+    dialogLabel: t('@astryx.sideNav.heading.dialogLabel'),
+    // The popup exposes its own role="menu" semantics; a role="dialog"
+    // aria-modal wrapper would announce "dialog, Navigation menu" around a
+    // menu (the anti-pattern removed in a478a3dcf).
+    role: 'none',
     hasCloseButton: false,
   });
 
@@ -426,7 +432,6 @@ export function SideNavHeading({
           {popover.render(
             <div
               ref={menuRef}
-              role="menu"
               {...stylex.props(styles.popoverContent)}
               {...contentProps}>
               <button
@@ -459,9 +464,14 @@ export function SideNavHeading({
                   )}
                 </span>
               </button>
-              <NavHeadingCloseContext value={closeMenuCtx}>
-                {menu}
-              </NavHeadingCloseContext>
+              {/* The menu role is scoped to the actual menu items so the
+                  heading button above stays a valid sibling, not an invalid
+                  child of a role="menu" element. */}
+              <div role="menu" aria-label={heading}>
+                <NavHeadingCloseContext value={closeMenuCtx}>
+                  {menu}
+                </NavHeadingCloseContext>
+              </div>
             </div>,
             {placement: 'below', alignment: 'start', xstyle: styles.popover},
           )}
@@ -603,7 +613,7 @@ export function SideNavHeading({
           {renderTextContent(
             <button
               type="button"
-              aria-label="Open menu"
+              aria-label={t('@astryx.sideNav.heading.openMenu')}
               onClick={e => {
                 e.stopPropagation();
                 triggerProps.onClick();
@@ -618,11 +628,15 @@ export function SideNavHeading({
         {popover.render(
           <div
             ref={menuRef}
-            role="menu"
             {...stylex.props(styles.popoverContent)}
             {...contentProps}>
             {popoverHeadingContent}
-            {menu}
+            {/* The menu role is scoped to the actual menu items so the
+                heading button above stays a valid sibling, not an invalid
+                child of a role="menu" element. */}
+            <div role="menu" aria-label={heading}>
+              {menu}
+            </div>
           </div>,
           {
             placement: 'below',
@@ -665,7 +679,7 @@ export function SideNavHeading({
             showChevron ? (
               <button
                 type="button"
-                aria-label="Open menu"
+                aria-label={t('@astryx.sideNav.heading.openMenu')}
                 onClick={e => {
                   e.stopPropagation();
                   triggerProps.onClick();
@@ -681,11 +695,15 @@ export function SideNavHeading({
         {popover.render(
           <div
             ref={menuRef}
-            role="menu"
             {...stylex.props(styles.popoverContent)}
             {...contentProps}>
             {popoverHeadingContent}
-            {menu}
+            {/* The menu role is scoped to the actual menu items so the
+                heading button above stays a valid sibling, not an invalid
+                child of a role="menu" element. */}
+            <div role="menu" aria-label={heading}>
+              {menu}
+            </div>
           </div>,
           {
             placement: 'below',

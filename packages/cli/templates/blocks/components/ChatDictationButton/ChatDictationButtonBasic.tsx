@@ -23,7 +23,7 @@ export default function ChatDictationButtonBasic() {
   });
 
   return (
-    <Stack direction="vertical" width="100%" style={{maxWidth: 450}}>
+    <Stack direction="vertical" width={450} maxWidth="100%">
       <ChatComposer
         onSubmit={value => console.log('Submit:', value)}
         input={<ChatComposerInput handleRef={inputRef} />}

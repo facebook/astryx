@@ -30,7 +30,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'All approaches resolve to the same design tokens, so theming and dark mode work regardless of which you choose. For external styling libraries, run `npx astryx docs styling-libraries`; it covers Tailwind, StyleX, Panda, Chakra, MUI, CSS-in-JS, CSS Modules, Sass, and `useTheme()` for non-CSS processing.',
+          text: 'All approaches resolve to the same design tokens, so theming and dark mode work regardless of which you choose. For external styling libraries, run `astryx docs styling-libraries`; it covers Tailwind, StyleX, Panda, Chakra, MUI, CSS-in-JS, CSS Modules, Sass, and `useTheme()` for non-CSS processing.',
         },
       ],
     },
@@ -118,7 +118,7 @@ const overrides = stylex.create({
         },
         {
           type: 'prose',
-          text: 'The bridge is pure CSS with zero JS. Theme changes (dark mode, custom themes) apply automatically because the utilities reference the same CSS custom properties that components use. This is the paved Tailwind path; for other styling libraries that follow the same aliasing pattern, run `npx astryx docs styling-libraries`.',
+          text: 'The bridge is pure CSS with zero JS. Theme changes (dark mode, custom themes) apply automatically because the utilities reference the same CSS custom properties that components use. This is the paved Tailwind path; for other styling libraries that follow the same aliasing pattern, run `astryx docs styling-libraries`.',
         },
       ],
     },
@@ -263,7 +263,7 @@ const overrides = stylex.create({
         },
         {
           type: 'prose',
-          text: 'For systematic theming, use defineTheme component overrides instead of raw CSS selectors. defineTheme keeps the higher-level `prop:value` API (`variant:primary`, `size:sm`) and handles selector generation for you. Run `npx astryx docs theme` for the full theming guide.',
+          text: 'For systematic theming, use defineTheme component overrides instead of raw CSS selectors. defineTheme keeps the higher-level `prop:value` API (`variant:primary`, `size:sm`) and handles selector generation for you. Run `astryx docs theme` for the full theming guide.',
         },
       ],
     },
@@ -334,7 +334,7 @@ const styles = stylex.create({
         },
         {
           type: 'prose',
-          text: 'See `npx astryx docs tokens` for the full token reference (all spacing, color, radius, shadow, and typography tokens with values). See `npx astryx docs theme` for how to override tokens via defineTheme.',
+          text: 'See `astryx docs tokens` for the full token reference (all spacing, color, radius, shadow, and typography tokens with values). See `astryx docs theme` for how to override tokens via defineTheme.',
         },
       ],
     },

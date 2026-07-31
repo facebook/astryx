@@ -77,22 +77,10 @@ describe('TabList', () => {
 
   it('does not set aria-orientation on the nav (invalid for role navigation)', () => {
     // Regression: aria-orientation is not an allowed attribute on the
-    // navigation role and produces an axe aria-allowed-attr violation. The
-    // `orientation` prop must drive keyboard/hint behavior without emitting
-    // this attribute, regardless of the value passed.
-    const {rerender} = render(
+    // navigation role and produces an axe aria-allowed-attr violation.
+    // TabList deliberately never sets this attribute.
+    render(
       <TabList value="home" onChange={() => {}}>
-        <Tab value="home" label="Home" />
-        <Tab value="settings" label="Settings" />
-      </TabList>,
-    );
-
-    expect(screen.getByRole('navigation')).not.toHaveAttribute(
-      'aria-orientation',
-    );
-
-    rerender(
-      <TabList value="home" onChange={() => {}} orientation="vertical">
         <Tab value="home" label="Home" />
         <Tab value="settings" label="Settings" />
       </TabList>,
@@ -320,6 +308,72 @@ describe('TabList', () => {
     );
 
     expect(screen.getByTestId('dot')).toBeInTheDocument();
+  });
+});
+
+describe('TabList divider gap', () => {
+  // The divider adds the reserved gap + indicator offset via a single class
+  // (StyleX applies deterministic classes in the test env). Capture that
+  // class set once so the assertions describe intent, not opaque hashes.
+  function navClasses(hasDivider: boolean): Set<string> {
+    const {unmount} = render(
+      <TabList value="home" onChange={() => {}} hasDivider={hasDivider}>
+        <Tab value="home" label="Home" />
+      </TabList>,
+    );
+    const nav = screen.getByRole('navigation');
+    const classes = new Set(nav.className.split(/\s+/).filter(Boolean));
+    unmount();
+    return classes;
+  }
+
+  it('adds divider-only styling classes when hasDivider is set', () => {
+    const withDivider = navClasses(true);
+    const withoutDivider = navClasses(false);
+
+    // Every class the plain nav has must still be present when divided: the
+    // divider only adds styling (border + reserved gap + indicator offset),
+    // it never removes the base nav styles.
+    for (const cls of withoutDivider) {
+      expect(withDivider.has(cls)).toBe(true);
+    }
+
+    // And it must add at least one class the undivided nav does not have.
+    const added = [...withDivider].filter(c => !withoutDivider.has(c));
+    expect(added.length).toBeGreaterThan(0);
+  });
+
+  it('does not add divider styling to an undivided tab list (default)', () => {
+    // Default (no hasDivider) and explicit hasDivider={false} are identical:
+    // the non-divided path is untouched by the divider gap change.
+    expect(navClasses(false)).toEqual(
+      (() => {
+        const {unmount} = render(
+          <TabList value="home" onChange={() => {}}>
+            <Tab value="home" label="Home" />
+          </TabList>,
+        );
+        const nav = screen.getByRole('navigation');
+        const classes = new Set(nav.className.split(/\s+/).filter(Boolean));
+        unmount();
+        return classes;
+      })(),
+    );
+  });
+
+  it('keeps the selected indicator rendered under a divider', () => {
+    render(
+      <TabList value="home" onChange={() => {}} hasDivider>
+        <Tab value="home" label="Home" />
+        <Tab value="away" label="Away" />
+      </TabList>,
+    );
+    const selected = screen.getByRole('button', {name: 'Home'});
+    // The indicator span carries the selected marker; the divider must not
+    // drop it (it is repositioned onto the rail, not removed).
+    expect(
+      selected.querySelector('[data-selected="selected"]'),
+    ).toBeInTheDocument();
   });
 });
 

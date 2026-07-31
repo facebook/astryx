@@ -15,7 +15,7 @@
 import {writeFileSync} from 'node:fs';
 import {resolve, dirname} from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {docs as docsApi} from '../../../packages/cli/src/api/docs.mjs';
+import {docs as docsApi} from '../../../packages/cli/api/docs/docs.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUTPUT = resolve(__dirname, '../src/generated/foundationDocs.json');

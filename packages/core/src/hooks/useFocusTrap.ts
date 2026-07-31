@@ -26,24 +26,62 @@ import {FOCUSABLE_SELECTOR} from './focusableSelector';
  * Every active `useFocusTrap` used to attach its own document-level `keydown`
  * listener with no coordination, so a single Escape press closed *every* open
  * layer at once (e.g. a popover nested inside a Dialog closed both). Tracking
- * traps in a shared stack lets only the most recently activated (top-most)
- * trap respond to Escape.
+ * traps in a shared stack lets only the top-most trap respond to Escape.
+ *
+ * "Top-most" is resolved by DOM containment first, push order second. Push
+ * order alone is not reliable: React runs child effects before parent
+ * effects, so when an outer and an inner (DOM-nested) trap mount in the SAME
+ * commit, the inner trap pushes first and the outer trap would wrongly win a
+ * pure last-pushed comparison.
  */
-const escapeStack: (() => void)[] = [];
+interface EscapeStackEntry {
+  handler: () => void;
+  getContainer: () => HTMLElement | null;
+}
 
-function pushEscapeHandler(handler: () => void): void {
-  escapeStack.push(handler);
+const escapeStack: EscapeStackEntry[] = [];
+
+function pushEscapeHandler(entry: EscapeStackEntry): void {
+  escapeStack.push(entry);
 }
 
 function removeEscapeHandler(handler: () => void): void {
-  const index = escapeStack.lastIndexOf(handler);
-  if (index !== -1) {
-    escapeStack.splice(index, 1);
+  for (let i = escapeStack.length - 1; i >= 0; i--) {
+    if (escapeStack[i].handler === handler) {
+      escapeStack.splice(i, 1);
+      return;
+    }
   }
 }
 
+/**
+ * Resolve the top-most trap: walk the stack in push order, keeping the
+ * deepest container by DOM containment. When a later entry's container
+ * contains the current candidate's container, the candidate is nested inside
+ * it and stays on top; otherwise the later push wins (containment for nested
+ * traps, push order as the tiebreaker for unrelated ones).
+ */
 function isTopEscapeHandler(handler: () => void): boolean {
-  return escapeStack[escapeStack.length - 1] === handler;
+  if (escapeStack.length === 0) {
+    return false;
+  }
+  let top = escapeStack[0];
+  for (let i = 1; i < escapeStack.length; i++) {
+    const entry = escapeStack[i];
+    const topContainer = top.getContainer();
+    const entryContainer = entry.getContainer();
+    if (
+      topContainer != null &&
+      entryContainer != null &&
+      entryContainer !== topContainer &&
+      entryContainer.contains(topContainer)
+    ) {
+      // The current top is nested inside this entry — it stays on top.
+      continue;
+    }
+    top = entry;
+  }
+  return top.handler === handler;
 }
 
 /**
@@ -73,13 +111,19 @@ export function isImeKeyEvent(event: {
 /**
  * Whether an element is currently perceivable/focusable — excludes ones hidden
  * via `display:none`/`visibility:hidden` or inside an `inert`/`hidden` subtree,
- * which the browser skips for Tab.
+ * which the browser skips for Tab, and ones inside an `aria-hidden="true"`
+ * subtree, which sighted-keyboard users could Tab to while AT skips them
+ * (WCAG 4.1.2 — focusable content must be exposed to assistive tech).
  */
 function isVisiblyFocusable(el: HTMLElement): boolean {
   if (el.hasAttribute('inert') || el.closest('[inert]')) {
     return false;
   }
   if (el.hidden || el.closest('[hidden]')) {
+    return false;
+  }
+  // closest() matches the element itself as well as any ancestor.
+  if (el.closest('[aria-hidden="true"]')) {
     return false;
   }
   // offsetParent is null for display:none (and fixed elements); pair with a
@@ -323,12 +367,17 @@ export function useFocusTrap<T extends HTMLElement = HTMLElement>(
 
     // Register this trap on the shared Escape stack so only the top-most
     // active trap responds to Escape. A stable identity per active period is
-    // enough — we push on activate and remove on cleanup.
+    // enough — we push on activate and remove on cleanup. The container is
+    // read lazily: the ref may not be attached yet at effect time, and the
+    // stack resolves top-most by DOM containment at keydown time.
     const escapeHandler = () => {
       onEscape?.();
     };
     if (onEscape) {
-      pushEscapeHandler(escapeHandler);
+      pushEscapeHandler({
+        handler: escapeHandler,
+        getContainer: () => containerRef.current,
+      });
     }
 
     const handleKeyDown = (event: KeyboardEvent) => {

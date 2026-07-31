@@ -367,3 +367,31 @@ export const AllVariations: Story = {
     );
   },
 };
+
+export const StatusVariantComparison: Story = {
+  render: () => {
+    const [a, setA] = useState<ISOTimeString | undefined>(
+      '22:00' as ISOTimeString,
+    );
+    const [b, setB] = useState<ISOTimeString | undefined>(
+      '22:00' as ISOTimeString,
+    );
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: 24, width: 280}}>
+        <TimeInput
+          label="Attached (default)"
+          value={a}
+          onChange={setA}
+          status={{type: 'error', message: 'Must be during business hours'}}
+        />
+        <TimeInput
+          label="Detached"
+          value={b}
+          onChange={setB}
+          status={{type: 'error', message: 'Must be during business hours'}}
+          statusVariant="detached"
+        />
+      </div>
+    );
+  },
+};

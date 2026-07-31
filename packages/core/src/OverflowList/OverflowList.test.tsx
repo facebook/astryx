@@ -413,4 +413,115 @@ describe('OverflowList', () => {
       expect(OverflowList.displayName).toBe('OverflowList');
     });
   });
+
+  describe('maxVisibleItems (cap)', () => {
+    it('caps visible items even when they all fit', () => {
+      render(
+        <OverflowList
+          gap={0}
+          data-w="1000"
+          data-testid="ov"
+          maxVisibleItems={2}
+          overflowRenderer={indicator('more:')}>
+          <button type="button" data-w="40">
+            A
+          </button>
+          <button type="button" data-w="40">
+            B
+          </button>
+          <button type="button" data-w="40">
+            C
+          </button>
+          <button type="button" data-w="40">
+            D
+          </button>
+        </OverflowList>,
+      );
+      const vis = visibleContainer();
+      expect(within(vis).getByText('A')).toBeInTheDocument();
+      expect(within(vis).getByText('B')).toBeInTheDocument();
+      expect(within(vis).queryByText('C')).not.toBeInTheDocument();
+      expect(within(vis).getByText('more:2,3')).toBeInTheDocument();
+    });
+
+    it('min wins over a smaller cap (D1)', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      render(
+        <OverflowList
+          gap={0}
+          data-w="1000"
+          data-testid="ov"
+          minVisibleItems={3}
+          maxVisibleItems={1}
+          overflowRenderer={indicator('more:')}>
+          <button type="button" data-w="40">
+            A
+          </button>
+          <button type="button" data-w="40">
+            B
+          </button>
+          <button type="button" data-w="40">
+            C
+          </button>
+          <button type="button" data-w="40">
+            D
+          </button>
+        </OverflowList>,
+      );
+      const vis = visibleContainer();
+      expect(within(vis).getByText('A')).toBeInTheDocument();
+      expect(within(vis).getByText('B')).toBeInTheDocument();
+      expect(within(vis).getByText('C')).toBeInTheDocument();
+      expect(within(vis).queryByText('D')).not.toBeInTheDocument();
+      expect(warn).toHaveBeenCalled();
+      warn.mockRestore();
+    });
+  });
+
+  describe('maxRows (multi-row)', () => {
+    it('applies a different container class when maxRows enables wrapping', () => {
+      const {rerender} = render(
+        <OverflowList gap={0} data-w="1000" data-testid="ov">
+          <button type="button" data-w="40">
+            A
+          </button>
+        </OverflowList>,
+      );
+      const singleLine = visibleContainer().getAttribute('class');
+
+      rerender(
+        <OverflowList gap={0} data-w="1000" data-testid="ov" maxRows={2}>
+          <button type="button" data-w="40">
+            A
+          </button>
+        </OverflowList>,
+      );
+      const multiRow = visibleContainer().getAttribute('class');
+      expect(multiRow).not.toEqual(singleLine);
+    });
+
+    it('keeps single-line behavior with maxRows={1}', () => {
+      render(
+        <OverflowList
+          gap={0}
+          data-w="100"
+          data-testid="ov"
+          maxRows={1}
+          overflowRenderer={indicator('more:')}>
+          <button type="button" data-w="40">
+            A
+          </button>
+          <button type="button" data-w="40">
+            B
+          </button>
+          <button type="button" data-w="40">
+            C
+          </button>
+        </OverflowList>,
+      );
+      const vis = visibleContainer();
+      expect(within(vis).getByText('A')).toBeInTheDocument();
+      expect(within(vis).queryByText('B')).not.toBeInTheDocument();
+    });
+  });
 });

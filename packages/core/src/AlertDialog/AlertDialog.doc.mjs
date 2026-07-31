@@ -113,6 +113,11 @@ export const docs = {
   components: [
     {name: 'useImperativeAlertDialog'},
   ],
+  theming: {
+    targets: [
+      {className: 'astryx-alert-dialog'},
+    ],
+  },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */

@@ -28,6 +28,7 @@ import {Button, type ButtonVariant} from '../Button';
 import type {BaseProps} from '../BaseProps';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 export interface AlertDialogProps extends BaseProps<HTMLDialogElement> {
   ref?: React.Ref<HTMLDialogElement>;
@@ -122,7 +123,7 @@ export function AlertDialog({
   onOpenChange,
   title,
   description,
-  cancelLabel = 'Cancel',
+  cancelLabel: cancelLabelFromProps,
   actionLabel,
   actionVariant = 'destructive',
   isActionLoading,
@@ -134,6 +135,8 @@ export function AlertDialog({
   'data-testid': testId,
   ...rest
 }: AlertDialogProps) {
+  const t = useTranslator();
+  const cancelLabel = cancelLabelFromProps ?? t('@astryx.alertDialog.cancel');
   const titleId = useId();
   const descriptionId = useId();
 

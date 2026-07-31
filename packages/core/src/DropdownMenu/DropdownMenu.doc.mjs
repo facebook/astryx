@@ -8,10 +8,36 @@ export const docs = {
   group: 'DropdownMenu',
   category: 'Action',
   keywords: ["dropdown","menu","popover","select","actions","contextmenu","overflow","kebab","menubutton"],
+  playground: {
+    // `items` is required; without seeded entries the properties-tab preview
+    // renders an empty trigger button. Provide a few actions so the preview
+    // is meaningful.
+    defaults: {
+      button: {label: 'Actions'},
+      items: [
+        {label: 'Edit'},
+        {label: 'Duplicate'},
+        {label: 'Delete'},
+      ],
+    },
+  },
   theming: {
     targets: [
       {className: 'astryx-dropdown-menu'},
       {className: 'astryx-dropdown-menu-item', visualProps: ['size']},
+      {
+        className: 'astryx-dropdown-menu-radio',
+        visualProps: ['size'],
+        states: ['checked', 'disabled'],
+      },
+      {
+        className: 'astryx-dropdown-menu-radio-dot',
+        visualProps: ['size'],
+        states: ['checked', 'disabled'],
+      },
+      {className: 'astryx-dropdown-menu-section-heading'},
+      {className: 'astryx-dropdown-menu-divider'},
+      {className: 'astryx-dropdown-menu-indicator-icon'},
     ],
     vars: [
       {name: '--_dropdown-menu-radius', description: 'Border radius of the menu popup', default: 'var(--radius-element)', private: true},

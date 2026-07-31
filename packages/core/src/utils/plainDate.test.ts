@@ -26,6 +26,7 @@ import {
   plainDateSetEndOfWeekExclusive,
   plainDateGetWeekNumber,
   plainDateFormat,
+  formatSharedDate,
   DATE_FORMAT_WITH_WEEKDAY,
 } from './plainDate';
 import type {ISODateString} from './dateTypes';
@@ -234,19 +235,37 @@ describe('plainDateAddMonths', () => {
     });
   });
 
-  it('overflows day into next month when target month is shorter', () => {
+  it('clamps to the last day when the target month is shorter', () => {
+    // Jan 31 + 1 month lands in February (clamped), not overflowed into
+    // March — matching Temporal.PlainDate.add and date-fns addMonths.
     expect(plainDateAddMonths({year: 2026, month: 1, day: 31}, 1)).toEqual({
       year: 2026,
-      month: 3,
-      day: 3,
+      month: 2,
+      day: 28,
     });
   });
 
-  it('overflows Jan 31 + 1 month in leap year', () => {
+  it('clamps to Feb 29 in a leap year', () => {
     expect(plainDateAddMonths({year: 2024, month: 1, day: 31}, 1)).toEqual({
       year: 2024,
-      month: 3,
-      day: 2,
+      month: 2,
+      day: 29,
+    });
+  });
+
+  it('clamps when subtracting into a shorter month', () => {
+    expect(plainDateAddMonths({year: 2026, month: 3, day: 31}, -1)).toEqual({
+      year: 2026,
+      month: 2,
+      day: 28,
+    });
+  });
+
+  it('clamps a 31st onto a 30-day month', () => {
+    expect(plainDateAddMonths({year: 2026, month: 5, day: 31}, 1)).toEqual({
+      year: 2026,
+      month: 6,
+      day: 30,
     });
   });
 });
@@ -519,5 +538,26 @@ describe('plainDateFormat', () => {
     );
     expect(result).toContain('2026');
     expect(result).toContain('25');
+  });
+});
+
+describe('formatSharedDate', () => {
+  const pd: PlainDate = {year: 2026, month: 1, day: 25};
+
+  it('formats the short-month "date" shape', () => {
+    expect(formatSharedDate(pd, 'date')).toBe('Jan 25, 2026');
+  });
+
+  it('formats the long-month "date_long" shape', () => {
+    expect(formatSharedDate(pd, 'date_long')).toBe('January 25, 2026');
+  });
+
+  it('formats the weekday "date_weekday" shape', () => {
+    // 2026-01-25 is a Sunday.
+    expect(formatSharedDate(pd, 'date_weekday')).toBe('Sun, Jan 25, 2026');
+  });
+
+  it('formats the ISO "system_date" shape', () => {
+    expect(formatSharedDate(pd, 'system_date')).toBe('2026-01-25');
   });
 });

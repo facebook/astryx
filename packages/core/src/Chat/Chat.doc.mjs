@@ -80,7 +80,7 @@ export const docs = {
       { name: 'Scroll-to-bottom button', required: false, description: 'Appears when the user scrolls up or new messages arrive. Defaults to ChatLayoutScrollButton; pass null to hide or a custom element to override.' },
       { name: 'Composer', required: true, description: 'The input area for sending messages, typically ChatComposer. Docked at the bottom inside the frosted glass layer.' },
       { name: 'Empty state', required: false, description: 'Centered placeholder shown when no messages exist. Use EmptyState for a consistent look.' },
-      { name: 'Avatar', required: false, description: 'A sender avatar rendered beside the message. Typically Avatar with size="small". Hidden for system messages.' },
+      { name: 'Avatar', required: false, description: 'A sender avatar rendered beside the message. Typically Avatar with size="md". Hidden for system messages.' },
       { name: 'Name', required: false, description: 'Sender name above the message body. Place on the bubble when using bubbles, or on the message wrapper for raw content.' },
       { name: 'Content', required: true, description: 'The message body: one or more ChatMessageBubble elements, or any free-form ReactNode like images or tool calls.' },
       { name: 'Metadata', required: false, description: 'Timestamp, delivery status, and footer actions below the message. Place on the last bubble or on the message wrapper.' },

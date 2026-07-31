@@ -16,6 +16,7 @@ import {TabList, Tab} from '@astryxdesign/core/TabList';
 import {ShowcasePreview} from './ShowcasePreview';
 import {ComponentPreviewTheme} from './ComponentPreviewTheme';
 import {BestPractices} from './BestPractices';
+import {Theming} from './Theming';
 import {HookSignature} from './HookSignature';
 import {ExampleBlock} from './ExampleBlock';
 import {MarkdownText} from '../MarkdownText';
@@ -23,7 +24,9 @@ import {
   InteractivePreviewStage,
   useInteractiveState,
 } from './InteractivePreview';
+import {hasInteractivePlayground} from './interactiveState';
 import {PlaygroundPropsTable} from './PlaygroundPropsTable';
+import {PropsTable} from './PropsTable';
 import type {ComponentEntry} from '../../generated/componentRegistry';
 import type {BlockEntry} from '../../generated/blockRegistry';
 import {showcaseRegistry} from '../../generated/showcaseRegistry';
@@ -112,6 +115,14 @@ function OverviewContent({
         <HookSignature params={comp.params} returns={comp.returns} />
       )}
 
+      {!isHook && !hasInteractivePlayground(comp) && comp.props.length > 0 && (
+        <PropsTable props={comp.props} heading="Props" />
+      )}
+
+      {!isHook && comp.theming && (
+        <Theming theming={comp.theming} props={comp.props} />
+      )}
+
       {(exampleRegistry[comp.name] || []).length > 0 && (
         <>
           <VStack gap={4}>
@@ -143,9 +154,8 @@ function ComponentDetailInner({
   const router = useRouter();
   const pathname = usePathname();
 
-  const isHook = comp.params != null;
   const hasShowcase = comp.name in showcaseRegistry;
-  const hasPlayground = !isHook;
+  const hasPlayground = hasInteractivePlayground(comp);
 
   const tab = searchParams.get('tab') ?? 'overview';
   const setTab = (value: string) => {

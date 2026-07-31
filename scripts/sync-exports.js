@@ -63,10 +63,25 @@ const STATIC_EXPORTS = {
     types: './src/tailwind-theme.css.d.ts',
     default: './src/tailwind-theme.css',
   },
+  './BaseProps': {
+    source: './src/BaseProps.ts',
+    types: './dist/BaseProps.d.ts',
+    default: './dist/BaseProps.js',
+  },
   './naming': {
     source: './src/naming.ts',
     types: './dist/naming.d.ts',
     default: './dist/naming.js',
+  },
+  './config': {
+    source: './src/config.ts',
+    types: './dist/config.d.ts',
+    default: './dist/config.js',
+  },
+  './authoring': {
+    source: './src/authoring/index.ts',
+    types: './dist/authoring/index.d.ts',
+    default: './dist/authoring/index.js',
   },
   './theme/tokens': {
     source: './src/theme/tokens.ts',
@@ -85,6 +100,12 @@ const STATIC_EXPORTS = {
   },
   './docs.mjs': './docs.mjs',
   './groups.doc.mjs': './groups.doc.mjs',
+  // i18n message catalogs. Consumers pass these to
+  // <InternationalizationProvider messages={{fr, ...}}> or use them for
+  // custom overrides / pseudoloc smoke-tests. Wildcard export exposes every
+  // JSON file under packages/core/locales/, which ships thanks to the
+  // `locales` entry in the `files` array.
+  './locales/*.json': './locales/*.json',
 };
 
 /**

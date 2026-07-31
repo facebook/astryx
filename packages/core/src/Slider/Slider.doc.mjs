@@ -132,7 +132,7 @@ export const docs = {
     },
     {
       name: 'status',
-      type: 'InputStatus',
+      type: "{type: 'warning' | 'error' | 'success', message?: string}",
       description:
         'Status indicator object (`{ type, message }`) for validation feedback.',
     },
@@ -140,6 +140,12 @@ export const docs = {
       name: 'labelTooltip',
       type: 'string',
       description: 'Tooltip text for an info icon displayed next to the label.',
+    },
+    {
+      name: 'width',
+      type: 'SizeValue',
+      description:
+        'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
     },
     {
       name: 'xstyle',
@@ -286,7 +292,7 @@ export const docsZh = {
     },
     {
       name: 'status',
-      type: 'InputStatus',
+      type: "{type: 'warning' | 'error' | 'success', message?: string}",
       description:
         '验证反馈的状态指示器对象（`{ type, message }`）。',
     },

@@ -41,6 +41,7 @@ import {
   truncationTooltipStyles,
 } from '../Text/text.stylex';
 import {useTruncation} from '../Text/useTruncation';
+import {resolveStyleColor} from '../Text/Text';
 import type {LayerPlacement} from '../Layer';
 import {mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
@@ -251,7 +252,7 @@ export function Heading({
         {...mergeProps(
           themeProps('heading', {level, color, ...(type && {type})}),
           stylex.props(
-            colorStyles[color],
+            colorStyles[resolveStyleColor(color)],
             type ? sizeByTypeStyles[type] : sizeByLevelStyles[level],
             type && defaultWeightByTypeStyles[type],
             // Display: use truncation styles when maxLines > 0

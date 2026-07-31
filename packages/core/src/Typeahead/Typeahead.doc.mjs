@@ -85,9 +85,16 @@ export const docs = {
     },
     {
       name: 'status',
-      type: 'InputStatus',
+      type: "{type: 'warning' | 'error' | 'success', message?: string}",
       description:
         'Validation status object with type and message for error/warning/success states.',
+    },
+    {
+      name: 'statusVariant',
+      type: "'attached' | 'detached'",
+      description:
+        'How the status message is placed relative to the input. attached overlaps directly below the input (bordered treatment); detached floats below as a separate element with spacing.',
+      default: "'attached'",
     },
     {
       name: 'renderItem',
@@ -157,6 +164,12 @@ export const docs = {
       name: 'onOpenChange',
       type: '(isOpen: boolean) => void',
       description: 'Callback when the dropdown opens or closes.',
+    },
+    {
+      name: 'width',
+      type: 'SizeValue',
+      description:
+        'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
     },
     {
       name: 'xstyle',

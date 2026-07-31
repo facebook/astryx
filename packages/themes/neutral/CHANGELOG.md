@@ -1,5 +1,41 @@
 # @xds/theme-neutral
 
+# 0.2.0
+
+#### Fixes
+
+- Neutral theme: express the light `--color-border` as `#00000014` (translucent black) instead of the opaque `#ebebeb`. Same rendered color over a white surface, but it now blends over any background — matching the translucent dark-mode value.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @kentonquatman
+
+---
+
+# 0.1.9
+
+---
+
+# 0.1.8
+
+---
+
+# 0.1.7
+
+#### Fixes
+
+- StatusDot now uses the same vivid fills as the filled Badge in the neutral theme. Previously the dots mapped to the dark text/icon stops (dark green, maroon, brown), which read muddy in light mode; success/warning/error/accent now match their badge counterparts so a dot and its badge share one status color.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @ernestt
+
+---
+
 # 0.1.6
 
 ---

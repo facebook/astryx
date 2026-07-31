@@ -17,7 +17,7 @@ on:
   pull_request:
     branches: ["main"]
     paths:
-      - "packages/cli/src/codemods/**"
+      - "packages/cli/codemods/**"
 
 permissions: {}
 

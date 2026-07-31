@@ -168,7 +168,12 @@ export function List({
       data-testid={testId}
       aria-labelledby={header != null ? headerId : undefined}
       {...(isOrdered && start != null && start !== 1 ? {start} : {})}
-      {...(listStyle === 'none' && !isOrdered ? {role: 'list'} : {})}
+      // The base list style always sets list-style-type: none (markers are
+      // custom-rendered by ListItem), and Safari/VoiceOver drops implicit
+      // list semantics for lists styled with list-style: none. The explicit
+      // role restores "list, N items" announcements for every listStyle
+      // variant.
+      role="list"
       {...mergeProps(
         themeProps('list', {density, listStyle}),
         stylex.props(

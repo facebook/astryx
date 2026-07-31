@@ -24,7 +24,7 @@ export default function AvatarGroupOverflowDefault() {
       <Text type="supporting" color="secondary">
         Reviewers
       </Text>
-      <AvatarGroup size="medium">
+      <AvatarGroup size="lg">
         {REVIEWERS.map(reviewer => (
           <Avatar key={reviewer.name} name={reviewer.name} />
         ))}

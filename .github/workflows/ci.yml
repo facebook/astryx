@@ -83,14 +83,25 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          # Depth 50 (same as check-scope) so the three-dot diff below can find
+          # a merge base. With the default depth of 1 the diff fails with
+          # "no merge base", the error is swallowed by the pipeline, and
+          # has_components silently becomes false — skipping pr-a11y entirely.
+          fetch-depth: 50
 
       - name: Fetch base branch
-        run: git fetch origin ${{ github.base_ref }} --depth=1
+        run: git fetch origin ${{ github.base_ref }} --depth=50
 
       - name: Check for component changes
         id: check
         run: |
-          CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- packages/core/src/ | grep -v -E '(hooks|theme|utils)/' | head -1)
+          if ! git merge-base HEAD origin/${{ github.base_ref }} >/dev/null 2>&1; then
+            echo "::warning::No merge base between HEAD and origin/${{ github.base_ref }} (clone too shallow) — assuming components changed so pr-a11y still runs"
+            echo "has_components=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- packages/core/src/ | grep -v -E '(hooks|theme|utils|__tests__)/' | head -1)
           echo "has_components=$( [ -n "$CHANGED" ] && echo true || echo false )" >> $GITHUB_OUTPUT
 
   # Run tests (parallel with build)
@@ -117,6 +128,10 @@ jobs:
       - name: Check package.json exports are in sync
         if: needs.check-scope.outputs.docsite_only != 'true'
         run: node scripts/sync-exports.js --check
+
+      - name: Verify the published CLI ./api type surface
+        if: needs.check-scope.outputs.docsite_only != 'true'
+        run: node .github/scripts/cli-api-types-verify.mjs
 
       - name: Check token docs are in sync
         if: needs.check-scope.outputs.docsite_only != 'true'
@@ -149,10 +164,15 @@ jobs:
       - name: Checkout
         if: needs.check-scope.outputs.docsite_only != 'true'
         uses: actions/checkout@v7
+        with:
+          # Depth 50 (same as check-scope) so analyze-pr.js's three-dot diff
+          # can find a merge base — depth 1 breaks it ("no merge base") and
+          # the analysis silently reported zero changed components.
+          fetch-depth: 50
 
       - name: Fetch base branch for PR analysis
         if: needs.check-scope.outputs.docsite_only != 'true' && github.event_name == 'pull_request'
-        run: git fetch origin ${{ github.base_ref }} --depth=1
+        run: git fetch origin ${{ github.base_ref }} --depth=50
 
       - name: Setup Node and pnpm
         if: needs.check-scope.outputs.docsite_only != 'true'
@@ -170,9 +190,24 @@ jobs:
         if: needs.check-scope.outputs.docsite_only != 'true'
         run: pnpm -F @astryxdesign/core typecheck:docs
 
+      - name: Typecheck lab docs
+        if: needs.check-scope.outputs.docsite_only != 'true'
+        run: pnpm -F @astryxdesign/lab typecheck:docs
+
+      - name: Typecheck charts docs
+        if: needs.check-scope.outputs.docsite_only != 'true'
+        run: pnpm -F @astryxdesign/charts typecheck:docs
+
       - name: Typecheck template docs
         if: needs.check-scope.outputs.docsite_only != 'true'
         run: pnpm -F @astryxdesign/cli typecheck:template-docs
+
+      # Full-package strict checkJs over the CLI (src, bin, scripts, docs, and
+      # the emitted templates). Requires the `pnpm build` above so the template
+      # .tsx sources can resolve the built @astryxdesign/{core,charts,lab} types.
+      - name: Typecheck CLI (strict)
+        if: needs.check-scope.outputs.docsite_only != 'true'
+        run: pnpm -F @astryxdesign/cli typecheck:strict
 
       - name: Typecheck storybook
         if: needs.check-scope.outputs.docsite_only != 'true'
@@ -219,28 +254,21 @@ jobs:
 
       - name: Write PR comment metadata
         if: needs.check-scope.outputs.docsite_only != 'true' && github.event_name == 'pull_request'
-        env:
-          # Preview deploy (gh-pages) only runs for same-repo PRs — forks lack
-          # the write token. So preview URLs only exist for same-repo PRs; for
-          # forks we omit them (empty), and generate-pr-comment.js drops the
-          # preview sections rather than link to a 404.
-          IS_SAME_REPO: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
         run: |
-          # The pr-comment workflow runs on workflow_run (privileged token, so
-          # it can comment on fork PRs). That context does NOT know the PR
-          # number or preview URLs, so persist them in the artifact here.
-          if [ "$IS_SAME_REPO" = "true" ]; then
-            SB_URL="${{ steps.urls.outputs.storybook_url }}"
-            SBX_URL="${{ steps.urls.outputs.sandbox_url }}"
-          else
-            SB_URL=""
-            SBX_URL=""
-          fi
+          # The pr-comment and deploy-preview workflows run on workflow_run
+          # (privileged token), so they can comment on and deploy previews for
+          # fork PRs too. Neither context knows the PR number, preview URLs, or
+          # the artifact hash, so persist them here for the trusted jobs to read.
+          #
+          # Preview URLs are now populated for ALL PRs (fork and same-repo alike)
+          # because deploy-preview.yml deploys every PR's preview from the trusted
+          # context — the old fork/same-repo split (empty URLs on forks) is gone.
           cat > pr-meta.json <<EOF
           {
             "prNumber": "${{ steps.urls.outputs.pr_number }}",
-            "storybookUrl": "${SB_URL}",
-            "sandboxUrl": "${SBX_URL}",
+            "shortHash": "${{ steps.urls.outputs.short_hash }}",
+            "storybookUrl": "${{ steps.urls.outputs.storybook_url }}",
+            "sandboxUrl": "${{ steps.urls.outputs.sandbox_url }}",
             "runId": "${{ github.run_id }}",
             "runUrl": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           }
@@ -349,80 +377,13 @@ jobs:
             *) exit 1 ;;
           esac
 
-  # Deploy PR preview to GitHub Pages.
-  # Uses a per-PR concurrency group so multiple PRs deploy in parallel.
-  # Instead of peaceiris/actions-gh-pages (which can conflict with main's
-  # force-push), we do a manual git push with retry-on-conflict.
-  # Fork PRs run with a read-only GITHUB_TOKEN, so the `git push origin gh-pages`
-  # below would 403. Skip on forks (neutral, not failing). A maintainer can deploy
-  # a trusted fork PR's preview manually via the Re-deploy Preview workflow.
-  deploy-preview:
-    if: >-
-      github.event_name == 'pull_request' &&
-      needs.check-scope.outputs.docsite_only != 'true' &&
-      github.event.pull_request.head.repo.full_name == github.repository
-    needs: [build-storybook, build-sandbox, check-scope]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    concurrency:
-      group: "pr-preview-${{ needs.build-storybook.outputs.pr_number }}"
-      cancel-in-progress: true
-    steps:
-      - name: Download Storybook artifact
-        uses: actions/download-artifact@v8
-        with:
-          name: storybook-${{ needs.build-storybook.outputs.short_hash }}
-          path: storybook-dist
-
-      - name: Download Sandbox artifact
-        uses: actions/download-artifact@v8
-        with:
-          name: sandbox-${{ needs.build-sandbox.outputs.short_hash }}
-          path: sandbox-dist
-
-      - name: Deploy PR preview to GitHub Pages
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUMBER: ${{ needs.build-storybook.outputs.pr_number }}
-        run: |
-          REPO_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git"
-          MAX_ATTEMPTS=5
-          WORK_DIR="$PWD"
-
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-
-          for attempt in $(seq 1 $MAX_ATTEMPTS); do
-            echo "::group::Attempt $attempt of $MAX_ATTEMPTS"
-            cd "$WORK_DIR"
-
-            rm -rf /tmp/gh-pages
-            git clone --depth=1 --single-branch --branch gh-pages "$REPO_URL" /tmp/gh-pages
-
-            rm -rf /tmp/gh-pages/pr/${PR_NUMBER}
-            mkdir -p /tmp/gh-pages/pr/${PR_NUMBER}
-            cp -r storybook-dist/* /tmp/gh-pages/pr/${PR_NUMBER}/
-            mkdir -p /tmp/gh-pages/pr/${PR_NUMBER}/sandbox
-            cp -r sandbox-dist/* /tmp/gh-pages/pr/${PR_NUMBER}/sandbox/
-
-            cd /tmp/gh-pages
-            git add -A
-            git commit -m "Deploy PR #${PR_NUMBER} preview" || { echo "Nothing to commit"; echo "::endgroup::"; exit 0; }
-
-            if git push origin gh-pages; then
-              echo "Deployed successfully on attempt $attempt"
-              echo "::endgroup::"
-              exit 0
-            fi
-
-            echo "Push failed (likely concurrent update), retrying in $((attempt * 2))s..."
-            echo "::endgroup::"
-            sleep $((attempt * 2))
-          done
-
-          echo "::error::Failed to deploy PR preview after $MAX_ATTEMPTS attempts"
-          exit 1
+  # NOTE: PR preview deploy has moved to deploy-preview.yml (workflow_run).
+  # It used to live here as a `deploy-preview` job, but a pull_request job on a
+  # fork gets a read-only GITHUB_TOKEN and can't push to gh-pages — so previews
+  # only ever appeared on same-repo PRs. The trusted workflow_run companion runs
+  # in the base-repo context with a write token, downloads the static artifacts
+  # this workflow already uploads (storybook-<hash>, sandbox-<hash>), and deploys
+  # for EVERY PR (fork and same-repo alike) without executing any PR code.
 
   # Accessibility audit
   # Skipped when no components changed. Depends only on build-storybook, so it
@@ -459,15 +420,23 @@ jobs:
       - name: Install Playwright
         run: pnpm install --frozen-lockfile && npx playwright install chromium
 
+      # Fails on axe violations not present in the checked-in baseline
+      # (.github/a11y-baseline.json). See CONTRIBUTING.md "Accessibility
+      # audits" for the baseline workflow.
       - name: Run accessibility audit
         run: |
           COMPONENTS=$(cat analysis.json | jq -r '(.newComponents + .modifiedComponents) | join(",")')
           node .github/scripts/accessibility-audit.js \
             --storybook-dir apps/storybook/dist \
             --output a11y-report.json \
-            --components "$COMPONENTS"
+            --components "$COMPONENTS" \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new
 
+      # if: always() so the report artifact (and the PR comment built from it)
+      # still exists when the gate above fails.
       - name: Upload a11y artifact
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: a11y-report

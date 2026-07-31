@@ -22,6 +22,7 @@ import {spacingVars} from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 // =============================================================================
 // Variant type
@@ -150,10 +151,12 @@ export function Breadcrumbs({
   xstyle,
   className,
   style,
-  label = 'Breadcrumb',
+  label: labelFromProps,
   ref,
   ...rest
 }: BreadcrumbsProps) {
+  const t = useTranslator();
+  const label = labelFromProps ?? t('@astryx.breadcrumbs.label');
   const ctxValue = useMemo<BreadcrumbContextValue>(
     () => ({variant, separator}),
     [variant, separator],

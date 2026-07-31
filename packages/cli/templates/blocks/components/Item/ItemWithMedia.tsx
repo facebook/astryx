@@ -13,14 +13,14 @@ export default function ItemWithMedia() {
   return (
     <Stack gap={0}>
       <Item
-        startContent={<Avatar name="Ada Lovelace" size="xsmall" />}
+        startContent={<Avatar name="Ada Lovelace" size="sm" />}
         label="Ada Lovelace"
         description="Design systems engineer"
         endContent={<Badge label="Owner" variant="purple" />}
         onClick={() => {}}
       />
       <Item
-        startContent={<Avatar name="Grace Hopper" size="xsmall" />}
+        startContent={<Avatar name="Grace Hopper" size="sm" />}
         label="Grace Hopper"
         description="Compiler platform"
         endContent={<Text color="secondary">Online</Text>}

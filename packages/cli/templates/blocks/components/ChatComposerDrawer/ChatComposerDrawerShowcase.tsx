@@ -12,12 +12,13 @@ import type {CSSProperties} from 'react';
 
 const drawerBorder: CSSProperties = {
   border: 'var(--border-width) solid var(--color-border)',
-  borderRadius: 'var(--radius-chat)',
+  borderTopLeftRadius: 'var(--radius-chat)',
+  borderTopRightRadius: 'var(--radius-chat)',
 };
 
 export default function ChatComposerDrawerShowcase() {
   return (
-    <Stack direction="vertical" gap={4} width={480}>
+    <Stack direction="vertical" gap={4} width={450} maxWidth="100%">
       <ChatComposer
         onSubmit={() => {}}
         drawer={

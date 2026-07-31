@@ -35,6 +35,9 @@ export * from './Chat';
 // Drawer — experimental overlay panel
 export {Drawer, type DrawerProps} from './Drawer';
 
+// BottomSheet — mobile touch sheet on a native modal <dialog>
+export {BottomSheet, type BottomSheetProps} from './BottomSheet';
+
 // Stat — experimental KPI/metric display
 export {
   Stat,
@@ -229,3 +232,21 @@ export {
   type LogEntry,
   type LogStreamLevel,
 } from './LogStream';
+
+// RichTextEditor — experimental Lexical WYSIWYG editor (RFC facebook/astryx#3899)
+// Optional peer deps: lexical + @lexical/*. Read-only rendering via RichTextView.
+export {
+  RichTextEditor,
+  type RichTextEditorProps,
+  type RichTextEditorRef,
+  type RichTextEditorStatus,
+  type RichTextEditorStatusType,
+  type RichTextEditorSize,
+  type Transformer,
+  RichTextView,
+  type RichTextViewProps,
+  sharedEditorTheme,
+  markdownToEditorStateJSON,
+  editorStateJSONToMarkdown,
+  type MarkdownSerializerOptions,
+} from './RichTextEditor';

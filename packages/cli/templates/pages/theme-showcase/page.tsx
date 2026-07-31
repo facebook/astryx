@@ -282,14 +282,14 @@ const DEFAULT_PRODUCTS: ProductSpec[] = [
 
 // Neutral product photos, served from the shared astryx asset CDN so the
 // scaffolded template renders real imagery without needing local public assets.
-const NEUTRAL_CDN = 'https://lookaside.facebook.com/assets/astryx';
 const DEFAULT_IMAGES: Record<string, string> = {
-  watch: `${NEUTRAL_CDN}/Neutral-Watch.png`,
-  headphones: `${NEUTRAL_CDN}/Neutral-Headphones.png`,
-  backpack: `${NEUTRAL_CDN}/Neutral-Backpack.png`,
-  wallet: `${NEUTRAL_CDN}/Neutral-Wallet.png`,
-  tumbler: `${NEUTRAL_CDN}/Neutral-Tumbler.png`,
-  throw_: `${NEUTRAL_CDN}/Neutral-Blanket.png`,
+  watch: 'https://lookaside.facebook.com/assets/astryx/Neutral-Watch.png',
+  headphones:
+    'https://lookaside.facebook.com/assets/astryx/Neutral-Headphones.png',
+  backpack: 'https://lookaside.facebook.com/assets/astryx/Neutral-Backpack.png',
+  wallet: 'https://lookaside.facebook.com/assets/astryx/Neutral-Wallet.png',
+  tumbler: 'https://lookaside.facebook.com/assets/astryx/Neutral-Tumbler.png',
+  throw_: 'https://lookaside.facebook.com/assets/astryx/Neutral-Blanket.png',
 };
 
 export interface ThemeShowcaseProps {

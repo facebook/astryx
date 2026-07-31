@@ -11,6 +11,7 @@
 
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
+import * as stylex from '@stylexjs/stylex';
 import {BaseTable} from './BaseTable';
 import {Table} from './Table';
 import {TableRow} from './TableRow';
@@ -412,6 +413,136 @@ describe('BaseTable', () => {
       'aria-label',
       'Users table',
     );
+  });
+
+  describe('root element styling props (#3679)', () => {
+    it('applies className to the table element', () => {
+      render(<Table data={users} columns={columns} className="custom-table" />);
+      expect(screen.getByRole('table').className).toContain('custom-table');
+    });
+
+    it('applies style to the table element', () => {
+      render(<Table data={users} columns={columns} style={{opacity: 0.9}} />);
+      expect(screen.getByRole('table').style.opacity).toBe('0.9');
+    });
+
+    it('accepts xstyle without error', () => {
+      render(<Table data={users} columns={columns} xstyle={undefined} />);
+      expect(screen.getByRole('table')).toBeInTheDocument();
+    });
+
+    it('spreads id and aria attributes onto the table element', () => {
+      render(
+        <Table
+          data={users}
+          columns={columns}
+          id="users-table"
+          aria-label="Users"
+          data-analytics="tables"
+        />,
+      );
+      const table = screen.getByRole('table', {name: 'Users'});
+      expect(table.id).toBe('users-table');
+      expect(table).toHaveAttribute('data-analytics', 'tables');
+    });
+
+    it('composes with deprecated tableProps, direct props winning conflicts', () => {
+      render(
+        <Table
+          data={users}
+          columns={columns}
+          className="direct"
+          style={{opacity: 1}}
+          tableProps={{
+            className: 'legacy',
+            style: {color: 'red', opacity: 0.5},
+          }}
+        />,
+      );
+      const table = screen.getByRole('table');
+      expect(table.className).toContain('legacy');
+      expect(table.className).toContain('direct');
+      // Direct style wins the conflicting key; non-conflicting legacy survives.
+      expect(table.style.opacity).toBe('1');
+      expect(table.style.color).toBe('red');
+    });
+
+    it('keeps the computed column min-width over a consumer style.minWidth', () => {
+      const {tableMinWidth} = resolveColumnWidths(columns);
+      render(
+        <Table data={users} columns={columns} style={{minWidth: '10px'}} />,
+      );
+      expect(screen.getByRole('table').style.minWidth).toBe(
+        `${tableMinWidth}px`,
+      );
+    });
+
+    it('lets a consumer style.minWidth survive when columns compute none', () => {
+      const plain: TableColumn<User>[] = [{key: 'name'}, {key: 'age'}];
+      render(<Table data={users} columns={plain} style={{minWidth: '10px'}} />);
+      expect(screen.getByRole('table').style.minWidth).toBe('10px');
+    });
+
+    it('direct id and aria attributes beat the same keys in tableProps', () => {
+      render(
+        <Table
+          data={users}
+          columns={columns}
+          id="direct-id"
+          aria-label="Direct"
+          tableProps={{id: 'legacy-id', 'aria-label': 'Legacy'}}
+        />,
+      );
+      const table = screen.getByRole('table', {name: 'Direct'});
+      expect(table.id).toBe('direct-id');
+    });
+
+    it('keeps the astryx theme classes alongside a consumer className', () => {
+      render(<Table data={users} columns={columns} className="custom-table" />);
+      const table = screen.getByRole('table');
+      expect(table.className).toContain('astryx-base-table');
+      expect(table.className).toContain('astryx-table');
+      expect(table.className).toContain('custom-table');
+    });
+
+    it('passes event handlers through to the table element', async () => {
+      const onClick = vi.fn();
+      render(<Table data={users} columns={columns} onClick={onClick} />);
+      screen
+        .getByRole('table')
+        .dispatchEvent(new MouseEvent('click', {bubbles: true}));
+      expect(onClick).toHaveBeenCalledTimes(1);
+    });
+
+    it('applies dynamic xstyle values to the table element', () => {
+      const dynamic = stylex.create({
+        opacity: (value: number) => ({opacity: value}),
+      });
+      render(
+        <Table data={users} columns={columns} xstyle={dynamic.opacity(0.42)} />,
+      );
+      expect(screen.getByRole('table').getAttribute('style')).toContain('0.42');
+    });
+
+    it('honors className in children mode', () => {
+      render(
+        <Table className="custom-table">
+          <tbody>
+            <TableRow>
+              <TableCell>Cell</TableCell>
+            </TableRow>
+          </tbody>
+        </Table>,
+      );
+      expect(screen.getByRole('table').className).toContain('custom-table');
+    });
+
+    it('honors className on an unwrapped BaseTable (no scrollWrapper)', () => {
+      render(
+        <BaseTable data={users} columns={columns} className="custom-table" />,
+      );
+      expect(screen.getByRole('table').className).toContain('custom-table');
+    });
   });
 
   describe('plugin pipeline', () => {
@@ -826,7 +957,7 @@ describe('Table', () => {
     const userPlugin: TablePlugin<User> = {
       transformTable: props => {
         // XDS plugin should have already added styles
-        expect(props.styles.length).toBeGreaterThan(1);
+        expect(props.xstyle.length).toBeGreaterThan(1);
         return {
           ...props,
           htmlProps: {...props.htmlProps, 'data-testid': 'after-xds'},
@@ -1318,5 +1449,90 @@ describe('emptyState', () => {
       expect(tfoot).toHaveAttribute('data-testid', 'tfoot');
       expect(tfoot).toHaveAttribute('id', 'foot-1');
     });
+  });
+});
+
+describe('ARIA row indexing (#3939)', () => {
+  const bodyRows = (container: HTMLElement): HTMLTableRowElement[] =>
+    Array.from(container.querySelectorAll('tbody tr'));
+
+  it('emits no aria-rowindex/aria-rowcount by default', () => {
+    const {container} = render(<Table data={users} columns={columns} />);
+    expect(screen.getByRole('table')).not.toHaveAttribute('aria-rowcount');
+    for (const row of bodyRows(container)) {
+      expect(row).not.toHaveAttribute('aria-rowindex');
+    }
+  });
+
+  it('numbers rows from 1 when rowCount is provided', () => {
+    const {container} = render(
+      <Table data={users} columns={columns} rowCount={users.length} />,
+    );
+    expect(screen.getByRole('table')).toHaveAttribute(
+      'aria-rowcount',
+      String(users.length),
+    );
+    const indices = bodyRows(container).map(r =>
+      r.getAttribute('aria-rowindex'),
+    );
+    expect(indices).toEqual(['1', '2', '3']);
+  });
+
+  it('offsets aria-rowindex by rowIndexStart for a paginated view', () => {
+    // Page 3 of a 10-per-page dataset: first visible row is dataset row 21.
+    const {container} = render(
+      <Table
+        data={users}
+        columns={columns}
+        rowIndexStart={21}
+        rowCount={100}
+      />,
+    );
+    expect(screen.getByRole('table')).toHaveAttribute('aria-rowcount', '100');
+    const indices = bodyRows(container).map(r =>
+      r.getAttribute('aria-rowindex'),
+    );
+    expect(indices).toEqual(['21', '22', '23']);
+  });
+
+  it('sets aria-rowcount to -1 (unknown) when only rowIndexStart is given', () => {
+    // Windowed/cursor pagination: offset known, total unknown.
+    const {container} = render(
+      <Table data={users} columns={columns} rowIndexStart={5} />,
+    );
+    expect(screen.getByRole('table')).toHaveAttribute('aria-rowcount', '-1');
+    const indices = bodyRows(container).map(r =>
+      r.getAttribute('aria-rowindex'),
+    );
+    expect(indices).toEqual(['5', '6', '7']);
+  });
+
+  it('does not assign an ARIA row index to the header row', () => {
+    render(<Table data={users} columns={columns} rowCount={users.length} />);
+    const header = screen.getAllByRole('row')[0];
+    expect(header).not.toHaveAttribute('aria-rowindex');
+  });
+
+  it('lets a plugin override the seeded aria-rowindex', () => {
+    const plugin: TablePlugin<User> = {
+      transformBodyRow(props, _item, index) {
+        return {
+          ...props,
+          htmlProps: {...props.htmlProps, 'aria-rowindex': 100 + index},
+        };
+      },
+    };
+    const {container} = render(
+      <Table
+        data={users}
+        columns={columns}
+        rowCount={users.length}
+        plugins={{custom: plugin}}
+      />,
+    );
+    const indices = bodyRows(container).map(r =>
+      r.getAttribute('aria-rowindex'),
+    );
+    expect(indices).toEqual(['100', '101', '102']);
   });
 });

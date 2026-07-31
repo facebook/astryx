@@ -30,6 +30,10 @@ export const docs = {
       {className: 'astryx-field', visualProps: ['layout']},
       {className: 'astryx-field-label'},
       {className: 'astryx-field-status', visualProps: ['type', 'variant']},
+      {
+        className: 'astryx-input-status-icon',
+        visualProps: ['size', 'status'],
+      },
     ],
     vars: [
       {name: '--_field-radius', description: 'Border radius of input fields', default: 'var(--radius-element)', private: true},
@@ -95,7 +99,7 @@ export const docs = {
     {
       name: 'labelIcon',
       type: 'IconType',
-      description: 'Icon to display before the label text. See `npx astryx docs icons` for valid semantic names.',
+      description: 'Icon to display before the label text. See `astryx docs icons` for valid semantic names.',
     },
     {
       name: 'labelTooltip',
@@ -104,8 +108,8 @@ export const docs = {
     },
     {
       name: 'status',
-      type: 'FieldStatus',
-      description: 'Status indicator with type and optional message. When message is set, displays a colored status box.',
+      type: "{type: 'warning' | 'error' | 'success', message?: string, messageID?: string}",
+      description: 'Status indicator with type and optional message. When message is set, displays a colored status box. messageID is for wiring aria-describedby on the input.',
     },
     {
       name: 'statusVariant',

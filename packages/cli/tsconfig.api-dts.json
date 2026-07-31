@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.strict.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "declarationMap": false,
+    "rootDir": "../..",
+    "outDir": "/tmp/astryx-dts-build",
+    "customConditions": ["source"]
+  },
+  "include": ["api/**/*.mjs", "types/**/*.d.ts"],
+  "exclude": ["**/*.test.mjs"]
+}

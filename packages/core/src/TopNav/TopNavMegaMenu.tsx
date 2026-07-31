@@ -123,6 +123,18 @@ const styles = stylex.create({
       transform: 'translateY(-4px)',
     },
   },
+  // Clamp the anchored layer to the space available below the nav so a tall
+  // menu never runs off the bottom of the viewport. The layer is positioned
+  // with position-area: self-block-end, so its containing block spans from
+  // the nav's block-end to the viewport edge — 100% is exactly that space.
+  // The layer is a flex column so panelContainer can shrink and scroll its
+  // own content, keeping the surface radius/shadow static at the edges.
+  // Internal scroll is a stopgap until the mobile bottom-sheet lands.
+  panelViewportFit: {
+    display: 'flex',
+    flexDirection: 'column',
+    maxHeight: `calc(100% - ${spacingVars['--spacing-3']})`,
+  },
   // Visual styles for the panel content container.
   panelContainer: {
     backgroundColor: colorVars['--color-background-popover'],
@@ -132,6 +144,11 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-container'],
     boxShadow: shadowVars['--shadow-low'],
     overflow: 'hidden',
+    // Allow the container to shrink inside the height-clamped layer so its
+    // content (panelContent) can scroll rather than overflow the viewport.
+    display: 'flex',
+    flexDirection: 'column',
+    minHeight: 0,
   },
   panelContent: {
     display: 'flex',
@@ -139,7 +156,14 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-6'],
     paddingBlock: spacingVars['--spacing-3'],
     paddingInline: spacingVars['--spacing-3'],
-    maxWidth: 960,
+    // Clamp to the viewport (minus a gutter) so the anchored panel never
+    // overflows the screen edge on narrow viewports; caps at 960px otherwise.
+    maxWidth: `min(960px, calc(100dvw - ${spacingVars['--spacing-4']}))`,
+    boxSizing: 'border-box',
+    // Scroll internally when the menu is taller than the available space
+    // below the nav (paired with panelViewportFit on the layer).
+    overflowY: 'auto',
+    overscrollBehavior: 'contain',
   },
   menuWrapper: {
     flexGrow: 2,
@@ -354,7 +378,11 @@ function DefaultMegaMenu({
   }, [onOpenChange]);
 
   const popover = usePopover({
-    dialogLabel: label,
+    // role: 'none' — the panel exposes its own role="group" labeled by
+    // `label`. Focus stays on the trigger while the panel is open, so a
+    // role="dialog" aria-modal="true" wrapper would announce an unnamed
+    // modal dialog around a grid of links.
+    role: 'none',
     // hasSurface: false — mega menu provides its own surface (panelContainer)
     // with border-top and custom overflow. Animation is applied via the
     // render() call's xstyle prop (panelAnimation), not the hook options.
@@ -434,8 +462,7 @@ function DefaultMegaMenu({
       <button
         ref={mergeRefs(triggerButtonRef, ref)}
         type="button"
-        aria-haspopup="true"
-        aria-expanded={popover.isOpen}
+        {...popover.triggerProps}
         onClick={handleClick}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
@@ -454,7 +481,10 @@ function DefaultMegaMenu({
       </button>
       {popover.render(
         <div
-          role="menu"
+          // role="group" — a mega menu is a browsing grid of links, not an
+          // ARIA menu of menuitems (per the WAI-ARIA APG, the menu role is
+          // for action menus; link mega menus are the documented anti-case).
+          role="group"
           aria-label={label}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
@@ -478,7 +508,7 @@ function DefaultMegaMenu({
         {
           placement: 'below',
           alignment: slot,
-          xstyle: styles.panelAnimation,
+          xstyle: [styles.panelAnimation, styles.panelViewportFit],
         },
       )}
     </>

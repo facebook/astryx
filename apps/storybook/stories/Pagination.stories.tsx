@@ -3,6 +3,7 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState} from 'react';
 import {Pagination} from '@astryxdesign/core/Pagination';
+import {InternationalizationProvider} from '@astryxdesign/core';
 
 const meta: Meta<typeof Pagination> = {
   title: 'Core/Pagination',
@@ -56,6 +57,17 @@ function PaginationDemo(
 
 export const Default: Story = {
   render: () => <PaginationDemo page={1} totalItems={100} pageSize={10} />,
+};
+
+export const RightToLeft: Story = {
+  name: 'Right to Left (RTL)',
+  render: () => (
+    <InternationalizationProvider locale="en" dir="rtl">
+      <div dir="rtl">
+        <PaginationDemo page={1} totalItems={100} pageSize={10} />
+      </div>
+    </InternationalizationProvider>
+  ),
 };
 
 export const PagesVariant: Story = {

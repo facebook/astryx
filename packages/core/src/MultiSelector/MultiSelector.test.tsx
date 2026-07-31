@@ -10,10 +10,19 @@
  */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {MultiSelector} from './MultiSelector';
+import {Icon} from '../Icon';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
+import {defineTheme} from '../theme/defineTheme';
+import {generateThemeCSSFlat} from '../theme/generateThemeRules';
 
 // Module-level constants to satisfy @eslint-react/no-unstable-default-props.
 const ANNOUNCE_OPTIONS = ['Apple', 'Banana', 'Orange'] as const;
@@ -360,6 +369,30 @@ describe('MultiSelector', () => {
     expect(activeId).toBeTruthy();
   });
 
+  it('End/Home jump the highlight to the last/first option (non-search)', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={[]}
+        onChange={() => {}}
+      />,
+    );
+
+    const trigger = screen.getByRole('combobox');
+    await user.click(trigger);
+    const options = screen.getAllByRole('option', h);
+
+    await user.keyboard('{End}');
+    expect(trigger).toHaveAttribute(
+      'aria-activedescendant',
+      options[options.length - 1].id,
+    );
+    await user.keyboard('{Home}');
+    expect(trigger).toHaveAttribute('aria-activedescendant', options[0].id);
+  });
+
   it('toggles item with Enter key', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
@@ -477,6 +510,59 @@ describe('MultiSelector', () => {
     expect(options[0]).toHaveTextContent('Select all');
   });
 
+  it('select-all accessible name reflects none/partial/all selection', async () => {
+    const user = userEvent.setup();
+    const options = [
+      {value: 'apple', label: 'Apple'},
+      {value: 'banana', label: 'Banana'},
+    ];
+    const {rerender} = render(
+      <MultiSelector
+        label="Fruit"
+        options={options}
+        value={[]}
+        onChange={() => {}}
+        hasSelectAll
+      />,
+    );
+
+    await user.click(screen.getByRole('combobox'));
+
+    // None selected: plain name, not selected
+    let selectAll = screen.getAllByRole('option', h)[0];
+    expect(selectAll).not.toHaveAccessibleName(/partially selected/);
+    expect(selectAll).toHaveAttribute('aria-selected', 'false');
+
+    // Partial: aria-selected="mixed" is invalid on role="option", so the
+    // indeterminate state must be conveyed through the accessible name.
+    rerender(
+      <MultiSelector
+        label="Fruit"
+        options={options}
+        value={['apple']}
+        onChange={() => {}}
+        hasSelectAll
+      />,
+    );
+    selectAll = screen.getAllByRole('option', h)[0];
+    expect(selectAll).toHaveAccessibleName('Select all, partially selected');
+    expect(selectAll).toHaveAttribute('aria-selected', 'false');
+
+    // All selected: plain name again, selected
+    rerender(
+      <MultiSelector
+        label="Fruit"
+        options={options}
+        value={['apple', 'banana']}
+        onChange={() => {}}
+        hasSelectAll
+      />,
+    );
+    selectAll = screen.getAllByRole('option', h)[0];
+    expect(selectAll).not.toHaveAccessibleName(/partially selected/);
+    expect(selectAll).toHaveAttribute('aria-selected', 'true');
+  });
+
   it('select-all toggles via keyboard Enter', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
@@ -535,6 +621,131 @@ describe('MultiSelector', () => {
     expect(options).toHaveLength(1);
   });
 
+  describe('grouped search', () => {
+    const GROUPED = [
+      {
+        type: 'section' as const,
+        title: 'Citrus',
+        options: [
+          {value: 'orange', label: 'Orange'},
+          {value: 'lemon', label: 'Lemon'},
+        ],
+      },
+      {
+        type: 'section' as const,
+        title: 'Berries',
+        options: [
+          {value: 'strawberry', label: 'Strawberry'},
+          {value: 'blueberry', label: 'Blueberry'},
+        ],
+      },
+    ];
+
+    it('keeps the group header above matching items while searching', async () => {
+      const user = userEvent.setup();
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={GROUPED}
+          value={[]}
+          onChange={() => {}}
+          hasSearch
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      await user.type(screen.getByRole('combobox', h), 'orange');
+
+      expect(
+        screen.getByRole('group', {name: 'Citrus', ...h}),
+      ).toBeInTheDocument();
+      const options = screen.getAllByRole('option', h);
+      expect(options).toHaveLength(1);
+      expect(options[0]).toHaveTextContent('Orange');
+    });
+
+    it('hides a group whose items have no match', async () => {
+      const user = userEvent.setup();
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={GROUPED}
+          value={[]}
+          onChange={() => {}}
+          hasSearch
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      await user.type(screen.getByRole('combobox', h), 'berry');
+
+      expect(
+        screen.getByRole('group', {name: 'Berries', ...h}),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole('group', {name: 'Citrus', ...h}),
+      ).not.toBeInTheDocument();
+      expect(screen.getAllByRole('option', h)).toHaveLength(2);
+    });
+  });
+
+  it('PageDown/PageUp jump the highlight to the last/first filtered option', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    const searchInput = screen.getByRole('combobox', h);
+    // Filter to Banana and Orange so "last" means last *visible* option.
+    await user.type(searchInput, 'an');
+    const options = screen.getAllByRole('option', h);
+    expect(options).toHaveLength(2);
+
+    await user.keyboard('{PageDown}');
+    expect(searchInput).toHaveAttribute(
+      'aria-activedescendant',
+      options[options.length - 1].id,
+    );
+    await user.keyboard('{PageUp}');
+    expect(searchInput).toHaveAttribute('aria-activedescendant', options[0].id);
+  });
+
+  it('Home/End move the search caret, not the option highlight', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    const searchInput = screen.getByRole<HTMLInputElement>('combobox', h);
+    await user.type(searchInput, 'an');
+    expect(searchInput.selectionStart).toBe(2);
+    const activeBefore = searchInput.getAttribute('aria-activedescendant');
+    // Home/End stay on the input for caret movement (APG editable combobox);
+    // the option highlight must not move.
+    await user.keyboard('{Home}');
+    expect(searchInput.selectionStart).toBe(0);
+    expect(searchInput.getAttribute('aria-activedescendant')).toBe(
+      activeBefore,
+    );
+    await user.keyboard('{End}');
+    expect(searchInput.selectionStart).toBe(2);
+    expect(searchInput.getAttribute('aria-activedescendant')).toBe(
+      activeBefore,
+    );
+  });
+
   it('shows empty state when search has no results', async () => {
     const user = userEvent.setup();
     render(
@@ -551,7 +762,108 @@ describe('MultiSelector', () => {
     const searchInput = screen.getByRole('combobox', h);
     await user.type(searchInput, 'xyz');
 
-    expect(screen.getByText('No results found')).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('listbox', h)).getByText('No results found'),
+    ).toBeInTheDocument();
+  });
+
+  it('empty-state message is not exposed as a listbox child', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    await user.type(screen.getByRole('combobox', h), 'xyz');
+
+    // role="listbox" only permits option/group children — the visual
+    // empty-state message must be presentational (it is announced through
+    // the result-count live region instead).
+    const listbox = screen.getByRole('listbox', h);
+    const empty = within(listbox).getByText('No results found');
+    expect(empty).toHaveAttribute('role', 'presentation');
+  });
+
+  describe('result announcements', () => {
+    it('announces the match count politely while searching', async () => {
+      const user = userEvent.setup();
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={defaultOptions}
+          value={EMPTY_VALUE}
+          onChange={() => {}}
+          hasSearch
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      // "an" matches Banana and Orange.
+      await user.type(screen.getByRole('combobox', h), 'an');
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('2 results');
+      });
+    });
+
+    it('announces the singular form when one option matches', async () => {
+      const user = userEvent.setup();
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={defaultOptions}
+          value={EMPTY_VALUE}
+          onChange={() => {}}
+          hasSearch
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      // "app" matches only Apple. Anchored so it cannot pass on "1 results".
+      await user.type(screen.getByRole('combobox', h), 'app');
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent(/^1 result$/);
+      });
+    });
+
+    it('announces "No results found" when nothing matches', async () => {
+      const user = userEvent.setup();
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={defaultOptions}
+          value={EMPTY_VALUE}
+          onChange={() => {}}
+          hasSearch
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      await user.type(screen.getByRole('combobox', h), 'xyz');
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('No results found');
+      });
+    });
+
+    it('does not announce results until the user searches', async () => {
+      const user = userEvent.setup();
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={defaultOptions}
+          value={EMPTY_VALUE}
+          onChange={() => {}}
+          hasSearch
+        />,
+      );
+      // Popover closed: nothing announced.
+      expect(politeRegion()?.textContent ?? '').toBe('');
+      // Open with an empty query: still nothing announced.
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      expect(politeRegion()?.textContent ?? '').toBe('');
+    });
   });
 
   it('renders with description', () => {
@@ -1072,7 +1384,300 @@ describe('MultiSelector', () => {
           />
         </form>,
       );
-      expect([...new FormData(container.querySelector('form')!).keys()]).toEqual([]);
+      expect([
+        ...new FormData(container.querySelector('form')!).keys(),
+      ]).toEqual([]);
     });
+  });
+});
+
+describe('MultiSelector statusVariant forwarding', () => {
+  it('defaults to attached (status renders with data-variant="attached")', () => {
+    const {container} = render(
+      <MultiSelector
+        label="Fruit"
+        options={['Apple', 'Banana']}
+        value={[]}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Required'}}
+      />,
+    );
+    expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+      'data-variant',
+      'attached',
+    );
+  });
+
+  it('forwards statusVariant="detached" to the underlying Field status', () => {
+    const {container} = render(
+      <MultiSelector
+        label="Fruit"
+        options={['Apple', 'Banana']}
+        value={[]}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Required'}}
+        statusVariant="detached"
+      />,
+    );
+    expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+      'data-variant',
+      'detached',
+    );
+  });
+
+  it('keeps the on-field status icon for the attached variant', () => {
+    const {container} = render(
+      <MultiSelector
+        label="Fruit"
+        options={['Apple', 'Banana']}
+        value={[]}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Required'}}
+      />,
+    );
+    // Attached: the status glyph replaces the chevron indicator on the field.
+    expect(
+      container.querySelector('.astryx-multi-selector-indicator-icon'),
+    ).toBeNull();
+  });
+
+  it('suppresses the on-field status icon for the detached variant', () => {
+    const {container} = render(
+      <MultiSelector
+        label="Fruit"
+        options={['Apple', 'Banana']}
+        value={[]}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Required'}}
+        statusVariant="detached"
+      />,
+    );
+    // Detached: the message box below carries its own leading icon, so the
+    // field keeps its chevron indicator rather than duplicating the glyph.
+    expect(
+      container.querySelector('.astryx-multi-selector-indicator-icon'),
+    ).not.toBeNull();
+  });
+});
+
+describe('MultiSelector clear icon theme target', () => {
+  const ICON_OPTIONS = ['Apple', 'Banana', 'Orange'];
+
+  // Resolve the clear glyph span (the astryx-icon element inside the clear
+  // button), independent of the theme target class.
+  const getClearIcon = (): HTMLElement => {
+    const button = screen.getByRole('button', {name: 'Clear all Fruit'});
+    const icon = button.querySelector('.astryx-icon');
+    if (icon == null) {
+      throw new Error('clear icon not found');
+    }
+    return icon as HTMLElement;
+  };
+
+  it('renders the astryx-multi-selector-clear-icon target on the clear glyph', () => {
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={ICON_OPTIONS}
+        value={['Banana']}
+        onChange={() => {}}
+        hasClear
+      />,
+    );
+    // The stable theme target lands on the icon element itself (not the
+    // button), so a theme can restyle just this glyph (color, size, hover)
+    // via `defineTheme` — a button-level target could not reach the icon's
+    // own color/size.
+    const icon = getClearIcon();
+    expect(icon).toHaveClass('astryx-multi-selector-clear-icon');
+    expect(icon).toHaveClass('astryx-icon');
+  });
+
+  it('keeps the clear button functional alongside the target', () => {
+    const onChange = vi.fn();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={ICON_OPTIONS}
+        value={['Banana']}
+        onChange={onChange}
+        hasClear
+      />,
+    );
+    const clear = screen.getByRole('button', {name: 'Clear all Fruit'});
+    expect(clear.tagName).toBe('BUTTON');
+    fireEvent.click(clear);
+    expect(onChange).toHaveBeenCalledWith([]);
+  });
+
+  it('renders the default icon (secondary color, sm size) byte-identically', () => {
+    // Pixel-identical default guard: the clear glyph must carry the exact same
+    // StyleX color/size classes as a standalone secondary/sm icon. The added
+    // target class is purely additive — it changes nothing until a theme
+    // targets it.
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={ICON_OPTIONS}
+        value={['Banana']}
+        onChange={() => {}}
+        hasClear
+      />,
+    );
+    const icon = getClearIcon();
+
+    const {container: refContainer} = render(
+      <Icon icon="close" size="sm" color="secondary" />,
+    );
+    const refIcon = refContainer.querySelector('.astryx-icon') as HTMLElement;
+
+    const styleClasses = (el: HTMLElement) =>
+      el.className
+        .split(' ')
+        .filter(c => c !== 'astryx-multi-selector-clear-icon')
+        .sort();
+
+    expect(styleClasses(icon)).toEqual(styleClasses(refIcon));
+  });
+
+  it('exposes multi-selector-clear-icon so a theme reaches the icon color, size, and hover', () => {
+    // jsdom cannot resolve the @layer cascade, so the DOM-class assertion above
+    // (target lands on the icon element) plus this generation assertion (the
+    // theme emits same-element icon rules in @layer astryx-theme) together
+    // prove the seam: a same-element theme rule wins over the icon's own
+    // base-layer color/size.
+    const theme = defineTheme({
+      name: 'multi-selector-clear-icon-test',
+      components: {
+        'multi-selector-clear-icon': {
+          base: {
+            width: '12px',
+            height: '12px',
+            fontSize: '12px',
+            color: 'var(--color-icon-secondary)',
+            ':hover': {color: 'var(--color-icon-primary)'},
+          },
+        },
+      },
+    });
+    const css = generateThemeCSSFlat(theme);
+    expect(css).toContain('.astryx-multi-selector-clear-icon {');
+    expect(css).toContain('width: 12px');
+    expect(css).toContain('height: 12px');
+    expect(css).toContain('.astryx-multi-selector-clear-icon:hover {');
+    expect(css).toContain('color: var(--color-icon-primary)');
+  });
+});
+
+describe('MultiSelector indicator (chevron) icon theme target', () => {
+  const ICON_OPTIONS = ['Apple', 'Banana', 'Orange'];
+
+  const getIndicatorIcon = (container: HTMLElement): HTMLElement => {
+    // The chevron is the only glyph carrying the indicator target class.
+    const icon = container.querySelector(
+      '.astryx-multi-selector-indicator-icon',
+    );
+    if (icon == null) {
+      throw new Error('indicator icon not found');
+    }
+    return icon as HTMLElement;
+  };
+
+  it('renders the astryx-multi-selector-indicator-icon target on the chevron glyph', () => {
+    const {container} = render(
+      <MultiSelector
+        label="Fruit"
+        options={ICON_OPTIONS}
+        value={[]}
+        onChange={() => {}}
+      />,
+    );
+    // The stable theme target lands on the icon element itself (not the trigger
+    // button), so a theme can restyle just this glyph (color, size, hover) —
+    // and each open/closed state — via `defineTheme`. A button-level target
+    // could not reach the icon's own color/size.
+    const icon = getIndicatorIcon(container);
+    expect(icon).toHaveClass('astryx-multi-selector-indicator-icon');
+    expect(icon).toHaveClass('astryx-icon');
+    // Open/closed state is reflected so a theme can target each state alone.
+    expect(icon).toHaveAttribute('data-state', 'collapsed');
+  });
+
+  it('reflects the expanded state on the chevron when the popover is open', async () => {
+    const user = userEvent.setup();
+    const {container} = render(
+      <MultiSelector
+        label="Fruit"
+        options={ICON_OPTIONS}
+        value={[]}
+        onChange={() => {}}
+      />,
+    );
+    await user.click(screen.getByRole('combobox'));
+    await waitFor(() => {
+      expect(getIndicatorIcon(container)).toHaveAttribute(
+        'data-state',
+        'expanded',
+      );
+    });
+  });
+
+  it('renders the default icon (inherit color, sm size) byte-identically', () => {
+    // Pixel-identical default guard: the chevron glyph must carry the exact
+    // same StyleX color/size classes as a standalone inherit/sm icon. The added
+    // target class + data-state are purely additive — they change nothing until
+    // a theme targets them.
+    const {container} = render(
+      <MultiSelector
+        label="Fruit"
+        options={ICON_OPTIONS}
+        value={[]}
+        onChange={() => {}}
+      />,
+    );
+    const icon = getIndicatorIcon(container);
+
+    const {container: refContainer} = render(
+      <Icon icon="chevronDown" size="sm" color="inherit" />,
+    );
+    const refIcon = refContainer.querySelector('.astryx-icon') as HTMLElement;
+
+    // Exclude the additive theme-target classes (the stable target + its
+    // reflected state class) so only the StyleX color/size classes remain.
+    const themeTargetClasses = new Set([
+      'astryx-multi-selector-indicator-icon',
+      'collapsed',
+      'expanded',
+    ]);
+    const styleClasses = (el: HTMLElement) =>
+      el.className
+        .split(' ')
+        .filter(c => !themeTargetClasses.has(c))
+        .sort();
+
+    expect(styleClasses(icon)).toEqual(styleClasses(refIcon));
+  });
+
+  it('exposes multi-selector-indicator-icon so a theme reaches the icon size and per-state color', () => {
+    // jsdom cannot resolve the @layer cascade, so the DOM-class assertions
+    // above (target lands on the icon element) plus this generation assertion
+    // (the theme emits same-element icon rules in @layer astryx-theme) together
+    // prove the seam: a same-element theme rule wins over the icon's own
+    // base-layer color/size.
+    const theme = defineTheme({
+      name: 'multi-selector-indicator-icon-test',
+      components: {
+        'multi-selector-indicator-icon': {
+          base: {width: '14px', height: '14px', fontSize: '14px'},
+          'state:expanded': {color: 'var(--color-icon-primary)'},
+        },
+      },
+    });
+    const css = generateThemeCSSFlat(theme);
+    expect(css).toContain('.astryx-multi-selector-indicator-icon {');
+    expect(css).toContain('width: 14px');
+    expect(css).toContain('height: 14px');
+    expect(css).toContain('.astryx-multi-selector-indicator-icon.expanded');
+    expect(css).toContain('color: var(--color-icon-primary)');
   });
 });

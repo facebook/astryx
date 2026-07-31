@@ -16,17 +16,37 @@ export default function TimestampTimezone() {
           User-facing with timezone
         </Text>
         <Stack direction="horizontal" gap={4} vAlign="center">
-          <Timestamp value={DATE} format="date_time" isTimezoneShown color="primary" />
-          <Timestamp value={DATE} format="time" isTimezoneShown color="primary" />
+          <Timestamp
+            value={DATE}
+            format="date_time"
+            isTimezoneShown
+            color="primary"
+          />
+          <Timestamp
+            value={DATE}
+            format="time"
+            isTimezoneShown
+            color="primary"
+          />
         </Stack>
       </Stack>
       <Stack direction="vertical" gap={1}>
         <Text type="supporting" color="secondary">
-          System formats with timezone
+          System formats stay machine-readable — never suffixed with a zone
         </Text>
         <Stack direction="horizontal" gap={4} vAlign="center">
-          <Timestamp value={DATE} format="system_date_time" isTimezoneShown type="code" color="primary" />
-          <Timestamp value={DATE} format="system_time" isTimezoneShown type="code" color="primary" />
+          <Timestamp
+            value={DATE}
+            format="system_date_time"
+            type="code"
+            color="primary"
+          />
+          <Timestamp
+            value={DATE}
+            format="system_time"
+            type="code"
+            color="primary"
+          />
         </Stack>
       </Stack>
     </Stack>

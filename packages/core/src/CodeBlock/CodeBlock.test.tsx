@@ -14,6 +14,7 @@ import {act, render, screen, fireEvent, waitFor} from '@testing-library/react';
 import {CodeBlock} from './CodeBlock';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {dracula} from '../theme/syntax';
+import {InternationalizationProvider} from '../i18n';
 
 function politeRegion(): HTMLElement | null {
   return document.querySelector('[data-astryx-live-region="polite"]');
@@ -70,6 +71,22 @@ describe('CodeBlock', () => {
     await waitFor(() => {
       expect(politeRegion()).toHaveTextContent('Copied');
     });
+  });
+
+  it('localizes the copy announcement through the i18n catalog', async () => {
+    render(
+      <InternationalizationProvider
+        locale="fr"
+        overrides={{fr: {'@astryx.codeBlock.copied': 'Copié'}}}>
+        <CodeBlock code="const x = 1;" language="javascript" />
+      </InternationalizationProvider>,
+    );
+    // The button label and the live-region announcement share the same key.
+    fireEvent.click(screen.getByRole('button', {name: 'Copy code'}));
+    await waitFor(() => {
+      expect(politeRegion()).toHaveTextContent('Copié');
+    });
+    expect(screen.getByRole('button', {name: 'Copié'})).toBeInTheDocument();
   });
 
   it('keeps the copied indicator a full 2s after a rapid re-copy', async () => {
@@ -208,6 +225,62 @@ describe('CodeBlock', () => {
     const controlsId = header.getAttribute('aria-controls');
     expect(controlsId).toBeTruthy();
     expect(document.getElementById(controlsId as string)).not.toBeNull();
+  });
+
+  it('makes the collapsed region inert so the scroll container is unreachable', () => {
+    render(
+      <CodeBlock
+        code={LONG_CODE}
+        language="javascript"
+        title="example"
+        isCollapsible
+      />,
+    );
+    const header = screen
+      .getAllByRole('button')
+      .find(el => el.hasAttribute('aria-expanded'))!;
+    const region = document.getElementById(
+      header.getAttribute('aria-controls') as string,
+    )!;
+    // Expanded: the region is not inert and the scroll container is reachable.
+    expect(region).not.toHaveAttribute('inert');
+
+    fireEvent.click(header);
+    expect(header).toHaveAttribute('aria-expanded', 'false');
+    // Collapsed: the wrapper is inert, so the keyboard-focusable scroll
+    // container (tabIndex=0) inside it drops out of the tab order and the
+    // accessibility tree instead of remaining an invisible tab stop.
+    expect(region).toHaveAttribute('inert');
+    const scrollContainer = screen.getByRole('group');
+    expect(scrollContainer.closest('[inert]')).toBe(region);
+  });
+
+  it('restores focusability of the scroll container after expanding again', () => {
+    render(
+      <CodeBlock
+        code={LONG_CODE}
+        language="javascript"
+        title="example"
+        isCollapsible
+      />,
+    );
+    const header = screen
+      .getAllByRole('button')
+      .find(el => el.hasAttribute('aria-expanded'))!;
+    const region = document.getElementById(
+      header.getAttribute('aria-controls') as string,
+    )!;
+    // Collapse, then expand again.
+    fireEvent.click(header);
+    expect(region).toHaveAttribute('inert');
+    fireEvent.click(header);
+    expect(header).toHaveAttribute('aria-expanded', 'true');
+    // Expanded again: inert is removed and the scroll container is a
+    // keyboard-focusable group once more.
+    expect(region).not.toHaveAttribute('inert');
+    const scrollContainer = screen.getByRole('group');
+    expect(scrollContainer.closest('[inert]')).toBeNull();
+    expect(scrollContainer).toHaveAttribute('tabindex', '0');
   });
 
   it('applies a per-instance syntax theme via the syntaxTheme prop', () => {

@@ -1,8 +1,10 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+'use client';
+
 /**
  * @file FieldLabel.tsx
- * @input Uses React, Icon, IconType
+ * @input Uses React, Icon, IconType, useTranslator
  * @output Exports FieldLabel component, FieldLabelProps
  * @position Core label implementation; used by Field, CheckboxInput, Switch
  *
@@ -10,6 +12,7 @@
  * - /packages/core/src/Field/Field.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/Field/index.ts (exports if types change)
  * - /packages/cli/templates/blocks/components/Field/ (showcase blocks)
+ * - /packages/core/locales/en.json (@astryx.field.required / @astryx.field.optional)
  */
 
 import type {ReactNode} from 'react';
@@ -26,6 +29,7 @@ import {
 } from '../theme/tokens.stylex';
 import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {Tooltip} from '../Tooltip';
+import {useTranslator} from '../i18n';
 import {themeProps} from '../utils/themeProps';
 
 const styles = stylex.create({
@@ -48,7 +52,7 @@ const styles = stylex.create({
     borderStyle: 'none',
     clip: 'rect(0, 0, 0, 0)',
     height: 1,
-    left: 0,
+    insetInlineStart: 0,
     margin: -1,
     overflow: 'hidden',
     padding: 0,
@@ -171,9 +175,18 @@ export function FieldLabel({
   labelTooltip,
   description,
   descriptionID,
+  className,
+  style,
+  xstyle,
   ref,
+  ...rest
 }: FieldLabelProps) {
-  const statusText = isOptional ? 'Optional' : isRequired ? 'Required' : null;
+  const t = useTranslator();
+  const statusText = isOptional
+    ? t('@astryx.field.optional')
+    : isRequired
+      ? t('@astryx.field.required')
+      : null;
 
   // A group label (e.g. for a radiogroup) must not be a literal `<label>`
   // element: a `<label>` semantically names a single form control and can't be
@@ -207,13 +220,17 @@ export function FieldLabel({
         // `htmlFor` only applies to a real `<label>` associating with a single
         // control; a group label (span) has no `htmlFor`.
         htmlFor={isGroupLabel ? undefined : inputID}
+        {...rest}
         {...mergeProps(
           themeProps('field-label'),
           stylex.props(
             styles.label,
             isDisabled && styles.labelDisabled,
             isLabelHidden && styles.srOnly,
+            xstyle,
           ),
+          className,
+          style,
         )}>
         {labelContent}
       </LabelElement>

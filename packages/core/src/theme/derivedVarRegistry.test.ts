@@ -186,6 +186,7 @@ function discoverComponents(): ComponentInfo[] {
 // ---------------------------------------------------------------------------
 
 const DIR_TO_REGISTRY_KEY: Record<string, string> = {
+  Avatar: 'avatar',
   Banner: 'banner',
   Button: 'button',
   Card: 'card',

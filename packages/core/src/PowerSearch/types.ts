@@ -256,13 +256,7 @@ export type DateTimeRangePart =
       readonly type: 'RELATIVE';
       readonly backValue: number;
       readonly unit:
-        | 'second'
-        | 'minute'
-        | 'hour'
-        | 'day'
-        | 'week'
-        | 'month'
-        | 'year';
+        'second' | 'minute' | 'hour' | 'day' | 'week' | 'month' | 'year';
       readonly anchorKey?: string;
     };
 
@@ -285,11 +279,41 @@ export interface RelativeDateFilterPreset {
 // Config Types
 // =============================================================================
 
-export interface PowerSearchOperator {
+export interface PowerSearchOperatorBase {
   readonly key: string;
-  readonly label: string;
   readonly value: OperatorValue;
 }
+
+/**
+ * Operator variant that provides its label as raw text. The consumer owns
+ * translation of that string. Use this for genuinely custom operator labels
+ * that don't correspond to an entry in astryx's shipped translation catalog
+ * (e.g. `label: 'in my rotations'`).
+ */
+export interface PowerSearchOperatorWithLabel extends PowerSearchOperatorBase {
+  readonly label: string;
+  readonly i18nKey?: never;
+}
+
+/**
+ * Operator variant that references a translation-catalog key. The library
+ * looks the key up against the active InternationalizationProvider locale.
+ * Use `@astryx.powersearch.operator.*` for astryx's shipped defaults, or a
+ * key from your own catalog registered via InternationalizationProvider
+ * `messages` / `overrides` props.
+ */
+export interface PowerSearchOperatorWithI18nKey extends PowerSearchOperatorBase {
+  readonly i18nKey: string;
+  readonly label?: never;
+}
+
+/**
+ * A discriminated union: an operator must supply EXACTLY ONE of `label`
+ * (raw text) or `i18nKey` (catalog lookup). The type system prevents
+ * accidental omission — a bare `{key, value}` is a compile error.
+ */
+export type PowerSearchOperator =
+  PowerSearchOperatorWithLabel | PowerSearchOperatorWithI18nKey;
 
 export interface PowerSearchField {
   readonly key: string;

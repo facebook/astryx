@@ -17,6 +17,12 @@
  */
 
 import {resolveThemeTokens, type DefinedTheme} from '@astryxdesign/core/theme';
+import {
+  parseHex,
+  parseColor,
+  formatHex,
+  formatColor,
+} from '@astryxdesign/core/utils';
 
 // =============================================================================
 // Types
@@ -96,32 +102,6 @@ const SEQUENTIAL_HUES: SequentialHue[] = [
   'gray',
 ];
 
-/** Parse a `#rgb`, `#rrggbb`, or `#rrggbbaa` color to `[r, g, b]`; null for anything else. */
-function parseHex(color: string): [number, number, number] | null {
-  const hex = color.trim().replace(/^#/, '');
-  if (/^[0-9a-fA-F]{3}$/.test(hex)) {
-    return [
-      parseInt(hex[0] + hex[0], 16),
-      parseInt(hex[1] + hex[1], 16),
-      parseInt(hex[2] + hex[2], 16),
-    ];
-  }
-  if (/^[0-9a-fA-F]{6}$/.test(hex) || /^[0-9a-fA-F]{8}$/.test(hex)) {
-    return [
-      parseInt(hex.slice(0, 2), 16),
-      parseInt(hex.slice(2, 4), 16),
-      parseInt(hex.slice(4, 6), 16),
-    ];
-  }
-  return null;
-}
-
-function toHexChannel(value: number): string {
-  return Math.max(0, Math.min(255, Math.round(value)))
-    .toString(16)
-    .padStart(2, '0');
-}
-
 /** Interpolate between two hex colors in sRGB. Non-hex input falls back to the nearer endpoint. */
 function lerpHex(a: string, b: string, t: number): string {
   const ca = parseHex(a);
@@ -129,8 +109,8 @@ function lerpHex(a: string, b: string, t: number): string {
   if (ca === null || cb === null) {
     return t < 0.5 ? a : b;
   }
-  const mix = (i: number): number => ca[i] + (cb[i] - ca[i]) * t;
-  return `#${toHexChannel(mix(0))}${toHexChannel(mix(1))}${toHexChannel(mix(2))}`;
+  const mix = (x: number, y: number): number => x + (y - x) * t;
+  return formatHex(mix(ca.r, cb.r), mix(ca.g, cb.g), mix(ca.b, cb.b));
 }
 
 /**
@@ -168,14 +148,21 @@ function sampleRamp(stops: string[], n: number): string[] {
   });
 }
 
-/** Apply an opacity to a hex color as an `rgba()` string. Non-hex input is returned unchanged. */
+/**
+ * Apply an opacity to a concrete CSS color (hex — with or without the leading
+ * `#` — `rgb()`/`rgba()`, named). The `opacity` argument always wins over any
+ * alpha already in the color. Unparseable input (e.g. `var()`) is returned
+ * unchanged.
+ */
 function hexAlpha(hex: string, opacity: number): string {
-  const rgb = parseHex(hex);
-  if (rgb === null) {
+  // parseColor requires the `#` for hex; fall back to parseHex so bare hex
+  // strings (`0064E0`) keep working as they did before #3739.
+  const rgba = parseColor(hex) ?? parseHex(hex);
+  if (rgba === null) {
     return hex;
   }
   const a = Number.isFinite(opacity) ? Math.max(0, Math.min(1, opacity)) : 1;
-  return `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a})`;
+  return formatColor({...rgba, a});
 }
 
 // =============================================================================
