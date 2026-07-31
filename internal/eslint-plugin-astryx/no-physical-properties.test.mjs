@@ -163,6 +163,34 @@ ruleTester.run('no-physical-properties', rule, {
         {messageId: 'physicalKey', data: {physical: 'left', logical: 'insetInlineStart'}},
       ],
     },
+    // --- INLINE-CENTERING EXCEPTION: left:'50%' + translate must NOT be
+    // logicalized (breaks RTL centering); flagged with a distinct, non-fixing
+    // message pointing to rtlStyles.centerInline. output:null = unchanged. ---
+    {
+      code: inStylex(`left: '50%', transform: 'translate(-50%, 100%)'`),
+      output: null,
+      errors: [{messageId: 'inlineCentering', data: {value: '50%'}}],
+    },
+    {
+      code: inStylex(`left: '50%', transform: 'translateX(-50%)'`),
+      output: null,
+      errors: [{messageId: 'inlineCentering', data: {value: '50%'}}],
+    },
+    {
+      // template-literal transform (the dynamic-style form) is also detected
+      code: inStylex('left: \'50%\', transform: `translate(-50%, ${o})`'),
+      output: null,
+      errors: [{messageId: 'inlineCentering', data: {value: '50%'}}],
+    },
+    {
+      // left:'50%' WITHOUT a translate is NOT the centering idiom — normal
+      // physicalKey rename still applies.
+      code: inStylex(`left: '50%'`),
+      output: inStylex(`insetInlineStart: '50%'`),
+      errors: [
+        {messageId: 'physicalKey', data: {physical: 'left', logical: 'insetInlineStart'}},
+      ],
+    },
     // --- KEY-BASED: corner radii (verify the diagonal mapping) ---
     {
       code: inStylex(`borderTopLeftRadius: 4`),
