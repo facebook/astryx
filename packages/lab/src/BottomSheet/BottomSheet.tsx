@@ -145,8 +145,8 @@ const styles = stylex.create({
     width: '100%',
     maxWidth: 640,
     backgroundColor: colorVars['--color-background-surface'],
-    borderStartStartRadius: radiusVars['--radius-page'],
-    borderStartEndRadius: radiusVars['--radius-page'],
+    borderStartStartRadius: radiusVars['--radius-container'],
+    borderStartEndRadius: radiusVars['--radius-container'],
     boxShadow: shadowVars['--shadow-high'],
     // tabIndex=-1 makes this the initial focus target; it's a programmatic
     // landing spot, not an interactive control, so suppress the focus ring.
