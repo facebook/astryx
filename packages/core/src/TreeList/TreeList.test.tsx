@@ -545,6 +545,48 @@ describe('TreeList', () => {
   });
 
   // ===========================================================================
+  // Leaf highlight flush-to-guide
+  // ===========================================================================
+
+  describe('leaf row highlight is flush with sibling parents', () => {
+    // A parent and a leaf at the SAME level should paint their hover/selected
+    // highlight from the same start x (the guide column) — the leaf must not be
+    // inset past its parent sibling. The row box carries --_tree-indent; a leaf
+    // realigns only its CONTENT via padding, not the row box, so the published
+    // row indent matches the parent's.
+    const mixed: TreeListItemData[] = [
+      {
+        id: 'parent',
+        label: 'Parent',
+        isExpanded: true,
+        children: [{id: 'child', label: 'Child'}],
+      },
+      {id: 'leaf', label: 'Leaf Sibling'},
+    ];
+
+    const rowIndentStyle = (text: string): string => {
+      const li = screen.getByText(text).closest('li')!;
+      const row = li.querySelector<HTMLElement>('[style*="--_tree-indent"]')!;
+      return row.getAttribute('style') ?? '';
+    };
+
+    it('publishes the same row indent (level * step) for a leaf and a parent at the same level', () => {
+      render(<TreeList items={mixed} variant="noGuides" />);
+      // Both top-level rows are level 0 → indent = calc(0 * var(--tree-list-indent)).
+      // The leaf no longer bakes the chevron-column offset into the row box, so
+      // its --_tree-indent matches the parent's exactly.
+      expect(rowIndentStyle('Parent')).toBe(rowIndentStyle('Leaf Sibling'));
+    });
+
+    it('does not fold the chevron-column offset into a leaf row-box indent', () => {
+      render(<TreeList items={mixed} variant="noGuides" />);
+      // Pre-fix, a leaf's indent was calc(N * step + spacing-4 + spacing-2);
+      // now the offset lives in content padding, not the row indent.
+      expect(rowIndentStyle('Leaf Sibling')).not.toContain('--spacing-4');
+    });
+  });
+
+  // ===========================================================================
   // xds class name
   // ===========================================================================
 

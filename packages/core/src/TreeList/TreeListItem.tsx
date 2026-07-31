@@ -87,7 +87,22 @@ const styles = stylex.create({
     // cascade order — an inline longhand would outrank every layer. The row
     // publishes only the computed distance as `--_tree-indent`; the per-level
     // step is the public `--tree-list-indent` lever (see TreeList `root`).
+    // The margin is `level * step` for parents AND leaves, so a leaf's
+    // highlight starts flush with its parent sibling (at the guide column)
+    // rather than inset past it — leaf label alignment is restored by
+    // `leafContentInset` (padding, not margin) so only content shifts.
     marginInlineStart: 'var(--_tree-indent, 0px)',
+  },
+  // Leaf rows have no chevron occupying the toggle column, so their content
+  // would sit one chevron-column too far to the start and misalign with
+  // sibling parents' labels. Re-inset the CONTENT (not the row box) by the
+  // chevron footprint (--spacing-4) + the flex gap (--spacing-2), added to the
+  // base inline-start padding (--spacing-2). Using padding-inline-start keeps
+  // the highlighted row box flush to the guide while the label lines up with
+  // parents. Longhand beats `contentWrapper`'s `paddingInline` shorthand via
+  // StyleX's longhand>shorthand priority, so it's order-independent.
+  leafContentInset: {
+    paddingInlineStart: `calc(${spacingVars['--spacing-2']} + ${spacingVars['--spacing-4']} + ${spacingVars['--spacing-2']})`,
   },
   interactive: {
     cursor: 'pointer',
@@ -366,15 +381,17 @@ export function TreeListItem({
 
   // Per-level indent distance. The per-level step is the public, themeable
   // `--tree-list-indent` lever (default `--spacing-4`, set on the tree-list
-  // root). Leaves add a fixed chevron-column offset (chevron width + gap) so
-  // their labels line up with sibling parents' labels; that offset is tied to
-  // the chevron's own dimensions, not the indent step, so it does not scale
-  // with the lever. Published as the private `--_tree-indent` and consumed by
+  // root). Published as the private `--_tree-indent` and consumed by
   // `contentWrapper`'s stylesheet `margin-inline-start` (kept out of the inline
   // style so the theme layer can override it — see #4308).
-  const indentDistance = hasChildren
-    ? `calc(${nestedLevel} * var(--tree-list-indent))`
-    : `calc(${nestedLevel} * var(--tree-list-indent) + ${spacingVars['--spacing-4']} + ${spacingVars['--spacing-2']})`;
+  //
+  // The row-start margin is `level * step` for BOTH parents and leaves, so a
+  // leaf's hover/selected highlight starts at the same x as its parent sibling
+  // (flush to the guide column) instead of inset past it. A leaf has no chevron
+  // to occupy the toggle column, so its label alignment is restored separately
+  // via `leafContentInset` below — a `padding-inline-start` that shifts only
+  // the content, not the highlighted row box.
+  const indentDistance = `calc(${nestedLevel} * var(--tree-list-indent))`;
   const indentStyle: IndentStyle = {'--_tree-indent': indentDistance};
 
   const labelAndDescription = (
@@ -541,6 +558,9 @@ export function TreeListItem({
             stylex.props(
               styles.contentWrapper,
               densityStyles[density],
+              // Leaves re-inset their content (not the row) to align labels
+              // with sibling parents while the highlight stays flush to guide.
+              !hasChildren && styles.leafContentInset,
               (isInteractive || (hasChildren && onClick == null)) &&
                 styles.interactive,
               (isInteractive || (hasChildren && onClick == null)) &&
