@@ -223,6 +223,47 @@ describe('BottomSheet', () => {
     });
   });
 
+  describe('initial focus', () => {
+    it('focuses the sheet panel on open, not the first control', () => {
+      render(
+        <BottomSheet isOpen onOpenChange={() => {}} label="Filters">
+          <button type="button">First action</button>
+        </BottomSheet>,
+      );
+      const panel = document.querySelector('[data-astryx-sheet]');
+      expect(document.activeElement).toBe(panel);
+      expect(document.activeElement).not.toBe(
+        screen.getByRole('button', {name: 'First action'}),
+      );
+    });
+
+    it('honors a descendant with data-autofocus', () => {
+      render(
+        <BottomSheet isOpen onOpenChange={() => {}} label="Filters">
+          <input data-autofocus aria-label="Search" />
+        </BottomSheet>,
+      );
+      expect(document.activeElement).toBe(
+        screen.getByRole('textbox', {name: 'Search'}),
+      );
+    });
+  });
+
+  describe('accessible name', () => {
+    it('warns in development when label is empty', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      render(
+        <BottomSheet isOpen onOpenChange={() => {}} label="">
+          Content
+        </BottomSheet>,
+      );
+      expect(
+        warn.mock.calls.some(args => String(args[0]).includes('BottomSheet')),
+      ).toBe(true);
+      warn.mockRestore();
+    });
+  });
+
   describe('reduced motion', () => {
     it('opens without throwing when prefers-reduced-motion is set', () => {
       vi.stubGlobal(

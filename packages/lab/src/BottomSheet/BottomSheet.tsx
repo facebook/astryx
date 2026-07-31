@@ -40,7 +40,7 @@ import {
   sizeVars,
   spacingVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
-import {useScrollLock} from '@astryxdesign/core/hooks';
+import {useDevWarning, useScrollLock} from '@astryxdesign/core/hooks';
 import {mergeProps, mergeRefs, themeProps} from '@astryxdesign/core/utils';
 import {useSheetGestures} from './useSheetGestures';
 
@@ -77,16 +77,17 @@ const MAX_SHEET_WIDTH = 640;
 // SYNC: must match OVERSCROLL_MAX in useSheetGestures.ts (the drag cap).
 const OVERSCROLL_PADDING = 48;
 
-// Grab-handle sizing, on the spacing scale. The pill sits in a short reserved
-// row right under the sheet's rounded top, but the pointer hit box is a
-// full-width 48px strip (`--spacing-12`; twice WCAG 2.2 SC 2.5.8's 24px floor)
-// so it's easy to land on. The extra target height extends DOWNWARD, over the
-// top of the content via a negative bottom margin, so the hit box grows
-// without reserving layout space or leaving a gap before the heading.
+// Backstop for the slide-out transition when releasing the modal on close, a
+// touch above `--duration-medium` (410ms) so `transitionend` normally fires
+// first and this only covers environments that don't emit it.
+const CLOSE_ANIMATION_MS = 450;
+
+// Grab-handle sizing. The whole strip is the drag target — a generous 48px
+// (`--spacing-12`, the top of the scale; above Apple's 44px HIG target and
+// twice WCAG 2.2 SC 2.5.8's 24px floor) with the pill centered in it. A full,
+// honest strip (no negative-margin overlap tricks) so the target is exactly
+// as tall as it looks and can't be undercut by the content below.
 const HANDLE_HIT_HEIGHT = spacingVars['--spacing-12']; // 48px target strip
-const HANDLE_PILL_INSET = spacingVars['--spacing-3']; // 12px above the pill
-// Overlap = hit height - reserved row (48 - 20), as tokens so it tracks scale.
-const HANDLE_OVERLAP = `calc(-1 * (${spacingVars['--spacing-12']} - ${spacingVars['--spacing-5']}))`;
 
 /**
  * Default snap detents in px, resolved against the *visual* viewport (like iOS
@@ -172,10 +173,17 @@ const styles = stylex.create({
     borderStartStartRadius: radiusVars['--radius-page'],
     borderStartEndRadius: radiusVars['--radius-page'],
     boxShadow: shadowVars['--shadow-high'],
+    // tabIndex=-1 makes this the initial focus target; it's a programmatic
+    // landing spot, not an interactive control, so suppress the focus ring.
+    outline: 'none',
     overflow: 'hidden',
-    // Home-indicator clearance plus the overscroll allowance so a small upward
-    // drag reveals padding rather than a gap.
+    // Reserved overdrag zone: extra bottom padding (surface bg + home-indicator
+    // clearance) that a small upward drag reveals, negated by an equal negative
+    // margin so at rest it sits BELOW the fold — the true sheet stays pinned to
+    // the bottom edge. Budget heights add the same amount back (see `budget` /
+    // `hugHeight`) so the visible height is unchanged.
     paddingBlockEnd: `calc(env(safe-area-inset-bottom, 0px) + ${OVERSCROLL_PADDING}px)`,
+    marginBlockEnd: `${-OVERSCROLL_PADDING}px`,
     // Slide in from below on open; @starting-style covers the entry.
     transform: {
       default: 'translateY(0)',
@@ -196,14 +204,11 @@ const styles = stylex.create({
   handleBar: {
     flexShrink: 0,
     display: 'flex',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'center',
-    // 48px pointer hit box overlapping into the content via a negative bottom
-    // margin, so only a short row is reserved in layout (no gap before the
-    // heading). The pill is anchored near the top of the box.
+    // The full strip is the drag target — tall and centered so it's easy to
+    // grab and reads clearly as the resize affordance.
     height: HANDLE_HIT_HEIGHT,
-    paddingBlockStart: HANDLE_PILL_INSET,
-    marginBlockEnd: HANDLE_OVERLAP,
     touchAction: 'none',
     cursor: 'grab',
   },
@@ -223,13 +228,15 @@ const styles = stylex.create({
     touchAction: 'pan-y',
   },
   // `hug` fits the content instead of filling the budget; the budget becomes
-  // an upper bound (90%).
+  // an upper bound (90%). Both budgets add the overdrag padding back to the
+  // height so the visible sheet (height minus the off-screen padding) matches
+  // the intended budget.
   budget: {
-    height: 'var(--_sheet-budget)',
+    height: `calc(var(--_sheet-budget) + ${OVERSCROLL_PADDING}px)`,
   },
   hugHeight: {
     height: 'fit-content',
-    maxHeight: HEIGHT_BUDGETS.hug,
+    maxHeight: `calc(${HEIGHT_BUDGETS.hug} + ${OVERSCROLL_PADDING}px)`,
   },
 });
 
@@ -307,6 +314,7 @@ export function BottomSheet({
 }: BottomSheetProps) {
   const dialogRef = useRef<HTMLDialogElement | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
+  const sheetNodeRef = useRef<HTMLDivElement | null>(null);
   const close = useCallback(() => onOpenChange(false), [onOpenChange]);
 
   // Drive the scrim opacity from drag progress via a CSS variable on the
@@ -339,17 +347,65 @@ export function BottomSheet({
       dialog.style.setProperty('--_sheet-scrim-opacity', '1');
       if (!dialog.open) {
         dialog.showModal();
+        // Match Dialog's focus contract: land initial focus at the top of the
+        // sheet (its panel) so assistive tech reads from the label rather than
+        // jumping into the first control — unless a descendant opts in with
+        // `data-autofocus`. showModal() focuses the first tabbable element by
+        // default, so we override that here.
         const autofocus = dialog.querySelector<HTMLElement>('[data-autofocus]');
-        autofocus?.focus();
+        if (autofocus) {
+          autofocus.focus();
+        } else {
+          sheetNodeRef.current?.focus();
+        }
       }
     } else if (dialog.open) {
-      dialog.close();
-      triggerRef.current?.focus();
-      triggerRef.current = null;
+      // Animate out before releasing the top layer: the `sheetClosing` style
+      // (applied on this render because isOpen is false) slides the sheet back
+      // down; we wait for that transition to finish, then close() and restore
+      // focus. A timeout backstops browsers/environments that don't fire
+      // transitionend (e.g. reduced motion, or the tab hidden).
+      const sheet = sheetNodeRef.current;
+      let done = false;
+      const finish = () => {
+        if (done) {
+          return;
+        }
+        done = true;
+        clearTimeout(timer);
+        sheet?.removeEventListener('transitionend', onEnd);
+        if (dialog.open) {
+          dialog.close();
+        }
+        triggerRef.current?.focus();
+        triggerRef.current = null;
+      };
+      const onEnd = (event: TransitionEvent) => {
+        if (event.target === sheet && event.propertyName === 'transform') {
+          finish();
+        }
+      };
+      sheet?.addEventListener('transitionend', onEnd);
+      const timer = setTimeout(finish, CLOSE_ANIMATION_MS);
+      return () => {
+        clearTimeout(timer);
+        sheet?.removeEventListener('transitionend', onEnd);
+      };
     }
   }, [isOpen]);
 
   useScrollLock(isOpen);
+
+  // Enforce an accessible name, like a modal Dialog: the sheet has no built-in
+  // heading to derive one from, so an empty `label` leaves it unnamed for
+  // assistive tech. `label` is a required prop, but JS callers can still pass
+  // an empty string — warn in development.
+  useDevWarning(
+    'BottomSheet',
+    'requires a non-empty `label` for an accessible name; the open sheet ' +
+      'has no built-in heading to derive one from.',
+    isOpen && !label,
+  );
 
   // Native Escape (dialog `cancel`) and scrim click both request close.
   const handleCancel = useCallback(
@@ -407,8 +463,9 @@ export function BottomSheet({
       {...props}>
       <div {...stylex.props(styles.positioner)}>
         <div
-          ref={sheetRef}
+          ref={mergeRefs(sheetRef, sheetNodeRef)}
           data-astryx-sheet=""
+          tabIndex={-1}
           {...mergeProps(
             stylex.props(
               styles.sheet,
