@@ -149,7 +149,8 @@ export const SelectAll: Story = {
   decorators: [Story => <Story />],
 };
 
-// Searchable
+// Searchable: the dropdown search field has a built-in leading magnifier icon
+// and a trailing clear (✕) button that appears once a query is typed.
 export const Searchable: Story = {
   render: () => {
     const [value, setValue] = useState<string[]>([]);

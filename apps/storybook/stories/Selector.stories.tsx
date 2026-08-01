@@ -323,6 +323,43 @@ export const SearchableWithSections: Story = {
   },
 };
 
+// Searchable: the dropdown search field has a built-in leading magnifier icon
+// and a trailing clear (✕) button that appears once a query is typed.
+export const Searchable: Story = {
+  render: args => {
+    const {
+      value: argsValue,
+      onChange: _onChange,
+      changeAction: _ca,
+      hasClear: _hc,
+      ...rest
+    } = args;
+    const [value, setValue] = useState(argsValue ?? undefined);
+    return (
+      <Selector
+        {...rest}
+        label="Fruit"
+        hasSearch
+        options={[
+          'Apple',
+          'Apricot',
+          'Banana',
+          'Blueberry',
+          'Cherry',
+          'Grapefruit',
+          'Mango',
+          'Orange',
+        ]}
+        value={value}
+        onChange={v => setValue(v)}
+      />
+    );
+  },
+  args: {
+    placeholder: 'Select a fruit...',
+  },
+};
+
 // Custom render
 export const CustomRender: Story = {
   render: args => {

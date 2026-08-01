@@ -212,11 +212,19 @@ const styles = stylex.create({
 
   // Search input
   searchWrapper: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-1'],
     paddingInline: spacingVars['--spacing-2'],
     paddingBlock: spacingVars['--spacing-1'],
   },
+  searchIcon: {
+    flexShrink: 0,
+  },
   searchInput: {
     boxSizing: 'border-box',
+    flexGrow: 1,
+    minWidth: 0,
     width: '100%',
     paddingBlock: spacingVars['--spacing-1'],
     paddingInline: spacingVars['--spacing-2'],
@@ -236,6 +244,24 @@ const styles = stylex.create({
       ':focus': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
     },
     outlineOffset: '0',
+  },
+  searchClearButton: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    padding: 0,
+    margin: 0,
+    borderWidth: 0,
+    borderStyle: 'none',
+    backgroundColor: 'transparent',
+    cursor: 'pointer',
+    borderRadius: radiusVars['--radius-element'],
+    outline: {
+      default: 'none',
+      ':focus-visible': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
+    },
+    outlineOffset: 1,
   },
 
   // Select-all wrapper
@@ -1059,6 +1085,13 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     }
   }, [optimisticValue, triggerDisplay, selectedLabels, placeholder, maxBadges]);
 
+  // Reset the search query and return focus to the search input so keyboard
+  // users aren't stranded after clearing.
+  const handleSearchClear = useCallback(() => {
+    setSearchQuery('');
+    searchRef.current?.focus();
+  }, []);
+
   // Render search input
   const renderSearch = useCallback(() => {
     if (!hasSearch) {
@@ -1066,6 +1099,15 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     }
     return (
       <div {...stylex.props(styles.searchWrapper)}>
+        <Icon
+          icon="search"
+          size="sm"
+          color="secondary"
+          {...mergeProps(
+            themeProps('multi-selector-search-icon'),
+            stylex.props(styles.searchIcon),
+          )}
+        />
         <input
           ref={searchRef}
           id={searchId}
@@ -1105,6 +1147,20 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           placeholder={searchPlaceholder}
           {...stylex.props(styles.searchInput)}
         />
+        {searchQuery.length > 0 && (
+          <button
+            type="button"
+            onClick={handleSearchClear}
+            aria-label={t('@astryx.multiSelector.clearSearch')}
+            {...stylex.props(styles.searchClearButton)}>
+            <Icon
+              icon="close"
+              size="sm"
+              color="secondary"
+              {...themeProps('multi-selector-search-clear-icon')}
+            />
+          </button>
+        )}
       </div>
     );
   }, [
@@ -1119,6 +1175,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     highlightedIndex,
     getItemId,
     t,
+    handleSearchClear,
   ]);
 
   // Render an individual item (index-based)

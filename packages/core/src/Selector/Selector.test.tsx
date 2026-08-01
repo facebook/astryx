@@ -1473,3 +1473,92 @@ describe('Selector indicator (chevron) icon theme target', () => {
     expect(css).toContain('color: var(--color-icon-primary)');
   });
 });
+
+describe('Selector search affordances', () => {
+  it('renders a decorative (aria-hidden) magnifier icon whenever hasSearch is on', async () => {
+    const user = userEvent.setup();
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value="Apple"
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    const search = screen.getByRole('combobox', {hidden: true});
+    const wrapper = search.parentElement;
+    const magnifier = wrapper?.querySelector('.astryx-selector-search-icon');
+    expect(magnifier).toBeTruthy();
+    // Decorative: must be hidden from assistive tech and carry no accessible name.
+    expect(magnifier?.getAttribute('aria-hidden')).toBe('true');
+    expect(magnifier?.getAttribute('aria-label')).toBeNull();
+  });
+
+  it('renders the clear button once a query is typed and clears + refocuses on click', async () => {
+    const user = userEvent.setup();
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value="Apple"
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    const search = screen.getByRole('combobox', {hidden: true});
+    await user.type(search, 'ap');
+    expect(search).toHaveValue('ap');
+
+    const clear = screen.getByRole('button', {
+      name: 'Clear search',
+      hidden: true,
+    });
+    expect(
+      clear.querySelector('.astryx-selector-search-clear-icon'),
+    ).toBeTruthy();
+
+    await user.click(clear);
+    expect(search).toHaveValue('');
+    expect(search).toHaveFocus();
+  });
+
+  it('does not render the clear button when the query is empty', async () => {
+    const user = userEvent.setup();
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value="Apple"
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    expect(
+      screen.queryByRole('button', {name: 'Clear search', hidden: true}),
+    ).not.toBeInTheDocument();
+  });
+
+  it('keeps the combobox contract on the input, not the affordances', async () => {
+    const user = userEvent.setup();
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value="Apple"
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    // Exactly one combobox — the input. The magnifier and clear button are not
+    // part of the combobox contract.
+    const comboboxes = screen.getAllByRole('combobox', {hidden: true});
+    expect(comboboxes).toHaveLength(1);
+    expect(comboboxes[0].tagName).toBe('INPUT');
+    expect(comboboxes[0]).toHaveAttribute('aria-autocomplete', 'list');
+  });
+});
