@@ -26,6 +26,11 @@ export const docs = {
         className: 'astryx-multi-selector-indicator-icon',
         states: ['state'],
       },
+      {className: 'astryx-multi-selector-dropdown'},
+      {className: 'astryx-multi-selector-search'},
+      {className: 'astryx-multi-selector-search-input'},
+      {className: 'astryx-multi-selector-empty'},
+      {className: 'astryx-multi-selector-section-header'},
     ],
   },
   components: [

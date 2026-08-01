@@ -1065,7 +1065,11 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       return null;
     }
     return (
-      <div {...stylex.props(styles.searchWrapper)}>
+      <div
+        {...mergeProps(
+          themeProps('multi-selector-search'),
+          stylex.props(styles.searchWrapper),
+        )}>
         <input
           ref={searchRef}
           id={searchId}
@@ -1103,7 +1107,10 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
             }
           }}
           placeholder={searchPlaceholder}
-          {...stylex.props(styles.searchInput)}
+          {...mergeProps(
+            themeProps('multi-selector-search-input'),
+            stylex.props(styles.searchInput),
+          )}
         />
       </div>
     );
@@ -1235,7 +1242,10 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         <div
           key="empty"
           role="presentation"
-          {...stylex.props(styles.emptyState)}>
+          {...mergeProps(
+            themeProps('multi-selector-empty'),
+            stylex.props(styles.emptyState),
+          )}>
           No results found
         </div>,
       );
@@ -1290,6 +1300,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
             <Divider
               key={`section-divider-${i}`}
               label={option.title}
+              className={themeProps('multi-selector-section-header').className}
               xstyle={styles.sectionDivider}
             />,
           );
@@ -1446,7 +1457,11 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       </div>
 
       {popover.render(
-        <div {...stylex.props(styles.dropdown)}>
+        <div
+          {...mergeProps(
+            themeProps('multi-selector-dropdown'),
+            stylex.props(styles.dropdown),
+          )}>
           {renderSearch()}
           <div
             id={listboxId}

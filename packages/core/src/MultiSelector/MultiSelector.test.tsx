@@ -1680,4 +1680,59 @@ describe('MultiSelector indicator (chevron) icon theme target', () => {
     expect(css).toContain('.astryx-multi-selector-indicator-icon.expanded');
     expect(css).toContain('color: var(--color-icon-primary)');
   });
+
+  it('renders search wrapper + input theme targets in hasSearch mode', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={['Apple', 'Banana', 'Orange']}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    const search = screen.getByRole('combobox', h);
+    expect(search).toHaveClass('astryx-multi-selector-search-input');
+    expect(search.parentElement).toHaveClass('astryx-multi-selector-search');
+  });
+
+  it('renders the dropdown theme target on the popover content', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={['Apple', 'Banana', 'Orange']}
+        value={[]}
+        onChange={() => {}}
+      />,
+    );
+    await user.click(screen.getByRole('combobox'));
+    await waitFor(() => {
+      expect(
+        document.querySelector('.astryx-multi-selector-dropdown'),
+      ).toBeTruthy();
+    });
+  });
+
+  it('renders the empty-state theme target when no options match', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={['Apple', 'Banana', 'Orange']}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    await user.type(screen.getByRole('combobox', h), 'zzzzz');
+    await waitFor(() => {
+      expect(
+        document.querySelector('.astryx-multi-selector-empty'),
+      ).toBeTruthy();
+    });
+  });
 });

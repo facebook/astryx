@@ -1472,4 +1472,84 @@ describe('Selector indicator (chevron) icon theme target', () => {
     expect(css).toContain('.astryx-selector-indicator-icon.expanded');
     expect(css).toContain('color: var(--color-icon-primary)');
   });
+
+  it('renders search wrapper + input theme targets in hasSearch mode', async () => {
+    const user = userEvent.setup();
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value="Apple"
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    const search = screen.getByRole('combobox', {hidden: true});
+    // Input carries its own target; the wrapper is its parent's target.
+    expect(search).toHaveClass('astryx-selector-search-input');
+    expect(search.parentElement).toHaveClass('astryx-selector-search');
+  });
+
+  it('renders the empty-state theme target when no options match', async () => {
+    const user = userEvent.setup();
+    const {container} = render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value="Apple"
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    const search = screen.getByRole('combobox', {hidden: true});
+    await user.type(search, 'zzzzz');
+    await waitFor(() => {
+      expect(
+        container.querySelector('.astryx-selector-empty') ??
+          document.querySelector('.astryx-selector-empty'),
+      ).toBeTruthy();
+    });
+  });
+
+  it('renders the dropdown theme target on the popover content', async () => {
+    const user = userEvent.setup();
+    render(<Selector label="Fruit" options={OPTIONS} onChange={() => {}} />);
+    await user.click(screen.getByRole('combobox'));
+    await waitFor(() => {
+      expect(document.querySelector('.astryx-selector-dropdown')).toBeTruthy();
+    });
+  });
+
+  it('renders the section-header theme target on grouped options', async () => {
+    const user = userEvent.setup();
+    render(
+      <Selector
+        label="Fruit"
+        options={[
+          {
+            type: 'section' as const,
+            title: 'Citrus',
+            options: [
+              {value: 'lemon', label: 'Lemon'},
+              {value: 'lime', label: 'Lime'},
+            ],
+          },
+          {
+            type: 'section' as const,
+            title: 'Berries',
+            options: [{value: 'strawberry', label: 'Strawberry'}],
+          },
+        ]}
+        onChange={() => {}}
+      />,
+    );
+    await user.click(screen.getByRole('combobox'));
+    await waitFor(() => {
+      expect(
+        document.querySelector('.astryx-selector-section-header'),
+      ).toBeTruthy();
+    });
+  });
 });

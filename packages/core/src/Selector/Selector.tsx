@@ -856,7 +856,11 @@ export function Selector<T extends SelectorOptionType>(
       return null;
     }
     return (
-      <div {...stylex.props(styles.searchWrapper)}>
+      <div
+        {...mergeProps(
+          themeProps('selector-search'),
+          stylex.props(styles.searchWrapper),
+        )}>
         <input
           ref={searchRef}
           id={searchId}
@@ -895,7 +899,10 @@ export function Selector<T extends SelectorOptionType>(
             }
           }}
           placeholder={searchPlaceholder}
-          {...stylex.props(styles.searchInput)}
+          {...mergeProps(
+            themeProps('selector-search-input'),
+            stylex.props(styles.searchInput),
+          )}
         />
       </div>
     );
@@ -971,7 +978,10 @@ export function Selector<T extends SelectorOptionType>(
         <div
           key="empty"
           role="presentation"
-          {...stylex.props(styles.emptyState)}>
+          {...mergeProps(
+            themeProps('selector-empty'),
+            stylex.props(styles.emptyState),
+          )}>
           No results found
         </div>,
       ];
@@ -1010,6 +1020,7 @@ export function Selector<T extends SelectorOptionType>(
             <Divider
               key={`section-divider-${i}`}
               label={option.title}
+              className={themeProps('selector-section-header').className}
               xstyle={styles.sectionDivider}
             />,
           );
@@ -1165,7 +1176,7 @@ export function Selector<T extends SelectorOptionType>(
 
       {popover.render(
         hasSearch ? (
-          <div>
+          <div {...themeProps('selector-dropdown')}>
             {renderSearch()}
             <div
               ref={listboxRef}
@@ -1182,9 +1193,12 @@ export function Selector<T extends SelectorOptionType>(
             id={listboxId}
             role="listbox"
             aria-labelledby={triggerId}
-            {...stylex.props(
-              styles.dropdown,
-              !isPositioned && styles.dropdownHidden,
+            {...mergeProps(
+              themeProps('selector-dropdown'),
+              stylex.props(
+                styles.dropdown,
+                !isPositioned && styles.dropdownHidden,
+              ),
             )}>
             {renderOptions()}
           </div>
