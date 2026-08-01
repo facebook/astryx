@@ -277,7 +277,7 @@ export function FieldLabel({
       </LabelElement>
       {description && (
         <span
-          ref={descriptionRef}
+          ref={forwardsDescriptionClick ? descriptionRef : undefined}
           id={descriptionID}
           {...(forwardsDescriptionClick ? descriptionClickProps : undefined)}
           {...stylex.props(
