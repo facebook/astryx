@@ -41,8 +41,9 @@ import {logger} from '../logger.mjs';
  * @param {{cwd?: string}} [ctx]
  * @returns {Promise<import('./upgrade.type.mjs').UpgradeListResponse | import('./upgrade.type.mjs').UpgradeStatusResponse | import('./upgrade.type.mjs').UpgradeRunResponse>}
  */
-export async function upgrade(options = {}, {cwd = process.cwd()} = {}) {
+export async function upgrade(options = {}, ctx = {}) {
   options = options ?? {};
+  const {cwd = process.cwd()} = ctx ?? {};
   logger.log('\nUpgrade');
 
   if (!options.list && !options.from) {

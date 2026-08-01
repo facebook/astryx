@@ -788,8 +788,9 @@ function validatePrivateVars(themeDef) {
  * @param {{cwd?: string}} [ctx]
  * @returns {Promise<import('../theme.type.mjs').ThemeBuildResponse | null>}
  */
-export async function themeBuild(file, options = {}, {cwd = process.cwd()} = {}) {
+export async function themeBuild(file, options = {}, ctx = {}) {
   options = options ?? {};
+  const {cwd = process.cwd()} = ctx ?? {};
   const filePath = path.resolve(cwd, file);
 
   if (!fs.existsSync(filePath)) {

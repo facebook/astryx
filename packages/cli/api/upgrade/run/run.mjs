@@ -52,8 +52,9 @@ import {assertWithin, PathSafetyError} from '../../../foundation/fs/path-safety.
  * @param {{cwd?: string}} [ctx]
  * @returns {Promise<import('../upgrade.type.mjs').UpgradeStatusResponse | import('../upgrade.type.mjs').UpgradeRunResponse>}
  */
-export async function run(options = {}, {cwd = process.cwd()} = {}) {
+export async function run(options = {}, ctx = {}) {
   options = options ?? {};
+  const {cwd = process.cwd()} = ctx ?? {};
   // Resolve the source dir against the API's cwd (not process.cwd()) so a
   // programmatic caller in another directory scans the right tree. Confine it to
   // cwd: --apply rewrites files in place, so a `..`-escaping or out-of-tree

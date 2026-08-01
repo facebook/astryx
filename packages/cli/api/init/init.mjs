@@ -40,8 +40,9 @@ export {getNextSteps} from './run/run.mjs';
  * @param {{cwd?: string}} [ctx]
  * @returns {Promise<import('./init.type.mjs').InitRunResponse | import('./init.type.mjs').InitRemoveResponse>}
  */
-export async function init(options = {}, {cwd = process.cwd()} = {}) {
+export async function init(options = {}, ctx = {}) {
   options = options ?? {};
+  const {cwd = process.cwd()} = ctx ?? {};
   if (options.removeAgents) {
     return remove({cwd});
   }
