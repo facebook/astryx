@@ -16,25 +16,26 @@
  * - /packages/cli/assets/templates/blocks/components/Timestamp/ (showcase blocks)
  */
 
-import {useCallback, useEffect, useRef, useState} from 'react';
+import {lazy, Suspense, useEffect, useRef, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Text} from '../Text';
 import type {TextType, TextSize, TextColor, TextWeight} from '../theme/types';
 import {mergeProps, mergeRefs} from '../utils';
 import {useDevWarning} from '../hooks/useDevWarning';
-import {useAnnounce} from '../hooks/useAnnounce';
 import {useTranslator} from '../i18n';
-import {Icon} from '../Icon';
-import {HoverCard} from '../HoverCard';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
-import {colorVars, radiusVars, spacingVars} from '../theme/tokens.stylex';
 import {formatInstant} from './formatInstant';
 import {formatTooltipLines} from './tooltipEntries';
 import type {
   TimestampTooltipEntry,
   TimestampTooltipLine,
 } from './tooltipEntries';
+
+// Load the overlay lazily so a card-less Timestamp — the default — never
+// bundles HoverCard or the copy affordance's Icon/IconButton. Mirrors the code
+// split the read-only Tooltip path used before it.
+const LazyTimestampHoverCard = lazy(async () => import('./TimestampHoverCard'));
 
 // =============================================================================
 // Types
@@ -165,61 +166,6 @@ const styles = stylex.create({
     color: 'inherit',
     fontWeight: 'inherit',
   },
-  // Copyable hover card: one row per line, each pairing the labelled instant
-  // with a copy button. A grid gives the label / value / button columns a
-  // shared, content-sized rhythm across rows.
-  cardRows: {
-    display: 'grid',
-    gridTemplateColumns: 'auto 1fr auto',
-    alignItems: 'center',
-    columnGap: spacingVars['--spacing-2'],
-    rowGap: spacingVars['--spacing-1'],
-    marginBlock: 0,
-    marginInline: 0,
-  },
-  cardLabel: {
-    // The card renders on --color-background-surface (not the inverted
-    // tooltip palette), so set explicit text colors instead of inheriting an
-    // ambient one that fails contrast against the surface.
-    color: colorVars['--color-text-secondary'],
-    marginBlock: 0,
-    marginInline: 0,
-    paddingInlineEnd: {
-      default: 0,
-      ':not(:empty)': spacingVars['--spacing-1'],
-    },
-  },
-  cardValue: {
-    color: colorVars['--color-text-primary'],
-    marginBlock: 0,
-    marginInline: 0,
-    whiteSpace: 'nowrap',
-  },
-  copyButton: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacingVars['--spacing-1'],
-    border: 'none',
-    borderRadius: radiusVars['--radius-inner'],
-    backgroundColor: {
-      default: 'transparent',
-      '@media (hover: hover)': {
-        ':hover': colorVars['--color-overlay-hover'],
-      },
-    },
-    color: colorVars['--color-text-primary'],
-    cursor: 'pointer',
-    lineHeight: 0,
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': '2px',
-    },
-  },
 });
 
 // =============================================================================
@@ -347,76 +293,6 @@ function isAbsoluteFormat(
   format: TimestampFormat,
 ): format is Exclude<TimestampFormat, 'relative' | 'auto'> {
   return format !== 'relative' && format !== 'auto';
-}
-
-/** How long the copied checkmark stays before reverting to the copy icon. */
-const COPY_FEEDBACK_MS = 1500;
-
-/**
- * One copyable row of the hover card: the labelled instant plus a button that
- * writes that line's value to the clipboard.
- *
- * Mirrors CodeBlock's copy affordance — `navigator.clipboard.writeText`, an
- * icon that flips `copy` → `check` for a moment, a polite live-region
- * announcement, and a silent no-op when the clipboard rejects.
- */
-function CopyableEntryRow({line}: {line: TimestampTooltipLine}) {
-  const t = useTranslator();
-  const announce = useAnnounce();
-  const [copied, setCopied] = useState(false);
-  const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (resetTimerRef.current != null) {
-        clearTimeout(resetTimerRef.current);
-      }
-    };
-  }, []);
-
-  const handleCopy = useCallback(async () => {
-    try {
-      await navigator.clipboard.writeText(line.value);
-      setCopied(true);
-      // A swapped aria-label alone isn't reliably announced, so confirm the
-      // copy via a polite live region (matching CodeBlock).
-      announce(t('@astryx.timestamp.copied'));
-      // Restart the reset timer on every copy so a rapid re-copy isn't
-      // reverted early by the previous click's timer.
-      if (resetTimerRef.current != null) {
-        clearTimeout(resetTimerRef.current);
-      }
-      resetTimerRef.current = setTimeout(() => {
-        resetTimerRef.current = null;
-        setCopied(false);
-      }, COPY_FEEDBACK_MS);
-    } catch {
-      // Clipboard failures leave the copied state unchanged.
-    }
-  }, [line.value, announce, t]);
-
-  return (
-    <>
-      <dt {...stylex.props(styles.cardLabel)}>{line.label ?? ''}</dt>
-      <dd {...stylex.props(styles.cardValue)}>{line.value}</dd>
-      <button
-        type="button"
-        onClick={() => {
-          void handleCopy();
-        }}
-        aria-label={
-          copied
-            ? t('@astryx.timestamp.copied')
-            : t('@astryx.timestamp.copyValue', {value: line.value})
-        }
-        {...mergeProps(
-          themeProps('timestamp-copy-button'),
-          stylex.props(styles.copyButton),
-        )}>
-        <Icon icon={copied ? 'check' : 'copy'} size="sm" color="inherit" />
-      </button>
-    </>
-  );
 }
 
 // =============================================================================
@@ -575,31 +451,25 @@ export function Timestamp({
   );
 
   if (showTooltip) {
-    // One surface for every timestamp that shows one: the copyable hover card.
-    // Each line becomes a labelled row with its own copy button. With no
-    // configured entries this is a single row carrying the full absolute time,
-    // itself copyable — so hovering a relative timestamp reveals the full time
-    // and lets the reader copy it. Opens on hover and on keyboard focus (the
+    // One surface for every timestamp that shows one: the copyable hover card,
+    // loaded lazily so the default card-less path never bundles it. Each line
+    // becomes a labelled row with its own copy button. With no configured
+    // entries this is a single row carrying the full absolute time, itself
+    // copyable — so hovering a relative timestamp reveals the full time and
+    // lets the reader copy it. Opens on hover and on keyboard focus (the
     // <time> tab stop above), with the dashed-underline affordance signalling
     // it is interactive.
-    const cardContent = (
-      <dl {...stylex.props(styles.cardRows)}>
-        {lines.map((line, index) => (
-          // eslint-disable-next-line @eslint-react/no-array-index-key -- rows are fixed positional slots and two entries may legitimately be identical
-          <CopyableEntryRow key={index} line={line} />
-        ))}
-      </dl>
-    );
-
+    //
+    // While the chunk loads the bare <time> stays visible (the Suspense
+    // fallback), so nothing disappears — the card simply attaches once ready.
     return (
-      <HoverCard
-        content={cardContent}
-        placement="above"
-        focusTrigger="always"
-        hasHoverIndication
-        label={t('@astryx.timestamp.detailsLabel')}>
-        {timeElement}
-      </HoverCard>
+      <Suspense fallback={timeElement}>
+        <LazyTimestampHoverCard
+          lines={lines}
+          label={t('@astryx.timestamp.detailsLabel')}>
+          {timeElement}
+        </LazyTimestampHoverCard>
+      </Suspense>
     );
   }
 

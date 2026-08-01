@@ -1,6 +1,14 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  beforeAll,
+  beforeEach,
+  afterEach,
+} from 'vitest';
 import {render, screen, act, waitFor, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Timestamp} from './Timestamp';
@@ -9,6 +17,14 @@ import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {InternationalizationProvider} from '../i18n';
 
 describe('Timestamp', () => {
+  // The hover card is loaded lazily (React.lazy + Suspense), so its chunk
+  // resolves asynchronously the first time a card renders. Warm the module
+  // cache once up front so findByRole('dialog') never races the cold import's
+  // resolution against its default 1s timeout.
+  beforeAll(async () => {
+    await import('./TimestampHoverCard');
+  });
+
   beforeEach(() => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-03-25T12:00:00Z'));
