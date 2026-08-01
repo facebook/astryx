@@ -23,7 +23,6 @@ import {
   useState,
   lazy,
   Suspense,
-  Fragment,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Text} from '../Text';
@@ -95,15 +94,20 @@ export interface TimestampProps extends BaseProps<HTMLTimeElement> {
    */
   hasTooltip?: boolean;
   /**
-   * Lines to show in the hover tooltip, so one instant can be read in several
-   * time zones and/or formats at once. Each entry is one line, rendered in the
-   * order given, with an optional label.
+   * Lines to show on hover, so one instant can be read — and copied — in
+   * several time zones and/or formats at once. Each entry is one line,
+   * rendered in the order given, with an optional label.
    *
-   * Configuring entries also attaches the tooltip to absolute formats, which
+   * Configuring entries upgrades the hover surface to an interactive
+   * copy-to-clipboard card (each row copies its value) and carries a dashed
+   * underline to signal it is interactive. With no entries, hover shows the
+   * lightweight read-only tooltip with the full absolute time.
+   *
+   * Configuring entries also attaches the surface to absolute formats, which
    * otherwise have no tooltip at all. `hasTooltip={false}` still suppresses it,
    * and an empty array is treated as no configuration.
    *
-   * @default undefined — a single line with the full absolute time in the
+   * @default undefined — a read-only tooltip with the full absolute time in the
    *   viewer's own time zone
    * @example
    * ```
@@ -117,34 +121,6 @@ export interface TimestampProps extends BaseProps<HTMLTimeElement> {
    * ```
    */
   tooltipEntries?: ReadonlyArray<TimestampTooltipEntry>;
-  /**
-   * Whether to present the tooltip lines in an interactive hover card whose
-   * rows are individually copy-to-clipboard, instead of the read-only tooltip.
-   *
-   * The rows are the exact same lines the tooltip would show (the default
-   * absolute line, or the ones configured via `tooltipEntries`), so one
-   * instant can be read — and copied — in several time zones and/or formats at
-   * once. The card opens on hover and on keyboard focus, and carries a dashed
-   * underline to signal it is interactive.
-   *
-   * Purely additive: with the default `false` the timestamp shows the same
-   * read-only tooltip it always has, gated by `hasTooltip`/`tooltipEntries`.
-   * `hasTooltip={false}` still suppresses the card.
-   *
-   * @default false
-   * @example
-   * ```
-   * <Timestamp
-   *   value={deployedAt}
-   *   hasCopyableEntries
-   *   tooltipEntries={[
-   *     {label: 'Your time'},
-   *     {timezoneID: 'UTC', label: 'UTC'},
-   *   ]}
-   * />
-   * ```
-   */
-  hasCopyableEntries?: boolean;
   /**
    * Whether to append the timezone abbreviation after the timestamp text.
    * Applies to the date_time and time formats. The system_* formats stay
@@ -208,31 +184,6 @@ const styles = stylex.create({
       default: '0',
       ':focus-visible': '2px',
     },
-  },
-  // Label/value pairs for a multi-entry tooltip. The label column is sized to
-  // its content, so when no entry carries a label it collapses to zero width
-  // and the values sit exactly where a plain list of lines would.
-  tooltipLines: {
-    display: 'grid',
-    gridTemplateColumns: 'auto 1fr',
-    rowGap: spacingVars['--spacing-0-5'],
-    marginBlock: 0,
-    marginInline: 0,
-  },
-  tooltipLabel: {
-    marginBlock: 0,
-    marginInline: 0,
-    // Only a label that actually has text earns the gutter, keeping the
-    // unlabeled case flush.
-    paddingInlineEnd: {
-      default: 0,
-      ':not(:empty)': spacingVars['--spacing-2'],
-    },
-  },
-  tooltipValue: {
-    marginBlock: 0,
-    // <dd> carries a 40px inline start margin from the UA stylesheet.
-    marginInline: 0,
   },
   // Copyable hover card: one row per line, each pairing the labelled instant
   // with a copy button. A grid gives the label / value / button columns a
@@ -514,7 +465,6 @@ export function Timestamp({
   autoThreshold = DEFAULT_AUTO_THRESHOLD,
   hasTooltip = true,
   tooltipEntries,
-  hasCopyableEntries = false,
   isTimezoneShown = false,
   isLive = false,
   type = 'supporting',
@@ -603,7 +553,10 @@ export function Timestamp({
   // The opt-in copyable presentation only applies once a tooltip would show at
   // all — it upgrades the same lines from read-only to copyable, never adds a
   // surface where there was none.
-  const showCopyableCard = showTooltip && hasCopyableEntries;
+  // Configured entries upgrade the hover surface from the read-only tooltip to
+  // the interactive copy-to-clipboard card — the presence of entries is the
+  // signal, no separate opt-in flag.
+  const showCopyableCard = showTooltip && entries !== undefined;
 
   // The rows both surfaces render: the configured entries, or the single
   // default absolute line the tooltip has always shown when none are set.
@@ -675,31 +628,16 @@ export function Timestamp({
   }
 
   if (showTooltip) {
-    // Built inside the branch so a timestamp without a tooltip allocates none
-    // of it. With no entries the content stays the bare string it has always
-    // been — no wrapper element is introduced around the default line.
-    const tooltipContent =
-      entries === undefined ? (
-        fullAbsoluteText
-      ) : (
-        <dl {...stylex.props(styles.tooltipLines)}>
-          {lines.map((line, index) => (
-            // eslint-disable-next-line @eslint-react/no-array-index-key -- tooltip lines are fixed positional slots and two entries may legitimately be identical
-            <Fragment key={index}>
-              <dt {...stylex.props(styles.tooltipLabel)}>{line.label ?? ''}</dt>
-              <dd {...stylex.props(styles.tooltipValue)}>{line.value}</dd>
-            </Fragment>
-          ))}
-        </dl>
-      );
-
+    // Reached only without entries (configured entries route to the copyable
+    // card above). The read-only tooltip stays the bare absolute string it has
+    // always been — no wrapper element around the default line.
     return (
       <>
         {timeElement}
         <Suspense fallback={null}>
           <LazyXDSTooltip
             anchorRef={timeRef}
-            content={tooltipContent}
+            content={fullAbsoluteText}
             placement="above"
           />
         </Suspense>

@@ -161,12 +161,13 @@ export const TimeFormat: Story = {
 };
 
 export const TooltipTimezones: Story = {
-  name: 'Tooltip — multiple time zones',
+  name: 'Hover card — configuration examples',
   render: () => (
     <div style={{display: 'flex', flexDirection: 'column', gap: '32px'}}>
       <div>
         <Text type="supporting" color="secondary">
-          Local + UTC, default format — hover or tab to the timestamp
+          Local + UTC, default format — hover or tab to the timestamp, then
+          copy any row
         </Text>
         <div>
           <Timestamp
@@ -181,7 +182,7 @@ export const TooltipTimezones: Story = {
       </div>
       <div>
         <Text type="supporting" color="secondary">
-          Three labelled zones — the widest case the 300px tooltip holds
+          Three labelled zones — the widest case the card holds
         </Text>
         <div>
           <Timestamp
@@ -247,7 +248,6 @@ export const CopyableHoverCard: Story = {
           <Timestamp
             value="2026-02-19T17:00:00Z"
             format="relative"
-            hasCopyableEntries
             tooltipEntries={[
               {label: 'Local'},
               {timezoneID: 'UTC', label: 'UTC'},
@@ -267,14 +267,14 @@ export const CopyableHoverCard: Story = {
       </div>
       <div>
         <Text type="supporting" color="secondary">
-          No entries configured — the single default absolute line is still
-          copyable
+          A single UTC entry — one copyable row, on an absolute format that has
+          no tooltip of its own
         </Text>
         <div>
           <Timestamp
             value="2026-02-19T17:00:00Z"
-            format="relative"
-            hasCopyableEntries
+            format="date_time"
+            tooltipEntries={[{timezoneID: 'UTC', label: 'UTC'}]}
           />
         </div>
       </div>

@@ -2,6 +2,6 @@
 '@astryxdesign/core': patch
 ---
 
-[feat] Timestamp: add `hasCopyableEntries` — an opt-in that presents the same `tooltipEntries` lines (local/UTC/other zones/Unix, as configured) in an interactive HoverCard where each row is copy-to-clipboard. Opens on hover and keyboard focus; default `false` keeps the read-only tooltip unchanged.
+[feat] Timestamp: configuring `tooltipEntries` now shows an interactive copy-to-clipboard hover card, where each row copies its own value; with no entries the lightweight read-only tooltip is unchanged. This changes the hover surface for existing `tooltipEntries` users — the copyable card is a superset of the previous read-only lines.
 
 @freddymeta
