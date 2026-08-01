@@ -196,4 +196,15 @@ describe('search CLI — exit codes + JSON contract', () => {
     expect(r.stdout).toContain('astryx component Button');
     expect(r.stdout).toContain('[component]');
   });
+
+  it('--verbose exits 0 and prints import/match detail', async () => {
+    // Regression: the boolean verbose flag was named --detail, which collided
+    // with the value-taking global `--detail <level>` — a bare `search
+    // --detail` errored "argument missing" and the verbose output was
+    // unreachable. It is now `--verbose`.
+    const r = await runCli(['search', 'button', '--verbose'], REPO_ROOT);
+    expect(r.status).toBe(0);
+    expect(r.stdout).toContain('import:');
+    expect(r.stdout).toContain('match:');
+  });
 }, SCAN_TIMEOUT);

@@ -60,8 +60,8 @@ export function registerBuild(program) {
     .description('Build a page: composition kit for an idea, or the workflow playbook (no args)')
     .option('--type <domain>', 'Filter the kit to one domain (component|hook|template)')
     .option('--limit <n>', 'Max candidates to draw from (default 60)')
-    .option('--detail', 'Verbose output (include import paths and match reason)')
-    .action(async (/** @type {string | undefined} */ query, /** @type {{type?: import('../../../api/search/search.type.mjs').SearchDomain, limit?: string, detail?: boolean}} */ options) => {
+    .option('--verbose', 'Verbose output (include import paths and match reason)')
+    .action(async (/** @type {string | undefined} */ query, /** @type {{type?: import('../../../api/search/search.type.mjs').SearchDomain, limit?: string, verbose?: boolean}} */ options) => {
       const run = getCliInvocation();
       const json = program.opts().json || false;
 
@@ -111,7 +111,7 @@ export function registerBuild(program) {
         humanLog(`  [${label}] ${display}`);
         if (r.description) humanLog(`          ${r.description}`);
         humanLog(`          → ${formatCliCommand(r.command)}`);
-        if (options.detail) {
+        if (options.verbose) {
           if (r.import) humanLog(`          import: ${r.import}`);
           humanLog(`          match: ${r.reason} (score ${r.score})`);
         }

@@ -12,7 +12,7 @@
  *   astryx search button                 Ranked results across all domains
  *   astryx search modal --type component Filter to a single domain
  *   astryx search forms --limit 5        Cap the result count
- *   astryx search button --detail        Verbose (include import / reason)
+ *   astryx search button --verbose       Verbose (include import / reason)
  *   astryx search button --json          Typed JSON envelope
  */
 
@@ -37,8 +37,8 @@ export function registerSearch(program) {
     .description('Search components, hooks, docs, and templates in one ranked list')
     .option('--type <domain>', `Filter to one domain (${SEARCH_DOMAINS.join('|')})`)
     .option('--limit <n>', 'Max number of results (default 20)')
-    .option('--detail', 'Verbose output (include import paths and match reason)')
-    .action(async (/** @type {string} */ query, /** @type {{type?: import('../../../api/search/search.type.mjs').SearchDomain, limit?: string, detail?: boolean}} */ options) => {
+    .option('--verbose', 'Verbose output (include import paths and match reason)')
+    .action(async (/** @type {string} */ query, /** @type {{type?: import('../../../api/search/search.type.mjs').SearchDomain, limit?: string, verbose?: boolean}} */ options) => {
       const json = program.opts().json || false;
 
       // Parse --limit to a number; the API validates it (positive integer) and
@@ -90,7 +90,7 @@ export function registerSearch(program) {
           humanLog(`               ${r.description}`);
         }
         humanLog(`               → ${formatCliCommand(r.command)}`);
-        if (options.detail) {
+        if (options.verbose) {
           if (r.import) humanLog(`               import: ${r.import}`);
           humanLog(`               match: ${r.reason} (score ${r.score})`);
         }
