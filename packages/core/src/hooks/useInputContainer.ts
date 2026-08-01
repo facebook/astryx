@@ -19,11 +19,8 @@ import {useClickableContainer} from './useClickableContainer';
 /**
  * Input types that should receive `.focus()` when the container is clicked.
  * Other input types (e.g. checkbox, radio, file) use `.click()` instead.
- *
- * Exported so other label/container utilities that forward clicks to a control
- * (e.g. FieldLabel's description) share one definition of "focus vs click".
  */
-export const FOCUS_INPUT_TYPES = new Set([
+const FOCUS_INPUT_TYPES = new Set([
   'text',
   'password',
   'email',

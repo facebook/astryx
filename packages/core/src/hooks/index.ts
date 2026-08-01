@@ -73,7 +73,7 @@ export type {
   ClickableContainerResult,
 } from './useClickableContainer';
 
-export {useInputContainer, FOCUS_INPUT_TYPES} from './useInputContainer';
+export {useInputContainer} from './useInputContainer';
 export type {UseInputContainerOptions} from './useInputContainer';
 
 export {useInputStatusIcon} from './useInputStatusIcon';

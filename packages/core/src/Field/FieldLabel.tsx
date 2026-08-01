@@ -15,7 +15,7 @@
  * - /packages/core/locales/en.json (@astryx.field.required / @astryx.field.optional)
  */
 
-import type {ReactNode} from 'react';
+import {useMemo, useRef, type ReactNode, type RefObject} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
 import {mergeProps} from '../utils';
@@ -31,7 +31,7 @@ import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {Tooltip} from '../Tooltip';
 import {useTranslator} from '../i18n';
 import {themeProps} from '../utils/themeProps';
-import {INTERACTIVE_SELECTORS, FOCUS_INPUT_TYPES} from '../hooks';
+import {useInputContainer} from '../hooks';
 
 const styles = stylex.create({
   label: {
@@ -209,39 +209,31 @@ export function FieldLabel({
   // has nothing to forward to.
   const forwardsDescriptionClick = !isGroupLabel && inputID != null;
 
-  // Forward a description click to the control: `.focus()` for text-like
-  // inputs (matching a native label click — no toggle to trigger) and
-  // `.click()` for click-activatable controls (checkbox/switch). Skipped when
-  // the click lands on interactive content inside a ReactNode description
-  // (a link, button, etc.), so that content handles its own click. Keyboard
-  // users are unaffected: the description is not focusable and adds no tab
-  // stop, and the label text keeps native `htmlFor` activation.
-  const handleDescriptionClick = (e: React.MouseEvent<HTMLSpanElement>) => {
-    if (e.defaultPrevented) {
-      return;
-    }
-    const container = e.currentTarget;
-    const eventTarget = e.target;
-    if (
-      eventTarget instanceof Element &&
-      eventTarget !== container &&
-      eventTarget.closest(INTERACTIVE_SELECTORS) != null
-    ) {
-      return;
-    }
-    const control = container.ownerDocument.getElementById(inputID);
-    if (control == null) {
-      return;
-    }
-    if (
-      control instanceof HTMLInputElement &&
-      FOCUS_INPUT_TYPES.has(control.type)
-    ) {
-      control.focus();
-    } else {
-      control.click();
-    }
-  };
+  // Reuse `useInputContainer` — the same hook input wrappers use to forward
+  // clicks on non-interactive chrome to their control. It skips nested
+  // interactive content (a link/button inside a ReactNode description) and
+  // guards against forwarding during text selection, so the description needs
+  // no bespoke click logic. The "input" is resolved from `inputID` lazily via
+  // a ref-shaped object, since FieldLabel points at the control by id rather
+  // than holding a ref to it.
+  const descriptionRef = useRef<HTMLSpanElement>(null);
+  const controlRef = useMemo<RefObject<HTMLElement | null>>(
+    () => ({
+      get current() {
+        return inputID == null
+          ? null
+          : (descriptionRef.current?.ownerDocument.getElementById(inputID) ??
+              null);
+      },
+      set current(_value) {},
+    }),
+    [inputID],
+  );
+  const descriptionClickProps = useInputContainer({
+    containerRef: descriptionRef,
+    inputRef: controlRef,
+    disabled: !forwardsDescriptionClick,
+  });
 
   const labelContent = (
     <>
@@ -285,10 +277,9 @@ export function FieldLabel({
       </LabelElement>
       {description && (
         <span
+          ref={descriptionRef}
           id={descriptionID}
-          onClick={
-            forwardsDescriptionClick ? handleDescriptionClick : undefined
-          }
+          {...(forwardsDescriptionClick ? descriptionClickProps : undefined)}
           {...stylex.props(
             styles.description,
             forwardsDescriptionClick && styles.descriptionClickable,
