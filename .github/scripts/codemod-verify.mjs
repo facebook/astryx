@@ -39,7 +39,8 @@ function getChangedFiles() {
 }
 
 function getCodemodVersions(changedFiles) {
-  const versionPattern = /^packages\/cli\/src\/codemods\/transforms\/v([\d.]+)\//;
+  const versionPattern =
+    /^packages\/cli\/assets\/codemods\/transforms\/v([\d.]+)\//;
   const versions = new Set();
   for (const file of changedFiles) {
     const match = file.match(versionPattern);
