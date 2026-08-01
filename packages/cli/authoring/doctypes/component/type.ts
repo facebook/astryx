@@ -135,7 +135,7 @@ export interface ComponentBaseDoc {
  *
  * Every .doc.mjs must export a single `docs` constant of this type:
  *
- *   /\*\* \@type \{import('../docs-types').ComponentDoc\} *\/
+ *   /\*\* \@type \{import('@astryxdesign/cli/authoring').ComponentDoc\} *\/
  *   export const docs = \{ ... \};
  *
  * Use SingleComponentDoc (with `props`) for single-component directories.

@@ -22,7 +22,7 @@ import type {
  *
  * Every hook .doc.mjs must export a single `docs` constant:
  *
- *   /\*\* @type {import('../docs-types').HookDoc} \*\/
+ *   /\*\* @type {import('@astryxdesign/cli/authoring').HookDoc} \*\/
  *   export const docs = { ... };
  */
 export interface HookDoc {
