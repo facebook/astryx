@@ -315,6 +315,9 @@ export function TopNavMegaMenu({
   delay = 150,
   hideDelay = 250,
   onOpenChange,
+  xstyle,
+  className,
+  style,
 }: TopNavMegaMenuProps) {
   const renderMode = useTopNavRenderMode();
 
@@ -344,6 +347,9 @@ export function TopNavMegaMenu({
       delay={delay}
       hideDelay={hideDelay}
       onOpenChange={onOpenChange}
+      xstyle={xstyle}
+      className={className}
+      style={style}
     />
   );
 }
@@ -362,6 +368,9 @@ function DefaultMegaMenu({
   delay = 150,
   hideDelay = 250,
   onOpenChange,
+  xstyle,
+  className,
+  style,
 }: TopNavMegaMenuProps) {
   const slot = useTopNavSlot();
   const showTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -457,6 +466,10 @@ function DefaultMegaMenu({
     };
   }, [clearTimeouts]);
 
+  // Consumer styling (xstyle/className/style) targets the top-bar trigger
+  // button — the one stable surface across renders. Drawer and mobile-bar modes
+  // render structurally different elements, so applying consumer styling there
+  // would be ambiguous; they are left unstyled.
   return (
     <>
       <button
@@ -468,7 +481,13 @@ function DefaultMegaMenu({
         onMouseLeave={handleMouseLeave}
         {...mergeProps(
           themeProps('top-nav-mega-menu'),
-          stylex.props(styles.trigger, popover.isOpen && styles.triggerOpen),
+          stylex.props(
+            styles.trigger,
+            popover.isOpen && styles.triggerOpen,
+            xstyle,
+          ),
+          className,
+          style,
         )}>
         {label}
         <span

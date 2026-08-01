@@ -330,6 +330,9 @@ export function TopNavMenu({
   items,
   delay = 150,
   hideDelay = 200,
+  xstyle,
+  className,
+  style,
 }: TopNavMenuProps) {
   const renderMode = useTopNavRenderMode();
   const {closeMobileNav} = useAppShellMobile();
@@ -485,7 +488,10 @@ export function TopNavMenu({
     );
   }
 
-  // Default: desktop popover
+  // Default: desktop popover. Consumer styling (xstyle/className/style) targets
+  // the top-bar trigger button — the one stable surface across renders. Drawer
+  // and mobile-bar modes render structurally different elements, so applying
+  // consumer styling there would be ambiguous; they are left unstyled.
   return (
     <>
       <button
@@ -495,7 +501,13 @@ export function TopNavMenu({
         {...triggerProps}
         {...mergeProps(
           themeProps('top-nav-menu'),
-          stylex.props(styles.trigger, popover.isOpen && styles.triggerOpen),
+          stylex.props(
+            styles.trigger,
+            popover.isOpen && styles.triggerOpen,
+            xstyle,
+          ),
+          className,
+          style,
         )}>
         {label}
         <span

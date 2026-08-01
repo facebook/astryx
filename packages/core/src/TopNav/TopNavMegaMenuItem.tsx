@@ -199,6 +199,9 @@ export function TopNavMegaMenuItem({
   onClick,
   as,
   tabIndex,
+  xstyle,
+  className,
+  style,
 }: TopNavMegaMenuItemProps) {
   const renderMode = useTopNavRenderMode();
   const LinkComponent = useLinkComponent(as);
@@ -222,7 +225,9 @@ export function TopNavMegaMenuItem({
         {...elementProps}
         {...mergeProps(
           themeProps('top-nav-mega-menu-item', {mode: 'drawer'}),
-          stylex.props(navItemStyles.item, styles.drawerItem),
+          stylex.props(navItemStyles.item, styles.drawerItem, xstyle),
+          className,
+          style,
         )}>
         {icon && <div {...stylex.props(styles.drawerItemIcon)}>{icon}</div>}
         <div {...stylex.props(styles.drawerItemContent)}>
@@ -249,7 +254,9 @@ export function TopNavMegaMenuItem({
       tabIndex={tabIndex}
       {...mergeProps(
         themeProps('top-nav-mega-menu-item'),
-        stylex.props(styles.desktop),
+        stylex.props(styles.desktop, xstyle),
+        className,
+        style,
       )}>
       {icon && <div {...stylex.props(styles.desktopIcon)}>{icon}</div>}
       <div {...stylex.props(styles.desktopContent)}>
