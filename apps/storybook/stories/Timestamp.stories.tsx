@@ -79,7 +79,7 @@ const meta: Meta<typeof Timestamp> = {
     },
     hasTooltip: {
       control: 'boolean',
-      description: 'Show tooltip on hover',
+      description: 'Show copyable hover card on hover',
     },
     isTimezoneShown: {
       control: 'boolean',
@@ -268,7 +268,7 @@ export const CopyableHoverCard: Story = {
       <div>
         <Text type="supporting" color="secondary">
           A single UTC entry — one copyable row, on an absolute format that has
-          no tooltip of its own
+          no hover card of its own
         </Text>
         <div>
           <Timestamp

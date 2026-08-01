@@ -16,14 +16,7 @@
  * - /packages/cli/assets/templates/blocks/components/Timestamp/ (showcase blocks)
  */
 
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  lazy,
-  Suspense,
-} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Text} from '../Text';
 import type {TextType, TextSize, TextColor, TextWeight} from '../theme/types';
@@ -42,10 +35,6 @@ import type {
   TimestampTooltipEntry,
   TimestampTooltipLine,
 } from './tooltipEntries';
-
-const LazyXDSTooltip = lazy(async () =>
-  import('../Tooltip/Tooltip').then(mod => ({default: mod.Tooltip})),
-);
 
 // =============================================================================
 // Types
@@ -89,7 +78,9 @@ export interface TimestampProps extends BaseProps<HTMLTimeElement> {
    */
   autoThreshold?: number;
   /**
-   * Whether to show a tooltip with the full date/time on hover.
+   * Whether to show a hover card with the full date/time on hover. The card
+   * is copyable — its default single row carries the full absolute time — and
+   * `tooltipEntries` customizes its rows.
    * @default true
    */
   hasTooltip?: boolean;
@@ -98,17 +89,18 @@ export interface TimestampProps extends BaseProps<HTMLTimeElement> {
    * several time zones and/or formats at once. Each entry is one line,
    * rendered in the order given, with an optional label.
    *
-   * Configuring entries upgrades the hover surface to an interactive
-   * copy-to-clipboard card (each row copies its value) and carries a dashed
-   * underline to signal it is interactive. With no entries, hover shows the
-   * lightweight read-only tooltip with the full absolute time.
+   * The hover surface is always the interactive copy-to-clipboard card (each
+   * row copies its value, with a dashed underline signalling it is
+   * interactive). Configuring entries customizes the card's rows; with no
+   * entries the card shows a single default row with the full absolute time in
+   * the viewer's own zone.
    *
    * Configuring entries also attaches the surface to absolute formats, which
-   * otherwise have no tooltip at all. `hasTooltip={false}` still suppresses it,
-   * and an empty array is treated as no configuration.
+   * otherwise have no hover card at all. `hasTooltip={false}` still suppresses
+   * it, and an empty array is treated as no configuration.
    *
-   * @default undefined — a read-only tooltip with the full absolute time in the
-   *   viewer's own time zone
+   * @default undefined — a single default row with the full absolute time in
+   *   the viewer's own time zone
    * @example
    * ```
    * <Timestamp
@@ -172,18 +164,6 @@ const styles = stylex.create({
     lineHeight: 'inherit',
     color: 'inherit',
     fontWeight: 'inherit',
-  },
-  // Visible focus ring for the tooltip tab stop, matching the repo-wide
-  // focus-visible outline treatment (see Token, Thumbnail).
-  focusable: {
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': '2px',
-    },
   },
   // Copyable hover card: one row per line, each pairing the labelled instant
   // with a copy button. A grid gives the label / value / button columns a
@@ -448,8 +428,8 @@ function CopyableEntryRow({line}: {line: TimestampTooltipLine}) {
  *
  * Renders a semantic `<time>` element with an ISO 8601 `datetime` attribute,
  * styled via Text. Supports relative ("2 hours ago"), multiple absolute
- * formats, and auto formatting. Optionally shows a tooltip with the full
- * absolute time and can update live.
+ * formats, and auto formatting. Optionally shows a hover card with the full
+ * absolute time (copyable) and can update live.
  *
  * @example
  * ```
@@ -543,23 +523,17 @@ export function Timestamp({
       ? tooltipEntries
       : undefined;
 
-  // Absolute formats have never carried a tooltip. Leaving that gate closed
-  // when a consumer has explicitly configured tooltip lines would let `format`
-  // silently suppress another prop's output, so entry presence opens it too.
-  // With no entries this reduces to the original condition exactly.
+  // Absolute formats have never carried a hover surface. Leaving that gate
+  // closed when a consumer has explicitly configured tooltip lines would let
+  // `format` silently suppress another prop's output, so entry presence opens
+  // it too. With no entries this reduces to the original condition exactly.
   const showTooltip =
     hasTooltip && (effectiveFormat === 'relative' || entries !== undefined);
 
-  // The opt-in copyable presentation only applies once a tooltip would show at
-  // all — it upgrades the same lines from read-only to copyable, never adds a
-  // surface where there was none.
-  // Configured entries upgrade the hover surface from the read-only tooltip to
-  // the interactive copy-to-clipboard card — the presence of entries is the
-  // signal, no separate opt-in flag.
-  const showCopyableCard = showTooltip && entries !== undefined;
-
-  // The rows both surfaces render: the configured entries, or the single
-  // default absolute line the tooltip has always shown when none are set.
+  // The rows the hover card renders: the configured entries, or the single
+  // default absolute line shown when none are set. Either way the surface is
+  // the same copyable card — the default line is a one-row card carrying the
+  // full absolute time, itself copyable, just like a configured entry.
   const lines: ReadonlyArray<TimestampTooltipLine> =
     entries === undefined
       ? [{value: fullAbsoluteText}]
@@ -584,28 +558,30 @@ export function Timestamp({
         aria-label={
           effectiveFormat === 'relative' ? fullAbsoluteText : undefined
         }
-        // The absolute-time tooltip is anchored here with the default 'auto'
-        // focus trigger, which only activates on focusable anchors. A bare
-        // <time> is not focusable, so without a tab stop sighted keyboard
-        // users could never reveal the tooltip (WCAG 1.4.13 / 2.1.1). Only
-        // add the tab stop while a tooltip is actually attached — no
-        // gratuitous tab stops otherwise. The copyable card carries its own
-        // dashed-underline affordance, so it skips the tooltip focus ring.
+        // The hover card is anchored here with focusTrigger="always", which
+        // attaches focus listeners but does not itself make the anchor
+        // focusable. A bare <time> is not focusable, so without a tab stop
+        // sighted keyboard users could never reveal the card (WCAG 1.4.13 /
+        // 2.1.1). Add the tab stop only while a card is actually attached — no
+        // gratuitous tab stops otherwise. The card carries its own
+        // dashed-underline hover indication as the affordance, so the anchor
+        // needs no separate focus outline.
         tabIndex={showTooltip ? 0 : undefined}
         data-testid={testId}
-        {...stylex.props(
-          styles.time,
-          showTooltip && !showCopyableCard && styles.focusable,
-        )}>
+        {...stylex.props(styles.time)}>
         {displayText}
       </time>
     </Text>
   );
 
-  if (showCopyableCard) {
-    // Each line becomes a labelled row with its own copy button. Opens on
-    // hover and on keyboard focus (the <time> tab stop above), with the
-    // dashed-underline affordance signalling it is interactive.
+  if (showTooltip) {
+    // One surface for every timestamp that shows one: the copyable hover card.
+    // Each line becomes a labelled row with its own copy button. With no
+    // configured entries this is a single row carrying the full absolute time,
+    // itself copyable — so hovering a relative timestamp reveals the full time
+    // and lets the reader copy it. Opens on hover and on keyboard focus (the
+    // <time> tab stop above), with the dashed-underline affordance signalling
+    // it is interactive.
     const cardContent = (
       <dl {...stylex.props(styles.cardRows)}>
         {lines.map((line, index) => (
@@ -624,24 +600,6 @@ export function Timestamp({
         label={t('@astryx.timestamp.detailsLabel')}>
         {timeElement}
       </HoverCard>
-    );
-  }
-
-  if (showTooltip) {
-    // Reached only without entries (configured entries route to the copyable
-    // card above). The read-only tooltip stays the bare absolute string it has
-    // always been — no wrapper element around the default line.
-    return (
-      <>
-        {timeElement}
-        <Suspense fallback={null}>
-          <LazyXDSTooltip
-            anchorRef={timeRef}
-            content={fullAbsoluteText}
-            placement="above"
-          />
-        </Suspense>
-      </>
     );
   }
 

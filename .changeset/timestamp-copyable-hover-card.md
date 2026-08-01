@@ -2,6 +2,6 @@
 '@astryxdesign/core': patch
 ---
 
-[feat] Timestamp: configuring `tooltipEntries` now shows an interactive copy-to-clipboard hover card, where each row copies its own value; with no entries the lightweight read-only tooltip is unchanged. This changes the hover surface for existing `tooltipEntries` users — the copyable card is a superset of the previous read-only lines.
+[feat] Timestamp: the hover surface is now a single copyable hover card for every timestamp that shows one. Relative timestamps and `tooltipEntries`-configured timestamps share one card, replacing the old read-only tooltip; the default single row carries the full absolute time and is itself copyable. `tooltipEntries` customizes the card's rows. This is a behavior and visual change for relative timestamps — hovering now reveals a copyable card instead of a plain tooltip.
 
 @freddymeta

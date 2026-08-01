@@ -375,17 +375,17 @@ describe('Timestamp', () => {
     }
   });
 
-  // --- Tooltip keyboard reachability (WCAG 1.4.13 / 2.1.1) ---
+  // --- Hover card keyboard reachability (WCAG 1.4.13 / 2.1.1) ---
 
-  describe('tooltip keyboard reachability', () => {
+  describe('hover card keyboard reachability', () => {
     const originalMatches = HTMLElement.prototype.matches;
     const originalShowPopover = HTMLElement.prototype.showPopover;
     const originalHidePopover = HTMLElement.prototype.hidePopover;
 
     beforeEach(() => {
-      // The tooltip is lazy-loaded via a dynamic import; real timers let the
-      // import promise and RTL's waitFor resolve naturally (the outer
-      // beforeEach installs fake timers, which would stall them).
+      // The card content renders inline in a (mocked) popover; real timers let
+      // RTL's findBy* and the async paths resolve (the outer beforeEach
+      // installs fake timers, which would stall them).
       vi.useRealTimers();
 
       // Mock the Popover API, which jsdom does not implement.
@@ -393,7 +393,7 @@ describe('Timestamp', () => {
       HTMLElement.prototype.hidePopover = vi.fn();
 
       // jsdom does not derive :focus-visible from keyboard focus for a <time>
-      // element; treat the focused element as focus-visible so the tooltip's
+      // element; treat the focused element as focus-visible so the card's
       // keyboard-focus path can be exercised.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (HTMLElement.prototype as any).matches = function (
@@ -413,7 +413,7 @@ describe('Timestamp', () => {
       HTMLElement.prototype.hidePopover = originalHidePopover;
     });
 
-    it('makes the <time> element focusable while the tooltip is attached', () => {
+    it('makes the <time> element focusable while the hover card is attached', () => {
       render(
         <Timestamp
           value={Date.now() / 1000 - 3600}
@@ -424,7 +424,7 @@ describe('Timestamp', () => {
       expect(screen.getByTestId('ts')).toHaveAttribute('tabindex', '0');
     });
 
-    it('shows the tooltip when the timestamp receives keyboard focus', async () => {
+    it('shows the hover card when the timestamp receives keyboard focus', async () => {
       const user = userEvent.setup();
       render(
         <Timestamp
@@ -435,13 +435,13 @@ describe('Timestamp', () => {
       );
       const el = screen.getByTestId('ts');
 
-      // Wait for the lazy-loaded tooltip layer to mount and confirm it
-      // carries the full absolute time (same string as the aria-label).
+      // The card layer mounts inline and carries the full absolute time (the
+      // same string as the aria-label) as its single default copyable row.
       // Compare with normalized whitespace: Intl output can contain narrow
       // no-break spaces that jest-dom's matcher normalization would break on.
-      const layer = await screen.findByRole('tooltip', {hidden: true});
+      const card = await screen.findByRole('dialog', {hidden: true});
       const normalize = (s: string) => s.replace(/\s+/g, ' ');
-      expect(normalize(layer.textContent ?? '')).toContain(
+      expect(normalize(card.textContent ?? '')).toContain(
         normalize(el.getAttribute('aria-label') ?? '\0'),
       );
 
@@ -453,7 +453,7 @@ describe('Timestamp', () => {
       });
     });
 
-    it('does not add a tab stop when the tooltip is disabled', () => {
+    it('does not add a tab stop when the hover card is disabled', () => {
       render(
         <Timestamp
           value={Date.now() / 1000 - 3600}
@@ -465,7 +465,7 @@ describe('Timestamp', () => {
       expect(screen.getByTestId('ts')).not.toHaveAttribute('tabindex');
     });
 
-    it('does not add a tab stop for absolute formats (no tooltip)', () => {
+    it('does not add a tab stop for absolute formats (no hover card)', () => {
       render(
         <Timestamp
           value="2026-02-19T17:00:00Z"
@@ -476,7 +476,7 @@ describe('Timestamp', () => {
       expect(screen.getByTestId('ts')).not.toHaveAttribute('tabindex');
     });
 
-    it('keeps the full absolute aria-label while the tooltip is attached', () => {
+    it('keeps the full absolute aria-label while the hover card is attached', () => {
       render(
         <Timestamp
           value={Date.now() / 1000 - 3600}
@@ -491,26 +491,33 @@ describe('Timestamp', () => {
     });
   });
 
-  // --- Read-only tooltip (no entries configured) ---
+  // --- Default hover card (no tooltipEntries) ---
 
-  describe('read-only tooltip (no tooltipEntries)', () => {
+  describe('default hover card (no tooltipEntries)', () => {
     const originalShowPopover = HTMLElement.prototype.showPopover;
     const originalHidePopover = HTMLElement.prototype.hidePopover;
 
     beforeEach(() => {
-      // The tooltip is lazy-loaded; real timers let the dynamic import and
-      // RTL's findBy* resolve (the outer beforeEach installs fake timers).
+      // The card content renders inline in a (mocked) popover; real timers let
+      // RTL's findBy* and the async clipboard write resolve (the outer
+      // beforeEach installs fake timers).
       vi.useRealTimers();
       HTMLElement.prototype.showPopover = vi.fn();
       HTMLElement.prototype.hidePopover = vi.fn();
+      // jsdom does not implement the async Clipboard API.
+      Object.defineProperty(navigator, 'clipboard', {
+        value: {writeText: vi.fn().mockResolvedValue(undefined)},
+        configurable: true,
+      });
     });
 
     afterEach(() => {
       HTMLElement.prototype.showPopover = originalShowPopover;
       HTMLElement.prototype.hidePopover = originalHidePopover;
+      __resetLiveRegionsForTest();
     });
 
-    it('renders a plain tooltip with the bare absolute string, not a card', async () => {
+    it('renders the unified copyable card with a single default absolute row', async () => {
       render(
         <Timestamp
           value={Date.now() / 1000 - 3600}
@@ -518,16 +525,40 @@ describe('Timestamp', () => {
           data-testid="ts"
         />,
       );
-      const layer = await screen.findByRole('tooltip', {hidden: true});
-      // With no entries the hover surface stays the lightweight read-only
-      // tooltip: a bare string, never the copyable card (no list, no dialog).
-      expect(layer.querySelector('dl')).toBeNull();
-      expect(screen.queryByRole('dialog', {hidden: true})).toBeNull();
+      // With no entries the hover surface is still the copyable card — one
+      // surface, one styling — never the old read-only tooltip.
+      expect(
+        screen.queryByRole('tooltip', {hidden: true}),
+      ).not.toBeInTheDocument();
+      const card = await screen.findByRole('dialog', {hidden: true});
+      // The default card is the named details card, exactly as the configured
+      // one is.
+      expect(card).toHaveAttribute('aria-label', 'Timestamp details');
+      // Exactly one row, carrying the full absolute time (the same string as
+      // the aria-label) with its own copy button.
+      expect(card.querySelectorAll('dd')).toHaveLength(1);
+      expect(card.querySelectorAll('button')).toHaveLength(1);
 
       const normalize = (s: string) => s.replace(/\s+/g, ' ');
-      expect(normalize(layer.textContent ?? '')).toContain(
+      expect(normalize(card.textContent ?? '')).toContain(
         normalize(screen.getByTestId('ts').getAttribute('aria-label') ?? '\0'),
       );
+    });
+
+    it("copies the default absolute row's value", async () => {
+      render(<Timestamp value={Date.now() / 1000 - 3600} format="relative" />);
+      const card = await screen.findByRole('dialog', {hidden: true});
+      const rowValue = card.querySelector('dd')?.textContent ?? '';
+      expect(rowValue).toBeTruthy();
+      fireEvent.click(card.querySelector('button')!);
+      expect(navigator.clipboard.writeText).toHaveBeenCalledWith(rowValue);
+      // Let the async copy resolve and flip the button into its copied state
+      // so the state update settles inside act().
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', {name: 'Copied', hidden: true}),
+        ).toBeInTheDocument();
+      });
     });
   });
 
