@@ -124,7 +124,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'All authoring types (for docs, integrations, templates, and codemods) are exported from `@astryxdesign/cli/authoring`: `AstryxComponentDoc`, `AstryxIntegration`, `AstryxTemplate`, `AstryxCodemod`, and `AstryxConfig`. Consumers can also run their own post-codemod hooks, such as a reinstall or rebuild, via `hooks.postCodemod` in their `astryx.config`.',
+          text: 'All authoring types are exported from `@astryxdesign/cli/authoring`: `ComponentDoc`, `HookDoc`, and `ReferenceDoc` for docs, `TemplateDoc` for templates, and `AstryxConfig`, `AstryxIntegration`, and `AstryxCodemod` for the project files. Consumers can also run their own post-codemod hooks, such as a reinstall or rebuild, via `hooks.postCodemod` in their `astryx.config`.',
         },
       ],
     },

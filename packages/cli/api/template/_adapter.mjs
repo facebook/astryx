@@ -557,7 +557,11 @@ export async function discoverIntegrationTemplatesForOne(integration) {
       category: doc?.category || '',
       isReady: true,
       scaffold: false,
-      componentsUsed: doc?.componentsUsed ?? [],
+      // The integration envelope carries `componentsUsed` for both page and
+      // block templates; the rich TemplateDoc union only declares it on blocks,
+      // so read it off the envelope shape here.
+      componentsUsed:
+        /** @type {{componentsUsed?: string[]}} */ (doc).componentsUsed ?? [],
       filePath: sourcePath,
       docPath,
       package: pkgLabel,

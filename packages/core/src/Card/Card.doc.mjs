@@ -151,7 +151,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('@astryxdesign/cli/authoring').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'bordered container for DISCRETE items; NOT the default layout tool. Most content doesn\'t need a card.',
   usage: {

@@ -14,17 +14,19 @@ import {parseReference} from './reference/parse.mjs';
 import {parseTemplate} from './template/parse.mjs';
 import {parseLegacyDoc} from './legacy.mjs';
 
-/** @typedef {import('./types').AstryxComponentDoc} AstryxComponentDoc */
-/** @typedef {import('./types').AstryxTemplate} AstryxTemplate */
+/** @typedef {import('./types').ComponentDoc} ComponentDoc */
+/** @typedef {import('./types').HookDoc} HookDoc */
+/** @typedef {import('./types').ReferenceDoc} ReferenceDoc */
+/** @typedef {import('./types').TemplateDoc} TemplateDoc */
 
 /**
  * Validate an unknown loaded doc value into its typed shape, or throw.
- * Dispatches on the stamped `type`; unstamped legacy docs fall back to
+ * Dispatches on the stamped `type`; unstamped docs fall back to
  * shape-sniffing. The reference/topic discriminant is `'generic'`.
  *
  * @param {unknown} input
  * @param {string} [label]
- * @returns {AstryxComponentDoc | AstryxTemplate}
+ * @returns {ComponentDoc | HookDoc | ReferenceDoc | TemplateDoc}
  */
 export function parseDoc(input, label = 'doc') {
   const type =

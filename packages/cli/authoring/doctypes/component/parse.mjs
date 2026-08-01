@@ -8,19 +8,19 @@
 import {ComponentDocKindSchema} from '../_schema.mjs';
 import {formatZodError} from '../../_shared/errors.mjs';
 
-/** @typedef {import('../types').AstryxComponentDocInput} AstryxComponentDocInput */
+/** @typedef {import('../types').ComponentDoc} ComponentDoc */
 
 /**
  * Validate an unknown value as a stamped component doc, or throw.
  *
  * @param {unknown} input
  * @param {string} [label]
- * @returns {AstryxComponentDocInput}
+ * @returns {ComponentDoc}
  */
 export function parseComponent(input, label = 'component doc') {
   const result = ComponentDocKindSchema.safeParse(input);
   if (!result.success) {
     throw new Error(formatZodError(label, result.error));
   }
-  return /** @type {AstryxComponentDocInput} */ (result.data);
+  return /** @type {ComponentDoc} */ (result.data);
 }

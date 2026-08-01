@@ -87,7 +87,7 @@
  * xds --json component <name> --props
  * @typedef {object} ComponentDetailPropsResponse
  * @property {'component.detail.props'} type
- * @property {import('@astryxdesign/cli/authoring').PropDoc[]} data
+ * @property {import('@astryxdesign/cli/authoring').ComponentPropDoc[]} data
  */
 
 /**

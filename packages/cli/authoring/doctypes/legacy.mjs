@@ -10,19 +10,20 @@
 import {LegacyDocSchema} from './_schema.mjs';
 import {formatZodError} from '../_shared/errors.mjs';
 
-/** @typedef {import('./types').AstryxComponentDoc} AstryxComponentDoc */
+/** @typedef {import('./types').ComponentDoc} ComponentDoc */
+/** @typedef {import('./types').HookDoc} HookDoc */
 
 /**
  * Validate an unknown value as a legacy (unstamped) doc, or throw.
  *
  * @param {unknown} input
  * @param {string} [label]
- * @returns {AstryxComponentDoc}
+ * @returns {ComponentDoc | HookDoc}
  */
 export function parseLegacyDoc(input, label = 'doc') {
   const result = LegacyDocSchema.safeParse(input);
   if (!result.success) {
     throw new Error(formatZodError(label, result.error));
   }
-  return /** @type {AstryxComponentDoc} */ (result.data);
+  return /** @type {ComponentDoc | HookDoc} */ (result.data);
 }

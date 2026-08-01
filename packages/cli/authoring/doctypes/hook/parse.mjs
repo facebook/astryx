@@ -8,19 +8,19 @@
 import {FunctionDocKindSchema} from '../_schema.mjs';
 import {formatZodError} from '../../_shared/errors.mjs';
 
-/** @typedef {import('../types').AstryxFunctionDocInput} AstryxFunctionDocInput */
+/** @typedef {import('../types').HookDoc} HookDoc */
 
 /**
  * Validate an unknown value as a stamped function/hook doc, or throw.
  *
  * @param {unknown} input
  * @param {string} [label]
- * @returns {AstryxFunctionDocInput}
+ * @returns {HookDoc}
  */
 export function parseHook(input, label = 'function doc') {
   const result = FunctionDocKindSchema.safeParse(input);
   if (!result.success) {
     throw new Error(formatZodError(label, result.error));
   }
-  return /** @type {AstryxFunctionDocInput} */ (result.data);
+  return /** @type {HookDoc} */ (result.data);
 }

@@ -91,7 +91,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('@astryxdesign/cli/authoring').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
     'Renders keyboard shortcut as styled key badges. Use in tooltips, menus + help text to show key combinations.',

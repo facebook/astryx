@@ -6,11 +6,11 @@ Every component directory has a `{Name}.doc.mjs` file with structured documentat
 
 ## Exports
 
-| Export      | Type             | Purpose                          | Required?                       |
-| ----------- | ---------------- | -------------------------------- | ------------------------------- |
-| `docs`      | `ComponentDoc`   | English docs (source of truth)   | Yes                             |
-| `docsZh`    | `TranslationDoc` | Chinese Simplified prose overlay | Optional, falls back to English |
-| `docsDense` | `TranslationDoc` | Compressed prose overlay         | Optional, falls back to English |
+| Export      | Type                      | Purpose                          | Required?                       |
+| ----------- | ------------------------- | -------------------------------- | ------------------------------- |
+| `docs`      | `ComponentDoc`            | English docs (source of truth)   | Yes                             |
+| `docsZh`    | `ComponentTranslationDoc` | Chinese Simplified prose overlay | Optional, falls back to English |
+| `docsDense` | `ComponentTranslationDoc` | Compressed prose overlay         | Optional, falls back to English |
 
 **English first.** When adding a new component, write the `docs` export. That's it. Both `--lang zh` and `--lang dense` fall back to English if their exports don't exist. Translations are generated from English by AI and can be added later.
 
@@ -70,7 +70,7 @@ export const docs = {
 
 ## Writing Translations (docsZh / docsDense)
 
-Translations use the `TranslationDoc` type. Only prose fields, no structure.
+Translations use the `ComponentTranslationDoc` type. Only prose fields, no structure.
 
 ```js
 // -------------------------------------------------------
@@ -79,7 +79,7 @@ Translations use the `TranslationDoc` type. Only prose fields, no structure.
 // See .context/decisions/dense-compression-protocol.md
 // -------------------------------------------------------
 
-/** @type {import('@astryxdesign/cli/authoring').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'multi-variant btn w/ loading state',
   features: [

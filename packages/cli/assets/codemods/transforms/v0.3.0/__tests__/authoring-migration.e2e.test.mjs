@@ -227,10 +227,10 @@ describe('v0.3.0 authoring migration — import shapes & edge cases', () => {
 
   it('keeps a sibling type import and repoints its source', async () => {
     const out = await migrate(
-      `import {createComponentDoc, type AstryxComponentDoc} from '@astryxdesign/core/authoring';\nconst d: AstryxComponentDoc = createComponentDoc({name: 'X', props: []});\nexport default d;\n`,
+      `import {createComponentDoc, type ComponentDoc} from '@astryxdesign/core/authoring';\nconst d: ComponentDoc = createComponentDoc({name: 'X', props: []});\nexport default d;\n`,
     );
     expect(out).not.toContain('createComponentDoc');
-    expect(out).toContain('AstryxComponentDoc');
+    expect(out).toContain('ComponentDoc');
     expect(out).toContain("from '@astryxdesign/cli/authoring'");
     expect(out).toContain("type: 'component'");
   });
@@ -257,7 +257,7 @@ describe('v0.3.0 authoring migration — import shapes & edge cases', () => {
       `import {createDoc, createComponentDoc} from '@astryxdesign/core/authoring';\n` +
         `export const a = createDoc({name: 'A', description: 'a'});\n` +
         `export const b = createComponentDoc({name: 'B', props: []});\n` +
-        `export {AstryxComponentDoc} from '@astryxdesign/cli/doc';\n`,
+        `export {ComponentDoc} from '@astryxdesign/cli/doc';\n`,
     );
     expect(out).not.toMatch(/createDoc|createComponentDoc/);
     expect(out).toContain("type: 'generic'");

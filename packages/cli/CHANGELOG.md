@@ -704,7 +704,7 @@ npx astryx upgrade --apply --to 0.0.6
 #### Features
 
 - **`astryx theme build`** — Renamed from `build-theme` to `theme build` (#570)
-- **`--lang` flag** — TranslationDoc support for i18n/compressed docs (#611)
+- **`--lang` flag** — ComponentTranslationDoc support for i18n/compressed docs (#611)
 - **`--zh` flag** — Chinese Simplified doc output (#567)
 
 #### Refactors

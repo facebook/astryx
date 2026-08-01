@@ -98,7 +98,7 @@ export const docs = {
   },
 };
 
-/** @type {import('@astryxdesign/cli/authoring').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsZh = {
   propDescriptions: {
     src: '\u56FE\u7247\u6E90 URL\u3002',

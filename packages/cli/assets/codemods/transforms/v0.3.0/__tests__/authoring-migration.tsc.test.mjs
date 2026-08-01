@@ -49,28 +49,28 @@ const integration: AstryxIntegration = createIntegration({components: './compone
 export default integration;
 `,
   'component.doc.ts': `import {createComponentDoc} from '@astryxdesign/core/authoring';
-import type {AstryxComponentDoc} from '@astryxdesign/core/authoring';
-const doc: AstryxComponentDoc = createComponentDoc({name: 'AcmeCarousel', props: [{name: 'slides', type: 'ReactNode[]', description: 'Slides.'}]});
+import type {ComponentDoc} from '@astryxdesign/core/authoring';
+const doc: ComponentDoc = createComponentDoc({name: 'AcmeCarousel', displayName: 'Acme Carousel', usage: {description: 'Cycle related media.'}, props: [{name: 'slides', type: 'ReactNode[]', description: 'Slides.'}]});
 export default doc;
 `,
   'function.doc.ts': `import {createFunctionDoc} from '@astryxdesign/core/authoring';
-import type {AstryxComponentDoc} from '@astryxdesign/core/authoring';
-const doc: AstryxComponentDoc = createFunctionDoc({name: 'useCarousel', params: [{name: 'count', type: 'number', description: 'Count.'}], returns: [{name: 'index', type: 'number', description: 'Index.'}]});
+import type {HookDoc} from '@astryxdesign/core/authoring';
+const doc: HookDoc = createFunctionDoc({name: 'useCarousel', displayName: 'useCarousel', usage: {description: 'Drive carousel state.'}, params: [{name: 'count', type: 'number', description: 'Count.'}], returns: [{name: 'index', type: 'number', description: 'Index.'}]});
 export default doc;
 `,
   'generic.doc.ts': `import {createDoc} from '@astryxdesign/core/authoring';
-import type {AstryxComponentDoc} from '@astryxdesign/core/authoring';
-const doc: AstryxComponentDoc = createDoc({name: 'Theming', description: 'How theming works.'});
+import type {ReferenceDoc} from '@astryxdesign/core/authoring';
+const doc: ReferenceDoc = createDoc({name: 'theming', title: 'Theming', description: 'How theming works.', sections: [{title: 'Overview', content: [{type: 'prose', text: 'Themes cascade.'}]}]});
 export default doc;
 `,
   'page.template.ts': `import {createPageTemplate} from '@astryxdesign/core/authoring';
-import type {AstryxTemplate} from '@astryxdesign/core/authoring';
-const t: AstryxTemplate = createPageTemplate({name: 'Landing', description: 'A landing page.'});
+import type {TemplateDoc} from '@astryxdesign/core/authoring';
+const t: TemplateDoc = createPageTemplate({name: 'Landing', displayName: 'Landing', description: 'A landing page.'});
 export default t;
 `,
   'block.template.ts': `import {createBlockTemplate} from '@astryxdesign/core/authoring';
-import type {AstryxTemplate} from '@astryxdesign/core/authoring';
-const t: AstryxTemplate = createBlockTemplate({name: 'Hero', description: 'A hero block.'});
+import type {TemplateDoc} from '@astryxdesign/core/authoring';
+const t: TemplateDoc = createBlockTemplate({name: 'Hero', displayName: 'Hero', exampleFor: 'Button', aspectRatio: 1.5, description: 'A hero block.'});
 export default t;
 `,
   'codemod.ts': `import {createCodemod} from '@astryxdesign/cli/codemod';

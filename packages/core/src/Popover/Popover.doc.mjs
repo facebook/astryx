@@ -275,7 +275,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('@astryxdesign/cli/authoring').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
     'Click-triggered popover displaying interactive content anchored to trigger element; implements button+dialog ARIA pattern.',

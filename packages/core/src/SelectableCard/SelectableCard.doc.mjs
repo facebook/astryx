@@ -54,7 +54,7 @@ export const docs = {
   },
 };
 
-/** @type {import('@astryxdesign/cli/authoring').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'Card toggling between selected/unselected states w/ accent border. For navigation use ClickableCard instead.',
   usage: {

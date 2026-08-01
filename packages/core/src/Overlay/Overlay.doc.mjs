@@ -188,7 +188,7 @@ export const docs = {
   },
 };
 
-/** @type {import('@astryxdesign/cli/authoring').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'layered content over media/card surfaces with scrim + hover/focus/controlled reveal',
   usage: {

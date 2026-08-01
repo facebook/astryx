@@ -1,8 +1,15 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import type {HookParamDoc} from '../base/HookParamDoc';
-import type {HookReturnDoc} from '../base/HookReturnDoc';
-import type {UsageDoc} from '../base/UsageDoc';
+/**
+ * @file Hook/function doc types.
+ */
+
+import type {
+  ComponentBestPractice,
+  HookParamDoc,
+  HookReturnDoc,
+  UsageDoc,
+} from '../base/type';
 
 /**
  * Documentation for a standalone hook's .doc.mjs file.
@@ -19,11 +26,15 @@ import type {UsageDoc} from '../base/UsageDoc';
  *   export const docs = { ... };
  */
 export interface HookDoc {
+  /** Doc-kind discriminant for the stamped default-export format
+   *  (`export default { type: 'function', ... }`). Optional: legacy
+   *  `export const docs = {...}` docs omit it. */
+  type?: 'function';
   /** Hook name exactly as exported, e.g. 'useMediaQuery', 'useFocusTrap'. */
   name: string;
   /** Human-readable display name for the hook. Hooks read better as the
    *  raw identifier ('useMediaQuery') than spaced ('use Media Query'), so
-   *  the codemod keeps the identifier verbatim. See `BaseDoc.displayName`. */
+   *  the codemod keeps the identifier verbatim. See `ComponentBaseDoc.displayName`. */
   displayName: string;
   /** Optional group for sidebar/docs organization — same as ComponentDoc.group. */
   group?: string;
@@ -46,4 +57,21 @@ export interface HookDoc {
   importPath?: string;
   /** Category for grouping in listings. */
   category?: string;
+}
+
+/**
+ * Translation overlay for hook documentation.
+ */
+export interface HookTranslationDoc {
+  /** Compressed/translated description. */
+  description?: string;
+  /** Param descriptions keyed by param name. */
+  paramDescriptions?: Record<string, string>;
+  /** Return descriptions keyed by field name. */
+  returnDescriptions?: Record<string, string>;
+  /** Translated usage. */
+  usage?: {
+    description?: string;
+    bestPractices?: ComponentBestPractice[];
+  };
 }

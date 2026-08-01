@@ -46,7 +46,7 @@ function formatTableCompact(headers, rows) {
 }
 
 /**
- * @param {import('@astryxdesign/cli/authoring').ContentBlock} block
+ * @param {import('@astryxdesign/cli/authoring').ReferenceContentBlock} block
  * @param {'full' | 'compact' | 'brief'} detail
  * @returns {string | null}
  */
