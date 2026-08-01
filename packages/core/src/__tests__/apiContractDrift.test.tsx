@@ -14,16 +14,15 @@ import {docs as TextInputDocs} from '../TextInput/TextInput.doc.mjs';
 import {docs as ToastDocs} from '../Toast/Toast.doc.mjs';
 import {docs as TokenizerDocs} from '../Tokenizer/Tokenizer.doc.mjs';
 
-function getProps(docs: Record<string, unknown>): {name: string}[] {
-  return (
-    (docs.props as {name: string}[]) ||
-    (
-      docs.components as {
-        props: {name: string}[];
-      }[]
-    )?.[0]?.props ||
-    []
-  );
+// `docs` is the ComponentDoc union (single vs multi component); narrow it
+// for structural access to either the top-level props or the first
+// sub-component's props.
+function getProps(docs: unknown): {name: string}[] {
+  const doc = docs as {
+    props?: {name: string}[];
+    components?: {props?: {name: string}[]}[];
+  };
+  return doc.props || doc.components?.[0]?.props || [];
 }
 
 describe('API Contract Drift Audit (#4163)', () => {
