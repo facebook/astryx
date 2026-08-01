@@ -193,6 +193,141 @@ describe('icon import emitted into the built module', () => {
     expect(warnSpy).not.toHaveBeenCalled();
   });
 
+  it('rewrites a parent-relative specifier onto its compiled companion', async () => {
+    const sharedDir = path.join(tmpDir, 'shared');
+    fs.mkdirSync(sharedDir, {recursive: true});
+    // Loadable source for jiti…
+    fs.writeFileSync(
+      path.join(sharedDir, 'icons.ts'),
+      `export const myIcons = { close: 'x' };\n`,
+    );
+    // …and the compiled companion where the OUTPUT will resolve it:
+    // dist/../shared/icons.mjs.
+    fs.writeFileSync(
+      path.join(sharedDir, 'icons.mjs'),
+      `export const myIcons = { close: 'x' };\n`,
+    );
+    const srcDir = path.join(tmpDir, 'src');
+    fs.mkdirSync(srcDir, {recursive: true});
+    fs.writeFileSync(
+      path.join(srcDir, 'parented.ts'),
+      `import { myIcons } from '../shared/icons';\n` +
+        `export default { name: 'parented', tokens: { '--color-bg': '#fff' }, icons: myIcons };\n`,
+    );
+
+    await themeBuild('src/parented.ts', {out: 'dist/theme.css'}, {cwd: tmpDir});
+
+    expect(builtModule('parented')).toContain(`from '../shared/icons.mjs'`);
+  });
+
+  it('rewrites a nested ./subdir specifier onto its compiled companion', async () => {
+    const srcDir = path.join(tmpDir, 'src', 'nested');
+    fs.mkdirSync(srcDir, {recursive: true});
+    fs.writeFileSync(
+      path.join(srcDir, 'icons.ts'),
+      `export const myIcons = { close: 'x' };\n`,
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'src', 'nester.ts'),
+      `import { myIcons } from './nested/icons';\n` +
+        `export default { name: 'nester', tokens: { '--color-bg': '#fff' }, icons: myIcons };\n`,
+    );
+    const distNested = path.join(tmpDir, 'dist', 'nested');
+    fs.mkdirSync(distNested, {recursive: true});
+    fs.writeFileSync(
+      path.join(distNested, 'icons.mjs'),
+      `export const myIcons = { close: 'x' };\n`,
+    );
+
+    await themeBuild('src/nester.ts', {out: 'dist/theme.css'}, {cwd: tmpDir});
+
+    expect(builtModule('nester')).toContain(`from './nested/icons.mjs'`);
+  });
+
+  it('falls back to .cjs when it is the only compiled companion', async () => {
+    const file = writeIconTheme();
+    writeCompanion('icons.cjs');
+
+    await themeBuild(file, {out: 'dist/theme.css'}, {cwd: tmpDir});
+
+    expect(builtModule()).toContain(`from './icons.cjs'`);
+  });
+
+  it('a directory named like the specifier is not a module — the build fails (no ESM directory imports)', async () => {
+    const file = writeIconTheme();
+    fs.mkdirSync(path.join(tmpDir, 'dist', 'icons'), {recursive: true});
+
+    await expect(
+      themeBuild(file, {out: 'dist/theme.css'}, {cwd: tmpDir}),
+    ).rejects.toMatchObject({code: 'ERR_THEME_ICON_UNRESOLVED'});
+  });
+
+  it('a fully-specified relative import that resolves nothing also fails the build', async () => {
+    const srcDir = path.join(tmpDir, 'src');
+    fs.mkdirSync(srcDir, {recursive: true});
+    fs.writeFileSync(
+      path.join(srcDir, 'icons-real.mjs'),
+      `export const myIcons = { close: 'x' };\n`,
+    );
+    fs.writeFileSync(
+      path.join(srcDir, 'spec-missing.mjs'),
+      `import { myIcons } from './icons-real.mjs';\n` +
+        `export default { name: 'specmissing', tokens: { '--color-bg': '#fff' }, icons: myIcons };\n`,
+    );
+    // No dist/icons-real.mjs — the explicit spelling resolves nothing there.
+
+    await expect(
+      themeBuild('src/spec-missing.mjs', {out: 'dist/theme.css'}, {cwd: tmpDir}),
+    ).rejects.toMatchObject({code: 'ERR_THEME_ICON_UNRESOLVED'});
+  });
+
+  it('the default out path (beside the source) takes the in-place warn path', async () => {
+    const file = writeIconTheme();
+    const warnSpy = vi.spyOn(logger, 'warn');
+
+    // No `out`: outputs land next to the source file, where only icons.ts
+    // exists — the default invocation for a theme scaffolded from a template.
+    const result = await themeBuild(file, {}, {cwd: tmpDir});
+
+    expect(result?.type).toBe('theme.build');
+    const js = fs.readFileSync(path.join(tmpDir, 'src', 'icotheme.js'), 'utf8');
+    expect(js).toContain(`from './icons'`);
+    expect(warnSpy).toHaveBeenCalledTimes(1);
+    expect(result?.data.warnings).toHaveLength(1);
+  });
+
+  it('a compiled companion beats the TS-sibling warn path (ladder order)', async () => {
+    const file = writeIconTheme();
+    // In-place build where BOTH the TS source and a compiled .cjs sit in the
+    // out dir — the compiled module must win, silently.
+    fs.writeFileSync(
+      path.join(tmpDir, 'src', 'icons.cjs'),
+      `exports.myIcons = { close: 'x' };\n`,
+    );
+    const warnSpy = vi.spyOn(logger, 'warn');
+
+    const result = await themeBuild(file, {out: 'src/theme.css'}, {cwd: tmpDir});
+
+    const js = fs.readFileSync(path.join(tmpDir, 'src', 'icotheme.js'), 'utf8');
+    expect(js).toContain(`from './icons.cjs'`);
+    expect(warnSpy).not.toHaveBeenCalled();
+    expect(result?.data.warnings).toEqual([]);
+  });
+
+  it('requires an exact-case companion — a case-insensitive FS match is not a real module', async () => {
+    const file = writeIconTheme();
+    // Wrong case on disk. macOS statSync happily matches `icons.mjs` onto
+    // ICONS.mjs; the emitted specifier would then fail on the case-sensitive
+    // systems the artifact actually ships to (Linux servers, CI). Only the
+    // exact on-disk name may satisfy the import — on every platform this
+    // build must fail, not emit a mac-only module.
+    writeCompanion('ICONS.mjs');
+
+    await expect(
+      themeBuild(file, {out: 'dist/theme.css'}, {cwd: tmpDir}),
+    ).rejects.toMatchObject({code: 'ERR_THEME_ICON_UNRESOLVED'});
+  });
+
   it('builds a theme without icons exactly as before (control)', async () => {
     const srcDir = path.join(tmpDir, 'src');
     fs.mkdirSync(srcDir, {recursive: true});

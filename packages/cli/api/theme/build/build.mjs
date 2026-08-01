@@ -558,7 +558,12 @@ function resolveIconImportPath(iconInfo, outDir, relOutDir) {
   const target = path.resolve(outDir, spec);
   const isFile = (/** @type {string} */ p) => {
     try {
-      return fs.statSync(p).isFile();
+      if (!fs.statSync(p).isFile()) return false;
+      // A case-insensitive filesystem (macOS default) matches `icons.mjs`
+      // onto `ICONS.mjs` — and the emitted specifier would then fail on the
+      // case-sensitive systems the artifact ships to. Only the exact
+      // on-disk name satisfies the import, on every platform.
+      return fs.readdirSync(path.dirname(p)).includes(path.basename(p));
     } catch {
       return false;
     }
