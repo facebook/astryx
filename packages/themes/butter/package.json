@@ -46,7 +46,7 @@
     "src"
   ],
   "scripts": {
-    "build": "astryx theme build src/butterTheme.ts -o dist/theme.css && tsup && tsc --project tsconfig.build.json"
+    "build": "astryx theme build src/butterTheme.ts -o dist/theme.css --icons-specifier ./icons.mjs && tsup && tsc --project tsconfig.build.json"
   },
   "dependencies": {
     "lucide-react": "^1.18.0"

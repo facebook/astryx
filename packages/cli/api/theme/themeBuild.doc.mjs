@@ -19,11 +19,13 @@ export const doc = {
     "via @astryxdesign/core's shared generator (the single source of truth, so the build " +
     'emits the exact CSS the <Theme> runtime does), writes a scoped CSS file, a JS module ' +
     'that re-exports the built theme, and a .d.ts (plus an optional .variants.d.ts when the ' +
-    'theme adds custom prop values). With {check: true} it writes nothing and instead compares ' +
+    'theme adds custom prop values). When another build step emits the icon registry, ' +
+    '{iconsSpecifier} declares the fully specified module path for the generated JS import. ' +
+    'With {check: true} it writes nothing and instead compares ' +
     'each output against disk, returning the drift: the CI guard for committed, generated theme CSS.',
   importPath: '@astryxdesign/cli/api',
   signature:
-    'themeBuild(file: string, options?: {out?: string, check?: boolean}, ctx?: {cwd?: string}): Promise<ThemeBuildResponse | ThemeBuildCheckResponse | null>',
+    'themeBuild(file: string, options?: {out?: string, check?: boolean, iconsSpecifier?: string}, ctx?: {cwd?: string}): Promise<ThemeBuildResponse | ThemeBuildCheckResponse | null>',
   keywords: [
     'theme',
     'build',
@@ -53,6 +55,12 @@ export const doc = {
       description:
         'Compile in memory and compare each output against what is on disk instead of writing: the CI drift guard.',
       default: 'false',
+    },
+    {
+      name: 'options.iconsSpecifier',
+      type: 'string',
+      description:
+        'Override the icon-registry import specifier in the generated JS module, for example ./icons.mjs. When omitted, the source specifier is preserved.',
     },
     {
       name: 'ctx.cwd',
@@ -101,6 +109,10 @@ export const doc = {
     {
       label: 'Check for drift (CI)',
       code: "const r = await themeBuild('src/themes/ocean.ts', {check: true});",
+    },
+    {
+      label: 'Use a separately compiled icon registry',
+      code: "const r = await themeBuild('src/themes/ocean.ts', {iconsSpecifier: './icons.mjs'});",
     },
   ],
   command: 'theme build',
