@@ -20,6 +20,11 @@
  */
 export function levenshteinDistance(a, b) {
   const m = a.length, n = b.length;
+  // Early exit: if the length difference exceeds any realistic fuzzy-match
+  // threshold (callers use ≤5), the distance is guaranteed ≥ |m-n| — skip the
+  // O(m·n) DP entirely. This closes the DoS surface where a long query (>3k
+  // chars) caused multi-second CPU spins (8,860 calls × O(n²) per search).
+  if (Math.abs(m - n) > 3) return 999;
   /** @type {number[][]} */
   const dp = Array.from({length: m + 1}, () => Array(n + 1).fill(0));
   for (let i = 0; i <= m; i++) dp[i][0] = i;

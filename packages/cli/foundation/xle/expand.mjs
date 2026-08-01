@@ -20,6 +20,7 @@ import {PAYLOAD_PROPS} from './validate.mjs';
 import {mergeImports, renderImport, prepareSpliceModule} from './splice.mjs';
 
 const INDENT = '  ';
+const MAX_REPEAT = 10000;
 
 /** @param {string | null | undefined} text */
 function slugify(text) {
@@ -312,7 +313,7 @@ class Emitter {
     const lines = [];
     for (const item of items) {
       if (item.kind === 'group') {
-        const count = item.repeat || 1;
+        const count = Math.min(item.repeat || 1, MAX_REPEAT);
         for (let i = 1; i <= count; i++) {
           for (const child of item.children) {
             const clone = count > 1 ? cloneItem(child) : child;
@@ -322,7 +323,7 @@ class Emitter {
         }
         continue;
       }
-      const count = item.repeat || 1;
+      const count = Math.min(item.repeat || 1, MAX_REPEAT);
       for (let i = 1; i <= count; i++) {
         const clone = count > 1 ? /** @type {import('./xle-ast').XLENode} */ (cloneItem(item)) : item;
         if (count > 1) {
