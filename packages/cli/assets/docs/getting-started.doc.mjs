@@ -40,7 +40,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: "Then run `astryx init` to install the AI agent cheat sheet (AGENTS.md/CLAUDE.md). It's non-interactive — no prompts — so it's safe for AI agents, CI, and scripts. Add `--all` for pointers to the theme and page-building workflows.",
+          text: "Then run `astryx init` to install the AI agent cheat sheet (AGENTS.md/CLAUDE.md). It's non-interactive; no prompts; so it's safe for AI agents, CI, and scripts. Add `--all` for pointers to the theme and page-building workflows.",
         },
         {
           type: 'code',
