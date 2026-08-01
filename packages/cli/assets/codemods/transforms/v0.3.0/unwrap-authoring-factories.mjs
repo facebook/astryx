@@ -81,6 +81,11 @@ function stampObjectType(j, objExpr, kind) {
   const existing = objExpr.properties.find(isTypeKey);
   if (existing) {
     existing.value = j.stringLiteral(kind);
+    // A shorthand `{type}` (i.e. `type: type`) prints as just its value, so
+    // overwriting `.value` alone would emit `{'component'}` — invalid. Force
+    // the explicit `type: '<kind>'` form.
+    existing.shorthand = false;
+    existing.key = j.identifier('type');
   } else {
     objExpr.properties.push(
       j.objectProperty(j.identifier('type'), j.stringLiteral(kind)),
@@ -123,11 +128,21 @@ export default function transformer(file, api) {
 
     const kind = FACTORY_STAMPS.get(canonical);
     const arg = path.node.arguments[0];
-    if (!arg) return; // createX() with no argument — leave for manual review
 
     /** @type {any} */
     let replacement;
-    if (kind == null) {
+    if (!arg) {
+      // createX() with no argument. The factory imports are removed below, so
+      // leaving the call would dangle a reference to a deleted binding. Emit the
+      // object the factory produced from no input: an empty object for the
+      // pure config/integration factories, or a stamp-only `{type: '<kind>'}`.
+      replacement =
+        kind == null
+          ? j.objectExpression([])
+          : j.objectExpression([
+              j.objectProperty(j.identifier('type'), j.stringLiteral(kind)),
+            ]);
+    } else if (kind == null) {
       // config / integration: pure unwrap.
       replacement = arg;
     } else if (j.ObjectExpression.check(arg)) {

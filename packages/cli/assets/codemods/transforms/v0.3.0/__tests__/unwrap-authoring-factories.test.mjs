@@ -96,6 +96,42 @@ export default createComponentDoc({type: 'wrong', name: 'Widget', props: []});
     expect(output).not.toContain("type: 'wrong'");
   });
 
+  it('rewrites a shorthand `type` property to the explicit discriminant (not a bare string)', async () => {
+    // `{name, type}` where `type` is a local binding is a shorthand property.
+    // Overwriting only the value would print `{name, 'component'}` — invalid
+    // syntax. The transform must force the explicit `type: 'component'` form.
+    const input = `import {createComponentDoc} from '@astryxdesign/core/authoring';
+const type = someVar;
+export default createComponentDoc({name: 'Widget', type});
+`;
+    const output = await applyTransform(input);
+    expect(output).toContain("type: 'component'");
+    // No stray bare string literal where a property key should be.
+    expect(output).not.toMatch(/\{\s*name: 'Widget',\s*'component'\s*\}/);
+    expect(output).not.toContain('createComponentDoc');
+  });
+
+  it('replaces a no-arg config factory with an empty object (no dangling import)', async () => {
+    // The factory import is removed, so a bare `createConfig()` left in place
+    // would reference a deleted binding. It must become the object the factory
+    // produced from no input: `{}`.
+    const input = `import {createConfig} from '@astryxdesign/cli/config';
+export default createConfig();
+`;
+    const output = await applyTransform(input);
+    expect(output).not.toContain('createConfig');
+    expect(output).toContain('export default {}');
+  });
+
+  it('replaces a no-arg doc factory with a stamp-only object (no dangling import)', async () => {
+    const input = `import {createComponentDoc} from '@astryxdesign/core/authoring';
+export default createComponentDoc();
+`;
+    const output = await applyTransform(input);
+    expect(output).not.toContain('createComponentDoc');
+    expect(output).toContain("type: 'component'");
+  });
+
   it('is a no-op when no authoring factory is imported', async () => {
     const input = `import {Button} from '@astryxdesign/core';
 export default Button;
