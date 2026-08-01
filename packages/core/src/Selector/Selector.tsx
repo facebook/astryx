@@ -1049,7 +1049,17 @@ export function Selector<T extends SelectorOptionType>(
               <DefaultOption option={item} />
             )}
           </span>
-          {isSelected && <Icon icon="check" size="sm" color="accent" />}
+          {isSelected && (
+            <Icon
+              icon="check"
+              size="sm"
+              color="accent"
+              // Stable theme target on the selected-row marker, so a theme can
+              // restyle or hide it (e.g. to compose its own selected indicator
+              // via renderOption) without a structural sibling selector.
+              {...themeProps('selector-check')}
+            />
+          )}
         </div>
       );
     },

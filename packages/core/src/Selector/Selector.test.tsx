@@ -1640,3 +1640,80 @@ describe('Selector search affordances', () => {
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
   });
 });
+
+describe('Selector selected-marker theme target (selector-check)', () => {
+  const openOptions = (): HTMLElement[] => screen.getAllByRole('option', h);
+
+  it('renders the astryx-selector-check target on the selected row only', () => {
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value="Banana"
+        onChange={() => {}}
+        isDefaultOpen
+      />,
+    );
+    const options = openOptions();
+    const selected = options.find(
+      o => o.getAttribute('aria-selected') === 'true',
+    )!;
+    const check = selected.querySelector('.astryx-selector-check');
+    expect(check).toBeInTheDocument();
+    // The target lands on the checkmark glyph itself, so a theme can restyle or
+    // hide it (e.g. to compose its own selected indicator via renderOption).
+    expect(check).toHaveClass('astryx-icon');
+
+    const unselected = options.filter(
+      o => o.getAttribute('aria-selected') !== 'true',
+    );
+    for (const row of unselected) {
+      expect(row.querySelector('.astryx-selector-check')).not.toBeInTheDocument();
+    }
+  });
+
+  it('renders the default checkmark byte-identically aside from the target class', () => {
+    // The added target class is purely additive — it changes nothing about the
+    // glyph's own color/size until a theme targets it.
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value="Banana"
+        onChange={() => {}}
+        isDefaultOpen
+      />,
+    );
+    const selected = screen
+      .getAllByRole('option', h)
+      .find(o => o.getAttribute('aria-selected') === 'true')!;
+    const check = selected.querySelector(
+      '.astryx-selector-check',
+    ) as HTMLElement;
+
+    const {container: refContainer} = render(
+      <Icon icon="check" size="sm" color="accent" />,
+    );
+    const refIcon = refContainer.querySelector('.astryx-icon') as HTMLElement;
+    const styleClasses = (el: HTMLElement) =>
+      el.className
+        .split(' ')
+        .filter(c => c !== 'astryx-selector-check')
+        .sort();
+    expect(styleClasses(check)).toEqual(styleClasses(refIcon));
+  });
+
+  it('exposes selector-check so a theme can hide or restyle the marker', () => {
+    const theme = defineTheme({
+      name: 'selector-check-test',
+      components: {
+        'selector-check': {
+          base: {display: 'none'},
+        },
+      },
+    });
+    const css = generateThemeTestCSS(theme);
+    expect(css).toContain('.astryx-selector-check {');
+    expect(css).toContain('display: none');
+  });
+});
