@@ -13,6 +13,7 @@
  */
 
 import * as fs from 'node:fs';
+import {assertWithin} from '../../../foundation/fs/path-safety.mjs';
 import {jsonOut, humanLog} from '../../../foundation/response/json.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
@@ -52,8 +53,27 @@ import {layoutExpand, layoutCheck, layoutGrammar} from '../../../api/layout/layo
  */
 async function readExpression(expr, options = {}) {
   if (options.file) {
+    // Confine the file read to the project root (reject traversal / absolute paths)
+    // and cap size to prevent OOM on special files like /dev/zero.
+    const filePath = assertWithin(options.file, process.cwd(), {
+      allowAbsolute: true,
+      label: 'layout --file',
+    });
+    const stat = fs.statSync(filePath, {throwIfNoEntry: false});
+    if (!stat || !stat.isFile()) {
+      cliError(`File not found: ${options.file}`, {
+        code: ERROR_CODES.ERR_FILE_NOT_FOUND,
+      });
+    }
+    const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+    if (stat.size > MAX_FILE_SIZE) {
+      cliError(
+        `File "${options.file}" is too large (${(stat.size / 1024 / 1024).toFixed(1)} MB, max 5 MB)`,
+        {code: ERROR_CODES.ERR_FILE_NOT_FOUND},
+      );
+    }
     try {
-      return fs.readFileSync(options.file, 'utf-8');
+      return fs.readFileSync(filePath, 'utf-8');
     } catch (e) {
       const errno = /** @type {NodeJS.ErrnoException} */ (e);
       if (errno && errno.code === 'ENOENT') {

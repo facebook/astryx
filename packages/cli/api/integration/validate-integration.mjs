@@ -24,6 +24,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import {assertWithin} from '../../foundation/fs/path-safety.mjs';
 import {
   findManifestPaths,
   loadManifestObject,
@@ -261,8 +262,20 @@ async function validateAtPackageDir(packageDir, identity) {
   }
 
   /** @param {string | null | undefined} value */
-  const resolveRoot = value =>
-    value == null ? undefined : path.resolve(packageDir, value);
+  const resolveRoot = (value, kind = 'contribution root') => {
+    if (value == null) return undefined;
+    try {
+      return assertWithin(value, packageDir, {label: kind});
+    } catch {
+      // If the root escapes the package, report an issue instead of crashing.
+      result.issues.push({
+        code: 'root_outside_package',
+        severity: 'error',
+        message: `The ${kind} "${value}" resolves outside the integration package directory. Contribution roots must stay within the package.`,
+      });
+      return undefined;
+    }
+  };
 
   const loaded = {
     name: identity.name,

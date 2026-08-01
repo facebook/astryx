@@ -24,6 +24,7 @@ import {pathToFileURL, fileURLToPath} from 'node:url';
 import {createJiti} from 'jiti';
 import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
 import {
+  assertWithin,
   sanitizeName,
   PathSafetyError,
 } from '../../../foundation/fs/path-safety.mjs';
@@ -788,7 +789,10 @@ function validatePrivateVars(themeDef) {
  * @returns {Promise<import('../theme.type.mjs').ThemeBuildResponse | null>}
  */
 export async function themeBuild(file, options = {}, {cwd = process.cwd()} = {}) {
-  const filePath = path.resolve(cwd, file);
+  const filePath = assertWithin(file, cwd, {
+    allowAbsolute: true,
+    label: 'theme source file',
+  });
 
   if (!fs.existsSync(filePath)) {
     throw new AstryxError(`File not found: ${filePath}`, undefined, ERROR_CODES.ERR_FILE_NOT_FOUND);
@@ -922,7 +926,7 @@ export async function themeBuild(file, options = {}, {cwd = process.cwd()} = {})
   // share one scheme; an explicit --out still wins.
   const baseName = themeDef.name;
   const outPath = options.out
-    ? path.resolve(cwd, options.out)
+    ? assertWithin(options.out, cwd, {allowAbsolute: true, label: 'output path'})
     : path.join(path.dirname(filePath), `${baseName}.css`);
 
   const displayTheme = resolvedTheme || themeDef;
