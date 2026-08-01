@@ -182,6 +182,7 @@ function applyTemplate(cwd, {templateName}, invocation, data) {
  * @returns {Promise<import('../init.type.mjs').InitRunResponse>}
  */
 export async function run(options = {}, {cwd = process.cwd()} = {}) {
+  options = options ?? {};
   const invocation = getCliInvocation();
 
   // Non-interactive feature install: --features or --all.

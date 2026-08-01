@@ -63,6 +63,7 @@ export {
  * @returns {Promise<{type: string, data: unknown}>}
  */
 export async function template(name, options = {}) {
+  options = options ?? {};
   const {
     list = false,
     skeleton = false,

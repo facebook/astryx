@@ -38,6 +38,7 @@ import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
  * >}
  */
 export async function discover(query, options = {}) {
+  options = options ?? {};
   const {lang = null, zh = false} = options;
   const {packages, configured} = await discoverPackages();
 

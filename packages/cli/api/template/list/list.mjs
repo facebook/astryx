@@ -18,6 +18,7 @@ import {pkgOf} from '../_adapter.mjs';
  * @returns {import('../template.type.mjs').TemplateListResponse}
  */
 export function templateList(templates, options = {}) {
+  options = options ?? {};
   const {type, package: packageFilter} = options;
   let filtered = templates;
   if (type) filtered = filtered.filter(t => t.type === type);

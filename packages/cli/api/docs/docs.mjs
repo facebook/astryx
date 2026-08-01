@@ -36,6 +36,7 @@ export {list, detail, sectionLeaf as section};
  * >}
  */
 export async function docs(topic, section, options = {}) {
+  options = options ?? {};
   if (!topic) return list();
   if (section) return sectionLeaf(topic, section, options);
   return detail(topic, options);

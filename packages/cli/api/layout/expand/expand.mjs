@@ -96,6 +96,7 @@ function buildBlockModules(doc, blocks) {
  * @returns {Promise<import('../layout.type.mjs').LayoutExpandResponse>}
  */
 export async function layoutExpand(expression, options = {}) {
+  options = options ?? {};
   const {targetPath, form = 'auto', loose = false, name, cwd = process.cwd()} = options;
   const {doc, registry, blocks, errors, warnings} = await analyze(expression, {form, loose, cwd});
 

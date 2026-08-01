@@ -556,6 +556,7 @@ function toResult(c, score, reason) {
  * @returns {Promise<{type: 'search', data: {query: string, results: Array<object>}}>}
  */
 export async function search(query, options = {}) {
+  options = options ?? {};
   const {cwd = process.cwd(), type, limit = 20} = options;
 
   if (!query || !String(query).trim()) {

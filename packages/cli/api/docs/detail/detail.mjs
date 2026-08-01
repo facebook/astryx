@@ -75,6 +75,7 @@ async function resolveTokenRefs(docsData, topics) {
  * @returns {Promise<import('../docs.type.mjs').DocsDetailResponse>}
  */
 export async function detail(topic, options = {}) {
+  options = options ?? {};
   const {topics, docsData} = await resolveTopicDocs(topic, options);
   const resolved = await resolveTokenRefs(docsData, topics);
   return {type: 'docs.detail', data: resolved};

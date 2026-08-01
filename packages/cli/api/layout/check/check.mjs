@@ -23,6 +23,7 @@ import {analyze, formatIssue} from '../_adapter.mjs';
  * @returns {Promise<import('../layout.type.mjs').LayoutCheckResponse>}
  */
 export async function layoutCheck(expression, options = {}) {
+  options = options ?? {};
   const {form = 'auto', loose = false, cwd = process.cwd()} = options;
   const {doc, errors, warnings} = await analyze(expression, {form, loose, cwd});
 

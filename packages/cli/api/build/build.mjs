@@ -28,6 +28,7 @@ export {buildHelp, buildKit};
  * @returns {Promise<import('./build.type.mjs').BuildHelpResponse | import('./build.type.mjs').BuildKitResponse>}
  */
 export async function build(query, options = {}) {
+  options = options ?? {};
   if (!query || !String(query).trim()) {
     return buildHelp();
   }

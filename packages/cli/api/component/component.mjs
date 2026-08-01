@@ -59,6 +59,7 @@ import {componentDetailBlocks} from './detail/blocks/blocks.mjs';
  * )>}
  */
 export async function component(name, options = {}) {
+  options = options ?? {};
   const {
     cwd = process.cwd(),
     list = false,

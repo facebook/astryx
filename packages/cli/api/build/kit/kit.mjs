@@ -43,6 +43,7 @@ const ALWAYS = new Set([...FRAME, ...FOUNDATION]);
  * @returns {Promise<import('../build.type.mjs').BuildKitResponse>}
  */
 export async function buildKit(query, options = {}) {
+  options = options ?? {};
   const {cwd = process.cwd(), type, limit = 60} = options;
   // search()'s JSDoc @returns widens results to object[]; the SearchResponse
   // shape is the contract (api/search/search.type.mjs). Cast locally rather than

@@ -47,6 +47,7 @@ function defaultTargetDir(slug) {
  * @returns {Promise<import('../theme.type.mjs').ThemeAddResponse>}
  */
 export async function themeAdd(slug, options = {}) {
+  options = options ?? {};
   const {targetPath, overwrite = false, cwd = process.cwd()} = options;
 
   const match = findTheme(slug);

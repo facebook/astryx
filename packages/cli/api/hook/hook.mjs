@@ -33,6 +33,7 @@ import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
  * @returns {Promise<{type: string, data: unknown}>}
  */
 export async function hook(name, options = {}) {
+  options = options ?? {};
   const {
     cwd = process.cwd(),
     list: listFlag = false,

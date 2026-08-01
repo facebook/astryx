@@ -112,6 +112,7 @@ export async function loadReferenceDocs(docPath, {lang} = {}) {
  * }>}
  */
 export async function resolveTopicDocs(topic, options = {}) {
+  options = options ?? {};
   const {lang = null, zh = false, dense = false} = options;
   const effectiveLang = lang || (dense ? 'dense' : zh ? 'zh' : null);
   const topics = discoverTopics();

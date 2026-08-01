@@ -175,6 +175,7 @@ function isExcludedFromCopy(file) {
  * @returns {Promise<import('../swizzle.type.mjs').SwizzleCopyResponse>}
  */
 export async function swizzleCopy(component, options = {}) {
+  options = options ?? {};
   const {
     cwd = process.cwd(),
     output = './components/astryx',

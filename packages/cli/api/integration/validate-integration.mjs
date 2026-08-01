@@ -393,6 +393,7 @@ export async function validateInstalledIntegration(spec, cwd = process.cwd()) {
  * @returns {Promise<import('./validate-integration.type.mjs').ValidateIntegrationResponse>}
  */
 export async function validateIntegration(pkg, options = {}) {
+  options = options ?? {};
   const {cwd = process.cwd()} = options;
   const result = pkg
     ? await validateInstalledIntegration(pkg, cwd)

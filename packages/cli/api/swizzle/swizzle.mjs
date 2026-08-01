@@ -28,6 +28,7 @@ export {rewriteImports};
  * @returns {Promise<import('./swizzle.type.mjs').SwizzleListResponse | import('./swizzle.type.mjs').SwizzleCopyResponse>}
  */
 export async function swizzle(component, options = {}) {
+  options = options ?? {};
   const {cwd = process.cwd(), list = false} = options;
 
   if (list || !component) {

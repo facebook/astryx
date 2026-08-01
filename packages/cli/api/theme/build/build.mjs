@@ -789,6 +789,7 @@ function validatePrivateVars(themeDef) {
  * @returns {Promise<import('../theme.type.mjs').ThemeBuildResponse | null>}
  */
 export async function themeBuild(file, options = {}, {cwd = process.cwd()} = {}) {
+  options = options ?? {};
   const filePath = path.resolve(cwd, file);
 
   if (!fs.existsSync(filePath)) {

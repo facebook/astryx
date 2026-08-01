@@ -42,6 +42,7 @@ import {logger} from '../logger.mjs';
  * @returns {Promise<import('./upgrade.type.mjs').UpgradeListResponse | import('./upgrade.type.mjs').UpgradeStatusResponse | import('./upgrade.type.mjs').UpgradeRunResponse>}
  */
 export async function upgrade(options = {}, {cwd = process.cwd()} = {}) {
+  options = options ?? {};
   logger.log('\nUpgrade');
 
   if (!options.list && !options.from) {

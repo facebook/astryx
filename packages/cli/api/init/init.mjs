@@ -41,6 +41,7 @@ export {getNextSteps} from './run/run.mjs';
  * @returns {Promise<import('./init.type.mjs').InitRunResponse | import('./init.type.mjs').InitRemoveResponse>}
  */
 export async function init(options = {}, {cwd = process.cwd()} = {}) {
+  options = options ?? {};
   if (options.removeAgents) {
     return remove({cwd});
   }

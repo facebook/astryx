@@ -512,6 +512,7 @@ export const SYNC_CHECKS = [
  * @returns {Promise<DoctorReport>}
  */
 export async function runChecks(options = {}) {
+  options = options ?? {};
   const cwd = options.cwd ?? process.cwd();
   const coreDir = findCoreDir(cwd);
   // findConfigPath throws when multiple config files coexist. That's a
@@ -570,6 +571,7 @@ export async function runChecks(options = {}) {
  * @returns {Promise<{type: 'doctor', data: DoctorReport}>}
  */
 export async function doctor(options = {}) {
+  options = options ?? {};
   const report = await runChecks(options);
   return {type: 'doctor', data: report};
 }

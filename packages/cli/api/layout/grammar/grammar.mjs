@@ -19,6 +19,7 @@ import {buildRegistry} from '../../../foundation/xle/registry.mjs';
  * @returns {Promise<import('../layout.type.mjs').LayoutGrammarResponse>}
  */
 export async function layoutGrammar(options = {}) {
+  options = options ?? {};
   const {cwd = process.cwd()} = options;
   const registry = await buildRegistry({cwd});
 
