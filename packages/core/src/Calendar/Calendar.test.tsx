@@ -9,7 +9,7 @@
  * SYNC: When Calendar.tsx changes, update tests accordingly
  */
 
-import {describe, it, expect, vi, afterEach} from 'vitest';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {act, render, screen, within, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {getButton} from '../__tests__/fastRoleQueries';
@@ -1038,8 +1038,23 @@ describe('Calendar', () => {
 
   // ─── Day-cell marker theming (#4286) ─────────────────────────
   describe('day-cell marker theme state', () => {
-    // Tests use the real "today" (as the existing aria-current tests do) since
-    // Calendar derives it internally. Helpers pin the exact ISO strings.
+    // Pin "today" to a mid-month date. The Calendar derives today from
+    // `new Date()`, and these tests build ranges around today (today±N). On a
+    // real clock, a run near a month boundary pushes an endpoint — or today
+    // itself — into an adjacent month, which the Calendar doesn't render (it
+    // shows the range's start month), so the today cell disappears and the
+    // assertions flake by calendar date. A fixed mid-month instant keeps the
+    // whole today±N window inside one rendered month.
+    beforeEach(() => {
+      // Fake only Date (not timers) so React/RTL scheduling is untouched.
+      vi.useFakeTimers({toFake: ['Date']});
+      vi.setSystemTime(new Date(2026, 5, 15, 12, 0, 0));
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    // Helpers pin the exact ISO strings for the (now fixed) "today".
     function todayISO(): ISODateString {
       const n = new Date();
       return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}` as ISODateString;
