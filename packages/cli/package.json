@@ -40,7 +40,7 @@
       "import": "./api/index.mjs"
     },
     "./authoring": {
-      "types": "./authoring/index.ts",
+      "types": "./authoring/index.d.ts",
       "import": "./authoring/index.mjs"
     },
     "./config": {
