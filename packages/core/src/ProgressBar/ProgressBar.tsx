@@ -31,6 +31,7 @@ import {
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import {Tooltip} from '../Tooltip/Tooltip';
 import {VisuallyHidden} from '../VisuallyHidden';
 import type {ProgressBarVariantMap} from './index';
 
@@ -54,9 +55,10 @@ export interface ProgressBarMarker {
    */
   value: number;
   /**
-   * Names the marker for assistive tech. When provided, it becomes the
-   * marker's `aria-label`; otherwise the marker is purely decorative. It is
-   * not rendered as visible text (reserved for a future visible-label option).
+   * Labels the marker. When provided, the marker is wrapped in a `Tooltip`
+   * that reveals the label on hover and keyboard focus — giving sighted users
+   * a visible affordance and assistive tech an accessible name. Without a
+   * label the marker is purely decorative (`aria-hidden`).
    */
   label?: string;
 }
@@ -111,9 +113,9 @@ export interface ProgressBarProps extends BaseProps<HTMLDivElement> {
   /**
    * Target markers drawn on the track at fixed points in the same `0..max`
    * scale as `value` — e.g. a goal line. Markers stay visible whether progress
-   * is below or past them. Each marker's optional `label` names it for assistive
-   * tech; it is not rendered as visible text (reserved for a future visible-label
-   * option). Ignored when `isIndeterminate` is true.
+   * is below or past them. A marker with a `label` reveals it via a `Tooltip`
+   * on hover/focus (and names it for assistive tech); an unlabeled marker is
+   * decorative. Ignored when `isIndeterminate` is true.
    */
   markers?: ReadonlyArray<ProgressBarMarker>;
   /**
@@ -199,13 +201,18 @@ const styles = stylex.create({
     whiteSpace: 'nowrap',
     borderWidth: 0,
   },
+  // The `role="progressbar"` element. It no longer clips its content
+  // (`overflow` stays visible) so a themed marker taller than the bar can
+  // overhang it. The fill rounds its own corners via `border-radius` (see
+  // `fill`), so dropping the clip does not change the fill's appearance at any
+  // progress — the track clip was redundant for the fill, which is always
+  // inside the track box.
   track: {
     position: 'relative',
     width: '100%',
     height: '8px',
     backgroundColor: colorVars['--color-background-muted'],
     borderRadius: radiusVars['--radius-full'],
-    overflow: 'hidden',
   },
   fill: {
     height: '100%',
@@ -229,19 +236,29 @@ const styles = stylex.create({
     animationTimingFunction: 'ease-in-out',
     animationIterationCount: 'infinite',
   },
-  // Target markers sit above the fill (later in flow, so higher in the paint
-  // order) and span the full track height, staying visible whether progress
-  // is below or past them. Centered on their position via a translate that
-  // mirrors under RTL, matching how Slider positions its marks.
+  // A marker is a vertical tick centered on the track, a child of the
+  // `role="progressbar"` element (unchanged DOM). The track no longer clips, so
+  // its height — default track height (8px), themeable via
+  // `--progressbar-marker-height` — may exceed the bar and overhang; the
+  // centering translate keeps any overhang symmetric. Positioned horizontally
+  // via `insetInlineStart`; the translate mirrors under RTL.
   marker: {
     position: 'absolute',
-    top: 0,
-    bottom: 0,
+    top: '50%',
     width: 2,
-    backgroundColor: colorVars['--color-border-emphasized'],
+    height: 'var(--progressbar-marker-height, 8px)',
+    backgroundColor: colorVars['--color-text-primary'],
+    outline: {
+      default: 'none',
+      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
+    },
+    outlineOffset: {
+      default: '0',
+      ':focus-visible': '2px',
+    },
     transform: {
-      default: 'translateX(-50%)',
-      ':is([dir="rtl"] *)': 'translateX(50%)',
+      default: 'translate(-50%, -50%)',
+      ':is([dir="rtl"] *)': 'translate(50%, -50%)',
     },
   },
 });
@@ -282,7 +299,7 @@ function defaultFormatValueLabel(value: number, max: number): string {
  * ProgressBar is intentionally minimal — compose additional labels, status
  * icons, and descriptions alongside the bar using layout components rather
  * than adding props to ProgressBar itself. The exception is on-track content
- * like `markers`, which must live inside the track and be positioned by value.
+ * like `markers`, which are positioned by value over the track.
  *
  * Styles use Astryx theme tokens via StyleX.
  * Wrap your app in <Theme> to apply a theme.
@@ -295,6 +312,20 @@ function defaultFormatValueLabel(value: number, max: number): string {
  *   formatValueLabel={(v, m) => `${v} GB / ${m} GB`} />
  * <ProgressBar value={30} label="Canceled" isDisabled hasValueLabel />
  * <ProgressBar value={45} label="Fundraiser" markers={[{value: 80, label: 'Goal'}]} />
+ * ```
+ *
+ * A marker's height defaults to the track height but is themeable — set a
+ * taller "goal flag" tick that overhangs the bar (centered, so the overhang is
+ * symmetric) via the `progressbar-marker` target:
+ *
+ * @example
+ * ```
+ * defineTheme({
+ *   name: 'campaign',
+ *   components: {
+ *     'progressbar-marker': {base: {'--progressbar-marker-height': '16px'}},
+ *   },
+ * });
  * ```
  */
 export function ProgressBar({
@@ -381,7 +412,10 @@ export function ProgressBar({
         <VisuallyHidden id={labelId}>{label}</VisuallyHidden>
       )}
 
-      {/* Progress track */}
+      {/* Progress track — the `role="progressbar"` element, holding the fill
+          and markers as its children (unchanged DOM shape). It no longer clips
+          (`overflow` is visible), so a themed taller marker can overhang it;
+          the fill preserves its rounded shape via its own `border-radius`. */}
       <div
         role="progressbar"
         aria-valuenow={isIndeterminate ? undefined : clampedValue}
@@ -412,23 +446,38 @@ export function ProgressBar({
             style={{width: `${percentage}%`}}
           />
         )}
-        {/* Target markers, layered above the fill so they show whether progress
-            is below or past them. Decorative by default (aria-hidden); a marker
-            with a `label` becomes a named graphic (role="img" + aria-label) so
-            assistive tech announces it. */}
-        {resolvedMarkers.map(marker => (
-          <span
-            key={`${marker.value}:${marker.label ?? ''}`}
-            role={marker.label == null ? undefined : 'img'}
-            aria-hidden={marker.label == null ? true : undefined}
-            aria-label={marker.label}
-            {...mergeProps(
-              themeProps('progressbar-marker'),
-              stylex.props(styles.marker),
-            )}
-            style={{insetInlineStart: `${marker.pct}%`}}
-          />
-        ))}
+        {/* Target markers — children of the progressbar element (unchanged),
+            layered above the fill so they show whether progress is below or
+            past them. An unlabeled marker is decorative (`aria-hidden`); a
+            labeled marker is wrapped in a `Tooltip` (no `role="img"`), so its
+            label is both visible on hover/focus and named for assistive tech
+            without adding a labeled child to the progressbar's a11y subtree. */}
+        {resolvedMarkers.map(marker => {
+          const isLabeled = marker.label != null;
+          const markerEl = (
+            <span
+              key={`${marker.value}:${marker.label ?? ''}`}
+              tabIndex={isLabeled ? 0 : undefined}
+              aria-hidden={isLabeled ? undefined : true}
+              {...mergeProps(
+                themeProps('progressbar-marker'),
+                stylex.props(styles.marker),
+              )}
+              style={{insetInlineStart: `${marker.pct}%`}}
+            />
+          );
+          return isLabeled ? (
+            <Tooltip
+              key={`${marker.value}:${marker.label}`}
+              content={marker.label}
+              placement="above"
+              focusTrigger="always">
+              {markerEl}
+            </Tooltip>
+          ) : (
+            markerEl
+          );
+        })}
       </div>
     </div>
   );

@@ -368,16 +368,18 @@ describe('ProgressBar', () => {
       expect(container.querySelectorAll(MARKER)).toHaveLength(0);
     });
 
-    it('marks a label-less marker as decorative (aria-hidden)', () => {
+    it('marks an unlabeled marker as decorative (aria-hidden)', () => {
       const {container} = render(
         <ProgressBar value={50} label="Progress" markers={[{value: 80}]} />,
       );
       const marker = container.querySelector<HTMLElement>(MARKER);
       expect(marker).toHaveAttribute('aria-hidden', 'true');
+      expect(marker).not.toHaveAttribute('role');
       expect(marker).not.toHaveAttribute('aria-label');
+      expect(marker).not.toHaveAttribute('tabindex');
     });
 
-    it('exposes a labeled marker to assistive tech via aria-label', () => {
+    it('reveals a labeled marker via a focusable Tooltip trigger', () => {
       const {container} = render(
         <ProgressBar
           value={50}
@@ -385,12 +387,37 @@ describe('ProgressBar', () => {
           markers={[{value: 80, label: 'Goal'}]}
         />,
       );
-      const marker = container.querySelector<HTMLElement>(MARKER);
-      expect(marker).toHaveAttribute('aria-label', 'Goal');
-      // A named graphic needs a role that permits a name — aria-label is
-      // prohibited on a plain span with no role.
-      expect(marker).toHaveAttribute('role', 'img');
+      const marker = container.querySelector<HTMLElement>(MARKER)!;
+      // Focusable so keyboard users can reveal the label; named via the
+      // Tooltip's aria-describedby rather than a labeled child of the bar.
+      expect(marker).toHaveAttribute('tabindex', '0');
       expect(marker).not.toHaveAttribute('aria-hidden');
+      expect(marker).toHaveAttribute('aria-describedby');
+      const tip = document.getElementById(
+        marker.getAttribute('aria-describedby')!,
+      );
+      expect(tip).toHaveTextContent('Goal');
+    });
+
+    it('keeps the progressbar element free of role="img"/aria-label children', () => {
+      // Markers are children of role="progressbar" (unchanged DOM), but a
+      // labeled marker uses a Tooltip (aria-describedby) rather than a
+      // role="img"+aria-label child, so nothing muddies what SRs announce for
+      // the bar. The unlabeled markers are aria-hidden.
+      const {container} = render(
+        <ProgressBar
+          value={50}
+          label="Progress"
+          markers={[{value: 80, label: 'Goal'}]}
+        />,
+      );
+      const progressbar = screen.getByRole('progressbar');
+      // Marker is a child of the progressbar (DOM unchanged from main).
+      expect(progressbar.querySelector(MARKER)).not.toBeNull();
+      // But it is not a labeled graphic that pollutes the a11y subtree.
+      expect(progressbar.querySelector('[role="img"]')).toBeNull();
+      expect(progressbar.querySelector('[aria-label]')).toBeNull();
+      expect(container.querySelectorAll(MARKER)).toHaveLength(1);
     });
 
     it('does not add marker info to the progressbar aria-valuetext', () => {
@@ -405,8 +432,9 @@ describe('ProgressBar', () => {
       expect(progressbar.getAttribute('aria-valuetext')).toBe('50%');
     });
 
-    it('leaves the fill as the first track child (markers come after)', () => {
-      // Guards the existing `firstElementChild` fill assertions elsewhere.
+    it('renders markers as children of the progressbar (unchanged DOM)', () => {
+      // Markers stay children of role="progressbar", after the fill — the same
+      // shape as main. The fill remains the first child.
       const {container} = render(
         <ProgressBar value={50} label="Progress" markers={[{value: 80}]} />,
       );
@@ -414,6 +442,78 @@ describe('ProgressBar', () => {
       const fill = progressbar.firstElementChild as HTMLElement;
       expect(fill.style.width).toBe('50%');
       expect(fill.classList.contains('astryx-progressbar-marker')).toBe(false);
+      const marker = container.querySelector<HTMLElement>(MARKER)!;
+      expect(marker.closest('[role="progressbar"]')).toBe(progressbar);
+      expect(container.querySelectorAll(MARKER)).toHaveLength(1);
+    });
+
+    it('does not clip markers (track carries no overflow:hidden)', () => {
+      // Removing the clip from the progressbar element is what lets a themed
+      // taller marker overhang the bar. Assert the compiled track class does
+      // not set overflow:hidden.
+      render(
+        <ProgressBar value={50} label="Progress" markers={[{value: 80}]} />,
+      );
+      const progressbar = screen.getByRole('progressbar');
+      const trackClass = Array.from(progressbar.classList).find(c =>
+        c.startsWith('x'),
+      );
+      let css = '';
+      for (const sheet of Array.from(document.styleSheets)) {
+        try {
+          for (const rule of Array.from(sheet.cssRules)) {
+            css += rule.cssText + '\n';
+          }
+        } catch {
+          // ignore cross-origin sheets
+        }
+      }
+      css += Array.from(document.querySelectorAll('style'))
+        .map(s => s.textContent || '')
+        .join('\n');
+      // The atomic class that would set overflow:hidden must not be applied to
+      // the track. Sanity-check the bar still rendered with a StyleX class.
+      expect(trackClass).toBeDefined();
+      // No rule targeting the track's classes sets overflow:hidden. (StyleX
+      // atomic classes are unique per declaration; if overflow:hidden were on
+      // the track we'd see it applied. We assert the track element's computed
+      // intent by checking no overflow:hidden atomic is in its class list's
+      // rules — simplest robust check: the track style object omits it.)
+      const trackHasOverflowHidden = Array.from(progressbar.classList).some(
+        cls => {
+          const re = new RegExp(
+            `\\.${cls}\\b[^{]*\\{[^}]*overflow:\\s*hidden`,
+            'i',
+          );
+          return re.test(css);
+        },
+      );
+      expect(trackHasOverflowHidden).toBe(false);
+    });
+
+    it('leaves the marker height overridable (defaults via CSS var)', () => {
+      // The marker reads `var(--progressbar-marker-height, 8px)`, so a theme
+      // targeting `.astryx-progressbar-marker` can set a taller tick that
+      // overhangs the bar without being clipped.
+      const {container} = render(
+        <ProgressBar value={50} label="Progress" markers={[{value: 80}]} />,
+      );
+      let css = '';
+      for (const sheet of Array.from(document.styleSheets)) {
+        try {
+          for (const rule of Array.from(sheet.cssRules)) {
+            css += rule.cssText + '\n';
+          }
+        } catch {
+          // ignore cross-origin sheets
+        }
+      }
+      css += Array.from(document.querySelectorAll('style'))
+        .map(s => s.textContent || '')
+        .join('\n');
+      expect(css).toMatch(/var\(--progressbar-marker-height,\s*8px\)/);
+      // And it is centered so any overhang is symmetric.
+      expect(css).toMatch(/translate\(-50%,\s*-50%\)/);
       expect(container.querySelectorAll(MARKER)).toHaveLength(1);
     });
   });
