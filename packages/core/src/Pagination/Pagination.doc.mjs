@@ -251,7 +251,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('@astryxdesign/cli/authoring').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
     'Standalone pagination controls for navigating content pages. Supports multiple display variants + works w/ known totals or cursor-based pagination.',

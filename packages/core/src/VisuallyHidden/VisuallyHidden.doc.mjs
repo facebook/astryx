@@ -61,7 +61,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('@astryxdesign/cli/authoring').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'renders content in the a11y tree while hiding it visually (sr-only)',
   usage: {

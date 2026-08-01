@@ -114,7 +114,7 @@ export const docs = {
   },
 };
 
-/** @type {import('@astryxdesign/cli/authoring').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsZh = {
   usage: {
     description:
@@ -128,7 +128,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('@astryxdesign/cli/authoring').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
     'Composable utilities + components for structured layouts w/ container/content separation pattern.',

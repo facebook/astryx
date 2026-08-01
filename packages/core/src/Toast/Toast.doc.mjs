@@ -92,7 +92,7 @@ export const docs = {
 // See .context/decisions/dense-compression-protocol.md
 // -------------------------------------------------------
 
-/** @type {import('@astryxdesign/cli/authoring').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsZh = {
   propDescriptions: {
     body: '主要消息内容。',
@@ -124,7 +124,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('@astryxdesign/cli/authoring').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
     'toast notification w/ auto-dismiss, stacking, dedup, smooth animations; MediaTheme inverted surface',

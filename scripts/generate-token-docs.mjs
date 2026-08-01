@@ -197,7 +197,7 @@ for (const group of groups) {
 
   const rows = pairs.map(([name, value]) => group.formatRow(name, value));
 
-  /** @type {import('@astryxdesign/cli/authoring').ContentBlock[]} */
+  /** @type {import('@astryxdesign/cli/authoring').ReferenceContentBlock[]} */
   const content = [
     {type: 'prose', text: group.description},
     {type: 'table', headers: group.headers, rows},

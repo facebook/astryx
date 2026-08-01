@@ -161,7 +161,7 @@ export async function loadDocs(readmePath, {zh = false, dense = false, lang} = {
     return overlayComponentDoc(docs, translation);
   }
 
-  // Otherwise it's a TranslationDoc — merge it onto docs
+  // Otherwise it's a ComponentTranslationDoc — merge it onto docs
   return mergeTranslation(docs, translation);
 }
 

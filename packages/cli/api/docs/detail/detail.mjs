@@ -25,7 +25,7 @@ async function resolveTokenRefs(docsData, topics) {
   const resolved = {...docsData, sections: [...docsData.sections]};
   for (let si = 0; si < resolved.sections.length; si++) {
     const section = resolved.sections[si];
-    /** @type {import('@astryxdesign/cli/authoring').ContentBlock[]} */
+    /** @type {import('@astryxdesign/cli/authoring').ReferenceContentBlock[]} */
     const newContent = [];
     for (const block of section.content) {
       if (block.type === 'token-ref') {

@@ -95,7 +95,7 @@ export const docs = {
   },
 };
 
-/** @type {import('@astryxdesign/cli/authoring').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
     'Inline reference to external source. Attribute info in AI responses, articles, or anywhere provenance needed.',

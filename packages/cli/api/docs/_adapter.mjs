@@ -79,7 +79,7 @@ export async function loadReferenceDocs(docPath, {lang} = {}) {
           title: ts.title || section.title,
           content: section.content.map(
             (
-              /** @type {import('@astryxdesign/cli/authoring').ContentBlock} */ block,
+              /** @type {import('@astryxdesign/cli/authoring').ReferenceContentBlock} */ block,
               /** @type {number} */ bi,
             ) => {
               const tb = ts.content?.[bi];

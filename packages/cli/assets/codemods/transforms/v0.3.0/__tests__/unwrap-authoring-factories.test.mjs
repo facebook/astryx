@@ -66,13 +66,13 @@ export default mkDoc({name: 'Theming', description: 'How theming works.'});
   });
 
   it('keeps sibling type imports, removing only the factory specifier', async () => {
-    const input = `import {createComponentDoc, type AstryxComponentDoc} from '@astryxdesign/core/authoring';
-const doc: AstryxComponentDoc = createComponentDoc({name: 'Widget', props: []});
+    const input = `import {createComponentDoc, type ComponentDoc} from '@astryxdesign/core/authoring';
+const doc: ComponentDoc = createComponentDoc({name: 'Widget', props: []});
 export default doc;
 `;
     const output = await applyTransform(input);
     expect(output).not.toContain('createComponentDoc');
-    expect(output).toContain('AstryxComponentDoc');
+    expect(output).toContain('ComponentDoc');
     expect(output).toContain("from '@astryxdesign/core/authoring'");
     expect(output).toContain("type: 'component'");
   });

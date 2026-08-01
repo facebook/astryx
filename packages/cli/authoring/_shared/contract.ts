@@ -19,7 +19,7 @@ export type Equal<A, B> =
  * schema↔type drift-lock: it still catches real drift (a missing/extra field,
  * `Partial<Record>` vs `Record`, a widened primitive) but tolerates the nominal
  * and inline-vs-named differences zod's structural inference introduces (e.g.
- * an inferred `{image?: string}` vs a named `AstryxTemplatePreview`). Tuples
+ * an inferred inline object literal vs its named interface). Tuples
  * suppress union distribution so discriminated unions are compared whole.
  */
 export type MutuallyAssignable<A, B> = [A] extends [B]

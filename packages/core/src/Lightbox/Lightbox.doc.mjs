@@ -148,7 +148,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('@astryxdesign/cli/authoring').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'Fullscreen overlay for viewing images and videos at full resolution with gallery navigation and zoom.',
   usage: {

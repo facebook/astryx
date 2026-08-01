@@ -2,15 +2,19 @@
 
 /**
  * @file Template doc parser (stamped `type: 'page' | 'block'`). Zod is sealed
- * here; template discovery calls `parseTemplate` at the load boundary. A
- * discriminated union so the drift-lock can hold against the public
- * {@link AstryxTemplate} union.
+ * here; template discovery calls `parseTemplate` at the load boundary.
+ *
+ * The schema is the minimal INTEGRATION-template envelope (integration templates
+ * carry only name/description/category/componentsUsed/preview plus the
+ * page|block discriminant). First-party core templates use the richer
+ * {@link TemplateDoc} and are loaded separately; `parseTemplate` returns that
+ * public type.
  */
 
 import {z} from 'zod';
 import {formatZodError} from '../../_shared/errors.mjs';
 
-/** @typedef {import('../types').AstryxTemplate} AstryxTemplate */
+/** @typedef {import('../types').TemplateDoc} TemplateDoc */
 
 const previewSchema = z
   .object({
@@ -33,24 +37,18 @@ const templateEnvelopeSchema = z.discriminatedUnion('type', [
 ]);
 
 /**
- * Compile-time drift-lock: sealed envelope must infer exactly {@link AstryxTemplate}.
- *
- * @typedef {import('../../_shared/contract').Expect<
- *   import('../../_shared/contract').MutuallyAssignable<z.infer<typeof templateEnvelopeSchema>, AstryxTemplate>
- * >} _TemplateDriftLock
- */
-
-/**
- * Validate an unknown value as a stamped template doc, or throw.
+ * Validate an unknown value as a stamped template doc, or throw. The zod schema
+ * validates the minimal integration-template envelope; the returned value is
+ * typed as the public {@link TemplateDoc}.
  *
  * @param {unknown} input
  * @param {string} [label]
- * @returns {AstryxTemplate}
+ * @returns {TemplateDoc}
  */
 export function parseTemplate(input, label = 'template') {
   const result = templateEnvelopeSchema.safeParse(input);
   if (!result.success) {
     throw new Error(formatZodError(label, result.error));
   }
-  return result.data;
+  return /** @type {TemplateDoc} */ (result.data);
 }

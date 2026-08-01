@@ -168,7 +168,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('@astryxdesign/cli/authoring').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
     'Page-level container for grouping content into regions. Use INSTEAD of Card for settings panels, form groups, and page sections.',

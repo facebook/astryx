@@ -11,7 +11,7 @@
  * `type` directly.
  *
  * Types (config, integration, codemod, and the doc vocabulary —
- * component/hook/reference/template) are re-exported via `./index.d.ts`.
+ * component/hook/reference/template) are re-exported via `./index.ts`.
  */
 
 export {parseConfig} from './config/parse.mjs';
