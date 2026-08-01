@@ -181,6 +181,30 @@ export interface BaseTypeaheadProps<T extends SearchableItem> extends Omit<
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
 
   /**
+   * Rewrites the text a user edit would put in the input, before it becomes
+   * the query. Called with the value the input is about to take; whatever it
+   * returns is used instead. Leave it unset — or return the argument
+   * unchanged — and the input behaves exactly as it does without it.
+   *
+   * It runs before the query is stored, before `onChangeQuery` fires, and
+   * before a search is scheduled, so returning shorter text never fires a
+   * search for the text it replaced. Side effects are allowed: it runs inside
+   * the input's change handler, and Tokenizer uses it to lift delimited values
+   * out of the input and commit them as tokens.
+   *
+   * On paste it receives the value the input would hold after the paste —
+   * existing text with the clipboard spliced over the selection — before the
+   * single-line input can strip newlines from it; returning different text
+   * replaces the native insertion. After an IME composition ends it runs over
+   * the finalized text, since no further change event will carry it.
+   *
+   * Not called for query changes the component makes itself, such as the clear
+   * that follows a selection, and not called while an input method is
+   * mid-composition, because that text is not final yet.
+   */
+  transformQuery?: (nextQuery: string) => string;
+
+  /**
    * Size of the typeahead, used to scale dropdown item padding.
    * When 'sm', items get compact padding to match the trigger size.
    * @default 'md'
@@ -329,6 +353,8 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   inputTabIndex,
   anchorRef,
   onKeyDown: externalOnKeyDown,
+  onPaste,
+  transformQuery,
   debounceMs = 150,
   size = 'md',
   ref,
@@ -508,15 +534,22 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         clearTimeout(searchTimeoutRef.current);
       }
 
-      if (newQuery.length === 0 && !hasEntriesOnFocus) {
+      if (newQuery.length === 0) {
+        // The text is gone, so results for it must never land afterwards.
+        // Bumping the generation here (not only in the hide branch below)
+        // keeps an in-flight search from reopening the dropdown — and
+        // re-arming Enter — during the bootstrap debounce window after a
+        // delimiter commit cleared the query.
         searchGenRef.current++;
         searchSource.cancel?.();
-        setResults([]);
-        setHasSearched(false);
-        // Clear any lingering result-count / no-results announcement.
-        announce('');
-        popover.hide();
-        return;
+        if (!hasEntriesOnFocus) {
+          setResults([]);
+          setHasSearched(false);
+          // Clear any lingering result-count / no-results announcement.
+          announce('');
+          popover.hide();
+          return;
+        }
       }
 
       const triggerSearch = () => {
@@ -545,12 +578,71 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
     ],
   );
 
-  // Handle input change
+  // Handle input change. transformQuery lets a parent rewrite the text before
+  // it becomes the query — Tokenizer uses it to lift delimited values out of
+  // the input and commit them as tokens, returning '' so the input clears.
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      handleQueryChange(e.target.value);
+      const next = e.target.value;
+      // Mid-composition text (IME) is not final; transforming it would commit
+      // half-typed input-method text.
+      const isComposing =
+        'isComposing' in e.nativeEvent &&
+        (e.nativeEvent as InputEvent).isComposing;
+      handleQueryChange(
+        transformQuery && !isComposing ? transformQuery(next) : next,
+      );
     },
-    [handleQueryChange],
+    [handleQueryChange, transformQuery],
+  );
+
+  // Paste needs its own transformQuery entry point: a single-line input
+  // strips CR/LF from pasted text before any change event, so a
+  // newline-delimited list would reach handleInputChange already flattened.
+  // Compose the value the input would hold after the paste — existing text
+  // with the clipboard spliced over the selection — and run the same rewrite.
+  // Only when the rewrite changes the text is the native insertion replaced;
+  // otherwise the browser inserts (and sanitizes) as usual and the change
+  // event proceeds normally. Skipped while disabled: a readOnly input
+  // (isFocusableDisabled) blocks change events but still fires paste.
+  const handlePaste = useCallback(
+    (e: React.ClipboardEvent<HTMLInputElement>) => {
+      onPaste?.(e);
+      if (!transformQuery || isDisabled || e.defaultPrevented) {
+        return;
+      }
+      const input = e.currentTarget;
+      const start = input.selectionStart ?? input.value.length;
+      const end = input.selectionEnd ?? input.value.length;
+      const pasted = e.clipboardData.getData('text');
+      const composed =
+        input.value.slice(0, start) + pasted + input.value.slice(end);
+      const transformed = transformQuery(composed);
+      if (transformed === composed) {
+        return;
+      }
+      e.preventDefault();
+      handleQueryChange(transformed);
+    },
+    [onPaste, transformQuery, isDisabled, handleQueryChange],
+  );
+
+  // Committed IME text fires no further change event with isComposing unset
+  // (Chrome, Safari), so text finalized by the input method would sit
+  // unrewritten until the next edit — and Enter could commit it whole. Run
+  // the rewrite over the final text once the composition ends.
+  const handleCompositionEnd = useCallback(
+    (e: React.CompositionEvent<HTMLInputElement>) => {
+      if (!transformQuery || isDisabled) {
+        return;
+      }
+      const next = e.currentTarget.value;
+      const transformed = transformQuery(next);
+      if (transformed !== next) {
+        handleQueryChange(transformed);
+      }
+    },
+    [transformQuery, isDisabled, handleQueryChange],
   );
 
   // Handle item selection
@@ -775,6 +867,12 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         onFocus={handleFocus}
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
+        // Runs any consumer onPaste first, then (unless prevented) the
+        // transformQuery rewrite over the composed post-paste value — see
+        // handlePaste. onCompositionEnd finishes the rewrite for IME text,
+        // which never reaches handleInputChange with final-text semantics.
+        onPaste={handlePaste}
+        onCompositionEnd={handleCompositionEnd}
         placeholder={placeholder}
         // When a disabled-reason tooltip is shown the input keeps focusability
         // via aria-disabled + readOnly instead of the native disabled
