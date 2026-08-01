@@ -1023,6 +1023,7 @@ export async function themeBuild(file, options = {}, {cwd = process.cwd()} = {})
     const relOutDirForIcons = path.relative(cwd, outDir) || '.';
     const resolvedIcon = resolveIconImportPath(iconInfo, outDir, relOutDirForIcons);
     if (resolvedIcon.warning) {
+      warningMessages.push(resolvedIcon.warning);
       logger.warn(`  ⚠ ${resolvedIcon.warning}`);
     }
     iconInfo = {...iconInfo, importPath: resolvedIcon.importPath};

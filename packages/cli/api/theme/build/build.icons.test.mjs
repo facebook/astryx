@@ -141,6 +141,11 @@ describe('icon import emitted into the built module', () => {
     expect(warnSpy).toHaveBeenCalledWith(
       expect.stringContaining(`'./icons'`),
     );
+    // The warning also reaches programmatic callers through the receipt —
+    // the shared logger is silent for them.
+    expect(result?.data.warnings).toEqual([
+      expect.stringContaining(`'./icons'`),
+    ]);
   });
 
   it('keeps an already fully-specified relative import that resolves', async () => {
