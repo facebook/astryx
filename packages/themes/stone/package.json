@@ -46,7 +46,7 @@
     "src"
   ],
   "scripts": {
-    "build": "astryx theme build src/stoneTheme.ts -o dist/theme.css && tsup && tsc --project tsconfig.build.json"
+    "build": "tsup && astryx theme build src/stoneTheme.ts -o dist/theme.css && tsc --project tsconfig.build.json && node ../../../scripts/check-fully-specified.mjs"
   },
   "dependencies": {
     "lucide-react": "^1.18.0"
