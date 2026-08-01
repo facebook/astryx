@@ -414,10 +414,12 @@ export function ProgressBar({
         )}
         {/* Target markers, layered above the fill so they show whether progress
             is below or past them. Decorative by default (aria-hidden); a marker
-            with a `label` exposes it to assistive tech via aria-label instead. */}
+            with a `label` becomes a named graphic (role="img" + aria-label) so
+            assistive tech announces it. */}
         {resolvedMarkers.map(marker => (
           <span
             key={`${marker.value}:${marker.label ?? ''}`}
+            role={marker.label == null ? undefined : 'img'}
             aria-hidden={marker.label == null ? true : undefined}
             aria-label={marker.label}
             {...mergeProps(

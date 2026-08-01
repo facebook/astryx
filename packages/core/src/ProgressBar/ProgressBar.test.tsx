@@ -363,11 +363,7 @@ describe('ProgressBar', () => {
 
     it('does not render markers in indeterminate mode', () => {
       const {container} = render(
-        <ProgressBar
-          isIndeterminate
-          label="Loading"
-          markers={[{value: 80}]}
-        />,
+        <ProgressBar isIndeterminate label="Loading" markers={[{value: 80}]} />,
       );
       expect(container.querySelectorAll(MARKER)).toHaveLength(0);
     });
@@ -391,6 +387,9 @@ describe('ProgressBar', () => {
       );
       const marker = container.querySelector<HTMLElement>(MARKER);
       expect(marker).toHaveAttribute('aria-label', 'Goal');
+      // A named graphic needs a role that permits a name — aria-label is
+      // prohibited on a plain span with no role.
+      expect(marker).toHaveAttribute('role', 'img');
       expect(marker).not.toHaveAttribute('aria-hidden');
     });
 
