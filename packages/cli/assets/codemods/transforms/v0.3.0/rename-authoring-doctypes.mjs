@@ -21,7 +21,7 @@
 export const meta = {
   title: 'Rename authoring doc field types to explicit domain-prefixed names',
   description:
-    'Renames the doc field types (PropDoc, UsageDoc, ThemingTarget, ComponentVar, ' +
+    'Renames the doc field types (PropDoc, ThemingTarget, ComponentVar, ' +
     'DerivedVar, ElementDescriptor, GroupDoc, TranslationDoc, ExampleDoc, ' +
     'AnatomyElement, BestPractice, PlaygroundConfig, ContentBlock, ' +
     'TokenPreviewType) to their Component*/Reference* equivalents in imports, ' +
