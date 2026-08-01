@@ -29,9 +29,9 @@ import {themeList} from '../../../api/theme/list/list.mjs';
 import {themeBuild, importSpecifier} from '../../../api/theme/build/build.mjs';
 
 /**
- * Path to this CLI's real entry (bin/astryx.mjs), resolved from this module's
- * location (src/commands/build-theme.mjs → ../../bin/astryx.mjs). Used to
- * re-invoke `theme build` as a child process in watch mode.
+ * Path to this CLI's real entry (clients/cli/bin/astryx.mjs), resolved from
+ * this module's location (clients/cli/commands/build-theme.mjs → ../bin/
+ * astryx.mjs). Used to re-invoke `theme build` as a child process in watch mode.
  */
 function resolveCliBin() {
   const commandsDir = path.dirname(fileURLToPath(import.meta.url));

@@ -3,8 +3,9 @@
 /**
  * @file Runner for file-based integration codemods.
  *
- * Integration codemods authored with `createCodemod` / `createConfigCodemod`
- * use the file-based contract `(file, api) => string | null | undefined`.
+ * Integration codemods (a plain object stamped `type: 'code'` or
+ * `type: 'config'`) use the file-based contract
+ * `(file, api) => string | null | undefined`.
  * Config codemods target the consumer's astryx.config.* file; code codemods
  * are applied to source files discovered under `--path`, filtered by each
  * codemod's `fileExtensions`.
