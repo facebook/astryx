@@ -1264,14 +1264,31 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
             }
           }}
           onMouseEnter={() => onItemMouseEnter(item, flatIndex)}
-          {...stylex.props(
-            styles.item,
-            isSelectAll ? selectAllSizeStyles[size] : itemSizeStyles[size],
-            isSelectAll && styles.selectAllWrapper,
-            isHighlighted && styles.itemHighlighted,
-            item.disabled && styles.itemDisabled,
+          {...mergeProps(
+            // The Select All row is additionally targetable via
+            // `multi-selector-select-all` so a theme can restyle just that row
+            // (and its checkbox/label) without reaching for structural
+            // selectors. Every option row also carries `multi-selector-option`.
+            isSelectAll
+              ? mergeProps(
+                  themeProps('multi-selector-option'),
+                  themeProps('multi-selector-select-all'),
+                )
+              : themeProps('multi-selector-option'),
+            stylex.props(
+              styles.item,
+              isSelectAll ? selectAllSizeStyles[size] : itemSizeStyles[size],
+              isSelectAll && styles.selectAllWrapper,
+              isHighlighted && styles.itemHighlighted,
+              item.disabled && styles.itemDisabled,
+            ),
           )}>
-          <div inert {...stylex.props(styles.checkboxDecorative)}>
+          <div
+            inert
+            {...mergeProps(
+              themeProps('multi-selector-option-checkbox'),
+              stylex.props(styles.checkboxDecorative),
+            )}>
             <CheckboxInput
               label=""
               isLabelHidden
@@ -1326,7 +1343,11 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     if (hasSelectAll && realItemCount > 0) {
       elements.push(renderItem(sortedItems[0], 0));
       elements.push(
-        <Divider key="select-all-divider" xstyle={styles.divider} />,
+        <Divider
+          key="select-all-divider"
+          xstyle={styles.divider}
+          className={themeProps('multi-selector-select-all-divider').className}
+        />,
       );
       cursor = 1;
     } else if (hasSelectAll) {
