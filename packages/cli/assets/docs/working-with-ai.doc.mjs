@@ -125,7 +125,7 @@ If you don't know all three, run \`npx @astryxdesign/cli init --features agents\
           lang: 'json',
           label: 'package.json',
           code: `"scripts": {
-  "astryx": "node node_modules/@astryxdesign/cli/bin/astryx.mjs"
+  "astryx": "node node_modules/@astryxdesign/cli/clients/cli/bin/astryx.mjs"
 }`,
         },
         {

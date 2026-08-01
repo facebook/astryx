@@ -13,7 +13,7 @@
  */
 
 import * as fs from 'node:fs';
-import {assertWithin} from '../../../foundation/fs/path-safety.mjs';
+import * as path from 'node:path';
 import {jsonOut, humanLog} from '../../../foundation/response/json.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
@@ -53,12 +53,11 @@ import {layoutExpand, layoutCheck, layoutGrammar} from '../../../api/layout/layo
  */
 async function readExpression(expr, options = {}) {
   if (options.file) {
-    // Confine the file read to the project root (reject traversal / absolute paths)
-    // and cap size to prevent OOM on special files like /dev/zero.
-    const filePath = assertWithin(options.file, process.cwd(), {
-      allowAbsolute: true,
-      label: 'layout --file',
-    });
+    // Validate the file exists + is a regular file + is reasonably sized.
+    // We intentionally do NOT confine the read path (the user running the CLI
+    // controls --file; this is a read, not a write). The size cap prevents OOM
+    // from infinite streams like /dev/zero.
+    const filePath = path.resolve(process.cwd(), options.file);
     const stat = fs.statSync(filePath, {throwIfNoEntry: false});
     if (!stat || !stat.isFile()) {
       cliError(`File not found: ${options.file}`, {

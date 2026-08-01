@@ -789,10 +789,7 @@ function validatePrivateVars(themeDef) {
  * @returns {Promise<import('../theme.type.mjs').ThemeBuildResponse | null>}
  */
 export async function themeBuild(file, options = {}, {cwd = process.cwd()} = {}) {
-  const filePath = assertWithin(file, cwd, {
-    allowAbsolute: true,
-    label: 'theme source file',
-  });
+  const filePath = path.resolve(cwd, file);
 
   if (!fs.existsSync(filePath)) {
     throw new AstryxError(`File not found: ${filePath}`, undefined, ERROR_CODES.ERR_FILE_NOT_FOUND);
@@ -925,9 +922,17 @@ export async function themeBuild(file, options = {}, {cwd = process.cwd()} = {})
   // Derive the default CSS name from the theme name so .css/.js/.d.ts
   // share one scheme; an explicit --out still wins.
   const baseName = themeDef.name;
-  const outPath = options.out
-    ? assertWithin(options.out, cwd, {allowAbsolute: true, label: 'output path'})
-    : path.join(path.dirname(filePath), `${baseName}.css`);
+  let outPath;
+  if (options.out) {
+    outPath = path.resolve(cwd, options.out);
+    // Guard: relative paths must not escape cwd via `../`. Absolute paths are
+    // trusted (the user explicitly controls where output goes, like gcc -o).
+    if (!path.isAbsolute(options.out)) {
+      assertWithin(options.out, cwd, {label: 'output path'});
+    }
+  } else {
+    outPath = path.join(path.dirname(filePath), `${baseName}.css`);
+  }
 
   const displayTheme = resolvedTheme || themeDef;
   const tokenCount = displayTheme.tokens ? Object.keys(displayTheme.tokens).length : 0;

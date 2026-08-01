@@ -133,11 +133,16 @@ function tokenize(str, line, startCol) {
  */
 const MAX_VALUE_DEPTH = 64;
 
+/**
+ * @param {string} raw
+ * @param {number} [_depth]
+ * @returns {import('./xle-ast').XLEValue}
+ */
 export function parseValue(raw, _depth = 0) {
   if (_depth > MAX_VALUE_DEPTH) {
     throw new XLEParseError(
       `Attribute value nested too deeply (limit ${MAX_VALUE_DEPTH})`,
-      undefined, 0, 0,
+      0, 0,
     );
   }
   const s = raw.trim();
