@@ -9,7 +9,7 @@
  * SYNC: When Calendar.tsx changes, update tests accordingly
  */
 
-import {describe, it, expect, vi, afterEach} from 'vitest';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {act, render, screen, within, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {getButton} from '../__tests__/fastRoleQueries';
@@ -1038,8 +1038,20 @@ describe('Calendar', () => {
 
   // ─── Day-cell marker theming (#4286) ─────────────────────────
   describe('day-cell marker theme state', () => {
-    // Tests use the real "today" (as the existing aria-current tests do) since
-    // Calendar derives it internally. Helpers pin the exact ISO strings.
+    // Pin "today" to a mid-month date so the ±2-day range helpers below stay
+    // within a single rendered month. With the real clock, running near a month
+    // boundary (e.g. the 1st) pushed today-2 into the previous month, so the
+    // rendered grid didn't contain today's cell and the marker assertions
+    // flaked. Fake only Date (timers stay real; these tests are synchronous).
+    beforeEach(() => {
+      vi.useFakeTimers({toFake: ['Date']});
+      vi.setSystemTime(new Date(2026, 5, 15, 12, 0, 0));
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+    // Tests use the (now-pinned) "today" since Calendar derives it internally.
+    // Helpers pin the exact ISO strings.
     function todayISO(): ISODateString {
       const n = new Date();
       return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}` as ISODateString;
