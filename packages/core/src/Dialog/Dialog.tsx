@@ -13,7 +13,7 @@
  * - /packages/core/src/Dialog/Dialog.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Dialog/index.ts (exports if types change)
  * - /apps/storybook/stories/Dialog.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Dialog/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Dialog/ (showcase blocks)
  */
 
 import {

@@ -67,8 +67,8 @@ function keyName(key) {
 }
 
 /**
- * @param {import('../../../types/codemod').AstryxCodemodFile} file
- * @param {import('../../../types/codemod').CodemodTransformApi} api
+ * @param {import('../../../../authoring/codemod/type').AstryxCodemodFile} file
+ * @param {import('../../../../authoring/codemod/type').CodemodTransformApi} api
  * @returns {string | null | undefined}
  */
 export default function transformer(file, api) {
