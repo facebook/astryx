@@ -24,8 +24,12 @@ import {Icon} from '../Icon';
 import {InputGroup} from '../InputGroup';
 import {InputGroupText} from '../InputGroup/InputGroupText';
 import {defineTheme} from '../theme/defineTheme';
-import {generateThemeCSSFlat} from '../theme/generateThemeRules';
+import {generateThemeCSS} from '../theme/generateThemeRules';
 
+function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
+  const {prose, component} = generateThemeCSS(theme);
+  return [prose, component].filter(Boolean).join('\n\n');
+}
 describe('DateInput', () => {
   it('renders with label', () => {
     render(<DateInput label="Date" onChange={() => {}} />);
@@ -1073,7 +1077,7 @@ describe('DateInput clear icon theme target', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('.astryx-date-input-clear-icon {');
     expect(css).toContain('width: 12px');
     expect(css).toContain('height: 12px');
@@ -1165,7 +1169,7 @@ describe('DateInput calendar-toggle icon theme target', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('.astryx-date-input-toggle-icon {');
     expect(css).toContain('width: 14px');
     expect(css).toContain('height: 14px');

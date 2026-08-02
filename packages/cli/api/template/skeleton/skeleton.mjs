@@ -42,7 +42,6 @@ const SPATIAL_PROPS = [
   'rowGap',
   'columnGap',
   'columns',
-  'minChildWidth',
   'hasDivider',
   'defaultHasDividers',
   'variant',

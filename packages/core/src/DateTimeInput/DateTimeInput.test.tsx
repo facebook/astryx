@@ -16,8 +16,12 @@ import {getButton, queryButton} from '../__tests__/fastRoleQueries';
 import {DateTimeInput} from './DateTimeInput';
 import type {ISODateTimeString} from './DateTimeInput';
 import {defineTheme} from '../theme/defineTheme';
-import {generateThemeCSSFlat} from '../theme/generateThemeRules';
+import {generateThemeCSS} from '../theme/generateThemeRules';
 
+function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
+  const {prose, component} = generateThemeCSS(theme);
+  return [prose, component].filter(Boolean).join('\n\n');
+}
 describe('DateTimeInput', () => {
   it('renders with label', () => {
     render(<DateTimeInput label="Meeting time" onChange={() => {}} />);
@@ -917,7 +921,7 @@ describe('DateTimeInput', () => {
           },
         },
       });
-      const css = generateThemeCSSFlat(theme);
+      const css = generateThemeTestCSS(theme);
 
       expect(css).toContain('.astryx-date-time-input-date-segment {');
       expect(css).toContain('.astryx-date-time-input-date-segment.lg');

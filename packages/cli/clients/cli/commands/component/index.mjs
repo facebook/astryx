@@ -264,7 +264,7 @@ export function registerComponent(program) {
 
 // Re-export lib functions for backward compatibility
 // (agent-docs.mjs, tests, and generate-skill-doc.sh import from here)
-export {discoverComponents, discoverExternalComponents, discoverExternalComponentsGrouped, findComponentReadme, findComponentSource, findExternalComponentDoc, resolveImportPath} from '../../../../foundation/discovery/component-discovery.mjs';
+export {discoverComponents, discoverExternalComponentsGrouped, findComponentReadme, findComponentSource, findExternalComponentDoc, resolveImportPath} from '../../../../foundation/discovery/component-discovery.mjs';
 export {discoverExternalPackages} from '../../../../foundation/fs/paths.mjs';
 export {loadDocs} from '../../../../foundation/discovery/component-loader.mjs';
 export {formatFull, formatCompact, formatBrief, formatProps, formatBriefAll} from '../../lib/component-format.mjs';

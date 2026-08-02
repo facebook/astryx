@@ -12,6 +12,11 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+
+function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
+  const {prose, component} = generateThemeCSS(theme);
+  return [prose, component].filter(Boolean).join('\n\n');
+}
 // getButton/queryButton instead of getByRole('button', {name}): the closed
 // popover keeps a two-month Calendar (~85 role=button nodes) mounted, which
 // made every role+name query compute ~85 accessible names through jsdom's
@@ -21,7 +26,7 @@ import {DateRangeInput} from './DateRangeInput';
 import type {DateRange} from './DateRangeInput';
 import {Icon} from '../Icon';
 import {defineTheme} from '../theme/defineTheme';
-import {generateThemeCSSFlat} from '../theme/generateThemeRules';
+import {generateThemeCSS} from '../theme/generateThemeRules';
 
 describe('DateRangeInput', () => {
   it('renders with label', () => {
@@ -603,7 +608,7 @@ describe('DateRangeInput icon theme targets', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('.astryx-date-range-input-clear-icon');
     expect(css).toContain('.astryx-date-range-input-toggle-icon');
     expect(css).toContain(':hover');

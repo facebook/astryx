@@ -331,7 +331,6 @@ function BaseTableInner<T extends Record<string, unknown>>({
   idKey,
   plugins: pluginsProp,
   children,
-  tableProps: userTableProps,
   textOverflow = 'wrap',
   scrollWrapper: ScrollWrapper,
   emptyState,
@@ -394,7 +393,7 @@ function BaseTableInner<T extends Record<string, unknown>>({
 
   // --- Plugin pipeline: table ---
   const tableRenderProps = applyPlugins(plugins, p => p.transformTable, {
-    htmlProps: {...userTableProps},
+    htmlProps: {},
     xstyle: children ? [styles.table, styles.tableAutoLayout] : [styles.table],
   } satisfies TableRenderProps);
 
@@ -498,8 +497,8 @@ function BaseTableInner<T extends Record<string, unknown>>({
   const hasData = data != null && data.length > 0;
   const hasColumns = resolvedColumns.length > 0;
 
-  // Style precedence: deprecated tableProps.style < consumer style < the
-  // computed column min-width (structural — derived from column defs, so it
+  // Style precedence: consumer style < the computed column min-width
+  // (structural — derived from column defs, so it
   // must win when present; when absent, a consumer minWidth survives).
   const tableStyle: React.CSSProperties = {
     ...tableRenderProps.htmlProps.style,

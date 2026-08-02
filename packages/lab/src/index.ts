@@ -13,7 +13,6 @@
  */
 
 // Code components — syntax highlighting domain
-export {CodeBlock, type CodeBlockProps} from './CodeBlock';
 export {CodeEditor, type CodeEditorProps} from './CodeEditor';
 export {
   tokenize,

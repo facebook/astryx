@@ -22,8 +22,12 @@ import {MultiSelector} from './MultiSelector';
 import {Icon} from '../Icon';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {defineTheme} from '../theme/defineTheme';
-import {generateThemeCSSFlat} from '../theme/generateThemeRules';
+import {generateThemeCSS} from '../theme/generateThemeRules';
 
+function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
+  const {prose, component} = generateThemeCSS(theme);
+  return [prose, component].filter(Boolean).join('\n\n');
+}
 // Module-level constants to satisfy @eslint-react/no-unstable-default-props.
 const ANNOUNCE_OPTIONS = ['Apple', 'Banana', 'Orange'] as const;
 const EMPTY_VALUE: string[] = [];
@@ -1605,7 +1609,7 @@ describe('MultiSelector clear icon theme target', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('.astryx-multi-selector-clear-icon {');
     expect(css).toContain('width: 12px');
     expect(css).toContain('height: 12px');
@@ -1718,7 +1722,7 @@ describe('MultiSelector indicator (chevron) icon theme target', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('.astryx-multi-selector-indicator-icon {');
     expect(css).toContain('width: 14px');
     expect(css).toContain('height: 14px');

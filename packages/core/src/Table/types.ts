@@ -576,15 +576,6 @@ export interface BaseTableProps<
   /** Children mode — render `<tr>`/`<td>` directly instead of data-driven */
   children?: ReactNode;
   /**
-   * Additional HTML attributes for the `<table>` element.
-   *
-   * @deprecated Pass `className`, `style`, `xstyle`, and other HTML
-   * attributes directly on the component instead — they now reach the root
-   * `<table>` and win over `tableProps` on conflicts. Migrate with
-   * `npx astryx upgrade --codemod migrate-table-tableprops-to-direct-props`.
-   */
-  tableProps?: HTMLAttributes<HTMLTableElement>;
-  /**
    * Optional wrapper rendered around the `<table>` element, inside the
    * plugin `transformTableContext` layer. Used by `Table` to add a
    * horizontal scroll container so plugin chrome (pagination, toolbars)

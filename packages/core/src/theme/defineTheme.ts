@@ -45,7 +45,6 @@ import {
   shadowDefaults,
   durationDefaults,
   easeDefaults,
-  transitionDefaults,
   typographyDefaults,
   textSizeDefaults,
   fontWeightDefaults,
@@ -78,7 +77,6 @@ export type CoreTokenName =
   | keyof typeof shadowDefaults
   | keyof typeof durationDefaults
   | keyof typeof easeDefaults
-  | keyof typeof transitionDefaults
   | keyof typeof typographyDefaults
   | keyof typeof textSizeDefaults
   | keyof typeof fontWeightDefaults
@@ -367,7 +365,6 @@ export const tokenDefaults: Record<string, string> = {
   ...shadowDefaults,
   ...durationDefaults,
   ...easeDefaults,
-  ...transitionDefaults,
   ...typographyDefaults,
   ...textSizeDefaults,
   ...fontWeightDefaults,
@@ -648,7 +645,6 @@ export {
   generateThemeRulesSplit,
   generateOnMediaCSS,
   generateThemeCSS,
-  generateThemeCSSFlat,
   type ThemeRulesSplit,
   type ThemeCSSOutput,
 } from './generateThemeRules';

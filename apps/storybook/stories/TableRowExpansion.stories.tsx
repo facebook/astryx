@@ -4,8 +4,8 @@ import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {
   Table,
-  useTableRowExpansion,
-  useTableRowExpansionState,
+  useTableTreeData,
+  useTableTreeState,
   pixel,
   proportional,
 } from '@astryxdesign/core/Table';
@@ -147,7 +147,7 @@ const columns: TableColumn<FileNode>[] = [
 // =============================================================================
 
 const meta: Meta = {
-  title: 'Core/TableRowExpansion',
+  title: 'Core/TableTree',
   tags: ['autodocs'],
 };
 
@@ -167,23 +167,23 @@ export const InheritedColumns: Story = {
 
     // The state hook flattens the tree, tracks depth, and derives the
     // expand/collapse + expand-all handlers — no boilerplate in the consumer.
-    const {data, expansionConfig} = useTableRowExpansionState<FileNode>({
-      baseData: fileTree,
-      getChildren: item => item.children ?? [],
-      getRowKey: item => item.id,
-      expandedKeys,
-      setExpandedKeys,
+    const {data, treeConfig} = useTableTreeState<FileNode>({
+      data: fileTree,
+      idKey: 'id',
+      childrenKey: 'children',
+      expandedIds: expandedKeys,
+      onExpandedIdsChange: ids => setExpandedKeys(new Set(ids)),
     });
 
-    const expansion = useTableRowExpansion(expansionConfig);
+    const tree = useTableTreeData(treeConfig);
 
     return (
       <Table
-        data={data}
+        data={visibleData}
         columns={columns}
         idKey="id"
         hasHover
-        plugins={{expansion}}
+        plugins={{tree}}
       />
     );
   },
@@ -200,24 +200,24 @@ export const LeafNodesNotExpandable: Story = {
     );
 
     // `getIsItemExpandable` restricts expandability (and expand-all) to folders.
-    const {data, expansionConfig} = useTableRowExpansionState<FileNode>({
-      baseData: fileTree,
-      getChildren: item => item.children ?? [],
-      getRowKey: item => item.id,
-      getIsItemExpandable: item => item.type === 'folder',
-      expandedKeys,
-      setExpandedKeys,
+    const {data, treeConfig} = useTableTreeState<FileNode>({
+      data: fileTree,
+      idKey: 'id',
+      childrenKey: 'children',
+      expandedIds: expandedKeys,
+      onExpandedIdsChange: ids => setExpandedKeys(new Set(ids)),
+      isItemExpandable: item => item.type === 'folder',
     });
 
-    const expansion = useTableRowExpansion(expansionConfig);
+    const tree = useTableTreeData(treeConfig);
 
     return (
       <Table
-        data={data}
+        data={visibleData}
         columns={columns}
         idKey="id"
         hasHover
-        plugins={{expansion}}
+        plugins={{tree}}
       />
     );
   },
@@ -231,27 +231,27 @@ export const ExpandOnRowClick: Story = {
   render: () => {
     const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
 
-    const {data, expansionConfig} = useTableRowExpansionState<FileNode>({
-      baseData: fileTree,
-      getChildren: item => item.children ?? [],
-      getRowKey: item => item.id,
-      expandedKeys,
-      setExpandedKeys,
+    const {data, treeConfig} = useTableTreeState<FileNode>({
+      data: fileTree,
+      idKey: 'id',
+      childrenKey: 'children',
+      expandedIds: expandedKeys,
+      onExpandedIdsChange: ids => setExpandedKeys(new Set(ids)),
     });
 
     // Opt into row-click expansion by extending the derived config.
-    const expansion = useTableRowExpansion({
-      ...expansionConfig,
+    const tree = useTableTreeData({
+      ...treeConfig,
       hasRowClickExpansion: true,
     });
 
     return (
       <Table
-        data={data}
+        data={visibleData}
         columns={columns}
         idKey="id"
         hasHover
-        plugins={{expansion}}
+        plugins={{tree}}
       />
     );
   },

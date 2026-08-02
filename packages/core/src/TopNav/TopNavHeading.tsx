@@ -227,14 +227,8 @@ export interface TopNavHeadingProps extends BaseProps<HTMLElement> {
   heading?: string;
   /**
    * Link for the heading (e.g., product home).
-   * Alias: `href` (for backward compatibility).
    */
   headingHref?: string;
-  /**
-   * @deprecated Use `headingHref` instead.
-   * URL to navigate to when the heading is clicked.
-   */
-  href?: string;
   /**
    * Text above the heading (e.g., suite name).
    */
@@ -304,8 +298,7 @@ export function TopNavHeading({
   logo,
   logoLabel,
   heading,
-  headingHref: headingHrefProp,
-  href,
+  headingHref,
   superheading,
   superheadingHref,
   subheading,
@@ -322,8 +315,6 @@ export function TopNavHeading({
   const t = useTranslator();
   const chevronDownIcon = useIcon('chevronDown');
   const LinkComponent = useLinkComponent(as);
-  // Support both headingHref and legacy href
-  const headingHref = headingHrefProp ?? href;
   // When the logo is wrapped in a link it needs its own accessible name (the
   // logo image itself is decorative). Prefer an explicit logoLabel, fall back
   // to the heading text. axe: link-name.

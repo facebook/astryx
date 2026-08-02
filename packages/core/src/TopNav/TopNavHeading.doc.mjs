@@ -34,11 +34,6 @@ export const docs = {
       description: 'Link for the heading text (e.g. product home). When no menu is present and this is the only href, the whole heading becomes one clickable link.',
     },
     {
-      name: 'href',
-      type: 'string',
-      description: 'Deprecated: use headingHref instead. URL to navigate to when clicked.',
-    },
-    {
       name: 'superheading',
       type: 'string',
       description: 'Text above the heading (e.g. suite name). Rendered in a smaller secondary style.',
@@ -123,11 +118,6 @@ export const docsZh = {
       description: '标题文本的链接（如产品首页）。当没有菜单且这是唯一的 href 时，整个标题变为一个可点击链接。',
     },
     {
-      name: 'href',
-      type: 'string',
-      description: '已弃用，请使用 headingHref。点击时导航到的 URL。',
-    },
-    {
       name: 'superheading',
       type: 'string',
       description: '标题上方的文本（如套件名称）。以较小的次要样式渲染。',
@@ -179,7 +169,6 @@ export const docsDense = {
     logo: 'Logo before heading text. Image, NavIcon, or ReactNode.',
     heading: 'Product/app name.',
     headingHref: 'Link for heading (product home). Only href + no menu → whole heading is link.',
-    href: 'Deprecated: use headingHref.',
     superheading: 'Text above heading (suite name). Smaller secondary style.',
     superheadingHref: 'Link for superheading. Independent inline link when menu present.',
     subheading: 'Text below heading (account context). Smaller secondary style.',

@@ -208,7 +208,7 @@ export default function ShellTopNav() {
         {[0, 1, 2].map(section => (
           <VStack key={section} gap={4}>
             <Card variant="muted" padding={0} width={200} height={24} />
-            <Grid minChildWidth={160} gap={4}>
+            <Grid columns={{minWidth: 160, repeat: 'fit'}} gap={4}>
               {CATEGORY_TILES.map(tile => (
                 <VStack key={tile} gap={2}>
                   <Card variant="muted" padding={0} width="100%" height={120} />
