@@ -616,13 +616,24 @@ function extractIconInfo(filePath) {
  * Generate a minimal JS module for a built theme.
  * Includes the theme name, marker, and re-exports the icon registry.
  * All styling is in the CSS file.
+ *
+ * The icon registry is imported rather than inlined because it holds React
+ * elements, which cannot be serialized. `extractIconInfo` lifts the specifier
+ * out of the TypeScript source, where an extensionless `./icons` is resolved by
+ * the TypeScript resolver — but the artifact here is ESM JavaScript, which
+ * requires a fully specified path. Only the caller knows what its own build
+ * will emit and under what name, so `iconsSpecifier` lets it say. When it is
+ * not given, the scraped specifier is emitted unchanged.
+ *
  * @param {any} themeDef
  * @param {{exportName: string, importPath: string} | null} iconInfo
+ * @param {string} [iconsSpecifier] - Overrides the scraped icon import specifier.
  * @returns {string}
  */
-function generateBuiltModule(themeDef, iconInfo) {
+function generateBuiltModule(themeDef, iconInfo, iconsSpecifier) {
+  const specifier = iconsSpecifier || iconInfo?.importPath;
   const iconImport = iconInfo
-    ? `import { ${iconInfo.exportName} } from '${iconInfo.importPath}';\n`
+    ? `import { ${iconInfo.exportName} } from '${specifier}';\n`
     : '';
   const iconsField = iconInfo ? `  icons: ${iconInfo.exportName},` : '';
   const iconReExport = iconInfo
@@ -861,7 +872,10 @@ function validatePrivateVars(themeDef) {
  * `logger` (silent by default).
  *
  * @param {string} file - Theme file path, resolved against `cwd`.
- * @param {{out?: string}} [options] - `out` overrides the output CSS path.
+ * @param {{out?: string, iconsSpecifier?: string}} [options] - `out` overrides the
+ *   output CSS path. `iconsSpecifier` overrides the icon registry import specifier
+ *   in the generated module (e.g. `./icons.mjs`); when omitted, the specifier
+ *   scraped from the theme source is emitted unchanged.
  * @param {{cwd?: string}} [ctx]
  * @returns {Promise<import('../theme.type.mjs').ThemeBuildResponse | null>}
  */
@@ -1036,7 +1050,7 @@ export async function themeBuild(file, options = {}, {cwd = process.cwd()} = {})
   // the variants file (when present) via a triple-slash directive so
   // importing the theme also loads the custom-variant augmentations.
   const cssContent = generatedHeader(sourceRelative, 'css', buildCommand) + css;
-  const jsContent = generatedHeader(sourceRelative, 'js', buildCommand) + generateBuiltModule(resolvedTheme || themeDef, iconInfo);
+  const jsContent = generatedHeader(sourceRelative, 'js', buildCommand) + generateBuiltModule(resolvedTheme || themeDef, iconInfo, options.iconsSpecifier);
   const dtsContent = generatedHeader(sourceRelative, 'ts', buildCommand) + generateBuiltTypes(themeDef, iconInfo, variantsFileName);
 
   // Atomic-ish write: stage every file as `<dest>.tmp`, then rename

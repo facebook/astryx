@@ -44,13 +44,15 @@ function resolveCliBin() {
  * Resolves with the child's exit code; never rejects.
  *
  * @param {string} file - The theme file argument, as the user passed it.
- * @param {{out?: string}} options - Parsed command options (only `out` is forwarded).
+ * @param {{out?: string, iconsSpecifier?: string}} options - Parsed command
+ *   options; only the ones that affect output are forwarded to the child.
  * @returns {Promise<number>}
  */
 function runThemeBuildOnceChild(file, options) {
   const cliBin = resolveCliBin();
   const args = [cliBin, 'theme', 'build', file];
   if (options.out) args.push('--out', options.out);
+  if (options.iconsSpecifier) args.push('--icons-specifier', options.iconsSpecifier);
   return new Promise((/** @type {(code: number) => void} */ resolve) => {
     const child = spawn(process.execPath, args, {
       stdio: 'inherit',
@@ -70,7 +72,7 @@ function runThemeBuildOnceChild(file, options) {
  *
  * @param {string} file - The theme file argument, as the user passed it.
  * @param {string} filePath - Absolute path to the theme file.
- * @param {{out?: string}} options - Parsed command options.
+ * @param {{out?: string, iconsSpecifier?: string}} options - Parsed command options.
  * @returns {Promise<void>} Resolves when the watcher is stopped (Ctrl-C).
  */
 async function runThemeBuildWatch(file, filePath, options) {
@@ -158,10 +160,15 @@ export function registerTheme(program) {
     .description('Compile a defineTheme file to CSS + JS')
     .option('-o, --out <path>', 'Output CSS file path')
     .option(
+      '--icons-specifier <spec>',
+      'Specifier for the icon registry import in the generated module, e.g. ./icons.mjs. ' +
+        'Declare what your own build emits; without it the specifier is copied from the theme source unchanged.',
+    )
+    .option(
       '-w, --watch',
       'Rebuild automatically when the theme file changes (Ctrl-C to stop)',
     )
-    .action(async (/** @type {string} */ file, /** @type {{out?: string, watch?: boolean}} */ options) => {
+    .action(async (/** @type {string} */ file, /** @type {{out?: string, iconsSpecifier?: string, watch?: boolean}} */ options) => {
       const filePath = path.resolve(process.cwd(), file);
       const json = program.opts().json || false;
 
@@ -190,7 +197,11 @@ export function registerTheme(program) {
       // instructions are all emitted from inside themeBuild via the shared logger.
       logger.setSilent(json);
       try {
-        const result = await themeBuild(file, {out: options.out}, {cwd: process.cwd()});
+        const result = await themeBuild(
+          file,
+          {out: options.out, iconsSpecifier: options.iconsSpecifier},
+          {cwd: process.cwd()},
+        );
         if (json && result) jsonOut(result);
       } catch (e) {
         const err = /** @type {import('../../../api/error.mjs').AstryxError} */ (e);
