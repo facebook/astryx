@@ -1,0 +1,33 @@
+{
+  "name": "complex-selector",
+  "prompts": [
+    {
+      "id": "cs-1",
+      "category": "complex-selector",
+      "prompt": "Build a fruit picker where users choose both a fruit and a ripeness level in one control. The closed control should show the current choice. When opened, it should be easy to move across ripeness levels and move down to the same ripeness for the next fruit using the keyboard.",
+      "expectedComponents": ["ComplexSelector"],
+      "complexity": "complex"
+    },
+    {
+      "id": "cs-2",
+      "category": "complex-selector",
+      "prompt": "Create a project destination picker. Users open one field, search destinations, browse nested folders, and choose a folder. The popup should support keyboard navigation and should close after a folder is selected.",
+      "expectedComponents": ["ComplexSelector", "TextInput", "TreeList"],
+      "complexity": "complex"
+    },
+    {
+      "id": "cs-3",
+      "category": "complex-selector",
+      "prompt": "Build a deadline picker field for a task form. Opening the field should let users choose a preset like Today or Next week, or choose a custom date and time before applying the selection.",
+      "expectedComponents": ["ComplexSelector", "DateInput", "TimeInput"],
+      "complexity": "complex"
+    },
+    {
+      "id": "cs-4",
+      "category": "complex-selector",
+      "prompt": "Make a snack selector field. Users can choose Apple, Banana, or Orange, but there should also be an Other option that reveals a text input for a custom snack before applying it.",
+      "expectedComponents": ["ComplexSelector", "TextInput", "RadioList"],
+      "complexity": "moderate"
+    }
+  ]
+}

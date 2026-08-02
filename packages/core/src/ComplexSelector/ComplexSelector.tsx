@@ -4,7 +4,7 @@
 
 /**
  * @file ComplexSelector.tsx
- * @input Uses React, StyleX, Field, usePopover, useGridFocus
+ * @input Uses React, StyleX, Field, usePopover
  * @output Exports ComplexSelector component for custom selector surfaces
  * @position Core implementation; consumed by index.ts
  *
@@ -17,7 +17,6 @@
 
 import React, {
   useCallback,
-  useEffect,
   useId,
   useOptimistic,
   useTransition,
@@ -29,7 +28,7 @@ import type {BaseProps} from '../BaseProps';
 import {Field, inputWrapperStyles, type FieldStatusVariant} from '../Field';
 import {Icon} from '../Icon';
 import {Spinner} from '../Spinner';
-import {useGridFocus} from '../hooks/useGridFocus';
+import {useTranslator} from '../i18n';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import type {LayerPlacement} from '../Layer/useLayer';
 import {usePopover} from '../Popover/usePopover';
@@ -43,12 +42,9 @@ import {
   typographyVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
-import {useTranslator} from '../i18n';
 import {mergeProps} from '../utils';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
-
-const OPTION_SELECTOR = '[data-astryx-complex-selector-option]';
 
 const styles = stylex.create({
   triggerContainer: {
@@ -127,7 +123,6 @@ const styles = stylex.create({
     maxHeight: 'min(480px, calc(100vh - 32px))',
     overflow: 'auto',
     padding: spacingVars['--spacing-3'],
-    outline: 'none',
   },
   sm: {
     minHeight: sizeVars['--size-element-sm'],
@@ -151,48 +146,7 @@ const styles = stylex.create({
 
 export type ComplexSelectorSize = 'sm' | 'md' | 'lg';
 
-export interface ComplexSelectorGridLayout {
-  /** Use the WAI-ARIA grid pattern for a two-dimensional picker. */
-  type: 'grid';
-  /** Number of visual columns. ArrowUp/ArrowDown preserve the current column. */
-  columns: number;
-}
-
-export type ComplexSelectorLayout = ComplexSelectorGridLayout;
-
-export interface ComplexSelectorGetOptionPropsOptions<Value> {
-  /** Zero-based DOM/grid index for the option. */
-  index: number;
-  /** Value to commit when the option is selected. */
-  value: Value;
-  /** Accessible label for this option. */
-  label: string;
-  /** Whether this option represents the current value. */
-  isSelected?: boolean;
-  /** Whether this option is visible but unavailable. */
-  isDisabled?: boolean;
-}
-
-export interface ComplexSelectorOptionProps {
-  id: string;
-  role?: 'gridcell';
-  'aria-label': string;
-  'aria-selected'?: boolean;
-  'aria-disabled'?: true;
-  'data-astryx-complex-selector-option': string;
-  tabIndex: 0 | -1;
-  onClick: () => void;
-}
-
-export interface ComplexSelectorRenderProps<Value> {
-  /** Current optimistic value. */
-  value: Value;
-  /** Commit a value through onChange/changeAction. */
-  onChange: (value: Value) => void;
-  /** Async action passed to ComplexSelector, exposed for composed content. */
-  changeAction?: (value: Value) => void | Promise<void>;
-  /** Close the selector surface. */
-  close: () => void;
+export interface ComplexSelectorRenderState {
   /** Whether the selector surface is open. */
   isOpen: boolean;
   /** Whether changeAction/isLoading is pending. */
@@ -201,10 +155,6 @@ export interface ComplexSelectorRenderProps<Value> {
   triggerId: string;
   /** ID of the popup content container. */
   contentId: string;
-  /** Props for selectable options inside the custom content. */
-  getOptionProps: (
-    options: ComplexSelectorGetOptionPropsOptions<Value>,
-  ) => ComplexSelectorOptionProps;
 }
 
 export interface ComplexSelectorTriggerRenderProps<Value> {
@@ -233,8 +183,13 @@ export interface ComplexSelectorProps<Value> extends Omit<
   onChange?: (value: Value) => void;
   /** Optional async action after onChange; drives optimistic UI. */
   changeAction?: (value: Value) => void | Promise<void>;
-  /** Custom selector surface content. */
-  children: (props: ComplexSelectorRenderProps<Value>) => ReactNode;
+  /** Custom selector surface content rendered inside a dialog popover. */
+  children: (
+    value: Value,
+    onChange: (value: Value) => void,
+    close: () => void,
+    state: ComplexSelectorRenderState,
+  ) => ReactNode;
   /** Label/content shown in the closed trigger. */
   triggerLabel?: ReactNode;
   /** Custom trigger content rendered inside the selector trigger. */
@@ -243,10 +198,6 @@ export interface ComplexSelectorProps<Value> extends Omit<
   ) => ReactNode;
   /** Placeholder shown when triggerLabel is omitted. */
   placeholder?: ReactNode;
-  /** Popup layout behavior owned by ComplexSelector. */
-  layout?: ComplexSelectorLayout;
-  /** Whether to close the popup after a value is committed. */
-  hasCloseOnChange?: boolean;
   /** Whether to visually hide the field label. */
   isLabelHidden?: boolean;
   /** Helper text displayed below the label. */
@@ -271,10 +222,6 @@ export interface ComplexSelectorProps<Value> extends Omit<
   width?: SizeValue;
   /** Popup placement. */
   placement?: LayerPlacement;
-  /** HTML form field name. */
-  htmlName?: string;
-  /** Converts value for the hidden input. */
-  getFormValue?: (value: Value) => string;
   /** StyleX styles for the popup content container. */
   contentXstyle?: StyleXStyles;
   /** Test ID for the trigger container. */
@@ -284,10 +231,10 @@ export interface ComplexSelectorProps<Value> extends Omit<
 /**
  * A selector shell for rich, custom selection surfaces.
  *
- * ComplexSelector owns the field, trigger, popover, focus restore, async change
- * action, and optional grid keyboard behavior. Consumers provide the actual
- * content as a render function and spread `getOptionProps` onto each selectable
- * cell when using `layout={{type: 'grid'}}`.
+ * ComplexSelector owns the field, trigger, popover, focus restore, and async
+ * change action flow. Consumers provide the dialog content as a render function,
+ * using the supplied `value`, `onChange`, and `close` helpers to compose the
+ * right accessible structure for the custom selector.
  *
  * @example
  * ```
@@ -295,19 +242,15 @@ export interface ComplexSelectorProps<Value> extends Omit<
  *   label="Fruit"
  *   value={value}
  *   onChange={setValue}
- *   triggerLabel={`${value.fruit} ${value.ripeness}`}
- *   layout={{type: 'grid', columns: 3}}>
- *   {({getOptionProps}) => fruits.flatMap((fruit, row) =>
- *     levels.map((level, column) => (
- *       <button
- *         {...getOptionProps({
- *           index: row * levels.length + column,
- *           value: {fruit, ripeness: level},
- *           label: `${fruit} ${level}`,
- *         })}>
- *         {fruit} {level}
- *       </button>
- *     )),
+ *   triggerLabel={`${value.fruit} ${value.ripeness}`}>
+ *   {(value, onChange, close) => (
+ *     <FruitGrid
+ *       value={value}
+ *       onChange={nextValue => {
+ *         onChange(nextValue);
+ *         close();
+ *       }}
+ *     />
  *   )}
  * </ComplexSelector>
  * ```
@@ -321,8 +264,6 @@ export function ComplexSelector<Value>({
   triggerLabel,
   renderTrigger,
   placeholder: placeholderFromProps,
-  layout,
-  hasCloseOnChange = true,
   isLabelHidden = false,
   description,
   isOptional = false,
@@ -335,8 +276,6 @@ export function ComplexSelector<Value>({
   size = 'md',
   width,
   placement = 'below',
-  htmlName,
-  getFormValue,
   contentXstyle,
   xstyle,
   className,
@@ -352,7 +291,6 @@ export function ComplexSelector<Value>({
   const contentId = useId();
   const descriptionId = useId();
   const statusMessageId = useId();
-
   const ariaDescribedBy =
     [
       description ? descriptionId : null,
@@ -365,22 +303,10 @@ export function ComplexSelector<Value>({
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const isBusy = isLoading || isPending;
 
-  const {
-    gridRef,
-    handleKeyDown: handleGridKeyDown,
-    handleFocus: handleGridFocus,
-    focusCell,
-  } = useGridFocus<HTMLDivElement>({
-    columns: layout?.type === 'grid' ? layout.columns : 1,
-    cellSelector: OPTION_SELECTOR,
-    isCellFocusable: cell => cell.getAttribute('aria-disabled') !== 'true',
-    hasRovingTabIndex: layout?.type === 'grid',
-  });
-
   const popover = usePopover({
     dialogLabel: label,
     hasCloseButton: false,
-    hasAutoFocus: layout?.type !== 'grid',
+    hasAutoFocus: true,
     onHide: () => {
       document.getElementById(triggerId)?.focus();
     },
@@ -395,81 +321,21 @@ export function ComplexSelector<Value>({
           await changeAction(nextValue);
         });
       }
-      if (hasCloseOnChange) {
-        popover.hide();
-      }
     },
-    [changeAction, hasCloseOnChange, onChange, popover, setOptimisticValue],
+    [changeAction, onChange, setOptimisticValue, startTransition],
   );
-
-  const getOptionProps = useCallback(
-    ({
-      index,
-      value: optionValue,
-      label: optionLabel,
-      isSelected = false,
-      isDisabled: optionDisabled = false,
-    }: ComplexSelectorGetOptionPropsOptions<Value>): ComplexSelectorOptionProps => ({
-      id: `${contentId}-option-${index}`,
-      role: layout?.type === 'grid' ? 'gridcell' : undefined,
-      'aria-label': optionLabel,
-      'aria-selected': isSelected || undefined,
-      'aria-disabled': optionDisabled ? true : undefined,
-      'data-astryx-complex-selector-option': '',
-      tabIndex: isSelected ? 0 : -1,
-      onClick: () => {
-        if (!optionDisabled) {
-          commitValue(optionValue);
-        }
-      },
-    }),
-    [commitValue, contentId, layout?.type],
-  );
-
-  useEffect(() => {
-    if (!popover.isOpen || layout?.type !== 'grid') {
-      return;
-    }
-
-    requestAnimationFrame(() => {
-      const grid = gridRef.current;
-      if (!grid) {
-        return;
-      }
-      const cells = Array.from(
-        grid.querySelectorAll<HTMLElement>(OPTION_SELECTOR),
-      );
-      const selectedIndex = cells.findIndex(
-        cell => cell.getAttribute('aria-selected') === 'true',
-      );
-      focusCell(selectedIndex >= 0 ? selectedIndex : 0);
-    });
-  }, [focusCell, gridRef, layout?.type, popover.isOpen]);
 
   const triggerContent = renderTrigger
     ? renderTrigger({value: optimisticValue, isOpen: popover.isOpen, isBusy})
     : (triggerLabel ?? placeholder);
 
   const content = (
-    <div
-      ref={gridRef}
-      id={contentId}
-      role={layout?.type === 'grid' ? 'grid' : undefined}
-      aria-label={layout?.type === 'grid' ? label : undefined}
-      aria-busy={isBusy || undefined}
-      onKeyDown={layout?.type === 'grid' ? handleGridKeyDown : undefined}
-      onFocus={layout?.type === 'grid' ? handleGridFocus : undefined}
-      {...stylex.props(styles.content, contentXstyle)}>
-      {children({
-        value: optimisticValue,
-        onChange: commitValue,
-        changeAction,
-        close: popover.hide,
+    <div id={contentId} {...stylex.props(styles.content, contentXstyle)}>
+      {children(optimisticValue, commitValue, popover.hide, {
         isOpen: popover.isOpen,
         isBusy,
         triggerId,
         contentId,
-        getOptionProps,
       })}
     </div>
   );
@@ -524,14 +390,6 @@ export function ComplexSelector<Value>({
           {...stylex.props(styles.trigger)}>
           <span {...stylex.props(styles.triggerText)}>{triggerContent}</span>
         </button>
-        {htmlName != null && (
-          <input
-            type="hidden"
-            name={htmlName}
-            value={getFormValue ? getFormValue(value) : String(value ?? '')}
-            disabled={isDisabled}
-          />
-        )}
         {isBusy && <Spinner size="sm" />}
         <span
           {...stylex.props(

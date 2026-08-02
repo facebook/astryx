@@ -1,11 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {ComplexSelector} from '@astryxdesign/core/ComplexSelector';
 import {Text} from '@astryxdesign/core/Text';
 import {HStack, VStack} from '@astryxdesign/core/Layout';
+import {useGridFocus} from '@astryxdesign/core/hooks';
 import {
   borderVars,
   colorVars,
@@ -17,6 +18,8 @@ import {
   typeScaleVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
 
+const GRID_CELL_SELECTOR = '[role="gridcell"]';
+
 const meta: Meta<typeof ComplexSelector> = {
   title: 'Core/ComplexSelector',
   component: ComplexSelector,
@@ -26,7 +29,7 @@ const meta: Meta<typeof ComplexSelector> = {
     docs: {
       description: {
         component:
-          'A high-level selector shell for rich custom content. The component owns the field, trigger, popover, focus restore, async changeAction, and optional grid keyboard behavior while consumers render the content.',
+          'A high-level selector shell for rich custom content. The component owns the field, trigger, popover, focus restore, and async changeAction flow while consumers render the content.',
       },
     },
   },
@@ -183,6 +186,98 @@ function formatValue(value: FruitValue) {
   return `${value.fruit} · ${value.ripeness}`;
 }
 
+function FruitRipenessMatrix({
+  value,
+  onChange,
+}: {
+  value: FruitValue;
+  onChange: (value: FruitValue) => void;
+}) {
+  const {gridRef, handleKeyDown, handleFocus, focusCell} =
+    useGridFocus<HTMLDivElement>({
+      columns: ripenessLevels.length,
+      cellSelector: GRID_CELL_SELECTOR,
+      hasRovingTabIndex: true,
+    });
+
+  useEffect(() => {
+    const rowIndex = fruits.findIndex(fruit => fruit.id === value.fruit);
+    const columnIndex = ripenessLevels.findIndex(
+      level => level.id === value.ripeness,
+    );
+    requestAnimationFrame(() => {
+      focusCell(
+        rowIndex >= 0 && columnIndex >= 0
+          ? rowIndex * ripenessLevels.length + columnIndex
+          : 0,
+      );
+    });
+  }, [focusCell, value]);
+
+  return (
+    <div>
+      <div {...stylex.props(styles.headerGrid)} aria-hidden="true">
+        <div />
+        {ripenessLevels.map(level => (
+          <div key={level.id} {...stylex.props(styles.columnHeading)}>
+            {level.id}
+          </div>
+        ))}
+      </div>
+
+      <div
+        ref={gridRef}
+        role="grid"
+        aria-label="Fruit ripeness choices"
+        onKeyDown={handleKeyDown}
+        onFocus={handleFocus}
+        {...stylex.props(styles.matrix)}>
+        {fruits.flatMap(fruit => [
+          <div key={`${fruit.id}-label`} {...stylex.props(styles.rowHeader)}>
+            <span {...stylex.props(styles.fruitEmoji)}>{fruit.emoji}</span>
+            <VStack gap={0}>
+              <span {...stylex.props(styles.fruitName)}>{fruit.id}</span>
+              <span {...stylex.props(styles.fruitDescription)}>
+                {fruit.description}
+              </span>
+            </VStack>
+          </div>,
+          ...ripenessLevels.map(level => {
+            const nextValue = {fruit: fruit.id, ripeness: level.id};
+            const isSelected =
+              value.fruit === fruit.id && value.ripeness === level.id;
+
+            return (
+              <button
+                key={`${fruit.id}-${level.id}`}
+                type="button"
+                role="gridcell"
+                aria-label={`${fruit.id}, ${level.id}: ${level.description}`}
+                aria-selected={isSelected || undefined}
+                tabIndex={isSelected ? 0 : -1}
+                onClick={() => onChange(nextValue)}
+                {...stylex.props(
+                  styles.cell,
+                  isSelected && styles.selectedCell,
+                )}>
+                <span {...stylex.props(styles.cellLabel)}>
+                  {level.id}
+                  <span {...stylex.props(styles.badge)}>
+                    {level.shortLabel}
+                  </span>
+                </span>
+                <span {...stylex.props(styles.cellDescription)}>
+                  {level.description}
+                </span>
+              </button>
+            );
+          }),
+        ])}
+      </div>
+    </div>
+  );
+}
+
 export const FruitRipenessGrid: Story = {
   name: 'Fruit ripeness grid',
   render: () => {
@@ -199,10 +294,8 @@ export const FruitRipenessGrid: Story = {
           value={value}
           onChange={setValue}
           triggerLabel={formatValue(value)}
-          layout={{type: 'grid', columns: ripenessLevels.length}}
-          contentXstyle={styles.content}
-          getFormValue={formatValue}>
-          {({value: selectedValue, getOptionProps}) => (
+          contentXstyle={styles.content}>
+          {(selectedValue, onChange, close) => (
             <div>
               <div {...stylex.props(styles.intro)}>
                 <Text type="supporting" color="secondary">
@@ -212,66 +305,13 @@ export const FruitRipenessGrid: Story = {
                 </Text>
               </div>
 
-              <div {...stylex.props(styles.headerGrid)} aria-hidden="true">
-                <div />
-                {ripenessLevels.map(level => (
-                  <div key={level.id} {...stylex.props(styles.columnHeading)}>
-                    {level.id}
-                  </div>
-                ))}
-              </div>
-
-              <div {...stylex.props(styles.matrix)}>
-                {fruits.flatMap((fruit, rowIndex) => [
-                  <div
-                    key={`${fruit.id}-label`}
-                    {...stylex.props(styles.rowHeader)}>
-                    <span {...stylex.props(styles.fruitEmoji)}>
-                      {fruit.emoji}
-                    </span>
-                    <VStack gap={0}>
-                      <span {...stylex.props(styles.fruitName)}>
-                        {fruit.id}
-                      </span>
-                      <span {...stylex.props(styles.fruitDescription)}>
-                        {fruit.description}
-                      </span>
-                    </VStack>
-                  </div>,
-                  ...ripenessLevels.map((level, columnIndex) => {
-                    const nextValue = {fruit: fruit.id, ripeness: level.id};
-                    const isSelected =
-                      selectedValue.fruit === fruit.id &&
-                      selectedValue.ripeness === level.id;
-
-                    return (
-                      <button
-                        key={`${fruit.id}-${level.id}`}
-                        type="button"
-                        {...getOptionProps({
-                          index: rowIndex * ripenessLevels.length + columnIndex,
-                          value: nextValue,
-                          label: `${fruit.id}, ${level.id}: ${level.description}`,
-                          isSelected,
-                        })}
-                        {...stylex.props(
-                          styles.cell,
-                          isSelected && styles.selectedCell,
-                        )}>
-                        <span {...stylex.props(styles.cellLabel)}>
-                          {level.id}
-                          <span {...stylex.props(styles.badge)}>
-                            {level.shortLabel}
-                          </span>
-                        </span>
-                        <span {...stylex.props(styles.cellDescription)}>
-                          {level.description}
-                        </span>
-                      </button>
-                    );
-                  }),
-                ])}
-              </div>
+              <FruitRipenessMatrix
+                value={selectedValue}
+                onChange={nextValue => {
+                  onChange(nextValue);
+                  close();
+                }}
+              />
 
               <div {...stylex.props(styles.keyboardHint)}>
                 <HStack gap={2} wrap="wrap">
@@ -293,7 +333,7 @@ export const FruitRipenessGrid: Story = {
     docs: {
       description: {
         story:
-          'A fruit-themed stand-in for a model plus level selector. The content is fully custom, but ComplexSelector owns the popover and grid keyboard contract.',
+          'A fruit-themed stand-in for a rich two-axis selector. ComplexSelector owns the trigger, popover, focus restore, and change flow; the custom content owns its grid semantics.',
       },
     },
   },

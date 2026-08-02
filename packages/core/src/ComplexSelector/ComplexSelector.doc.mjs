@@ -12,10 +12,10 @@ export const docs = {
     'picker',
     'popover',
     'dialog',
-    'grid',
-    'matrix',
     'custom',
     'rich',
+    'matrix',
+    'grid',
   ],
   theming: {
     targets: [
@@ -31,7 +31,7 @@ export const docs = {
       name: 'ComplexSelector',
       displayName: 'Complex Selector',
       description:
-        'A field and popover shell for building rich custom selector surfaces, including two-dimensional grids.',
+        'A field and dialog-popover shell for custom selector content.',
       props: [
         {
           name: 'label',
@@ -58,9 +58,9 @@ export const docs = {
         },
         {
           name: 'children',
-          type: '(props: ComplexSelectorRenderProps<Value>) => ReactNode',
+          type: '(value: Value, onChange: (value: Value) => void, close: () => void, state: ComplexSelectorRenderState) => ReactNode',
           description:
-            'Custom selector content. Receives value, onChange, changeAction, close, isOpen, isBusy, IDs, and getOptionProps.',
+            'Custom dialog content. Receives positional value, onChange, close, and state helpers.',
           required: true,
         },
         {
@@ -72,31 +72,13 @@ export const docs = {
           name: 'renderTrigger',
           type: '(props: ComplexSelectorTriggerRenderProps<Value>) => ReactNode',
           description:
-            'Custom trigger content rendered inside the selector trigger while ComplexSelector owns the button semantics.',
+            'Custom trigger content rendered inside the selector trigger while ComplexSelector owns button semantics.',
         },
         {
           name: 'placeholder',
           type: 'ReactNode',
           description: 'Placeholder shown when triggerLabel is omitted.',
           default: "'Select...'",
-        },
-        {
-          name: 'layout',
-          type: "{type: 'grid', columns: number}",
-          description:
-            'Optional popup layout behavior. Grid layout wires arrow-key navigation and preserves columns on vertical movement.',
-        },
-        {
-          name: 'hasCloseOnChange',
-          type: 'boolean',
-          description: 'Whether to close the popup after a value is committed.',
-          default: 'true',
-        },
-        {
-          name: 'getOptionProps',
-          type: 'render prop helper',
-          description:
-            'Returned from children props. Spread onto selectable buttons/cells so the selector can apply grid semantics and commit values.',
         },
         {
           name: 'isDisabled',
@@ -125,41 +107,47 @@ export const docs = {
           description: 'Width of the field.',
         },
         {
-          name: 'htmlName',
-          type: 'string',
-          description: 'HTML form field name. Renders a hidden input.',
+          name: 'placement',
+          type: 'LayerPlacement',
+          description: 'Popup placement.',
+          default: "'below'",
         },
         {
-          name: 'getFormValue',
-          type: '(value: Value) => string',
-          description: 'Converts value for the hidden input.',
+          name: 'contentXstyle',
+          type: 'StyleXStyles',
+          description: 'StyleX styles for the popup content container.',
         },
       ],
     },
   ],
   usage: {
     description:
-      'Use ComplexSelector when a selection needs richer custom content than a Selector option row, such as a card picker, color matrix, or two-dimensional option grid. It is intentionally one component: consumers customize content through a render prop while the design system owns the field, popover, focus restore, changeAction flow, and optional grid navigation.',
+      'Use ComplexSelector when a selection needs richer custom content than a Selector option row. It is intentionally one component: ComplexSelector owns the field, trigger, popover, focus restore, and changeAction flow, while the content render prop owns the selector-specific accessible structure.',
     bestPractices: [
       {
         guidance: true,
         description:
-          'Use layout={{type: \'grid\', columns}} for two-dimensional selectors so arrow navigation preserves columns.',
+          'Compose the dialog content from the appropriate accessible structure for the job: RadioList for a simple choice, Calendar/date inputs for date picking, TreeList or a searchable list for hierarchy, or a custom grid when two-dimensional arrow navigation is useful.',
       },
       {
         guidance: true,
         description:
-          'Spread getOptionProps onto each selectable cell/button; pass a clear label so screen readers announce the row and column meaning.',
+          'Use the provided onChange helper from children; it already calls both onChange and changeAction and updates optimistic busy state.',
       },
       {
         guidance: true,
         description:
-          'Keep selectable cells as the only focusable elements inside grid content. Put decorative or explanatory content inside the cell.',
+          'Call close() from custom content when a selection should dismiss the popup. Keep it open for multi-step content or freeform entry flows.',
+      },
+      {
+        guidance: true,
+        description:
+          'For custom two-dimensional grids, implement the ARIA grid pattern and use useGridFocus to preserve columns during vertical arrow navigation.',
       },
       {
         guidance: false,
         description:
-          'Do not rebuild trigger ARIA, popover focus management, or roving tabindex in product code.',
+          'Do not rebuild trigger ARIA, popover focus management, or changeAction handling in product code.',
       },
       {
         guidance: false,
@@ -176,18 +164,16 @@ export const docsDense = {
   group: 'Selector',
   category: 'Data Input',
   description:
-    'Field+popover shell for rich custom selectors. Content render prop gets value/onChange/changeAction/close/isBusy/getOptionProps. Grid layout owns roving focus + column-preserving arrows.',
+    'Field+dialog-popover shell for rich custom selectors. Content render prop gets positional value/onChange/close plus state; content owns its accessible structure.',
   propDescriptions: {
     label: 'Accessible field label.',
     value: 'Controlled value.',
     onChange: 'Commit value.',
     changeAction: 'Async action after onChange; drives optimistic value/busy.',
     children:
-      'Render custom content from {value,onChange,changeAction,close,isBusy,getOptionProps}.',
+      'Render custom dialog content from (value,onChange,close,state).',
     triggerLabel: 'Closed trigger label/content.',
     renderTrigger: 'Custom trigger content inside owned button.',
-    layout: "Optional {type:'grid', columns} for grid keyboard navigation.",
-    hasCloseOnChange: 'Close popup after value commit; default true.',
-    getOptionProps: 'Render helper to spread onto selectable cells/buttons.',
+    placement: 'Popup placement.',
   },
 };

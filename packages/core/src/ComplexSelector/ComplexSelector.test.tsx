@@ -4,44 +4,15 @@
  * @file ComplexSelector.test.tsx
  * @input Uses vitest, Testing Library, user-event
  * @output Unit tests for ComplexSelector
- * @position Tests; validates custom content, async actions, and grid keyboard behavior
+ * @position Tests; validates custom content, async actions, and dialog composition
  *
  * SYNC: When ComplexSelector.tsx API changes, update these tests.
  */
 
-import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import {describe, expect, it, vi} from 'vitest';
 import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {ComplexSelector} from './ComplexSelector';
-
-beforeEach(() => {
-  HTMLElement.prototype.showPopover = vi.fn(function (this: HTMLElement) {
-    this.setAttribute('popover-open', '');
-    const event = new Event('toggle', {bubbles: false});
-    Object.defineProperty(event, 'newState', {value: 'open'});
-    this.dispatchEvent(event);
-  });
-  HTMLElement.prototype.hidePopover = vi.fn(function (this: HTMLElement) {
-    this.removeAttribute('popover-open');
-    const event = new Event('toggle', {bubbles: false});
-    Object.defineProperty(event, 'newState', {value: 'closed'});
-    this.dispatchEvent(event);
-  });
-  const originalMatches = HTMLElement.prototype.matches;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (HTMLElement.prototype as any).matches = function (
-    selector: string,
-  ): boolean {
-    if (selector === ':popover-open') {
-      return this.hasAttribute('popover-open');
-    }
-    return originalMatches.call(this, selector);
-  };
-});
-
-afterEach(() => {
-  vi.restoreAllMocks();
-});
 
 type FruitValue = {
   fruit: 'Apple' | 'Banana';
@@ -51,6 +22,36 @@ type FruitValue = {
 const FRUITS = ['Apple', 'Banana'] as const;
 const RIPENESS = ['Crisp', 'Ripe', 'Juicy'] as const;
 const h = {hidden: true} as const;
+
+function FruitGrid({
+  value,
+  onChange,
+}: {
+  value: FruitValue;
+  onChange: (value: FruitValue) => void;
+}) {
+  return (
+    <div role="grid" aria-label="Fruit blend choices">
+      {FRUITS.flatMap(fruit =>
+        RIPENESS.map(ripeness => {
+          const isSelected =
+            value.fruit === fruit && value.ripeness === ripeness;
+          return (
+            <button
+              key={`${fruit}-${ripeness}`}
+              type="button"
+              role="gridcell"
+              aria-label={`${fruit} ${ripeness}`}
+              aria-selected={isSelected || undefined}
+              onClick={() => onChange({fruit, ripeness})}>
+              {fruit} {ripeness}
+            </button>
+          );
+        }),
+      )}
+    </div>
+  );
+}
 
 function FruitComplexSelector({
   value,
@@ -67,31 +68,15 @@ function FruitComplexSelector({
       value={value}
       onChange={onChange}
       changeAction={changeAction}
-      triggerLabel={`${value.fruit} ${value.ripeness}`}
-      layout={{type: 'grid', columns: RIPENESS.length}}>
-      {({getOptionProps}) => (
-        <div>
-          {FRUITS.flatMap((fruit, rowIndex) =>
-            RIPENESS.map((ripeness, columnIndex) => {
-              const optionValue = {fruit, ripeness};
-              const isSelected =
-                value.fruit === fruit && value.ripeness === ripeness;
-              return (
-                <button
-                  key={`${fruit}-${ripeness}`}
-                  type="button"
-                  {...getOptionProps({
-                    index: rowIndex * RIPENESS.length + columnIndex,
-                    value: optionValue,
-                    label: `${fruit} ${ripeness}`,
-                    isSelected,
-                  })}>
-                  {fruit} {ripeness}
-                </button>
-              );
-            }),
-          )}
-        </div>
+      triggerLabel={`${value.fruit} ${value.ripeness}`}>
+      {(value, onChange, close) => (
+        <FruitGrid
+          value={value}
+          onChange={nextValue => {
+            onChange(nextValue);
+            close();
+          }}
+        />
       )}
     </ComplexSelector>
   );
@@ -121,7 +106,7 @@ describe('ComplexSelector', () => {
     );
   });
 
-  it('runs changeAction after onChange', async () => {
+  it('runs changeAction through the provided onChange helper', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
     const changeAction = vi.fn();
@@ -148,27 +133,24 @@ describe('ComplexSelector', () => {
     });
   });
 
-  it('uses grid keyboard navigation that preserves columns vertically', async () => {
+  it('passes a close helper to composed content', async () => {
     const user = userEvent.setup();
 
     render(
-      <FruitComplexSelector
-        value={{fruit: 'Apple', ripeness: 'Ripe'}}
-        onChange={() => {}}
-      />,
+      <ComplexSelector label="Fruit blend" value="Apple" triggerLabel="Apple">
+        {(_value, _onChange, close) => (
+          <button type="button" onClick={close}>
+            Done
+          </button>
+        )}
+      </ComplexSelector>,
     );
 
-    await user.click(screen.getByRole('button', {name: 'Fruit blend'}));
+    const trigger = screen.getByRole('button', {name: 'Fruit blend'});
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
 
-    const appleRipe = screen.getByRole('gridcell', {name: 'Apple Ripe', ...h});
-    const bananaRipe = screen.getByRole('gridcell', {
-      name: 'Banana Ripe',
-      ...h,
-    });
-
-    appleRipe.focus();
-    await user.keyboard('{ArrowDown}');
-
-    expect(bananaRipe).toHaveFocus();
+    await user.click(screen.getByRole('button', {name: 'Done', ...h}));
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
 });
