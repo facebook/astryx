@@ -204,8 +204,18 @@ const MAX_CLOSE_DELAY_MS = 250;
 /** Fraction of the hold to close at, so the close never lands on its boundary. */
 const CLOSE_WITHIN_HOLD = 0.6;
 
-/** Shortest duration in a `transition-duration` list, in ms; null if unreadable. */
-function parseShortestDurationMs(value: string): number | null {
+/**
+ * Shortest duration in a `transition-duration` list, in ms; null if unreadable.
+ *
+ * Browsers serialise computed `<time>` values in seconds — an authored `410ms`
+ * reads back as `"0.41s"` and a list as `"0.41s, 0.12s"` — so the seconds branch
+ * is the one that runs outside tests. jsdom echoes an inline `250ms` back as-is
+ * and never resolves `var()`, so both units and the unreadable case are covered
+ * directly in MobileNavCloseTiming.test.ts rather than through the component.
+ *
+ * @internal Exported for unit tests.
+ */
+export function parseShortestDurationMs(value: string): number | null {
   const durations = value
     .split(',')
     .map(part => {
@@ -391,6 +401,34 @@ export function MobileNav({
     side === 'auto' ? 'end' : side,
   );
 
+  // Resolve which edge the drawer slides from. Deliberately its own effect,
+  // declared before the open/close effect below so the trigger is still the
+  // active element when `side='auto'` reads it. Keeping it out of that effect
+  // is what stops a `side` change during a close from re-arming the delay: the
+  // CSS hold runs from the commit that started the slide-out and does not
+  // restart, so a fresh full delay could land after the drawer had already
+  // stopped being rendered — #4290 again.
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    if (side === 'auto') {
+      const trigger = document.activeElement as HTMLElement | null;
+      if (trigger && trigger !== document.body) {
+        const rect = trigger.getBoundingClientRect();
+        const triggerCenter = rect.left + rect.width / 2;
+        // eslint-disable-next-line @eslint-react/set-state-in-effect -- side is resolved from trigger layout immediately before showModal()
+        setResolvedSide(
+          triggerCenter < window.innerWidth / 2 ? 'start' : 'end',
+        );
+      }
+    } else {
+      // eslint-disable-next-line @eslint-react/set-state-in-effect -- side prop changes must update the open dialog placement
+      setResolvedSide(side);
+    }
+  }, [isOpen, side]);
+
   // Open/close the dialog via showModal()/close()
   // close() is delayed so the slide-out transition can play.
   useEffect(() => {
@@ -399,28 +437,7 @@ export function MobileNav({
       return;
     }
 
-    if (closeTimeoutRef.current) {
-      clearTimeout(closeTimeoutRef.current);
-      closeTimeoutRef.current = null;
-    }
-
     if (isOpen) {
-      // Determine drawer side from trigger position when auto
-      if (side === 'auto') {
-        const trigger = document.activeElement as HTMLElement | null;
-        if (trigger && trigger !== document.body) {
-          const rect = trigger.getBoundingClientRect();
-          const triggerCenter = rect.left + rect.width / 2;
-          // eslint-disable-next-line @eslint-react/set-state-in-effect -- side is resolved from trigger layout immediately before showModal()
-          setResolvedSide(
-            triggerCenter < window.innerWidth / 2 ? 'start' : 'end',
-          );
-        }
-      } else {
-        // eslint-disable-next-line @eslint-react/set-state-in-effect -- side prop changes must update the open dialog placement
-        setResolvedSide(side);
-      }
-
       if (!dialog.open) {
         dialog.showModal();
       }
@@ -443,7 +460,7 @@ export function MobileNav({
       }
       document.documentElement.style.overflow = '';
     };
-  }, [isOpen, side]);
+  }, [isOpen]);
 
   // Close the native dialog on unmount if it's still open. Inside AppShell the
   // drawer is mounted in an <Activity> that switches to mode="hidden" when the

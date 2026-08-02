@@ -63,7 +63,11 @@ describe('MobileNav stays rendered while it closes', () => {
     // A zero hold is the bug wearing the fix's clothes: the drawer stops being
     // rendered on the next style recalc, before any effect can close it.
     expect(style.transitionDuration.trim()).not.toBe('');
-    expect(style.transitionDuration).not.toBe('0s');
+    // The hold must stay tied to the motion token rather than a literal: the
+    // close delay is derived by reading this value back, so a hardcoded hold
+    // and a themed slide-out would drift apart again. jsdom leaves var()
+    // unresolved, which is exactly why this reads as a declaration.
+    expect(style.transitionDuration).toContain('var(');
   });
 
   it('keeps the native dialog open until the slide-out has run', () => {
@@ -133,8 +137,9 @@ describe('MobileNav stays rendered while it closes', () => {
       act(() => {
         rerender(<Drawer isOpen={false} />);
       });
-      // Reduced motion shortens the slide-out, it does not remove the gap —
-      // closing on the transition's boundary is the same hazard, just narrower.
+      // Reduced motion caps the delay at 0 — but 0 is still a macrotask. What
+      // must not happen is the close landing synchronously in the commit, while
+      // the dialog is mid-flip. This pins deferral, not duration.
       expect(dialog).toHaveAttribute('open');
 
       act(() => {

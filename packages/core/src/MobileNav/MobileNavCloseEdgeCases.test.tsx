@@ -52,21 +52,33 @@ class MockResizeObserver {
   disconnect() {}
 }
 
-beforeEach(() => {
-  vi.stubGlobal('ResizeObserver', MockResizeObserver);
+/**
+ * `matches` has to depend on the query.
+ *
+ * A blanket `matches: true` puts AppShell below its breakpoint, which these
+ * tests need — but it also matches `prefers-reduced-motion`, which caps the
+ * close delay at 0. Every test in this file would then run against an immediate
+ * close while appearing to exercise the real delay.
+ */
+function stubMatchMedia({reduceMotion}: {reduceMotion: boolean}) {
   vi.stubGlobal(
     'matchMedia',
-    vi.fn().mockReturnValue({
-      matches: true,
-      media: '',
+    vi.fn((query: string) => ({
+      matches: query.includes('prefers-reduced-motion') ? reduceMotion : true,
+      media: query,
       onchange: null,
       addEventListener: vi.fn(),
       removeEventListener: vi.fn(),
       addListener: vi.fn(),
       removeListener: vi.fn(),
       dispatchEvent: vi.fn(),
-    }),
+    })),
   );
+}
+
+beforeEach(() => {
+  vi.stubGlobal('ResizeObserver', MockResizeObserver);
+  stubMatchMedia({reduceMotion: false});
 });
 
 afterEach(() => {
@@ -153,7 +165,7 @@ describe('MobileNav close path edge cases', () => {
     expect(dialog).not.toHaveAttribute('open');
   });
 
-  it('still closes when the side prop changes mid-slide-out', () => {
+  it('does not restart the pending close when the side prop changes', () => {
     vi.useFakeTimers();
     try {
       const {rerender} = render(<Drawer isOpen side="start" />);
@@ -164,12 +176,28 @@ describe('MobileNav close path edge cases', () => {
       });
       expect(dialog).toHaveAttribute('open');
 
-      // A dep change re-runs the effect, whose cleanup clears the pending
-      // close. It must re-arm, not drop it on the floor.
+      // Most of the way through the pending close...
+      act(() => {
+        vi.advanceTimersByTime(200);
+      });
+      expect(dialog).toHaveAttribute('open');
+
+      // ...then change the side. Side resolution lives in its own effect, so
+      // this has to leave the close alone. Were `side` a dep of the open/close
+      // effect, its cleanup would cancel the pending close and re-arm a fresh
+      // full delay — while the CSS hold keeps running from the commit that
+      // started the slide-out. The close would then land after the drawer had
+      // stopped being rendered, which is the #4290 state again.
+      //
+      // The split advance is the whole point: the total must clear one delay
+      // but not two.
       act(() => {
         rerender(<Drawer isOpen={false} side="end" />);
-        vi.advanceTimersByTime(300);
       });
+      act(() => {
+        vi.advanceTimersByTime(100);
+      });
+
       expect(dialog).not.toHaveAttribute('open');
     } finally {
       vi.useRealTimers();
@@ -208,12 +236,22 @@ describe('MobileNav close path edge cases', () => {
     vi.useFakeTimers();
     try {
       const {rerender} = render(<Drawer isOpen />);
+      const dialog = screen.getByTestId('mobile-nav');
       expect(document.documentElement.style.overflow).toBe('clip');
 
+      // Two acts on purpose: the close timer is armed by the effect that runs
+      // when the first act flushes, so advancing inside that same act would
+      // advance past nothing and the drawer would never actually close.
       act(() => {
         rerender(<Drawer isOpen={false} />);
+      });
+      act(() => {
         vi.advanceTimersByTime(300);
       });
+      // Pin the close itself. The effect cleanup resets overflow on every
+      // isOpen flip, so the overflow assertion alone passes even with the whole
+      // close path deleted — the test name would be the only thing left of it.
+      expect(dialog).not.toHaveAttribute('open');
       // A drawer that closes but leaves the page scroll-locked is its own
       // flavour of "the page is broken and nothing says why".
       expect(document.documentElement.style.overflow).toBe('');
@@ -254,21 +292,8 @@ describe('MobileNav close path edge cases', () => {
     // scheduled on the hold's boundary lands on the frame the drawer stops
     // being rendered — which is exactly the #4290 state. The delay has to be
     // derived from the hold actually in effect, not assumed.
-    // Full motion — otherwise the reduced-motion branch closes immediately and
-    // the boundary is never exercised.
-    vi.stubGlobal(
-      'matchMedia',
-      vi.fn().mockReturnValue({
-        matches: false,
-        media: '',
-        onchange: null,
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-        addListener: vi.fn(),
-        removeListener: vi.fn(),
-        dispatchEvent: vi.fn(),
-      }),
-    );
+    // Full motion (the file default) — under reduced motion the close is
+    // immediate and the boundary is never exercised.
     vi.useFakeTimers();
     try {
       const hold = 250;
@@ -305,12 +330,58 @@ describe('MobileNav close path edge cases', () => {
     }
   });
 
-  it('closes immediately under reduced motion, without shortening the hold', () => {
+  it('closes on the next macrotask when the hold is zero', () => {
+    // A theme can set --duration-medium to 0 — nothing validates motion values
+    // — and then `display` flips on the next style recalc with no hold at all.
+    // No delay is safe at that point, so the close has to go out immediately
+    // rather than fall back to the cap and land a quarter-second after the
+    // drawer stopped being rendered, which is #4290 restored.
+    vi.useFakeTimers();
+    try {
+      const style = {transitionDuration: '0ms'};
+      const {rerender} = render(
+        <MobileNav
+          isOpen
+          onOpenChange={() => {}}
+          style={style}
+          data-testid="mobile-nav">
+          <span>Nav content</span>
+        </MobileNav>,
+      );
+      const dialog = screen.getByTestId('mobile-nav');
+
+      act(() => {
+        rerender(
+          <MobileNav
+            isOpen={false}
+            onOpenChange={() => {}}
+            style={style}
+            data-testid="mobile-nav">
+            <span>Nav content</span>
+          </MobileNav>,
+        );
+      });
+      act(() => {
+        vi.advanceTimersByTime(1);
+      });
+
+      expect(dialog).not.toHaveAttribute('open');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('closes on the next macrotask under reduced motion', () => {
     // Reduced motion should make the close *sooner*, not the safety margin
     // *smaller*. Shortening the hold to match leaves no slack: one slow frame
     // between the commit and the close macrotask and the drawer has already
     // stopped being rendered — #4290 again, on the accessibility setting.
-    // matchMedia is stubbed to `matches: true` for this file.
+    //
+    // Only the delay is assertable here. That the hold itself stays long is a
+    // CSS fact — styles.dialog carries no reduced-motion override, unlike
+    // styles.drawer and ::backdrop — and jsdom does not evaluate media queries
+    // inside stylesheets, so there is nothing to read back.
+    stubMatchMedia({reduceMotion: true});
     vi.useFakeTimers();
     try {
       const style = {transitionDuration: '410ms'};
