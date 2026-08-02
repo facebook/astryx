@@ -58,15 +58,20 @@ function TreeTable(
   props: Partial<UseTableTreeStateConfig<FileRow>> & {
     data?: FileRow[];
     hasExpandAllControl?: boolean;
+    hasRowClickExpansion?: boolean;
   },
 ) {
-  const {hasExpandAllControl, ...stateProps} = props;
+  const {hasExpandAllControl, hasRowClickExpansion, ...stateProps} = props;
   const {visibleData, treeConfig} = useTableTreeState<FileRow>({
     data: props.data ?? fileTree,
     idKey: 'id',
     ...stateProps,
   });
-  const tree = useTableTreeData({...treeConfig, hasExpandAllControl});
+  const tree = useTableTreeData({
+    ...treeConfig,
+    hasExpandAllControl,
+    hasRowClickExpansion,
+  });
 
   return (
     <Table data={visibleData} columns={columns} idKey="id" plugins={{tree}} />
@@ -150,6 +155,160 @@ describe('useTableTreeData — expander', () => {
     expect(
       within(getRowByText('src')).getByRole('button', {name: 'Collapse row'}),
     ).toHaveAttribute('aria-expanded', 'true');
+  });
+});
+
+// =============================================================================
+// Whole-row-click expansion
+// =============================================================================
+
+describe('useTableTreeData — row-click expansion', () => {
+  it('does not toggle on row click when hasRowClickExpansion is unset', async () => {
+    const user = userEvent.setup();
+    render(<TreeTable />);
+
+    await user.click(within(getRowByText('src')).getByText('src'));
+
+    // Row body click is inert by default: subtree stays collapsed.
+    expect(screen.queryByText('components')).toBeNull();
+    expect(
+      within(getRowByText('src')).getByRole('button', {name: 'Expand row'}),
+    ).toBeInTheDocument();
+  });
+
+  it('expands an expandable row when its body is clicked', async () => {
+    const user = userEvent.setup();
+    render(<TreeTable hasRowClickExpansion />);
+
+    await user.click(within(getRowByText('src')).getByText('src'));
+
+    expect(screen.getByText('components')).toBeInTheDocument();
+    expect(screen.getByText('utils.ts')).toBeInTheDocument();
+    expect(
+      within(getRowByText('src')).getByRole('button', {name: 'Collapse row'}),
+    ).toBeInTheDocument();
+  });
+
+  it('collapses an expanded row when its body is clicked', async () => {
+    const user = userEvent.setup();
+    render(<TreeTable hasRowClickExpansion defaultExpandedIds={['src']} />);
+
+    expect(screen.getByText('components')).toBeInTheDocument();
+
+    await user.click(within(getRowByText('src')).getByText('src'));
+
+    expect(screen.queryByText('components')).toBeNull();
+    expect(
+      within(getRowByText('src')).getByRole('button', {name: 'Expand row'}),
+    ).toBeInTheDocument();
+  });
+
+  it('does not toggle when a leaf row body is clicked', async () => {
+    const user = userEvent.setup();
+    render(<TreeTable hasRowClickExpansion />);
+
+    const before = screen.getAllByRole('row').length;
+    await user.click(within(getRowByText('README.md')).getByText('README.md'));
+
+    // Leaf has no expansion: row count is unchanged.
+    expect(screen.getAllByRole('row')).toHaveLength(before);
+  });
+
+  it('toggles once when the chevron is clicked (no double-toggle via row click)', async () => {
+    const user = userEvent.setup();
+    const onToggle = vi.fn();
+
+    function SpyTree() {
+      const {visibleData, treeConfig} = useTableTreeState<FileRow>({
+        data: fileTree,
+        idKey: 'id',
+      });
+      const tree = useTableTreeData({
+        ...treeConfig,
+        hasRowClickExpansion: true,
+        onToggleItem: item => {
+          onToggle(item);
+          treeConfig.onToggleItem(item);
+        },
+      });
+      return (
+        <Table
+          data={visibleData}
+          columns={columns}
+          idKey="id"
+          plugins={{tree}}
+        />
+      );
+    }
+
+    render(<SpyTree />);
+
+    await user.click(
+      within(getRowByText('src')).getByRole('button', {name: 'Expand row'}),
+    );
+
+    // The chevron stops propagation, so a chevron click toggles exactly once.
+    expect(onToggle).toHaveBeenCalledTimes(1);
+    expect(screen.getByText('components')).toBeInTheDocument();
+  });
+
+  it('does not toggle when an interactive control inside the row is clicked', async () => {
+    const user = userEvent.setup();
+    // Compose with selection: each row carries a checkbox in its own column.
+    function TreeWithSelection() {
+      const [selectedKeys, setSelectedKeys] = useState<Set<string>>(
+        () => new Set(),
+      );
+      const {visibleData, treeConfig} = useTableTreeState<FileRow>({
+        data: fileTree,
+        idKey: 'id',
+      });
+      const {selectionConfig} = useTableSelectionState<FileRow>({
+        data: visibleData,
+        idKey: 'id',
+        selectedKeys,
+        setSelectedKeys,
+      });
+      const selection = useTableSelection<FileRow>(selectionConfig);
+      const tree = useTableTreeData({
+        ...treeConfig,
+        hasRowClickExpansion: true,
+      });
+      return (
+        <Table
+          data={visibleData}
+          columns={columns}
+          idKey="id"
+          plugins={{tree, selection}}
+        />
+      );
+    }
+
+    render(<TreeWithSelection />);
+
+    const srcRow = getRowByText('src');
+    const cells = within(srcRow).getAllByRole('cell');
+    await user.click(within(cells[0]).getByRole('checkbox'));
+
+    // Clicking the checkbox selects the row but must NOT expand it.
+    expect(screen.queryByText('components')).toBeNull();
+    expect(
+      within(getRowByText('src')).getByRole('button', {name: 'Expand row'}),
+    ).toBeInTheDocument();
+  });
+
+  it('is a no-op on flat data even when hasRowClickExpansion is set', async () => {
+    const user = userEvent.setup();
+    const flat: FileRow[] = [
+      {id: 'a', name: 'a.txt', size: 1},
+      {id: 'b', name: 'b.txt', size: 2},
+    ];
+    render(<TreeTable data={flat} hasRowClickExpansion />);
+
+    const before = screen.getAllByRole('row').length;
+    await user.click(within(getRowByText('a.txt')).getByText('a.txt'));
+
+    expect(screen.getAllByRole('row')).toHaveLength(before);
   });
 });
 

@@ -13,7 +13,7 @@
  * - /packages/core/src/Selector/Selector.test.tsx
  * - /packages/core/src/Selector/index.ts
  * - /apps/storybook/stories/InputGroup.stories.tsx
- * - /packages/cli/templates/blocks/components/Selector/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Selector/ (showcase blocks)
  */
 
 import React, {
@@ -963,8 +963,15 @@ export function Selector<T extends SelectorOptionType>(
 
     // Nothing matched across every group/option: show the empty state.
     if (isSearching && filteredItems.length === 0) {
+      // role="presentation" keeps the message out of the listbox's
+      // accessibility tree (role="listbox" only permits option/group
+      // children); the no-results outcome is announced via the
+      // result-count live region instead.
       return [
-        <div key="empty" {...stylex.props(styles.emptyState)}>
+        <div
+          key="empty"
+          role="presentation"
+          {...stylex.props(styles.emptyState)}>
           No results found
         </div>,
       ];
@@ -1024,6 +1031,10 @@ export function Selector<T extends SelectorOptionType>(
 
     return elements;
   }, [options, renderItem, hasSearch, searchQuery, filteredItems]);
+
+  // The detached message box renders its own leading status icon, so the
+  // on-field icon would duplicate it — keep the chevron indicator instead.
+  const showStatusIcon = status != null && statusVariant !== 'detached';
 
   const selectorContent = (
     <>
@@ -1125,10 +1136,10 @@ export function Selector<T extends SelectorOptionType>(
         <span
           {...stylex.props(
             styles.triggerIcon,
-            !status && popover.isOpen && styles.triggerIconOpen,
-            status && styles.triggerIconStatus,
+            !showStatusIcon && popover.isOpen && styles.triggerIconOpen,
+            showStatusIcon && styles.triggerIconStatus,
           )}>
-          {status ? (
+          {showStatusIcon ? (
             <Icon
               icon={STATUS_ICON_MAP[status.type]}
               size="sm"

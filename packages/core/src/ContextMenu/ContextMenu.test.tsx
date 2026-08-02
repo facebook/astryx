@@ -136,6 +136,21 @@ describe('ContextMenu', () => {
     expect(HTMLElement.prototype.hidePopover).toHaveBeenCalled();
   });
 
+  it('closes the menu when Tab is pressed inside it (APG menu pattern)', () => {
+    render(
+      <ContextMenu items={[{label: 'Item 1'}]}>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+
+    fireEvent.contextMenu(screen.getByText('Right-click me'));
+    expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
+
+    const menu = screen.getByRole('menu', {hidden: true});
+    fireEvent.keyDown(menu, {key: 'Tab'});
+    expect(HTMLElement.prototype.hidePopover).toHaveBeenCalled();
+  });
+
   it('ignores Escape during IME composition', () => {
     render(
       <ContextMenu items={[{label: 'Item 1'}]}>
@@ -552,7 +567,7 @@ describe('ContextMenu selectable items', () => {
             <ContextMenuRadioGroup
               value="name"
               onChange={() => {}}
-              aria-label="Sort by">
+              label="Sort by">
               <ContextMenuRadioItem value="name" label="Sort by name" />
               <ContextMenuRadioItem value="date" label="Sort by date" />
             </ContextMenuRadioGroup>
@@ -587,7 +602,7 @@ describe('ContextMenu selectable items', () => {
             <ContextMenuRadioGroup
               value="name"
               onChange={onSort}
-              aria-label="Sort by">
+              label="Sort by">
               <ContextMenuRadioItem value="name" label="Sort by name" />
               <ContextMenuRadioItem value="date" label="Sort by date" />
             </ContextMenuRadioGroup>

@@ -14,6 +14,7 @@ import {render, screen, fireEvent, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Button} from './Button';
 import {Badge} from '../Badge/Badge';
+import {InternationalizationProvider} from '../i18n';
 
 describe('Button', () => {
   it('renders label as visible text', () => {
@@ -444,6 +445,21 @@ describe('Button', () => {
 
     rerender(<Button label="Submit" isLoading />);
     expect(liveRegion).toHaveTextContent('Loading');
+  });
+
+  it('localizes the loading announcement through the i18n catalog', () => {
+    render(
+      <InternationalizationProvider
+        locale="fr"
+        overrides={{fr: {'@astryx.button.loading': 'Chargement'}}}>
+        <Button label="Submit" isLoading />
+      </InternationalizationProvider>,
+    );
+    const button = screen.getByRole('button');
+    // The Spinner also has role="status", so grab the live region explicitly.
+    const regions = button.querySelectorAll('[role="status"]');
+    const liveRegion = regions[regions.length - 1];
+    expect(liveRegion).toHaveTextContent('Chargement');
   });
 
   describe('elevation', () => {

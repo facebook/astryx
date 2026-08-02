@@ -1,0 +1,21 @@
+{
+  "extends": "./tsconfig.strict.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "declarationMap": false,
+    "rootDir": "../..",
+    "outDir": "/tmp/astryx-dts-build",
+    "customConditions": ["source"]
+  },
+  "include": [
+    "api/**/*.mjs",
+    "api/**/*.d.ts",
+    "foundation/**/*.d.ts",
+    "authoring/**/*.d.ts",
+    "clients/cli/lib/*.d.ts",
+    "assets/codemods/*.d.ts"
+  ],
+  "exclude": ["**/*.test.mjs"]
+}

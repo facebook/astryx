@@ -28,7 +28,7 @@
  * - /packages/core/src/Banner/Banner.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Banner/index.ts (exports if types change)
  * - /apps/storybook/stories/Banner.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Banner/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Banner/ (showcase blocks)
  */
 
 import {useId, useState, type ReactNode} from 'react';
@@ -243,10 +243,10 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-container'],
   },
   headerCardWithContent: {
-    borderTopLeftRadius: radiusVars['--radius-container'],
-    borderTopRightRadius: radiusVars['--radius-container'],
-    borderBottomLeftRadius: 0,
-    borderBottomRightRadius: 0,
+    borderStartStartRadius: radiusVars['--radius-container'],
+    borderStartEndRadius: radiusVars['--radius-container'],
+    borderEndStartRadius: 0,
+    borderEndEndRadius: 0,
   },
   // When there's only a title (no description) and actions, center everything vertically
   headerCentered: {
@@ -305,8 +305,8 @@ const styles = stylex.create({
     borderBottomColor: colorVars['--color-border'],
   },
   contentAreaCard: {
-    borderBottomLeftRadius: radiusVars['--radius-container'],
-    borderBottomRightRadius: radiusVars['--radius-container'],
+    borderEndStartRadius: radiusVars['--radius-container'],
+    borderEndEndRadius: radiusVars['--radius-container'],
   },
   chevron: {
     display: 'inline-flex',

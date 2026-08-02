@@ -11,7 +11,7 @@
  * - /packages/core/src/Field/Field.doc.mjs (compat docs when public API changes)
  * - /packages/core/src/FieldStatus/index.ts (exports if types change)
  * - /packages/core/src/Field/index.ts (compat re-export if public API changes)
- * - /packages/cli/templates/blocks/components/FieldStatus/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/FieldStatus/ (showcase blocks)
  */
 
 'use client';
@@ -56,8 +56,8 @@ const styles = stylex.create({
     paddingBlockStart: `calc(${spacingVars['--spacing-1-5']} + ${spacingVars['--spacing-2']})`,
     paddingBlockEnd: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-2'],
-    borderBottomLeftRadius: radiusVars['--radius-element'],
-    borderBottomRightRadius: radiusVars['--radius-element'],
+    borderEndStartRadius: radiusVars['--radius-element'],
+    borderEndEndRadius: radiusVars['--radius-element'],
   },
   detached: {
     marginTop: spacingVars['--spacing-1'],
@@ -216,7 +216,18 @@ export function FieldStatus({
       {variant === 'detached' ? (
         <span {...stylex.props(styles.detachedContent)}>
           <span {...stylex.props(styles.detachedIcon)}>
-            <Icon icon={statusIconMap[type]} size="sm" color="inherit" />
+            <Icon
+              icon={statusIconMap[type]}
+              size="sm"
+              color="inherit"
+              // Stable theme target on the detached message box's leading glyph
+              // itself, so a theme can restyle just this icon (color, size) —
+              // and each status — via `defineTheme`. Same-element rules in
+              // @layer astryx-theme win over the icon's own base
+              // width/height/fontSize, which a field-level target could not
+              // reach.
+              {...themeProps('field-status-icon', {type})}
+            />
           </span>
           <span>{message}</span>
         </span>

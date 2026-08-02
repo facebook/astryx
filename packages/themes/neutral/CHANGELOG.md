@@ -1,5 +1,19 @@
 # @xds/theme-neutral
 
+# 0.2.0
+
+#### Fixes
+
+- Neutral theme: express the light `--color-border` as `#00000014` (translucent black) instead of the opaque `#ebebeb`. Same rendered color over a white surface, but it now blends over any background — matching the translucent dark-mode value.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @kentonquatman
+
+---
+
 # 0.1.9
 
 ---

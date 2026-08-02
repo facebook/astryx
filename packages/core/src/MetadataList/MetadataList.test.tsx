@@ -5,6 +5,7 @@ import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {MetadataList} from './MetadataList';
 import {MetadataListItem} from './MetadataListItem';
+import {InternationalizationProvider} from '../i18n';
 
 describe('MetadataList', () => {
   it('renders a description list with items', () => {
@@ -85,6 +86,29 @@ describe('MetadataList', () => {
 
     await user.click(screen.getByText('Show less'));
     expect(screen.queryByText('B')).not.toBeInTheDocument();
+  });
+
+  it('localizes the show more / show less labels through the i18n catalog', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <InternationalizationProvider
+        locale="fr"
+        overrides={{
+          fr: {
+            '@astryx.metadataList.showMore': 'Afficher plus',
+            '@astryx.metadataList.showLess': 'Afficher moins',
+          },
+        }}>
+        <MetadataList maxNumOfItems={1}>
+          <MetadataListItem label="A">1</MetadataListItem>
+          <MetadataListItem label="B">2</MetadataListItem>
+        </MetadataList>
+      </InternationalizationProvider>,
+    );
+
+    await user.click(screen.getByText('Afficher plus'));
+    expect(screen.getByText('Afficher moins')).toBeInTheDocument();
   });
 
   it('does not show toggle in horizontal mode even with maxNumOfItems', () => {

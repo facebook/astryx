@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'AvatarStatusDot',
@@ -21,7 +21,7 @@ export const docs = {
       name: 'label',
       type: 'string',
       description:
-        'Accessible label describing the status. Inside an Avatar it is composed into the avatar\'s accessible name (e.g. "Jane Doe, Online") — the Avatar root is role="img", which prunes child semantics, so the composed name is how the status reaches assistive tech. Standalone dots expose role="img" with this label directly.',
+        'Accessible label describing the status. Inside an Avatar it is composed into the avatar\'s accessible name (e.g. "Jane Doe, Online"); the Avatar root is role="img", which prunes child semantics, so the composed name is how the status reaches assistive tech. Standalone dots expose role="img" with this label directly.',
     },
     {
       name: 'icon',
@@ -80,7 +80,7 @@ export const docsDense = {
     variant:
       'colour + shape variant: success filled, neutral ring, error minus',
     label:
-      'accessible status label; composed into the Avatar accessible name ("Jane Doe, Online") — standalone dots expose role="img" with it directly',
+      'accessible status label; composed into the Avatar accessible name ("Jane Doe, Online"); standalone dots expose role="img" with it directly',
     icon: 'icon centered in dot (hidden at tiny sizes); replaces the built-in shape glyph, so differ it per status',
   },
 };

@@ -10,7 +10,7 @@
 
 import * as fs from 'node:fs';
 import {AstryxError} from '../../../error.mjs';
-import {ERROR_CODES} from '../../../../lib/error-codes.mjs';
+import {ERROR_CODES} from '../../../../foundation/response/error-codes.mjs';
 import {findShowcase} from '../../../template/template.mjs';
 
 /**
@@ -24,7 +24,7 @@ import {findShowcase} from '../../../template/template.mjs';
  * @param {string} ctx.name - the caller's original input, used in the error message
  * @param {string|null} [ctx.packageScope] - scope block discovery + the error to a package
  * @param {boolean} [ctx.resolve] - when false, skip discovery and treat as not found
- * @returns {Promise<import('../../../../types/component').ComponentDetailShowcaseResponse>}
+ * @returns {Promise<import('../../component.type.mjs').ComponentDetailShowcaseResponse>}
  */
 export async function componentDetailShowcase(componentName, {cwd, name, packageScope = null, resolve = true}) {
   const match = resolve

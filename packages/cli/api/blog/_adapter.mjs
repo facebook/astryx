@@ -14,8 +14,8 @@
  */
 
 import {AstryxError} from '../error.mjs';
-import {ERROR_CODES} from '../../lib/error-codes.mjs';
-import {SITE_URL, SITE_ORIGIN} from '../../lib/site.mjs';
+import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
+import {SITE_URL, SITE_ORIGIN} from './_site.mjs';
 
 /** Abort a feed/post fetch that hangs, and cap how much we'll read. */
 const FETCH_TIMEOUT_MS = 15000;
@@ -173,10 +173,10 @@ function slugFromLink(link) {
 
 /**
  * @param {string} xml
- * @returns {import('../../types/blog').BlogPost[]}
+ * @returns {import('./blog.type.mjs').BlogPost[]}
  */
 function parseFeed(xml) {
-  /** @type {import('../../types/blog').BlogPost[]} */
+  /** @type {import('./blog.type.mjs').BlogPost[]} */
   const items = [];
   const re = /<item>([\s\S]*?)<\/item>/g;
   let m;
@@ -200,7 +200,7 @@ function parseFeed(xml) {
 /**
  * Fetch the canonical feed and parse it into posts. Shared by both leaves; the
  * envelope's `feedUrl` lets a caller hit the RSS feed directly.
- * @returns {Promise<import('../../types/blog').BlogListData>}
+ * @returns {Promise<import('./blog.type.mjs').BlogListData>}
  */
 export async function loadFeed() {
   const xml = await fetchText(FEED_URL);

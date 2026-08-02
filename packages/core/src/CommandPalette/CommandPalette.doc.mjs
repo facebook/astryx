@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docs = {
   name: 'CommandPalette',
   displayName: 'Command Palette',
@@ -22,7 +22,7 @@ export const docs = {
   description: 'Root component. Manages open state, search, keyboard navigation, and composition slots.',
   // Intentionally a contained isInline preview, not playground.overlay: the
   // component stays visible on load and knobs stay live, whereas a real
-  // showModal() overlay makes the page inert — see PlaygroundConfig.overlay
+  // showModal() overlay makes the page inert — see ComponentPlaygroundConfig.overlay
   // in docs-types.ts (#3657).
   playground: {
     defaults: {
@@ -162,7 +162,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsZh = {
   usage: {
     description: 'CommandPalette is a searchable dialog for quick access to commands, navigation, and actions. Use it as a keyboard-driven launcher powered by SearchSource for filtering and selection.',
@@ -175,7 +175,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
     'searchSource-driven command palette dialog; filtering, keyboard nav, grouping, selection; same SearchSource interface as Typeahead',

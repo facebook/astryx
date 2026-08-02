@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'TextArea',
@@ -98,7 +98,7 @@ export const docs = {
       name: 'maxLength',
       type: 'number',
       description:
-        'Maximum number of characters allowed. When set, a character counter (current/max) is displayed below the textarea. Does not enforce the limit natively; the counter shows error styling when exceeded.',
+        'Maximum number of characters allowed. When set, a character counter (current/max) is displayed inside the input container, anchored to the bottom-right beneath the text. Does not enforce the limit natively; when exceeded the counter turns red and shows a warning icon (a non-color cue), and screen-reader users hear the remaining/over-limit count announced.',
     },
     {
       name: 'status',
@@ -198,7 +198,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docsZh = {
   name: 'TextArea',
   displayName: 'Text Area',
@@ -374,7 +374,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'Multi-line text input for collecting longer user input.',
   usage: {
@@ -407,7 +407,7 @@ export const docsDense = {
     isLoading: 'Loading state w/ spinner inside input.',
     placeholder: 'Placeholder when textarea empty.',
     rows: 'Visible text rows.',
-    maxLength: 'Max chars allowed. Shows counter (current/max) below textarea. No native enforcement.',
+    maxLength: 'Max chars allowed. Shows counter (current/max) inside the container, bottom-right beneath the text. No native enforcement; over-limit shows red + a warning icon and is announced to screen readers.',
     status: 'Colored border+icon status. Optional floating message below textarea.',
     statusVariant: 'How status message is placed: attached overlaps below input; detached floats below w/ spacing; tooltip hides the box and shows it on the status icon.',
     labelTooltip: 'Tooltip in info icon at label end.',

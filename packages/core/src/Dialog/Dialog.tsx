@@ -13,7 +13,7 @@
  * - /packages/core/src/Dialog/Dialog.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Dialog/index.ts (exports if types change)
  * - /apps/storybook/stories/Dialog.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Dialog/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Dialog/ (showcase blocks)
  */
 
 import {
@@ -104,15 +104,37 @@ export type DialogVariant = keyof DialogVariantMap;
  */
 export type DialogPurpose = 'required' | 'form' | 'info';
 
-/**
- * Position configuration for static dialog positioning
- */
-export interface DialogPosition {
-  bottom?: number | string;
-  left?: number | string;
-  right?: number | string;
+/** Block-axis offsets — always allowed, independent of inline direction. */
+interface DialogBlockPosition {
   top?: number | string;
+  bottom?: number | string;
 }
+
+/**
+ * Static position for a dialog. The inline axis is logical XOR physical — the
+ * type forbids mixing the two, so a single dialog can't be positioned both ways:
+ * - Logical `start`/`end` map to `inset-inline-*` and mirror under RTL (preferred).
+ * - Physical `left`/`right` are deprecated, do not mirror, and are removed in a
+ *   future major.
+ * Block-axis `top`/`bottom` may be combined with either.
+ */
+export type DialogPosition =
+  | (DialogBlockPosition & {
+      /** Logical inline-start offset (`inset-inline-start`); mirrors under RTL. */
+      start?: number | string;
+      /** Logical inline-end offset (`inset-inline-end`); mirrors under RTL. */
+      end?: number | string;
+      left?: never;
+      right?: never;
+    })
+  | (DialogBlockPosition & {
+      /** @deprecated Use `start`. Physical (never mirrors); removed in a future major. */
+      left?: number | string;
+      /** @deprecated Use `end`. Physical (never mirrors); removed in a future major. */
+      right?: number | string;
+      start?: never;
+      end?: never;
+    });
 
 const enterDirectional = stylex.keyframes({
   from: {
@@ -215,28 +237,60 @@ const dynamicStyles = stylex.create({
     maxHeight: typeof maxHeight === 'number' ? `${maxHeight}px` : maxHeight,
   }),
   position: (
-    top: number | string | undefined,
-    right: number | string | undefined,
-    bottom: number | string | undefined,
-    left: number | string | undefined,
+    top: string,
+    insetInlineStart: string,
+    insetInlineEnd: string,
+    right: string,
+    bottom: string,
+    left: string,
   ) => ({
-    // When position is set, disable auto margin and use fixed positioning
+    // Assigns pre-resolved offsets from resolveDialogPositionOffsets(). This
+    // literal has no logic — StyleX can't analyze a helper, so the values
+    // (logical start/end → inset-inline-*, physical left/right, `auto`
+    // fallbacks) are computed at the call site and passed in.
     margin: 0,
-    top: top !== undefined ? formatPosition(top) : 'auto',
-    right: right !== undefined ? formatPosition(right) : 'auto',
-    bottom: bottom !== undefined ? formatPosition(bottom) : 'auto',
-    left: left !== undefined ? formatPosition(left) : 'auto',
+    top,
+    insetInlineStart,
+    insetInlineEnd,
+    // eslint-disable-next-line @astryx/no-physical-properties -- deprecated consumer-facing DialogPosition.right; physical by contract, superseded by logical `end`
+    right,
+    bottom,
+    // eslint-disable-next-line @astryx/no-physical-properties -- deprecated consumer-facing DialogPosition.left; physical by contract, superseded by logical `start`
+    left,
   }),
 });
 
 /**
  * Format position value - numbers become pixels, strings pass through, undefined becomes null
  */
-function formatPosition(value: number | string | undefined): string | null {
-  if (value === undefined) {
-    return null;
-  }
+function formatPosition(value: number | string): string {
   return typeof value === 'number' ? `${value}px` : value;
+}
+
+/**
+ * Map a {@link DialogPosition} to resolved CSS offsets. Logical `start`/`end`
+ * become `inset-inline-*` (mirror under RTL); physical `left`/`right` stay
+ * physical. The union type guarantees at most one inline pair is set, so no
+ * precedence is needed — each unset offset falls back to `auto`.
+ *
+ * Not re-exported from the package; internal to Dialog. Directly unit-tested
+ * so the mapping is verified without StyleX class compilation.
+ *
+ * @see DialogPosition
+ */
+export function resolveDialogPositionOffsets(position: DialogPosition) {
+  const {top, bottom, start, end, left, right} = position;
+
+  return {
+    top: top !== undefined ? formatPosition(top) : 'auto',
+    bottom: bottom !== undefined ? formatPosition(bottom) : 'auto',
+    // Logical offsets mirror under RTL (preferred replacements).
+    insetInlineStart: start !== undefined ? formatPosition(start) : 'auto',
+    insetInlineEnd: end !== undefined ? formatPosition(end) : 'auto',
+    // Deprecated physical offsets never mirror.
+    left: left !== undefined ? formatPosition(left) : 'auto',
+    right: right !== undefined ? formatPosition(right) : 'auto',
+  };
 }
 
 export interface DialogProps extends BaseProps<HTMLDialogElement> {
@@ -632,12 +686,17 @@ export function Dialog({
           styles.backdrop,
           !isFullscreen && dynamicStyles.sizing(width, maxHeight),
           hasPosition &&
-            dynamicStyles.position(
-              position?.top,
-              position?.right,
-              position?.bottom,
-              position?.left,
-            ),
+            (() => {
+              const o = resolveDialogPositionOffsets(position);
+              return dynamicStyles.position(
+                o.top,
+                o.insetInlineStart,
+                o.insetInlineEnd,
+                o.right,
+                o.bottom,
+                o.left,
+              );
+            })(),
           isFullscreen && styles.fullscreen,
           xstyle,
         ),

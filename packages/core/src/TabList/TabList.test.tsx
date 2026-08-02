@@ -77,22 +77,10 @@ describe('TabList', () => {
 
   it('does not set aria-orientation on the nav (invalid for role navigation)', () => {
     // Regression: aria-orientation is not an allowed attribute on the
-    // navigation role and produces an axe aria-allowed-attr violation. The
-    // `orientation` prop must drive keyboard/hint behavior without emitting
-    // this attribute, regardless of the value passed.
-    const {rerender} = render(
+    // navigation role and produces an axe aria-allowed-attr violation.
+    // TabList deliberately never sets this attribute.
+    render(
       <TabList value="home" onChange={() => {}}>
-        <Tab value="home" label="Home" />
-        <Tab value="settings" label="Settings" />
-      </TabList>,
-    );
-
-    expect(screen.getByRole('navigation')).not.toHaveAttribute(
-      'aria-orientation',
-    );
-
-    rerender(
-      <TabList value="home" onChange={() => {}} orientation="vertical">
         <Tab value="home" label="Home" />
         <Tab value="settings" label="Settings" />
       </TabList>,

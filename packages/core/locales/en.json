@@ -247,6 +247,10 @@
     "defaultMessage": "Use arrow keys to move between avatars",
     "description": "Screen-reader-only instruction attached (via aria-describedby) to a group of interactive avatars that share a single Tab stop. Tells keyboard users the Left/Right arrow keys move focus between the avatars. Only announced when the group has interactive (link/button) avatars."
   },
+  "@astryx.avatarGroup.overflow": {
+    "defaultMessage": "{count, number} more",
+    "description": "Accessible name for the \"+N\" overflow indicator at the end of an AvatarGroup — announces how many additional avatars are not shown. Example: `5 more`. The visible \"+N\" text is unaffected; this is the aria-label only."
+  },
   "@astryx.banner.dismiss": {
     "defaultMessage": "Dismiss",
     "description": "\"Dismiss\" = close/hide this notification (not \"reject a person\"). Aria label AND tooltip on the small X button on a Banner."
@@ -406,6 +410,10 @@
   "@astryx.multiSelector.searchOptions": {
     "defaultMessage": "Search options",
     "description": "Screen-reader-only accessible name for that same search input inside a MultiSelector."
+  },
+  "@astryx.multiSelector.selectAllPartiallySelected": {
+    "defaultMessage": "{label}, partially selected",
+    "description": "Accessible name for the MultiSelector select-all option while only some options are selected. `{label}` is the visible select-all label (e.g. \"Select all\"). ARIA forbids aria-selected=\"mixed\" on options, so the indeterminate state is conveyed through the name instead. \"Partially\" = some but not all."
   },
   "@astryx.popover.close": {
     "defaultMessage": "Close popover",
@@ -683,6 +691,10 @@
     "defaultMessage": "Expand",
     "description": "\"Expand\" = reveal more, not grow physically. Aria label AND tooltip on the same toggle when currently collapsed. Pairs with `banner.collapse`."
   },
+  "@astryx.button.loading": {
+    "defaultMessage": "Loading",
+    "description": "Screen-reader-only live-region announcement while a Button is in its loading state (spinner shown, action in flight). Progressive sense (\"work in progress\"), not a noun. Kept separate from `typeahead.loading` — translations may diverge."
+  },
   "@astryx.chatComposerDrawer.expand": {
     "defaultMessage": "Expand {label}",
     "description": "Screen-reader-only label on the ChatComposerDrawer toggle when the drawer is collapsed. `{label}` is the drawer's visible name — example: `Expand Attachments`. Pairs with `collapse`."
@@ -747,6 +759,14 @@
     "defaultMessage": "Code",
     "description": "Screen-reader-only fallback name for a code-snippet scroll container when the code's language is unknown. \"Code\" = source code, not secret code or code of conduct."
   },
+  "@astryx.field.optional": {
+    "defaultMessage": "Optional",
+    "description": "Visible indicator shown next to a form field's label when the field is optional (isOptional). Mutually exclusive with the required indicator. Very short — appears inline after the label text."
+  },
+  "@astryx.field.required": {
+    "defaultMessage": "Required",
+    "description": "Visible indicator shown next to a form field's label when the field must be filled in (isRequired). Mutually exclusive with the optional indicator. Very short — appears inline after the label text."
+  },
   "@astryx.fileInput.clearLabel": {
     "defaultMessage": "Clear {label}",
     "description": "Screen-reader-only label on the X that removes the selected file from a FileInput. Example: `Clear Attachment`, `Clear Résumé`."
@@ -759,9 +779,21 @@
     "defaultMessage": "{label}, {fileNames}",
     "description": "Accessible name for a FileInput trigger that has files attached, composing the field label with the selected filenames. Example: `Attachments, report.pdf, notes.txt`."
   },
+  "@astryx.keyboardHint.toNavigate": {
+    "defaultMessage": "to navigate",
+    "description": "Trailing text in the keyboard-hint badge, shown after arrow-key icons — reads as `← → to navigate`. Lowercase sentence fragment completing the visual phrase; the badge is aria-hidden, so this is for sighted users only."
+  },
   "@astryx.lightbox.mediaViewer": {
     "defaultMessage": "Media viewer",
     "description": "Screen-reader-only fallback name for the Lightbox dialog when the current media item has no alt text. Should rarely render — consumers should provide alt."
+  },
+  "@astryx.metadataList.showMore": {
+    "defaultMessage": "Show more",
+    "description": "Button label under a MetadataList that reveals items hidden beyond the configured maximum. Toggles with `metadataList.showLess` — keep the pair parallel in your language."
+  },
+  "@astryx.metadataList.showLess": {
+    "defaultMessage": "Show less",
+    "description": "Button label under a MetadataList that re-hides the extra items revealed by `metadataList.showMore`. Keep the pair parallel."
   },
   "@astryx.mobileNav.navigation": {
     "defaultMessage": "Navigation",
@@ -850,6 +882,14 @@
   "@astryx.tableTree.expandAllRows": {
     "defaultMessage": "Expand all rows",
     "description": "Aria label for the Table tree-data header toggle when rows are collapsed and clicking it expands them."
+  },
+  "@astryx.textArea.charactersRemaining": {
+    "defaultMessage": "{count, number} {count, plural, one {character} other {characters}} remaining",
+    "description": "Screen-reader-only announcement of how many characters the user can still type before hitting a TextArea's maxLength. Announced politely as the count nears the limit. `{count}` is the number remaining — example: `12 characters remaining`."
+  },
+  "@astryx.textArea.charactersOverLimit": {
+    "defaultMessage": "{count, number} {count, plural, one {character} other {characters}} over the limit",
+    "description": "Screen-reader-only assertive announcement when the user has typed past a TextArea's maxLength. `{count}` is how many characters over — example: `3 characters over the limit`."
   },
   "@astryx.textInput.clearLabel": {
     "defaultMessage": "Clear {label}",

@@ -71,7 +71,8 @@ export const TallSheet: Story = {
           <Section padding={4}>
             <VStack gap={3}>
               <Text type="supporting" color="secondary">
-                Drag the handle down or press Escape to dismiss.
+                Drag the handle to resize between snap points; flick down to
+                dismiss or up to expand. Escape also dismisses.
               </Text>
               <Divider />
               {Array.from({length: 12}, (_, i) => (
@@ -90,7 +91,7 @@ export const TallSheet: Story = {
   },
 };
 
-export const AutoHeight: Story = {
+export const HugHeight: Story = {
   render: () => {
     const [isOpen, setIsOpen] = useState(false);
     return (
@@ -100,12 +101,12 @@ export const AutoHeight: Story = {
           isOpen={isOpen}
           onOpenChange={setIsOpen}
           label="Add a comment"
-          height="auto">
+          height="hug">
           <Section padding={4}>
             <VStack gap={4}>
               <Heading level={3}>Add a comment</Heading>
               <Text type="supporting" color="secondary">
-                The sheet fits its content up to the tall budget.
+                The sheet fits its content, up to 92% of the viewport.
               </Text>
               <Divider />
               <TextInput label="Title" value="" />

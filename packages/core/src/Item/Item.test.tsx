@@ -9,10 +9,34 @@
  * SYNC: When Item component changes, update tests to match new behavior
  */
 
+import {useRef} from 'react';
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Item} from './Item';
+
+/**
+ * Item in delegation mode: `interactiveRef` points at a nested control that
+ * owns the row's keyboard access and action. The row is an enlarged tap target
+ * that forwards surface clicks to that control (useClickableContainer).
+ */
+function DelegatingItem({onToggle}: {onToggle?: () => void}) {
+  const ref = useRef<HTMLInputElement>(null);
+  return (
+    <Item
+      label="Row"
+      interactiveRef={ref}
+      startContent={
+        <input
+          ref={ref}
+          type="checkbox"
+          aria-label="Pick row"
+          onChange={onToggle}
+        />
+      }
+    />
+  );
+}
 
 describe('Item', () => {
   // ===========================================================================
@@ -188,6 +212,70 @@ describe('Item', () => {
     const {container} = render(<Item label="Item" onClick={() => {}} />);
     const buttons = container.querySelectorAll('div button');
     expect(buttons).toHaveLength(1);
+  });
+
+  // ===========================================================================
+  // Interactive — interactiveRef (delegation to a nested control)
+  // ===========================================================================
+
+  it('renders no invisible button in interactiveRef (delegation) mode', () => {
+    const {container} = render(<DelegatingItem />);
+    // The nested control provides keyboard access — the row must not add a
+    // second focusable control for the same action (WCAG 4.1.2).
+    expect(container.querySelector('button')).not.toBeInTheDocument();
+  });
+
+  it('keeps the nested control as the only tab stop in interactiveRef mode', async () => {
+    const user = userEvent.setup();
+    render(<DelegatingItem />);
+    await user.tab();
+    expect(screen.getByRole('checkbox')).toHaveFocus();
+    // Next tab leaves the item entirely — the row itself is not focusable.
+    await user.tab();
+    expect(screen.getByRole('checkbox')).not.toHaveFocus();
+    expect(document.body).toHaveFocus();
+  });
+
+  it('delegates a row-surface click to the interactive control', async () => {
+    const user = userEvent.setup();
+    const onToggle = vi.fn();
+    render(<DelegatingItem onToggle={onToggle} />);
+    // Clicking the label (row surface) is forwarded to the checkbox.
+    await user.click(screen.getByText('Row'));
+    expect(onToggle).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not double-fire when the interactive control itself is clicked', async () => {
+    const user = userEvent.setup();
+    const onToggle = vi.fn();
+    render(<DelegatingItem onToggle={onToggle} />);
+    await user.click(screen.getByRole('checkbox'));
+    // The row must not re-forward the control's own click back to it.
+    expect(onToggle).toHaveBeenCalledTimes(1);
+  });
+
+  it('ignores onClick when interactiveRef is set (delegation wins, single tab stop)', async () => {
+    const user = userEvent.setup();
+    const onClick = vi.fn();
+    function ItemWithBoth() {
+      const ref = useRef<HTMLInputElement>(null);
+      return (
+        <Item
+          label="Row"
+          onClick={onClick}
+          interactiveRef={ref}
+          startContent={
+            <input ref={ref} type="checkbox" aria-label="Pick row" />
+          }
+        />
+      );
+    }
+    const {container} = render(<ItemWithBoth />);
+    // No invisible button (onClick is ignored in delegation mode)...
+    expect(container.querySelector('button')).not.toBeInTheDocument();
+    // ...and the checkbox is still the sole tab stop.
+    await user.tab();
+    expect(screen.getByRole('checkbox')).toHaveFocus();
   });
 
   // ===========================================================================

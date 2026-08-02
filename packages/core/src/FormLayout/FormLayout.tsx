@@ -12,17 +12,14 @@
  * - /packages/core/src/FormLayout/FormLayout.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/FormLayout/index.ts (exports if types change)
  * - /apps/storybook/stories/FormLayout.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/FormLayout/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/FormLayout/ (showcase blocks)
  */
 
 import {useMemo, type ReactNode} from 'react';
 import type {BaseProps} from '../BaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
-import {
-  FormLayoutContext,
-  type FormLayoutDirection,
-} from './FormLayoutContext';
+import {FormLayoutContext, type FormLayoutDirection} from './FormLayoutContext';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 

@@ -613,6 +613,28 @@ describe('Selector', () => {
       expect(within(listbox).getByText('No results found')).toBeInTheDocument();
     });
 
+    it('empty-state message is not exposed as a listbox child', async () => {
+      const user = userEvent.setup();
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Apple"
+          onChange={() => {}}
+          hasSearch
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      await user.type(screen.getByRole('combobox', h), 'xyz');
+
+      // role="listbox" only permits option/group children — the visual
+      // empty-state message must be presentational (it is announced through
+      // the result-count live region instead).
+      const listbox = screen.getByRole('listbox', h);
+      const empty = within(listbox).getByText('No results found');
+      expect(empty).toHaveAttribute('role', 'presentation');
+    });
+
     it('calls onChange when selecting a filtered option', async () => {
       const user = userEvent.setup();
       const onChange = vi.fn();
@@ -1218,6 +1240,36 @@ describe('Selector statusVariant forwarding', () => {
       'data-variant',
       'detached',
     );
+  });
+
+  it('keeps the on-field status icon for the attached variant', () => {
+    const {container} = render(
+      <Selector
+        label="Fruit"
+        options={['Apple', 'Banana']}
+        status={{type: 'error', message: 'Required'}}
+      />,
+    );
+    // Attached: the status glyph replaces the chevron indicator on the field.
+    expect(
+      container.querySelector('.astryx-selector-indicator-icon'),
+    ).toBeNull();
+  });
+
+  it('suppresses the on-field status icon for the detached variant', () => {
+    const {container} = render(
+      <Selector
+        label="Fruit"
+        options={['Apple', 'Banana']}
+        status={{type: 'error', message: 'Required'}}
+        statusVariant="detached"
+      />,
+    );
+    // Detached: the message box below carries its own leading icon, so the
+    // field keeps its chevron indicator rather than duplicating the glyph.
+    expect(
+      container.querySelector('.astryx-selector-indicator-icon'),
+    ).not.toBeNull();
   });
 });
 

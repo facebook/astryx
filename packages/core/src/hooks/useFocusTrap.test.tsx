@@ -50,6 +50,39 @@ function EscapeTrap({
   );
 }
 
+function NestedInnerTrap({onEscape}: {onEscape: () => void}) {
+  const {containerRef} = useFocusTrap<HTMLDivElement>({
+    isActive: true,
+    onEscape,
+  });
+  return (
+    <div ref={containerRef} data-testid="nested-inner">
+      <button type="button">inner-btn</button>
+    </div>
+  );
+}
+
+function NestedTraps({
+  onOuterEscape,
+  onInnerEscape,
+  showInner = true,
+}: {
+  onOuterEscape: () => void;
+  onInnerEscape: () => void;
+  showInner?: boolean;
+}) {
+  const {containerRef} = useFocusTrap<HTMLDivElement>({
+    isActive: true,
+    onEscape: onOuterEscape,
+  });
+  return (
+    <div ref={containerRef} data-testid="nested-outer">
+      <button type="button">outer-btn</button>
+      {showInner && <NestedInnerTrap onEscape={onInnerEscape} />}
+    </div>
+  );
+}
+
 function RestoreTrap({isActive}: {isActive: boolean}) {
   const {containerRef} = useFocusTrap<HTMLDivElement>({isActive});
   return (
@@ -117,6 +150,47 @@ describe('useFocusTrap tabbable model (infra-8)', () => {
     fireEvent.click(screen.getByTestId('focus-first'));
     // Focus skips the inert button and lands on the real one.
     expect(screen.getByTestId('real-btn')).toHaveFocus();
+  });
+
+  it('ignores an aria-hidden subtree when finding focusables', () => {
+    render(
+      <Trap>
+        <div aria-hidden="true">
+          <button type="button" data-testid="aria-hidden-btn">
+            Hidden from AT
+          </button>
+        </div>
+        <button type="button" data-testid="real-btn">
+          Real
+        </button>
+      </Trap>,
+    );
+    fireEvent.click(screen.getByTestId('focus-first'));
+    // An element AT cannot perceive must not be a trap tab stop (WCAG 4.1.2).
+    expect(screen.getByTestId('real-btn')).toHaveFocus();
+  });
+
+  it('excludes an aria-hidden focusable from the Tab wrap boundary', () => {
+    render(
+      <Trap>
+        <button type="button" data-testid="first">
+          First
+        </button>
+        <button type="button" data-testid="visible-last">
+          Visible last
+        </button>
+        <div aria-hidden="true">
+          <button type="button" data-testid="aria-hidden-btn">
+            Hidden from AT
+          </button>
+        </div>
+      </Trap>,
+    );
+    // The last VISIBLE-to-AT element is the wrap boundary: Tab from it wraps
+    // to the first element instead of landing on the aria-hidden button.
+    screen.getByTestId('visible-last').focus();
+    fireEvent.keyDown(document, {key: 'Tab'});
+    expect(screen.getByTestId('first')).toHaveFocus();
   });
 });
 
@@ -196,6 +270,36 @@ describe('useFocusTrap Escape coordination', () => {
     // a normal Escape still works
     fireEvent.keyDown(document, {key: 'Escape'});
     expect(onEscape).toHaveBeenCalledTimes(1);
+  });
+
+  it('resolves Escape to the DOM-nested inner trap when both mount in one commit', () => {
+    const outer = vi.fn();
+    const inner = vi.fn();
+    // Outer and inner mount in the SAME React commit. React runs child
+    // effects before parent effects, so the inner trap is PUSHED first —
+    // DOM containment, not push order, must decide who answers Escape.
+    render(<NestedTraps onOuterEscape={outer} onInnerEscape={inner} />);
+    fireEvent.keyDown(document, {key: 'Escape'});
+    expect(inner).toHaveBeenCalledTimes(1);
+    expect(outer).not.toHaveBeenCalled();
+  });
+
+  it('falls back to the outer trap once the nested inner trap unmounts', () => {
+    const outer = vi.fn();
+    const inner = vi.fn();
+    const {rerender} = render(
+      <NestedTraps onOuterEscape={outer} onInnerEscape={inner} />,
+    );
+    rerender(
+      <NestedTraps
+        onOuterEscape={outer}
+        onInnerEscape={inner}
+        showInner={false}
+      />,
+    );
+    fireEvent.keyDown(document, {key: 'Escape'});
+    expect(outer).toHaveBeenCalledTimes(1);
+    expect(inner).not.toHaveBeenCalled();
   });
 
   it('does not respond after the trap is deactivated', () => {

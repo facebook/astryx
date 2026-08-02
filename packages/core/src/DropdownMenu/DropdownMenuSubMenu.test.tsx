@@ -8,7 +8,7 @@
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {useState} from 'react';
-import {render, screen, waitFor} from '@testing-library/react';
+import {render, screen, waitFor, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {DropdownMenu} from './DropdownMenu';
 import {DropdownMenuItem} from './DropdownMenuItem';
@@ -510,6 +510,34 @@ describe('DropdownMenuSubMenu accessibility (WCAG 2.2 / APG)', () => {
     expect(onPick).toHaveBeenCalledWith('data');
   });
 
+  // Regression: hovering the submenu trigger while a sibling item still holds
+  // focus must move the single focus-driven highlight onto the trigger — not
+  // leave two items highlighted at once (the trigger via :hover, the sibling
+  // via :focus). Mirrors DropdownMenuItem's hover-focus behavior.
+  it('moves focus to the submenu trigger on hover, keeping a single highlight', async () => {
+    const user = userEvent.setup();
+    render(<MoveMenu />);
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+
+    const rename = screen.getByRole('menuitem', {
+      name: 'Rename',
+      hidden: true,
+    });
+    const trigger = screen.getByRole('menuitem', {
+      name: /Move to/,
+      hidden: true,
+    });
+
+    rename.focus();
+    expect(rename).toHaveFocus();
+
+    // A mouse hover over the submenu trigger moves focus onto it, so the single
+    // focus-driven highlight follows the pointer instead of leaving two.
+    fireEvent.pointerMove(trigger, {pointerType: 'mouse'});
+    expect(trigger).toHaveFocus();
+    expect(rename).not.toHaveFocus();
+  });
+
   // 1.4.13 Content on Hover or Focus: the flyout stays open while the pointer
   // is over it (moving onto the flyout must not dismiss it).
   it('keeps the flyout open while the pointer is over it', async () => {
@@ -631,5 +659,22 @@ describe('DropdownMenuSubMenu accessibility (WCAG 2.2 / APG)', () => {
         screen.getByRole('menuitem', {name: 'Folder A', hidden: true}),
       ).toHaveFocus();
     });
+  });
+});
+
+describe('DropdownMenuSubMenu theming slots', () => {
+  it('exposes a themeable slot on the submenu indicator icon', async () => {
+    const user = userEvent.setup();
+    render(<MoveMenu />);
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    const trigger = screen.getByRole('menuitem', {
+      name: /Move to/,
+      hidden: true,
+    });
+    // The indicator-icon slot wraps the chevron affordance inside the trigger
+    // row.
+    expect(
+      trigger.querySelector('.astryx-dropdown-menu-indicator-icon'),
+    ).toBeInTheDocument();
   });
 });

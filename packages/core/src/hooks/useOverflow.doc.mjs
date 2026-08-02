@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').HookDoc} */
+/** @type {import('@astryxdesign/cli/authoring').HookDoc} */
 export const docs = {
   name: 'useOverflow',
   displayName: 'useOverflow',
@@ -84,7 +84,7 @@ export const docs = {
   category: 'layout',
 };
 
-/** @type {import('../docs-types').HookTranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').HookTranslationDoc} */
 export const docsDense = {
   description:
     'Measures children rendered in hidden container to determine how many fit in available width w/o flickering. Uses ResizeObserver to react to container size changes. Measurement container should hold all items plus optional overflow indicator element (identified by data-overflow-indicator attribute).',

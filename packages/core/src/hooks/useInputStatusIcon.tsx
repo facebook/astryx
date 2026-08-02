@@ -41,6 +41,7 @@ import type {InputStatus, InputStatusType} from '../Field/types';
 import {useTooltip} from '../Tooltip';
 import {useTranslator} from '../i18n';
 import {colorVars, radiusVars} from '../theme/tokens.stylex';
+import {themeProps} from '../utils/themeProps';
 
 /**
  * Maps each status type to its glyph. Shared so every input shows the same icon
@@ -194,7 +195,17 @@ export function useInputStatusIcon({
   }
 
   const icon = (
-    <Icon icon={STATUS_ICON[status.type]} size={size} color={status.type} />
+    <Icon
+      icon={STATUS_ICON[status.type]}
+      size={size}
+      color={status.type}
+      // Stable theme target on the status glyph itself, so a theme can restyle
+      // just this icon (color, size) — and each status — via `defineTheme`.
+      // Same-element rules in @layer astryx-theme win over the icon's own base
+      // width/height/fontSize, which a field-level target could not reach.
+      // Shared by the attached and tooltip variants across all bordered inputs.
+      {...themeProps('input-status-icon', {size, status: status.type})}
+    />
   );
 
   // Attached (and tooltip-without-message) variants: plain, non-interactive

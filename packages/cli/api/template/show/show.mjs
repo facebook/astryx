@@ -10,13 +10,13 @@
 
 import * as fs from 'node:fs';
 import {AstryxError} from '../../error.mjs';
-import {ERROR_CODES} from '../../../lib/error-codes.mjs';
+import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {extractComponents} from '../_adapter.mjs';
 
 /**
  * Build the `template.show` envelope for an already-resolved template.
  * @param {import('../_adapter.mjs').DiscoveredTemplate} match
- * @returns {import('../../../types/template').TemplateShowResponse}
+ * @returns {import('../template.type.mjs').TemplateShowResponse}
  */
 export function templateShow(match) {
   if (!fs.existsSync(match.filePath)) {

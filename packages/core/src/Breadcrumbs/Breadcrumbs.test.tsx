@@ -519,7 +519,7 @@ describe('BreadcrumbItem menu', () => {
         <BreadcrumbItem
           menu={
             <BreadcrumbMenuRadioGroup
-              aria-label="Sort by"
+              label="Sort by"
               value="name"
               onChange={onChange}>
               <BreadcrumbMenuRadioItem value="name" label="Name" />

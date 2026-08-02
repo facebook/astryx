@@ -11,7 +11,7 @@
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
-import {Dialog} from './Dialog';
+import {Dialog, resolveDialogPositionOffsets} from './Dialog';
 import {DialogHeader} from './DialogHeader';
 
 // Mock showModal and close methods since they're not fully implemented in jsdom
@@ -207,6 +207,89 @@ describe('Dialog', () => {
         </Dialog>,
       );
       expect(screen.getByRole('dialog')).toBeInTheDocument();
+    });
+
+    it('accepts logical start/end position configuration', () => {
+      render(
+        <Dialog
+          isOpen={true}
+          onOpenChange={() => {}}
+          position={{top: 100, start: 20, end: 40}}>
+          Content
+        </Dialog>,
+      );
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+    });
+  });
+
+  // Physical-vs-logical mapping is verified against the pure resolver so we can
+  // assert the exact emitted CSS offsets without relying on StyleX class
+  // compilation or a browser. The public DialogPosition union forbids mixing
+  // logical and physical inline offsets (enforced at compile time, below), so
+  // the resolver has no precedence logic — it just maps what it's given.
+  describe('resolveDialogPositionOffsets (physical-vs-logical mapping)', () => {
+    it('maps logical start/end to inset-inline offsets (mirror under RTL)', () => {
+      // insetInlineStart/End are direction-relative: the browser resolves them
+      // to left/right per `dir`, so the same value mirrors under RTL.
+      const offsets = resolveDialogPositionOffsets({start: 20, end: 40});
+      expect(offsets.insetInlineStart).toBe('20px');
+      expect(offsets.insetInlineEnd).toBe('40px');
+      // No physical offsets requested → auto.
+      expect(offsets.left).toBe('auto');
+      expect(offsets.right).toBe('auto');
+    });
+
+    it('keeps physical left/right physical — they do NOT mirror', () => {
+      // Physical props are the visual-left / visual-right edge in BOTH LTR and
+      // RTL (unchanged from pre-deprecation).
+      const offsets = resolveDialogPositionOffsets({left: 20, right: 40});
+      expect(offsets.left).toBe('20px');
+      expect(offsets.right).toBe('40px');
+      // insetInlineStart/End default to auto (no logical positioning requested).
+      expect(offsets.insetInlineStart).toBe('auto');
+      expect(offsets.insetInlineEnd).toBe('auto');
+    });
+
+    it('combines block-axis top/bottom with an inline pair', () => {
+      const offsets = resolveDialogPositionOffsets({top: 100, start: 12});
+      expect(offsets.top).toBe('100px');
+      expect(offsets.insetInlineStart).toBe('12px');
+      // Everything unset falls back to auto — no mirroring for a logical-only
+      // consumer's physical slots.
+      expect(offsets.bottom).toBe('auto');
+      expect(offsets.left).toBe('auto');
+      expect(offsets.right).toBe('auto');
+      expect(offsets.insetInlineEnd).toBe('auto');
+    });
+
+    it('is non-breaking: physical-only offsets match pre-deprecation output', () => {
+      const offsets = resolveDialogPositionOffsets({top: 100, right: 20});
+      expect(offsets.top).toBe('100px');
+      expect(offsets.right).toBe('20px');
+      expect(offsets.left).toBe('auto');
+      expect(offsets.bottom).toBe('auto');
+      expect(offsets.insetInlineStart).toBe('auto');
+      expect(offsets.insetInlineEnd).toBe('auto');
+    });
+
+    it('passes through string offsets (vw/vh/etc.) for both APIs', () => {
+      const logical = resolveDialogPositionOffsets({start: '5vw', end: '10%'});
+      expect(logical.insetInlineStart).toBe('5vw');
+      expect(logical.insetInlineEnd).toBe('10%');
+
+      const physical = resolveDialogPositionOffsets({left: '5vw', top: '10vh'});
+      expect(physical.left).toBe('5vw');
+      expect(physical.top).toBe('10vh');
+    });
+
+    it('forbids mixing logical and physical inline offsets at compile time', () => {
+      // The union type makes a mixed inline pair a type error — a single dialog
+      // cannot be positioned both logically and physically. These would not
+      // compile (kept as documentation of the enforced contract):
+      // @ts-expect-error start (logical) cannot combine with left (physical)
+      resolveDialogPositionOffsets({start: 5, left: 99});
+      // @ts-expect-error end (logical) cannot combine with right (physical)
+      resolveDialogPositionOffsets({end: 7, right: 88});
     });
   });
 

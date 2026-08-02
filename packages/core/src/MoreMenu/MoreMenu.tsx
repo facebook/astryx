@@ -15,7 +15,7 @@
  * - /packages/core/src/MoreMenu/MoreMenu.test.tsx
  * - /packages/core/src/MoreMenu/index.ts
  * - /apps/storybook/stories/MoreMenu.stories.tsx
- * - /packages/cli/templates/blocks/components/MoreMenu/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/MoreMenu/ (showcase blocks)
  */
 
 import type {ReactNode} from 'react';

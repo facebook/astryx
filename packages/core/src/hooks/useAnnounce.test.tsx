@@ -9,8 +9,8 @@
  * SYNC: When useAnnounce.ts changes, update tests to match new behavior
  */
 
-import {describe, it, expect, afterEach} from 'vitest';
-import {renderHook, waitFor} from '@testing-library/react';
+import {describe, it, expect, afterEach, vi} from 'vitest';
+import {act, renderHook, waitFor} from '@testing-library/react';
 import {useAnnounce, __resetLiveRegionsForTest} from './useAnnounce';
 
 afterEach(() => {
@@ -80,6 +80,79 @@ describe('useAnnounce', () => {
     result.current('');
     // No regions created for an empty announce.
     expect(politeRegion()).toBeNull();
+  });
+
+  it('clears the region after the clear delay, but not before', () => {
+    vi.useFakeTimers();
+    try {
+      const {result} = renderHook(() => useAnnounce());
+      result.current('Saved');
+      // Flush the rAF that re-sets the message.
+      act(() => {
+        vi.advanceTimersByTime(50);
+      });
+      expect(politeRegion()?.textContent).toBe('Saved');
+
+      // The message survives long enough for AT to finish reading it.
+      act(() => {
+        vi.advanceTimersByTime(1000);
+      });
+      expect(politeRegion()?.textContent).toBe('Saved');
+
+      // After the clear delay, stale status text is removed from the DOM.
+      act(() => {
+        vi.advanceTimersByTime(10_000);
+      });
+      expect(politeRegion()?.textContent).toBe('');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('resets the clear timer on each announce', () => {
+    vi.useFakeTimers();
+    try {
+      const {result} = renderHook(() => useAnnounce());
+      result.current('first');
+      act(() => {
+        vi.advanceTimersByTime(1500);
+      });
+      // Announcing again must reset the pending clear, not inherit it.
+      result.current('second');
+      act(() => {
+        vi.advanceTimersByTime(1900);
+      });
+      // 3.4s after 'first' (past its clear point) but only 1.9s after
+      // 'second' — the newer message must still be present.
+      expect(politeRegion()?.textContent).toBe('second');
+      act(() => {
+        vi.advanceTimersByTime(10_000);
+      });
+      expect(politeRegion()?.textContent).toBe('');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('re-announces normally after a clear', () => {
+    vi.useFakeTimers();
+    try {
+      const {result} = renderHook(() => useAnnounce());
+      result.current('gone soon');
+      act(() => {
+        vi.advanceTimersByTime(10_000);
+      });
+      expect(politeRegion()?.textContent).toBe('');
+
+      // The clear-then-rAF re-announce pattern still works after a clear.
+      result.current('back again');
+      act(() => {
+        vi.advanceTimersByTime(50);
+      });
+      expect(politeRegion()?.textContent).toBe('back again');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('reuses the same singleton regions across hook instances', async () => {

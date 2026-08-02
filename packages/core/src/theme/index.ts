@@ -71,19 +71,13 @@ export {expandTypeScale, generateTypeScaleComponents} from './expandTypeScale';
 export type {TypeScaleConfig, TypeScaleTokens} from './expandTypeScale';
 
 export {expandRadiusScale} from './expandRadiusScale';
-export type {
-  RadiusScaleConfig,
-  RadiusScaleTokens,
-} from './expandRadiusScale';
+export type {RadiusScaleConfig, RadiusScaleTokens} from './expandRadiusScale';
 
 export {expandColorScale} from './expandColorScale';
 export type {ColorScaleConfig, ColorScaleTokens} from './expandColorScale';
 
 export {expandMotionScale} from './expandMotionScale';
-export type {
-  MotionScaleConfig,
-  MotionScaleTokens,
-} from './expandMotionScale';
+export type {MotionScaleConfig, MotionScaleTokens} from './expandMotionScale';
 
 // Export token defaults and vars for use in custom components and themes
 export {
@@ -155,6 +149,8 @@ export type {
   TextSize,
   TextWeight,
   TextColor,
+  BuiltinTextColor,
+  TextColorMap,
   TypographyConfig,
   TypographyRole,
   FontWeight,

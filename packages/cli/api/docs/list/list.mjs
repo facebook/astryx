@@ -3,7 +3,7 @@
 /**
  * @file docs.list leaf — enumerate the available reference-doc topics.
  *
- * @input Reads packages/cli/docs/{topic}.doc.mjs via the shared adapter's
+ * @input Reads packages/cli/assets/docs/{topic}.doc.mjs via the shared adapter's
  *   topic discovery. Each topic's English `description` is read directly; the
  *   listing never applies --dense/--zh overlays.
  * @output { type: 'docs.list', data: DocsListEntry[] } — one entry per topic,
@@ -15,11 +15,11 @@ import {pathToFileURL} from 'node:url';
 import {discoverTopics} from '../_adapter.mjs';
 
 /**
- * @returns {Promise<import('../../../types/docs').DocsListResponse>}
+ * @returns {Promise<import('../docs.type.mjs').DocsListResponse>}
  */
 export async function list() {
   const topics = discoverTopics();
-  /** @type {Array<import('../../../types/docs').DocsListEntry>} */
+  /** @type {Array<import('../docs.type.mjs').DocsListEntry>} */
   const entries = [];
   for (const [name, docPath] of Object.entries(topics)) {
     try {

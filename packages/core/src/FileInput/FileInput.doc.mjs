@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'FileInput',
@@ -78,7 +78,7 @@ export const docs = {
       name: 'isRequired',
       type: 'boolean',
       description:
-        'Displays a "Required" indicator next to the label and adds a screen-reader-only "Required" description to the trigger (aria-required is not supported on role="button"). Mutually exclusive with isOptional.',
+        'Displays a "Required" indicator next to the label and adds a screen-reader-only "Required" description to the trigger (assistive tech does not reliably announce aria-required on the trigger). Mutually exclusive with isOptional.',
       default: 'false',
     },
     {
@@ -170,7 +170,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docsZh = {
   name: 'FileInput',
   displayName: 'File Input',
@@ -293,7 +293,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'File input w/ input/dropzone modes, validation, label, description, status.',
   usage: {

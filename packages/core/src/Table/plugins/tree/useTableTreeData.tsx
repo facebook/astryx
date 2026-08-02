@@ -106,6 +106,17 @@ export interface UseTableTreeDataConfig<T extends Record<string, unknown>> {
   indent?: 'sm' | 'md' | 'lg';
   /** Column that carries the indent + expander. @default the first column */
   treeColumnKey?: string;
+  /**
+   * When true, clicking anywhere on an expandable row toggles its expansion,
+   * in addition to the chevron. Leaf rows stay inert. No-op on flat data.
+   *
+   * This is a pointer-only convenience layered over the chevron: keyboard and
+   * assistive-tech users toggle via the chevron button (which stays the
+   * accessible control). Clicks originating from interactive cell content
+   * (buttons, links, form controls) or a text selection do not toggle.
+   * @default false (only the chevron toggles expansion).
+   */
+  hasRowClickExpansion?: boolean;
 }
 
 // =============================================================================
@@ -270,6 +281,10 @@ const treeStyles = stylex.create({
     alignItems: 'center',
     gap: spacingVars['--spacing-1'],
     minWidth: 0,
+  },
+  /** Whole-row-click expansion: signal the row is interactive. */
+  clickableRow: {
+    cursor: 'pointer',
   },
 });
 
@@ -616,9 +631,47 @@ export function useTableTreeData<T extends Record<string, unknown>>(
           };
         };
 
-        return {
+        const withRef = {
           ...props,
           ref: props.ref ? mergeRefs(props.ref, treeRef) : treeRef,
+        };
+
+        // Whole-row-click expansion (opt-in). Only expandable rows are
+        // clickable; leaves and flat data stay inert. `hasExpandableRows` is
+        // the feature-level flag (short-circuits the whole feature when off);
+        // `hasChildren` is the per-row check — both are intentional.
+        const cfg = store.getConfig();
+        const rowClickExpandable =
+          cfg.hasRowClickExpansion === true &&
+          cfg.hasExpandableRows &&
+          cfg.getRowMeta(item)?.hasChildren === true;
+        if (!rowClickExpandable) {
+          return withRef;
+        }
+
+        return {
+          ...withRef,
+          htmlProps: {
+            ...withRef.htmlProps,
+            onClick: (event: React.MouseEvent<HTMLTableRowElement>) => {
+              // Don't hijack clicks on interactive cell content (the chevron
+              // already stops propagation, but a composed selection checkbox,
+              // link, or action button does not) or a text selection.
+              const target = event.target as HTMLElement;
+              if (
+                target.closest(
+                  'button, a, input, select, textarea, [role="button"], [role="checkbox"], [contenteditable="true"]',
+                )
+              ) {
+                return;
+              }
+              if ((window.getSelection()?.toString() ?? '') !== '') {
+                return;
+              }
+              cfg.onToggleItem(item);
+            },
+          },
+          xstyle: [...withRef.xstyle, treeStyles.clickableRow],
         };
       },
     };

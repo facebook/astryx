@@ -415,6 +415,41 @@ describe('DropdownMenu dividers', () => {
   });
 });
 
+describe('DropdownMenu theming slots', () => {
+  it('exposes a themeable slot on the section heading', () => {
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        items={[
+          {
+            type: 'section',
+            title: 'File Actions',
+            items: [{label: 'New'}],
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByText('File Actions')).toHaveClass(
+      'astryx-dropdown-menu-section-heading',
+    );
+  });
+
+  it('exposes a themeable slot on the menu divider', () => {
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        items={[{label: 'Edit'}, {type: 'divider'}, {label: 'Delete'}]}
+      />,
+    );
+
+    const divider = screen.getByRole('separator', {hidden: true});
+    expect(divider).toHaveClass('astryx-dropdown-menu-divider');
+    // Still carries the base Divider slot so global divider theming applies too.
+    expect(divider).toHaveClass('astryx-divider');
+  });
+});
+
 describe('DropdownMenu button customization', () => {
   it('renders with different button variants', () => {
     const {rerender} = render(

@@ -33,18 +33,19 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {pathToFileURL} from 'node:url';
-import {findCoreDir, CLI_ROOT} from '../../utils/paths.mjs';
+import {findCoreDir, CLI_ROOT} from '../../foundation/fs/paths.mjs';
 import {
   discoverComponents,
   findComponentReadme,
   resolveImportPath,
-} from '../../lib/component-discovery.mjs';
-import {discoverHooks, findHookDoc} from '../../lib/hook-discovery.mjs';
-import {levenshteinDistance} from '../../lib/string-utils.mjs';
+} from '../../foundation/discovery/component-discovery.mjs';
+import {discoverHooks, findHookDoc} from '../../foundation/discovery/hook-discovery.mjs';
+import {levenshteinDistance} from '../../foundation/text/string-utils.mjs';
 import {discoverTemplates, extractComponents} from '../template/template.mjs';
 import {AstryxError} from '../error.mjs';
+import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 
-const DOCS_DIR = path.join(CLI_ROOT, 'docs');
+const DOCS_DIR = path.join(CLI_ROOT, 'assets', 'docs');
 
 /**
  * A search candidate gathered from one content domain. Extra underscore-
@@ -558,15 +559,32 @@ export async function search(query, options = {}) {
   const {cwd = process.cwd(), type, limit = 20} = options;
 
   if (!query || !String(query).trim()) {
-    throw new AstryxError('A search query is required', [
-      {name: 'astryx search button', reason: 'example'},
-    ]);
+    throw new AstryxError(
+      'A search query is required',
+      [{name: 'astryx search button', reason: 'example'}],
+      ERROR_CODES.ERR_INVALID_ARGUMENT,
+    );
   }
 
   if (type && !SEARCH_DOMAINS.includes(type)) {
     throw new AstryxError(
       `Unknown --type "${type}"`,
       SEARCH_DOMAINS.map(d => ({name: d, reason: 'valid type'})),
+      ERROR_CODES.ERR_INVALID_ARGUMENT,
+    );
+  }
+
+  // Validate limit here (not just in the CLI) so direct API callers get the same
+  // contract: a non-positive or non-integer limit is an error, never a silent
+  // "return everything". (Previously `limit <= 0` fell through to the full set.)
+  if (
+    limit != null &&
+    (!Number.isInteger(limit) || limit <= 0)
+  ) {
+    throw new AstryxError(
+      `Invalid limit "${limit}". Must be a positive integer.`,
+      undefined,
+      ERROR_CODES.ERR_INVALID_ARGUMENT,
     );
   }
 
@@ -610,7 +628,7 @@ export async function search(query, options = {}) {
       a.name.localeCompare(b.name),
   );
 
-  const limited = limit > 0 ? scored.slice(0, limit) : scored;
+  const limited = scored.slice(0, limit);
 
   return {type: 'search', data: {query: String(query).trim(), results: limited}};
 }

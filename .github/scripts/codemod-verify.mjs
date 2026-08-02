@@ -20,8 +20,8 @@
 import {execSync} from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {getTransformsBetween} from '../../packages/cli/codemods/registry.mjs';
-import {runCodemods} from '../../packages/cli/codemods/runner.mjs';
+import {getTransformsBetween} from '../../packages/cli/assets/codemods/registry.mjs';
+import {runCodemods} from '../../packages/cli/assets/codemods/runner.mjs';
 
 // Consumer directories whose changes should be reproducible by codemods
 const CONSUMER_DIRS = ['apps/storybook', 'apps/sandbox', 'e2e'];
@@ -39,7 +39,8 @@ function getChangedFiles() {
 }
 
 function getCodemodVersions(changedFiles) {
-  const versionPattern = /^packages\/cli\/src\/codemods\/transforms\/v([\d.]+)\//;
+  const versionPattern =
+    /^packages\/cli\/assets\/codemods\/transforms\/v([\d.]+)\//;
   const versions = new Set();
   for (const file of changedFiles) {
     const match = file.match(versionPattern);
@@ -117,7 +118,7 @@ async function main() {
   const latestVersion = codemodVersions[codemodVersions.length - 1];
 
   // Find the version just before the earliest modified one
-  const {versions: allVersions} = await import('../../packages/cli/codemods/registry.mjs');
+  const {versions: allVersions} = await import('../../packages/cli/assets/codemods/registry.mjs');
   const earliestIdx = allVersions.indexOf(earliestVersion);
   const fromVersion = earliestIdx > 0 ? allVersions[earliestIdx - 1] : '0.0.0';
 

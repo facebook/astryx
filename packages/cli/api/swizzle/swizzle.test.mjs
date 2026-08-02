@@ -9,10 +9,12 @@ import {rewriteImports, swizzle} from './swizzle.mjs';
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 
 describe('rewriteImports', () => {
-  it('rewrites ../theme/tokens to @astryxdesign/core/theme', () => {
+  it('preserves the theme token subpath (StyleX module is a dedicated export)', () => {
     const input = `import { tokens } from '../theme/tokens.stylex';`;
     const result = rewriteImports(input);
-    expect(result).toBe(`import { tokens } from '@astryxdesign/core/theme';`);
+    expect(result).toBe(
+      `import { tokens } from '@astryxdesign/core/theme/tokens.stylex';`,
+    );
   });
 
   it('rewrites ../utils/mergeProps to @astryxdesign/core/utils', () => {
@@ -36,7 +38,9 @@ describe('rewriteImports', () => {
   it('handles double quotes', () => {
     const input = `import { tokens } from "../theme/tokens.stylex";`;
     const result = rewriteImports(input);
-    expect(result).toBe(`import { tokens } from "@astryxdesign/core/theme";`);
+    expect(result).toBe(
+      `import { tokens } from "@astryxdesign/core/theme/tokens.stylex";`,
+    );
   });
 
   it('handles multiple imports in one file', () => {
@@ -49,10 +53,35 @@ describe('rewriteImports', () => {
     const result = rewriteImports(input);
     expect(result).toBe(
       [
-        `import { tokens } from '@astryxdesign/core/theme';`,
+        `import { tokens } from '@astryxdesign/core/theme/tokens.stylex';`,
         `import { mergeProps } from '@astryxdesign/core/utils';`,
         `import { helper } from './helper';`,
       ].join('\n'),
+    );
+  });
+
+  it('rewrites a dynamic import() of a sibling component', () => {
+    const input = `const T = lazy(() => import('../Tooltip/Tooltip'));`;
+    expect(rewriteImports(input)).toBe(
+      `const T = lazy(() => import('@astryxdesign/core/Tooltip'));`,
+    );
+  });
+
+  it('rewrites a two-levels-up asset import to a valid subpath (never /..)', () => {
+    const input = `import en from '../../locales/en.json' with {type: 'json'};`;
+    const out = rewriteImports(input);
+    expect(out).not.toContain('@astryxdesign/core/..');
+    expect(out).toBe(
+      `import en from '@astryxdesign/core/locales/en.json' with {type: 'json'};`,
+    );
+  });
+
+  it('keeps the barrel collapse for a component-local .stylex (not a subpath export)', () => {
+    // Only theme/tokens.stylex is a dedicated deep export; component-local
+    // .stylex files are re-exported through the directory barrel.
+    const input = `import { s } from '../Layer/layerAnimations.stylex';`;
+    expect(rewriteImports(input)).toBe(
+      `import { s } from '@astryxdesign/core/Layer';`,
     );
   });
 });

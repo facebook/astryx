@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'DropdownMenuSubMenu',
@@ -33,7 +33,7 @@ export const docs = {
       name: 'children',
       type: 'ReactNode',
       description:
-        'The flyout menu items — the same components used at the top level (DropdownMenuItem, nested DropdownMenuSubMenu, selectable items).',
+        'The flyout menu items: the same components used at the top level (DropdownMenuItem, nested DropdownMenuSubMenu, selectable items).',
     },
     {
       name: 'isDisabled',
@@ -47,7 +47,7 @@ export const docs = {
       type: 'boolean',
       default: 'false',
       description:
-        'Show a spinner in place of the caret, e.g. while a lazy submenu’s children are loading.',
+        'Show a spinner in place of the caret, e.g. while a lazy submenu\'s children are loading.',
     },
     {
       name: 'menuWidth',

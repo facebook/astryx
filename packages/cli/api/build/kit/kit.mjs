@@ -39,15 +39,15 @@ const ALWAYS = new Set([...FRAME, ...FOUNDATION]);
  * The grouped composition kit for what you're building.
  *
  * @param {string} query what you're building (e.g. "analytics dashboard")
- * @param {{cwd?: string, type?: import('../../../types/search').SearchDomain, limit?: number}} [options]
- * @returns {Promise<import('../../../types/build').BuildKitResponse>}
+ * @param {{cwd?: string, type?: import('../../search/search.type.mjs').SearchDomain, limit?: number}} [options]
+ * @returns {Promise<import('../build.type.mjs').BuildKitResponse>}
  */
 export async function buildKit(query, options = {}) {
   const {cwd = process.cwd(), type, limit = 60} = options;
   // search()'s JSDoc @returns widens results to object[]; the SearchResponse
-  // shape is the contract (api.d.ts). Cast locally rather than tightening the
-  // search @returns (a separate follow-up).
-  const result = /** @type {import('../../../types/search').SearchResponse} */ (
+  // shape is the contract (api/search/search.type.mjs). Cast locally rather than
+  // tightening the search @returns (a separate follow-up).
+  const result = /** @type {import('../../search/search.type.mjs').SearchResponse} */ (
     await search(query, {cwd, type, limit})
   );
   const results = result.data.results;

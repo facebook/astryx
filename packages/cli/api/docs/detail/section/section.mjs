@@ -14,7 +14,7 @@
  */
 
 import {AstryxError} from '../../../error.mjs';
-import {ERROR_CODES} from '../../../../lib/error-codes.mjs';
+import {ERROR_CODES} from '../../../../foundation/response/error-codes.mjs';
 import {resolveTopicDocs} from '../../_adapter.mjs';
 
 /**
@@ -24,9 +24,20 @@ import {resolveTopicDocs} from '../../_adapter.mjs';
  * @param {string} [options.lang]
  * @param {boolean} [options.zh]
  * @param {boolean} [options.dense]
- * @returns {Promise<import('../../../../types/docs').DocsDetailSectionResponse>}
+ * @returns {Promise<import('../../docs.type.mjs').DocsDetailSectionResponse>}
  */
 export async function section(topic, sectionName, options = {}) {
+  // An empty section name must error, not resolve to the first section via
+  // `.includes('')`. The docs() dispatcher routes a falsy section to detail, but
+  // the leaf must be safe on its own. A non-string would also throw a raw
+  // TypeError below (`.toLowerCase()`) → downgrades to ERR_UNKNOWN.
+  if (typeof sectionName !== 'string' || !sectionName.trim()) {
+    throw new AstryxError(
+      'A section name is required',
+      undefined,
+      ERROR_CODES.ERR_UNKNOWN_SECTION,
+    );
+  }
   const {docsData} = await resolveTopicDocs(topic, options);
 
   const normalizedSection = sectionName.toLowerCase();

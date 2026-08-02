@@ -144,7 +144,10 @@ export const neutralTheme = defineTheme({
 
     // Text
     '--color-text-primary': ['#171717', '#fafafa'],
-    '--color-text-secondary': ['#737373', '#a3a3a3'],
+    // Light secondary is neutral-600 (#525252), not 500 (#737373): 500 only
+    // reaches 4.19:1 on the T95 body (#f1f1f1), just under WCAG AA 4.5:1.
+    // 600 clears it (6.9:1 on body, 7.8:1 on card). Dark stays neutral-400.
+    '--color-text-secondary': ['#525252', '#a3a3a3'],
     '--color-text-disabled': ['#a3a3a3', '#525252'],
     '--color-text-accent': ['#262626', '#ebebeb'],
     '--color-on-dark': '#ffffff',

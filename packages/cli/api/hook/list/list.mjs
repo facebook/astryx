@@ -13,10 +13,10 @@
  * @position api/hook/list/list.mjs — dispatched from ../hook.mjs
  */
 
-import {discoverHooks, findHookDoc} from '../../../lib/hook-discovery.mjs';
-import {loadDocs} from '../../../lib/component-loader.mjs';
+import {discoverHooks, findHookDoc} from '../../../foundation/discovery/hook-discovery.mjs';
+import {loadDocs} from '../../../foundation/discovery/component-loader.mjs';
 import {AstryxError} from '../../error.mjs';
-import {ERROR_CODES} from '../../../lib/error-codes.mjs';
+import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {resolveCoreDir} from '../_adapter.mjs';
 
 /**
@@ -26,7 +26,7 @@ import {resolveCoreDir} from '../_adapter.mjs';
  * @param {'full'|'compact'|'brief'|'names'} [options.detail] - Anything other than 'compact'/'full' renders names only.
  * @param {boolean} [options.zh]
  * @param {string|null} [options.lang]
- * @returns {Promise<import('../../../types/hook').HookListResponse>}
+ * @returns {Promise<import('../hook.type.mjs').HookListResponse>}
  */
 export async function list({cwd = process.cwd(), category, detail = 'names', zh = false, lang = null} = {}) {
   const coreDir = resolveCoreDir(cwd);
@@ -45,7 +45,7 @@ export async function list({cwd = process.cwd(), category, detail = 'names', zh 
     }
 
     if (detail === 'compact') {
-      /** @type {import('../../../types/hook').HookBriefEntry[]} */
+      /** @type {import('../hook.type.mjs').HookBriefEntry[]} */
       const entries = [];
       for (const hookName of match[1]) {
         const docPath = findHookDoc(coreDir, hookName);
@@ -68,7 +68,7 @@ export async function list({cwd = process.cwd(), category, detail = 'names', zh 
     }
 
     if (detail === 'full') {
-      /** @type {import('../../../types/hook').HookDoc[]} */
+      /** @type {import('../hook.type.mjs').HookDoc[]} */
       const entries = [];
       for (const hookName of match[1]) {
         const docPath = findHookDoc(coreDir, hookName);
@@ -76,10 +76,10 @@ export async function list({cwd = process.cwd(), category, detail = 'names', zh 
           try {
             entries.push(await loadDocs(docPath, /** @type {{zh?: boolean, dense?: boolean, lang?: string}} */ ({zh, lang})));
           } catch {
-            entries.push(/** @type {import('../../../types/hook').HookDoc} */ ({name: hookName}));
+            entries.push(/** @type {import('../hook.type.mjs').HookDoc} */ ({name: hookName}));
           }
         } else {
-          entries.push(/** @type {import('../../../types/hook').HookDoc} */ ({name: hookName}));
+          entries.push(/** @type {import('../hook.type.mjs').HookDoc} */ ({name: hookName}));
         }
       }
       return {type: 'hook.list', data: {detail: 'full', components: {[match[0]]: entries}}};
@@ -91,7 +91,7 @@ export async function list({cwd = process.cwd(), category, detail = 'names', zh 
 
   // All hooks
   if (detail === 'compact') {
-    /** @type {Record<string, import('../../../types/hook').HookBriefEntry[]>} */
+    /** @type {Record<string, import('../hook.type.mjs').HookBriefEntry[]>} */
     const result = {};
     for (const [cat, hookNames] of Object.entries(hooks)) {
       result[cat] = [];
@@ -117,7 +117,7 @@ export async function list({cwd = process.cwd(), category, detail = 'names', zh 
   }
 
   if (detail === 'full') {
-    /** @type {Record<string, import('../../../types/hook').HookDoc[]>} */
+    /** @type {Record<string, import('../hook.type.mjs').HookDoc[]>} */
     const result = {};
     for (const [cat, hookNames] of Object.entries(hooks)) {
       result[cat] = [];
@@ -127,10 +127,10 @@ export async function list({cwd = process.cwd(), category, detail = 'names', zh 
           try {
             result[cat].push(await loadDocs(docPath, /** @type {{zh?: boolean, dense?: boolean, lang?: string}} */ ({zh, lang})));
           } catch {
-            result[cat].push(/** @type {import('../../../types/hook').HookDoc} */ ({name: hookName}));
+            result[cat].push(/** @type {import('../hook.type.mjs').HookDoc} */ ({name: hookName}));
           }
         } else {
-          result[cat].push(/** @type {import('../../../types/hook').HookDoc} */ ({name: hookName}));
+          result[cat].push(/** @type {import('../hook.type.mjs').HookDoc} */ ({name: hookName}));
         }
       }
     }

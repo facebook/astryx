@@ -88,7 +88,16 @@ export function plainDateAddDays(pd: PlainDate, n: number): PlainDate {
   return plainDateFromDate(d);
 }
 
-function getTimeZoneParts(
+/**
+ * The wall-clock fields an instant reads as in a given zone.
+ *
+ * A fixed `'en-US'` locale with `hourCycle: 'h23'` keeps the parts numeric and
+ * stable whatever locale the viewer has, so callers can assemble machine
+ * shapes (`YYYY-MM-DD`, `HH:mm:ss`) from them. Exported for Timestamp, whose
+ * `system_*` formats are built from these fields rather than through `Intl`
+ * formatting.
+ */
+export function getTimeZoneParts(
   instant: number,
   timezoneID: string,
 ): {

@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../../../core/src/docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'RichTextEditor',
@@ -110,6 +110,12 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'maxLength',
+      type: 'number',
+      description:
+        'Maximum number of characters. When set, a character counter (current/max) is displayed below the editor. Like TextArea, does not enforce the limit natively; the counter shows error styling when the plain-text length exceeds the limit.',
+    },
+    {
       name: 'width',
       type: 'number | string',
       description:
@@ -147,7 +153,12 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Use a ref (RichTextEditorRef) to imperatively focus(), clear(), read the state via getEditorState(), or reach the LexicalEditor via getEditor(). The handle is available after mount. focus() and clear() are no-ops when the editor is read-only or disabled, and clear() resets to a single empty paragraph.',
+          'Use a ref (RichTextEditorRef) to imperatively focus(), clear(), read the state via getEditorState(), serialize to Markdown via getMarkdown() or HTML via getHTML(), or reach the LexicalEditor via getEditor(). The handle is available after mount. getMarkdown() uses the same transformers prop the editor is configured with. focus() and clear() are no-ops when the editor is read-only or disabled, and clear() resets to a single empty paragraph.',
+      },
+      {
+        guidance: true,
+        description:
+          'To produce a defaultValue from Markdown without mounting an editor (e.g. on the server), use markdownToEditorStateJSON(markdown). Convert the other way with editorStateJSONToMarkdown(json). Both run headless via @lexical/headless and accept the same transformers/nodes options as the editor.',
       },
       {
         guidance: false,

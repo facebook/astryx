@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'TopNavItem',
@@ -29,7 +29,7 @@ export const docs = {
     {
       name: 'isDisabled',
       type: 'boolean',
-      description: 'Whether the nav item is disabled. Sets aria-disabled and prevents interaction.',
+      description: 'Whether the nav item is disabled. Sets aria-disabled, drops href/target so the item cannot navigate, and prevents interaction.',
       default: 'false',
     },
     {
@@ -91,7 +91,7 @@ export const docsZh = {
     {
       name: 'isDisabled',
       type: 'boolean',
-      description: '导航项是否被禁用。设置 aria-disabled 并阻止交互。',
+      description: '导航项是否被禁用。设置 aria-disabled，移除 href/target 使其无法导航，并阻止交互。',
       default: 'false',
     },
     {
@@ -121,7 +121,7 @@ export const docsDense = {
     label: 'Visible text or aria-label when isIconOnly is true.',
     href: 'Navigation URL.',
     isSelected: 'Sets aria-current="page"+highlighted styles.',
-    isDisabled: 'Sets aria-disabled, prevents interaction.',
+    isDisabled: 'Sets aria-disabled, drops href/target (no navigation), prevents interaction.',
     icon: 'Icon before label.',
     children: 'Custom content instead of label text.',
     as: 'Custom link component. Overrides LinkProvider default. Must accept href, className, style, children.',

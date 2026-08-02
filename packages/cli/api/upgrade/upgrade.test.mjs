@@ -15,9 +15,10 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
 import {upgrade} from './upgrade.mjs';
+import {logger} from '../logger.mjs';
 import {AstryxError} from '../error.mjs';
-import {ERROR_CODES} from '../../lib/error-codes.mjs';
-import {generateCompressedIndex} from '../../lib/agent-docs/agent-docs.mjs';
+import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
+import {generateCompressedIndex} from '../../foundation/agent-docs/agent-docs.mjs';
 
 vi.setConfig({testTimeout: 30000});
 
@@ -33,6 +34,7 @@ afterEach(() => {
   process.chdir(originalCwd);
   fs.rmSync(tmpDir, {recursive: true, force: true});
   vi.restoreAllMocks();
+  logger.setSilent(true);
 });
 
 function writePkg(dir, deps = {}) {
@@ -135,20 +137,17 @@ describe('upgrade() — honors cwd for codemod scanning (no chdir)', () => {
     fs.mkdirSync(path.join(tmpDir, 'src'), {recursive: true});
     fs.writeFileSync(path.join(tmpDir, 'src', 'index.ts'), 'const x = 1;\n');
 
-    // Capture stdout: the runner logs the directory it scans. A non-noop logger
-    // (distinct object from the module's noopLogger) keeps the runner non-silent.
+    // Capture stdout: the runner logs the directory it scans. Enabling the
+    // shared logger keeps the runner non-silent so its scan line is emitted.
     const out = [];
     vi.spyOn(console, 'log').mockImplementation((...a) => out.push(a.join(' ')));
     vi.spyOn(process.stdout, 'write').mockImplementation(c => {
       out.push(typeof c === 'string' ? c : c.toString());
       return true;
     });
-    const noop = () => {};
-    const logger = {
-      intro: noop, step: noop, info: noop, warn: noop, success: noop, error: noop, outro: noop,
-    };
+    logger.setSilent(false);
 
-    const res = await upgrade({from: '0.0.1', apply: false, path: 'src'}, {cwd: tmpDir, logger});
+    const res = await upgrade({from: '0.0.1', apply: false, path: 'src'}, {cwd: tmpDir});
 
     const joined = out.join('\n');
     expect(res.type).toBe('upgrade.run');

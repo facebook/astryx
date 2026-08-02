@@ -14,10 +14,10 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {AstryxError} from '../../error.mjs';
-import {ERROR_CODES} from '../../../lib/error-codes.mjs';
-import {assertWithin, isFilePathArg, PathSafetyError} from '../../../utils/path-safety.mjs';
-import {detectForm} from '../../../lib/xle/parse.mjs';
-import {expand} from '../../../lib/xle/expand.mjs';
+import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
+import {assertWithin, isFilePathArg, PathSafetyError} from '../../../foundation/fs/path-safety.mjs';
+import {detectForm} from '../../../foundation/xle/parse.mjs';
+import {expand} from '../../../foundation/xle/expand.mjs';
 import {stripTemplateAssetRefs} from '../../template/template.mjs';
 import {analyze, formatIssue} from '../_adapter.mjs';
 
@@ -26,12 +26,12 @@ const normKey = (name) => name.toLowerCase().replace(/[^a-z0-9]/g, '');
 
 /**
  * Collect the block names referenced by {hints} anywhere in the doc.
- * @param {import('../../../lib/xle/xle-ast').XLEDoc} doc
+ * @param {import('../../../foundation/xle/xle-ast').XLEDoc} doc
  */
 function collectHintNames(doc) {
   /** @type {Set<string>} */
   const names = new Set();
-  /** @param {import('../../../lib/xle/xle-ast').XLEItem} node */
+  /** @param {import('../../../foundation/xle/xle-ast').XLEItem} node */
   const visitNode = (node) => {
     if (!node || node.kind === 'group') {
       (node?.children || []).forEach(visit);
@@ -49,7 +49,7 @@ function collectHintNames(doc) {
     }
     (node.children || []).forEach(visit);
   };
-  /** @param {import('../../../lib/xle/xle-ast').XLEItem} item */
+  /** @param {import('../../../foundation/xle/xle-ast').XLEItem} item */
   const visit = (item) => (item?.kind === 'group' ? item.children.forEach(visit) : visitNode(item));
   doc.roots.forEach(visit);
   doc.overlays.forEach(visit);
@@ -61,23 +61,23 @@ function collectHintNames(doc) {
  * splice-mode (reading + asset-stripping the block source) for template blocks.
  * Only blocks actually referenced are read.
  *
- * @param {import('../../../lib/xle/xle-ast').XLEDoc} doc
+ * @param {import('../../../foundation/xle/xle-ast').XLEDoc} doc
  * @param {import('../_adapter.mjs').LayoutBlock[]} blocks
- * @returns {Map<string, import('../../../lib/xle/xle-ast').BlockModule>}
+ * @returns {Map<string, import('../../../foundation/xle/xle-ast').BlockModule>}
  */
 function buildBlockModules(doc, blocks) {
   const referenced = collectHintNames(doc);
   if (referenced.size === 0) return new Map();
   const byKey = new Map(blocks.map(b => [normKey(b.dirName), b]));
-  /** @type {Map<string, import('../../../lib/xle/xle-ast').BlockModule>} */
+  /** @type {Map<string, import('../../../foundation/xle/xle-ast').BlockModule>} */
   const modules = new Map();
   for (const name of referenced) {
     const block = byKey.get(normKey(name));
     if (!block) continue;
     if (block.kind === 'component') {
-      modules.set(name, /** @type {import('../../../lib/xle/xle-ast').BlockModule} */ (/** @type {unknown} */ ({mode: 'import', componentName: block.name, importPath: block.importPath, isDefault: block.isDefault})));
+      modules.set(name, /** @type {import('../../../foundation/xle/xle-ast').BlockModule} */ (/** @type {unknown} */ ({mode: 'import', componentName: block.name, importPath: block.importPath, isDefault: block.isDefault})));
     } else if (block.filePath && fs.existsSync(block.filePath)) {
-      modules.set(name, /** @type {import('../../../lib/xle/xle-ast').BlockModule} */ ({mode: 'splice', componentName: block.dirName, source: stripTemplateAssetRefs(fs.readFileSync(block.filePath, 'utf-8'))}));
+      modules.set(name, /** @type {import('../../../foundation/xle/xle-ast').BlockModule} */ ({mode: 'splice', componentName: block.dirName, source: stripTemplateAssetRefs(fs.readFileSync(block.filePath, 'utf-8'))}));
     }
   }
   return modules;
@@ -93,7 +93,7 @@ function buildBlockModules(doc, blocks) {
  * @param {boolean} [options.loose] - downgrade unknown {hints} to TODO warnings
  * @param {string} [options.name] - generated component name
  * @param {string} [options.cwd]
- * @returns {Promise<import('../../../types/layout').LayoutExpandResponse>}
+ * @returns {Promise<import('../layout.type.mjs').LayoutExpandResponse>}
  */
 export async function layoutExpand(expression, options = {}) {
   const {targetPath, form = 'auto', loose = false, name, cwd = process.cwd()} = options;

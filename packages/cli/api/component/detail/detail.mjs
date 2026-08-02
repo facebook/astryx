@@ -16,7 +16,7 @@ import {withOwnership} from '../_adapter.mjs';
  * @param {{package: string, sourcePath: string|null}} owner
  * @param {string} componentName - name used for the import specifier
  * @param {string} coreDir
- * @returns {import('../../../types/component').ComponentDetailResponse}
+ * @returns {import('../component.type.mjs').ComponentDetailResponse}
  */
 export function componentDetail(docs, owner, componentName, coreDir) {
   return {type: 'component.detail', data: withOwnership(docs, owner, componentName, coreDir)};

@@ -27,6 +27,7 @@ import {
   shadowVars,
 } from '../theme/tokens.stylex';
 import {Button} from '../Button';
+import {rtlStyles} from '../utils';
 import {useTranslator} from '../i18n';
 import {useDevWarning} from '../hooks/useDevWarning';
 
@@ -43,12 +44,13 @@ const styles = stylex.create({
   contentWrapper: {
     position: 'relative',
   },
-  // Hidden close button wrapper - sr-only until focused, then positioned below popover
+  // Hidden close button wrapper - sr-only until focused, then positioned below
+  // popover. Inline-axis centering (+ the translateY(100%) that drops it below
+  // the surface) comes from rtlStyles.centerInline('100%') at the call site —
+  // it centers correctly in both LTR and RTL.
   closeButtonWrapper: {
     position: 'absolute',
     bottom: 0,
-    left: '50%',
-    transform: 'translate(-50%, 100%)',
     zIndex: 1,
     // sr-only by default
     width: {
@@ -417,7 +419,11 @@ export function usePopover(options: UsePopoverOptions = {}): UsePopoverReturn {
           )}>
           {children}
           {hasCloseButton && (
-            <div {...stylex.props(styles.closeButtonWrapper)}>
+            <div
+              {...stylex.props(
+                styles.closeButtonWrapper,
+                rtlStyles.centerInline('100%'),
+              )}>
               <Button
                 variant="secondary"
                 label={closeButtonLabel}

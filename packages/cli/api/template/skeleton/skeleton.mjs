@@ -10,7 +10,7 @@
 
 import * as fs from 'node:fs';
 import {AstryxError} from '../../error.mjs';
-import {ERROR_CODES} from '../../../lib/error-codes.mjs';
+import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {extractComponents} from '../_adapter.mjs';
 
 const STRUCTURAL = new Set([
@@ -226,7 +226,7 @@ function extractSkeleton(source) {
  * "specify a template name" error the dispatcher's resolution would surface.
  * @param {import('../_adapter.mjs').DiscoveredTemplate | undefined} match
  * @param {import('../_adapter.mjs').DiscoveredTemplate[]} templates
- * @returns {import('../../../types/template').TemplateSkeletonResponse}
+ * @returns {import('../template.type.mjs').TemplateSkeletonResponse}
  */
 export function templateSkeleton(match, templates) {
   if (!match) {

@@ -13,8 +13,8 @@
  * - /packages/core/src/Heading/Heading.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Text/index.ts (exports if types change)
  * - /apps/storybook/stories/Text.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Heading/ (showcase blocks)
- * - /packages/cli/templates/blocks/components/Text/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Heading/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Text/ (showcase blocks)
  */
 
 import {lazy, Suspense, useRef, type ReactNode} from 'react';
@@ -41,6 +41,7 @@ import {
   truncationTooltipStyles,
 } from '../Text/text.stylex';
 import {useTruncation} from '../Text/useTruncation';
+import {resolveStyleColor} from '../Text/Text';
 import type {LayerPlacement} from '../Layer';
 import {mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
@@ -251,7 +252,7 @@ export function Heading({
         {...mergeProps(
           themeProps('heading', {level, color, ...(type && {type})}),
           stylex.props(
-            colorStyles[color],
+            colorStyles[resolveStyleColor(color)],
             type ? sizeByTypeStyles[type] : sizeByLevelStyles[level],
             type && defaultWeightByTypeStyles[type],
             // Display: use truncation styles when maxLines > 0

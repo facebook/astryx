@@ -20,7 +20,7 @@
  * - /packages/core/src/DropdownMenu/DropdownMenu.test.tsx
  * - /packages/core/src/DropdownMenu/index.ts
  * - /apps/storybook/stories/DropdownMenu.stories.tsx
- * - /packages/cli/templates/blocks/components/DropdownMenu/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/DropdownMenu/ (showcase blocks)
  */
 
 import {useCallback, type PointerEvent, type ReactNode} from 'react';

@@ -7,12 +7,7 @@
  * @position Entry point for Text components
  */
 
-export {
-  Text,
-  type TextProps,
-  type TextType,
-  type TextSize,
-} from './Text';
+export {Text, type TextProps, type TextType, type TextSize} from './Text';
 export {
   Heading,
   type HeadingProps,
@@ -23,6 +18,7 @@ export {
 // Re-export shared types from theme for convenience
 export type {
   TextColor,
+  TextColorMap,
   TextWeight,
   TextDisplay,
   TextJustify,

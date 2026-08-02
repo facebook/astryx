@@ -13,7 +13,7 @@
  *
  * It performs the writes and returns a `theme.build` receipt, or `null` when
  * the theme produced no CSS (nothing to build). Errors throw AstryxError (with
- * a stable code). Human progress is emitted through the injected `logger`
+ * a stable code). Human progress is emitted through the shared `logger`
  * (silent by default), so the CLI keeps its exact output while a programmatic
  * caller stays quiet.
  */
@@ -22,13 +22,14 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {pathToFileURL, fileURLToPath} from 'node:url';
 import {createJiti} from 'jiti';
-import {getCliInvocation} from '../../../utils/package-manager.mjs';
+import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
 import {
   sanitizeName,
   PathSafetyError,
-} from '../../../utils/path-safety.mjs';
-import {ERROR_CODES} from '../../../lib/error-codes.mjs';
+} from '../../../foundation/fs/path-safety.mjs';
+import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {AstryxError} from '../../error.mjs';
+import {logger} from '../../logger.mjs';
 
 // Import shared theme processing from core. `astryx theme build` MUST produce the
 // exact same CSS as the `<Theme>` runtime, so it has exactly one generation
@@ -129,12 +130,15 @@ async function loadKnownValues(componentName) {
   const cliDir = path.dirname(fileURLToPath(import.meta.url));
   const coreSrc = path.resolve(cliDir, '../../../../core/src');
   if (!fs.existsSync(coreSrc)) return {};
-  // Map component name to directory (e.g. 'banner' → 'Banner', 'dropdownmenu' → 'DropdownMenu')
+  // Map component name to directory (e.g. 'banner' → 'Banner',
+  // 'dropdown-menu' → 'DropdownMenu'). Theme keys use the rendered class
+  // token, which hyphenates multi-word names, so strip non-letters from BOTH
+  // sides before comparing.
   const dirs = fs.readdirSync(coreSrc, { withFileTypes: true })
     .filter(d => d.isDirectory())
     .map(d => d.name);
-  const dir = dirs.find(d => d.toLowerCase() === componentName.toLowerCase()
-    || d.toLowerCase().replace(/[^a-z]/g, '') === componentName.toLowerCase());
+  const target = componentName.toLowerCase().replace(/[^a-z]/g, '');
+  const dir = dirs.find(d => d.toLowerCase().replace(/[^a-z]/g, '') === target);
   if (!dir) return {};
 
   const docPath = path.join(coreSrc, dir, `${dir}.doc.mjs`);
@@ -599,11 +603,29 @@ ${iconType}export declare const ${toIdentifier(themeDef.name)}Theme: DefinedThem
 /**
  * Known Astryx component names and their visual props.
  * Used to warn on typos in defineTheme component overrides.
+ *
+ * CONTRACT: every key must equal the stable class token the component
+ * actually renders — the `<name>` in core's `themeProps('<name>')` /
+ * `stableClassName('<name>')` calls. Theme CSS selectors are derived
+ * verbatim from these keys (`.astryx-<key>`), so a key that diverges from
+ * the rendered class validates cleanly but emits a dead rule that matches
+ * nothing in the DOM (#4109: `textinput` emitted `.astryx-textinput` while
+ * TextInput renders `astryx-text-input`).
+ *
+ * The prop lists mirror the visual props each component passes to
+ * `themeProps()` (also documented as `theming.targets[].visualProps` in the
+ * component's doc.mjs) — the axes that render as variant classes and
+ * data attributes.
+ *
+ * `layer` has no rendered `astryx-layer` class or doc target; it is a
+ * layout/anchor concept unrelated to #4109 and is intentionally kept (see the
+ * `allowedWithoutTarget` allowlist in build-theme.registry.test.mjs).
+ *
  * @type {Record<string, string[]>}
  */
 const KNOWN_COMPONENTS = {
-  'app-shell': ['position'],
-  'aspect-ratio': [],
+  'app-shell': ['variant'],
+  'aspect-ratio': ['shape'],
   avatar: ['size'],
   badge: ['variant', 'color'],
   banner: ['container', 'status'],
@@ -612,15 +634,15 @@ const KNOWN_COMPONENTS = {
   calendar: [],
   card: ['variant'],
   center: [],
-  'checkbox-input': [],
+  'checkbox-input': ['size'],
   collapsible: [],
-  'date-input': [],
+  'date-input': ['size', 'status'],
   dialog: ['variant', 'position'],
   divider: ['variant', 'orientation'],
   'dropdown-menu': [],
   'empty-state': [],
   field: [],
-  'form-layout': [],
+  'form-layout': ['direction'],
   grid: ['align'],
   heading: ['level'],
   icon: ['size', 'color'],
@@ -629,28 +651,28 @@ const KNOWN_COMPONENTS = {
   layout: [],
   link: ['color'],
   list: ['type', 'density'],
-  'mobile-nav': [],
+  'mobile-nav': ['side'],
   'more-menu': [],
   navicon: [],
-  'number-input': [],
+  'number-input': ['size', 'status'],
   pagination: ['variant'],
   progressbar: ['variant', 'size'],
-  'radio-list': ['orientation'],
+  'radio-list': ['orientation', 'size'],
   section: ['variant'],
   selector: ['type', 'size', 'color'],
-  'side-nav': [],
+  'side-nav': ['mode'],
   skeleton: [],
   slider: ['orientation'],
   spinner: ['size'],
   stack: [],
   statusdot: ['variant', 'size'],
   switch: [],
+  'tab-list': ['size'],
   table: [],
-  'tab-list': ['type'],
   text: ['type', 'color'],
+  'text-input': ['size', 'status'],
   textarea: [],
-  'text-input': [],
-  'time-input': [],
+  'time-input': ['size', 'status'],
   token: ['color'],
   tokenizer: [],
   'top-nav': [],
@@ -754,34 +776,18 @@ function validatePrivateVars(themeDef) {
 }
 
 /**
- * @typedef {object} ThemeBuildLogger
- * @property {(m?: string) => void} log   - stdout (install/receipt lines)
- * @property {(m?: string) => void} warn  - stderr (component-override warnings)
- * @property {(m?: string) => void} error - stderr (private-var errors)
- */
-
-/**
- * No-op logger — the default so a programmatic caller stays silent. The CLI
- * injects a real logger (humanLog / console.warn / console.error) in human
- * mode, and this same no-op shape in --json mode so human chatter never
- * corrupts the single JSON envelope.
- * @type {ThemeBuildLogger}
- */
-const noopLogger = {log() {}, warn() {}, error() {}};
-
-/**
  * Compile a defineTheme file to CSS + JS + .d.ts (and an optional
  * `.variants.d.ts`). Performs the writes and returns a `theme.build` receipt,
  * or `null` when the theme produced no CSS (nothing to build). Throws
- * AstryxError (stable code) on failure. Progress is emitted through `logger`
- * (silent by default).
+ * AstryxError (stable code) on failure. Progress is emitted through the shared
+ * `logger` (silent by default).
  *
  * @param {string} file - Theme file path, resolved against `cwd`.
  * @param {{out?: string}} [options] - `out` overrides the output CSS path.
- * @param {{cwd?: string, logger?: ThemeBuildLogger}} [ctx]
- * @returns {Promise<import('../../../types/theme').ThemeBuildResponse | null>}
+ * @param {{cwd?: string}} [ctx]
+ * @returns {Promise<import('../theme.type.mjs').ThemeBuildResponse | null>}
  */
-export async function themeBuild(file, options = {}, {cwd = process.cwd(), logger = noopLogger} = {}) {
+export async function themeBuild(file, options = {}, {cwd = process.cwd()} = {}) {
   const filePath = path.resolve(cwd, file);
 
   if (!fs.existsSync(filePath)) {

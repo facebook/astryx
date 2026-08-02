@@ -64,7 +64,8 @@ if (analysis.newComponents && analysis.newComponents.length > 0) {
     const stats = analysis.componentStats[comp] || {};
     const sbLink = getStorybookLink(storybookUrl, stats.storyTitle);
     const sbBadge = sbLink ? ` · ${extLink('View in Storybook', sbLink)}` : '';
-    componentSection += `<details>\n<summary><strong>${comp}</strong>${sbBadge}</summary>\n\n`;
+    const pkgBadge = stats.package ? ` <sub>(${stats.package})</sub>` : '';
+    componentSection += `<details>\n<summary><strong>${comp}</strong>${pkgBadge}${sbBadge}</summary>\n\n`;
     componentSection += `| Metric | Value |\n|--------|-------|\n`;
     componentSection += `| Bundle Size (ESM) | ${stats.esmSize || 'N/A'} |\n`;
     componentSection += `| Bundle Size (CJS) | ${stats.cjsSize || 'N/A'} |\n`;
@@ -92,8 +93,9 @@ if (analysis.modifiedComponents && analysis.modifiedComponents.length > 0) {
     const compExports = stats.exports || [];
     const newInComp = compExports.filter(e => newExports.includes(e));
     const newBadge = newInComp.length > 0 ? ` · 🆕 ${newInComp.join(', ')}` : '';
+    const pkgBadge = stats.package ? ` <sub>(${stats.package})</sub>` : '';
 
-    componentSection += `<details>\n<summary><strong>${comp}</strong>${sbBadge}${newBadge}</summary>\n\n`;
+    componentSection += `<details>\n<summary><strong>${comp}</strong>${pkgBadge}${sbBadge}${newBadge}</summary>\n\n`;
     componentSection += `| Metric | Before | After | Delta |\n|--------|--------|-------|-------|\n`;
 
     const esmDelta = stats.esmBytes && baseStats.esmBytes
@@ -113,11 +115,27 @@ if (analysis.modifiedComponents && analysis.modifiedComponents.length > 0) {
 // Build accessibility section using shared module
 const a11ySection = buildA11ySection(a11yReport);
 
-// Build bundle size section
+// Build bundle size section — one row per package the PR actually touched.
 let bundleSection = '### Bundle Size Summary\n\n';
-bundleSection += `| Package | Size (ESM) | Size (CJS) | Gzipped |\n`;
-bundleSection += `|---------|------------|------------|----------|\n`;
-bundleSection += `| @astryxdesign/core | ${analysis.totalBundle?.esmSize || 'N/A'} | ${analysis.totalBundle?.cjsSize || 'N/A'} | ${analysis.totalBundle?.gzipSize || 'N/A'} |\n\n`;
+// Prefer the multi-package list; fall back to the legacy single-core shape so
+// an older analysis.json still renders.
+const bundlePackages =
+  analysis.bundlePackages && analysis.bundlePackages.length > 0
+    ? analysis.bundlePackages
+    : analysis.totalBundle
+      ? [{ package: '@astryxdesign/core', ...analysis.totalBundle }]
+      : [];
+
+if (bundlePackages.length > 0) {
+  bundleSection += `| Package | Size (ESM) | Size (CJS) | Gzipped |\n`;
+  bundleSection += `|---------|------------|------------|----------|\n`;
+  for (const b of bundlePackages) {
+    bundleSection += `| ${b.package} | ${b.esmSize || 'N/A'} | ${b.cjsSize || 'N/A'} | ${b.gzipSize || 'N/A'} |\n`;
+  }
+  bundleSection += `\n`;
+} else {
+  bundleSection += '_No component packages changed._\n\n';
+}
 
 if (analysis.bundleDelta) {
   const delta = analysis.bundleDelta;

@@ -35,7 +35,7 @@
  * - /packages/core/src/DropdownMenu/DropdownMenuSubMenu.test.tsx
  * - /packages/core/src/DropdownMenu/index.ts
  * - /apps/storybook/stories/DropdownMenu.stories.tsx
- * - /packages/cli/templates/blocks/components/DropdownMenu/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/DropdownMenu/ (showcase blocks)
  */
 
 import React, {
@@ -44,6 +44,7 @@ import React, {
   useMemo,
   useRef,
   useState,
+  type PointerEvent,
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
@@ -78,6 +79,7 @@ import {
   useDropdownMenuContext,
   type DropdownMenuContextValue,
 } from './DropdownMenuContext';
+import {focusMenuItemOnHover} from './menuItemHover';
 
 const triggerStyles = stylex.create({
   root: {
@@ -92,11 +94,6 @@ const triggerStyles = stylex.create({
     backgroundColor: {
       default: 'transparent',
       ':focus': colorVars['--color-overlay-hover'],
-    },
-    ':hover': {
-      '@media (hover: hover)': {
-        backgroundColor: colorVars['--color-overlay-hover'],
-      },
     },
     border: 'none',
     cursor: 'pointer',
@@ -393,6 +390,16 @@ export function DropdownMenuSubMenu(
     [isDisabled, open],
   );
 
+  // Move the single focus-driven highlight onto the trigger as the pointer
+  // enters it, so a sibling item that still holds focus doesn't stay
+  // highlighted alongside the hovered trigger. This is separate from the
+  // hover-open intent (onMouseEnter/onMouseLeave) — the flyout still opens on
+  // the hover delay; this only keeps the highlight single.
+  const handlePointerMove = useCallback(
+    (e: PointerEvent<HTMLElement>) => focusMenuItemOnHover(e, isDisabled),
+    [isDisabled],
+  );
+
   // Enter/Space activate the focused row; typeahead jumps by first character;
   // the close key (Left, or Right in RTL) returns focus to the trigger;
   // arrows/Home/End defer to useListFocus (RTL-aware).
@@ -467,11 +474,19 @@ export function DropdownMenuSubMenu(
   );
 
   const endAffordance = hasSpinner ? (
-    <span {...stylex.props(triggerStyles.caret)}>
+    <span
+      {...mergeProps(
+        themeProps('dropdown-menu-indicator-icon'),
+        stylex.props(triggerStyles.caret),
+      )}>
       <Spinner size="sm" />
     </span>
   ) : (
-    <span {...stylex.props(triggerStyles.caret)}>
+    <span
+      {...mergeProps(
+        themeProps('dropdown-menu-indicator-icon'),
+        stylex.props(triggerStyles.caret),
+      )}>
       <Icon icon="chevronRight" size="sm" color="secondary" />
     </span>
   );
@@ -494,6 +509,7 @@ export function DropdownMenuSubMenu(
         data-testid={testId}
         onMouseEnter={triggerProps.onMouseEnter}
         onMouseLeave={triggerProps.onMouseLeave}
+        onPointerMove={handlePointerMove}
         startContent={
           icon
             ? renderIconSlot(icon, {size: 'sm', color: 'secondary'})

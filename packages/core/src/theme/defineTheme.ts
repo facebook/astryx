@@ -239,9 +239,15 @@ export interface DefineThemeInput {
    * categorical hues, and fixed tokens (on-dark/on-light) use defaults.
    * Explicit `tokens` entries always take precedence.
    *
+   * `accent` is optional — omit it for a neutral-only theme, which keeps
+   * the default accent tokens and only themes the neutrals.
+   *
    * @example
    * ```tsx
    * color: { accent: '#0064E0', neutralStyle: 'cool', contrast: 'standard' }
+   *
+   * // Neutral-only — accent tokens stay at their defaults
+   * color: { neutralStyle: 'warm' }
    * ```
    */
   color?: ColorScaleConfig;
