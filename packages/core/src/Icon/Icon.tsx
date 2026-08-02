@@ -27,8 +27,8 @@ import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
 import {useThemeName} from '../theme/useTheme';
-import {getIcon} from './globalIconRegistry';
-import type {IconName} from './globalIconRegistry';
+import {getComponentIcon, getIcon} from './globalIconRegistry';
+import type {ComponentIconSlotName, IconName} from './globalIconRegistry';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 
@@ -201,7 +201,7 @@ export interface IconProps extends Omit<
    * - A semantic name string (e.g. 'close', 'chevronDown') — resolved from theme or built-in fallback
    * - An SVG icon component (e.g. from @heroicons/react) — rendered directly
    */
-  icon: IconType | IconName;
+  icon: IconType | IconName | ComponentIconSlotName;
   /**
    * The color variant of the icon.
    * @default 'inherit'
@@ -246,6 +246,15 @@ export interface IconProps extends Omit<
    * ```
    */
   label?: string;
+  /**
+   * Fallback global icon name when `icon` is a component-specific slot.
+   *
+   * Components use this to render semantic purposes like
+   * `selector-selected-option` while letting themes remap that purpose through
+   * `defineTheme({componentIcons})`. Set to `null` when the default for the
+   * component slot is intentionally no icon.
+   */
+  fallbackIcon?: IconName | null;
   /**
    * StyleX styles created via `stylex.create()`. Folded into the icon's own
    * `stylex.props()` call (as the last argument) so it merges with the base
@@ -297,6 +306,7 @@ export function Icon({
   color = 'inherit',
   size = 'md',
   label,
+  fallbackIcon,
   ref,
   className,
   style,
@@ -312,6 +322,7 @@ export function Icon({
     return (
       <IconFromRegistry
         name={icon}
+        fallbackIcon={fallbackIcon}
         color={color}
         size={size}
         a11yProps={a11yProps}
@@ -363,6 +374,7 @@ Icon.displayName = 'Icon';
  */
 function IconFromRegistry({
   name,
+  fallbackIcon,
   color,
   size,
   a11yProps,
@@ -371,7 +383,8 @@ function IconFromRegistry({
   xstyle,
   spanProps,
 }: {
-  name: IconName;
+  name: IconName | ComponentIconSlotName;
+  fallbackIcon?: IconName | null;
   color: IconColor;
   size: IconSize;
   a11yProps: {role: 'img'; 'aria-label': string} | {'aria-hidden': 'true'};
@@ -381,7 +394,10 @@ function IconFromRegistry({
   spanProps?: Omit<SVGProps<SVGSVGElement>, 'ref' | 'color'>;
 }) {
   const themeName = useThemeName();
-  const resolvedIcon = getIcon(name, themeName);
+  const resolvedIcon =
+    fallbackIcon !== undefined
+      ? getComponentIcon(name as ComponentIconSlotName, fallbackIcon, themeName)
+      : getIcon(name, themeName);
 
   if (resolvedIcon == null) {
     return null;

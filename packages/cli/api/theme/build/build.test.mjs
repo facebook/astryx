@@ -112,6 +112,29 @@ describe('themeBuild() — receipt', () => {
       outSpy.mockRestore();
     }
   });
+
+
+  it('preserves component icon mappings in the built theme object', async () => {
+    const themeFile = path.join(tmpDir, 'component-icons.mjs');
+    fs.writeFileSync(
+      themeFile,
+      `export default {
+        name: 'component-icons',
+        tokens: { '--color-bg': '#fff' },
+        componentIcons: { 'selector-selected-option': 'success' },
+      };
+`,
+    );
+
+    const result = await themeBuild('component-icons.mjs', {}, {cwd: tmpDir});
+
+    expect(result?.type).toBe('theme.build');
+    const js = fs.readFileSync(path.join(tmpDir, 'component-icons.js'), 'utf-8');
+    expect(js).toContain('componentIcons');
+    expect(js).toContain("selector-selected-option");
+    expect(js).toContain("success");
+  });
+
 });
 
 describe('themeBuild() — nothing to build', () => {

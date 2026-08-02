@@ -73,6 +73,19 @@ export type ExtendedIconName = IconName | (string & {});
  */
 export type IconRegistry = Record<IconName, ReactNode>;
 
+/**
+ * Semantic component icon slots. Core declares slots for built-in components;
+ * external component packages can add their own slots with module augmentation.
+ */
+export interface ComponentIconSlotMap {
+  'selector-selected-option': true;
+}
+
+export type ComponentIconSlotName = keyof ComponentIconSlotMap & string;
+export type ComponentIconMap = Partial<
+  Record<ComponentIconSlotName, IconName | null>
+>;
+
 export type IconRegistrySource = DefinedTheme | string | null | undefined;
 
 // =============================================================================
@@ -81,18 +94,22 @@ export type IconRegistrySource = DefinedTheme | string | null | undefined;
 
 let globalRegistry: Record<string, ReactNode> = {};
 
-function getThemeIconOverrides(
-  source: IconRegistrySource,
-): Partial<IconRegistry> | null {
+function getTheme(source: IconRegistrySource): DefinedTheme | null {
   if (source == null) {
     return null;
   }
 
   if (typeof source === 'string') {
-    return getRegisteredTheme(source)?.icons ?? null;
+    return getRegisteredTheme(source);
   }
 
-  return source.icons ?? null;
+  return source;
+}
+
+function getThemeIconOverrides(
+  source: IconRegistrySource,
+): Partial<IconRegistry> | null {
+  return getTheme(source)?.icons ?? null;
 }
 
 /**
@@ -209,6 +226,40 @@ export function getExtendedIcon(
     defaultIcons[name as IconName] ??
     fallback
   );
+}
+
+/**
+ * Resolve a component-specific semantic slot to a concrete icon name.
+ *
+ * The mapping is theme-scoped: `componentIcons[slot]` chooses which global icon
+ * name should represent the component purpose. `undefined` falls back to the
+ * component default; `null` intentionally renders no icon.
+ */
+export function getComponentIconName(
+  slot: ComponentIconSlotName,
+  fallback: IconName | null,
+  source?: IconRegistrySource,
+): IconName | null {
+  const theme = getTheme(source);
+  const mapped = theme?.componentIcons?.[slot];
+
+  if (mapped === undefined) {
+    return fallback;
+  }
+
+  return mapped;
+}
+
+/**
+ * Resolve a component-specific semantic slot to a concrete icon node.
+ */
+export function getComponentIcon(
+  slot: ComponentIconSlotName,
+  fallback: IconName | null,
+  source?: IconRegistrySource,
+): ReactNode {
+  const iconName = getComponentIconName(slot, fallback, source);
+  return iconName == null ? null : getIcon(iconName, source);
 }
 
 /**

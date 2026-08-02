@@ -837,3 +837,29 @@ export const ThemedIcons: Story = {
     );
   },
 };
+
+const selectorComponentIconTheme = defineTheme({
+  name: 'selector-component-icon-demo',
+  icons: {
+    success: <span style={{fontSize: 14, lineHeight: 1}}>◆</span>,
+  },
+  componentIcons: {
+    'selector-selected-option': 'success',
+  },
+});
+
+export const ComponentIconMapping: Story = {
+  render: () => {
+    const [value, setValue] = useState<string | undefined>('Banana');
+    return (
+      <Theme theme={selectorComponentIconTheme} mode="light">
+        <Selector
+          label="Selected option uses a component icon slot"
+          options={['Apple', 'Banana', 'Cherry']}
+          value={value}
+          onChange={setValue}
+        />
+      </Theme>
+    );
+  },
+};

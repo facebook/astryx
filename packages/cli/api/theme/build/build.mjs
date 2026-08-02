@@ -735,7 +735,15 @@ function generateBuiltModule(themeDef, iconInfo) {
     ? `import { ${iconInfo.exportName} } from '${iconInfo.importPath}';\n`
     : '';
   const iconsField = iconInfo ? `  icons: ${iconInfo.exportName},` : '';
-  const iconReExport = iconInfo ? `\nexport { ${iconInfo.exportName} };\n` : '';
+  const componentIconsField = themeDef.componentIcons
+    ? `  componentIcons: ${JSON.stringify(themeDef.componentIcons, null, 2)
+        .split('\n')
+        .map((line, i) => (i === 0 ? line : '  ' + line))
+        .join('\n')},`
+    : '';
+  const iconReExport = iconInfo ? `
+export { ${iconInfo.exportName} };
+` : '';
 
   // Resolve token values — tuples become light-dark() strings
   /** @type {Record<string, unknown>} */
@@ -763,6 +771,7 @@ export const ${toIdentifier(themeDef.name)}Theme = {
   __built: true,
   tokens: ${tokensStr},
 ${iconsField}
+${componentIconsField}
 };
 ${iconReExport}`;
 }

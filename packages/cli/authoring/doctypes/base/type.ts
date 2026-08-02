@@ -313,6 +313,26 @@ export interface ComponentThemingTarget {
 }
 
 /**
+ * Documents a themeable component icon slot.
+ *
+ * Component icon slots map a component-specific purpose to a global icon
+ * registry name through defineTheme({componentIcons}).
+ *
+ * @example
+ * ```
+ * {slot: 'selector-selected-option', default: 'check', description: 'Icon shown next to the selected option.'}
+ * ```
+ */
+export interface ComponentIconSlotDoc {
+  /** Component-specific icon slot name used in `componentIcons`. */
+  slot: string;
+  /** Default global icon name used when the theme does not map this slot. */
+  default: string | null;
+  /** What this slot represents semantically. */
+  description: string;
+}
+
+/**
  * Documents a CSS custom property exposed by a component for theming.
  * These vars are set on the component's root element and can be overridden
  * via `defineTheme` component overrides.

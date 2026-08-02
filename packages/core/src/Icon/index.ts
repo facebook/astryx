@@ -21,6 +21,8 @@ export {
   getIconRegistry,
   getIcon,
   getExtendedIcon,
+  getComponentIcon,
+  getComponentIconName,
   resetIcons,
 } from './globalIconRegistry';
 export type {
@@ -28,4 +30,7 @@ export type {
   ExtendedIconName,
   IconRegistry,
   IconRegistrySource,
+  ComponentIconSlotMap,
+  ComponentIconSlotName,
+  ComponentIconMap,
 } from './globalIconRegistry';

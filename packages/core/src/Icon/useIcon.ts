@@ -11,13 +11,43 @@
 
 import type {ReactNode} from 'react';
 import {useThemeName} from '../theme/useTheme';
-import {getIcon, type IconName} from './globalIconRegistry';
+import {
+  getComponentIcon,
+  getIcon,
+  type ComponentIconSlotName,
+  type IconName,
+} from './globalIconRegistry';
 
 /**
- * Resolve a semantic icon name from the nearest Theme, falling back through
- * root theme registration, global icon overrides, and built-in defaults.
+ * Resolve a global semantic icon name from the nearest Theme.
  */
-export function useIcon(name: IconName): ReactNode {
+export function useIcon(name: IconName): ReactNode;
+
+/**
+ * Resolve a component-specific semantic icon slot from the nearest Theme.
+ *
+ * `fallback` is the component's default global icon name. A theme can remap
+ * the slot through `defineTheme({componentIcons})`; mapping the slot to `null`
+ * intentionally renders no icon.
+ */
+export function useIcon(
+  slot: ComponentIconSlotName,
+  fallback: IconName | null,
+): ReactNode;
+
+export function useIcon(
+  nameOrSlot: IconName | ComponentIconSlotName,
+  fallback?: IconName | null,
+): ReactNode {
   const themeName = useThemeName();
-  return getIcon(name, themeName);
+
+  if (arguments.length === 2) {
+    return getComponentIcon(
+      nameOrSlot as ComponentIconSlotName,
+      fallback ?? null,
+      themeName,
+    );
+  }
+
+  return getIcon(nameOrSlot, themeName);
 }

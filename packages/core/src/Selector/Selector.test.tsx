@@ -23,6 +23,7 @@ import {SelectorOption} from './SelectorOption';
 import {Icon} from '../Icon';
 import {InputGroup, InputGroupText} from '../InputGroup';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
+import {Theme} from '../theme/Theme';
 import {defineTheme} from '../theme/defineTheme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
 
@@ -217,6 +218,54 @@ describe('Selector', () => {
       />,
     );
     expect(screen.getByRole('combobox')).toHaveTextContent('Banana');
+  });
+
+  it('resolves the selected-option icon through the component icon slot', () => {
+    const theme = defineTheme({
+      name: 'selector-selected-option-icon-test',
+      icons: {success: 'selected-slot-icon'},
+      componentIcons: {'selector-selected-option': 'success'},
+    });
+
+    render(
+      <Theme theme={theme}>
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Banana"
+          onChange={() => {}}
+        />
+      </Theme>,
+    );
+
+    const selectedOption = document.querySelector('[aria-selected="true"]');
+    expect(selectedOption).not.toBeNull();
+    expect(selectedOption).toHaveTextContent('Banana');
+    expect(selectedOption).toHaveTextContent('selected-slot-icon');
+  });
+
+  it('allows a theme to remove the selected-option icon slot', () => {
+    const theme = defineTheme({
+      name: 'selector-selected-option-null-test',
+      componentIcons: {'selector-selected-option': null},
+    });
+
+    render(
+      <Theme theme={theme}>
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Banana"
+          onChange={() => {}}
+        />
+      </Theme>,
+    );
+
+    const selectedOption = screen.getByRole('option', {
+      name: /Banana/,
+      hidden: true,
+    });
+    expect(selectedOption.querySelector('.astryx-icon')).toBeNull();
   });
 
   it('renders custom option endContent', async () => {

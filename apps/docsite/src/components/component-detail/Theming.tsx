@@ -169,6 +169,88 @@ function TargetsTable({targets, props}: TargetsTableProps) {
   );
 }
 
+interface IconSlotDoc {
+  slot: string;
+  default: string | null;
+  description: string;
+}
+
+interface IconSlotsTableProps {
+  icons: IconSlotDoc[];
+}
+
+function IconSlotsTable({icons}: IconSlotsTableProps) {
+  const isMobile = useMediaQuery('(max-width: 768px)');
+
+  if (isMobile) {
+    return (
+      <VStack gap={0}>
+        {icons.map(icon => (
+          <Fragment key={icon.slot}>
+            <Divider />
+            <VStack gap={1} style={{paddingBlock: 8}}>
+              <Text type="code" weight="bold">
+                {icon.slot}
+              </Text>
+              <Text type="code" color="secondary">
+                {icon.default ?? 'none'}
+              </Text>
+              <MarkdownText type="body" color="secondary">
+                {icon.description}
+              </MarkdownText>
+            </VStack>
+          </Fragment>
+        ))}
+      </VStack>
+    );
+  }
+
+  const data = icons.map(icon => ({
+    slot: icon.slot as unknown,
+    fallback: (icon.default ?? 'none') as unknown,
+    description: icon.description as unknown,
+  })) as Record<string, unknown>[];
+
+  return (
+    <Table
+      data={data}
+      columns={[
+        {
+          key: 'slot',
+          header: 'Slot',
+          width: pixel(260),
+          renderCell: (item: Record<string, unknown>) => (
+            <Text type="code" weight="bold" style={{whiteSpace: 'nowrap'}}>
+              {item.slot as string}
+            </Text>
+          ),
+        },
+        {
+          key: 'fallback',
+          header: 'Default icon',
+          width: pixel(160),
+          renderCell: (item: Record<string, unknown>) => (
+            <Text type="code" color="secondary">
+              {item.fallback as string}
+            </Text>
+          ),
+        },
+        {
+          key: 'description',
+          header: 'Description',
+          renderCell: (item: Record<string, unknown>) => (
+            <MarkdownText type="body">
+              {item.description as string}
+            </MarkdownText>
+          ),
+        },
+      ]}
+      density="spacious"
+      dividers="rows"
+    />
+  );
+}
+
 interface CssVarsTableProps {
   vars: ComponentVar[];
 }
@@ -262,8 +344,10 @@ export function Theming({theming, props}: ThemingProps) {
   const hasTargets = theming.targets.length > 0;
   const vars = publicVars(theming);
   const hasVars = vars.length > 0;
+  const iconSlots = theming.icons ?? [];
+  const hasIconSlots = iconSlots.length > 0;
 
-  if (!hasTargets && !hasVars) {
+  if (!hasTargets && !hasVars && !hasIconSlots) {
     return null;
   }
 
@@ -284,8 +368,8 @@ export function Theming({theming, props}: ThemingProps) {
           />
           <Text type="large" weight="normal">
             Restyle this component with a <Text type="code">defineTheme</Text>{' '}
-            config. Target the component through the keys below, or override the
-            CSS variables it exposes.
+            config. Target the component through the keys below, map component
+            icon slots, or override the CSS variables it exposes.
           </Text>
         </VStack>
 
@@ -307,6 +391,19 @@ export function Theming({theming, props}: ThemingProps) {
                 hasCopyButton
               />
             )}
+          </VStack>
+        )}
+
+        {hasIconSlots && (
+          <VStack gap={3}>
+            <Heading level={3}>Component icon slots</Heading>
+            <Text color="secondary">
+              These semantic slots map component-specific purposes to global
+              icon names with <Text type="code">defineTheme</Text>{' '}
+              <Text type="code">componentIcons</Text>. Use{' '}
+              <Text type="code">null</Text> to intentionally render no icon.
+            </Text>
+            <IconSlotsTable icons={iconSlots} />
           </VStack>
         )}
 

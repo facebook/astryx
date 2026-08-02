@@ -1070,6 +1070,29 @@ describe('defineTheme extends', () => {
     });
   });
 
+  it('preserves component icon mappings', () => {
+    const theme = defineTheme({
+      name: 'icons',
+      componentIcons: {'selector-selected-option': 'check'},
+    });
+
+    expect(theme.componentIcons?.['selector-selected-option']).toBe('check');
+  });
+
+  it('merges component icon mappings — child overrides base including null', () => {
+    const base = defineTheme({
+      name: 'base',
+      componentIcons: {'selector-selected-option': 'check'},
+    });
+    const child = defineTheme({
+      name: 'child',
+      extends: base,
+      componentIcons: {'selector-selected-option': null},
+    });
+
+    expect(child.componentIcons?.['selector-selected-option']).toBeNull();
+  });
+
   it('merges icons — child overrides base', () => {
     const baseIcons = {close: 'X', menu: 'M'} as Partial<IconRegistry>;
     const childIcons = {close: 'Y'} as Partial<IconRegistry>;

@@ -130,6 +130,12 @@ export type {
 
 export {useTheme, useThemeName, ThemeContext} from './useTheme';
 export type {UseThemeReturn, ThemeContextValue} from './useTheme';
+
+export type {
+  ComponentIconMap,
+  ComponentIconSlotMap,
+  ComponentIconSlotName,
+} from '../Icon';
 export {
   resolveThemeToken,
   resolveThemeTokens,

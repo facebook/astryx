@@ -179,6 +179,25 @@ function formatTargetsTable(docs, themeData) {
   return lines.join('\n');
 }
 
+
+/** @param {any} docs */
+function formatComponentIconSlotsTable(docs) {
+  if (!docs.theming?.icons?.length) return '';
+
+  const lines = [];
+  lines.push('| Slot | Default icon | Description |');
+  lines.push('|------|--------------|-------------|');
+
+  for (const icon of docs.theming.icons) {
+    const fallback = icon.default == null ? 'none' : icon.default;
+    lines.push(
+      `| \`${mdCell(icon.slot)}\` | \`${mdCell(fallback)}\` | ${mdCell(icon.description || '')} |`,
+    );
+  }
+
+  return lines.join('\n');
+}
+
 /**
  * Format full component docs (default mode, replaces cleanReadme).
  *
@@ -298,6 +317,11 @@ export function formatFull(docs, options = {}) {
       }
       exampleLines.push('}\n```\n');
       sections.push(exampleLines.join('\n'));
+    }
+
+    if (docs.theming.icons?.length) {
+      sections.push('**Component icon slots** — override these through `defineTheme({ componentIcons })`.\n');
+      sections.push(formatComponentIconSlotsTable(docs) + '\n');
     }
 
     // Legacy componentKey (for backward compatibility)
@@ -518,6 +542,14 @@ export function formatBrief(docs, componentName, importHint, options = {}) {
         ? description.slice(0, 77) + '...'
         : description;
     output.push(`  ${shortDesc}`);
+  }
+
+  // Component icon slots (if any)
+  if (docs.theming?.icons?.length) {
+    const slots = docs.theming.icons
+      .map((/** @type {any} */ icon) => `${icon.slot}→${icon.default ?? 'none'}`)
+      .join(', ');
+    output.push(`  Icon slots: ${slots}`);
   }
 
   // Component vars (if any — only show public vars)

@@ -35,6 +35,12 @@ export const docs = {
       default: "'md'",
     },
     {
+      name: 'fallbackIcon',
+      type: 'IconName | null',
+      description:
+        'Fallback global icon name when icon is a component-specific icon slot. Components use this for semantic purposes like selector-selected-option while letting themes remap through defineTheme({componentIcons}). Set null when the component slot defaults to no icon. Valid semantic names: close, chevronDown, chevronLeft, chevronRight, check, success, error, warning, info, calendar, clock, externalLink, menu, moreHorizontal, search, arrowUp, arrowDown, arrowsUpDown, funnel, eyeSlash, viewColumns, copy, checkDouble, wrench, stop, microphone.',
+    },
+    {
       name: 'label',
       type: 'string',
       description: 'Accessible name for a MEANINGFUL, standalone icon (a status glyph or icon-only indicator with no adjacent text). Setting it exposes the icon to screen readers as role="img" with this text as the accessible name (aria-label) and removes the default aria-hidden. Omit it (default) for decorative icons and the icon stays hidden from assistive tech (aria-hidden="true"). This is the accessible-name / alt-text prop for icons: one prop instead of manually setting aria-label + role + aria-hidden. An empty string is treated as decorative. Do not set it when an interactive parent (Button, IconButton, link) already names the control.',
@@ -91,6 +97,12 @@ export const docsZh = {
       type: "'xsm' | 'sm' | 'md' | 'lg'",
       description: '图标尺寸。',
       default: "'md'",
+    },
+    {
+      name: 'fallbackIcon',
+      type: 'IconName | null',
+      description:
+        'Fallback global icon name when icon is a component-specific icon slot. Components use this for semantic purposes like selector-selected-option while letting themes remap through defineTheme({componentIcons}). Set null when the component slot defaults to no icon. Valid semantic names: close, chevronDown, chevronLeft, chevronRight, check, success, error, warning, info, calendar, clock, externalLink, menu, moreHorizontal, search, arrowUp, arrowDown, arrowsUpDown, funnel, eyeSlash, viewColumns, copy, checkDouble, wrench, stop, microphone.',
     },
     {
       name: 'label',

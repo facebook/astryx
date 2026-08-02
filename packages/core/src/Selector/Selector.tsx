@@ -314,12 +314,6 @@ const styles = stylex.create({
     flex: 1,
     minWidth: 0,
   },
-  itemCheckmark: {
-    flexShrink: 0,
-    width: 16,
-    height: 16,
-    color: colorVars['--color-icon-primary'],
-  },
   itemHighlighted: {
     backgroundColor: colorVars['--color-overlay-hover'],
   },
@@ -1062,12 +1056,14 @@ export function Selector<T extends SelectorOptionType>(
           </span>
           {isSelected && (
             <Icon
-              icon="check"
+              // The component icon slot chooses WHICH glyph marks the
+              // selected row (a theme can remap it, or map it to null);
+              // `selector-check` is the stable target for how that glyph
+              // LOOKS. The two are independent, so keep both.
+              icon="selector-selected-option"
+              fallbackIcon="check"
               size="sm"
               color="accent"
-              // Stable theme target on the selected-row marker, so a theme can
-              // restyle or hide it (e.g. to compose its own selected indicator
-              // via renderOption) without a structural sibling selector.
               {...themeProps('selector-check')}
             />
           )}
