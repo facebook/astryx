@@ -220,12 +220,23 @@ export function ContextMenu({
   xstyle,
   triggerXstyle,
   'data-testid': testId,
-  ...props
+  ...rest
 }: ContextMenuProps) {
   const t = useTranslator();
   const label = labelFromProps ?? t('@astryx.contextMenu.label');
-  const items = ('items' in props ? props.items : undefined) ?? [];
-  const menuContent = 'menuContent' in props ? props.menuContent : undefined;
+  // Separate content props (union discriminant) from DOM pass-through attrs.
+  // The union means exactly one of items/menuContent exists in rest; destructure
+  // both so triggerProps contains only DOM-safe attributes.
+  const {
+    items: itemsProp,
+    menuContent: menuContentProp,
+    ...triggerProps
+  } = rest as {items?: ContextMenuOption[]; menuContent?: ReactNode} & Omit<
+    typeof rest,
+    'items' | 'menuContent'
+  >;
+  const items = itemsProp ?? [];
+  const menuContent = menuContentProp;
 
   const menuId = useId();
   // Cursor point in the trigger's local coordinate space (offset from the
@@ -449,7 +460,7 @@ export function ContextMenu({
   );
 
   const resolvedMenuContent =
-    props.items !== undefined ? renderDropdownItems(items) : menuContent;
+    itemsProp !== undefined ? renderDropdownItems(items) : menuContent;
 
   return (
     <>
@@ -457,6 +468,7 @@ export function ContextMenu({
         ref={mergeRefs(ref, triggerRef)}
         onContextMenu={handleContextMenu}
         {...longPressHandlers}
+        {...triggerProps}
         data-testid={testId}
         {...stylex.props(
           styles.trigger,
