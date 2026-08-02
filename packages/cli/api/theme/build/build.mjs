@@ -30,6 +30,7 @@ import {
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {AstryxError} from '../../error.mjs';
 import {logger} from '../../logger.mjs';
+import {loadComponentDoc} from '../../../foundation/discovery/component-loader.mjs';
 
 // Import shared theme processing from core. `astryx theme build` MUST produce the
 // exact same CSS as the `<Theme>` runtime, so it has exactly one generation
@@ -596,105 +597,94 @@ ${iconType}export declare const ${toIdentifier(themeDef.name)}Theme: DefinedThem
 `;
 }
 
+/**
+ * Load known theme target keys and visual props from core component docs.
+ * Returns null when docs are unavailable so validation can skip unknown-key
+ * warnings rather than guessing from a second registry.
+ *
+ * @returns {Promise<Record<string, string[]> | null>}
+ */
+async function loadKnownComponents() {
+  const coreRoot = resolveCoreRoot();
+  const coreSrc = coreRoot ? path.join(coreRoot, 'src') : null;
+  if (!coreSrc || !fs.existsSync(coreSrc)) return null;
+
+  /** @type {Record<string, string[]>} */
+  const targets = {};
+
+  /** @param {string} dir */
+  async function scan(dir) {
+    const entries = fs.readdirSync(dir, {withFileTypes: true});
+    for (const entry of entries) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (entry.name === 'node_modules' || entry.name === '__tests__') continue;
+        await scan(full);
+        continue;
+      }
+      if (!entry.name.endsWith('.doc.mjs')) continue;
+
+      /** @type {any} */
+      let doc;
+      try {
+        doc = await loadComponentDoc(full);
+      } catch {
+        continue;
+      }
+
+      for (const target of doc?.theming?.targets || []) {
+        const className = target?.className;
+        if (typeof className !== 'string') continue;
+        const key = className.replace(/^astryx-/, '');
+        if (!key) continue;
+        const props = Array.isArray(target.visualProps)
+          ? target.visualProps.filter((/** @type {unknown} */ p) => typeof p === 'string')
+          : [];
+        targets[key] = [...new Set([...(targets[key] || []), ...props])];
+      }
+    }
+  }
+
+  await scan(coreSrc);
+  return Object.keys(targets).length > 0 ? targets : null;
+}
+
+/** @type {Record<string, string[]> | null | undefined} */
+let knownComponentsCache;
+
+/**
+ * @returns {Promise<Record<string, string[]> | null>}
+ */
+async function getKnownComponents() {
+  if (knownComponentsCache === undefined) {
+    knownComponentsCache = await loadKnownComponents();
+  }
+  return knownComponentsCache;
+}
+
 // =============================================================================
 // Component validation
 // =============================================================================
-
-/**
- * Known Astryx component names and their visual props.
- * Used to warn on typos in defineTheme component overrides.
- *
- * CONTRACT: every key must equal the stable class token the component
- * actually renders — the `<name>` in core's `themeProps('<name>')` /
- * `stableClassName('<name>')` calls. Theme CSS selectors are derived
- * verbatim from these keys (`.astryx-<key>`), so a key that diverges from
- * the rendered class validates cleanly but emits a dead rule that matches
- * nothing in the DOM (#4109: `textinput` emitted `.astryx-textinput` while
- * TextInput renders `astryx-text-input`).
- *
- * The prop lists mirror the visual props each component passes to
- * `themeProps()` (also documented as `theming.targets[].visualProps` in the
- * component's doc.mjs) — the axes that render as variant classes and
- * data attributes.
- *
- * `layer` has no rendered `astryx-layer` class or doc target; it is a
- * layout/anchor concept unrelated to #4109 and is intentionally kept (see the
- * `allowedWithoutTarget` allowlist in build-theme.registry.test.mjs).
- *
- * @type {Record<string, string[]>}
- */
-const KNOWN_COMPONENTS = {
-  'app-shell': ['variant'],
-  'aspect-ratio': ['shape'],
-  avatar: ['size'],
-  badge: ['variant', 'color'],
-  banner: ['container', 'status'],
-  breadcrumbs: ['variant'],
-  button: ['variant', 'size'],
-  calendar: [],
-  card: ['variant'],
-  center: [],
-  'checkbox-input': ['size'],
-  collapsible: [],
-  'date-input': ['size', 'status'],
-  dialog: ['variant', 'position'],
-  divider: ['variant', 'orientation'],
-  'dropdown-menu': [],
-  'empty-state': [],
-  field: [],
-  'form-layout': ['direction'],
-  grid: ['align'],
-  heading: ['level'],
-  icon: ['size', 'color'],
-  kbd: [],
-  layer: [],
-  layout: [],
-  link: ['color'],
-  list: ['type', 'density'],
-  'mobile-nav': ['side'],
-  'more-menu': [],
-  navicon: [],
-  'number-input': ['size', 'status'],
-  pagination: ['variant'],
-  progressbar: ['variant', 'size'],
-  'radio-list': ['orientation', 'size'],
-  section: ['variant'],
-  selector: ['type', 'size', 'color'],
-  'side-nav': ['mode'],
-  skeleton: [],
-  slider: ['orientation'],
-  spinner: ['size'],
-  stack: [],
-  statusdot: ['variant', 'size'],
-  switch: [],
-  'tab-list': ['size'],
-  table: [],
-  text: ['type', 'color'],
-  'text-input': ['size', 'status'],
-  textarea: [],
-  'time-input': ['size', 'status'],
-  token: ['color'],
-  tokenizer: [],
-  'top-nav': [],
-  typeahead: ['type', 'size', 'color'],
-};
 
 /**
  * Validate component overrides in a theme definition.
  * Warns on unknown component names and unknown prop names.
  * Returns array of warning strings.
  * @param {{components?: Record<string, Record<string, unknown>>}} themeDef
- * @returns {string[]}
+ * @returns {Promise<string[]>}
  */
-function validateComponentOverrides(themeDef) {
+async function validateComponentOverrides(themeDef) {
   /** @type {string[]} */
   const warnings = [];
   if (!themeDef.components) return warnings;
 
+  const knownComponents = await getKnownComponents();
+  if (knownComponents == null) return warnings;
+
   for (const [component, rules] of Object.entries(themeDef.components)) {
     // Check component name
-    if (!(component in KNOWN_COMPONENTS)) {
-      const similar = Object.keys(KNOWN_COMPONENTS)
+    if (!(component in knownComponents)) {
+      const similar = Object.keys(knownComponents)
         .filter((k) => {
           if (k.includes(component) || component.includes(k)) return true;
           // Levenshtein distance 1-2 for short names
@@ -719,7 +709,7 @@ function validateComponentOverrides(themeDef) {
     }
 
     // Check prop names in prop:value keys
-    const knownProps = KNOWN_COMPONENTS[component];
+    const knownProps = knownComponents[component];
     for (const key of Object.keys(rules)) {
       if (key === 'base') continue;
 
@@ -823,7 +813,7 @@ export async function themeBuild(file, options = {}, {cwd = process.cwd()} = {})
   }
 
   // Validate component overrides
-  const warnings = validateComponentOverrides(themeDef);
+  const warnings = await validateComponentOverrides(themeDef);
   const warningMessages = [];
   for (const w of warnings) {
     warningMessages.push(w);
