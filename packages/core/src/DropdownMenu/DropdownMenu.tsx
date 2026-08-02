@@ -50,7 +50,7 @@ import {
 import {useListFocus} from '../hooks/useListFocus';
 import {useTypeahead} from '../hooks/useTypeahead';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
-import type {LayerPlacement} from '../Layer/useLayer';
+import type {LayerAlignment, LayerPlacement} from '../Layer/useLayer';
 import {
   spacingVars,
   radiusVars,
@@ -145,6 +145,13 @@ interface DropdownMenuBaseProps extends BaseProps {
    */
   placement?: LayerPlacement;
 
+  /**
+   * Alignment along the placement axis.
+   * Uses the same alignment values as other Astryx layer-based components.
+   * @default 'start'
+   */
+  alignment?: LayerAlignment;
+
   'data-testid'?: string;
 }
 
@@ -198,6 +205,7 @@ export function DropdownMenu({
   onClick,
   hasChevron = true,
   placement = 'below',
+  alignment = 'start',
   className,
   style,
   xstyle,
@@ -474,7 +482,7 @@ export function DropdownMenu({
         </div>,
         {
           placement,
-          alignment: 'start',
+          alignment,
           xstyle: [popoverXstyle, popoverGapStyle, layerAnimations[placement]],
         },
       )}

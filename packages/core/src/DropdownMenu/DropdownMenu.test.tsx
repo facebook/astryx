@@ -109,6 +109,22 @@ describe('DropdownMenu', () => {
     );
   });
 
+  it('supports explicit menu alignment', () => {
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        alignment="end"
+        items={[{label: 'Item 1'}]}
+      />,
+    );
+    const popover = screen
+      .getByRole('menu', {hidden: true})
+      .closest('[popover]');
+    expect(popover?.getAttribute('style')).toContain(
+      'position-area: self-block-end span-self-inline-start',
+    );
+  });
+
   it('emits the direction-independent logical mapping under an RTL ancestor (#3389)', async () => {
     // The self-* position-area keywords resolve against the popover's own
     // inherited direction in the browser, so RTL emits the same string as
