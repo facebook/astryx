@@ -40,13 +40,13 @@ const s0 = stylex.create({
   reveal: {
     transitionProperty: 'opacity, position',
     transitionDuration: {
-      default: `${durationVars['--duration-fast']}, 0s`,
+      default: durationVars['--duration-fast'] + ', 0s',
       '@media (prefers-reduced-motion: reduce)': '0s, 0s',
     },
     transitionTimingFunction: easeVars['--ease-standard'],
     transitionBehavior: 'allow-discrete',
     transitionDelay: {
-      default: `0s, ${durationVars['--duration-fast']}`,
+      default: '0s, ' + durationVars['--duration-fast'],
       '@media (prefers-reduced-motion: reduce)': '0s, 0s',
       [stylex.when.ancestor(':hover', m0)]: {'@media (hover: hover)': '0s, 0s'},
       [stylex.when.ancestor(':focus-within', m0)]: '0s, 0s',
@@ -122,13 +122,13 @@ const s1 = stylex.create({
   reveal: {
     transitionProperty: 'opacity, position',
     transitionDuration: {
-      default: `${durationVars['--duration-fast']}, 0s`,
+      default: durationVars['--duration-fast'] + ', 0s',
       '@media (prefers-reduced-motion: reduce)': '0s, 0s',
     },
     transitionTimingFunction: easeVars['--ease-standard'],
     transitionBehavior: 'allow-discrete',
     transitionDelay: {
-      default: `0s, ${durationVars['--duration-fast']}`,
+      default: '0s, ' + durationVars['--duration-fast'],
       '@media (prefers-reduced-motion: reduce)': '0s, 0s',
       [stylex.when.ancestor(':hover', m1)]: {'@media (hover: hover)': '0s, 0s'},
       [stylex.when.ancestor(':focus-within', m1)]: '0s, 0s',
@@ -204,13 +204,13 @@ const s2 = stylex.create({
   reveal: {
     transitionProperty: 'opacity, position',
     transitionDuration: {
-      default: `${durationVars['--duration-fast']}, 0s`,
+      default: durationVars['--duration-fast'] + ', 0s',
       '@media (prefers-reduced-motion: reduce)': '0s, 0s',
     },
     transitionTimingFunction: easeVars['--ease-standard'],
     transitionBehavior: 'allow-discrete',
     transitionDelay: {
-      default: `0s, ${durationVars['--duration-fast']}`,
+      default: '0s, ' + durationVars['--duration-fast'],
       '@media (prefers-reduced-motion: reduce)': '0s, 0s',
       [stylex.when.ancestor(':hover', m2)]: {'@media (hover: hover)': '0s, 0s'},
       [stylex.when.ancestor(':focus-within', m2)]: '0s, 0s',
@@ -286,13 +286,13 @@ const s3 = stylex.create({
   reveal: {
     transitionProperty: 'opacity, position',
     transitionDuration: {
-      default: `${durationVars['--duration-fast']}, 0s`,
+      default: durationVars['--duration-fast'] + ', 0s',
       '@media (prefers-reduced-motion: reduce)': '0s, 0s',
     },
     transitionTimingFunction: easeVars['--ease-standard'],
     transitionBehavior: 'allow-discrete',
     transitionDelay: {
-      default: `0s, ${durationVars['--duration-fast']}`,
+      default: '0s, ' + durationVars['--duration-fast'],
       '@media (prefers-reduced-motion: reduce)': '0s, 0s',
       [stylex.when.ancestor(':hover', m3)]: {'@media (hover: hover)': '0s, 0s'},
       [stylex.when.ancestor(':focus-within', m3)]: '0s, 0s',
@@ -368,13 +368,13 @@ const s4 = stylex.create({
   reveal: {
     transitionProperty: 'opacity, position',
     transitionDuration: {
-      default: `${durationVars['--duration-fast']}, 0s`,
+      default: durationVars['--duration-fast'] + ', 0s',
       '@media (prefers-reduced-motion: reduce)': '0s, 0s',
     },
     transitionTimingFunction: easeVars['--ease-standard'],
     transitionBehavior: 'allow-discrete',
     transitionDelay: {
-      default: `0s, ${durationVars['--duration-fast']}`,
+      default: '0s, ' + durationVars['--duration-fast'],
       '@media (prefers-reduced-motion: reduce)': '0s, 0s',
       [stylex.when.ancestor(':hover', m4)]: {'@media (hover: hover)': '0s, 0s'},
       [stylex.when.ancestor(':focus-within', m4)]: '0s, 0s',
@@ -450,13 +450,13 @@ const s5 = stylex.create({
   reveal: {
     transitionProperty: 'opacity, position',
     transitionDuration: {
-      default: `${durationVars['--duration-fast']}, 0s`,
+      default: durationVars['--duration-fast'] + ', 0s',
       '@media (prefers-reduced-motion: reduce)': '0s, 0s',
     },
     transitionTimingFunction: easeVars['--ease-standard'],
     transitionBehavior: 'allow-discrete',
     transitionDelay: {
-      default: `0s, ${durationVars['--duration-fast']}`,
+      default: '0s, ' + durationVars['--duration-fast'],
       '@media (prefers-reduced-motion: reduce)': '0s, 0s',
       [stylex.when.ancestor(':hover', m5)]: {'@media (hover: hover)': '0s, 0s'},
       [stylex.when.ancestor(':focus-within', m5)]: '0s, 0s',

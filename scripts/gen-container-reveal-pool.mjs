@@ -48,7 +48,7 @@ function toggled(m, hidden, shown) {
 // 0s so nothing lingers visible-but-empty.
 function positionDelay(m) {
   return `{
-      default: \`0s, \${durationVars['--duration-fast']}\`,
+      default: '0s, ' + durationVars['--duration-fast'],
       '@media (prefers-reduced-motion: reduce)': '0s, 0s',
       [stylex.when.ancestor(':hover', ${m})]: {'@media (hover: hover)': '0s, 0s'},
       [stylex.when.ancestor(':focus-within', ${m})]: '0s, 0s',
@@ -71,7 +71,7 @@ const s${i} = stylex.create({
   reveal: {
     transitionProperty: 'opacity, position',
     transitionDuration: {
-      default: \`\${durationVars['--duration-fast']}, 0s\`,
+      default: durationVars['--duration-fast'] + ', 0s',
       '@media (prefers-reduced-motion: reduce)': '0s, 0s',
     },
     transitionTimingFunction: easeVars['--ease-standard'],
