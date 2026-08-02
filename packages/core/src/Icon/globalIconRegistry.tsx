@@ -4,14 +4,17 @@
  * @file globalIconRegistry.tsx
  * @input None (pure module-level state)
  * @output Exports registerIcons, getIconRegistry, getIcon, resetIcons, IconName, IconRegistry
- * @position Global icon registry; works in both server and client environments
+ * @position Global and theme-scoped icon registry; works in server and client environments
  *
  * This module has NO 'use client' directive — it's importable from RSC.
- * All components use getIcon() to resolve icons from this global registry.
+ * Components resolve semantic icons through getIcon() or the client useIcon() hook.
  */
 
 import type {ReactNode} from 'react';
 import {defaultIcons} from './defaultIcons';
+import type {DefinedTheme} from '../theme/defineTheme';
+import {getRegisteredTheme} from '../theme/themeRegistry';
+import {warnOnce} from '../utils/devWarning';
 
 // =============================================================================
 // Types
@@ -57,11 +60,27 @@ export type IconName =
  */
 export type IconRegistry = Record<IconName, ReactNode>;
 
+export type IconRegistrySource = DefinedTheme | string | null | undefined;
+
 // =============================================================================
 // Global Registry
 // =============================================================================
 
 let globalRegistry: Partial<IconRegistry> = {};
+
+function getThemeIconOverrides(
+  source: IconRegistrySource,
+): Partial<IconRegistry> | null {
+  if (source == null) {
+    return null;
+  }
+
+  if (typeof source === 'string') {
+    return getRegisteredTheme(source)?.icons ?? null;
+  }
+
+  return source.icons ?? null;
+}
 
 /**
  * Register icons at the module level. Works in both server and client
@@ -78,6 +97,11 @@ let globalRegistry: Partial<IconRegistry> = {};
  * ```
  */
 export function registerIcons(icons: Partial<IconRegistry>): void {
+  warnOnce(
+    'icon-registry:global-register-icons',
+    'Icon',
+    '`registerIcons()` applies icon overrides globally. Prefer `defineTheme({ icons })` for theme-scoped icon overrides.',
+  );
   globalRegistry = {...globalRegistry, ...icons};
 }
 
@@ -89,11 +113,20 @@ export function registerIcons(icons: Partial<IconRegistry>): void {
  * to derive valid semantic icon-name options from the same registry Icon
  * resolves against.
  */
-export function getIconRegistry(): Readonly<IconRegistry> {
+export function getIconRegistry(
+  source?: IconRegistrySource,
+): Readonly<IconRegistry> {
   const registry = {...defaultIcons};
 
   for (const name of Object.keys(globalRegistry) as IconName[]) {
     registry[name] = globalRegistry[name] ?? defaultIcons[name];
+  }
+
+  const themeIcons = getThemeIconOverrides(source);
+  if (themeIcons != null) {
+    for (const name of Object.keys(themeIcons) as IconName[]) {
+      registry[name] = themeIcons[name] ?? registry[name];
+    }
   }
 
   return registry;
@@ -105,8 +138,12 @@ export function getIconRegistry(): Readonly<IconRegistry> {
  * Works in both server and client environments.
  * Falls back to built-in default icons when no override is registered.
  */
-export function getIcon(name: IconName): ReactNode {
-  return globalRegistry[name] ?? defaultIcons[name];
+export function getIcon(
+  name: IconName,
+  source?: IconRegistrySource,
+): ReactNode {
+  const themeIcons = getThemeIconOverrides(source);
+  return themeIcons?.[name] ?? globalRegistry[name] ?? defaultIcons[name];
 }
 
 /**

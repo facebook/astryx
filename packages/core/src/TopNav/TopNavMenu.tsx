@@ -28,7 +28,7 @@ import {usePopover} from '../Popover/usePopover';
 import {useMenuHover} from '../hooks/useMenuHover';
 import {useListFocus} from '../hooks/useListFocus';
 import {useTypeahead} from '../hooks/useTypeahead';
-import {getIcon} from '../Icon/globalIconRegistry';
+import {useIcon} from '../Icon';
 import {mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {navItemStyles} from '../NavItem/navItemStyles.stylex';
@@ -332,6 +332,7 @@ export function TopNavMenu({
   hideDelay = 200,
 }: TopNavMenuProps) {
   const renderMode = useTopNavRenderMode();
+  const chevronDownIcon = useIcon('chevronDown');
   const {closeMobileNav} = useAppShellMobile();
   const LinkComponent = useLinkComponent();
   const [drawerExpanded, setDrawerExpanded] = useState(false);
@@ -445,7 +446,7 @@ export function TopNavMenu({
               drawerStyles.chevron,
               drawerExpanded && drawerStyles.chevronExpanded,
             )}>
-            {getIcon('chevronDown')}
+            {chevronDownIcon}
           </span>
         </button>
         <div
@@ -503,7 +504,7 @@ export function TopNavMenu({
             styles.chevron,
             popover.isOpen && styles.chevronOpen,
           )}>
-          {getIcon('chevronDown')}
+          {chevronDownIcon}
         </span>
       </button>
       {popover.render(

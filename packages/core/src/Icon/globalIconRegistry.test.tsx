@@ -1,6 +1,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {describe, it, expect, beforeEach} from 'vitest';
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
+import {defineTheme} from '../theme/defineTheme';
+import {resetThemes} from '../theme/themeRegistry';
+import {__resetDevWarnings} from '../utils/devWarning';
 import {defaultIcons} from './defaultIcons';
 import {
   registerIcons,
@@ -12,6 +15,13 @@ import {
 describe('iconRegistry (global, RSC-compatible)', () => {
   beforeEach(() => {
     resetIcons();
+    resetThemes();
+    __resetDevWarnings();
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('returns a default icon registry snapshot', () => {
@@ -26,6 +36,18 @@ describe('iconRegistry (global, RSC-compatible)', () => {
     const icon = getIcon('close');
     expect(icon).toBeDefined();
     expect(icon).not.toBeNull();
+  });
+
+  it('warns once that registerIcons applies global overrides', () => {
+    const warnSpy = vi.mocked(console.warn);
+
+    registerIcons({close: 'custom-close'});
+    registerIcons({check: 'custom-check'});
+
+    expect(warnSpy).toHaveBeenCalledTimes(1);
+    expect(warnSpy.mock.calls[0]?.[0]).toContain(
+      '`registerIcons()` applies icon overrides globally',
+    );
   });
 
   it('returns registered icons over defaults', () => {
@@ -63,6 +85,35 @@ describe('iconRegistry (global, RSC-compatible)', () => {
     registerIcons({close: 'close-v1'});
     registerIcons({close: 'close-v2'});
     expect(getIcon('close')).toBe('close-v2');
+  });
+
+  it('resolves icons from an explicit theme object over global registrations', () => {
+    registerIcons({close: 'global-close'});
+    const theme = defineTheme({
+      name: 'brand',
+      icons: {close: 'theme-close'},
+    });
+
+    expect(getIcon('close', theme)).toBe('theme-close');
+    expect(getIconRegistry(theme).close).toBe('theme-close');
+  });
+
+  it('resolves icons from a registered theme name for SSR-friendly lookups', () => {
+    defineTheme({
+      name: 'brand',
+      icons: {close: 'theme-close'},
+    });
+
+    expect(getIcon('close', 'brand')).toBe('theme-close');
+    expect(getIconRegistry('brand').close).toBe('theme-close');
+  });
+
+  it('falls back through global registrations when a theme omits a name', () => {
+    registerIcons({close: 'global-close'});
+    const theme = defineTheme({name: 'brand', icons: {check: 'theme-check'}});
+
+    expect(getIcon('close', theme)).toBe('global-close');
+    expect(getIcon('check', theme)).toBe('theme-check');
   });
 
   it('resetIcons clears the global registry', () => {

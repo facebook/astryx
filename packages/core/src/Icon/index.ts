@@ -12,12 +12,8 @@
  */
 
 export {Icon, renderIconSlot} from './Icon';
-export type {
-  IconProps,
-  IconColor,
-  IconSize,
-  IconType,
-} from './Icon';
+export {useIcon} from './useIcon';
+export type {IconProps, IconColor, IconSize, IconType} from './Icon';
 
 // Global registry (RSC-compatible, no 'use client')
 export {
@@ -26,4 +22,8 @@ export {
   getIcon,
   resetIcons,
 } from './globalIconRegistry';
-export type {IconName, IconRegistry} from './globalIconRegistry';
+export type {
+  IconName,
+  IconRegistry,
+  IconRegistrySource,
+} from './globalIconRegistry';

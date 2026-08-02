@@ -24,7 +24,7 @@ import {
   easeVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
-import {getIcon} from '../Icon/globalIconRegistry';
+import {useIcon} from '../Icon';
 import {mergeProps, rtlStyles} from '../utils';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import {TreeListBranches} from './TreeListBranches';
@@ -328,6 +328,7 @@ export function TreeListItem({
   isTabbable,
 }: TreeListItemInternalProps) {
   const t = useTranslator();
+  const chevronRightIcon = useIcon('chevronRight');
   const labelId = useId();
   const descriptionId = useId();
   const LinkComponent = useLinkComponent();
@@ -412,7 +413,7 @@ export function TreeListItem({
           styles.chevronSvg,
           isExpanded ? styles.chevronExpanded : styles.chevronCollapsed,
         )}>
-        {getIcon('chevronRight')}
+        {chevronRightIcon}
       </span>
     </span>
   );

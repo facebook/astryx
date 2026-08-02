@@ -30,6 +30,12 @@ export {
   isDefinedTheme,
   tokenDefaults,
 } from './defineTheme';
+export {
+  registerTheme,
+  getRegisteredTheme,
+  getRegisteredThemes,
+  resetThemes,
+} from './themeRegistry';
 export type {
   DefineThemeInput,
   DefinedTheme,
@@ -126,7 +132,7 @@ export type {
   TypeScaleVarName,
 } from './tokens.stylex';
 
-export {useTheme, ThemeContext} from './useTheme';
+export {useTheme, useThemeName, ThemeContext} from './useTheme';
 export type {UseThemeReturn, ThemeContextValue} from './useTheme';
 export {
   resolveThemeToken,
