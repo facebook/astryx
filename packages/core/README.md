@@ -75,6 +75,8 @@ astryx gap-report                   # report a missing capability
 
 ## Quick Start
 
+Astryx requires **React 19** or later (`react` and `react-dom` >= 19.0.0 are peer dependencies).
+
 Install Astryx and a theme:
 
 ```bash

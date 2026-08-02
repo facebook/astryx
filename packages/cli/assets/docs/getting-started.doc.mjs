@@ -30,6 +30,10 @@ export const docs = {
       content: [
         {
           type: 'prose',
+          text: 'Astryx requires React 19 or later: `react` and `react-dom` >= 19.0.0 are peer dependencies of `@astryxdesign/core`.',
+        },
+        {
+          type: 'prose',
           text: 'Add the core package, a theme, and the CLI to your existing project.',
         },
         {
