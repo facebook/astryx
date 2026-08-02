@@ -4,9 +4,23 @@ astryx publishes its 12 public `@astryxdesign/*` packages to the public npm regi
 
 ### How it fits together
 
-- **Versioning is local and unchanged.** `pnpm run version-packages` (= `changeset version && format-changelogs`) only edits files and changelogs on disk. It needs no npm auth and is untouched by trusted publishing.
+- **Versioning is local and unchanged.** `pnpm run version-packages` (= `changeset version && promote-codemod-next && sync-internal-deps && format-changelogs`) only edits files, changelogs, and release-staged codemods on disk. It needs no npm auth and is untouched by trusted publishing.
 - **Publishing is pnpm-native and tokenless.** CI runs `pnpm publish ... --provenance --access public --no-git-checks` (not `changeset publish`, whose `npm whoami` precheck breaks under tokenless OIDC). pnpm natively fetches the OIDC token and attaches provenance.
 - **Trust is per-package.** npm allows exactly **one** trust configuration per package, registered against the **calling** workflow. Each of the 12 packages must be configured individually.
+
+### Version-package codemod promotion
+
+Core codemods for unreleased breaking changes are staged in
+`packages/cli/assets/codemods/transforms/next/`, not in a guessed future version
+folder. During the Version Packages PR, `pnpm version-packages` runs
+`scripts/promote-codemod-next.mjs` immediately after `changeset version`, when
+`packages/core/package.json` contains the actual version being released.
+
+The promotion step copies every entry from `next` except `README.md` into
+`packages/cli/assets/codemods/transforms/v<released-version>/`, removes the
+promoted files from `next`, and registers the new version folder in
+`packages/cli/assets/codemods/registry.mjs`. Review those generated files in the
+Version Packages PR the same way you review changelog output.
 
 ### The publish workflow (`.github/workflows/deploy.yml`)
 

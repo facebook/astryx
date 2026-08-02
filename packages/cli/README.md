@@ -482,6 +482,30 @@ The config is validated against a strict schema when the CLI loads it, so an
 unknown field is a hard error rather than a silent no-op. `astryx doctor`
 reports whether the config loads cleanly.
 
+## Core codemod authoring
+
+Core codemods live under `packages/cli/assets/codemods/transforms/`. Released
+codemods are grouped by the target package version (`v0.3.0`, `v0.3.1`, ...),
+which is the version that first contains the breaking change.
+
+Do not guess that version in ordinary feature PRs. Add new codemods to
+`packages/cli/assets/codemods/transforms/next/` instead:
+
+- put transform modules and tests in `transforms/next/`;
+- maintain `transforms/next/index.mjs` with the run order for the staged
+  transforms;
+- leave `transforms/next/README.md` in place; it documents the staging area and
+  is never promoted.
+
+During the Version Packages PR, `pnpm version-packages` runs
+`scripts/promote-codemod-next.mjs` after `changeset version`. The script copies
+all staged entries except the README into `transforms/v<new-core-version>/`,
+registers that version in `packages/cli/assets/codemods/registry.mjs`, and clears
+the promoted files from `next`.
+
+This mirrors Changesets: feature PRs stage migration work without knowing the
+future release number; the release PR assigns the exact version.
+
 ## Integrations
 
 An **integration** is any npm package that contributes its own components,
