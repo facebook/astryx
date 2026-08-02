@@ -18,19 +18,19 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
-import {ensureJscodeshift} from '../../codemods/ensure-jscodeshift.mjs';
-import {getTransformsBetween, latestVersion} from '../../codemods/registry.mjs';
-import {runCodemods} from '../../codemods/runner.mjs';
+import {ensureJscodeshift} from '../../assets/codemods/ensure-jscodeshift.mjs';
+import {getTransformsBetween, latestVersion} from '../../assets/codemods/registry.mjs';
+import {runCodemods} from '../../assets/codemods/runner.mjs';
 import {
   discoverIntegrationCodemods,
   selectIntegrationCodemods,
-} from '../../codemods/integration-discovery.mjs';
-import {runIntegrationCodemods} from '../../codemods/integration-runner.mjs';
-import {installAgentDocs, inspectAgentDocs} from '../../lib/agent-docs/agent-docs.mjs';
-import {formatCliCommand} from '../../utils/package-manager.mjs';
-import {Project} from '../../lib/project.mjs';
-import {loadIntegrations} from '../../lib/integrations.mjs';
-import {warnOnIntegrationIssues} from '../../lib/integration-warnings.mjs';
+} from '../../assets/codemods/integration-discovery.mjs';
+import {runIntegrationCodemods} from '../../assets/codemods/integration-runner.mjs';
+import {installAgentDocs, inspectAgentDocs} from '../../foundation/agent-docs/agent-docs.mjs';
+import {formatCliCommand} from '../../foundation/env/package-manager.mjs';
+import {Project} from '../../foundation/config/project.mjs';
+import {loadIntegrations} from '../../foundation/integrations/integrations.mjs';
+import {warnOnIntegrationIssues} from '../../foundation/integrations/integration-warnings.mjs';
 import {logger} from '../logger.mjs';
 
 const execFileAsync = promisify(execFile);
@@ -38,7 +38,7 @@ const execFileAsync = promisify(execFile);
 /**
  * @typedef {object} CoreTransformEntry
  * @property {string} name
- * @property {import('../../types/codemod').CodemodTransform} transform
+ * @property {import('../../authoring/codemod/type').CodemodTransform} transform
  * @property {{title: string, description?: string, pr?: string, codemodType?: string}} meta
  * @property {boolean} [optional]
  */
@@ -95,7 +95,7 @@ export function uniqueFiles(files) {
 /**
  * Run the app config's post-codemod hooks (config.hooks.postCodemod).
  * Dry-run PREVIEWS (buildCommand still called, so a throw fails); apply executes.
- * @param {import('../../types/config').PostCodemodHook[]} hooks
+ * @param {import('../../authoring/config/type').PostCodemodHook[]} hooks
  * @param {{packageDir: string, files: string[], apply: boolean}} context
  */
 export async function runPostCodemodHooks(hooks, context) {
@@ -269,7 +269,7 @@ export async function runCoreCodemods(versionManifests, {apply, path: srcPath, c
  * the run leaf decides between the config_fixable preview and a hard abort.
  * @param {string} cwd
  * @param {string[]} [extraIntegrationSpecs] explicit `--integration` specs
- * @returns {Promise<{postCodemodHooks: import('../../types/config').PostCodemodHook[], integrations: import('../../lib/integrations.mjs').LoadedIntegration[]}>}
+ * @returns {Promise<{postCodemodHooks: import('../../authoring/config/type').PostCodemodHook[], integrations: import('../../foundation/integrations/integrations.mjs').LoadedIntegration[]}>}
  */
 export async function loadProjectContext(cwd, extraIntegrationSpecs = []) {
   const project = await Project.load(cwd);
@@ -286,7 +286,7 @@ export async function loadProjectContext(cwd, extraIntegrationSpecs = []) {
  * Non-blocking nudge for integration validation issues. Never throws (a broken
  * nudge must not fail the upgrade) and is suppressed for --json/programmatic
  * callers (the silent logger).
- * @param {Array<import('../../lib/integrations.mjs').LoadedIntegration>} integrations
+ * @param {Array<import('../../foundation/integrations/integrations.mjs').LoadedIntegration>} integrations
  * @returns {Promise<void>}
  */
 export async function warnIntegrationIssues(integrations) {
@@ -301,20 +301,20 @@ export async function warnIntegrationIssues(integrations) {
  * Discover + select the integration codemods that apply in the (from, to]
  * range. An integration whose codemods fail to load is SKIPPED (a definition
  * error is surfaced by the nudge, not a hard failure of the upgrade).
- * @param {Array<import('../../lib/integrations.mjs').LoadedIntegration>} integrations
+ * @param {Array<import('../../foundation/integrations/integrations.mjs').LoadedIntegration>} integrations
  * @param {string} from
  * @param {string} to
- * @returns {Promise<Array<{version: string, codemods: import('../../types/codemod').CodemodEntry[]}>>}
+ * @returns {Promise<Array<{version: string, codemods: import('../../authoring/codemod/type').CodemodEntry[]}>>}
  */
 export async function selectIntegrationCodemodsFor(integrations, from, to) {
-  /** @type {Map<string, Array<import('../../types/codemod').CodemodEntry>>} */
+  /** @type {Map<string, Array<import('../../authoring/codemod/type').CodemodEntry>>} */
   const integrationCodemodsByVersion = new Map();
   for (const integration of integrations) {
     if (!integration?.codemods) continue;
     try {
       const byVersion = await discoverIntegrationCodemods([integration]);
       for (const [version, rawList] of byVersion) {
-        const list = /** @type {Array<import('../../types/codemod').CodemodEntry>} */ (/** @type {unknown} */ (rawList));
+        const list = /** @type {Array<import('../../authoring/codemod/type').CodemodEntry>} */ (/** @type {unknown} */ (rawList));
         const existing = integrationCodemodsByVersion.get(version);
         if (existing) existing.push(...list);
         else integrationCodemodsByVersion.set(version, [...list]);
@@ -323,14 +323,14 @@ export async function selectIntegrationCodemodsFor(integrations, from, to) {
       // Skip this integration's codemods (definition error); nudge above surfaces it.
     }
   }
-  return /** @type {Array<{version: string, codemods: import('../../types/codemod').CodemodEntry[]}>} */ (
+  return /** @type {Array<{version: string, codemods: import('../../authoring/codemod/type').CodemodEntry[]}>} */ (
     selectIntegrationCodemods(integrationCodemodsByVersion, from, to)
   );
 }
 
 /**
  * Run the file-based INTEGRATION codemods (config codemods first, then code).
- * @param {Array<{version: string, codemods: import('../../types/codemod').CodemodEntry[]}>} versionGroups
+ * @param {Array<{version: string, codemods: import('../../authoring/codemod/type').CodemodEntry[]}>} versionGroups
  * @param {{apply: boolean, path: string, codemod?: string, skipCodemods: Set<string>}} options
  */
 export async function runIntegrationCodemodsStep(versionGroups, {apply, path: srcPath, codemod, skipCodemods}) {

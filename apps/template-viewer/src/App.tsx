@@ -7,11 +7,13 @@ import {LayerProvider} from '@astryxdesign/core/Layer';
 import {neutralTheme} from '@astryxdesign/theme-neutral/built';
 
 // Every renderable template, keyed by its path relative to this file, e.g.
-// "../../../packages/cli/templates/pages/ai-chat/page.tsx".
-const templates = import.meta.glob('../../../packages/cli/templates/**/*.tsx');
+// "../../../packages/cli/assets/templates/pages/ai-chat/page.tsx".
+const templates = import.meta.glob(
+  '../../../packages/cli/assets/templates/**/*.tsx',
+);
 
 // The URL pathname is a template directory,
-// e.g. /packages/cli/templates/pages/ai-chat
+// e.g. /packages/cli/assets/templates/pages/ai-chat
 const dir = window.location.pathname.replace(/^\/+|\/+$/g, '');
 
 // Each directory holds a single .tsx, so a substring match uniquely finds it.

@@ -15,7 +15,7 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Chat/index.ts (exports)
- * - /packages/cli/templates/blocks/components/ChatDictationButton/ (block examples)
+ * - /packages/cli/assets/templates/blocks/components/ChatDictationButton/ (block examples)
  */
 
 import React from 'react';

@@ -27,7 +27,7 @@
  * - /packages/core/src/ContextMenu/ContextMenu.test.tsx
  * - /packages/core/src/ContextMenu/index.ts
  * - /apps/storybook/stories/ContextMenu.stories.tsx
- * - /packages/cli/templates/blocks/components/ContextMenu/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/ContextMenu/ (showcase blocks)
  */
 
 import React, {

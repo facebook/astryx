@@ -361,7 +361,7 @@ function copyAgentTools(dest) {
   fs.mkdirSync(agentToolsDest, { recursive: true });
 
   // Copy bin directory
-  const binSrc = path.join(AGENT_TOOLS_DIR, 'bin');
+  const binSrc = path.join(AGENT_TOOLS_DIR, 'clients', 'cli', 'bin');
   const binDest = path.join(agentToolsDest, 'bin');
   if (fs.existsSync(binSrc)) {
     fs.mkdirSync(binDest, { recursive: true });
@@ -372,7 +372,7 @@ function copyAgentTools(dest) {
   }
 
   // Copy docs directory
-  const docsSrc = path.join(AGENT_TOOLS_DIR, 'docs');
+  const docsSrc = path.join(AGENT_TOOLS_DIR, 'assets', 'docs');
   const docsDest = path.join(agentToolsDest, 'docs');
   if (fs.existsSync(docsSrc)) {
     fs.mkdirSync(docsDest, { recursive: true });

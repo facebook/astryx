@@ -13,7 +13,7 @@
  * - /packages/core/src/Spinner/Spinner.test.tsx
  * - /packages/core/src/Spinner/index.ts
  * - /apps/storybook/stories/Spinner.stories.tsx
- * - /packages/cli/templates/blocks/components/Spinner/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Spinner/ (showcase blocks)
  */
 
 import {useEffect, useId, useRef, type ReactNode} from 'react';

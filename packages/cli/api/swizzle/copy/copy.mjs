@@ -16,15 +16,15 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {resolveCore} from '../_adapter.mjs';
-import {assertWithin, sanitizeName, PathSafetyError} from '../../../utils/path-safety.mjs';
-import {checkGhCli} from '../../../utils/github.mjs';
-import {Project} from '../../../lib/project.mjs';
+import {assertWithin, sanitizeName, PathSafetyError} from '../../../foundation/fs/path-safety.mjs';
+import {checkGhCli} from '../_github.mjs';
+import {Project} from '../../../foundation/config/project.mjs';
 import {
   CORE_PACKAGE,
   findIntegrationComponentDoc,
   findIntegrationComponentSource,
-} from '../../../lib/component-discovery.mjs';
-import {ERROR_CODES} from '../../../lib/error-codes.mjs';
+} from '../../../foundation/discovery/component-discovery.mjs';
+import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {AstryxError} from '../../error.mjs';
 
 /** Default issue tracker for maintainer feedback after swizzling. */
@@ -110,7 +110,7 @@ function buildFeedback(component, issuesUrl) {
  * Load the configured integrations + core issues URL for `cwd`, swallowing any
  * config errors so swizzle never hard-fails on a malformed/absent config.
  * @param {string} cwd
- * @returns {Promise<{loadedIntegrations: import('../../../lib/integrations.mjs').LoadedIntegration[], issuesUrl: string|undefined, project: Project|null}>}
+ * @returns {Promise<{loadedIntegrations: import('../../../foundation/integrations/integrations.mjs').LoadedIntegration[], issuesUrl: string|undefined, project: Project|null}>}
  */
 async function loadConfigSafely(cwd) {
   try {

@@ -22,7 +22,7 @@
  * - /packages/core/src/Thumbnail/Thumbnail.test.tsx
  * - /packages/core/src/Thumbnail/index.ts
  * - /apps/storybook/stories/Thumbnail.stories.tsx
- * - /packages/cli/templates/blocks/components/Thumbnail/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Thumbnail/ (showcase blocks)
  */
 
 import {useState} from 'react';

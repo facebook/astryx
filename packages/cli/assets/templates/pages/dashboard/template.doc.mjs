@@ -1,0 +1,12 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+/** @type {import('@astryxdesign/cli/authoring').TemplateDoc} */
+export const doc = {
+  type: 'page',
+  name: 'Analytics Dashboard',
+  displayName: 'Analytics Dashboard',
+  description: 'Analytics dashboard with KPI cards, charts, and data tables',
+  isReady: true,
+  category: 'Dashboard - Analytics',
+  isHiddenFromOverview: true,
+};

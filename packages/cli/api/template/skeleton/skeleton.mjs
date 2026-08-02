@@ -10,7 +10,7 @@
 
 import * as fs from 'node:fs';
 import {AstryxError} from '../../error.mjs';
-import {ERROR_CODES} from '../../../lib/error-codes.mjs';
+import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {extractComponents} from '../_adapter.mjs';
 
 const STRUCTURAL = new Set([

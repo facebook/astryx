@@ -171,6 +171,40 @@ describe('Switch', () => {
     expect(switchEl).toHaveAttribute('aria-describedby', description.id);
   });
 
+  it('toggles when clicking on the description', async () => {
+    const user = userEvent.setup();
+    const handleChange = vi.fn();
+    render(
+      <Switch
+        label="Dark mode"
+        description="Switch to a darker color scheme"
+        value={false}
+        onChange={handleChange}
+      />,
+    );
+    await user.click(screen.getByText('Switch to a darker color scheme'));
+    expect(handleChange).toHaveBeenCalledWith(true, expect.any(Object));
+  });
+
+  it('does not fold the description into the switch accessible name', () => {
+    // Description stays a sibling of the <label>, so it must not become part
+    // of the switch's accessible name — it belongs in the accessible
+    // description (aria-describedby) only, to avoid double announcement.
+    render(
+      <Switch
+        label="Dark mode"
+        description="Switch to a darker color scheme"
+        value={false}
+        onChange={() => {}}
+      />,
+    );
+    const switchEl = screen.getByRole('switch');
+    expect(switchEl).toHaveAccessibleName('Dark mode');
+    expect(switchEl).toHaveAccessibleDescription(
+      'Switch to a darker color scheme',
+    );
+  });
+
   it('is disabled when isDisabled prop is true', () => {
     render(
       <Switch

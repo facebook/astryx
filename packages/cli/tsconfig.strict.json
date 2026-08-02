@@ -11,25 +11,21 @@
   "include": [
     "api/**/*.mjs",
     "api/**/*.ts",
-    "cli/**/*.mjs",
-    "cli/**/*.ts",
-    "codemods/**/*.mjs",
-    "codemods/**/*.ts",
+    "clients/**/*.mjs",
+    "clients/**/*.ts",
+    "foundation/**/*.mjs",
+    "foundation/**/*.ts",
     "lib/**/*.mjs",
     "lib/**/*.ts",
     "utils/**/*.mjs",
     "utils/**/*.ts",
     "types/**/*.ts",
-    "schemas/**/*.mjs",
-    "schemas/**/*.ts",
     "authoring/**/*.mjs",
     "authoring/**/*.ts",
-    "bin/**/*.mjs",
     "scripts/**/*.mjs",
-    "docs/**/*.mjs",
-    "templates/**/*.mjs",
-    "templates/**/*.ts",
-    "templates/**/*.tsx"
+    "assets/**/*.mjs",
+    "assets/**/*.ts",
+    "assets/**/*.tsx"
   ],
   "exclude": ["**/*.test.mjs"]
 }

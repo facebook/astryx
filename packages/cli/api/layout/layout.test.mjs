@@ -13,7 +13,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import ts from 'typescript';
 import {layoutExpand, layoutCheck, layoutGrammar} from './layout.mjs';
-import {buildRegistry} from '../../lib/xle/registry.mjs';
+import {buildRegistry} from '../../foundation/xle/registry.mjs';
 
 // The registry imports ~140 .doc.mjs modules on first use; under full-suite
 // parallel load that can exceed the default 5s test timeout. Warm it once.

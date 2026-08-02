@@ -15,17 +15,17 @@
  *   and lib/component-loader; the discover dispatcher + leaves consume it.
  */
 
-import {Project} from '../../lib/project.mjs';
+import {Project} from '../../foundation/config/project.mjs';
 import {
   scanAllPackages,
   findComponentInPackages,
-} from '../../lib/package-scanner.mjs';
-import {loadDocs} from '../../lib/component-loader.mjs';
+} from './_package-scanner.mjs';
+import {loadDocs} from '../../foundation/discovery/component-loader.mjs';
 import {AstryxError} from '../error.mjs';
-import {ERROR_CODES} from '../../lib/error-codes.mjs';
+import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 
 /**
- * @typedef {import('../../lib/package-scanner.mjs').ScannedPackage} ScannedPackage
+ * @typedef {import('./_package-scanner.mjs').ScannedPackage} ScannedPackage
  */
 
 /**
@@ -71,7 +71,7 @@ function validateDocs(docs) {
 export async function discoverPackages() {
   const project = await Project.load();
   const loadedIntegrations =
-    /** @type {import('../../lib/integrations.mjs').LoadedIntegration[]} */ (
+    /** @type {import('../../foundation/integrations/integrations.mjs').LoadedIntegration[]} */ (
       project.loadedIntegrations
     );
 

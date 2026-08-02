@@ -57,7 +57,7 @@ For architectural context, decisions, and research, see the **[GitHub Wiki](http
 - **Research** — AI + Design Systems, AI Model Trajectory, Swizzle Ergonomics
 - **Future** — Animation System, RSC Utilities, Distribution Strategy
 
-For component-specific documentation, see the `{Name}.doc.mjs` file in each component directory under `packages/core/src/` (e.g. `Button/Button.doc.mjs`). These are plain JS files with JSDoc type annotations exporting a `ComponentDoc` object (typed via `packages/core/src/docs-types.ts`).
+For component-specific documentation, see the `{Name}.doc.mjs` file in each component directory under `packages/core/src/` (e.g. `Button/Button.doc.mjs`). These are plain JS files with JSDoc type annotations exporting a `ComponentDoc` object (typed via `@astryxdesign/cli/authoring`).
 
 ## Documentation Standard
 
@@ -119,7 +119,7 @@ Documentation lives in two places:
 <!-- ASTRYX-CLI:START -->
 
 Astryx CLI|Run from repo root. Load agent docs before any component work.
-ASTRYX="node packages/cli/bin/astryx.mjs"
+ASTRYX="node packages/cli/clients/cli/bin/astryx.mjs"
 BOOTSTRAP (run every branch, <500ms):
 $ASTRYX help # discover all commands and options
 $ASTRYX docs # list available doc topics

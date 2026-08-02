@@ -33,19 +33,19 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {pathToFileURL} from 'node:url';
-import {findCoreDir, CLI_ROOT} from '../../utils/paths.mjs';
+import {findCoreDir, CLI_ROOT} from '../../foundation/fs/paths.mjs';
 import {
   discoverComponents,
   findComponentReadme,
   resolveImportPath,
-} from '../../lib/component-discovery.mjs';
-import {discoverHooks, findHookDoc} from '../../lib/hook-discovery.mjs';
-import {levenshteinDistance} from '../../lib/string-utils.mjs';
+} from '../../foundation/discovery/component-discovery.mjs';
+import {discoverHooks, findHookDoc} from '../../foundation/discovery/hook-discovery.mjs';
+import {levenshteinDistance} from '../../foundation/text/string-utils.mjs';
 import {discoverTemplates, extractComponents} from '../template/template.mjs';
 import {AstryxError} from '../error.mjs';
-import {ERROR_CODES} from '../../lib/error-codes.mjs';
+import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 
-const DOCS_DIR = path.join(CLI_ROOT, 'docs');
+const DOCS_DIR = path.join(CLI_ROOT, 'assets', 'docs');
 
 /**
  * A search candidate gathered from one content domain. Extra underscore-

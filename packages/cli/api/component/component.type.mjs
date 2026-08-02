@@ -45,7 +45,7 @@
  * @typedef {(
  *   | {detail: 'names'; components: Record<string, ComponentListEntry[]>}
  *   | {detail: 'compact'; components: Record<string, ComponentBriefEntry[]>}
- *   | {detail: 'full'; components: Record<string, import('../../../core/src/docs-types').ComponentDoc[]>}
+ *   | {detail: 'full'; components: Record<string, import('@astryxdesign/cli/authoring').ComponentDoc[]>}
  * )} ComponentListData
  */
 
@@ -70,7 +70,7 @@
  * xds --json component <name>
  * @typedef {object} ComponentDetailResponse
  * @property {'component.detail'} type
- * @property {import('../../../core/src/docs-types').ComponentDoc & ComponentOwnership} data
+ * @property {import('@astryxdesign/cli/authoring').ComponentDoc & ComponentOwnership} data
  */
 
 /**
@@ -87,7 +87,7 @@
  * xds --json component <name> --props
  * @typedef {object} ComponentDetailPropsResponse
  * @property {'component.detail.props'} type
- * @property {import('../../../core/src/docs-types').PropDoc[]} data
+ * @property {import('@astryxdesign/cli/authoring').ComponentPropDoc[]} data
  */
 
 /**

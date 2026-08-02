@@ -21,7 +21,7 @@
  * - /packages/core/src/AvatarGroup/AvatarGroup.doc.mjs (props table, features)
  * - /packages/core/src/AvatarGroup/index.ts (exports if types change)
  * - /apps/storybook/stories/AvatarGroup.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/AvatarGroup/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/AvatarGroup/ (showcase blocks)
  */
 
 import {useId, useMemo, useState, type ReactNode} from 'react';

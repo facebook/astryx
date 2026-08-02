@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'useTableRowStatus',
@@ -19,7 +19,7 @@ export const docs = {
   ],
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
     'Returns a TablePlugin that prepends a narrow per-row status column: a colored dot, or an icon when provided (shape + color beats color alone for a11y). getStatus maps a row to {color, icon?, label} or null. color is a semantic name (success/error/warning/etc.) mapped to a theme token, or a raw CSS color. label is required (tooltip + accessible name). Memoize getStatus with useCallback.',

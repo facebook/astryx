@@ -33,7 +33,7 @@
  * `astryx --json validate-integration [package]`.
  * @typedef {object} ValidateIntegrationResponse
  * @property {'integration.validate'} type
- * @property {{name: string | null, version: string | null, issues: import('../../types/integration').AstryxIntegrationIssue[]}} data
+ * @property {{name: string | null, version: string | null, issues: import('../../foundation/integrations/issue').AstryxIntegrationIssue[]}} data
  */
 
 export {};

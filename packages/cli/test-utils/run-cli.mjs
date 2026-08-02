@@ -20,9 +20,9 @@
  */
 
 import {format} from 'node:util';
-import {createProgram} from '../cli/index.mjs';
-import {setJsonMode} from '../lib/json.mjs';
-import {handleCommanderError} from '../lib/json-shim.mjs';
+import {createProgram} from '../clients/cli/index.mjs';
+import {setJsonMode} from '../foundation/response/json.mjs';
+import {handleCommanderError} from '../clients/cli/lib/json-shim.mjs';
 
 /** Thrown by the trapped process.exit to unwind parseAsync with the exit code. */
 class ExitSignal extends Error {

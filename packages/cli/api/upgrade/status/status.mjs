@@ -15,7 +15,7 @@
  * just returns what they hand back.
  */
 
-import {formatCliCommand} from '../../../utils/package-manager.mjs';
+import {formatCliCommand} from '../../../foundation/env/package-manager.mjs';
 import {logger} from '../../logger.mjs';
 
 /**

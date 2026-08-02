@@ -14,8 +14,8 @@
  */
 
 import {AstryxError} from '../error.mjs';
-import {ERROR_CODES} from '../../lib/error-codes.mjs';
-import {SITE_URL, SITE_ORIGIN} from '../../lib/site.mjs';
+import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
+import {SITE_URL, SITE_ORIGIN} from './_site.mjs';
 
 /** Abort a feed/post fetch that hangs, and cap how much we'll read. */
 const FETCH_TIMEOUT_MS = 15000;

@@ -28,13 +28,13 @@ import {
   findManifestPaths,
   loadManifestObject,
   resolvePackageDir,
-} from '../../lib/integrations.mjs';
-import {discoverIntegrationCodemods} from '../../codemods/integration-discovery.mjs';
+} from '../../foundation/integrations/integrations.mjs';
+import {discoverIntegrationCodemods} from '../../assets/codemods/integration-discovery.mjs';
 import {discoverIntegrationTemplatesForOne} from '../template/template.mjs';
-import * as componentDiscovery from '../../lib/component-discovery.mjs';
+import * as componentDiscovery from '../../foundation/discovery/component-discovery.mjs';
 
 /**
- * @typedef {import('../../types/integration').AstryxIntegrationIssue} Issue
+ * @typedef {import('../../foundation/integrations/issue').AstryxIntegrationIssue} Issue
  */
 
 /**

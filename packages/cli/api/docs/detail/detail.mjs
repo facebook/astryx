@@ -25,7 +25,7 @@ async function resolveTokenRefs(docsData, topics) {
   const resolved = {...docsData, sections: [...docsData.sections]};
   for (let si = 0; si < resolved.sections.length; si++) {
     const section = resolved.sections[si];
-    /** @type {import('../../../../core/src/docs-types').ContentBlock[]} */
+    /** @type {import('@astryxdesign/cli/authoring').ReferenceContentBlock[]} */
     const newContent = [];
     for (const block of section.content) {
       if (block.type === 'token-ref') {
@@ -37,7 +37,7 @@ async function resolveTokenRefs(docsData, topics) {
         const refMod = await import(pathToFileURL(refPath).href);
         const refDocs = refMod.docs;
         const refSection = refDocs.sections.find(
-          (/** @type {import('../../../../core/src/docs-types').ReferenceSection} */ s) =>
+          (/** @type {import('@astryxdesign/cli/authoring').ReferenceSection} */ s) =>
             s.title.toLowerCase() === block.section.toLowerCase(),
         );
         if (!refSection) {

@@ -5,3 +5,7 @@
 api/**/*.d.mts
 api/*.d.mts
 .api-verify/
+
+# Transient fixture dir written by authoring-migration.tsc.test.mjs (runs the
+# real tsc over migrated output); created + removed per test run.
+.codemod-tsc-*/

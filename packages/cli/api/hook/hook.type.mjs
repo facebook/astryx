@@ -2,7 +2,7 @@
 
 /**
  * @file Colocated types for the `hook` command — source of truth for its JSON
- * responses (mirrored by `../../types/hook.d.ts`).
+ * responses (re-exported by the `./json` barrel at `../json/index.d.ts`).
  *
  * Detail-level contract for list views (brief < compact < full):
  *   --detail brief    Names only. Smallest, most scannable. (DEFAULT for --list)
@@ -24,8 +24,8 @@
 // Re-export the authored-doc types from core so the hook leaves reference these
 // colocated aliases here (the leaf @returns reference these rather than reaching
 // into core directly).
-/** @typedef {import('../../../core/src/docs-types').HookDoc} HookDoc */
-/** @typedef {import('../../../core/src/docs-types').HookParamDoc} HookParamDoc */
+/** @typedef {import('@astryxdesign/cli/authoring').HookDoc} HookDoc */
+/** @typedef {import('@astryxdesign/cli/authoring').HookParamDoc} HookParamDoc */
 
 /**
  * xds --json hook [--list] [--category X] [--detail names|compact|full]

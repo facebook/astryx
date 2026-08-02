@@ -3,7 +3,7 @@
 /**
  * @file Shared doc-loading and topic-resolution helpers for the docs leaves.
  *
- * @input packages/cli/docs/{topic}.doc.mjs and, when a --dense/--zh overlay is
+ * @input packages/cli/assets/docs/{topic}.doc.mjs and, when a --dense/--zh overlay is
  *   requested, the sibling {topic}.doc.dense.mjs / {topic}.doc.zh.mjs.
  * @output Topic discovery map, overlay-merged reference-doc data, and a combined
  *   resolve step ({topics, docsData}) that the detail and section leaves share.
@@ -14,11 +14,11 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {pathToFileURL} from 'node:url';
-import {CLI_ROOT} from '../../utils/paths.mjs';
+import {CLI_ROOT} from '../../foundation/fs/paths.mjs';
 import {AstryxError} from '../error.mjs';
-import {ERROR_CODES} from '../../lib/error-codes.mjs';
+import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 
-const DOCS_DIR = path.join(CLI_ROOT, 'docs');
+const DOCS_DIR = path.join(CLI_ROOT, 'assets', 'docs');
 
 /**
  * @returns {Record<string, string>}
@@ -71,7 +71,7 @@ export async function loadReferenceDocs(docPath, {lang} = {}) {
     ...docs,
     description: translation.description || docs.description,
     sections: docs.sections.map(
-      (/** @type {import('../../../core/src/docs-types').ReferenceSection} */ section) => {
+      (/** @type {import('@astryxdesign/cli/authoring').ReferenceSection} */ section) => {
         const ts = bySection.get(section.title);
         if (!ts) return section;
         return {
@@ -79,7 +79,7 @@ export async function loadReferenceDocs(docPath, {lang} = {}) {
           title: ts.title || section.title,
           content: section.content.map(
             (
-              /** @type {import('../../../core/src/docs-types').ContentBlock} */ block,
+              /** @type {import('@astryxdesign/cli/authoring').ReferenceContentBlock} */ block,
               /** @type {number} */ bi,
             ) => {
               const tb = ts.content?.[bi];

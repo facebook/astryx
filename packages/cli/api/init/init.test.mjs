@@ -15,7 +15,7 @@ import * as os from 'node:os';
 import {init, getNextSteps} from './init.mjs';
 import {logger} from '../logger.mjs';
 import {AstryxError} from '../error.mjs';
-import {ERROR_CODES} from '../../lib/error-codes.mjs';
+import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 
 const MARKER_START = '<!-- ASTRYX:START -->';
 

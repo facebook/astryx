@@ -108,6 +108,61 @@ describe('SelectableCard', () => {
     expect(handleChange).not.toHaveBeenCalled();
   });
 
+  it('calls onChange with true when Enter is pressed on the checkbox (unselected)', () => {
+    const handleChange = vi.fn();
+    render(
+      <SelectableCard label="Test" isSelected={false} onChange={handleChange}>
+        Content
+      </SelectableCard>,
+    );
+    const checkbox = screen.getByRole('checkbox', {name: 'Test'});
+    fireEvent.keyDown(checkbox, {key: 'Enter'});
+    expect(handleChange).toHaveBeenCalledWith(true);
+  });
+
+  it('calls onChange with false when Enter is pressed on the checkbox (selected)', () => {
+    const handleChange = vi.fn();
+    render(
+      <SelectableCard label="Test" isSelected={true} onChange={handleChange}>
+        Content
+      </SelectableCard>,
+    );
+    const checkbox = screen.getByRole('checkbox', {name: 'Test'});
+    fireEvent.keyDown(checkbox, {key: 'Enter'});
+    expect(handleChange).toHaveBeenCalledWith(false);
+  });
+
+  it('does not toggle on Enter when disabled', () => {
+    const handleChange = vi.fn();
+    render(
+      <SelectableCard
+        label="Disabled"
+        isSelected={false}
+        onChange={handleChange}
+        isDisabled>
+        Content
+      </SelectableCard>,
+    );
+    const checkbox = screen.getByRole('checkbox', {name: 'Disabled'});
+    fireEvent.keyDown(checkbox, {key: 'Enter'});
+    expect(handleChange).not.toHaveBeenCalled();
+  });
+
+  it('toggles exactly once on Space (native), not doubled by the Enter handler', () => {
+    const handleChange = vi.fn();
+    render(
+      <SelectableCard label="Test" isSelected={false} onChange={handleChange}>
+        Content
+      </SelectableCard>,
+    );
+    const checkbox = screen.getByRole('checkbox', {name: 'Test'});
+    // Space activates the native checkbox, firing a single change event.
+    fireEvent.click(checkbox);
+    fireEvent.keyDown(checkbox, {key: ' '});
+    expect(handleChange).toHaveBeenCalledTimes(1);
+    expect(handleChange).toHaveBeenCalledWith(true);
+  });
+
   describe('elevation', () => {
     const noop = () => {};
 

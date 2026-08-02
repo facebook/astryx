@@ -59,7 +59,7 @@ For reliable CLI access, add a script to your `package.json`:
 
 ```json
 "scripts": {
-  "astryx": "node node_modules/@astryxdesign/cli/bin/astryx.mjs"
+  "astryx": "node node_modules/@astryxdesign/cli/clients/cli/bin/astryx.mjs"
 }
 ```
 

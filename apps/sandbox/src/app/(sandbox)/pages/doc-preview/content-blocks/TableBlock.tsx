@@ -6,7 +6,7 @@ import {Text} from '@astryxdesign/core/Text';
 import {Table} from '@astryxdesign/core/Table';
 
 /**
- * Generic table renderer for ContentBlock type='table'.
+ * Generic table renderer for ReferenceContentBlock type='table'.
  * Renders headers + rows as a simple data table.
  */
 export function TableBlock({

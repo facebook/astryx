@@ -461,20 +461,15 @@ The CLI reads an optional `astryx.config.{ts,mjs,js}` from your project root
 CLI runs on defaults.
 
 ```typescript
-import {createConfig} from '@astryxdesign/core/config';
-
-export default createConfig({
+export default {
   integrations: ['@acme/astryx-widgets'],
   issuesUrl: 'https://github.com/your-org/your-repo/issues',
-});
+};
 ```
 
-`createConfig` is a type-preserving helper: it returns its argument unchanged
-and exists only to give the config file editor autocomplete and type-checking. A
-plain `export default {}` object works identically. It's exported from
-`@astryxdesign/core` (not the CLI) so your config file gets type feedback
-without depending on the CLI; the same helper is re-exported from
-`@astryxdesign/cli/config` for back-compat.
+There is no factory: write a plain object. For editor autocomplete and
+type-checking, annotate it with the `AstryxConfig` type exported from
+`@astryxdesign/cli/authoring`.
 
 | Field                         | Type                           | Purpose                                                                                         |
 | ----------------------------- | ------------------------------ | ----------------------------------------------------------------------------------------------- |
@@ -514,14 +509,12 @@ manifest points at where each kind of contribution lives; identity (name,
 version) comes from `package.json`, not the manifest.
 
 ```typescript
-import {createIntegration} from '@astryxdesign/core/authoring';
-
-export default createIntegration({
+export default {
   components: './components',
   templates: './templates',
   codemods: './codemods',
   issuesUrl: 'https://github.com/acme/widgets/issues',
-});
+};
 ```
 
 | Field        | Type     | Purpose                                                               |
@@ -531,10 +524,9 @@ export default createIntegration({
 | `codemods`   | `string` | Directory holding upgrade codemods run by `astryx upgrade`.           |
 | `issuesUrl`  | `string` | Where "report an issue" links for this package's contributions point. |
 
-Every field is optional; declare only the roots the package ships.
-`createIntegration` is a type-preserving helper (editor autocomplete and
-type-checking); it lives in `@astryxdesign/core/authoring` and is re-exported
-from `@astryxdesign/cli/integration` for back-compat.
+Every field is optional; declare only the roots the package ships. There is no
+factory: write a plain object, and annotate it with the `AstryxIntegration` type
+from `@astryxdesign/cli/authoring` for editor autocomplete and type-checking.
 
 ### How it works
 

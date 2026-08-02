@@ -1,5 +1,5 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
-/** @type {import('../../../core/src/docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'BottomSheet',
@@ -90,7 +90,7 @@ export const docs = {
   ],
 };
 
-/** @type {import('../../../core/src/docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'mobile touch sheet rising from the bottom edge (native modal <dialog>): grab handle, drag-to-resize snap points, swipe-to-dismiss, named height scale',
   usage: {

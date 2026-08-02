@@ -1,0 +1,11 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+/** @type {import('@astryxdesign/cli/authoring').TemplateDoc} */
+export const doc = {
+  type: 'page',
+  name: 'Login Split',
+  displayName: 'Login Split',
+  description: 'Split-screen login with form and cover image',
+  isReady: true,
+  category: 'Login - Split',
+};

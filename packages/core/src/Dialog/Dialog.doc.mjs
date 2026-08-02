@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'Dialog',
@@ -10,7 +10,7 @@ export const docs = {
   keywords: ["dialog","modal","popup","overlay","lightbox","alert","confirm","prompt","backdrop","focus trap","imperative"],
   // Intentionally a contained isInline preview, not playground.overlay: the
   // component stays visible on load and knobs stay live, whereas a real
-  // showModal() overlay makes the page inert — see PlaygroundConfig.overlay
+  // showModal() overlay makes the page inert — see ComponentPlaygroundConfig.overlay
   // in docs-types.ts (#3657).
   playground: {
     defaults: {
@@ -123,7 +123,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsZh = {
   usage: {
     description: 'Dialog displays a modal overlay that blocks interaction with the page until the user responds. Use it for delete confirmations, edit forms, terms acceptance, or any decision that should not be skipped.',
@@ -145,7 +145,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'modal overlay that blocks page interaction until the user responds',
   usage: {

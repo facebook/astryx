@@ -45,7 +45,7 @@
  * xds --json discover @scope/name/Component
  * @typedef {object} DiscoverDetailDocResponse
  * @property {'discover.detail.doc'} type
- * @property {import('../../../core/src/docs-types').ComponentDoc} data
+ * @property {import('@astryxdesign/cli/authoring').ComponentDoc} data
  */
 
 /**
