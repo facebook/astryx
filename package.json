@@ -36,7 +36,8 @@
     "release": "pnpm build && changeset publish",
     "prepare": "husky install",
     "dev:sandbox": "pnpm -F @astryxdesign/core build && pnpm -F @astryxdesign/sandbox dev",
-    "dev:sandbox:source": "ASTRYX_SOURCE=1 pnpm -F @astryxdesign/sandbox dev"
+    "dev:sandbox:source": "ASTRYX_SOURCE=1 pnpm -F @astryxdesign/sandbox dev",
+    "npm:prune-canaries": "node scripts/npm/prune-canaries.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",

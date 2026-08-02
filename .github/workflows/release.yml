@@ -204,3 +204,14 @@ jobs:
           fi
 
           echo "Canary published: npm install @astryxdesign/core@${CANARY_VERSION}"
+
+      - name: Prune old canary versions
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -eu
+          if [ -z "${NODE_AUTH_TOKEN:-}" ]; then
+            echo "::notice::Skipping canary cleanup because NPM_TOKEN is not configured."
+            exit 0
+          fi
+          node scripts/npm/prune-canaries.mjs --yes
