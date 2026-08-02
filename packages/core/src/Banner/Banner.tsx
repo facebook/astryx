@@ -53,54 +53,17 @@ import type {Elevation} from '../utils/types';
 import {edgeCompSlot} from '../Layout/edgeCompensation.stylex';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
+import type {BannerStatusMap, BannerContainerMap} from './index';
 
 // =============================================================================
 // Types
 // =============================================================================
 
 /**
- * Extensible status map for Banner.
- *
- * Theme packages can add custom statuses via TypeScript module augmentation:
- * @example
- * ```
- * declare module '@astryxdesign/core/Banner' {
- *   interface BannerStatusMap {
- *     'neutral': true;
- *   }
- * }
- * ```
- */
-export interface BannerStatusMap {
-  info: true;
-  warning: true;
-  error: true;
-  success: true;
-}
-
-/**
  * Status type controlling the banner's icon and color.
  * Extensible via module augmentation of BannerStatusMap.
  */
 export type BannerStatus = keyof BannerStatusMap;
-
-/**
- * Extensible container map for Banner.
- *
- * Theme packages can add custom container types via TypeScript module augmentation:
- * @example
- * ```
- * declare module '@astryxdesign/core/Banner' {
- *   interface BannerContainerMap {
- *     'floating': true;
- *   }
- * }
- * ```
- */
-export interface BannerContainerMap {
-  card: true;
-  section: true;
-}
 
 /**
  * Container type of the banner.

@@ -33,25 +33,7 @@ import {
 import type {SizeValue, SpacingStep} from '../utils/types';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
-
-/**
- * Extensible variant map for Section.
- *
- * Theme packages can add custom variants via TypeScript module augmentation:
- * @example
- * ```
- * declare module '@astryxdesign/core/Section' {
- *   interface SectionVariantMap {
- *     'elevated': true;
- *   }
- * }
- * ```
- */
-export interface SectionVariantMap {
-  section: true;
-  transparent: true;
-  muted: true;
-}
+import type {SectionVariantMap} from './index';
 
 /**
  * Visual variant for the section.

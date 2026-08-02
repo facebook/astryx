@@ -28,6 +28,7 @@ import {
 } from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
+import type {BadgeVariantMap} from './index';
 
 /**
  * Base badge styles
@@ -114,36 +115,6 @@ const variants = stylex.create({
     color: colorVars['--color-text-yellow'],
   },
 });
-
-/**
- * Extensible variant map for Badge.
- *
- * Theme packages can add custom variants via TypeScript module augmentation:
- * @example
- * ```
- * declare module '@astryxdesign/core/Badge' {
- *   interface BadgeVariantMap {
- *     'premium': true;
- *   }
- * }
- * ```
- */
-export interface BadgeVariantMap {
-  neutral: true;
-  info: true;
-  success: true;
-  warning: true;
-  error: true;
-  blue: true;
-  cyan: true;
-  green: true;
-  orange: true;
-  pink: true;
-  purple: true;
-  red: true;
-  teal: true;
-  yellow: true;
-}
 
 /**
  * Badge variant type derived from BadgeVariantMap.

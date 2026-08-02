@@ -46,6 +46,7 @@ import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
+import type {ButtonVariantMap} from './index';
 
 /**
  * Base button styles
@@ -262,26 +263,6 @@ const variants = stylex.create({
     },
   },
 });
-
-/**
- * Extensible variant map for Button.
- *
- * Theme packages can add custom variants via TypeScript module augmentation:
- * @example
- * ```
- * declare module '@astryxdesign/core/Button' {
- *   interface ButtonVariantMap {
- *     'primary-muted': true;
- *   }
- * }
- * ```
- */
-export interface ButtonVariantMap {
-  primary: true;
-  secondary: true;
-  ghost: true;
-  destructive: true;
-}
 
 /**
  * Button variant type derived from ButtonVariantMap.

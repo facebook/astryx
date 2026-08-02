@@ -55,6 +55,7 @@ import {useMediaQuery} from '../hooks/useMediaQuery';
 import {observeResize, unobserveResize} from '../utils/sharedResizeObserver';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
+import type {AppShellVariantMap} from './index';
 
 const HasActivity = typeof React.Activity !== 'undefined';
 const ActivityWrapper = HasActivity
@@ -101,25 +102,6 @@ export type AppShellBreakpoint = 'sm' | 'md' | 'lg' | 'none';
  * - `elevated`: Wash nav background with elevated surface content + border radius
  * @default 'elevated'
  */
-/**
- * Extensible variant map for AppShell.
- *
- * Theme packages can add custom variants via TypeScript module augmentation:
- * @example
- * ```
- * declare module '@astryxdesign/core/AppShell' {
- *   interface AppShellVariantMap {
- *     'glass': true;
- *   }
- * }
- * ```
- */
-export interface AppShellVariantMap {
-  wash: true;
-  surface: true;
-  section: true;
-  elevated: true;
-}
 
 /**
  * Navigation background style. Extensible via module augmentation of AppShellVariantMap.

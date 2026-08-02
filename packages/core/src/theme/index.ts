@@ -140,6 +140,7 @@ export type {
   ResolvedThemeMode,
 } from './tokens';
 
+export type {TextColorMap} from '../Text';
 export type {
   ThemeMode,
   HeadingTag,
@@ -150,7 +151,6 @@ export type {
   TextWeight,
   TextColor,
   BuiltinTextColor,
-  TextColorMap,
   TypographyConfig,
   TypographyRole,
   FontWeight,

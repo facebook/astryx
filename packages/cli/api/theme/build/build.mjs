@@ -119,6 +119,94 @@ function toPascalCase(name) {
     .join('');
 }
 
+/** @type {Map<string, {moduleName: string, interfacePrefix: string}>} */
+const _augmentationTargetCache = new Map();
+
+/**
+ * Resolve a theme component key (the rendered class without `astryx-`) to the
+ * public core subpath and component-name prefix that own its augmentable prop
+ * maps. Subtargets such as `avatar-status-dot` are documented in their parent
+ * component docs and augment the parent's public module (`Avatar`), while some
+ * rendered class keys are intentionally unhyphenated (`progressbar`,
+ * `statusdot`) and need the exported component casing from docs, not naive
+ * PascalCase.
+ *
+ * @param {string} componentName
+ * @returns {Promise<{moduleName: string, interfacePrefix: string}>}
+ */
+async function resolveAugmentationTarget(componentName) {
+  if (_augmentationTargetCache.has(componentName)) {
+    return /** @type {{moduleName: string, interfacePrefix: string}} */ (_augmentationTargetCache.get(componentName));
+  }
+
+  const fallback = {
+    moduleName: toPascalCase(componentName),
+    interfacePrefix: toPascalCase(componentName),
+  };
+
+  const coreRoot = resolveCoreRoot();
+  const coreSrc = coreRoot ? path.join(coreRoot, 'src') : null;
+  if (!coreSrc || !fs.existsSync(coreSrc)) {
+    _augmentationTargetCache.set(componentName, fallback);
+    return fallback;
+  }
+
+  /** @type {Array<{moduleName: string, interfacePrefix: string}>} */
+  const matches = [];
+
+  /** @param {string} dir */
+  async function scan(dir) {
+    const entries = fs.readdirSync(dir, {withFileTypes: true});
+    for (const entry of entries) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (entry.name === 'node_modules' || entry.name === '__tests__') continue;
+        await scan(full);
+        continue;
+      }
+      if (!entry.name.endsWith('.doc.mjs')) continue;
+
+      /** @type {any} */
+      let doc;
+      try {
+        doc = await loadComponentDoc(full);
+      } catch {
+        continue;
+      }
+
+      const matchesTarget = (doc?.theming?.targets || []).some(
+        (/** @type {any} */ target) =>
+          typeof target?.className === 'string' &&
+          target.className.replace(/^astryx-/, '') === componentName,
+      );
+      if (!matchesTarget) continue;
+
+      const sourceDir = path.basename(path.dirname(full));
+      const moduleName = doc?.name && typeof doc.name === 'string'
+        ? doc.name
+        : sourceDir;
+      const interfacePrefix = (doc?.components || [])
+        .map((/** @type {any} */ comp) => comp?.name)
+        .find((/** @type {unknown} */ name) =>
+          typeof name === 'string' &&
+          name.toLowerCase().replace(/[^a-z]/g, '') ===
+            componentName.toLowerCase().replace(/[^a-z]/g, ''),
+        ) || moduleName;
+
+      matches.push({moduleName, interfacePrefix});
+    }
+  }
+
+  await scan(coreSrc);
+  const normalizedComponent = componentName.toLowerCase().replace(/[^a-z]/g, '');
+  const result =
+    matches.find(m => m.moduleName.toLowerCase().replace(/[^a-z]/g, '') === normalizedComponent) ||
+    matches[0] ||
+    fallback;
+  _augmentationTargetCache.set(componentName, result);
+  return result;
+}
+
 /**
  * Load known built-in values for a component's visual props from its .doc.mjs file.
  * Parses the type string (e.g. "'info' | 'warning' | 'error' | 'success'") to extract values.
@@ -338,17 +426,17 @@ async function generateVariantDeclarationsAsync(themeDef) {
     for (const [prop, values] of Object.entries(props)) {
       if (values.size === 0) continue;
 
-      const pascal = toPascalCase(component);
+      const {moduleName, interfacePrefix} = await resolveAugmentationTarget(component);
       const propPascal = prop.charAt(0).toUpperCase() + prop.slice(1);
-      const modulePath = `@astryxdesign/core/${pascal}`;
-      const interfaceName = `${pascal}${propPascal}Map`;
+      const modulePath = `@astryxdesign/core/${moduleName}`;
+      const interfaceName = `${interfacePrefix}${propPascal}Map`;
 
       // Only augment interfaces that actually exist as an extension point in
       // core. Props backed by closed literal-union types (e.g. Button `size`,
       // Heading `type`/`level`) have no `*Map` interface — a `declare module`
       // block against a non-existent interface just creates a new, unused
       // interface and never extends the component's prop union, so skip it.
-      if (!componentHasAugmentableInterface(pascal, interfaceName)) continue;
+      if (!componentHasAugmentableInterface(moduleName, interfaceName)) continue;
 
       sections.push(`declare module '${modulePath}' {`);
       sections.push(`  interface ${interfaceName} {`);

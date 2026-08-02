@@ -32,27 +32,7 @@ import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {VisuallyHidden} from '../VisuallyHidden';
-
-/**
- * Extensible variant map for ProgressBar.
- *
- * Theme packages can add custom variants via TypeScript module augmentation:
- * @example
- * ```
- * declare module '@astryxdesign/core/ProgressBar' {
- *   interface ProgressBarVariantMap {
- *     'brand': true;
- *   }
- * }
- * ```
- */
-export interface ProgressBarVariantMap {
-  accent: true;
-  success: true;
-  warning: true;
-  neutral: true;
-  error: true;
-}
+import type {ProgressBarVariantMap} from './index';
 
 /**
  * Progress bar variant type — maps to semantic color tokens.

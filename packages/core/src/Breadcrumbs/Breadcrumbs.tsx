@@ -23,28 +23,11 @@ import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
+import type {BreadcrumbsVariantMap} from './index';
 
 // =============================================================================
 // Variant type
 // =============================================================================
-
-/**
- * Extensible variant map for Breadcrumbs.
- *
- * Theme packages can add custom variants via TypeScript module augmentation:
- * @example
- * ```
- * declare module '@astryxdesign/core/Breadcrumbs' {
- *   interface BreadcrumbsVariantMap {
- *     'compact': true;
- *   }
- * }
- * ```
- */
-export interface BreadcrumbsVariantMap {
-  default: true;
-  supporting: true;
-}
 
 /**
  * Visual variant for the breadcrumb trail.
