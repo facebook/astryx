@@ -170,15 +170,13 @@ describe('TextArea', () => {
     expect(screen.getByRole('textbox')).not.toBeDisabled();
   });
 
-  it('renders positioned spinner container when isLoading is true', () => {
+  it('renders positioned spinner when isLoading is true', () => {
     render(
       <TextArea label="Description" isLoading value="" onChange={() => { }} />,
     );
     const spinner = screen.getByRole('status');
     expect(spinner).toBeInTheDocument();
-    const spinnerContainer = spinner.parentElement;
-    expect(spinnerContainer?.tagName.toLowerCase()).toBe('span');
-    expect(spinnerContainer?.className).toContain('spinnerIcon');
+    expect(spinner.className).toContain('spinnerIcon');
   });
 
   it('suppresses status icon when isLoading is true', () => {

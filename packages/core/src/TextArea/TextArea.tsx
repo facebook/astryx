@@ -482,11 +482,7 @@ export function TextArea({
             effectivelyDisabled && styles.textareaDisabled,
           )}
         />
-        {isBusy && (
-          <span {...stylex.props(styles.spinnerIcon)}>
-            <Spinner size="sm" />
-          </span>
-        )}
+        {isBusy && <Spinner size="sm" xstyle={styles.spinnerIcon} />}
         {status && !isBusy && (
           <span {...stylex.props(styles.statusIcon)}>
             <Icon
