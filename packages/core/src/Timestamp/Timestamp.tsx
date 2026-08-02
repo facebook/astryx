@@ -25,6 +25,8 @@ import {useDevWarning} from '../hooks/useDevWarning';
 import {useTranslator} from '../i18n';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {spacingVars} from '../theme/tokens.stylex';
 import {formatInstant} from './formatInstant';
 import {formatTooltipLines} from './tooltipEntries';
 import type {
@@ -173,6 +175,34 @@ const styles = stylex.create({
     lineHeight: 'inherit',
     color: 'inherit',
     fontWeight: 'inherit',
+  },
+  // Visible focus ring for the tooltip tab stop, matching the repo-wide
+  // focus-visible outline treatment (see Token, Thumbnail).
+  focusable: {},
+  // Label/value pairs for a multi-entry tooltip. The label column is sized to
+  // its content, so when no entry carries a label it collapses to zero width
+  // and the values sit exactly where a plain list of lines would.
+  tooltipLines: {
+    display: 'grid',
+    gridTemplateColumns: 'auto 1fr',
+    rowGap: spacingVars['--spacing-0-5'],
+    marginBlock: 0,
+    marginInline: 0,
+  },
+  tooltipLabel: {
+    marginBlock: 0,
+    marginInline: 0,
+    // Only a label that actually has text earns the gutter, keeping the
+    // unlabeled case flush.
+    paddingInlineEnd: {
+      default: 0,
+      ':not(:empty)': spacingVars['--spacing-2'],
+    },
+  },
+  tooltipValue: {
+    marginBlock: 0,
+    // <dd> carries a 40px inline start margin from the UA stylesheet.
+    marginInline: 0,
   },
 });
 
@@ -532,6 +562,10 @@ export function Timestamp({
         tabIndex={showTooltip ? 0 : undefined}
         data-testid={testId}
         {...stylex.props(styles.time)}>
+        {...focusOutlineProps.focusVisible(
+          styles.time,
+          showTooltip && styles.focusable,
+        )}>
         {displayText}
       </time>
     </Text>

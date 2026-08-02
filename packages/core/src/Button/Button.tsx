@@ -45,6 +45,7 @@ import {mergeProps, mergeRefs} from '../utils';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {useTranslator} from '../i18n';
 import type {ButtonVariantMap} from './index';
 
@@ -179,7 +180,7 @@ const elevationStyles = stylex.create({
  * Variant styles using backgroundImage for layered colors
  * Pseudo-classes are nested within properties per StyleX recommendation
  * Overlay is stacked on top of base color using multiple linear-gradients
- * Focus outline color matches variant (destructive uses negative color)
+ * Focus outline is shared across variants for consistent keyboard affordance.
  */
 const variants = stylex.create({
   primary: {
@@ -192,15 +193,6 @@ const variants = stylex.create({
       },
       ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
     },
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    '--button-focus-offset': '3px',
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': 'var(--button-focus-offset)',
-    },
   },
   secondary: {
     backgroundColor: colorVars['--color-neutral'],
@@ -211,15 +203,6 @@ const variants = stylex.create({
         '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
       },
       ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
-    },
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    '--button-focus-offset': '3px',
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': 'var(--button-focus-offset)',
     },
   },
   ghost: {
@@ -232,15 +215,6 @@ const variants = stylex.create({
       },
       ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
     },
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    '--button-focus-offset': '3px',
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': 'var(--button-focus-offset)',
-    },
   },
   destructive: {
     backgroundColor: colorVars['--color-error'],
@@ -251,15 +225,6 @@ const variants = stylex.create({
         '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
       },
       ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
-    },
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-error']}`,
-    },
-    '--button-focus-offset': '3px',
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': 'var(--button-focus-offset)',
     },
   },
 });
@@ -676,7 +641,7 @@ export function Button({
   const edgeCompAttr = isFlat ? {[EDGE_COMP_ATTR]: ''} : null;
 
   // Shared StyleX props for both button and link rendering
-  const sharedStylexProps = stylex.props(
+  const sharedStylexProps = focusOutlineProps.focusVisible(
     styles.base,
     sizeStyles[size],
     variants[variant],
@@ -693,8 +658,7 @@ export function Button({
       (variant === 'primary' || variant === 'destructive') &&
       (buttonGroup.orientation === 'horizontal'
         ? groupStyles.onSolidHorizontal
-        : groupStyles.onSolidVertical),
-    // Standalone floating buttons only — a grouped button's elevation is owned
+        : groupStyles.onSolidVertical), // Standalone floating buttons only — a grouped button's elevation is owned
     // by the ButtonGroup so the shared surface lifts as one unit.
     !buttonGroup && elevationStyles[elevation],
     width != null && dynamicStyles.width(width),

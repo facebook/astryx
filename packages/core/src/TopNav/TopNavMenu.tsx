@@ -37,6 +37,7 @@ import {useTopNavRenderMode} from './TopNavRenderContext';
 import {useAppShellMobile} from '../AppShell/AppShellMobileContext';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {
   colorVars,
   spacingVars,
@@ -73,14 +74,6 @@ const styles = stylex.create({
       ':hover': {
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
-    },
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': '2px',
     },
     border: 'none',
     fontFamily: 'inherit',
@@ -136,14 +129,6 @@ const styles = stylex.create({
       },
     },
     border: 'none',
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': '2px',
-    },
   },
   menuItemIcon: {
     display: 'flex',
@@ -510,7 +495,10 @@ export function TopNavMenu({
         {...triggerProps}
         {...mergeProps(
           themeProps('top-nav-menu'),
-          stylex.props(styles.trigger, popover.isOpen && styles.triggerOpen),
+          focusOutlineProps.focusVisible(
+            styles.trigger,
+            popover.isOpen && styles.triggerOpen,
+          ),
         )}>
         {label}
         <Icon
@@ -543,7 +531,7 @@ export function TopNavMenu({
                 tabIndex={-1}
                 href={item.href}
                 onClick={item.onClick}
-                {...stylex.props(styles.menuItem)}>
+                {...focusOutlineProps.focusVisible(styles.menuItem)}>
                 <div {...stylex.props(styles.menuItemIcon)}>{item.icon}</div>
                 <div {...stylex.props(styles.menuItemContent)}>
                   <span {...stylex.props(styles.menuItemTitle)}>

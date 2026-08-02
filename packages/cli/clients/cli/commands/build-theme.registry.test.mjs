@@ -60,7 +60,10 @@ function renderedClassLiterals() {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
         walk(full);
-      } else if (entry.name.endsWith('.tsx') && !entry.name.endsWith('.test.tsx')) {
+      } else if (
+        (entry.name.endsWith('.tsx') || entry.name.endsWith('.ts')) &&
+        !entry.name.includes('.test.')
+      ) {
         const text = fs.readFileSync(full, 'utf8');
         for (const re of [
           /themeProps\(\s*'([^']+)'/g,
@@ -110,6 +113,7 @@ describe('theme build emits a live TextInput selector (#4109)', () => {
         `    'side-nav-item': { base: { borderRadius: '12px' } },\n` +
         `    'chat-composer': { base: { padding: '10px' } },\n` +
         `    'chat-message-bubble': { 'variant:ghost': { borderRadius: '18px' } },\n` +
+        `    'focus-outline': { base: { outlineOffset: '4px' } },\n` +
         `  },\n` +
         `};\n`,
     );
@@ -122,6 +126,7 @@ describe('theme build emits a live TextInput selector (#4109)', () => {
     expect(css).toContain('.astryx-side-nav-item');
     expect(css).toContain('.astryx-chat-composer');
     expect(css).toContain('.astryx-chat-message-bubble.ghost');
+    expect(css).toContain('.astryx-focus-outline');
   });
 
   it('emits .astryx-text-input (the rendered class), not the dead .astryx-textinput', async () => {

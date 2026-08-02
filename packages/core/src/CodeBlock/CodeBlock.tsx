@@ -45,6 +45,7 @@ import type {SyntaxToken, TokenLine} from './tokenizer';
 import {ensureHighlightStyles} from './highlightStyles';
 import {applyHighlightRangesChunked} from './highlightRanges';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {useTranslator} from '../i18n';
 import {SyntaxTheme, type SyntaxThemeDefinition} from '../theme/syntax';
 
@@ -218,14 +219,6 @@ const styles = stylex.create({
     // Restore a keyboard-only focus ring with the standard token/offset so this
     // disclosure control matches the rest of the system (Collapsible, TabMenu);
     // otherwise it falls back to the inconsistent UA default outline.
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': '2px',
-    },
   },
   code: {
     display: 'block',
@@ -871,7 +864,7 @@ export function CodeBlock({
               }
             : undefined
         }
-        {...stylex.props(
+        {...focusOutlineProps.focusVisible(
           styles.header,
           canCollapse && styles.headerCollapsible,
         )}>

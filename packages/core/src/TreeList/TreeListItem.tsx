@@ -24,6 +24,7 @@ import {
   easeVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {Icon} from '../Icon';
 import {mergeProps} from '../utils';
 import {useLinkComponent} from '../Link/useLinkComponent';
@@ -51,14 +52,6 @@ const styles = stylex.create({
     // redeclares these vars (default: 'none' / '0'), so a descendant row's
     // default shadows an ancestor's active value — the ring can never leak
     // past the nearest containing treeitem, however deep the tree nests.
-    '--_tree-focus-outline': {
-      default: 'none',
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    '--_tree-focus-outline-offset': {
-      default: '0',
-      ':focus-visible': '2px',
-    },
   },
   childGroup: {
     margin: 0,
@@ -111,19 +104,6 @@ const styles = stylex.create({
         '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
       },
       ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
-    },
-  },
-  focusVisibleOutline: {
-    outline: {
-      // Reads the row's own --_tree-focus-outline (published on the <li> in
-      // `wrapper`), which resolves to the nearest containing treeitem only.
-      default: 'var(--_tree-focus-outline, none)',
-      // Also support inner focusable actions.
-      ':has(:focus-visible)': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: 'var(--_tree-focus-outline-offset, 0)',
-      ':has(:focus-visible)': '2px',
     },
   },
   disabled: {
@@ -573,7 +553,7 @@ export function TreeListItem({
       data-tree-id={id}
       data-tree-level={nestedLevel + 1}
       data-tree-disabled={isDisabled || undefined}
-      {...stylex.props(styles.wrapper)}>
+      {...focusOutlineProps.publishFocusVisibleVars(styles.wrapper)}>
       {variant !== 'noGuides' && (
         <div {...stylex.props(styles.treeBranches)}>
           <TreeListBranches
@@ -591,16 +571,20 @@ export function TreeListItem({
               selected: isSelected ? 'selected' : null,
               disabled: isDisabled ? 'disabled' : null,
             }),
-            stylex.props(
-              styles.contentWrapper,
-              densityStyles[density],
-              (isInteractive || (hasChildren && onClick == null)) &&
-                styles.interactive,
-              (isInteractive || (hasChildren && onClick == null)) &&
-                styles.focusVisibleOutline,
-              isDisabled && styles.disabled,
-              isSelected && styles.selected,
-            ),
+            isInteractive || (hasChildren && onClick == null)
+              ? focusOutlineProps.focusWithinOrPublished(
+                  styles.contentWrapper,
+                  densityStyles[density],
+                  styles.interactive,
+                  isDisabled && styles.disabled,
+                  isSelected && styles.selected,
+                )
+              : stylex.props(
+                  styles.contentWrapper,
+                  densityStyles[density],
+                  isDisabled && styles.disabled,
+                  isSelected && styles.selected,
+                ),
           )}
           style={indentStyle}
           onClick={handleClick}>

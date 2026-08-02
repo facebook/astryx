@@ -36,6 +36,7 @@ import {useInteractiveRole} from '../hooks/useInteractiveRole';
 import {TokenLink} from './TokenLink';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {useTranslator} from '../i18n';
 import type {TokenColorMap} from './index';
 
@@ -146,14 +147,6 @@ const styles = stylex.create({
       },
       ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
     },
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': '2px',
-    },
   },
   disabled: {
     cursor: 'not-allowed',
@@ -180,16 +173,7 @@ const styles = stylex.create({
     overflow: 'hidden',
     minWidth: 0,
   },
-  focusVisibleOutline: {
-    outline: {
-      default: null,
-      ':has(:focus-visible)': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':has(:focus-visible)': '2px',
-    },
-  },
+  focusVisibleOutline: {},
   removeButton: {
     all: 'unset',
     display: 'inline-flex',
@@ -203,10 +187,6 @@ const styles = stylex.create({
     width: '16px',
     height: '16px',
     color: 'inherit',
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
     '::after': {
       content: '""',
       position: 'absolute',
@@ -337,7 +317,7 @@ export function Token({
         onRemove(e);
       }}
       disabled={isDisabled}
-      {...stylex.props(styles.removeButton)}>
+      {...focusOutlineProps.focusVisible(styles.removeButton)}>
       <Icon icon="close" size="xsm" color="inherit" />
     </button>
   );
@@ -370,7 +350,7 @@ export function Token({
           {...sharedProps}
           {...mergeProps(
             themeProps('token', {color, size}),
-            stylex.props(
+            focusOutlineProps.focusVisible(
               styles.base,
               sizeStyles[size],
               colorStyles[color],
@@ -415,7 +395,7 @@ export function Token({
         {...sharedProps}
         {...mergeProps(
           themeProps('token', {color, size}),
-          stylex.props(
+          focusOutlineProps.focusWithin(
             styles.base,
             sizeStyles[size],
             colorStyles[color],
@@ -447,7 +427,7 @@ export function Token({
         {...sharedProps}
         {...mergeProps(
           themeProps('token', {color, size}),
-          stylex.props(
+          focusOutlineProps.focusWithin(
             styles.base,
             sizeStyles[size],
             colorStyles[color],

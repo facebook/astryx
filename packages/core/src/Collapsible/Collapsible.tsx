@@ -46,6 +46,7 @@ import {Icon} from '../Icon';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 
 const styles = stylex.create({
   root: {
@@ -73,14 +74,6 @@ const styles = stylex.create({
     paddingBlock: 0,
     // `all: unset` above wipes the UA focus outline; restore a keyboard-only
     // focus ring using the standard token/offset (WCAG 2.4.7).
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': '2px',
-    },
   },
   // Capsize: trim leading from text triggers
   triggerLabel: {
@@ -332,7 +325,7 @@ export function Collapsible({
           themeProps('collapsible-trigger', {
             density: density ?? undefined,
           }),
-          stylex.props(
+          focusOutlineProps.focusVisible(
             styles.trigger,
             density != null && triggerDensity[density],
             isDisabled && styles.triggerDisabled,

@@ -43,6 +43,7 @@ import {useListFocus} from '../hooks/useListFocus';
 import {mergeProps, rtlStyles} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {useTranslator} from '../i18n/useTranslator';
 import type {PaginationVariantMap} from './index';
 
@@ -217,14 +218,6 @@ const styles = stylex.create({
     transitionProperty: 'background-color',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
-    outline: {
-      default: 'none',
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': '2px',
-    },
   },
   dotSm: {
     width: spacingVars['--spacing-1-5'],
@@ -702,7 +695,7 @@ export function Pagination({
                       active: isActive ? 'active' : null,
                       size,
                     }),
-                    stylex.props(
+                    focusOutlineProps.focusVisible(
                       styles.dot,
                       isSm && styles.dotSm,
                       isActive && styles.dotActive,

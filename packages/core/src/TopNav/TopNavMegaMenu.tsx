@@ -51,6 +51,7 @@ import {navItemStyles} from '../NavItem/navItemStyles.stylex';
 import {useTopNavSlot} from './TopNavContext';
 import {useTopNavRenderMode} from './TopNavRenderContext';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 
 // =============================================================================
 // Styles
@@ -78,14 +79,6 @@ const styles = stylex.create({
       ':hover': {
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
-    },
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': '2px',
     },
     border: 'none',
     fontFamily: 'inherit',
@@ -481,7 +474,10 @@ function DefaultMegaMenu({
         onMouseLeave={handleMouseLeave}
         {...mergeProps(
           themeProps('top-nav-mega-menu'),
-          stylex.props(styles.trigger, popover.isOpen && styles.triggerOpen),
+          focusOutlineProps.focusVisible(
+            styles.trigger,
+            popover.isOpen && styles.triggerOpen,
+          ),
         )}>
         {label}
         <Icon

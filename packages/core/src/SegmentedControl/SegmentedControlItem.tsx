@@ -32,6 +32,7 @@ import type {SegmentedControlSize} from './SegmentedControlContext';
 import {mergeProps, composeEventHandlers} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 
 export interface SegmentedControlItemProps extends BaseProps<HTMLButtonElement> {
   ref?: React.Ref<HTMLButtonElement>;
@@ -85,14 +86,6 @@ const styles = stylex.create({
     transitionProperty: 'color, background-color, box-shadow',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': '2px',
-    },
   },
   hover: {
     backgroundColor: {
@@ -240,7 +233,7 @@ export function SegmentedControlItem({
           selected: isSelected ? 'selected' : null,
           disabled: isItemDisabled ? 'disabled' : null,
         }),
-        stylex.props(
+        focusOutlineProps.focusVisible(
           styles.base,
           sizeStyles[size],
           isFill && styles.fill,
