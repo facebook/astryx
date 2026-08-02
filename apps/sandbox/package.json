@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
-    "@stylexjs/stylex": "^0.19.0",
+    "@stylexjs/stylex": "catalog:",
     "@astryxdesign/charts": "*",
     "@astryxdesign/cli": "*",
     "@astryxdesign/core": "*",
@@ -35,7 +35,7 @@
   "devDependencies": {
     "@babel/preset-react": "^8.0.1",
     "@babel/preset-typescript": "^7.29.7",
-    "@stylexjs/babel-plugin": "^0.19.0",
+    "@stylexjs/babel-plugin": "catalog:",
     "@stylexjs/postcss-plugin": "^0.19.0",
     "@types/node": "^25.9.3",
     "@types/react": "^19.2.17",
