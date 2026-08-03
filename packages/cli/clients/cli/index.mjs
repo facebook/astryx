@@ -144,6 +144,22 @@ export async function createProgram() {
   // registered so they inherit it via copyInheritedSettings.
   program.configureHelp({wrap: (str) => str});
 
+  // Document the text-output contract in --help so agents know how to parse/grep
+  // it (and when to reach for --json instead). Kept in sync with the formatter
+  // kit in clients/cli/formatters.
+  program.addHelpText(
+    'after',
+    `
+Output format:
+  Text output is a plain-ASCII projection of --json.
+  - Record: a block of aligned "key: value" lines (one item). Records are
+    separated by a single blank line.
+  - Section: a header line (no "key:"), optionally a one-line subtitle, then its
+    records.
+  - Grep one field across records, e.g.  astryx search button | grep "^command:"
+  For stable, structured parsing use --json (most commands; see astryx manifest --json).`,
+  );
+
   program
     .name('astryx')
     .description('Design system CLI — components, themes, and tooling')
