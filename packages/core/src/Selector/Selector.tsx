@@ -627,6 +627,9 @@ export function Selector<T extends SelectorOptionType>(
   const inputGroup = useInputGroup();
 
   const [searchQuery, setSearchQuery] = useState('');
+  // A typed query shows TextInput's built-in clear (✕) button, which becomes
+  // the next tab stop after the search input.
+  const hasQuery = searchQuery.length > 0;
 
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(normalizedValue);
@@ -838,7 +841,21 @@ export function Selector<T extends SelectorOptionType>(
       return null;
     }
     return (
-      <div {...stylex.props(styles.searchWrapper)}>
+      <div
+        {...stylex.props(styles.searchWrapper)}
+        onKeyDown={e => {
+          // The clear (✕) button lives inside the TextInput, after the input in
+          // DOM order. When it is focused and the user tabs forward there is
+          // nothing else in the popup, so dismiss it (Shift+Tab returns to the
+          // input natively). Key events originating on the input are handled on
+          // the input below; ignore them here so we don't double-dismiss.
+          if (e.target === searchRef.current) {
+            return;
+          }
+          if (e.key === 'Tab' && !e.shiftKey) {
+            onKeyDown(e);
+          }
+        }}>
         <TextInput
           ref={searchRef}
           id={searchId}
@@ -852,6 +869,9 @@ export function Selector<T extends SelectorOptionType>(
           startIcon="search"
           hasClear
           size="sm"
+          // Fill the dropdown's width (minus the wrapper's inline padding) so
+          // the field is flush end-to-end rather than sized to its content.
+          width="100%"
           // When hasSearch is set, focus moves into this input on open, so it —
           // not the trigger — must be the combobox that reports the highlighted
           // option via aria-activedescendant (comboboxes-4). A bare searchbox
@@ -869,7 +889,7 @@ export function Selector<T extends SelectorOptionType>(
           value={searchQuery}
           onChange={handleSearchChange}
           onKeyDown={e => {
-            // Arrow keys navigate options; Enter selects; Escape/Tab close.
+            // Arrow keys navigate options; Enter selects; Escape closes.
             // Home/End are left to the input for caret movement (APG editable
             // combobox); PageUp/PageDown are the sanctioned substitute for
             // jumping to the first/last option.
@@ -879,9 +899,15 @@ export function Selector<T extends SelectorOptionType>(
               e.key === 'PageUp' ||
               e.key === 'PageDown' ||
               e.key === 'Enter' ||
-              e.key === 'Escape' ||
-              e.key === 'Tab'
+              e.key === 'Escape'
             ) {
+              onKeyDown(e);
+              return;
+            }
+            // Tab: when a query is showing the clear (✕) button, forward-tab
+            // moves focus to it (keeping the popup open) so the affordance is
+            // keyboard-reachable. Every other Tab dismisses the popup as usual.
+            if (e.key === 'Tab' && (e.shiftKey || !hasQuery)) {
               onKeyDown(e);
             }
           }}
@@ -894,6 +920,7 @@ export function Selector<T extends SelectorOptionType>(
     searchId,
     listboxId,
     searchQuery,
+    hasQuery,
     searchPlaceholder,
     handleSearchChange,
     onKeyDown,
