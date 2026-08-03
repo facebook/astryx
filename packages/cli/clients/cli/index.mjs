@@ -135,6 +135,14 @@ const SETUP_NUDGE_EXEMPT = new Set(['init', 'agent-docs']);
 export async function createProgram() {
   const program = new Command();
 
+  // Deterministic, single-line help. Commander wraps each option/command
+  // description to a column width (80 when captured non-TTY), which splits long
+  // descriptions like --json across several indented lines. Override `wrap` to a
+  // no-op so every item stays on one line — matching the rest of the CLI's
+  // plain, unwrapped, width-independent output. Set before subcommands are
+  // registered so they inherit it via copyInheritedSettings.
+  program.configureHelp({wrap: (str) => str});
+
   program
     .name('astryx')
     .description('Design system CLI — components, themes, and tooling')
