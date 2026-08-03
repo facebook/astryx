@@ -15,7 +15,7 @@
  */
 
 import {jsonOut} from '../../../foundation/response/json.mjs';
-import {emit, title, text, records} from '../formatters/index.mjs';
+import {emit, section, text, records} from '../formatters/index.mjs';
 import {
   validateIntegration,
   summarizeIssues,
@@ -31,7 +31,7 @@ function printHuman(data) {
 
   if (data.issues.length === 0) {
     emit(
-      title(`Validating integration: ${label}`),
+      section(`Validating integration: ${label}`),
       text('[ok] No issues found.'),
     );
     return;
@@ -41,7 +41,7 @@ function printHuman(data) {
   // mirroring the JSON keys (severity/code/message).
   const {errors, warnings} = summarizeIssues(data.issues);
   emit(
-    title(`Validating integration: ${label}`),
+    section(`Validating integration: ${label}`),
     records(data.issues, {fields: ['severity', 'code', 'message']}),
     text(
       `${data.issues.length} issue(s): ${errors} error(s), ${warnings} warning(s)`,

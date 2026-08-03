@@ -14,7 +14,7 @@
 
 import {getCliInvocation, formatCliCommand} from '../../../foundation/env/package-manager.mjs';
 import {jsonOut} from '../../../foundation/response/json.mjs';
-import {emit, title, section, text, record, records, ARROW} from '../formatters/index.mjs';
+import {emit, section, text, record, records, ARROW} from '../formatters/index.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {build as buildApi} from '../../../api/build/build.mjs';
 
@@ -24,7 +24,7 @@ import {build as buildApi} from '../../../api/build/build.mjs';
  */
 function printPlaybook(run) {
   emit(
-    title('How to build a page with Astryx'),
+    section('How to build a page with Astryx'),
     text(
       [
         "1. Find a starting point for what you're building:",
@@ -150,7 +150,7 @@ export function registerBuild(program) {
 
       /** @type {import('../formatters/index.mjs').Block[]} */
       const out = [
-        title(`Build kit for "${q}"`),
+        section(`Build kit for "${q}"`),
         text(
           'A recommended set of pieces to assemble this page, in the order to use them. ' +
             'Begin with RECOMMENDED START, then pull from the sections below — each ' +

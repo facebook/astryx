@@ -12,7 +12,7 @@
 
 import {runChecks} from '../../../api/doctor/doctor.mjs';
 import {jsonOut} from '../../../foundation/response/json.mjs';
-import {emit, title, records, text} from '../formatters/index.mjs';
+import {emit, section, records, text} from '../formatters/index.mjs';
 
 /** Status -> ASCII token (plain, matching the rest of the CLI). */
 const STATUS = {
@@ -43,7 +43,7 @@ function printHuman(report) {
         : 'All checks passed. Your XDS setup looks healthy.';
 
   emit(
-    title('astryx doctor — diagnosing your setup'),
+    section('astryx doctor — diagnosing your setup'),
     records(report.checks, {
       fields: ['status', 'label', 'message', 'fix'],
       labels: {label: 'check'},

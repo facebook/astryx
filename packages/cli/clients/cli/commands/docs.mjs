@@ -14,7 +14,7 @@
 
 import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
 import {jsonOut} from '../../../foundation/response/json.mjs';
-import {emit, title, records, text, markdown} from '../formatters/index.mjs';
+import {emit, section, records, text, code} from '../formatters/index.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {docs as docsApi} from '../../../api/docs/docs.mjs';
 
@@ -136,7 +136,7 @@ export function registerDocs(program) {
   program
     .command('docs [topic] [section]')
     .description('Print reference docs')
-    .action(async (/** @type {string | undefined} */ topic, /** @type {string | undefined} */ section) => {
+    .action(async (/** @type {string | undefined} */ topic, /** @type {string | undefined} */ sectionName) => {
       const run = getCliInvocation();
       const lang = program.opts().lang || null;
       const zh = program.opts().zh || false;
@@ -146,7 +146,7 @@ export function registerDocs(program) {
 
       let result;
       try {
-        result = await docsApi(topic, section, {lang, zh, dense});
+        result = await docsApi(topic, sectionName, {lang, zh, dense});
       } catch (e) {
         // docs API throws structured errors with {name, reason} suggestions —
         // pass them through untouched so the CLI envelope matches the API.
@@ -162,7 +162,7 @@ export function registerDocs(program) {
           // The text view mirrors the JSON list: one record per topic (topic +
           // description), then the usage footer as plain prose.
           emit(
-            title('Available docs'),
+            section('Available docs'),
             records(result.data, {fields: ['topic', 'description']}),
             text(
               [
@@ -175,12 +175,12 @@ export function registerDocs(program) {
         }
 
         case 'docs.detail': {
-          emit(markdown(formatReferenceFull(result.data, detail)));
+          emit(code(formatReferenceFull(result.data, detail)));
           break;
         }
 
         case 'docs.detail.section': {
-          emit(markdown(formatSection(result.data, detail)));
+          emit(code(formatSection(result.data, detail)));
           break;
         }
       }

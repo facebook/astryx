@@ -18,7 +18,7 @@
 
 import {getCliInvocation, formatCliCommand} from '../../../foundation/env/package-manager.mjs';
 import {jsonOut} from '../../../foundation/response/json.mjs';
-import {emit, title, text, records} from '../formatters/index.mjs';
+import {emit, section, text, records} from '../formatters/index.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {search as searchApi, SEARCH_DOMAINS} from '../../../api/search/search.mjs';
 
@@ -80,7 +80,7 @@ export function registerSearch(program) {
         : ['name', 'domain', 'displayName', 'import', 'description', 'command'];
 
       emit(
-        title(`Results for "${q}" (${results.length})`),
+        section(`Results for "${q}" (${results.length})`),
         records(results, {fields, format: {command: formatCliCommand}}),
       );
     });

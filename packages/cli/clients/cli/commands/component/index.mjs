@@ -20,7 +20,7 @@ import {
 import {resolveTheme} from '../../lib/resolve-theme.mjs';
 import {getCliInvocation} from '../../../../foundation/env/package-manager.mjs';
 import {jsonOut} from '../../../../foundation/response/json.mjs';
-import {emit, title, section, text, list, record, records, table, markdown, code} from '../../formatters/index.mjs';
+import {emit, section, text, list, record, records, code} from '../../formatters/index.mjs';
 import {cliError} from '../../lib/cli-error.mjs';
 import {ERROR_CODES} from '../../../../foundation/response/error-codes.mjs';
 import {component as componentApi} from '../../../../api/component/component.mjs';
@@ -129,8 +129,8 @@ export function registerComponent(program) {
           // in result.data.detail and the grouped map in result.data.components.
           if (result.data.detail === 'full') {
             // --detail full — dense per-component docs (signature, props, theming,
-            // examples). Verbatim markdown from the shared formatter.
-            emit(markdown(await formatBriefAll(coreDir, {zh, lang, themeData})));
+            // examples). Verbatim doc block from the shared formatter.
+            emit(code(await formatBriefAll(coreDir, {zh, lang, themeData})));
             break;
           }
 
@@ -153,11 +153,11 @@ export function registerComponent(program) {
             break;
           }
 
-          // --detail names (default for list views): one uniform table of every
-          // component + its import path, sorted A-Z. The import column already
-          // conveys families, so we skip the choppy per-family grouping that
-          // interleaved headerless singletons with "(group)" sections. External
-          // or name-colliding entries stay package-qualified.
+          // --detail names (default for list views): one record per component
+          // (name + import), sorted A-Z. The import field already conveys
+          // families, so we skip the choppy per-family grouping that interleaved
+          // headerless singletons with "(group)" sections. External or
+          // name-colliding entries stay package-qualified.
           const groups = result.data.components;
           const CORE_PKG = '@astryxdesign/core';
           /** @type {Map<string, Set<string>>} */
@@ -181,13 +181,15 @@ export function registerComponent(program) {
           const entries =
             options.category && firstGroup ? firstGroup[1] : Object.values(groups).flat();
           const sorted = [...entries].sort((a, b) => a.name.localeCompare(b.name));
-          const rows = sorted.map(item => [item.name, importCell(item)]);
 
           emit(
             options.category && firstGroup
               ? section(firstGroup[0])
-              : title(`Components (${sorted.length})`),
-            table(rows, {head: ['Component', 'Import']}),
+              : section(`Components (${sorted.length})`),
+            records(
+              sorted.map(item => ({name: item.name, import: importCell(item)})),
+              {fields: ['name', 'import']},
+            ),
             listFooter,
           );
           break;
@@ -198,10 +200,10 @@ export function registerComponent(program) {
           const importHint = resolveImportPath(coreDir, resolvedName);
           const doc =
             detail === 'brief'
-              ? markdown(formatBrief(result.data, resolvedName, importHint, {themeData}))
+              ? code(formatBrief(result.data, resolvedName, importHint, {themeData}))
               : detail === 'compact'
-                ? markdown(formatCompact(result.data, resolvedName, importHint))
-                : markdown(formatFull(result.data, {themeData, importHint}));
+                ? code(formatCompact(result.data, resolvedName, importHint))
+                : code(formatFull(result.data, {themeData, importHint}));
           const related = await findRelatedBlocks(resolvedName);
           emit(
             doc,
@@ -213,7 +215,7 @@ export function registerComponent(program) {
 
         case 'component.detail.props': {
           const resolvedName = (name || '').replace(/^XDS/, '');
-          emit(markdown(formatProps({props: result.data}, resolvedName)));
+          emit(code(formatProps({props: result.data}, resolvedName)));
           break;
         }
 

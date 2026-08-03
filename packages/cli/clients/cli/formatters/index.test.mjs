@@ -3,15 +3,12 @@
 import {describe, it, expect, vi, afterEach} from 'vitest';
 import {
   emit,
-  title,
   section,
   text,
   list,
   record,
   records,
-  table,
   code,
-  markdown,
   Block,
   BULLET,
   ARROW,
@@ -33,7 +30,7 @@ describe('constants', () => {
 
 describe('renderers return Block', () => {
   it('produces nominal Block instances', () => {
-    expect(title('x')).toBeInstanceOf(Block);
+    expect(section('x')).toBeInstanceOf(Block);
     expect(record({a: 1})).toBeInstanceOf(Block);
     expect(records([{a: 1}])).toBeInstanceOf(Block);
     expect(code('a')).toBeInstanceOf(Block);
@@ -110,62 +107,44 @@ describe('records', () => {
 describe('ASCII normalization', () => {
   it('converts em/en dashes, curly quotes, and ellipsis in prose + records', () => {
     expect(text('a \u2014 b').toString()).toBe('a - b');
-    expect(title('X \u2013 Y').toString()).toBe('X - Y');
+    expect(section('X \u2013 Y').toString()).toBe('X - Y');
     expect(record({name: '\u201cSettings\u201d \u2014 Form\u2026'}).toString()).toBe(
       'name: "Settings" - Form...',
     );
     expect(list(['Avatar \u2014 Group']).toString()).toBe('- Avatar - Group');
   });
 
-  it('leaves code and markdown verbatim (no normalization)', () => {
+  it('leaves code verbatim (no normalization)', () => {
     expect(code('a \u2014 b').toString()).toBe('a \u2014 b');
-    expect(markdown('a \u2014 b').toString()).toBe('a \u2014 b');
   });
 });
 
-describe('table', () => {
-  it('aligns columns to their widest cell and does not pad the last column', () => {
-    const out = table(
-      [
-        ['Button', '100'],
-        ['IconButton', '90'],
-      ],
-      {head: ['Name', 'Score']},
-    ).toString();
-    expect(out).toBe(
-      ['Name        Score', '----------  -----', 'Button      100', 'IconButton  90'].join(
-        '\n',
-      ),
-    );
-  });
-});
-
-describe('code / markdown', () => {
-  it('are byte-for-byte verbatim', () => {
+describe('code', () => {
+  it('is byte-for-byte verbatim (source or docs)', () => {
     const src = 'const x = 1;\n  const y = 2;\n';
     expect(code(src).toString()).toBe(src);
-    expect(markdown('# Title\n\n- a\n').toString()).toBe('# Title\n\n- a\n');
+    expect(code('# Title\n\n- a\n').toString()).toBe('# Title\n\n- a\n');
   });
 });
 
 describe('emit', () => {
   it('joins blocks with a single blank line via one console.log', () => {
     const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
-    emit(title('A'), text('B'));
+    emit(section('A'), text('B'));
     expect(spy).toHaveBeenCalledTimes(1);
     expect(spy).toHaveBeenCalledWith('A\n\nB');
   });
 
   it('drops falsy placeholders', () => {
     const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
-    emit(title('A'), false, null, undefined, text('B'));
+    emit(section('A'), false, null, undefined, text('B'));
     expect(spy).toHaveBeenCalledWith('A\n\nB');
   });
 
   it('is a no-op in --json mode (stdout stays clean)', () => {
     const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
     setJsonMode(true);
-    emit(title('A'), text('B'));
+    emit(section('A'), text('B'));
     expect(spy).not.toHaveBeenCalled();
   });
 });

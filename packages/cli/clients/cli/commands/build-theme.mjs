@@ -21,7 +21,7 @@ import {fileURLToPath} from 'node:url';
 import {spawn} from 'node:child_process';
 import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
 import {jsonOut} from '../../../foundation/response/json.mjs';
-import {emit, title, text, list, code} from '../formatters/index.mjs';
+import {emit, section, text, list, code} from '../formatters/index.mjs';
 import {logger} from '../../../api/logger.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
@@ -144,7 +144,7 @@ function printThemeList(themes) {
   }
   const run = getCliInvocation();
   emit(
-    title('Themes'),
+    section('Themes'),
     list(
       themes.map(t => {
         const head = t.maintained ? `${t.slug} (maintained)` : t.slug;

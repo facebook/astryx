@@ -33,9 +33,6 @@ export const BULLET = '-';
 export const ERR = '!!';
 export const WARN = '!';
 
-// Gap between table columns.
-const COL_GAP = '  ';
-
 /**
  * An opaque, renderer-produced block of output. Nominal via a private field:
  * nothing outside this file can construct one, so `emit` can trust that whatever
@@ -92,7 +89,7 @@ function renderValue(v) {
  * Normalize common non-ASCII typography to ASCII so human output stays plain and
  * consistent no matter what the source data contains (em/en dashes -> "-", curly
  * quotes -> straight, ellipsis -> "...", non-breaking space -> space). The
- * verbatim renderers (code, markdown) deliberately skip this. `--json` is
+ * the verbatim renderer (code) deliberately skips this. `--json` is
  * unaffected — it always carries the original data.
  * @param {string} s
  * @returns {string}
@@ -104,15 +101,6 @@ function toAscii(s) {
     .replace(/[\u201C\u201D]/g, '"')
     .replace(/\u2026/g, '...')
     .replace(/\u00a0/g, ' ');
-}
-
-/**
- * A headline for a command's output (e.g. `Results for "button" (20)`).
- * @param {string} content
- * @returns {Block}
- */
-export function title(content) {
-  return new Block(toAscii(String(content)));
 }
 
 /**
@@ -194,64 +182,15 @@ export function records(items, options = {}) {
 }
 
 /**
- * A text table with content-aligned columns. The caller decides the columns and
- * cells; the last column is not padded (no trailing spaces). An optional header
- * row is underlined. Best for short, uniform values (not long descriptions).
- * @param {string[][]} rows
- * @param {{head?: string[]}} [options]
- * @returns {Block}
- */
-export function table(rows, options = {}) {
-  // Normalize cells to ASCII up front so column widths are computed on the
-  // final glyphs (e.g. an ellipsis "…" -> "..." must widen the column).
-  const head = options.head ? options.head.map(c => toAscii(c ?? '')) : undefined;
-  const body = rows.map(r => r.map(c => toAscii(c ?? '')));
-  const all = head ? [head, ...body] : body;
-  if (all.length === 0) return new Block('');
-
-  const cols = all.reduce((max, r) => Math.max(max, r.length), 0);
-  /** @type {number[]} */
-  const widths = [];
-  for (let c = 0; c < cols; c++) {
-    widths[c] = all.reduce((max, r) => Math.max(max, (r[c] ?? '').length), 0);
-  }
-
-  /** @param {string[]} row */
-  const fmt = row =>
-    row
-      .map((cell, c) => (c === cols - 1 ? (cell ?? '') : (cell ?? '').padEnd(widths[c])))
-      .join(COL_GAP)
-      .replace(/\s+$/, '');
-
-  /** @type {string[]} */
-  const lines = [];
-  if (head) {
-    lines.push(fmt(head));
-    lines.push(widths.map(w => '-'.repeat(w)).join(COL_GAP).replace(/\s+$/, ''));
-  }
-  for (const r of body) lines.push(fmt(r));
-  return new Block(lines.join('\n'));
-}
-
-/**
- * A verbatim preformatted block — source dumps, layout skeletons; survives
- * piping byte-for-byte (`astryx template X > file.tsx`).
+ * A verbatim block — source dumps, layout skeletons, or a markdown doc. Output
+ * is byte-for-byte (NOT ASCII-normalized), so it survives piping
+ * (`astryx template X > file.tsx`) and preserves doc/source content exactly.
  * @param {string} source
  * @param {{lang?: string}} [_options] - Reserved (intent label); output verbatim.
  * @returns {Block}
  */
 export function code(source, _options = {}) {
   return new Block(String(source));
-}
-
-/**
- * A verbatim Markdown document — component / docs / hook detail. Verbatim today;
- * the semantic name is a single seam to pretty-render later.
- * @param {string} md
- * @returns {Block}
- */
-export function markdown(md) {
-  return new Block(String(md));
 }
 
 /**

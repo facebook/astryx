@@ -12,7 +12,7 @@
 
 import {formatFull, formatBrief, formatCompact} from '../lib/component-format.mjs';
 import {jsonOut} from '../../../foundation/response/json.mjs';
-import {emit, title, text, record, records, list, code, markdown} from '../formatters/index.mjs';
+import {emit, section, text, record, records, list, code} from '../formatters/index.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {discover as discoverApi} from '../../../api/discover/discover.mjs';
 import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
@@ -120,14 +120,14 @@ export function registerDiscover(program) {
               : detail === 'compact'
                 ? formatCompact(docs, docs.name, '')
                 : formatFull(docs);
-          emit(markdown(md));
+          emit(code(md));
           break;
         }
 
         case 'discover.search': {
           const {query: q, matches} = result.data;
           emit(
-            title(`Found ${matches.length} matches for "${q}"`),
+            section(`Found ${matches.length} matches for "${q}"`),
             list(matches.map(m => `${run} discover ${m.package}/${m.component}`)),
           );
           break;

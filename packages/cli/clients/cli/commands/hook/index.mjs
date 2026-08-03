@@ -14,7 +14,7 @@ import {
 } from '../../lib/hook-format.mjs';
 import {getCliInvocation} from '../../../../foundation/env/package-manager.mjs';
 import {jsonOut} from '../../../../foundation/response/json.mjs';
-import {emit, section, text, list, records, markdown} from '../../formatters/index.mjs';
+import {emit, section, text, list, records, code} from '../../formatters/index.mjs';
 import {cliError} from '../../lib/cli-error.mjs';
 import {ERROR_CODES} from '../../../../foundation/response/error-codes.mjs';
 import {hook as hookApi} from '../../../../api/hook/hook.mjs';
@@ -100,7 +100,7 @@ export function registerHook(program) {
                   formatHookCompact(item, item.importPath || '@astryxdesign/core/hooks'),
                 )
                 .join('\n');
-              out.push(markdown(`## ${cat}\n\n${body}`));
+              out.push(code(`## ${cat}\n\n${body}`));
             }
             emit(...out);
             break;
@@ -163,7 +163,7 @@ export function registerHook(program) {
           }
 
           emit(
-            markdown(doc),
+            code(doc),
             allBlocks.length > 0 && section('Related block templates'),
             allBlocks.length > 0 &&
               records(allBlocks, {fields: ['dirName', 'description']}),
@@ -172,7 +172,7 @@ export function registerHook(program) {
         }
 
         case 'hook.detail.params': {
-          emit(markdown(formatHookParams({params: result.data, name})));
+          emit(code(formatHookParams({params: result.data, name})));
           break;
         }
       }

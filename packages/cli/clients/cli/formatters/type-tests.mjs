@@ -8,21 +8,20 @@
  * type check fails.
  */
 
-import {emit, title, section, text, list, record, records, table, code, markdown} from './index.mjs';
+import {emit, section, text, list, record, records, code} from './index.mjs';
 
 /** @returns {void} */
 export function __formatterTypeGuards() {
   // Renderer output is emittable.
-  emit(title('t'), section('s'), section('H', 'subtitle'), text('p'));
+  emit(section('s'), section('H', 'subtitle'), text('p'));
   emit(list(['a', ['head', 'detail']]));
   emit(record({name: 'Button', domain: 'component'}, {fields: ['name', 'domain']}));
   emit(records([{name: 'A'}, {name: 'B'}], {format: {name: v => String(v)}}));
-  emit(table([['a', 'b']], {head: ['x', 'y']}));
-  emit(code('const x = 1;'), markdown('# doc'));
+  emit(code('const x = 1;'));
 
   // Falsy placeholders are allowed (inline conditionals).
   const show = false;
-  emit(title('t'), show && section('maybe'), null, undefined);
+  emit(section('s'), show && section('maybe'), null, undefined);
 
   // @ts-expect-error a bare string is not a Block — must go through a renderer.
   emit('raw string');

@@ -21,7 +21,7 @@ import {getCliInvocation} from '../../foundation/env/package-manager.mjs';
 import {API_VERSION, setJsonMode} from '../../foundation/response/json.mjs';
 import {buildManifest} from './lib/manifest.mjs';
 import {cliError} from './lib/cli-error.mjs';
-import {emit, title, text, table} from './formatters/index.mjs';
+import {emit, section, text, records} from './formatters/index.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 import {levenshteinDistance} from '../../foundation/text/string-utils.mjs';
 import {installJsonShim} from './lib/json-shim.mjs';
@@ -150,14 +150,16 @@ export async function createProgram() {
   program.addHelpText(
     'after',
     `
-Output format:
-  Text output is a plain-ASCII projection of --json.
-  - Record: a block of aligned "key: value" lines (one item). Records are
-    separated by a single blank line.
+Output format (--json is the machine-readable surface; text mirrors it):
+  Text is plain ASCII, built from a fixed set of blocks:
+  - Record:  aligned "key: value" lines = one item; records separated by a blank
+             line. Grep a field, e.g.  astryx search button | grep "^command:"
   - Section: a header line (no "key:"), optionally a one-line subtitle, then its
-    records.
-  - Grep one field across records, e.g.  astryx search button | grep "^command:"
-  For stable, structured parsing use --json (most commands; see astryx manifest --json).`,
+             records or list.
+  - List:    "- value" lines, for a simple sequence of values.
+  - Text:    free-form prose / notes.
+  - Code:    a verbatim block (source, skeleton, or doc), emitted exactly.
+  Errors and warnings go to stderr; use --json for stable structured parsing.`,
   );
 
   program
@@ -385,14 +387,18 @@ Output format:
         console.log(JSON.stringify({apiVersion: API_VERSION, type: 'manifest', data: manifest}, null, 2));
         return;
       }
-      // Human-readable summary as a single greppable table (agents should use
-      // --json). One row per command: name, whether it supports --json, and the
-      // description — no nested indent.
+      // Human-readable summary as greppable records (agents should use --json).
+      // One record per command: name, whether it supports --json, and the
+      // description.
       emit(
-        title(`${manifest.name} v${manifest.version} (${manifest.commands.length} commands)`),
-        table(
-          manifest.commands.map(c => [c.name, c.json ? 'yes' : '', c.description || '']),
-          {head: ['Command', 'JSON', 'Description']},
+        section(`${manifest.name} v${manifest.version} (${manifest.commands.length} commands)`),
+        records(
+          manifest.commands.map(c => ({
+            command: c.name,
+            json: c.json ? 'yes' : '',
+            description: c.description || '',
+          })),
+          {fields: ['command', 'json', 'description']},
         ),
         text(`Run \`${getCliInvocation()} manifest --json\` for the full structured manifest.`),
       );
