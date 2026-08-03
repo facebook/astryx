@@ -10,9 +10,12 @@
  *   when called outside a provider (matches the silent-en-fallback pattern of
  *   useTranslator).
  *
- * Use this in components that need to swap directional icons, mirror
- * behavioral logic (slider math, keyboard nav), or apply direction-specific
- * styling that CSS logical properties can't express.
+ * Render-time last resort. Prefer, in order: CSS logical properties; the shared
+ * `rtlStyles.mirror` for directional icons (CSS scaleX, not a JS icon-name
+ * swap); and lazy DOM reads (`isRtlElement`) for behavioral logic like keyboard
+ * nav or drag math. Reach for this hook only when you need the direction value
+ * during render and none of those fit — note it can mismatch on hydration if
+ * the provider's direction disagrees with the actual `<html dir>`.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/i18n/InternationalizationContext.ts
