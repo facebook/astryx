@@ -229,7 +229,7 @@ describe('useTablePagination', () => {
       ).toBeTruthy();
     });
 
-    it('transformTableContext renders Pagination above and below', () => {
+    it('transformTableContext renders distinctly named Pagination above and below', () => {
       render(
         <PaginatedTable
           data={generateItems(30)}
@@ -237,10 +237,40 @@ describe('useTablePagination', () => {
           position="both"
         />,
       );
-      const navs = screen.getAllByRole('navigation', {
-        name: 'Table pagination',
+      const table = screen.getByRole('table');
+      // Each nav landmark gets a unique accessible name (axe landmark-unique)
+      const topNav = screen.getByRole('navigation', {
+        name: 'Table pagination (top)',
       });
-      expect(navs).toHaveLength(2);
+      const bottomNav = screen.getByRole('navigation', {
+        name: 'Table pagination (bottom)',
+      });
+      // Top nav comes before the table, bottom nav after it in DOM order
+      expect(
+        table.compareDocumentPosition(topNav) &
+          Node.DOCUMENT_POSITION_PRECEDING,
+      ).toBeTruthy();
+      expect(
+        table.compareDocumentPosition(bottomNav) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    });
+
+    it('position="both" interpolates a consumer label into distinct nav names', () => {
+      render(
+        <PaginatedTable
+          data={generateItems(30)}
+          pageSize={10}
+          position="both"
+          label="Users table"
+        />,
+      );
+      expect(
+        screen.getByRole('navigation', {name: 'Users table (top)'}),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('navigation', {name: 'Users table (bottom)'}),
+      ).toBeInTheDocument();
     });
 
     it('transformTableContext does not render Pagination when position is none', () => {

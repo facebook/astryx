@@ -743,9 +743,7 @@ export const ThemedLayout: Story = {
   render: () => (
     <HStack gap={6} xstyle={styles.storySection}>
       <VStack gap={3}>
-        <p {...stylex.props(styles.sectionLabel)}>
-          Stone Theme
-        </p>
+        <p {...stylex.props(styles.sectionLabel)}>Stone Theme</p>
         <Theme theme={stoneTheme}>
           <Card width={400}>
             <Layout
@@ -779,9 +777,7 @@ export const ThemedLayout: Story = {
       </VStack>
 
       <VStack gap={3}>
-        <p {...stylex.props(styles.sectionLabel)}>
-          Neutral Theme
-        </p>
+        <p {...stylex.props(styles.sectionLabel)}>Neutral Theme</p>
         <Theme theme={neutralTheme}>
           <Card width={400}>
             <Layout
@@ -1229,7 +1225,11 @@ export const ContentWidthResponsive: Story = {
                 </LayoutHeader>
               }
               start={
-                <LayoutPanel width={160} hasDivider role="navigation">
+                <LayoutPanel
+                  width={160}
+                  hasDivider
+                  role="navigation"
+                  label="Wide navigation">
                   <NavItem active>Dashboard</NavItem>
                   <NavItem>Settings</NavItem>
                 </LayoutPanel>
@@ -1262,7 +1262,11 @@ export const ContentWidthResponsive: Story = {
                 </LayoutHeader>
               }
               start={
-                <LayoutPanel width={160} hasDivider role="navigation">
+                <LayoutPanel
+                  width={160}
+                  hasDivider
+                  role="navigation"
+                  label="Medium navigation">
                   <NavItem active>Dashboard</NavItem>
                   <NavItem>Settings</NavItem>
                 </LayoutPanel>
@@ -1295,7 +1299,11 @@ export const ContentWidthResponsive: Story = {
                 </LayoutHeader>
               }
               start={
-                <LayoutPanel width={160} hasDivider role="navigation">
+                <LayoutPanel
+                  width={160}
+                  hasDivider
+                  role="navigation"
+                  label="Narrow navigation">
                   <NavItem active>Dashboard</NavItem>
                   <NavItem>Settings</NavItem>
                 </LayoutPanel>

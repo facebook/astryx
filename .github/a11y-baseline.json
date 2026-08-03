@@ -679,11 +679,6 @@
       "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
     },
     {
-      "key": "Layout::Content Width — Responsive Panels::landmark-unique",
-      "impact": "moderate",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/landmark-unique?application=playwright"
-    },
-    {
       "key": "Layout::Content Width — Start Panel::color-contrast",
       "impact": "serious",
       "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
@@ -752,11 +747,6 @@
       "key": "Overlay::Drag And Drop::color-contrast",
       "impact": "serious",
       "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
-    },
-    {
-      "key": "Pagination::All Variants::landmark-unique",
-      "impact": "moderate",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/landmark-unique?application=playwright"
     },
     {
       "key": "PopArt::Debug Projection::color-contrast",
@@ -944,16 +934,6 @@
       "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
     },
     {
-      "key": "TabList::Divider Gap (sm / md / lg)::landmark-unique",
-      "impact": "moderate",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/landmark-unique?application=playwright"
-    },
-    {
-      "key": "TabList::Size Variants::landmark-unique",
-      "impact": "moderate",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/landmark-unique?application=playwright"
-    },
-    {
       "key": "Table::In Card Densities::color-contrast",
       "impact": "serious",
       "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
@@ -997,16 +977,6 @@
       "key": "TableGroupedRows::Initially Collapsed::color-contrast",
       "impact": "serious",
       "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
-    },
-    {
-      "key": "TablePagination::Options Matrix::landmark-unique",
-      "impact": "moderate",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/landmark-unique?application=playwright"
-    },
-    {
-      "key": "TablePagination::Position Both::landmark-unique",
-      "impact": "moderate",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/landmark-unique?application=playwright"
     },
     {
       "key": "TableRowStatus::Default::empty-table-header",
@@ -1102,16 +1072,6 @@
       "key": "Tokenizer::Disabled::color-contrast",
       "impact": "serious",
       "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
-    },
-    {
-      "key": "Toolbar::Composition: Tab Navigation::landmark-unique",
-      "impact": "moderate",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/landmark-unique?application=playwright"
-    },
-    {
-      "key": "ToolbarEdgeCompensation::Tabs in toolbar (all sizes)::landmark-unique",
-      "impact": "moderate",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/landmark-unique?application=playwright"
     },
     {
       "key": "useContainerReveal::Inverted Conceal::color-contrast",

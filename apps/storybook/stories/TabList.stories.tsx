@@ -101,7 +101,11 @@ export const SizeVariants: Story = {
               size=\"{size}\"
             </div>
             <div style={{border: '1px dashed #ccc', display: 'inline-flex'}}>
-              <TabList value={value} onChange={setValue} size={size}>
+              <TabList
+                value={value}
+                onChange={setValue}
+                size={size}
+                aria-label={`Tabs (${size})`}>
                 <Tab value="home" label="Home" />
                 <Tab value="projects" label="Projects" />
                 <Tab value="settings" label="Settings" />
@@ -242,7 +246,12 @@ export const DividerGap: Story = {
             <span style={{font: '600 12px system-ui', color: '#4E606F'}}>
               size=&quot;{size}&quot; · hasDivider · matched Button size
             </span>
-            <TabList value={value} onChange={setValue} size={size} hasDivider>
+            <TabList
+              value={value}
+              onChange={setValue}
+              size={size}
+              hasDivider
+              aria-label={`Tabs (${size})`}>
               <Tab value="overview" label="Overview" />
               <Tab value="activity" label="Activity" />
               <Tab value="settings" label="Settings" />

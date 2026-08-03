@@ -51,10 +51,12 @@ function PaginatedDemo({
   variant = 'pages',
   position = 'below',
   align = 'start',
+  label,
 }: {
   variant?: Variant;
   position?: Position;
   align?: Align;
+  label?: string;
 }) {
   const [page, setPage] = useState(1);
   const pageSize = 10;
@@ -67,6 +69,7 @@ function PaginatedDemo({
     variant,
     position,
     align,
+    label,
   });
 
   return (
@@ -394,6 +397,7 @@ export const OptionsMatrix: Story = {
                 variant={variant}
                 position={position}
                 align={align}
+                label={`Table pagination (${variant}, ${position}, ${align})`}
               />
             </div>
           )),
