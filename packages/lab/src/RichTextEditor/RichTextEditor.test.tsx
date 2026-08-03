@@ -38,6 +38,40 @@ function CaptureEditor({onReady}: {onReady: (editor: LexicalEditor) => void}) {
 
 // A minimal valid serialized Lexical editor state containing a single
 // paragraph with the text "Hello world".
+// Builds a serialized Lexical state containing a single paragraph with the
+// given text. Used to verify that RichTextView reacts to `value` changes.
+function makeParagraphState(text: string): string {
+  return JSON.stringify({
+    root: {
+      children: [
+        {
+          children: [
+            {
+              detail: 0,
+              format: 0,
+              mode: 'normal',
+              style: '',
+              text,
+              type: 'text',
+              version: 1,
+            },
+          ],
+          direction: 'ltr',
+          format: '',
+          indent: 0,
+          type: 'paragraph',
+          version: 1,
+        },
+      ],
+      direction: 'ltr',
+      format: '',
+      indent: 0,
+      type: 'root',
+      version: 1,
+    },
+  });
+}
+
 // Builds a serialized Lexical state containing a list. `listType` is
 // 'bullet' (renders <ul>) or 'number' (renders <ol>). Used to verify that the
 // editor theme applies visible list markers rather than bare indentation.
@@ -666,6 +700,44 @@ describe('RichTextView', () => {
   it('renders nothing (no crash) on malformed JSON with no fallback', () => {
     expect(() => render(<RichTextView value={'garbage'} />)).not.toThrow();
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+  });
+
+  it('updates the rendered content when the value prop changes', async () => {
+    // LexicalComposer's initialConfig.editorState is only read on mount, so
+    // without the internal sync plugin the view would freeze at the first
+    // value. This guards that a changed `value` re-renders the content — the
+    // exact bug in the "Markdown Serializers" story (RichTextView stayed stale
+    // while the Markdown input changed).
+    const {rerender} = render(
+      <RichTextView value={makeParagraphState('first version')} />,
+    );
+    await waitFor(() =>
+      expect(screen.getByText('first version')).toBeInTheDocument(),
+    );
+
+    rerender(<RichTextView value={makeParagraphState('second version')} />);
+    await waitFor(() =>
+      expect(screen.getByText('second version')).toBeInTheDocument(),
+    );
+    expect(screen.queryByText('first version')).not.toBeInTheDocument();
+  });
+
+  it('recovers from a malformed value once a valid value is supplied again', async () => {
+    // A bad value renders the fallback; a subsequent valid value must re-mount
+    // the composer and render the new content (hasError resets on change).
+    const {rerender} = render(
+      <RichTextView
+        value={'{ not valid json'}
+        errorFallback={<div data-testid="view-fallback">Unavailable</div>}
+      />,
+    );
+    expect(screen.getByTestId('view-fallback')).toBeInTheDocument();
+
+    rerender(<RichTextView value={makeParagraphState('recovered')} />);
+    await waitFor(() =>
+      expect(screen.getByText('recovered')).toBeInTheDocument(),
+    );
+    expect(screen.queryByTestId('view-fallback')).not.toBeInTheDocument();
   });
 });
 
