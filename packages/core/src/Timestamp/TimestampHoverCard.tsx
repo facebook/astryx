@@ -31,12 +31,15 @@ import {colorVars, spacingVars} from '../theme/tokens.stylex';
 import type {TimestampTooltipLine} from './tooltipEntries';
 
 const styles = stylex.create({
-  // Each row's value: the formatted instant paired with its copy button. The
-  // instant takes the available width; the button sits flush at the end.
+  // Each row's value: the formatted instant on the left, its copy button flush
+  // at the right edge. The span fills the value cell (dd) so `space-between`
+  // can push the button to the end regardless of the instant's width.
   value: {
     display: 'flex',
     alignItems: 'center',
+    justifyContent: 'space-between',
     gap: spacingVars['--spacing-2'],
+    width: '100%',
   },
   instant: {
     color: colorVars['--color-text-primary'],
