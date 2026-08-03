@@ -149,17 +149,35 @@ export async function createProgram() {
   // kit in clients/cli/formatters.
   program.addHelpText(
     'after',
-    `
-Output format (--json is the machine-readable surface; text mirrors it):
-  Text is plain ASCII, built from a fixed set of blocks:
-  - Record:  aligned "key: value" lines = one item; records separated by a blank
-             line. Grep a field, e.g.  astryx search button | grep "^command:"
-  - Section: a header line (no "key:"), optionally a one-line subtitle, then its
-             records or list.
-  - List:    "- value" lines, for a simple sequence of values.
-  - Text:    free-form prose / notes.
-  - Code:    a verbatim block (source, skeleton, or doc), emitted exactly.
-  Errors and warnings go to stderr; use --json for stable structured parsing.`,
+    '\n' +
+      [
+        section(
+          'Output format',
+          'Text mirrors --json (the machine-readable surface); it is built from these blocks:',
+        ),
+        records(
+          [
+            {
+              block: 'Record',
+              shape: 'aligned "key: value" lines = one item; records separated by a blank line',
+            },
+            {
+              block: 'Section',
+              shape: 'a header line (no "key:"), optional one-line subtitle, then its records/list',
+            },
+            {block: 'List', shape: '"- value" lines for a simple sequence of values'},
+            {block: 'Text', shape: 'free-form prose / notes'},
+            {block: 'Code', shape: 'a verbatim block (source, skeleton, or doc), emitted exactly'},
+          ],
+          {fields: ['block', 'shape']},
+        ),
+        text(
+          'Grep a field across records, e.g.  astryx search button | grep "^command:". ' +
+            'Errors/warnings go to stderr; use --json for structured parsing.',
+        ),
+      ]
+        .map(block => block.toString())
+        .join('\n\n'),
   );
 
   program
