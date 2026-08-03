@@ -56,7 +56,7 @@
     "@types/react": "^19.2.17",
     "tsup": "^8.3.0",
     "typescript": "^6.0.3",
-    "vega": "^6.2.0",
+    "vega": "^6.3.1",
     "vega-lite": "^6.4.3",
     "vega-util": "^2.1.1"
   }
