@@ -73,6 +73,20 @@ export const docs = {
           description: 'Accessible label for the popover dialog.',
         },
         {
+          name: 'role',
+          type: "'dialog' | 'none'",
+          description:
+            'ARIA role for the popover wrapper. Use dialog for dialog-style popovers; use none when content provides its own role, like menu or listbox.',
+          default: "'dialog'",
+        },
+        {
+          name: 'isModal',
+          type: 'boolean',
+          description:
+            'Whether a dialog-style popover sets aria-modal. Only applies when role is dialog.',
+          default: 'true',
+        },
+        {
           name: 'hasCloseButton',
           type: 'boolean',
           description: 'Whether to include a hidden close button for accessibility.',
@@ -212,6 +226,20 @@ export const docsZh = {
           name: 'label',
           type: 'string',
           description: '弹出框对话框的无障碍标签。',
+        },
+        {
+          name: 'role',
+          type: "'dialog' | 'none'",
+          description:
+            '弹出框包装器的 ARIA 角色。对话框式弹出框使用 dialog；当内容提供自己的角色（如 menu 或 listbox）时使用 none。',
+          default: "'dialog'",
+        },
+        {
+          name: 'isModal',
+          type: 'boolean',
+          description:
+            '对话框式弹出框是否设置 aria-modal。仅在 role 为 dialog 时适用。',
+          default: 'true',
         },
         {
           name: 'hasCloseButton',
