@@ -20,7 +20,7 @@ import {
 import {resolveTheme} from '../../lib/resolve-theme.mjs';
 import {getCliInvocation} from '../../../../foundation/env/package-manager.mjs';
 import {jsonOut} from '../../../../foundation/response/json.mjs';
-import {emit, section, text, list, record, records, markdown, code} from '../../formatters/index.mjs';
+import {emit, title, section, text, list, record, records, table, markdown, code} from '../../formatters/index.mjs';
 import {cliError} from '../../lib/cli-error.mjs';
 import {ERROR_CODES} from '../../../../foundation/response/error-codes.mjs';
 import {component as componentApi} from '../../../../api/component/component.mjs';
@@ -145,7 +145,7 @@ export function registerComponent(program) {
               // Skip the synthetic group header when there's only one ungrouped category
               const isUngrouped =
                 entries.length === 1 && items.length === 1 && items[0]?.name === cat;
-              if (!isUngrouped) out.push(section(`${cat} (group)`));
+              if (!isUngrouped) out.push(section(cat));
               out.push(records(items, {fields: ['name', 'import', 'description']}));
             }
             out.push(listFooter);
@@ -153,14 +153,13 @@ export function registerComponent(program) {
             break;
           }
 
-          // --detail names (default for list views). The API now returns
-          // package-qualified entries ({name, package}); the human view omits
-          // the core package label for readability but ALWAYS shows the package
-          // for integration components (and whenever names collide).
+          // --detail names (default for list views): one uniform table of every
+          // component + its import path, sorted A-Z. The import column already
+          // conveys families, so we skip the choppy per-family grouping that
+          // interleaved headerless singletons with "(group)" sections. External
+          // or name-colliding entries stay package-qualified.
           const groups = result.data.components;
           const CORE_PKG = '@astryxdesign/core';
-          // Names that appear under more than one package across the whole
-          // listing — these must always be package-qualified to disambiguate.
           /** @type {Map<string, Set<string>>} */
           const nameCounts = new Map();
           for (const items of Object.values(groups)) {
@@ -170,49 +169,27 @@ export function registerComponent(program) {
               nameCounts.set(item.name, set);
             }
           }
-          /** @param {string} n */
-          const isCollision = n => (nameCounts.get(n)?.size ?? 0) > 1;
           /** @param {import('../../../../api/component/component.type.mjs').ComponentListEntry} item */
-          const pkgSuffix = item => {
-            if (item.package !== CORE_PKG) return `  [${item.package}]`;
-            if (isCollision(item.name)) return `  [${item.package}]`;
-            return '';
+          const importCell = item => {
+            const importPath = resolveImportPath(coreDir, item.name);
+            const qualify =
+              item.package !== CORE_PKG || (nameCounts.get(item.name)?.size ?? 0) > 1;
+            return qualify ? `${importPath}  [${item.package}]` : importPath;
           };
-          // The import path hint stays inline (`name <- importPath`), ASCII arrow.
-          /** @param {import('../../../../api/component/component.type.mjs').ComponentListEntry} item */
-          const entryLine = item =>
-            `${item.name}  <- ${resolveImportPath(coreDir, item.name)}${pkgSuffix(item)}`;
 
-          if (options.category) {
-            const [cat, comps] = Object.entries(groups)[0];
-            emit(section(`${cat}:`), list(comps.map(entryLine)));
-            break;
-          }
+          const firstGroup = Object.entries(groups)[0];
+          const entries =
+            options.category && firstGroup ? firstGroup[1] : Object.values(groups).flat();
+          const sorted = [...entries].sort((a, b) => a.name.localeCompare(b.name));
+          const rows = sorted.map(item => [item.name, importCell(item)]);
 
-          /** @type {import('../../formatters/index.mjs').Block[]} */
-          const out = [];
-          // Batch consecutive ungrouped singles into one tight list; render each
-          // group as its own section + list.
-          /** @type {string[]} */
-          let singles = [];
-          const flushSingles = () => {
-            if (singles.length) {
-              out.push(list(singles));
-              singles = [];
-            }
-          };
-          for (const [key, comps] of Object.entries(groups)) {
-            const isUngrouped = comps.length === 1 && comps[0]?.name === key;
-            if (isUngrouped) {
-              singles.push(entryLine(comps[0]));
-            } else {
-              flushSingles();
-              out.push(section(`${key} (group)`), list(comps.map(entryLine)));
-            }
-          }
-          flushSingles();
-          out.push(listFooter);
-          emit(...out);
+          emit(
+            options.category && firstGroup
+              ? section(firstGroup[0])
+              : title(`Components (${sorted.length})`),
+            table(rows, {head: ['Component', 'Import']}),
+            listFooter,
+          );
           break;
         }
 
