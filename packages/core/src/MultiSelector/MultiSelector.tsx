@@ -177,6 +177,47 @@ const styles = stylex.create({
   triggerIconStatus: {
     transition: 'none',
   },
+  triggerGhost: {
+    width: 'auto',
+    borderWidth: 0,
+    backgroundColor: 'transparent',
+    backgroundImage: {
+      default: null,
+      ':hover': {
+        '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
+      },
+      ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
+    },
+    boxShadow: {
+      default: 'none',
+      ':hover:not(:focus-within)': {
+        '@media (hover: hover)': 'none',
+      },
+      ':focus-within': 'none',
+    },
+    fontWeight: fontWeightVars['--font-weight-medium'],
+    outline: {
+      default: 'none',
+      ':has(:focus-visible)': `2px solid ${colorVars['--color-accent']}`,
+    },
+    outlineOffset: {
+      default: '0',
+      ':has(:focus-visible)': '3px',
+    },
+    transitionProperty:
+      'background-image, background-color, color, opacity, transform',
+    transform: {
+      default: 'scale(1)',
+      ':active': 'scale(0.98)',
+    },
+  },
+  triggerGhostDisabled: {
+    backgroundImage: 'none',
+    transform: {
+      default: 'none',
+      ':active': 'none',
+    },
+  },
 
   // Clear button
   clearButton: {
@@ -188,6 +229,24 @@ const styles = stylex.create({
     borderWidth: 0,
     borderStyle: 'none',
     backgroundColor: 'transparent',
+    cursor: 'pointer',
+    borderRadius: radiusVars['--radius-element'],
+    outline: {
+      default: 'none',
+      ':focus-visible': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
+    },
+    outlineOffset: 1,
+  },
+  statusButton: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 0,
+    margin: 0,
+    borderWidth: 0,
+    borderStyle: 'none',
+    backgroundColor: 'transparent',
+    color: 'inherit',
     cursor: 'pointer',
     borderRadius: radiusVars['--radius-element'],
     outline: {
@@ -347,7 +406,15 @@ const STATUS_ICON_COLOR_MAP: Record<
   success: 'success',
 };
 
+const STATUS_BUTTON_LABEL_KEY: Record<MultiSelectorStatusType, string> = {
+  warning: '@astryx.input.statusButton.warning',
+  error: '@astryx.input.statusButton.error',
+  success: '@astryx.input.statusButton.success',
+};
+
 export type MultiSelectorSize = 'sm' | 'md' | 'lg';
+
+export type MultiSelectorVariant = 'input' | 'ghost';
 
 export type MultiSelectorStatusType = 'warning' | 'error' | 'success';
 
@@ -461,14 +528,23 @@ export interface MultiSelectorProps<
   size?: MultiSelectorSize;
 
   /**
+   * Visual style of the selector trigger.
+   * - 'input': bordered input-style trigger for forms
+   * - 'ghost': borderless trigger matching ghost buttons, for toolbars
+   * @default 'input'
+   */
+  variant?: MultiSelectorVariant;
+
+  /**
    * Status indicator for the selector.
    */
   status?: MultiSelectorStatus;
   /**
    * How the status message is placed relative to the input.
-   * - 'attached': message overlaps directly below the input (bordered treatment)
+   * - 'attached': message overlaps directly below the bordered input (input variant only)
    * - 'detached': message floats below as a separate element with spacing
-   * @default 'attached'
+   * - 'tooltip': message is exposed from the on-field status icon
+   * @default 'attached' for input selectors; 'detached' for ghost selectors
    */
   statusVariant?: FieldStatusVariant;
 
@@ -613,6 +689,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   isLoading = false,
   placeholder: placeholderFromProps,
   size: sizeProp,
+  variant = 'input',
   status,
   statusVariant = 'attached',
   labelTooltip,
@@ -641,6 +718,11 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   const searchPlaceholder =
     searchPlaceholderFromProps ?? t('@astryx.multiSelector.searchPlaceholder');
   const size = useSize(sizeProp, 'md');
+  const effectiveStatusVariant =
+    variant === 'ghost' && statusVariant === 'attached'
+      ? 'detached'
+      : statusVariant;
+
   const triggerId = useId();
   const listboxId = useId();
   const descriptionId = useId();
@@ -680,12 +762,21 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     focusTrigger: 'always',
     isEnabled: showsDisabledMessage,
   });
+  const statusTooltip = useTooltip({
+    placement: 'above',
+    isEnabled: effectiveStatusVariant === 'tooltip' && !!status?.message,
+  });
 
   const {ariaLabelledBy, ariaDescribedBy} = getInputARIA(
     inputLabelId,
     [
       description ? descriptionId : null,
-      status?.message ? statusMessageId : null,
+      !inputGroup && effectiveStatusVariant !== 'tooltip' && status?.message
+        ? statusMessageId
+        : null,
+      effectiveStatusVariant === 'tooltip' && status?.message
+        ? statusTooltip.describedBy
+        : null,
       showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
     ],
     inputGroup,
@@ -1332,7 +1423,10 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
 
   // The detached message box renders its own leading status icon, so the
   // on-field icon would duplicate it — keep the chevron indicator instead.
-  const showStatusIcon = status != null && statusVariant !== 'detached';
+  const showStatusIcon =
+    status != null && effectiveStatusVariant !== 'detached';
+  const showStatusTooltip =
+    status != null && effectiveStatusVariant === 'tooltip' && !!status.message;
 
   const multiSelectorContent = (
     <>
@@ -1347,16 +1441,27 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         onClick={onTriggerClick}
         data-testid={testId}
         {...mergeProps(
-          themeProps('multi-selector', {size, status: status?.type ?? null}),
+          themeProps('multi-selector', {
+            variant,
+            size,
+            status: status?.type ?? null,
+          }),
           stylex.props(
             inputWrapperStyles.base,
             styles.triggerContainer,
             sizeStyles[size],
+            variant === 'ghost' && styles.triggerGhost,
             isDisabled && inputWrapperStyles.disabled,
+            variant === 'ghost' && isDisabled && styles.triggerGhostDisabled,
             optimisticValue.length === 0 && styles.triggerPlaceholder,
-            status && inputStatusBorderStyles[status.type],
-            status && !isDisabled && inputStatusHoverShadowStyles[status.type],
-            inputGroup && groupStyles.inGroup,
+            variant !== 'ghost' &&
+              status &&
+              inputStatusBorderStyles[status.type],
+            variant !== 'ghost' &&
+              status &&
+              !isDisabled &&
+              inputStatusHoverShadowStyles[status.type],
+            variant !== 'ghost' && inputGroup && groupStyles.inGroup,
             xstyle,
           ),
           className,
@@ -1439,11 +1544,27 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
             showStatusIcon && styles.triggerIconStatus,
           )}>
           {showStatusIcon ? (
-            <Icon
-              icon={STATUS_ICON_MAP[status.type]}
-              size="sm"
-              color={STATUS_ICON_COLOR_MAP[status.type]}
-            />
+            showStatusTooltip ? (
+              <button
+                ref={statusTooltip.ref}
+                type="button"
+                aria-label={t(STATUS_BUTTON_LABEL_KEY[status.type])}
+                aria-describedby={statusTooltip.describedBy}
+                onClick={e => e.stopPropagation()}
+                {...stylex.props(styles.statusButton)}>
+                <Icon
+                  icon={STATUS_ICON_MAP[status.type]}
+                  size="sm"
+                  color={STATUS_ICON_COLOR_MAP[status.type]}
+                />
+              </button>
+            ) : (
+              <Icon
+                icon={STATUS_ICON_MAP[status.type]}
+                size="sm"
+                color={STATUS_ICON_COLOR_MAP[status.type]}
+              />
+            )
           ) : (
             <Icon
               icon="chevronDown"
@@ -1480,6 +1601,8 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         },
       )}
 
+      {showStatusTooltip && statusTooltip.renderTooltip(status?.message ?? '')}
+
       {showsDisabledMessage &&
         disabledMessageTooltip.renderTooltip(disabledMessage)}
     </>
@@ -1508,7 +1631,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
             }
           : undefined
       }
-      statusVariant={statusVariant}
+      statusVariant={effectiveStatusVariant}
       labelTooltip={labelTooltip}
       width={width}>
       {multiSelectorContent}

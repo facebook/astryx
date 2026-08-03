@@ -1271,6 +1271,47 @@ describe('Selector statusVariant forwarding', () => {
       container.querySelector('.astryx-selector-indicator-icon'),
     ).not.toBeNull();
   });
+
+  it('detaches attached status by default for the ghost variant', () => {
+    const {container} = render(
+      <Selector
+        label="Fruit"
+        options={['Apple', 'Banana']}
+        variant="ghost"
+        status={{type: 'error', message: 'Required'}}
+      />,
+    );
+    expect(container.querySelector('.astryx-selector')).toHaveAttribute(
+      'data-variant',
+      'ghost',
+    );
+    expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+      'data-variant',
+      'detached',
+    );
+  });
+
+  it('uses a status tooltip for ghost selectors when requested', () => {
+    const {container} = render(
+      <Selector
+        label="Fruit"
+        options={['Apple', 'Banana']}
+        variant="ghost"
+        status={{type: 'warning', message: 'Visible to all users'}}
+        statusVariant="tooltip"
+      />,
+    );
+    expect(container.querySelector('.astryx-field-status')).toBeNull();
+    const statusButton = screen.getByRole('button', {
+      name: /warning details/i,
+    });
+    const tooltip = screen.getByRole('tooltip', h);
+    expect(tooltip).toHaveTextContent('Visible to all users');
+    expect(statusButton.getAttribute('aria-describedby')).toContain(tooltip.id);
+    expect(
+      screen.getByRole('combobox').getAttribute('aria-describedby'),
+    ).toContain(tooltip.id);
+  });
 });
 
 describe('Selector clear icon theme target', () => {

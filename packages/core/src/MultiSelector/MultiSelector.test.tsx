@@ -1458,6 +1458,51 @@ describe('MultiSelector statusVariant forwarding', () => {
       container.querySelector('.astryx-multi-selector-indicator-icon'),
     ).not.toBeNull();
   });
+
+  it('detaches attached status by default for the ghost variant', () => {
+    const {container} = render(
+      <MultiSelector
+        label="Fruit"
+        options={['Apple', 'Banana']}
+        value={[]}
+        onChange={() => {}}
+        variant="ghost"
+        status={{type: 'error', message: 'Required'}}
+      />,
+    );
+    expect(container.querySelector('.astryx-multi-selector')).toHaveAttribute(
+      'data-variant',
+      'ghost',
+    );
+    expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+      'data-variant',
+      'detached',
+    );
+  });
+
+  it('uses a status tooltip for ghost multi-selectors when requested', () => {
+    const {container} = render(
+      <MultiSelector
+        label="Fruit"
+        options={['Apple', 'Banana']}
+        value={[]}
+        onChange={() => {}}
+        variant="ghost"
+        status={{type: 'warning', message: 'Some rows are hidden'}}
+        statusVariant="tooltip"
+      />,
+    );
+    expect(container.querySelector('.astryx-field-status')).toBeNull();
+    const statusButton = screen.getByRole('button', {
+      name: /warning details/i,
+    });
+    const tooltip = screen.getByRole('tooltip', h);
+    expect(tooltip).toHaveTextContent('Some rows are hidden');
+    expect(statusButton.getAttribute('aria-describedby')).toContain(tooltip.id);
+    expect(
+      screen.getByRole('combobox').getAttribute('aria-describedby'),
+    ).toContain(tooltip.id);
+  });
 });
 
 describe('MultiSelector clear icon theme target', () => {

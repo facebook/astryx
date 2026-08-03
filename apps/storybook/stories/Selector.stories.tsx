@@ -2,6 +2,7 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState} from 'react';
+import {Button} from '@astryxdesign/core/Button';
 import {Selector, SelectorOption} from '@astryxdesign/core/Selector';
 import {Theme, defineTheme} from '@astryxdesign/core/theme';
 import {UserIcon, CogIcon, BellIcon} from '@heroicons/react/24/outline';
@@ -50,6 +51,11 @@ const meta: Meta<typeof Selector> = {
       control: 'radio',
       options: ['sm', 'md', 'lg'],
       description: 'Size variant of the selector',
+    },
+    variant: {
+      control: 'radio',
+      options: ['input', 'ghost'],
+      description: 'Visual trigger style',
     },
     placement: {
       control: 'select',
@@ -429,6 +435,55 @@ export const SizeVariants: Story = {
           onChange={setValue3}
           placeholder="Large size (36px)"
         />
+      </div>
+    );
+  },
+  decorators: [Story => <Story />],
+};
+
+// Ghost variant for toolbar composition
+export const GhostVariant: Story = {
+  render: () => {
+    const [view, setView] = useState<string | undefined>('week');
+    const [density, setDensity] = useState<string | undefined>('comfortable');
+    return (
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          width: 'max-content',
+        }}>
+        <Button label="Today" variant="ghost" />
+        <Selector
+          label="View"
+          isLabelHidden
+          variant="ghost"
+          size="md"
+          options={[
+            {value: 'day', label: 'Day'},
+            {value: 'week', label: 'Week'},
+            {value: 'month', label: 'Month'},
+          ]}
+          value={view}
+          onChange={setView}
+        />
+        <Selector
+          label="Density"
+          isLabelHidden
+          variant="ghost"
+          size="md"
+          options={[
+            {value: 'compact', label: 'Compact'},
+            {value: 'comfortable', label: 'Comfortable'},
+            {value: 'spacious', label: 'Spacious'},
+          ]}
+          value={density}
+          onChange={setDensity}
+          status={{type: 'warning', message: 'This setting affects all users'}}
+          statusVariant="tooltip"
+        />
+        <Button label="Export" variant="ghost" />
       </div>
     );
   },
