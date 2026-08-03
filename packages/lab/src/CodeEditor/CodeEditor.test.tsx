@@ -188,4 +188,40 @@ describe('CodeEditor', () => {
 
     expect(onChange).toHaveBeenCalledWith('  a;\nb;');
   });
+
+  it('exposes an explicit tabindex so scrollable editors count as focusable content', () => {
+    // contenteditable is not on axe's natively-focusable whitelist, and axe
+    // reads the tabindex ATTRIBUTE (not the browser's effective tabIndex),
+    // so the scrollable editorContainer only passes scrollable-region-focusable
+    // when the <code> editor materializes tabindex="0" explicitly.
+    render(
+      <CodeEditor
+        value={Array.from({length: 30}, (_, i) => `line ${i + 1};`).join('\n')}
+        onChange={() => {}}
+        language="typescript"
+        label="Edit snippet"
+        maxHeight={200}
+      />,
+    );
+    expect(screen.getByRole('textbox', {name: 'Edit snippet'})).toHaveAttribute(
+      'tabindex',
+      '0',
+    );
+  });
+
+  it('keeps read-only editors keyboard-focusable, like a readonly textarea', () => {
+    render(
+      <CodeEditor
+        value="const x = 1;"
+        onChange={() => {}}
+        language="typescript"
+        label="Edit snippet"
+        isReadOnly
+      />,
+    );
+    expect(screen.getByRole('textbox', {name: 'Edit snippet'})).toHaveAttribute(
+      'tabindex',
+      '0',
+    );
+  });
 });
