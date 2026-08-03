@@ -5,7 +5,7 @@
 /**
  * @file Pagination.tsx
  * @input Uses React, StyleX, Button, Icon, Selector, Text; page number buttons delegate to Button.
- *   Reads i18n direction via useDirection() to flip the prev/next chevrons under RTL.
+ *   Prev/next chevrons mirror under RTL via the shared rtlStyles.mirror (CSS scaleX), not a JS direction read.
  * @output Exports Pagination component, PaginationProps, PaginationVariant, PaginationSize types
  * @position Core implementation; consumed by index.ts, tested by Pagination.test.tsx
  *
@@ -37,11 +37,10 @@ import {Selector} from '../Selector';
 import {Text} from '../Text';
 import {useAnnounce} from '../hooks/useAnnounce';
 import {useListFocus} from '../hooks/useListFocus';
-import {mergeProps} from '../utils';
+import {mergeProps, rtlStyles} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n/useTranslator';
-import {useDirection} from '../i18n/useDirection';
 import type {PaginationVariantMap} from './index';
 
 // =============================================================================
@@ -343,11 +342,6 @@ export function Pagination({
   const previousLabel = t('@astryx.pagination.previous');
   const nextLabel = t('@astryx.pagination.next');
 
-  // Directional icons: under RTL, the "previous" control points right and the
-  // "next" control points left. aria-labels stay semantic (unchanged).
-  const direction = useDirection();
-  const previousIcon = direction === 'rtl' ? 'chevronRight' : 'chevronLeft';
-  const nextIcon = direction === 'rtl' ? 'chevronLeft' : 'chevronRight';
   const pageIndicatorsLabel = t('@astryx.pagination.pageIndicators');
   const itemsPerPageLabel = t('@astryx.pagination.itemsPerPage');
 
@@ -651,7 +645,11 @@ export function Pagination({
           label={previousLabel}
           variant="ghost"
           size={buttonSize}
-          icon={<Icon icon={previousIcon} size={isSm ? 'sm' : 'md'} />}
+          icon={
+            <span {...stylex.props(rtlStyles.mirror)}>
+              <Icon icon="chevronLeft" size={isSm ? 'sm' : 'md'} />
+            </span>
+          }
           onClick={handlePrevious}
           isDisabled={isDisabled || !hasPrevious}
           isIconOnly
@@ -663,7 +661,11 @@ export function Pagination({
           label={nextLabel}
           variant="ghost"
           size={buttonSize}
-          icon={<Icon icon={nextIcon} size={isSm ? 'sm' : 'md'} />}
+          icon={
+            <span {...stylex.props(rtlStyles.mirror)}>
+              <Icon icon="chevronRight" size={isSm ? 'sm' : 'md'} />
+            </span>
+          }
           onClick={handleNext}
           isDisabled={isDisabled || !hasNext}
           isIconOnly
