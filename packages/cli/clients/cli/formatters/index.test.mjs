@@ -107,6 +107,22 @@ describe('records', () => {
   });
 });
 
+describe('ASCII normalization', () => {
+  it('converts em/en dashes, curly quotes, and ellipsis in prose + records', () => {
+    expect(text('a \u2014 b').toString()).toBe('a - b');
+    expect(title('X \u2013 Y').toString()).toBe('X - Y');
+    expect(record({name: '\u201cSettings\u201d \u2014 Form\u2026'}).toString()).toBe(
+      'name: "Settings" - Form...',
+    );
+    expect(list(['Avatar \u2014 Group']).toString()).toBe('- Avatar - Group');
+  });
+
+  it('leaves code and markdown verbatim (no normalization)', () => {
+    expect(code('a \u2014 b').toString()).toBe('a \u2014 b');
+    expect(markdown('a \u2014 b').toString()).toBe('a \u2014 b');
+  });
+});
+
 describe('table', () => {
   it('aligns columns to their widest cell and does not pad the last column', () => {
     const out = table(

@@ -89,12 +89,30 @@ function renderValue(v) {
 }
 
 /**
+ * Normalize common non-ASCII typography to ASCII so human output stays plain and
+ * consistent no matter what the source data contains (em/en dashes -> "-", curly
+ * quotes -> straight, ellipsis -> "...", non-breaking space -> space). The
+ * verbatim renderers (code, markdown) deliberately skip this. `--json` is
+ * unaffected — it always carries the original data.
+ * @param {string} s
+ * @returns {string}
+ */
+function toAscii(s) {
+  return String(s)
+    .replace(/[\u2014\u2013]/g, '-')
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/\u2026/g, '...')
+    .replace(/\u00a0/g, ' ');
+}
+
+/**
  * A headline for a command's output (e.g. `Results for "button" (20)`).
  * @param {string} content
  * @returns {Block}
  */
 export function title(content) {
-  return new Block(String(content));
+  return new Block(toAscii(String(content)));
 }
 
 /**
@@ -107,7 +125,7 @@ export function title(content) {
  * @returns {Block}
  */
 export function section(heading, subtitle) {
-  return new Block(subtitle ? `${heading}\n${subtitle}` : String(heading));
+  return new Block(toAscii(subtitle ? `${heading}\n${subtitle}` : String(heading)));
 }
 
 /**
@@ -116,7 +134,7 @@ export function section(heading, subtitle) {
  * @returns {Block}
  */
 export function text(content) {
-  return new Block(String(content));
+  return new Block(toAscii(String(content)));
 }
 
 /**
@@ -134,7 +152,7 @@ export function list(items) {
     return [`${BULLET} ${head}`, ...rest.map(l => `${hang}${l}`)].join('\n');
   });
   const multiline = rendered.some(r => r.includes('\n'));
-  return new Block(rendered.join(multiline ? '\n\n' : '\n'));
+  return new Block(toAscii(rendered.join(multiline ? '\n\n' : '\n')));
 }
 
 /**
@@ -159,7 +177,7 @@ export function record(obj, options = {}) {
     const value = fmt ? fmt(src[k]) : renderValue(src[k]);
     return `${`${label(k)}:`.padEnd(keyWidth + 2)}${value}`;
   });
-  return new Block(lines.join('\n'));
+  return new Block(toAscii(lines.join('\n')));
 }
 
 /**
@@ -184,8 +202,11 @@ export function records(items, options = {}) {
  * @returns {Block}
  */
 export function table(rows, options = {}) {
-  const {head} = options;
-  const all = head ? [head, ...rows] : rows;
+  // Normalize cells to ASCII up front so column widths are computed on the
+  // final glyphs (e.g. an ellipsis "…" -> "..." must widen the column).
+  const head = options.head ? options.head.map(c => toAscii(c ?? '')) : undefined;
+  const body = rows.map(r => r.map(c => toAscii(c ?? '')));
+  const all = head ? [head, ...body] : body;
   if (all.length === 0) return new Block('');
 
   const cols = all.reduce((max, r) => Math.max(max, r.length), 0);
@@ -208,7 +229,7 @@ export function table(rows, options = {}) {
     lines.push(fmt(head));
     lines.push(widths.map(w => '-'.repeat(w)).join(COL_GAP).replace(/\s+$/, ''));
   }
-  for (const r of rows) lines.push(fmt(r));
+  for (const r of body) lines.push(fmt(r));
   return new Block(lines.join('\n'));
 }
 
