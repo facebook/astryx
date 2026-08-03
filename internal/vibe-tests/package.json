@@ -9,6 +9,9 @@
   },
   "scripts": {
     "harness": "tsx src/cli.ts",
+    "trends": "tsx src/cli.ts trends",
+    "trends:collect": "tsx src/trends-collect.ts",
+    "trends:report": "tsx src/trends-report.ts",
     "interactive": "tsx src/interactive.ts",
     "interactive:sample": "tsx src/interactive.ts --sample 5",
     "aggregate": "tsx src/universal-aggregate.ts",

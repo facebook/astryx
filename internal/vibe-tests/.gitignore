@@ -16,6 +16,10 @@ AGENTS.html.md
 # Test results (generated)
 results/
 
+# Trends dashboard (generated from GitHub issues by `trends-collect` / `trends-report`)
+trends.json
+trends-dashboard.html
+
 # Preview build temp dirs
 .preview-tmp*
 # .baseline/ is committed (real shadcn components for type checking)

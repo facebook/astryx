@@ -12,6 +12,7 @@
 import {Command} from 'commander';
 import * as path from 'node:path';
 import * as fs from 'node:fs';
+import {execFileSync} from 'node:child_process';
 import type {Iteration} from './types.js';
 import {readJson} from './utils.js';
 
@@ -63,6 +64,64 @@ program
       console.log(`    Refinements applied: ${iter.refinementsApplied.length}`);
       console.log(`    Parent: ${iter.parentIteration ?? 'none'}`);
       console.log();
+    }
+  });
+
+/**
+ * Trends command — collect nightly GitHub-issue results into a time series
+ * and build the self-contained dashboard.
+ */
+program
+  .command('trends')
+  .description(
+    'Collect nightly vibe-test issues and build the trends dashboard',
+  )
+  .option(
+    '--collect-only',
+    'Only refresh trends.json; skip building the dashboard',
+  )
+  .option('--repo <slug>', 'GitHub repo to read issues from', 'facebook/astryx')
+  .option('--label <label>', 'Issue label to collect', 'vibe-test')
+  .option('--open', 'Print the dashboard path on completion')
+  .action(async options => {
+    const scriptDir = import.meta.dirname;
+    const trendsJson = path.join(scriptDir, '..', 'trends.json');
+    const dashboard = path.join(scriptDir, '..', 'trends-dashboard.html');
+
+    execFileSync(
+      'npx',
+      [
+        'tsx',
+        path.join(scriptDir, 'trends-collect.ts'),
+        '--repo',
+        options.repo,
+        '--label',
+        options.label,
+        '--out',
+        trendsJson,
+      ],
+      {stdio: 'inherit'},
+    );
+
+    if (options.collectOnly) {
+      return;
+    }
+
+    execFileSync(
+      'npx',
+      [
+        'tsx',
+        path.join(scriptDir, 'trends-report.ts'),
+        '--in',
+        trendsJson,
+        '--out',
+        dashboard,
+      ],
+      {stdio: 'inherit'},
+    );
+
+    if (options.open) {
+      console.log(`\nOpen: ${dashboard}`);
     }
   });
 

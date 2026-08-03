@@ -118,6 +118,33 @@ For evaluation fairness, check `universal-eval.ts`:
 - Verify each branch is measuring the equivalent concept for its system
 - Watch for any target getting a skip/bonus the others don't
 
+## Trends Dashboard
+
+Each nightly run is posted as a GitHub issue labeled `vibe-test`, with a scoreboard
+table in the body. `trends-collect` reads every such issue, parses the scoreboard
+across the historical table layouts, and writes a normalized `trends.json`.
+`trends-report` injects that data into a single self-contained HTML dashboard —
+overall-score trend, Astryx-vs-Baseline gap with a moving average, per-dimension
+small multiples, and a sortable table linking back to each issue. No build step,
+no external chart deps (inline SVG).
+
+```bash
+# One shot: refresh data + rebuild the dashboard
+pnpm -F @astryxdesign/lns trends              # → trends-dashboard.html
+
+# Or run the stages separately
+pnpm -F @astryxdesign/lns trends:collect      # → trends.json
+pnpm -F @astryxdesign/lns trends:report       # trends.json → trends-dashboard.html
+
+# Point at a different repo/label
+pnpm -F @astryxdesign/lns trends -- --repo facebook/astryx --label vibe-test
+```
+
+Both `trends.json` and `trends-dashboard.html` are generated (gitignored). Runs that
+carry the label but aren't score reports — experiments, audits, failed runs — are
+excluded automatically; runs scored on the old 0–10 rubric are rescaled to 0–100 so
+the trend line stays consistent.
+
 ## Known Accepted Asymmetries
 
 These are intentional and documented; they slightly favor baseline, making Astryx wins more credible:
@@ -139,7 +166,10 @@ internal/vibe-tests/
 │   ├── build-previews.ts     # TSX → HTML compilation + tsc
 │   ├── screenshot-previews.ts # Playwright screenshots
 │   ├── build-report.ts       # Vite HTML report
-│   └── deploy-report.ts      # gh-pages deployment
+│   ├── deploy-report.ts      # gh-pages deployment
+│   ├── trends-collect.ts     # GitHub issues → trends.json time series
+│   ├── trends-report.ts      # trends.json → self-contained dashboard HTML
+│   └── trends-template/      # Dashboard HTML shell (data injected at build)
 ├── .baseline/           # Real shadcn/ui components for baseline tsc
 ├── results/             # Iteration results (gitignored)
 └── README.md            # This file

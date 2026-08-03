@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Vibe Test Trends — Astryx</title>
+<style>
+:root{
+  --bg:#fbfbfa; --surface:#ffffff; --surface-2:#f4f4f2; --border:#e6e5e1;
+  --text:#1c1b19; --text-muted:#6b6a66; --text-subtle:#93928d;
+  --astryx:#2563eb; --astryxTW:#7c3aed; --baseline:#e8833a; --html:#9aa0a6;
+  --good:#16a34a; --bad:#dc2626; --shadow:0 1px 2px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.05);
+  --radius:12px; --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+html[data-theme="dark"]{
+  --bg:#131211; --surface:#1c1b19; --surface-2:#232220; --border:#33322e;
+  --text:#f2f1ee; --text-muted:#a3a29d; --text-subtle:#75746f;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 20px rgba(0,0,0,.4);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);
+  -webkit-font-smoothing:antialiased;line-height:1.5;font-size:14px}
+.wrap{max-width:1180px;margin:0 auto;padding:32px 24px 80px}
+header{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;margin-bottom:28px;flex-wrap:wrap}
+h1{font-size:24px;font-weight:680;letter-spacing:-.02em;margin:0 0 4px}
+.sub{color:var(--text-muted);font-size:13px}
+.sub a{color:var(--astryx);text-decoration:none}
+.sub a:hover{text-decoration:underline}
+.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+button.ctrl{background:var(--surface);border:1px solid var(--border);color:var(--text);
+  border-radius:8px;padding:7px 12px;font-size:12.5px;cursor:pointer;font-family:var(--sans);transition:.12s}
+button.ctrl:hover{background:var(--surface-2)}
+button.ctrl.active{background:var(--text);color:var(--bg);border-color:var(--text)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:26px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:16px 18px;box-shadow:var(--shadow)}
+.kpi .label{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-subtle);
+  display:flex;align-items:center;gap:7px;margin-bottom:8px;font-weight:600}
+.kpi .dot{width:9px;height:9px;border-radius:50%;flex:none}
+.kpi .val{font-size:30px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.kpi .delta{font-size:12.5px;margin-top:3px;font-weight:600}
+.kpi .delta.up{color:var(--good)} .kpi .delta.down{color:var(--bad)} .kpi .delta.flat{color:var(--text-subtle)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:20px 22px;box-shadow:var(--shadow);margin-bottom:22px}
+.card h2{font-size:15px;font-weight:640;margin:0 0 2px;letter-spacing:-.01em}
+.card .hint{color:var(--text-subtle);font-size:12px;margin:0 0 14px}
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin:0 0 10px}
+.legend .item{display:flex;align-items:center;gap:7px;font-size:12.5px;cursor:pointer;user-select:none;color:var(--text-muted)}
+.legend .item .sw{width:14px;height:3px;border-radius:2px}
+.legend .item.off{opacity:.35}
+.chart{width:100%;position:relative}
+svg{display:block;width:100%;overflow:visible}
+.axis text{fill:var(--text-subtle);font-size:10.5px}
+.axis line,.axis path{stroke:var(--border)}
+.gridline{stroke:var(--border);stroke-dasharray:2 3;opacity:.6}
+.smalls{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+.small{border:1px solid var(--border);border-radius:10px;padding:12px 14px;background:var(--surface-2)}
+.small .t{font-size:12.5px;font-weight:620;margin-bottom:2px;display:flex;justify-content:space-between;align-items:baseline}
+.small .t .now{font-variant-numeric:tabular-nums;color:var(--text-muted);font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{text-align:right;padding:7px 10px;border-bottom:1px solid var(--border);font-variant-numeric:tabular-nums;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--text-subtle);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.04em;
+  position:sticky;top:0;background:var(--surface);cursor:pointer}
+tbody tr:hover{background:var(--surface-2)}
+td a{color:var(--astryx);text-decoration:none}
+td a:hover{text-decoration:underline}
+.win{font-weight:700}
+.tblwrap{max-height:440px;overflow:auto;border:1px solid var(--border);border-radius:10px}
+.tooltip{position:fixed;pointer-events:none;background:var(--text);color:var(--bg);
+  padding:8px 11px;border-radius:8px;font-size:12px;box-shadow:0 6px 24px rgba(0,0,0,.25);
+  opacity:0;transition:opacity .1s;z-index:50;line-height:1.5;max-width:230px}
+.tooltip .tr{display:flex;justify-content:space-between;gap:14px}
+.tooltip .td{font-weight:600;color:var(--text)}
+.tooltip b{font-variant-numeric:tabular-nums}
+.foot{color:var(--text-subtle);font-size:11.5px;margin-top:8px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Vibe Test Trends</h1>
+      <div class="sub" id="subhead"></div>
+    </div>
+    <div class="toolbar">
+      <button class="ctrl" data-range="30">30d</button>
+      <button class="ctrl" data-range="60">60d</button>
+      <button class="ctrl active" data-range="all">All</button>
+      <button class="ctrl" id="themeToggle" title="Toggle theme">◐</button>
+    </div>
+  </header>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="card">
+    <h2>Overall score over time</h2>
+    <p class="hint">Judge-scored overall (0–100) per nightly run. Click a series in the legend to toggle it.</p>
+    <div class="legend" id="legend"></div>
+    <div class="chart" id="mainChart"></div>
+  </div>
+
+  <div class="card">
+    <h2>Astryx vs Baseline — overall gap</h2>
+    <p class="hint">Astryx overall minus Baseline overall. Above the line = Astryx ahead. 7-run moving average in bold.</p>
+    <div class="chart" id="gapChart"></div>
+  </div>
+
+  <div class="card">
+    <h2>Per-dimension trends</h2>
+    <p class="hint">Astryx (blue) vs Baseline (orange) across the five scored dimensions.</p>
+    <div class="smalls" id="smalls"></div>
+  </div>
+
+  <div class="card">
+    <h2>All runs</h2>
+    <p class="hint" id="tblhint"></p>
+    <div class="tblwrap"><table id="tbl"><thead></thead><tbody></tbody></table></div>
+  </div>
+
+  <div class="foot" id="foot"></div>
+</div>
+<div class="tooltip" id="tip"></div>
+
+<script id="data" type="application/json">__DATA__</script>
+<script>
+const RAW = JSON.parse(document.getElementById('data').textContent);
+const META = RAW.meta;
+const SERIES = [
+  {key:'astryx',   label:'Astryx',      cssvar:'--astryx'},
+  {key:'astryxTW', label:'Astryx + Tailwind', cssvar:'--astryxTW'},
+  {key:'baseline', label:'Baseline (shadcn/TW)', cssvar:'--baseline'},
+  {key:'html',     label:'Raw HTML',    cssvar:'--html'},
+];
+const DIMS = [
+  {key:'correctness',label:'Correctness'},
+  {key:'accessibility',label:'Accessibility'},
+  {key:'codeQuality',label:'Code Quality'},
+  {key:'efficiency',label:'Efficiency'},
+  {key:'maintainability',label:'Maintainability'},
+];
+let RANGE='all';
+const hidden=new Set();
+const tip=document.getElementById('tip');
+
+function cssColor(v){const c=getComputedStyle(document.documentElement).getPropertyValue(v);return c.trim()||v;}
+function filtered(){let recs=RAW.records;if(RANGE!=='all'){recs=recs.slice(-parseInt(RANGE));}return recs;}
+function fmt(x){return x==null?'—':(Math.round(x*10)/10).toString();}
+
+function renderKPIs(){
+  const recs=RAW.records;
+  const last=recs[recs.length-1], prev=recs[recs.length-2]||{overall:{}};
+  const box=document.getElementById('kpis');box.innerHTML='';
+  SERIES.forEach(s=>{
+    const v=last.overall[s.key], pv=(prev.overall||{})[s.key];
+    if(v==null)return;
+    let d='',cls='flat';
+    if(pv!=null){const diff=v-pv;cls=diff>0?'up':diff<0?'down':'flat';
+      d=(diff>0?'▲ +':diff<0?'▼ ':'▬ ')+fmt(Math.abs(diff))+' vs prev';}
+    box.insertAdjacentHTML('beforeend',
+      `<div class="kpi"><div class="label"><span class="dot" style="background:${cssColor(s.cssvar)}"></span>${s.label}</div>
+       <div class="val">${fmt(v)}</div><div class="delta ${cls}">${d}</div></div>`);
+  });
+  let wins=0,cmp=0;
+  recs.forEach(r=>{const a=r.overall.astryx,b=r.overall.baseline;if(a!=null&&b!=null){cmp++;if(a>=b)wins++;}});
+  const pct=cmp?Math.round(100*wins/cmp):0;
+  box.insertAdjacentHTML('beforeend',
+    `<div class="kpi"><div class="label"><span class="dot" style="background:var(--good)"></span>Astryx ≥ Baseline</div>
+     <div class="val">${pct}%</div><div class="delta flat">${wins}/${cmp} runs</div></div>`);
+}
+
+function makeX(recs,W,padL,padR){const n=recs.length;return i=>padL+(n<=1?0:(W-padL-padR)*i/(n-1));}
+function niceTicks(min,max,count){
+  const span=max-min||1, step=Math.pow(10,Math.floor(Math.log10(span/count)));
+  const err=count*step/span; let mult=1;
+  if(err<=.15)mult=10;else if(err<=.35)mult=5;else if(err<=.75)mult=2;
+  const s=mult*step;const t=[];for(let v=Math.ceil(min/s)*s;v<=max+1e-9;v+=s)t.push(Math.round(v));return t;}
+
+function lineChart(elId,recs,seriesKeys,yMin,yMax,H){
+  const el=document.getElementById(elId);
+  const W=el.clientWidth||900, padL=38,padR=14,padT=12,padB=30;
+  const x=makeX(recs,W,padL,padR);
+  const y=v=>padT+(H-padT-padB)*(1-(v-yMin)/(yMax-yMin));
+  let svg=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" height="${H}">`;
+  niceTicks(yMin,yMax,5).forEach(t=>{svg+=`<line class="gridline" x1="${padL}" x2="${W-padR}" y1="${y(t)}" y2="${y(t)}"/>`+
+    `<text x="${padL-7}" y="${y(t)+3.5}" text-anchor="end" fill="var(--text-subtle)" font-size="10.5">${t}</text>`;});
+  const step=Math.max(1,Math.round(recs.length/8));
+  recs.forEach((r,i)=>{if(i%step===0||i===recs.length-1)
+    svg+=`<text x="${x(i)}" y="${H-8}" text-anchor="middle" fill="var(--text-subtle)" font-size="10">${r.date.slice(5)}</text>`;});
+  seriesKeys.forEach(sk=>{
+    if(hidden.has(sk))return;const s=SERIES.find(z=>z.key===sk);const col=cssColor(s.cssvar);
+    let d='',started=false;
+    recs.forEach((r,i)=>{const v=r.overall[sk];if(v==null)return;
+      d+=(started?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1)+' ';started=true;});
+    svg+=`<path d="${d}" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    recs.forEach((r,i)=>{const v=r.overall[sk];if(v==null)return;
+      svg+=`<circle cx="${x(i)}" cy="${y(v)}" r="2.6" fill="${col}"/>`;});
+  });
+  svg+=`</svg>`;el.innerHTML=svg;
+  attachHover(el,recs,x,W,seriesKeys);
+}
+
+function attachHover(el,recs,x,W,seriesKeys){
+  const svg=el.querySelector('svg');
+  svg.addEventListener('mousemove',e=>{
+    const rect=svg.getBoundingClientRect();const px=(e.clientX-rect.left)/rect.width*W;
+    let bi=0,bd=1e9;recs.forEach((r,i)=>{const d=Math.abs(x(i)-px);if(d<bd){bd=d;bi=i;}});
+    const r=recs[bi];
+    let rows=`<div class="td">${r.date} · #${r.number}</div>`;
+    seriesKeys.forEach(sk=>{if(hidden.has(sk))return;const s=SERIES.find(z=>z.key===sk);const v=r.overall[sk];if(v==null)return;
+      rows+=`<div class="tr"><span style="color:${cssColor(s.cssvar)}">■</span>&nbsp;${s.label}<b>&nbsp;&nbsp;${fmt(v)}</b></div>`;});
+    tip.innerHTML=rows;tip.style.opacity=1;
+    tip.style.left=Math.min(e.clientX+14,window.innerWidth-240)+'px';tip.style.top=(e.clientY+14)+'px';
+  });
+  svg.addEventListener('mouseleave',()=>tip.style.opacity=0);
+}
+
+function gapChart(recs){
+  const el=document.getElementById('gapChart');
+  const H=220,padL=38,padR=14,padT=12,padB=30,W=el.clientWidth||900;
+  const gaps=recs.map(r=>(r.overall.astryx!=null&&r.overall.baseline!=null)?r.overall.astryx-r.overall.baseline:null);
+  const vals=gaps.filter(v=>v!=null);
+  let lo=Math.floor(Math.min(...vals,0)/5)*5-2,hi=Math.ceil(Math.max(...vals,0)/5)*5+2;
+  const x=makeX(recs,W,padL,padR);
+  const y=v=>padT+(H-padT-padB)*(1-(v-lo)/(hi-lo));
+  let svg=`<svg viewBox="0 0 ${W} ${H}" height="${H}">`;
+  niceTicks(lo,hi,5).forEach(t=>{svg+=`<line class="gridline" x1="${padL}" x2="${W-padR}" y1="${y(t)}" y2="${y(t)}"/>`+
+    `<text x="${padL-7}" y="${y(t)+3.5}" text-anchor="end" fill="var(--text-subtle)" font-size="10.5">${t>0?'+':''}${t}</text>`;});
+  svg+=`<line x1="${padL}" x2="${W-padR}" y1="${y(0)}" y2="${y(0)}" stroke="var(--text-muted)" stroke-width="1"/>`;
+  const step=Math.max(1,Math.round(recs.length/8));
+  recs.forEach((r,i)=>{if(i%step===0||i===recs.length-1)
+    svg+=`<text x="${x(i)}" y="${H-8}" text-anchor="middle" fill="var(--text-subtle)" font-size="10">${r.date.slice(5)}</text>`;});
+  recs.forEach((r,i)=>{const g=gaps[i];if(g==null)return;const col=g>=0?cssColor('--good'):cssColor('--bad');
+    const yy=y(g),y0=y(0);svg+=`<rect x="${x(i)-2.5}" y="${Math.min(yy,y0)}" width="5" height="${Math.abs(yy-y0)}" fill="${col}" opacity="0.55"/>`;});
+  const win=7;const ma=gaps.map((_,i)=>{const s=gaps.slice(Math.max(0,i-win+1),i+1).filter(v=>v!=null);
+    return s.length?s.reduce((a,b)=>a+b,0)/s.length:null;});
+  let d='',st=false;ma.forEach((v,i)=>{if(v==null)return;d+=(st?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1)+' ';st=true;});
+  svg+=`<path d="${d}" fill="none" stroke="var(--text)" stroke-width="2.4" stroke-linejoin="round"/></svg>`;el.innerHTML=svg;
+  const s2=el.querySelector('svg');
+  s2.addEventListener('mousemove',e=>{const rect=s2.getBoundingClientRect();const px=(e.clientX-rect.left)/rect.width*W;
+    let bi=0,bd=1e9;recs.forEach((r,i)=>{const dd=Math.abs(x(i)-px);if(dd<bd){bd=dd;bi=i;}});
+    const g=gaps[bi],r=recs[bi];
+    tip.innerHTML=`<div class="td">${r.date} · #${r.number}</div><div class="tr">Gap<b>&nbsp;${g==null?'—':(g>0?'+':'')+fmt(g)}</b></div>`+
+      `<div class="tr">7-run avg<b>&nbsp;${ma[bi]==null?'—':(ma[bi]>0?'+':'')+fmt(ma[bi])}</b></div>`;
+    tip.style.opacity=1;tip.style.left=Math.min(e.clientX+14,window.innerWidth-200)+'px';tip.style.top=(e.clientY+14)+'px';});
+  s2.addEventListener('mouseleave',()=>tip.style.opacity=0);
+}
+
+function smalls(recs){
+  const box=document.getElementById('smalls');box.innerHTML='';
+  DIMS.forEach(dim=>{
+    const id='sm_'+dim.key;const last=recs[recs.length-1].dimensions[dim.key]||{};
+    box.insertAdjacentHTML('beforeend',
+      `<div class="small"><div class="t">${dim.label}<span class="now">A ${fmt(last.astryx)} · B ${fmt(last.baseline)}</span></div><div class="chart" id="${id}"></div></div>`);
+    const el=document.getElementById(id);
+    const H=110,padL=26,padR=6,padT=8,padB=16,W=el.clientWidth||220;
+    const x=makeX(recs,W,padL,padR);const y=v=>padT+(H-padT-padB)*(1-v/100);
+    let svg=`<svg viewBox="0 0 ${W} ${H}" height="${H}">`;
+    [0,50,100].forEach(t=>{svg+=`<line class="gridline" x1="${padL}" x2="${W-padR}" y1="${y(t)}" y2="${y(t)}"/>`+
+      `<text x="${padL-5}" y="${y(t)+3}" text-anchor="end" fill="var(--text-subtle)" font-size="9">${t}</text>`;});
+    ['astryx','baseline'].forEach(sk=>{const s=SERIES.find(z=>z.key===sk);const col=cssColor(s.cssvar);
+      let d='',st=false;recs.forEach((r,i)=>{const v=(r.dimensions[dim.key]||{})[sk];if(v==null)return;
+        d+=(st?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1)+' ';st=true;});
+      svg+=`<path d="${d}" fill="none" stroke="${col}" stroke-width="1.6"/>`;});
+    svg+=`</svg>`;el.innerHTML=svg;
+  });
+}
+
+function renderLegend(){
+  const box=document.getElementById('legend');box.innerHTML='';
+  SERIES.forEach(s=>{const off=hidden.has(s.key)?' off':'';
+    box.insertAdjacentHTML('beforeend',
+      `<div class="item${off}" data-k="${s.key}"><span class="sw" style="background:${cssColor(s.cssvar)}"></span>${s.label}</div>`);});
+  box.querySelectorAll('.item').forEach(it=>it.onclick=()=>{
+    const k=it.dataset.k;if(hidden.has(k))hidden.delete(k);else hidden.add(k);renderLegend();draw();});
+}
+
+let sortKey='date',sortDir=-1;
+function winnerKey(r){let bk=null,bv=-1;SERIES.forEach(s=>{const v=r.overall[s.key];if(v!=null&&v>bv){bv=v;bk=s.key;}});return bk;}
+function winnerName(r){const k=winnerKey(r);const s=SERIES.find(z=>z.key===k);return s?s.label.split(' ')[0]:'—';}
+function renderTable(){
+  const recs=[...RAW.records];
+  const cols=[['date','Date'],['number','Issue'],['astryx','Astryx'],['astryxTW','+TW'],['baseline','Baseline'],['html','HTML'],['winner','Winner']];
+  document.querySelector('#tbl thead').innerHTML='<tr>'+cols.map(c=>`<th data-k="${c[0]}">${c[1]}</th>`).join('')+'</tr>';
+  recs.sort((a,b)=>{let av,bv;
+    if(sortKey==='date'){av=a.date;bv=b.date;}
+    else if(sortKey==='number'){av=a.number;bv=b.number;}
+    else if(sortKey==='winner'){av=winnerName(a);bv=winnerName(b);}
+    else{av=a.overall[sortKey]??-1;bv=b.overall[sortKey]??-1;}
+    return (av>bv?1:av<bv?-1:0)*sortDir;});
+  const tb=document.querySelector('#tbl tbody');tb.innerHTML='';
+  recs.forEach(r=>{const win=winnerKey(r);
+    const cell=k=>{const v=r.overall[k];return `<td${k===win?' class="win"':''}>${fmt(v)}</td>`;};
+    tb.insertAdjacentHTML('beforeend',
+      `<tr><td>${r.date}</td><td><a href="${r.url}" target="_blank" rel="noopener">#${r.number}</a></td>`+
+      cell('astryx')+cell('astryxTW')+cell('baseline')+cell('html')+`<td>${winnerName(r)}</td></tr>`);});
+  document.querySelectorAll('#tbl thead th').forEach(th=>th.onclick=()=>{
+    const k=th.dataset.k;if(sortKey===k)sortDir*=-1;else{sortKey=k;sortDir=-1;}renderTable();});
+}
+
+function draw(){
+  const recs=filtered();const active=SERIES.map(s=>s.key);
+  let lo=100,hi=0;recs.forEach(r=>SERIES.forEach(s=>{const v=r.overall[s.key];if(v!=null){lo=Math.min(lo,v);hi=Math.max(hi,v);}}));
+  lo=Math.max(0,Math.floor((lo-3)/5)*5);hi=Math.min(100,Math.ceil((hi+3)/5)*5);
+  lineChart('mainChart',recs,active,lo,hi,320);gapChart(recs);smalls(recs);
+}
+
+function boot(){
+  document.getElementById('subhead').innerHTML=
+    `${META.count} nightly runs · ${META.dateMin} → ${META.dateMax} · source: <a href="https://github.com/${META.repo}/issues?q=label%3A${META.label}" target="_blank" rel="noopener">${META.repo} · label:${META.label}</a>`;
+  document.getElementById('tblhint').textContent=`${RAW.records.length} scored runs. Click a header to sort; click an issue number to open it on GitHub.`;
+  document.getElementById('foot').textContent=`Parsed from GitHub issue scoreboards · generated ${META.generatedAt} · ${RAW.skipped.length} non-scored issues excluded`;
+  renderKPIs();renderLegend();renderTable();draw();
+}
+document.querySelectorAll('[data-range]').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('[data-range]').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');RANGE=b.dataset.range;draw();});
+document.getElementById('themeToggle').onclick=()=>{
+  const h=document.documentElement;h.dataset.theme=h.dataset.theme==='dark'?'light':'dark';draw();};
+window.addEventListener('resize',()=>{clearTimeout(window._rz);window._rz=setTimeout(draw,150);});
+boot();
+</script>
+</body>
+</html>
