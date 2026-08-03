@@ -131,50 +131,34 @@ export const docs = {
       {
         className: 'astryx-markdown-heading',
         visualProps: ['density', 'level'],
-        description:
-          'Each rendered heading block (h1–h6). Override marginBlockStart/marginBlockEnd to tune the gap around headings; reflects data-density and data-level so themes can set spacing per density and per heading level. Only applies to the default heading render — a custom components.heading owns its own styling.',
       },
       {
         className: 'astryx-markdown-paragraph',
         visualProps: ['density'],
-        description:
-          'Each rendered paragraph block. Override marginBlockStart/marginBlockEnd to tune the gap between paragraphs. Reflects data-density so themes can set different spacing per density.',
       },
       {
         className: 'astryx-markdown-list',
         visualProps: ['density'],
-        description:
-          'Each rendered list block (ordered, unordered, and task lists). Override marginBlockStart/marginBlockEnd to tune the gap around lists; reflects data-density.',
       },
       {
         className: 'astryx-markdown-codeblock',
         visualProps: ['density'],
-        description:
-          'Each rendered fenced code block wrapper. Override marginBlockStart/marginBlockEnd to tune the gap around code blocks; reflects data-density. Only applies to the default render — a custom components.code owns its own styling.',
       },
       {
         className: 'astryx-markdown-blockquote',
         visualProps: ['density'],
-        description:
-          'Each rendered blockquote block (shares the element with the astryx-blockquote target). Override marginBlockStart/marginBlockEnd to tune the gap around blockquotes; reflects data-density. Only applies to the default render — a custom components.blockquote owns its own styling.',
       },
       {
         className: 'astryx-markdown-table',
         visualProps: ['density'],
-        description:
-          'Each rendered table wrapper. Override marginBlockStart/marginBlockEnd to tune the gap around tables; reflects data-density.',
       },
       {
         className: 'astryx-markdown-hr',
         visualProps: ['density'],
-        description:
-          'Each rendered horizontal rule. Override marginBlockStart/marginBlockEnd to tune the gap around rules; reflects data-density. Only applies to the default render — a custom components.hr owns its own styling.',
       },
       {
         className: 'astryx-markdown-image',
         visualProps: ['density'],
-        description:
-          'Each rendered block image wrapper (and the broken-image placeholder). Override marginBlockStart/marginBlockEnd to tune the gap around images; reflects data-density. Only applies to the default render — a custom components.image owns its own styling.',
       },
     ],
   },
