@@ -131,15 +131,15 @@ export function registerBuild(program) {
           ? `${run} template ${pages[0].name} --skeleton`
           : `${run} component AppShell`;
       const startNote = directMatch
-        ? 'Direct match — scaffold this page template, then adapt it:'
+        ? `This \`${pages[0].name}\` page template appears to be the closest to what you want, so we recommend starting here — scaffold it and adapt. Otherwise, browse PAGE TEMPLATES first, then BLOCKS and DOMAIN COMPONENTS below.`
         : pages.length
-          ? 'No exact page template — use the closest as a layout reference, then compose:'
-          : 'No page template fits — frame with AppShell, then compose the pieces below:';
+          ? `No exact match, but \`${pages[0].name}\` is the closest page template — start from it as a layout reference. Otherwise, browse PAGE TEMPLATES first, then BLOCKS and DOMAIN COMPONENTS below.`
+          : 'No page template fits — frame with AppShell, then compose from BLOCKS and DOMAIN COMPONENTS below.';
 
       // A short legend up top: what this output is, how to use it, and the exact
       // order of the sections below (only the ones actually present) so it reads
       // clearly and parses predictably.
-      const sectionsOrder = ['START'];
+      const sectionsOrder = ['RECOMMENDED START'];
       if (pages.length) sectionsOrder.push('PAGE TEMPLATES');
       if (blocks.length) sectionsOrder.push('BLOCKS');
       if (domain.length) sectionsOrder.push('DOMAIN COMPONENTS');
@@ -150,11 +150,11 @@ export function registerBuild(program) {
         title(`Build kit for "${q}"`),
         text(
           'A recommended set of pieces to assemble this page, in the order to use them. ' +
-            'Run START first, then pull from the sections below — each recommended item ' +
-            'includes a `command:` to run next.\n' +
+            'Begin with RECOMMENDED START, then pull from the sections below — each ' +
+            'recommended item includes a `command:` to run next.\n' +
             `Sections in order: ${sectionsOrder.join(', ')}.`,
         ),
-        section('START', `${startNote}\n${startCmd}`),
+        section('RECOMMENDED START', `${startNote}\n${startCmd}`),
       ];
 
       if (pages.length) {
