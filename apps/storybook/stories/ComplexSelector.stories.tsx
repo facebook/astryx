@@ -423,21 +423,26 @@ function toTreeListItems(
   selectedId: string,
   onSelect: (value: DestinationValue) => void,
 ): TreeListItemData[] {
-  return nodes.map(node => ({
-    id: node.id,
-    label: node.label,
-    description: node.path,
-    isExpanded: node.children != null,
-    isSelected: node.id === selectedId,
-    endContent:
-      node.kind === 'team' ? (
-        <Token label="Team" size="sm" color="blue" />
-      ) : undefined,
-    onClick: () => onSelect({id: node.id, label: node.label, path: node.path}),
-    children: node.children
-      ? toTreeListItems(node.children, selectedId, onSelect)
-      : undefined,
-  }));
+  return nodes.map(node => {
+    const hasChildren = node.children != null && node.children.length > 0;
+    return {
+      id: node.id,
+      label: node.label,
+      description: node.path,
+      isExpanded: hasChildren,
+      isSelected: !hasChildren && node.id === selectedId,
+      endContent:
+        node.kind === 'team' ? (
+          <Token label="Team" size="sm" color="blue" />
+        ) : undefined,
+      onClick: hasChildren
+        ? undefined
+        : () => onSelect({id: node.id, label: node.label, path: node.path}),
+      children: hasChildren
+        ? toTreeListItems(node.children ?? [], selectedId, onSelect)
+        : undefined,
+    };
+  });
 }
 
 function FruitRipenessMatrix({
