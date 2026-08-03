@@ -864,6 +864,11 @@
       "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/aria-input-field-name?application=playwright"
     },
     {
+      "key": "RichTextEditor::With Toolbar::aria-input-field-name",
+      "impact": "serious",
+      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/aria-input-field-name?application=playwright"
+    },
+    {
       "key": "Schedule::Async Loader::color-contrast",
       "impact": "serious",
       "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
