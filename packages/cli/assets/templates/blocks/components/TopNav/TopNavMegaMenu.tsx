@@ -30,7 +30,7 @@ export default function TopNavMegaMenuBlock() {
         <TopNavHeading
           heading="My App"
           logo={<NavIcon icon={<Icon icon={CubeIcon} size="sm" />} />}
-          href="#"
+          headingHref="#"
         />
       }
       startContent={

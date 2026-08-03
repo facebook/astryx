@@ -108,7 +108,7 @@ function MegaItems({items}: {items: MegaItem[]}) {
             title={item.name}
             description={item.tagline}
             icon={<Icon icon={item.icon} size="md" color="secondary" />}
-            href="#"
+            headingHref="#"
           />
         ))}
       </Grid>
@@ -146,7 +146,7 @@ export default function ShellTopNav() {
               logo={
                 <NavIcon icon={<Icon icon={ShoppingBagIcon} size="sm" />} />
               }
-              href="#"
+              headingHref="#"
             />
           }
           centerContent={

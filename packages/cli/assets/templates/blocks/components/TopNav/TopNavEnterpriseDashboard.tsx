@@ -21,20 +21,20 @@ export default function TopNavEnterpriseDashboard() {
         <TopNavHeading
           heading="My App"
           logo={<NavIcon icon={<Icon icon={CubeIcon} size="sm" />} />}
-          href="#"
+          headingHref="#"
         />
       }
       startContent={
         <>
           <TopNavItem
             label="Dashboard"
-            href="#"
+            headingHref="#"
             isSelected
             icon={<Icon icon={HomeIcon} size="sm" />}
           />
           <TopNavItem
             label="Reports"
-            href="#"
+            headingHref="#"
             icon={<Icon icon={DocumentTextIcon} size="sm" />}
           />
         </>
