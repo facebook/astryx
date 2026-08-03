@@ -125,15 +125,18 @@ export function registerBuild(program) {
       /** @type {import('../formatters/index.mjs').RecordOptions} */
       const recordOpts = {fields, format: {command: formatCliCommand}};
 
+      // `template <name> <path>` scaffolds into your project; <path> is the file
+      // (or folder) to write it to — a placeholder, since we can't know your
+      // layout. `--skeleton` and `component <Name>` just print, so no path.
       const startCmd = directMatch
-        ? `${run} template ${pages[0].name} ./src/App.tsx`
+        ? `${run} template ${pages[0].name} <path>`
         : pages.length
           ? `${run} template ${pages[0].name} --skeleton`
           : `${run} component AppShell`;
       const startNote = directMatch
-        ? `This \`${pages[0].name}\` page template appears to be the closest to what you want, so we recommend starting here — scaffold it and adapt. Otherwise, browse PAGE TEMPLATES first, then BLOCKS and DOMAIN COMPONENTS below.`
+        ? `This \`${pages[0].name}\` page template appears to be the closest to what you want, so we recommend scaffolding it into your project — replace \`<path>\` with the file (or folder) to write it to — then adapting. Otherwise, browse PAGE TEMPLATES first, then BLOCKS and DOMAIN COMPONENTS below.`
         : pages.length
-          ? `No exact match, but \`${pages[0].name}\` is the closest page template — start from it as a layout reference. Otherwise, browse PAGE TEMPLATES first, then BLOCKS and DOMAIN COMPONENTS below.`
+          ? `No exact match, but \`${pages[0].name}\` is the closest page template — run the above to print its layout as a reference, then compose. Otherwise, browse PAGE TEMPLATES first, then BLOCKS and DOMAIN COMPONENTS below.`
           : 'No page template fits — frame with AppShell, then compose from BLOCKS and DOMAIN COMPONENTS below.';
 
       // A short legend up top: what this output is, how to use it, and the exact
