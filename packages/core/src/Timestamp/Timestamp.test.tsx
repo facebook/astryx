@@ -88,6 +88,137 @@ describe('Timestamp', () => {
     expect(screen.getByText('yesterday')).toBeInTheDocument();
   });
 
+  // --- relative_short format ---
+
+  describe('relative_short format', () => {
+    it('renders "now" for very recent times', () => {
+      render(
+        <Timestamp value={Date.now() / 1000 - 5} format="relative_short" />,
+      );
+      expect(screen.getByText('now')).toBeInTheDocument();
+    });
+
+    it('abbreviates each past tier (s/m/h/d/mo/y)', () => {
+      const {rerender} = render(
+        <Timestamp value={Date.now() / 1000 - 30} format="relative_short" />,
+      );
+      expect(screen.getByText('30s ago')).toBeInTheDocument();
+
+      rerender(
+        <Timestamp
+          value={Date.now() / 1000 - 5 * 60}
+          format="relative_short"
+        />,
+      );
+      expect(screen.getByText('5m ago')).toBeInTheDocument();
+
+      rerender(
+        <Timestamp
+          value={Date.now() / 1000 - 2 * 3600}
+          format="relative_short"
+        />,
+      );
+      expect(screen.getByText('2h ago')).toBeInTheDocument();
+
+      rerender(
+        <Timestamp
+          value={Date.now() / 1000 - 3 * 86400}
+          format="relative_short"
+        />,
+      );
+      expect(screen.getByText('3d ago')).toBeInTheDocument();
+
+      rerender(
+        <Timestamp
+          value={Date.now() / 1000 - 90 * 86400}
+          format="relative_short"
+        />,
+      );
+      expect(screen.getByText('3mo ago')).toBeInTheDocument();
+
+      rerender(
+        <Timestamp
+          value={Date.now() / 1000 - 730 * 86400}
+          format="relative_short"
+        />,
+      );
+      expect(screen.getByText('2y ago')).toBeInTheDocument();
+    });
+
+    it('uses "mo" for months so it never collides with "m" (minutes)', () => {
+      // 45 days → months tier. A bare "m" here would be indistinguishable from
+      // the minutes unit, so months must render as "mo".
+      render(
+        <Timestamp
+          value={Date.now() / 1000 - 45 * 86400}
+          format="relative_short"
+        />,
+      );
+      expect(screen.getByText('1mo ago')).toBeInTheDocument();
+    });
+
+    it('renders a single day as "1d ago" (no "yesterday" idiom in short form)', () => {
+      render(
+        <Timestamp
+          value={Date.now() / 1000 - 100000}
+          format="relative_short"
+        />,
+      );
+      expect(screen.getByText('1d ago')).toBeInTheDocument();
+    });
+
+    it('renders future times with the "in" prefix and abbreviated units', () => {
+      const {rerender} = render(
+        <Timestamp
+          value={Date.now() / 1000 + 5 * 60}
+          format="relative_short"
+        />,
+      );
+      expect(screen.getByText('in 5m')).toBeInTheDocument();
+
+      rerender(
+        <Timestamp
+          value={Date.now() / 1000 + 2 * 3600}
+          format="relative_short"
+        />,
+      );
+      expect(screen.getByText('in 2h')).toBeInTheDocument();
+    });
+
+    it('does not round a tier up past its own boundary', () => {
+      const {rerender} = render(
+        <Timestamp value={Date.now() / 1000 - 3599} format="relative_short" />,
+      );
+      expect(screen.getByText('59m ago')).toBeInTheDocument();
+
+      rerender(
+        <Timestamp value={Date.now() / 1000 - 86399} format="relative_short" />,
+      );
+      expect(screen.getByText('23h ago')).toBeInTheDocument();
+    });
+
+    it('treats a hair in the future as "now" (clock skew)', () => {
+      render(
+        <Timestamp value={Date.now() / 1000 + 2} format="relative_short" />,
+      );
+      expect(screen.getByText('now')).toBeInTheDocument();
+    });
+
+    it('keeps the full absolute date as the accessible name', () => {
+      render(
+        <Timestamp
+          value={Date.now() / 1000 - 2 * 3600}
+          format="relative_short"
+        />,
+      );
+      const el = screen.getByText('2h ago');
+      // Same a11y contract as the long relative form: the visible short label
+      // is backed by the full absolute date for screen readers.
+      expect(el).toHaveAttribute('aria-label');
+      expect(el.getAttribute('aria-label')).not.toBe('2h ago');
+    });
+  });
+
   // --- Standard display formats ---
 
   it('renders date format', () => {

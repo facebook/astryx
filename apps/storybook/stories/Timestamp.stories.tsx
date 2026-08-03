@@ -13,6 +13,7 @@ const meta: Meta<typeof Timestamp> = {
       control: 'select',
       options: [
         'relative',
+        'relative_short',
         'auto',
         'date',
         'date_long',
@@ -113,6 +114,32 @@ export const RelativeFormat: Story = {
       <Timestamp value={Date.now() / 1000 - 259200} format="relative" />
       <Timestamp value={Date.now() / 1000 - 90 * 86400} format="relative" />
       <Timestamp value={Date.now() / 1000 - 730 * 86400} format="relative" />
+    </div>
+  ),
+};
+
+export const RelativeShortFormat: Story = {
+  render: () => (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px',
+        alignItems: 'flex-start',
+      }}>
+      <Timestamp value={Date.now() / 1000 - 5} format="relative_short" />
+      <Timestamp value={Date.now() / 1000 - 120} format="relative_short" />
+      <Timestamp value={Date.now() / 1000 - 3600} format="relative_short" />
+      <Timestamp value={Date.now() / 1000 - 86400} format="relative_short" />
+      <Timestamp value={Date.now() / 1000 - 259200} format="relative_short" />
+      <Timestamp
+        value={Date.now() / 1000 - 90 * 86400}
+        format="relative_short"
+      />
+      <Timestamp
+        value={Date.now() / 1000 - 730 * 86400}
+        format="relative_short"
+      />
     </div>
   ),
 };

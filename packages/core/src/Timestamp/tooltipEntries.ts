@@ -34,8 +34,9 @@ import type {InstantFormat} from './formatInstant';
  *
  * Every `TimestampFormat` that names a fixed instant, plus `'full'` — the long
  * absolute style the tooltip has always shown ("February 19, 2026 at 5:00:00 PM
- * UTC"). `'relative'` and `'auto'` are excluded: a relative phrase ignores any
- * zone, which would make `timezoneID` silently inert on that line.
+ * UTC"). `'relative'`, `'relative_short'`, and `'auto'` are excluded: a
+ * relative phrase ignores any zone, which would make `timezoneID` silently
+ * inert on that line.
  *
  * `'full'` lives only in this vocabulary, never in `TimestampFormat` — nothing
  * asked for it as a visible display format, and keeping it out means new

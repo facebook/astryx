@@ -39,6 +39,7 @@ const LazyXDSTooltip = lazy(async () =>
 
 export type TimestampFormat =
   | 'relative'
+  | 'relative_short'
   | 'auto'
   | 'date'
   | 'date_long'
@@ -57,6 +58,9 @@ export interface TimestampProps extends BaseProps<HTMLTimeElement> {
   /**
    * Display format.
    * - `'relative'`: "2 hours ago", "yesterday", "now"
+   * - `'relative_short'`: "2h ago", "1d ago", "now" — the same tiers as
+   *   `'relative'` with abbreviated units (s/m/h/d/mo/y), for compact,
+   *   space-constrained surfaces
    * - `'auto'`: Relative for recent times, `date_time` for older
    * - `'date'`: "Mar 21, 2025"
    * - `'date_long'`: "March 21, 2025"
@@ -298,6 +302,69 @@ function getRelativeTimeString(date: Date, now: Date): string {
   return `${years} ${years === 1 ? 'year' : 'years'} ago`;
 }
 
+/**
+ * The compact sibling of `getRelativeTimeString`: the same tier boundaries and
+ * present/future-skew handling, rendered with abbreviated units for
+ * space-constrained surfaces (chat metadata, dense tables, chips).
+ *
+ * Units follow the common compact convention (and the Microsoft Style Guide):
+ * `s` seconds, `m` minutes, `h` hours, `d` days, `mo` months, `y` years.
+ * Months use `mo` — not `m` — because `m` already means minutes; a bare `m`
+ * for months would be ambiguous. The value is always numeric (no "yesterday"
+ * idiom, which belongs to the long form) so the short form stays predictable
+ * and easy to scan. The `ago` / `in` affixes are kept so direction stays
+ * unambiguous at a glance.
+ */
+function getRelativeTimeShortString(date: Date, now: Date): string {
+  const diffSeconds = Math.round((now.getTime() - date.getTime()) / 1000);
+
+  // Present clamp — identical to the long form (see getRelativeTimeString).
+  if (Math.abs(diffSeconds) < 10) {
+    return 'now';
+  }
+
+  if (diffSeconds < 0) {
+    // Future dates.
+    const absDiff = Math.abs(diffSeconds);
+    if (absDiff <= FUTURE_SKEW_TOLERANCE) {
+      return 'now';
+    }
+    if (absDiff < MINUTE) {
+      return `in ${absDiff}s`;
+    }
+    if (absDiff < HOUR) {
+      return `in ${Math.floor(absDiff / MINUTE)}m`;
+    }
+    if (absDiff < DAY) {
+      return `in ${Math.floor(absDiff / HOUR)}h`;
+    }
+    if (absDiff < MONTH) {
+      return `in ${Math.floor(absDiff / DAY)}d`;
+    }
+    if (absDiff < YEAR) {
+      return `in ${Math.floor(absDiff / MONTH)}mo`;
+    }
+    return `in ${Math.floor(absDiff / YEAR)}y`;
+  }
+
+  if (diffSeconds < MINUTE) {
+    return `${diffSeconds}s ago`;
+  }
+  if (diffSeconds < HOUR) {
+    return `${Math.floor(diffSeconds / MINUTE)}m ago`;
+  }
+  if (diffSeconds < DAY) {
+    return `${Math.floor(diffSeconds / HOUR)}h ago`;
+  }
+  if (diffSeconds < MONTH) {
+    return `${Math.floor(diffSeconds / DAY)}d ago`;
+  }
+  if (diffSeconds < YEAR) {
+    return `${Math.floor(diffSeconds / MONTH)}mo ago`;
+  }
+  return `${Math.floor(diffSeconds / YEAR)}y ago`;
+}
+
 /** Returns the interval (in ms) at which a relative timestamp should update. */
 function getLiveInterval(diffSeconds: number): number {
   const absDiff = Math.abs(diffSeconds);
@@ -316,8 +383,22 @@ function getLiveInterval(diffSeconds: number): number {
 /** Whether a format is non-relative (i.e. shows a fixed date/time). */
 function isAbsoluteFormat(
   format: TimestampFormat,
-): format is Exclude<TimestampFormat, 'relative' | 'auto'> {
-  return format !== 'relative' && format !== 'auto';
+): format is Exclude<TimestampFormat, 'relative' | 'relative_short' | 'auto'> {
+  return (
+    format !== 'relative' && format !== 'relative_short' && format !== 'auto'
+  );
+}
+
+/**
+ * Whether a format renders a relative phrase ("2 hours ago" / "2h ago") rather
+ * than a fixed instant. Both the long and short relative forms share the same
+ * treatment: they get the accessible full-date name, the hover tooltip, and
+ * live updates.
+ */
+function isRelativeFormat(
+  format: TimestampFormat,
+): format is 'relative' | 'relative_short' {
+  return format === 'relative' || format === 'relative_short';
 }
 
 // =============================================================================
@@ -384,16 +465,18 @@ export function Timestamp({
     ? ''
     : effectiveFormat === 'relative'
       ? getRelativeTimeString(date, now)
-      : isAbsoluteFormat(effectiveFormat)
-        ? formatInstant(date, effectiveFormat, {isTimezoneShown})
-        : '';
+      : effectiveFormat === 'relative_short'
+        ? getRelativeTimeShortString(date, now)
+        : isAbsoluteFormat(effectiveFormat)
+          ? formatInstant(date, effectiveFormat, {isTimezoneShown})
+          : '';
 
   // Full absolute text for tooltip and aria-label
   const fullAbsoluteText = isValidDate ? formatInstant(date, 'full') : '';
 
   // Live updates
   useEffect(() => {
-    if (!isLive || !isValidDate || effectiveFormat !== 'relative') {
+    if (!isLive || !isValidDate || !isRelativeFormat(effectiveFormat)) {
       return;
     }
 
@@ -428,7 +511,7 @@ export function Timestamp({
   // silently suppress another prop's output, so entry presence opens it too.
   // With no entries this reduces to the original condition exactly.
   const showTooltip =
-    hasTooltip && (effectiveFormat === 'relative' || entries !== undefined);
+    hasTooltip && (isRelativeFormat(effectiveFormat) || entries !== undefined);
 
   const timestampProps = mergeProps(
     themeProps('timestamp', {format: effectiveFormat}),
@@ -447,7 +530,7 @@ export function Timestamp({
         ref={mergeRefs(ref, timeRef)}
         dateTime={isoString}
         aria-label={
-          effectiveFormat === 'relative' ? fullAbsoluteText : undefined
+          isRelativeFormat(effectiveFormat) ? fullAbsoluteText : undefined
         }
         // The absolute-time tooltip is anchored here with the default 'auto'
         // focus trigger, which only activates on focusable anchors. A bare
