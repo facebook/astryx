@@ -11,12 +11,13 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/ProgressBar/ProgressBar.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/ProgressBar/ProgressBar.test.tsx (tests for new/changed behavior)
+ * - /packages/core/src/ProgressBar/ProgressBarMarkTooltip.tsx (the lazy Tooltip wrapper for labeled marks)
  * - /packages/core/src/ProgressBar/index.ts (exports if types change)
  * - /apps/storybook/stories/ProgressBar.stories.tsx (storybook stories)
  * - /packages/cli/assets/templates/blocks/components/ProgressBar/ (showcase blocks)
  */
 
-import {useId} from 'react';
+import {lazy, Suspense, useId} from 'react';
 import * as stylex from '@stylexjs/stylex';
 
 import {
@@ -31,9 +32,16 @@ import {
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
-import {Tooltip} from '../Tooltip/Tooltip';
 import {VisuallyHidden} from '../VisuallyHidden';
 import type {ProgressBarVariantMap} from './index';
+
+// The Tooltip only wraps labeled marks, so load it lazily: a ProgressBar with
+// no marks — or only decorative, unlabeled ones — never bundles the Tooltip
+// chunk. While it loads, the Suspense fallback shows the bare mark, so nothing
+// disappears; the tooltip simply attaches once the chunk is ready.
+const LazyProgressBarMarkTooltip = lazy(
+  async () => import('./ProgressBarMarkTooltip'),
+);
 
 /**
  * Progress bar variant type — maps to semantic color tokens.
@@ -42,23 +50,23 @@ import type {ProgressBarVariantMap} from './index';
 export type ProgressBarVariant = keyof ProgressBarVariantMap;
 
 /**
- * A fixed target marker drawn on the progress track.
+ * A fixed target mark drawn on the progress track.
  *
  * Positioned by `value` in the same `0..max` scale as the bar's `value` prop —
  * mirroring the object shape of Slider's `marks` so the two APIs stay
  * consistent and this is extensible to visible labels later.
  */
-export interface ProgressBarMarker {
+export interface ProgressBarMark {
   /**
-   * Position of the marker in the same `0..max` scale as `value`. Values
+   * Position of the mark in the same `0..max` scale as `value`. Values
    * outside the range are clamped to the track edges.
    */
   value: number;
   /**
-   * Labels the marker. When provided, the marker is wrapped in a `Tooltip`
+   * Labels the mark. When provided, the mark is wrapped in a `Tooltip`
    * that reveals the label on hover and keyboard focus — giving sighted users
    * a visible affordance and assistive tech an accessible name. Without a
-   * label the marker is purely decorative (`aria-hidden`).
+   * label the mark is purely decorative (`aria-hidden`).
    */
   label?: string;
 }
@@ -111,13 +119,13 @@ export interface ProgressBarProps extends BaseProps<HTMLDivElement> {
    */
   isIndeterminate?: boolean;
   /**
-   * Target markers drawn on the track at fixed points in the same `0..max`
-   * scale as `value` — e.g. a goal line. Markers stay visible whether progress
-   * is below or past them. A marker with a `label` reveals it via a `Tooltip`
-   * on hover/focus (and names it for assistive tech); an unlabeled marker is
+   * Target marks drawn on the track at fixed points in the same `0..max`
+   * scale as `value` — e.g. a goal line. Marks stay visible whether progress
+   * is below or past them. A mark with a `label` reveals it via a `Tooltip`
+   * on hover/focus (and names it for assistive tech); an unlabeled mark is
    * decorative. Ignored when `isIndeterminate` is true.
    */
-  markers?: ReadonlyArray<ProgressBarMarker>;
+  marks?: ReadonlyArray<ProgressBarMark>;
   /**
    * When true, the progress bar is visually disabled — the fill bar and
    * text use disabled colors. Use for canceled or inactive operations.
@@ -202,7 +210,7 @@ const styles = stylex.create({
     borderWidth: 0,
   },
   // The `role="progressbar"` element. It no longer clips its content
-  // (`overflow` stays visible) so a themed marker taller than the bar can
+  // (`overflow` stays visible) so a themed mark taller than the bar can
   // overhang it. The fill rounds its own corners via `border-radius` (see
   // `fill`), so dropping the clip does not change the fill's appearance at any
   // progress — the track clip was redundant for the fill, which is always
@@ -236,17 +244,17 @@ const styles = stylex.create({
     animationTimingFunction: 'ease-in-out',
     animationIterationCount: 'infinite',
   },
-  // A marker is a vertical tick centered on the track, a child of the
+  // A mark is a vertical tick centered on the track, a child of the
   // `role="progressbar"` element (unchanged DOM). The track no longer clips, so
   // its height — default track height (8px), themeable via
-  // `--progressbar-marker-height` — may exceed the bar and overhang; the
+  // `--progressbar-mark-height` — may exceed the bar and overhang; the
   // centering translate keeps any overhang symmetric. Positioned horizontally
   // via `insetInlineStart`; the translate mirrors under RTL.
-  marker: {
+  mark: {
     position: 'absolute',
     top: '50%',
     width: 2,
-    height: 'var(--progressbar-marker-height, 8px)',
+    height: 'var(--progressbar-mark-height, 8px)',
     backgroundColor: colorVars['--color-text-primary'],
     outline: {
       default: 'none',
@@ -299,7 +307,7 @@ function defaultFormatValueLabel(value: number, max: number): string {
  * ProgressBar is intentionally minimal — compose additional labels, status
  * icons, and descriptions alongside the bar using layout components rather
  * than adding props to ProgressBar itself. The exception is on-track content
- * like `markers`, which are positioned by value over the track.
+ * like `marks`, which are positioned by value over the track.
  *
  * Styles use Astryx theme tokens via StyleX.
  * Wrap your app in <Theme> to apply a theme.
@@ -311,19 +319,19 @@ function defaultFormatValueLabel(value: number, max: number): string {
  * <ProgressBar value={3.2} max={5} label="Disk usage" hasValueLabel
  *   formatValueLabel={(v, m) => `${v} GB / ${m} GB`} />
  * <ProgressBar value={30} label="Canceled" isDisabled hasValueLabel />
- * <ProgressBar value={45} label="Fundraiser" markers={[{value: 80, label: 'Goal'}]} />
+ * <ProgressBar value={45} label="Fundraiser" marks={[{value: 80, label: 'Goal'}]} />
  * ```
  *
- * A marker's height defaults to the track height but is themeable — set a
+ * A mark's height defaults to the track height but is themeable — set a
  * taller "goal flag" tick that overhangs the bar (centered, so the overhang is
- * symmetric) via the `progressbar-marker` target:
+ * symmetric) via the `progressbar-mark` target:
  *
  * @example
  * ```
  * defineTheme({
  *   name: 'campaign',
  *   components: {
- *     'progressbar-marker': {base: {'--progressbar-marker-height': '16px'}},
+ *     'progressbar-mark': {base: {'--progressbar-mark-height': '16px'}},
  *   },
  * });
  * ```
@@ -338,7 +346,7 @@ export function ProgressBar({
   variant = 'accent',
   isIndeterminate = false,
   isDisabled = false,
-  markers,
+  marks,
   xstyle,
   className,
   style,
@@ -361,17 +369,17 @@ export function ProgressBar({
 
   const fillVariant = isDisabled ? 'disabled' : variant;
 
-  // Markers make no sense without a determinate value, so they are only drawn
-  // in determinate mode. Non-finite marker values are dropped; the rest are
+  // Marks make no sense without a determinate value, so they are only drawn
+  // in determinate mode. Non-finite mark values are dropped; the rest are
   // clamped to the track edges, matching the bar's own `clampedValue`.
-  const resolvedMarkers =
-    !isIndeterminate && markers
-      ? markers
-          .filter(marker => Number.isFinite(marker.value))
-          .map(marker => {
-            const clamped = Math.min(Math.max(0, marker.value), safeMax);
+  const resolvedMarks =
+    !isIndeterminate && marks
+      ? marks
+          .filter(mark => Number.isFinite(mark.value))
+          .map(mark => {
+            const clamped = Math.min(Math.max(0, mark.value), safeMax);
             const pct = safeMax > 0 ? (clamped / safeMax) * 100 : 0;
-            return {value: marker.value, label: marker.label, pct};
+            return {value: mark.value, label: mark.label, pct};
           })
       : [];
 
@@ -413,8 +421,8 @@ export function ProgressBar({
       )}
 
       {/* Progress track — the `role="progressbar"` element, holding the fill
-          and markers as its children (unchanged DOM shape). It no longer clips
-          (`overflow` is visible), so a themed taller marker can overhang it;
+          and marks as its children (unchanged DOM shape). It no longer clips
+          (`overflow` is visible), so a themed taller mark can overhang it;
           the fill preserves its rounded shape via its own `border-radius`. */}
       <div
         role="progressbar"
@@ -446,36 +454,34 @@ export function ProgressBar({
             style={{width: `${percentage}%`}}
           />
         )}
-        {/* Target markers — children of the progressbar element (unchanged),
+        {/* Target marks — children of the progressbar element (unchanged),
             layered above the fill so they show whether progress is below or
-            past them. An unlabeled marker is decorative (`aria-hidden`); a
-            labeled marker is wrapped in a `Tooltip` (no `role="img"`), so its
+            past them. An unlabeled mark is decorative (`aria-hidden`); a
+            labeled mark is wrapped in a `Tooltip` (no `role="img"`), so its
             label is both visible on hover/focus and named for assistive tech
             without adding a labeled child to the progressbar's a11y subtree. */}
-        {resolvedMarkers.map(marker => {
-          const isLabeled = marker.label != null;
-          const markerEl = (
+        {resolvedMarks.map(mark => {
+          const isLabeled = mark.label != null;
+          const markEl = (
             <span
-              key={`${marker.value}:${marker.label ?? ''}`}
+              key={`${mark.value}:${mark.label ?? ''}`}
               tabIndex={isLabeled ? 0 : undefined}
               aria-hidden={isLabeled ? undefined : true}
               {...mergeProps(
-                themeProps('progressbar-marker'),
-                stylex.props(styles.marker),
+                themeProps('progressbar-mark'),
+                stylex.props(styles.mark),
               )}
-              style={{insetInlineStart: `${marker.pct}%`}}
+              style={{insetInlineStart: `${mark.pct}%`}}
             />
           );
           return isLabeled ? (
-            <Tooltip
-              key={`${marker.value}:${marker.label}`}
-              content={marker.label}
-              placement="above"
-              focusTrigger="always">
-              {markerEl}
-            </Tooltip>
+            <Suspense key={`${mark.value}:${mark.label}`} fallback={markEl}>
+              <LazyProgressBarMarkTooltip content={mark.label as string}>
+                {markEl}
+              </LazyProgressBarMarkTooltip>
+            </Suspense>
           ) : (
-            markerEl
+            markEl
           );
         })}
       </div>

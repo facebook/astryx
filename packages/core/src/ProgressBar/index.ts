@@ -30,6 +30,6 @@ export interface ProgressBarVariantMap {
 export {ProgressBar} from './ProgressBar';
 export type {
   ProgressBarProps,
-  ProgressBarMarker,
+  ProgressBarMark,
   ProgressBarVariant,
 } from './ProgressBar';

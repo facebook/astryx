@@ -57,10 +57,10 @@ export const docs = {
       default: 'false',
     },
     {
-      name: 'markers',
+      name: 'marks',
       type: 'ReadonlyArray<{value: number; label?: string}>',
       description:
-        'Fixed target markers drawn on the track at values in the same 0..max scale as value (e.g. a goal line). They stay visible whether progress is below or past them. A marker with a label reveals it via a tooltip on hover/focus (and names it for assistive tech). Ignored when indeterminate.',
+        'Fixed target marks drawn on the track at values in the same 0..max scale as value (e.g. a goal line). They stay visible whether progress is below or past them. A mark with a label reveals it via a tooltip on hover/focus (and names it for assistive tech). Ignored when indeterminate.',
     },
     {
       name: 'isDisabled',
@@ -80,13 +80,13 @@ export const docs = {
       {className: 'astryx-progressbar', visualProps: ['variant']},
       {className: 'astryx-progressbar-fill', visualProps: ['variant']},
       {className: 'astryx-progressbar-track'},
-      {className: 'astryx-progressbar-marker'},
+      {className: 'astryx-progressbar-mark'},
     ],
     vars: [
       {
-        name: '--progressbar-marker-height',
+        name: '--progressbar-mark-height',
         description:
-          'Height of a target marker. Defaults to the track height (8px); set a larger value to make a "goal flag" tick that overhangs the bar. Markers are centered on the track, so the overhang is symmetric and never clipped. Set on the `progressbar-marker` target.',
+          'Height of a target mark. Defaults to the track height (8px); set a larger value to make a "goal flag" tick that overhangs the bar. Marks are centered on the track, so the overhang is symmetric and never clipped. Set on the `progressbar-mark` target.',
         default: '8px',
       },
     ],
@@ -159,7 +159,7 @@ export const docsZh = {
       default: 'false',
     },
     {
-      name: 'markers',
+      name: 'marks',
       type: 'ReadonlyArray<{value: number; label?: string}>',
       description:
         '在轨道上按与 value 相同的 0..max 刻度绘制的固定目标标记（例如目标线）。无论进度低于还是超过它们都保持可见。带 label 的标记会在悬停/聚焦时通过工具提示显示（并为辅助技术命名）。不确定模式下忽略。',
@@ -182,13 +182,13 @@ export const docsZh = {
       {className: 'astryx-progressbar', visualProps: ['variant']},
       {className: 'astryx-progressbar-fill', visualProps: ['variant']},
       {className: 'astryx-progressbar-track'},
-      {className: 'astryx-progressbar-marker'},
+      {className: 'astryx-progressbar-mark'},
     ],
     vars: [
       {
-        name: '--progressbar-marker-height',
+        name: '--progressbar-mark-height',
         description:
-          'Height of a target marker. Defaults to the track height (8px); set a larger value to make a "goal flag" tick that overhangs the bar. Markers are centered on the track, so the overhang is symmetric and never clipped. Set on the `progressbar-marker` target.',
+          'Height of a target mark. Defaults to the track height (8px); set a larger value to make a "goal flag" tick that overhangs the bar. Marks are centered on the track, so the overhang is symmetric and never clipped. Set on the `progressbar-mark` target.',
         default: '8px',
       },
     ],
@@ -232,7 +232,7 @@ export const docsDense = {
     formatValueLabel: 'Custom value label formatter; defaults to percentage string.',
     variant: 'Semantic color variant.',
     isIndeterminate: 'Animated loading indicator for unknown progress.',
-    markers: 'Fixed target markers ({value, label?}) drawn on the track in the 0..max scale; stay visible past the fill. A label reveals a tooltip on hover/focus. Ignored when indeterminate.',
+    marks: 'Fixed target marks ({value, label?}) drawn on the track in the 0..max scale; stay visible past the fill. A label reveals a tooltip on hover/focus. Ignored when indeterminate.',
     isDisabled: 'Visually disabled: grays out fill and text.',
     xstyle: 'StyleX styles for layout customization. Must be stylex.create() value.',
   },

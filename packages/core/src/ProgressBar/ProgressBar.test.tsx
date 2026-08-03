@@ -1,8 +1,17 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {describe, it, expect} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {describe, it, expect, beforeAll} from 'vitest';
+import {render, screen, waitFor} from '@testing-library/react';
 import {ProgressBar} from './ProgressBar';
+
+// A labeled mark wraps the tick in a lazily-loaded Tooltip (React.lazy +
+// Suspense). Preload that chunk once so the Tooltip (and its
+// aria-describedby) is present synchronously on first render, keeping these
+// tests deterministic rather than racing the dynamic import's default 1s
+// Suspense timeout.
+beforeAll(async () => {
+  await import('./ProgressBarMarkTooltip');
+});
 
 describe('ProgressBar', () => {
   it('renders with default props', () => {
@@ -278,182 +287,187 @@ describe('ProgressBar', () => {
     });
   });
 
-  // Target markers
-  describe('target markers', () => {
-    const MARKER = '.astryx-progressbar-marker';
+  // Target marks
+  describe('target marks', () => {
+    const MARK = '.astryx-progressbar-mark';
 
-    it('renders no marker elements when markers is omitted', () => {
+    it('renders no mark elements when marks is omitted', () => {
       const {container} = render(<ProgressBar value={50} label="Progress" />);
-      expect(container.querySelectorAll(MARKER)).toHaveLength(0);
+      expect(container.querySelectorAll(MARK)).toHaveLength(0);
     });
 
-    it('renders no marker elements for an empty markers array', () => {
+    it('renders no mark elements for an empty marks array', () => {
       const {container} = render(
-        <ProgressBar value={50} label="Progress" markers={[]} />,
+        <ProgressBar value={50} label="Progress" marks={[]} />,
       );
-      expect(container.querySelectorAll(MARKER)).toHaveLength(0);
+      expect(container.querySelectorAll(MARK)).toHaveLength(0);
     });
 
-    it('renders a marker at the position matching its value', () => {
+    it('renders a mark at the position matching its value', () => {
       const {container} = render(
-        <ProgressBar value={40} label="Progress" markers={[{value: 80}]} />,
+        <ProgressBar value={40} label="Progress" marks={[{value: 80}]} />,
       );
-      const markers = container.querySelectorAll<HTMLElement>(MARKER);
-      expect(markers).toHaveLength(1);
+      const marks = container.querySelectorAll<HTMLElement>(MARK);
+      expect(marks).toHaveLength(1);
       // value 80 of max 100 -> 80% along the track (RTL-safe logical property).
-      expect(markers[0].style.insetInlineStart).toBe('80%');
+      expect(marks[0].style.insetInlineStart).toBe('80%');
     });
 
-    it('positions markers relative to a custom max', () => {
+    it('positions marks relative to a custom max', () => {
       const {container} = render(
-        <ProgressBar value={1} max={5} label="Steps" markers={[{value: 4}]} />,
+        <ProgressBar value={1} max={5} label="Steps" marks={[{value: 4}]} />,
       );
-      const markers = container.querySelectorAll<HTMLElement>(MARKER);
+      const marks = container.querySelectorAll<HTMLElement>(MARK);
       // value 4 of max 5 -> 80%.
-      expect(markers[0].style.insetInlineStart).toBe('80%');
+      expect(marks[0].style.insetInlineStart).toBe('80%');
     });
 
-    it('keeps a marker past the current value visible', () => {
-      // A marker beyond the fill still renders — it layers above the fill.
+    it('keeps a mark past the current value visible', () => {
+      // A mark beyond the fill still renders — it layers above the fill.
       const {container} = render(
-        <ProgressBar value={20} label="Progress" markers={[{value: 90}]} />,
+        <ProgressBar value={20} label="Progress" marks={[{value: 90}]} />,
       );
-      const markers = container.querySelectorAll<HTMLElement>(MARKER);
-      expect(markers).toHaveLength(1);
-      expect(markers[0].style.insetInlineStart).toBe('90%');
+      const marks = container.querySelectorAll<HTMLElement>(MARK);
+      expect(marks).toHaveLength(1);
+      expect(marks[0].style.insetInlineStart).toBe('90%');
     });
 
-    it('renders multiple markers', () => {
-      const {container} = render(
-        <ProgressBar
-          value={50}
-          label="Progress"
-          markers={[{value: 25}, {value: 50}, {value: 80}]}
-        />,
-      );
-      expect(container.querySelectorAll(MARKER)).toHaveLength(3);
-    });
-
-    it('clamps out-of-range marker positions to the track edges', () => {
+    it('renders multiple marks', () => {
       const {container} = render(
         <ProgressBar
           value={50}
           label="Progress"
-          markers={[{value: -10}, {value: 150}]}
+          marks={[{value: 25}, {value: 50}, {value: 80}]}
         />,
       );
-      const markers = container.querySelectorAll<HTMLElement>(MARKER);
-      expect(markers).toHaveLength(2);
-      expect(markers[0].style.insetInlineStart).toBe('0%');
-      expect(markers[1].style.insetInlineStart).toBe('100%');
+      expect(container.querySelectorAll(MARK)).toHaveLength(3);
     });
 
-    it('drops non-finite marker values', () => {
+    it('clamps out-of-range mark positions to the track edges', () => {
       const {container} = render(
         <ProgressBar
           value={50}
           label="Progress"
-          markers={[{value: NaN}, {value: Infinity}, {value: 60}]}
+          marks={[{value: -10}, {value: 150}]}
         />,
       );
-      const markers = container.querySelectorAll<HTMLElement>(MARKER);
-      expect(markers).toHaveLength(1);
-      expect(markers[0].style.insetInlineStart).toBe('60%');
+      const marks = container.querySelectorAll<HTMLElement>(MARK);
+      expect(marks).toHaveLength(2);
+      expect(marks[0].style.insetInlineStart).toBe('0%');
+      expect(marks[1].style.insetInlineStart).toBe('100%');
     });
 
-    it('does not render markers in indeterminate mode', () => {
-      const {container} = render(
-        <ProgressBar isIndeterminate label="Loading" markers={[{value: 80}]} />,
-      );
-      expect(container.querySelectorAll(MARKER)).toHaveLength(0);
-    });
-
-    it('marks an unlabeled marker as decorative (aria-hidden)', () => {
-      const {container} = render(
-        <ProgressBar value={50} label="Progress" markers={[{value: 80}]} />,
-      );
-      const marker = container.querySelector<HTMLElement>(MARKER);
-      expect(marker).toHaveAttribute('aria-hidden', 'true');
-      expect(marker).not.toHaveAttribute('role');
-      expect(marker).not.toHaveAttribute('aria-label');
-      expect(marker).not.toHaveAttribute('tabindex');
-    });
-
-    it('reveals a labeled marker via a focusable Tooltip trigger', () => {
+    it('drops non-finite mark values', () => {
       const {container} = render(
         <ProgressBar
           value={50}
           label="Progress"
-          markers={[{value: 80, label: 'Goal'}]}
+          marks={[{value: NaN}, {value: Infinity}, {value: 60}]}
         />,
       );
-      const marker = container.querySelector<HTMLElement>(MARKER)!;
+      const marks = container.querySelectorAll<HTMLElement>(MARK);
+      expect(marks).toHaveLength(1);
+      expect(marks[0].style.insetInlineStart).toBe('60%');
+    });
+
+    it('does not render marks in indeterminate mode', () => {
+      const {container} = render(
+        <ProgressBar isIndeterminate label="Loading" marks={[{value: 80}]} />,
+      );
+      expect(container.querySelectorAll(MARK)).toHaveLength(0);
+    });
+
+    it('marks an unlabeled mark as decorative (aria-hidden)', () => {
+      const {container} = render(
+        <ProgressBar value={50} label="Progress" marks={[{value: 80}]} />,
+      );
+      const mark = container.querySelector<HTMLElement>(MARK);
+      expect(mark).toHaveAttribute('aria-hidden', 'true');
+      expect(mark).not.toHaveAttribute('role');
+      expect(mark).not.toHaveAttribute('aria-label');
+      expect(mark).not.toHaveAttribute('tabindex');
+    });
+
+    it('reveals a labeled mark via a focusable Tooltip trigger', async () => {
+      const {container} = render(
+        <ProgressBar
+          value={50}
+          label="Progress"
+          marks={[{value: 80, label: 'Goal'}]}
+        />,
+      );
       // Focusable so keyboard users can reveal the label; named via the
       // Tooltip's aria-describedby rather than a labeled child of the bar.
-      expect(marker).toHaveAttribute('tabindex', '0');
-      expect(marker).not.toHaveAttribute('aria-hidden');
-      expect(marker).toHaveAttribute('aria-describedby');
+      // The Tooltip loads lazily (Suspense), so re-query the live element and
+      // wait for it to attach aria-describedby.
+      const mark0 = container.querySelector<HTMLElement>(MARK)!;
+      expect(mark0).toHaveAttribute('tabindex', '0');
+      expect(mark0).not.toHaveAttribute('aria-hidden');
+      await waitFor(() =>
+        expect(container.querySelector(MARK)).toHaveAttribute(
+          'aria-describedby',
+        ),
+      );
+      const mark = container.querySelector<HTMLElement>(MARK)!;
       const tip = document.getElementById(
-        marker.getAttribute('aria-describedby')!,
+        mark.getAttribute('aria-describedby')!,
       );
       expect(tip).toHaveTextContent('Goal');
     });
 
     it('keeps the progressbar element free of role="img"/aria-label children', () => {
-      // Markers are children of role="progressbar" (unchanged DOM), but a
-      // labeled marker uses a Tooltip (aria-describedby) rather than a
+      // Marks are children of role="progressbar" (unchanged DOM), but a
+      // labeled mark uses a Tooltip (aria-describedby) rather than a
       // role="img"+aria-label child, so nothing muddies what SRs announce for
-      // the bar. The unlabeled markers are aria-hidden.
+      // the bar. The unlabeled marks are aria-hidden.
       const {container} = render(
         <ProgressBar
           value={50}
           label="Progress"
-          markers={[{value: 80, label: 'Goal'}]}
+          marks={[{value: 80, label: 'Goal'}]}
         />,
       );
       const progressbar = screen.getByRole('progressbar');
-      // Marker is a child of the progressbar (DOM unchanged from main).
-      expect(progressbar.querySelector(MARKER)).not.toBeNull();
+      // Mark is a child of the progressbar (DOM unchanged from main).
+      expect(progressbar.querySelector(MARK)).not.toBeNull();
       // But it is not a labeled graphic that pollutes the a11y subtree.
       expect(progressbar.querySelector('[role="img"]')).toBeNull();
       expect(progressbar.querySelector('[aria-label]')).toBeNull();
-      expect(container.querySelectorAll(MARKER)).toHaveLength(1);
+      expect(container.querySelectorAll(MARK)).toHaveLength(1);
     });
 
-    it('does not add marker info to the progressbar aria-valuetext', () => {
+    it('does not add mark info to the progressbar aria-valuetext', () => {
       render(
         <ProgressBar
           value={50}
           label="Progress"
-          markers={[{value: 80, label: 'Goal'}]}
+          marks={[{value: 80, label: 'Goal'}]}
         />,
       );
       const progressbar = screen.getByRole('progressbar');
       expect(progressbar.getAttribute('aria-valuetext')).toBe('50%');
     });
 
-    it('renders markers as children of the progressbar (unchanged DOM)', () => {
-      // Markers stay children of role="progressbar", after the fill — the same
+    it('renders marks as children of the progressbar (unchanged DOM)', () => {
+      // Marks stay children of role="progressbar", after the fill — the same
       // shape as main. The fill remains the first child.
       const {container} = render(
-        <ProgressBar value={50} label="Progress" markers={[{value: 80}]} />,
+        <ProgressBar value={50} label="Progress" marks={[{value: 80}]} />,
       );
       const progressbar = screen.getByRole('progressbar');
       const fill = progressbar.firstElementChild as HTMLElement;
       expect(fill.style.width).toBe('50%');
-      expect(fill.classList.contains('astryx-progressbar-marker')).toBe(false);
-      const marker = container.querySelector<HTMLElement>(MARKER)!;
-      expect(marker.closest('[role="progressbar"]')).toBe(progressbar);
-      expect(container.querySelectorAll(MARKER)).toHaveLength(1);
+      expect(fill.classList.contains('astryx-progressbar-mark')).toBe(false);
+      const mark = container.querySelector<HTMLElement>(MARK)!;
+      expect(mark.closest('[role="progressbar"]')).toBe(progressbar);
+      expect(container.querySelectorAll(MARK)).toHaveLength(1);
     });
 
-    it('does not clip markers (track carries no overflow:hidden)', () => {
+    it('does not clip marks (track carries no overflow:hidden)', () => {
       // Removing the clip from the progressbar element is what lets a themed
-      // taller marker overhang the bar. Assert the compiled track class does
+      // taller mark overhang the bar. Assert the compiled track class does
       // not set overflow:hidden.
-      render(
-        <ProgressBar value={50} label="Progress" markers={[{value: 80}]} />,
-      );
+      render(<ProgressBar value={50} label="Progress" marks={[{value: 80}]} />);
       const progressbar = screen.getByRole('progressbar');
       const trackClass = Array.from(progressbar.classList).find(c =>
         c.startsWith('x'),
@@ -491,12 +505,12 @@ describe('ProgressBar', () => {
       expect(trackHasOverflowHidden).toBe(false);
     });
 
-    it('leaves the marker height overridable (defaults via CSS var)', () => {
-      // The marker reads `var(--progressbar-marker-height, 8px)`, so a theme
-      // targeting `.astryx-progressbar-marker` can set a taller tick that
+    it('leaves the mark height overridable (defaults via CSS var)', () => {
+      // The mark reads `var(--progressbar-mark-height, 8px)`, so a theme
+      // targeting `.astryx-progressbar-mark` can set a taller tick that
       // overhangs the bar without being clipped.
       const {container} = render(
-        <ProgressBar value={50} label="Progress" markers={[{value: 80}]} />,
+        <ProgressBar value={50} label="Progress" marks={[{value: 80}]} />,
       );
       let css = '';
       for (const sheet of Array.from(document.styleSheets)) {
@@ -511,10 +525,10 @@ describe('ProgressBar', () => {
       css += Array.from(document.querySelectorAll('style'))
         .map(s => s.textContent || '')
         .join('\n');
-      expect(css).toMatch(/var\(--progressbar-marker-height,\s*8px\)/);
+      expect(css).toMatch(/var\(--progressbar-mark-height,\s*8px\)/);
       // And it is centered so any overhang is symmetric.
       expect(css).toMatch(/translate\(-50%,\s*-50%\)/);
-      expect(container.querySelectorAll(MARKER)).toHaveLength(1);
+      expect(container.querySelectorAll(MARK)).toHaveLength(1);
     });
   });
 });

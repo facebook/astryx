@@ -77,31 +77,11 @@ export const Variants: Story = {
         gap: '16px',
         width: '300px',
       }}>
-      <ProgressBar
-        value={60}
-        label="Accent"
-        variant="accent"
-        hasValueLabel
-      />
-      <ProgressBar
-        value={80}
-        label="Success"
-        variant="success"
-        hasValueLabel
-      />
-      <ProgressBar
-        value={50}
-        label="Warning"
-        variant="warning"
-        hasValueLabel
-      />
+      <ProgressBar value={60} label="Accent" variant="accent" hasValueLabel />
+      <ProgressBar value={80} label="Success" variant="success" hasValueLabel />
+      <ProgressBar value={50} label="Warning" variant="warning" hasValueLabel />
       <ProgressBar value={92} label="Error" variant="error" hasValueLabel />
-      <ProgressBar
-        value={35}
-        label="Neutral"
-        variant="neutral"
-        hasValueLabel
-      />
+      <ProgressBar value={35} label="Neutral" variant="neutral" hasValueLabel />
     </div>
   ),
 };
@@ -215,21 +195,21 @@ export const IndeterminateVariants: Story = {
   ),
 };
 
-export const WithTargetMarker: Story = {
+export const WithTargetMark: Story = {
   args: {
     value: 45,
     label: 'Fundraiser',
     hasValueLabel: true,
-    markers: [{value: 80, label: 'Goal'}],
+    marks: [{value: 80, label: 'Goal'}],
   },
 };
 
-export const WithMultipleMarkers: Story = {
+export const WithMultipleMarks: Story = {
   args: {
     value: 55,
     label: 'Quarterly milestones',
     hasValueLabel: true,
-    markers: [
+    marks: [
       {value: 25, label: 'Q1 target'},
       {value: 50, label: 'Q2 target'},
       {value: 80, label: 'Stretch goal'},
@@ -237,12 +217,12 @@ export const WithMultipleMarkers: Story = {
   },
 };
 
-export const ProgressPastMarker: Story = {
+export const ProgressPastMark: Story = {
   args: {
     value: 92,
     label: 'Budget used',
     hasValueLabel: true,
     variant: 'warning',
-    markers: [{value: 75, label: 'Budget cap'}],
+    marks: [{value: 75, label: 'Budget cap'}],
   },
 };
