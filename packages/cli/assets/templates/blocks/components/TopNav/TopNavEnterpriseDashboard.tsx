@@ -28,13 +28,13 @@ export default function TopNavEnterpriseDashboard() {
         <>
           <TopNavItem
             label="Dashboard"
-            headingHref="#"
+            href="#"
             isSelected
             icon={<Icon icon={HomeIcon} size="sm" />}
           />
           <TopNavItem
             label="Reports"
-            headingHref="#"
+            href="#"
             icon={<Icon icon={DocumentTextIcon} size="sm" />}
           />
         </>

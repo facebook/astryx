@@ -108,7 +108,7 @@ function MegaItems({items}: {items: MegaItem[]}) {
             title={item.name}
             description={item.tagline}
             icon={<Icon icon={item.icon} size="md" color="secondary" />}
-            headingHref="#"
+            href="#"
           />
         ))}
       </Grid>
