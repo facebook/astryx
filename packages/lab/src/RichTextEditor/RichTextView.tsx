@@ -99,6 +99,17 @@ export interface RichTextViewProps extends BaseProps {
  * The initial `value` is already applied via `initialConfig.editorState`, so we
  * skip the first run to avoid a redundant re-parse on mount.
  *
+ * This mirrors the canonical Lexical pattern for applying externally-sourced
+ * serialized state after mount: the Lexical Playground's ActionsPlugin does the
+ * same `editor.setEditorState(editor.parseEditorState(...))` from inside a
+ * plugin (see facebook/lexical
+ * packages/lexical-playground/src/plugins/ActionsPlugin/index.tsx). It is
+ * necessary because `LexicalComposer` builds the editor in a `useMemo(..., [])`
+ * and reads `initialConfig.editorState` exactly once on init
+ * (packages/lexical-react/src/LexicalComposer.tsx), so a changed prop cannot
+ * re-seed the editor on its own. A read-only view has no history, so we skip the
+ * Playground's accompanying CLEAR_HISTORY_COMMAND.
+ *
  * `parseEditorState` / `setEditorState` are methods on the editor instance, so
  * this avoids a top-level `lexical` *value* import (which would force the
  * sandbox's Next build to transpile lexical's raw `src/*.ts` and fail — see the
