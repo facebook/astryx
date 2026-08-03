@@ -4,7 +4,7 @@
 
 /**
  * @file TimestampHoverCard.tsx
- * @input Uses React, HoverCard, IconButton, Icon, formatted tooltip lines
+ * @input Uses React, HoverCard, MetadataList, IconButton, Icon, formatted lines
  * @output Default-exports the lazily-loaded copyable hover card for Timestamp
  * @position Split out of Timestamp so the overlay (HoverCard) and the copy
  *   affordance's Icon/IconButton load only when a card is actually shown — the
@@ -20,6 +20,8 @@ import type {ReactNode} from 'react';
 import {useCallback, useEffect, useRef, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {HoverCard} from '../HoverCard';
+import {MetadataList} from '../MetadataList';
+import {MetadataListItem} from '../MetadataList';
 import {IconButton} from '../IconButton';
 import {Icon} from '../Icon';
 import {useAnnounce} from '../hooks/useAnnounce';
@@ -29,34 +31,15 @@ import {colorVars, spacingVars} from '../theme/tokens.stylex';
 import type {TimestampTooltipLine} from './tooltipEntries';
 
 const styles = stylex.create({
-  // Copyable hover card: one row per line, each pairing the labelled instant
-  // with a copy button. A grid gives the label / value / button columns a
-  // shared, content-sized rhythm across rows.
-  cardRows: {
-    display: 'grid',
-    gridTemplateColumns: 'auto 1fr auto',
+  // Each row's value: the formatted instant paired with its copy button. The
+  // instant takes the available width; the button sits flush at the end.
+  value: {
+    display: 'flex',
     alignItems: 'center',
-    columnGap: spacingVars['--spacing-2'],
-    rowGap: spacingVars['--spacing-1'],
-    marginBlock: 0,
-    marginInline: 0,
+    gap: spacingVars['--spacing-2'],
   },
-  cardLabel: {
-    // The card renders on --color-background-surface (not the inverted
-    // tooltip palette), so set explicit text colors instead of inheriting an
-    // ambient one that fails contrast against the surface.
-    color: colorVars['--color-text-secondary'],
-    marginBlock: 0,
-    marginInline: 0,
-    paddingInlineEnd: {
-      default: 0,
-      ':not(:empty)': spacingVars['--spacing-1'],
-    },
-  },
-  cardValue: {
+  instant: {
     color: colorVars['--color-text-primary'],
-    marginBlock: 0,
-    marginInline: 0,
     whiteSpace: 'nowrap',
   },
 });
@@ -65,8 +48,9 @@ const styles = stylex.create({
 const COPY_FEEDBACK_MS = 1500;
 
 /**
- * One copyable row of the hover card: the labelled instant plus an IconButton
- * that writes that line's value to the clipboard.
+ * One copyable row of the hover card: a `MetadataListItem` whose value is the
+ * labelled instant plus an IconButton that writes that line's value to the
+ * clipboard.
  *
  * Copy affordance: `navigator.clipboard.writeText`, an icon that flips
  * `copy` → `check` for a moment, a polite live-region announcement, and a
@@ -108,26 +92,27 @@ function CopyableEntryRow({line}: {line: TimestampTooltipLine}) {
   }, [line.value, announce, t]);
 
   return (
-    <>
-      <dt {...stylex.props(styles.cardLabel)}>{line.label ?? ''}</dt>
-      <dd {...stylex.props(styles.cardValue)}>{line.value}</dd>
-      <IconButton
-        variant="ghost"
-        size="sm"
-        icon={
-          <Icon icon={copied ? 'check' : 'copy'} size="sm" color="inherit" />
-        }
-        label={
-          copied
-            ? t('@astryx.timestamp.copied')
-            : t('@astryx.timestamp.copyValue', {value: line.value})
-        }
-        onClick={() => {
-          void handleCopy();
-        }}
-        {...themeProps('timestamp-copy-button')}
-      />
-    </>
+    <MetadataListItem label={line.label ?? ''}>
+      <span {...stylex.props(styles.value)}>
+        <span {...stylex.props(styles.instant)}>{line.value}</span>
+        <IconButton
+          variant="ghost"
+          size="sm"
+          icon={
+            <Icon icon={copied ? 'check' : 'copy'} size="sm" color="inherit" />
+          }
+          label={
+            copied
+              ? t('@astryx.timestamp.copied')
+              : t('@astryx.timestamp.copyValue', {value: line.value})
+          }
+          onClick={() => {
+            void handleCopy();
+          }}
+          {...themeProps('timestamp-copy-button')}
+        />
+      </span>
+    </MetadataListItem>
   );
 }
 
@@ -141,11 +126,12 @@ export interface TimestampHoverCardProps {
 }
 
 /**
- * The copyable hover card for Timestamp. Each line becomes a labelled row with
- * its own copy button; with a single default line this is a one-row card
- * carrying the full absolute time, itself copyable. Opens on hover and on
- * keyboard focus (the anchor's tab stop), with a dashed-underline affordance
- * signalling it is interactive.
+ * The copyable hover card for Timestamp. Composes `MetadataList`: each line is
+ * a `MetadataListItem` whose value pairs the labelled instant with its own copy
+ * button. With a single default line this is a one-row list carrying the full
+ * absolute time, itself copyable. Opens on hover and on keyboard focus (the
+ * anchor's tab stop), with a dashed-underline affordance signalling it is
+ * interactive.
  */
 export default function TimestampHoverCard({
   lines,
@@ -153,12 +139,12 @@ export default function TimestampHoverCard({
   children,
 }: TimestampHoverCardProps): ReactNode {
   const cardContent = (
-    <dl {...stylex.props(styles.cardRows)}>
+    <MetadataList label={{position: 'start'}}>
       {lines.map((line, index) => (
         // eslint-disable-next-line @eslint-react/no-array-index-key -- rows are fixed positional slots and two entries may legitimately be identical
         <CopyableEntryRow key={index} line={line} />
       ))}
-    </dl>
+    </MetadataList>
   );
 
   return (
