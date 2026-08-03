@@ -27,6 +27,7 @@
 import {describe, it, expect, vi, beforeAll} from 'vitest';
 import {render, screen, act} from '@testing-library/react';
 import {MobileNav} from './MobileNav';
+import {stubMatchMedia} from '../__tests__/stubMatchMedia';
 
 // jsdom doesn't implement showModal/close on <dialog>, so we mock them
 beforeAll(() => {
@@ -116,19 +117,13 @@ describe('MobileNav stays rendered while it closes', () => {
   });
 
   it('still defers the close under prefers-reduced-motion', () => {
-    vi.stubGlobal(
-      'matchMedia',
-      vi.fn().mockReturnValue({
-        matches: true,
-        media: '(prefers-reduced-motion: reduce)',
-        onchange: null,
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-        addListener: vi.fn(),
-        removeListener: vi.fn(),
-        dispatchEvent: vi.fn(),
-      }),
-    );
+    // Query-aware on purpose. A blanket `matches: true` is the stub shape that
+    // once left 9 of 11 tests in the sibling edge-case file silently running
+    // against a 0ms close delay — see the header of stubMatchMedia.ts. It is
+    // inert for this file today (MobileNav renders standalone here, so
+    // prefers-reduced-motion is the only query in play), but the shape is the
+    // hazard, not the blast radius.
+    stubMatchMedia({reduceMotion: true});
     vi.useFakeTimers();
     try {
       const {rerender} = render(<Drawer isOpen />);

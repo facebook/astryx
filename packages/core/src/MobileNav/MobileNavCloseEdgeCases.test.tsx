@@ -31,6 +31,7 @@ import {render, screen, fireEvent, act} from '@testing-library/react';
 import {MobileNav} from './MobileNav';
 import {AppShell} from '../AppShell/AppShell';
 import {SideNav, SideNavItem, SideNavSection} from '../SideNav';
+import {stubMatchMedia} from '../__tests__/stubMatchMedia';
 
 // jsdom doesn't implement showModal/close on <dialog>, so we mock them
 beforeAll(() => {
@@ -52,29 +53,11 @@ class MockResizeObserver {
   disconnect() {}
 }
 
-/**
- * `matches` has to depend on the query.
- *
- * A blanket `matches: true` puts AppShell below its breakpoint, which these
- * tests need — but it also matches `prefers-reduced-motion`, which caps the
- * close delay at 0. Every test in this file would then run against an immediate
- * close while appearing to exercise the real delay.
- */
-function stubMatchMedia({reduceMotion}: {reduceMotion: boolean}) {
-  vi.stubGlobal(
-    'matchMedia',
-    vi.fn((query: string) => ({
-      matches: query.includes('prefers-reduced-motion') ? reduceMotion : true,
-      media: query,
-      onchange: null,
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-      addListener: vi.fn(),
-      removeListener: vi.fn(),
-      dispatchEvent: vi.fn(),
-    })),
-  );
-}
+// `matches` has to depend on the query: a blanket `matches: true` puts AppShell
+// below its breakpoint, which these tests need, but it also matches
+// `prefers-reduced-motion`, which caps the close delay at 0 — every test here
+// would run against an immediate close while appearing to exercise the real
+// delay. See the header of stubMatchMedia.ts.
 
 beforeEach(() => {
   vi.stubGlobal('ResizeObserver', MockResizeObserver);
