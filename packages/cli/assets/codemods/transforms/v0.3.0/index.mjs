@@ -8,6 +8,9 @@
  * imports), then `migrate-authoring-imports` repoints the surviving type
  * imports to `@astryxdesign/cli/authoring`, then `rename-authoring-doctypes`
  * renames the doc field types to their explicit domain-prefixed names.
+ * `rename-radiogroup-arialabel-to-label` is independent of the authoring
+ * codemods — it renames `aria-label` to the new required `label` prop on the
+ * RadioGroup menu components.
  */
 
 import unwrapAuthoringFactories, {
@@ -19,6 +22,9 @@ import migrateAuthoringImports, {
 import renameAuthoringDoctypes, {
   meta as renameAuthoringDoctypesMeta,
 } from './rename-authoring-doctypes.mjs';
+import renameRadioGroupAriaLabelToLabel, {
+  meta as renameRadioGroupAriaLabelToLabelMeta,
+} from './rename-radiogroup-arialabel-to-label.mjs';
 
 export default [
   {
@@ -35,5 +41,10 @@ export default [
     name: 'rename-authoring-doctypes',
     transform: renameAuthoringDoctypes,
     meta: renameAuthoringDoctypesMeta,
+  },
+  {
+    name: 'rename-radiogroup-arialabel-to-label',
+    transform: renameRadioGroupAriaLabelToLabel,
+    meta: renameRadioGroupAriaLabelToLabelMeta,
   },
 ];
