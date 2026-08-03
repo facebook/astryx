@@ -21,6 +21,7 @@ import {getCliInvocation} from '../../foundation/env/package-manager.mjs';
 import {API_VERSION, setJsonMode} from '../../foundation/response/json.mjs';
 import {buildManifest} from './lib/manifest.mjs';
 import {cliError} from './lib/cli-error.mjs';
+import {emit, title, text, table} from './formatters/index.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 import {levenshteinDistance} from '../../foundation/text/string-utils.mjs';
 import {installJsonShim} from './lib/json-shim.mjs';
@@ -368,14 +369,17 @@ export async function createProgram() {
         console.log(JSON.stringify({apiVersion: API_VERSION, type: 'manifest', data: manifest}, null, 2));
         return;
       }
-      // Human-readable summary. Agents should use --json.
-      console.log(`\n${manifest.name} v${manifest.version} — ${manifest.commands.length} commands\n`);
-      for (const c of manifest.commands) {
-        const tag = c.json ? ' [--json]' : '';
-        console.log(`  ${c.name}${tag}`);
-        if (c.description) console.log(`    ${c.description}`);
-      }
-      console.log(`\nRun \`${getCliInvocation()} manifest --json\` for the full structured manifest.\n`);
+      // Human-readable summary as a single greppable table (agents should use
+      // --json). One row per command: name, whether it supports --json, and the
+      // description — no nested indent.
+      emit(
+        title(`${manifest.name} v${manifest.version} (${manifest.commands.length} commands)`),
+        table(
+          manifest.commands.map(c => [c.name, c.json ? 'yes' : '', c.description || '']),
+          {head: ['Command', 'JSON', 'Description']},
+        ),
+        text(`Run \`${getCliInvocation()} manifest --json\` for the full structured manifest.`),
+      );
     });
 
   // Hidden command used by package.json postinstall scripts
