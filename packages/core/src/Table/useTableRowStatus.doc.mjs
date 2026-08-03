@@ -7,7 +7,7 @@ export const docs = {
   subComponentOf: 'Table',
   displayName: 'useTableRowStatus',
   description:
-    'Hook that returns a TablePlugin which prepends a narrow column signaling per-row status: a colored status dot by default, or an icon when provided (shape + color is more accessible than color alone). getStatus maps a row to a semantic color (mapped to a theme token) or raw CSS color, an optional icon, and a required accessible label (shown in a tooltip on hover and announced to assistive technology, so status is never color-only); return null for no indicator. Memoize getStatus with useCallback for a stable plugin identity.',
+    'Hook that returns a TablePlugin which prepends a narrow column signaling per-row status: a colored status dot by default, or an icon when provided (shape + color is more accessible than color alone). getStatus maps a row to a semantic color (mapped to a theme token) or raw CSS color, an optional icon, and a required accessible label (shown in a tooltip on hover and announced to assistive technology, so status is never color-only); return null for no indicator. The column header is visually blank but carries a screen-reader-only localized name ("Row status", i18n key @astryx.table.rowStatus.columnHeader). Memoize getStatus with useCallback for a stable plugin identity.',
   props: [
     {
       name: 'getStatus',
