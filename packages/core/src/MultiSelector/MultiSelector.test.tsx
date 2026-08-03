@@ -1696,10 +1696,10 @@ describe('MultiSelector search affordances', () => {
     );
     await user.click(screen.getByRole('button', {name: 'Fruit'}));
     const search = screen.getByRole('combobox', h);
+    // The search field is a TextInput; the magnifier is its startIcon, so it
+    // sits inside the input container as a sibling of the <input>.
     const wrapper = search.parentElement;
-    const magnifier = wrapper?.querySelector(
-      '.astryx-multi-selector-search-icon',
-    );
+    const magnifier = wrapper?.querySelector('.astryx-icon');
     expect(magnifier).toBeTruthy();
     expect(magnifier?.getAttribute('aria-hidden')).toBe('true');
     expect(magnifier?.getAttribute('aria-label')).toBeNull();
@@ -1721,13 +1721,12 @@ describe('MultiSelector search affordances', () => {
     await user.type(search, 'ap');
     expect(search).toHaveValue('ap');
 
+    // The clear button is TextInput's built-in hasClear affordance; its name is
+    // derived from the field label ("Search options").
     const clear = screen.getByRole('button', {
-      name: 'Clear search',
+      name: 'Clear Search options',
       hidden: true,
     });
-    expect(
-      clear.querySelector('.astryx-multi-selector-search-clear-icon'),
-    ).toBeTruthy();
 
     await user.click(clear);
     expect(search).toHaveValue('');
@@ -1747,7 +1746,10 @@ describe('MultiSelector search affordances', () => {
     );
     await user.click(screen.getByRole('button', {name: 'Fruit'}));
     expect(
-      screen.queryByRole('button', {name: 'Clear search', hidden: true}),
+      screen.queryByRole('button', {
+        name: 'Clear Search options',
+        hidden: true,
+      }),
     ).not.toBeInTheDocument();
   });
 

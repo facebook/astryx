@@ -43,6 +43,7 @@ import {Divider} from '../Divider';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import type {LayerPlacement} from '../Layer/useLayer';
 import {Spinner} from '../Spinner';
+import {TextInput} from '../TextInput';
 import {useAnnounce} from '../hooks/useAnnounce';
 import {
   colorVars,
@@ -191,58 +192,14 @@ const styles = stylex.create({
   popover: {
     minWidth: 'anchor-size(width)',
   },
-  // Search input
+  // Search field. The inner TextInput owns the border, focus ring, magnifier
+  // (startIcon), and clear button (hasClear); this wrapper only supplies the
+  // dropdown's inline/block padding around it.
   searchWrapper: {
     display: 'flex',
     alignItems: 'center',
-    gap: spacingVars['--spacing-1'],
     paddingInline: spacingVars['--spacing-2'],
     paddingBlock: spacingVars['--spacing-1'],
-  },
-  searchIcon: {
-    flexShrink: 0,
-  },
-  searchInput: {
-    boxSizing: 'border-box',
-    flexGrow: 1,
-    minWidth: 0,
-    width: '100%',
-    paddingBlock: spacingVars['--spacing-1'],
-    paddingInline: spacingVars['--spacing-2'],
-    borderWidth: borderVars['--border-width'],
-    borderStyle: 'solid',
-    borderColor: colorVars['--color-border-emphasized'],
-    borderRadius: radiusVars['--radius-element'],
-    backgroundColor: colorVars['--color-background-surface'],
-    fontFamily: typographyVars['--font-family-body'],
-    fontSize: {
-      default: typeScaleVars['--text-label-size'],
-      '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-label-size']})`,
-    },
-    color: colorVars['--color-text-primary'],
-    outline: {
-      default: 'none',
-      ':focus': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: '0',
-  },
-  searchClearButton: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-    padding: 0,
-    margin: 0,
-    borderWidth: 0,
-    borderStyle: 'none',
-    backgroundColor: 'transparent',
-    cursor: 'pointer',
-    borderRadius: radiusVars['--radius-element'],
-    outline: {
-      default: 'none',
-      ':focus-visible': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: 1,
   },
 
   // Empty state
@@ -763,8 +720,7 @@ export function Selector<T extends SelectorOptionType>(
   // next query here fires the announcement exactly once per keystroke and does
   // not re-speak on unrelated re-renders.
   const handleSearchChange = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      const nextQuery = event.target.value;
+    (nextQuery: string) => {
       setSearchQuery(nextQuery);
       if (nextQuery.length === 0) {
         // Emptying the query clears the region rather than announcing a count.
@@ -876,13 +832,6 @@ export function Selector<T extends SelectorOptionType>(
     [clearValue],
   );
 
-  // Reset the search query and return focus to the search input so keyboard
-  // users aren't stranded after clearing.
-  const handleSearchClear = useCallback(() => {
-    setSearchQuery('');
-    searchRef.current?.focus();
-  }, []);
-
   // Render search input
   const renderSearch = useCallback(() => {
     if (!hasSearch) {
@@ -890,22 +839,24 @@ export function Selector<T extends SelectorOptionType>(
     }
     return (
       <div {...stylex.props(styles.searchWrapper)}>
-        <Icon
-          icon="search"
-          size="sm"
-          color="secondary"
-          {...mergeProps(
-            themeProps('selector-search-icon'),
-            stylex.props(styles.searchIcon),
-          )}
-        />
-        <input
+        <TextInput
           ref={searchRef}
           id={searchId}
+          // The search field IS a TextInput: the leading magnifier is its
+          // `startIcon` and the trailing clear (✕) is its built-in `hasClear`
+          // (which resets the value and refocuses the input). We add no bespoke
+          // affordance chrome — the field just looks and behaves like every
+          // other Astryx input.
+          label={t('@astryx.selector.searchOptions')}
+          isLabelHidden
+          startIcon="search"
+          hasClear
+          size="sm"
           // When hasSearch is set, focus moves into this input on open, so it —
           // not the trigger — must be the combobox that reports the highlighted
           // option via aria-activedescendant (comboboxes-4). A bare searchbox
-          // left the highlight silent to screen readers.
+          // left the highlight silent to screen readers. role + aria-* pass
+          // through to the underlying <input> via BaseProps.
           role="combobox"
           aria-expanded={popover.isOpen}
           aria-controls={listboxId}
@@ -915,8 +866,6 @@ export function Selector<T extends SelectorOptionType>(
               ? getItemId(highlightedIndex)
               : undefined
           }
-          aria-label={t('@astryx.selector.searchOptions')}
-          type="text"
           value={searchQuery}
           onChange={handleSearchChange}
           onKeyDown={e => {
@@ -937,22 +886,7 @@ export function Selector<T extends SelectorOptionType>(
             }
           }}
           placeholder={searchPlaceholder}
-          {...stylex.props(styles.searchInput)}
         />
-        {searchQuery.length > 0 && (
-          <button
-            type="button"
-            onClick={handleSearchClear}
-            aria-label={t('@astryx.selector.clearSearch')}
-            {...stylex.props(styles.searchClearButton)}>
-            <Icon
-              icon="close"
-              size="sm"
-              color="secondary"
-              {...themeProps('selector-search-clear-icon')}
-            />
-          </button>
-        )}
       </div>
     );
   }, [
@@ -967,7 +901,6 @@ export function Selector<T extends SelectorOptionType>(
     highlightedIndex,
     getItemId,
     t,
-    handleSearchClear,
   ]);
 
   // Render an individual item

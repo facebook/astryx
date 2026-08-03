@@ -41,6 +41,7 @@ import {
 } from '../Field';
 import {Divider} from '../Divider';
 import {Spinner} from '../Spinner';
+import {TextInput} from '../TextInput';
 import {CheckboxInput} from '../CheckboxInput';
 import {Badge} from '../Badge';
 import {
@@ -210,58 +211,14 @@ const styles = stylex.create({
     marginBlockStart: spacingVars['--spacing-1'],
   },
 
-  // Search input
+  // Search field. The inner TextInput owns the border, focus ring, magnifier
+  // (startIcon), and clear button (hasClear); this wrapper only supplies the
+  // dropdown's inline/block padding around it.
   searchWrapper: {
     display: 'flex',
     alignItems: 'center',
-    gap: spacingVars['--spacing-1'],
     paddingInline: spacingVars['--spacing-2'],
     paddingBlock: spacingVars['--spacing-1'],
-  },
-  searchIcon: {
-    flexShrink: 0,
-  },
-  searchInput: {
-    boxSizing: 'border-box',
-    flexGrow: 1,
-    minWidth: 0,
-    width: '100%',
-    paddingBlock: spacingVars['--spacing-1'],
-    paddingInline: spacingVars['--spacing-2'],
-    borderWidth: borderVars['--border-width'],
-    borderStyle: 'solid',
-    borderColor: colorVars['--color-border-emphasized'],
-    borderRadius: radiusVars['--radius-element'],
-    backgroundColor: colorVars['--color-background-surface'],
-    fontFamily: typographyVars['--font-family-body'],
-    fontSize: {
-      default: typeScaleVars['--text-label-size'],
-      '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-label-size']})`,
-    },
-    color: colorVars['--color-text-primary'],
-    outline: {
-      default: 'none',
-      ':focus': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: '0',
-  },
-  searchClearButton: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-    padding: 0,
-    margin: 0,
-    borderWidth: 0,
-    borderStyle: 'none',
-    backgroundColor: 'transparent',
-    cursor: 'pointer',
-    borderRadius: radiusVars['--radius-element'],
-    outline: {
-      default: 'none',
-      ':focus-visible': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: 1,
   },
 
   // Select-all wrapper
@@ -844,8 +801,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   // not re-speak on unrelated re-renders. Reuses the announce instance shared
   // with the selection-count announcements above.
   const handleSearchChange = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      const nextQuery = event.target.value;
+    (nextQuery: string) => {
       setSearchQuery(nextQuery);
       if (nextQuery.length === 0) {
         // Emptying the query clears the region rather than announcing a count.
@@ -1085,13 +1041,6 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     }
   }, [optimisticValue, triggerDisplay, selectedLabels, placeholder, maxBadges]);
 
-  // Reset the search query and return focus to the search input so keyboard
-  // users aren't stranded after clearing.
-  const handleSearchClear = useCallback(() => {
-    setSearchQuery('');
-    searchRef.current?.focus();
-  }, []);
-
   // Render search input
   const renderSearch = useCallback(() => {
     if (!hasSearch) {
@@ -1099,21 +1048,23 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     }
     return (
       <div {...stylex.props(styles.searchWrapper)}>
-        <Icon
-          icon="search"
-          size="sm"
-          color="secondary"
-          {...mergeProps(
-            themeProps('multi-selector-search-icon'),
-            stylex.props(styles.searchIcon),
-          )}
-        />
-        <input
+        <TextInput
           ref={searchRef}
           id={searchId}
+          // The search field IS a TextInput: the leading magnifier is its
+          // `startIcon` and the trailing clear (✕) is its built-in `hasClear`
+          // (which resets the value and refocuses the input). We add no bespoke
+          // affordance chrome — the field just looks and behaves like every
+          // other Astryx input.
+          label={t('@astryx.multiSelector.searchOptions')}
+          isLabelHidden
+          startIcon="search"
+          hasClear
+          size="sm"
           // When hasSearch is set, focus moves into this input on open, so it —
           // not the trigger — must be the combobox reporting the highlighted
-          // option via aria-activedescendant (comboboxes-4).
+          // option via aria-activedescendant (comboboxes-4). role + aria-* pass
+          // through to the underlying <input> via BaseProps.
           role="combobox"
           aria-expanded={popover.isOpen}
           aria-controls={listboxId}
@@ -1123,8 +1074,6 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
               ? getItemId(highlightedIndex)
               : undefined
           }
-          aria-label={t('@astryx.multiSelector.searchOptions')}
-          type="text"
           value={searchQuery}
           onChange={handleSearchChange}
           onKeyDown={e => {
@@ -1145,22 +1094,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
             }
           }}
           placeholder={searchPlaceholder}
-          {...stylex.props(styles.searchInput)}
         />
-        {searchQuery.length > 0 && (
-          <button
-            type="button"
-            onClick={handleSearchClear}
-            aria-label={t('@astryx.multiSelector.clearSearch')}
-            {...stylex.props(styles.searchClearButton)}>
-            <Icon
-              icon="close"
-              size="sm"
-              color="secondary"
-              {...themeProps('multi-selector-search-clear-icon')}
-            />
-          </button>
-        )}
       </div>
     );
   }, [
@@ -1175,7 +1109,6 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     highlightedIndex,
     getItemId,
     t,
-    handleSearchClear,
   ]);
 
   // Render an individual item (index-based)
