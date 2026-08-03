@@ -10,7 +10,7 @@ import {
   RichTextEditorToolbar,
   RichTextEditorAutoLinkPlugin,
   type RichTextEditorRef,
-} from '@astryxdesign/lab';
+} from '@astryxdesign/richtext';
 import type {EditorState} from 'lexical';
 import {BOLD_STAR, ITALIC_STAR, UNORDERED_LIST} from '@lexical/markdown';
 import {$getRoot} from 'lexical';

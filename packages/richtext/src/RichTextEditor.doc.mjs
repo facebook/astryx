@@ -161,12 +161,12 @@ export const docs = {
   },
   usage: {
     description:
-      'A WYSIWYG rich-text editor built on Lexical, styled with Astryx design tokens. Its field container shares TextArea input visuals for the resting border, hover ring, focus-within ring, disabled state, and status colors. Experimental component in @astryxdesign/lab (canary). lexical and @lexical/* are optional peer dependencies. The editor is deliberately minimal and extensible: pass toolbar, nodes, and plugins to layer richer behaviour (formatting, mentions, hover cards) on top without forking. Use RichTextView to render serialized content read-only.',
+      'A WYSIWYG rich-text editor built on Lexical, styled with Astryx design tokens. Its field container shares TextArea input visuals for the resting border, hover ring, focus-within ring, disabled state, and status colors. Experimental component in @astryxdesign/richtext (canary). lexical and @lexical/* are optional peer dependencies. The editor is deliberately minimal and extensible: pass toolbar, nodes, and plugins to layer richer behaviour (formatting, mentions, hover cards) on top without forking. Use RichTextView to render serialized content read-only.',
     bestPractices: [
       {
         guidance: true,
         description:
-          'Install lexical and @lexical/react (optional peers) before importing from @astryxdesign/lab.',
+          'Install lexical and @lexical/react (optional peers) before importing from @astryxdesign/richtext.',
       },
       {
         guidance: true,
