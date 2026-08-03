@@ -652,6 +652,9 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   const inputGroup = useInputGroup();
 
   const [searchQuery, setSearchQuery] = useState('');
+  // A typed query shows TextInput's built-in clear (✕) button, which becomes
+  // the next tab stop after the search input.
+  const hasQuery = searchQuery.length > 0;
 
   // Snapshot of which values were selected when the dropdown opened.
   // Stored as state (not a ref) so sortedItems recomputes exactly once on open,
@@ -1047,7 +1050,21 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       return null;
     }
     return (
-      <div {...stylex.props(styles.searchWrapper)}>
+      <div
+        {...stylex.props(styles.searchWrapper)}
+        onKeyDown={e => {
+          // The clear (✕) button lives inside the TextInput, after the input in
+          // DOM order. When it is focused and the user tabs forward there is
+          // nothing else in the popup, so dismiss it (Shift+Tab returns to the
+          // input natively). Key events originating on the input are handled on
+          // the input below; ignore them here so we don't double-dismiss.
+          if (e.target === searchRef.current) {
+            return;
+          }
+          if (e.key === 'Tab' && !e.shiftKey) {
+            onKeyDown(e);
+          }
+        }}>
         <TextInput
           ref={searchRef}
           id={searchId}
@@ -1061,6 +1078,9 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           startIcon="search"
           hasClear
           size="sm"
+          // Fill the dropdown's width (minus the wrapper's inline padding) so
+          // the field is flush end-to-end rather than sized to its content.
+          width="100%"
           // When hasSearch is set, focus moves into this input on open, so it —
           // not the trigger — must be the combobox reporting the highlighted
           // option via aria-activedescendant (comboboxes-4). role + aria-* pass
@@ -1077,7 +1097,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           value={searchQuery}
           onChange={handleSearchChange}
           onKeyDown={e => {
-            // Arrow keys navigate options; Enter toggles; Escape/Tab close.
+            // Arrow keys navigate options; Enter toggles; Escape closes.
             // Space and Home/End are left to the input (type a space / move
             // the caret) per the APG editable combobox; PageUp/PageDown are
             // the sanctioned substitute for jumping to the first/last option.
@@ -1087,9 +1107,15 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
               e.key === 'PageUp' ||
               e.key === 'PageDown' ||
               e.key === 'Enter' ||
-              e.key === 'Escape' ||
-              e.key === 'Tab'
+              e.key === 'Escape'
             ) {
+              onKeyDown(e);
+              return;
+            }
+            // Tab: when a query is showing the clear (✕) button, forward-tab
+            // moves focus to it (keeping the popup open) so the affordance is
+            // keyboard-reachable. Every other Tab dismisses the popup as usual.
+            if (e.key === 'Tab' && (e.shiftKey || !hasQuery)) {
               onKeyDown(e);
             }
           }}
@@ -1102,6 +1128,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     searchId,
     listboxId,
     searchQuery,
+    hasQuery,
     searchPlaceholder,
     handleSearchChange,
     onKeyDown,

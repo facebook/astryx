@@ -1769,4 +1769,56 @@ describe('MultiSelector search affordances', () => {
     expect(search.tagName).toBe('INPUT');
     expect(search).toHaveAttribute('aria-autocomplete', 'list');
   });
+
+  it('tabs from the search input to the clear button (keeping the popup open) when a query is showing it', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={['Apple', 'Banana', 'Orange']}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    const trigger = screen.getByRole('button', {name: 'Fruit'});
+    const search = screen.getByRole('combobox', h);
+    await user.type(search, 'ap');
+    expect(search).toHaveFocus();
+
+    // Forward-tab lands on the clear (✕) button and the popup stays open, so
+    // the affordance is keyboard-reachable rather than being skipped when the
+    // input's Tab dismisses the popup.
+    await user.tab();
+    const clear = screen.getByRole('button', {
+      name: 'Clear Search options',
+      hidden: true,
+    });
+    expect(clear).toHaveFocus();
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('dismisses on Tab from the search input when there is no query (no clear button)', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={['Apple', 'Banana', 'Orange']}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    const trigger = screen.getByRole('button', {name: 'Fruit'});
+    await user.click(trigger);
+    const search = screen.getByRole('combobox', h);
+    // Focus moves into the search input on open (via rAF).
+    await waitFor(() => expect(search).toHaveFocus());
+
+    // With no query there is no clear button, so Tab dismisses the popup as a
+    // plain combobox does.
+    await user.tab();
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
 });

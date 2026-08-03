@@ -1565,4 +1565,33 @@ describe('Selector search affordances', () => {
     expect(comboboxes[0].tagName).toBe('INPUT');
     expect(comboboxes[0]).toHaveAttribute('aria-autocomplete', 'list');
   });
+
+  it('tabs from the search input to the clear button (keeping the popup open) when a query is showing it', async () => {
+    const user = userEvent.setup();
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value="Apple"
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    const trigger = screen.getByRole('button', {name: 'Fruit'});
+    const search = screen.getByRole('combobox', {hidden: true});
+    await user.type(search, 'ap');
+    expect(search).toHaveFocus();
+
+    // Forward-tab lands on the clear (✕) button and the popup stays open, so
+    // the affordance is keyboard-reachable rather than being skipped when the
+    // input's Tab dismisses the popup.
+    await user.tab();
+    const clear = screen.getByRole('button', {
+      name: 'Clear Search options',
+      hidden: true,
+    });
+    expect(clear).toHaveFocus();
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
 });
