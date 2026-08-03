@@ -58,8 +58,10 @@ describe('--detail level ordering: component --list', () => {
     expect(brief).not.toMatch(/ \u2014 /);
   });
 
-  it('compact has 1-line descriptions (name + em-dash separator)', () => {
-    expect(compact).toMatch(/ \u2014 /);
+  it('compact has descriptions (records expose a description field)', () => {
+    // Migrated to the shared formatter kit: compact renders one record per entry
+    // (name/import/description) rather than a single em-dash-joined line.
+    expect(compact).toMatch(/^description:/m);
   });
 
   it('full has dense per-entry docs (props, targets, and import hints)', () => {
@@ -114,8 +116,8 @@ describe('--detail level ordering: hook --list', () => {
     expect(brief).not.toMatch(/ \u2014 /);
   });
 
-  it('compact has 1-line descriptions (name + em-dash separator)', () => {
-    expect(compact).toMatch(/ \u2014 /);
+  it('compact has per-hook descriptions (records with a description field)', () => {
+    expect(compact).toMatch(/description:/);
   });
 
   it('full has dense docs (param tables and import statements)', () => {

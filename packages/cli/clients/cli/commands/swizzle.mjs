@@ -10,7 +10,8 @@
  * commands for the caller's package manager.
  */
 
-import {jsonOut, humanLog} from '../../../foundation/response/json.mjs';
+import {jsonOut} from '../../../foundation/response/json.mjs';
+import {emit, section, list, text, WARN} from '../formatters/index.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
 import {swizzle as swizzleApi} from '../../../api/swizzle/swizzle.mjs';
@@ -50,54 +51,63 @@ export function registerSwizzle(program) {
 
       if (result.type === 'swizzle.list') {
         const components = result.data;
-        humanLog('\nAvailable components:\n');
-        for (const name of components) {
-          humanLog(`  ${name}`);
-        }
-        humanLog(`\nUsage: ${run} swizzle <component>\n`);
-        humanLog(`Example: ${run} swizzle Button`);
-        humanLog(`         ${run} swizzle XDSButton  (XDS prefix also works)\n`);
+        emit(
+          section('Available components'),
+          list(components),
+          text(`Usage: ${run} swizzle <component>`),
+          text(
+            [
+              `Example: ${run} swizzle Button`,
+              `         ${run} swizzle XDSButton  (XDS prefix also works)`,
+            ].join('\n'),
+          ),
+        );
         return;
       }
 
       const {package: ownerPackage, outputDir, filesCopied, usesStyleX, feedback} =
         result.data;
 
-      humanLog(`\n✓ Copied ${filesCopied} files to ${outputDir}/\n`);
-      humanLog(`Relative imports have been rewritten to use ${ownerPackage}.`);
-      humanLog('You can now customize the component source freely.\n');
+      /** @type {import('../formatters/index.mjs').Block[]} */
+      const out = [
+        text(`[ok] Copied ${filesCopied} files to ${outputDir}/`),
+        text(
+          [
+            `Relative imports have been rewritten to use ${ownerPackage}.`,
+            'You can now customize the component source freely.',
+          ].join('\n'),
+        ),
+      ];
 
       // StyleX build requirement — swizzled StyleX source renders unstyled with
       // no error unless the consumer's build runs a StyleX compiler.
       if (usesStyleX) {
-        humanLog(
-          '⚠ These components use StyleX and require a StyleX compiler in your build.',
+        out.push(
+          text(
+            [
+              `${WARN} These components use StyleX and require a StyleX compiler in your build.`,
+              '  Without one they render unstyled (no error). See setup per framework:',
+              `  ${run} docs styling`,
+              '  Next.js note: the StyleX Babel plugin disables SWC and breaks next/font -',
+              '  use an SWC-based StyleX transform instead (covered in the guide).',
+            ].join('\n'),
+          ),
         );
-        humanLog(
-          '  Without one they render unstyled (no error). See setup per framework:',
-        );
-        humanLog(`  ${run} docs styling`);
-        humanLog(
-          '  Next.js note: the StyleX Babel plugin disables SWC and breaks next/font —',
-        );
-        humanLog(
-          '  use an SWC-based StyleX transform instead (covered in the guide).',
-        );
-        humanLog('');
       }
 
       // Maintainer feedback note (skipped when the owner ships no issues URL).
       if (feedback) {
-        humanLog(
-          'Customizing a component often signals a gap in the design system.',
+        out.push(
+          text(
+            [
+              'Customizing a component often signals a gap in the design system.',
+              'Let the maintainers know what you needed:',
+              `  ${feedback.ghCommand || feedback.issuesUrl}`,
+            ].join('\n'),
+          ),
         );
-        humanLog('Let the maintainers know what you needed:');
-        if (feedback.ghCommand) {
-          humanLog(`  ${feedback.ghCommand}`);
-        } else {
-          humanLog(`  ${feedback.issuesUrl}`);
-        }
-        humanLog('');
       }
+
+      emit(...out);
     });
 }

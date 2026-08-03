@@ -13,42 +13,53 @@
  */
 
 import {getCliInvocation, formatCliCommand} from '../../../foundation/env/package-manager.mjs';
-import {jsonOut, humanLog} from '../../../foundation/response/json.mjs';
+import {jsonOut} from '../../../foundation/response/json.mjs';
+import {emit, title, section, text, record, records, ARROW} from '../formatters/index.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {build as buildApi} from '../../../api/build/build.mjs';
 
 /**
- * Print the build playbook (shown when `build` is run with no query).
+ * Emit the build playbook (shown when `build` is run with no query).
  * @param {string} run - The CLI invocation prefix (e.g. `npx astryx`).
  */
 function printPlaybook(run) {
-  const lines = [
-    '',
-    'How to build a page with Astryx',
-    '',
-    "1. Find a starting point for what you're building:",
-    `     ${run} build "<what you're building>"`,
-    '   → returns the closest [page] template, the [block]s that cover parts,',
-    '     and the [component]s to fill the gaps, with a "Compose:" suggestion.',
-    '',
-    '2. If a [page] template matches → scaffold it and adapt:',
-    `     ${run} template <name> [path]`,
-    '',
-    '3. If nothing matches exactly → compose:',
-    `     ${run} template <name> --skeleton   # study a close page's layout`,
-    `     ${run} template <BlockName>         # drop in each block from the kit`,
-    `     ${run} component <Name>             # fill remaining gaps (read props)`,
-    '',
-    '4. Rules (keep it on-system):',
-    '   - No <div>/raw HTML for layout — use VStack/HStack/Grid/Stack/Card etc.',
-    `   - No style={{}} — use component props; design tokens via \`${run} docs tokens\`.`,
-    '   - Wrap the app in <Theme theme={...}> and import core reset.css + astryx.css.',
-    '',
-    `Tip: \`${run} build "<idea>"\` is the fastest way in. For a neutral`,
-    `lookup of any component/doc/template, use \`${run} search <query>\`.`,
-    '',
-  ];
-  for (const l of lines) humanLog(l);
+  emit(
+    title('How to build a page with Astryx'),
+    text(
+      [
+        "1. Find a starting point for what you're building:",
+        `     ${run} build "<what you're building>"`,
+        `   ${ARROW} returns the closest [page] template, the [block]s that cover parts,`,
+        '     and the [component]s to fill the gaps, with a "Compose:" suggestion.',
+      ].join('\n'),
+    ),
+    text(
+      [
+        `2. If a [page] template matches ${ARROW} scaffold it and adapt:`,
+        `     ${run} template <name> [path]`,
+      ].join('\n'),
+    ),
+    text(
+      [
+        `3. If nothing matches exactly ${ARROW} compose:`,
+        `     ${run} template <name> --skeleton   # study a close page's layout`,
+        `     ${run} template <BlockName>         # drop in each block from the kit`,
+        `     ${run} component <Name>             # fill remaining gaps (read props)`,
+      ].join('\n'),
+    ),
+    text(
+      [
+        '4. Rules (keep it on-system):',
+        '   - No <div>/raw HTML for layout — use VStack/HStack/Grid/Stack/Card etc.',
+        `   - No style={{}} — use component props; design tokens via \`${run} docs tokens\`.`,
+        '   - Wrap the app in <Theme theme={...}> and import core reset.css + astryx.css.',
+      ].join('\n'),
+    ),
+    text(
+      `Tip: \`${run} build "<idea>"\` is the fastest way in. For a neutral ` +
+        `lookup of any component/doc/template, use \`${run} search <query>\`.`,
+    ),
+  );
 }
 
 /**
@@ -98,71 +109,73 @@ export function registerBuild(program) {
         result.data;
 
       if (!hasResults) {
-        humanLog('');
-        humanLog(`No matches for "${q}".`);
-        humanLog(`Try a broader term, or browse: ${run} component --list`);
-        humanLog('');
+        emit(
+          text(`No matches for "${q}".`),
+          text(`Try a broader term, or browse: ${run} component --list`),
+        );
         return;
       }
 
-      const printItem = (/** @type {import('../../../api/search/search.type.mjs').SearchResultEntry} */ r, /** @type {string} */ label) => {
-        const display = r.domain === 'template' && r.displayName ? r.displayName : r.name;
-        humanLog('');
-        humanLog(`  [${label}] ${display}`);
-        if (r.description) humanLog(`          ${r.description}`);
-        humanLog(`          → ${formatCliCommand(r.command)}`);
-        if (options.verbose) {
-          if (r.import) humanLog(`          import: ${r.import}`);
-          humanLog(`          match: ${r.reason} (score ${r.score})`);
-        }
-      };
+      // Same JSON->text projection as search, but leaner: the section header
+      // already says the kind, so drop `domain`/`import` by default (they're in
+      // --json and under --detail). Keeps each item to name/displayName/desc/cmd.
+      const fields = options.detail
+        ? ['name', 'domain', 'displayName', 'score', 'reason', 'import', 'description', 'command']
+        : ['name', 'displayName', 'description', 'command'];
+      /** @type {import('../formatters/index.mjs').RecordOptions} */
+      const recordOpts = {fields, format: {command: formatCliCommand}};
 
-      humanLog('');
-      humanLog(`Building "${q}":`);
+      const startCmd = directMatch
+        ? `${run} template ${pages[0].name} ./src/App.tsx`
+        : pages.length
+          ? `${run} template ${pages[0].name} --skeleton`
+          : `${run} component AppShell`;
+      const startNote = directMatch
+        ? 'Direct match — scaffold this page template, then adapt it:'
+        : pages.length
+          ? 'No exact page template — use the closest as a layout reference, then compose:'
+          : 'No page template fits — frame with AppShell, then compose the pieces below:';
 
-      // START — the single recommended path.
-      humanLog('');
-      if (directMatch) {
-        humanLog(`START → Scaffold the \`${pages[0].name}\` page template, then adapt: ${run} template ${pages[0].name} ./src/App.tsx`);
-      } else if (pages.length) {
-        humanLog(`START → No exact page template. Use \`${pages[0].name}\` as a layout reference (${run} template ${pages[0].name} --skeleton) and compose the pieces below.`);
-      } else {
-        humanLog(`START → No page template fits. Frame with AppShell and compose the blocks + components below.`);
-      }
+      /** @type {import('../formatters/index.mjs').Block[]} */
+      const out = [
+        title(`Building "${q}"`),
+        section('START', `${startNote}\n${startCmd}`),
+      ];
 
-      // PAGE
       if (pages.length) {
-        humanLog('');
-        humanLog(directMatch ? 'PAGE TEMPLATE — direct match:' : 'CLOSEST PAGE TEMPLATES — layout reference:');
-        pages.forEach(p => printItem(p, directMatch ? 'page' : 'closest'));
+        out.push(
+          section(
+            'PAGE TEMPLATES',
+            directMatch
+              ? 'Closest full-page templates — scaffold one, then adapt it.'
+              : 'Closest full-page templates — use as a layout reference.',
+          ),
+          records(pages, recordOpts),
+        );
       }
-
-      // FRAME — always (the page shell).
-      humanLog('');
-      humanLog(`FRAME — page shell (always): ${frame.join(', ')}`);
-      humanLog(`          full-page → AppShell; or Layout + SideNav/TopNav. ${run} component AppShell`);
-
-      // BLOCKS — idea-specific composed patterns.
       if (blocks.length) {
-        humanLog('');
-        humanLog('BLOCKS — drop-in patterns that cover parts of it:');
-        blocks.forEach(b => printItem(b, 'block'));
+        out.push(
+          section('BLOCKS', 'Drop-in patterns that cover parts of the page.'),
+          records(blocks, recordOpts),
+        );
       }
-
-      // DOMAIN COMPONENTS — idea-specific atoms.
       if (domain.length) {
-        humanLog('');
-        humanLog('DOMAIN COMPONENTS — specific to this idea:');
-        domain.forEach(c => printItem(c, c.domain === 'hook' ? 'hook' : 'component'));
+        out.push(
+          section('DOMAIN COMPONENTS', 'Components specific to this idea.'),
+          records(domain, recordOpts),
+        );
       }
 
-      // FOUNDATION — always (layout/typography/actions).
-      humanLog('');
-      humanLog(`FOUNDATION — always available (layout/text/actions): ${foundation.join(' ')}`);
+      out.push(
+        section('FRAME + FOUNDATION', 'Always-available shell + layout/text/action primitives.'),
+        record({
+          frame,
+          foundation,
+          setup:
+            'import "@astryxdesign/core/reset.css" + "astryx.css"; no <div>/style for layout — use Stack/Grid + tokens',
+        }),
+      );
 
-      // SETUP — so it renders / stays on-system.
-      humanLog('');
-      humanLog('SETUP — import "@astryxdesign/core/reset.css" + "astryx.css". No <div>/style for layout — use Stack/Grid + tokens.');
-      humanLog('');
+      emit(...out);
     });
 }

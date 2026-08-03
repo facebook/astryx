@@ -15,30 +15,10 @@
  */
 
 import {getRunPrefix} from '../../../foundation/env/package-manager.mjs';
-import {humanLog, jsonOut} from '../../../foundation/response/json.mjs';
+import {jsonOut} from '../../../foundation/response/json.mjs';
+import {emit, section, text, records} from '../formatters/index.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {blog as blogApi} from '../../../api/blog/blog.mjs';
-
-/**
- * @param {import('../../../api/blog/blog.type.mjs').BlogListData} data
- * @param {string} run
- */
-function formatList({feedUrl, posts}, run) {
-  const lines = [`\nAstryx blog · feed: ${feedUrl}\n`];
-  if (posts.length === 0) {
-    lines.push('No posts found in the feed.');
-    return lines.join('\n');
-  }
-  for (const p of posts) {
-    lines.push(`  ${p.slug}`);
-    lines.push(`    ${p.title}`);
-    if (p.type) lines.push(`    ${p.type}`);
-    if (p.textUrl) lines.push(`    ${p.textUrl}`);
-    lines.push('');
-  }
-  lines.push(`Read one: ${run} astryx blog <slug>`);
-  return lines.join('\n');
-}
 
 /**
  * @param {import('commander').Command} program
@@ -68,11 +48,24 @@ export function registerBlog(program) {
       }
 
       if (result.type === 'blog.list') {
-        humanLog(formatList(result.data, run));
+        const {feedUrl, posts} = result.data;
+        if (posts.length === 0) {
+          emit(
+            section('Astryx blog', `feed: ${feedUrl}`),
+            text('No posts found in the feed.'),
+          );
+          return;
+        }
+        // One record per post — fields mirror the JSON post shape; empty
+        // fields (type/textUrl) are skipped by record().
+        emit(
+          section('Astryx blog', `feed: ${feedUrl}`),
+          records(posts, {fields: ['slug', 'title', 'type', 'textUrl']}),
+          text(`Read one: ${run} astryx blog <slug>`),
+        );
       } else {
-        // blog.detail — print the feed URL, then the plaintext body.
-        humanLog(`Feed: ${result.data.feedUrl}\n`);
-        humanLog(result.data.text);
+        // blog.detail — print the feed URL, then the plaintext body verbatim.
+        emit(text(`Feed: ${result.data.feedUrl}`), text(result.data.text));
       }
     });
 }

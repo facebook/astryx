@@ -191,10 +191,13 @@ describe('search CLI — exit codes + JSON contract', () => {
     expect(parsed.data.results).toEqual([]);
   });
 
-  it('shows the follow-up command hint in human output', async () => {
+  it('renders each result as a greppable key: value record', async () => {
     const r = await runCli(['search', 'button'], REPO_ROOT);
     expect(r.stdout).toContain('astryx component Button');
-    expect(r.stdout).toContain('[component]');
+    // Fields mirror the JSON object and are line-greppable.
+    expect(r.stdout).toMatch(/^name:\s+Button$/m);
+    expect(r.stdout).toMatch(/^domain:\s+component$/m);
+    expect(r.stdout).toContain('description:');
   });
 
   it('--verbose exits 0 and prints import/match detail', async () => {

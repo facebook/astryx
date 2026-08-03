@@ -19,7 +19,8 @@ import {
 } from '../../lib/component-format.mjs';
 import {resolveTheme} from '../../lib/resolve-theme.mjs';
 import {getCliInvocation} from '../../../../foundation/env/package-manager.mjs';
-import {jsonOut, humanLog} from '../../../../foundation/response/json.mjs';
+import {jsonOut} from '../../../../foundation/response/json.mjs';
+import {emit, section, text, list, record, records, markdown, code} from '../../formatters/index.mjs';
 import {cliError} from '../../lib/cli-error.mjs';
 import {ERROR_CODES} from '../../../../foundation/response/error-codes.mjs';
 import {component as componentApi} from '../../../../api/component/component.mjs';
@@ -114,36 +115,41 @@ export function registerComponent(program) {
       const coreDir = /** @type {string} */ (findCoreDir(process.cwd()));
       const themeData = resolveTheme(process.cwd());
 
+      // Footer shared by the compact + names list views (prose → text()).
+      const listFooter = text(
+        [
+          `Import from the path shown (e.g. import {Button} from '@astryxdesign/core/Button')`,
+          `Usage: ${run} component <name>`,
+        ].join('\n'),
+      );
+
       switch (result.type) {
         case 'component.list': {
           // One list type across all three detail levels; the depth is carried
           // in result.data.detail and the grouped map in result.data.components.
           if (result.data.detail === 'full') {
-            // --detail full — dense per-component docs (signature, props, theming, examples).
-            humanLog(await formatBriefAll(coreDir, {zh, lang, themeData}));
+            // --detail full — dense per-component docs (signature, props, theming,
+            // examples). Verbatim markdown from the shared formatter.
+            emit(markdown(await formatBriefAll(coreDir, {zh, lang, themeData})));
             break;
           }
 
           if (result.data.detail === 'compact') {
-            // --detail compact — name + 1-line description per entry.
+            // --detail compact — one record per entry (name + import + 1-line
+            // description), grouped by category. Fields mirror the JSON keys.
             const groups = result.data.components;
-            humanLog('');
             const entries = Object.entries(groups);
+            /** @type {import('../../formatters/index.mjs').Block[]} */
+            const out = [];
             for (const [cat, items] of entries) {
               // Skip the synthetic group header when there's only one ungrouped category
               const isUngrouped =
                 entries.length === 1 && items.length === 1 && items[0]?.name === cat;
-              if (!isUngrouped) humanLog(`${cat} (group)`);
-              for (const item of items) {
-                const importHint = item.import ? `  ← ${item.import}` : '';
-                const desc = item.description ? ` — ${item.description}` : '';
-                humanLog(`  XDS${item.name}${importHint}${desc}`);
-              }
-              humanLog('');
+              if (!isUngrouped) out.push(section(`${cat} (group)`));
+              out.push(records(items, {fields: ['name', 'import', 'description']}));
             }
-            humanLog(`Import from the path shown (e.g. import {Button} from '@astryxdesign/core/Button')`);
-            humanLog(`Usage: ${run} component <name>`);
-            humanLog('');
+            out.push(listFooter);
+            emit(...out);
             break;
           }
 
@@ -172,105 +178,104 @@ export function registerComponent(program) {
             if (isCollision(item.name)) return `  [${item.package}]`;
             return '';
           };
+          // The import path hint stays inline (`name <- importPath`), ASCII arrow.
+          /** @param {import('../../../../api/component/component.type.mjs').ComponentListEntry} item */
+          const entryLine = item =>
+            `${item.name}  <- ${resolveImportPath(coreDir, item.name)}${pkgSuffix(item)}`;
 
           if (options.category) {
             const [cat, comps] = Object.entries(groups)[0];
-            humanLog(`\n${cat}:`);
-            for (const item of comps) {
-              const importPath = resolveImportPath(coreDir, item.name);
-              humanLog(`  ${item.name}  ← ${importPath}${pkgSuffix(item)}`);
-            }
-            humanLog('');
-          } else {
-            humanLog('');
-            for (const [key, comps] of Object.entries(groups)) {
-              const isUngrouped = comps.length === 1 && comps[0]?.name === key;
-              if (isUngrouped) {
-                const item = comps[0];
-                const importPath = resolveImportPath(coreDir, item.name);
-                humanLog(`${item.name}  ← ${importPath}${pkgSuffix(item)}`);
-              } else {
-                humanLog(`${key} (group)`);
-                for (const item of comps) {
-                  const importPath = resolveImportPath(coreDir, item.name);
-                  humanLog(`  ${item.name}  ← ${importPath}${pkgSuffix(item)}`);
-                }
-              }
-            }
-            humanLog('');
-            humanLog(`Import from the path shown (e.g. import {Button} from '@astryxdesign/core/Button')`);
-            humanLog(`Usage: ${run} component <name>`);
-            humanLog('');
+            emit(section(`${cat}:`), list(comps.map(entryLine)));
+            break;
           }
+
+          /** @type {import('../../formatters/index.mjs').Block[]} */
+          const out = [];
+          // Batch consecutive ungrouped singles into one tight list; render each
+          // group as its own section + list.
+          /** @type {string[]} */
+          let singles = [];
+          const flushSingles = () => {
+            if (singles.length) {
+              out.push(list(singles));
+              singles = [];
+            }
+          };
+          for (const [key, comps] of Object.entries(groups)) {
+            const isUngrouped = comps.length === 1 && comps[0]?.name === key;
+            if (isUngrouped) {
+              singles.push(entryLine(comps[0]));
+            } else {
+              flushSingles();
+              out.push(section(`${key} (group)`), list(comps.map(entryLine)));
+            }
+          }
+          flushSingles();
+          out.push(listFooter);
+          emit(...out);
           break;
         }
 
         case 'component.detail': {
-          if (detail === 'brief') {
-            const resolvedName = (name || '').replace(/^XDS/, '');
-            const importHint = resolveImportPath(coreDir, resolvedName);
-            humanLog(formatBrief(result.data, resolvedName, importHint, {themeData}));
-          } else if (detail === 'compact') {
-            const resolvedName = (name || '').replace(/^XDS/, '');
-            const importHint = resolveImportPath(coreDir, resolvedName);
-            humanLog(formatCompact(result.data, resolvedName, importHint));
-          } else {
-            const resolvedName = (name || '').replace(/^XDS/, '');
-            const importHint = resolveImportPath(coreDir, resolvedName);
-            humanLog(formatFull(result.data, {themeData, importHint}));
-          }
-          const compName = (name || '').replace(/^XDS/, '');
-          const related = await findRelatedBlocks(compName);
-          if (related.length > 0) {
-            humanLog('\nRelated block templates:\n');
-            for (const b of related) {
-              humanLog(`  ${b.dirName}`);
-              if (b.description) humanLog(`    ${b.description}`);
-            }
-            humanLog('');
-          }
+          const resolvedName = (name || '').replace(/^XDS/, '');
+          const importHint = resolveImportPath(coreDir, resolvedName);
+          const doc =
+            detail === 'brief'
+              ? markdown(formatBrief(result.data, resolvedName, importHint, {themeData}))
+              : detail === 'compact'
+                ? markdown(formatCompact(result.data, resolvedName, importHint))
+                : markdown(formatFull(result.data, {themeData, importHint}));
+          const related = await findRelatedBlocks(resolvedName);
+          emit(
+            doc,
+            related.length > 0 && section('Related block templates'),
+            related.length > 0 && records(related, {fields: ['dirName', 'description']}),
+          );
           break;
         }
 
         case 'component.detail.props': {
           const resolvedName = (name || '').replace(/^XDS/, '');
-          humanLog(formatProps({props: result.data}, resolvedName));
+          emit(markdown(formatProps({props: result.data}, resolvedName)));
           break;
         }
 
         case 'component.detail.source': {
-          humanLog(result.data.source);
+          emit(code(result.data.source));
           break;
         }
 
         case 'component.detail.showcase': {
-          humanLog(result.data.source);
+          emit(code(result.data.source));
           break;
         }
 
         case 'component.detail.blocks': {
           const {showcase, examples, related} = result.data;
+          /** @type {import('../../formatters/index.mjs').Block[]} */
+          const out = [];
           if (showcase) {
-            humanLog(`\nShowcase: ${showcase.displayName}`);
-            if (showcase.description) humanLog(`  ${showcase.description}`);
+            out.push(
+              section('Showcase'),
+              record(showcase, {fields: ['displayName', 'description']}),
+            );
           }
           if (examples.length > 0) {
-            humanLog('\nExamples:\n');
-            for (const b of examples) {
-              humanLog(`  ${b.name}`);
-              if (b.description) humanLog(`    ${b.description}`);
-            }
+            out.push(
+              section('Examples'),
+              records(examples, {fields: ['name', 'description']}),
+            );
           }
           if (related.length > 0) {
-            humanLog(`\nRelated: ${related.length} blocks that use ${result.data.component}\n`);
-            for (const b of related) {
-              humanLog(`  ${b.name}`);
-            }
+            out.push(
+              section(`Related: ${related.length} blocks that use ${result.data.component}`),
+              list(related.map(b => b.name)),
+            );
           }
           if (!showcase && examples.length === 0 && related.length === 0) {
-            humanLog(`\nNo blocks found for ${result.data.component}`);
+            out.push(text(`No blocks found for ${result.data.component}`));
           }
-          humanLog('');
+          emit(...out);
           break;
         }
       }

@@ -17,16 +17,10 @@
  */
 
 import {getCliInvocation, formatCliCommand} from '../../../foundation/env/package-manager.mjs';
-import {jsonOut, humanLog} from '../../../foundation/response/json.mjs';
+import {jsonOut} from '../../../foundation/response/json.mjs';
+import {emit, title, text, records} from '../formatters/index.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {search as searchApi, SEARCH_DOMAINS} from '../../../api/search/search.mjs';
-
-const DOMAIN_LABEL = {
-  component: 'component',
-  hook: 'hook',
-  doc: 'docs',
-  template: 'template',
-};
 
 /**
  * @param {import('commander').Command} program
@@ -71,31 +65,24 @@ export function registerSearch(program) {
 
       // No matches is a valid, successful outcome — clean message, exit 0.
       if (results.length === 0) {
-        humanLog('');
-        humanLog(`No results for "${q}".`);
-        humanLog('');
-        humanLog(`Try a broader term, or browse: ${run} component --list`);
-        humanLog('');
+        emit(
+          text(`No results for "${q}".`),
+          text(`Try a broader term, or browse: ${run} component --list`),
+        );
         return;
       }
 
-      humanLog('');
-      humanLog(`Results for "${q}" (${results.length}):`);
-      humanLog('');
-      for (const r of results) {
-        const tag = `[${DOMAIN_LABEL[r.domain] || r.domain}]`.padEnd(12);
-        const display = r.domain === 'template' && r.displayName ? r.displayName : r.name;
-        humanLog(`  ${tag} ${display}`);
-        if (r.description) {
-          humanLog(`               ${r.description}`);
-        }
-        humanLog(`               → ${formatCliCommand(r.command)}`);
-        if (options.verbose) {
-          if (r.import) humanLog(`               import: ${r.import}`);
-          humanLog(`               match: ${r.reason} (score ${r.score})`);
-        }
-        humanLog('');
-      }
+      // The text view is just a projection of the JSON: one record per result,
+      // fields in a fixed order (missing ones skipped), command prefixed for the
+      // caller's package manager. Ranked order is preserved (best match first).
+      const fields = options.detail
+        ? ['name', 'domain', 'displayName', 'score', 'reason', 'import', 'description', 'command']
+        : ['name', 'domain', 'displayName', 'import', 'description', 'command'];
+
+      emit(
+        title(`Results for "${q}" (${results.length})`),
+        records(results, {fields, format: {command: formatCliCommand}}),
+      );
     });
 }
 

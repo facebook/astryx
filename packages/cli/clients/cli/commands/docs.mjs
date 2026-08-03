@@ -13,7 +13,8 @@
  */
 
 import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
-import {jsonOut, humanLog} from '../../../foundation/response/json.mjs';
+import {jsonOut} from '../../../foundation/response/json.mjs';
+import {emit, title, records, text, markdown} from '../formatters/index.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {docs as docsApi} from '../../../api/docs/docs.mjs';
 
@@ -76,8 +77,8 @@ function formatBlock(block, detail) {
 
     case 'list': {
       const prefix = block.style === 'ordered' ? (/** @type {number} */ i) => `${i + 1}. `
-        : block.style === 'dont' ? () => '❌ '
-        : block.style === 'do' ? () => '✓ '
+        : block.style === 'dont' ? () => 'x '
+        : block.style === 'do' ? () => '+ '
         : () => '- ';
       return block.items.map((item, i) => `${prefix(i)}${item}`).join('\n');
     }
@@ -158,22 +159,28 @@ export function registerDocs(program) {
 
       switch (result.type) {
         case 'docs.list': {
-          humanLog('\nAvailable docs:\n');
-          for (const entry of result.data) {
-            humanLog(`  ${entry.topic.padEnd(14)} ${entry.description}`);
-          }
-          humanLog(`\nUsage: ${run} docs <topic>`);
-          humanLog(`       ${run} docs <topic> <section>\n`);
+          // The text view mirrors the JSON list: one record per topic (topic +
+          // description), then the usage footer as plain prose.
+          emit(
+            title('Available docs'),
+            records(result.data, {fields: ['topic', 'description']}),
+            text(
+              [
+                `Usage: ${run} docs <topic>`,
+                `       ${run} docs <topic> <section>`,
+              ].join('\n'),
+            ),
+          );
           break;
         }
 
         case 'docs.detail': {
-          humanLog(formatReferenceFull(result.data, detail));
+          emit(markdown(formatReferenceFull(result.data, detail)));
           break;
         }
 
         case 'docs.detail.section': {
-          humanLog(formatSection(result.data, detail));
+          emit(markdown(formatSection(result.data, detail)));
           break;
         }
       }

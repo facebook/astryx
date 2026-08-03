@@ -20,7 +20,8 @@ import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {spawn} from 'node:child_process';
 import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
-import {jsonOut, humanLog} from '../../../foundation/response/json.mjs';
+import {jsonOut} from '../../../foundation/response/json.mjs';
+import {emit, title, text, list, code} from '../formatters/index.mjs';
 import {logger} from '../../../api/logger.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
@@ -91,10 +92,10 @@ async function runThemeBuildWatch(file, filePath, options) {
       return;
     }
     building = true;
-    humanLog(`\n♻️  Change detected — rebuilding ${rel}...`);
+    emit(text(`\nChange detected — rebuilding ${rel}...`));
     await runThemeBuildOnceChild(file, options);
     building = false;
-    humanLog(`\n👀 Watching ${rel} for changes — press Ctrl-C to stop.`);
+    emit(text(`\nWatching ${rel} for changes — press Ctrl-C to stop.`));
     if (queued) {
       queued = false;
       rebuild();
@@ -116,18 +117,44 @@ async function runThemeBuildWatch(file, filePath, options) {
   // Announce readiness only AFTER fs.watch is armed — the log is the "safe to
   // edit" signal (tests and humans rely on it), so printing it before the watch
   // is registered would race: a change in that gap is silently missed.
-  humanLog(`\n👀 Watching ${rel} for changes — press Ctrl-C to stop.`);
+  emit(text(`\nWatching ${rel} for changes — press Ctrl-C to stop.`));
 
   await new Promise((/** @type {(value?: void) => void} */ resolve) => {
     const stop = () => {
       clearTimeout(debounce);
       watcher.close();
-      humanLog('\nStopped watching.');
+      emit(text('\nStopped watching.'));
       resolve();
     };
     process.once('SIGINT', stop);
     process.once('SIGTERM', stop);
   });
+}
+
+/**
+ * Emit the bundled themes as a bulleted list plus the `theme add` usage hint —
+ * the human projection of a `theme.list` envelope. Shared by `theme list` and
+ * the list affordance of `theme add` (bare `theme add` / `--list`).
+ * @param {import('../../../api/theme/theme.type.mjs').ThemeListEntry[]} themes
+ */
+function printThemeList(themes) {
+  if (themes.length === 0) {
+    emit(text('No themes are bundled with this CLI build.'));
+    return;
+  }
+  const run = getCliInvocation();
+  emit(
+    title('Themes'),
+    list(
+      themes.map(t => {
+        const head = t.maintained ? `${t.slug} (maintained)` : t.slug;
+        return t.description ? [head, t.description] : head;
+      }),
+    ),
+    text(
+      `Usage:\n  ${run} theme add <slug> [target-path]   Scaffold a theme file you own`,
+    ),
+  );
 }
 
 /**
@@ -266,21 +293,7 @@ export function registerTheme(program) {
 
       if (json) return jsonOut(result);
 
-      const themes = result.data;
-      if (themes.length === 0) {
-        humanLog('\nNo themes are bundled with this CLI build.\n');
-        return;
-      }
-      humanLog('\nThemes:\n');
-      for (const t of themes) {
-        const tag = t.maintained ? ' (maintained)' : '';
-        humanLog(`  ${t.slug}${tag}`);
-        if (t.description) humanLog(`    ${t.description}`);
-      }
-      humanLog('\nUsage:');
-      humanLog(
-        `  ${getCliInvocation()} theme add <slug> [target-path]   Scaffold a theme file you own\n`,
-      );
+      printThemeList(result.data);
     });
 
   theme
@@ -324,41 +337,30 @@ export function registerTheme(program) {
         if (json) return jsonOut(result);
 
         if (result.type === 'theme.list') {
-          const themes = result.data;
-          humanLog('\nThemes:\n');
-          for (const t of themes) {
-            const tag = t.maintained ? ' (maintained)' : '';
-            humanLog(`  ${t.slug}${tag}`);
-            if (t.description) humanLog(`    ${t.description}`);
-          }
-          humanLog('\nUsage:');
-          humanLog(
-            `  ${getCliInvocation()} theme add <slug> [target-path]   Scaffold a theme file you own\n`,
-          );
+          printThemeList(result.data);
           return;
         }
 
         // theme.add — print where files landed + how to use the theme.
         const {displayName, outputDir, entry, exportName, files} = result.data;
-        humanLog(`\n✓ Added ${displayName} theme to ${outputDir}/`);
-        for (const f of files) {
-          humanLog(`  ${outputDir}/${f}`);
-        }
         const entryModule = importSpecifier(
           outputDir,
           entry.replace(/\.tsx?$/, ''),
         );
-        humanLog(`
-Use it in your app (import path is relative to a file in src/ — adjust if yours lives elsewhere):
-
-  import { ${exportName} } from '${entryModule}';
-
-  <Theme theme={${exportName}}>
-    <App />
-  </Theme>
-
-This is your copy of the ${displayName} theme — edit ${entry} to make it your own.
-`);
+        emit(
+          text(`[ok] Added ${displayName} theme to ${outputDir}/`),
+          list(files.map(f => `${outputDir}/${f}`)),
+          text(
+            'Use it in your app (import path is relative to a file in src/ — adjust if yours lives elsewhere):',
+          ),
+          code(
+            `import { ${exportName} } from '${entryModule}';\n\n` +
+              `<Theme theme={${exportName}}>\n  <App />\n</Theme>`,
+          ),
+          text(
+            `This is your copy of the ${displayName} theme — edit ${entry} to make it your own.`,
+          ),
+        );
       },
     );
 }

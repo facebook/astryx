@@ -14,7 +14,8 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {jsonOut, humanLog} from '../../../foundation/response/json.mjs';
+import {jsonOut} from '../../../foundation/response/json.mjs';
+import {emit, section, text, list, record, code, WARN} from '../formatters/index.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {layoutExpand, layoutCheck, layoutGrammar} from '../../../api/layout/layout.mjs';
@@ -136,17 +137,30 @@ export function registerLayout(program) {
       }
       if (json) return jsonOut(result);
 
-      for (const warning of result.data.warnings) humanLog(`⚠ ${warning}`);
-      if (result.data.written) {
-        humanLog(`\n✓ Expanded to ${result.data.written}`);
-        humanLog(`  Components: ${result.data.componentsUsed.join(', ')}`);
-        if (result.data.todos.length > 0) {
-          humanLog(`  TODOs: ${result.data.todos.length} (search for "TODO(xle)")`);
-        }
-        humanLog('');
-      } else {
-        humanLog(result.data.code);
+      /** @type {import('../formatters/index.mjs').Block[]} */
+      const out = [];
+      if (result.data.warnings.length > 0) {
+        out.push(text(result.data.warnings.map(w => `${WARN} ${w}`).join('\n')));
       }
+      if (result.data.written) {
+        out.push(
+          text(`[ok] Expanded to ${result.data.written}`),
+          record(
+            {
+              components: result.data.componentsUsed,
+              todos:
+                result.data.todos.length > 0
+                  ? `${result.data.todos.length} (search for "TODO(xle)")`
+                  : '',
+            },
+            {labels: {components: 'Components', todos: 'TODOs'}},
+          ),
+        );
+      } else {
+        // Raw expanded TSX (no target path) — preformatted, emitted verbatim.
+        out.push(code(result.data.code));
+      }
+      emit(...out);
     });
 
   layoutCmd
@@ -188,21 +202,27 @@ export function registerLayout(program) {
 
       const {valid, form, errors, warnings, compact, outline} = result.data;
       if (!valid) {
-        humanLog(`\n✗ Invalid (${errors.length} error${errors.length === 1 ? '' : 's'}):`);
-        for (const e of errors) {
-          humanLog(`  - ${e.formatted}`);
-          if (e.suggestions && e.suggestions.length > 0) humanLog(`    did you mean: ${e.suggestions.join(', ')}?`);
-        }
-        humanLog('');
+        // Each error: the formatted issue, with a hanging "did you mean" line.
+        const items = errors.map(e =>
+          e.suggestions && e.suggestions.length > 0
+            ? [e.formatted, `did you mean: ${e.suggestions.join(', ')}?`]
+            : [e.formatted],
+        );
+        emit(
+          text(`[fail] Invalid (${errors.length} error${errors.length === 1 ? '' : 's'}):`),
+          list(items),
+        );
         return;
       }
-      humanLog(`\n✓ Valid (parsed as ${form})`);
-      for (const warning of warnings) humanLog(`⚠ ${warning}`);
-      humanLog('\ncompact:');
-      humanLog(`  ${compact}`);
-      humanLog('\noutline:');
-      humanLog(outline.split('\n').map(l => `  ${l}`).join('\n'));
-      humanLog('');
+
+      /** @type {import('../formatters/index.mjs').Block[]} */
+      const out = [text(`[ok] Valid (parsed as ${form})`)];
+      if (warnings.length > 0) {
+        out.push(text(warnings.map(w => `${WARN} ${w}`).join('\n')));
+      }
+      // The canonical compact/outline surfaces are preformatted — emit verbatim.
+      out.push(section('compact'), code(compact), section('outline'), code(outline));
+      emit(...out);
     });
 
   layoutCmd
@@ -220,6 +240,7 @@ export function registerLayout(program) {
         return;
       }
       if (json) return jsonOut(result);
-      humanLog(result.data.text);
+      // The cheatsheet is a preformatted document — emit verbatim.
+      emit(code(result.data.text));
     });
 }

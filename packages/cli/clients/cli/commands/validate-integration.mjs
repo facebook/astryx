@@ -14,7 +14,8 @@
  * an integration package is not a failure).
  */
 
-import {jsonOut, humanLog} from '../../../foundation/response/json.mjs';
+import {jsonOut} from '../../../foundation/response/json.mjs';
+import {emit, title, text, records} from '../formatters/index.mjs';
 import {
   validateIntegration,
   summarizeIssues,
@@ -27,21 +28,24 @@ import {
 function printHuman(data) {
   const label =
     data.version != null ? `${data.name}@${data.version}` : data.name;
-  humanLog(`Validating integration: ${label}`);
 
   if (data.issues.length === 0) {
-    humanLog('\n\u2713 No issues found.');
+    emit(
+      title(`Validating integration: ${label}`),
+      text('[ok] No issues found.'),
+    );
     return;
   }
 
-  humanLog('');
-  for (const issue of data.issues) {
-    humanLog(`  ${issue.severity} ${issue.code}: ${issue.message}`);
-  }
-
+  // The issue list is a projection of the JSON: one record per issue, fields
+  // mirroring the JSON keys (severity/code/message).
   const {errors, warnings} = summarizeIssues(data.issues);
-  humanLog(
-    `\n${data.issues.length} issue(s): ${errors} error(s), ${warnings} warning(s)`,
+  emit(
+    title(`Validating integration: ${label}`),
+    records(data.issues, {fields: ['severity', 'code', 'message']}),
+    text(
+      `${data.issues.length} issue(s): ${errors} error(s), ${warnings} warning(s)`,
+    ),
   );
 }
 
@@ -77,7 +81,7 @@ export function registerValidateIntegration(program) {
         jsonOut(result);
       } else if (result.data.name === null) {
         // No-arg + no local manifest: guidance, not an error.
-        humanLog(NO_MANIFEST_GUIDANCE);
+        emit(text(NO_MANIFEST_GUIDANCE));
       } else {
         printHuman(result.data);
       }

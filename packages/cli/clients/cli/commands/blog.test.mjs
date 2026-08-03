@@ -82,7 +82,8 @@ describe('blog CLI — json-enabled', () => {
   it('blog (non-json) still prints the human feed listing', async () => {
     const {status, stdout} = await runCli(['blog']);
     expect(status).toBe(0);
-    expect(stdout).toMatch(/Astryx blog · feed:/);
+    expect(stdout).toMatch(/Astryx blog/);
+    expect(stdout).toMatch(/feed:/);
     expect(stdout).toMatch(/how-astryx-works/);
   });
 
