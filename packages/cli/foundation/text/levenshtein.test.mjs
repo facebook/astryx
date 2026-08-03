@@ -37,4 +37,17 @@ describe('levenshteinDistance', () => {
   it('handles unicode', () => {
     expect(d('café', 'cafe')).toBe(1);
   });
+
+  it('short-circuits pairs whose length gap exceeds every caller threshold', () => {
+    // The DoS guard bails out with a large sentinel once |m − n| > 5, so a
+    // pathological long query never runs the O(m·n) DP.
+    expect(d('a', 'a'.repeat(10_000))).toBe(999);
+  });
+
+  it('still computes the true distance up to a length gap of 5', () => {
+    // The gap must stay ≥ the loosest caller threshold (hook suggester = 5),
+    // so a real 5-away typo isn't dropped by the short-circuit.
+    expect(d('use', 'useMedia')).toBe(5); // 5 pure insertions
+  });
 });
+
