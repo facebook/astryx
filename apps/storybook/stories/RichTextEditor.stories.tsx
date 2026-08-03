@@ -8,6 +8,7 @@ import {
   markdownToEditorStateJSON,
   editorStateJSONToMarkdown,
   RichTextEditorToolbar,
+  RichTextEditorAutoLinkPlugin,
   type RichTextEditorRef,
 } from '@astryxdesign/lab';
 import type {EditorState} from 'lexical';
@@ -52,6 +53,31 @@ export const WithToolbar: Story = {
   },
 };
 
+export const WithLinks: Story = {
+  args: {
+    label: 'Notes',
+    placeholder:
+      'Select text and press the Link button (or Cmd/Ctrl+K) to add a link…',
+    // The toolbar's Link button creates new-tab links by default (target/rel
+    // baked into the node). No extra plugin needed.
+    plugins: <RichTextEditorToolbar />,
+  },
+};
+
+export const WithAutoLink: Story = {
+  args: {
+    label: 'Notes',
+    placeholder: 'Type a URL like https://astryx.dev and it auto-links…',
+    plugins: (
+      <>
+        <RichTextEditorToolbar />
+        {/* Auto-linkify typed/pasted URLs + emails (open in a new tab). */}
+        <RichTextEditorAutoLinkPlugin />
+      </>
+    ),
+  },
+};
+
 export const WithDescription: Story = {
   args: {
     label: 'Release notes',
@@ -72,7 +98,8 @@ export const WithCharacterLimit: Story = {
   args: {
     label: 'Bio',
     maxLength: 80,
-    description: 'A character counter appears below the editor when maxLength is set.',
+    description:
+      'A character counter appears below the editor when maxLength is set.',
     placeholder: 'Type past 80 characters to see the counter turn red…',
   },
 };
@@ -190,7 +217,9 @@ export const ImperativeRef = {
             onClick={() => {
               const state = ref.current?.getEditorState();
               const text = state?.read(() => $getRoot().getTextContent());
-              setReadout(`getEditorState() text content: ${JSON.stringify(text)}`);
+              setReadout(
+                `getEditorState() text content: ${JSON.stringify(text)}`,
+              );
             }}>
             getEditorState()
           </button>
@@ -282,7 +311,7 @@ export const MarkdownSerializers = {
           </div>
           <textarea
             value={markdown}
-            onChange={(e) => setMarkdown(e.target.value)}
+            onChange={e => setMarkdown(e.target.value)}
             rows={10}
             style={{
               width: '100%',

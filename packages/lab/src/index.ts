@@ -252,4 +252,12 @@ export {
   RichTextEditorToolbar,
   type RichTextEditorToolbarProps,
   RICHTEXT_ICON_KEYS,
+  RichTextEditorAutoLinkPlugin,
+  type RichTextEditorAutoLinkPluginProps,
+  DEFAULT_LINK_MATCHERS,
+  NEW_TAB_LINK_ATTRIBUTES,
+  sanitizeUrl,
+  validateUrl,
+  URL_MATCHER,
+  EMAIL_MATCHER,
 } from './RichTextEditor';

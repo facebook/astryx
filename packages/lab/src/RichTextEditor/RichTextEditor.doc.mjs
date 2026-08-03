@@ -163,7 +163,17 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Add a formatting toolbar by rendering RichTextEditorToolbar in the plugins slot: plugins={<RichTextEditorToolbar />}. It is built from Astryx Toolbar/ToggleButton primitives (so it matches the theme), syncs active states to the selection, and covers bold/italic/underline/strikethrough/code, headings, quote, lists, and undo/redo. Compose extra controls via its endContent prop.',
+          'Add a formatting toolbar by rendering RichTextEditorToolbar in the plugins slot: plugins={<RichTextEditorToolbar />}. It is built from Astryx Toolbar/ToggleButton primitives (so it matches the theme), syncs active states to the selection, and covers bold/italic/underline/strikethrough/code, links, headings, quote, lists, and undo/redo. Compose extra controls via its endContent prop.',
+      },
+      {
+        guidance: true,
+        description:
+          'Links: the toolbar Link button (on by default; disable with hasLink={false}) and Cmd/Ctrl+K toggle a link on the selection via Lexical TOGGLE_LINK_COMMAND. It prompts for a URL with window.prompt by default; pass promptForUrl to plug in a custom prompt (e.g. an Astryx Dialog or floating popover). Entered URLs are sanitized (only http/https/mailto/tel are written; javascript:/data: are rejected). Links open in a new tab by default — target=_blank and rel=noopener noreferrer are written into the link node data (so they serialize and round-trip), not patched onto the DOM; set linkOpensInNewTab={false} for same-tab links. Pressing the button while a link is selected removes it.',
+      },
+      {
+        guidance: true,
+        description:
+          'Auto-linking: render RichTextEditorAutoLinkPlugin in the plugins slot to turn typed/pasted URLs and emails into links automatically. Created links open in a new tab by default (target=_blank, rel=noopener noreferrer, baked into the node). Pass matchers to recognize additional patterns (build them with createLinkMatcherWithRegExp).',
       },
       {
         guidance: true,
