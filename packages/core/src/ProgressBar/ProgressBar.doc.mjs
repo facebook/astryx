@@ -58,9 +58,9 @@ export const docs = {
     },
     {
       name: 'marks',
-      type: 'ReadonlyArray<{value: number; label?: string}>',
+      type: 'ReadonlyArray<{value: number; label: string}>',
       description:
-        'Fixed target marks drawn on the track at values in the same 0..max scale as value (e.g. a goal line). They stay visible whether progress is below or past them. A mark with a label reveals it via a tooltip on hover/focus (and names it for assistive tech). Ignored when indeterminate.',
+        'Fixed target marks drawn on the track at values in the same 0..max scale as value (e.g. a goal line). They stay visible whether progress is below or past them. Each mark requires a label — it is the mark\'s accessible name and the text revealed via a tooltip on hover/focus. Ignored when indeterminate.',
     },
     {
       name: 'isDisabled',
@@ -160,9 +160,9 @@ export const docsZh = {
     },
     {
       name: 'marks',
-      type: 'ReadonlyArray<{value: number; label?: string}>',
+      type: 'ReadonlyArray<{value: number; label: string}>',
       description:
-        '在轨道上按与 value 相同的 0..max 刻度绘制的固定目标标记（例如目标线）。无论进度低于还是超过它们都保持可见。带 label 的标记会在悬停/聚焦时通过工具提示显示（并为辅助技术命名）。不确定模式下忽略。',
+        '在轨道上按与 value 相同的 0..max 刻度绘制的固定目标标记（例如目标线）。无论进度低于还是超过它们都保持可见。每个标记都必须提供 label——它既是标记的无障碍名称，也是悬停/聚焦时通过工具提示显示的文本。不确定模式下忽略。',
     },
     {
       name: 'isDisabled',

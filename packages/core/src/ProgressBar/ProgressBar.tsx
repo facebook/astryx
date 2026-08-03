@@ -54,7 +54,7 @@ export type ProgressBarVariant = keyof ProgressBarVariantMap;
  *
  * Positioned by `value` in the same `0..max` scale as the bar's `value` prop —
  * mirroring the object shape of Slider's `marks` so the two APIs stay
- * consistent and this is extensible to visible labels later.
+ * consistent.
  */
 export interface ProgressBarMark {
   /**
@@ -63,12 +63,13 @@ export interface ProgressBarMark {
    */
   value: number;
   /**
-   * Labels the mark. When provided, the mark is wrapped in a `Tooltip`
-   * that reveals the label on hover and keyboard focus — giving sighted users
-   * a visible affordance and assistive tech an accessible name. Without a
-   * label the mark is purely decorative (`aria-hidden`).
+   * Names the mark. A mark stands for something meaningful on the track — a
+   * goal, a threshold, a quarter target — so a label is required: it is the
+   * mark's accessible name and the text revealed in a `Tooltip` on hover and
+   * keyboard focus. Can be the value itself (e.g. `'70%'`) or something richer
+   * (e.g. `'Q1 target: 50%'`).
    */
-  label?: string;
+  label: string;
 }
 
 export interface ProgressBarProps extends BaseProps<HTMLDivElement> {
@@ -456,17 +457,15 @@ export function ProgressBar({
         )}
         {/* Target marks — children of the progressbar element (unchanged),
             layered above the fill so they show whether progress is below or
-            past them. An unlabeled mark is decorative (`aria-hidden`); a
-            labeled mark is wrapped in a `Tooltip` (no `role="img"`), so its
-            label is both visible on hover/focus and named for assistive tech
-            without adding a labeled child to the progressbar's a11y subtree. */}
+            past them. Each mark is labeled, so it is a focusable Tooltip
+            trigger: the label is visible on hover/focus and names the mark for
+            assistive tech via the Tooltip's aria-describedby, without adding a
+            labeled child to the progressbar's own a11y subtree. */}
         {resolvedMarks.map(mark => {
-          const isLabeled = mark.label != null;
           const markEl = (
             <span
-              key={`${mark.value}:${mark.label ?? ''}`}
-              tabIndex={isLabeled ? 0 : undefined}
-              aria-hidden={isLabeled ? undefined : true}
+              key={`${mark.value}:${mark.label}`}
+              tabIndex={0}
               {...mergeProps(
                 themeProps('progressbar-mark'),
                 stylex.props(styles.mark),
@@ -474,14 +473,14 @@ export function ProgressBar({
               style={{insetInlineStart: `${mark.pct}%`}}
             />
           );
-          return isLabeled ? (
+          // The tooltip loads lazily (Suspense); the bare mark is the fallback,
+          // so the tick is always visible and the label attaches once ready.
+          return (
             <Suspense key={`${mark.value}:${mark.label}`} fallback={markEl}>
-              <LazyProgressBarMarkTooltip content={mark.label as string}>
+              <LazyProgressBarMarkTooltip content={mark.label}>
                 {markEl}
               </LazyProgressBarMarkTooltip>
             </Suspense>
-          ) : (
-            markEl
           );
         })}
       </div>
