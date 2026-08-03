@@ -35,10 +35,12 @@ function Tree({
   collapsed = NO_NODES,
   expanded = NO_NODES,
   onActivate,
+  dir,
 }: {
   collapsed?: Node[];
   expanded?: Node[];
   onActivate?: (id: string | undefined) => boolean | undefined;
+  dir?: 'ltr' | 'rtl';
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const nodes = isOpen && expanded.length > 0 ? expanded : collapsed;
@@ -47,7 +49,7 @@ function Tree({
     onActivate: onActivate ? (_item, id) => onActivate(id) : undefined,
   });
   return (
-    <ul ref={treeRef} role="tree" onKeyDown={handleKeyDown}>
+    <ul ref={treeRef} role="tree" dir={dir} onKeyDown={handleKeyDown}>
       {nodes.map(n => (
         <li
           key={n.id}
@@ -169,6 +171,56 @@ describe('useTreeFocus tree semantics (Arrow Left/Right)', () => {
 
     fireEvent.keyDown(tree, {key: 'ArrowLeft'}); // expanded parent → collapse
     expect(screen.queryByTestId('c1')).not.toBeInTheDocument();
+  });
+});
+
+describe('useTreeFocus RTL tree semantics (WAI-ARIA Tree View)', () => {
+  const COLLAPSED: Node[] = [
+    {id: 'p', label: 'Parent', level: 1, expanded: false},
+  ];
+  const EXPANDED: Node[] = [
+    {id: 'p', label: 'Parent', level: 1, expanded: true},
+    {id: 'c1', label: 'Child 1', level: 2},
+    {id: 'c2', label: 'Child 2', level: 2},
+  ];
+
+  it('auto-detects dir="rtl": ArrowLeft expands a collapsed parent, then enters the first child', () => {
+    render(<Tree collapsed={COLLAPSED} expanded={EXPANDED} dir="rtl" />);
+    const tree = screen.getByRole('tree');
+    screen.getByTestId('p').focus();
+
+    expect(screen.queryByTestId('c1')).not.toBeInTheDocument();
+    fireEvent.keyDown(tree, {key: 'ArrowLeft'}); // RTL: descend → expand
+    expect(screen.getByTestId('c1')).toBeInTheDocument();
+    expect(screen.getByTestId('p')).toHaveFocus();
+
+    fireEvent.keyDown(tree, {key: 'ArrowLeft'}); // RTL: descend → into first child
+    expect(screen.getByTestId('c1')).toHaveFocus();
+  });
+
+  it('auto-detects dir="rtl": ArrowRight moves to parent, then collapses', () => {
+    render(<Tree collapsed={COLLAPSED} expanded={EXPANDED} dir="rtl" />);
+    const tree = screen.getByRole('tree');
+    screen.getByTestId('p').focus();
+    fireEvent.keyDown(tree, {key: 'ArrowLeft'}); // expand
+    fireEvent.keyDown(tree, {key: 'ArrowLeft'}); // into child 1
+    expect(screen.getByTestId('c1')).toHaveFocus();
+
+    fireEvent.keyDown(tree, {key: 'ArrowRight'}); // RTL: ascend → child leaf → parent
+    expect(screen.getByTestId('p')).toHaveFocus();
+
+    fireEvent.keyDown(tree, {key: 'ArrowRight'}); // RTL: ascend → expanded parent → collapse
+    expect(screen.queryByTestId('c1')).not.toBeInTheDocument();
+  });
+
+  it('vertical keys (ArrowDown/ArrowUp) are unaffected by RTL', () => {
+    render(<Tree collapsed={FLAT} dir="rtl" />);
+    const tree = screen.getByRole('tree');
+    screen.getByTestId('a').focus();
+    fireEvent.keyDown(tree, {key: 'ArrowDown'});
+    expect(screen.getByTestId('b')).toHaveFocus();
+    fireEvent.keyDown(tree, {key: 'ArrowUp'});
+    expect(screen.getByTestId('a')).toHaveFocus();
   });
 });
 

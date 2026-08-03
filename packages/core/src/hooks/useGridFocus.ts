@@ -90,13 +90,15 @@ export interface UseGridFocusOptions {
   onPageDown?: () => void;
 
   /**
-   * Whether the grid is in a right-to-left context. When true, ArrowLeft and
-   * ArrowRight are swapped so horizontal navigation follows visual direction.
+   * @deprecated Direction is auto-detected from the container's computed
+   * `direction` — omit this. The explicit override is redundant (there's no
+   * valid reason to force RTL arrows in an LTR context) and will be removed in
+   * an upcoming major.
    *
-   * When omitted, the direction is auto-detected from the container's computed
-   * `direction` (read lazily on keydown, only for horizontal arrow keys), so
-   * grids inside `dir="rtl"` subtrees flip automatically. Pass an explicit
-   * boolean to override detection.
+   * When set, forces whether the grid is right-to-left: ArrowLeft/ArrowRight
+   * are swapped so horizontal navigation follows visual direction. When
+   * omitted (preferred), the direction is auto-detected from the container's
+   * computed `direction` (read lazily on keydown, horizontal arrows only).
    * @default undefined (auto-detect from the container)
    */
   isRtl?: boolean;
