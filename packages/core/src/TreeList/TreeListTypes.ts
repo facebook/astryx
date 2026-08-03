@@ -12,27 +12,10 @@
  */
 
 import type {ReactNode} from 'react';
+import type {TreeListVariantMap} from './index';
 
 /** Spacing density for tree list items. */
 export type TreeListDensity = 'compact' | 'balanced' | 'spacious';
-
-/**
- * Extensible variant map for TreeList.
- *
- * Theme packages can add custom variants via TypeScript module augmentation:
- * @example
- * ```
- * declare module '@astryxdesign/core/TreeList' {
- *   interface TreeListVariantMap {
- *     'dotted': true;
- *   }
- * }
- * ```
- */
-export interface TreeListVariantMap {
-  lineGuides: true;
-  noGuides: true;
-}
 
 /**
  * Visual treatment of the hierarchy guide (connector) lines. Extensible via

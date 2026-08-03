@@ -232,7 +232,7 @@ function HeroContent({contentRef}: {contentRef: Ref<HTMLElement>}) {
             target="_blank"
             rel="noopener noreferrer"
             hasUnderline>
-            React
+            React 19+
           </Link>{' '}
           and{' '}
           <Link

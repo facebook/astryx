@@ -78,6 +78,18 @@ export const docs = {
       description: 'Custom menu width; defaults to matching the trigger button width.',
     },
     {
+      name: 'placement',
+      type: "'above' | 'below' | 'start' | 'end'",
+      description: "Position placement relative to the trigger. Logical: start/end resolve against the menu's own inherited direction (RTL mirrors).",
+      default: "'below'",
+    },
+    {
+      name: 'alignment',
+      type: "'start' | 'center' | 'end'",
+      description: "Alignment along the placement axis. Logical: start/end follow the menu's own inherited direction (RTL mirrors).",
+      default: "'start'",
+    },
+    {
       name: 'onClick',
       type: '() => void',
       description: 'Callback fired when the trigger button is clicked.',

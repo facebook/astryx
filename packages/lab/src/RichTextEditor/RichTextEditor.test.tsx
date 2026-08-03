@@ -16,24 +16,19 @@ import {useLexicalComposerContext} from '@lexical/react/LexicalComposerContext';
 import type {EditorState, LexicalEditor} from 'lexical';
 import {$getRoot, $createParagraphNode, $createTextNode} from 'lexical';
 import {HeadingNode} from '@lexical/rich-text';
-import {
-  TRANSFORMERS,
-  $convertFromMarkdownString,
-} from '@lexical/markdown';
+import {TRANSFORMERS, $convertFromMarkdownString} from '@lexical/markdown';
 import {RichTextEditor, type RichTextEditorRef} from './RichTextEditor';
 import {RichTextView} from './RichTextView';
 import {
   markdownToEditorStateJSON,
   editorStateJSONToMarkdown,
 } from './markdownSerializers';
+import {RichTextEditorToolbar} from './RichTextEditorToolbar';
+import {registerIcons, resetIcons} from '@astryxdesign/core/Icon';
 
 // Small plugin that captures the editor instance so tests can drive real
 // Lexical updates (jsdom does not implement contenteditable editing).
-function CaptureEditor({
-  onReady,
-}: {
-  onReady: (editor: LexicalEditor) => void;
-}) {
+function CaptureEditor({onReady}: {onReady: (editor: LexicalEditor) => void}) {
   const [editor] = useLexicalComposerContext();
   useEffect(() => {
     onReady(editor);
@@ -403,9 +398,7 @@ describe('RichTextEditor', () => {
     editorRef!.update(() => {
       $convertFromMarkdownString('# Title', TRANSFORMERS);
     });
-    await waitFor(() =>
-      expect(ref.current?.getMarkdown()).toBe('# Title'),
-    );
+    await waitFor(() => expect(ref.current?.getMarkdown()).toBe('# Title'));
   });
 
   it('ref.getMarkdown() honors a custom transformers prop', async () => {
@@ -532,11 +525,13 @@ describe('RichTextEditor', () => {
   it('renders a character counter reflecting the seeded content length', async () => {
     // HELLO_STATE is "Hello world" (11 chars).
     render(
-      <RichTextEditor label="Notes" defaultValue={HELLO_STATE} maxLength={100} />,
+      <RichTextEditor
+        label="Notes"
+        defaultValue={HELLO_STATE}
+        maxLength={100}
+      />,
     );
-    await waitFor(() =>
-      expect(screen.getByText('11/100')).toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.getByText('11/100')).toBeInTheDocument());
   });
 
   it('shows an over-limit counter when content exceeds maxLength', async () => {
@@ -551,7 +546,11 @@ describe('RichTextEditor', () => {
 
   it('associates the counter with the editor via aria-describedby', async () => {
     render(
-      <RichTextEditor label="Notes" defaultValue={HELLO_STATE} maxLength={100} />,
+      <RichTextEditor
+        label="Notes"
+        defaultValue={HELLO_STATE}
+        maxLength={100}
+      />,
     );
     const counter = await screen.findByText('11/100');
     const describedBy = screen
@@ -619,7 +618,9 @@ describe('RichTextView', () => {
   });
 
   it('renders bullet lists with a disc marker (not bare indentation)', async () => {
-    const {container} = render(<RichTextView value={makeListState('bullet')} />);
+    const {container} = render(
+      <RichTextView value={makeListState('bullet')} />,
+    );
     await waitFor(() =>
       expect(screen.getByText('Item one')).toBeInTheDocument(),
     );
@@ -633,7 +634,9 @@ describe('RichTextView', () => {
   });
 
   it('renders numbered lists with a decimal marker (not bare indentation)', async () => {
-    const {container} = render(<RichTextView value={makeListState('number')} />);
+    const {container} = render(
+      <RichTextView value={makeListState('number')} />,
+    );
     await waitFor(() =>
       expect(screen.getByText('Item one')).toBeInTheDocument(),
     );
@@ -702,5 +705,100 @@ describe('markdown serializers', () => {
     await waitFor(() =>
       expect(screen.getByRole('textbox').textContent).toContain('Hello world'),
     );
+  });
+});
+
+describe('RichTextEditorToolbar', () => {
+  it('renders inside the editor plugins slot with formatting controls', () => {
+    render(
+      <RichTextEditor label="Notes" plugins={<RichTextEditorToolbar />} />,
+    );
+    // Toolbar landmark with its accessible label.
+    expect(
+      screen.getByRole('toolbar', {name: 'Text formatting'}),
+    ).toBeInTheDocument();
+    // A representative set of format buttons are present and labelled.
+    for (const name of [
+      'Bold',
+      'Italic',
+      'Underline',
+      'Strikethrough',
+      'Inline code',
+      'Quote',
+      'Bulleted list',
+      'Numbered list',
+      'Undo',
+      'Redo',
+    ]) {
+      expect(screen.getByRole('button', {name})).toBeInTheDocument();
+    }
+  });
+
+  it('renders one heading button per configured level', () => {
+    render(
+      <RichTextEditor
+        label="Notes"
+        plugins={<RichTextEditorToolbar headingLevels={['h1', 'h2']} />}
+      />,
+    );
+    expect(screen.getByRole('button', {name: 'Heading 1'})).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Heading 2'})).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: 'Heading 3'}),
+    ).not.toBeInTheDocument();
+  });
+
+  it('accepts a custom accessible label', () => {
+    render(
+      <RichTextEditor
+        label="Notes"
+        plugins={<RichTextEditorToolbar label="Editor controls" />}
+      />,
+    );
+    expect(
+      screen.getByRole('toolbar', {name: 'Editor controls'}),
+    ).toBeInTheDocument();
+  });
+
+  it('renders composed endContent', () => {
+    render(
+      <RichTextEditor
+        label="Notes"
+        plugins={
+          <RichTextEditorToolbar
+            endContent={<button type="button">Custom</button>}
+          />
+        }
+      />,
+    );
+    expect(screen.getByRole('button', {name: 'Custom'})).toBeInTheDocument();
+  });
+
+  it('disables formatting controls when the editor is read-only', () => {
+    render(
+      <RichTextEditor
+        label="Notes"
+        isReadOnly
+        plugins={<RichTextEditorToolbar />}
+      />,
+    );
+    expect(screen.getByRole('button', {name: 'Bold'})).toBeDisabled();
+  });
+
+  it('renders a theme-registered icon override for a richtext:* key', () => {
+    registerIcons({
+      'richtext:bold': <span data-testid="themed-bold">B!</span>,
+    });
+    try {
+      render(
+        <RichTextEditor label="Notes" plugins={<RichTextEditorToolbar />} />,
+      );
+      // The Bold control uses the theme's registered glyph instead of the
+      // bundled inline default.
+      const bold = screen.getByRole('button', {name: 'Bold'});
+      expect(bold).toContainElement(screen.getByTestId('themed-bold'));
+    } finally {
+      resetIcons();
+    }
   });
 });

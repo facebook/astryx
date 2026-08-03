@@ -168,6 +168,7 @@ export * from './hooks';
 export * from './utils';
 
 // Theme
+export type {TextColorMap} from './Text';
 export * from './theme';
 
 // Internationalization

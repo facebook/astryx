@@ -191,7 +191,7 @@ const myTheme = defineTheme({
             [
               'color',
               '--color-accent, --color-background-*, --color-text-*, --color-border, etc.',
-              'accent? (hex — omit for neutral-only), neutralStyle? (warm|cool|neutral), contrast? (standard|high)',
+              'accent? (hex; omit for neutral-only), neutralStyle? (warm|cool|neutral), contrast? (standard|high)',
             ],
             [
               'typography.scale',
@@ -536,7 +536,7 @@ import './themes/ocean.css';
       content: [
         {
           type: 'prose',
-          text: 'Use `tokenVar()` when a non-StyleX styling library wants a CSS variable reference, and `resolveThemeTokens()` when JavaScript needs token values for a specific theme and mode without React context.',
+          text: 'Use `tokenVar()` when a non-StyleX styling library wants a CSS variable reference, and `resolveThemeTokens()` when JavaScript needs token values for a specific theme and mode without React context. Themes are also registered by name when created with `defineTheme()`; call `registerTheme(theme)` for prebuilt or object-literal themes that need name-based SSR lookup.',
         },
         {
           type: 'code',

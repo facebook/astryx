@@ -161,6 +161,16 @@ export const docs = {
           'To produce a defaultValue from Markdown without mounting an editor (e.g. on the server), use markdownToEditorStateJSON(markdown). Convert the other way with editorStateJSONToMarkdown(json). Both run headless via @lexical/headless and accept the same transformers/nodes options as the editor.',
       },
       {
+        guidance: true,
+        description:
+          'Add a formatting toolbar by rendering RichTextEditorToolbar in the plugins slot: plugins={<RichTextEditorToolbar />}. It is built from Astryx Toolbar/ToggleButton primitives (so it matches the theme), syncs active states to the selection, and covers bold/italic/underline/strikethrough/code, headings, quote, lists, and undo/redo. Compose extra controls via its endContent prop.',
+      },
+      {
+        guidance: true,
+        description:
+          "The toolbar's glyphs are themeable. Each control resolves its icon from the core icon registry under a stable richtext:* key (see RICHTEXT_ICON_KEYS), falling back to a bundled inline SVG. A theme can restyle any glyph without forking the toolbar: registerIcons({'richtext:bold': <MyBoldIcon />}) from @astryxdesign/core/Icon. registerIcons now accepts arbitrary extension keys, and getExtendedIcon(key, fallback) resolves them — the same pattern any library can use to make its own icons theme-overridable.",
+      },
+      {
         guidance: false,
         description:
           'Use for single-line input or plain text; use TextInput or TextArea for those.',

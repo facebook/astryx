@@ -32,3 +32,9 @@ export {
   editorStateJSONToMarkdown,
 } from './markdownSerializers';
 export type {MarkdownSerializerOptions} from './markdownSerializers';
+
+export {
+  RichTextEditorToolbar,
+  RICHTEXT_ICON_KEYS,
+} from './RichTextEditorToolbar';
+export type {RichTextEditorToolbarProps} from './RichTextEditorToolbar';

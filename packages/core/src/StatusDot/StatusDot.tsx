@@ -22,6 +22,7 @@ import type {BaseProps} from '../BaseProps';
 import {Tooltip} from '../Tooltip/Tooltip';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
+import type {StatusDotVariantMap} from './index';
 
 /**
  * Pulse animation keyframes
@@ -76,27 +77,6 @@ const variants = stylex.create({
     backgroundColor: colorVars['--color-icon-secondary'],
   },
 });
-
-/**
- * Extensible variant map for StatusDot.
- *
- * Theme packages can add custom variants via TypeScript module augmentation:
- * @example
- * ```
- * declare module '@astryxdesign/core/StatusDot' {
- *   interface StatusDotVariantMap {
- *     'critical': true;
- *   }
- * }
- * ```
- */
-export interface StatusDotVariantMap {
-  success: true;
-  warning: true;
-  error: true;
-  accent: true;
-  neutral: true;
-}
 
 /**
  * Status dot variant type derived from StatusDotVariantMap.

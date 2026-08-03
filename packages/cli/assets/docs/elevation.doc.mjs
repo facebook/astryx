@@ -50,29 +50,29 @@ export const docs = {
           rows: [
             [
               'none',
-              'The component is flat and embedded in the surface — it is part of the page, not layered above it. This is the default for every surface except ChatComposer.',
+              'The component is flat and embedded in the surface; it is part of the page, not layered above it. This is the default for every surface except ChatComposer.',
               'A Card in a grid, an inline Banner, a standard Button',
             ],
             [
               'low',
-              'The component is in the normal page flow but should read as distinct from the background. Use for emphasis or to separate the component from the surface behind it — the component still sits on the page, it is not floating over other content.',
+              'The component is in the normal page flow but should read as distinct from the background. Use for emphasis or to separate the component from the surface behind it; the component still sits on the page, it is not floating over other content.',
               'A raised Card that needs emphasis, a ChatComposer',
             ],
             [
               'med',
-              'The component sits over other content on the same page — it floats above nearby elements but not the whole screen.',
+              'The component sits over other content on the same page; it floats above nearby elements but not the whole screen.',
               'A Popover, a floating Banner, a floating action Button',
             ],
             [
               'high',
-              'The component is placed over the entire UI — it is the topmost layer and typically has a backdrop or takes focus from everything else.',
+              'The component is placed over the entire UI; it is the topmost layer and typically has a backdrop or takes focus from everything else.',
               'A modal Dialog, a full-screen overlay surface',
             ],
           ],
         },
         {
           type: 'prose',
-          text: 'If two surfaces overlap, the one on top takes the higher level. If a surface does not overlap anything, it is `none` or `low` — never `med` or `high`.',
+          text: 'If two surfaces overlap, the one on top takes the higher level. If a surface does not overlap anything, it is `none` or `low`; never `med` or `high`.',
         },
       ],
     },
@@ -86,13 +86,13 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'Prop defaults preserve current appearance: every surface defaults to `none` except ChatComposer, which defaults to `low` to keep its raised look. Set `elevation="none"` to flatten it — the flat composer draws a border with the same rest / hover / focus treatment as a text input.',
+          text: 'Prop defaults preserve current appearance: every surface defaults to `none` except ChatComposer, which defaults to `low` to keep its raised look. Set `elevation="none"` to flatten it; the flat composer draws a border with the same rest / hover / focus treatment as a text input.',
         },
         {
           type: 'code',
           lang: 'tsx',
           label: 'Raising a surface with the elevation prop',
-          code: `// Flat by default — raise only when the surface needs to float.
+          code: `// Flat by default; raise only when the surface needs to float.
 <Card elevation="low">Raised card</Card>
 
 // A floating action button.
@@ -103,7 +103,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'Always float — no prop: intrinsic overlays (Dialog, Popover, Tooltip, Toast, HoverCard, DropdownMenu, and the components that compose them) bake their elevation in and never expose the prop. Flow content (inputs, Text, layout) is never elevated; input fields use inset rings, which are a separate concept from elevation.',
+          text: 'Always float; no prop: intrinsic overlays (Dialog, Popover, Tooltip, Toast, HoverCard, DropdownMenu, and the components that compose them) bake their elevation in and never expose the prop. Flow content (inputs, Text, layout) is never elevated; input fields use inset rings, which are a separate concept from elevation.',
         },
       ],
     },
@@ -113,7 +113,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'When building a custom surface, read elevation from the token scale rather than a hand-rolled shadow — the same tokens the elevation prop resolves to.',
+          text: 'When building a custom surface, read elevation from the token scale rather than a hand-rolled shadow; the same tokens the elevation prop resolves to.',
         },
         {
           type: 'code',
@@ -152,8 +152,8 @@ const styles = stylex.create({
           type: 'list',
           style: 'dont',
           items: [
-            'Hand-write a `box-shadow` in app code — set the `elevation` prop or read `shadowVars` instead.',
-            'Raise a surface that does not sit above other content — a non-overlapping surface is `none` or `low`, never `med` or `high`.',
+            'Hand-write a `box-shadow` in app code; set the `elevation` prop or read `shadowVars` instead.',
+            'Raise a surface that does not sit above other content; a non-overlapping surface is `none` or `low`, never `med` or `high`.',
             'Stack multiple elevation levels on the same element.',
             'Use elevation shadows for decorative borders. Use --color-border tokens instead.',
           ],

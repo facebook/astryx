@@ -249,4 +249,7 @@ export {
   markdownToEditorStateJSON,
   editorStateJSONToMarkdown,
   type MarkdownSerializerOptions,
+  RichTextEditorToolbar,
+  type RichTextEditorToolbarProps,
+  RICHTEXT_ICON_KEYS,
 } from './RichTextEditor';

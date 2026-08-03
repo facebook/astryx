@@ -16,7 +16,7 @@ import {writeFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import {dirname, join} from 'node:path';
 
-const POOL_SIZE = 8;
+const POOL_SIZE = 6;
 const OUT = join(
   dirname(fileURLToPath(import.meta.url)),
   '../packages/core/src/hooks/containerReveal.pool.stylex.ts',
@@ -38,27 +38,57 @@ function toggled(m, hidden, shown) {
     }`;
 }
 
+// `position` is discrete, so it cannot tween. To avoid an exit flicker — where
+// `static -> absolute` snaps at full opacity and yanks the element out of flow
+// before it can fade — the flip participates in the transition with
+// `allow-discrete`, and its `transition-delay` is state-conditional: 0 on entry
+// (destination = shown) so it enters flow immediately and fades in, but the
+// fade duration on exit (destination = rest) so it stays in flow until the
+// opacity fade finishes, then snaps out. Under reduced motion both collapse to
+// 0s so nothing lingers visible-but-empty.
+function positionDelay(m) {
+  return `{
+      default: '0s, ' + durationVars['--duration-fast'],
+      '@media (prefers-reduced-motion: reduce)': '0s, 0s',
+      [stylex.when.ancestor(':hover', ${m})]: {'@media (hover: hover)': '0s, 0s'},
+      [stylex.when.ancestor(':focus-within', ${m})]: '0s, 0s',
+      '@media (any-pointer: coarse)': '0s, 0s',
+    }`;
+}
+
 function block(i) {
   const m = `m${i}`;
   return `
 export const ${m} = stylex.defineMarker();
 const s${i} = stylex.create({
+  // Hidden at rest via position + opacity (kept in the a11y tree and tab
+  // order); on container :hover (fine pointer) or :focus-within it returns to
+  // flow and fades in. Always shown on touch. The position flip is discrete,
+  // so it transitions with allow-discrete + a state-conditional delay: 0 on
+  // entry (flips to static immediately, then fades in) and the fade duration
+  // on exit (stays in flow until the fade finishes, then snaps out) — without
+  // this, the exit would snap out of flow at full opacity and flicker.
   reveal: {
-    ${transition}
+    transitionProperty: 'opacity, position',
+    transitionDuration: {
+      default: durationVars['--duration-fast'] + ', 0s',
+      '@media (prefers-reduced-motion: reduce)': '0s, 0s',
+    },
+    transitionTimingFunction: easeVars['--ease-standard'],
+    transitionBehavior: 'allow-discrete',
+    transitionDelay: ${positionDelay(m)},
     opacity: ${toggled(m, '0', '1')},
     position: ${toggled(m, "'absolute'", "'static'")},
-    width: ${toggled(m, "'1px'", "'auto'")},
-    height: ${toggled(m, "'1px'", "'auto'")},
-    margin: ${toggled(m, "'-1px'", "'0'")},
-    overflow: ${toggled(m, "'hidden'", "'visible'")},
-    clip: ${toggled(m, "'rect(0, 0, 0, 0)'", "'auto'")},
-    whiteSpace: ${toggled(m, "'nowrap'", "'normal'")},
   },
+  // Opacity-only reveal that keeps the box reserved (no layout shift). Use for
+  // content that is already positioned (e.g. an absolute overlay).
   revealLayoutPreserved: {
     ${transition}
     opacity: ${toggled(m, '0', '1')},
-    pointerEvents: ${toggled(m, "'none'", "'auto'")},
   },
+  // Inverted: visible at rest, fades OUT on :hover only. Deliberately ignores
+  // :focus-within (a keyboard user must never watch content vanish) and stays
+  // visible on touch. Never leaves the a11y tree.
   conceal: {
     ${transition}
     opacity: {
@@ -118,12 +148,18 @@ export const POOL = [
 ${Array.from(
   {length: POOL_SIZE},
   (_, i) =>
-    `  {marker: m${i}, reveal: s${i}.reveal, revealLayoutPreserved: s${i}.revealLayoutPreserved, conceal: s${i}.conceal, concealLayoutPreserved: s${i}.concealLayoutPreserved},`,
+    `  {
+    marker: m${i},
+    reveal: s${i}.reveal,
+    revealLayoutPreserved: s${i}.revealLayoutPreserved,
+    conceal: s${i}.conceal,
+    concealLayoutPreserved: s${i}.concealLayoutPreserved,
+  },`,
 ).join('\n')}
 ] as const;
 
 export type RevealSlot = (typeof POOL)[number];
 `;
 
-writeFileSync(OUT, header + '\n' + blocks + footer);
+writeFileSync(OUT, header + blocks + footer);
 console.log(`Wrote ${OUT}`);

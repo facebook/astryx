@@ -128,6 +128,38 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-markdown', visualProps: ['density']},
+      {
+        className: 'astryx-markdown-heading',
+        visualProps: ['density', 'level'],
+      },
+      {
+        className: 'astryx-markdown-paragraph',
+        visualProps: ['density'],
+      },
+      {
+        className: 'astryx-markdown-list',
+        visualProps: ['density'],
+      },
+      {
+        className: 'astryx-markdown-codeblock',
+        visualProps: ['density'],
+      },
+      {
+        className: 'astryx-markdown-blockquote',
+        visualProps: ['density'],
+      },
+      {
+        className: 'astryx-markdown-table',
+        visualProps: ['density'],
+      },
+      {
+        className: 'astryx-markdown-hr',
+        visualProps: ['density'],
+      },
+      {
+        className: 'astryx-markdown-image',
+        visualProps: ['density'],
+      },
     ],
   },
   usage: {
@@ -292,6 +324,54 @@ export const docsZh = {
   theming: {
     targets: [
       {className: 'astryx-markdown', visualProps: ['density']},
+      {
+        className: 'astryx-markdown-heading',
+        visualProps: ['density', 'level'],
+        description:
+          '每个渲染的标题块（h1–h6）。覆盖 marginBlockStart/marginBlockEnd 可调整标题周围的间距；反映 data-density 和 data-level，因此主题可按密度和标题层级设置间距。仅适用于默认标题渲染——自定义的 components.heading 拥有自己的样式。',
+      },
+      {
+        className: 'astryx-markdown-paragraph',
+        visualProps: ['density'],
+        description:
+          '每个渲染的段落块。覆盖 marginBlockStart/marginBlockEnd 可调整段落之间的间距。反映 data-density，因此主题可以为不同密度设置不同的间距。',
+      },
+      {
+        className: 'astryx-markdown-list',
+        visualProps: ['density'],
+        description:
+          '每个渲染的列表块（有序、无序和任务列表）。覆盖 marginBlockStart/marginBlockEnd 可调整列表周围的间距；反映 data-density。',
+      },
+      {
+        className: 'astryx-markdown-codeblock',
+        visualProps: ['density'],
+        description:
+          '每个渲染的代码块外层容器。覆盖 marginBlockStart/marginBlockEnd 可调整代码块周围的间距；反映 data-density。仅适用于默认渲染——自定义的 components.code 拥有自己的样式。',
+      },
+      {
+        className: 'astryx-markdown-blockquote',
+        visualProps: ['density'],
+        description:
+          '每个渲染的引用块（与 astryx-blockquote 目标共用同一元素）。覆盖 marginBlockStart/marginBlockEnd 可调整引用块周围的间距；反映 data-density。仅适用于默认渲染——自定义的 components.blockquote 拥有自己的样式。',
+      },
+      {
+        className: 'astryx-markdown-table',
+        visualProps: ['density'],
+        description:
+          '每个渲染的表格外层容器。覆盖 marginBlockStart/marginBlockEnd 可调整表格周围的间距；反映 data-density。',
+      },
+      {
+        className: 'astryx-markdown-hr',
+        visualProps: ['density'],
+        description:
+          '每个渲染的水平分隔线。覆盖 marginBlockStart/marginBlockEnd 可调整分隔线周围的间距；反映 data-density。仅适用于默认渲染——自定义的 components.hr 拥有自己的样式。',
+      },
+      {
+        className: 'astryx-markdown-image',
+        visualProps: ['density'],
+        description:
+          '每个渲染的块级图片外层容器（以及损坏图片的占位符）。覆盖 marginBlockStart/marginBlockEnd 可调整图片周围的间距；反映 data-density。仅适用于默认渲染——自定义的 components.image 拥有自己的样式。',
+      },
     ],
   },
   usage: {

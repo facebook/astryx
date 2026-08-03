@@ -9,6 +9,7 @@
  * Invocation                                 -> type discriminator
  * ------------------------------------------------------------------
  * xds --json theme build <file>             -> theme.build
+ * xds --json theme build <file> --check     -> theme.build.check
  * xds --json theme list                     -> theme.list
  * xds --json theme add <slug>               -> theme.add
  * (file not found / parse error)            -> CLIError
@@ -21,6 +22,13 @@
  * @typedef {object} ThemeBuildResponse
  * @property {'theme.build'} type
  * @property {{name: string, tokenCount: number, componentCount: number, sizeKB: number, outputs: {css: string, js: string, dts: string, variantsDts?: string}, warnings: string[]}} data
+ */
+
+/**
+ * xds --json theme build <file> --check
+ * @typedef {object} ThemeBuildCheckResponse
+ * @property {'theme.build.check'} type
+ * @property {{name: string, upToDate: boolean, stale: Array<{path: string, reason: 'missing' | 'outdated'}>, checked: string[]}} data
  */
 
 /**

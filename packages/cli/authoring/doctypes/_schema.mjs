@@ -85,13 +85,6 @@ export const GenericDocKindSchema = z
   })
   .passthrough();
 
-/** A stamped doc: one of the three per-kind schemas, discriminated by `type`. */
-export const StampedDocSchema = z.discriminatedUnion('type', [
-  ComponentDocKindSchema,
-  FunctionDocKindSchema,
-  GenericDocKindSchema,
-]);
-
 // ── Legacy loose format (unchanged, kept for back-compat) ─────────────
 const LegacyBaseDocSchema = z.object({
   name: z.string().min(1, 'name is required'),
@@ -140,9 +133,3 @@ export const LegacyDocSchema = z.union([
   LegacyMultiComponentDocSchema,
   LegacySingleComponentDocSchema,
 ]);
-
-/**
- * The permissive load-boundary contract for a doc: a stamped doc OR a legacy
- * loose doc. This is the exact acceptance set the old `ComponentDocSchema` had.
- */
-export const AnyDocSchema = z.union([StampedDocSchema, LegacyDocSchema]);

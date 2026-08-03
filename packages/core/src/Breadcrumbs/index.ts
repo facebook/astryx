@@ -6,12 +6,26 @@
  * @file Breadcrumbs component barrel export
  */
 
+/**
+ * Extensible variant map for Breadcrumbs.
+ *
+ * Theme packages can add custom variants via TypeScript module augmentation:
+ * @example
+ * ```
+ * declare module '@astryxdesign/core/Breadcrumbs' {
+ *   interface BreadcrumbsVariantMap {
+ *     'compact': true;
+ *   }
+ * }
+ * ```
+ */
+export interface BreadcrumbsVariantMap {
+  default: true;
+  supporting: true;
+}
+
 export {Breadcrumbs} from './Breadcrumbs';
-export type {
-  BreadcrumbsProps,
-  BreadcrumbsVariant,
-  BreadcrumbsVariantMap,
-} from './Breadcrumbs';
+export type {BreadcrumbsProps, BreadcrumbsVariant} from './Breadcrumbs';
 export {BreadcrumbItem} from './BreadcrumbItem';
 export type {BreadcrumbItemProps} from './BreadcrumbItem';
 

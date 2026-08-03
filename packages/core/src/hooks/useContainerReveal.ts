@@ -16,7 +16,7 @@
  * marker + matching reveal styles from a pre-compiled pool.
  *
  * ACCESSIBILITY (WCAG 2.2 by construction):
- * - Revealed content is visually hidden at rest via the clip recipe, so it
+ * - Revealed content is visually hidden at rest via position + opacity, so it
  *   stays in the accessibility tree and tab order — never display:none.
  * - Keyboard: revealed on :focus-within, so tabbing in shows it.
  * - Touch: always visible on coarse pointers; never gated behind hover.
@@ -102,9 +102,10 @@ export interface UseContainerRevealReturn {
   /** Spread onto the container whose hover/focus-within drives the reveal. */
   getContainerProps: () => {className?: string; style?: CSSProperties};
   /** Spread onto each revealed / concealed child. */
-  getContentRevealProps: (
-    options?: ContentRevealOptions,
-  ) => {className?: string; style?: CSSProperties};
+  getContentRevealProps: (options?: ContentRevealOptions) => {
+    className?: string;
+    style?: CSSProperties;
+  };
 }
 
 const EMPTY = Object.freeze({});

@@ -106,7 +106,7 @@ import fr from '@astryxdesign/core/locales/fr.json';
         },
         {
           type: 'prose',
-          text: 'Pass the optional `dir` prop to force a direction. This overrides the locale-derived default — useful for RTL layout testing under an English catalog, or to skip derivation when you already know the direction.',
+          text: 'Pass the optional `dir` prop to force a direction. This overrides the locale-derived default; useful for RTL layout testing under an English catalog, or to skip derivation when you already know the direction.',
         },
         {
           type: 'code',
@@ -119,11 +119,11 @@ import fr from '@astryxdesign/core/locales/fr.json';
         },
         {
           type: 'prose',
-          text: "There's one more step: tell the browser about the direction too. Add a `dir` attribute to your page — usually on the `<html>` tag. This is what makes text align to the correct side, punctuation and mixed-language text flow correctly, and layouts mirror. The provider handles astryx components; the `dir` attribute handles everything else on the page.",
+          text: "There's one more step: tell the browser about the direction too. Add a `dir` attribute to your page; usually on the `<html>` tag. This is what makes text align to the correct side, punctuation and mixed-language text flow correctly, and layouts mirror. The provider handles astryx components; the `dir` attribute handles everything else on the page.",
         },
         {
           type: 'prose',
-          text: "Astryx doesn't set `dir` for you — you set it, alongside the same direction you pass to the provider. If your app is server-rendered (like Next.js), the `getLocaleDirection()` helper computes the direction from a locale so you can set it while the page renders:",
+          text: "Astryx doesn't set `dir` for you; you set it, alongside the same direction you pass to the provider. If your app is server-rendered (like Next.js), the `getLocaleDirection()` helper computes the direction from a locale so you can set it while the page renders:",
         },
         {
           type: 'code',
@@ -146,7 +146,7 @@ export default function RootLayout({children, params}) {
         },
         {
           type: 'prose',
-          text: 'To make just one part of a left-to-right page right-to-left — say an Arabic quote or a comment thread — wrap that part in its own `<InternationalizationProvider dir="rtl">` and add `dir="rtl"` to the element around it. (One current limitation: pop-up overlays like menus and dialogs opened from inside that region aren\'t mirrored yet; that\'s coming in later RTL work.)',
+          text: 'To make just one part of a left-to-right page right-to-left; say an Arabic quote or a comment thread; wrap that part in its own `<InternationalizationProvider dir="rtl">` and add `dir="rtl"` to the element around it. (One current limitation: pop-up overlays like menus and dialogs opened from inside that region aren\'t mirrored yet; that\'s coming in later RTL work.)',
         },
       ],
     },
@@ -341,7 +341,7 @@ function SaveButton() {
         },
         {
           type: 'prose',
-          text: "Component authors read the ambient text direction with `useDirection()`. Reach for it only when CSS logical properties can't express the mirroring — swapping a directional icon, mirroring behavioral logic (slider math, keyboard nav), or direction-specific geometry. It returns `'ltr'` when called outside a provider, matching the silent-fallback behavior of `useTranslator`.",
+          text: "Component authors read the ambient text direction with `useDirection()`. Reach for it only when CSS logical properties can't express the mirroring; swapping a directional icon, mirroring behavioral logic (slider math, keyboard nav), or direction-specific geometry. It returns `'ltr'` when called outside a provider, matching the silent-fallback behavior of `useTranslator`.",
         },
         {
           type: 'code',
@@ -362,7 +362,7 @@ function NextButton() {
         },
         {
           type: 'prose',
-          text: 'Crowdin is the preferred way to contribute — [join a language](https://crowdin.com/project/astryx), translate strings in the web UI, and your work syncs back to the repo without opening a PR. Direct PRs against `packages/core/locales/*.json` also work if you prefer that flow.',
+          text: 'Crowdin is the preferred way to contribute; [join a language](https://crowdin.com/project/astryx), translate strings in the web UI, and your work syncs back to the repo without opening a PR. Direct PRs against `packages/core/locales/*.json` also work if you prefer that flow.',
         },
       ],
     },

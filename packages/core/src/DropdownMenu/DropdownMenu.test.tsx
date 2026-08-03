@@ -109,6 +109,22 @@ describe('DropdownMenu', () => {
     );
   });
 
+  it('supports explicit menu alignment', () => {
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        alignment="end"
+        items={[{label: 'Item 1'}]}
+      />,
+    );
+    const popover = screen
+      .getByRole('menu', {hidden: true})
+      .closest('[popover]');
+    expect(popover?.getAttribute('style')).toContain(
+      'position-area: self-block-end span-self-inline-start',
+    );
+  });
+
   it('emits the direction-independent logical mapping under an RTL ancestor (#3389)', async () => {
     // The self-* position-area keywords resolve against the popover's own
     // inherited direction in the browser, so RTL emits the same string as
@@ -146,6 +162,77 @@ describe('DropdownMenu', () => {
 
     await user.click(screen.getByRole('button', {name: /Actions/}));
     expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
+  });
+
+  it('calls onOpenChange for uncontrolled native open and close transitions', async () => {
+    const user = userEvent.setup();
+    const handleOpenChange = vi.fn();
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        items={[{label: 'Item 1'}]}
+        onOpenChange={handleOpenChange}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    expect(handleOpenChange).toHaveBeenCalledWith(true);
+
+    handleOpenChange.mockClear();
+    const popoverEl = screen
+      .getByRole('menu', {hidden: true})
+      .closest('[popover]');
+    expect(popoverEl).not.toBeNull();
+    const toggleEvent = new Event('toggle');
+    Object.defineProperty(toggleEvent, 'newState', {value: 'closed'});
+    fireEvent(popoverEl as HTMLElement, toggleEvent);
+
+    expect(handleOpenChange).toHaveBeenCalledWith(false);
+    expect(screen.getByRole('button', {name: /Actions/})).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+  });
+
+  it('restores focus to the trigger after native light dismiss', async () => {
+    const raf = vi
+      .spyOn(window, 'requestAnimationFrame')
+      .mockImplementation(callback => {
+        callback(0);
+        return 0;
+      });
+
+    try {
+      const user = userEvent.setup();
+      render(
+        <DropdownMenu
+          button={{label: 'Actions'}}
+          items={[{label: 'Edit'}, {label: 'Delete'}]}
+        />,
+      );
+
+      const trigger = screen.getByRole('button', {name: /Actions/});
+      trigger.focus();
+      await user.click(trigger);
+      expect(
+        screen.getByRole('menuitem', {name: 'Edit', hidden: true}),
+      ).toHaveFocus();
+
+      const popoverEl = screen
+        .getByRole('menu', {hidden: true})
+        .closest('[popover]');
+      expect(popoverEl).not.toBeNull();
+      popoverEl?.addEventListener('toggle', () => {
+        trigger.blur();
+      });
+      const toggleEvent = new Event('toggle');
+      Object.defineProperty(toggleEvent, 'newState', {value: 'closed'});
+      fireEvent(popoverEl as HTMLElement, toggleEvent);
+
+      expect(trigger).toHaveFocus();
+    } finally {
+      raf.mockRestore();
+    }
   });
 
   it('closes the menu when Tab is pressed inside it (APG menu-button)', async () => {

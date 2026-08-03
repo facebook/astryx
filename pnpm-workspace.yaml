@@ -53,7 +53,10 @@ overrides:
   # + .sync). The floor below then holds that chain on the patched 4.x line.
   read-yaml-file: ^2.1.0
   read-yaml-file>js-yaml: ^4.2.0
-  '@changesets/parse>js-yaml': '>=4.2.0'
+  # Constrain to 4.x — the 5.x line has DoS vulnerabilities (GHSA-pm4m-ph32-ghv5,
+  # GHSA-724g-mxrg-4qvm) patched only in 5.2.2. @changesets/parse declares ^4.1.1
+  # anyway, so keep it on 4.x where the advisory does not apply.
+  '@changesets/parse>js-yaml': ^4.2.0
   fast-uri: ^3.1.4
   brace-expansion: ^2.1.2
   # next pulls sharp as an optional dependency for image optimization and still

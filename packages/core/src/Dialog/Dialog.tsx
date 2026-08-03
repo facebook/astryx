@@ -49,6 +49,7 @@ import {mergeProps, mergeRefs} from '../utils';
 import {devWarn} from '../utils/devWarning';
 import {DialogContext} from './DialogContext';
 import {themeProps} from '../utils/themeProps';
+import type {DialogVariantMap} from './index';
 
 /**
  * Calculate a directional translate offset for dialog entry animation.
@@ -67,24 +68,6 @@ function getDialogDirection(
     x: Math.round((dx / dist) * distance),
     y: Math.round((dy / dist) * distance),
   };
-}
-
-/**
- * Extensible variant map for Dialog.
- *
- * Theme packages can add custom variants via TypeScript module augmentation:
- * @example
- * ```
- * declare module '@astryxdesign/core/Dialog' {
- *   interface DialogVariantMap {
- *     'drawer': true;
- *   }
- * }
- * ```
- */
-export interface DialogVariantMap {
-  standard: true;
-  fullscreen: true;
 }
 
 /**

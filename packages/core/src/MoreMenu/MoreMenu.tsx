@@ -19,7 +19,7 @@
  */
 
 import type {ReactNode} from 'react';
-import {getIcon} from '../Icon/globalIconRegistry';
+import {useIcon} from '../Icon';
 import {DropdownMenu} from '../DropdownMenu/DropdownMenu';
 import {useSize} from '../SizeContext/SizeContext';
 import type {DropdownMenuOption} from '../DropdownMenu';
@@ -119,7 +119,7 @@ export function MoreMenu({
   const t = useTranslator();
   const label = labelFromProps ?? t('@astryx.moreMenu.label');
   const size = useSize(sizeProp, 'md');
-  const moreIcon = getIcon('moreHorizontal');
+  const moreIcon = useIcon('moreHorizontal');
 
   return (
     <DropdownMenu

@@ -8,7 +8,7 @@
 
 An open source design system that's fully customizable and built for how we build now: <br/> by people and the agents working alongside them.
 
-**Currently in Beta** · Built on [React](https://react.dev) and [StyleX](https://stylexjs.com)
+**Currently in Beta** · Built on [React 19+](https://react.dev) and [StyleX](https://stylexjs.com)
 
 [![npm version](https://img.shields.io/npm/v/@astryxdesign/core?label=npm&color=cb3837&logo=npm)](https://www.npmjs.com/package/@astryxdesign/core)
 [![license MIT](https://img.shields.io/npm/l/@astryxdesign/core?color=blue)](LICENSE)
@@ -36,6 +36,8 @@ It ships 150+ accessible components, brand-level theming, dark mode, ready-to-sh
 - **Built for people and agents.** The API, docs, and CLI are designed together so a person and an AI assistant build the same way, from the same reference.
 
 ## Getting Started
+
+Astryx requires **React 19** or later (`react` and `react-dom` are peer dependencies of `@astryxdesign/core`).
 
 Install Astryx and a theme:
 
