@@ -18,11 +18,11 @@ import {Link} from '@astryxdesign/core/Link';
 import {Divider} from '@astryxdesign/core/Divider';
 
 const COVER_IMAGE_URL =
-  'https://lookaside.facebook.com/assets/astryx/light-working-vertical-1.png';
+  '/template-assets/light-working-vertical-1.png';
 const APPLE_LOGO_URL =
-  'https://lookaside.facebook.com/assets/astryx/AppleLogo.png';
+  '/template-assets/AppleLogo.png';
 const GOOGLE_LOGO_URL =
-  'https://lookaside.facebook.com/assets/astryx/GoogleLogo.png';
+  '/template-assets/GoogleLogo.png';
 
 // Grid emits minmax(MIN, 1fr) where MIN is a hard floor, so MIN plus the
 // grid inset and page padding must fit the narrowest phone or the column is
