@@ -72,7 +72,8 @@ export const WithCharacterLimit: Story = {
   args: {
     label: 'Bio',
     maxLength: 80,
-    description: 'A character counter appears below the editor when maxLength is set.',
+    description:
+      'A character counter appears below the editor when maxLength is set.',
     placeholder: 'Type past 80 characters to see the counter turn red…',
   },
 };
@@ -159,7 +160,7 @@ export const ControlledPersistence = {
           <div style={{fontWeight: 600, marginBottom: 8}}>
             RichTextView (read-only render of the same content)
           </div>
-          <RichTextView value={json} />
+          <RichTextView value={json} label="Saved content preview" />
         </div>
       </div>
     );
@@ -190,7 +191,9 @@ export const ImperativeRef = {
             onClick={() => {
               const state = ref.current?.getEditorState();
               const text = state?.read(() => $getRoot().getTextContent());
-              setReadout(`getEditorState() text content: ${JSON.stringify(text)}`);
+              setReadout(
+                `getEditorState() text content: ${JSON.stringify(text)}`,
+              );
             }}>
             getEditorState()
           </button>
@@ -277,12 +280,15 @@ export const MarkdownSerializers = {
     return (
       <div style={{display: 'grid', gap: 24, maxWidth: 720}}>
         <div>
-          <div style={{fontWeight: 600, marginBottom: 8}}>
+          <label
+            htmlFor="rte-markdown-input"
+            style={{display: 'block', fontWeight: 600, marginBottom: 8}}>
             1. Input Markdown (edit me)
-          </div>
+          </label>
           <textarea
+            id="rte-markdown-input"
             value={markdown}
-            onChange={(e) => setMarkdown(e.target.value)}
+            onChange={e => setMarkdown(e.target.value)}
             rows={10}
             style={{
               width: '100%',
@@ -314,7 +320,7 @@ export const MarkdownSerializers = {
           <div style={{fontWeight: 600, marginBottom: 8}}>
             3. Same JSON rendered read-only via RichTextView
           </div>
-          <RichTextView value={json} />
+          <RichTextView value={json} label="Serialized content preview" />
         </div>
 
         <div>

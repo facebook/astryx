@@ -414,6 +414,7 @@ export const RichTextEditor = forwardRef<
 ) {
   const size = useSize(sizeProp, 'md');
   const id = useId();
+  const labelID = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
   const placeholderID = useId();
@@ -465,6 +466,7 @@ export const RichTextEditor = forwardRef<
       isLabelHidden={isLabelHidden}
       description={description}
       inputID={id}
+      labelID={labelID}
       descriptionID={description ? descriptionID : undefined}
       isOptional={isOptional}
       isRequired={isRequired}
@@ -503,8 +505,9 @@ export const RichTextEditor = forwardRef<
             <RichTextPlugin
               contentEditable={
                 <EditorContentEditable
+                  id={id}
                   ariaLabel={isLabelHidden ? label : undefined}
-                  ariaLabelledBy={isLabelHidden ? undefined : id}
+                  ariaLabelledBy={isLabelHidden ? undefined : labelID}
                   ariaDescribedBy={ariaDescribedBy}
                   ariaRequired={isRequired && !isOptional}
                   ariaInvalid={status?.type === 'error'}
@@ -629,7 +632,9 @@ function EditorRefBridge({
         // $generateHtmlFromNodes serializes the whole document (null selection)
         // to HTML; must run in a read context and requires a DOM.
         // `@lexical/html` is a subpackage (built dist) — safe.
-        editor.getEditorState().read(() => $generateHtmlFromNodes(editor, null)),
+        editor
+          .getEditorState()
+          .read(() => $generateHtmlFromNodes(editor, null)),
       getEditor: () => editor,
     }),
     [editor, editable, transformers],
@@ -659,7 +664,7 @@ function CharCountPlugin({
     // `declare` class fields) and fails. Both APIs used here are methods on the
     // editor instance, so no top-level `lexical` value import is needed.
     onCountChange(editor.getRootElement()?.textContent?.length ?? 0);
-    return editor.registerTextContentListener((textContent) => {
+    return editor.registerTextContentListener(textContent => {
       onCountChange(textContent.length);
     });
   }, [editor, onCountChange]);
@@ -672,6 +677,7 @@ function CharCountPlugin({
  * neither) is satisfied by two concrete branches rather than a spread.
  */
 function EditorContentEditable({
+  id,
   ariaLabel,
   ariaLabelledBy,
   ariaDescribedBy,
@@ -681,6 +687,7 @@ function EditorContentEditable({
   placeholderID,
   rest,
 }: {
+  id: string;
   ariaLabel?: string;
   ariaLabelledBy?: string;
   ariaDescribedBy?: string;
@@ -691,6 +698,7 @@ function EditorContentEditable({
   rest: Record<string, unknown>;
 }) {
   const shared = {
+    id,
     role: 'textbox' as const,
     'aria-multiline': 'true' as const,
     'aria-label': ariaLabel,
