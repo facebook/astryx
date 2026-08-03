@@ -69,12 +69,6 @@ export const docs = {
           description: 'Label/content shown in the closed trigger.',
         },
         {
-          name: 'renderTrigger',
-          type: '(props: ComplexSelectorTriggerRenderProps<Value>) => ReactNode',
-          description:
-            'Custom trigger content rendered inside the selector trigger while ComplexSelector owns button semantics.',
-        },
-        {
           name: 'placeholder',
           type: 'ReactNode',
           description: 'Placeholder shown when triggerLabel is omitted.',
@@ -142,7 +136,12 @@ export const docs = {
       {
         guidance: true,
         description:
-          'For custom two-dimensional grids, implement the ARIA grid pattern and use useGridFocus to preserve columns during vertical arrow navigation.',
+          'Use Astryx focus hooks for custom content: useGridFocus for two-dimensional grids, useTreeFocus through TreeList for hierarchies, and useListFocus for custom linear collections.',
+      },
+      {
+        guidance: true,
+        description:
+          'Evaluate custom content against WCAG 2.2: keyboard operation, focus visible/not obscured, names and roles, labels/instructions, target size, and contrast/non-text contrast are especially relevant for selector popovers.',
       },
       {
         guidance: false,
@@ -164,7 +163,7 @@ export const docsDense = {
   group: 'Selector',
   category: 'Data Input',
   description:
-    'Field+dialog-popover shell for rich custom selectors. Content render prop gets positional value/onChange/close plus state; content owns its accessible structure.',
+    'Field+dialog-popover shell for rich custom selectors. Content gets value/onChange/close/state; content owns semantics. Use focus hooks and evaluate custom content against WCAG 2.2.',
   propDescriptions: {
     label: 'Accessible field label.',
     value: 'Controlled value.',
@@ -173,7 +172,8 @@ export const docsDense = {
     children:
       'Render custom dialog content from (value,onChange,close,state).',
     triggerLabel: 'Closed trigger label/content.',
-    renderTrigger: 'Custom trigger content inside owned button.',
     placement: 'Popup placement.',
+    accessibility:
+      'Custom content must provide its own accessible structure. Use focus hooks and evaluate against WCAG 2.2.',
   },
 };

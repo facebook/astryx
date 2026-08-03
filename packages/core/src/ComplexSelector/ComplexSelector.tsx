@@ -157,15 +157,6 @@ export interface ComplexSelectorRenderState {
   contentId: string;
 }
 
-export interface ComplexSelectorTriggerRenderProps<Value> {
-  /** Current optimistic value. */
-  value: Value;
-  /** Whether the selector surface is open. */
-  isOpen: boolean;
-  /** Whether changeAction/isLoading is pending. */
-  isBusy: boolean;
-}
-
 export interface ComplexSelectorStatus {
   type: 'warning' | 'error' | 'success';
   message?: string;
@@ -192,10 +183,6 @@ export interface ComplexSelectorProps<Value> extends Omit<
   ) => ReactNode;
   /** Label/content shown in the closed trigger. */
   triggerLabel?: ReactNode;
-  /** Custom trigger content rendered inside the selector trigger. */
-  renderTrigger?: (
-    props: ComplexSelectorTriggerRenderProps<Value>,
-  ) => ReactNode;
   /** Placeholder shown when triggerLabel is omitted. */
   placeholder?: ReactNode;
   /** Whether to visually hide the field label. */
@@ -262,7 +249,6 @@ export function ComplexSelector<Value>({
   changeAction,
   children,
   triggerLabel,
-  renderTrigger,
   placeholder: placeholderFromProps,
   isLabelHidden = false,
   description,
@@ -325,9 +311,7 @@ export function ComplexSelector<Value>({
     [changeAction, onChange, setOptimisticValue, startTransition],
   );
 
-  const triggerContent = renderTrigger
-    ? renderTrigger({value: optimisticValue, isOpen: popover.isOpen, isBusy})
-    : (triggerLabel ?? placeholder);
+  const triggerContent = triggerLabel ?? placeholder;
 
   const content = (
     <div id={contentId} {...stylex.props(styles.content, contentXstyle)}>
@@ -363,7 +347,7 @@ export function ComplexSelector<Value>({
             styles.focusRing,
             isDisabled && inputWrapperStyles.disabled,
             isDisabled && styles.disabled,
-            triggerLabel == null && !renderTrigger && styles.placeholder,
+            triggerLabel == null && styles.placeholder,
             xstyle,
           ),
           className,
