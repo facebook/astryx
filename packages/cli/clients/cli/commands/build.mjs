@@ -136,9 +136,24 @@ export function registerBuild(program) {
           ? 'No exact page template — use the closest as a layout reference, then compose:'
           : 'No page template fits — frame with AppShell, then compose the pieces below:';
 
+      // A short legend up top: what this output is, how to use it, and the exact
+      // order of the sections below (only the ones actually present) so it reads
+      // clearly and parses predictably.
+      const sectionsOrder = ['START'];
+      if (pages.length) sectionsOrder.push('PAGE TEMPLATES');
+      if (blocks.length) sectionsOrder.push('BLOCKS');
+      if (domain.length) sectionsOrder.push('DOMAIN COMPONENTS');
+      sectionsOrder.push('FRAME + FOUNDATION');
+
       /** @type {import('../formatters/index.mjs').Block[]} */
       const out = [
-        title(`Building "${q}"`),
+        title(`Build kit for "${q}"`),
+        text(
+          'A recommended set of pieces to assemble this page, in the order to use them. ' +
+            'Run START first, then pull from the sections below — each recommended item ' +
+            'includes a `command:` to run next.\n' +
+            `Sections in order: ${sectionsOrder.join(', ')}.`,
+        ),
         section('START', `${startNote}\n${startCmd}`),
       ];
 
