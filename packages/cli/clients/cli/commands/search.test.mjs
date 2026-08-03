@@ -208,6 +208,9 @@ describe('search CLI — exit codes + JSON contract', () => {
     const r = await runCli(['search', 'button', '--verbose'], REPO_ROOT);
     expect(r.status).toBe(0);
     expect(r.stdout).toContain('import:');
-    expect(r.stdout).toContain('match:');
+    // Ranking detail: pre-formatter this was a single `match: <reason> (score N)`
+    // line; it's now separate `score:` / `reason:` record fields mirroring --json.
+    expect(r.stdout).toContain('score:');
+    expect(r.stdout).toContain('reason:');
   });
 }, SCAN_TIMEOUT);
