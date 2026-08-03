@@ -16,7 +16,7 @@
 
 import {getRunPrefix} from '../../../foundation/env/package-manager.mjs';
 import {jsonOut} from '../../../foundation/response/json.mjs';
-import {emit, section, text, records} from '../formatters/index.mjs';
+import {emit, section, text, record, records, code} from '../formatters/index.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {blog as blogApi} from '../../../api/blog/blog.mjs';
 
@@ -64,8 +64,9 @@ export function registerBlog(program) {
           text(`Read one: ${run} astryx blog <slug>`),
         );
       } else {
-        // blog.detail — print the feed URL, then the plaintext body verbatim.
-        emit(text(`Feed: ${result.data.feedUrl}`), text(result.data.text));
+        // blog.detail — the feed URL, then the post body emitted verbatim
+        // (code() so article typography/spacing isn't ASCII-normalized).
+        emit(record({feed: result.data.feedUrl}), code(result.data.text));
       }
     });
 }
