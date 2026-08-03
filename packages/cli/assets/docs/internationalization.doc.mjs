@@ -348,12 +348,22 @@ function SaveButton() {
           text: "When you author a component that needs to respond to direction, resolve it from the DOM, not from a render-time JavaScript read, and reach for the lightest tool that works. In priority order:",
         },
         {
-          type: 'prose',
-          text: "**1. CSS logical properties first.** Use `insetInlineStart`, `paddingInlineEnd`, `marginInline`, and friends instead of physical `left`/`right`. Most mirroring needs nothing more; the browser flips it from the ambient `dir`. The `@astryx/no-physical-properties` ESLint rule enforces this.",
+          type: 'heading',
+          level: 4,
+          text: '1. CSS logical properties first',
         },
         {
           type: 'prose',
-          text: "**2. Directional icons: mirror with CSS, not a name-swap.** Render one fixed glyph and wrap it in the shared `rtlStyles.mirror` (a `scaleX(-1)` that only applies under `[dir=\"rtl\"]`). It flips from the ancestor `dir` through the cascade, so it works on the server with no hydration flash. Do not pick `chevronLeft` vs `chevronRight` in JS. This is how Pagination, Calendar, and Carousel handle their chevrons.",
+          text: "Use `insetInlineStart`, `paddingInlineEnd`, `marginInline`, and friends instead of physical `left`/`right`. Most mirroring needs nothing more; the browser flips it from the ambient `dir`. The `@astryx/no-physical-properties` ESLint rule enforces this.",
+        },
+        {
+          type: 'heading',
+          level: 4,
+          text: '2. Directional icons — mirror with CSS, not a name-swap',
+        },
+        {
+          type: 'prose',
+          text: "Render one fixed glyph and wrap it in the shared `rtlStyles.mirror` (a `scaleX(-1)` that only applies under `[dir=\"rtl\"]`). It flips from the ancestor `dir` through the cascade, so it works on the server with no hydration flash. Do not pick `chevronLeft` vs `chevronRight` in JS. This is how Pagination, Calendar, and Carousel handle their chevrons.",
         },
         {
           type: 'code',
@@ -372,12 +382,22 @@ function NextButton() {
 }`,
         },
         {
-          type: 'prose',
-          text: "**3. Behavioral logic: read the DOM lazily, on the event.** For things CSS can't express; keyboard arrow-key mapping, drag/scroll math; read direction at interaction time with `isRtlElement(el)` (a `getComputedStyle().direction` check), never during render. The focus primitives (`useListFocus`, `useGridFocus`, `useTreeFocus`) already auto-detect direction from their container, so arrow keys flip for free; don't pass a direction flag to them. (`isRtl` on `useListFocus`/`useGridFocus` is deprecated in favor of auto-detection, and new hooks don't accept it.)",
+          type: 'heading',
+          level: 4,
+          text: '3. Behavioral logic — read the DOM lazily, on the event',
         },
         {
           type: 'prose',
-          text: "**4. `useDirection()` (context) is the last resort.** Reach for it only when you genuinely need the direction value during render and none of the above fit. It's SSR-safe and returns `'ltr'` outside a provider (matching `useTranslator`'s silent fallback), but it's the one path that can mismatch on hydration if the provider's `direction` disagrees with `<html dir>`; so prefer 1–3, which resolve purely from the DOM. As of the CSS-mirror migration, no astryx component reads direction from context at render time.",
+          text: "For things CSS can't express; keyboard arrow-key mapping, drag/scroll math; read direction at interaction time with `isRtlElement(el)` (a `getComputedStyle().direction` check), never during render. The focus primitives (`useListFocus`, `useGridFocus`, `useTreeFocus`) already auto-detect direction from their container, so arrow keys flip for free; don't pass a direction flag to them. (`isRtl` on `useListFocus`/`useGridFocus` is deprecated in favor of auto-detection, and new hooks don't accept it.)",
+        },
+        {
+          type: 'heading',
+          level: 4,
+          text: '4. useDirection() context — the last resort',
+        },
+        {
+          type: 'prose',
+          text: "Reach for it only when you genuinely need the direction value during render and none of the above fit. It's SSR-safe and returns `'ltr'` outside a provider (matching `useTranslator`'s silent fallback), but it's the one path that can mismatch on hydration if the provider's `direction` disagrees with `<html dir>`; so prefer the options above, which resolve purely from the DOM. As of the CSS-mirror migration, no astryx component reads direction from context at render time.",
         },
         {
           type: 'heading',
