@@ -30,7 +30,6 @@ import {Icon} from '../Icon';
 import {Spinner} from '../Spinner';
 import {useTranslator} from '../i18n';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
-import type {LayerPlacement} from '../Layer/useLayer';
 import {usePopover} from '../Popover/usePopover';
 import {
   colorVars,
@@ -208,7 +207,7 @@ export interface ComplexSelectorProps<Value> extends Omit<
   /** Width of the field. */
   width?: SizeValue;
   /** Popup placement. */
-  placement?: LayerPlacement;
+  placement?: 'above' | 'below' | 'start' | 'end';
   /** StyleX styles for the popup content container. */
   contentXstyle?: StyleXStyles;
   /** Test ID for the trigger container. */

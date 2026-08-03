@@ -102,7 +102,7 @@ export const docs = {
         },
         {
           name: 'placement',
-          type: 'LayerPlacement',
+          type: "'above' | 'below' | 'start' | 'end'",
           description: 'Popup placement.',
           default: "'below'",
         },
