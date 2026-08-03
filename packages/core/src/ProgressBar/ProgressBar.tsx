@@ -210,18 +210,28 @@ const styles = stylex.create({
     whiteSpace: 'nowrap',
     borderWidth: 0,
   },
-  // The `role="progressbar"` element. It no longer clips its content
-  // (`overflow` stays visible) so a themed mark taller than the bar can
-  // overhang it. The fill rounds its own corners via `border-radius` (see
-  // `fill`), so dropping the clip does not change the fill's appearance at any
-  // progress — the track clip was redundant for the fill, which is always
-  // inside the track box.
+  // The `role="progressbar"` element. In determinate mode it does NOT clip its
+  // content (`overflow` stays visible) so a themed mark taller than the bar can
+  // overhang it; the determinate fill rounds its own corners via `border-radius`
+  // (see `fill`) and is always inside the track box, so dropping the clip does
+  // not change its appearance at any progress. Indeterminate mode re-adds the
+  // clip via `trackClipped` (see below) — its sliding fill travels outside the
+  // track and must be clipped, and marks are ignored while indeterminate, so
+  // there is nothing to overhang.
   track: {
     position: 'relative',
     width: '100%',
     height: '8px',
     backgroundColor: colorVars['--color-background-muted'],
     borderRadius: radiusVars['--radius-full'],
+  },
+  // Indeterminate-only clip. The indeterminate fill slides from translateX
+  // -100% to 250%, so it deliberately overshoots the track on both sides and
+  // relies on the track clipping it to the visible window. Applied only when
+  // `isIndeterminate` (marks are suppressed then, so nothing needs to overhang)
+  // so it never re-clips a themed tall mark in determinate mode.
+  trackClipped: {
+    overflow: 'hidden',
   },
   fill: {
     height: '100%',
@@ -434,7 +444,7 @@ export function ProgressBar({
         aria-valuetext={isIndeterminate ? undefined : valueText}
         {...mergeProps(
           themeProps('progressbar-track'),
-          stylex.props(styles.track),
+          stylex.props(styles.track, isIndeterminate && styles.trackClipped),
         )}>
         {isIndeterminate ? (
           <div

@@ -503,10 +503,10 @@ describe('ProgressBar', () => {
       expect(container.querySelectorAll(MARK)).toHaveLength(1);
     });
 
-    it('does not clip marks (track carries no overflow:hidden)', () => {
-      // Removing the clip from the progressbar element is what lets a themed
-      // taller mark overhang the bar. Assert the compiled track class does
-      // not set overflow:hidden.
+    it('does not clip marks in determinate mode (track carries no overflow:hidden)', () => {
+      // In determinate mode the track must NOT clip, so a themed taller mark
+      // can overhang the bar. (Indeterminate mode re-adds the clip — covered
+      // separately — but marks are suppressed there, so nothing overhangs.)
       render(
         <ProgressBar
           value={50}
@@ -549,6 +549,38 @@ describe('ProgressBar', () => {
         },
       );
       expect(trackHasOverflowHidden).toBe(false);
+    });
+
+    it('clips the track in indeterminate mode (the sliding fill must not escape)', () => {
+      // Regression: the indeterminate fill slides from translateX -100% to
+      // 250%, deliberately overshooting the track, and relies on the track
+      // clipping it to the visible window. Determinate mode drops the clip so
+      // marks can overhang — indeterminate mode must keep it.
+      render(<ProgressBar isIndeterminate label="Loading" />);
+      const progressbar = screen.getByRole('progressbar');
+      let css = '';
+      for (const sheet of Array.from(document.styleSheets)) {
+        try {
+          for (const rule of Array.from(sheet.cssRules)) {
+            css += rule.cssText + '\n';
+          }
+        } catch {
+          // ignore cross-origin sheets
+        }
+      }
+      css += Array.from(document.querySelectorAll('style'))
+        .map(s => s.textContent || '')
+        .join('\n');
+      const trackHasOverflowHidden = Array.from(progressbar.classList).some(
+        cls => {
+          const re = new RegExp(
+            `\\.${cls}\\b[^{]*\\{[^}]*overflow:\\s*hidden`,
+            'i',
+          );
+          return re.test(css);
+        },
+      );
+      expect(trackHasOverflowHidden).toBe(true);
     });
 
     it('leaves the mark height overridable (defaults via CSS var)', () => {
