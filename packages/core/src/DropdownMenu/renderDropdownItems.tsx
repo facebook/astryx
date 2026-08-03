@@ -35,7 +35,11 @@ const styles = stylex.create({
     userSelect: 'none',
   },
   divider: {
-    marginBlock: spacingVars['--spacing-1'],
+    // Exposed as a themable var (default: the token) so a theme can retune the
+    // menu divider's vertical rhythm via `--_dropdown-menu-divider-margin`
+    // without out-specifying the global Divider slot. Matches the component's
+    // existing `--_dropdown-menu-*` private-var pattern.
+    marginBlock: `var(--_dropdown-menu-divider-margin, ${spacingVars['--spacing-1']})`,
   },
 });
 

@@ -42,10 +42,12 @@ export const docs = {
     vars: [
       {name: '--_dropdown-menu-radius', description: 'Border radius of the menu popup', default: 'var(--radius-element)', private: true},
       {name: '--_dropdown-menu-padding', description: 'Inner padding of the menu popup', default: 'var(--spacing-1)', private: true},
+      {name: '--_dropdown-menu-divider-margin', description: 'Vertical margin above and below a menu divider', default: 'var(--spacing-1)', private: true},
     ],
     derived: [
       {property: 'borderRadius', vars: ['--_dropdown-menu-radius']},
       {property: 'padding', vars: ['--_dropdown-menu-padding']},
+      {property: 'marginBlock', vars: ['--_dropdown-menu-divider-margin']},
     ],
   },
   description: 'Main dropdown menu component with a trigger button and popup item list.',
