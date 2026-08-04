@@ -23,7 +23,7 @@ jobs:
   # Detect docsite-only changes — lets docsite PRs skip heavy jobs
   check-scope:
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     permissions:
       contents: read
     outputs:
@@ -53,7 +53,7 @@ jobs:
           fi
   # Docsite data extraction tests — always runs, fast (~2s)
   docsite-test:
-    runs-on: ubuntu-latest
+    runs-on: 2-core-ubuntu-arm
     permissions:
       contents: read
     steps:
@@ -75,7 +75,7 @@ jobs:
   check-components:
     needs: [check-scope]
     if: github.event_name == 'pull_request' && needs.check-scope.outputs.docsite_only != 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     permissions:
       contents: read
     outputs:
@@ -107,7 +107,7 @@ jobs:
   # Run tests (parallel with build)
   test:
     needs: [check-scope]
-    runs-on: ubuntu-latest
+    runs-on: 2-core-ubuntu-arm
     permissions:
       contents: read
     steps:
@@ -148,7 +148,7 @@ jobs:
   # `build` join below folds their results into the historical check name.
   build-storybook:
     needs: [check-scope]
-    runs-on: ubuntu-latest
+    runs-on: 2-core-ubuntu-arm
     permissions:
       contents: read
     outputs:
@@ -291,7 +291,7 @@ jobs:
   build-sandbox:
     needs: [check-scope]
     if: github.event_name == 'pull_request' && needs.check-scope.outputs.docsite_only != 'true'
-    runs-on: ubuntu-latest
+    runs-on: 2-core-ubuntu-arm
     permissions:
       contents: read
     outputs:
@@ -364,7 +364,7 @@ jobs:
   build:
     needs: [build-storybook, build-sandbox]
     if: ${{ !cancelled() && needs.build-storybook.result != 'skipped' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     permissions: {}
     steps:
       - name: Assert parallel builds succeeded
@@ -392,7 +392,7 @@ jobs:
   pr-a11y:
     needs: [build-storybook, check-components]
     if: github.event_name == 'pull_request' && needs.check-components.outputs.has_components == 'true'
-    runs-on: ubuntu-latest
+    runs-on: 2-core-ubuntu-arm
     permissions:
       contents: read
     steps:
@@ -462,7 +462,7 @@ jobs:
   pr-rtl:
     needs: [build-storybook]
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: 2-core-ubuntu-arm
     continue-on-error: true
     permissions:
       contents: read

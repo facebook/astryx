@@ -18,7 +18,7 @@ permissions: {}
 jobs:
   create-hardening-issues:
     if: github.event.pull_request.merged == true
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     permissions:
       issues: write
       contents: read

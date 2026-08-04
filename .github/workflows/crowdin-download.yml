@@ -26,7 +26,7 @@ concurrency:
 
 jobs:
   download:
-    runs-on: ubuntu-latest
+    runs-on: 4-core-ubuntu
     permissions:
       contents: write
       pull-requests: write

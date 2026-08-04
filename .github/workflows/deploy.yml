@@ -42,7 +42,7 @@ jobs:
   # Verify package.json exports match the source tree.
   # Fails if exports are stale — run `node scripts/sync-exports.js` locally to fix.
   sync-exports:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     permissions:
       contents: read
     steps:
@@ -53,7 +53,7 @@ jobs:
 
 
   test:
-    runs-on: ubuntu-latest
+    runs-on: 2-core-ubuntu-arm
     permissions:
       contents: read
     steps:
@@ -103,7 +103,7 @@ jobs:
   # handed to `deploy` as artifacts, so a broken test run never publishes —
   # test still gates the push, it just no longer serializes the build.
   build:
-    runs-on: ubuntu-latest
+    runs-on: 2-core-ubuntu-arm
     permissions:
       contents: read
     steps:
@@ -188,7 +188,7 @@ jobs:
   deploy:
     needs: [test, build]
     if: always() && !cancelled() && needs.test.result == 'success' && needs.build.result == 'success'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     permissions:
       contents: write
     steps:
