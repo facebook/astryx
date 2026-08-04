@@ -92,8 +92,14 @@ export const docs = {
       {
         name: '--progressbar-mark-color',
         description:
-          'Color of a target mark. Defaults to `--color-on-accent` (white) so the tick reads against the colored fill; set it on the `progressbar-mark` target to tune per-variant contrast (e.g. where a mark sits over the unfilled track).',
-        default: 'var(--color-on-accent)',
+          'Color of a target mark. Defaults to `--color-text-primary`; set it on the `progressbar-mark` target to tune per-variant contrast (e.g. white over a bold fill, or a distinct accent over the unfilled track).',
+        default: 'var(--color-text-primary)',
+      },
+      {
+        name: '--progressbar-mark-width',
+        description:
+          'Width (thickness) of a target mark. Defaults to 2px; set it on the `progressbar-mark` target for a thinner or bolder tick.',
+        default: '2px',
       },
     ],
   },
@@ -200,8 +206,14 @@ export const docsZh = {
       {
         name: '--progressbar-mark-color',
         description:
-          'Color of a target mark. Defaults to `--color-on-accent` (white) so the tick reads against the colored fill; set it on the `progressbar-mark` target to tune per-variant contrast (e.g. where a mark sits over the unfilled track).',
-        default: 'var(--color-on-accent)',
+          'Color of a target mark. Defaults to `--color-text-primary`; set it on the `progressbar-mark` target to tune per-variant contrast (e.g. white over a bold fill, or a distinct accent over the unfilled track).',
+        default: 'var(--color-text-primary)',
+      },
+      {
+        name: '--progressbar-mark-width',
+        description:
+          'Width (thickness) of a target mark. Defaults to 2px; set it on the `progressbar-mark` target for a thinner or bolder tick.',
+        default: '2px',
       },
     ],
   },

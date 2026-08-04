@@ -613,7 +613,7 @@ describe('ProgressBar', () => {
       expect(container.querySelectorAll(MARK)).toHaveLength(1);
     });
 
-    it('leaves the mark color overridable (defaults to on-accent white)', () => {
+    it('leaves the mark color overridable (defaults to text-primary)', () => {
       // The mark reads `var(--progressbar-mark-color, ...)`, so a theme
       // targeting `.astryx-progressbar-mark` can recolor the tick (e.g. for
       // per-variant contrast) without touching the component.
@@ -638,8 +638,10 @@ describe('ProgressBar', () => {
         .map(s => s.textContent || '')
         .join('\n');
       // The tick's color comes from the themeable var, defaulting to the
-      // on-accent (white) token so it reads against the colored fill.
+      // text-primary token.
       expect(css).toMatch(/var\(--progressbar-mark-color,/);
+      // Its thickness is themeable too, defaulting to 2px.
+      expect(css).toMatch(/var\(--progressbar-mark-width,\s*2px\)/);
     });
   });
 });

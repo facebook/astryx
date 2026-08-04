@@ -264,14 +264,13 @@ const styles = stylex.create({
   mark: {
     position: 'absolute',
     top: '50%',
-    width: 2,
+    width: 'var(--progressbar-mark-width, 2px)',
     height: 'var(--progressbar-mark-height, 8px)',
-    // White by default (`--color-on-accent`) so the tick reads against the
-    // colored fill, matching the reference design. Themeable via
-    // `--progressbar-mark-color` on the `progressbar-mark` target so a theme
-    // can tune per-variant contrast (e.g. where a mark sits over the unfilled
-    // track rather than the fill).
-    backgroundColor: `var(--progressbar-mark-color, ${colorVars['--color-on-accent']})`,
+    // Defaults to `--color-text-primary`; themeable via `--progressbar-mark-color`
+    // on the `progressbar-mark` target so a theme can tune per-variant contrast
+    // (e.g. white over a bold fill, or a distinct accent over the unfilled
+    // track).
+    backgroundColor: `var(--progressbar-mark-color, ${colorVars['--color-text-primary']})`,
     outline: {
       default: 'none',
       ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
