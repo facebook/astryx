@@ -127,7 +127,7 @@ describe('DateRangeInput', () => {
       />,
     );
     const trigger = getButton(/Range/);
-    expect(trigger.getAttribute('aria-label')).toMatch(/Required/);
+    expect(trigger).toHaveAccessibleName(/Required/);
   });
 
   it('disables trigger when isDisabled is true', () => {
