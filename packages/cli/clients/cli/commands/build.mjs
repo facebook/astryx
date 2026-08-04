@@ -118,8 +118,8 @@ export function registerBuild(program) {
 
       // Same JSON->text projection as search, but leaner: the section header
       // already says the kind, so drop `domain`/`import` by default (they're in
-      // --json and under --detail). Keeps each item to name/displayName/desc/cmd.
-      const fields = options.detail
+      // --json and under --verbose). Keeps each item to name/displayName/desc/cmd.
+      const fields = options.verbose
         ? ['name', 'domain', 'displayName', 'score', 'reason', 'import', 'description', 'command']
         : ['name', 'displayName', 'description', 'command'];
       /** @type {import('../formatters/index.mjs').RecordOptions} */

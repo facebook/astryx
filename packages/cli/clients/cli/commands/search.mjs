@@ -75,7 +75,7 @@ export function registerSearch(program) {
       // The text view is just a projection of the JSON: one record per result,
       // fields in a fixed order (missing ones skipped), command prefixed for the
       // caller's package manager. Ranked order is preserved (best match first).
-      const fields = options.detail
+      const fields = options.verbose
         ? ['name', 'domain', 'displayName', 'score', 'reason', 'import', 'description', 'command']
         : ['name', 'domain', 'displayName', 'import', 'description', 'command'];
 
