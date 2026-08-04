@@ -7,15 +7,14 @@
  *   DEFAULT_NODES set.
  * @output Standalone Markdown <-> serialized EditorState helpers:
  *   markdownToEditorStateJSON, editorStateJSONToMarkdown.
- * @position Re-exported from RichTextEditor/index.ts and the @astryxdesign/lab
+ * @position Re-exported from RichTextEditor/index.ts and the @astryxdesign/richtext
  *   barrel. Complements the ref's getMarkdown() by working WITHOUT a mounted
  *   editor (e.g. to produce a `defaultValue` from Markdown on the server).
  *
  * SYNC: When modified, update:
- * - /packages/lab/src/RichTextEditor/index.ts (exports)
- * - /packages/lab/src/index.ts (barrel re-export)
- * - /packages/lab/src/RichTextEditor/RichTextEditor.doc.mjs (usage notes)
- * - /packages/lab/src/RichTextEditor/RichTextEditor.test.tsx (tests)
+ * - /packages/richtext/src/index.ts (exports)
+ * - /packages/richtext/src/RichTextEditor.doc.mjs (usage notes)
+ * - /packages/richtext/src/RichTextEditor.test.tsx (tests)
  *
  * NOTE: `@lexical/headless`, `@lexical/markdown`, and `lexical` are OPTIONAL
  * peer dependencies (this is a canary lab module). Install them to use these

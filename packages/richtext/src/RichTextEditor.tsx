@@ -7,17 +7,16 @@
  * @input Uses React, useId, Lexical (lexical + @lexical/react), Field, design tokens
  * @output Exports RichTextEditor component, RichTextEditorProps, RichTextEditorStatus,
  *   RichTextEditorStatusType, RichTextEditorSize
- * @position Experimental (lab) implementation; consumed by RichTextEditor/index.ts and
- *   re-exported from @astryxdesign/lab. Tested by RichTextEditor.test.tsx.
+ * @position Experimental (richtext) implementation; consumed by the package index.ts and
+ *   re-exported from @astryxdesign/richtext. Tested by RichTextEditor.test.tsx.
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/lab/src/RichTextEditor/RichTextEditor.doc.mjs (props table, features, implementation notes)
- * - /packages/lab/src/RichTextEditor/RichTextEditor.test.tsx (tests for new/changed behavior)
- * - /packages/lab/src/RichTextEditor/index.ts (exports if types change)
- * - /packages/lab/src/index.ts (barrel re-export)
+ * - /packages/richtext/src/RichTextEditor.doc.mjs (props table, features, implementation notes)
+ * - /packages/richtext/src/RichTextEditor.test.tsx (tests for new/changed behavior)
+ * - /packages/richtext/src/index.ts (exports if types change)
  * - /apps/storybook/stories/RichTextEditor.stories.tsx (storybook stories)
  *
- * NOTE: This is an EXPERIMENTAL component in @astryxdesign/lab (published only under
+ * NOTE: This is an EXPERIMENTAL component in @astryxdesign/richtext (published only under
  * the `@canary` dist-tag, never as stable `latest`). It is the initial landing for the
  * OSS Lexical editor RFC; the goal is graduation to @astryxdesign/core after the
  * Component Specification Protocol. `lexical` and `@lexical/*` are OPTIONAL peer
@@ -356,7 +355,7 @@ export interface RichTextEditorProps extends Omit<
 
 /**
  * A WYSIWYG rich-text editor built on Lexical, styled with Astryx design
- * tokens. Experimental — ships from `@astryxdesign/lab` (canary). `lexical` and
+ * tokens. Experimental — ships from `@astryxdesign/richtext` (canary). `lexical` and
  * `@lexical/*` are optional peer dependencies — install them to use this
  * component.
  *
@@ -369,7 +368,7 @@ export interface RichTextEditorProps extends Omit<
  *
  * @example
  * ```
- * import {RichTextEditor, type RichTextEditorRef} from '@astryxdesign/lab';
+ * import {RichTextEditor, type RichTextEditorRef} from '@astryxdesign/richtext';
  * const ref = useRef<RichTextEditorRef>(null);
  * <RichTextEditor
  *   ref={ref}

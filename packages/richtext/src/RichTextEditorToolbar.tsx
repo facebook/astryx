@@ -9,18 +9,17 @@
  *   command constants, plus Astryx Toolbar / ToggleButton / Divider primitives.
  * @output Exports RichTextEditorToolbar (a composable formatting toolbar) and
  *   RichTextEditorToolbarProps.
- * @position Experimental (lab). Drop into RichTextEditor's `plugins` slot to add
+ * @position Experimental (richtext). Drop into RichTextEditor's `plugins` slot to add
  *   a formatting toolbar. Themed via Astryx Toolbar/ToggleButton, so it inherits
  *   the active theme with no extra styling.
  *
  * SYNC: When modified, update:
- * - /packages/lab/src/RichTextEditor/index.ts (exports)
- * - /packages/lab/src/index.ts (barrel re-export)
- * - /packages/lab/src/RichTextEditor/RichTextEditor.doc.mjs (usage notes)
- * - /packages/lab/src/RichTextEditor/RichTextEditor.test.tsx (tests)
+ * - /packages/richtext/src/index.ts (exports)
+ * - /packages/richtext/src/RichTextEditor.doc.mjs (usage notes)
+ * - /packages/richtext/src/RichTextEditor.test.tsx (tests)
  * - /apps/storybook/stories/RichTextEditor.stories.tsx (WithToolbar story)
  *
- * NOTE: Experimental `@astryxdesign/lab` component (canary). `lexical` and
+ * NOTE: Experimental `@astryxdesign/richtext` component (canary). `lexical` and
  * `@lexical/*` are OPTIONAL peer dependencies — install them to use this.
  * Behavior mirrors the Lexical playground toolbar (selection sync + format
  * commands); the UI is built from Astryx primitives so it matches the theme.
@@ -401,7 +400,7 @@ export interface RichTextEditorToolbarProps {
  *
  * @example
  * ```
- * import {RichTextEditor, RichTextEditorToolbar} from '@astryxdesign/lab';
+ * import {RichTextEditor, RichTextEditorToolbar} from '@astryxdesign/richtext';
  *
  * <RichTextEditor
  *   label="Notes"

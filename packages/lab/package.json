@@ -60,18 +60,7 @@
     "@stylexjs/stylex": ">=0.10.0",
     "@astryxdesign/core": "0.2.0",
     "react": ">=19.0.0",
-    "react-dom": ">=19.0.0",
-    "lexical": "^0.46.0",
-    "@lexical/react": "^0.46.0",
-    "@lexical/markdown": "^0.46.0",
-    "@lexical/headless": "^0.46.0",
-    "@lexical/html": "^0.46.0",
-    "@lexical/link": "^0.46.0",
-    "@lexical/list": "^0.46.0",
-    "@lexical/rich-text": "^0.46.0",
-    "@lexical/selection": "^0.46.0",
-    "@lexical/code": "^0.46.0",
-    "@lexical/utils": "^0.46.0"
+    "react-dom": ">=19.0.0"
   },
   "dependencies": {
     "d3-array": "^3.2.4",
@@ -80,54 +69,8 @@
   },
   "devDependencies": {
     "@astryxdesign/cli": "workspace:*",
-    "@lexical/code": "^0.46.0",
-    "@lexical/headless": "^0.46.0",
-    "@lexical/html": "^0.46.0",
-    "@lexical/link": "^0.46.0",
-    "@lexical/list": "^0.46.0",
-    "@lexical/markdown": "^0.46.0",
-    "@lexical/react": "^0.46.0",
-    "@lexical/rich-text": "^0.46.0",
-    "@lexical/selection": "^0.46.0",
-    "@lexical/utils": "^0.46.0",
     "@types/d3-array": "^3.2.2",
     "@types/d3-scale": "^4.0.9",
-    "@types/d3-shape": "^3.1.8",
-    "lexical": "^0.46.0"
-  },
-  "peerDependenciesMeta": {
-    "lexical": {
-      "optional": true
-    },
-    "@lexical/react": {
-      "optional": true
-    },
-    "@lexical/markdown": {
-      "optional": true
-    },
-    "@lexical/headless": {
-      "optional": true
-    },
-    "@lexical/html": {
-      "optional": true
-    },
-    "@lexical/link": {
-      "optional": true
-    },
-    "@lexical/list": {
-      "optional": true
-    },
-    "@lexical/rich-text": {
-      "optional": true
-    },
-    "@lexical/selection": {
-      "optional": true
-    },
-    "@lexical/code": {
-      "optional": true
-    },
-    "@lexical/utils": {
-      "optional": true
-    }
+    "@types/d3-shape": "^3.1.8"
   }
 }
