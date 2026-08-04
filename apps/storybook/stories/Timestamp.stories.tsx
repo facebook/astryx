@@ -288,16 +288,16 @@ export const PerEntryCopyable: Story = {
     <div style={{display: 'flex', flexDirection: 'column', gap: '32px'}}>
       <div>
         <Text type="supporting" color="secondary">
-          Mixed: human-readable rows are read-only; only the machine value is
-          copyable
+          Mixed: human-readable rows are read-only; only the machine value opts
+          into a copy button
         </Text>
         <div>
           <Timestamp
             value="2026-02-19T17:00:00Z"
             format="relative"
             tooltipEntries={[
-              {label: 'Local', isCopyable: false},
-              {timezoneID: 'UTC', label: 'UTC', isCopyable: false},
+              {label: 'Local'},
+              {timezoneID: 'UTC', label: 'UTC'},
               {
                 timezoneID: 'UTC',
                 format: 'system_date_time',
@@ -310,28 +310,30 @@ export const PerEntryCopyable: Story = {
       </div>
       <div>
         <Text type="supporting" color="secondary">
-          Fully read-only card — no copy buttons at all (right padding check)
+          Fully read-only card — no row opts in, so there is no copy button and
+          no trailing action column
         </Text>
         <div>
           <Timestamp
             value="2026-02-19T17:00:00Z"
             format="relative"
             tooltipEntries={[
-              {label: 'Local', isCopyable: false},
-              {timezoneID: 'UTC', label: 'UTC', isCopyable: false},
+              {label: 'Local'},
+              {timezoneID: 'UTC', label: 'UTC'},
             ]}
           />
         </div>
       </div>
       <div>
         <Text type="supporting" color="secondary">
-          Single read-only row, no label (right padding check)
+          Single read-only row with no label — the value sits flush at the
+          leading edge
         </Text>
         <div>
           <Timestamp
             value="2026-02-19T17:00:00Z"
             format="relative"
-            tooltipEntries={[{isCopyable: false}]}
+            tooltipEntries={[{}]}
           />
         </div>
       </div>

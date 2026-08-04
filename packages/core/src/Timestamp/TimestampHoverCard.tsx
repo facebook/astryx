@@ -105,24 +105,16 @@ const gridTemplates = stylex.create({
 const COPY_FEEDBACK_MS = 1500;
 
 /**
- * One row of the hover card: an optional label, the formatted instant, and —
- * when the row is copyable and the card reserves an action column — a copy
- * button in that trailing column. When `hasActionColumn` is true but this row
- * is not copyable, an empty action cell is emitted so the columns stay aligned.
+ * The per-row copy affordance: a compact ghost `IconButton` that writes the
+ * row's value to the clipboard, flips `copy` → `check` for a moment, and
+ * announces the copy to a polite live region (a swapped aria-label alone
+ * isn't reliably announced). A clipboard rejection is a silent no-op.
  *
- * Copy affordance: `navigator.clipboard.writeText`, an icon that flips
- * `copy` → `check` for a moment, a polite live-region announcement, and a
- * silent no-op when the clipboard rejects.
+ * Kept as its own component so its state/timer/effect only exist for rows that
+ * actually opt into copying — read-only rows render no button and carry none
+ * of this machinery.
  */
-function EntryRow({
-  line,
-  hasLabelColumn,
-  hasActionColumn,
-}: {
-  line: TimestampTooltipLine;
-  hasLabelColumn: boolean;
-  hasActionColumn: boolean;
-}) {
+function CopyButton({value}: {value: string}) {
   const t = useTranslator();
   const announce = useAnnounce();
   const [copied, setCopied] = useState(false);
@@ -138,10 +130,8 @@ function EntryRow({
 
   const handleCopy = useCallback(async () => {
     try {
-      await navigator.clipboard.writeText(line.value);
+      await navigator.clipboard.writeText(value);
       setCopied(true);
-      // A swapped aria-label alone isn't reliably announced, so confirm the
-      // copy via a polite live region.
       announce(t('@astryx.timestamp.copied'));
       // Restart the reset timer on every copy so a rapid re-copy isn't
       // reverted early by the previous click's timer.
@@ -155,8 +145,42 @@ function EntryRow({
     } catch {
       // Clipboard failures leave the copied state unchanged.
     }
-  }, [line.value, announce, t]);
+  }, [value, announce, t]);
 
+  return (
+    <IconButton
+      variant="ghost"
+      size="sm"
+      icon={<Icon icon={copied ? 'check' : 'copy'} size="sm" color="inherit" />}
+      label={
+        copied
+          ? t('@astryx.timestamp.copied')
+          : t('@astryx.timestamp.copyValue', {value})
+      }
+      onClick={() => {
+        void handleCopy();
+      }}
+      {...themeProps('timestamp-copy-button')}
+    />
+  );
+}
+
+/**
+ * One row of the hover card: an optional label, the formatted instant, and —
+ * when the card reserves an action column — a trailing action cell holding the
+ * copy button (for a copyable row) or nothing (for a read-only row, so the
+ * columns stay aligned). Pure presentation: the copy state lives in
+ * {@link CopyButton}, which only copyable rows render.
+ */
+function EntryRow({
+  line,
+  hasLabelColumn,
+  hasActionColumn,
+}: {
+  line: TimestampTooltipLine;
+  hasLabelColumn: boolean;
+  hasActionColumn: boolean;
+}) {
   return (
     <div {...stylex.props(styles.row)}>
       {hasLabelColumn && (
@@ -165,28 +189,7 @@ function EntryRow({
       <dd {...stylex.props(styles.value)}>{line.value}</dd>
       {hasActionColumn && (
         <div {...stylex.props(styles.action)}>
-          {line.isCopyable && (
-            <IconButton
-              variant="ghost"
-              size="sm"
-              icon={
-                <Icon
-                  icon={copied ? 'check' : 'copy'}
-                  size="sm"
-                  color="inherit"
-                />
-              }
-              label={
-                copied
-                  ? t('@astryx.timestamp.copied')
-                  : t('@astryx.timestamp.copyValue', {value: line.value})
-              }
-              onClick={() => {
-                void handleCopy();
-              }}
-              {...themeProps('timestamp-copy-button')}
-            />
-          )}
+          {line.isCopyable && <CopyButton value={line.value} />}
         </div>
       )}
     </div>
