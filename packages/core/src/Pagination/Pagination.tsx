@@ -13,7 +13,7 @@
  * - /packages/core/src/Pagination/Pagination.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Pagination/index.ts (exports if types change)
  * - /apps/storybook/stories/Pagination.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Pagination/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Pagination/ (showcase blocks)
  *
  * Last synced props: page, onChange, changeAction, totalItems, totalPages, hasMore,
  *   pageSize, pageSizeOptions, onPageSizeChange, variant, siblingCount, size, isDisabled,
@@ -42,31 +42,11 @@ import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n/useTranslator';
 import {useDirection} from '../i18n/useDirection';
+import type {PaginationVariantMap} from './index';
 
 // =============================================================================
 // Types
 // =============================================================================
-
-/**
- * Extensible variant map for Pagination.
- *
- * Theme packages can add custom variants via TypeScript module augmentation:
- * @example
- * ```
- * declare module '@astryxdesign/core/Pagination' {
- *   interface PaginationVariantMap {
- *     'progress': true;
- *   }
- * }
- * ```
- */
-export interface PaginationVariantMap {
-  pages: true;
-  count: true;
-  compact: true;
-  dots: true;
-  none: true;
-}
 
 /** Visual variant controlling what appears between prev/next buttons.
  * Extensible via module augmentation of PaginationVariantMap.

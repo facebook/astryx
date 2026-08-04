@@ -35,3 +35,8 @@ export {
   DropdownMenuRadioItem as ContextMenuRadioItem,
   type DropdownMenuRadioItemProps as ContextMenuRadioItemProps,
 } from '../DropdownMenu/DropdownMenuRadioItem';
+// Submenus work inside a ContextMenu too (nested flyout of items).
+export {
+  DropdownMenuSubMenu as ContextMenuSubMenu,
+  type DropdownMenuSubMenuProps as ContextMenuSubMenuProps,
+} from '../DropdownMenu/DropdownMenuSubMenu';

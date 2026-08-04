@@ -15,7 +15,7 @@
  * - /packages/core/src/RadioList/RadioList.test.tsx
  * - /packages/core/src/RadioList/index.ts
  * - /apps/storybook/stories/RadioList.stories.tsx
- * - /packages/cli/templates/blocks/components/RadioList/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/RadioList/ (showcase blocks)
  */
 
 import React, {use, useId, type ReactNode} from 'react';
@@ -119,7 +119,14 @@ const styles = stylex.create({
   },
   innerDot: {
     borderRadius: '50%',
-    backgroundColor: colorVars['--color-on-accent'],
+    backgroundColor: {
+      default: colorVars['--color-on-accent'],
+      // Forced colors (Windows High Contrast) strips painted backgrounds,
+      // which would make the selected dot invisible — checked and unchecked
+      // radios would look identical. CanvasText keeps the dot perceivable on
+      // the Canvas circle fill (WCAG 1.4.11).
+      '@media (forced-colors: active)': 'CanvasText',
+    },
   },
   labelDisabled: {
     color: colorVars['--color-text-disabled'],
@@ -140,12 +147,12 @@ const wrapperSizeStyles = stylex.create({
 
 const radioSizeStyles = stylex.create({
   sm: {
-    width: 18,
-    height: 18,
+    width: 20,
+    height: 20,
   },
   md: {
-    width: 22,
-    height: 22,
+    width: 24,
+    height: 24,
   },
 });
 

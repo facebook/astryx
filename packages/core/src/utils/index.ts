@@ -98,3 +98,5 @@ export {
 export type {RGBA} from './color';
 
 export {devWarn, devError, warnOnce, formatDevMessage} from './devWarning';
+
+export {rtlStyles} from './rtlStyles';

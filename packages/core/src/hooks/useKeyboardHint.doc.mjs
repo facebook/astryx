@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').HookDoc} */
+/** @type {import('@astryxdesign/cli/authoring').HookDoc} */
 export const docs = {
   name: 'useKeyboardHint',
   displayName: 'useKeyboardHint',
@@ -72,7 +72,7 @@ export const docs = {
   category: 'focus',
 };
 
-/** @type {import('../docs-types').HookTranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').HookTranslationDoc} */
 export const docsDense = {
   description:
     'Ephemeral "← → to navigate" hint anchored to the focused item on first keyboard focus of a roving-tabindex composite (Toolbar/TabList/SegmentedControl). Teaches sighted keyboard users that arrows move within the group. Kbd-rendered arrows in a top-layer popover="manual", CSS-anchor-positioned (never clipped by overflow), aria-hidden. Auto-dismisses on first arrow press, timeout, or blur; never re-shows for that instance.',

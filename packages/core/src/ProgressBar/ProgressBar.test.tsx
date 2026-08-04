@@ -242,5 +242,39 @@ describe('ProgressBar', () => {
         unmount();
       }
     });
+
+    it('drives a direction-aware indeterminate slide (mirrored keyframe under RTL)', () => {
+      // StyleX injects the keyframes + the atomic rule that swaps the
+      // animation-name under `[dir="rtl"]`. Scan the injected CSS so we can
+      // assert the RTL branch exists without relying on jsdom animation.
+      function injectedCss(): string {
+        let out = '';
+        for (const sheet of Array.from(document.styleSheets)) {
+          try {
+            for (const rule of Array.from(sheet.cssRules)) {
+              out += rule.cssText + '\n';
+            }
+          } catch {
+            // ignore cross-origin sheets
+          }
+        }
+        out += Array.from(document.querySelectorAll('style'))
+          .map(s => s.textContent || '')
+          .join('\n');
+        return out;
+      }
+
+      render(<ProgressBar isIndeterminate label="Loading" />);
+      const css = injectedCss();
+      // LTR keyframe slides physically left → right (−100% → 250%).
+      expect(css).toMatch(/translateX\(-100%\)/);
+      expect(css).toMatch(/translateX\(250%\)/);
+      // RTL keyframe mirrors it (100% → −250%) so the bar travels along the
+      // reading flow (inline-start → inline-end, i.e. right → left).
+      expect(css).toMatch(/translateX\(100%\)/);
+      expect(css).toMatch(/translateX\(-250%\)/);
+      // The animation-name is swapped specifically under `[dir="rtl"]`.
+      expect(css).toMatch(/:is\(\[dir="rtl"\][^)]*\)[^{]*\{\s*animation-name:/);
+    });
   });
 });

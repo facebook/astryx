@@ -5,6 +5,7 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {DateRangeInput} from '@astryxdesign/core/DateRangeInput';
 import type {DateRange} from '@astryxdesign/core/DateRangeInput';
 import type {ISODateString} from '@astryxdesign/core/Calendar';
+import {Theme, defineTheme} from '@astryxdesign/core/theme';
 
 function daysAgo(n: number): ISODateString {
   const d = new Date();
@@ -339,7 +340,8 @@ export const StatusVariantComparison: Story = {
     const [a, setA] = useState<DateRange | null>(null);
     const [b, setB] = useState<DateRange | null>(null);
     return (
-      <div style={{display: 'flex', flexDirection: 'column', gap: 24, width: 320}}>
+      <div
+        style={{display: 'flex', flexDirection: 'column', gap: 24, width: 320}}>
         <DateRangeInput
           label="Attached (default)"
           value={a}
@@ -354,6 +356,59 @@ export const StatusVariantComparison: Story = {
           statusVariant="detached"
         />
       </div>
+    );
+  },
+};
+
+/**
+ * Theme the clear and calendar-toggle glyphs precisely via `defineTheme`.
+ * `components['date-range-input-clear-icon'].base` and
+ * `components['date-range-input-toggle-icon'].base` scope overrides to the
+ * icons themselves (via the `astryx-date-range-input-*-icon` targets), so a
+ * theme can recolor, hover-morph, and resize them — without a fragile
+ * descendant selector or raw CSS. Same-element rules in `@layer astryx-theme`
+ * win over each icon's own base color/size.
+ */
+const iconTheme = defineTheme({
+  name: 'date-range-input-icon-demo',
+  components: {
+    'date-range-input-clear-icon': {
+      base: {
+        width: '12px',
+        height: '12px',
+        fontSize: '12px',
+        color: 'var(--color-icon-secondary)',
+        ':hover': {color: 'var(--color-accent)'},
+      },
+    },
+    'date-range-input-toggle-icon': {
+      base: {
+        width: '14px',
+        height: '14px',
+        fontSize: '14px',
+        color: 'var(--color-accent)',
+      },
+    },
+  },
+});
+
+export const ThemedIcons: Story = {
+  render: () => {
+    const [value, setValue] = useState<DateRange | null>({
+      start: daysAgo(7),
+      end: today(),
+    });
+    return (
+      <Theme theme={iconTheme} mode="light">
+        <div style={{width: 320}}>
+          <DateRangeInput
+            label="Icons themed (12px clear w/ hover, 14px accent toggle)"
+            value={value}
+            onChange={setValue}
+            hasClear
+          />
+        </div>
+      </Theme>
     );
   },
 };

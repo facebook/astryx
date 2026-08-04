@@ -13,7 +13,7 @@
  * - /packages/core/src/ProgressBar/ProgressBar.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/ProgressBar/index.ts (exports if types change)
  * - /apps/storybook/stories/ProgressBar.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/ProgressBar/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/ProgressBar/ (showcase blocks)
  */
 
 import {useId} from 'react';
@@ -32,27 +32,7 @@ import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {VisuallyHidden} from '../VisuallyHidden';
-
-/**
- * Extensible variant map for ProgressBar.
- *
- * Theme packages can add custom variants via TypeScript module augmentation:
- * @example
- * ```
- * declare module '@astryxdesign/core/ProgressBar' {
- *   interface ProgressBarVariantMap {
- *     'brand': true;
- *   }
- * }
- * ```
- */
-export interface ProgressBarVariantMap {
-  accent: true;
-  success: true;
-  warning: true;
-  neutral: true;
-  error: true;
-}
+import type {ProgressBarVariantMap} from './index';
 
 /**
  * Progress bar variant type — maps to semantic color tokens.
@@ -132,6 +112,18 @@ const indeterminateSlide = stylex.keyframes({
   },
 });
 
+// RTL: mirror the slide so the indeterminate bar travels along the reading
+// flow (inline-start → inline-end, i.e. right → left) instead of always
+// physically left → right. The magnitudes mirror the LTR keyframe.
+const indeterminateSlideRtl = stylex.keyframes({
+  '0%': {
+    transform: 'translateX(100%)',
+  },
+  '100%': {
+    transform: 'translateX(-250%)',
+  },
+});
+
 // =============================================================================
 // Styles
 // =============================================================================
@@ -196,7 +188,10 @@ const styles = stylex.create({
     height: '100%',
     width: '40%',
     borderRadius: radiusVars['--radius-full'],
-    animationName: indeterminateSlide,
+    animationName: {
+      default: indeterminateSlide,
+      ':is([dir="rtl"] *)': indeterminateSlideRtl,
+    },
     animationDuration: {
       default: '1.5s',
       '@media (prefers-reduced-motion: reduce)': '3s',

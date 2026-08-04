@@ -13,7 +13,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import ts from 'typescript';
 import {layoutExpand, layoutCheck, layoutGrammar} from './layout.mjs';
-import {buildRegistry} from '../../lib/xle/registry.mjs';
+import {buildRegistry} from '../../foundation/xle/registry.mjs';
 
 // The registry imports ~140 .doc.mjs modules on first use; under full-suite
 // parallel load that can exceed the default 5s test timeout. Warm it once.
@@ -145,6 +145,45 @@ describe('layoutExpand', () => {
       message: expect.stringMatching(/line 1/),
     });
   });
+
+  it('maps pathologically deep nesting to a coded parse error, not ERR_UNKNOWN', async () => {
+    await expect(layoutCheck('V > '.repeat(2000) + 'C')).rejects.toMatchObject({
+      code: 'ERR_LAYOUT_PARSE',
+    });
+  });
+
+  it('wraps top-level repeats and groups in a fragment (valid JSX)', async () => {
+    for (const expr of ['B"Sign in"*3', '(B"a" + B"b")', '(B"a" + B"b")*2']) {
+      const {data} = await layoutExpand(expr);
+      expectValidTsx(data.code);
+      expect(data.code).toContain('<>');
+    }
+  }, SLOW);
+
+  it('wraps a top-level outline repeat block in a fragment', async () => {
+    const {data} = await layoutExpand('repeat 3:\n  B "x"', {form: 'outline'});
+    expectValidTsx(data.code);
+  }, SLOW);
+
+  it('emits JSX-safe TSX for text payloads containing < and >', async () => {
+    const result = await layoutExpand('Text"5 < 3 and 3 > 1"');
+    expectValidTsx(result.data.code);
+  }, SLOW);
+
+  it('emits JSX-safe TSX for text payloads containing { and }', async () => {
+    const result = await layoutExpand('Text"cost is {price}"');
+    expectValidTsx(result.data.code);
+  }, SLOW);
+
+  it('emits JSX-safe TSX when a text payload looks like a closing tag', async () => {
+    const result = await layoutExpand('Text"end</Text><img/>"');
+    expectValidTsx(result.data.code);
+  }, SLOW);
+
+  it('emits JSX-safe TSX for JSX-special chars in outline form', async () => {
+    const result = await layoutExpand('VStack\n  Text "a < b"', {form: 'outline'});
+    expectValidTsx(result.data.code);
+  }, SLOW);
 });
 
 describe('layoutCheck', () => {
@@ -237,5 +276,22 @@ describe('layoutGrammar', () => {
     expect(result.data.aliases.TB).toBe('TableBody');
     // every alias target must exist — the table is registry-filtered
     expect(Object.values(result.data.aliases)).not.toContain(undefined);
+  });
+});
+
+
+describe('layout — input validation (API matches CLI)', () => {
+  it('rejects an invalid --form value instead of silently parsing as compact', async () => {
+    await expect(layoutCheck('V > C', {form: /** @type {any} */ ('xml')})).rejects.toMatchObject({
+      code: 'ERR_INVALID_OPTION',
+    });
+    await expect(layoutExpand('V > C', {form: /** @type {any} */ ('nonsense')})).rejects.toMatchObject({
+      code: 'ERR_INVALID_OPTION',
+    });
+  });
+
+  it('rejects an empty expression at the API layer', async () => {
+    await expect(layoutCheck('')).rejects.toMatchObject({code: 'ERR_INVALID_ARGUMENT'});
+    await expect(layoutExpand('   ')).rejects.toMatchObject({code: 'ERR_INVALID_ARGUMENT'});
   });
 });

@@ -3,6 +3,7 @@
 'use client';
 
 import {
+  isValidElement,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -10,10 +11,12 @@ import {
   useRef,
   useState,
 } from 'react';
+import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars, durationVars, easeVars} from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
 import {INTERACTIVE_SELECTORS} from '../hooks/useClickableContainer';
+import {useAnnounce} from '../hooks/useAnnounce';
 import {Toast} from './Toast';
 import {ToastContext, type ToastContextValue} from './ToastContext';
 import type {ToastEntry, ToastPosition, ToastDismissReason} from './types';
@@ -75,6 +78,29 @@ const styles = stylex.create({
     overflow: 'hidden',
   },
 });
+
+// Flatten a toast's rendered content (title, description, etc.) to the plain
+// text that should be spoken by a screen reader. Only text is announced —
+// interactive endContent is deliberately excluded (it is reachable via F6).
+function getNodeText(node: ReactNode): string {
+  if (node == null || typeof node === 'boolean') {
+    return '';
+  }
+  if (typeof node === 'string') {
+    return node;
+  }
+  if (typeof node === 'number') {
+    return String(node);
+  }
+  if (Array.isArray(node)) {
+    return node.map(getNodeText).filter(Boolean).join(' ');
+  }
+  if (isValidElement(node)) {
+    const {children} = node.props as {children?: ReactNode};
+    return getNodeText(children);
+  }
+  return '';
+}
 
 export interface ToastViewportProps {
   position?: ToastPosition;
@@ -159,21 +185,54 @@ export function ToastViewport({
     [],
   );
 
-  const addToast = useCallback((entry: ToastEntry) => {
-    setToasts(prev => {
+  // Announce toasts through the persistent singleton live regions. Each
+  // <Toast> also renders its own role="status"/"alert" region, but that region
+  // is "born with content" — mounted together with its text — which many
+  // screen readers do not announce (see useAnnounce.ts); the singleton regions
+  // are mounted empty and only mutated afterwards, so they are what actually
+  // guarantees the announcement (the per-toast markup is kept for browse-mode
+  // discoverability). The announcement happens in addToast — the imperative
+  // dispatch path invoked once per useToast() call from an event handler,
+  // never from render — so each toast is announced exactly once by
+  // construction, independent of the React render lifecycle (StrictMode
+  // double-render/double-effect, viewport remounts, and unrelated list
+  // re-renders never re-announce). It is client-only (addToast never runs
+  // during SSR), so it is SSR-safe.
+  const announce = useAnnounce();
+
+  const addToast = useCallback(
+    (entry: ToastEntry) => {
       const {uniqueID, collisionBehavior = 'overwrite'} = entry.options;
-      if (uniqueID) {
-        const existing = prev.find(t => t.options.uniqueID === uniqueID);
-        if (existing) {
-          if (collisionBehavior === 'ignore') {
-            return prev;
-          }
-          return prev.map(t => (t.options.uniqueID === uniqueID ? entry : t));
-        }
+      // Resolve an ignored collision synchronously against the committed list
+      // so a suppressed toast is neither shown nor announced. The remaining
+      // announce + setToasts run outside the setToasts updater, which React may
+      // invoke more than once — keeping the announcement exactly-once.
+      if (
+        uniqueID &&
+        collisionBehavior === 'ignore' &&
+        toastsRef.current.some(t => t.options.uniqueID === uniqueID)
+      ) {
+        return;
       }
-      return [...prev, entry];
-    });
-  }, []);
+      const text = getNodeText(entry.options.body);
+      if (text) {
+        // Error toasts map to the assertive region (role="alert"); everything
+        // else to the polite region (role="status") — mirrors Toast.tsx.
+        announce(text, entry.options.type === 'error' ? 'assertive' : 'polite');
+      }
+      setToasts(prev => {
+        if (uniqueID) {
+          const existing = prev.find(t => t.options.uniqueID === uniqueID);
+          if (existing) {
+            // An ignored collision already returned above; overwrite in place.
+            return prev.map(t => (t.options.uniqueID === uniqueID ? entry : t));
+          }
+        }
+        return [...prev, entry];
+      });
+    },
+    [announce],
+  );
 
   const removeToast = useCallback((id: string, reason: ToastDismissReason) => {
     // An exiting toast stays in toastsRef until its exit transition ends, so

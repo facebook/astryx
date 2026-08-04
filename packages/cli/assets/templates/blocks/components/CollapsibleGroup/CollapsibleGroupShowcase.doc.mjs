@@ -1,0 +1,15 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+/** @type {import('@astryxdesign/cli/authoring').TemplateDoc} */
+export const doc = {
+  type: 'block',
+  exampleFor: 'CollapsibleGroup',
+  name: 'CollapsibleGroup',
+  displayName: 'Collapsible Group',
+  description:
+    'CollapsibleGroup coordinates multiple Collapsible components so that expanding one can automatically collapse the others, creating accordion behavior.',
+  isReady: true,
+  isShowcase: true,
+  aspectRatio: 16 / 9,
+  componentsUsed: ['Collapsible', 'CollapsibleGroup'],
+};

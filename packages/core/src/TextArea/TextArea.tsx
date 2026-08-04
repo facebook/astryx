@@ -13,7 +13,7 @@
  * - /packages/core/src/TextArea/TextArea.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/TextArea/index.ts (exports if types change)
  * - /apps/storybook/stories/TextArea.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/TextArea/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/TextArea/ (showcase blocks)
  */
 
 import {
@@ -21,13 +21,13 @@ import {
   useOptimistic,
   useTransition,
   useRef,
+  useCallback,
   type ChangeEvent,
   type ClipboardEvent,
   type FocusEvent,
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {IconName} from '../Icon';
 import {
   colorVars,
   spacingVars,
@@ -49,25 +49,40 @@ import {mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {useInputContainer} from '../hooks/useInputContainer';
+import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
+import {useAnnounce} from '../hooks/useAnnounce';
 import {useSize} from '../SizeContext/SizeContext';
 import {themeProps} from '../utils/themeProps';
-import {VisuallyHidden} from '../VisuallyHidden';
+import {useTranslator} from '../i18n';
 
 const COUNTER_WARNING_THRESHOLD = 0.8;
 
 const styles = stylex.create({
+  // The wrapper is a bare positioning context. The <textarea> spans the full
+  // container and carries its own internal padding; icons, status/spinner, and
+  // the character counter are absolutely-positioned overlays anchored to the
+  // container corners. This keeps the native resize grip in the true
+  // bottom-right corner and lets the scrollbar represent the full input area.
   wrapper: {
     zIndex: 1,
-    alignItems: 'flex-start',
-    paddingBlock: spacingVars['--spacing-1'],
+    display: 'block',
+    padding: 0,
+    // Internal inline padding for the textarea's text. Defined on the wrapper
+    // so the counter (a sibling overlay) inherits the same value and stays
+    // aligned with the text edge. Kept as an internal var so it can later be
+    // driven by a theme "padding" translation without touching either child.
+    '--_textarea-inline-padding': spacingVars['--spacing-2'],
   },
   textarea: {
     display: 'block',
-    flex: 1,
+    width: '100%',
+    boxSizing: 'border-box',
     minWidth: 0,
     borderWidth: 0,
     borderStyle: 'none',
-    padding: 0,
+    // Base internal padding; overlays get their own reserved space below.
+    paddingBlock: spacingVars['--spacing-1'],
+    paddingInline: 'var(--_textarea-inline-padding)',
     fontFamily: typographyVars['--font-family-body'],
     fontSize: {
       default: typeScaleVars['--text-body-size'],
@@ -85,28 +100,58 @@ const styles = stylex.create({
   textareaDisabled: {
     cursor: 'not-allowed',
   },
-  counter: {
+  // Reserve start padding so text clears the start icon.
+  // inline inset + 16px icon (sm) + 8px gap
+  textareaWithStartIcon: {
+    paddingInlineStart: `calc(var(--_textarea-inline-padding) + ${spacingVars['--spacing-6']})`,
+  },
+  // Reserve end padding so text clears the status icon / spinner overlay.
+  // inline inset + 20px icon (md) + 4px gap
+  textareaWithStatus: {
+    paddingInlineEnd: `calc(var(--_textarea-inline-padding) + ${spacingVars['--spacing-6']})`,
+  },
+  // Reserve wider end padding when the spinner AND status icon both show.
+  // inline inset + 16px spinner + 8px gap + 20px icon + 4px gap
+  textareaWithBusyStatus: {
+    paddingInlineEnd: `calc(var(--_textarea-inline-padding) + ${spacingVars['--spacing-12']})`,
+  },
+  // Reserve bottom padding so text clears the character counter overlay.
+  textareaWithCounter: {
+    paddingBottom: spacingVars['--spacing-7'],
+  },
+  startIcon: {
+    position: 'absolute',
+    top: spacingVars['--spacing-2'],
+    insetInlineStart: 'var(--_textarea-inline-padding)',
+    pointerEvents: 'none',
     display: 'flex',
-    justifyContent: 'flex-end',
-    marginTop: spacingVars['--spacing-1'],
+  },
+  endSlot: {
+    position: 'absolute',
+    top: spacingVars['--spacing-2'],
+    insetInlineEnd: 'var(--_textarea-inline-padding)',
+    pointerEvents: 'none',
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-2'],
+  },
+  // Character counter lives inside the input container, anchored bottom-right
+  // underneath the textarea, aligned to the same inline inset as the text.
+  counter: {
+    position: 'absolute',
+    bottom: spacingVars['--spacing-1'],
+    insetInlineEnd: 'var(--_textarea-inline-padding)',
+    pointerEvents: 'none',
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-1'],
     fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-supporting-size'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
     color: colorVars['--color-text-secondary'],
   },
   counterError: {
     color: colorVars['--color-error'],
-  },
-  statusIcon: {
-    position: 'absolute',
-    top: spacingVars['--spacing-2'],
-    insetInlineEnd: spacingVars['--spacing-2'],
-    pointerEvents: 'none',
-    display: 'flex',
-  },
-  textareaWithStatus: {
-    // Reserve space so text doesn't flow under the absolutely-positioned icon.
-    // 20px (icon md) + 4px gap = 24px (--spacing-6)
-    paddingInlineEnd: spacingVars['--spacing-6'],
   },
 });
 
@@ -222,6 +267,7 @@ export interface TextAreaProps extends Omit<
    * How the status message is placed relative to the input.
    * - 'attached': message overlaps directly below the input (bordered treatment)
    * - 'detached': message floats below as a separate element with spacing
+   * - 'tooltip': no message box; the status icon becomes a focusable info-tip button that reveals the message on hover, keyboard focus, or tap
    * @default 'attached'
    */
   statusVariant?: FieldStatusVariant;
@@ -325,12 +371,17 @@ export function TextArea({
   ...rest
 }: TextAreaProps) {
   const size = useSize(sizeProp, 'md');
+  const t = useTranslator();
+  const announce = useAnnounce();
   const id = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
   const counterID = useId();
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  // Tracks the counter "zone" last announced (under / near / over) so we only
+  // announce on a zone change, not on every keystroke.
+  const counterZoneRef = useRef<'under' | 'near' | 'over' | null>(null);
 
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
@@ -350,30 +401,61 @@ export function TextArea({
     isEnabled: showsDisabledMessage,
   });
 
-  const statusIconMap: Record<TextAreaStatusType, IconName> = {
-    warning: 'warning',
-    error: 'error',
-    success: 'success',
-  };
-
-  const statusIconColorMap: Record<
-    TextAreaStatusType,
-    'warning' | 'error' | 'success'
-  > = {
-    warning: 'warning',
-    error: 'error',
-    success: 'success',
-  };
+  const {statusIcon, describedBy: statusTooltipDescribedBy} =
+    useInputStatusIcon({
+      status,
+      statusVariant,
+    });
 
   const ariaDescribedBy =
     [
       description ? descriptionID : null,
-      status?.message ? statusMessageID : null,
+      statusVariant !== 'tooltip' && status?.message ? statusMessageID : null,
+      // The tooltip variant renders no message box; describe the input by the
+      // tooltip's content instead so the status is still announced.
+      statusTooltipDescribedBy,
       maxLength != null ? counterID : null,
       showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
     ]
       .filter(Boolean)
       .join(' ') || undefined;
+
+  // Announce the character-count status through the shared live region, but
+  // only when the value crosses into a new zone (near the limit / over the
+  // limit) so we don't speak on every keystroke. Over-limit is assertive (an
+  // error the user should hear immediately); nearing the limit is polite.
+  const announceCounter = useCallback(
+    (length: number) => {
+      if (maxLength == null) {
+        return;
+      }
+      const zone: 'under' | 'near' | 'over' =
+        length > maxLength
+          ? 'over'
+          : length >= maxLength * COUNTER_WARNING_THRESHOLD
+            ? 'near'
+            : 'under';
+      if (zone === counterZoneRef.current) {
+        return;
+      }
+      counterZoneRef.current = zone;
+      if (zone === 'over') {
+        announce(
+          t('@astryx.textArea.charactersOverLimit', {
+            count: length - maxLength,
+          }),
+          'assertive',
+        );
+      } else if (zone === 'near') {
+        announce(
+          t('@astryx.textArea.charactersRemaining', {
+            count: maxLength - length,
+          }),
+        );
+      }
+    },
+    [announce, t, maxLength],
+  );
 
   const handleChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     // Value can't change while showing a disabled message (the field is
@@ -383,6 +465,7 @@ export function TextArea({
       return;
     }
     const newValue = e.target.value;
+    announceCounter(newValue.length);
     onChange?.(newValue, e);
     if (changeAction && !e.defaultPrevented) {
       startTransition(async () => {
@@ -439,18 +522,20 @@ export function TextArea({
           stylex.props(
             inputWrapperStyles.base,
             styles.wrapper,
-            textareaSizeStyles[size],
-            effectivelyDisabled && inputWrapperStyles.disabled,
+            isDisabled && inputWrapperStyles.disabled,
             status && inputStatusBorderStyles[status.type],
-            status && inputStatusHoverShadowStyles[status.type],
+            status && !isDisabled && inputStatusHoverShadowStyles[status.type],
             status && inputStatusFocusWithinStyles[status.type],
             xstyle,
           ),
           className,
           style,
         )}>
-        {startIcon &&
-          renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
+        {startIcon && (
+          <span {...stylex.props(styles.startIcon)}>
+            {renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
+          </span>
+        )}
         <textarea
           {...rest}
           ref={mergeRefs(ref, textareaRef)}
@@ -483,38 +568,37 @@ export function TextArea({
           aria-busy={isBusy || undefined}
           {...stylex.props(
             styles.textarea,
-            effectivelyDisabled && styles.textareaDisabled,
-            status && styles.textareaWithStatus,
+            textareaSizeStyles[size],
+            isDisabled && styles.textareaDisabled,
+            Boolean(startIcon) && styles.textareaWithStartIcon,
+            (status || isBusy) && styles.textareaWithStatus,
+            isBusy && !!statusIcon && styles.textareaWithBusyStatus,
+            maxLength != null && styles.textareaWithCounter,
           )}
         />
-        {isBusy && <Spinner size="sm" />}
-        {status && (
-          <span {...stylex.props(styles.statusIcon)}>
-            <Icon
-              icon={statusIconMap[status.type]}
-              size="md"
-              color={statusIconColorMap[status.type]}
-            />
+        {(isBusy || statusIcon) && (
+          <span {...stylex.props(styles.endSlot)}>
+            {isBusy && <Spinner size="sm" />}
+            {statusIcon}
           </span>
         )}
+        {maxLength != null && (
+          <div
+            id={counterID}
+            {...stylex.props(
+              styles.counter,
+              optimisticValue.length > maxLength && styles.counterError,
+            )}>
+            {optimisticValue.length > maxLength && (
+              // Non-color cue so the over-limit state isn't conveyed by the red
+              // color alone (WCAG 1.4.1). Decorative — the count text and the
+              // live-region announcement carry the meaning.
+              <Icon icon="warning" size="sm" />
+            )}
+            {optimisticValue.length}/{maxLength}
+          </div>
+        )}
       </div>
-      {maxLength != null && (
-        <div
-          id={counterID}
-          {...stylex.props(
-            styles.counter,
-            optimisticValue.length > maxLength && styles.counterError,
-          )}>
-          {optimisticValue.length}/{maxLength}
-          <VisuallyHidden aria-live="polite">
-            {optimisticValue.length >= maxLength * COUNTER_WARNING_THRESHOLD
-              ? optimisticValue.length > maxLength
-                ? `${optimisticValue.length - maxLength} characters over limit`
-                : `${maxLength - optimisticValue.length} characters remaining`
-              : ''}
-          </VisuallyHidden>
-        </div>
-      )}
       {showsDisabledMessage &&
         disabledMessageTooltip.renderTooltip(disabledMessage)}
     </Field>

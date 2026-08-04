@@ -24,7 +24,7 @@
  * - /packages/core/src/Collapsible/index.ts (exports)
  * - /packages/core/src/Collapsible/Collapsible.doc.mjs
  * - /apps/storybook/stories/Collapsible.stories.tsx
- * - /packages/cli/templates/blocks/components/Collapsible/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Collapsible/ (showcase blocks)
  */
 
 import {use, useId, type ReactNode} from 'react';
@@ -42,7 +42,7 @@ import {
 
 import {useCollapsible} from './useCollapsible';
 import {CollapsibleGroupPresentationContext} from './CollapsibleGroupContext';
-import {getIcon} from '../Icon/globalIconRegistry';
+import {useIcon} from '../Icon';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
@@ -51,7 +51,12 @@ const styles = stylex.create({
   root: {
     width: '100%',
   },
-  // Trigger button — full width, flex row, no browser button styling
+  // Trigger button — full width, flex row, no browser button styling.
+  // Anchors heading-adjacent typography (body family, large size, semibold)
+  // so the label reads as a section header regardless of where the
+  // Collapsible is placed. External themes retarget it independently from the
+  // content via the `astryx-collapsible-trigger` target — e.g. a heading font
+  // on the trigger while the content stays on the body font.
   trigger: {
     all: 'unset',
     boxSizing: 'border-box',
@@ -113,7 +118,7 @@ const styles = stylex.create({
   // Anchors body typography so revealed text renders at the system's body
   // scale (family/size/weight/leading) instead of inheriting from wherever
   // the Collapsible is placed. External themes override via the
-  // `astryx-collapsible-content` target.
+  // `astryx-collapsible-content` target, independently from the trigger.
   content: {
     paddingBlockStart: spacingVars['--spacing-1'],
     fontFamily: typographyVars['--font-family-body'],
@@ -288,7 +293,7 @@ export function Collapsible({
   const isDivided = presentation?.hasDividers ?? false;
   const density = presentation?.density ?? null;
 
-  const chevronIcon = getIcon('chevronDown');
+  const chevronIcon = useIcon('chevronDown');
 
   // Links the trigger to the region it shows/hides so assistive tech can move
   // from the button to its controlled content (disclosure pattern).
@@ -318,10 +323,15 @@ export function Collapsible({
         // the system-wide disabled convention (never native `disabled`, which
         // would swallow events like a wrapping tooltip's hover).
         tabIndex={isDisabled ? -1 : undefined}
-        {...stylex.props(
-          styles.trigger,
-          density != null && triggerDensity[density],
-          isDisabled && styles.triggerDisabled,
+        {...mergeProps(
+          themeProps('collapsible-trigger', {
+            density: density ?? undefined,
+          }),
+          stylex.props(
+            styles.trigger,
+            density != null && triggerDensity[density],
+            isDisabled && styles.triggerDisabled,
+          ),
         )}>
         <span {...stylex.props(styles.triggerLabel)}>{trigger}</span>
         <span

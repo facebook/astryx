@@ -40,7 +40,7 @@ jobs:
       # the action push or open its own PR — peter-evans handles that below so
       # we control title/body/labels.
       - name: Download translations from Crowdin
-        uses: crowdin/github-action@e0c8f73cdc0fafde9396e056c5038217000a32d1
+        uses: crowdin/github-action@c7af9bc98b01694653031fef2a0dc6c7888ce9bc
         with:
           upload_sources: false
           upload_translations: false
@@ -106,7 +106,7 @@ jobs:
 
       # peter-evans/create-pull-request@v7.0.11 — pinned by SHA per repo policy.
       - name: Open translations PR
-        uses: peter-evans/create-pull-request@22a9089034f40e5a961c8808d113e2c98fb63676
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1
         with:
           branch: l10n/crowdin
           base: main

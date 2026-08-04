@@ -181,8 +181,8 @@ describe('computeRangeRounding', () => {
       }),
     );
     const rounding = computeRangeRounding(state);
-    expect(rounding.roundLeft).toBe(true);
-    expect(rounding.roundRight).toBe(false);
+    expect(rounding.roundStart).toBe(true);
+    expect(rounding.roundEnd).toBe(false);
   });
 
   it('rounds left at first column even without range start', () => {
@@ -196,7 +196,7 @@ describe('computeRangeRounding', () => {
       }),
     );
     const rounding = computeRangeRounding(state);
-    expect(rounding.roundLeft).toBe(true);
+    expect(rounding.roundStart).toBe(true);
   });
 
   it('rounds right at last column', () => {
@@ -210,7 +210,7 @@ describe('computeRangeRounding', () => {
       }),
     );
     const rounding = computeRangeRounding(state);
-    expect(rounding.roundRight).toBe(true);
+    expect(rounding.roundEnd).toBe(true);
   });
 
   // #2715 follow-up: cap the highlight where the range meets a disabled or
@@ -230,8 +230,8 @@ describe('computeRangeRounding', () => {
       prevInRange: true,
       nextInRange: false,
     });
-    expect(rounding.roundLeft).toBe(false);
-    expect(rounding.roundRight).toBe(true);
+    expect(rounding.roundStart).toBe(false);
+    expect(rounding.roundEnd).toBe(true);
   });
 
   it('caps the left edge when the previous day breaks the range', () => {
@@ -248,8 +248,8 @@ describe('computeRangeRounding', () => {
       prevInRange: false,
       nextInRange: true,
     });
-    expect(rounding.roundLeft).toBe(true);
-    expect(rounding.roundRight).toBe(false);
+    expect(rounding.roundStart).toBe(true);
+    expect(rounding.roundEnd).toBe(false);
   });
 
   it('does not cap a mid-range day when both neighbours continue the range', () => {
@@ -266,8 +266,8 @@ describe('computeRangeRounding', () => {
       prevInRange: true,
       nextInRange: true,
     });
-    expect(rounding.roundLeft).toBe(false);
-    expect(rounding.roundRight).toBe(false);
+    expect(rounding.roundStart).toBe(false);
+    expect(rounding.roundEnd).toBe(false);
   });
 });
 
@@ -313,8 +313,8 @@ describe('computePreviewRounding', () => {
       }),
     );
     const rounding = computePreviewRounding(state);
-    expect(rounding.roundLeft).toBe(true);
-    expect(rounding.roundRight).toBe(false);
+    expect(rounding.roundStart).toBe(true);
+    expect(rounding.roundEnd).toBe(false);
   });
 
   // #2715: the hover preview needs the same disabled/outside caps as the
@@ -332,8 +332,8 @@ describe('computePreviewRounding', () => {
       prevInPreview: true,
       nextInPreview: false,
     });
-    expect(rounding.roundLeft).toBe(false);
-    expect(rounding.roundRight).toBe(true);
+    expect(rounding.roundStart).toBe(false);
+    expect(rounding.roundEnd).toBe(true);
   });
 
   it('caps the left edge when the previous day breaks the preview run', () => {
@@ -349,8 +349,8 @@ describe('computePreviewRounding', () => {
       prevInPreview: false,
       nextInPreview: true,
     });
-    expect(rounding.roundLeft).toBe(true);
-    expect(rounding.roundRight).toBe(false);
+    expect(rounding.roundStart).toBe(true);
+    expect(rounding.roundEnd).toBe(false);
   });
 
   it('does not cap a mid-preview day when both neighbours continue', () => {
@@ -366,8 +366,8 @@ describe('computePreviewRounding', () => {
       prevInPreview: true,
       nextInPreview: true,
     });
-    expect(rounding.roundLeft).toBe(false);
-    expect(rounding.roundRight).toBe(false);
+    expect(rounding.roundStart).toBe(false);
+    expect(rounding.roundEnd).toBe(false);
   });
 });
 

@@ -11,7 +11,7 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/TreeList/TreeList.doc.mjs
  * - /packages/core/src/TreeList/TreeList.tsx
- * - /packages/cli/templates/blocks/components/TreeList/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/TreeList/ (showcase blocks)
  */
 
 import {useId, useMemo, type ReactNode} from 'react';
@@ -24,8 +24,8 @@ import {
   easeVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
-import {getIcon} from '../Icon/globalIconRegistry';
-import {mergeProps} from '../utils';
+import {useIcon} from '../Icon';
+import {mergeProps, rtlStyles} from '../utils';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import {TreeListBranches} from './TreeListBranches';
 import type {TreeListDensity, TreeListVariant} from './TreeListTypes';
@@ -82,6 +82,12 @@ const styles = stylex.create({
     position: 'relative',
     boxSizing: 'border-box',
     textAlign: 'start',
+    // Per-level indent. Declared here (not inline) so it lives in
+    // `@layer astryx-base` and the theme layer can override it in normal
+    // cascade order — an inline longhand would outrank every layer. The row
+    // publishes only the computed distance as `--_tree-indent`; the per-level
+    // step is the public `--tree-list-indent` lever (see TreeList `root`).
+    marginInlineStart: 'var(--_tree-indent, 0px)',
   },
   interactive: {
     cursor: 'pointer',
@@ -246,6 +252,11 @@ const descriptionSizeStyles = stylex.create({
   },
 });
 
+// `CSSProperties` has no index signature for custom properties, so the row's
+// inline style — which publishes the computed indent distance as the private
+// `--_tree-indent` — needs this augmentation to typecheck.
+type IndentStyle = React.CSSProperties & Record<'--_tree-indent', string>;
+
 // =============================================================================
 // Types
 // =============================================================================
@@ -317,6 +328,7 @@ export function TreeListItem({
   isTabbable,
 }: TreeListItemInternalProps) {
   const t = useTranslator();
+  const chevronRightIcon = useIcon('chevronRight');
   const labelId = useId();
   const descriptionId = useId();
   const LinkComponent = useLinkComponent();
@@ -353,9 +365,18 @@ export function TreeListItem({
     return undefined;
   }, [onClick, hasChildren, onToggle, id, isDisabled]);
 
-  const computedMarginLeft = hasChildren
-    ? `calc(${nestedLevel} * ${spacingVars['--spacing-4']})`
-    : `calc(${nestedLevel} * ${spacingVars['--spacing-4']} + ${spacingVars['--spacing-4']} + ${spacingVars['--spacing-2']})`;
+  // Per-level indent distance. The per-level step is the public, themeable
+  // `--tree-list-indent` lever (default `--spacing-4`, set on the tree-list
+  // root). Leaves add a fixed chevron-column offset (chevron width + gap) so
+  // their labels line up with sibling parents' labels; that offset is tied to
+  // the chevron's own dimensions, not the indent step, so it does not scale
+  // with the lever. Published as the private `--_tree-indent` and consumed by
+  // `contentWrapper`'s stylesheet `margin-inline-start` (kept out of the inline
+  // style so the theme layer can override it — see #4308).
+  const indentDistance = hasChildren
+    ? `calc(${nestedLevel} * var(--tree-list-indent))`
+    : `calc(${nestedLevel} * var(--tree-list-indent) + ${spacingVars['--spacing-4']} + ${spacingVars['--spacing-2']})`;
+  const indentStyle: IndentStyle = {'--_tree-indent': indentDistance};
 
   const labelAndDescription = (
     <>
@@ -386,12 +407,14 @@ export function TreeListItem({
   );
 
   const chevronIcon = (
-    <span
-      {...stylex.props(
-        styles.chevronSvg,
-        isExpanded ? styles.chevronExpanded : styles.chevronCollapsed,
-      )}>
-      {getIcon('chevronRight')}
+    <span {...stylex.props(rtlStyles.mirror)}>
+      <span
+        {...stylex.props(
+          styles.chevronSvg,
+          isExpanded ? styles.chevronExpanded : styles.chevronCollapsed,
+        )}>
+        {chevronRightIcon}
+      </span>
     </span>
   );
 
@@ -527,7 +550,7 @@ export function TreeListItem({
               isSelected && styles.selected,
             ),
           )}
-          style={{marginInlineStart: computedMarginLeft}}
+          style={indentStyle}
           onClick={handleClick}>
           {innerContent}
         </div>

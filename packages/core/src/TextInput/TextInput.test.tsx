@@ -681,11 +681,15 @@ describe('TextInput', () => {
   });
 });
 
-
 describe('TextInput statusVariant forwarding', () => {
   it('defaults to attached (status renders with data-variant="attached")', () => {
     const {container} = render(
-      <TextInput label="Email" value="" onChange={() => {}} status={{type: 'error', message: 'Invalid email'}} />,
+      <TextInput
+        label="Email"
+        value=""
+        onChange={() => {}}
+        status={{type: 'error', message: 'Invalid email'}}
+      />,
     );
     expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
       'data-variant',
@@ -695,11 +699,113 @@ describe('TextInput statusVariant forwarding', () => {
 
   it('forwards statusVariant="detached" to the underlying Field status', () => {
     const {container} = render(
-      <TextInput label="Email" value="" onChange={() => {}} status={{type: 'error', message: 'Invalid email'}} statusVariant="detached" />,
+      <TextInput
+        label="Email"
+        value=""
+        onChange={() => {}}
+        status={{type: 'error', message: 'Invalid email'}}
+        statusVariant="detached"
+      />,
     );
     expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
       'data-variant',
       'detached',
     );
+  });
+
+  it('renders no message box for statusVariant="tooltip"', () => {
+    const {container} = render(
+      <TextInput
+        label="Email"
+        value=""
+        onChange={() => {}}
+        status={{type: 'error', message: 'Invalid email'}}
+        statusVariant="tooltip"
+      />,
+    );
+    expect(
+      container.querySelector('.astryx-field-status'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('surfaces the status message in a tooltip for statusVariant="tooltip"', () => {
+    render(
+      <TextInput
+        label="Email"
+        value=""
+        onChange={() => {}}
+        status={{type: 'error', message: 'Invalid email'}}
+        statusVariant="tooltip"
+      />,
+    );
+    const tooltip = screen.getByRole('tooltip', h);
+    expect(tooltip).toHaveTextContent('Invalid email');
+  });
+
+  it('describes the input by the status tooltip for statusVariant="tooltip"', () => {
+    render(
+      <TextInput
+        label="Email"
+        value=""
+        onChange={() => {}}
+        status={{type: 'error', message: 'Invalid email'}}
+        statusVariant="tooltip"
+      />,
+    );
+    const input = screen.getByRole('textbox');
+    const tooltip = screen.getByRole('tooltip', h);
+    expect(input.getAttribute('aria-describedby')).toContain(tooltip.id);
+  });
+
+  it('renders the tooltip status affordance as a focusable button (WCAG 2.1.1)', () => {
+    render(
+      <TextInput
+        label="Email"
+        value=""
+        onChange={() => {}}
+        status={{type: 'error', message: 'Invalid email'}}
+        statusVariant="tooltip"
+      />,
+    );
+    // The status affordance is a real button with an accessible name naming
+    // the status type (WCAG 4.1.2), so keyboard-only users (no AT) can reach it.
+    const statusButton = screen.getByRole('button', {name: /error details/i});
+    expect(statusButton).toBeInTheDocument();
+    expect(statusButton).toHaveAttribute('type', 'button');
+  });
+
+  it('opens the status tooltip on keyboard focus for statusVariant="tooltip"', async () => {
+    const user = userEvent.setup();
+    render(
+      <TextInput
+        label="Email"
+        value=""
+        onChange={() => {}}
+        status={{type: 'error', message: 'Invalid email'}}
+        statusVariant="tooltip"
+      />,
+    );
+    const tooltip = screen.getByRole('tooltip', h);
+    // Tab from the input to the status button; keyboard focus reveals the tip.
+    await user.tab();
+    await user.tab();
+    await waitFor(() => {
+      expect(tooltip).toHaveAttribute('popover-open');
+    });
+  });
+
+  it('describes the status button by the tooltip content for statusVariant="tooltip"', () => {
+    render(
+      <TextInput
+        label="Email"
+        value=""
+        onChange={() => {}}
+        status={{type: 'error', message: 'Invalid email'}}
+        statusVariant="tooltip"
+      />,
+    );
+    const statusButton = screen.getByRole('button', {name: /error details/i});
+    const tooltip = screen.getByRole('tooltip', h);
+    expect(statusButton.getAttribute('aria-describedby')).toContain(tooltip.id);
   });
 });

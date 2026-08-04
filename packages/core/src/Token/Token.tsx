@@ -5,15 +5,16 @@
 /**
  * @file Token.tsx
  * @input Uses React, ReactNode, StyleXStyles
- * @output Exports Token component, TokenProps, TokenColor types
+ * @output Exports Token component, TokenProps, TokenColor, TokenColorMap types
  * @position Core implementation; consumed by index.ts, tested by Token.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
+ * - /packages/core/src/Token/TokenLink.tsx (interactive wrapper for href+onRemove)
  * - /packages/core/src/Token/Token.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/Token/Token.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Token/index.ts (exports if types change)
  * - /apps/storybook/stories/Token.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Token/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Token/ (showcase blocks)
  */
 
 import type {ReactNode} from 'react';
@@ -32,29 +33,21 @@ import {Icon} from '../Icon';
 import {mergeProps} from '../utils';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import {useInteractiveRole} from '../hooks/useInteractiveRole';
+import {TokenLink} from './TokenLink';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
+import type {TokenColorMap} from './index';
 
 // =============================================================================
 // Types
 // =============================================================================
 
 /**
- * Available color variants for the token.
+ * Token color type derived from TokenColorMap.
+ * Extensible via module augmentation of TokenColorMap.
  */
-export type TokenColor =
-  | 'default'
-  | 'red'
-  | 'orange'
-  | 'yellow'
-  | 'green'
-  | 'teal'
-  | 'cyan'
-  | 'blue'
-  | 'purple'
-  | 'pink'
-  | 'gray';
+export type TokenColor = keyof TokenColorMap;
 
 export type TokenSize = 'sm' | 'md' | 'lg';
 
@@ -296,7 +289,9 @@ const colorStyles = stylex.create({
  * `<span>` container with an invisible `<button>` when `onClick` is provided.
  * The invisible button pattern provides real button semantics for accessibility
  * while the container uses `:focus-within` to show focus outlines around the
- * entire token.
+ * entire token. When both `href` and `onRemove` are provided, the same
+ * container pattern is used with an invisible `<a>` so the remove `<button>`
+ * renders as a sibling of the link rather than nested inside it.
  *
  * @example
  * ```
@@ -333,6 +328,20 @@ export function Token({
   // if onClick was provided — the popover attaches its own handler.
   const effectiveOnClick = onClick ?? (role === 'button' ? () => {} : null);
 
+  const removeButton = onRemove != null && (
+    <button
+      type="button"
+      aria-label={t('@astryx.token.remove', {label})}
+      onClick={e => {
+        e.stopPropagation();
+        onRemove(e);
+      }}
+      disabled={isDisabled}
+      {...stylex.props(styles.removeButton)}>
+      <Icon icon="close" size="xsm" color="inherit" />
+    </button>
+  );
+
   const content = (
     <>
       {icon}
@@ -341,19 +350,7 @@ export function Token({
         {label}
       </span>
       {endContent}
-      {onRemove != null && (
-        <button
-          type="button"
-          aria-label={t('@astryx.token.remove', {label})}
-          onClick={e => {
-            e.stopPropagation();
-            onRemove(e);
-          }}
-          disabled={isDisabled}
-          {...stylex.props(styles.removeButton)}>
-          <Icon icon="close" size="xsm" color="inherit" />
-        </button>
-      )}
+      {removeButton}
     </>
   );
 
@@ -364,11 +361,57 @@ export function Token({
   };
 
   if (role === 'link') {
+    if (onRemove == null) {
+      return (
+        <LinkComponent
+          ref={ref as React.Ref<HTMLAnchorElement>}
+          href={href as string}
+          aria-disabled={isDisabled || undefined}
+          {...sharedProps}
+          {...mergeProps(
+            themeProps('token', {color, size}),
+            stylex.props(
+              styles.base,
+              sizeStyles[size],
+              colorStyles[color],
+              styles.interactive,
+              isDisabled && styles.disabled,
+              xstyle,
+            ),
+            className,
+            style,
+          )}>
+          {content}
+        </LinkComponent>
+      );
+    }
+
+    // With a remove button, the link cannot be the root — nesting a <button>
+    // inside an <a> is invalid HTML (WCAG 4.1.2). Delegate to TokenLink, a
+    // non-presentational wrapper that renders a <span> container with the link
+    // and the remove button as siblings and wires up useClickableContainer so
+    // the whole token surface activates the link (including middle-click and
+    // cmd/ctrl-click to open in a new tab). Token itself stays presentational
+    // (no refs/effects) per the @astryx/presentational-component rule.
     return (
-      <LinkComponent
-        ref={ref as React.Ref<HTMLAnchorElement>}
+      <TokenLink
+        ref={ref}
         href={href as string}
-        aria-disabled={isDisabled || undefined}
+        isDisabled={isDisabled}
+        LinkComponent={LinkComponent}
+        icon={icon}
+        endContent={endContent}
+        removeButton={removeButton}
+        linkStyleProps={stylex.props(styles.invisibleButton)}
+        labelContent={
+          <span
+            {...stylex.props(
+              styles.label,
+              isLabelHidden && styles.labelHidden,
+            )}>
+            {label}
+          </span>
+        }
         {...sharedProps}
         {...mergeProps(
           themeProps('token', {color, size}),
@@ -377,14 +420,14 @@ export function Token({
             sizeStyles[size],
             colorStyles[color],
             styles.interactive,
+            styles.focusVisibleOutline,
             isDisabled && styles.disabled,
             xstyle,
           ),
           className,
           style,
-        )}>
-        {content}
-      </LinkComponent>
+        )}
+      />
     );
   }
 
@@ -431,19 +474,7 @@ export function Token({
           </span>
         </button>
         {endContent}
-        {onRemove != null && (
-          <button
-            type="button"
-            aria-label={t('@astryx.token.remove', {label})}
-            onClick={e => {
-              e.stopPropagation();
-              onRemove(e);
-            }}
-            disabled={isDisabled}
-            {...stylex.props(styles.removeButton)}>
-            <Icon icon="close" size="xsm" color="inherit" />
-          </button>
-        )}
+        {removeButton}
       </span>
     );
   }

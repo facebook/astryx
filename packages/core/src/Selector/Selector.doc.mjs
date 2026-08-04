@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'Selector',
@@ -23,6 +23,8 @@ export const docs = {
     targets: [
       {className: 'astryx-selector', visualProps: ['size', 'status']},
       {className: 'astryx-selector-option'},
+      {className: 'astryx-selector-clear-icon'},
+      {className: 'astryx-selector-indicator-icon', states: ['state']},
     ],
   },
   description: 'Dropdown selector for choosing from a list of options.',
@@ -142,6 +144,12 @@ export const docs = {
         'Custom render function for each selectable option in the dropdown. Use this instead of JSX children; dividers and sections are rendered by the selector.',
     },
     {
+      name: 'width',
+      type: 'SizeValue',
+      description:
+        'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
@@ -244,7 +252,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsZh = {
   usage: {
     description:
@@ -336,7 +344,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   usage: {
     description:

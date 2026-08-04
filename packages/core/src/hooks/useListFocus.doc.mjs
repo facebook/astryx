@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').HookDoc} */
+/** @type {import('@astryxdesign/cli/authoring').HookDoc} */
 export const docs = {
   name: 'useListFocus',
   displayName: 'useListFocus',
@@ -17,6 +17,13 @@ export const docs = {
       type: 'string',
       description: 'Selector for focusable items within the list.',
       default: "'[role=\"menuitem\"]'",
+      required: false,
+    },
+    {
+      name: 'options.boundarySelector',
+      type: 'string',
+      description:
+        "Selector identifying a list boundary, for lists that contain nested lists of the same kind (e.g. a menu with submenu flyouts). When set, item collection and key handling are scoped to this level's own container. Typically '[role=\"menu\"]'.",
       required: false,
     },
     {
@@ -99,6 +106,18 @@ export const docs = {
       type: '() => boolean',
       description: 'Focus the last enabled item. Returns true when an item was focused.',
     },
+    {
+      name: 'ownsEvent',
+      type: '(e: React.KeyboardEvent) => boolean',
+      description:
+        "Whether a key event belongs to this list level rather than a nested list sharing the same boundarySelector. Always true when no boundarySelector is set. Use to guard consumer-added key handling (Enter/Space, typeahead).",
+    },
+    {
+      name: 'getItems',
+      type: '() => HTMLElement[]',
+      description:
+        "This level's focusable items in DOM order (already scoped by boundarySelector). Build typeahead targets from this instead of re-querying.",
+    },
   ],
   usage: {
     description:
@@ -116,13 +135,14 @@ export const docs = {
   category: 'focus',
 };
 
-/** @type {import('../docs-types').HookTranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').HookTranslationDoc} */
 export const docsDense = {
   description:
     'Manages keyboard navigation within linear list following WAI-ARIA menu/listbox/toolbar patterns. Supports arrow key navigation (vertical / horizontal), Home/End for boundaries, optional wrap-around, Escape to close. Suitable for dropdown menus, toolbars, any 1D focusable list.',
   paramDescriptions: {
     options: 'config for list focus behavior. All fields optional.',
     'options.itemSelector': 'selector for focusable items in list.',
+    'options.boundarySelector': "boundary selector for lists that contain nested lists (e.g. submenu flyouts); scopes items + key handling to this level.",
     'options.wrap': 'whether arrow navigation wraps around at ends.',
     'options.onEscape': 'callback when Escape key pressed (e.g. close menu).',
     'options.orientation': "navigation orientation. 'horizontal' uses ArrowLeft/ArrowRight, 'vertical' uses ArrowUp/ArrowDown, 'both' accepts all four arrows.",
@@ -138,6 +158,8 @@ export const docsDense = {
     focusItem: 'focus specific item by index (clamped to valid range).',
     focusFirst: 'focus first enabled item; returns true when focused.',
     focusLast: 'focus last enabled item; returns true when focused.',
+    ownsEvent: 'whether a key event is this level\'s vs a nested list\'s (boundarySelector); always true without one.',
+    getItems: "this level's focusable items in DOM order, scoped by boundarySelector.",
   },
   usage: {
     description:

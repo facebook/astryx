@@ -28,7 +28,7 @@
  * - /packages/core/src/Banner/Banner.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Banner/index.ts (exports if types change)
  * - /apps/storybook/stories/Banner.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Banner/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Banner/ (showcase blocks)
  */
 
 import {useId, useState, type ReactNode} from 'react';
@@ -53,54 +53,17 @@ import type {Elevation} from '../utils/types';
 import {edgeCompSlot} from '../Layout/edgeCompensation.stylex';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
+import type {BannerStatusMap, BannerContainerMap} from './index';
 
 // =============================================================================
 // Types
 // =============================================================================
 
 /**
- * Extensible status map for Banner.
- *
- * Theme packages can add custom statuses via TypeScript module augmentation:
- * @example
- * ```
- * declare module '@astryxdesign/core/Banner' {
- *   interface BannerStatusMap {
- *     'neutral': true;
- *   }
- * }
- * ```
- */
-export interface BannerStatusMap {
-  info: true;
-  warning: true;
-  error: true;
-  success: true;
-}
-
-/**
  * Status type controlling the banner's icon and color.
  * Extensible via module augmentation of BannerStatusMap.
  */
 export type BannerStatus = keyof BannerStatusMap;
-
-/**
- * Extensible container map for Banner.
- *
- * Theme packages can add custom container types via TypeScript module augmentation:
- * @example
- * ```
- * declare module '@astryxdesign/core/Banner' {
- *   interface BannerContainerMap {
- *     'floating': true;
- *   }
- * }
- * ```
- */
-export interface BannerContainerMap {
-  card: true;
-  section: true;
-}
 
 /**
  * Container type of the banner.
@@ -243,10 +206,10 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-container'],
   },
   headerCardWithContent: {
-    borderTopLeftRadius: radiusVars['--radius-container'],
-    borderTopRightRadius: radiusVars['--radius-container'],
-    borderBottomLeftRadius: 0,
-    borderBottomRightRadius: 0,
+    borderStartStartRadius: radiusVars['--radius-container'],
+    borderStartEndRadius: radiusVars['--radius-container'],
+    borderEndStartRadius: 0,
+    borderEndEndRadius: 0,
   },
   // When there's only a title (no description) and actions, center everything vertically
   headerCentered: {
@@ -305,8 +268,8 @@ const styles = stylex.create({
     borderBottomColor: colorVars['--color-border'],
   },
   contentAreaCard: {
-    borderBottomLeftRadius: radiusVars['--radius-container'],
-    borderBottomRightRadius: radiusVars['--radius-container'],
+    borderEndStartRadius: radiusVars['--radius-container'],
+    borderEndEndRadius: radiusVars['--radius-container'],
   },
   chevron: {
     display: 'inline-flex',

@@ -72,9 +72,14 @@ export function plainDateDayOfWeek(pd: PlainDate): number {
 }
 
 export function plainDateAddMonths(pd: PlainDate, n: number): PlainDate {
-  const d = plainDateToDate(pd);
-  d.setMonth(d.getMonth() + n);
-  return plainDateFromDate(d);
+  // Pure month arithmetic with day clamping (Temporal.PlainDate.add
+  // semantics): Jan 31 + 1 month is Feb 28/29, not Mar 2/3. Date#setMonth
+  // would overflow the excess days into the following month instead.
+  const totalMonths = pd.year * 12 + (pd.month - 1) + n;
+  const year = Math.floor(totalMonths / 12);
+  const month = (((totalMonths % 12) + 12) % 12) + 1;
+  const day = Math.min(pd.day, getDaysInMonth(year, month));
+  return {year, month, day};
 }
 
 export function plainDateAddDays(pd: PlainDate, n: number): PlainDate {
@@ -83,7 +88,16 @@ export function plainDateAddDays(pd: PlainDate, n: number): PlainDate {
   return plainDateFromDate(d);
 }
 
-function getTimeZoneParts(
+/**
+ * The wall-clock fields an instant reads as in a given zone.
+ *
+ * A fixed `'en-US'` locale with `hourCycle: 'h23'` keeps the parts numeric and
+ * stable whatever locale the viewer has, so callers can assemble machine
+ * shapes (`YYYY-MM-DD`, `HH:mm:ss`) from them. Exported for Timestamp, whose
+ * `system_*` formats are built from these fields rather than through `Intl`
+ * formatting.
+ */
+export function getTimeZoneParts(
   instant: number,
   timezoneID: string,
 ): {

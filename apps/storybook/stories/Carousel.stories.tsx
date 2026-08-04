@@ -1,11 +1,13 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {useState} from 'react';
+import {useRef, useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
 import {Carousel} from '@astryxdesign/core/Carousel';
+import type {CarouselHandle} from '@astryxdesign/core/Carousel';
 import {Thumbnail} from '@astryxdesign/core/Thumbnail';
 import {Card} from '@astryxdesign/core/Card';
+import {Button} from '@astryxdesign/core/Button';
 import {
   colorVars,
   spacingVars,
@@ -80,6 +82,14 @@ const meta: Meta<typeof Carousel> = {
     hasButtons: {
       control: 'boolean',
       description: 'Show navigation buttons on hover',
+    },
+    hasEdgeFade: {
+      control: 'boolean',
+      description: 'Show gradient edge-fade mask on overflow',
+    },
+    hasLoop: {
+      control: 'boolean',
+      description: 'Wrap-around scrolling (next at end → start)',
     },
     hasSnap: {
       control: 'boolean',
@@ -281,6 +291,76 @@ export const ColorSwatches: Story = {
             />
           ))}
         </Carousel>
+      </div>
+    );
+  },
+};
+
+export const Loop: Story = {
+  name: 'Loop (Wrap-Around)',
+  render: () => (
+    <div {...stylex.props(styles.constrainedWidth)}>
+      <p {...stylex.props(styles.label)}>
+        Next at the end wraps to the start — buttons stay active at both edges
+      </p>
+      <Carousel gap={1} hasLoop hasSnap aria-label="Looping gallery">
+        {IMAGES.map(img => (
+          <Thumbnail
+            key={img.id}
+            src={img.src}
+            alt={img.label}
+            label={img.label}
+          />
+        ))}
+      </Carousel>
+    </div>
+  ),
+};
+
+export const ImperativeControl: Story = {
+  name: 'Imperative Control (handleRef)',
+  render: function ImperativeControlStory() {
+    const carouselRef = useRef<CarouselHandle>(null);
+    return (
+      <div {...stylex.props(styles.constrainedWidth)}>
+        <p {...stylex.props(styles.label)}>
+          External buttons driving the carousel through handleRef
+        </p>
+        <Carousel
+          handleRef={carouselRef}
+          gap={1}
+          hasSnap
+          hasButtons={false}
+          aria-label="Externally controlled gallery">
+          {IMAGES.map(img => (
+            <Thumbnail
+              key={img.id}
+              src={img.src}
+              alt={img.label}
+              label={img.label}
+            />
+          ))}
+        </Carousel>
+        <div style={{display: 'flex', gap: 8, marginTop: 12}}>
+          <Button
+            label="Previous"
+            variant="secondary"
+            size="sm"
+            onClick={() => carouselRef.current?.scrollPrev()}
+          />
+          <Button
+            label="Next"
+            variant="secondary"
+            size="sm"
+            onClick={() => carouselRef.current?.scrollNext()}
+          />
+          <Button
+            label="Jump to first"
+            variant="ghost"
+            size="sm"
+            onClick={() => carouselRef.current?.scrollTo(0)}
+          />
+        </div>
       </div>
     );
   },

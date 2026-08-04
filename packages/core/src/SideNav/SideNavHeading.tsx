@@ -16,7 +16,7 @@
  * - /packages/core/src/SideNav/SideNav.test.tsx
  * - /packages/core/src/SideNav/index.ts
  * - /apps/storybook/stories/SideNav.stories.tsx
- * - /packages/cli/templates/blocks/components/SideNav/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/SideNav/ (showcase blocks)
  */
 
 import {useMemo, useRef, type ReactNode} from 'react';
@@ -33,7 +33,7 @@ import {
 // of lazy loading layer resources.
 import {usePopover} from '../Popover/usePopover';
 import {Link} from '../Link';
-import {getIcon} from '../Icon/globalIconRegistry';
+import {useIcon} from '../Icon';
 import {Tooltip} from '../Tooltip';
 import {navItemStyles} from '../NavItem/navItemStyles.stylex';
 import {useSideNavCollapse} from './SideNavCollapseContext';
@@ -344,6 +344,7 @@ export function SideNavHeading({
   ...props
 }: SideNavHeadingProps) {
   const t = useTranslator();
+  const chevronDownIcon = useIcon('chevronDown');
   const LinkComponent = useLinkComponent(as);
   const {isCollapsed} = useSideNavCollapse();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -454,7 +455,7 @@ export function SideNavHeading({
                       {heading}
                     </span>
                     <span {...stylex.props(styles.popoverChevron)}>
-                      {getIcon('chevronDown')}
+                      {chevronDownIcon}
                     </span>
                   </span>
                   {subheading && (
@@ -550,7 +551,7 @@ export function SideNavHeading({
   );
 
   const chevronElement = showChevron && (
-    <span {...stylex.props(styles.chevron)}>{getIcon('chevronDown')}</span>
+    <span {...stylex.props(styles.chevron)}>{chevronDownIcon}</span>
   );
 
   const headerEndContentElement = headerEndContent && (
@@ -566,9 +567,7 @@ export function SideNavHeading({
       onClick={triggerProps.onClick}>
       {icon && <span {...stylex.props(styles.icon)}>{icon}</span>}
       {renderTextContent(
-        <span {...stylex.props(styles.popoverChevron)}>
-          {getIcon('chevronDown')}
-        </span>,
+        <span {...stylex.props(styles.popoverChevron)}>{chevronDownIcon}</span>,
       )}
     </button>
   );
@@ -620,7 +619,7 @@ export function SideNavHeading({
               }}
               {...popover.triggerProps}
               {...stylex.props(styles.chevron, styles.interactive)}>
-              {getIcon('chevronDown')}
+              {chevronDownIcon}
             </button>,
           )}
           {headerEndContentElement}
@@ -686,7 +685,7 @@ export function SideNavHeading({
                 }}
                 {...popover.triggerProps}
                 {...stylex.props(styles.chevron, styles.interactive)}>
-                {getIcon('chevronDown')}
+                {chevronDownIcon}
               </button>
             ) : undefined,
           )}

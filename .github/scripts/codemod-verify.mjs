@@ -20,8 +20,8 @@
 import {execSync} from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {getTransformsBetween} from '../../packages/cli/codemods/registry.mjs';
-import {runCodemods} from '../../packages/cli/codemods/runner.mjs';
+import {getTransformsBetween} from '../../packages/cli/assets/codemods/registry.mjs';
+import {runCodemods} from '../../packages/cli/assets/codemods/runner.mjs';
 
 // Consumer directories whose changes should be reproducible by codemods
 const CONSUMER_DIRS = ['apps/storybook', 'apps/sandbox', 'e2e'];
@@ -38,22 +38,46 @@ function getChangedFiles() {
   };
 }
 
-function getCodemodVersions(changedFiles) {
-  const versionPattern = /^packages\/cli\/src\/codemods\/transforms\/v([\d.]+)\//;
-  const versions = new Set();
+function getCodemodTargets(changedFiles) {
+  const versionPattern =
+    /^packages\/cli\/assets\/codemods\/transforms\/v([\d.]+)\//;
+  const targets = new Set();
   for (const file of changedFiles) {
     const match = file.match(versionPattern);
-    if (match) versions.add(match[1]);
+    if (match) {
+      targets.add(match[1]);
+      continue;
+    }
+    if (file.startsWith('packages/cli/assets/codemods/transforms/next/')) {
+      targets.add('next');
+    }
   }
-  return [...versions].sort();
+  return [...targets].sort((a, b) => {
+    if (a === 'next') return 1;
+    if (b === 'next') return -1;
+    return a.localeCompare(b, undefined, {numeric: true});
+  });
+}
+
+async function getManifestsForTargets(targets, fromVersion, latestVersion) {
+  if (targets.includes('next')) {
+    const manifest =
+      await import('../../packages/cli/assets/codemods/transforms/next/index.mjs');
+    const manifests = [{version: 'next', transforms: manifest.default}];
+    const releasedTargets = targets.filter(target => target !== 'next');
+    if (releasedTargets.length === 0) return manifests;
+    return [
+      ...(await getTransformsBetween(fromVersion, latestVersion)),
+      ...manifests,
+    ];
+  }
+  return getTransformsBetween(fromVersion, latestVersion);
 }
 
 function getChangedConsumerFiles(changedFiles) {
-  return changedFiles.filter((f) =>
+  return changedFiles.filter(f =>
     CONSUMER_DIRS.some(
-      (dir) =>
-        f.startsWith(dir + '/') &&
-        /\.(tsx?|jsx?)$/.test(f),
+      dir => f.startsWith(dir + '/') && /\.(tsx?|jsx?)$/.test(f),
     ),
   );
 }
@@ -62,13 +86,15 @@ async function main() {
   console.log('🔍 Codemod Verification\n');
 
   const {base, files: changedFiles} = getChangedFiles();
-  const codemodVersions = getCodemodVersions(changedFiles);
+  const codemodTargets = getCodemodTargets(changedFiles);
   const consumerFiles = getChangedConsumerFiles(changedFiles);
 
-  console.log(`Codemod versions modified: ${codemodVersions.join(', ') || 'none'}`);
+  console.log(
+    `Codemod targets modified: ${codemodTargets.join(', ') || 'none'}`,
+  );
   console.log(`Consumer files changed: ${consumerFiles.length}`);
 
-  if (codemodVersions.length === 0) {
+  if (codemodTargets.length === 0) {
     console.log('\n✅ No codemod changes — nothing to verify.');
     process.exit(0);
   }
@@ -81,7 +107,9 @@ async function main() {
     process.exit(0);
   }
 
-  console.log(`\nConsumer files to verify:\n${consumerFiles.map((f) => `  ${f}`).join('\n')}\n`);
+  console.log(
+    `\nConsumer files to verify:\n${consumerFiles.map(f => `  ${f}`).join('\n')}\n`,
+  );
 
   // Save the PR version of each consumer file
   const prVersions = {};
@@ -100,7 +128,9 @@ async function main() {
       console.log(`  ⏭  ${file} — new in this PR, skipping`);
     }
   }
-  console.log(`Reverted ${revertedFiles.length} files to base (${base.slice(0, 8)})\n`);
+  console.log(
+    `Reverted ${revertedFiles.length} files to base (${base.slice(0, 8)})\n`,
+  );
 
   if (revertedFiles.length === 0) {
     console.log('✅ All consumer files are new — nothing to verify.');
@@ -113,13 +143,20 @@ async function main() {
   // Determine the version range for codemods
   // Only run the new versions added in this PR — the base branch already
   // has earlier codemod changes applied to consumer files.
-  const earliestVersion = codemodVersions[0];
-  const latestVersion = codemodVersions[codemodVersions.length - 1];
+  const releasedTargets = codemodTargets.filter(target => target !== 'next');
+  const earliestVersion = releasedTargets[0] ?? 'next';
+  const latestVersion = releasedTargets[releasedTargets.length - 1] ?? 'next';
 
   // Find the version just before the earliest modified one
-  const {versions: allVersions} = await import('../../packages/cli/codemods/registry.mjs');
+  const {versions: allVersions, latestVersion: latestRegisteredVersion} =
+    await import('../../packages/cli/assets/codemods/registry.mjs');
   const earliestIdx = allVersions.indexOf(earliestVersion);
-  const fromVersion = earliestIdx > 0 ? allVersions[earliestIdx - 1] : '0.0.0';
+  const fromVersion =
+    earliestVersion === 'next'
+      ? latestRegisteredVersion
+      : earliestIdx > 0
+        ? allVersions[earliestIdx - 1]
+        : '0.0.0';
 
   // Save the base versions to detect which files the codemod actually modified
   const baseVersions = {};
@@ -130,13 +167,21 @@ async function main() {
   // Run codemods on each affected consumer directory
   const affectedDirs = [
     ...new Set(
-      revertedFiles.map((f) => CONSUMER_DIRS.find((dir) => f.startsWith(dir + '/'))).filter(Boolean),
+      revertedFiles
+        .map(f => CONSUMER_DIRS.find(dir => f.startsWith(dir + '/')))
+        .filter(Boolean),
     ),
   ];
 
   for (const dir of affectedDirs) {
-    console.log(`Running codemods (${fromVersion} → ${latestVersion}) on ${dir}/...`);
-    const manifests = await getTransformsBetween(fromVersion, latestVersion);
+    console.log(
+      `Running codemods (${fromVersion} → ${latestVersion}) on ${dir}/...`,
+    );
+    const manifests = await getManifestsForTargets(
+      codemodTargets,
+      fromVersion,
+      latestVersion,
+    );
     if (manifests.length === 0) {
       console.log('  No applicable codemods found.');
       continue;
@@ -154,17 +199,21 @@ async function main() {
 
   // Filter to only files the codemod actually modified.
   // Files unchanged by the codemod have unrelated edits in this PR — skip them.
-  const codemodModifiedFiles = revertedFiles.filter((file) => {
+  const codemodModifiedFiles = revertedFiles.filter(file => {
     try {
       return fs.readFileSync(file, 'utf-8') !== baseVersions[file];
     } catch {
       return false;
     }
   });
-  const skippedFiles = revertedFiles.filter((f) => !codemodModifiedFiles.includes(f));
+  const skippedFiles = revertedFiles.filter(
+    f => !codemodModifiedFiles.includes(f),
+  );
 
   if (codemodModifiedFiles.length === 0) {
-    console.log('\n✅ Codemod made no changes to consumer files — nothing to verify.');
+    console.log(
+      '\n✅ Codemod made no changes to consumer files — nothing to verify.',
+    );
     for (const file of consumerFiles) {
       fs.writeFileSync(file, prVersions[file]);
     }
@@ -172,7 +221,9 @@ async function main() {
   }
 
   if (skippedFiles.length > 0) {
-    console.log(`\nSkipping ${skippedFiles.length} file(s) not modified by codemod:`);
+    console.log(
+      `\nSkipping ${skippedFiles.length} file(s) not modified by codemod:`,
+    );
     for (const file of skippedFiles) {
       console.log(`  ⏭  ${file}`);
     }
@@ -182,7 +233,9 @@ async function main() {
   // (jscodeshift's toSource() may change quotes, spacing, etc.)
   console.log('\nFormatting codemod output with prettier...');
   try {
-    run(`npx prettier --write ${codemodModifiedFiles.map((f) => `"${f}"`).join(' ')}`);
+    run(
+      `npx prettier --write ${codemodModifiedFiles.map(f => `"${f}"`).join(' ')}`,
+    );
   } catch (e) {
     console.log('  ⚠️  Prettier formatting failed, comparing raw output');
   }
@@ -234,32 +287,46 @@ async function main() {
       const prLines = expected.split('\n');
 
       // Find lines removed by codemod (in base but not in codemod output)
-      const codemodRemovedFromBase = baseLines.filter((l) => !codemodLines.includes(l));
+      const codemodRemovedFromBase = baseLines.filter(
+        l => !codemodLines.includes(l),
+      );
       // Find lines added by codemod (in codemod output but not in base)
-      const codemodAddedToBase = codemodLines.filter((l) => !baseLines.includes(l));
+      const codemodAddedToBase = codemodLines.filter(
+        l => !baseLines.includes(l),
+      );
 
       // Check: removed lines should also be absent from PR
       const missingRemovals = codemodRemovedFromBase.filter(
-        (l) => l.trim() && prLines.includes(l),
+        l => l.trim() && prLines.includes(l),
       );
       // Check: added lines should be present in PR
       const missingAdditions = codemodAddedToBase.filter(
-        (l) => l.trim() && !prLines.includes(l),
+        l => l.trim() && !prLines.includes(l),
       );
 
       if (missingRemovals.length === 0 && missingAdditions.length === 0) {
         matches++;
-        console.log(`  ✅ ${file} (superset — PR includes codemod changes + additional edits)`);
+        console.log(
+          `  ✅ ${file} (superset — PR includes codemod changes + additional edits)`,
+        );
       } else {
         mismatches++;
         const issues = [];
         if (missingRemovals.length > 0) {
-          issues.push(`${missingRemovals.length} line(s) codemod removed still present in PR`);
+          issues.push(
+            `${missingRemovals.length} line(s) codemod removed still present in PR`,
+          );
         }
         if (missingAdditions.length > 0) {
-          issues.push(`${missingAdditions.length} line(s) codemod added missing from PR`);
+          issues.push(
+            `${missingAdditions.length} line(s) codemod added missing from PR`,
+          );
         }
-        mismatchDetails.push({file, diffLines: missingRemovals.length + missingAdditions.length, issues: issues.join('; ')});
+        mismatchDetails.push({
+          file,
+          diffLines: missingRemovals.length + missingAdditions.length,
+          issues: issues.join('; '),
+        });
         console.log(`  ❌ ${file} (${issues.join('; ')})`);
       }
     }
@@ -281,15 +348,21 @@ async function main() {
   console.log(`  ❌ Mismatches:   ${mismatches}`);
 
   if (mismatches > 0) {
-    console.log('\nMismatched files (codemod changes not fully reflected in PR):');
+    console.log(
+      '\nMismatched files (codemod changes not fully reflected in PR):',
+    );
     for (const {file, diffLines, issues} of mismatchDetails) {
       console.log(`  ❌ ${file} (${issues || diffLines + ' lines differ'})`);
     }
-    console.log('\n⚠️  The codemod did not reproduce the committed consumer changes.');
+    console.log(
+      '\n⚠️  The codemod did not reproduce the committed consumer changes.',
+    );
     console.log('This means either:');
     console.log('  1. Callsites were hand-edited instead of using the codemod');
     console.log('  2. The codemod is incomplete (add missing transforms)');
-    console.log('  3. Changes are intentionally beyond codemod scope (add allow-manual-edit label)');
+    console.log(
+      '  3. Changes are intentionally beyond codemod scope (add allow-manual-edit label)',
+    );
     process.exit(1);
   }
 
@@ -297,7 +370,7 @@ async function main() {
   process.exit(0);
 }
 
-main().catch((err) => {
+main().catch(err => {
   console.error('Codemod verification failed:', err);
   process.exit(1);
 });

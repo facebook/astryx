@@ -4,7 +4,7 @@
   "private": true,
   "license": "MIT",
   "scripts": {
-    "build": "pnpm -F @astryxdesign/build build && pnpm -F @astryxdesign/core build && pnpm -F @astryxdesign/lab build && pnpm -F @astryxdesign/charts build && pnpm -F @astryxdesign/vega build && pnpm -F @astryxdesign/theme-neutral build && pnpm -F @astryxdesign/theme-matcha build && pnpm -F @astryxdesign/theme-stone build && pnpm -F @astryxdesign/theme-gothic build && pnpm -F @astryxdesign/theme-chocolate build && pnpm -F @astryxdesign/theme-y2k build && pnpm -F @astryxdesign/theme-butter build && pnpm bundle:cli-themes",
+    "build": "pnpm -F @astryxdesign/build build && pnpm -F @astryxdesign/core build && pnpm -F @astryxdesign/lab build && pnpm -F @astryxdesign/charts build && pnpm -F @astryxdesign/vega build && pnpm -F @astryxdesign/theme-neutral build && pnpm -F @astryxdesign/theme-matcha build && pnpm -F @astryxdesign/theme-stone build && pnpm -F @astryxdesign/theme-gothic build && pnpm -F @astryxdesign/theme-chocolate build && pnpm -F @astryxdesign/theme-y2k build && pnpm -F @astryxdesign/theme-butter build && pnpm bundle:cli-themes && pnpm -F @astryxdesign/cli sync:api-types",
     "bundle:cli-themes": "node scripts/generate-cli-themes.mjs",
     "dev": "pnpm -F @astryxdesign/storybook dev",
     "test": "vitest run",
@@ -18,6 +18,8 @@
     "check:sync": "node scripts/check-sync.js",
     "lint": "pnpm check:repo && eslint . --cache",
     "lint:strict": "pnpm check:repo && ASTRYX_STRICT_LINT=1 eslint . --cache",
+    "a11y:audit": "node .github/scripts/accessibility-audit.js --baseline .github/a11y-baseline.json --fail-on-new",
+    "a11y:baseline": "node .github/scripts/accessibility-audit.js --baseline .github/a11y-baseline.json --update-baseline",
     "storybook": "pnpm -F @astryxdesign/storybook dev",
     "storybook:build": "pnpm -F @astryxdesign/storybook build",
     "docsite": "pnpm -F @astryxdesign/docsite dev",
@@ -27,14 +29,15 @@
     "package:source": "node scripts/package-source.js",
     "changeset": "changeset",
     "changeset:new": "node scripts/changeset-new.mjs",
-    "version-packages": "changeset version && node scripts/format-changelogs.mjs",
+    "version-packages": "changeset version && node scripts/promote-codemod-next.mjs && node scripts/sync-internal-deps.mjs && node scripts/format-changelogs.mjs",
     "format-changelogs": "node scripts/format-changelogs.mjs",
     "setup-trusted-publishing": "node scripts/npm/setup-trusted-publishing.mjs",
     "verify-exports": "node scripts/verify-exports.mjs",
     "release": "pnpm build && changeset publish",
     "prepare": "husky install",
     "dev:sandbox": "pnpm -F @astryxdesign/core build && pnpm -F @astryxdesign/sandbox dev",
-    "dev:sandbox:source": "ASTRYX_SOURCE=1 pnpm -F @astryxdesign/sandbox dev"
+    "dev:sandbox:source": "ASTRYX_SOURCE=1 pnpm -F @astryxdesign/sandbox dev",
+    "npm:prune-canaries": "node scripts/npm/prune-canaries.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",

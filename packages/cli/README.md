@@ -307,64 +307,91 @@ The CLI command handlers are thin wrappers around these functions: they parse ar
 If you're spawning the CLI as a subprocess rather than importing the API directly:
 
 ```typescript
-import {parseResponse, isError, assertResponse} from '@astryxdesign/cli/json';
-import type {ComponentDetailResponse, CLIResult} from '@astryxdesign/cli/json';
+import {parseResponse, isError} from '@astryxdesign/cli/json';
+import type {
+  ComponentDetailResponse,
+  ComponentListResponse,
+  DocsListResponse,
+  // ...import the response types for the commands you consume
+} from '@astryxdesign/cli/json';
+
+// parseResponse returns the structural { type, data, meta? } envelope; `data`
+// is `unknown` until you narrow it. Reconstruct the union you care about from
+// the per-command response types, then narrow on `type`:
+type MyResponse =
+  ComponentDetailResponse | ComponentListResponse | DocsListResponse;
 
 const result = parseResponse(stdout);
 if (isError(result)) {
   console.error(result.error);
 } else {
-  switch (result.type) {
+  const r = result as MyResponse;
+  switch (r.type) {
     case 'component.detail':
-      result.data.name; // TypeScript: ComponentDoc
+      r.data.name; // narrowed to ComponentDoc
       break;
   }
 }
-
-// Or assert directly (throws on error/mismatch):
-const detail = assertResponse(stdout, 'component.detail');
-detail.data.name; // already narrowed
 ```
+
+Prefer narrowing at the call site? Wrap `assertResponse` (which throws on
+error/mismatch) with your reconstructed union:
+
+```typescript
+import {assertResponse} from '@astryxdesign/cli/json';
+import type {ComponentDetailResponse} from '@astryxdesign/cli/json';
+
+type MyResponse = ComponentDetailResponse; /* | ...others */
+
+function assertTyped<T extends MyResponse['type']>(raw: unknown, type: T) {
+  return assertResponse(raw, type) as Extract<MyResponse, {type: T}>;
+}
+
+const detail = assertTyped(stdout, 'component.detail');
+detail.data.name; // narrowed
+```
+
+> **Migration (removed in the structural-`jsonOut` release):** the central
+> `CLIAnyResponse`, `CLIResponseType`, and `CLIResponseDataMap` exports were
+> removed. `parseResponse` / `assertResponse` no longer auto-narrow `.data`.
+> Rebuild the union from the individual `*Response` types as shown above — they
+> are all still exported from `@astryxdesign/cli/json`.
 
 ### Type discriminators
 
 Every response has a `type` string that uniquely identifies it:
 
-| Command                                           | Type                        | Response                          |
-| ------------------------------------------------- | --------------------------- | --------------------------------- |
-| `astryx --json component [--list]`                | `component.list`            | `ComponentListResponse`           |
-| `astryx --json component --list --detail compact` | `component.brief`           | `ComponentBriefResponse`          |
-| `astryx --json component --list --detail full`    | `component.full`            | `ComponentFullResponse`           |
-| `astryx --json component <name>`                  | `component.detail`          | `ComponentDetailResponse`         |
-| `astryx --json component <name> --props`          | `component.detail.props`    | `ComponentDetailPropsResponse`    |
-| `astryx --json component <name> --source`         | `component.detail.source`   | `ComponentDetailSourceResponse`   |
-| `astryx --json component <name> --showcase`       | `component.detail.showcase` | `ComponentDetailShowcaseResponse` |
-| `astryx --json component <name> --blocks`         | `component.detail.blocks`   | `ComponentDetailBlocksResponse`   |
-| `astryx --json discover`                          | `discover.list`             | `DiscoverListResponse`            |
-| `astryx --json discover @scope/name`              | `discover.detail`           | `DiscoverDetailResponse`          |
-| `astryx --json discover @scope/name/Comp`         | `discover.detail.doc`       | `DiscoverDetailDocResponse`       |
-| `astryx --json discover <search>`                 | `discover.search`           | `DiscoverSearchResponse`          |
-| `astryx --json docs`                              | `docs.list`                 | `DocsListResponse`                |
-| `astryx --json docs <topic>`                      | `docs.detail`               | `DocsDetailResponse`              |
-| `astryx --json docs <topic> <section>`            | `docs.detail.section`       | `DocsDetailSectionResponse`       |
-| `astryx --json template [--list]`                 | `template.list`             | `TemplateListResponse`            |
-| `astryx --json template <name>`                   | `template.show`             | `TemplateShowResponse`            |
-| `astryx --json template <name> --skeleton`        | `template.skeleton`         | `TemplateSkeletonResponse`        |
-| `astryx --json template <name> [path]`            | `template.copy`             | `TemplateCopyResponse`            |
-| `astryx --json hook [--list]`                     | `hook.list`                 | `HookListResponse`                |
-| `astryx --json hook --list --detail compact`      | `hook.brief`                | `HookBriefResponse`               |
-| `astryx --json hook --list --detail full`         | `hook.full`                 | `HookFullResponse`                |
-| `astryx --json hook <name>`                       | `hook.detail`               | `HookDetailResponse`              |
-| `astryx --json hook <name> --params`              | `hook.detail.params`        | `HookDetailParamsResponse`        |
-| `astryx --json search <query>`                    | `search`                    | `SearchResponse`                  |
-| `astryx --json swizzle [--list]`                  | `swizzle.list`              | `SwizzleListResponse`             |
-| `astryx --json swizzle <component>`               | `swizzle.copy`              | `SwizzleCopyResponse`             |
-| `astryx --json theme build <file>`                | `theme.build`               | `ThemeBuildResponse`              |
-| `astryx --json upgrade --list`                    | `upgrade.list`              | `UpgradeListResponse`             |
-| `astryx --json upgrade [--apply]`                 | `upgrade.run`               | `UpgradeRunResponse`              |
-| `astryx --json doctor`                            | `doctor`                    | `DoctorResponse`                  |
-| any error                                         | —                           | `CLIError`                        |
-| unsupported command                               | —                           | `CLIUnsupportedError`             |
+| Command                                                            | Type                                 | Response                          |
+| ------------------------------------------------------------------ | ------------------------------------ | --------------------------------- |
+| `astryx --json component [--list] [--detail names\|compact\|full]` | `component.list` (see `data.detail`) | `ComponentListResponse`           |
+| `astryx --json component <name>`                                   | `component.detail`                   | `ComponentDetailResponse`         |
+| `astryx --json component <name> --props`                           | `component.detail.props`             | `ComponentDetailPropsResponse`    |
+| `astryx --json component <name> --source`                          | `component.detail.source`            | `ComponentDetailSourceResponse`   |
+| `astryx --json component <name> --showcase`                        | `component.detail.showcase`          | `ComponentDetailShowcaseResponse` |
+| `astryx --json component <name> --blocks`                          | `component.detail.blocks`            | `ComponentDetailBlocksResponse`   |
+| `astryx --json discover`                                           | `discover.list`                      | `DiscoverListResponse`            |
+| `astryx --json discover @scope/name`                               | `discover.detail`                    | `DiscoverDetailResponse`          |
+| `astryx --json discover @scope/name/Comp`                          | `discover.detail.doc`                | `DiscoverDetailDocResponse`       |
+| `astryx --json discover <search>`                                  | `discover.search`                    | `DiscoverSearchResponse`          |
+| `astryx --json docs`                                               | `docs.list`                          | `DocsListResponse`                |
+| `astryx --json docs <topic>`                                       | `docs.detail`                        | `DocsDetailResponse`              |
+| `astryx --json docs <topic> <section>`                             | `docs.detail.section`                | `DocsDetailSectionResponse`       |
+| `astryx --json template [--list]`                                  | `template.list`                      | `TemplateListResponse`            |
+| `astryx --json template <name>`                                    | `template.show`                      | `TemplateShowResponse`            |
+| `astryx --json template <name> --skeleton`                         | `template.skeleton`                  | `TemplateSkeletonResponse`        |
+| `astryx --json template <name> [path]`                             | `template.copy`                      | `TemplateCopyResponse`            |
+| `astryx --json hook [--list] [--detail names\|compact\|full]`      | `hook.list` (see `data.detail`)      | `HookListResponse`                |
+| `astryx --json hook <name>`                                        | `hook.detail`                        | `HookDetailResponse`              |
+| `astryx --json hook <name> --params`                               | `hook.detail.params`                 | `HookDetailParamsResponse`        |
+| `astryx --json search <query>`                                     | `search`                             | `SearchResponse`                  |
+| `astryx --json swizzle [--list]`                                   | `swizzle.list`                       | `SwizzleListResponse`             |
+| `astryx --json swizzle <component>`                                | `swizzle.copy`                       | `SwizzleCopyResponse`             |
+| `astryx --json theme build <file>`                                 | `theme.build`                        | `ThemeBuildResponse`              |
+| `astryx --json upgrade --list`                                     | `upgrade.list`                       | `UpgradeListResponse`             |
+| `astryx --json upgrade [--apply]`                                  | `upgrade.run`                        | `UpgradeRunResponse`              |
+| `astryx --json doctor`                                             | `doctor`                             | `DoctorResponse`                  |
+| any error                                                          | —                                    | `CLIError`                        |
+| unsupported command                                                | —                                    | `CLIUnsupportedError`             |
 
 ## Doctor
 
@@ -434,20 +461,15 @@ The CLI reads an optional `astryx.config.{ts,mjs,js}` from your project root
 CLI runs on defaults.
 
 ```typescript
-import {createConfig} from '@astryxdesign/core/config';
-
-export default createConfig({
+export default {
   integrations: ['@acme/astryx-widgets'],
   issuesUrl: 'https://github.com/your-org/your-repo/issues',
-});
+};
 ```
 
-`createConfig` is a type-preserving helper: it returns its argument unchanged
-and exists only to give the config file editor autocomplete and type-checking. A
-plain `export default {}` object works identically. It's exported from
-`@astryxdesign/core` (not the CLI) so your config file gets type feedback
-without depending on the CLI; the same helper is re-exported from
-`@astryxdesign/cli/config` for back-compat.
+There is no factory: write a plain object. For editor autocomplete and
+type-checking, annotate it with the `AstryxConfig` type exported from
+`@astryxdesign/cli/authoring`.
 
 | Field                         | Type                           | Purpose                                                                                         |
 | ----------------------------- | ------------------------------ | ----------------------------------------------------------------------------------------------- |
@@ -459,6 +481,30 @@ without depending on the CLI; the same helper is re-exported from
 The config is validated against a strict schema when the CLI loads it, so an
 unknown field is a hard error rather than a silent no-op. `astryx doctor`
 reports whether the config loads cleanly.
+
+## Core codemod authoring
+
+Core codemods live under `packages/cli/assets/codemods/transforms/`. Released
+codemods are grouped by the target package version (`v0.3.0`, `v0.3.1`, ...),
+which is the version that first contains the breaking change.
+
+Do not guess that version in ordinary feature PRs. Add new codemods to
+`packages/cli/assets/codemods/transforms/next/` instead:
+
+- put transform modules and tests in `transforms/next/`;
+- maintain `transforms/next/index.mjs` with the run order for the staged
+  transforms;
+- leave `transforms/next/README.md` in place; it documents the staging area and
+  is never promoted.
+
+During the Version Packages PR, `pnpm version-packages` runs
+`scripts/promote-codemod-next.mjs` after `changeset version`. The script copies
+all staged entries except the README into `transforms/v<new-core-version>/`,
+registers that version in `packages/cli/assets/codemods/registry.mjs`, and clears
+the promoted files from `next`.
+
+This mirrors Changesets: feature PRs stage migration work without knowing the
+future release number; the release PR assigns the exact version.
 
 ## Integrations
 
@@ -487,14 +533,12 @@ manifest points at where each kind of contribution lives; identity (name,
 version) comes from `package.json`, not the manifest.
 
 ```typescript
-import {createIntegration} from '@astryxdesign/core/authoring';
-
-export default createIntegration({
+export default {
   components: './components',
   templates: './templates',
   codemods: './codemods',
   issuesUrl: 'https://github.com/acme/widgets/issues',
-});
+};
 ```
 
 | Field        | Type     | Purpose                                                               |
@@ -504,10 +548,9 @@ export default createIntegration({
 | `codemods`   | `string` | Directory holding upgrade codemods run by `astryx upgrade`.           |
 | `issuesUrl`  | `string` | Where "report an issue" links for this package's contributions point. |
 
-Every field is optional; declare only the roots the package ships.
-`createIntegration` is a type-preserving helper (editor autocomplete and
-type-checking); it lives in `@astryxdesign/core/authoring` and is re-exported
-from `@astryxdesign/cli/integration` for back-compat.
+Every field is optional; declare only the roots the package ships. There is no
+factory: write a plain object, and annotate it with the `AstryxIntegration` type
+from `@astryxdesign/cli/authoring` for editor autocomplete and type-checking.
 
 ### How it works
 

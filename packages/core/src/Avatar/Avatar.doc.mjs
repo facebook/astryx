@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'Avatar',
@@ -76,7 +76,7 @@ export const docs = {
     {
       name: 'status',
       type: 'ReactNode',
-      description: 'Corner content for status indicators.',
+      description: 'Corner content for status indicators. A string `label` on the element (as on AvatarStatusDot) is composed into the avatar\'s accessible name (e.g. "Jane Doe, Online") so screen readers announce the status.',
       slotElements: [
         {
           __element: 'AvatarStatusDot',
@@ -91,14 +91,14 @@ export const docs = {
       name: 'tooltip',
       type: 'string | boolean',
       description:
-        "Tooltip shown on hover and keyboard focus. Omitted or true shows the avatar's name; a string shows that text instead; false shows no tooltip. Not auto-disabled when wrapped in your own Tooltip/HoverCard — set tooltip={false} if you supply your own overlay. No tooltip is shown when tooltip is true/omitted and there is no name.",
+        "Tooltip shown on hover and keyboard focus. Omitted or true shows the avatar's name; a string shows that text instead; false shows no tooltip. Not auto-disabled when wrapped in your own Tooltip/HoverCard. Set tooltip={false} if you supply your own overlay. No tooltip is shown when tooltip is true/omitted and there is no name.",
       default: 'true',
     },
     {
       name: 'href',
       type: 'string',
       description:
-        'When set, the avatar renders as an interactive link (`<a>` or a custom link component) pointing here — the same element-swap rule as Button. Requires a meaningful accessible name via `alt` or `name`. Inside an AvatarGroup, interactive avatars share a single Tab stop and are reached with arrow keys.',
+        'When set, the avatar renders as an interactive link (`<a>` or a custom link component) pointing here. This follows the same element-swap rule as Button. Requires a meaningful accessible name via `alt` or `name`. Inside an AvatarGroup, interactive avatars share a single Tab stop and are reached with arrow keys.',
     },
     {
       name: 'as',
@@ -128,7 +128,7 @@ export const docs = {
   ],
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsZh = {
   usage: {
     description:
@@ -142,7 +142,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'person/team avatar w/ photo → initials → icon fallback chain',
   usage: {
@@ -152,6 +152,7 @@ export const docsDense = {
       {guidance: true, description: 'Always pass a name for initials fallback and screen reader alt text.'},
       {guidance: true, description: 'Match size to context: xsm/sm inline, md/lg in lists, xl for profiles.'},
       {guidance: true, description: 'Add a status dot in chat or team views where availability matters.'},
+      {guidance: true, description: 'When wrapping Avatar in your own Tooltip or HoverCard, set tooltip={false} so the built-in name tooltip does not overlap yours.'},
       {guidance: false, description: 'Use for logos or product images. Use an image or icon instead.'},
       {guidance: false, description: 'Force a square or custom shape. Avatars are always circular.'},
     ],
@@ -162,7 +163,8 @@ export const docsDense = {
     name: 'user name for initials and alt text',
     alt: 'alt text; falls back to name',
     size: "avatar size. Named ('xsm' 20px, 'sm' 24px, 'md' 36px, 'lg' 48px, 'xl' 128px) or numeric px.",
-    status: 'corner content for status indicators',
+    status:
+      'corner content for status indicators; its `label` is composed into the avatar accessible name ("Jane Doe, Online")',
     tooltip:
       "hover/focus tooltip. true/omitted → name; string → that text; false → none. Owns its tooltip; set false when wrapping in your own Tooltip/HoverCard. Default true.",
     href: 'renders avatar as a link (<a>/custom). Needs alt/name. Button-style element swap.',

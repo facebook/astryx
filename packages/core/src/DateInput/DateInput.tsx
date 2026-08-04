@@ -13,7 +13,7 @@
  * - /packages/core/src/DateInput/DateInput.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/DateInput/index.ts (exports if types change)
  * - /apps/storybook/stories/DateInput.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/DateInput/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/DateInput/ (showcase blocks)
  */
 
 import {
@@ -25,7 +25,6 @@ import {
   useTransition,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {IconName} from '../Icon';
 import {
   colorVars,
   sizeVars,
@@ -37,7 +36,6 @@ import {
 import {
   Field,
   type InputStatus,
-  type InputStatusType,
   inputWrapperStyles,
   inputStatusBorderStyles,
   inputStatusHoverShadowStyles,
@@ -52,6 +50,7 @@ import {useSize} from '../SizeContext/SizeContext';
 import {Spinner} from '../Spinner';
 import {Calendar, type ISODateString, type CalendarHandle} from '../Calendar';
 import {useCalendarConstraints} from '../Calendar/hooks';
+import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
 import {usePopover} from '../Popover';
 import {useTooltip} from '../Tooltip';
 import {getInputARIA, parseDateInput} from '../utils';
@@ -283,6 +282,7 @@ export interface DateInputProps extends Omit<
    * How the status message is placed relative to the input.
    * - 'attached': message overlaps directly below the input (bordered treatment)
    * - 'detached': message floats below as a separate element with spacing
+   * - 'tooltip': no message box; the status icon becomes a focusable info-tip button that reveals the message on hover, keyboard focus, or tap
    * @default 'attached'
    */
   statusVariant?: FieldStatusVariant;
@@ -419,30 +419,24 @@ export function DateInput({
     isEnabled: showsDisabledMessage,
   });
 
-  // Status icon mapping
-  const statusIconMap: Record<InputStatusType, IconName> = {
-    warning: 'warning',
-    error: 'error',
-    success: 'success',
-  };
-
-  const statusIconColorMap: Record<
-    InputStatusType,
-    'warning' | 'error' | 'success'
-  > = {
-    warning: 'warning',
-    error: 'error',
-    success: 'success',
-  };
-
   // Constraint checking for text input validation (reuses calendar logic)
   const {isDateDisabled} = useCalendarConstraints({min, max, dateConstraints});
+
+  const {statusIcon, describedBy: statusTooltipDescribedBy} =
+    useInputStatusIcon({
+      status,
+      statusVariant,
+      isInGroup: !!inputGroup,
+    });
 
   const {ariaLabelledBy, ariaDescribedBy} = getInputARIA(
     inputLabelID,
     [
       description ? descriptionID : null,
-      status?.message ? statusMessageID : null,
+      statusVariant !== 'tooltip' && status?.message ? statusMessageID : null,
+      // The tooltip variant renders no message box; describe the input by the
+      // tooltip's content instead so the status is still announced.
+      statusTooltipDescribedBy,
       showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
     ],
     inputGroup,
@@ -647,7 +641,9 @@ export function DateInput({
           sizeStyles[size],
           isEffectivelyDisabled && inputWrapperStyles.disabled,
           status && inputStatusBorderStyles[status.type],
-          status && inputStatusHoverShadowStyles[status.type],
+          status &&
+            !isEffectivelyDisabled &&
+            inputStatusHoverShadowStyles[status.type],
           status && inputStatusFocusWithinStyles[status.type],
           inputGroup && groupStyles.inGroup,
           xstyle,
@@ -669,7 +665,20 @@ export function DateInput({
           styles.iconButton,
           isEffectivelyDisabled && styles.iconButtonDisabled,
         )}>
-        <Icon icon="calendar" size="sm" color="secondary" />
+        <Icon
+          icon="calendar"
+          size="sm"
+          color="secondary"
+          // Stable theme target on the toggle glyph itself, so a theme can
+          // restyle just this icon (color, size, hover) — and each open/closed
+          // state — via `defineTheme`. Same-element rules in @layer astryx-theme
+          // win over the icon's own base color/size, which a button-level target
+          // could not reach. Reflects the popover's open/closed state as a
+          // `data-state` attribute.
+          {...themeProps('date-input-toggle-icon', {
+            state: popover.isOpen ? 'expanded' : 'collapsed',
+          })}
+        />
       </button>
       <input
         ref={mergeRefs(ref, inputRef)}
@@ -721,17 +730,20 @@ export function DateInput({
           onClick={handleClear}
           aria-label={t('@astryx.dateInput.clear', {label})}
           {...stylex.props(styles.iconButton)}>
-          <Icon icon="close" size="sm" color="secondary" />
+          <Icon
+            icon="close"
+            size="sm"
+            color="secondary"
+            // Stable theme target on the clear glyph itself, so a theme can
+            // restyle just this icon (color, size, hover) via `defineTheme`.
+            // Same-element rules in @layer astryx-theme win over the icon's own
+            // base color/size, which a button-level target could not reach.
+            {...themeProps('date-input-clear-icon')}
+          />
         </button>
       )}
       {isBusy && <Spinner size="sm" />}
-      {status && !inputGroup && (
-        <Icon
-          icon={statusIconMap[status.type]}
-          size="md"
-          color={statusIconColorMap[status.type]}
-        />
-      )}
+      {statusIcon}
       {popover.render(
         <Calendar
           handleRef={calendarRef}

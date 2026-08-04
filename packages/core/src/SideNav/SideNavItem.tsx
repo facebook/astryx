@@ -15,7 +15,7 @@
  * - /packages/core/src/SideNav/SideNav.test.tsx
  * - /packages/core/src/SideNav/index.ts
  * - /apps/storybook/stories/SideNav.stories.tsx
- * - /packages/cli/templates/blocks/components/SideNav/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/SideNav/ (showcase blocks)
  */
 
 import {
@@ -38,7 +38,7 @@ import {
   borderVars,
   radiusVars,
 } from '../theme/tokens.stylex';
-import {renderIconSlot, type IconType} from '../Icon';
+import {renderIconSlot, useIcon, type IconType} from '../Icon';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
 import {usePopover} from '../Popover/usePopover';
@@ -50,7 +50,6 @@ import {
   useSideNavCollapse,
   SideNavCollapseContext,
 } from './SideNavCollapseContext';
-import {getIcon} from '../Icon/globalIconRegistry';
 import {useSideNavRenderMode} from './SideNavRenderContext';
 import {useAppShellMobile} from '../AppShell/AppShellMobileContext';
 import {themeProps} from '../utils/themeProps';
@@ -356,8 +355,10 @@ export function SideNavItem({
   size = 'md',
   'data-testid': testId,
   ref,
+  xstyle,
 }: SideNavItemProps) {
   const t = useTranslator();
+  const chevronDownIcon = useIcon('chevronDown');
   const {isCollapsed} = useSideNavCollapse();
   const renderMode = useSideNavRenderMode();
   const {closeMobileNav} = useAppShellMobile();
@@ -502,7 +503,7 @@ export function SideNavItem({
     // Items with children: popover trigger + popover
     if (hasChildren) {
       return (
-        <div {...stylex.props(styles.root)}>
+        <div {...stylex.props(styles.root, xstyle)}>
           <button
             ref={mergeRefs(ref, popover.triggerRef)}
             type="button"
@@ -554,7 +555,7 @@ export function SideNavItem({
     );
 
     return (
-      <div ref={itemRef} {...stylex.props(styles.root)}>
+      <div ref={itemRef} {...stylex.props(styles.root, xstyle)}>
         {collapsedElement}
         <Tooltip content={label} placement="end" anchorRef={itemRef} />
       </div>
@@ -578,7 +579,7 @@ export function SideNavItem({
             styles.expandChevron,
             !isItemCollapsed && styles.expandChevronExpanded,
           )}>
-          {getIcon('chevronDown')}
+          {chevronDownIcon}
         </span>
       )}
     </>
@@ -641,7 +642,7 @@ export function SideNavItem({
               styles.expandChevron,
               !isItemCollapsed && styles.expandChevronExpanded,
             )}>
-            {getIcon('chevronDown')}
+            {chevronDownIcon}
           </span>
         </button>
       </div>
@@ -670,7 +671,7 @@ export function SideNavItem({
   }
 
   const item = (
-    <div ref={itemRef} {...stylex.props(styles.root)}>
+    <div ref={itemRef} {...stylex.props(styles.root, xstyle)}>
       {itemElement}
       {hasChildren && !isCollapsed && (
         <div

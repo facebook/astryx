@@ -24,7 +24,17 @@
  * dependencies — install them to use this component.
  */
 
-import {useEffect, useId, useRef, type ReactNode} from 'react';
+import {
+  useEffect,
+  useId,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+  forwardRef,
+  type ReactNode,
+  type Ref,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -41,6 +51,7 @@ import {
   inputStatusFocusWithinStyles,
 } from '@astryxdesign/core/Field';
 import type {BaseProps} from '@astryxdesign/core';
+import {VisuallyHidden} from '@astryxdesign/core/VisuallyHidden';
 import type {SizeValue} from '@astryxdesign/core/utils';
 import {useSize} from '@astryxdesign/core/SizeContext';
 import {themeProps} from '@astryxdesign/core/utils';
@@ -59,11 +70,14 @@ import {LinkPlugin} from '@lexical/react/LexicalLinkPlugin';
 import {TabIndentationPlugin} from '@lexical/react/LexicalTabIndentationPlugin';
 import {MarkdownShortcutPlugin} from '@lexical/react/LexicalMarkdownShortcutPlugin';
 import {OnChangePlugin} from '@lexical/react/LexicalOnChangePlugin';
-import {TRANSFORMERS} from '@lexical/markdown';
-import {ListNode, ListItemNode} from '@lexical/list';
-import {HeadingNode, QuoteNode} from '@lexical/rich-text';
-import {LinkNode, AutoLinkNode} from '@lexical/link';
-import {CodeNode, CodeHighlightNode} from '@lexical/code';
+import {
+  TRANSFORMERS,
+  $convertToMarkdownString,
+  type Transformer,
+} from '@lexical/markdown';
+export type {Transformer} from '@lexical/markdown';
+import {$generateHtmlFromNodes} from '@lexical/html';
+import {DEFAULT_NODES} from './editorNodes';
 import type {
   EditorState,
   Klass,
@@ -71,6 +85,40 @@ import type {
   LexicalNode,
   EditorThemeClasses,
 } from 'lexical';
+
+/**
+ * Serialized state for an empty editor: a root containing a single empty
+ * paragraph. Used by the imperative `clear()` handle.
+ *
+ * We deliberately reset the editor via `editor.setEditorState(...)` rather than
+ * an `editor.update(() => { $getRoot()... })` callback, because `$getRoot` /
+ * `$createParagraphNode` are *runtime value* imports from the top-level
+ * `lexical` package. In the sandbox's Next build a top-level `lexical` value
+ * import forces Babel to transpile lexical's raw `src/*.ts` (which uses
+ * `declare` class fields) and fails the build. `parseEditorState` /
+ * `setEditorState` are methods on the editor instance, so no top-level
+ * `lexical` value import is needed. Setting a fresh state still notifies update
+ * listeners, so `onChange` fires.
+ */
+const EMPTY_EDITOR_STATE_JSON = JSON.stringify({
+  root: {
+    children: [
+      {
+        children: [],
+        direction: null,
+        format: '',
+        indent: 0,
+        type: 'paragraph',
+        version: 1,
+      },
+    ],
+    direction: null,
+    format: '',
+    indent: 0,
+    type: 'root',
+    version: 1,
+  },
+});
 
 const styles = stylex.create({
   wrapper: {
@@ -113,6 +161,17 @@ const styles = stylex.create({
   disabled: {
     cursor: 'not-allowed',
   },
+  counter: {
+    display: 'flex',
+    justifyContent: 'flex-end',
+    marginTop: spacingVars['--spacing-1'],
+    fontFamily: typographyVars['--font-family-body'],
+    fontSize: typeScaleVars['--text-supporting-size'],
+    color: colorVars['--color-text-secondary'],
+  },
+  counterError: {
+    color: colorVars['--color-error'],
+  },
 });
 
 const sizeStyles = stylex.create({
@@ -123,17 +182,11 @@ const sizeStyles = stylex.create({
   },
 });
 
-/** The default OSS node set registered with the editor. */
-const DEFAULT_NODES: ReadonlyArray<Klass<LexicalNode>> = [
-  HeadingNode,
-  QuoteNode,
-  ListNode,
-  ListItemNode,
-  LinkNode,
-  AutoLinkNode,
-  CodeNode,
-  CodeHighlightNode,
-];
+/**
+ * Fraction of `maxLength` at which the character counter begins announcing
+ * remaining/over-limit characters to screen readers. Matches TextArea.
+ */
+const COUNTER_WARNING_THRESHOLD = 0.8;
 
 export type RichTextEditorStatusType = 'warning' | 'error' | 'success';
 
@@ -144,6 +197,43 @@ export interface RichTextEditorStatus {
   type: RichTextEditorStatusType;
   /** Optional message to display below the editor. */
   message?: string;
+}
+
+/**
+ * Imperative handle exposed via `ref`. Lets callers focus, clear, and read the
+ * editor without wiring a custom plugin. Available after mount.
+ */
+export interface RichTextEditorRef {
+  /**
+   * Move focus into the editor's editable surface. No-op when the editor is
+   * read-only or disabled.
+   */
+  focus: () => void;
+  /**
+   * Remove all content, resetting the editor to a single empty paragraph.
+   * No-op when the editor is read-only or disabled.
+   */
+  clear: () => void;
+  /** Read the current `EditorState`. Serialize with `.toJSON()` to persist. */
+  getEditorState: () => EditorState;
+  /**
+   * Serialize the current content to a Markdown string, using the same
+   * `transformers` the editor is configured with (so custom transformers
+   * layered in via the `transformers` prop are honored). Equivalent to
+   * `$convertToMarkdownString` run in a read context.
+   */
+  getMarkdown: () => string;
+  /**
+   * Serialize the current content to an HTML string via
+   * `$generateHtmlFromNodes`. Requires a DOM (available in the browser and in
+   * jsdom-based tests). Useful for copy/paste, email, or non-Lexical consumers.
+   */
+  getHTML: () => string;
+  /**
+   * Access the underlying `LexicalEditor` instance for advanced use cases
+   * (custom commands, listeners, node transforms).
+   */
+  getEditor: () => LexicalEditor;
 }
 
 export interface RichTextEditorProps extends Omit<
@@ -224,12 +314,39 @@ export interface RichTextEditorProps extends Omit<
   plugins?: ReactNode;
   /**
    * Whether to enable Markdown shortcut typing (e.g. `# ` for a heading,
-   * `- ` for a list). Uses the default `@lexical/markdown` transformers.
+   * `- ` for a list). Uses the `transformers` prop (defaults to the standard
+   * `@lexical/markdown` transformers).
    * @default true
    */
   hasMarkdownShortcuts?: boolean;
+  /**
+   * Markdown transformers — the single source of truth for markdown behaviour.
+   * Defaults to the standard `@lexical/markdown` `TRANSFORMERS`.
+   *
+   * The same array drives all three markdown operations in Lexical (see the
+   * lexical-playground reference, where one `PLAYGROUND_TRANSFORMERS` array
+   * feeds each):
+   *  - shortcut typing        — `registerMarkdownShortcuts` (wired here today)
+   *  - markdown -> state       — `$convertFromMarkdownString` (future import API)
+   *  - state -> markdown       — `$convertToMarkdownString` (future `getMarkdown`)
+   *
+   * Pass a custom array to support additional node types (e.g. custom
+   * transformers layered in via the `nodes` extension point) consistently
+   * across all three. Shortcut typing is only applied when
+   * `hasMarkdownShortcuts` is true; the array is still the intended input for
+   * the serialization APIs added in later phases.
+   */
+  transformers?: ReadonlyArray<Transformer>;
   /** Whether to automatically focus the editor on mount. @default false */
   hasAutoFocus?: boolean;
+  /**
+   * Maximum number of characters. When set, a character counter
+   * (current/max) is displayed below the editor. Like TextArea, this does
+   * NOT enforce the limit natively — the counter shows error styling when the
+   * plain-text length exceeds the limit. Count is the editor's plain-text
+   * content length.
+   */
+  maxLength?: number;
   /**
    * The Lexical composer namespace, used for editor identity.
    * @default 'astryx-editor'
@@ -247,46 +364,64 @@ export interface RichTextEditorProps extends Omit<
  * `plugins` to layer richer behaviour (toolbars, mentions, hover cards) on top
  * without forking.
  *
+ * The forwarded `RichTextEditorRef` exposes imperative `focus()` and `clear()`
+ * methods for callers that manage the editor from outside.
+ *
  * @example
  * ```
- * import {RichTextEditor} from '@astryxdesign/lab';
+ * import {RichTextEditor, type RichTextEditorRef} from '@astryxdesign/lab';
+ * const ref = useRef<RichTextEditorRef>(null);
  * <RichTextEditor
+ *   ref={ref}
  *   label="Notes"
  *   placeholder="Write something..."
  *   onChange={state => save(JSON.stringify(state.toJSON()))}
  * />
  * ```
  */
-export function RichTextEditor({
-  label,
-  isLabelHidden = false,
-  description,
-  isOptional = false,
-  isRequired = false,
-  defaultValue,
-  onChange,
-  placeholder,
-  isReadOnly = false,
-  isDisabled = false,
-  status,
-  width,
-  labelTooltip,
-  size: sizeProp,
-  nodes,
-  plugins,
-  hasMarkdownShortcuts = true,
-  hasAutoFocus = false,
-  namespace = 'astryx-editor',
-  xstyle,
-  className,
-  style,
-  ...rest
-}: RichTextEditorProps) {
+export const RichTextEditor = forwardRef<
+  RichTextEditorRef,
+  RichTextEditorProps
+>(function RichTextEditor(
+  {
+    label,
+    isLabelHidden = false,
+    description,
+    isOptional = false,
+    isRequired = false,
+    defaultValue,
+    onChange,
+    placeholder,
+    isReadOnly = false,
+    isDisabled = false,
+    status,
+    width,
+    labelTooltip,
+    size: sizeProp,
+    nodes,
+    plugins,
+    hasMarkdownShortcuts = true,
+    transformers = TRANSFORMERS,
+    hasAutoFocus = false,
+    maxLength,
+    namespace = 'astryx-editor',
+    xstyle,
+    className,
+    style,
+    ...rest
+  }: RichTextEditorProps,
+  ref: Ref<RichTextEditorRef>,
+) {
   const size = useSize(sizeProp, 'md');
   const id = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
   const placeholderID = useId();
+  const counterID = useId();
+
+  // Plain-text character count, tracked from inside the composer via
+  // CharCountPlugin. Only used when maxLength is set.
+  const [charCount, setCharCount] = useState(0);
 
   // Theme is stable per render; build once.
   const themeRef = useRef<EditorThemeClasses | null>(null);
@@ -295,6 +430,12 @@ export function RichTextEditor({
   }
 
   const editable = !isReadOnly && !isDisabled;
+
+  // Stabilize the transformers array so MarkdownShortcutPlugin doesn't
+  // re-register on every render. `[...transformers]` would allocate a new
+  // array each time; memoize on the prop identity instead. (React Compiler
+  // isn't running the transform in this repo, so this isn't auto-memoized.)
+  const markdownTransformers = useMemo(() => [...transformers], [transformers]);
 
   const initialConfig: InitialConfigType = {
     namespace,
@@ -313,6 +454,7 @@ export function RichTextEditor({
       description ? descriptionID : null,
       status?.message ? statusMessageID : null,
       placeholder ? placeholderID : null,
+      maxLength != null ? counterID : null,
     ]
       .filter(Boolean)
       .join(' ') || undefined;
@@ -379,7 +521,7 @@ export function RichTextEditor({
             <LinkPlugin />
             <TabIndentationPlugin />
             {hasMarkdownShortcuts && (
-              <MarkdownShortcutPlugin transformers={TRANSFORMERS} />
+              <MarkdownShortcutPlugin transformers={markdownTransformers} />
             )}
             {hasAutoFocus && <AutoFocusOnMount />}
             {onChange && (
@@ -390,12 +532,37 @@ export function RichTextEditor({
               />
             )}
             {plugins}
+            <EditorRefBridge
+              editorRef={ref}
+              editable={editable}
+              transformers={markdownTransformers}
+            />
+            {maxLength != null && (
+              <CharCountPlugin onCountChange={setCharCount} />
+            )}
           </div>
         </LexicalComposer>
       </div>
+      {maxLength != null && (
+        <div
+          id={counterID}
+          {...stylex.props(
+            styles.counter,
+            charCount > maxLength && styles.counterError,
+          )}>
+          {charCount}/{maxLength}
+          <VisuallyHidden aria-live="polite">
+            {charCount >= maxLength * COUNTER_WARNING_THRESHOLD
+              ? charCount > maxLength
+                ? `${charCount - maxLength} characters over limit`
+                : `${maxLength - charCount} characters remaining`
+              : ''}
+          </VisuallyHidden>
+        </div>
+      )}
     </Field>
   );
-}
+});
 
 RichTextEditor.displayName = 'RichTextEditor';
 
@@ -408,6 +575,94 @@ function AutoFocusOnMount(): null {
   useEffect(() => {
     editor.focus();
   }, [editor]);
+  return null;
+}
+
+/**
+ * Wires the imperative `RichTextEditorRef` handle. Split into its own plugin so
+ * it runs inside the composer context and can reach the `LexicalEditor` via
+ * `useLexicalComposerContext()`. Renders nothing.
+ *
+ * `focus()` and `clear()` are gated on `editable` so a read-only or disabled
+ * editor cannot be mutated or focused through the imperative handle — matching
+ * the behaviour of the editable surface itself.
+ */
+function EditorRefBridge({
+  editorRef,
+  editable,
+  transformers,
+}: {
+  editorRef: Ref<RichTextEditorRef>;
+  editable: boolean;
+  transformers: Array<Transformer>;
+}): null {
+  const [editor] = useLexicalComposerContext();
+  useImperativeHandle(
+    editorRef,
+    () => ({
+      focus: () => {
+        if (!editable) {
+          return;
+        }
+        editor.focus();
+      },
+      clear: () => {
+        if (!editable) {
+          return;
+        }
+        // Reset to a single empty paragraph via a fresh EditorState. Uses the
+        // editor instance's own parse/set methods so we avoid a top-level
+        // `lexical` value import (see EMPTY_EDITOR_STATE_JSON). This still
+        // notifies update listeners, so `onChange` fires.
+        editor.setEditorState(editor.parseEditorState(EMPTY_EDITOR_STATE_JSON));
+      },
+      getEditorState: () => editor.getEditorState(),
+      getMarkdown: () =>
+        // $convertToMarkdownString must run inside a read context. Honors the
+        // same transformers the editor uses for shortcuts, so custom
+        // transformers round-trip to Markdown. `@lexical/markdown` is a
+        // subpackage (built dist) — safe, unlike a top-level `lexical` import.
+        editor
+          .getEditorState()
+          .read(() => $convertToMarkdownString(transformers)),
+      getHTML: () =>
+        // $generateHtmlFromNodes serializes the whole document (null selection)
+        // to HTML; must run in a read context and requires a DOM.
+        // `@lexical/html` is a subpackage (built dist) — safe.
+        editor.getEditorState().read(() => $generateHtmlFromNodes(editor, null)),
+      getEditor: () => editor,
+    }),
+    [editor, editable, transformers],
+  );
+  return null;
+}
+
+/**
+ * Tracks the editor's plain-text length and reports it to the host component.
+ * Split into its own plugin so it runs inside the composer context and can
+ * read the editor state via `useLexicalComposerContext()`. Renders nothing.
+ */
+function CharCountPlugin({
+  onCountChange,
+}: {
+  onCountChange: (count: number) => void;
+}): null {
+  const [editor] = useLexicalComposerContext();
+  useEffect(() => {
+    // Report the initial count (e.g. seeded via defaultValue) from the mounted
+    // root element's text, then track changes via registerTextContentListener,
+    // which hands us the plain-text content directly.
+    //
+    // We deliberately avoid importing `$getRoot` from the top-level `lexical`
+    // package: that is a *runtime value* import, and in the sandbox's Next
+    // build it forces Babel to transpile lexical's raw `src/*.ts` (which uses
+    // `declare` class fields) and fails. Both APIs used here are methods on the
+    // editor instance, so no top-level `lexical` value import is needed.
+    onCountChange(editor.getRootElement()?.textContent?.length ?? 0);
+    return editor.registerTextContentListener((textContent) => {
+      onCountChange(textContent.length);
+    });
+  }, [editor, onCountChange]);
   return null;
 }
 

@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docs = {
   name: 'ClickableCard',
   displayName: 'Clickable Card',
@@ -55,7 +55,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'Interactive card for navigation/action targets. Nested interactive elements work independently.',
   usage: {

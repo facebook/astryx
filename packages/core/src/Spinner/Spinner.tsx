@@ -13,10 +13,10 @@
  * - /packages/core/src/Spinner/Spinner.test.tsx
  * - /packages/core/src/Spinner/index.ts
  * - /apps/storybook/stories/Spinner.stories.tsx
- * - /packages/cli/templates/blocks/components/Spinner/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Spinner/ (showcase blocks)
  */
 
-import {useEffect, useRef, type ReactNode} from 'react';
+import {useEffect, useId, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {durationVars, spacingVars} from '../theme/tokens.stylex';
 import {useTheme} from '../theme/useTheme';
@@ -119,8 +119,9 @@ export interface SpinnerProps extends BaseProps<HTMLSpanElement> {
    * Visible content displayed below the spinner.
    * Accepts a string or ReactNode for rich content.
    *
-   * When `label` is a string, it is also used as the accessible name
-   * (aria-label) unless `aria-label` is explicitly set.
+   * When `label` is a string, the visible text also provides the accessible
+   * name of the status element (via aria-labelledby, avoiding a duplicate
+   * announcement) unless `aria-label` is explicitly set.
    *
    * @example
    * ```
@@ -255,6 +256,14 @@ export function Spinner({
   const {border, diameter} = SIZES[size];
   const frameSize = diameter + border * 2;
   const hasLabel = label != null;
+  const labelId = useId();
+
+  // When a visible string label renders (and no explicit aria-label is set),
+  // name the status element from the visible Text via aria-labelledby instead
+  // of duplicating the same string as aria-label — the duplicate would be
+  // announced twice by screen readers (WCAG 4.1.2).
+  const namedByVisibleLabel =
+    hasLabel && typeof label === 'string' && ariaLabel == null;
 
   // Resolve accessible name: explicit aria-label > string label > "Loading"
   const resolvedAriaLabel =
@@ -264,7 +273,8 @@ export function Spinner({
     <span
       ref={hasLabel ? undefined : ref}
       role="status"
-      aria-label={resolvedAriaLabel}
+      aria-label={namedByVisibleLabel ? undefined : resolvedAriaLabel}
+      aria-labelledby={namedByVisibleLabel ? labelId : undefined}
       data-testid={hasLabel ? undefined : testId}
       {...(hasLabel ? {} : restProps)}
       {...mergeProps(
@@ -294,7 +304,7 @@ export function Spinner({
       )}>
       {spinner}
       {typeof label === 'string' ? (
-        <Text type="body" weight="bold">
+        <Text id={labelId} type="body" weight="bold">
           {label}
         </Text>
       ) : (

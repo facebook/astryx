@@ -63,6 +63,7 @@ import {expandColorScale, type ColorScaleConfig} from './expandColorScale';
 import type {DomainTokenName} from './domainTokens';
 import {domainTokenDefaults} from './domainTokens';
 import type {SyntaxThemeDefinition} from './syntax';
+import {registerTheme} from './themeRegistry';
 
 // =============================================================================
 // Types
@@ -239,9 +240,15 @@ export interface DefineThemeInput {
    * categorical hues, and fixed tokens (on-dark/on-light) use defaults.
    * Explicit `tokens` entries always take precedence.
    *
+   * `accent` is optional — omit it for a neutral-only theme, which keeps
+   * the default accent tokens and only themes the neutrals.
+   *
    * @example
    * ```tsx
    * color: { accent: '#0064E0', neutralStyle: 'cool', contrast: 'standard' }
+   *
+   * // Neutral-only — accent tokens stay at their defaults
+   * color: { neutralStyle: 'warm' }
    * ```
    */
   color?: ColorScaleConfig;
@@ -618,7 +625,7 @@ export function defineTheme(input: DefineThemeInput): DefinedTheme {
       ? {...base.icons, ...input.icons}
       : (input.icons ?? base?.icons);
 
-  return {
+  const theme: DefinedTheme = {
     name: input.name,
     tokens,
     components,
@@ -627,6 +634,9 @@ export function defineTheme(input: DefineThemeInput): DefinedTheme {
     __onDark,
     __onLight,
   };
+
+  registerTheme(theme);
+  return theme;
 }
 
 // =============================================================================

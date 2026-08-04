@@ -12,7 +12,6 @@
 import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {pathToFileURL} from 'node:url';
 import {
   validateLocalIntegration,
   validateInstalledIntegration,
@@ -20,12 +19,6 @@ import {
 } from './validate-integration.mjs';
 
 let tmpDir;
-
-// Absolute file:// URL to the codemod helper so codemod modules in the temp
-// package can import createCodemod without node_modules wiring.
-const codemodModuleUrl = pathToFileURL(
-  path.resolve(process.cwd(), 'packages/cli/authoring/codemod.mjs'),
-).href;
 
 beforeEach(() => {
   tmpDir = fs.mkdtempSync(path.join(process.cwd(), '.astryx-validate-it-'));
@@ -64,8 +57,7 @@ describe('validate-integration API', () => {
     fs.mkdirSync(cmDir, {recursive: true});
     fs.writeFileSync(
       path.join(cmDir, 'drop-foo.mjs'),
-      `import {createCodemod} from ${JSON.stringify(codemodModuleUrl)};\n` +
-        `export default createCodemod({ title: 'Drop foo', transform: (file) => file.source });\n`,
+      `export default { type: 'code', title: 'Drop foo', transform: (file) => file.source };\n`,
     );
 
     const result = await validateLocalIntegration(pkgDir);
@@ -218,5 +210,31 @@ describe('validate-integration API', () => {
 
     const result = await validateLocalIntegration(pkgDir);
     expect(byCode(result.issues, 'invalid_component')).toHaveLength(1);
+  });
+
+  it('degrades a path-unsafe package spec (..) into a diagnostic instead of crashing', async () => {
+    const consumer = path.join(tmpDir, 'consumer');
+    fs.mkdirSync(consumer, {recursive: true});
+    fs.writeFileSync(
+      path.join(consumer, 'package.json'),
+      JSON.stringify({name: 'consumer'}),
+    );
+    // resolvePackageDir throws on a spec with `..`; it must be caught and
+    // surfaced as an issue, not escape as a raw stack / generic ERR_UNKNOWN.
+    const result = await validateInstalledIntegration('../evil', consumer);
+    expect(result.found).toBe(true);
+    expect(byCode(result.issues, 'invalid_package_spec')).toHaveLength(1);
+    expect(summarizeIssues(result.issues).errors).toBeGreaterThan(0);
+  });
+
+  it('degrades an absolute package spec into a diagnostic', async () => {
+    const consumer = path.join(tmpDir, 'consumer');
+    fs.mkdirSync(consumer, {recursive: true});
+    fs.writeFileSync(
+      path.join(consumer, 'package.json'),
+      JSON.stringify({name: 'consumer'}),
+    );
+    const result = await validateInstalledIntegration('/etc/passwd', consumer);
+    expect(byCode(result.issues, 'invalid_package_spec')).toHaveLength(1);
   });
 });

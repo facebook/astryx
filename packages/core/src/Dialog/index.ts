@@ -11,11 +11,28 @@
  * SYNC: When modified, update this header and /packages/core/src/Dialog/Dialog.doc.mjs
  */
 
+/**
+ * Extensible variant map for Dialog.
+ *
+ * Theme packages can add custom variants via TypeScript module augmentation:
+ * @example
+ * ```
+ * declare module '@astryxdesign/core/Dialog' {
+ *   interface DialogVariantMap {
+ *     'drawer': true;
+ *   }
+ * }
+ * ```
+ */
+export interface DialogVariantMap {
+  standard: true;
+  fullscreen: true;
+}
+
 export {Dialog} from './Dialog';
 export type {
   DialogProps,
   DialogVariant,
-  DialogVariantMap,
   DialogPurpose,
   DialogPosition,
 } from './Dialog';

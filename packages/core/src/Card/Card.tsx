@@ -12,7 +12,7 @@
  * - /packages/core/src/Card/Card.doc.mjs (props table, features)
  * - /packages/core/src/Card/index.ts (exports if types change)
  * - /apps/storybook/stories/Card.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Card/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Card/ (showcase blocks)
  */
 
 import type {ReactNode} from 'react';
@@ -92,7 +92,7 @@ const styles = stylex.create({
   withBorder: {
     borderWidth: borderVars['--border-width'],
     borderStyle: 'solid',
-    borderColor: colorVars['--color-border-emphasized'],
+    borderColor: colorVars['--color-border'],
     paddingInlineStart: `calc(var(--container-padding-inline-start) - ${borderVars['--border-width']})`,
     paddingInlineEnd: `calc(var(--container-padding-inline-end) - ${borderVars['--border-width']})`,
     paddingBlockStart: `calc(var(--container-padding-block-start) - ${borderVars['--border-width']})`,

@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'MultiSelector',
@@ -21,6 +21,11 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-multi-selector', visualProps: ['size', 'status']},
+      {className: 'astryx-multi-selector-clear-icon'},
+      {
+        className: 'astryx-multi-selector-indicator-icon',
+        states: ['state'],
+      },
     ],
   },
   components: [
@@ -169,6 +174,12 @@ export const docs = {
             'Custom render function for each selectable option in the dropdown. Not called for dividers, sections, or the select-all row.',
         },
         {
+          name: 'width',
+          type: 'SizeValue',
+          description:
+            'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
+        },
+        {
           name: 'xstyle',
           type: 'StyleXStyles',
           description:
@@ -223,7 +234,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsZh = {
   components: [
     {
@@ -305,7 +316,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
     'checkbox multi-select dropdown for finite sets like column toggles or filter facets',

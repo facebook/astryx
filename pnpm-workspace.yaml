@@ -53,9 +53,19 @@ overrides:
   # + .sync). The floor below then holds that chain on the patched 4.x line.
   read-yaml-file: ^2.1.0
   read-yaml-file>js-yaml: ^4.2.0
-  '@changesets/parse>js-yaml': '>=4.2.0'
+  # Constrain to 4.x — the 5.x line has DoS vulnerabilities (GHSA-pm4m-ph32-ghv5,
+  # GHSA-724g-mxrg-4qvm) patched only in 5.2.2. @changesets/parse declares ^4.1.1
+  # anyway, so keep it on 4.x where the advisory does not apply.
+  '@changesets/parse>js-yaml': ^4.2.0
   fast-uri: ^3.1.4
   brace-expansion: ^2.1.2
+  # next pulls sharp as an optional dependency for image optimization and still
+  # resolves 0.34.5, which inherits the libvips advisories CVE-2026-33327,
+  # CVE-2026-33328, CVE-2026-35590 and CVE-2026-35591. They are patched in
+  # sharp 0.35.0 — a semver-major bump on the 0.x line, so next's `^0.34`
+  # range can never reach it on its own. Drop this entry once next depends on
+  # 0.35 itself.
+  sharp: ^0.35.3
 
 # pnpm 11 replaced the onlyBuiltDependencies allowlist with an allowBuilds map
 # (managed via `pnpm approve-builds`). These are the same packages previously

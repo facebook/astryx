@@ -13,10 +13,10 @@
  * - /packages/core/src/Timestamp/Timestamp.test.tsx
  * - /packages/core/src/Timestamp/index.ts
  * - /apps/storybook/stories/Timestamp.stories.tsx
- * - /packages/cli/templates/blocks/components/Timestamp/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Timestamp/ (showcase blocks)
  */
 
-import {useEffect, useRef, useState, lazy, Suspense} from 'react';
+import {useEffect, useRef, useState, lazy, Suspense, Fragment} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Text} from '../Text';
 import type {TextType, TextSize, TextColor, TextWeight} from '../theme/types';
@@ -24,8 +24,10 @@ import {mergeProps, mergeRefs} from '../utils';
 import {useDevWarning} from '../hooks/useDevWarning';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
-import {colorVars} from '../theme/tokens.stylex';
-import {SHARED_DATE_FORMAT_OPTIONS} from '../utils/plainDate';
+import {colorVars, spacingVars} from '../theme/tokens.stylex';
+import {formatInstant} from './formatInstant';
+import {formatTooltipLines} from './tooltipEntries';
+import type {TimestampTooltipEntry} from './tooltipEntries';
 
 const LazyXDSTooltip = lazy(async () =>
   import('../Tooltip/Tooltip').then(mod => ({default: mod.Tooltip})),
@@ -37,6 +39,7 @@ const LazyXDSTooltip = lazy(async () =>
 
 export type TimestampFormat =
   | 'relative'
+  | 'relative_short'
   | 'auto'
   | 'date'
   | 'date_long'
@@ -55,6 +58,9 @@ export interface TimestampProps extends BaseProps<HTMLTimeElement> {
   /**
    * Display format.
    * - `'relative'`: "2 hours ago", "yesterday", "now"
+   * - `'relative_short'`: "2h ago", "1d ago", "now" — the same tiers as
+   *   `'relative'` with abbreviated units (s/m/h/d/mo/y), for compact,
+   *   space-constrained surfaces
    * - `'auto'`: Relative for recent times, `date_time` for older
    * - `'date'`: "Mar 21, 2025"
    * - `'date_long'`: "March 21, 2025"
@@ -78,8 +84,35 @@ export interface TimestampProps extends BaseProps<HTMLTimeElement> {
    */
   hasTooltip?: boolean;
   /**
-   * Whether to append the timezone abbreviation after the timestamp.
-   * Applies to date_time, time, system_date_time, and system_time formats.
+   * Lines to show in the hover tooltip, so one instant can be read in several
+   * time zones and/or formats at once. Each entry is one line, rendered in the
+   * order given, with an optional label.
+   *
+   * Configuring entries also attaches the tooltip to absolute formats, which
+   * otherwise have no tooltip at all. `hasTooltip={false}` still suppresses it,
+   * and an empty array is treated as no configuration.
+   *
+   * @default undefined — a single line with the full absolute time in the
+   *   viewer's own time zone
+   * @example
+   * ```
+   * <Timestamp
+   *   value={savedAt}
+   *   tooltipEntries={[
+   *     {label: 'Your time'},
+   *     {timezoneID: 'UTC', label: 'UTC'},
+   *   ]}
+   * />
+   * ```
+   */
+  tooltipEntries?: ReadonlyArray<TimestampTooltipEntry>;
+  /**
+   * Whether to append the timezone abbreviation after the timestamp text.
+   * Applies to the date_time and time formats. The system_* formats stay
+   * machine-readable and never carry a timezone abbreviation.
+   *
+   * Affects the visible text only — use `tooltipEntries` to control the
+   * tooltip's time zones.
    * @default false
    */
   isTimezoneShown?: boolean;
@@ -136,6 +169,31 @@ const styles = stylex.create({
       default: '0',
       ':focus-visible': '2px',
     },
+  },
+  // Label/value pairs for a multi-entry tooltip. The label column is sized to
+  // its content, so when no entry carries a label it collapses to zero width
+  // and the values sit exactly where a plain list of lines would.
+  tooltipLines: {
+    display: 'grid',
+    gridTemplateColumns: 'auto 1fr',
+    rowGap: spacingVars['--spacing-0-5'],
+    marginBlock: 0,
+    marginInline: 0,
+  },
+  tooltipLabel: {
+    marginBlock: 0,
+    marginInline: 0,
+    // Only a label that actually has text earns the gutter, keeping the
+    // unlabeled case flush.
+    paddingInlineEnd: {
+      default: 0,
+      ':not(:empty)': spacingVars['--spacing-2'],
+    },
+  },
+  tooltipValue: {
+    marginBlock: 0,
+    // <dd> carries a 40px inline start margin from the UA stylesheet.
+    marginInline: 0,
   },
 });
 
@@ -244,87 +302,67 @@ function getRelativeTimeString(date: Date, now: Date): string {
   return `${years} ${years === 1 ? 'year' : 'years'} ago`;
 }
 
-function pad(n: number): string {
-  return String(n).padStart(2, '0');
-}
+/**
+ * The compact sibling of `getRelativeTimeString`: the same tier boundaries and
+ * present/future-skew handling, rendered with abbreviated units for
+ * space-constrained surfaces (chat metadata, dense tables, chips).
+ *
+ * Units follow the common compact convention (and the Microsoft Style Guide):
+ * `s` seconds, `m` minutes, `h` hours, `d` days, `mo` months, `y` years.
+ * Months use `mo` — not `m` — because `m` already means minutes; a bare `m`
+ * for months would be ambiguous. The value is always numeric (no "yesterday"
+ * idiom, which belongs to the long form) so the short form stays predictable
+ * and easy to scan. The `ago` / `in` affixes are kept so direction stays
+ * unambiguous at a glance.
+ */
+function getRelativeTimeShortString(date: Date, now: Date): string {
+  const diffSeconds = Math.round((now.getTime() - date.getTime()) / 1000);
 
-function formatTimestamp(
-  date: Date,
-  format: Exclude<TimestampFormat, 'relative' | 'auto'>,
-  isTimezoneShown: boolean,
-): string {
-  switch (format) {
-    case 'date':
-      return new Intl.DateTimeFormat(
-        undefined,
-        SHARED_DATE_FORMAT_OPTIONS.date,
-      ).format(date);
-
-    case 'date_long':
-      return new Intl.DateTimeFormat(
-        undefined,
-        SHARED_DATE_FORMAT_OPTIONS.date_long,
-      ).format(date);
-
-    case 'date_weekday':
-      return new Intl.DateTimeFormat(
-        undefined,
-        SHARED_DATE_FORMAT_OPTIONS.date_weekday,
-      ).format(date);
-
-    case 'date_time':
-      return new Intl.DateTimeFormat(undefined, {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-        ...(isTimezoneShown ? {timeZoneName: 'short'} : {}),
-      }).format(date);
-
-    case 'time':
-      return new Intl.DateTimeFormat(undefined, {
-        hour: 'numeric',
-        minute: '2-digit',
-        ...(isTimezoneShown ? {timeZoneName: 'short'} : {}),
-      }).format(date);
-
-    case 'system_date': {
-      const y = date.getFullYear();
-      const m = pad(date.getMonth() + 1);
-      const d = pad(date.getDate());
-      return `${y}-${m}-${d}`;
-    }
-
-    case 'system_date_time': {
-      const y = date.getFullYear();
-      const m = pad(date.getMonth() + 1);
-      const d = pad(date.getDate());
-      const h = pad(date.getHours());
-      const min = pad(date.getMinutes());
-      const s = pad(date.getSeconds());
-      return `${y}-${m}-${d} ${h}:${min}:${s}`;
-    }
-
-    case 'system_time': {
-      const h = pad(date.getHours());
-      const min = pad(date.getMinutes());
-      const s = pad(date.getSeconds());
-      return `${h}:${min}:${s}`;
-    }
+  // Present clamp — identical to the long form (see getRelativeTimeString).
+  if (Math.abs(diffSeconds) < 10) {
+    return 'now';
   }
-}
 
-function getFullAbsoluteString(date: Date): string {
-  return new Intl.DateTimeFormat(undefined, {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-    second: '2-digit',
-    timeZoneName: 'short',
-  }).format(date);
+  if (diffSeconds < 0) {
+    // Future dates.
+    const absDiff = Math.abs(diffSeconds);
+    if (absDiff <= FUTURE_SKEW_TOLERANCE) {
+      return 'now';
+    }
+    if (absDiff < MINUTE) {
+      return `in ${absDiff}s`;
+    }
+    if (absDiff < HOUR) {
+      return `in ${Math.floor(absDiff / MINUTE)}m`;
+    }
+    if (absDiff < DAY) {
+      return `in ${Math.floor(absDiff / HOUR)}h`;
+    }
+    if (absDiff < MONTH) {
+      return `in ${Math.floor(absDiff / DAY)}d`;
+    }
+    if (absDiff < YEAR) {
+      return `in ${Math.floor(absDiff / MONTH)}mo`;
+    }
+    return `in ${Math.floor(absDiff / YEAR)}y`;
+  }
+
+  if (diffSeconds < MINUTE) {
+    return `${diffSeconds}s ago`;
+  }
+  if (diffSeconds < HOUR) {
+    return `${Math.floor(diffSeconds / MINUTE)}m ago`;
+  }
+  if (diffSeconds < DAY) {
+    return `${Math.floor(diffSeconds / HOUR)}h ago`;
+  }
+  if (diffSeconds < MONTH) {
+    return `${Math.floor(diffSeconds / DAY)}d ago`;
+  }
+  if (diffSeconds < YEAR) {
+    return `${Math.floor(diffSeconds / MONTH)}mo ago`;
+  }
+  return `${Math.floor(diffSeconds / YEAR)}y ago`;
 }
 
 /** Returns the interval (in ms) at which a relative timestamp should update. */
@@ -345,8 +383,22 @@ function getLiveInterval(diffSeconds: number): number {
 /** Whether a format is non-relative (i.e. shows a fixed date/time). */
 function isAbsoluteFormat(
   format: TimestampFormat,
-): format is Exclude<TimestampFormat, 'relative' | 'auto'> {
-  return format !== 'relative' && format !== 'auto';
+): format is Exclude<TimestampFormat, 'relative' | 'relative_short' | 'auto'> {
+  return (
+    format !== 'relative' && format !== 'relative_short' && format !== 'auto'
+  );
+}
+
+/**
+ * Whether a format renders a relative phrase ("2 hours ago" / "2h ago") rather
+ * than a fixed instant. Both the long and short relative forms share the same
+ * treatment: they get the accessible full-date name, the hover tooltip, and
+ * live updates.
+ */
+function isRelativeFormat(
+  format: TimestampFormat,
+): format is 'relative' | 'relative_short' {
+  return format === 'relative' || format === 'relative_short';
 }
 
 // =============================================================================
@@ -374,6 +426,7 @@ export function Timestamp({
   format = 'auto',
   autoThreshold = DEFAULT_AUTO_THRESHOLD,
   hasTooltip = true,
+  tooltipEntries,
   isTimezoneShown = false,
   isLive = false,
   type = 'supporting',
@@ -406,21 +459,24 @@ export function Timestamp({
         : 'date_time'
       : format;
 
-  // Format the display text
+  // Format the display text. No time zone is passed: the visible text always
+  // reads in the viewer's own zone, and only the tooltip names others.
   const displayText = !isValidDate
     ? ''
     : effectiveFormat === 'relative'
       ? getRelativeTimeString(date, now)
-      : isAbsoluteFormat(effectiveFormat)
-        ? formatTimestamp(date, effectiveFormat, isTimezoneShown)
-        : '';
+      : effectiveFormat === 'relative_short'
+        ? getRelativeTimeShortString(date, now)
+        : isAbsoluteFormat(effectiveFormat)
+          ? formatInstant(date, effectiveFormat, {isTimezoneShown})
+          : '';
 
   // Full absolute text for tooltip and aria-label
-  const fullAbsoluteText = isValidDate ? getFullAbsoluteString(date) : '';
+  const fullAbsoluteText = isValidDate ? formatInstant(date, 'full') : '';
 
   // Live updates
   useEffect(() => {
-    if (!isLive || !isValidDate || effectiveFormat !== 'relative') {
+    if (!isLive || !isValidDate || !isRelativeFormat(effectiveFormat)) {
       return;
     }
 
@@ -443,7 +499,19 @@ export function Timestamp({
     return null;
   }
 
-  const showTooltip = hasTooltip && effectiveFormat === 'relative';
+  // An empty array is not a second way to spell "off" — `hasTooltip` stays the
+  // only on/off axis — so normalize it away before anything reads it.
+  const entries =
+    tooltipEntries !== undefined && tooltipEntries.length > 0
+      ? tooltipEntries
+      : undefined;
+
+  // Absolute formats have never carried a tooltip. Leaving that gate closed
+  // when a consumer has explicitly configured tooltip lines would let `format`
+  // silently suppress another prop's output, so entry presence opens it too.
+  // With no entries this reduces to the original condition exactly.
+  const showTooltip =
+    hasTooltip && (isRelativeFormat(effectiveFormat) || entries !== undefined);
 
   const timestampProps = mergeProps(
     themeProps('timestamp', {format: effectiveFormat}),
@@ -462,7 +530,7 @@ export function Timestamp({
         ref={mergeRefs(ref, timeRef)}
         dateTime={isoString}
         aria-label={
-          effectiveFormat === 'relative' ? fullAbsoluteText : undefined
+          isRelativeFormat(effectiveFormat) ? fullAbsoluteText : undefined
         }
         // The absolute-time tooltip is anchored here with the default 'auto'
         // focus trigger, which only activates on focusable anchors. A bare
@@ -479,13 +547,31 @@ export function Timestamp({
   );
 
   if (showTooltip) {
+    // Built inside the branch so a timestamp without a tooltip allocates none
+    // of it. With no entries the content stays the bare string it has always
+    // been — no wrapper element is introduced around the default line.
+    const tooltipContent =
+      entries === undefined ? (
+        fullAbsoluteText
+      ) : (
+        <dl {...stylex.props(styles.tooltipLines)}>
+          {formatTooltipLines(date, entries).map((line, index) => (
+            // eslint-disable-next-line @eslint-react/no-array-index-key -- tooltip lines are fixed positional slots and two entries may legitimately be identical
+            <Fragment key={index}>
+              <dt {...stylex.props(styles.tooltipLabel)}>{line.label ?? ''}</dt>
+              <dd {...stylex.props(styles.tooltipValue)}>{line.value}</dd>
+            </Fragment>
+          ))}
+        </dl>
+      );
+
     return (
       <>
         {timeElement}
         <Suspense fallback={null}>
           <LazyXDSTooltip
             anchorRef={timeRef}
-            content={fullAbsoluteText}
+            content={tooltipContent}
             placement="above"
           />
         </Suspense>

@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'Carousel',
@@ -12,6 +12,7 @@ export const docs = {
       'Carousel scrolls a row of items horizontally when they overflow the available width. Use it for card grids, image galleries, product lists, or any set of items that should be browsable without taking up the full page.',
     bestPractices: [
       {guidance: true, description: 'Enable scroll-snap when each item should land precisely at the start edge, like a gallery or product list.'},
+      {guidance: true, description: 'Reach for hasLoop on small, cyclable sets like a photo gallery, where wrapping past the last item back to the first feels natural.'},
       {guidance: true, description: 'Always provide an aria-label that describes what the carousel contains, like "Featured products" or "Team members".'},
       {guidance: true, description: 'Use a consistent gap and item width so the carousel looks intentional, not like content overflowing by accident.'},
       {guidance: true, description: 'Trust the built-in navigation: trackpad users can swipe horizontally, and mouse users can hold Shift while scrolling the wheel to move through items.'},
@@ -31,10 +32,12 @@ export const docs = {
     {name: 'gap', type: "0 | 0.5 | 1 | 1.5 | 2 | 3 | 4", description: 'Gap between items using the spacing token scale.', default: '1'},
     {name: 'hasButtons', type: 'boolean', description: 'Show prev/next navigation buttons when content is scrollable.', default: 'true'},
     {name: 'hasEdgeFade', type: 'boolean', description: 'Show a gradient edge-fade mask when content overflows, signalling that more items exist off-screen.', default: 'true'},
+    {name: 'hasLoop', type: 'boolean', description: 'Wrap-around scrolling: next at the end scrolls to the start, prev at the start scrolls to the end. Buttons stay visible at both edges. Only engages when content overflows.', default: 'false'},
     {name: 'hasSnap', type: 'boolean', description: 'Enable scroll-snap so each child snaps to the start edge.', default: 'false'},
     {name: 'padding', type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10', description: 'Inline padding inside the scroll container, with matching scroll-padding so snap points align to the content edge.'},
     {name: 'aria-label', type: 'string', description: 'Accessible label for the carousel region.', default: "\'Carousel\'"},
     {name: 'ref', type: 'React.Ref<HTMLDivElement>', description: 'Ref forwarded to the root element.'},
+    {name: 'handleRef', type: 'React.Ref<CarouselHandle>', description: 'Imperative handle exposing scrollNext(), scrollPrev(), scrollTo(index), canScrollNext(), and canScrollPrev() for programmatic scroll control.'},
     {name: 'xstyle', type: 'StyleXStyles', description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value.'},
     {name: 'className', type: 'string', description: 'CSS class name for the root element. Prefer xstyle for styling.'},
     {name: 'style', type: 'CSSProperties', description: 'Inline styles for the root element. Prefer xstyle.'},
@@ -56,7 +59,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsZh = {
   usage: {
     description:
@@ -75,13 +78,15 @@ export const docsZh = {
     gap: '使用间距令牌比例的项目间距。',
     hasButtons: '内容可滚动时显示上一个/下一个导航按钮。',
     hasEdgeFade: '内容溢出时显示渐变边缘遮罩，提示屏幕外还有更多项目。',
+    hasLoop: '环绕滚动：在末尾按"下一个"回到开头，在开头按"上一个"跳到末尾。按钮在两端始终可见。仅在内容溢出时生效。',
     hasSnap: '启用滚动吸附，使每个子元素吸附到起始边缘。',
     padding: '滚动容器内的内联内边距，并设置匹配的 scroll-padding，使吸附点与内容边缘对齐。',
     'aria-label': '轮播区域的无障碍标签。',
+    handleRef: '命令式句柄，暴露 scrollNext()、scrollPrev()、scrollTo(index)、canScrollNext() 和 canScrollPrev() 以进行编程式滚动控制。',
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'horizontal scroll container w/ fade edges, nav buttons, scroll-snap',
   usage: {
@@ -102,9 +107,11 @@ export const docsDense = {
     gap: 'item spacing via spacing token scale',
     hasButtons: 'prev/next buttons when content is scrollable',
     hasEdgeFade: 'gradient edge-fade mask on overflow',
+    hasLoop: 'wrap-around: next at end -> start, prev at start -> end; buttons stay visible; only when overflowing',
     hasSnap: 'scroll-snap; children snap to start edge',
     padding: 'inline padding; scroll-padding keeps snap points on content edge',
     'aria-label': 'accessible label for carousel region',
+    handleRef: 'imperative handle: scrollNext/scrollPrev/scrollTo(index)/canScrollNext/canScrollPrev',
     'data-testid': 'test selector for automated testing frameworks',
   },
 };

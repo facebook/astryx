@@ -9,7 +9,7 @@
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /apps/storybook/stories/CommandPalette.stories.tsx
- * - /packages/cli/templates/blocks/components/CommandPalette/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/CommandPalette/ (showcase blocks)
  */
 
 import {useCallback, useEffect, useRef, type ReactNode} from 'react';
@@ -163,6 +163,8 @@ export function CommandPaletteInput({
   onKeyDown,
   ref,
   xstyle,
+  className,
+  style,
   ...props
 }: CommandPaletteInputProps) {
   const t = useTranslator();
@@ -207,6 +209,8 @@ export function CommandPaletteInput({
       {...mergeProps(
         themeProps('command-palette-input'),
         stylex.props(styles.wrapper, xstyle),
+        className,
+        style,
       )}>
       <span {...stylex.props(styles.icon)}>
         <Icon icon="search" size="sm" color="inherit" />

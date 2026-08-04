@@ -3,13 +3,13 @@
 'use client';
 /**
  * @file CommandPalette.tsx
- * @input Uses React, Dialog, Layout, CommandPaletteContext, SearchSource, useCombobox
+ * @input Uses React, Dialog, Layout, CommandPaletteContext, SearchSource, useCombobox, useAnnounce
  * @output Exports CommandPalette root component and props
  * @position Core root component; dialog shell with searchSource-driven items
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /apps/storybook/stories/CommandPalette.stories.tsx
- * - /packages/cli/templates/blocks/components/CommandPalette/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/CommandPalette/ (showcase blocks)
  */
 
 import {
@@ -36,6 +36,7 @@ import {CommandPaletteInput} from './CommandPaletteInput';
 import {CommandPaletteFooter} from './CommandPaletteFooter';
 import {CommandPaletteEmpty} from './CommandPaletteEmpty';
 import type {BaseProps} from '../BaseProps';
+import {useAnnounce} from '../hooks/useAnnounce';
 import {useTranslator} from '../i18n';
 
 export interface CommandPaletteProps<
@@ -291,6 +292,13 @@ export function CommandPalette<T extends SearchableItem = SearchableItem>({
   const isBusy = isPending;
   const searchVersionRef = useRef(0);
 
+  // Announce search status to screen readers through the shared polite live
+  // region (comboboxes-7 announce path, mirroring Selector / BaseTypeahead).
+  // The busy spinner and the empty states are otherwise purely visual, so a
+  // screen-reader user typing a query would hear nothing when loading starts
+  // or results disappear.
+  const announce = useAnnounce();
+
   const value = controlledValue ?? internalValue;
 
   const setValue = useCallback(
@@ -318,8 +326,12 @@ export function CommandPalette<T extends SearchableItem = SearchableItem>({
       setInternalValue('');
     }
     searchSource.cancel?.();
+    // Clear any lingering result / loading announcement when the palette
+    // closes so stale status text does not linger in the a11y tree
+    // (matching Selector's onHide).
+    announce('');
     onOpenChange(false);
-  }, [onOpenChange, searchSource, controlledValue]);
+  }, [onOpenChange, searchSource, controlledValue, announce]);
 
   const selectItem = useCallback(
     (itemValue: string) => {
@@ -355,6 +367,14 @@ export function CommandPalette<T extends SearchableItem = SearchableItem>({
       startTransition(async () => {
         const isBootstrap = query === '';
 
+        // Loading started for a user query: tell screen-reader users the
+        // spinner appeared. The polite region coalesces rapid updates, so for
+        // fast sources the result-count announcement below simply replaces
+        // this instead of stacking one "Loading" per keystroke.
+        if (!isBootstrap) {
+          announce(t('@astryx.commandPalette.loading'));
+        }
+
         // Client-filter previous results for instant narrowing while fetch is in flight
         if (!isBootstrap && searchResults.length > 0) {
           const lower = query.toLowerCase().trim();
@@ -377,6 +397,23 @@ export function CommandPalette<T extends SearchableItem = SearchableItem>({
           setOptimisticResults(items);
           setSearchResults(items);
 
+          // Announce the outcome from the search commit (not a reactive
+          // effect), matching Selector / BaseTypeahead: exactly one
+          // announcement per committed query, and the version check above
+          // already discards stale keystrokes. Bootstrap stays silent — the
+          // same role PowerSearch's mount guard plays — so opening the
+          // palette announces nothing; clearing the query only clears any
+          // lingering status text.
+          if (isBootstrap) {
+            announce('');
+          } else if (items.length === 0) {
+            announce(t('@astryx.commandPalette.noResultsFor', {query}));
+          } else {
+            announce(
+              t('@astryx.commandPalette.resultCount', {count: items.length}),
+            );
+          }
+
           // When opening with a preselected value, highlight it once
           // bootstrap results arrive. No value → highlight stays at -1
           // and ArrowDown naturally moves to the first item.
@@ -396,6 +433,8 @@ export function CommandPalette<T extends SearchableItem = SearchableItem>({
       value,
       combobox,
       setOptimisticResults,
+      announce,
+      t,
     ],
   );
 

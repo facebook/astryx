@@ -8,6 +8,7 @@ import {
   DropdownMenuCheckboxItem,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
+  DropdownMenuSubMenu,
 } from '@astryxdesign/core/DropdownMenu';
 import {Divider} from '@astryxdesign/core/Divider';
 import {
@@ -50,6 +51,11 @@ const meta: Meta<typeof DropdownMenu> = {
       control: 'select',
       options: ['above', 'below', 'start', 'end'],
       description: 'Menu placement relative to trigger',
+    },
+    alignment: {
+      control: 'select',
+      options: ['start', 'center', 'end'],
+      description: 'Menu alignment along the placement axis',
     },
     'data-testid': {
       control: 'text',
@@ -522,6 +528,29 @@ export const PlacementAbove: Story = {
   ),
 };
 
+export const AlignmentEnd: Story = {
+  render: () => (
+    <DropdownMenu
+      button={{label: 'Row actions'}}
+      alignment="end"
+      menuWidth={220}
+      items={[
+        {label: 'Edit', onClick: () => console.log('Edit')},
+        {label: 'Duplicate', onClick: () => console.log('Duplicate')},
+        {label: 'Delete', onClick: () => console.log('Delete')},
+      ]}
+    />
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Use alignment="end" when a menu should extend back over the trigger, such as a row action menu near the inline-end edge.',
+      },
+    },
+  },
+};
+
 export const RTL: Story = {
   render: () => (
     <div style={{direction: 'rtl', display: 'flex', gap: '16px'}}>
@@ -596,10 +625,7 @@ export const LabRadioGroup: Story = {
     const [sort, setSort] = useState('newest');
     return (
       <DropdownMenu button={{label: 'Sort'}}>
-        <DropdownMenuRadioGroup
-          value={sort}
-          onChange={setSort}
-          aria-label="Sort by">
+        <DropdownMenuRadioGroup value={sort} onChange={setSort} label="Sort by">
           <DropdownMenuRadioItem value="newest" label="Newest" />
           <DropdownMenuRadioItem value="oldest" label="Oldest" />
           <DropdownMenuRadioItem
@@ -628,19 +654,13 @@ export const LabSelectableSizes: Story = {
     return (
       <div style={{display: 'flex', gap: 24}}>
         <DropdownMenu button={{label: 'Small menu', size: 'sm'}}>
-          <DropdownMenuRadioGroup
-            value={sm}
-            onChange={setSm}
-            aria-label="Small">
+          <DropdownMenuRadioGroup value={sm} onChange={setSm} label="Small">
             <DropdownMenuRadioItem value="a" label="Option A" />
             <DropdownMenuRadioItem value="b" label="Option B" />
           </DropdownMenuRadioGroup>
         </DropdownMenu>
         <DropdownMenu button={{label: 'Large menu', size: 'lg'}}>
-          <DropdownMenuRadioGroup
-            value={lg}
-            onChange={setLg}
-            aria-label="Large">
+          <DropdownMenuRadioGroup value={lg} onChange={setLg} label="Large">
             <DropdownMenuRadioItem value="a" label="Option A" />
             <DropdownMenuRadioItem value="b" label="Option B" />
           </DropdownMenuRadioGroup>
@@ -653,6 +673,99 @@ export const LabSelectableSizes: Story = {
       description: {
         story:
           'The checkbox/radio control size is derived from the menu item size — a `sm` menu renders the small (18px) control, `md`/`lg` render the standard (22px) control. On coarse-pointer (touch) devices the control swaps to the inline-end of the row.',
+      },
+    },
+  },
+};
+
+export const Submenu: Story = {
+  render: () => (
+    <DropdownMenu button={{label: 'Actions'}}>
+      <DropdownMenuItem icon={PencilIcon} label="Rename" onClick={() => {}} />
+      <DropdownMenuSubMenu icon={FolderPlusIcon} label="Move to">
+        <DropdownMenuItem label="Folder A" onClick={() => {}} />
+        <DropdownMenuItem label="Folder B" onClick={() => {}} />
+        <DropdownMenuItem label="Folder C" onClick={() => {}} />
+      </DropdownMenuSubMenu>
+      <DropdownMenuItem icon={TrashIcon} label="Delete" onClick={() => {}} />
+    </DropdownMenu>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'DropdownMenuSubMenu is a single menu row that reveals a nested flyout of its own children. Hover or Right arrow (Left in RTL) / Enter / Space opens it and moves focus to its first item; Left arrow / Escape closes it and returns focus to the trigger. The flyout opens inline-end by default and auto-flips at the viewport edge.',
+      },
+    },
+  },
+};
+
+export const NestedSubmenu: Story = {
+  render: () => (
+    <DropdownMenu button={{label: 'Share'}}>
+      <DropdownMenuItem icon={ShareIcon} label="Copy link" onClick={() => {}} />
+      <DropdownMenuSubMenu label="Share to">
+        <DropdownMenuItem label="Email" onClick={() => {}} />
+        <DropdownMenuSubMenu label="Team">
+          <DropdownMenuItem label="Design" onClick={() => {}} />
+          <DropdownMenuItem label="Engineering" onClick={() => {}} />
+        </DropdownMenuSubMenu>
+      </DropdownMenuSubMenu>
+    </DropdownMenu>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Submenus nest to arbitrary depth — each level owns its own roving focus and positioning layer.',
+      },
+    },
+  },
+};
+
+export const SubmenuAsyncSpinner: Story = {
+  render: () => (
+    <DropdownMenu button={{label: 'Actions'}}>
+      <DropdownMenuItem label="Rename" onClick={() => {}} />
+      <DropdownMenuSubMenu label="Move to" hasSpinner>
+        <DropdownMenuItem label="Loading…" isDisabled onClick={() => {}} />
+      </DropdownMenuSubMenu>
+    </DropdownMenu>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'A submenu row can show a spinner in place of the caret via `hasSpinner`, e.g. while a lazy submenu\u2019s children load.',
+      },
+    },
+  },
+};
+
+export const SubmenuDataDriven: Story = {
+  render: () => (
+    <DropdownMenu
+      button={{label: 'Actions'}}
+      items={[
+        {label: 'Rename', onClick: () => {}},
+        {
+          label: 'Move to',
+          icon: FolderPlusIcon,
+          items: [
+            {label: 'Folder A', onClick: () => {}},
+            {label: 'Folder B', onClick: () => {}},
+          ],
+        },
+        {type: 'divider'},
+        {label: 'Delete', onClick: () => {}},
+      ]}
+    />
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Data-driven parity: give a menu item a nested `items` array and it becomes a submenu automatically — no separate item type.',
       },
     },
   },

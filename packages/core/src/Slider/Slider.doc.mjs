@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'Slider',
@@ -142,6 +142,12 @@ export const docs = {
       description: 'Tooltip text for an info icon displayed next to the label.',
     },
     {
+      name: 'width',
+      type: 'SizeValue',
+      description:
+        'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
@@ -168,7 +174,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docsZh = {
   name: 'Slider',
   displayName: 'Slider',
@@ -322,7 +328,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   usage: {
     description:

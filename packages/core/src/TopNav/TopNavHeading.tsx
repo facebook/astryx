@@ -17,7 +17,7 @@
  * - /packages/core/src/TopNav/TopNav.test.tsx
  * - /packages/core/src/TopNav/index.ts
  * - /apps/storybook/stories/TopNav.stories.tsx
- * - /packages/cli/templates/blocks/components/TopNav/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/TopNav/ (showcase blocks)
  */
 
 import {useMemo, useRef, type ReactNode} from 'react';
@@ -31,7 +31,7 @@ import {
 } from '../theme/tokens.stylex';
 import {usePopover} from '../Popover/usePopover';
 import {Link} from '../Link';
-import {getIcon} from '../Icon/globalIconRegistry';
+import {useIcon} from '../Icon';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
 import {mergeProps, mergeRefs} from '../utils';
@@ -320,6 +320,7 @@ export function TopNavHeading({
   ...props
 }: TopNavHeadingProps) {
   const t = useTranslator();
+  const chevronDownIcon = useIcon('chevronDown');
   const LinkComponent = useLinkComponent(as);
   // Support both headingHref and legacy href
   const headingHref = headingHrefProp ?? href;
@@ -412,7 +413,7 @@ export function TopNavHeading({
   );
 
   const chevronElement = showChevron && (
-    <span {...stylex.props(styles.chevron)}>{getIcon('chevronDown')}</span>
+    <span {...stylex.props(styles.chevron)}>{chevronDownIcon}</span>
   );
 
   const headerEndContentElement = headerEndContent && (
@@ -428,9 +429,7 @@ export function TopNavHeading({
       onClick={triggerProps.onClick}>
       {logo && <span {...stylex.props(styles.logo)}>{logo}</span>}
       {renderTextContent(
-        <span {...stylex.props(styles.popoverChevron)}>
-          {getIcon('chevronDown')}
-        </span>,
+        <span {...stylex.props(styles.popoverChevron)}>{chevronDownIcon}</span>,
       )}
     </button>
   );
@@ -507,7 +506,7 @@ export function TopNavHeading({
               }}
               {...popover.triggerProps}
               {...stylex.props(styles.chevron, styles.interactive)}>
-              {getIcon('chevronDown')}
+              {chevronDownIcon}
             </button>,
           )}
           {headerEndContentElement}
@@ -576,7 +575,7 @@ export function TopNavHeading({
                 }}
                 {...popover.triggerProps}
                 {...stylex.props(styles.chevron, styles.interactive)}>
-                {getIcon('chevronDown')}
+                {chevronDownIcon}
               </button>
             ) : undefined,
           )}

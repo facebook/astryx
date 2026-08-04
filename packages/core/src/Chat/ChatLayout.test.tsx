@@ -104,6 +104,63 @@ describe('ChatLayout', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Self-scroll layout contract (#2573)
+//
+// jsdom has no layout, so these assert the class-level CSS intent: the root
+// must be a flex column whose message area flexes (grow, no shrink) instead
+// of forcing minHeight: 100%. With minHeight: 100% the in-flow sticky dock
+// added its full height on top of the message area, so the root always
+// overflowed by exactly the dock height (phantom scrollbar). Real-layout
+// geometry was verified in a browser; see the PR for measurements.
+// ---------------------------------------------------------------------------
+
+describe('ChatLayout — self-scroll layout contract (#2573)', () => {
+  it('root is a flex column so the dock height is part of the 100%', () => {
+    render(
+      <ChatLayout composer={<div>composer</div>} data-testid="layout">
+        <div>msg</div>
+      </ChatLayout>,
+    );
+    const root = screen.getByTestId('layout');
+    expect(root).toHaveStyle({display: 'flex', flexDirection: 'column'});
+  });
+
+  it('message area flexes to fill leftover space instead of minHeight: 100%', () => {
+    render(
+      <ChatLayout composer={<div>composer</div>} data-testid="layout">
+        <div>msg</div>
+      </ChatLayout>,
+    );
+    const messageArea = screen.getByTestId('layout')
+      .firstElementChild as HTMLElement;
+    expect(messageArea).toHaveStyle({flexGrow: '1', flexShrink: '0'});
+    // minHeight: 100% is the phantom-scrollbar bug — it must not come back.
+    expect(getComputedStyle(messageArea).minHeight).not.toBe('100%');
+  });
+
+  it('dock is sticky in self-scroll mode and fixed with an external scrollRef', () => {
+    const {rerender} = render(
+      <ChatLayout composer={<div>composer</div>} data-testid="layout">
+        <div>msg</div>
+      </ChatLayout>,
+    );
+    const dock = screen.getByTestId('layout').lastElementChild as HTMLElement;
+    expect(dock).toHaveStyle({position: 'sticky'});
+
+    const scrollRef = {current: document.documentElement};
+    rerender(
+      <ChatLayout
+        composer={<div>composer</div>}
+        data-testid="layout"
+        scrollRef={scrollRef}>
+        <div>msg</div>
+      </ChatLayout>,
+    );
+    expect(dock).toHaveStyle({position: 'fixed'});
+  });
+});
+
+// ---------------------------------------------------------------------------
 // First-fill scroll positioning
 //
 // jsdom has no layout, so geometry is stubbed and only the synchronous

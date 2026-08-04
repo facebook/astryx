@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'DropdownMenuRadioGroup',
@@ -22,16 +22,10 @@ export const docs = {
       description: 'Callback fired when the selected value changes.',
     },
     {
-      name: 'aria-label',
+      name: 'label',
       type: 'string',
       description:
-        'Accessible label for the group. Required (or aria-labelledby) so screen readers announce the radios as a named set, e.g. "Sort by".',
-    },
-    {
-      name: 'aria-labelledby',
-      type: 'string',
-      description:
-        'The id of an element that labels the group, as an alternative to aria-label.',
+        'Accessible name for the group, applied as aria-label so screen readers announce the radios as a named set, e.g. "Sort by". Required. Pass aria-labelledby (via base props) instead when the name already exists as a visible element.',
     },
     {
       name: 'hasCloseOnSelect',
@@ -57,8 +51,7 @@ export const docsZh = {
   propDescriptions: {
     value: '组中当前选中的值。尚无选中项时传 undefined。',
     onChange: '所选值变化时触发的回调。',
-    'aria-label': '组的无障碍标签。必需（或 aria-labelledby），以便屏幕阅读器将单选项作为命名集合朗读。',
-    'aria-labelledby': '标记该组的元素 id，作为 aria-label 的替代。',
+    label: '组的无障碍名称，作为 aria-label 应用，以便屏幕阅读器将单选项作为命名集合朗读，例如“Sort by”。必需。当名称已作为可见元素存在时，可改用 aria-labelledby（通过基础属性）。',
     hasCloseOnSelect: '选择某值是否关闭菜单。默认关闭。',
     children: '组成该组的 DropdownMenuRadioItem。',
   },
@@ -72,8 +65,7 @@ export const docsDense = {
   propDescriptions: {
     value: 'selected value (undefined = none)',
     onChange: 'fired when selected value changes',
-    'aria-label': 'accessible group name (or aria-labelledby); required',
-    'aria-labelledby': 'id of labelling element (alt to aria-label)',
+    label: 'accessible group name (applied as aria-label); required',
     hasCloseOnSelect: 'close menu on select (default true)',
     children: 'the DropdownMenuRadioItems',
   },

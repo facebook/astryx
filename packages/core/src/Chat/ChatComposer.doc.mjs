@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'ChatComposer',
@@ -60,7 +60,7 @@ export const docs = {
       name: 'elevation',
       type: "'none' | 'low'",
       description:
-        "Resting elevation of the composer body. `low` (the default) keeps today's raised look — low at rest, bumping to med on hover / focus. `none` flattens it and draws a border with the same rest / hover / focus treatment as a text input (emphasized border → accent on focus, matching inset rings).",
+        "Resting elevation of the composer body. `low` (the default) keeps today's raised look: low at rest, bumping to med on hover / focus. `none` flattens it and draws a border with the same rest / hover / focus treatment as a text input (emphasized border → accent on focus, matching inset rings).",
       default: "'low'",
     },
     {
@@ -109,7 +109,7 @@ export const docs = {
     {
       name: 'input',
       type: 'ReactNode',
-      description: 'Slot: custom input element. Replaces the default input. Use ChatComposerInput for trigger menus/tokens, or wire any input (plain textarea, rich editor) to the composition contract via useChatComposerContext() — read value/onChange/onSubmit/canSend and register a focus control on inputControlRef so body-click-to-focus works.',
+      description: 'Slot: custom input element. Replaces the default input. Use ChatComposerInput for trigger menus/tokens, or wire any input (plain textarea, rich editor) to the composition contract via useChatComposerContext(): read value/onChange/onSubmit/canSend and register a focus control on inputControlRef so body-click-to-focus works.',
       slotElements: [
         {
           __element: 'TextInput',

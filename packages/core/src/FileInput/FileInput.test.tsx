@@ -770,16 +770,20 @@ describe('FileInput', () => {
         />,
       );
 
-      const trigger = screen.getByRole('button');
       const tooltip = screen.getByRole('tooltip', h);
       expect(tooltip).toHaveTextContent('You need the Editor role');
 
-      fireEvent.mouseEnter(trigger);
+      // The trigger button is visually hidden, so the disabled-reason tooltip
+      // anchors its hover listeners to the visible container surface.
+      const surface = document.querySelector(
+        '.astryx-file-input',
+      ) as HTMLElement;
+      fireEvent.mouseEnter(surface);
       await waitFor(() => {
         expect(tooltip).toHaveAttribute('popover-open');
       });
 
-      fireEvent.mouseLeave(trigger);
+      fireEvent.mouseLeave(surface);
       await waitFor(() => {
         expect(tooltip).not.toHaveAttribute('popover-open');
       });
@@ -860,7 +864,10 @@ describe('FileInput', () => {
     });
 
     it('blocks opening the file picker while focusable-disabled', async () => {
-      const user = userEvent.setup();
+      // The trigger is a visually-hidden button (pointer-events: none) — real
+      // pointer clicks land on the container surface, so bypass the pointer
+      // check to exercise the disabled guard directly.
+      const user = userEvent.setup({pointerEventsCheck: 0});
       render(
         <FileInput
           label="Resume"
@@ -901,11 +908,15 @@ describe('FileInput', () => {
   });
 });
 
-
 describe('FileInput statusVariant forwarding', () => {
   it('defaults to attached (status renders with data-variant="attached")', () => {
     const {container} = render(
-      <FileInput label="Upload" value={null} onChange={() => {}} status={{type: 'error', message: 'Something went wrong'}} />,
+      <FileInput
+        label="Upload"
+        value={null}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Something went wrong'}}
+      />,
     );
     expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
       'data-variant',
@@ -915,7 +926,13 @@ describe('FileInput statusVariant forwarding', () => {
 
   it('forwards statusVariant="detached" to the underlying Field status', () => {
     const {container} = render(
-      <FileInput label="Upload" value={null} onChange={() => {}} status={{type: 'error', message: 'Something went wrong'}} statusVariant="detached" />,
+      <FileInput
+        label="Upload"
+        value={null}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Something went wrong'}}
+        statusVariant="detached"
+      />,
     );
     expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
       'data-variant',

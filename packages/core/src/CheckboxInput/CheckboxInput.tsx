@@ -13,7 +13,7 @@
  * - /packages/core/src/CheckboxInput/CheckboxInput.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/CheckboxInput/index.ts (exports if types change)
  * - /apps/storybook/stories/CheckboxInput.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/CheckboxInput/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/CheckboxInput/ (showcase blocks)
  */
 
 import {
@@ -158,14 +158,29 @@ const styles = stylex.create({
   },
   checkmark: {
     display: 'none',
-    color: colorVars['--color-on-accent'],
+    color: {
+      default: colorVars['--color-on-accent'],
+      // Forced colors (Windows High Contrast) does not reliably force an SVG
+      // stroke painted with currentColor, so the check stays the same white as
+      // the flattened (Canvas) box fill — a white check on a white box.
+      // CanvasText keeps it perceivable on the Canvas box, matching the
+      // indeterminate mark (WCAG 1.4.11).
+      '@media (forced-colors: active)': 'CanvasText',
+    },
   },
   checkmarkVisible: {
     display: 'block',
   },
   indeterminateMark: {
     display: 'none',
-    backgroundColor: colorVars['--color-on-accent'],
+    backgroundColor: {
+      default: colorVars['--color-on-accent'],
+      // Forced colors (Windows High Contrast) strips painted backgrounds,
+      // which would make the indeterminate bar invisible; CanvasText keeps it
+      // perceivable on the Canvas box fill (WCAG 1.4.11). The checkmark carries
+      // the matching CanvasText treatment on its own style.
+      '@media (forced-colors: active)': 'CanvasText',
+    },
     borderRadius: radiusVars['--radius-full'],
   },
   indeterminateMarkVisible: {
@@ -198,12 +213,12 @@ const wrapperSizeStyles = stylex.create({
 
 const checkboxSizeStyles = stylex.create({
   sm: {
-    width: 18,
-    height: 18,
+    width: 20,
+    height: 20,
   },
   md: {
-    width: 22,
-    height: 22,
+    width: 24,
+    height: 24,
   },
 });
 

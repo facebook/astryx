@@ -207,6 +207,33 @@ export const RTL: Story = {
   },
 };
 
+export const RTLRange: Story = {
+  render: () => {
+    const [value, setValue] = useState<DateRange>({
+      start: '2026-01-10',
+      end: '2026-01-20',
+    });
+    return (
+      <div dir="rtl">
+        <Calendar
+          mode="range"
+          value={value}
+          onChange={range => setValue(range)}
+          focusDate="2026-01-01"
+        />
+      </div>
+    );
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'A committed range under dir="rtl". The range-fill pill uses logical CSS, so its rounded caps follow the reading direction: the start of the range (earliest date) rounds on the inline-start edge and the end (latest date) on the inline-end edge, mirrored from LTR.',
+      },
+    },
+  },
+};
+
 export const AllVariations: Story = {
   render: () => {
     const [singleValue, setSingleValue] = useState<ISODateString | undefined>(

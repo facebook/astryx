@@ -507,6 +507,67 @@ export const CustomPosition: Story = {
 };
 
 /**
+ * Logical position example — start/end mirror under RTL.
+ *
+ * `start`/`end` map to inset-inline-start/end, so a dialog anchored to the
+ * inline-start edge stays on the start edge in both LTR and RTL. This is the
+ * preferred replacement for the deprecated physical `left`/`right` (which
+ * never mirror). Toggle the story's direction (RTL) to see it flip.
+ */
+function LogicalPositionedModalExample() {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <>
+      <Button
+        label="Open Logically-Positioned Modal"
+        variant="secondary"
+        onClick={() => setIsOpen(true)}
+      />
+      <Dialog
+        isOpen={isOpen}
+        onOpenChange={open => setIsOpen(open)}
+        position={{top: 100, start: 20}}
+        width={350}>
+        <Layout
+          header={
+            <DialogHeader
+              title="Logically-Positioned Modal"
+              onOpenChange={open => setIsOpen(open)}
+            />
+          }
+          content={
+            <LayoutContent>
+              <Text type="body">
+                Positioned with the logical `start: 20` offset (maps to
+                inset-inline-start). It hugs the inline-start edge — the left in
+                LTR, the right in RTL — instead of a fixed physical side. Prefer
+                `start`/`end` over the deprecated `left`/`right`.
+              </Text>
+            </LayoutContent>
+          }
+          footer={
+            <LayoutFooter>
+              <HStack hAlign="end">
+                <Button
+                  label="Close"
+                  variant="primary"
+                  onClick={() => setIsOpen(false)}
+                />
+              </HStack>
+            </LayoutFooter>
+          }
+        />
+      </Dialog>
+    </>
+  );
+}
+
+export const LogicalPosition: Story = {
+  render: () => <LogicalPositionedModalExample />,
+};
+
+/**
  * Scrolling content example
  */
 function ScrollingModalExample() {

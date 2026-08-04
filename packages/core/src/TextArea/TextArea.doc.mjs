@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'TextArea',
@@ -98,7 +98,7 @@ export const docs = {
       name: 'maxLength',
       type: 'number',
       description:
-        'Maximum number of characters allowed. When set, a character counter (current/max) is displayed below the textarea. Does not enforce the limit natively; the counter shows error styling when exceeded.',
+        'Maximum number of characters allowed. When set, a character counter (current/max) is displayed inside the input container, anchored to the bottom-right beneath the text. Does not enforce the limit natively; when exceeded the counter turns red and shows a warning icon (a non-color cue), and screen-reader users hear the remaining/over-limit count announced.',
     },
     {
       name: 'status',
@@ -108,9 +108,9 @@ export const docs = {
     },
     {
       name: 'statusVariant',
-      type: "'attached' | 'detached'",
+      type: "'attached' | 'detached' | 'tooltip'",
       description:
-        'How the status message is placed relative to the input. attached overlaps directly below the input (bordered treatment); detached floats below as a separate element with spacing.',
+        'How the status message is placed relative to the input. attached overlaps directly below the input (bordered treatment); detached floats below as a separate element with spacing; tooltip hides the message box and surfaces it in a tooltip on the status icon.',
       default: "'attached'",
     },
     {
@@ -155,6 +155,12 @@ export const docs = {
         'HTML name attribute for the textarea element, useful for form submissions.',
     },
     {
+      name: 'width',
+      type: 'SizeValue',
+      description:
+        'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
+    },
+    {
       name: 'onFocus',
       type: '(e: FocusEvent<HTMLTextAreaElement>) => void',
       description: 'Callback fired when the textarea receives focus.',
@@ -192,7 +198,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docsZh = {
   name: 'TextArea',
   displayName: 'Text Area',
@@ -288,9 +294,9 @@ export const docsZh = {
     },
     {
       name: 'statusVariant',
-      type: "'attached' | 'detached'",
+      type: "'attached' | 'detached' | 'tooltip'",
       description:
-        '状态消息相对于输入框的放置方式。attached 直接叠加在输入框下方（带边框处理）；detached 作为独立元素浮于下方并留有间距。',
+        '状态消息相对于输入框的放置方式。attached 直接叠加在输入框下方（带边框处理）；detached 作为独立元素浮于下方并留有间距；tooltip 隐藏消息框，并在状态图标上以提示气泡形式显示。',
       default: "'attached'",
     },
     {
@@ -368,7 +374,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'Multi-line text input for collecting longer user input.',
   usage: {
@@ -401,9 +407,9 @@ export const docsDense = {
     isLoading: 'Loading state w/ spinner inside input.',
     placeholder: 'Placeholder when textarea empty.',
     rows: 'Visible text rows.',
-    maxLength: 'Max chars allowed. Shows counter (current/max) below textarea. No native enforcement.',
+    maxLength: 'Max chars allowed. Shows counter (current/max) inside the container, bottom-right beneath the text. No native enforcement; over-limit shows red + a warning icon and is announced to screen readers.',
     status: 'Colored border+icon status. Optional floating message below textarea.',
-    statusVariant: 'How status message is placed: attached overlaps below input; detached floats below w/ spacing.',
+    statusVariant: 'How status message is placed: attached overlaps below input; detached floats below w/ spacing; tooltip hides the box and shows it on the status icon.',
     labelTooltip: 'Tooltip in info icon at label end.',
     startIcon: 'Icon inside leading edge of textarea wrapper.',
     hasSpellCheck: 'Enables/disables browser spell checking.',

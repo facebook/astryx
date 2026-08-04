@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'Thumbnail',
@@ -98,7 +98,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsZh = {
   propDescriptions: {
     src: '\u56FE\u7247\u6E90 URL\u3002',
@@ -149,7 +149,7 @@ export const docsDense = {
     onClick: '(e) => void. Adds button semantics + hover overlay.',
     isLoading: 'Skeleton (no src) or upload overlay (with src). Default: false.',
     isDisabled: 'Disabled state. Default: false.',
-    showRemoveOn: "When remove button shows: hover (default — reveal on hover/focus, stays visible on touch) | always. Only when onRemove set.",
+    showRemoveOn: "When remove button shows: hover (default: reveal on hover/focus, stays visible on touch) | always. Only when onRemove set.",
     xstyle: 'stylex.create() for layout.',
     className: 'CSS class. Prefer xstyle.',
     style: 'Inline styles. Prefer xstyle.',

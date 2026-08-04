@@ -35,7 +35,7 @@ const EXP_DIR = __dirname;
 const VIBE_DIR = path.resolve(EXP_DIR, '..');
 const REPO_ROOT = path.resolve(VIBE_DIR, '../..');
 const RESULTS_DIR = path.join(VIBE_DIR, 'results');
-const REAL_CLI_BIN = path.join(REPO_ROOT, 'packages', 'cli', 'bin', 'astryx.mjs');
+const REAL_CLI_BIN = path.join(REPO_ROOT, 'packages', 'cli', 'clients', 'cli', 'bin', 'astryx.mjs');
 const TMP_ROOT = path.join(os.tmpdir(), 'astryx-disco');
 
 const generateId = () => crypto.randomBytes(4).toString('hex');

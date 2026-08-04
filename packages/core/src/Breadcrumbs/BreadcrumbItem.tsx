@@ -19,7 +19,7 @@
  * - /packages/core/src/Breadcrumbs/Breadcrumbs.test.tsx
  * - /packages/core/src/Breadcrumbs/index.ts
  * - /apps/storybook/stories/Breadcrumbs.stories.tsx
- * - /packages/cli/templates/blocks/components/Breadcrumbs/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Breadcrumbs/ (showcase blocks)
  */
 
 import React, {
@@ -45,7 +45,7 @@ import type {LinkComponentType} from '../Link/types';
 import {mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
-import {getIcon} from '../Icon/globalIconRegistry';
+import {useIcon} from '../Icon';
 import {usePopover} from '../Popover/usePopover';
 import {useListFocus} from '../hooks/useListFocus';
 import {useTypeahead} from '../hooks/useTypeahead';
@@ -59,6 +59,7 @@ import {
 import {
   MENU_ITEM_ROLES,
   MENU_ITEM_SELECTOR,
+  MENU_BOUNDARY_SELECTOR,
 } from '../DropdownMenu/menuItemRoles';
 import type {DropdownMenuOption} from '../DropdownMenu/DropdownMenu';
 
@@ -506,6 +507,8 @@ function BreadcrumbMenuTrigger({
     role: 'none',
   });
 
+  const chevronDownIcon = useIcon('chevronDown');
+
   const closeMenu = useCallback(() => {
     popover.hide();
   }, [popover]);
@@ -515,21 +518,15 @@ function BreadcrumbMenuTrigger({
     handleKeyDown: listNavKeyDown,
     focusFirst,
     focusItem,
+    ownsEvent,
+    getItems: getMenuItems,
   } = useListFocus<HTMLDivElement>({
     itemSelector: MENU_ITEM_SELECTOR,
+    boundarySelector: MENU_BOUNDARY_SELECTOR,
     wrap: false,
     onEscape: closeMenu,
   });
 
-  const getMenuItems = useCallback(
-    (): HTMLElement[] =>
-      listRef.current
-        ? Array.from(
-            listRef.current.querySelectorAll<HTMLElement>(MENU_ITEM_SELECTOR),
-          )
-        : [],
-    [listRef],
-  );
   const typeahead = useTypeahead({
     getItemLabels: () => getMenuItems().map(el => el.textContent),
     onMatch: focusItem,
@@ -542,6 +539,11 @@ function BreadcrumbMenuTrigger({
 
   const listKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
+      // A submenu flyout renders inline inside this menu; its key events bubble
+      // up here. Let that level own them — only handle events from this level.
+      if (!ownsEvent(e)) {
+        return;
+      }
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         const focused = document.activeElement as HTMLElement | null;
@@ -564,7 +566,7 @@ function BreadcrumbMenuTrigger({
       }
       listNavKeyDown(e);
     },
-    [listNavKeyDown, closeMenu, typeahead],
+    [listNavKeyDown, closeMenu, typeahead, ownsEvent],
   );
 
   const openAndFocus = useCallback(() => {
@@ -623,7 +625,7 @@ function BreadcrumbMenuTrigger({
         )}>
         {children}
         <span aria-hidden="true" {...stylex.props(itemStyles.chevron)}>
-          {getIcon('chevronDown')}
+          {chevronDownIcon}
         </span>
       </button>
 

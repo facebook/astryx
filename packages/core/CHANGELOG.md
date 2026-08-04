@@ -1,5 +1,112 @@
 # @xds/core
 
+# 0.2.0
+
+#### Breaking Changes
+
+- TabList: remove orientation prop (misleading no-op). The prop did not render vertical tabs; it only toggled the keyboard-hint badge arrows. Arrow navigation has always accepted both axes (horizontal and vertical) via orientation: both in useListFocus. Run astryx upgrade to auto-strip the prop from your code.
+
+#### New Features
+
+- `Avatar` gains optional interactivity via `href`/`onClick` (with `as`/`target`/`rel`), following Button's element-swap trichotomy: `href` renders a link through `useLinkComponent`, `onClick` (no href) renders a `<button type="button">`, and with neither the avatar stays the static, non-focusable element it is today (non-breaking default). Interactive avatars get the focus-visible accent ring and a required accessible name (from `alt`/`name`). Inside `AvatarGroup`, interactive avatars — and an interactive `AvatarGroupOverflow` — now share a single Tab stop with roving ArrowLeft/ArrowRight focus, and the group exposes a screen-reader keyboard hint via `aria-describedby`. A purely static facepile is unchanged. (#4170)
+- Citation: `CitationSource.icon` now accepts a `ReactNode` (e.g. an Astryx `<Icon>`, an SVG, or a custom element) in addition to an image URL string, and a new `CitationSource.src` field holds a favicon/logo image URL (mirroring `Avatar`/`Thumbnail`). Additive and non-breaking: a string `icon` still renders as the favicon `<img>`, so existing callers are unaffected. When both a node `icon` and `src` are set, the node wins. The icon stays decorative — the accessible name still comes solely from the citation's `aria-label`.
+- CodeBlock: move the collapse chevron to the left of the title/language label, following the leading-disclosure convention (points right `>` when collapsed, down `v` when expanded). It grows into place (width + inline margin) so it slides the title over smoothly instead of popping in and shifting the header. Respects `prefers-reduced-motion` (#4513)
+- Collapsible: expose the trigger button as a distinct theming target (`astryx-collapsible-trigger`) so themes can style the trigger independently from the content — e.g. a heading font on the trigger while the content keeps the body font.
+- DateInput: add `astryx-date-input-clear-icon` and `astryx-date-input-toggle-icon` theme targets on the clear and calendar-toggle glyphs, so consumers can recolor, resize, and hover-style each icon — and style the toggle's open/closed state — via `defineTheme` instead of a fragile descendant selector or raw CSS. The toggle reflects its open/closed state as a `data-state` attribute. `Icon` now fully handles its styling props (`className`, `style`, `xstyle`) so they compose with its base styles instead of being dropped. Default rendering is unchanged.
+- DateRangeInput: add `astryx-date-range-input-clear-icon` and `astryx-date-range-input-toggle-icon` theme targets on the clear and calendar-toggle glyphs, so consumers can recolor, hover-morph, and resize them via `defineTheme` instead of a fragile descendant selector or raw CSS. The toggle icon reflects its open/closed state as a `data-state` attribute. `Icon` now fully handles its styling props (`className`, `style`, `xstyle`) so they compose with its base styles instead of being dropped. Default rendering is unchanged.
+- DateTimeInput: add `astryx-date-time-input-date-segment` and `astryx-date-time-input-time-segment` theme targets on the two segment wrappers, so a theme can restyle their geometry (padding/height/font) via `defineTheme` instead of being unable to reach them at all. Both reflect `size` and `status` as data attributes, mirroring the root target. Default rendering is unchanged.
+- DropdownMenu: add submenus via a single `DropdownMenuSubMenu` component (or a nested `items` array in data mode). The row adopts DropdownMenuItem semantics (label / icon / description / isDisabled) and its children — or an `items` array — become the flyout content. Flyouts open inline-end with auto-flip, hover-intent, and full keyboard support (Right/Enter/Space opens and focuses the first item; Left/Escape closes and returns focus to the trigger).
+- Bordered inputs gain a `statusVariant="tooltip"` option that hides the status message box and surfaces the status as an info-tip on the on-field status icon. The icon is a real focusable button so the status is reachable by everyone: keyboard users tab to it (with a visible focus ring) and see the message on focus, pointer users see it on hover, and touch users tap to toggle it. The message is piped into both the input's and the button's `aria-describedby`, and the tooltip is dismissible with Escape. Added to TextInput, TextArea, NumberInput, DateInput, DateRangeInput, TimeInput, and FileInput.
+- The bordered input family now accepts a `statusVariant` prop (`'attached' | 'detached'`, default `'attached'`) that forwards to the underlying `Field`, letting you float the status message below the input with spacing instead of overlapping it. Added to TextInput, TextArea, NumberInput, DateInput, DateRangeInput, TimeInput, Selector, MultiSelector, Typeahead, Tokenizer, FileInput, and PowerSearch. Non-breaking: the default matches today's behavior. (#4187)
+- Add RTL direction API: `useDirection()` hook, `getLocaleDirection(locale)` server-safe helper, and an optional `dir` prop on `InternationalizationProvider`.
+- RTL: mirror directional disclosure/navigation chevrons under RTL via a shared `rtlStyles.mirror` CSS transform, applied to the icon wrapper in Lightbox and the Table tree / grouped-rows / row-expansion plugins. The mirror composes correctly with the Table chevrons' state-rotation (expanded chevrons still point down under RTL). Semantic aria-labels are unchanged.
+- Selector & MultiSelector: add `astryx-selector-clear-icon`, `astryx-selector-indicator-icon`, `astryx-multi-selector-clear-icon`, and `astryx-multi-selector-indicator-icon` theme targets on the clear and chevron glyphs, so consumers can recolor, resize, and hover-style each icon — and style the chevron's open/closed state — via `defineTheme` instead of a fragile descendant selector or raw CSS. Each chevron reflects its open/closed state as a `data-state` attribute. `Icon` now fully handles its styling props (`className`, `style`, `xstyle`) so they compose with its base styles instead of being dropped. Default rendering is unchanged.
+- add size prop (sm / md) to Switch to match CheckboxInput and RadioList boolean control scales (#4230)
+- Table: `rowIndexStart` and `rowCount` props expose row numbering as a table-level ARIA concern, so `aria-rowindex`/`aria-rowcount` reflect a row's position in the full dataset: correct across pagination and even when no visible index column is rendered. Opt-in; tables that set neither prop are unchanged. Closes #3939.
+- Timestamp: new `tooltipEntries` prop renders the hover tooltip across several time zones and/or formats at once — one line per entry, each with an optional `timezoneID` (IANA id; omit it or pass `'local'` for the viewer's zone), `format` (every non-relative `TimestampFormat` plus `'full'`), and `label`. The default is unchanged: with no entries the tooltip stays the single full absolute line in the viewer's zone. Configuring entries also attaches the tooltip to absolute formats, which previously had none — note that this gives those timestamps a tab stop and focus ring, as relative timestamps already have, so a column of them gains one tab stop per row. `hasTooltip={false}` still suppresses the tooltip, and an empty array counts as no configuration. Also corrects `isTimezoneShown`'s documentation, which claimed it applied to the `system_date_time` and `system_time` formats; it never has, and those formats stay machine-readable. (#4188)
+- Token: make the `color` prop extensible via module augmentation. `TokenColor` is now derived from a `TokenColorMap` interface, so theme packages can add custom colors (and `astryx theme build` generates the type augmentation), matching Badge and Button.
+- TreeList: the per-level indentation step is now the themeable `--tree-list-indent` variable (default `var(--spacing-4)`), so a theme can retune the indent metric via `defineTheme` on the `tree-list` target instead of the previously hardcoded, unreachable step (#4308).
+- TreeList: add a `variant` prop (`'lineGuides' | 'noGuides'`, default `'lineGuides'`) to select the base hierarchy guide-line look. `noGuides` hides the connector lines while keeping indentation intact. Orthogonal to `density` (spacing); the guides stay themeable via the `astryx-tree-list-guide` target. Non-breaking — omitting the prop renders exactly as before.
+
+#### Fixes
+
+- Avatar: compose the status dot's label into the avatar's accessible name so assistive tech can reach the status the `role="img"` root previously pruned (WCAG 4.1.2)
+- Calendar: expose selected state in day-button accessible names, announce range-selection progress and completion via the polite live region, and set aria-multiselectable on the grid in range mode
+- CommandPalette: announce result counts, empty, and loading states to screen readers via the shared polite live region (WCAG 4.1.3)
+- Divider: expose the label as the separator's accessible name via aria-labelledby; Spinner: name the status element from the visible label instead of duplicating it as aria-label
+- FileInput: announce the required state via a visually hidden description on the trigger (aria-required is unsupported on role="button") and announce validation errors exactly once
+- hooks: resolve focus-trap Escape by DOM depth instead of push order, exclude aria-hidden subtrees from trap tab cycles, and auto-clear live regions after announcing so stale status text does not linger
+- List: keep list semantics for all listStyle variants by always emitting an explicit role="list", since the base style strips list-style-type for every variant and Safari/VoiceOver drops implicit list roles for such lists (WCAG 1.3.1)
+- NumberInput: announce the units text through the input's accessible description, and stop TextInput/NumberInput from referencing the non-rendered status message id in aria-describedby inside InputGroup
+- reset: stop suppressing `:focus-visible` outlines on coarse-pointer devices so keyboard users keep the WCAG 2.4.7 focus indicator
+- hooks: auto-detect RTL direction for arrow-key navigation in useListFocus and useGridFocus (WCAG 1.3.2)
+- Slider: constrain range thumb aria-valuemin/aria-valuemax by the sibling thumb (including minStepsBetweenThumbs) and render the label as a group label wired via aria-labelledby instead of an inert <label htmlFor>
+- TopNav: disabled TopNavItems now render href-less anchors so they no longer navigate or fire clicks, and Outline's active item uses aria-current="location"
+- Avatar: avoid remounting the avatar subtree when the name tooltip toggles — render the tooltip as a conditional sibling instead of forking the return so the avatar keeps its position in the React tree (and its image-load state) across tooltip changes.
+- Card: rest the bordered variant on the subtle `--color-border` instead of `--color-border-emphasized`, so a Card's outer frame matches its own LayoutHeader/LayoutFooter dividers and neighboring ClickableCards instead of rendering a heavier edge.
+- CheckboxInput, RadioList, Switch: align control sizes. The visible checkbox and radio controls now fill their size exactly (20px at `sm`, 24px at `md`) instead of being inset 2px. The `sm` Switch track is now 32px wide with a 2px inset.
+- Export the `BaseProps` type through the `@astryxdesign/core/BaseProps` subpath. Previously it was only reachable through the package barrel, so the `import type {BaseProps} from '@astryxdesign/core/BaseProps'` specifier that `astryx swizzle` generates failed to resolve (#4091).
+- Guard DropdownMenu item hover styles with `@media (hover: hover)` to prevent sticky highlights on touch devices. Forward BaseProps pass-throughs to the menu element.
+- FieldStatus renders a leading status icon on the `detached` message so status is not conveyed by color/position alone (WCAG 1.4.1). The icon is decorative for assistive tech; the message text and live-region announcement carry the status. The `attached` variant is unchanged.
+- FileInput no longer nests interactive controls (the clear and status buttons) inside a role="button" trigger. The trigger is now a visually hidden button alongside them in a non-interactive container, resolving the nested-interactive a11y violation (WCAG 4.1.2) while keeping click, keyboard, and drag-and-drop behavior. (#4522)
+- Inputs no longer show the hover ring while disabled. The shared input wrapper's disabled state now suppresses both the base and status hover shadows, so TextInput, TextArea, NumberInput, DateInput, TimeInput, Selector, MultiSelector, Typeahead, and Tokenizer stay visually inert on hover when disabled.
+- HoverCard: move themeProps className to the layer container (where bg/radius/shadow live) so themes can target the visual surface. Forward consumer xstyle/className/style to that same layer container so surface customization lands next to the theme class, instead of silently dropping them.
+- With `statusVariant="detached"`, bordered inputs no longer render a status icon inside the control (this also covers DateTimeInput, which is fixed to the detached presentation) — the detached message box already carries a leading icon, so the on-field glyph was a duplicate. Also centers the detached message's icon on the first line of text.
+- DropdownMenu/ContextMenu: mouse hover now moves the highlight instead of adding a second one, so keyboard focus and pointer hover share a single highlighted item (#4493)
+- utils: clamp plainDateAddMonths to the target month's last day
+  Adding a month to Jan 31 landed on Mar 3 (Date#setMonth overflow) instead of Feb 28, so month arithmetic from end-of-month dates skipped February entirely. The helper now uses pure month arithmetic and clamps the day, matching Temporal.PlainDate.add and date-fns.
+- Calendar RTL: month-navigation chevrons now mirror correctly under RTL (via the shared `rtlStyles.mirror` transform on the nav-icon wrapper), and the range-selection / hover-preview fill pills use logical CSS (`insetInline*`, `border*Start/EndRadius`) so their rounded start/end caps follow the reading direction instead of the physical left/right. LTR rendering is unchanged.
+- Carousel now supports RTL: the directional scroll-button chevrons mirror under RTL, the scroll buttons respect RTL scroll semantics (previously the button was a no-op under RTL), and the button pills sit on the correct edges.
+- RTL: migrate physical `left`/`right` CSS properties to their logical equivalents so components mirror correctly under `dir="rtl"`. This is the Phase 2 mechanical, one-to-one follow-up to the RTL direction API — a no-op in the default LTR direction with no visual change.
+- RTL Phase 4 (behavioral): mirror directional behavior that logical-CSS and icon name-swaps alone couldn't fix. SideNavCollapseButton and TreeListItem now compose `rtlStyles.mirror` on the icon wrapper outside the state rotation, so the chevrons point toward the correct edge in every collapsed/expanded × LTR/RTL combination. TreeList connector/guide lines position via logical `inset-inline-start`/`inset-inline-end` so they mirror to the inline-start (right) edge under RTL alongside the chevron and row indent. Slider positions its thumb, fill, and marks via logical `inset-inline-start` and flips the physical centering transform under RTL, and its pointer/click math measures the value fraction from the inline-start (right) edge under RTL — so a click at 25% of the track maps to 75 instead of 25.
+- RTL Phase 4b behavioral fixes: ChatMessageBubble grouped-bubble tail corners now use logical border radii so the tail follows reading direction (mirrors under RTL, text unaffected); Table sticky-column shadows make their `translateX` and gradient direction-aware so the shadow fades from the pinned edge toward scrolled content in both LTR and RTL instead of rendering inside-out, and gate shadow visibility on `Math.abs(scrollLeft)` so the start/end shadows still appear under RTL (where spec-compliant browsers report a negative `scrollLeft`); ResizeHandle's hit-area bias is now direction-aware (mirrors about center under RTL) and the pointer-drag delta reads the handle's computed direction so dragging resizes intuitively in RTL.
+- Markdown honors the `components.image` override for standalone (block) images, matching the inline image path. A standalone `![alt](src)` line parses as a block image, whose render path previously hardcoded a bare `<img>` and ignored a supplied `components.image`; it now uses the override just like an inline image does.
+- Selector & MultiSelector: keep group headers visible while searching; hide groups with no matching items. Previously, typing a query flattened grouped options into a single ungrouped list; now each group header stays above its matching items and a group is hidden only when none of its items match.
+- SideNav: remove the top border above the footer region so the `footer` slot no longer renders a divider line.
+- Slider: round snapped values to the min/step decimal precision
+  With fractional steps, `min + steps * step` accumulated binary floating-point error, so a keyboard nudge on a `step={0.1}` slider emitted `0.30000000000000004` through `onChange`/`onChangeEnd` (and into `aria-valuenow`/the value tooltip once the consumer echoed it back). Snapped values are now rounded to the combined decimal precision of `min` and `step`, which removes only the error — exact steps are unaffected.
+- Tooltip: dismiss the tooltip when its trigger is pressed. Previously the tooltip stayed open through a click (e.g. a "Copy link" button's tooltip lingered after activation); now pressing the trigger hides its own tooltip. Applies to uncontrolled tooltips only.
+- Typeahead: omit aria-activedescendant when search results are empty or index is out of bounds (#4059)
+
+#### Documentation
+
+- document `width` prop across 17 input component doc files (#4163)
+
+#### Other Changes
+
+- Add `@astryx/no-physical-properties` ESLint rule that flags physical left/right CSS properties inside `stylex.create()` and suggests the CSS logical equivalent for RTL support.
+- KEY-BASED: `marginLeft`/`marginRight`, `paddingLeft`/`paddingRight`, `borderLeft`/`borderRight` (+ their `Width`/`Style`/`Color` longhands), `left`/`right` → `insetInlineStart`/`insetInlineEnd`, and the four physical corner radii → their diagonal-aware logical names (`borderTopLeftRadius` → `borderStartStartRadius`, etc.).
+- VALUE-BASED: `textAlign: 'left'|'right'`, `float: 'left'|'right'`, and `clear: 'left'|'right'` (the key stays, only the physical value is flagged).
+- Scoped strictly to `stylex.create()` — physical identifiers used elsewhere are ignored.
+- `useDirection()` returns `'ltr' | 'rtl'` for the current provider context (falls back to `'ltr'` when called outside a provider).
+- `getLocaleDirection(locale)` computes direction from a BCP 47 locale via `Intl.Locale.getTextInfo()` — safe to call from React Server Components and Next.js layouts to set `<html dir>`.
+- `<InternationalizationProvider locale="ar">` auto-derives `dir="rtl"`. Pass an explicit `dir` prop to override (useful for RTL testing under an English catalog, or to force LTR).
+- Pagination is the first component to consume the hook: prev/next chevron icons flip under RTL while the aria-labels stay semantic.
+- Storybook gains a global `Direction` toolbar for toggling every story between LTR and RTL.
+- Component-level CSS migrations (borders, chevrons, sliders, calendar range pills, etc.) land in follow-up PRs.
+- `textAlign: 'left' | 'right'` → `'start' | 'end'` (Selector, Typeahead, Chat trigger menu, DropdownMenu, CommandPalette, NavMenu items).
+- `borderLeft*`/`borderRight*` → `borderInlineStart*`/`borderInlineEnd*`, kept as separate start/end declarations (Banner, Table cell/header dividers, DateRangeInput preset sidebar).
+- Static `left`/`right` positioning → `insetInlineStart`/`insetInlineEnd` for full-bleed overlays and single-side offsets (Button spinner overlay, Chat dock/blur/placeholder, Field sr-only label, Lightbox close/nav/counter buttons, TabList indicators, Thumbnail remove slot, CodeBlock copy button).
+- Inline `marginLeft` indentation → `marginInlineStart` (TreeList rows).
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @AKnassa
+- @arham766
+- @bhamodi
+- @cixzhang
+- @ernestt
+- @freddymeta
+- @HelloOjasMutreja
+- @humbertovirtudes
+- @kentonquatman
+- @lexs
+- @nynexman4464
+
+---
+
 # 0.1.9
 
 #### New Features

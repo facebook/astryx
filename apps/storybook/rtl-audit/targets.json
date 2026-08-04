@@ -1,0 +1,38 @@
+[
+  {
+    "component": "Calendar",
+    "storyId": "core-calendar--default",
+    "dims": [
+      "D2"
+    ],
+    "selectors": {
+      "prev": "button[aria-label=\"Previous month\"]",
+      "next": "button[aria-label=\"Next month\"]"
+    }
+  },
+  {
+    "component": "Carousel",
+    "storyId": "core-carousel--default",
+    "dims": [
+      "D3"
+    ],
+    "selectors": {
+      "scroller": "[aria-roledescription=\"carousel\"] > div:first-child",
+      "nextButton": "button[aria-label=\"Scroll right\"]"
+    }
+  },
+  {
+    "component": "Lightbox",
+    "storyId": "core-lightbox--gallery",
+    "dims": [
+      "D2"
+    ],
+    "setup": {
+      "click": "img, [role=button]"
+    },
+    "selectors": {
+      "prev": "button[aria-label=\"Previous\"]",
+      "next": "button[aria-label=\"Next\"]"
+    }
+  }
+]

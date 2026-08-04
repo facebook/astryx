@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').HookDoc} */
+/** @type {import('@astryxdesign/cli/authoring').HookDoc} */
 export const docs = {
   name: 'useTranslator',
   displayName: 'useTranslator',
@@ -31,7 +31,7 @@ export const docs = {
   importPath: '@astryxdesign/core',
 };
 
-/** @type {import('../docs-types').HookTranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').HookTranslationDoc} */
 export const docsDense = {
   description:
     'Hook returning a translator function bound to the current InternationalizationProvider context. Call with an ICU MessageFormat key and values to get the formatted string for the active locale.',

@@ -235,6 +235,10 @@
     "defaultMessage": "Mobile navigation",
     "description": "Screen-reader-only accessible name for the mobile-only navigation region on small viewports. \"Mobile\" = phone/tablet (small screen), not \"movable\"."
   },
+  "@astryx.avatar.nameWithStatus": {
+    "defaultMessage": "{name}, {status}",
+    "description": "Screen-reader accessible name for an Avatar showing a status indicator; composes the person's name with the status label, e.g. \"Jane Doe, Online\". {name} = the avatar's name/alt text, {status} = the status dot's label. Adjust separator and order per locale."
+  },
   "@astryx.avatarGroup.label": {
     "defaultMessage": "Avatars",
     "description": "Screen-reader-only fallback name for a horizontal cluster of user avatar images. Plural noun; consumers usually override with \"Team members\", \"Attendees\", etc."
@@ -242,6 +246,10 @@
   "@astryx.avatarGroup.keyboardHint": {
     "defaultMessage": "Use arrow keys to move between avatars",
     "description": "Screen-reader-only instruction attached (via aria-describedby) to a group of interactive avatars that share a single Tab stop. Tells keyboard users the Left/Right arrow keys move focus between the avatars. Only announced when the group has interactive (link/button) avatars."
+  },
+  "@astryx.avatarGroup.overflow": {
+    "defaultMessage": "{count, number} more",
+    "description": "Accessible name for the \"+N\" overflow indicator at the end of an AvatarGroup — announces how many additional avatars are not shown. Example: `5 more`. The visible \"+N\" text is unaffected; this is the aria-label only."
   },
   "@astryx.banner.dismiss": {
     "defaultMessage": "Dismiss",
@@ -254,6 +262,34 @@
   "@astryx.calendar.nextMonth": {
     "defaultMessage": "Next month",
     "description": "Screen-reader-only label on the right-arrow button in a Calendar's month header (navigates one month forward). Pairs with `calendar.previousMonth`."
+  },
+  "@astryx.calendar.daySelected": {
+    "defaultMessage": "{date}, selected",
+    "description": "Accessible name for the Calendar day button that is the current single-mode selection. `{date}` is the localized full date, e.g. \"Thursday, January 15, 2026\". The trailing state word tells screen-reader users the focused day is selected."
+  },
+  "@astryx.calendar.dayRangeStart": {
+    "defaultMessage": "{date}, range start",
+    "description": "Accessible name for the Calendar day button that begins the selected date range (or the first pick of an in-progress range). `{date}` is the localized full date."
+  },
+  "@astryx.calendar.dayRangeEnd": {
+    "defaultMessage": "{date}, range end",
+    "description": "Accessible name for the Calendar day button that ends the selected date range. `{date}` is the localized full date. Pairs with `calendar.dayRangeStart`."
+  },
+  "@astryx.calendar.dayRangeStartAndEnd": {
+    "defaultMessage": "{date}, range start and range end",
+    "description": "Accessible name for a Calendar day button that both begins and ends a completed one-day range. `{date}` is the localized full date."
+  },
+  "@astryx.calendar.dayInRange": {
+    "defaultMessage": "{date}, in range",
+    "description": "Accessible name for a Calendar day button strictly inside the selected date range (not an endpoint). `{date}` is the localized full date."
+  },
+  "@astryx.calendar.rangeStartAnnounce": {
+    "defaultMessage": "Start date {date}. Select an end date.",
+    "description": "Screen-reader announcement after the first pick of a Calendar range selection. `{date}` is the localized full date. Prompts the user that a second pick completes the range."
+  },
+  "@astryx.calendar.rangeCompleteAnnounce": {
+    "defaultMessage": "Selected range: {start} to {end}.",
+    "description": "Screen-reader announcement after the second pick completes a Calendar range selection. `{start}` and `{end}` are localized full dates in chronological order."
   },
   "@astryx.carousel.label": {
     "defaultMessage": "Carousel",
@@ -311,6 +347,18 @@
     "defaultMessage": "Type to search",
     "description": "Onboarding empty-state text shown inside a CommandPalette on first open, before the user has typed anything. Imperative sentence fragment."
   },
+  "@astryx.commandPalette.resultCount": {
+    "defaultMessage": "{count, number} {count, plural, one {result} other {results}}",
+    "description": "Screen-reader-only announcement of how many commands match the CommandPalette query as the user types. Example: `12 results`, `1 result`; keep compact."
+  },
+  "@astryx.commandPalette.noResultsFor": {
+    "defaultMessage": "No results for {query}",
+    "description": "Screen-reader-only announcement when a CommandPalette query matches nothing. `{query}` is the user's verbatim search text; keep it last if your language allows so truncation-by-AT still conveys the outcome."
+  },
+  "@astryx.commandPalette.loading": {
+    "defaultMessage": "Loading",
+    "description": "Screen-reader-only announcement that a CommandPalette search has started and results are being fetched. Present-progressive form; matches the visible spinner."
+  },
   "@astryx.dateRangeInput.presetDateRanges": {
     "defaultMessage": "Preset date ranges",
     "description": "Screen-reader-only accessible name for the sidebar of quick-pick preset ranges inside a DateRangeInput popover (e.g. \"Last 7 days\", \"This month\")."
@@ -362,6 +410,10 @@
   "@astryx.multiSelector.searchOptions": {
     "defaultMessage": "Search options",
     "description": "Screen-reader-only accessible name for that same search input inside a MultiSelector."
+  },
+  "@astryx.multiSelector.selectAllPartiallySelected": {
+    "defaultMessage": "{label}, partially selected",
+    "description": "Accessible name for the MultiSelector select-all option while only some options are selected. `{label}` is the visible select-all label (e.g. \"Select all\"). ARIA forbids aria-selected=\"mixed\" on options, so the indeterminate state is conveyed through the name instead. \"Partially\" = some but not all."
   },
   "@astryx.popover.close": {
     "defaultMessage": "Close popover",
@@ -639,6 +691,10 @@
     "defaultMessage": "Expand",
     "description": "\"Expand\" = reveal more, not grow physically. Aria label AND tooltip on the same toggle when currently collapsed. Pairs with `banner.collapse`."
   },
+  "@astryx.button.loading": {
+    "defaultMessage": "Loading",
+    "description": "Screen-reader-only live-region announcement while a Button is in its loading state (spinner shown, action in flight). Progressive sense (\"work in progress\"), not a noun. Kept separate from `typeahead.loading` — translations may diverge."
+  },
   "@astryx.chatComposerDrawer.expand": {
     "defaultMessage": "Expand {label}",
     "description": "Screen-reader-only label on the ChatComposerDrawer toggle when the drawer is collapsed. `{label}` is the drawer's visible name — example: `Expand Attachments`. Pairs with `collapse`."
@@ -646,6 +702,14 @@
   "@astryx.chatComposerDrawer.collapse": {
     "defaultMessage": "Collapse {label}",
     "description": "Screen-reader-only label on the ChatComposerDrawer toggle when the drawer is expanded. Example: `Collapse Attachments`. Pairs with `expand`."
+  },
+  "@astryx.chatDictationButton.startDictation": {
+    "defaultMessage": "Start dictation",
+    "description": "Accessible label for the microphone button when idle (not listening)."
+  },
+  "@astryx.chatDictationButton.stopDictation": {
+    "defaultMessage": "Stop dictation",
+    "description": "Accessible label for the microphone button when actively listening."
   },
   "@astryx.chatLayout.newMessages": {
     "defaultMessage": "New messages",
@@ -667,6 +731,14 @@
     "defaultMessage": "Send",
     "description": "Primary button label on the chat submit button (paperplane icon). Imperative verb; pairs with `Stop`. Very short."
   },
+  "@astryx.chatToolCalls.error": {
+    "defaultMessage": "Error: {message}",
+    "description": "Screen-reader text for a tool call that failed. {message} is the error detail."
+  },
+  "@astryx.chatToolCalls.groupLabel": {
+    "defaultMessage": "{count} tool calls",
+    "description": "Summary label shown in the group header when multiple tool calls are expanded. {count} is the number of calls."
+  },
   "@astryx.chatTriggerMenu.suggestions": {
     "defaultMessage": "Suggestions",
     "description": "Screen-reader-only fallback label for the popover listbox opened by a trigger character (`@`, `/`) in the chat composer when the trigger provides no specific label."
@@ -687,6 +759,14 @@
     "defaultMessage": "Code",
     "description": "Screen-reader-only fallback name for a code-snippet scroll container when the code's language is unknown. \"Code\" = source code, not secret code or code of conduct."
   },
+  "@astryx.field.optional": {
+    "defaultMessage": "Optional",
+    "description": "Visible indicator shown next to a form field's label when the field is optional (isOptional). Mutually exclusive with the required indicator. Very short — appears inline after the label text."
+  },
+  "@astryx.field.required": {
+    "defaultMessage": "Required",
+    "description": "Visible indicator shown next to a form field's label when the field must be filled in (isRequired). Mutually exclusive with the optional indicator. Very short — appears inline after the label text."
+  },
   "@astryx.fileInput.clearLabel": {
     "defaultMessage": "Clear {label}",
     "description": "Screen-reader-only label on the X that removes the selected file from a FileInput. Example: `Clear Attachment`, `Clear Résumé`."
@@ -699,9 +779,21 @@
     "defaultMessage": "{label}, {fileNames}",
     "description": "Accessible name for a FileInput trigger that has files attached, composing the field label with the selected filenames. Example: `Attachments, report.pdf, notes.txt`."
   },
+  "@astryx.keyboardHint.toNavigate": {
+    "defaultMessage": "to navigate",
+    "description": "Trailing text in the keyboard-hint badge, shown after arrow-key icons — reads as `← → to navigate`. Lowercase sentence fragment completing the visual phrase; the badge is aria-hidden, so this is for sighted users only."
+  },
   "@astryx.lightbox.mediaViewer": {
     "defaultMessage": "Media viewer",
     "description": "Screen-reader-only fallback name for the Lightbox dialog when the current media item has no alt text. Should rarely render — consumers should provide alt."
+  },
+  "@astryx.metadataList.showMore": {
+    "defaultMessage": "Show more",
+    "description": "Button label under a MetadataList that reveals items hidden beyond the configured maximum. Toggles with `metadataList.showLess` — keep the pair parallel in your language."
+  },
+  "@astryx.metadataList.showLess": {
+    "defaultMessage": "Show less",
+    "description": "Button label under a MetadataList that re-hides the extra items revealed by `metadataList.showMore`. Keep the pair parallel."
   },
   "@astryx.mobileNav.navigation": {
     "defaultMessage": "Navigation",
@@ -710,6 +802,18 @@
   "@astryx.multiSelector.clearAll": {
     "defaultMessage": "Clear all {label}",
     "description": "Screen-reader-only label on the X that clears every selected value from a MultiSelector. Example: `Clear all Countries`. `{label}` is typically already plural in English."
+  },
+  "@astryx.input.statusButton.error": {
+    "defaultMessage": "Error details",
+    "description": "Accessible name for the focusable status icon button inside an input when statusVariant is 'tooltip' and the status type is error. Activating or focusing the button reveals the error message in a tooltip. Keep it short — it labels an icon-only button."
+  },
+  "@astryx.input.statusButton.warning": {
+    "defaultMessage": "Warning details",
+    "description": "Accessible name for the focusable status icon button inside an input when statusVariant is 'tooltip' and the status type is warning. Activating or focusing the button reveals the warning message in a tooltip."
+  },
+  "@astryx.input.statusButton.success": {
+    "defaultMessage": "Success details",
+    "description": "Accessible name for the focusable status icon button inside an input when statusVariant is 'tooltip' and the status type is success. Activating or focusing the button reveals the success message in a tooltip."
   },
   "@astryx.numberInput.clearLabel": {
     "defaultMessage": "Clear {label}",
@@ -778,6 +882,14 @@
   "@astryx.tableTree.expandAllRows": {
     "defaultMessage": "Expand all rows",
     "description": "Aria label for the Table tree-data header toggle when rows are collapsed and clicking it expands them."
+  },
+  "@astryx.textArea.charactersRemaining": {
+    "defaultMessage": "{count, number} {count, plural, one {character} other {characters}} remaining",
+    "description": "Screen-reader-only announcement of how many characters the user can still type before hitting a TextArea's maxLength. Announced politely as the count nears the limit. `{count}` is the number remaining — example: `12 characters remaining`."
+  },
+  "@astryx.textArea.charactersOverLimit": {
+    "defaultMessage": "{count, number} {count, plural, one {character} other {characters}} over the limit",
+    "description": "Screen-reader-only assertive announcement when the user has typed past a TextArea's maxLength. `{count}` is how many characters over — example: `3 characters over the limit`."
   },
   "@astryx.textInput.clearLabel": {
     "defaultMessage": "Clear {label}",
