@@ -35,10 +35,10 @@ import {themeProps} from '../utils/themeProps';
 import {VisuallyHidden} from '../VisuallyHidden';
 import type {ProgressBarVariantMap} from './index';
 
-// The Tooltip only wraps labeled marks, so load it lazily: a ProgressBar with
-// no marks — or only decorative, unlabeled ones — never bundles the Tooltip
-// chunk. While it loads, the Suspense fallback shows the bare mark, so nothing
-// disappears; the tooltip simply attaches once the chunk is ready.
+// Every mark is wrapped in a Tooltip (marks always carry a label), so load it
+// lazily: a ProgressBar with no marks never bundles the Tooltip chunk. While it
+// loads, the Suspense fallback shows the bare mark, so nothing disappears; the
+// tooltip simply attaches once the chunk is ready.
 const LazyProgressBarMarkTooltip = lazy(
   async () => import('./ProgressBarMarkTooltip'),
 );
@@ -122,9 +122,9 @@ export interface ProgressBarProps extends BaseProps<HTMLDivElement> {
   /**
    * Target marks drawn on the track at fixed points in the same `0..max`
    * scale as `value` — e.g. a goal line. Marks stay visible whether progress
-   * is below or past them. A mark with a `label` reveals it via a `Tooltip`
-   * on hover/focus (and names it for assistive tech); an unlabeled mark is
-   * decorative. Ignored when `isIndeterminate` is true.
+   * is below or past them. Each mark's required `label` names it for assistive
+   * tech and is revealed via a `Tooltip` on hover/focus. Ignored when
+   * `isIndeterminate` is true.
    */
   marks?: ReadonlyArray<ProgressBarMark>;
   /**
@@ -476,9 +476,12 @@ export function ProgressBar({
             assistive tech via the Tooltip's aria-describedby, without adding a
             labeled child to the progressbar's own a11y subtree. */}
         {resolvedMarks.map(mark => {
+          // The tick element. It is both the Tooltip's anchor and the Suspense
+          // fallback shown while the lazy Tooltip chunk loads, so the tick is
+          // always visible and the label attaches once ready. The list `key`
+          // lives on the mapped <Suspense>, not here.
           const markEl = (
             <span
-              key={`${mark.value}:${mark.label}`}
               tabIndex={0}
               {...mergeProps(
                 themeProps('progressbar-mark'),
@@ -487,8 +490,6 @@ export function ProgressBar({
               style={{insetInlineStart: `${mark.pct}%`}}
             />
           );
-          // The tooltip loads lazily (Suspense); the bare mark is the fallback,
-          // so the tick is always visible and the label attaches once ready.
           return (
             <Suspense key={`${mark.value}:${mark.label}`} fallback={markEl}>
               <LazyProgressBarMarkTooltip content={mark.label}>

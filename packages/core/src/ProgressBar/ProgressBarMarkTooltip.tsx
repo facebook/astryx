@@ -6,9 +6,9 @@
  * @file ProgressBarMarkTooltip.tsx
  * @input Uses React, Tooltip, the mark element to wrap, and its label
  * @output Default-exports the lazily-loaded Tooltip wrapper for a labeled mark
- * @position Split out of ProgressBar so the Tooltip only loads when a labeled
- *   mark is actually rendered — a ProgressBar with no marks (or only
- *   decorative, unlabeled marks) never bundles the Tooltip chunk.
+ * @position Split out of ProgressBar so the Tooltip only loads when a mark is
+ *   actually rendered — a ProgressBar with no marks never bundles the Tooltip
+ *   chunk.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/ProgressBar/ProgressBar.tsx (the lazy() + Suspense wrapper)
