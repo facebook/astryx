@@ -33,7 +33,6 @@ jobs:
 
   node-install:
     name: node install / ${{ matrix.runner }}
-    needs: pickup
     strategy:
       fail-fast: false
       matrix:
@@ -58,7 +57,6 @@ jobs:
 
   heavy-arm:
     name: heavy smoke / 2-core-ubuntu-arm
-    needs: node-install
     runs-on: 2-core-ubuntu-arm
     timeout-minutes: 45
 
@@ -78,7 +76,6 @@ jobs:
 
   playwright-arm:
     name: playwright smoke / 2-core-ubuntu-arm
-    needs: node-install
     runs-on: 2-core-ubuntu-arm
     timeout-minutes: 25
 
