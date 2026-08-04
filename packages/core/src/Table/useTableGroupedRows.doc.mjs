@@ -7,7 +7,7 @@ export const docs = {
   subComponentOf: 'Table',
   displayName: 'useTableGroupedRows',
   description:
-    'Hook that groups a flat data array into collapsible section rows. Each distinct groupBy value becomes a full-width section-header row with a chevron toggle, the group label, and a member count; collapsing hides that group\'s data rows while keeping the header visible. The consumer owns the collapsedGroups set and the hook returns {data, plugin, idKey}: pass all three to Table (data, plugins, and idKey respectively).',
+    'Hook that groups a flat data array into collapsible section rows. Each distinct groupBy value becomes a full-width section-header row with a chevron toggle, the group label, and a member count; collapsing hides that group\'s data rows while keeping the header visible. Mirrors useTableRowExpansionState: the consumer owns the collapsedGroups set and the hook returns {data, plugin, idKey}: pass all three to Table (data, plugins, and idKey respectively).',
   props: [
     {
       name: 'data',

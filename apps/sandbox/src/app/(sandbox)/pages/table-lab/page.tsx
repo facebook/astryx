@@ -45,8 +45,8 @@ import {
   paginateData,
   useTableColumnResize,
   useTableStickyColumns,
-  useTableTreeData,
-  useTableTreeState,
+  useTableRowExpansion,
+  useTableRowExpansionState,
   useTableGroupedRows,
   useTableRowIndex,
   useTableRowStatus,
@@ -205,16 +205,16 @@ function useLabPlugins({
     endKeys: ['joined'],
   });
 
-  // --- tree rows (flat rows; no real tree in the synthetic data) ---
+  // --- row expansion (flat rows; no real tree in the synthetic data) ---
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
-  const {visibleData, treeConfig} = useTableTreeState<LabRow>({
-    data: dataAfterPage,
-    idKey: 'id',
-    expandedIds: expandedKeys,
-    onExpandedIdsChange: ids => setExpandedKeys(new Set(ids)),
-    isItemExpandable: () => false,
+  const {expansionConfig} = useTableRowExpansionState<LabRow>({
+    baseData: dataAfterPage,
+    getChildren: () => [],
+    getRowKey: item => item.id,
+    expandedKeys,
+    setExpandedKeys,
   });
-  const treePlugin = useTableTreeData(treeConfig);
+  const rowExpansionPlugin = useTableRowExpansion(expansionConfig);
   if (enabled.rowExpansion) {
     summary.push(`${expandedKeys.size} expanded`);
   }

@@ -1,0 +1,263 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {render, renderHook, screen, fireEvent} from '@testing-library/react';
+import {useState} from 'react';
+import {Table} from '../../Table';
+import type {TableColumn} from '../../types';
+import {
+  useTableRowExpansion,
+  useTableRowExpansionState,
+} from './useTableRowExpansion';
+import {InternationalizationProvider} from '../../../i18n';
+
+// popover mock for context-menu tests
+beforeEach(() => {
+  HTMLElement.prototype.showPopover = vi.fn(function (this: HTMLElement) {
+    this.setAttribute('popover-open', '');
+    const event = new Event('toggle', {bubbles: false});
+    Object.defineProperty(event, 'newState', {value: 'open'});
+    this.dispatchEvent(event);
+  });
+  HTMLElement.prototype.hidePopover = vi.fn(function (this: HTMLElement) {
+    this.removeAttribute('popover-open');
+    const event = new Event('toggle', {bubbles: false});
+    Object.defineProperty(event, 'newState', {value: 'closed'});
+    this.dispatchEvent(event);
+  });
+  const originalMatches = HTMLElement.prototype.matches;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (HTMLElement.prototype as any).matches = function (
+    selector: string,
+  ): boolean {
+    if (selector === ':popover-open') {
+      return this.hasAttribute('popover-open');
+    }
+    return originalMatches.call(this, selector);
+  };
+});
+
+interface TreeItem extends Record<string, unknown> {
+  id: string;
+  name: string;
+  children: TreeItem[];
+}
+
+const treeData: TreeItem[] = [
+  {
+    id: 'a',
+    name: 'Folder A',
+    children: [
+      {id: 'a1', name: 'File A1', children: []},
+      {id: 'a2', name: 'File A2', children: []},
+    ],
+  },
+  {
+    id: 'b',
+    name: 'Folder B',
+    children: [{id: 'b1', name: 'File B1', children: []}],
+  },
+  {id: 'c', name: 'Leaf C', children: []},
+];
+
+const columns: TableColumn<TreeItem>[] = [{key: 'name', header: 'Name'}];
+
+const EMPTY_KEYS = new Set<string>();
+
+function Harness({
+  initialExpanded = EMPTY_KEYS,
+}: {
+  initialExpanded?: Set<string>;
+}) {
+  const [expandedKeys, setExpandedKeys] = useState(initialExpanded);
+  const {data, expansionConfig} = useTableRowExpansionState<TreeItem>({
+    baseData: treeData,
+    getChildren: item => item.children,
+    getRowKey: item => item.id,
+    expandedKeys,
+    setExpandedKeys,
+  });
+  const expansion = useTableRowExpansion(expansionConfig);
+  return (
+    <Table data={data} columns={columns} idKey="id" plugins={{expansion}} />
+  );
+}
+
+describe('useTableRowExpansion', () => {
+  it('renders a chevron button for expandable rows', () => {
+    render(<Harness />);
+    const buttons = screen.getAllByRole('button', {name: /expand row/i});
+    // Folder A and Folder B are expandable (top-level with children)
+    expect(buttons.length).toBe(2);
+  });
+
+  it('shows child rows when expanded', () => {
+    render(<Harness initialExpanded={new Set(['a'])} />);
+    expect(screen.getByText('File A1')).toBeInTheDocument();
+    expect(screen.getByText('File A2')).toBeInTheDocument();
+  });
+
+  it('hides child rows when collapsed', () => {
+    render(<Harness />);
+    expect(screen.queryByText('File A1')).not.toBeInTheDocument();
+  });
+
+  it('toggles expansion on chevron click', () => {
+    render(<Harness />);
+    expect(screen.queryByText('File A1')).not.toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole('button', {name: /expand row/i})[0]);
+    expect(screen.getByText('File A1')).toBeInTheDocument();
+  });
+
+  it('contributes a context-menu action on expandable rows', () => {
+    render(<Harness />);
+    fireEvent.contextMenu(screen.getByText('Folder A'));
+    const items = screen.getAllByRole('menuitem', {
+      name: /expand row/i,
+      hidden: true,
+    });
+    expect(items.length).toBeGreaterThan(0);
+  });
+
+  it('localizes the context-menu action label through the i18n catalog', () => {
+    render(
+      <InternationalizationProvider
+        locale="fr"
+        overrides={{
+          fr: {'@astryx.tableRowExpansion.expandRow': 'Développer la ligne'},
+        }}>
+        <Harness />
+      </InternationalizationProvider>,
+    );
+    fireEvent.contextMenu(screen.getByText('Folder A'));
+    const items = screen.getAllByRole('menuitem', {
+      name: /Développer la ligne/,
+      hidden: true,
+    });
+    expect(items.length).toBeGreaterThan(0);
+  });
+
+  it('does not show chevron for leaf nodes', () => {
+    render(<Harness />);
+    // Leaf C has no children
+    expect(screen.getByText('Leaf C')).toBeInTheDocument();
+    // only 2 expand buttons (Folder A, Folder B), not 3
+    expect(
+      screen.getAllByRole('button', {name: /expand row|collapse row/i}).length,
+    ).toBe(2);
+  });
+
+  it('renders an expand-all toggle in the header', () => {
+    render(<Harness />);
+    expect(
+      screen.getByRole('button', {name: /expand all rows/i}),
+    ).toBeInTheDocument();
+  });
+
+  it('expand-all toggle expands every expandable row', () => {
+    render(<Harness />);
+    expect(screen.queryByText('File A1')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', {name: /expand all rows/i}));
+    // Both folders' children become visible.
+    expect(screen.getByText('File A1')).toBeInTheDocument();
+    expect(screen.getByText('File A2')).toBeInTheDocument();
+    expect(screen.getByText('File B1')).toBeInTheDocument();
+  });
+
+  it('collapse-all toggle collapses every row', () => {
+    render(<Harness initialExpanded={new Set(['a', 'b'])} />);
+    expect(screen.getByText('File A1')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', {name: /collapse all rows/i}));
+    expect(screen.queryByText('File A1')).not.toBeInTheDocument();
+    expect(screen.queryByText('File B1')).not.toBeInTheDocument();
+  });
+});
+
+describe('useTableRowExpansionState cycle guard', () => {
+  /** A row whose children array contains the row itself (plus a real child). */
+  function makeSelfReferential(): TreeItem[] {
+    const x: TreeItem = {id: 'x', name: 'Self', children: []};
+    const y: TreeItem = {id: 'y', name: 'Leaf Y', children: []};
+    x.children.push(x, y);
+    return [x];
+  }
+
+  /** root -> child -> grand, where grand's children point back at root. */
+  function makeDeepCycle(): TreeItem[] {
+    const root: TreeItem = {id: 'root', name: 'Root', children: []};
+    const child: TreeItem = {id: 'child', name: 'Child', children: []};
+    const grand: TreeItem = {id: 'grand', name: 'Grand', children: []};
+    root.children.push(child);
+    child.children.push(grand);
+    grand.children.push(root);
+    return [root];
+  }
+
+  function renderState(baseData: TreeItem[], expandedKeys: Set<string>) {
+    const setExpandedKeys = vi.fn();
+    const hook = renderHook(() =>
+      useTableRowExpansionState<TreeItem>({
+        baseData,
+        getChildren: item => item.children,
+        getRowKey: item => item.id,
+        expandedKeys,
+        setExpandedKeys,
+      }),
+    );
+    return {hook, setExpandedKeys};
+  }
+
+  it('terminates on a self-referential expanded row and flattens each key once', () => {
+    const {hook} = renderState(makeSelfReferential(), new Set(['x']));
+    const {data, expansionConfig} = hook.result.current;
+    expect(data.map(item => item.id)).toEqual(['x', 'y']);
+    expect(expansionConfig.getDepth?.(data[0])).toBe(0);
+    expect(expansionConfig.getDepth?.(data[1])).toBe(1);
+  });
+
+  it('terminates on a deeper cycle back to the root and flattens each key once', () => {
+    const {hook} = renderState(
+      makeDeepCycle(),
+      new Set(['root', 'child', 'grand']),
+    );
+    const {data, expansionConfig} = hook.result.current;
+    expect(data.map(item => item.id)).toEqual(['root', 'child', 'grand']);
+    expect(expansionConfig.getDepth?.(data[0])).toBe(0);
+    expect(expansionConfig.getDepth?.(data[1])).toBe(1);
+    expect(expansionConfig.getDepth?.(data[2])).toBe(2);
+    // The cycle guard keeps isAllExpanded computable — true, not a crash.
+    expect(expansionConfig.isAllExpanded).toBe(true);
+  });
+
+  it('terminates when collecting allExpandableKeys on cyclic data with nothing expanded', () => {
+    const {hook, setExpandedKeys} = renderState(
+      makeDeepCycle(),
+      new Set<string>(),
+    );
+    const {data, expansionConfig} = hook.result.current;
+    expect(data.map(item => item.id)).toEqual(['root']);
+    expansionConfig.onToggleExpandAll?.(true);
+    const nextKeys = setExpandedKeys.mock.calls[0][0] as Set<string>;
+    expect(Array.from(nextKeys)).toEqual(['root', 'child', 'grand']);
+  });
+
+  it('re-walks a shared child under each expanded parent (ancestor-path, not visited-set, semantics)', () => {
+    const leaf: TreeItem = {id: 'leaf', name: 'Leaf', children: []};
+    const shared: TreeItem = {id: 's', name: 'Shared', children: [leaf]};
+    const p1: TreeItem = {id: 'p1', name: 'Parent 1', children: [shared]};
+    const p2: TreeItem = {id: 'p2', name: 'Parent 2', children: [shared]};
+    const {hook} = renderState([p1, p2], new Set(['p1', 'p2', 's']));
+    // 's' is on neither parent's ancestor path, so it must flatten under
+    // both — the guard only skips true cycles, matching pre-guard behavior
+    // for acyclic (DAG-shaped) data.
+    const {data} = hook.result.current;
+    expect(data.map(item => item.id)).toEqual([
+      'p1',
+      's',
+      'leaf',
+      'p2',
+      's',
+      'leaf',
+    ]);
+  });
+});
