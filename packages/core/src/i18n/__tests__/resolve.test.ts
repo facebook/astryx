@@ -9,8 +9,15 @@
  */
 
 import {describe, expect, test, beforeEach, vi} from 'vitest';
-import {__resetForTests, resolve, resolveLocaleChain} from '../resolve';
+import {__resetForTests, getResolve, resolveLocaleChain} from '../resolve';
 import type {Catalog, MessagesByLocale, Overrides} from '../types';
+
+const resolve = (
+  ...[key, values, locale, messages, overrides]: [
+    ...Parameters<ReturnType<typeof getResolve>>,
+    ...Parameters<typeof getResolve>,
+  ]
+) => getResolve(locale, messages, overrides)(key, values);
 
 // Reset caches between tests so warn-once and formatter cache don't bleed.
 beforeEach(() => {
