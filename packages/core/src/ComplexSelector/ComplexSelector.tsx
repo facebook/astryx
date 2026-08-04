@@ -13,6 +13,7 @@
  * - /packages/core/src/ComplexSelector/ComplexSelector.test.tsx
  * - /packages/core/src/ComplexSelector/index.ts
  * - /apps/storybook/stories/ComplexSelector.stories.tsx
+ * - /packages/cli/assets/templates/blocks/components/ComplexSelector/ (showcase blocks)
  */
 
 import React, {
