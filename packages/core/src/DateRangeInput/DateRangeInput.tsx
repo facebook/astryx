@@ -509,9 +509,15 @@ export function DateRangeInput({
     [fireChange],
   );
 
-  const triggerAriaLabel = value
-    ? `${label}: ${displayValue}`
-    : `${label}: ${placeholder}`;
+  // aria-required is not a supported attribute for role="button" (the
+  // trigger's implicit role), so a required state can't be exposed that way.
+  // Fold it into the accessible name instead — legal on any role, and reuses
+  // the same word the visible Field label already shows next to it.
+  const triggerAriaLabel = isRequired
+    ? `${label}: ${value ? displayValue : placeholder}, ${t('@astryx.field.required')}`
+    : value
+      ? `${label}: ${displayValue}`
+      : `${label}: ${placeholder}`;
 
   return (
     <Field
@@ -598,7 +604,6 @@ export function DateRangeInput({
           aria-disabled={showsDisabledMessage ? 'true' : undefined}
           aria-label={triggerAriaLabel}
           aria-describedby={ariaDescribedBy}
-          aria-required={isRequired === true ? 'true' : undefined}
           aria-invalid={status?.type === 'error' ? 'true' : undefined}
           aria-busy={isBusy || undefined}
           aria-expanded={popover.isOpen}
