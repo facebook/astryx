@@ -9,7 +9,7 @@ export const docs = {
     {
       name: 'options',
       type: 'UseSheetGesturesOptions',
-      description: 'isOpen, onDismiss, optional snapHeights (candidate detent heights in px), onSnap, and onScrimOpacity (the scrim opacity to show, 1->0 as the sheet collapses onto its peek detent, for a glance affordance). Internal to BottomSheet, not exported from the lab entry point.',
+      description: 'isOpen, onDismiss, optional snapHeights (candidate detent heights in px), onSnap, and onScrimOpacity (the scrim opacity to show, fading from 1 toward a faint floor as the sheet collapses onto its peek detent, for a glance affordance). Internal to BottomSheet, not exported from the lab entry point.',
       required: true,
     },
   ],

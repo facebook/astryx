@@ -110,15 +110,21 @@ describe('scrimOpacityForOffset', () => {
       expect(scrimOpacityForOffset(60, offsets, dismissOffset)).toBe(1);
     });
 
-    it('fades linearly from the mid detent to the peek', () => {
+    it('fades linearly from the mid detent toward the peek floor', () => {
+      // Halfway from mid (100) to peek (200), opacity is halfway from 1 to the
+      // 0.3 floor => 0.65.
       expect(scrimOpacityForOffset(150, offsets, dismissOffset)).toBeCloseTo(
-        0.5,
+        0.65,
       );
     });
 
-    it('is hidden at or below the peek detent', () => {
-      expect(scrimOpacityForOffset(200, offsets, dismissOffset)).toBe(0);
-      expect(scrimOpacityForOffset(240, offsets, dismissOffset)).toBe(0);
+    it('thins to the peek floor at or below the peek detent (still modal)', () => {
+      expect(scrimOpacityForOffset(200, offsets, dismissOffset)).toBeCloseTo(
+        0.3,
+      );
+      expect(scrimOpacityForOffset(240, offsets, dismissOffset)).toBeCloseTo(
+        0.3,
+      );
     });
   });
 

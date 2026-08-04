@@ -119,7 +119,7 @@ export interface UseSheetGesturesOptions {
    * Called with the scrim opacity the sheet should show (1 = fully visible,
    * 0 = hidden) as the drag moves and on settle. Full while the sheet is at
    * or above its mid detent, fading to 0 as it collapses onto the shortest
-   * "peek" detent — so a glance-height sheet reveals the content behind — and
+   * "peek" detent — thinning to a faint glance state without fully clearing — and
    * on the dismiss overshoot. Lets the owner mirror it onto the scrim.
    */
   onScrimOpacity?: (opacity: number) => void;
@@ -320,7 +320,7 @@ export function useSheetGestures({
       const target = resolveSettleOffset(offset, offsets, dir, baseOffset);
       setSettledOffset(target);
       onSnapRef.current?.(height - target);
-      // Keep the scrim in sync with the resting detent (hidden at the peek).
+      // Keep the scrim in sync with the resting detent (faint floor at the peek).
       const dismissOffset =
         maxOffset + shortestDetentHeight * DISMISS_OVERSHOOT_RATIO;
       onScrimOpacityRef.current?.(
