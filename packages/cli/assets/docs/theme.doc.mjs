@@ -106,7 +106,7 @@ function App() {
             [
               'Y2K',
               "import {y2kTheme} from '@astryxdesign/theme-y2k'",
-              'Playful Y2K pop; periwinkle body, holographic accents, Poppins + Crimson Text.',
+              'Playful Y2K pop; periwinkle body, holographic accents, Poppins + `Crimson Text`.',
             ],
           ],
         },
