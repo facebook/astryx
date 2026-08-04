@@ -228,18 +228,18 @@ export const ProgressPastMark: Story = {
 };
 
 export const ThemedMarks: Story = {
-  // Marks are themeable via the `progressbar-mark` target: `--progressbar-mark-color`
-  // recolors the tick (default `--color-text-primary`), `--progressbar-mark-width`
-  // sets its thickness, and `--progressbar-mark-height` makes it taller than the
-  // bar, overhanging symmetrically above and below. Here we set all three via a
-  // scoped style block so the effect is visible without a full theme.
+  // Marks are themeable directly via the `progressbar-mark` target: a theme sets
+  // `backgroundColor`, `width`, and `height` on it with `defineTheme` — no
+  // dedicated CSS vars needed. A taller height overhangs the bar symmetrically
+  // above and below. Here we set the properties via a scoped style block so the
+  // effect is visible without a full theme.
   render: () => (
     <div style={{width: '320px'}}>
       <style>{`
         .themed-marks-demo .astryx-progressbar-mark {
-          --progressbar-mark-color: red;
-          --progressbar-mark-width: 3px;
-          --progressbar-mark-height: 14px;
+          background-color: red;
+          width: 3px;
+          height: 14px;
         }
       `}</style>
       <div className="themed-marks-demo">

@@ -82,26 +82,6 @@ export const docs = {
       {className: 'astryx-progressbar-track'},
       {className: 'astryx-progressbar-mark'},
     ],
-    vars: [
-      {
-        name: '--progressbar-mark-height',
-        description:
-          'Height of a target mark. Defaults to the track height (8px); set a larger value to make a "goal flag" tick that overhangs the bar. Marks are centered on the track, so the overhang is symmetric (above and below) and never clipped. Set on the `progressbar-mark` target.',
-        default: '8px',
-      },
-      {
-        name: '--progressbar-mark-color',
-        description:
-          'Color of a target mark. Defaults to `--color-text-primary`; set it on the `progressbar-mark` target to tune per-variant contrast (e.g. white over a bold fill, or a distinct accent over the unfilled track).',
-        default: 'var(--color-text-primary)',
-      },
-      {
-        name: '--progressbar-mark-width',
-        description:
-          'Width (thickness) of a target mark. Defaults to 2px; set it on the `progressbar-mark` target for a thinner or bolder tick.',
-        default: '2px',
-      },
-    ],
   },
   usage: {
     description:
@@ -195,26 +175,6 @@ export const docsZh = {
       {className: 'astryx-progressbar-fill', visualProps: ['variant']},
       {className: 'astryx-progressbar-track'},
       {className: 'astryx-progressbar-mark'},
-    ],
-    vars: [
-      {
-        name: '--progressbar-mark-height',
-        description:
-          'Height of a target mark. Defaults to the track height (8px); set a larger value to make a "goal flag" tick that overhangs the bar. Marks are centered on the track, so the overhang is symmetric (above and below) and never clipped. Set on the `progressbar-mark` target.',
-        default: '8px',
-      },
-      {
-        name: '--progressbar-mark-color',
-        description:
-          'Color of a target mark. Defaults to `--color-text-primary`; set it on the `progressbar-mark` target to tune per-variant contrast (e.g. white over a bold fill, or a distinct accent over the unfilled track).',
-        default: 'var(--color-text-primary)',
-      },
-      {
-        name: '--progressbar-mark-width',
-        description:
-          'Width (thickness) of a target mark. Defaults to 2px; set it on the `progressbar-mark` target for a thinner or bolder tick.',
-        default: '2px',
-      },
     ],
   },
   usage: {

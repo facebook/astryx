@@ -257,20 +257,20 @@ const styles = stylex.create({
   },
   // A mark is a vertical tick centered on the track, a child of the
   // `role="progressbar"` element (unchanged DOM). The track no longer clips, so
-  // its height — default track height (8px), themeable via
-  // `--progressbar-mark-height` — may exceed the bar and overhang; the
-  // centering translate keeps any overhang symmetric. Positioned horizontally
-  // via `insetInlineStart`; the translate mirrors under RTL.
+  // its height — 8px by default, directly overridable via the `progressbar-mark`
+  // theme target — may exceed the bar and overhang; the centering translate
+  // keeps any overhang symmetric. Positioned horizontally via `insetInlineStart`;
+  // the translate mirrors under RTL.
   mark: {
     position: 'absolute',
     top: '50%',
-    width: 'var(--progressbar-mark-width, 2px)',
-    height: 'var(--progressbar-mark-height, 8px)',
-    // Defaults to `--color-text-primary`; themeable via `--progressbar-mark-color`
-    // on the `progressbar-mark` target so a theme can tune per-variant contrast
-    // (e.g. white over a bold fill, or a distinct accent over the unfilled
-    // track).
-    backgroundColor: `var(--progressbar-mark-color, ${colorVars['--color-text-primary']})`,
+    width: 2,
+    height: 8,
+    // Defaults to text-primary. Directly overridable via the `progressbar-mark`
+    // theme target — a theme can set `backgroundColor`, `width`, and `height`
+    // (e.g. a taller "flag" tick that overhangs the bar, or per-variant
+    // contrast) with `defineTheme`; no dedicated CSS vars needed.
+    backgroundColor: colorVars['--color-text-primary'],
     outline: {
       default: 'none',
       ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
@@ -337,16 +337,16 @@ function defaultFormatValueLabel(value: number, max: number): string {
  * <ProgressBar value={45} label="Fundraiser" marks={[{value: 80, label: 'Goal'}]} />
  * ```
  *
- * A mark's height defaults to the track height but is themeable — set a
- * taller "goal flag" tick that overhangs the bar (centered, so the overhang is
- * symmetric) via the `progressbar-mark` target:
+ * A mark's height, width, and color are directly themeable via the
+ * `progressbar-mark` target — e.g. a taller "goal flag" tick that overhangs the
+ * bar (centered, so the overhang is symmetric):
  *
  * @example
  * ```
  * defineTheme({
  *   name: 'campaign',
  *   components: {
- *     'progressbar-mark': {base: {'--progressbar-mark-height': '16px'}},
+ *     'progressbar-mark': {base: {height: '16px', backgroundColor: 'red'}},
  *   },
  * });
  * ```

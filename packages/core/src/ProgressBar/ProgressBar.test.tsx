@@ -583,10 +583,11 @@ describe('ProgressBar', () => {
       expect(trackHasOverflowHidden).toBe(true);
     });
 
-    it('leaves the mark height overridable (defaults via CSS var)', () => {
-      // The mark reads `var(--progressbar-mark-height, 8px)`, so a theme
-      // targeting `.astryx-progressbar-mark` can set a taller tick that
-      // overhangs the bar without being clipped.
+    it('renders the mark on the stable progressbar-mark target, centered for symmetric overhang', () => {
+      // The mark's width/height/color are directly overridable via the
+      // `progressbar-mark` theme target (no dedicated CSS vars). It is centered
+      // on the track (translate -50%,-50%) so a themed taller tick overhangs the
+      // bar symmetrically above and below without being clipped.
       const {container} = render(
         <ProgressBar
           value={50}
@@ -594,6 +595,8 @@ describe('ProgressBar', () => {
           marks={[{value: 80, label: 'M'}]}
         />,
       );
+      const mark = container.querySelector<HTMLElement>(MARK)!;
+      expect(mark.className).toContain('astryx-progressbar-mark');
       let css = '';
       for (const sheet of Array.from(document.styleSheets)) {
         try {
@@ -607,41 +610,9 @@ describe('ProgressBar', () => {
       css += Array.from(document.querySelectorAll('style'))
         .map(s => s.textContent || '')
         .join('\n');
-      expect(css).toMatch(/var\(--progressbar-mark-height,\s*8px\)/);
-      // And it is centered so any overhang is symmetric.
+      // Centered so any themed overhang stays symmetric.
       expect(css).toMatch(/translate\(-50%,\s*-50%\)/);
       expect(container.querySelectorAll(MARK)).toHaveLength(1);
-    });
-
-    it('leaves the mark color overridable (defaults to text-primary)', () => {
-      // The mark reads `var(--progressbar-mark-color, ...)`, so a theme
-      // targeting `.astryx-progressbar-mark` can recolor the tick (e.g. for
-      // per-variant contrast) without touching the component.
-      render(
-        <ProgressBar
-          value={50}
-          label="Progress"
-          marks={[{value: 80, label: 'M'}]}
-        />,
-      );
-      let css = '';
-      for (const sheet of Array.from(document.styleSheets)) {
-        try {
-          for (const rule of Array.from(sheet.cssRules)) {
-            css += rule.cssText + '\n';
-          }
-        } catch {
-          // ignore cross-origin sheets
-        }
-      }
-      css += Array.from(document.querySelectorAll('style'))
-        .map(s => s.textContent || '')
-        .join('\n');
-      // The tick's color comes from the themeable var, defaulting to the
-      // text-primary token.
-      expect(css).toMatch(/var\(--progressbar-mark-color,/);
-      // Its thickness is themeable too, defaulting to 2px.
-      expect(css).toMatch(/var\(--progressbar-mark-width,\s*2px\)/);
     });
   });
 });
