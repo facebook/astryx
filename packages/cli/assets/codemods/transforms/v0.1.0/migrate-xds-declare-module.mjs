@@ -40,7 +40,6 @@ const PACKAGE_RENAMES = new Map([
   ['@xds/theme-butter', '@astryxdesign/theme-butter'],
   ['@xds/theme-chocolate', '@astryxdesign/theme-chocolate'],
   ['@xds/theme-daily', '@astryxdesign/theme-neutral'],
-  ['@xds/theme-default', '@astryxdesign/theme-neutral'],
   ['@xds/theme-gothic', '@astryxdesign/theme-gothic'],
   ['@xds/theme-matcha', '@astryxdesign/theme-matcha'],
   ['@xds/theme-neutral', '@astryxdesign/theme-neutral'],
