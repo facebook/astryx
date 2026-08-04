@@ -16,7 +16,7 @@
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/i18n/index.ts
- * - /packages/core/src/i18n/t.client.ts
+ * - /packages/core/src/i18n/resolve.ts
  */
 
 import {use, useCallback} from 'react';
@@ -44,7 +44,14 @@ export function useTranslator(): TranslatorFn {
   const ctx = use(InternationalizationContext);
   return useCallback(
     (key: string, values?: Record<string, unknown>) =>
-      resolve(key, values, ctx.locale, ctx.messages, ctx.overrides),
-    [ctx.locale, ctx.messages, ctx.overrides],
+      resolve(
+        key,
+        values,
+        ctx.locale,
+        ctx.messages,
+        ctx.overrides,
+        ctx.translator,
+      ),
+    [ctx.locale, ctx.messages, ctx.overrides, ctx.translator],
   );
 }
