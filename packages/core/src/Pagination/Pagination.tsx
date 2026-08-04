@@ -183,9 +183,12 @@ const styles = stylex.create({
     borderStyle: 'none',
     padding: 0,
     borderRadius: '50%',
-    backgroundColor: colorVars['--color-neutral'],
+    // Use a solid secondary text token instead of the translucent --color-neutral
+    // so inactive dots meet WCAG 1.4.11 (3:1 non-text contrast) on body/surface.
+    // --color-neutral is 20% alpha and blends to ~1.2:1 (light) / ~1.7:1 (dark).
+    backgroundColor: colorVars['--color-text-secondary'],
     cursor: 'pointer',
-    transitionProperty: 'background-color',
+    transitionProperty: 'background-color, box-shadow',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
     outline: {
@@ -202,7 +205,11 @@ const styles = stylex.create({
     height: spacingVars['--spacing-1-5'],
   },
   dotActive: {
-    backgroundColor: colorVars['--color-accent'],
+    // Render the active dot as an outlined ring rather than a solid fill so the
+    // current page is identifiable by shape, not only by color (WCAG 1.4.1 Use
+    // of Color). The inset ring adds no size, so the dot layout is unchanged.
+    backgroundColor: 'transparent',
+    boxShadow: `inset 0 0 0 2px ${colorVars['--color-accent']}`,
   },
   dotDisabled: {
     cursor: 'not-allowed',
