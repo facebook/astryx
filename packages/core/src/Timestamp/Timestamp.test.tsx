@@ -625,7 +625,7 @@ describe('Timestamp', () => {
       expect(card).toHaveAttribute('aria-label', 'Timestamp details');
     });
 
-    it('renders one copyable row per configured entry', async () => {
+    it('renders one row per configured entry, read-only by default', async () => {
       render(
         <Timestamp
           value={VALUE}
@@ -639,11 +639,35 @@ describe('Timestamp', () => {
       );
       const card = await screen.findByRole('dialog', {hidden: true});
       expect(card.querySelectorAll('dd')).toHaveLength(3);
-      // Each row carries its own copy button.
-      expect(card.querySelectorAll('button')).toHaveLength(3);
+      // Entries are read-only unless they opt in, so no copy buttons and no
+      // trailing action column are rendered.
+      expect(card.querySelectorAll('button')).toHaveLength(0);
       expect(card.textContent).toContain('Local');
       expect(card.textContent).toContain('UTC');
       expect(card.textContent).toContain('Tokyo');
+    });
+
+    it('renders a copy button only on rows that opt into isCopyable', async () => {
+      render(
+        <Timestamp
+          value={VALUE}
+          format="relative"
+          tooltipEntries={[
+            {label: 'Local'},
+            {timezoneID: 'UTC', label: 'UTC'},
+            {
+              timezoneID: 'UTC',
+              format: 'system_date_time',
+              label: 'ISO',
+              isCopyable: true,
+            },
+          ]}
+        />,
+      );
+      const card = await screen.findByRole('dialog', {hidden: true});
+      // Three rows, but only the opted-in row carries a copy button.
+      expect(card.querySelectorAll('dd')).toHaveLength(3);
+      expect(card.querySelectorAll('button')).toHaveLength(1);
     });
 
     it('renders each entry in the time zone it names', async () => {
@@ -670,25 +694,29 @@ describe('Timestamp', () => {
       expect(values).toEqual(['2026-02-19 17:00:00', '2026-02-20 02:00:00']);
     });
 
-    it("copies that row's value and flips the button to the copied state", async () => {
+    it("copies an opted-in row's value and flips the button to the copied state", async () => {
       render(
         <Timestamp
           value={VALUE}
           format="relative"
           tooltipEntries={[
-            {label: 'Local', timezoneID: 'UTC', format: 'system_date_time'},
-            {label: 'ISO', format: 'system_date_time', timezoneID: 'UTC'},
+            {
+              label: 'ISO',
+              format: 'system_date_time',
+              timezoneID: 'UTC',
+              isCopyable: true,
+            },
           ]}
         />,
       );
       const card = await screen.findByRole('dialog', {hidden: true});
-      const [firstRowValue] = Array.from(card.querySelectorAll('dd')).map(
+      const [rowValue] = Array.from(card.querySelectorAll('dd')).map(
         el => el.textContent ?? '',
       );
       const copyButton = card.querySelectorAll('button')[0];
 
       fireEvent.click(copyButton);
-      expect(navigator.clipboard.writeText).toHaveBeenCalledWith(firstRowValue);
+      expect(navigator.clipboard.writeText).toHaveBeenCalledWith(rowValue);
 
       // The button announces and flips its icon/label to the copied state.
       await waitFor(() => {
@@ -706,7 +734,9 @@ describe('Timestamp', () => {
           <Timestamp
             value={VALUE}
             format="relative"
-            tooltipEntries={[{timezoneID: 'UTC', label: 'UTC'}]}
+            tooltipEntries={[
+              {timezoneID: 'UTC', label: 'UTC', isCopyable: true},
+            ]}
           />
         </InternationalizationProvider>,
       );

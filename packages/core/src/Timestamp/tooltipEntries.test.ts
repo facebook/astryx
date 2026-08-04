@@ -512,6 +512,15 @@ describe('formatTooltipLines', () => {
     expect(line.label).toBe('');
   });
 
+  it('marks lines read-only by default and copyable only when opted in', () => {
+    const lines = formatTooltipLines(INSTANT, [
+      {label: 'Local'},
+      {label: 'ISO', format: 'system_date_time', isCopyable: true},
+      {label: 'Off', isCopyable: false},
+    ]);
+    expect(lines.map(l => l.isCopyable)).toEqual([false, true, false]);
+  });
+
   // --- Ordering and arity ---
 
   it('preserves entry order', () => {

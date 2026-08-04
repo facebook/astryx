@@ -47,9 +47,9 @@ export const docs = {
     },
     {
       name: 'tooltipEntries',
-      type: 'ReadonlyArray<{timezoneID?: string; format?: TimestampTooltipFormat; label?: string}>',
+      type: 'ReadonlyArray<{timezoneID?: string; format?: TimestampTooltipFormat; label?: string; isCopyable?: boolean}>',
       description:
-        "Lines to show on hover, so one instant can be read — and copied — in several time zones and/or formats at once. Each entry is one line, in the order given. Omit timezoneID (or pass 'local') for the viewer's own zone; format defaults to the full absolute style and also accepts 'full' alongside every non-relative TimestampFormat. The hover surface is always the interactive copy-to-clipboard card (each row copies its value, dashed-underline affordance); these entries customize its rows. With no entries the card shows a single default row with the full absolute time. Configuring entries also attaches the surface to absolute formats, which otherwise have none.",
+        "Lines to show on hover, so one instant can be read — and optionally copied — in several time zones and/or formats at once. Each entry is one line, in the order given. Omit timezoneID (or pass 'local') for the viewer's own zone; format defaults to the full absolute style and also accepts 'full' alongside every non-relative TimestampFormat. Rows are read-only unless they set isCopyable (default false); copyable rows show a copy button in a dedicated trailing action column so buttons align, and the column is only present when some row is copyable. With no entries the card shows a single default row with the full absolute time, which is copyable. Configuring entries also attaches the surface to absolute formats, which otherwise have none.",
     },
     {
       name: 'isTimezoneShown',
@@ -114,7 +114,7 @@ export const docs = {
     anatomy: [
       {name: 'Formatted text', required: true, description: 'The rendered date, time, or relative label like "2 hours ago" or "Mar 21, 2025".'},
       {name: 'Hover card', required: false, description: 'A copyable hover card showing the full absolute date and time when the display is relative, or the rows configured via tooltipEntries. Its default single row carries the full absolute time.'},
-      {name: 'Hover card row', required: false, description: 'One copyable row of the card: an optional label beside the instant rendered in one time zone and format, with a copy button.'},
+      {name: 'Hover card row', required: false, description: 'One row of the card: an optional label beside the instant rendered in one time zone and format. Rows opt into a copy button via isCopyable.'},
       {name: 'Copy button', required: true, description: 'Per-row copy-to-clipboard button in the hover card; copies that row\'s formatted value.'},
     ],
   },
@@ -157,7 +157,7 @@ export const docsZh = {
     anatomy: [
       {name: 'Formatted text', required: true, description: 'The rendered date, time, or relative label like "2 hours ago" or "Mar 21, 2025".'},
       {name: 'Hover card', required: false, description: 'A copyable hover card showing the full absolute date and time when the display is relative, or the rows configured via tooltipEntries. Its default single row carries the full absolute time.'},
-      {name: 'Hover card row', required: false, description: 'One copyable row of the card: an optional label beside the instant rendered in one time zone and format, with a copy button.'},
+      {name: 'Hover card row', required: false, description: 'One row of the card: an optional label beside the instant rendered in one time zone and format. Rows opt into a copy button via isCopyable.'},
       {name: 'Copy button', required: true, description: 'Per-row copy-to-clipboard button in the hover card; copies that row\'s formatted value.'},
     ],
   },

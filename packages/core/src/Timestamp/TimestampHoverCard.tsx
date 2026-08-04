@@ -4,11 +4,18 @@
 
 /**
  * @file TimestampHoverCard.tsx
- * @input Uses React, HoverCard, MetadataList, IconButton, Icon, formatted lines
+ * @input Uses React, HoverCard, IconButton, Icon, formatted lines
  * @output Default-exports the lazily-loaded copyable hover card for Timestamp
  * @position Split out of Timestamp so the overlay (HoverCard) and the copy
  *   affordance's Icon/IconButton load only when a card is actually shown — the
  *   default, card-less Timestamp never bundles this chunk.
+ *
+ * Layout: a semantic `<dl>` laid out as a grid. Labelled cards use three
+ *   columns — label, value, and a trailing action column for copy buttons —
+ *   so the buttons align down a single column no matter how wide each value
+ *   is. The action column is only added when at least one row is copyable, so
+ *   a fully read-only card carries no dangling gutter. Label-less cards drop
+ *   the label column and stack to whatever columns remain.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Timestamp/Timestamp.tsx (the lazy() + Suspense wrapper)
@@ -20,46 +27,102 @@ import type {ReactNode} from 'react';
 import {useCallback, useEffect, useRef, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {HoverCard} from '../HoverCard';
-import {MetadataList} from '../MetadataList';
-import {MetadataListItem} from '../MetadataList';
 import {IconButton} from '../IconButton';
 import {Icon} from '../Icon';
 import {useAnnounce} from '../hooks/useAnnounce';
 import {useTranslator} from '../i18n';
 import {themeProps} from '../utils/themeProps';
-import {colorVars, spacingVars} from '../theme/tokens.stylex';
+import {
+  colorVars,
+  spacingVars,
+  typeScaleVars,
+  fontWeightVars,
+} from '../theme/tokens.stylex';
 import type {TimestampTooltipLine} from './tooltipEntries';
 
 const styles = stylex.create({
-  // Each row's value: the formatted instant on the left, its copy button flush
-  // at the right edge. The span fills the value cell (dd) so `space-between`
-  // can push the button to the end regardless of the instant's width.
-  value: {
-    display: 'flex',
+  // The card is a definition list laid out as a grid so cells align into
+  // columns across rows. `gridTemplateColumns` is set per-card (below) to add
+  // or drop the label and action columns; the row/column gaps live here.
+  dl: {
+    display: 'grid',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacingVars['--spacing-2'],
-    width: '100%',
+    columnGap: spacingVars['--spacing-4'],
+    rowGap: spacingVars['--spacing-2'],
+    margin: 0,
+    padding: 0,
   },
-  instant: {
-    color: colorVars['--color-text-primary'],
+  // Each row spans the full grid so its cells land in the shared columns.
+  // `display: contents` lets the <dt>/<dd> participate directly in the grid.
+  row: {
+    display: 'contents',
+  },
+  // Label: the design system's `supporting` role — secondary colour, the
+  // supporting size/leading, normal weight. This matches Timestamp's own
+  // default `type` ('supporting'), so the card's labels read at the same
+  // register as the component itself.
+  label: {
+    color: colorVars['--color-text-secondary'],
+    fontSize: typeScaleVars['--text-supporting-size'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
+    fontWeight: fontWeightVars['--font-weight-normal'],
+    margin: 0,
+    padding: 0,
     whiteSpace: 'nowrap',
   },
+  // Value: the `body` role — primary colour, body size/leading, normal weight.
+  value: {
+    color: colorVars['--color-text-primary'],
+    fontSize: typeScaleVars['--text-body-size'],
+    lineHeight: typeScaleVars['--text-body-leading'],
+    fontWeight: fontWeightVars['--font-weight-normal'],
+    margin: 0,
+    padding: 0,
+    whiteSpace: 'nowrap',
+  },
+  // The trailing action cell holds the copy button (or nothing, on a
+  // read-only row). It lives in its own grid column so buttons align.
+  action: {
+    display: 'flex',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+  },
+});
+
+// Grid templates, selected per-card by which columns are present.
+// - hasAnyLabel + hasAnyCopyable → label | value | action
+// - hasAnyLabel only             → label | value
+// - hasAnyCopyable only          → value | action
+// - neither                      → value
+const gridTemplates = stylex.create({
+  labelValueAction: {gridTemplateColumns: 'auto 1fr auto'},
+  labelValue: {gridTemplateColumns: 'auto 1fr'},
+  valueAction: {gridTemplateColumns: '1fr auto'},
+  value: {gridTemplateColumns: '1fr'},
 });
 
 /** How long the copied checkmark stays before reverting to the copy icon. */
 const COPY_FEEDBACK_MS = 1500;
 
 /**
- * One copyable row of the hover card: a `MetadataListItem` whose value is the
- * labelled instant plus an IconButton that writes that line's value to the
- * clipboard.
+ * One row of the hover card: an optional label, the formatted instant, and —
+ * when the row is copyable and the card reserves an action column — a copy
+ * button in that trailing column. When `hasActionColumn` is true but this row
+ * is not copyable, an empty action cell is emitted so the columns stay aligned.
  *
  * Copy affordance: `navigator.clipboard.writeText`, an icon that flips
  * `copy` → `check` for a moment, a polite live-region announcement, and a
  * silent no-op when the clipboard rejects.
  */
-function CopyableEntryRow({line}: {line: TimestampTooltipLine}) {
+function EntryRow({
+  line,
+  hasLabelColumn,
+  hasActionColumn,
+}: {
+  line: TimestampTooltipLine;
+  hasLabelColumn: boolean;
+  hasActionColumn: boolean;
+}) {
   const t = useTranslator();
   const announce = useAnnounce();
   const [copied, setCopied] = useState(false);
@@ -95,32 +158,43 @@ function CopyableEntryRow({line}: {line: TimestampTooltipLine}) {
   }, [line.value, announce, t]);
 
   return (
-    <MetadataListItem label={line.label ?? ''}>
-      <span {...stylex.props(styles.value)}>
-        <span {...stylex.props(styles.instant)}>{line.value}</span>
-        <IconButton
-          variant="ghost"
-          size="sm"
-          icon={
-            <Icon icon={copied ? 'check' : 'copy'} size="sm" color="inherit" />
-          }
-          label={
-            copied
-              ? t('@astryx.timestamp.copied')
-              : t('@astryx.timestamp.copyValue', {value: line.value})
-          }
-          onClick={() => {
-            void handleCopy();
-          }}
-          {...themeProps('timestamp-copy-button')}
-        />
-      </span>
-    </MetadataListItem>
+    <div {...stylex.props(styles.row)}>
+      {hasLabelColumn && (
+        <dt {...stylex.props(styles.label)}>{line.label ?? ''}</dt>
+      )}
+      <dd {...stylex.props(styles.value)}>{line.value}</dd>
+      {hasActionColumn && (
+        <div {...stylex.props(styles.action)}>
+          {line.isCopyable && (
+            <IconButton
+              variant="ghost"
+              size="sm"
+              icon={
+                <Icon
+                  icon={copied ? 'check' : 'copy'}
+                  size="sm"
+                  color="inherit"
+                />
+              }
+              label={
+                copied
+                  ? t('@astryx.timestamp.copied')
+                  : t('@astryx.timestamp.copyValue', {value: line.value})
+              }
+              onClick={() => {
+                void handleCopy();
+              }}
+              {...themeProps('timestamp-copy-button')}
+            />
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
 export interface TimestampHoverCardProps {
-  /** The rows to render, each a labelled instant with its own copy button. */
+  /** The rows to render, each a labelled instant, optionally copyable. */
   lines: ReadonlyArray<TimestampTooltipLine>;
   /** Accessible name for the card. */
   label: string;
@@ -128,11 +202,28 @@ export interface TimestampHoverCardProps {
   children: ReactNode;
 }
 
+function gridTemplateFor(
+  hasLabelColumn: boolean,
+  hasActionColumn: boolean,
+): stylex.StyleXStyles {
+  if (hasLabelColumn && hasActionColumn) {
+    return gridTemplates.labelValueAction;
+  }
+  if (hasLabelColumn) {
+    return gridTemplates.labelValue;
+  }
+  if (hasActionColumn) {
+    return gridTemplates.valueAction;
+  }
+  return gridTemplates.value;
+}
+
 /**
- * The copyable hover card for Timestamp. Composes `MetadataList`: each line is
- * a `MetadataListItem` whose value pairs the labelled instant with its own copy
- * button. With a single default line this is a one-row list carrying the full
- * absolute time, itself copyable. Opens on hover and on keyboard focus (the
+ * The copyable hover card for Timestamp. Renders a semantic `<dl>` as a grid:
+ * an optional label column, the value, and — when any row is copyable — a
+ * trailing action column carrying that row's copy button, so buttons align
+ * down one column. With a single default line this is a one-row card carrying
+ * the full absolute time, copyable. Opens on hover and on keyboard focus (the
  * anchor's tab stop), with a dashed-underline affordance signalling it is
  * interactive.
  */
@@ -141,13 +232,31 @@ export default function TimestampHoverCard({
   label,
   children,
 }: TimestampHoverCardProps): ReactNode {
+  // A label column is only reserved when some row is labelled; otherwise the
+  // value sits flush at the card's leading edge. An action column is only
+  // reserved when some row is copyable (option B), so a fully read-only card
+  // has no trailing gutter.
+  const hasLabelColumn = lines.some(
+    line => line.label != null && line.label !== '',
+  );
+  const hasActionColumn = lines.some(line => line.isCopyable);
+
   const cardContent = (
-    <MetadataList label={{position: 'start'}}>
+    <dl
+      {...stylex.props(
+        styles.dl,
+        gridTemplateFor(hasLabelColumn, hasActionColumn),
+      )}>
       {lines.map((line, index) => (
-        // eslint-disable-next-line @eslint-react/no-array-index-key -- rows are fixed positional slots and two entries may legitimately be identical
-        <CopyableEntryRow key={index} line={line} />
+        <EntryRow
+          // eslint-disable-next-line @eslint-react/no-array-index-key -- rows are fixed positional slots and two entries may legitimately be identical
+          key={index}
+          line={line}
+          hasLabelColumn={hasLabelColumn}
+          hasActionColumn={hasActionColumn}
+        />
       ))}
-    </MetadataList>
+    </dl>
   );
 
   return (

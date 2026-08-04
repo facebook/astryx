@@ -86,15 +86,15 @@ export interface TimestampProps extends BaseProps<HTMLTimeElement> {
    */
   hasTooltip?: boolean;
   /**
-   * Lines to show on hover, so one instant can be read — and copied — in
-   * several time zones and/or formats at once. Each entry is one line,
-   * rendered in the order given, with an optional label.
+   * Lines to show on hover, so one instant can be read — and optionally
+   * copied — in several time zones and/or formats at once. Each entry is one
+   * line, rendered in the order given, with an optional label.
    *
-   * The hover surface is always the interactive copy-to-clipboard card (each
-   * row copies its value, with a dashed underline signalling it is
-   * interactive). Configuring entries customizes the card's rows; with no
-   * entries the card shows a single default row with the full absolute time in
-   * the viewer's own zone.
+   * Rows are read-only unless they set `isCopyable` (default `false`). A
+   * copyable row shows a copy button in a dedicated trailing action column so
+   * the buttons align across rows; that column is only present when some row
+   * is copyable. With no entries the card shows a single default row with the
+   * full absolute time in the viewer's own zone, which is copyable.
    *
    * Configuring entries also attaches the surface to absolute formats, which
    * otherwise have no hover card at all. `hasTooltip={false}` still suppresses
@@ -109,6 +109,7 @@ export interface TimestampProps extends BaseProps<HTMLTimeElement> {
    *   tooltipEntries={[
    *     {label: 'Your time'},
    *     {timezoneID: 'UTC', label: 'UTC'},
+   *     {timezoneID: 'UTC', format: 'system_date_time', label: 'ISO', isCopyable: true},
    *   ]}
    * />
    * ```
@@ -412,7 +413,7 @@ export function Timestamp({
   // full absolute time, itself copyable, just like a configured entry.
   const lines: ReadonlyArray<TimestampTooltipLine> =
     entries === undefined
-      ? [{value: fullAbsoluteText}]
+      ? [{value: fullAbsoluteText, isCopyable: true}]
       : formatTooltipLines(date, entries);
 
   const timestampProps = mergeProps(
