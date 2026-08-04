@@ -1,0 +1,94 @@
+name: Runner Label Smoke
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/runner-label-smoke.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pickup:
+    name: pickup / ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        runner:
+          - ubuntu-slim
+          - ubuntu-24.04-arm
+          - 2-core-ubuntu-arm
+          - 4-core-ubuntu
+          - 8-core-ubuntu
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 10
+
+    steps:
+      - run: date -u
+      - run: uname -a
+      - run: nproc
+      - run: free -h
+      - run: df -h
+
+  node-install:
+    name: node install / ${{ matrix.runner }}
+    needs: pickup
+    strategy:
+      fail-fast: false
+      matrix:
+        runner:
+          - ubuntu-slim
+          - ubuntu-24.04-arm
+          - 2-core-ubuntu-arm
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: node --version
+      - run: pnpm --version
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -F @astryxdesign/cli typecheck:json-api
+
+  heavy-arm:
+    name: heavy smoke / 2-core-ubuntu-arm
+    needs: node-install
+    runs-on: 2-core-ubuntu-arm
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test
+      - run: pnpm -F @astryxdesign/core build
+      - run: pnpm -F @astryxdesign/docsite generate && pnpm -F @astryxdesign/docsite test
+      - run: pnpm -F @astryxdesign/storybook build
+      - run: pnpm -F @astryxdesign/sandbox build
+
+  playwright-arm:
+    name: playwright smoke / 2-core-ubuntu-arm
+    needs: node-install
+    runs-on: 2-core-ubuntu-arm
+    timeout-minutes: 25
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: npx playwright install chromium
+      - run: npx playwright --version
