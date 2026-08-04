@@ -92,7 +92,10 @@ describe('DateRangeInput', () => {
     expect(screen.getByText('Range')).toBeInTheDocument();
   });
 
-  it('sets aria-required when isRequired is true', () => {
+  it('does not put aria-required on the trigger button even when isRequired is true', () => {
+    // aria-required is not a supported attribute for role="button" (axe:
+    // aria-allowed-attr, WCAG 4.1.2) — the trigger is a plain button, not an
+    // editable/selectable widget role like textbox or combobox.
     render(
       <DateRangeInput
         label="Range"
@@ -102,13 +105,29 @@ describe('DateRangeInput', () => {
       />,
     );
     const trigger = getButton(/Range/);
-    expect(trigger).toHaveAttribute('aria-required', 'true');
+    expect(trigger).not.toHaveAttribute('aria-required');
   });
 
   it('does not set aria-required when isRequired is false', () => {
     render(<DateRangeInput label="Range" value={null} onChange={() => {}} />);
     const trigger = getButton(/Range/);
     expect(trigger).not.toHaveAttribute('aria-required');
+  });
+
+  it('exposes required state via the trigger accessible name instead', () => {
+    // With aria-required unusable on role="button", the required state must
+    // still reach assistive tech — via the accessible name (aria-label),
+    // which is legal on any role.
+    render(
+      <DateRangeInput
+        label="Range"
+        isRequired
+        value={null}
+        onChange={() => {}}
+      />,
+    );
+    const trigger = getButton(/Range/);
+    expect(trigger.getAttribute('aria-label')).toMatch(/Required/);
   });
 
   it('disables trigger when isDisabled is true', () => {
