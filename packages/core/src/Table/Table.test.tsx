@@ -886,6 +886,33 @@ describe('Table', () => {
       render(<Table data={users} columns={columns} density="spacious" />);
       expect(screen.getAllByRole('row')).toHaveLength(4);
     });
+
+    it('reflects density as data-density on cells and header cells (theme hook)', () => {
+      // The density lives in internal StyleX classes, so cells expose it as a
+      // data-density attribute on the stable astryx-table-cell /
+      // astryx-table-header-cell targets. This lets a theme override padding
+      // per density (e.g. hold the inline inset while varying the block) via
+      // `defineTheme` — the padding split is otherwise unreachable.
+      const {rerender} = render(
+        <Table data={users} columns={columns} density="spacious" />,
+      );
+      const cell = screen.getAllByRole('cell')[0];
+      const header = screen.getAllByRole('columnheader')[0];
+      expect(cell.className).toContain('astryx-table-cell');
+      expect(cell).toHaveAttribute('data-density', 'spacious');
+      expect(header.className).toContain('astryx-table-header-cell');
+      expect(header).toHaveAttribute('data-density', 'spacious');
+
+      rerender(<Table data={users} columns={columns} density="compact" />);
+      expect(screen.getAllByRole('cell')[0]).toHaveAttribute(
+        'data-density',
+        'compact',
+      );
+      expect(screen.getAllByRole('columnheader')[0]).toHaveAttribute(
+        'data-density',
+        'compact',
+      );
+    });
   });
 
   describe('dividers', () => {

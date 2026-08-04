@@ -252,7 +252,7 @@ export function TableCell({
       ref={ref}
       {...props}
       {...mergeProps(
-        themeProps('table-cell'),
+        themeProps('table-cell', {density: ctx?.density}),
         stylex.props(...mergeXStyle(cellStyles, xstyle)),
         incomingClassName,
         incomingStyle,
