@@ -83,11 +83,13 @@ export interface UseTriggerMenuReturn {
    * ARIA props to spread onto the editable element. When triggers are
    * configured the element becomes a `combobox` (which is the only role that
    * permits `aria-expanded`/`aria-haspopup`/`aria-controls`/
-   * `aria-activedescendant`); otherwise it stays a plain `textbox` and no
-   * combobox attributes are emitted.
+   * `aria-activedescendant`); otherwise it stays a plain `textbox`.
+   * `aria-multiline` is only valid on `textbox`, so it is emitted there and
+   * omitted from the `combobox` variant.
    */
   ariaProps: {
     role: 'combobox' | 'textbox';
+    'aria-multiline'?: true;
     'aria-expanded'?: boolean;
     'aria-controls'?: string;
     'aria-activedescendant'?: string;
@@ -611,10 +613,11 @@ export function useTriggerMenu(
   // (aria-expanded/haspopup/controls/activedescendant) are only valid on
   // role="combobox", so we only switch to that role — and only emit those
   // attributes — when triggers are actually configured. With no triggers the
-  // element stays a plain role="textbox".
+  // element stays a plain role="textbox", which is the only role that
+  // permits aria-multiline.
   const hasTriggers = (triggers?.length ?? 0) > 0;
   const ariaProps: UseTriggerMenuReturn['ariaProps'] = !hasTriggers
-    ? {role: 'textbox'}
+    ? {role: 'textbox', 'aria-multiline': true}
     : state.isActive && popover.isOpen
       ? {
           role: 'combobox',
