@@ -569,6 +569,16 @@ describe('ChatComposerInput', () => {
       expect(textbox).not.toHaveAttribute('aria-expanded');
       expect(textbox).not.toHaveAttribute('aria-haspopup');
     });
+
+    it('does not carry aria-multiline on the combobox when triggers are configured', () => {
+      // aria-multiline is only allowed on role="textbox" per the ARIA spec.
+      // When triggers switch the element to role="combobox" the attribute
+      // must not be emitted (axe: aria-allowed-attr, WCAG 4.1.2).
+      const triggers = [createMentionTrigger()];
+      render(<ChatComposerInput triggers={triggers} />);
+      const combobox = screen.getByRole('combobox');
+      expect(combobox).not.toHaveAttribute('aria-multiline');
+    });
   });
 
   describe('refs', () => {
