@@ -86,8 +86,14 @@ export const docs = {
       {
         name: '--progressbar-mark-height',
         description:
-          'Height of a target mark. Defaults to the track height (8px); set a larger value to make a "goal flag" tick that overhangs the bar. Marks are centered on the track, so the overhang is symmetric and never clipped. Set on the `progressbar-mark` target.',
+          'Height of a target mark. Defaults to the track height (8px); set a larger value to make a "goal flag" tick that overhangs the bar. Marks are centered on the track, so the overhang is symmetric (above and below) and never clipped. Set on the `progressbar-mark` target.',
         default: '8px',
+      },
+      {
+        name: '--progressbar-mark-color',
+        description:
+          'Color of a target mark. Defaults to `--color-on-accent` (white) so the tick reads against the colored fill; set it on the `progressbar-mark` target to tune per-variant contrast (e.g. where a mark sits over the unfilled track).',
+        default: 'var(--color-on-accent)',
       },
     ],
   },
@@ -188,8 +194,14 @@ export const docsZh = {
       {
         name: '--progressbar-mark-height',
         description:
-          'Height of a target mark. Defaults to the track height (8px); set a larger value to make a "goal flag" tick that overhangs the bar. Marks are centered on the track, so the overhang is symmetric and never clipped. Set on the `progressbar-mark` target.',
+          'Height of a target mark. Defaults to the track height (8px); set a larger value to make a "goal flag" tick that overhangs the bar. Marks are centered on the track, so the overhang is symmetric (above and below) and never clipped. Set on the `progressbar-mark` target.',
         default: '8px',
+      },
+      {
+        name: '--progressbar-mark-color',
+        description:
+          'Color of a target mark. Defaults to `--color-on-accent` (white) so the tick reads against the colored fill; set it on the `progressbar-mark` target to tune per-variant contrast (e.g. where a mark sits over the unfilled track).',
+        default: 'var(--color-on-accent)',
       },
     ],
   },

@@ -612,5 +612,34 @@ describe('ProgressBar', () => {
       expect(css).toMatch(/translate\(-50%,\s*-50%\)/);
       expect(container.querySelectorAll(MARK)).toHaveLength(1);
     });
+
+    it('leaves the mark color overridable (defaults to on-accent white)', () => {
+      // The mark reads `var(--progressbar-mark-color, ...)`, so a theme
+      // targeting `.astryx-progressbar-mark` can recolor the tick (e.g. for
+      // per-variant contrast) without touching the component.
+      render(
+        <ProgressBar
+          value={50}
+          label="Progress"
+          marks={[{value: 80, label: 'M'}]}
+        />,
+      );
+      let css = '';
+      for (const sheet of Array.from(document.styleSheets)) {
+        try {
+          for (const rule of Array.from(sheet.cssRules)) {
+            css += rule.cssText + '\n';
+          }
+        } catch {
+          // ignore cross-origin sheets
+        }
+      }
+      css += Array.from(document.querySelectorAll('style'))
+        .map(s => s.textContent || '')
+        .join('\n');
+      // The tick's color comes from the themeable var, defaulting to the
+      // on-accent (white) token so it reads against the colored fill.
+      expect(css).toMatch(/var\(--progressbar-mark-color,/);
+    });
   });
 });
