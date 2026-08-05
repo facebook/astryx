@@ -17,6 +17,14 @@
  * is false only for the no-manifest local case, which is guidance (not an
  * error) so `validate-integration` can stay exit-0 in a non-integration dir.
  *
+ * The on-disk contribution validators themselves (roots + codemods/templates/
+ * components, behind `validateLoadedIntegration`) live in
+ * `foundation/integrations/validate-contributions.mjs`, because foundation also
+ * runs them: `Project` collects integration issues and `integration-warnings`
+ * nudges about them on ordinary commands. This file re-exports
+ * `validateLoadedIntegration` so existing importers are unaffected, and keeps
+ * the command-level entry points that resolve a manifest from disk.
+ *
  * Validators are intentionally small and independent so more checks can be
  * appended without reshaping the result. Issue `code`s are stable public
  * strings.

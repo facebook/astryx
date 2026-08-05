@@ -1,19 +1,24 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Shared discovery + IO for the template command family.
+ * @file Shared template discovery + IO.
  *
- * This adapter owns everything the template leaves (list/show/skeleton/copy)
- * AND other commands (component, layout, search, init, discover,
- * validate-integration) share: template discovery across core/external/
- * integration sources, the template-spec loaders, and the cross-command
- * helpers (stripTemplateAssetRefs, findShowcase, findRelatedBlocks,
- * extractComponents, listTemplates). The `template.mjs` barrel re-exports the
- * public helpers so external import paths (`api/template/template.mjs`) keep
- * working unchanged.
+ * Owns everything the template leaves (list/show/skeleton/copy) AND other
+ * commands (component, layout, search, init, discover, validate-integration)
+ * share: template discovery across core/external/integration sources, the
+ * template-spec loaders, and the cross-command helpers (stripTemplateAssetRefs,
+ * findShowcase, findRelatedBlocks, extractComponents, listTemplates). The
+ * `api/template/template.mjs` barrel re-exports the public helpers so external
+ * import paths keep working unchanged.
  *
- * @position api/template — shared discovery/IO under the template leaves;
- *   consumed by the leaves and re-exported by the template barrel.
+ * Lives in foundation rather than under api/template because foundation itself
+ * needs it: `Project` assembles templates from it. While this sat in api/, that
+ * made a cycle across the layer boundary — Project reached up for discovery and
+ * this module imported Project back. Nothing here depends on api/; every import
+ * is node:*, jiti, foundation/*, or authoring/*.
+ *
+ * @position packages/cli/foundation/discovery — shared template discovery/IO;
+ *   consumed by Project and by the api/template leaves.
  */
 
 import * as fs from 'node:fs';
