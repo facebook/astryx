@@ -1,14 +1,14 @@
 ---
 title: 'Who needs a Figma Library?'
-description: "We weren't sure we needed a Figma library at all. So we built one that maintains itself, and shipped it as an experiment."
+description: "Introducing the Astryx Figma Library — built and self-maintained by a Night Watch that keeps it in sync with code on every dot release."
 date: '2026-08-05'
-type: 'perspective'
+type: 'update'
 authors:
   - 'ernest'
 tags:
   - 'Figma'
   - 'AI'
-  - 'Design systems'
+  - 'Release'
 coverImage: '/blog/who-needs-a-figma-library/cover.png'
 coverAlt: 'A Figma canvas showing an Astryx Button component — a dark, rounded button with the Astryx logo, the word Astryx, and a dropdown chevron — selected with its component boundary and a cursor hovering the chevron'
 relatedDocs:
