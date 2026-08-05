@@ -35,7 +35,6 @@ import {
   typeScaleVars,
   durationVars,
   easeVars,
-  borderVars,
   radiusVars,
 } from '../theme/tokens.stylex';
 import {renderIconSlot, useIcon, type IconType} from '../Icon';
@@ -162,11 +161,12 @@ const styles = stylex.create({
     textAlign: 'start',
     cursor: 'pointer',
   },
-  // Popover surface for collapsed items with children
+  // Popover surface for collapsed items with children. usePopover's own
+  // render() already supplies the bordered/rounded/elevated surface
+  // (background, --radius-container, shadow) around this content — adding
+  // another border here draws a sharp-cornered rectangle inside that rounded
+  // surface instead of one coherent menu.
   popoverSurface: {
-    borderWidth: borderVars['--border-width'],
-    borderStyle: 'solid',
-    borderColor: colorVars['--color-border'],
     paddingBlock: spacingVars['--spacing-1'],
     paddingInline: spacingVars['--spacing-1'],
     marginInlineStart: spacingVars['--spacing-1'],
