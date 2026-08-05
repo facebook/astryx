@@ -315,8 +315,9 @@ const variantStyles = stylex.create({
 // A mark sitting inside the filled area is drawn *on* the bar, so it takes the
 // on-color that pairs with the fill's own variant color — the same pairing
 // Badge uses for solid semantic backgrounds. `neutral` and `disabled` fill with
-// the muted `--color-text-disabled` gray, which has no dedicated on-token; they
-// borrow text-primary, matching Badge's neutral treatment.
+// the muted `--color-text-disabled` gray, which carries no semantic weight and
+// has no dedicated on-token, so they keep the same emphasized divider color a
+// mark uses out on the track.
 const markOnFillStyles = stylex.create({
   accent: {
     backgroundColor: colorVars['--color-on-accent'],
@@ -331,10 +332,10 @@ const markOnFillStyles = stylex.create({
     backgroundColor: colorVars['--color-on-error'],
   },
   neutral: {
-    backgroundColor: colorVars['--color-text-primary'],
+    backgroundColor: colorVars['--color-border-emphasized'],
   },
   disabled: {
-    backgroundColor: colorVars['--color-text-primary'],
+    backgroundColor: colorVars['--color-border-emphasized'],
   },
 });
 

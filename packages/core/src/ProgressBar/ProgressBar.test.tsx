@@ -505,6 +505,33 @@ describe('ProgressBar', () => {
       );
     });
 
+    it('keeps the divider color on the fill for neutral and disabled bars', () => {
+      // The neutral/disabled fill is the muted gray — it carries no semantic
+      // weight and has no on-token, so a mark on it stays the emphasized
+      // divider color it would have out on the track.
+      for (const props of [
+        {variant: 'neutral'} as const,
+        {isDisabled: true} as const,
+      ]) {
+        const {container, unmount} = render(
+          <ProgressBar
+            value={60}
+            label="Progress"
+            {...props}
+            marks={[
+              {value: 20, label: 'On fill'},
+              {value: 90, label: 'On track'},
+            ]}
+          />,
+        );
+        const marks = container.querySelectorAll<HTMLElement>(MARK);
+        expect(marks[0]).toHaveAttribute('data-placement', 'fill');
+        expect(marks[1]).toHaveAttribute('data-placement', 'track');
+        expect(styleClasses(marks[0])).toBe(styleClasses(marks[1]));
+        unmount();
+      }
+    });
+
     it('recolors marks per variant when they sit on the fill', () => {
       // Two bars at the same progress with different variants give their
       // on-fill marks different colors (different atomic classes), while
