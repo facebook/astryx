@@ -324,7 +324,7 @@ The CLI (`packages/cli/`) is layered so behavior, presentation, and contracts st
 - **`clients/cli/`** — the Commander program and per-command handlers. A handler is a _thin wrapper_: parse flags → call the matching `api/` function → render (JSON via `jsonOut`, or text via the formatter kit in `clients/cli/formatters/`).
 - **`api/`** — the programmatic API (`@astryxdesign/cli/api`). Each command maps to `api/<name>/`, whose functions return a typed `{ type, data }` envelope. This is the behavior source of truth, so `astryx --json` and the imported function return identical data.
 - **`authoring/`** — the pure data contracts (`@astryxdesign/cli/authoring`): the TypeScript types you author objects against (config, integration, codemod, and the doc-types) plus the sealed zod parsers the CLI runs at the load boundary.
-- **`foundation/`** — cross-cutting infra: the `{ type, data }` JSON contract, the stable `ERROR_CODES`, discovery, and path-safety.
+- **`foundation/`** — cross-cutting infra: the `{ type, data }` JSON contract, the stable `ERROR_CODES`, discovery, and path-safety. Depended on by the layers above it, with one known inversion: `foundation/config/project.mjs` and `foundation/integrations/integration-warnings.mjs` reach up into `api/` for template discovery and `validateLoadedIntegration`. That is why the lint rules below pin the `authoring/` and `api/` directions but not this one — straightening it means moving that discovery down into `foundation/`, which cascades through `api/template`'s adapter and the `api/integration` → `api/template` dependency.
 
 ### The CLI documents itself
 
