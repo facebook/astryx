@@ -232,7 +232,9 @@ export const MarksAcrossVariants: Story = {
   // uses the fill variant's on-color (on-accent / on-success / on-warning /
   // on-error), out on the bare track it uses the primary text color.
   // Neutral and disabled fill with the muted gray, which has no on-token, so
-  // their marks keep the primary text color on both sides.
+  // their marks keep one plain foreground on both sides — the primary text
+  // color for a live neutral bar, the secondary one for a disabled bar, which
+  // dims everything it draws.
   //
   // Every fill style is covered here: each semantic variant, the disabled
   // fill, both fill extremes (nothing filled / fully filled), and the

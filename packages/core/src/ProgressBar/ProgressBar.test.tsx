@@ -505,10 +505,10 @@ describe('ProgressBar', () => {
       );
     });
 
-    it('keeps the divider color on the fill for neutral and disabled bars', () => {
+    it('keeps one plain foreground on both sides for neutral and disabled bars', () => {
       // The neutral/disabled fill is the muted gray — it carries no semantic
-      // weight and has no on-token, so a mark on it stays the primary text
-      // color it would have out on the track.
+      // weight and has no on-token, so a mark on it takes the same plain
+      // foreground it would have out on the track.
       for (const props of [
         {variant: 'neutral'} as const,
         {isDisabled: true} as const,
@@ -530,6 +530,28 @@ describe('ProgressBar', () => {
         expect(styleClasses(marks[0])).toBe(styleClasses(marks[1]));
         unmount();
       }
+    });
+
+    it("dims a disabled bar's marks below a live one's", () => {
+      // A disabled bar is deliberately low-emphasis (its label and value text
+      // drop to muted colors), so its marks step down to the secondary
+      // foreground on both sides rather than shouting over the grayed-out
+      // bar. A live neutral bar — same muted gray fill — keeps the
+      // full-contrast primary foreground.
+      const MARKS = [
+        {value: 20, label: 'On fill'},
+        {value: 90, label: 'On track'},
+      ];
+      const {container: live} = render(
+        <ProgressBar value={60} variant="neutral" label="A" marks={MARKS} />,
+      );
+      const {container: off} = render(
+        <ProgressBar value={60} isDisabled label="B" marks={MARKS} />,
+      );
+      const liveMarks = live.querySelectorAll<HTMLElement>(MARK);
+      const offMarks = off.querySelectorAll<HTMLElement>(MARK);
+      expect(styleClasses(offMarks[0])).not.toBe(styleClasses(liveMarks[0]));
+      expect(styleClasses(offMarks[1])).not.toBe(styleClasses(liveMarks[1]));
     });
 
     it('recolors marks per variant when they sit on the fill', () => {

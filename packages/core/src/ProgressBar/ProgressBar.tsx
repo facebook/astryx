@@ -125,7 +125,8 @@ export interface ProgressBarProps extends BaseProps<HTMLDivElement> {
    * is below or past them, and take their color from what they sit on: a mark
    * inside the filled area uses the fill variant's on-color (on-accent,
    * on-warning, on-error, …), while a mark still out on the bare track uses
-   * `--color-text-primary`. Each mark's required `label` names it for
+   * `--color-text-primary` (`--color-text-secondary` on a disabled bar, which
+   * dims everything it draws). Each mark's required `label` names it for
    * assistive tech and is revealed via a `Tooltip` on hover/focus. Ignored when
    * `isIndeterminate` is true.
    */
@@ -314,11 +315,16 @@ const variantStyles = stylex.create({
 
 // A mark sitting inside the filled area is drawn *on* the bar, so it takes the
 // on-color that pairs with the fill's own variant color — the same pairing
-// Badge uses for solid semantic backgrounds. `neutral` and `disabled` fill with
-// the muted `--color-text-disabled` gray, which carries no semantic weight and
-// has no dedicated on-token, so they use the same `--color-text-primary` a mark
-// uses out on the track (see `markOnTrackStyles`) — the only foreground that
-// clears 3:1 against that gray in every shipped theme and mode.
+// Badge uses for solid semantic backgrounds.
+//
+// `neutral` and `disabled` both fill with the muted `--color-text-disabled`
+// gray, which carries no semantic weight and has no dedicated on-token, so
+// they fall back to a plain foreground. They pick different ones: a `neutral`
+// bar is live, so its mark keeps the full-contrast `--color-text-primary` a
+// mark uses out on the track; a `disabled` bar is deliberately low-emphasis —
+// its own label and value text drop to muted colors — so its mark steps down
+// to `--color-text-secondary` rather than becoming the loudest thing on a
+// grayed-out component.
 const markOnFillStyles = stylex.create({
   accent: {
     backgroundColor: colorVars['--color-on-accent'],
@@ -336,7 +342,7 @@ const markOnFillStyles = stylex.create({
     backgroundColor: colorVars['--color-text-primary'],
   },
   disabled: {
-    backgroundColor: colorVars['--color-text-primary'],
+    backgroundColor: colorVars['--color-text-secondary'],
   },
 });
 
@@ -356,6 +362,12 @@ const markOnFillStyles = stylex.create({
 const markOnTrackStyles = stylex.create({
   track: {
     backgroundColor: colorVars['--color-text-primary'],
+  },
+  // A disabled bar dims everything it draws, so its track marks step down to
+  // the secondary foreground for the same reason the disabled on-fill mark
+  // does — matching the muted label and value text.
+  trackDisabled: {
+    backgroundColor: colorVars['--color-text-secondary'],
   },
 });
 
@@ -567,7 +579,9 @@ export function ProgressBar({
                   styles.mark,
                   mark.isOnFill
                     ? markOnFillStyles[fillVariant]
-                    : markOnTrackStyles.track,
+                    : isDisabled
+                      ? markOnTrackStyles.trackDisabled
+                      : markOnTrackStyles.track,
                 ),
               )}
               style={{insetInlineStart: `${mark.pct}%`}}
