@@ -77,8 +77,6 @@ const styles = stylex.create({
     minHeight: 0,
     overflowY: 'auto',
     overscrollBehavior: 'contain',
-    paddingBlock: spacingVars['--spacing-3'],
-    paddingInline: spacingVars['--spacing-3'],
   },
   viewOptionsFooter: {
     display: 'flex',
