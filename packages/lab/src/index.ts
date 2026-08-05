@@ -24,6 +24,14 @@ export {
 // InfoTip — accessible info-icon help affordance (RFC facebook/astryx#3349)
 export {InfoTip, type InfoTipProps, type InfoTipSize} from './InfoTip';
 
+// TransferList — controlled dual-panel collection input
+export {
+  TransferList,
+  transferListVars,
+  type TransferListOption,
+  type TransferListProps,
+} from './TransferList';
+
 // Chat — experimental reasoning display
 export {
   ChatReasoning,

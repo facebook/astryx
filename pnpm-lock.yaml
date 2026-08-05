@@ -683,6 +683,9 @@ importers:
       d3-shape:
         specifier: ^3.2.0
         version: 3.2.0
+      lucide-react:
+        specifier: ^1.18.0
+        version: 1.23.0(react@19.2.7)
       react:
         specifier: '>=19.0.0'
         version: 19.2.7
