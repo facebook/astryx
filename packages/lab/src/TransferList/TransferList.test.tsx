@@ -3,15 +3,15 @@
 /**
  * @file TransferList.test.tsx
  * @input Uses Vitest, Testing Library, and the data-driven TransferList API
- * @output Behavioral coverage for transfer, filtering, and keyboard reordering
+ * @output Behavioral coverage for transfer, filtering, and pointer/keyboard reordering
  * @position Lab tests; validates TransferList.tsx
  *
  * SYNC: When TransferList.tsx behavior changes, update these tests.
  */
 
 import {useState} from 'react';
-import {describe, expect, it, vi} from 'vitest';
-import {render, screen, within} from '@testing-library/react';
+import {afterEach, describe, expect, it, vi} from 'vitest';
+import {fireEvent, render, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -80,6 +80,27 @@ function ControlledTransferList({
 
 const testStyles = stylex.create({
   root: (opacity: number) => ({opacity}),
+});
+
+function mockRowBounds(rows: ReadonlyArray<HTMLElement>): void {
+  rows.forEach((row, index) => {
+    const top = index * 40;
+    vi.spyOn(row, 'getBoundingClientRect').mockReturnValue({
+      x: 0,
+      y: top,
+      top,
+      right: 400,
+      bottom: top + 40,
+      left: 0,
+      width: 400,
+      height: 40,
+      toJSON: () => {},
+    });
+  });
+}
+
+afterEach(() => {
+  vi.restoreAllMocks();
 });
 
 describe('TransferList', () => {
@@ -390,6 +411,244 @@ describe('TransferList', () => {
       expect(root.getAttribute('style')).toContain('0.75');
       root.click();
       expect(onClick).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('pointer reordering', () => {
+    it('keeps rows stationary, follows both pointer axes, and commits once', () => {
+      const onValueChange = vi.fn();
+      const {container} = render(
+        <ControlledTransferList
+          initialValue={['name', 'owner', 'status']}
+          onValueChange={onValueChange}
+        />,
+      );
+      const rows = [
+        ...container.querySelectorAll<HTMLElement>('[data-transfer-list-row]'),
+      ];
+      mockRowBounds(rows);
+      const selectedList = screen.getByRole('list', {
+        name: 'Selected columns',
+      });
+      const handle = screen.getByRole('button', {name: 'Reorder Owner'});
+
+      fireEvent.pointerDown(handle, {
+        button: 0,
+        pointerId: 7,
+        clientX: 300,
+        clientY: 50,
+      });
+
+      const source = container.querySelector<HTMLElement>(
+        '[data-transfer-list-reorder-source]',
+      );
+      const preview = document.querySelector<HTMLElement>(
+        '[data-transfer-list-drag-preview]',
+      );
+      expect(source).toBe(rows[1]);
+      expect(getComputedStyle(source!).opacity).toBe('0.5');
+      expect(preview).toBeInTheDocument();
+      expect(getComputedStyle(preview!).opacity).toBe('0.5');
+      expect(preview).toHaveAttribute('aria-hidden', 'true');
+      expect(preview).toHaveTextContent('Owner');
+      expect(preview!.style.getPropertyValue('--x-transform')).toBe(
+        'translate3d(0px, 40px, 0)',
+      );
+      expect(
+        container.querySelector('[data-transfer-list-drop-target]'),
+      ).not.toBeInTheDocument();
+
+      fireEvent.pointerMove(handle, {
+        pointerId: 7,
+        clientX: 345,
+        clientY: 5,
+      });
+
+      expect(preview!.style.getPropertyValue('--x-transform')).toBe(
+        'translate3d(45px, -5px, 0)',
+      );
+      expect([
+        ...container.querySelectorAll<HTMLElement>('[data-transfer-list-row]'),
+      ]).toEqual(rows);
+      expect(
+        within(selectedList)
+          .getAllByRole('listitem')
+          .map(row => row.textContent?.trim()),
+      ).toEqual(['Name', 'Owner', 'Status']);
+      expect(onValueChange).not.toHaveBeenCalled();
+      expect(rows[0]).toHaveAttribute(
+        'data-transfer-list-drop-target',
+        'before',
+      );
+
+      fireEvent.pointerMove(handle, {
+        pointerId: 7,
+        clientX: 245,
+        clientY: 115,
+      });
+
+      expect(preview!.style.getPropertyValue('--x-transform')).toBe(
+        'translate3d(-55px, 105px, 0)',
+      );
+      expect(rows[0]).not.toHaveAttribute('data-transfer-list-drop-target');
+      expect(rows[2]).toHaveAttribute(
+        'data-transfer-list-drop-target',
+        'after',
+      );
+      expect(onValueChange).not.toHaveBeenCalled();
+
+      fireEvent.pointerUp(handle, {
+        pointerId: 7,
+        clientX: 245,
+        clientY: 115,
+      });
+
+      expect(onValueChange).toHaveBeenCalledOnce();
+      expect(onValueChange).toHaveBeenCalledWith(['name', 'status', 'owner']);
+      expect(
+        document.querySelector('[data-transfer-list-drop-target]'),
+      ).not.toBeInTheDocument();
+      expect(
+        document.querySelector('[data-transfer-list-drag-preview]'),
+      ).not.toBeInTheDocument();
+    });
+
+    it('clears a sub-threshold gesture without changing the value', () => {
+      const onValueChange = vi.fn();
+      const {container} = render(
+        <ControlledTransferList
+          initialValue={['name', 'owner']}
+          onValueChange={onValueChange}
+        />,
+      );
+      const rows = [
+        ...container.querySelectorAll<HTMLElement>('[data-transfer-list-row]'),
+      ];
+      mockRowBounds(rows);
+      const handle = screen.getByRole('button', {name: 'Reorder Name'});
+
+      fireEvent.pointerDown(handle, {
+        button: 0,
+        pointerId: 8,
+        clientX: 10,
+        clientY: 10,
+      });
+      expect(
+        fireEvent.pointerMove(handle, {
+          pointerId: 8,
+          clientX: 14,
+          clientY: 10,
+        }),
+      ).toBe(true);
+      expect(
+        container.querySelector('[data-transfer-list-reorder-source]'),
+      ).toBeInTheDocument();
+      expect(
+        document.querySelector('[data-transfer-list-drag-preview]'),
+      ).toBeInTheDocument();
+      expect(
+        container.querySelector('[data-transfer-list-drop-target]'),
+      ).not.toBeInTheDocument();
+
+      fireEvent.pointerUp(handle, {
+        pointerId: 8,
+        clientX: 14,
+        clientY: 10,
+      });
+
+      expect(onValueChange).not.toHaveBeenCalled();
+      expect(
+        container.querySelector('[data-transfer-list-reorder-source]'),
+      ).not.toBeInTheDocument();
+      expect(
+        document.querySelector('[data-transfer-list-drag-preview]'),
+      ).not.toBeInTheDocument();
+    });
+
+    it('cancels on pointer cancellation and does not suppress the next activation', () => {
+      const onValueChange = vi.fn();
+      const {container} = render(
+        <ControlledTransferList
+          initialValue={['name', 'owner', 'status']}
+          onValueChange={onValueChange}
+        />,
+      );
+      const rows = [
+        ...container.querySelectorAll<HTMLElement>('[data-transfer-list-row]'),
+      ];
+      mockRowBounds(rows);
+      const handle = screen.getByRole('button', {name: 'Reorder Owner'});
+
+      fireEvent.pointerDown(handle, {
+        button: 0,
+        pointerId: 9,
+        clientX: 300,
+        clientY: 50,
+      });
+      fireEvent.pointerMove(handle, {
+        pointerId: 9,
+        clientX: 300,
+        clientY: 5,
+      });
+      fireEvent.pointerCancel(handle, {pointerId: 9});
+
+      expect(onValueChange).not.toHaveBeenCalled();
+      expect(
+        document.querySelector('[data-transfer-list-drag-preview]'),
+      ).not.toBeInTheDocument();
+      expect(
+        container.querySelector('[data-transfer-list-reorder-source]'),
+      ).not.toBeInTheDocument();
+
+      fireEvent.click(handle);
+      expect(handle).toHaveAttribute('aria-pressed', 'true');
+      expect(onValueChange).not.toHaveBeenCalled();
+    });
+
+    it('keeps disabled selected options as pointer-order barriers', () => {
+      const onValueChange = vi.fn();
+      const {container} = render(
+        <ControlledTransferList
+          options={LOCKED_OPTIONS}
+          initialValue={['name', 'owner', 'status', 'updated']}
+          onValueChange={onValueChange}
+        />,
+      );
+      const rows = [
+        ...container.querySelectorAll<HTMLElement>('[data-transfer-list-row]'),
+      ];
+      mockRowBounds(rows);
+      const handle = screen.getByRole('button', {name: 'Reorder Updated'});
+
+      fireEvent.pointerDown(handle, {
+        button: 0,
+        pointerId: 10,
+        clientX: 300,
+        clientY: 130,
+      });
+      fireEvent.pointerMove(handle, {
+        pointerId: 10,
+        clientX: 300,
+        clientY: 5,
+      });
+
+      expect(rows[2]).toHaveAttribute(
+        'data-transfer-list-drop-target',
+        'before',
+      );
+      fireEvent.pointerUp(handle, {
+        pointerId: 10,
+        clientX: 300,
+        clientY: 5,
+      });
+
+      expect(onValueChange).toHaveBeenCalledOnce();
+      expect(onValueChange).toHaveBeenCalledWith([
+        'name',
+        'owner',
+        'updated',
+        'status',
+      ]);
     });
   });
 

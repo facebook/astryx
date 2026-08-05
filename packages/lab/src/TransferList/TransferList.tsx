@@ -4,7 +4,7 @@
 
 /**
  * @file TransferList.tsx
- * @input Controlled option data, ordered selected values, and display labels
+ * @input Controlled option data, React DOM portals, and shared Lab reorder styles
  * @output Exports the generic TransferList component and its public prop types
  * @position Lab collection input; consumed by index.ts, docs, tests, and Storybook
  *
@@ -19,6 +19,7 @@ import {
   Fragment,
   useCallback,
   useId,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -27,6 +28,7 @@ import {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
+import {createPortal, flushSync} from 'react-dom';
 import {GripVertical, Plus, X} from 'lucide-react';
 import type {BaseProps} from '@astryxdesign/core';
 import {Button} from '@astryxdesign/core/Button';
@@ -44,6 +46,7 @@ import {
   spacingVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
 import {mergeProps, mergeRefs, themeProps} from '@astryxdesign/core/utils';
+import {reorderStyles} from '../reorderStyles';
 import {transferListVars} from './tokens.stylex';
 
 export interface TransferListOption<T extends string = string> {
@@ -112,7 +115,32 @@ interface ReorderSession<T extends string> {
   label: string;
   mode: 'keyboard' | 'pointer';
   originalValue: readonly T[];
+  fromIndex: number;
+  toIndex: number;
+  pointerId?: number;
+  pointerStartX?: number;
+  pointerStartY?: number;
+  pointerOffsetX?: number;
+  pointerOffsetY?: number;
+  pointerClientX?: number;
+  pointerClientY?: number;
+  previewWidth?: number;
+  hasPointerMoved?: boolean;
 }
+
+type PointerGeometry = Required<
+  Pick<
+    ReorderSession<string>,
+    | 'pointerId'
+    | 'pointerStartX'
+    | 'pointerStartY'
+    | 'pointerOffsetX'
+    | 'pointerOffsetY'
+    | 'pointerClientX'
+    | 'pointerClientY'
+    | 'previewWidth'
+  >
+>;
 
 const styles = stylex.create({
   root: {
@@ -204,8 +232,7 @@ const styles = stylex.create({
   item: {minWidth: 0},
   draggingItem: {backgroundColor: colorVars['--color-accent-muted']},
   disabledReason: {maxWidth: '8rem'},
-  reorderGlyph: {cursor: 'grab'},
-  reorderGlyphActive: {cursor: 'grabbing'},
+  dragPreviewContainer: {listStyleType: 'none'},
   empty: {
     display: 'flex',
     alignItems: 'center',
@@ -215,6 +242,43 @@ const styles = stylex.create({
     textAlign: 'center',
   },
 });
+
+const dynamicStyles = stylex.create({
+  dragPreview: (x: number, y: number, width: number) => ({
+    width,
+    transform: `translate3d(${x}px, ${y}px, 0)`,
+  }),
+  rowTransition: (name: string) => ({viewTransitionName: name}),
+});
+
+function moveItem<T>(
+  value: readonly T[],
+  fromIndex: number,
+  toIndex: number,
+): T[] {
+  const nextValue = [...value];
+  const [item] = nextValue.splice(fromIndex, 1);
+  nextValue.splice(toIndex, 0, item);
+  return nextValue;
+}
+
+function animateControlledUpdate(update: () => void): void {
+  const prefersReducedMotion = window.matchMedia?.(
+    '(prefers-reduced-motion: reduce)',
+  ).matches;
+  if (
+    !prefersReducedMotion &&
+    typeof document.startViewTransition === 'function'
+  ) {
+    document.startViewTransition(() => flushSync(update));
+    return;
+  }
+  update();
+}
+
+function transitionName(scope: string, value: string): string {
+  return `${scope}-${value}`.replace(/[^a-zA-Z0-9_-]/g, '-');
+}
 
 function matchesQuery<T extends string>(
   option: TransferListOption<T>,
@@ -288,14 +352,25 @@ export function TransferList<T extends string = string>({
   const searchRef = useRef<HTMLInputElement | null>(null);
   const selectedPanelRef = useRef<HTMLDivElement | null>(null);
   const availablePanelRef = useRef<HTMLDivElement | null>(null);
+  const selectedRowRefs = useRef(new Map<T, HTMLElement>());
+  const dragPreviewRef = useRef<HTMLDivElement | null>(null);
   const currentValueRef = useRef<readonly T[]>(value);
   const reorderSessionRef = useRef<ReorderSession<T> | null>(null);
   const suppressClickRef = useRef(false);
   const [query, setQuery] = useState('');
-  const [activeReorderValue, setActiveReorderValue] = useState<T | null>(null);
+  const [reorderSession, setReorderSessionState] =
+    useState<ReorderSession<T> | null>(null);
   const announce = useAnnounce();
 
   currentValueRef.current = value;
+
+  const setReorderSession = useCallback(
+    (nextSession: ReorderSession<T> | null) => {
+      reorderSessionRef.current = nextSession;
+      setReorderSessionState(nextSession);
+    },
+    [],
+  );
 
   const optionByValue = useMemo(() => {
     const map = new Map<T, TransferListOption<T>>();
@@ -336,6 +411,64 @@ export function TransferList<T extends string = string>({
     });
     return Array.from(groups.entries());
   }, [availableOptions]);
+
+  const pointerPlacement = useMemo(() => {
+    if (
+      reorderSession?.mode !== 'pointer' ||
+      !reorderSession.hasPointerMoved ||
+      reorderSession.toIndex === reorderSession.fromIndex
+    ) {
+      return null;
+    }
+    const remainingValues = reorderSession.originalValue.filter(
+      optionValue => optionValue !== reorderSession.value,
+    );
+    const beforeValue = remainingValues[reorderSession.toIndex];
+    if (beforeValue != null) {
+      return {value: beforeValue, position: 'before' as const};
+    }
+    const afterValue = remainingValues.at(-1);
+    return afterValue == null
+      ? null
+      : {value: afterValue, position: 'after' as const};
+  }, [reorderSession]);
+
+  const previewCloneValue =
+    reorderSession?.mode === 'pointer' ? reorderSession.value : null;
+
+  useLayoutEffect(() => {
+    const previewHost = dragPreviewRef.current;
+    if (previewHost == null || previewCloneValue == null) {
+      return;
+    }
+    const sourceRow = selectedRowRefs.current.get(previewCloneValue);
+    if (sourceRow == null) {
+      return;
+    }
+    const clone = sourceRow.cloneNode(true) as HTMLElement;
+    previewHost.style.direction = getComputedStyle(sourceRow).direction;
+    clone.style.opacity = '1';
+    clone.setAttribute('aria-hidden', 'true');
+    const clonedElements = [clone, ...clone.querySelectorAll<HTMLElement>('*')];
+    for (const element of clonedElements) {
+      element.removeAttribute('id');
+      element.removeAttribute('aria-describedby');
+      element.removeAttribute('aria-labelledby');
+      element.removeAttribute('name');
+      for (const attribute of Array.from(element.attributes)) {
+        if (attribute.name.startsWith('data-transfer-list-')) {
+          element.removeAttribute(attribute.name);
+        }
+      }
+      element.setAttribute('tabindex', '-1');
+      element.style.viewTransitionName = 'none';
+    }
+    previewHost.replaceChildren(clone);
+    return () => {
+      previewHost.replaceChildren();
+      previewHost.style.removeProperty('direction');
+    };
+  }, [previewCloneValue]);
 
   const commit = useCallback(
     (nextValue: readonly T[]) => {
@@ -469,31 +602,68 @@ export function TransferList<T extends string = string>({
   );
 
   const beginReorder = useCallback(
-    (option: TransferListOption<T>, mode: 'keyboard' | 'pointer') => {
+    (
+      option: TransferListOption<T>,
+      mode: 'keyboard' | 'pointer',
+      pointerGeometry?: PointerGeometry,
+    ) => {
       if (option.isDisabled || !isReorderable) {
         return;
       }
-      reorderSessionRef.current = {
+      const index = currentValueRef.current.indexOf(option.value);
+      if (index < 0 || (mode === 'pointer' && pointerGeometry == null)) {
+        return;
+      }
+      setReorderSession({
         value: option.value,
         label: option.label,
         mode,
         originalValue: [...currentValueRef.current],
-      };
-      setActiveReorderValue(option.value);
+        fromIndex: index,
+        toIndex: index,
+        ...pointerGeometry,
+        hasPointerMoved: false,
+      });
       if (mode === 'keyboard') {
-        const index = currentValueRef.current.indexOf(option.value);
         announce(
           `${option.label} picked up, position ${index + 1} of ${currentValueRef.current.length}. Use arrow keys to move, Space or Enter to drop, or Escape to cancel.`,
         );
       }
     },
-    [announce, isReorderable],
+    [announce, isReorderable, setReorderSession],
   );
 
   const finishReorder = useCallback(
     (cancelled: boolean) => {
       const session = reorderSessionRef.current;
       if (!session) {
+        return;
+      }
+      if (session.mode === 'pointer') {
+        if (cancelled || !session.hasPointerMoved) {
+          setReorderSession(null);
+          if (cancelled) {
+            announce(`${session.label} move cancelled.`);
+          }
+          return;
+        }
+        const hasChanged = session.fromIndex !== session.toIndex;
+        const nextValue = moveItem(
+          session.originalValue,
+          session.fromIndex,
+          session.toIndex,
+        );
+        flushSync(() => setReorderSession(null));
+        if (hasChanged) {
+          animateControlledUpdate(() => commit(nextValue));
+          announce(
+            `${session.label} dropped at position ${session.toIndex + 1} of ${session.originalValue.length}.`,
+          );
+        } else {
+          announce(
+            `${session.label} returned to position ${session.fromIndex + 1}.`,
+          );
+        }
         return;
       }
       if (cancelled) {
@@ -505,10 +675,9 @@ export function TransferList<T extends string = string>({
           `${session.label} dropped at position ${index + 1} of ${currentValueRef.current.length}.`,
         );
       }
-      reorderSessionRef.current = null;
-      setActiveReorderValue(null);
+      setReorderSession(null);
     },
-    [announce, commit],
+    [announce, commit, setReorderSession],
   );
 
   const handleReorderClick = useCallback(
@@ -578,9 +747,23 @@ export function TransferList<T extends string = string>({
       if (event.button !== 0) {
         return;
       }
+      const sourceRow = selectedRowRefs.current.get(option.value);
+      if (sourceRow == null) {
+        return;
+      }
+      const bounds = sourceRow.getBoundingClientRect();
       suppressClickRef.current = true;
-      beginReorder(option, 'pointer');
       event.currentTarget.setPointerCapture?.(event.pointerId);
+      beginReorder(option, 'pointer', {
+        pointerId: event.pointerId,
+        pointerStartX: event.clientX,
+        pointerStartY: event.clientY,
+        pointerOffsetX: event.clientX - bounds.left,
+        pointerOffsetY: event.clientY - bounds.top,
+        pointerClientX: event.clientX,
+        pointerClientY: event.clientY,
+        previewWidth: bounds.width,
+      });
     },
     [beginReorder],
   );
@@ -591,29 +774,92 @@ export function TransferList<T extends string = string>({
       option: TransferListOption<T>,
     ) => {
       const session = reorderSessionRef.current;
-      if (session?.value !== option.value || session.mode !== 'pointer') {
+      if (
+        session?.value !== option.value ||
+        session.mode !== 'pointer' ||
+        session.pointerId !== event.pointerId
+      ) {
         return;
       }
-      const row = document
-        .elementFromPoint(event.clientX, event.clientY)
-        ?.closest<HTMLElement>('[data-transfer-list-index]');
-      const target = Number(row?.dataset.transferListIndex);
-      if (Number.isInteger(target)) {
-        moveOption(option.value, target);
+      const horizontalDistance =
+        event.clientX - (session.pointerStartX ?? event.clientX);
+      const verticalDistance =
+        event.clientY - (session.pointerStartY ?? event.clientY);
+      const hasCrossedThreshold =
+        session.hasPointerMoved ||
+        Math.hypot(horizontalDistance, verticalDistance) >= 5;
+      let targetIndex = session.fromIndex;
+      if (hasCrossedThreshold) {
+        event.preventDefault();
+        const {start, end} = movableRange(session.value, session.originalValue);
+        const remainingValues = session.originalValue.filter(
+          optionValue => optionValue !== session.value,
+        );
+        const candidates = session.originalValue
+          .map((optionValue, originalIndex) => ({optionValue, originalIndex}))
+          .filter(
+            candidate =>
+              candidate.optionValue !== session.value &&
+              candidate.originalIndex >= start &&
+              candidate.originalIndex <= end,
+          )
+          .map(candidate => ({
+            row: selectedRowRefs.current.get(candidate.optionValue),
+            targetIndex: remainingValues.indexOf(candidate.optionValue),
+          }))
+          .filter(
+            (candidate): candidate is {row: HTMLElement; targetIndex: number} =>
+              candidate.row != null,
+          );
+        if (candidates.length > 0) {
+          targetIndex = candidates[candidates.length - 1].targetIndex + 1;
+          for (const candidate of candidates) {
+            const bounds = candidate.row.getBoundingClientRect();
+            if (event.clientY < bounds.top + bounds.height / 2) {
+              targetIndex = candidate.targetIndex;
+              break;
+            }
+          }
+          targetIndex = Math.max(start, Math.min(end, targetIndex));
+        }
+      }
+      const nextSession = {
+        ...session,
+        pointerClientX: event.clientX,
+        pointerClientY: event.clientY,
+        hasPointerMoved: hasCrossedThreshold,
+        toIndex: targetIndex,
+      };
+      setReorderSession(nextSession);
+      if (hasCrossedThreshold && session.toIndex !== targetIndex) {
+        announce(
+          `${option.label}, position ${targetIndex + 1} of ${session.originalValue.length}.`,
+        );
       }
     },
-    [moveOption],
+    [announce, movableRange, setReorderSession],
   );
 
   const handlePointerEnd = useCallback(
     (event: ReactPointerEvent<HTMLButtonElement>, cancelled: boolean) => {
-      if (reorderSessionRef.current?.mode !== 'pointer') {
+      const session = reorderSessionRef.current;
+      if (
+        session?.mode !== 'pointer' ||
+        session.pointerId !== event.pointerId
+      ) {
         return;
       }
+      if (cancelled) {
+        suppressClickRef.current = false;
+      } else {
+        setTimeout(() => {
+          suppressClickRef.current = false;
+        }, 0);
+      }
+      finishReorder(cancelled);
       if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
         event.currentTarget.releasePointerCapture?.(event.pointerId);
       }
-      finishReorder(cancelled);
     },
     [finishReorder],
   );
@@ -675,11 +921,25 @@ export function TransferList<T extends string = string>({
     );
   };
 
+  const dragPreviewPosition =
+    reorderSession?.mode === 'pointer' &&
+    reorderSession.pointerClientX != null &&
+    reorderSession.pointerClientY != null &&
+    reorderSession.pointerOffsetX != null &&
+    reorderSession.pointerOffsetY != null &&
+    reorderSession.previewWidth != null
+      ? {
+          x: reorderSession.pointerClientX - reorderSession.pointerOffsetX,
+          y: reorderSession.pointerClientY - reorderSession.pointerOffsetY,
+          width: reorderSession.previewWidth,
+        }
+      : null;
+
   const reorderControl = (option: TransferListOption<T>) => {
     if (!isReorderable || option.isDisabled) {
       return undefined;
     }
-    const active = activeReorderValue === option.value;
+    const active = reorderSession?.value === option.value;
     return (
       <IconButton
         label={`Reorder ${option.label}`}
@@ -688,13 +948,23 @@ export function TransferList<T extends string = string>({
         icon={<GripVertical size={16} strokeWidth={1.5} aria-hidden />}
         size="sm"
         variant="ghost"
-        xstyle={[styles.reorderGlyph, active && styles.reorderGlyphActive]}
+        xstyle={[reorderStyles.handle, active && reorderStyles.handleActive]}
         onClick={() => handleReorderClick(option)}
         onKeyDown={event => handleReorderKeyDown(event, option)}
         onPointerDown={event => handlePointerDown(event, option)}
         onPointerMove={event => handlePointerMove(event, option)}
         onPointerUp={event => handlePointerEnd(event, false)}
         onPointerCancel={event => handlePointerEnd(event, true)}
+        onLostPointerCapture={event => {
+          const session = reorderSessionRef.current;
+          if (
+            session?.mode === 'pointer' &&
+            session.pointerId === event.pointerId
+          ) {
+            suppressClickRef.current = false;
+            finishReorder(true);
+          }
+        }}
       />
     );
   };
@@ -704,17 +974,43 @@ export function TransferList<T extends string = string>({
     side: 'selected' | 'available',
     index: number,
   ) => {
-    const active = activeReorderValue === option.value;
+    const active = reorderSession?.value === option.value;
+    const isPointerSource = active && reorderSession?.mode === 'pointer';
+    const dropPosition =
+      pointerPlacement?.value === option.value
+        ? pointerPlacement.position
+        : null;
     const orderedIndex = currentValueRef.current.indexOf(option.value);
     return (
       <Item
         key={option.value}
         as="li"
+        ref={node => {
+          if (side !== 'selected') {
+            return;
+          }
+          if (node == null) {
+            selectedRowRefs.current.delete(option.value);
+          } else {
+            selectedRowRefs.current.set(option.value, node);
+          }
+        }}
         density="compact"
         startContent={side === 'selected' ? reorderControl(option) : undefined}
         label={renderOption?.(option) ?? option.label}
         endContent={optionActions(option, side, index)}
-        xstyle={[styles.item, active && styles.draggingItem]}
+        xstyle={[
+          styles.item,
+          side === 'selected' &&
+            dynamicStyles.rowTransition(transitionName(labelId, option.value)),
+          active && reorderSession?.mode === 'keyboard' && styles.draggingItem,
+          isPointerSource && reorderStyles.source,
+          dropPosition === 'before' && reorderStyles.dropBefore,
+          dropPosition === 'after' && reorderStyles.dropAfter,
+        ]}
+        data-transfer-list-row={side === 'selected' ? option.value : undefined}
+        data-transfer-list-reorder-source={isPointerSource || undefined}
+        data-transfer-list-drop-target={dropPosition ?? undefined}
         data-transfer-list-index={
           side === 'selected' ? String(orderedIndex) : undefined
         }
@@ -911,6 +1207,25 @@ export function TransferList<T extends string = string>({
           </div>
         </div>
       </div>
+      {dragPreviewPosition != null && typeof document !== 'undefined'
+        ? createPortal(
+            <div
+              ref={dragPreviewRef}
+              aria-hidden="true"
+              data-transfer-list-drag-preview=""
+              {...stylex.props(
+                reorderStyles.preview,
+                styles.dragPreviewContainer,
+                dynamicStyles.dragPreview(
+                  dragPreviewPosition.x,
+                  dragPreviewPosition.y,
+                  dragPreviewPosition.width,
+                ),
+              )}
+            />,
+            document.body,
+          )
+        : null}
     </div>
   );
 }

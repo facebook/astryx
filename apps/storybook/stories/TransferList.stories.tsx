@@ -168,7 +168,7 @@ function BasicExample() {
   return (
     <TransferList
       label="Visible fields"
-      description="Choose which fields appear, then drag the selected fields into display order."
+      description="Choose which fields appear. The drag preview follows your pointer, and the display order changes on release."
       options={BASIC_OPTIONS}
       value={value}
       onChange={setValue}

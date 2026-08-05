@@ -102,7 +102,7 @@ export const docs = {
       name: 'isReorderable',
       type: 'boolean',
       description:
-        'Shows a left-side grip handle for enabled selected options. It supports pointer or touch dragging and keyboard reordering, with order changes announced to assistive technology.',
+        'Shows a left-side grip for enabled selected options. Pointer dragging keeps rows stationary while a 50%-opacity duplicate follows both axes; vertical position sets the insertion line and the controlled order commits once on release. Keyboard reordering remains immediate, and both paths announce position changes.',
       default: 'true',
     },
     {
@@ -167,6 +167,11 @@ export const docs = {
       {
         guidance: true,
         description:
+          'Let the pointer preview move freely on both axes while using vertical position alone for insertion. Keep rows stationary, commit once on release, and retain disabled selected options as ordering barriers.',
+      },
+      {
+        guidance: true,
+        description:
           'Compose TransferList inside ComplexSelector when the control should collapse behind a toolbar or field trigger. Keep ComplexSelector.value as the applied ordered values and TransferList.value as a local draft; call the provided commit helper only from Apply.',
       },
       {
@@ -208,7 +213,7 @@ export const docs = {
         name: 'Selected list',
         required: true,
         description:
-          'A labeled semantic list of single-line rows whose order matches value. Each enabled row uses a left-side grip for ordering and a direction-neutral X action for removal.',
+          'A labeled semantic list of single-line rows whose order matches value. Each enabled row uses a left-side grip for keyboard ordering or stationary-list pointer dragging, plus a direction-neutral X action for removal.',
       },
       {
         name: 'Available list',
@@ -321,7 +326,7 @@ export const docsDense = {
     'controlled dual-list selector for membership + selected-value order; responsive, searchable, and accessible',
   usage: {
     description:
-      'Moves options between adjacent semantic lists separated only by a divider; rows are single-line and selected order matches value. Plus adds, X removes, and a left grip reorders. Search/reorder default on; narrow containers stack.',
+      'Moves options between adjacent semantic lists separated only by a divider; rows are single-line and selected order matches value. Plus adds, X removes, and a left grip reorders with a stationary list plus free-moving pointer preview. Search/reorder default on; narrow containers stack.',
     bestPractices: [
       {
         guidance: true,
@@ -331,6 +336,11 @@ export const docsDense = {
       {
         guidance: true,
         description: 'Explain every locked option with disabledMessage.',
+      },
+      {
+        guidance: true,
+        description:
+          'Pointer preview follows X/Y; Y sets insertion, rows stay put, and value commits once on release.',
       },
       {
         guidance: true,
@@ -362,7 +372,7 @@ export const docsDense = {
     searchLabel: 'Accessible search label.',
     searchPlaceholder: 'Search placeholder.',
     isReorderable:
-      'Left grip with pointer/touch + keyboard reorder; default true.',
+      'Left grip: free X/Y pointer preview, vertical insertion, release-only commit, and immediate keyboard reorder; default true.',
     hasSelectAll: 'Add all enabled available options.',
     hasClear: 'Remove all enabled selected options.',
     onReset: 'Caller-owned default restoration action.',
