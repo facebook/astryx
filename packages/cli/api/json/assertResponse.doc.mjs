@@ -20,7 +20,7 @@ export const doc = {
     'is not the one you asked for. Use it when a call site expects exactly one response ' +
     'type and any other outcome is a bug worth failing on.',
   importPath: '@astryxdesign/cli/json',
-  signature: 'assertResponse(raw: unknown, expectedType: string): CLIResponse',
+  signature: 'assertResponse(raw: unknown, expectedType: string): any',
   keywords: ['json', 'assert', 'narrow', 'subprocess', 'envelope'],
   params: [
     {
@@ -40,9 +40,9 @@ export const doc = {
   ],
   returns: [
     {
-      type: 'CLIResponse',
+      type: 'any',
       description:
-        'The parsed envelope, guaranteed to carry the requested `type`.',
+        'The parsed envelope, guaranteed at runtime to carry the requested `type`. The published signature is untyped — cast to the matching *Response type for typed access.',
     },
   ],
   throws: [

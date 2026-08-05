@@ -353,14 +353,16 @@ Most of the conventions above are mechanical, so they're checked rather than rev
 | each `api/<name>/` ships its typedefs, a `FunctionDoc`, and a test                                            | `pnpm check:cli-structure`       |
 | every `CommandDoc`/`EnumDoc` matches the live CLI                                                             | the drift harness                |
 
-The declaration file (`parse.d.mts`) is the easiest one to forget and the most expensive to miss: `authoring/index.d.ts` re-exports each parser, so without it a strict consumer of the published package resolves that parser as `any` — and local typechecks won't catch it, because they run with `checkJs` and never exercise the packed `./api` surface.
+The declaration file (`parse.d.mts`) is the easiest one to forget and the most expensive to miss: `authoring/index.d.ts` re-exports each parser, so without it a strict consumer of the published package resolves that parser as `any` — and local typechecks won't catch it, because they run with `checkJs` and never exercise the packed `./api` surface. A hand-written declaration shadows the JSDoc in its `.mjs`, so it can also go stale while still compiling; `check:cli-structure` therefore asserts that every doc kind appears in the `parseDoc` return union too.
 
 ### Adding a command
 
-1. Add the behavior under `api/<name>/` with a colocated `<name>.type.mjs` (the `Options` + `{ type, data }` response typedefs — the shape source of truth).
-2. Register the command in `clients/cli/index.mjs` and write its thin handler in `clients/cli/commands/<name>.mjs`.
-3. Author its docs: a `FunctionDoc` (`api/<name>/<name>.doc.mjs`) and a `CommandDoc` (`clients/cli/commands/<name>.doc.mjs`) — copy the `search` docs as a template.
-4. Run the checks below; the drift harness will flag any mismatch between the docs and the command.
+Author the docs _before_ the handler: `defineCommand` builds the Commander command from the `CommandDoc`, so the handler needs it to exist.
+
+1. Add the behavior under `api/<name>/`, with a colocated `<name>.type.mjs` (the `Options` + `{ type, data }` response typedefs — the shape source of truth) and a test.
+2. Author the docs — a `FunctionDoc` at `api/<name>/<fn>.doc.mjs` and a `CommandDoc` at `clients/cli/commands/<name>.doc.mjs`. Copy the `search` pair as a template.
+3. Write the thin handler in `clients/cli/commands/<name>.mjs`, registering it with `defineCommand(program, <name>Command, {fn: <name>Fn, action})` so `--help` and the manifest come from the doc. Call its `register<Name>` from `clients/cli/index.mjs`.
+4. Run the checks below. The drift harness catches a doc that disagrees with the live command, and `check:cli-structure` catches a missing typedef, doc, or test.
 
 ### Testing the CLI
 

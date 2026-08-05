@@ -12,11 +12,12 @@ export const doc = {
   kind: 'api',
   name: 'isError',
   displayName: 'isError()',
-  summary: 'Type guard: did the CLI return an error envelope?',
+  summary: 'Did the CLI return an error envelope?',
   description:
-    'Narrows a parsed response to the CLIError branch by testing for an `error` key. ' +
-    'Branch on this before touching `data` — and prefer the stable `code` field over ' +
-    'matching the human-readable message, which is not a contract.',
+    'Tests a parsed response for an `error` key. Branch on this before touching `data` — ' +
+    'and prefer the stable `code` field over matching the human-readable message, which is ' +
+    'not a contract. Note this returns a plain boolean, not a TypeScript type predicate, so ' +
+    'it does not narrow on its own: cast to the matching *Response type to get typed access.',
   importPath: '@astryxdesign/cli/json',
   signature: 'isError(result: unknown): boolean',
   keywords: ['json', 'error', 'guard', 'narrow', 'subprocess'],

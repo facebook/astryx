@@ -19,7 +19,7 @@ export const doc = {
     'either. It returns the structural { type, data, meta? } envelope without narrowing: ' +
     '`data` stays unknown until you discriminate on `type` (or use assertResponse).',
   importPath: '@astryxdesign/cli/json',
-  signature: 'parseResponse(raw: unknown): CLIResponse | CLIError',
+  signature: 'parseResponse(raw: unknown): any',
   keywords: ['json', 'parse', 'subprocess', 'envelope', 'stdout'],
   params: [
     {
@@ -32,9 +32,9 @@ export const doc = {
   ],
   returns: [
     {
-      type: 'CLIResponse | CLIError',
+      type: 'any',
       description:
-        'The { type, data, meta? } envelope, or a CLIError envelope. `data` is unknown until narrowed on `type`.',
+        'The { type, data, meta? } envelope, or a CLIError envelope. The published signature is intentionally untyped — narrow it by casting to the matching *Response type exported from @astryxdesign/cli/json.',
     },
   ],
   throws: [
