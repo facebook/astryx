@@ -927,6 +927,10 @@
     "defaultMessage": "Copy {value}",
     "description": "Aria label on a Timestamp copyable-hover-card row's copy button, in its default state. `value` is the formatted instant that row shows (e.g. `Copy February 19, 2026 at 5:00:00 PM UTC`). Imperative verb. Pairs with `timestamp.copied` (post-click state)."
   },
+  "@astryx.timestamp.copy": {
+    "defaultMessage": "Copy",
+    "description": "Short label shown in the tooltip on a Timestamp copyable-hover-card row's copy button (hover/focus), in its default state. Imperative verb. Pairs with `timestamp.copied` (post-click state). The full `copyValue` string remains the button's aria-label for assistive tech."
+  },
   "@astryx.timestamp.copied": {
     "defaultMessage": "Copied",
     "description": "Aria label on a Timestamp copy button for ~1.5s after a successful copy, and the text announced to a polite live region. Past-participle (\"has been copied\"); pairs with `timestamp.copyValue`."

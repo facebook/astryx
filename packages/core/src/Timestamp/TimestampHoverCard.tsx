@@ -29,6 +29,7 @@ import * as stylex from '@stylexjs/stylex';
 import {HoverCard} from '../HoverCard';
 import {IconButton} from '../IconButton';
 import {Icon} from '../Icon';
+import {Tooltip} from '../Tooltip/Tooltip';
 import {useAnnounce} from '../hooks/useAnnounce';
 import {useTranslator} from '../i18n';
 import {themeProps} from '../utils/themeProps';
@@ -148,20 +149,28 @@ function CopyButton({value}: {value: string}) {
   }, [value, announce, t]);
 
   return (
-    <IconButton
-      variant="ghost"
-      size="sm"
-      icon={<Icon icon={copied ? 'check' : 'copy'} size="sm" color="inherit" />}
-      label={
-        copied
-          ? t('@astryx.timestamp.copied')
-          : t('@astryx.timestamp.copyValue', {value})
-      }
-      onClick={() => {
-        void handleCopy();
-      }}
-      {...themeProps('timestamp-copy-button')}
-    />
+    <Tooltip
+      content={t(
+        copied ? '@astryx.timestamp.copied' : '@astryx.timestamp.copy',
+      )}
+      placement="above">
+      <IconButton
+        variant="ghost"
+        size="sm"
+        icon={
+          <Icon icon={copied ? 'check' : 'copy'} size="sm" color="inherit" />
+        }
+        label={
+          copied
+            ? t('@astryx.timestamp.copied')
+            : t('@astryx.timestamp.copyValue', {value})
+        }
+        onClick={() => {
+          void handleCopy();
+        }}
+        {...themeProps('timestamp-copy-button')}
+      />
+    </Tooltip>
   );
 }
 

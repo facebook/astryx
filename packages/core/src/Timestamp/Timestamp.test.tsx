@@ -343,6 +343,26 @@ describe('Timestamp', () => {
     expect(el.textContent).toMatch(/\d{2}:\d{2}:\d{2}/);
   });
 
+  it('renders system_unix format as whole epoch seconds (zone-independent)', () => {
+    // 2026-02-19T17:00:00Z is 1771520400 seconds since the epoch. The value is
+    // absolute, so it is the same regardless of the viewer's zone.
+    render(
+      <Timestamp
+        value="2026-02-19T17:00:00Z"
+        format="system_unix"
+        data-testid="ts"
+      />,
+    );
+    expect(screen.getByTestId('ts').textContent).toBe('1771520400');
+  });
+
+  it('renders system_unix from a Unix-seconds value input unchanged', () => {
+    render(
+      <Timestamp value={1771520400} format="system_unix" data-testid="ts" />,
+    );
+    expect(screen.getByTestId('ts').textContent).toBe('1771520400');
+  });
+
   // --- Auto format ---
 
   it('auto format uses relative for recent times', () => {
@@ -673,10 +693,14 @@ describe('Timestamp', () => {
         />,
       );
       // With no entries the hover surface is still the copyable card — one
-      // surface, one styling — never the old read-only tooltip.
+      // surface, one styling — never the old read-only tooltip. (The copy
+      // button carries its own small "Copy" tooltip; that is not the hover
+      // surface, so exclude it.)
       expect(
-        screen.queryByRole('tooltip', {hidden: true}),
-      ).not.toBeInTheDocument();
+        screen
+          .queryAllByRole('tooltip', {hidden: true})
+          .filter(el => !/^(Copy|Copied)$/.test(el.textContent?.trim() ?? '')),
+      ).toHaveLength(0);
       const card = await screen.findByRole('dialog', {hidden: true});
       // The default card is the named details card, exactly as the configured
       // one is.
@@ -706,6 +730,31 @@ describe('Timestamp', () => {
           screen.getByRole('button', {name: 'Copied', hidden: true}),
         ).toBeInTheDocument();
       });
+    });
+
+    it("shows a 'Copy' tooltip on the copy button, flipping to 'Copied' after a copy", async () => {
+      render(<Timestamp value={Date.now() / 1000 - 3600} format="relative" />);
+      const card = await screen.findByRole('dialog', {hidden: true});
+      const button = card.querySelector('button')!;
+      // The visible tooltip content defaults to the short imperative 'Copy'
+      // (the full "Copy <value>" string stays the button's aria-label).
+      await waitFor(() =>
+        expect(
+          screen.getByText('Copy', {
+            selector: '[role="tooltip"] *, [role="tooltip"]',
+          }),
+        ).toBeInTheDocument(),
+      );
+      fireEvent.click(button);
+      // After a successful copy the tooltip content flips to 'Copied' in step
+      // with the icon/aria-label.
+      await waitFor(() =>
+        expect(
+          screen.getByText('Copied', {
+            selector: '[role="tooltip"] *, [role="tooltip"]',
+          }),
+        ).toBeInTheDocument(),
+      );
     });
   });
 
@@ -748,10 +797,13 @@ describe('Timestamp', () => {
         />,
       );
       // Entries present — the surface is the interactive card, never the
-      // lightweight read-only tooltip.
+      // lightweight read-only tooltip. (The copy button's own "Copy" tooltip
+      // is not the hover surface, so exclude it.)
       expect(
-        screen.queryByRole('tooltip', {hidden: true}),
-      ).not.toBeInTheDocument();
+        screen
+          .queryAllByRole('tooltip', {hidden: true})
+          .filter(el => !/^(Copy|Copied)$/.test(el.textContent?.trim() ?? '')),
+      ).toHaveLength(0);
       const card = await screen.findByRole('dialog', {hidden: true});
       expect(card).toHaveAttribute('aria-label', 'Timestamp details');
     });
@@ -925,7 +977,11 @@ describe('Timestamp', () => {
       // hasTooltip stays the on/off switch: false suppresses the surface even
       // when entries would otherwise upgrade it to the card.
       expect(screen.queryByRole('dialog', {hidden: true})).toBeNull();
-      expect(screen.queryByRole('tooltip', {hidden: true})).toBeNull();
+      expect(
+        screen
+          .queryAllByRole('tooltip', {hidden: true})
+          .filter(el => !/^(Copy|Copied)$/.test(el.textContent?.trim() ?? '')),
+      ).toHaveLength(0);
       expect(screen.getByTestId('ts')).not.toHaveAttribute('tabindex');
       expect(
         screen.getByTestId('ts').getAttribute('aria-describedby'),
