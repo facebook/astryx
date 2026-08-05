@@ -9,7 +9,7 @@
  * SYNC: When modified, update TransferList.tsx, tests, and Storybook examples.
  */
 
-/** @type {import('../../../core/src/docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'TransferList',
@@ -167,7 +167,12 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Keep draft state, Apply and Cancel actions, saved views, and persistence in the surrounding feature when changes should not take effect immediately.',
+          'Compose TransferList inside ComplexSelector when the control should collapse behind a toolbar or field trigger. Keep ComplexSelector.value as the applied ordered values and TransferList.value as a local draft; call the provided commit helper only from Apply.',
+      },
+      {
+        guidance: true,
+        description:
+          'Reset the draft from the applied value whenever a ComplexSelector opens. Closing, pressing Escape, or light dismissing then discards uncommitted edits without adding state to TransferList.',
       },
       {
         guidance: false,
@@ -261,26 +266,56 @@ export const docs = {
 />`,
     },
     {
-      label: 'Draft changes with surrounding actions',
+      label: 'Staged changes in ComplexSelector',
       code: `const [applied, setApplied] = useState(defaultFields);
 const [draft, setDraft] = useState(defaultFields);
+const [isOpen, setIsOpen] = useState(false);
 
-<>
-  <TransferList
-    label="Visible fields"
-    options={fieldOptions}
-    value={draft}
-    onChange={setDraft}
-    onReset={() => setDraft(defaultFields)}
-  />
-  <Button label="Cancel" onClick={() => setDraft(applied)} />
-  <Button label="Apply" onClick={() => setApplied(draft)} />
-</>`,
+<ComplexSelector
+  label="View options"
+  isLabelHidden
+  variant="ghost"
+  startIcon="viewColumns"
+  triggerLabel="View options"
+  value={applied}
+  onChange={setApplied}
+  isOpen={isOpen}
+  onOpenChange={nextIsOpen => {
+    if (nextIsOpen) {
+      setDraft(applied);
+    }
+    setIsOpen(nextIsOpen);
+  }}>
+  {(_appliedValue, commit, close) => (
+    <>
+      <TransferList
+        label="Visible fields"
+        isLabelHidden
+        selectedLabel="Visible fields"
+        availableLabel="Available fields"
+        options={fieldOptions}
+        value={draft}
+        onChange={setDraft}
+        hasSelectAll
+        hasClear
+      />
+      <Button label="Restore to default" onClick={() => setDraft(defaultFields)} />
+      <Button
+        label="Apply"
+        variant="primary"
+        onClick={() => {
+          commit(draft);
+          close();
+        }}
+      />
+    </>
+  )}
+</ComplexSelector>`,
     },
   ],
 };
 
-/** @type {import('../../../core/src/docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
     'controlled dual-list selector for membership + selected-value order; responsive, searchable, and accessible',
@@ -300,7 +335,7 @@ export const docsDense = {
       {
         guidance: true,
         description:
-          'Compose draft/Apply/Cancel, saved views, and persistence outside the component.',
+          'Optionally host in ComplexSelector: its value is applied state, TransferList value is draft state, and only Apply commits.',
       },
       {
         guidance: false,

@@ -1,13 +1,25 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/**
+ * @file TransferList.stories.tsx
+ * @input TransferList option data plus Core selector, layout, and table primitives
+ * @output Storybook examples for standalone and composed TransferList patterns
+ * @position Lab Storybook documentation and visual validation
+ *
+ * SYNC: When TransferList behavior changes, update its source, docs, and tests.
+ */
+
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
+import * as stylex from '@stylexjs/stylex';
 import {TransferList} from '@astryxdesign/lab';
 import type {TransferListOption} from '@astryxdesign/lab';
 import {Button} from '@astryxdesign/core/Button';
+import {ComplexSelector} from '@astryxdesign/core/ComplexSelector';
 import {Divider} from '@astryxdesign/core/Divider';
 import {Heading} from '@astryxdesign/core/Heading';
-import {Popover} from '@astryxdesign/core/Popover';
+import {Icon} from '@astryxdesign/core/Icon';
+import {IconButton} from '@astryxdesign/core/IconButton';
 import {Section} from '@astryxdesign/core/Section';
 import {Selector} from '@astryxdesign/core/Selector';
 import {HStack, VStack} from '@astryxdesign/core/Stack';
@@ -20,6 +32,75 @@ import {
 } from '@astryxdesign/core/Table';
 import type {TableColumn} from '@astryxdesign/core/Table';
 import {Text} from '@astryxdesign/core/Text';
+import {
+  colorVars,
+  radiusVars,
+  spacingVars,
+} from '@astryxdesign/core/theme/tokens.stylex';
+import {Plus} from 'lucide-react';
+
+const styles = stylex.create({
+  viewOptionsTrigger: {
+    backgroundColor: colorVars['--color-background-muted'],
+    borderRadius: radiusVars['--radius-element'],
+  },
+  viewOptionsContent: {
+    width: 'min(760px, calc(100vw - 32px))',
+    maxWidth: 'calc(100vw - 32px)',
+    maxHeight: 'min(680px, calc(100vh - 32px))',
+    padding: 0,
+    overflow: 'hidden',
+  },
+  viewOptionsSurface: {
+    display: 'flex',
+    flexDirection: 'column',
+    minWidth: 0,
+    maxHeight: 'min(680px, calc(100vh - 32px))',
+  },
+  viewOptionsHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacingVars['--spacing-2'],
+    paddingBlock: spacingVars['--spacing-3'],
+    paddingInline: spacingVars['--spacing-3'],
+  },
+  presetsRow: {
+    display: 'grid',
+    gridTemplateColumns: 'auto minmax(0, 1fr) auto',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-2'],
+    paddingBlock: spacingVars['--spacing-2'],
+    paddingInline: spacingVars['--spacing-3'],
+  },
+  transferListSection: {
+    minHeight: 0,
+    overflowY: 'auto',
+    overscrollBehavior: 'contain',
+    paddingBlock: spacingVars['--spacing-3'],
+    paddingInline: spacingVars['--spacing-3'],
+  },
+  viewOptionsFooter: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacingVars['--spacing-2'],
+    paddingBlock: spacingVars['--spacing-3'],
+    paddingInline: spacingVars['--spacing-3'],
+  },
+  footerLink: {
+    height: 'auto',
+    paddingBlock: 0,
+    paddingInline: 0,
+    borderRadius: 0,
+    color: colorVars['--color-text-accent'],
+    backgroundImage: {
+      default: 'none',
+      ':hover': 'none',
+      ':active': 'none',
+    },
+  },
+});
 
 const meta: Meta<typeof TransferList> = {
   title: 'Lab/TransferList',
@@ -397,6 +478,21 @@ const SAVED_VIEWS: ReadonlyArray<{
   },
 ];
 
+const SAVED_VIEW_OPTIONS = [
+  ...SAVED_VIEWS.map(view => ({value: view.value, label: view.label})),
+  {value: 'custom', label: 'Custom', disabled: true},
+];
+
+function hasSameOrderedColumns(
+  left: ReadonlyArray<ProjectColumnKey>,
+  right: ReadonlyArray<ProjectColumnKey>,
+): boolean {
+  return (
+    left.length === right.length &&
+    left.every((column, index) => column === right[index])
+  );
+}
+
 function TableColumnSettingsExample() {
   const [appliedColumns, setAppliedColumns] = useState<
     ReadonlyArray<ProjectColumnKey>
@@ -404,7 +500,6 @@ function TableColumnSettingsExample() {
   const [draftColumns, setDraftColumns] = useState<
     ReadonlyArray<ProjectColumnKey>
   >(DEFAULT_PROJECT_COLUMNS);
-  const [savedView, setSavedView] = useState('standard');
   const [isOpen, setIsOpen] = useState(true);
 
   const columnSettingsState = useTableColumnSettingsState<ProjectColumnKey>({
@@ -418,12 +513,15 @@ function TableColumnSettingsExample() {
     ProjectColumnKey
   >(columnSettingsState.columnSettingsConfig);
 
+  const activeSavedView =
+    SAVED_VIEWS.find(view => hasSameOrderedColumns(view.columns, draftColumns))
+      ?.value ?? 'custom';
+
   const selectSavedView = (nextValue: string) => {
     const nextView = SAVED_VIEWS.find(view => view.value === nextValue);
     if (nextView == null) {
       return;
     }
-    setSavedView(nextValue);
     setDraftColumns(nextView.columns);
   };
 
@@ -432,16 +530,6 @@ function TableColumnSettingsExample() {
       setDraftColumns(appliedColumns);
     }
     setIsOpen(nextIsOpen);
-  };
-
-  const cancelChanges = () => {
-    setDraftColumns(appliedColumns);
-    setIsOpen(false);
-  };
-
-  const applyChanges = () => {
-    setAppliedColumns(draftColumns);
-    setIsOpen(false);
   };
 
   return (
@@ -453,80 +541,91 @@ function TableColumnSettingsExample() {
             Customize visible columns without changing the underlying data.
           </Text>
         </VStack>
-        <Popover
-          label="Customize table columns"
+        <ComplexSelector
+          label="View options"
+          isLabelHidden
+          value={appliedColumns}
+          onChange={setAppliedColumns}
+          triggerLabel="View Options"
+          startIcon="viewColumns"
+          variant="ghost"
           placement="below"
           alignment="end"
-          width={760}
           isOpen={isOpen}
           onOpenChange={handleOpenChange}
-          hasAutoFocus={false}
-          content={
-            <VStack gap={3}>
-              <VStack gap={0.5}>
-                <Heading level={3}>Customize columns</Heading>
-                <Text type="supporting" color="secondary">
-                  Start from a saved view, then choose and order the columns for
-                  this table.
-                </Text>
-              </VStack>
-              <Selector
-                label="Saved view"
-                options={SAVED_VIEWS.map(view => ({
-                  value: view.value,
-                  label: view.label,
-                }))}
-                value={savedView}
-                onChange={selectSavedView}
-                width="100%"
-              />
-              <Divider />
-              <TransferList
-                label="Table columns"
-                isLabelHidden
-                options={PROJECT_TRANSFER_OPTIONS}
-                value={draftColumns}
-                onChange={setDraftColumns}
-                selectedLabel="Shown columns"
-                availableLabel="Hidden columns"
-                hasSelectAll
-                hasClear
-                onReset={() => {
-                  setSavedView('standard');
-                  setDraftColumns(DEFAULT_PROJECT_COLUMNS);
-                }}
-              />
-              <Divider />
-              <HStack gap={2} hAlign="end" vAlign="center" wrap="wrap">
-                <Button
-                  label="Reset columns"
+          xstyle={styles.viewOptionsTrigger}
+          contentXstyle={styles.viewOptionsContent}>
+          {(_currentColumns, commit, close) => (
+            <div {...stylex.props(styles.viewOptionsSurface)}>
+              <div {...stylex.props(styles.viewOptionsHeader)}>
+                <Heading level={3}>View Options</Heading>
+                <IconButton
+                  label="Close view options"
+                  icon={<Icon icon="close" size="sm" color="inherit" />}
                   variant="ghost"
-                  onClick={() => {
-                    setSavedView('standard');
-                    setDraftColumns(DEFAULT_PROJECT_COLUMNS);
-                  }}
+                  size="sm"
+                  onClick={close}
                 />
-                <Button
-                  label="Cancel column changes"
+              </div>
+              <Divider />
+              <div {...stylex.props(styles.presetsRow)}>
+                <Text type="label" weight="semibold">
+                  Presets
+                </Text>
+                <Selector
+                  label="Column preset"
+                  isLabelHidden
+                  options={SAVED_VIEW_OPTIONS}
+                  value={activeSavedView}
+                  onChange={selectSavedView}
+                  width="100%"
+                />
+                <IconButton
+                  label="Save current columns as a preset"
+                  icon={<Icon icon={Plus} size="sm" color="inherit" />}
                   variant="secondary"
-                  onClick={cancelChanges}>
-                  Cancel
+                  size="sm"
+                  isDisabled
+                />
+              </div>
+              <Divider />
+              <div {...stylex.props(styles.transferListSection)}>
+                <TransferList
+                  label="Table columns"
+                  isLabelHidden
+                  options={PROJECT_TRANSFER_OPTIONS}
+                  value={draftColumns}
+                  onChange={setDraftColumns}
+                  selectedLabel="Visible fields"
+                  availableLabel="Available fields"
+                  hasSelectAll
+                  hasClear
+                />
+              </div>
+              <Divider />
+              <div {...stylex.props(styles.viewOptionsFooter)}>
+                <Button
+                  label="Restore columns to default"
+                  variant="ghost"
+                  xstyle={styles.footerLink}
+                  onClick={() => {
+                    setDraftColumns(DEFAULT_PROJECT_COLUMNS);
+                  }}>
+                  Restore to default
                 </Button>
                 <Button
                   label="Apply column changes"
                   variant="primary"
-                  onClick={applyChanges}>
+                  onClick={() => {
+                    commit(draftColumns);
+                    close();
+                  }}>
                   Apply
                 </Button>
-              </HStack>
-            </VStack>
-          }>
-          <Button
-            label={`Customize columns, ${appliedColumns.length} visible`}
-            variant="secondary">
-            {`Columns · ${appliedColumns.length}`}
-          </Button>
-        </Popover>
+              </div>
+            </div>
+          )}
+        </ComplexSelector>
       </HStack>
       <Section padding={0}>
         <Table
