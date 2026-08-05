@@ -19,10 +19,10 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {createJiti} from 'jiti';
-import {loadModuleWithParser} from '../../foundation/fs/module-loader.mjs';
+import {loadModuleWithParser} from '../fs/module-loader.mjs';
 import {parseTemplate} from '../../authoring/doctypes/template/parse.mjs';
-import {CLI_ROOT, discoverExternalPackages} from '../../foundation/fs/paths.mjs';
-import {Project} from '../../foundation/config/project.mjs';
+import {CLI_ROOT, discoverExternalPackages} from '../fs/paths.mjs';
+import {Project} from '../config/project.mjs';
 
 /** Identity used for core (built-in) templates in package-scoped listings. */
 const CORE_PACKAGE = '@astryxdesign/core';
@@ -458,7 +458,7 @@ async function discoverIntegrationTemplates(cwd = process.cwd()) {
   try {
     const project = await Project.load(cwd);
     loadedIntegrations =
-      /** @type {import('../../foundation/integrations/integrations.mjs').LoadedIntegration[]} */ (
+      /** @type {import('../integrations/integrations.mjs').LoadedIntegration[]} */ (
         project.loadedIntegrations
       );
   } catch (err) {

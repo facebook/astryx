@@ -18,12 +18,12 @@ import {
 } from '../../../foundation/fs/path-safety.mjs';
 import {AstryxError} from '../../error.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
-import {stripTemplateAssetRefs} from '../_adapter.mjs';
+import {stripTemplateAssetRefs} from '../../../foundation/discovery/template-adapter.mjs';
 
 /**
  * Scaffold an already-resolved template to `targetPath` (relative to `cwd`) and
  * return the `template.copy` receipt.
- * @param {import('../_adapter.mjs').DiscoveredTemplate} match
+ * @param {import('../../../foundation/discovery/template-adapter.mjs').DiscoveredTemplate} match
  * @param {{targetPath: string, cwd: string, overwrite?: boolean}} ctx
  * @returns {import('../template.type.mjs').TemplateCopyResponse}
  */

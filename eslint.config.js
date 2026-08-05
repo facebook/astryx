@@ -450,9 +450,31 @@ export default defineConfig(
   },
   // Everything above the contracts consumes already-parsed, typed data.
   {
-    files: ["packages/cli/clients/**/*.mjs", "packages/cli/foundation/**/*.mjs"],
+    files: ["packages/cli/clients/**/*.mjs"],
     rules: {
       "no-restricted-imports": ["error", {
+        paths: [{
+          name: "zod",
+          message:
+            "zod is sealed behind the authoring/ parsers. Validate at the load boundary (parseDoc/parseConfig/parseIntegration) and pass typed data inward.",
+        }],
+      }],
+    },
+  },
+  // foundation/ is the bottom layer: cross-cutting infra that the layers above
+  // build on. It must not reach back up into api/ or clients/. (It briefly did:
+  // Project pulled template discovery out of api/template, whose adapter then
+  // imported Project back — a cycle across the layer boundary. The adapter and
+  // the contribution validators now live in foundation, where their callers are.)
+  {
+    files: ["packages/cli/foundation/**/*.mjs"],
+    rules: {
+      "no-restricted-imports": ["error", {
+        patterns: [{
+          group: ["**/api/**", "**/clients/**"],
+          message:
+            "foundation/ is the bottom layer and must not import api/ or clients/. If foundation needs it, it belongs in foundation — move it down rather than reaching up.",
+        }],
         paths: [{
           name: "zod",
           message:
