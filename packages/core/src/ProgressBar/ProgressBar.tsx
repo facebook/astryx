@@ -125,7 +125,7 @@ export interface ProgressBarProps extends BaseProps<HTMLDivElement> {
    * is below or past them, and take their color from what they sit on: a mark
    * inside the filled area uses the fill variant's on-color (on-accent,
    * on-warning, on-error, …), while a mark still out on the bare track uses
-   * the emphasized divider color. Each mark's required `label` names it for
+   * `--color-text-primary`. Each mark's required `label` names it for
    * assistive tech and is revealed via a `Tooltip` on hover/focus. Ignored when
    * `isIndeterminate` is true.
    */
@@ -316,8 +316,9 @@ const variantStyles = stylex.create({
 // on-color that pairs with the fill's own variant color — the same pairing
 // Badge uses for solid semantic backgrounds. `neutral` and `disabled` fill with
 // the muted `--color-text-disabled` gray, which carries no semantic weight and
-// has no dedicated on-token, so they keep the same emphasized divider color a
-// mark uses out on the track.
+// has no dedicated on-token, so they use the same `--color-text-primary` a mark
+// uses out on the track (see `markOnTrackStyles`) — the only foreground that
+// clears 3:1 against that gray in every shipped theme and mode.
 const markOnFillStyles = stylex.create({
   accent: {
     backgroundColor: colorVars['--color-on-accent'],
@@ -332,19 +333,29 @@ const markOnFillStyles = stylex.create({
     backgroundColor: colorVars['--color-on-error'],
   },
   neutral: {
-    backgroundColor: colorVars['--color-border-emphasized'],
+    backgroundColor: colorVars['--color-text-primary'],
   },
   disabled: {
-    backgroundColor: colorVars['--color-border-emphasized'],
+    backgroundColor: colorVars['--color-text-primary'],
   },
 });
 
-// A mark out on the bare track is a divider-like tick over the muted track
-// background, so it takes the emphasized divider color (what `Divider`'s
-// `strong` variant and `Slider`'s marks use).
+// A mark out on the bare track is a foreground tick over the muted track
+// background, so it takes `--color-text-primary`.
+//
+// The obvious candidate was `--color-border-emphasized` — the emphasized
+// divider color `Divider`'s `strong` variant and `Slider`'s marks use — but
+// divider tokens sit a step or two from the track on the same neutral ramp, so
+// a mark drawn in one is at or near invisible: measured against each shipped
+// theme's track it lands between 1.00:1 (theme-neutral, both modes, where the
+// track is aliased to that very token) and 2.9:1, under the 3:1 WCAG 1.4.11
+// non-text floor in 7 of 8 themes. `--color-text-secondary` still misses in
+// two. `--color-text-primary` is the one foreground guaranteed to read against
+// every surface a theme defines: 5.8:1 to 15.7:1 on the track across all
+// themes and both modes.
 const markOnTrackStyles = stylex.create({
   track: {
-    backgroundColor: colorVars['--color-border-emphasized'],
+    backgroundColor: colorVars['--color-text-primary'],
   },
 });
 

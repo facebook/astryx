@@ -417,7 +417,7 @@ describe('ProgressBar', () => {
 
     // Mark color follows what the mark sits on: inside the filled area it
     // takes the fill variant's on-color, out on the bare track it takes the
-    // emphasized divider color. The choice is reflected as `data-placement`
+    // primary text color. The choice is reflected as `data-placement`
     // (plus `data-variant`, mirroring the fill) so themes can target it and
     // tests can assert it without reading atomic class names.
     it('marks the ticks inside the filled area as placed on the fill', () => {
@@ -507,8 +507,8 @@ describe('ProgressBar', () => {
 
     it('keeps the divider color on the fill for neutral and disabled bars', () => {
       // The neutral/disabled fill is the muted gray — it carries no semantic
-      // weight and has no on-token, so a mark on it stays the emphasized
-      // divider color it would have out on the track.
+      // weight and has no on-token, so a mark on it stays the primary text
+      // color it would have out on the track.
       for (const props of [
         {variant: 'neutral'} as const,
         {isDisabled: true} as const,

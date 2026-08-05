@@ -230,9 +230,9 @@ export const ProgressPastMark: Story = {
 export const MarksAcrossVariants: Story = {
   // A mark takes its color from what it sits on: inside the filled area it
   // uses the fill variant's on-color (on-accent / on-success / on-warning /
-  // on-error), out on the bare track it uses the emphasized divider color.
+  // on-error), out on the bare track it uses the primary text color.
   // Neutral and disabled fill with the muted gray, which has no on-token, so
-  // their marks keep the divider color on both sides.
+  // their marks keep the primary text color on both sides.
   //
   // Every fill style is covered here: each semantic variant, the disabled
   // fill, both fill extremes (nothing filled / fully filled), and the
