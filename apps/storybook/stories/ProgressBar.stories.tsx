@@ -231,42 +231,84 @@ export const MarksAcrossVariants: Story = {
   // A mark takes its color from what it sits on: inside the filled area it
   // uses the fill variant's on-color (on-accent / on-success / on-warning /
   // on-error), out on the bare track it uses the emphasized divider color.
-  // Each bar below has one mark on each side of the fill.
-  render: () => (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '16px',
-        width: '320px',
-      }}>
-      {(['accent', 'success', 'warning', 'error', 'neutral'] as const).map(
-        variant => (
+  // Neutral and disabled fill with the muted gray, which has no on-token, so
+  // their marks keep the divider color on both sides.
+  //
+  // Every fill style is covered here: each semantic variant, the disabled
+  // fill, both fill extremes (nothing filled / fully filled), and the
+  // indeterminate fill, which ignores marks entirely.
+  render: () => {
+    const MARKS = [
+      {value: 30, label: 'Mark at 30'},
+      {value: 85, label: 'Mark at 85'},
+    ];
+    const section: React.CSSProperties = {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '16px',
+      width: '320px',
+    };
+    const heading: React.CSSProperties = {
+      font: '600 12px/1.4 system-ui, sans-serif',
+      textTransform: 'uppercase',
+      letterSpacing: '0.06em',
+      opacity: 0.6,
+      marginBlockEnd: '-4px',
+    };
+    return (
+      <div style={{...section, gap: '28px'}}>
+        <div style={section}>
+          <div style={heading}>Semantic variants — 60% filled</div>
+          {(['accent', 'success', 'warning', 'error', 'neutral'] as const).map(
+            variant => (
+              <ProgressBar
+                key={variant}
+                value={60}
+                variant={variant}
+                label={variant}
+                hasValueLabel
+                marks={MARKS}
+              />
+            ),
+          )}
           <ProgressBar
-            key={variant}
             value={60}
-            variant={variant}
-            label={variant}
+            isDisabled
+            label="disabled"
             hasValueLabel
-            marks={[
-              {value: 30, label: 'On the fill'},
-              {value: 85, label: 'On the track'},
-            ]}
+            marks={MARKS}
           />
-        ),
-      )}
-      <ProgressBar
-        value={60}
-        isDisabled
-        label="disabled"
-        hasValueLabel
-        marks={[
-          {value: 30, label: 'On the fill'},
-          {value: 85, label: 'On the track'},
-        ]}
-      />
-    </div>
-  ),
+        </div>
+
+        <div style={section}>
+          <div style={heading}>Fill extremes</div>
+          <ProgressBar
+            value={0}
+            label="0% — every mark on the track"
+            hasValueLabel
+            marks={MARKS}
+          />
+          <ProgressBar
+            value={100}
+            label="100% — every mark on the fill"
+            hasValueLabel
+            marks={MARKS}
+          />
+          <ProgressBar
+            value={30}
+            label="30% — a mark exactly at the fill edge"
+            hasValueLabel
+            marks={MARKS}
+          />
+        </div>
+
+        <div style={section}>
+          <div style={heading}>Indeterminate — marks are ignored</div>
+          <ProgressBar isIndeterminate label="indeterminate" marks={MARKS} />
+        </div>
+      </div>
+    );
+  },
 };
 
 export const ThemedMarks: Story = {
