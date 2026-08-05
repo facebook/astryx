@@ -17,7 +17,7 @@ export const docs = {
       {guidance: true, description: 'Add a status dot when knowing someone\'s availability matters, like in chat or team views.'},
       {guidance: true, description: 'When wrapping an Avatar in your own Tooltip or HoverCard, set tooltip={false} so the built-in name tooltip does not overlap yours.'},
       {guidance: false, description: 'Use Avatar for logos, product images, or anything that isn\'t a person or team. Use an image or icon instead.'},
-      {guidance: false, description: 'Force a square or custom shape. Avatars are always circular to stay consistent across the system.'},
+      {guidance: false, description: 'Use xstyle or className to override shape. Use the shape prop instead so themes can control it globally.'},
     ],
     anatomy: [
       {name: 'Photo', required: false, description: 'The profile image, loaded from the src URL. Shown when available.'},
@@ -28,14 +28,14 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'astryx-avatar', visualProps: ['size']},
+      {className: 'astryx-avatar', visualProps: ['size', 'shape']},
       {className: 'astryx-avatar-status-dot', visualProps: ['variant']},
       {className: 'astryx-avatar-status-dot-glyph', visualProps: ['shape']},
     ],
     vars: [
       {name: '--_avatar-fallback-font-size', description: 'Initials font size; default is proportional to the avatar size (size × 0.4). Override per size tier (e.g. size:sm) for a custom type scale.', default: 'calc(avatar-size × 0.4)', private: true},
       {name: '--_avatar-fallback-font-weight', description: 'Initials font weight', default: 'var(--font-weight-medium)', private: true},
-      {name: '--_avatar-fallback-color', description: 'Fallback text and default-icon color', default: 'var(--color-text-secondary)', private: true},
+      {name: '--_avatar-fallback-color', description: 'Fallback text and default-icon color', default: 'var(--color-text-primary)', private: true},
       {name: '--_avatar-fallback-background', description: 'Fallback wash background fill', default: 'var(--color-neutral)', private: true},
     ],
     derived: [
@@ -72,6 +72,12 @@ export const docs = {
       type: "'xsm' | 'sm' | 'md' | 'lg' | 'xl' | number",
       description: "Avatar size. Use a named size ('xsm' 20px, 'sm' 24px, 'md' 36px, 'lg' 48px, 'xl' 128px) or a numeric pixel value. Avatar shares Icon's abbreviated scale, but its tiers are larger because avatars align with media rather than glyphs.",
       default: "'md'",
+    },
+    {
+      name: 'shape',
+      type: "'circle' | 'rounded' | 'square'",
+      description: "Shape variant of the avatar. 'circle' (default) stays fully round. 'rounded' uses the element radius token so it matches UI corner rounding and can be set globally via theme. 'square' has no radius. Status dot positioning adapts automatically: 4-o'clock on circle, bottom-right corner on rounded/square.",
+      default: "'circle'",
     },
     {
       name: 'status',

@@ -38,7 +38,7 @@ export interface AvatarStatusDotVariantMap {
 }
 
 export {Avatar, resolveSize} from './Avatar';
-export type {AvatarProps, AvatarSize} from './Avatar';
+export type {AvatarProps, AvatarSize, AvatarShape} from './Avatar';
 export {AvatarStatusDot} from './AvatarStatusDot';
 export type {
   AvatarStatusDotProps,
