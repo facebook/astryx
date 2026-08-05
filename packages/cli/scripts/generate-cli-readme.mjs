@@ -36,6 +36,15 @@ function getManifest() {
     encoding: 'utf8',
     maxBuffer: 64 * 1024 * 1024,
   });
+  // Report a CLI that failed to boot as itself. Without this, the parse below
+  // turns it into "Unexpected end of JSON input", which says nothing useful
+  // when this runs as a CI gate.
+  if (res.error) throw res.error;
+  if (res.status !== 0 || !res.stdout.trim()) {
+    throw new Error(
+      `\`astryx manifest --json\` failed (exit ${res.status}).\n${res.stderr}`,
+    );
+  }
   return JSON.parse(res.stdout).data;
 }
 

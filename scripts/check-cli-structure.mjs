@@ -67,15 +67,20 @@ function walk(dir) {
 
 /** @type {string[]} */
 const errors = [];
-let checked = 0;
+let doctypeCount = 0;
+let apiCount = 0;
 
 // ── 1. doc-type quartets ────────────────────────────────────────────────
 const authoringIndexTypes = fs.readFileSync(path.join(CLI, 'authoring/index.d.ts'), 'utf8');
 const authoringIndexImpl = fs.readFileSync(path.join(CLI, 'authoring/index.mjs'), 'utf8');
+const aggregateParseDecl = fs.readFileSync(
+  path.join(DOCTYPES, 'parse.d.mts'),
+  'utf8',
+);
 
 for (const kind of dirsIn(DOCTYPES)) {
   if (DOCTYPE_EXEMPT.has(kind)) continue;
-  checked++;
+  doctypeCount++;
   const dir = path.join(DOCTYPES, kind);
 
   for (const required of ['type.ts', 'parse.mjs', 'parse.d.mts', `${kind}.doc.mjs`]) {
@@ -94,11 +99,22 @@ for (const kind of dirsIn(DOCTYPES)) {
   if (!authoringIndexImpl.includes(spec)) {
     errors.push(`doc-type "${kind}" parser is not re-exported from authoring/index.mjs`);
   }
+
+  // The aggregate parseDoc declaration shadows its implementation for published
+  // consumers, so a kind missing from that union is silently unnarrowable —
+  // `type === 'schema'` reads as a no-overlap comparison and `fields` is
+  // inaccessible. Existence of parse.d.mts is not enough; it must cover the kind.
+  const docType = `${kind[0].toUpperCase()}${kind.slice(1)}Doc`;
+  if (!aggregateParseDecl.includes(docType)) {
+    errors.push(
+      `doc-type "${kind}" is missing from the parseDoc return union in authoring/doctypes/parse.d.mts (expected ${docType})`,
+    );
+  }
 }
 
 // ── 2. api/<name>/ leaves ───────────────────────────────────────────────
 for (const name of dirsIn(API)) {
-  checked++;
+  apiCount++;
   const dir = path.join(API, name);
   const files = walk(dir);
   const topLevel = fs.readdirSync(dir);
@@ -119,6 +135,20 @@ for (const name of dirsIn(API)) {
   }
 }
 
+// If a directory is moved or renamed, the loops above simply iterate nothing and
+// this would report a cheerful "0 checked". A check that passes when its subject
+// disappears is worse than no check, so require having found something real.
+if (doctypeCount === 0) {
+  errors.push(
+    `found no doc-type folders under ${path.relative(REPO_ROOT, DOCTYPES)} — has the directory moved? Update this check.`,
+  );
+}
+if (apiCount === 0) {
+  errors.push(
+    `found no api/<name>/ folders under ${path.relative(REPO_ROOT, API)} — has the directory moved? Update this check.`,
+  );
+}
+
 if (errors.length > 0) {
   console.error('❌ CLI structure violations:\n');
   for (const e of errors) console.error(`  ${e}`);
@@ -128,4 +158,6 @@ if (errors.length > 0) {
   process.exit(1);
 }
 
-console.log(`✅ ${checked} CLI doc-type/api folder(s) checked — structure is intact.`);
+console.log(
+  `✅ ${doctypeCount} doc-type(s) + ${apiCount} api folder(s) checked — CLI structure is intact.`,
+);
