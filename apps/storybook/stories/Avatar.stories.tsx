@@ -628,14 +628,19 @@ export const NumericSizes: Story = {
 // font-size scale are all set on the `avatar-fallback` child target (font size
 // through its size tiers). The default row is unchanged (size × 0.4, medium
 // weight, neutral fill); only the themed row opts in.
+//
+// The themed colors deliberately use a hued token pair (blue) rather than
+// `--color-accent-muted`/`--color-text-secondary`: in the monochrome neutral
+// theme those resolve to the same grey as the default fallback, so the demo
+// would look unthemed even though the theme rule is applying.
 const fallbackScaleTheme = defineTheme({
   name: 'avatar-fallback-scale',
   components: {
     'avatar-fallback': {
       base: {
         fontWeight: 'var(--font-weight-normal)',
-        color: 'var(--color-text-secondary)',
-        backgroundColor: 'var(--color-accent-muted)',
+        color: 'var(--color-text-blue)',
+        backgroundColor: 'var(--color-background-blue)',
       },
       'size:xsm': {fontSize: '8px'},
       'size:sm': {fontSize: '9px'},
@@ -660,7 +665,7 @@ export const ThemedFallbackScale: Story = {
       </div>
 
       <h4 {...stylex.props(styles.heading)}>
-        Themed fallback (per-size scale, regular weight, wash fill)
+        Themed fallback (per-size scale, regular weight, blue wash)
       </h4>
       <Theme theme={fallbackScaleTheme} mode="light">
         <div {...stylex.props(styles.row)}>
@@ -677,16 +682,20 @@ export const ThemedFallbackScale: Story = {
 
 // The fallback surface (initials AND the default person icon) is a direct theme
 // target via the stable `astryx-avatar-fallback` class. Setting a background on
-// the `avatar-fallback` component key paints the wash on the element that
+// the `avatar-fallback` component key paints the fill on the element that
 // actually renders it — no per-component override needed. Both fallback kinds
 // pick up the same themed background.
+//
+// `--color-accent` / `--color-on-accent` gives a full-contrast flip against the
+// default grey wash in every shipped theme, so the themed row reads as themed
+// at a glance (a muted token would land within a shade of the default here).
 const fallbackBackgroundTheme = defineTheme({
   name: 'avatar-fallback-background',
   components: {
     'avatar-fallback': {
       base: {
-        backgroundColor: 'var(--color-accent-muted)',
-        color: 'var(--color-text-accent)',
+        backgroundColor: 'var(--color-accent)',
+        color: 'var(--color-on-accent)',
       },
     },
   },
@@ -704,7 +713,7 @@ export const ThemedFallbackBackground: Story = {
       </div>
 
       <h4 {...stylex.props(styles.heading)}>
-        Themed fallback background (accent wash on initials and icon)
+        Themed fallback background (solid accent on initials and icon)
       </h4>
       <Theme theme={fallbackBackgroundTheme} mode="light">
         <div {...stylex.props(styles.row)}>
