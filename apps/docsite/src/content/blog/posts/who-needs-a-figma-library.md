@@ -1,6 +1,6 @@
 ---
 title: 'Who needs a Figma Library?'
-description: "Introducing the Astryx Figma Library — built and self-maintained by a Night Watch that keeps it in sync with code on every dot release."
+description: 'Introducing the Astryx Figma Library, built and self-maintained by a Night Watch that keeps it in sync with code on every dot release.'
 date: '2026-08-05'
 type: 'update'
 authors:
