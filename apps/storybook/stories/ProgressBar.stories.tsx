@@ -227,6 +227,48 @@ export const ProgressPastMark: Story = {
   },
 };
 
+export const MarksAcrossVariants: Story = {
+  // A mark takes its color from what it sits on: inside the filled area it
+  // uses the fill variant's on-color (on-accent / on-success / on-warning /
+  // on-error), out on the bare track it uses the emphasized divider color.
+  // Each bar below has one mark on each side of the fill.
+  render: () => (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '16px',
+        width: '320px',
+      }}>
+      {(['accent', 'success', 'warning', 'error', 'neutral'] as const).map(
+        variant => (
+          <ProgressBar
+            key={variant}
+            value={60}
+            variant={variant}
+            label={variant}
+            hasValueLabel
+            marks={[
+              {value: 30, label: 'On the fill'},
+              {value: 85, label: 'On the track'},
+            ]}
+          />
+        ),
+      )}
+      <ProgressBar
+        value={60}
+        isDisabled
+        label="disabled"
+        hasValueLabel
+        marks={[
+          {value: 30, label: 'On the fill'},
+          {value: 85, label: 'On the track'},
+        ]}
+      />
+    </div>
+  ),
+};
+
 export const ThemedMarks: Story = {
   // Marks are themeable directly via the `progressbar-mark` target: a theme sets
   // `backgroundColor`, `width`, and `height` on it with `defineTheme` — no

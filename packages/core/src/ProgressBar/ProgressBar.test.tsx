@@ -291,6 +291,16 @@ describe('ProgressBar', () => {
   describe('target marks', () => {
     const MARK = '.astryx-progressbar-mark';
 
+    // The StyleX atomic classes on an element, without the stable astryx-*
+    // theme classes and the bare variant/placement tokens — so a comparison
+    // reflects the resolved styles, not the reflected props.
+    function styleClasses(el: HTMLElement): string {
+      return Array.from(el.classList)
+        .filter(c => /^x[a-z0-9]+$/.test(c))
+        .sort()
+        .join(' ');
+    }
+
     it('renders no mark elements when marks is omitted', () => {
       const {container} = render(<ProgressBar value={50} label="Progress" />);
       expect(container.querySelectorAll(MARK)).toHaveLength(0);
@@ -403,6 +413,130 @@ describe('ProgressBar', () => {
         />,
       );
       expect(container.querySelectorAll(MARK)).toHaveLength(0);
+    });
+
+    // Mark color follows what the mark sits on: inside the filled area it
+    // takes the fill variant's on-color, out on the bare track it takes the
+    // emphasized divider color. The choice is reflected as `data-placement`
+    // (plus `data-variant`, mirroring the fill) so themes can target it and
+    // tests can assert it without reading atomic class names.
+    it('marks the ticks inside the filled area as placed on the fill', () => {
+      const {container} = render(
+        <ProgressBar
+          value={60}
+          label="Progress"
+          marks={[
+            {value: 25, label: 'Behind'},
+            {value: 90, label: 'Ahead'},
+          ]}
+        />,
+      );
+      const marks = container.querySelectorAll<HTMLElement>(MARK);
+      expect(marks[0]).toHaveAttribute('data-placement', 'fill');
+      expect(marks[1]).toHaveAttribute('data-placement', 'track');
+      // Different placements resolve to different color styles.
+      expect(styleClasses(marks[0])).not.toBe(styleClasses(marks[1]));
+    });
+
+    it('treats a mark exactly at the current value as on the fill', () => {
+      const {container} = render(
+        <ProgressBar
+          value={70}
+          label="Progress"
+          marks={[{value: 70, label: 'Goal'}]}
+        />,
+      );
+      expect(container.querySelector(MARK)).toHaveAttribute(
+        'data-placement',
+        'fill',
+      );
+    });
+
+    it('places every mark on the track at zero progress', () => {
+      // With no fill drawn, even a mark at 0 sits on the bare track.
+      const {container} = render(
+        <ProgressBar
+          value={0}
+          label="Progress"
+          marks={[
+            {value: 0, label: 'Start'},
+            {value: 50, label: 'Goal'},
+          ]}
+        />,
+      );
+      const marks = container.querySelectorAll<HTMLElement>(MARK);
+      expect(marks[0]).toHaveAttribute('data-placement', 'track');
+      expect(marks[1]).toHaveAttribute('data-placement', 'track');
+      expect(styleClasses(marks[0])).toBe(styleClasses(marks[1]));
+    });
+
+    it('mirrors the fill variant on marks so the on-color matches the bar', () => {
+      const {container} = render(
+        <ProgressBar
+          value={80}
+          variant="warning"
+          label="Budget used"
+          marks={[
+            {value: 50, label: 'Half'},
+            {value: 95, label: 'Cap'},
+          ]}
+        />,
+      );
+      const marks = container.querySelectorAll<HTMLElement>(MARK);
+      expect(marks[0]).toHaveAttribute('data-variant', 'warning');
+      expect(marks[0]).toHaveAttribute('data-placement', 'fill');
+      expect(marks[1]).toHaveAttribute('data-variant', 'warning');
+      expect(marks[1]).toHaveAttribute('data-placement', 'track');
+    });
+
+    it('uses the disabled variant for marks when the bar is disabled', () => {
+      const {container} = render(
+        <ProgressBar
+          value={80}
+          variant="error"
+          isDisabled
+          label="Canceled"
+          marks={[{value: 50, label: 'Half'}]}
+        />,
+      );
+      expect(container.querySelector(MARK)).toHaveAttribute(
+        'data-variant',
+        'disabled',
+      );
+    });
+
+    it('recolors marks per variant when they sit on the fill', () => {
+      // Two bars at the same progress with different variants give their
+      // on-fill marks different colors (different atomic classes), while
+      // their on-track marks stay the same divider color.
+      const {container: accent} = render(
+        <ProgressBar
+          value={60}
+          variant="accent"
+          label="A"
+          marks={[
+            {value: 20, label: 'On fill'},
+            {value: 90, label: 'On track'},
+          ]}
+        />,
+      );
+      const {container: error} = render(
+        <ProgressBar
+          value={60}
+          variant="error"
+          label="B"
+          marks={[
+            {value: 20, label: 'On fill'},
+            {value: 90, label: 'On track'},
+          ]}
+        />,
+      );
+      const accentMarks = accent.querySelectorAll<HTMLElement>(MARK);
+      const errorMarks = error.querySelectorAll<HTMLElement>(MARK);
+      expect(styleClasses(accentMarks[0])).not.toBe(
+        styleClasses(errorMarks[0]),
+      );
+      expect(styleClasses(accentMarks[1])).toBe(styleClasses(errorMarks[1]));
     });
 
     it('renders every mark as a focusable trigger (label is required, never decorative)', () => {
