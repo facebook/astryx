@@ -38,7 +38,7 @@ export const doc = {
   ],
   examples: [
     {label: 'Browse the catalog', cli: 'astryx hook --list'},
-    {label: 'One hook as JSON', cli: 'astryx hook useToggle --json'},
+    {label: 'One hook as JSON', cli: 'astryx hook useFocusTrap --json'},
   ],
   exitCodes: [
     {code: 0, when: 'success'},

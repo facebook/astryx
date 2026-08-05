@@ -103,7 +103,7 @@ const EXAMPLES = {
   build: ['astryx build', 'astryx build "analytics dashboard" --json'],
   swizzle: ['astryx swizzle XDSButton'],
   template: ['astryx template --json', 'astryx template dashboard ./src/app'],
-  hook: ['astryx hook', 'astryx hook useToggle --json'],
+  hook: ['astryx hook', 'astryx hook useFocusTrap --json'],
   'theme build': [
     'astryx theme build ./src/themes/ocean.ts --out ./dist/ocean.css',
     'astryx theme build ./src/themes/ocean.ts --check',
