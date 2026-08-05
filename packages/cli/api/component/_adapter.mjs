@@ -270,6 +270,9 @@ export async function resolveUnscopedDoc(dirName, {coreDir, cwd, name}) {
   let resolvedName = dirName;
   // Track the resolving owner so the detail payload can carry ownership info.
   // Defaults to core; the legacy-external fallback below may reassign it.
+  // Annotated because CORE_PACKAGE's generated declaration carries the literal
+  // type, which (unlike a fresh literal) does not widen on assignment.
+  /** @type {string} */
   let resolvedOwnerPackage = CORE_PACKAGE;
   let resolvedSourcePath = readmePath ? findComponentSource(coreDir, dirName) : null;
 

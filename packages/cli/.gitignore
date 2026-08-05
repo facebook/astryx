@@ -10,6 +10,8 @@ api/**/*.d.mts
 api/*.d.mts
 authoring/**/*.d.mts
 authoring/*.d.mts
+foundation/**/*.d.mts
+foundation/*.d.mts
 .api-verify/
 
 # Transient fixture dir written by authoring-migration.tsc.test.mjs (runs the

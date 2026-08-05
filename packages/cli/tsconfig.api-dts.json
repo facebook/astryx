@@ -14,7 +14,8 @@
     "api/**/*.d.ts",
     "authoring/**/*.mjs",
     "authoring/**/*.ts",
-    "foundation/**/*.d.ts",
+    "foundation/**/*.mjs",
+    "foundation/**/*.ts",
     "clients/cli/lib/*.d.ts",
     "assets/codemods/*.d.ts"
   ],

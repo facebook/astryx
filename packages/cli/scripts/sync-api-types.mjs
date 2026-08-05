@@ -1,18 +1,23 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Generate the public `./api` type surface from the JSDoc source of truth.
+ * @file Generate the published type surface from the JSDoc source of truth.
  *
- * Functions own their types: each api leaf's `@returns` + colocated
- * `.type.mjs` typedefs ARE the contract. This script runs `tsc`
- * (allowJs + checkJs + declaration + emitDeclarationOnly) over the api sources
- * into a throwaway temp dir, then copies just the emitted api declaration tree
- * (the `.d.mts` files) back alongside the sources (so their relative imports and
- * shared `types` declarations resolve). `api/index.d.mts` is the entry that
- * `package.json` exports["./api"].types points at.
+ * Functions own their types: a leaf's `@returns` + its colocated `.type.mjs`
+ * typedefs ARE the contract. This script runs `tsc` (allowJs + checkJs +
+ * declaration + emitDeclarationOnly) over the source trees into a throwaway
+ * temp dir, then copies the emitted declaration trees (the `.d.mts` files) back
+ * alongside their sources (so relative imports and shared `types` declarations
+ * resolve). `api/index.d.mts` is the entry `package.json` exports["./api"].types
+ * points at.
  *
- * The emitted `api/**\/*.d.mts` are NOT committed (they're gitignored, like the
- * other packages' `dist/`). This script runs automatically at `prepack`, so
+ * Three trees are emitted (see TREES): `api` and `authoring` are published
+ * entry points, and `foundation` is included because the `api` declarations
+ * re-export from it — without it a consumer resolving those re-exports hits
+ * TS7016 on the packed surface.
+ *
+ * The emitted `.d.mts` are NOT committed (they're gitignored, like the other
+ * packages' `dist/`). This script runs automatically at `prepack`, so
  * `pnpm pack`/`pnpm publish` always ships a freshly generated, in-sync surface.
  * Run `pnpm sync:api-types` to produce them locally; the published surface is
  * verified end-to-end by `.github/scripts/cli-api-types-verify.mjs`.
@@ -28,9 +33,16 @@ import {fileURLToPath} from 'node:url';
 const CLI_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const TMP = '/tmp/astryx-dts-build';
 
-/** The source trees whose `.mjs` JSDoc is the contract. Both are emitted in one
- *  tsc pass (they share types), then copied back beside their sources. */
-const TREES = ['api', 'authoring'];
+/**
+ * The source trees whose `.mjs` JSDoc is the contract. Emitted in one tsc pass
+ * (they share types), then copied back beside their sources.
+ *
+ * `foundation` is here because the published `./api` declarations re-export
+ * from it (e.g. api/template re-exports the template adapter): a consumer
+ * resolving those re-exports needs foundation's declarations too, or it hits
+ * TS7016 on the packed surface.
+ */
+const TREES = ['api', 'authoring', 'foundation'];
 
 /**
  * Banner prepended to every emitted declaration so it's obvious the file is

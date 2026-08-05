@@ -82,6 +82,15 @@ if (!fs.existsSync(path.join(pkgDir, 'authoring', 'doctypes', 'parse.d.mts'))) {
   );
 }
 console.log('\u2713 tarball ships the generated ./authoring declarations');
+// The api declarations re-export from foundation (e.g. api/template re-exports
+// the template adapter), so foundation's declarations have to ship too or those
+// re-exports resolve to `any` for a strict consumer.
+if (!fs.existsSync(path.join(pkgDir, 'foundation', 'discovery', 'template-adapter.d.mts'))) {
+  fail(
+    'packaged tarball is missing foundation/discovery/template-adapter.d.mts \u2014 the api declarations re-export from foundation, so its declarations must ship too',
+  );
+}
+console.log('\u2713 tarball ships the generated foundation declarations');
 fs.symlinkSync(CORE_DIR, path.join(nm, 'core'), 'dir');
 
 // 3. Type-check a representative consumer against the packed types.
