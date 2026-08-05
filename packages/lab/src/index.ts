@@ -224,6 +224,9 @@ export {
 export * from './Stepper';
 export * from './CircularProgress';
 
+// ListInput — compact editor for short collections of simple records
+export * from './ListInput';
+
 // LogStream — experimental streaming log viewer
 export {
   LogStream,

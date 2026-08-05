@@ -1,0 +1,353 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
+
+export const docs = {
+  name: 'ListInput',
+  displayName: 'List Input',
+  group: 'ListInput',
+  category: 'Data Input',
+  keywords: [
+    'listinput',
+    'list input',
+    'editable list',
+    'repeatable fields',
+    'field array',
+    'collection input',
+    'reorder',
+    'guest list',
+    'traveler details',
+  ],
+  props: [
+    {
+      name: 'label',
+      type: 'string',
+      description:
+        'Visible label that names the collection. It also provides the accessible name for the complete input.',
+      required: true,
+    },
+    {
+      name: 'value',
+      type: 'T[]',
+      description:
+        'Current ordered records. ListInput is controlled and never mutates this array or its records.',
+      required: true,
+    },
+    {
+      name: 'onChange',
+      type: '(next: T[], change: ListInputChange<T>) => void',
+      description:
+        'Called with the next array after an add, update, remove, or reorder action. The change argument identifies the action and affected record.',
+      required: true,
+    },
+    {
+      name: 'getItemKey',
+      type: '(item: T) => React.Key',
+      description:
+        'Returns a stable, unique key for each record. Stable identity preserves focus and announcements when records move.',
+      required: true,
+    },
+    {
+      name: 'createItem',
+      type: '() => T',
+      description:
+        'Creates the initial record inserted by the built-in add action. Return a new record with its stable key already assigned.',
+      required: true,
+    },
+    {
+      name: 'columns',
+      type: 'ListInputColumn<T>[]',
+      description:
+        'Consistent simple fields shown for every record. Use each column width with proportional() or pixel() from @astryxdesign/core/Table to tune the width spread. At wider widths, the first record shows each header as its input label and later labels remain available to assistive technology. At 480px or narrower, fields stack, every record shows its field labels, records receive stronger vertical separation, and row actions align beside the first field. Renderers receive isLabelHidden, scoped validation status, and updateItem.',
+      required: true,
+    },
+    {
+      name: 'itemName',
+      type: 'string',
+      description:
+        'Singular noun used in built-in action labels and live announcements, such as "guest" in "Add guest".',
+    },
+    {
+      name: 'description',
+      type: 'string',
+      description:
+        'Supporting text displayed between the collection label and its records.',
+    },
+    {
+      name: 'status',
+      type: 'InputStatus',
+      description:
+        'List-level validation status displayed for the complete collection. An error marks the collection invalid and associates its message with the input.',
+    },
+    {
+      name: 'getItemStatus',
+      type: '(item: T, index: number) => InputStatus | undefined',
+      description:
+        'Returns validation status for a complete record, such as an invalid combination of otherwise valid fields.',
+    },
+    {
+      name: 'getFieldStatus',
+      type: '(item: T, columnKey: string, index: number) => InputStatus | undefined',
+      description:
+        'Returns validation status for one field. The renderer receives the status type for input styling, while ListInput presents the message in a hover/focus tooltip and retains a hidden live description.',
+    },
+    {
+      name: 'isReorderable',
+      type: 'boolean',
+      description:
+        'Shows a trailing vertical grip after the Remove action. During pointer reordering, list rows stay stationary while the source row and a free-moving duplicate that follows the pointer on both axes appear at 50% opacity. Vertical pointer position determines the accent insertion line and final list placement. The controlled order commits and affected rows animate only on release. When the grip is focused, Arrow Up or Arrow Down immediately moves the record one position. Space or Enter starts lift mode for Arrow, Home, or End previewing; Space or Enter drops and Escape cancels. Focus and live announcements are preserved.',
+      default: 'false',
+    },
+    {
+      name: 'isDisabled',
+      type: 'boolean',
+      description:
+        'Disables the collection and all built-in actions. The disabled state is also passed to each column renderer.',
+      default: 'false',
+    },
+    {
+      name: 'isLoading',
+      type: 'boolean',
+      description:
+        'Marks the collection busy and prevents changes while work is pending. The loading state is also passed to each column renderer.',
+      default: 'false',
+    },
+    {
+      name: 'maxItems',
+      type: 'number',
+      description:
+        'Maximum number of records that can be added. Once the value reaches this limit, the built-in add action is unavailable.',
+    },
+    {
+      name: 'isLabelHidden',
+      type: 'boolean',
+      description:
+        'Visually hides the collection label while keeping it available to assistive technology.',
+      default: 'false',
+    },
+    {
+      name: 'isOptional',
+      type: 'boolean',
+      description:
+        'Displays an optional indicator beside the collection label. Mutually exclusive with isRequired.',
+      default: 'false',
+    },
+    {
+      name: 'isRequired',
+      type: 'boolean',
+      description:
+        'Displays a required indicator beside the collection label and exposes the requirement to assistive technology. Mutually exclusive with isOptional.',
+      default: 'false',
+    },
+  ],
+  usage: {
+    description:
+      'ListInput edits a compact, ordered collection of records with consistent fields, built-in add and remove actions, and optional reordering. Use it for lists with fewer than seven records and up to three simple fields per record, such as guests, travelers, or tag options. Use a Table for larger collections and a card or step-based form when records need many, complex, or inconsistent fields.',
+    bestPractices: [
+      {
+        guidance: true,
+        description:
+          'Use stable record keys and consistent columns so focus, validation, and reorder announcements remain attached to the correct record.',
+      },
+      {
+        guidance: true,
+        description:
+          'Keep validation timing application-owned. Track touched fields by stable item and column keys when errors should appear after blur, while allowing submit or server errors to display immediately.',
+      },
+      {
+        guidance: true,
+        description:
+          'Place validation at the narrowest useful level: field status for one value, item status for a record-wide problem, and list status for collection-wide requirements.',
+      },
+      {
+        guidance: true,
+        description:
+          'Let the floating pointer preview follow both axes while using vertical position alone for insertion. Keep list rows stationary and commit the controlled value once on release. Focused handles move immediately with Arrow Up or Arrow Down while preserving lift, move, drop, and cancel behavior.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use for seven or more records or more than three simple fields per record; use a Table or a dedicated editing flow instead.',
+      },
+      {
+        guidance: false,
+        description:
+          'Prevent removal solely to enforce a minimum count; allow the action and explain the resulting requirement with list-level validation.',
+      },
+    ],
+    anatomy: [
+      {
+        name: 'Label and description',
+        required: true,
+        description:
+          'Names the complete collection and optionally explains what records to add.',
+      },
+      {
+        name: 'First-record field labels',
+        required: true,
+        description:
+          'Label the inputs in the first record with the primary text tone and without separate table chrome. At wider widths, labels on later records are visually hidden but remain accessible; when fields stack at 480px or narrower, every record shows its field labels.',
+      },
+      {
+        name: 'Record fields',
+        required: true,
+        description:
+          'Consumer-rendered inputs that receive scoped record state, validation, and update behavior. When stacked responsively, the tighter spacing between fields and larger spacing between records keeps each object visually grouped.',
+      },
+      {
+        name: 'Remove action',
+        required: true,
+        description:
+          'Removes its record and moves focus to a predictable neighboring control. In the stacked layout, it aligns beside the first field at the top of the record.',
+      },
+      {
+        name: 'Reorder handle',
+        required: false,
+        description:
+          'A trailing vertical grip positioned after Remove, with an accessible label and no hover tooltip. In the stacked layout, both actions align beside the first field at the top of the record. Pointer dragging keeps the list stationary, fades both source and duplicate preview to 50%, lets the duplicate follow freely on both axes, and uses vertical position for the insertion line before committing and animating on release. A focused grip moves one position with Arrow Up or Arrow Down; Space or Enter also enables lift mode with Arrow, Home, End, drop, and Escape controls.',
+      },
+      {
+        name: 'Empty state',
+        required: false,
+        description:
+          'When no records exist, a centered compact EmptyState names the empty collection and directs users to the Add action.',
+      },
+      {
+        name: 'Add action',
+        required: true,
+        description:
+          'Fills the record-fields width and appends a new record created by createItem, unless maxItems has been reached.',
+      },
+      {
+        name: 'Validation messages',
+        required: false,
+        description:
+          'Explain field-, item-, or list-level errors, warnings, and success states. Item messages align to the record fields without extending under reorder or remove controls.',
+      },
+    ],
+  },
+  examples: [
+    {
+      label: 'Controlled guest list',
+      code: `import {proportional} from '@astryxdesign/core/Table';
+
+type Guest = {id: string; name: string; email: string};
+
+const columns = [
+  {
+    key: 'name',
+    header: 'Name',
+    width: proportional(1),
+    renderInput: ({item, label, isLabelHidden, status, isDisabled, isLoading, updateItem}) => (
+      <TextInput
+        label={label}
+        isLabelHidden={isLabelHidden}
+        value={item.name}
+        onChange={name => updateItem({...item, name}, 'name')}
+        status={status}
+        isDisabled={isDisabled}
+        isLoading={isLoading}
+      />
+    ),
+  },
+  {
+    key: 'email',
+    header: 'Email',
+    width: proportional(2),
+    renderInput: ({item, label, isLabelHidden, status, isDisabled, isLoading, updateItem}) => (
+      <TextInput
+        type="email"
+        label={label}
+        isLabelHidden={isLabelHidden}
+        value={item.email}
+        onChange={email => updateItem({...item, email}, 'email')}
+        status={status}
+        isDisabled={isDisabled}
+        isLoading={isLoading}
+      />
+    ),
+  },
+] satisfies ListInputColumn<Guest>[];
+
+<ListInput
+  label="Guests"
+  itemName="guest"
+  value={guests}
+  onChange={setGuests}
+  getItemKey={guest => guest.id}
+  createItem={() => ({id: crypto.randomUUID(), name: '', email: ''})}
+  columns={columns}
+  isReorderable
+  maxItems={6}
+  getFieldStatus={(guest, key) =>
+    key === 'email' && guest.email === ''
+      ? {type: 'error', message: 'Enter an email address'}
+      : undefined
+  }
+  status={
+    guests.length === 0
+      ? {type: 'error', message: 'Add at least one guest'}
+      : undefined
+  }
+/>`,
+    },
+  ],
+};
+
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
+export const docsDense = {
+  description:
+    'Controlled compact-record input with typed columns, add/remove, optional reorder, and field/item/list validation.',
+  propDescriptions: {
+    label: 'Collection label and accessible name.',
+    value: 'Controlled ordered records.',
+    onChange: 'Emits next records plus add/update/remove/reorder metadata.',
+    getItemKey: 'Required stable unique record identity.',
+    createItem: 'Creates a new keyed record for Add.',
+    columns:
+      'Typed simple fields: key, header, optional proportional/pixel width, and renderInput. Narrow records stack with visible labels, stronger separation, and top-aligned row actions.',
+    itemName: 'Singular noun for actions and announcements.',
+    description: 'Supporting text below the label.',
+    status: 'List-level InputStatus.',
+    getItemStatus: 'Per-record InputStatus resolver.',
+    getFieldStatus:
+      'Per-field status resolver; type styles the input and message appears in an accessible tooltip.',
+    isReorderable:
+      'Adds a trailing grip without a tooltip. The list stays stationary while a free-moving pointer preview follows both axes; vertical position controls insertion. Focused Arrow Up/Down moves immediately, and keyboard lift/move/drop/cancel is also supported.',
+    isDisabled: 'Disables collection, actions, and rendered inputs.',
+    isLoading: 'Marks busy and prevents changes.',
+    maxItems: 'Makes Add unavailable at the limit.',
+    isLabelHidden: 'Visually hides label only.',
+    isOptional: 'Shows Optional; exclusive with isRequired.',
+    isRequired:
+      'Shows Required + accessible requirement; exclusive with isOptional.',
+  },
+  usage: {
+    description:
+      'Use for compact ordered records: fewer than 7 items and up to 3 simple consistent fields. Use Table or a dedicated flow for larger or complex data.',
+    bestPractices: [
+      {
+        guidance: true,
+        description: 'Use stable keys and consistent columns.',
+      },
+      {
+        guidance: true,
+        description: 'Validate at field, item, or list scope as appropriate.',
+      },
+      {
+        guidance: true,
+        description:
+          'Follow pointer X and Y in the floating preview, use Y for insertion, and commit once on release; focused Arrow Up/Down moves immediately, with lift mode available for extended keyboard control.',
+      },
+      {
+        guidance: false,
+        description: 'Use for long datasets or complex/inconsistent records.',
+      },
+      {
+        guidance: false,
+        description:
+          'Block removal to enforce a minimum; report a list error instead.',
+      },
+    ],
+  },
+};
