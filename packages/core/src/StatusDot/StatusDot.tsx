@@ -20,7 +20,9 @@ import type {ReactNode} from 'react';
 
 import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
+import {useThemeName} from '../theme/useTheme';
 import type {BaseProps} from '../BaseProps';
+import {getExtendedIcon} from '../Icon';
 import {Tooltip} from '../Tooltip/Tooltip';
 import {isRenderable, mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
@@ -162,6 +164,25 @@ const glyphShapeMap: Partial<Record<StatusDotVariant, StatusDotGlyphShape>> = {
   error: 'cross',
   neutral: 'ring',
 };
+
+/**
+ * Registry key for a variant's glyph override: `statusdot:<variant>`.
+ *
+ * The built-in glyphs resolve through the icon registry under these scoped
+ * keys, so a theme can reshape a status's mark — `defineTheme({icons:
+ * {'statusdot:success': <MyGlyph />}})` or `registerIcons` — the same seam
+ * `RichTextEditorToolbar` uses for its `richtext:*` keys. The keys are
+ * deliberately separate from the standard 24px semantic icons
+ * (`check`/`warning`/`error`): those are drawn for a 24px field and their
+ * stroke geometry does not survive being squeezed into the 8px dot, so
+ * overriding a full-size icon does not silently restyle every dot. An
+ * override renders in the same slot as the `icon` prop: an 8px box painted
+ * from the variant's `currentColor` ink. Augmented custom variants are
+ * themeable the same way (e.g. `statusdot:critical`).
+ */
+function statusDotIconKey(variant: StatusDotVariant): string {
+  return `statusdot:${variant}`;
+}
 
 /**
  * The built-in shape glyph, drawn as a stroked inline SVG in `currentColor`.
@@ -307,7 +328,10 @@ export interface StatusDotProps extends BaseProps<HTMLSpanElement> {
  * (WCAG 2.1 SC 1.4.1). The shapes are the system's semantic icon vocabulary
  * (the marks `Banner`/`FieldStatus` render via `defaultIcons`), so a status
  * reads the same whether shown as a full icon or an 8px dot. Pass `icon` to
- * override the built-in glyph. Themes can target the glyph via the
+ * override the built-in glyph per instance, or register a dot-scaled icon
+ * under the scoped registry key `statusdot:<variant>` (via
+ * `defineTheme({icons})` or `registerIcons`) to retheme a variant's mark
+ * everywhere. Themes can also target the built-in glyph via the
  * `astryx-statusdot-glyph` class and its `data-shape` attribute.
  *
  * Renders as a non-focusable `<span>` with `role="img"` and
@@ -335,11 +359,19 @@ export function StatusDot({
   ref,
   ...props
 }: StatusDotProps) {
+  const themeName = useThemeName();
   // A user-supplied icon is itself a non-colour mark, so it replaces the
   // built-in glyph. Booleans and empty renders don't count (safe for
   // `cond && <Icon />`) — same contract as AvatarStatusDot.
   const showsIcon = isRenderable(icon);
-  const glyphShape = showsIcon ? undefined : glyphShapeMap[variant];
+  // Theme/global registry override for this variant's mark. The explicit
+  // `icon` prop wins over it; the tuned built-in glyph is the fallback.
+  const registryGlyph = showsIcon
+    ? undefined
+    : getExtendedIcon(statusDotIconKey(variant), undefined, themeName);
+  const showsRegistryGlyph = isRenderable(registryGlyph);
+  const glyphShape =
+    showsIcon || showsRegistryGlyph ? undefined : glyphShapeMap[variant];
   const dot = (
     <span
       ref={ref}
@@ -361,6 +393,11 @@ export function StatusDot({
       {showsIcon && (
         <span aria-hidden="true" {...stylex.props(styles.icon)}>
           {icon}
+        </span>
+      )}
+      {!showsIcon && showsRegistryGlyph && (
+        <span aria-hidden="true" {...stylex.props(styles.icon)}>
+          {registryGlyph}
         </span>
       )}
       {glyphShape && <StatusDotGlyph shape={glyphShape} />}

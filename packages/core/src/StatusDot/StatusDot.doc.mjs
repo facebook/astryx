@@ -39,7 +39,7 @@ export const docs = {
       name: 'icon',
       type: 'ReactNode',
       description:
-        'Optional icon rendered centered inside the dot, painted in currentColor. Replaces the built-in shape glyph (use a different icon per status). Booleans and empty strings are ignored, so `cond && <Icon />` is safe. Same contract as AvatarStatusDot.',
+        'Optional icon rendered centered inside the dot, painted in currentColor. Replaces the built-in shape glyph (use a different icon per status). Booleans and empty strings are ignored, so `cond && <Icon />` is safe. Same contract as AvatarStatusDot. To retheme a variant everywhere instead of per instance, register a dot-scaled icon under the scoped registry key `statusdot:<variant>` via defineTheme({icons}) or registerIcons.',
     },
     {
       name: 'xstyle',
@@ -98,7 +98,7 @@ export const docsZh = {
       name: 'icon',
       type: 'ReactNode',
       description:
-        '可选图标，居中渲染于圆点内，以 currentColor 着色。会替换内置形状图形（请为每个状态使用不同图标）。布尔值和空字符串会被忽略，因此 `cond && <Icon />` 是安全的。与 AvatarStatusDot 的契约一致。',
+        '可选图标，居中渲染于圆点内，以 currentColor 着色。会替换内置形状图形（请为每个状态使用不同图标）。布尔值和空字符串会被忽略，因此 `cond && <Icon />` 是安全的。与 AvatarStatusDot 的契约一致。若要在全局重新定制某个变体的形状（而非逐实例），请通过 defineTheme({icons}) 或 registerIcons 在作用域注册表键 `statusdot:<variant>` 下注册适配圆点尺寸的图标。',
     },
     {
       name: 'xstyle',
@@ -150,7 +150,7 @@ export const docsDense = {
     label: 'Accessible label via aria-label.',
     isPulsing: 'Pulse animation; respects prefers-reduced-motion: reduce.',
     tooltip: 'Tooltip text on hover to explain status meaning.',
-    icon: 'Optional ReactNode rendered centered in the dot (currentColor); replaces the built-in glyph. Booleans/empty strings ignored (safe for cond && <Icon/>). Same contract as AvatarStatusDot.',
+    icon: 'Optional ReactNode rendered centered in the dot (currentColor); replaces the built-in glyph. Booleans/empty strings ignored (safe for cond && <Icon/>). Same contract as AvatarStatusDot. Theme a variant globally via registry key statusdot:<variant> (defineTheme({icons}) / registerIcons).',
     xstyle: 'StyleX layout styles; must be stylex.create() value.',
   },
 };

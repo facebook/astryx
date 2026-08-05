@@ -1,9 +1,10 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {describe, it, expect} from 'vitest';
+import {describe, it, expect, afterEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
+import {registerIcons, resetIcons} from '../Icon';
 import {StatusDot, type StatusDotVariant} from './StatusDot';
 
 const GLYPH_SELECTOR = '.astryx-statusdot-glyph';
@@ -370,6 +371,80 @@ describe('StatusDot', () => {
       const dot = renderDot({variant: 'error', label: 'Do not disturb'});
       expect(dot).toHaveAttribute('role', 'img');
       expect(dot).toHaveAttribute('aria-label', 'Do not disturb');
+    });
+  });
+
+  describe('icon registry integration (statusdot:<variant> keys)', () => {
+    afterEach(() => {
+      resetIcons();
+    });
+
+    it('renders a registered statusdot:<variant> icon instead of the built-in glyph', () => {
+      registerIcons({
+        'statusdot:success': (
+          <svg data-testid="custom-success-glyph">
+            <circle />
+          </svg>
+        ),
+      });
+      const dot = renderDot({variant: 'success', label: 'Online'});
+      expect(screen.getByTestId('custom-success-glyph')).toBeInTheDocument();
+      expect(dot.querySelector(GLYPH_SELECTOR)).toBeNull();
+    });
+
+    it('scopes an override to its own variant — others keep the built-in glyph', () => {
+      registerIcons({
+        'statusdot:success': <svg data-testid="custom-success-glyph" />,
+      });
+      const dot = renderDot({variant: 'error', label: 'Offline'});
+      expect(
+        screen.queryByTestId('custom-success-glyph'),
+      ).not.toBeInTheDocument();
+      expect(dot.querySelector(GLYPH_SELECTOR)).toHaveAttribute(
+        'data-shape',
+        'cross',
+      );
+    });
+
+    it('does not inherit overrides of the standard 24px semantic icons', () => {
+      // Redrawing the full-size `check`/`success` icons must not silently
+      // restyle the 8px dot — the dot only listens to its scoped keys.
+      registerIcons({
+        check: <svg data-testid="big-check" />,
+        success: <svg data-testid="big-success" />,
+      });
+      const dot = renderDot({variant: 'success', label: 'Online'});
+      expect(screen.queryByTestId('big-check')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('big-success')).not.toBeInTheDocument();
+      expect(dot.querySelector(GLYPH_SELECTOR)).toHaveAttribute(
+        'data-shape',
+        'check',
+      );
+    });
+
+    it('lets the explicit icon prop win over a registry override', () => {
+      registerIcons({
+        'statusdot:success': <svg data-testid="registry-glyph" />,
+      });
+      renderDot({
+        variant: 'success',
+        label: 'Online',
+        icon: <svg data-testid="prop-icon" />,
+      });
+      expect(screen.getByTestId('prop-icon')).toBeInTheDocument();
+      expect(screen.queryByTestId('registry-glyph')).not.toBeInTheDocument();
+    });
+
+    it('gives augmented custom variants a themeable mark via their scoped key', () => {
+      registerIcons({
+        'statusdot:critical': <svg data-testid="critical-glyph" />,
+      });
+      const dot = renderDot({
+        variant: 'critical' as StatusDotVariant,
+        label: 'Critical',
+      });
+      expect(screen.getByTestId('critical-glyph')).toBeInTheDocument();
+      expect(dot.querySelector(GLYPH_SELECTOR)).toBeNull();
     });
   });
 });
