@@ -29,7 +29,6 @@ import * as stylex from '@stylexjs/stylex';
 import {HoverCard} from '../HoverCard';
 import {IconButton} from '../IconButton';
 import {Icon} from '../Icon';
-import {Tooltip} from '../Tooltip/Tooltip';
 import {useAnnounce} from '../hooks/useAnnounce';
 import {useTranslator} from '../i18n';
 import {themeProps} from '../utils/themeProps';
@@ -149,28 +148,26 @@ function CopyButton({value}: {value: string}) {
   }, [value, announce, t]);
 
   return (
-    <Tooltip
-      content={t(
+    <IconButton
+      variant="ghost"
+      size="sm"
+      icon={<Icon icon={copied ? 'check' : 'copy'} size="sm" color="inherit" />}
+      // Visible hover/focus hint via Button's built-in tooltip: 'Copy',
+      // flipping to 'Copied' after a successful copy in step with the icon.
+      // The full 'Copy <value>' string stays the aria-label for assistive tech.
+      tooltip={t(
         copied ? '@astryx.timestamp.copied' : '@astryx.timestamp.copy',
       )}
-      placement="above">
-      <IconButton
-        variant="ghost"
-        size="sm"
-        icon={
-          <Icon icon={copied ? 'check' : 'copy'} size="sm" color="inherit" />
-        }
-        label={
-          copied
-            ? t('@astryx.timestamp.copied')
-            : t('@astryx.timestamp.copyValue', {value})
-        }
-        onClick={() => {
-          void handleCopy();
-        }}
-        {...themeProps('timestamp-copy-button')}
-      />
-    </Tooltip>
+      label={
+        copied
+          ? t('@astryx.timestamp.copied')
+          : t('@astryx.timestamp.copyValue', {value})
+      }
+      onClick={() => {
+        void handleCopy();
+      }}
+      {...themeProps('timestamp-copy-button')}
+    />
   );
 }
 
