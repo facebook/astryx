@@ -1445,6 +1445,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
             variant,
             size,
             status: status?.type ?? null,
+            disabled: isDisabled ? 'disabled' : null,
           }),
           stylex.props(
             inputWrapperStyles.base,

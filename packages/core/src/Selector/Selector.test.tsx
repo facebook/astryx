@@ -1717,3 +1717,48 @@ describe('Selector selected-marker theme target (selector-check)', () => {
     expect(css).toContain('display: none');
   });
 });
+
+describe('Selector disabled state theme target', () => {
+  const getSelectorRoot = (container: HTMLElement): HTMLElement => {
+    const root = container.querySelector('.astryx-selector');
+    if (root == null) {
+      throw new Error('selector root not found');
+    }
+    return root as HTMLElement;
+  };
+
+  it('reflects data-disabled="disabled" on the root when disabled', () => {
+    const {container} = render(
+      <Selector label="Fruit" options={OPTIONS} onChange={() => {}} isDisabled />,
+    );
+    expect(getSelectorRoot(container)).toHaveAttribute(
+      'data-disabled',
+      'disabled',
+    );
+  });
+
+  it('omits the disabled class/attribute when enabled', () => {
+    const {container} = render(
+      <Selector label="Fruit" options={OPTIONS} onChange={() => {}} />,
+    );
+    const root = getSelectorRoot(container);
+    expect(root).not.toHaveAttribute('data-disabled');
+    expect(root).not.toHaveClass('disabled');
+  });
+
+  it('exposes the disabled state so a theme can key on it', () => {
+    const theme = defineTheme({
+      name: 'selector-disabled-state-test',
+      components: {
+        selector: {
+          'disabled:disabled': {opacity: '0.4'},
+        },
+      },
+    });
+    const css = generateThemeTestCSS(theme);
+    expect(css).toContain('.astryx-selector.disabled');
+    expect(css).toContain('opacity: 0.4');
+  });
+});
+
+

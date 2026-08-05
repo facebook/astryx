@@ -23,6 +23,7 @@ export const docs = {
       {
         className: 'astryx-multi-selector',
         visualProps: ['variant', 'size', 'status'],
+        states: ['disabled'],
       },
       {className: 'astryx-multi-selector-clear-icon'},
       {
