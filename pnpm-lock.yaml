@@ -588,6 +588,9 @@ importers:
       '@types/d3-shape':
         specifier: ^3.1.8
         version: 3.1.8
+      rimraf:
+        specifier: ^6.0.1
+        version: 6.1.3
 
   packages/cli:
     dependencies:
@@ -735,6 +738,9 @@ importers:
       lexical:
         specifier: ^0.46.0
         version: 0.46.0(typescript@6.0.3)
+      rimraf:
+        specifier: ^6.0.1
+        version: 6.1.3
 
   packages/richtext:
     dependencies:
@@ -750,6 +756,10 @@ importers:
       react-dom:
         specifier: '>=19.0.0'
         version: 19.2.7(react@19.2.7)
+    devDependencies:
+      rimraf:
+        specifier: ^6.0.1
+        version: 6.1.3
 
   packages/themes/butter:
     dependencies:
