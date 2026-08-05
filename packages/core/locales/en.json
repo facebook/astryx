@@ -677,7 +677,15 @@
   },
   "@astryx.table.pagination.label": {
     "defaultMessage": "Table pagination",
-    "description": "Screen-reader-only accessible name for the pagination `<nav>` appended below a data table. Kept separate from `@astryx.pagination.label` so translations may diverge."
+    "description": "Screen-reader-only accessible name for a table's pagination `<nav>` (rendered below and/or above the table per the plugin's position config). Kept separate from `@astryx.pagination.label` so translations may diverge. When position='both', this string is interpolated as the {label} value into `@astryx.table.pagination.labelAbove`/`labelBelow` — keep it compatible with those suffix templates."
+  },
+  "@astryx.table.pagination.labelAbove": {
+    "defaultMessage": "{label} (top)",
+    "description": "Accessible name for the pagination `<nav>` rendered above the table when position='both' renders two navs. `label` is the resolved base label (default \"Table pagination\" or consumer-supplied); the suffix keeps the two same-type landmarks distinguishable."
+  },
+  "@astryx.table.pagination.labelBelow": {
+    "defaultMessage": "{label} (bottom)",
+    "description": "Accessible name for the pagination `<nav>` rendered below the table when position='both' renders two navs. `label` is the resolved base label (default \"Table pagination\" or consumer-supplied); the suffix keeps the two same-type landmarks distinguishable."
   },
   "@astryx.timeInput.placeholder": {
     "defaultMessage": "Select a time",
