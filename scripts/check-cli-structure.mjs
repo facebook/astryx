@@ -9,16 +9,16 @@
  * precisely what typechecking and unit tests cannot see — every individual file
  * is valid, the set is incomplete.
  *
- * 1. Every doc-type ships a complete quartet:
+ * 1. Every doc-type ships a complete trio, and re-exports its parser from the
+ *    authoring barrel:
  *      type.ts          the authored shape
  *      parse.mjs        the sealed parser (the CLI's load boundary)
- *      parse.d.mts      the parser's declaration
  *      <kind>.doc.mjs   the doc-type documenting itself
- *    The declaration is not optional: `authoring/index.d.ts` re-exports each
- *    parser, so a missing parse.d.mts makes a strict consumer of the published
- *    package resolve it as `any`. That shipped once and only surfaced at pack
- *    time in CI (TS7016) — long after local typechecks passed clean, because
- *    they run with checkJs and never exercise the packed ./api type surface.
+ *    The parser's `.d.mts` declaration is deliberately NOT checked here: it is
+ *    generated from the `.mjs` JSDoc by scripts/sync-api-types.mjs, so it can
+ *    neither go missing nor drift. (Both failure modes shipped once while those
+ *    declarations were hand-written — a missing file surfaced as TS7016 at pack
+ *    time, and a stale parseDoc union silently dropped three doc kinds.)
  *
  * 2. Every api/<name>/ leaf carries its colocated contract and proof:
  *      *.type.mjs   the Options + { type, data } response typedefs, or a
@@ -73,17 +73,26 @@ let apiCount = 0;
 // ── 1. doc-type quartets ────────────────────────────────────────────────
 const authoringIndexTypes = fs.readFileSync(path.join(CLI, 'authoring/index.d.ts'), 'utf8');
 const authoringIndexImpl = fs.readFileSync(path.join(CLI, 'authoring/index.mjs'), 'utf8');
-const aggregateParseDecl = fs.readFileSync(
-  path.join(DOCTYPES, 'parse.d.mts'),
-  'utf8',
-);
+/**
+ * parseDoc's own `@returns {...}` union — the source the emitted declaration
+ * derives from. Scoped to the JSDoc block immediately above `export function
+ * parseDoc`: the file also carries a `@typedef` line per kind, so matching the
+ * whole file would find every kind name and never fail.
+ */
+const parseSrc = fs.readFileSync(path.join(DOCTYPES, 'parse.mjs'), 'utf8');
+const parseDocJsdoc = parseSrc.slice(0, parseSrc.indexOf('export function parseDoc'));
+const returnsMatches = parseDocJsdoc.match(/@returns\s*\{[^}]*\}/g) ?? [];
+const aggregateParserReturns = returnsMatches[returnsMatches.length - 1] ?? '';
+if (!aggregateParserReturns) {
+  errors.push('could not find a @returns union on parseDoc in authoring/doctypes/parse.mjs');
+}
 
 for (const kind of dirsIn(DOCTYPES)) {
   if (DOCTYPE_EXEMPT.has(kind)) continue;
   doctypeCount++;
   const dir = path.join(DOCTYPES, kind);
 
-  for (const required of ['type.ts', 'parse.mjs', 'parse.d.mts', `${kind}.doc.mjs`]) {
+  for (const required of ['type.ts', 'parse.mjs', `${kind}.doc.mjs`]) {
     if (!fs.existsSync(path.join(dir, required))) {
       errors.push(
         `doc-type "${kind}" is missing authoring/doctypes/${kind}/${required}`,
@@ -100,14 +109,14 @@ for (const kind of dirsIn(DOCTYPES)) {
     errors.push(`doc-type "${kind}" parser is not re-exported from authoring/index.mjs`);
   }
 
-  // The aggregate parseDoc declaration shadows its implementation for published
-  // consumers, so a kind missing from that union is silently unnarrowable —
-  // `type === 'schema'` reads as a no-overlap comparison and `fields` is
-  // inaccessible. Existence of parse.d.mts is not enough; it must cover the kind.
+  // parseDoc's own `@returns` is what the generated declaration derives its
+  // return union from, so a kind missing there is silently unnarrowable for
+  // consumers (`type === 'schema'` reads as a no-overlap comparison). Checking
+  // the JSDoc catches it at the source rather than in the emitted artifact.
   const docType = `${kind[0].toUpperCase()}${kind.slice(1)}Doc`;
-  if (!aggregateParseDecl.includes(docType)) {
+  if (!aggregateParserReturns.includes(docType)) {
     errors.push(
-      `doc-type "${kind}" is missing from the parseDoc return union in authoring/doctypes/parse.d.mts (expected ${docType})`,
+      `doc-type "${kind}" is missing from the @returns union of authoring/doctypes/parse.mjs (expected ${docType})`,
     );
   }
 }

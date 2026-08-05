@@ -344,16 +344,18 @@ These are not free-form. `parseDoc` validates each at load, and a **drift harnes
 
 Most of the conventions above are mechanical, so they're checked rather than reviewed:
 
-| Rule                                                                                                          | Enforced by                      |
-| ------------------------------------------------------------------------------------------------------------- | -------------------------------- |
-| `authoring/` imports no other layer; `api/` never imports `clients/`                                          | ESLint (`no-restricted-imports`) |
-| zod stays sealed behind the `authoring/` parsers                                                              | ESLint (`no-restricted-imports`) |
-| commands register via `defineCommand`, never straight onto Commander                                          | ESLint (`no-restricted-syntax`)  |
-| each doc-type ships `type.ts` + `parse.mjs` + `parse.d.mts` + `<kind>.doc.mjs`, and its parser is re-exported | `pnpm check:cli-structure`       |
-| each `api/<name>/` ships its typedefs, a `FunctionDoc`, and a test                                            | `pnpm check:cli-structure`       |
-| every `CommandDoc`/`EnumDoc` matches the live CLI                                                             | the drift harness                |
+| Rule                                                                                                                          | Enforced by                      |
+| ----------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| `authoring/` imports no other layer; `api/` never imports `clients/`                                                          | ESLint (`no-restricted-imports`) |
+| zod stays sealed behind the `authoring/` parsers                                                                              | ESLint (`no-restricted-imports`) |
+| commands register via `defineCommand`, never straight onto Commander                                                          | ESLint (`no-restricted-syntax`)  |
+| each doc-type ships `type.ts` + `parse.mjs` + `<kind>.doc.mjs`, re-exports its parser, and appears in `parseDoc`'s `@returns` | `pnpm check:cli-structure`       |
+| each `api/<name>/` ships its typedefs, a `FunctionDoc`, and a test                                                            | `pnpm check:cli-structure`       |
+| every `CommandDoc`/`EnumDoc` matches the live CLI                                                                             | the drift harness                |
 
-The declaration file (`parse.d.mts`) is the easiest one to forget and the most expensive to miss: `authoring/index.d.ts` re-exports each parser, so without it a strict consumer of the published package resolves that parser as `any` — and local typechecks won't catch it, because they run with `checkJs` and never exercise the packed `./api` surface. A hand-written declaration shadows the JSDoc in its `.mjs`, so it can also go stale while still compiling; `check:cli-structure` therefore asserts that every doc kind appears in the `parseDoc` return union too.
+You never hand-write the `.d.mts` declarations. `scripts/sync-api-types.mjs` emits them for both `api/` and `authoring/` from the `.mjs` JSDoc — gitignored, regenerated at `prepack`, and stamped `@generated`. Edit the JSDoc and run `pnpm -F @astryxdesign/cli sync:api-types`.
+
+That matters because a hand-written declaration _shadows_ the JSDoc in its `.mjs`, and both ways it can lie shipped once: a missing declaration made a strict consumer resolve the parser as `any` (surfacing only at pack time as TS7016, since local typechecks run with `checkJs` and never exercise the packed surface), and a stale `parseDoc` union silently dropped three doc kinds from the published type while still compiling. Generation removes both. The one declaration still written by hand is `authoring/index.d.ts`, the curated public barrel.
 
 ### Adding a command
 
