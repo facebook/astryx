@@ -406,6 +406,75 @@ export default defineConfig(
       '@astryx/copyright-header': 'error',
     },
   },
+  // ── CLI architecture invariants ────────────────────────────────────────
+  // Enforces the layering documented in CONTRIBUTING > "Working on the astryx
+  // CLI". Every rule below is already clean across packages/cli, so they are
+  // errors: they exist to prevent regressions, not to flag a backlog.
+  //
+  // NOTE: flat config *overrides* (does not merge) a same-named rule, so the
+  // `no-restricted-imports` blocks are kept disjoint — one per layer.
+
+  // authoring/ is pure data contracts + sealed parsers: it sits below every
+  // other layer and imports none of them.
+  {
+    files: ["packages/cli/authoring/**/*.mjs"],
+    rules: {
+      "no-restricted-imports": ["error", {
+        patterns: [{
+          group: ["**/api/**", "**/clients/**", "**/foundation/**"],
+          message:
+            "authoring/ is pure data contracts (types + sealed parsers) and must not import api/, clients/, or foundation/. Move shared behavior down into the contract, or invert the dependency.",
+        }],
+      }],
+    },
+  },
+  // api/ is the behavior source of truth — it must never reach up into the
+  // CLI presentation layer (that's what keeps `astryx --json` and the imported
+  // function returning identical data).
+  {
+    files: ["packages/cli/api/**/*.mjs"],
+    rules: {
+      "no-restricted-imports": ["error", {
+        patterns: [{
+          group: ["**/clients/**"],
+          message:
+            "api/ is the behavior source of truth and must not import clients/ (the CLI presentation layer). Return data in the { type, data } envelope and let the command handler render it.",
+        }],
+        paths: [{
+          name: "zod",
+          message:
+            "zod is sealed behind the authoring/ parsers. Validate at the load boundary (parseDoc/parseConfig/parseIntegration) and pass typed data inward.",
+        }],
+      }],
+    },
+  },
+  // Everything above the contracts consumes already-parsed, typed data.
+  {
+    files: ["packages/cli/clients/**/*.mjs", "packages/cli/foundation/**/*.mjs"],
+    rules: {
+      "no-restricted-imports": ["error", {
+        paths: [{
+          name: "zod",
+          message:
+            "zod is sealed behind the authoring/ parsers. Validate at the load boundary (parseDoc/parseConfig/parseIntegration) and pass typed data inward.",
+        }],
+      }],
+    },
+  },
+  // A command's --help and its manifest entry are generated from its colocated
+  // CommandDoc via defineCommand. Registering straight onto Commander bypasses
+  // the doc, so the docs silently stop describing the real CLI.
+  {
+    files: ["packages/cli/clients/cli/commands/**/*.mjs"],
+    rules: {
+      "no-restricted-syntax": ["error", {
+        selector:
+          "CallExpression[callee.type='MemberExpression'][callee.property.name='command']",
+        message:
+          "Register commands with defineCommand(parent, doc, {fn, action}) so --help and the manifest come from the colocated CommandDoc. See CONTRIBUTING > Working on the astryx CLI.",
+      }],
+    },
+  },
   // CLI tests — relax author-ergonomics rules (test files emit freely and may
   // keep intentionally-unused fixtures). Must come after the CLI block above.
   {
@@ -413,6 +482,9 @@ export default defineConfig(
     rules: {
       "@astryx/no-raw-console-cli": "off",
       "@typescript-eslint/no-unused-vars": "off",
+      // Tests build fixtures directly against zod and Commander.
+      "no-restricted-imports": "off",
+      "no-restricted-syntax": "off",
     },
   },
 );

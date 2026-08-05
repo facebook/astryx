@@ -340,6 +340,21 @@ Every CLI surface has a colocated, typed `.doc.mjs` next to what it describes, a
 
 These are not free-form. `parseDoc` validates each at load, and a **drift harness** (`packages/cli/test/drift/`) enforces that they mirror their source of truth: every `CommandDoc`'s `fn`/args/options match the live CLI, and the `EnumDoc`s equal `ERROR_CODES` / the manifest's response-type set exactly. A doc that drifts fails CI.
 
+### What's enforced for you
+
+Most of the conventions above are mechanical, so they're checked rather than reviewed:
+
+| Rule                                                                                                          | Enforced by                      |
+| ------------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| `authoring/` imports no other layer; `api/` never imports `clients/`                                          | ESLint (`no-restricted-imports`) |
+| zod stays sealed behind the `authoring/` parsers                                                              | ESLint (`no-restricted-imports`) |
+| commands register via `defineCommand`, never straight onto Commander                                          | ESLint (`no-restricted-syntax`)  |
+| each doc-type ships `type.ts` + `parse.mjs` + `parse.d.mts` + `<kind>.doc.mjs`, and its parser is re-exported | `pnpm check:cli-structure`       |
+| each `api/<name>/` ships its typedefs, a `FunctionDoc`, and a test                                            | `pnpm check:cli-structure`       |
+| every `CommandDoc`/`EnumDoc` matches the live CLI                                                             | the drift harness                |
+
+The declaration file (`parse.d.mts`) is the easiest one to forget and the most expensive to miss: `authoring/index.d.ts` re-exports each parser, so without it a strict consumer of the published package resolves that parser as `any` — and local typechecks won't catch it, because they run with `checkJs` and never exercise the packed `./api` surface.
+
 ### Adding a command
 
 1. Add the behavior under `api/<name>/` with a colocated `<name>.type.mjs` (the `Options` + `{ type, data }` response typedefs — the shape source of truth).
@@ -356,6 +371,10 @@ node packages/cli/clients/cli/bin/astryx.mjs --help
 # Validate every colocated doc parses + mirrors its source of truth
 pnpm -F @astryxdesign/cli test              # includes the drift suite
 pnpm -F @astryxdesign/cli typecheck:authoring
+
+# Structural conventions (doc-type quartets, api/ leaf contents). Also runs as
+# part of `pnpm lint` via check:repo, and in the pre-commit hook.
+pnpm check:cli-structure
 
 # Keep the generated CLI README tables (commands, error codes, response types)
 # in sync with the manifest + EnumDocs. After an intended change, refresh + review:
