@@ -52,7 +52,7 @@ export const docs = {
     },
   ],
   usage: {
-    description: 'A mobile touch surface for filters, actions, and detail views that should rise from the bottom of the screen. Drag the grab handle to resize: a slow drag settles to the nearest snap point (a short peek, ~half, and ~full detent, filtered to those shorter than the sheet), a fast flick down dismisses, a fast flick up expands. Pulling down on the content when it is scrolled to the top also drags the sheet, giving a larger, more forgiving target. The scrim thins to a faint glance state (but never fully clears) as the sheet collapses onto its shortest "peek" detent — the sheet stays modal, so the background remains inert until dismissed; a residual dim keeps that legible. The sheet is modal: focus is trapped while open and restored to the opener on close, and Escape dismisses, so the swipe gesture always has a keyboard equivalent. Content padding clears the home indicator via env(safe-area-inset-bottom).',
+    description: 'A mobile touch surface for filters, actions, and detail views that should rise from the bottom of the screen. Drag the grab handle to resize: a slow drag settles to the nearest snap point (a short peek, ~half, and ~full detent, filtered to those shorter than the sheet), a fast flick down dismisses, a fast flick up expands. Pulling down on the content when it is scrolled to the top also drags the sheet, giving a larger, more forgiving target. The scrim thins to a faint glance state (but never fully clears) as the sheet collapses onto its shortest "peek" detent; the sheet stays modal, so the background remains inert until dismissed; a residual dim keeps that legible. The sheet is modal: focus is trapped while open and restored to the opener on close, and Escape dismisses, so the swipe gesture always has a keyboard equivalent. Content padding clears the home indicator via env(safe-area-inset-bottom).',
     bestPractices: [
       { guidance: true, description: 'Use for mobile-first surfaces (filters, share sheets, quick actions) where the content should rise from the bottom edge.' },
       { guidance: true, description: 'Keep the caller as the source of truth: derive isOpen from state and clear it in onOpenChange.' },
@@ -95,7 +95,7 @@ export const docs = {
 </BottomSheet>`,
     },
     {
-      label: 'Non-modal sheet (no scrim) — page stays interactive',
+      label: 'Non-modal sheet (no scrim): page stays interactive',
       code: `const [isOpen, setIsOpen] = useState(true);
 <BottomSheet
   isOpen={isOpen}
