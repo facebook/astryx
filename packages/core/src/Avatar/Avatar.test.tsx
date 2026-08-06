@@ -65,6 +65,12 @@ describe('Avatar', () => {
     expect(icon?.querySelector('svg')).not.toBeNull();
   });
 
+  it('extracts initials by codepoint, not UTF-16 code unit', () => {
+    // '😀' is a surrogate pair; `.charAt(0)` would split it into a lone unpaired surrogate.
+    render(<Avatar name="😀 Ada" data-testid="a" />);
+    expect(screen.getByTestId('a')).toHaveTextContent('😀A');
+  });
+
   it('retries a new src after a previous src failed to load', () => {
     const {rerender} = render(
       <Avatar name="Ada" src="https://example.com/broken.jpg" />,
