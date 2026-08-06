@@ -9,28 +9,27 @@
  *   on the site. Kept separate so the rules are unit-testable without React.
  *
  * Docs prose cites sibling topics as the literal CLI command — "Semantic
- * tokens, not hardcoded values (see `astryx docs tokens`)". That string is
- * what an agent should type, so it has to stay copy-pasteable code, but for a
- * human reading the site it is a dead end. Linkifying it keeps the code
- * formatting and adds a click target.
+ * tokens, not hardcoded values (see `astryx docs tokens`)". That is what an
+ * agent should type, so it stays copy-pasteable code; linkifying it gives a
+ * human somewhere to click.
  *
  * To teach the site a new kind of cross-reference, write a CodeLinkifier and
- * add it to LINKIFIERS.
+ * append it to LINKIFIERS.
  */
 
-import {docTopicSlugs} from '../generated/docTopicSlugs';
+import {docTopics} from '../generated/docsRegistry';
 
 /** Returns an href for a code span it recognizes, or null to pass. */
 type CodeLinkifier = (code: string) => string | null;
 
-const KNOWN_TOPICS = new Set(docTopicSlugs);
+const KNOWN_TOPICS = new Set(docTopics.map(d => d.topic));
 
 /**
  * `astryx docs tokens` -> /docs/tokens, `astryx docs` -> the docs index.
  *
- * Anything after the topic (a section argument, or a flag like `--dense`
- * that only changes CLI output) still belongs to the topic's page. Unknown
- * topics return null so a renamed doc degrades to plain code, never a 404.
+ * Anything after the topic — a section argument, or a flag like `--dense`
+ * that only changes CLI output — still belongs to the topic's page. Unknown
+ * topics return null so a renamed doc degrades to plain code, not a 404.
  */
 const docTopic: CodeLinkifier = code => {
   const match = /^(?:npx )?astryx docs(?:\s+([a-z][\w-]*))?(?:\s.*)?$/.exec(

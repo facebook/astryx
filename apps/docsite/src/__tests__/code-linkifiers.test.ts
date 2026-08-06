@@ -10,7 +10,6 @@ import {describe, it, expect} from 'vitest';
 import {linkifyCode} from '../components/codeLinkifiers';
 import {docTopics} from '../generated/docsRegistry';
 import {components} from '../generated/componentRegistry';
-import type {ContentBlock} from '../generated/docsRegistry';
 
 describe('doc topic linkifier', () => {
   it.each([
@@ -52,84 +51,33 @@ describe('doc topic linkifier', () => {
   });
 });
 
-/** Inline code spans in a string of authored prose. */
-function codeSpans(text: string): string[] {
-  return [...text.matchAll(/`([^`]+)`/g)].map(m => m[1]);
-}
-
-/**
- * Spans from the blocks of a doc topic that render through
- * renderInlineMarkdown. Fenced code blocks are excluded — they are verbatim
- * terminal transcripts, and nothing linkifies them.
- */
-function inlineSpansOf(block: ContentBlock): string[] {
-  if (block.type === 'code') {
-    return [];
-  }
-  const text = [
-    block.text ?? '',
-    ...(block.items ?? []),
-    ...(block.rows ?? []).flat(),
-  ].join('\n');
-  return codeSpans(text);
-}
-
-function isDocReference(span: string): boolean {
-  return /(^|\s)astryx docs(\s|$)/.test(span);
+/** Every backticked `astryx docs ...` reference in a chunk of authored data. */
+function docReferences(json: string): string[] {
+  const found = [...json.matchAll(/`((?:npx )?astryx docs[^`]*)`/g)];
+  return [...new Set(found.map(m => m[1]))];
 }
 
 /**
  * Guards the failure mode the linkifier cannot catch at runtime: if a topic is
- * renamed, an unresolvable reference silently degrades to plain code instead
- * of 404ing, so nobody notices the cross-reference went stale.
+ * renamed, an unresolvable reference degrades to plain code instead of 404ing,
+ * so nobody notices the cross-reference went stale.
+ *
+ * Scanning the serialized registries rather than walking their shapes keeps
+ * this short and covers every authored field, not just the ones rendered
+ * today.
  */
 describe('doc references in shipped content', () => {
-  const references: Array<{kind: string; source: string; span: string}> = [];
+  const corpora = {
+    'doc topics': JSON.stringify(docTopics),
+    'component docs': JSON.stringify(components),
+  };
 
-  for (const topic of docTopics) {
-    for (const section of topic.sections) {
-      for (const block of section.content) {
-        for (const span of inlineSpansOf(block)) {
-          if (isDocReference(span)) {
-            references.push({
-              kind: 'doc topic',
-              source: `${topic.topic} › ${section.title}`,
-              span,
-            });
-          }
-        }
-      }
-    }
-  }
-
-  for (const entries of Object.values(components)) {
-    for (const comp of entries) {
-      const prose = [
-        comp.usage?.description ?? '',
-        ...(comp.usage?.bestPractices ?? []).map(p => p.description ?? ''),
-        ...(comp.props ?? []).map(p => p.description ?? ''),
-      ].join('\n');
-      for (const span of codeSpans(prose)) {
-        if (isDocReference(span)) {
-          references.push({kind: 'component', source: comp.name, span});
-        }
-      }
-    }
-  }
-
-  // Both corpora render through the linkifiers, so both need covering. If a
-  // scan stops finding anything the guard has quietly stopped guarding.
-  it.each(['doc topic', 'component'])('scans %s prose', kind => {
-    expect(references.filter(ref => ref.kind === kind).length).toBeGreaterThan(
-      0,
-    );
+  it.each(Object.entries(corpora))('scans %s', (_name, json) => {
+    expect(docReferences(json).length).toBeGreaterThan(0);
   });
 
   it('links every reference to a page the site serves', () => {
-    const unresolved = references
-      .filter(ref => linkifyCode(ref.span) == null)
-      .map(ref => `${ref.kind} ${ref.source}: \`${ref.span}\``);
-
-    expect(unresolved).toEqual([]);
+    const all = Object.values(corpora).flatMap(docReferences);
+    expect(all.filter(ref => linkifyCode(ref) == null)).toEqual([]);
   });
 });
