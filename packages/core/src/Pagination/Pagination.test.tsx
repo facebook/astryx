@@ -142,19 +142,39 @@ describe('Pagination', () => {
       ).toBe(true);
     });
 
-    it('renders the prev/next caret icons without an extra mirror wrapper span', () => {
+    it('rides the RTL mirror on the caret Icons themselves, not a wrapper span', () => {
       // Regression: the RTL mirror used to wrap each chevron in a
       // display:contents span, which dropped the icon out of the button's
       // flex-centering context and offset the glyph vertically. The mirror now
-      // rides on the Icon via xstyle, so the icon renders as a direct centered
-      // child. jsdom has no layout engine to assert the pixel centering, but we
-      // can assert the structural fix: the icon carries its own class and is
-      // not the lone child of a bare wrapper span. (Centering is verified
-      // visually in Storybook.)
-      render(<Pagination page={3} onChange={() => {}} totalPages={5} />);
-      const next = screen.getByRole('button', {name: 'Go to next page'});
-      const icon = next.querySelector('.astryx-icon');
-      expect(icon).not.toBeNull();
+      // rides on the Icon via xstyle, so the icon stays a direct centered child
+      // of the button's icon slot. jsdom has no layout engine to assert the
+      // pixel centering, but we can assert the structural fix: the mirror class
+      // lives on the icon element itself (not an extra wrapper). Covers the
+      // single prev/next carets and the input variant's first/last
+      // double-chevrons — the double-chevrons were the last carets still using
+      // the wrapper. (Centering is verified visually in Storybook.)
+      render(
+        <Pagination
+          page={3}
+          onChange={() => {}}
+          totalItems={100}
+          pageSize={10}
+          variant="input"
+        />,
+      );
+      for (const name of [
+        'Go to first page',
+        'Go to previous page',
+        'Go to next page',
+        'Go to last page',
+      ]) {
+        const button = screen.getByRole('button', {name});
+        const icon = button.querySelector('.astryx-icon');
+        expect(icon).not.toBeNull();
+        // The mirror transform is on the Icon element, so the icon carries the
+        // shared mirror class directly rather than through a bare wrapper span.
+        expect(icon?.className).toContain('rtlStyles.mirror');
+      }
     });
 
     it('renders with data-testid', () => {
