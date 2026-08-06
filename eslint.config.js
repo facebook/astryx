@@ -313,6 +313,9 @@ export default defineConfig(
       "@typescript-eslint/no-non-null-assertion": "off",
       "@typescript-eslint/consistent-type-assertions": "off",
       "react-compiler/react-compiler": "off",
+      // Test harnesses wrap components in sized/positioned <div>s to set up a
+      // scenario; that scaffolding is not shipped DOM.
+      "@astryx/no-style-only-wrapper": "off",
     },
   },
   // Non-production code — allow console.log for demos, tools, and examples
