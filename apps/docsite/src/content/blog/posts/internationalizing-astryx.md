@@ -3,7 +3,7 @@ title: 'Translating a component library, safely'
 description: "How internationalization and RTL came to Astryx: surveying the modern i18n landscape, why we didn't just adopt a framework, and using automation to catch RTL bugs a linter can't see."
 date: '2026-08-06'
 type: 'engineering'
-draft: true
+draft: false
 authors:
   - 'nynexman4464'
 tags:
