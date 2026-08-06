@@ -46,6 +46,15 @@ describe('generateCompressedIndex', () => {
     expect(result).toMatch(/never override --color-/);
   });
 
+  it('sends frame choice to the layout doc rather than naming a shell', () => {
+    const result = generateCompressedIndex('1.0.0');
+    expect(result).toMatch(/Frame first/);
+    expect(result).toContain('astryx docs layout');
+    expect(result).toContain('https://astryx.atmeta.com/docs/layout');
+    // Naming a shell here duplicates (and eventually contradicts) the doc.
+    expect(result).not.toMatch(/AppShell/);
+  });
+
   it('includes the post-generation self-check rule', () => {
     const result = generateCompressedIndex('1.0.0');
     expect(result).toContain('SELF-CHECK before you finish');
