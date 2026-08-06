@@ -12,6 +12,7 @@
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {useState} from 'react';
 import {fireEvent, render, screen, within} from '@testing-library/react';
+import {TextInput} from '@astryxdesign/core/TextInput';
 import {
   ListInput,
   type ListInputColumn,
@@ -39,6 +40,7 @@ const columns = [
       label,
       isLabelHidden,
       status,
+      statusVariant,
       isDisabled,
       isLoading,
       updateItem,
@@ -51,6 +53,7 @@ const columns = [
           data-label-hidden={String(isLabelHidden)}
           data-status-type={status?.type}
           data-status-message={status?.message}
+          data-status-variant={statusVariant}
           disabled={isDisabled || isLoading}
           value={item.name}
           onChange={event =>
@@ -58,6 +61,34 @@ const columns = [
           }
         />
       </label>
+    ),
+  },
+] satisfies ListInputColumn<Guest>[];
+
+const nativeStatusColumns = [
+  {
+    key: 'name',
+    header: 'Name',
+    renderInput: ({
+      item,
+      label,
+      isLabelHidden,
+      status,
+      statusVariant,
+      isDisabled,
+      isLoading,
+      updateItem,
+    }) => (
+      <TextInput
+        label={label}
+        isLabelHidden={isLabelHidden}
+        value={item.name}
+        status={status}
+        statusVariant={statusVariant}
+        isDisabled={isDisabled}
+        isLoading={isLoading}
+        onChange={name => updateItem({...item, name}, 'name')}
+      />
     ),
   },
 ] satisfies ListInputColumn<Guest>[];
@@ -90,16 +121,26 @@ describe('ListInput', () => {
     expect(screen.getByRole('list')).toBeInTheDocument();
 
     const inputs = screen.getAllByRole('textbox');
-    expect(inputs[0]).toHaveAttribute('data-label-hidden', 'false');
+    expect(inputs[0]).toHaveAttribute('data-label-hidden', 'true');
     expect(inputs[0]).toHaveAccessibleName('Name');
     expect(inputs[1]).toHaveAttribute('data-label-hidden', 'true');
     expect(inputs[1]).toHaveAccessibleName('Name, guest 2 of 2');
-    expect(inputs[0].closest('[data-list-input-cell]')).toHaveAttribute(
-      'data-list-input-column-label',
-      'primary',
+    expect(inputs[0]).toHaveAttribute('data-status-variant', 'tooltip');
+    const primaryLabel = document.querySelector(
+      '[data-list-input-column-label="primary"]',
     );
-    expect(inputs[1].closest('[data-list-input-cell]')).not.toHaveAttribute(
-      'data-list-input-column-label',
+    const responsiveLabel = document.querySelector(
+      '[data-list-input-column-label="responsive"]',
+    );
+    expect(primaryLabel).toHaveTextContent('Name');
+    expect(primaryLabel).toHaveAttribute('aria-hidden', 'true');
+    expect(responsiveLabel).toHaveTextContent('Name');
+    expect(responsiveLabel).toHaveAttribute('aria-hidden', 'true');
+    expect(primaryLabel?.closest('[data-list-input-cell]')).toContainElement(
+      inputs[0],
+    );
+    expect(responsiveLabel?.closest('[data-list-input-cell]')).toContainElement(
+      inputs[1],
     );
   });
 
@@ -144,6 +185,7 @@ describe('ListInput', () => {
 
   it('renders list/item messages and presents field messages in a tooltip', () => {
     renderListInput({
+      columns: nativeStatusColumns,
       status: {type: 'error', message: 'Add at least three guests'},
       getItemStatus: guest =>
         guest.id === 'ada'
@@ -157,25 +199,24 @@ describe('ListInput', () => {
 
     expect(screen.getByText('Add at least three guests')).toBeInTheDocument();
     expect(screen.getByText('This guest is duplicated')).toBeInTheDocument();
-    const fieldMessages = screen.getAllByText('Enter a different name');
-    expect(
-      fieldMessages.some(message => message.getAttribute('role') === 'alert'),
-    ).toBe(true);
     const firstInput = screen.getAllByRole('textbox')[0];
-    expect(firstInput).toHaveAttribute('data-status-type', 'error');
-    expect(firstInput).not.toHaveAttribute('data-status-message');
     expect(firstInput).toHaveAttribute('aria-invalid', 'true');
-
-    const fieldGroup = screen
-      .getAllByRole('group')
-      .find(group => group.getAttribute('aria-invalid') === 'true');
-    expect(fieldGroup).toBeDefined();
     const tooltip = screen
       .getAllByRole('tooltip', {hidden: true})
       .find(node => node.textContent === 'Enter a different name');
     expect(tooltip).toBeDefined();
     expect(tooltip).toHaveTextContent('Enter a different name');
-    expect(fieldGroup!.getAttribute('aria-describedby')).toContain(tooltip!.id);
+    expect(firstInput.getAttribute('aria-describedby')).toContain(tooltip!.id);
+    const fieldCell = firstInput.closest('[data-list-input-cell]');
+    expect(fieldCell?.querySelector('.astryx-field-status')).toBeNull();
+    expect(
+      within(fieldCell as HTMLElement).getByRole('button', {
+        name: /error details/i,
+      }),
+    ).toBeInTheDocument();
+    expect(
+      firstInput.closest('[role="group"][aria-invalid="true"]'),
+    ).toBeNull();
 
     const itemStatus = screen
       .getByText('This guest is duplicated')
@@ -210,25 +251,29 @@ describe('ListInput', () => {
         {
           key: 'name',
           header: 'Name',
-          renderInput: ({item, label, isLabelHidden, status, updateItem}) => (
-            <label>
-              <span hidden={isLabelHidden}>{label}</span>
-              <input
-                aria-label={label}
-                aria-invalid={status?.type === 'error' || undefined}
-                value={item.name}
-                onChange={event =>
-                  updateItem({...item, name: event.currentTarget.value}, 'name')
-                }
-                onBlur={() =>
-                  setTouchedItems(current => {
-                    const next = new Set(current);
-                    next.add(item.id);
-                    return next;
-                  })
-                }
-              />
-            </label>
+          renderInput: ({
+            item,
+            label,
+            isLabelHidden,
+            status,
+            statusVariant,
+            updateItem,
+          }) => (
+            <TextInput
+              label={label}
+              isLabelHidden={isLabelHidden}
+              value={item.name}
+              status={status}
+              statusVariant={statusVariant}
+              onChange={name => updateItem({...item, name}, 'name')}
+              onBlur={() =>
+                setTouchedItems(current => {
+                  const next = new Set(current);
+                  next.add(item.id);
+                  return next;
+                })
+              }
+            />
           ),
         },
       ] satisfies ListInputColumn<Guest>[];
@@ -446,13 +491,16 @@ describe('ListInput', () => {
     const preview = document.querySelector<HTMLElement>(
       '[data-list-input-drag-preview]',
     );
+    const previewLayer = preview?.closest<HTMLElement>('[popover="manual"]');
     expect(source).toBe(rows[1]);
     expect(getComputedStyle(source!).opacity).toBe('0.5');
+    expect(container).toContainElement(preview);
     expect(preview).toBeInTheDocument();
-    expect(getComputedStyle(preview!).opacity).toBe('0.5');
+    expect(previewLayer).toBeInTheDocument();
+    expect(getComputedStyle(previewLayer!).opacity).toBe('0.5');
     expect(preview).toHaveAttribute('aria-hidden', 'true');
     expect(preview?.querySelector('input')).toHaveValue('Grace');
-    expect(preview!.style.getPropertyValue('--x-transform')).toBe(
+    expect(previewLayer!.style.getPropertyValue('--x-transform')).toBe(
       'translate3d(0px, 40px, 0)',
     );
     expect(
@@ -460,7 +508,7 @@ describe('ListInput', () => {
     ).not.toBeInTheDocument();
 
     fireEvent.pointerMove(handle, {pointerId: 7, clientX: 345, clientY: 5});
-    expect(preview!.style.getPropertyValue('--x-transform')).toBe(
+    expect(previewLayer!.style.getPropertyValue('--x-transform')).toBe(
       'translate3d(45px, -5px, 0)',
     );
     expect([
@@ -478,7 +526,7 @@ describe('ListInput', () => {
     );
 
     fireEvent.pointerMove(handle, {pointerId: 7, clientX: 245, clientY: 115});
-    expect(preview!.style.getPropertyValue('--x-transform')).toBe(
+    expect(previewLayer!.style.getPropertyValue('--x-transform')).toBe(
       'translate3d(-55px, 105px, 0)',
     );
     expect(rows[0].closest('li')).not.toHaveAttribute(

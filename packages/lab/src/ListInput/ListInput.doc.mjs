@@ -58,7 +58,7 @@ export const docs = {
       name: 'columns',
       type: 'ListInputColumn<T>[]',
       description:
-        'Consistent simple fields shown for every record. Use each column width with proportional() or pixel() from @astryxdesign/core/Table to tune the width spread. At wider widths, the first record shows each header as its input label and later labels remain available to assistive technology. At 480px or narrower, fields stack, every record shows its field labels, records receive stronger vertical separation, and row actions align beside the first field. Renderers receive isLabelHidden, scoped validation status, and updateItem.',
+        'Consistent simple fields shown for every record. Use each column width with proportional() or pixel() from @astryxdesign/core/Table to tune the width spread. ListInput owns the visible primary-tone column labels while renderer labels remain semantically available to assistive technology. At 640px or narrower, fields stack, every record shows its field labels, records receive stronger vertical separation, and row actions align beside the first field. Renderers receive isLabelHidden, complete scoped validation status, statusVariant, and updateItem.',
       required: true,
     },
     {
@@ -89,13 +89,13 @@ export const docs = {
       name: 'getFieldStatus',
       type: '(item: T, columnKey: string, index: number) => InputStatus | undefined',
       description:
-        'Returns validation status for one field. The renderer receives the status type for input styling, while ListInput presents the message in a hover/focus tooltip and retains a hidden live description.',
+        'Returns validation status for one field. The renderer receives the complete status plus statusVariant="tooltip" and should forward both to its Astryx input so the native status affordance owns styling, description, keyboard access, and tooltip behavior without changing row height.',
     },
     {
       name: 'isReorderable',
       type: 'boolean',
       description:
-        'Shows a trailing vertical grip after the Remove action. During pointer reordering, list rows stay stationary while the source row and a free-moving duplicate that follows the pointer on both axes appear at 50% opacity. Vertical pointer position determines the accent insertion line and final list placement. The controlled order commits and affected rows animate only on release. When the grip is focused, Arrow Up or Arrow Down immediately moves the record one position. Space or Enter starts lift mode for Arrow, Home, or End previewing; Space or Enter drops and Escape cancels. Focus and live announcements are preserved.',
+        'Shows a trailing vertical grip after the Remove action. During pointer reordering, list rows stay stationary while the source row and a free-moving duplicate that follows the pointer on both axes appear at 50% opacity as a temporary drag-only state; full opacity returns immediately on drop or cancel. Vertical pointer position determines the accent insertion line and final list placement. The controlled order commits and affected rows animate with Astryx motion tokens only on release. When the grip is focused, Arrow Up or Arrow Down immediately moves the record one position. Space or Enter starts lift mode for Arrow, Home, or End previewing; Space or Enter drops and Escape cancels. Focus and live announcements are preserved.',
       default: 'false',
     },
     {
@@ -162,6 +162,11 @@ export const docs = {
       {
         guidance: true,
         description:
+          'Forward both status and statusVariant from every column renderer to the rendered Astryx input so field messages use the control’s native accessible tooltip pattern.',
+      },
+      {
+        guidance: true,
+        description:
           'Let the floating pointer preview follow both axes while using vertical position alone for insertion. Keep list rows stationary and commit the controlled value once on release. Focused handles move immediately with Arrow Up or Arrow Down while preserving lift, move, drop, and cancel behavior.',
       },
       {
@@ -186,13 +191,13 @@ export const docs = {
         name: 'First-record field labels',
         required: true,
         description:
-          'Label the inputs in the first record with the primary text tone and without separate table chrome. At wider widths, labels on later records are visually hidden but remain accessible; when fields stack at 480px or narrower, every record shows its field labels.',
+          'ListInput renders primary-tone column labels without separate table chrome and keeps each rendered control’s own label visually hidden but semantically associated. At wider widths, repeated labels are visually hidden; when fields stack at 640px or narrower, every record shows its field labels.',
       },
       {
         name: 'Record fields',
         required: true,
         description:
-          'Consumer-rendered inputs that receive scoped record state, validation, and update behavior. When stacked responsively, the tighter spacing between fields and larger spacing between records keeps each object visually grouped.',
+          'Consumer-rendered inputs that receive scoped record state, complete validation status, the native tooltip status variant, and update behavior. When stacked responsively, label-to-input spacing is smallest, field spacing is larger, and record spacing is largest so each object remains visually grouped.',
       },
       {
         name: 'Remove action',
@@ -222,7 +227,7 @@ export const docs = {
         name: 'Validation messages',
         required: false,
         description:
-          'Explain field-, item-, or list-level errors, warnings, and success states. Item messages align to the record fields without extending under reorder or remove controls.',
+          'Explain field-, item-, or list-level errors, warnings, and success states. Field messages use each input’s native tooltip status affordance and do not change row height. Item messages align to the record fields without extending under reorder or remove controls.',
       },
     ],
   },
@@ -238,13 +243,14 @@ const columns = [
     key: 'name',
     header: 'Name',
     width: proportional(1),
-    renderInput: ({item, label, isLabelHidden, status, isDisabled, isLoading, updateItem}) => (
+    renderInput: ({item, label, isLabelHidden, status, statusVariant, isDisabled, isLoading, updateItem}) => (
       <TextInput
         label={label}
         isLabelHidden={isLabelHidden}
         value={item.name}
         onChange={name => updateItem({...item, name}, 'name')}
         status={status}
+        statusVariant={statusVariant}
         isDisabled={isDisabled}
         isLoading={isLoading}
       />
@@ -254,7 +260,7 @@ const columns = [
     key: 'email',
     header: 'Email',
     width: proportional(2),
-    renderInput: ({item, label, isLabelHidden, status, isDisabled, isLoading, updateItem}) => (
+    renderInput: ({item, label, isLabelHidden, status, statusVariant, isDisabled, isLoading, updateItem}) => (
       <TextInput
         type="email"
         label={label}
@@ -262,6 +268,7 @@ const columns = [
         value={item.email}
         onChange={email => updateItem({...item, email}, 'email')}
         status={status}
+        statusVariant={statusVariant}
         isDisabled={isDisabled}
         isLoading={isLoading}
       />
@@ -305,15 +312,15 @@ export const docsDense = {
     getItemKey: 'Required stable unique record identity.',
     createItem: 'Creates a new keyed record for Add.',
     columns:
-      'Typed simple fields: key, header, optional proportional/pixel width, and renderInput. Narrow records stack with visible labels, stronger separation, and top-aligned row actions.',
+      'Typed simple fields: key, header, optional proportional/pixel width, and renderInput. ListInput owns visible column labels; narrow records stack with repeated labels, stronger separation, and top-aligned row actions. Renderers forward status and statusVariant.',
     itemName: 'Singular noun for actions and announcements.',
     description: 'Supporting text below the label.',
     status: 'List-level InputStatus.',
     getItemStatus: 'Per-record InputStatus resolver.',
     getFieldStatus:
-      'Per-field status resolver; type styles the input and message appears in an accessible tooltip.',
+      'Per-field resolver; complete status plus tooltip variant are forwarded to the rendered input.',
     isReorderable:
-      'Adds a trailing grip without a tooltip. The list stays stationary while a free-moving pointer preview follows both axes; vertical position controls insertion. Focused Arrow Up/Down moves immediately, and keyboard lift/move/drop/cancel is also supported.',
+      'Adds a trailing grip without a tooltip. During the temporary drag state, source and free-moving preview use 50% opacity while the list stays stationary; full opacity returns on drop/cancel and tokenized motion animates the committed order. Vertical position controls insertion. Focused Arrow Up/Down moves immediately, and keyboard lift/move/drop/cancel is also supported.',
     isDisabled: 'Disables collection, actions, and rendered inputs.',
     isLoading: 'Marks busy and prevents changes.',
     maxItems: 'Makes Add unavailable at the limit.',

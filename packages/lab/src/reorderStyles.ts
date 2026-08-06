@@ -2,7 +2,7 @@
 
 /**
  * @file reorderStyles.ts
- * @input StyleX and Astryx semantic color, radius, and spacing tokens
+ * @input StyleX and Astryx semantic color, motion, radius, and spacing tokens
  * @output Shared internal visual states for reorderable Lab components
  * @position Lab-internal drag-and-drop style contract; API arbitration required before public export
  */
@@ -10,6 +10,8 @@
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
+  durationVars,
+  easeVars,
   radiusVars,
   spacingVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
@@ -35,14 +37,19 @@ export const reorderStyles = stylex.create({
     userSelect: 'none',
   },
   preview: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
     opacity: 0.5,
     pointerEvents: 'none',
     userSelect: 'none',
     willChange: 'transform',
-    zIndex: 1000,
+  },
+  viewTransitionRoot: {
+    '::view-transition-group(*)': {
+      animationDuration: {
+        default: durationVars['--duration-fast'],
+        '@media (prefers-reduced-motion: reduce)': '0s',
+      },
+      animationTimingFunction: easeVars['--ease-standard'],
+    },
   },
   dropBefore: {
     position: 'relative',

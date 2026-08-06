@@ -4,7 +4,7 @@
 
 /**
  * @file ListInput.tsx
- * @input React, StyleX, Astryx field/list/button/icon/tooltip/empty-state primitives, tokens, and shared Lab reorder styles
+ * @input React, StyleX, Astryx field/list/button/icon/layer/empty-state primitives, tokens, and shared Lab reorder styles
  * @output Exports ListInput and its controlled data, column, renderer, and change types
  * @position Lab experiment (RFC facebook/astryx#4531) for editing compact repeated records
  *
@@ -27,7 +27,7 @@ import {
   type SVGProps,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {createPortal, flushSync} from 'react-dom';
+import {flushSync} from 'react-dom';
 import type {BaseProps} from '@astryxdesign/core';
 import {Button} from '@astryxdesign/core/Button';
 import {EmptyState} from '@astryxdesign/core/EmptyState';
@@ -35,8 +35,8 @@ import {Field, type InputStatus} from '@astryxdesign/core/Field';
 import {FieldStatus} from '@astryxdesign/core/FieldStatus';
 import {Icon} from '@astryxdesign/core/Icon';
 import {IconButton} from '@astryxdesign/core/IconButton';
+import {useLayer} from '@astryxdesign/core/Layer';
 import type {ColumnWidth} from '@astryxdesign/core/Table';
-import {Tooltip} from '@astryxdesign/core/Tooltip';
 import {VisuallyHidden} from '@astryxdesign/core/VisuallyHidden';
 import {
   colorVars,
@@ -67,13 +67,15 @@ export interface ListInputValueContext<T> {
   index: number;
   /** Accessible cell label, including the record position. */
   label: string;
-  /** Whether the field label should be visually hidden. */
+  /** True because ListInput owns the visible column label. */
   isLabelHidden: boolean;
 }
 
 export interface ListInputRenderContext<T> extends ListInputValueContext<T> {
-  /** Validation status scoped to this field. Its message is shown by ListInput. */
+  /** Complete validation status scoped to this field. */
   status?: InputStatus;
+  /** Forward to the rendered Astryx control so status uses its native tooltip. */
+  statusVariant: 'tooltip';
   /** Whether the rendered control should be disabled. */
   isDisabled: boolean;
   /** Whether an asynchronous list operation is in progress. */
@@ -179,8 +181,8 @@ const styles = stylex.create({
     display: 'flex',
     flexDirection: 'column',
     gap: {
-      default: spacingVars['--spacing-1'],
-      '@container list-input (max-width: 480px)': spacingVars['--spacing-4'],
+      default: spacingVars['--spacing-2'],
+      '@container list-input (max-width: 640px)': spacingVars['--spacing-4'],
     },
     listStyleType: 'none',
     margin: 0,
@@ -198,7 +200,7 @@ const styles = stylex.create({
     columnGap: spacingVars['--spacing-1'],
     rowGap: {
       default: 0,
-      '@container list-input (max-width: 480px)': spacingVars['--spacing-2'],
+      '@container list-input (max-width: 640px)': spacingVars['--spacing-2'],
     },
     minWidth: 0,
   },
@@ -217,19 +219,19 @@ const styles = stylex.create({
   fields: {
     display: {
       default: 'grid',
-      '@container list-input (max-width: 480px)': 'contents',
+      '@container list-input (max-width: 640px)': 'contents',
     },
     alignItems: 'end',
     gap: {
       default: spacingVars['--spacing-1'],
-      '@container list-input (max-width: 480px)': spacingVars['--spacing-2'],
+      '@container list-input (max-width: 640px)': spacingVars['--spacing-2'],
     },
     minWidth: 0,
   },
   fieldCell: {
     gridColumn: {
       default: 'auto',
-      '@container list-input (max-width: 480px)': '1',
+      '@container list-input (max-width: 640px)': '1',
     },
   },
   contentOnly: {gridColumn: '1 / -1'},
@@ -238,11 +240,11 @@ const styles = stylex.create({
   itemStatus: {
     gridRow: {
       default: '2',
-      '@container list-input (max-width: 480px)': 'auto',
+      '@container list-input (max-width: 640px)': 'auto',
     },
     marginBlockStart: {
       default: spacingVars['--spacing-1'],
-      '@container list-input (max-width: 480px)': 0,
+      '@container list-input (max-width: 640px)': 0,
     },
     minWidth: 0,
   },
@@ -255,11 +257,22 @@ const styles = stylex.create({
   actionContent: {
     minWidth: 0,
   },
-  primaryColumnLabel: {
-    // FieldLabel uses the secondary text token by default. Scope its token to
-    // the first record so these labels read as column labels without changing
-    // labels elsewhere in the application.
-    '--color-text-secondary': colorVars['--color-text-primary'],
+  columnLabel: {
+    display: 'block',
+    marginBlockEnd: {
+      default: spacingVars['--spacing-0-5'],
+      '@container list-input (max-width: 640px)': spacingVars['--spacing-1'],
+    },
+    color: colorVars['--color-text-primary'],
+    fontSize: typeScaleVars['--text-label-size'],
+    lineHeight: typeScaleVars['--text-label-leading'],
+    fontWeight: fontWeightVars['--font-weight-medium'],
+  },
+  repeatedColumnLabel: {
+    display: {
+      default: 'none',
+      '@container list-input (max-width: 640px)': 'block',
+    },
   },
   cellContent: {minWidth: 0},
   controlCell: {
@@ -272,36 +285,22 @@ const styles = stylex.create({
   removeControlCell: {
     gridColumn: {
       default: 'auto',
-      '@container list-input (max-width: 480px)': '2',
+      '@container list-input (max-width: 640px)': '2',
     },
     gridRow: {
       default: 'auto',
-      '@container list-input (max-width: 480px)': '1',
+      '@container list-input (max-width: 640px)': '1',
     },
   },
   reorderControlCell: {
     gridColumn: {
       default: 'auto',
-      '@container list-input (max-width: 480px)': '3',
+      '@container list-input (max-width: 640px)': '3',
     },
     gridRow: {
       default: 'auto',
-      '@container list-input (max-width: 480px)': '1',
+      '@container list-input (max-width: 640px)': '1',
     },
-  },
-  fieldStatusAnchor: {
-    minWidth: 0,
-  },
-  responsiveColumnLabel: {
-    display: {
-      default: 'none',
-      '@container list-input (max-width: 480px)': 'block',
-    },
-    marginBlockEnd: spacingVars['--spacing-1'],
-    color: colorVars['--color-text-primary'],
-    fontSize: typeScaleVars['--text-label-size'],
-    lineHeight: typeScaleVars['--text-label-leading'],
-    fontWeight: fontWeightVars['--font-weight-medium'],
   },
   emptyItem: {
     width: '100%',
@@ -309,6 +308,7 @@ const styles = stylex.create({
   dragPreviewContainer: {
     containerType: 'inline-size',
     containerName: 'list-input',
+    width: '100%',
   },
 });
 
@@ -316,7 +316,7 @@ const dynamicStyles = stylex.create({
   fields: (gridTemplateColumns: string) => ({
     gridTemplateColumns: {
       default: gridTemplateColumns,
-      '@container list-input (max-width: 480px)': 'minmax(0, 1fr)',
+      '@container list-input (max-width: 640px)': 'minmax(0, 1fr)',
     },
   }),
   dragPreview: (x: number, y: number, width: number) => ({
@@ -363,6 +363,27 @@ function joinIDs(...ids: Array<string | undefined>): string | undefined {
   return resolved.length > 0 ? resolved.join(' ') : undefined;
 }
 
+const viewTransitionRootClassNames =
+  stylex
+    .props(reorderStyles.viewTransitionRoot)
+    .className?.split(/\s+/)
+    .filter(Boolean) ?? [];
+let activeViewTransitionCount = 0;
+
+function addViewTransitionRootStyles(): void {
+  if (activeViewTransitionCount === 0) {
+    document.documentElement.classList.add(...viewTransitionRootClassNames);
+  }
+  activeViewTransitionCount += 1;
+}
+
+function removeViewTransitionRootStyles(): void {
+  activeViewTransitionCount = Math.max(0, activeViewTransitionCount - 1);
+  if (activeViewTransitionCount === 0) {
+    document.documentElement.classList.remove(...viewTransitionRootClassNames);
+  }
+}
+
 function animateControlledUpdate(update: () => void): void {
   const prefersReducedMotion = window.matchMedia?.(
     '(prefers-reduced-motion: reduce)',
@@ -371,7 +392,17 @@ function animateControlledUpdate(update: () => void): void {
     !prefersReducedMotion &&
     typeof document.startViewTransition === 'function'
   ) {
-    document.startViewTransition(() => flushSync(update));
+    addViewTransitionRootStyles();
+    try {
+      const transition = document.startViewTransition(() => flushSync(update));
+      void transition.finished.then(
+        removeViewTransitionRootStyles,
+        removeViewTransitionRootStyles,
+      );
+    } catch {
+      removeViewTransitionRootStyles();
+      update();
+    }
     return;
   }
   update();
@@ -440,6 +471,11 @@ export function ListInput<T>({
     null,
   );
   const [announcement, setAnnouncement] = useState('');
+  const {
+    render: renderDragPreviewLayer,
+    show: showDragPreviewLayer,
+    hide: hideDragPreviewLayer,
+  } = useLayer({mode: 'fixed'});
 
   const setReorderState = (nextState: ReorderState<T> | null) => {
     reorderStateRef.current = nextState;
@@ -583,11 +619,13 @@ export function ListInput<T>({
       element.style.viewTransitionName = 'none';
     }
     previewHost.replaceChildren(clone);
+    showDragPreviewLayer();
     return () => {
+      hideDragPreviewLayer();
       previewHost.replaceChildren();
       previewHost.style.removeProperty('direction');
     };
-  }, [previewCloneKey]);
+  }, [hideDragPreviewLayer, previewCloneKey, showDragPreviewLayer]);
 
   const mutationsDisabled = isDisabled || isLoading;
   const hasReachedMax = maxItems != null && value.length >= maxItems;
@@ -1013,25 +1051,20 @@ export function ListInput<T>({
                             column.key,
                             index,
                           );
-                          const fieldStatusID = fieldStatus?.message
-                            ? `${groupID}-item-${index}-field-${columnIndex}-status`
-                            : undefined;
-                          const isFieldLabelHidden = index !== 0;
-                          const cellLabel = isFieldLabelHidden
+                          const isRepeatedLabel = index !== 0;
+                          const cellLabel = isRepeatedLabel
                             ? `${column.header}, ${itemName} ${index + 1} of ${displayValue.length}`
                             : column.header;
                           const valueContext: ListInputValueContext<T> = {
                             item,
                             index,
                             label: cellLabel,
-                            isLabelHidden: isFieldLabelHidden,
+                            isLabelHidden: true,
                           };
                           const content = column.renderInput({
                             ...valueContext,
-                            status:
-                              fieldStatus == null
-                                ? undefined
-                                : {type: fieldStatus.type},
+                            status: fieldStatus,
+                            statusVariant: 'tooltip',
                             isDisabled: isDisabled || isLoading,
                             isLoading,
                             updateItem: (nextItem, changeColumnKey) =>
@@ -1042,69 +1075,28 @@ export function ListInput<T>({
                                 changeColumnKey ?? column.key,
                               ),
                           });
-                          const fieldContent = (
-                            <div
-                              role={fieldStatusID ? 'group' : undefined}
-                              aria-describedby={fieldStatusID}
-                              aria-invalid={
-                                fieldStatus?.type === 'error' || undefined
-                              }
-                              {...stylex.props(styles.fieldStatusAnchor)}>
-                              {isFieldLabelHidden ? (
-                                <span
-                                  aria-hidden="true"
-                                  {...stylex.props(
-                                    styles.responsiveColumnLabel,
-                                  )}>
-                                  {column.header}
-                                </span>
-                              ) : null}
-                              <div {...stylex.props(styles.cellContent)}>
-                                {content}
-                              </div>
-                            </div>
-                          );
                           return (
                             <div
                               key={column.key}
                               data-list-input-cell={String(columnIndex)}
-                              data-list-input-column-label={
-                                isFieldLabelHidden ? undefined : 'primary'
-                              }
                               {...stylex.props(
                                 styles.cellContent,
                                 styles.fieldCell,
-                                !isFieldLabelHidden &&
-                                  styles.primaryColumnLabel,
                               )}>
-                              {fieldStatus?.message ? (
-                                <>
-                                  <Tooltip
-                                    content={fieldStatus.message}
-                                    placement="above"
-                                    focusTrigger="always"
-                                    hasHoverIndication={false}>
-                                    {fieldContent}
-                                  </Tooltip>
-                                  <VisuallyHidden
-                                    as="div"
-                                    id={fieldStatusID}
-                                    role={
-                                      fieldStatus.type === 'error'
-                                        ? 'alert'
-                                        : 'status'
-                                    }
-                                    aria-live={
-                                      fieldStatus.type === 'error'
-                                        ? 'assertive'
-                                        : 'polite'
-                                    }>
-                                    {fieldStatus.message}
-                                  </VisuallyHidden>
-                                </>
-                              ) : (
-                                fieldContent
-                              )}
+                              <span
+                                aria-hidden="true"
+                                data-list-input-column-label={
+                                  isRepeatedLabel ? 'responsive' : 'primary'
+                                }
+                                {...stylex.props(
+                                  styles.columnLabel,
+                                  isRepeatedLabel && styles.repeatedColumnLabel,
+                                )}>
+                                {column.header}
+                              </span>
+                              <div {...stylex.props(styles.cellContent)}>
+                                {content}
+                              </div>
                             </div>
                           );
                         })}
@@ -1283,23 +1275,26 @@ export function ListInput<T>({
           </VisuallyHidden>
         </div>
       </Field>
-      {dragPreviewPosition != null && typeof document !== 'undefined'
-        ? createPortal(
+      {dragPreviewPosition != null
+        ? renderDragPreviewLayer(
             <div
               ref={dragPreviewRef}
               aria-hidden="true"
               data-list-input-drag-preview=""
-              {...stylex.props(
+              {...stylex.props(styles.dragPreviewContainer)}
+            />,
+            {
+              x: 0,
+              y: 0,
+              xstyle: [
                 reorderStyles.preview,
-                styles.dragPreviewContainer,
                 dynamicStyles.dragPreview(
                   dragPreviewPosition.x,
                   dragPreviewPosition.y,
                   dragPreviewPosition.width,
                 ),
-              )}
-            />,
-            document.body,
+              ],
+            },
           )
         : null}
     </>

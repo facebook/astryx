@@ -22,6 +22,10 @@ const storyStyles = stylex.create({
     width: 680,
     maxWidth: '100%',
   },
+  responsiveCanvas: {
+    width: 600,
+    maxWidth: '100%',
+  },
   narrowCanvas: {
     width: 360,
     maxWidth: '100%',
@@ -116,6 +120,7 @@ function createTagColumns(
         label,
         isLabelHidden,
         status,
+        statusVariant,
         isDisabled,
         updateItem,
       }) => (
@@ -126,6 +131,7 @@ function createTagColumns(
           value={item.color}
           onChange={color => updateItem({...item, color}, 'color')}
           status={status}
+          statusVariant={statusVariant}
           isDisabled={isDisabled}
           onBlur={() => onFieldBlur(item.id, 'color')}
         />
@@ -140,6 +146,7 @@ function createTagColumns(
         label,
         isLabelHidden,
         status,
+        statusVariant,
         isDisabled,
         isLoading,
         updateItem,
@@ -152,6 +159,7 @@ function createTagColumns(
             updateItem({...item, label: nextLabel}, 'label')
           }
           status={status}
+          statusVariant={statusVariant}
           isDisabled={isDisabled}
           isLoading={isLoading}
           onBlur={() => onFieldBlur(item.id, 'label')}
@@ -255,6 +263,7 @@ function MailingListExample() {
           label,
           isLabelHidden,
           status,
+          statusVariant,
           isDisabled,
           isLoading,
           updateItem,
@@ -268,6 +277,7 @@ function MailingListExample() {
             onChange={email => updateItem({...item, email}, 'email')}
             onBlur={() => markFieldTouched(item.id, 'email')}
             status={status}
+            statusVariant={statusVariant}
             isDisabled={isDisabled}
             isLoading={isLoading}
           />
@@ -380,6 +390,7 @@ function ExpenseAllocationsExample() {
           label,
           isLabelHidden,
           status,
+          statusVariant,
           isDisabled,
           isLoading,
           updateItem,
@@ -393,6 +404,7 @@ function ExpenseAllocationsExample() {
             onChange={team => updateItem({...item, team}, 'team')}
             onBlur={() => markFieldTouched(item.id, 'team')}
             status={status}
+            statusVariant={statusVariant}
             isDisabled={isDisabled || isLoading}
           />
         ),
@@ -406,6 +418,7 @@ function ExpenseAllocationsExample() {
           label,
           isLabelHidden,
           status,
+          statusVariant,
           isDisabled,
           isLoading,
           updateItem,
@@ -417,6 +430,7 @@ function ExpenseAllocationsExample() {
             onChange={percent => updateItem({...item, percent}, 'percent')}
             onBlur={() => markFieldTouched(item.id, 'percent')}
             status={status}
+            statusVariant={statusVariant}
             isDisabled={isDisabled || isLoading}
             min={0}
             max={100}
@@ -559,6 +573,7 @@ function FamilyMemberDeclarationExample() {
           label,
           isLabelHidden,
           status,
+          statusVariant,
           isDisabled,
           isLoading,
           updateItem,
@@ -570,6 +585,7 @@ function FamilyMemberDeclarationExample() {
             onChange={fullName => updateItem({...item, fullName}, 'fullName')}
             onBlur={() => markFieldTouched(item.id, 'fullName')}
             status={status}
+            statusVariant={statusVariant}
             isDisabled={isDisabled}
             isLoading={isLoading}
           />
@@ -584,6 +600,7 @@ function FamilyMemberDeclarationExample() {
           label,
           isLabelHidden,
           status,
+          statusVariant,
           isDisabled,
           isLoading,
           updateItem,
@@ -599,6 +616,7 @@ function FamilyMemberDeclarationExample() {
             }
             onBlur={() => markFieldTouched(item.id, 'relationship')}
             status={status}
+            statusVariant={statusVariant}
             isDisabled={isDisabled || isLoading}
           />
         ),
@@ -612,6 +630,7 @@ function FamilyMemberDeclarationExample() {
           label,
           isLabelHidden,
           status,
+          statusVariant,
           isDisabled,
           isLoading,
           updateItem,
@@ -625,6 +644,7 @@ function FamilyMemberDeclarationExample() {
             }
             onBlur={() => markFieldTouched(item.id, 'dateOfBirth')}
             status={status}
+            statusVariant={statusVariant}
             isDisabled={isDisabled}
             isLoading={isLoading}
             max={DECLARATION_DATE}
@@ -711,6 +731,23 @@ export const FamilyMemberDeclaration: Story = {
   },
 };
 
+/** Three fields at an intermediate width that must stack without overflow. */
+export const ResponsiveFamilyMemberDeclaration: Story = {
+  render: () => (
+    <div {...stylex.props(storyStyles.responsiveCanvas)}>
+      <FamilyMemberDeclarationExample />
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Exercises the 640px stacking breakpoint at a 600px container with all three field types, repeated labels, and non-reorderable top-aligned remove actions.',
+      },
+    },
+  },
+};
+
 type TripLeg = {
   id: string;
   destination: string;
@@ -749,6 +786,7 @@ function ResponsiveItineraryExample() {
           label,
           isLabelHidden,
           status,
+          statusVariant,
           isDisabled,
           isLoading,
           updateItem,
@@ -762,6 +800,7 @@ function ResponsiveItineraryExample() {
             }
             onBlur={() => markFieldTouched(item.id, 'destination')}
             status={status}
+            statusVariant={statusVariant}
             isDisabled={isDisabled}
             isLoading={isLoading}
           />
@@ -776,6 +815,7 @@ function ResponsiveItineraryExample() {
           label,
           isLabelHidden,
           status,
+          statusVariant,
           isDisabled,
           isLoading,
           updateItem,
@@ -789,6 +829,7 @@ function ResponsiveItineraryExample() {
             }
             onBlur={() => markFieldTouched(item.id, 'departureDate')}
             status={status}
+            statusVariant={statusVariant}
             isDisabled={isDisabled}
             isLoading={isLoading}
             min="2026-09-01"
@@ -854,7 +895,7 @@ export const ResponsiveItinerary: Story = {
     docs: {
       description: {
         story:
-          'Exercises the 480px container breakpoint, clearly separated record groups, stacked labels, a long value, DateInput popovers, item-order validation, and reorder/remove controls aligned beside each record’s first field.',
+          'Exercises the 640px container breakpoint, clearly separated record groups, stacked labels, a long value, DateInput popovers, item-order validation, and reorder/remove controls aligned beside each record’s first field.',
       },
     },
   },
