@@ -4,7 +4,7 @@
 
 import {Fragment, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {Code} from '@astryxdesign/core/CodeBlock';
+import {AutolinkedCode} from '../AutolinkedCode';
 
 const TOKEN = /(`([^`]+)`|\[([^\]]+)\]\(([^)]+)\))/g;
 
@@ -57,7 +57,7 @@ export function renderInlineMarkdown(text: string) {
     const linkLabel = match[3];
     const linkHref = match[4];
     if (code != null) {
-      nodes.push(<Code key={match.index}>{code}</Code>);
+      nodes.push(<AutolinkedCode key={match.index}>{code}</AutolinkedCode>);
     } else if (linkLabel != null && linkHref != null) {
       nodes.push(renderLink(linkLabel, linkHref, match.index));
     }
