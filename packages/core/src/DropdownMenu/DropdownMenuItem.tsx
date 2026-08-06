@@ -63,15 +63,13 @@ const menuItemStyles = stylex.create({
     cursor: 'not-allowed',
   },
   destructive: {
-    // Recolor the label/description via the Item custom properties, and tint
-    // the focus/hover background with the error color instead of the neutral
-    // overlay. Semantic error tokens keep it theme-aware.
+    // Only recolor the text/icon; the hover / focus background stays the shared
+    // neutral overlay from `root` so the hover state matches every other menu
+    // item. The root color covers the label/description via the Item custom
+    // properties (and any bare text). Semantic error tokens keep it theme-aware.
+    color: colorVars['--color-error'],
     '--_item-label-color': colorVars['--color-error'],
     '--_item-description-color': colorVars['--color-error'],
-    backgroundColor: {
-      default: 'transparent',
-      ':focus': colorVars['--color-error-muted'],
-    },
   },
 });
 
