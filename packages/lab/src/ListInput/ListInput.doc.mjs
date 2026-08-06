@@ -58,7 +58,7 @@ export const docs = {
       name: 'columns',
       type: 'ListInputColumn<T>[]',
       description:
-        'Consistent simple fields shown for every record. Use each column width with proportional() or pixel() from @astryxdesign/core/Table to tune the width spread. ListInput owns the visible primary-tone column labels while renderer labels remain semantically available to assistive technology. At 640px or narrower, fields stack, every record shows its field labels, records receive stronger vertical separation, and row actions align beside the first field. Renderers receive isLabelHidden, complete scoped validation status, statusVariant, and updateItem.',
+        'Consistent simple fields shown for every record. Use each column width with proportional() or pixel() from @astryxdesign/core/Table to tune the width spread. ListInput owns the visible primary-tone column labels while renderer labels remain semantically available to assistive technology. At 640px or narrower, fields stack, every record shows its field labels, record groups use 32px vertical separation, and row actions align beside the first field. Renderers receive isLabelHidden, complete scoped validation status, statusVariant, and updateItem.',
       required: true,
     },
     {
@@ -142,7 +142,7 @@ export const docs = {
   ],
   usage: {
     description:
-      'ListInput edits a compact, ordered collection of records with consistent fields, built-in add and remove actions, and optional reordering. Use it for lists with fewer than seven records and up to three simple fields per record, such as guests, travelers, or tag options. Use a Table for larger collections and a card or step-based form when records need many, complex, or inconsistent fields.',
+      'ListInput edits a compact, ordered collection of records with consistent fields, built-in add and remove actions, and optional reordering. Standard Astryx controls rendered in its columns inherit the medium control size so inputs align with the Add, remove, reorder, and validation affordances; an explicit field size still takes precedence. Pointer activation keeps Add at its viewport position by adjusting available vertical scroll containers from nearest to outermost, which supports repeated adding without chasing the action. Added rows enter with tokenized translate motion; after removal, surviving rows animate into their new positions when their geometry stays stable. Motion never delays onChange, focus handoff, or the announcement, while reduced-motion preferences and unsupported browsers use an instant change. Use it for lists with fewer than seven records and up to three simple fields per record, such as guests, travelers, or tag options. Use a Table for larger collections and a card or step-based form when records need many, complex, or inconsistent fields.',
     bestPractices: [
       {
         guidance: true,
@@ -168,6 +168,16 @@ export const docs = {
         guidance: true,
         description:
           'Let the floating pointer preview follow both axes while using vertical position alone for insertion. Keep list rows stationary and commit the controlled value once on release. Focused handles move immediately with Arrow Up or Arrow Down while preserving lift, move, drop, and cancel behavior.',
+      },
+      {
+        guidance: true,
+        description:
+          'Keep collection motion informational and non-blocking. Added live rows translate into place; removed rows disappear immediately while stable-size survivors close the gap. onChange, focus, and announcements run without waiting, and reduced-motion preferences remain instant.',
+      },
+      {
+        guidance: true,
+        description:
+          'Keep repeated pointer adding spatially stable by preserving the Add action’s viewport position, beginning with the nearest vertical scroll container and cascading any clamped remainder outward. Let visibility of the newly focused field take priority when available scrolling cannot absorb the complete offset; keyboard activation follows the normal focus flow.',
       },
       {
         guidance: false,
@@ -197,13 +207,13 @@ export const docs = {
         name: 'Record fields',
         required: true,
         description:
-          'Consumer-rendered inputs that receive scoped record state, complete validation status, the native tooltip status variant, and update behavior. When stacked responsively, label-to-input spacing is smallest, field spacing is larger, and record spacing is largest so each object remains visually grouped.',
+          'Consumer-rendered inputs that receive scoped record state, complete validation status, the native tooltip status variant, and update behavior. When stacked responsively, label-to-input spacing is smallest, field spacing is larger, and record groups use 32px separation so each object remains visually distinct.',
       },
       {
         name: 'Remove action',
         required: true,
         description:
-          'Removes its record and moves focus to a predictable neighboring control. In the stacked layout, it aligns beside the first field at the top of the record.',
+          'Removes its record immediately, moves focus to a predictable neighboring control, and animates surviving rows into their new positions when supported. In the stacked layout, it aligns beside the first field at the top of the record.',
       },
       {
         name: 'Reorder handle',
@@ -221,7 +231,7 @@ export const docs = {
         name: 'Add action',
         required: true,
         description:
-          'Fills the record-fields width and appends a new record created by createItem, unless maxItems has been reached.',
+          'Fills the record-fields width, uses the inherited medium control size shared by ListInput fields and actions, and immediately appends a new record created by createItem unless maxItems has been reached. On pointer activation, available vertical scroll containers offset the inserted height from nearest to outermost so the action remains under the pointer; keyboard activation keeps the normal focus behavior, and newly focused field visibility always wins. The live row uses tokenized translate entrance motion when supported, and focus moves to its first field without waiting for the animation.',
       },
       {
         name: 'Validation messages',
@@ -304,7 +314,7 @@ const columns = [
 /** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
-    'Controlled compact-record input with typed columns, add/remove, optional reorder, and field/item/list validation.',
+    'Controlled compact-record input with typed columns, tokenized non-blocking add/remove motion, optional reorder, and field/item/list validation.',
   propDescriptions: {
     label: 'Collection label and accessible name.',
     value: 'Controlled ordered records.',
@@ -331,7 +341,7 @@ export const docsDense = {
   },
   usage: {
     description:
-      'Use for compact ordered records: fewer than 7 items and up to 3 simple consistent fields. Use Table or a dedicated flow for larger or complex data.',
+      'Use for compact ordered records: fewer than 7 items and up to 3 simple consistent fields. Add/remove motion does not delay onChange or focus and becomes instant under reduced motion. Use Table or a dedicated flow for larger or complex data.',
     bestPractices: [
       {
         guidance: true,
@@ -345,6 +355,11 @@ export const docsDense = {
         guidance: true,
         description:
           'Follow pointer X and Y in the floating preview, use Y for insertion, and commit once on release; focused Arrow Up/Down moves immediately, with lift mode available for extended keyboard control.',
+      },
+      {
+        guidance: true,
+        description:
+          'Keep add/remove motion non-blocking and instant under reduced motion.',
       },
       {
         guidance: false,

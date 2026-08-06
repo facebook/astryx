@@ -3,7 +3,7 @@
 /**
  * @file ListInput.test.tsx
  * @input Uses Vitest, Testing Library, and the controlled ListInput API
- * @output Behavioral coverage for list editing, validation, focus, and free-floating stationary-list reordering
+ * @output Behavioral coverage for list editing, pointer-stable adding, tokenized mutation motion, validation, focus, and free-floating stationary-list reordering
  * @position Lab tests; validates ListInput.tsx
  *
  * SYNC: When ListInput.tsx behavior changes, update these tests.
@@ -108,8 +108,81 @@ function renderListInput(overrides: Partial<ListInputProps<Guest>> = {}) {
   return render(<ListInput<Guest> {...props} />);
 }
 
+const originalAnimateDescriptor = Object.getOwnPropertyDescriptor(
+  HTMLElement.prototype,
+  'animate',
+);
+const originalScrollIntoViewDescriptor = Object.getOwnPropertyDescriptor(
+  HTMLElement.prototype,
+  'scrollIntoView',
+);
+
+function createRect(top: number): DOMRect {
+  return {
+    x: 0,
+    y: top,
+    top,
+    right: 400,
+    bottom: top + 40,
+    left: 0,
+    width: 400,
+    height: 40,
+    toJSON: () => {},
+  };
+}
+
+function mockMutationAnimations(events: string[] = []) {
+  const animate = vi.fn(function (
+    this: HTMLElement,
+    _keyframes: Keyframe[],
+    _options?: number | KeyframeAnimationOptions,
+  ) {
+    events.push('animate');
+    return {
+      cancel: vi.fn(),
+      finished: new Promise(() => {}),
+    } as unknown as Animation;
+  });
+  Object.defineProperty(HTMLElement.prototype, 'animate', {
+    configurable: true,
+    value: animate,
+  });
+  vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
+    function (this: HTMLElement) {
+      if (this.dataset.listInputMotionKey == null) {
+        return createRect(0);
+      }
+      const group = this.closest('[role="group"]');
+      const motionElements = Array.from(
+        group?.querySelectorAll<HTMLElement>('[data-list-input-motion-key]') ??
+          [],
+      ).filter(candidate => candidate.closest('[role="group"]') === group);
+      return createRect(Math.max(0, motionElements.indexOf(this)) * 40);
+    },
+  );
+  return animate;
+}
+
 afterEach(() => {
   vi.restoreAllMocks();
+  if (originalAnimateDescriptor == null) {
+    Reflect.deleteProperty(HTMLElement.prototype, 'animate');
+  } else {
+    Object.defineProperty(
+      HTMLElement.prototype,
+      'animate',
+      originalAnimateDescriptor,
+    );
+  }
+  if (originalScrollIntoViewDescriptor == null) {
+    Reflect.deleteProperty(HTMLElement.prototype, 'scrollIntoView');
+  } else {
+    Object.defineProperty(
+      HTMLElement.prototype,
+      'scrollIntoView',
+      originalScrollIntoViewDescriptor,
+    );
+  }
 });
 
 describe('ListInput', () => {
@@ -183,6 +256,268 @@ describe('ListInput', () => {
     });
   });
 
+  it('keeps Add under the pointer in the nearest newly scrollable container', () => {
+    function ScrollAnchoredList() {
+      const [value, setValue] = useState(guests);
+      return (
+        <div data-outer-scroll="" style={{height: 240, overflowY: 'auto'}}>
+          <div
+            data-inner-scroll=""
+            style={{
+              height: 160,
+              overflowY: 'auto',
+              scrollBehavior: 'smooth',
+            }}>
+            <ListInput<Guest>
+              label="Guests"
+              itemName="guest"
+              value={value}
+              onChange={setValue}
+              getItemKey={guest => guest.id}
+              createItem={() => createdGuest}
+              columns={columns}
+            />
+          </div>
+        </div>
+      );
+    }
+
+    const {container} = render(<ScrollAnchoredList />);
+    const outerScroll = container.querySelector<HTMLElement>(
+      '[data-outer-scroll]',
+    )!;
+    const innerScroll = container.querySelector<HTMLElement>(
+      '[data-inner-scroll]',
+    )!;
+    Object.defineProperties(outerScroll, {
+      clientHeight: {configurable: true, value: 240},
+      scrollHeight: {configurable: true, value: 400},
+    });
+    Object.defineProperties(innerScroll, {
+      clientHeight: {configurable: true, value: 160},
+      scrollHeight: {
+        configurable: true,
+        get: () => (screen.getAllByRole('listitem').length >= 3 ? 180 : 160),
+      },
+    });
+    let innerScrollTop = 0;
+    Object.defineProperty(innerScroll, 'scrollTop', {
+      configurable: true,
+      get: () => innerScrollTop,
+      set: (nextScrollTop: number) => {
+        const maxScrollTop =
+          screen.getAllByRole('listitem').length >= 3 ? 20 : 0;
+        innerScrollTop = Math.max(0, Math.min(nextScrollTop, maxScrollTop));
+      },
+    });
+    outerScroll.scrollTop = 10;
+    const setScrollStyle = vi.spyOn(innerScroll.style, 'setProperty');
+
+    const addButton = screen.getByRole('button', {name: 'Add guest'});
+    vi.spyOn(addButton, 'getBoundingClientRect').mockImplementation(() =>
+      createRect(
+        screen.getAllByRole('listitem').length * 40 -
+          innerScroll.scrollTop -
+          outerScroll.scrollTop,
+      ),
+    );
+    const initialTop = addButton.getBoundingClientRect().top;
+
+    fireEvent.click(addButton, {detail: 1});
+
+    expect(innerScroll.scrollTop).toBe(20);
+    expect(outerScroll.scrollTop).toBe(30);
+    expect(setScrollStyle).toHaveBeenCalledWith(
+      'scroll-behavior',
+      'auto',
+      'important',
+    );
+    expect(innerScroll.style.scrollBehavior).toBe('smooth');
+    expect(addButton.getBoundingClientRect().top).toBe(initialTop);
+    expect(screen.getByDisplayValue('Linus')).toHaveFocus();
+  });
+
+  it('checks every clipping ancestor before preserving focused-field visibility', () => {
+    function NestedClippingList() {
+      const [value, setValue] = useState(guests);
+      return (
+        <div data-outer-clip="" style={{height: 80, overflowY: 'auto'}}>
+          <div data-inner-clip="" style={{height: 160, overflowY: 'auto'}}>
+            <ListInput<Guest>
+              label="Guests"
+              itemName="guest"
+              value={value}
+              onChange={setValue}
+              getItemKey={guest => guest.id}
+              createItem={() => createdGuest}
+              columns={columns}
+            />
+          </div>
+        </div>
+      );
+    }
+
+    const {container} = render(<NestedClippingList />);
+    const outerClip =
+      container.querySelector<HTMLElement>('[data-outer-clip]')!;
+    const innerClip =
+      container.querySelector<HTMLElement>('[data-inner-clip]')!;
+    Object.defineProperties(outerClip, {
+      clientHeight: {configurable: true, value: 80},
+      scrollHeight: {configurable: true, value: 400},
+    });
+    Object.defineProperties(innerClip, {
+      clientHeight: {configurable: true, value: 160},
+      scrollHeight: {configurable: true, value: 400},
+    });
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
+      function (this: HTMLElement) {
+        return this instanceof HTMLInputElement && this.value === 'Linus'
+          ? createRect(100)
+          : createRect(0);
+      },
+    );
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+      configurable: true,
+      value: scrollIntoView,
+    });
+
+    fireEvent.click(screen.getByRole('button', {name: 'Add guest'}), {
+      detail: 1,
+    });
+
+    expect(scrollIntoView).toHaveBeenCalledWith({
+      block: 'nearest',
+      inline: 'nearest',
+    });
+  });
+
+  it('animates live add and removal reflow after the controlled change', () => {
+    const events: string[] = [];
+    const animate = mockMutationAnimations(events);
+
+    function ControlledList() {
+      const [value, setValue] = useState(guests);
+      return (
+        <ListInput<Guest>
+          label="Guests"
+          itemName="guest"
+          value={value}
+          onChange={(nextValue, change) => {
+            events.push(`change:${change.type}`);
+            setValue(nextValue);
+          }}
+          getItemKey={guest => guest.id}
+          createItem={() => createdGuest}
+          columns={columns}
+        />
+      );
+    }
+
+    render(<ControlledList />);
+    fireEvent.click(screen.getByRole('button', {name: 'Add guest'}));
+
+    expect(events[0]).toBe('change:add');
+    expect(screen.getByDisplayValue('Linus')).toHaveFocus();
+    expect(screen.getAllByRole('listitem')).toHaveLength(3);
+    const addedRow = screen
+      .getByDisplayValue('Linus')
+      .closest<HTMLElement>('li')!;
+    const addedAnimationIndex = animate.mock.contexts.indexOf(addedRow);
+    expect(addedAnimationIndex).toBeGreaterThanOrEqual(0);
+    expect(animate).toHaveBeenCalledTimes(1);
+    expect(animate.mock.calls[addedAnimationIndex]).toEqual([
+      [{transform: 'translateY(8px)'}, {transform: 'translateY(0)'}],
+      {
+        duration: 230,
+        easing: 'cubic-bezier(0.24, 1, 0.4, 1)',
+      },
+    ]);
+    expect(
+      Array.from(document.querySelectorAll('[aria-live="polite"]')).some(
+        node => node.textContent === 'Added guest 3.',
+      ),
+    ).toBe(true);
+
+    const removeEventStart = events.length;
+    const animationCountBeforeRemove = animate.mock.calls.length;
+    fireEvent.click(screen.getByRole('button', {name: 'Remove guest 1'}));
+
+    expect(events[removeEventStart]).toBe('change:remove');
+    expect(animate.mock.calls.length).toBeGreaterThan(
+      animationCountBeforeRemove,
+    );
+    expect(screen.queryByDisplayValue('Ada')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Remove guest 1'})).toHaveFocus();
+    expect(
+      animate.mock.calls
+        .slice(animationCountBeforeRemove)
+        .some(([keyframes], index) => {
+          const context = animate.mock.contexts[
+            animationCountBeforeRemove + index
+          ] as HTMLElement;
+          return (
+            context.querySelector('input')?.value === 'Grace' &&
+            (keyframes as Keyframe[])[0]?.transform === 'translate(0px, 40px)'
+          );
+        }),
+    ).toBe(true);
+    expect(
+      Array.from(document.querySelectorAll('[aria-live="polite"]')).some(
+        node => node.textContent === 'Removed guest 1.',
+      ),
+    ).toBe(true);
+  });
+
+  it('uses instant add and remove changes when reduced motion is requested', () => {
+    const animate = mockMutationAnimations();
+    vi.spyOn(window, 'matchMedia').mockImplementation(
+      query =>
+        ({
+          matches: query === '(prefers-reduced-motion: reduce)',
+          media: query,
+          onchange: null,
+          addListener: () => {},
+          removeListener: () => {},
+          addEventListener: () => {},
+          removeEventListener: () => {},
+          dispatchEvent: () => false,
+        }) as MediaQueryList,
+    );
+
+    function ReducedMotionList() {
+      const [value, setValue] = useState([guests[0]]);
+      return (
+        <ListInput<Guest>
+          label="Guests"
+          itemName="guest"
+          value={value}
+          onChange={setValue}
+          getItemKey={guest => guest.id}
+          createItem={() => createdGuest}
+          columns={columns}
+        />
+      );
+    }
+
+    render(<ReducedMotionList />);
+    fireEvent.click(screen.getByRole('button', {name: 'Remove guest 1'}));
+
+    expect(animate).not.toHaveBeenCalled();
+    expect(screen.queryByDisplayValue('Ada')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Add guest'})).toHaveFocus();
+    expect(
+      Array.from(document.querySelectorAll('[aria-live="polite"]')).some(
+        node => node.textContent === 'Removed guest 1.',
+      ),
+    ).toBe(true);
+
+    fireEvent.click(screen.getByRole('button', {name: 'Add guest'}));
+    expect(animate).not.toHaveBeenCalled();
+    expect(screen.getByDisplayValue('Linus')).toHaveFocus();
+  });
+
   it('renders list/item messages and presents field messages in a tooltip', () => {
     renderListInput({
       columns: nativeStatusColumns,
@@ -230,12 +565,18 @@ describe('ListInput', () => {
   });
 
   it('fills the fields track with Add and omits reorder handles by default', () => {
-    const {container} = renderListInput();
+    const {container} = renderListInput({columns: nativeStatusColumns});
 
     const addContent = container.querySelector('[data-list-input-add-content]');
-    expect(addContent).toContainElement(
-      screen.getByRole('button', {name: 'Add guest'}),
-    );
+    const addButton = screen.getByRole('button', {name: 'Add guest'});
+    const removeButton = screen.getByRole('button', {
+      name: 'Remove guest 1',
+    });
+    const textInput = container.querySelector('.astryx-text-input');
+    expect(addContent).toContainElement(addButton);
+    expect(addButton).toHaveAttribute('data-size', 'md');
+    expect(removeButton).toHaveAttribute('data-size', 'md');
+    expect(textInput).toHaveAttribute('data-size', 'md');
     expect(
       screen.queryByRole('button', {name: 'Reorder guest 1'}),
     ).not.toBeInTheDocument();
@@ -365,6 +706,7 @@ describe('ListInput', () => {
 
     render(<ArrowReorderList />);
     const handle = screen.getByRole('button', {name: 'Reorder guest 1'});
+    expect(handle).toHaveAttribute('data-size', 'md');
     expect(
       screen
         .queryAllByRole('tooltip', {hidden: true})

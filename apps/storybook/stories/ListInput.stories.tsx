@@ -3,7 +3,7 @@
 /**
  * @file ListInput.stories.tsx
  * @input Uses ListInput with controlled data, Astryx field controls, column width helpers, React, and StyleX
- * @output Storybook examples spanning realistic use cases, validation scopes, density, responsiveness, and reordering
+ * @output Storybook examples spanning realistic use cases, validation scopes, density, responsiveness, tokenized collection motion, and reordering
  * @position Lab component stories; documents the consumer-facing ListInput API
  */
 
@@ -216,7 +216,6 @@ function TagOptionsExample({isReorderable}: {isReorderable?: boolean}) {
           : undefined
       }
       isReorderable={isReorderable || undefined}
-      maxItems={6}
     />
   );
 }
@@ -224,6 +223,14 @@ function TagOptionsExample({isReorderable}: {isReorderable?: boolean}) {
 /** Controlled tag options with validation at list, item, and field scope. */
 export const TagOptions: Story = {
   render: () => <TagOptionsExample isReorderable />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Pointer-activate Add near the bottom of the viewport to keep the action under the pointer while available scroll containers absorb the inserted row from nearest to outermost. The new row receives focus and uses a live translate entrance. Remove one to see stable-size survivors close the gap; reduced-motion preferences use an instant change.',
+      },
+    },
+  },
 };
 
 /** Editable tag options using the default fixed insertion order. */
@@ -713,7 +720,6 @@ function FamilyMemberDeclarationExample() {
         return undefined;
       }}
       isRequired
-      maxItems={6}
     />
   );
 }
@@ -882,7 +888,6 @@ function ResponsiveItineraryExample() {
         }}
         isReorderable
         isRequired
-        maxItems={6}
       />
     </div>
   );
@@ -895,7 +900,7 @@ export const ResponsiveItinerary: Story = {
     docs: {
       description: {
         story:
-          'Exercises the 640px container breakpoint, clearly separated record groups, stacked labels, a long value, DateInput popovers, item-order validation, and reorder/remove controls aligned beside each record’s first field.',
+          'Exercises the 640px container breakpoint, 32px separation between stacked record groups, repeated labels, a long value, DateInput popovers, item-order validation, and reorder/remove controls aligned beside each record’s first field.',
       },
     },
   },

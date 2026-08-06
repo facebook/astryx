@@ -4,7 +4,7 @@
 
 /**
  * @file ListInput.tsx
- * @input React, StyleX, Astryx field/list/button/icon/layer/empty-state primitives, tokens, and shared Lab reorder styles
+ * @input React, StyleX, Astryx field/list/button/icon/layer/empty-state primitives, compact size context, browser scroll geometry, programmatic theme tokens, and shared Lab reorder styles
  * @output Exports ListInput and its controlled data, column, renderer, and change types
  * @position Lab experiment (RFC facebook/astryx#4531) for editing compact repeated records
  *
@@ -34,9 +34,12 @@ import {EmptyState} from '@astryxdesign/core/EmptyState';
 import {Field, type InputStatus} from '@astryxdesign/core/Field';
 import {FieldStatus} from '@astryxdesign/core/FieldStatus';
 import {Icon} from '@astryxdesign/core/Icon';
+import {useMediaQuery} from '@astryxdesign/core/hooks';
 import {IconButton} from '@astryxdesign/core/IconButton';
 import {useLayer} from '@astryxdesign/core/Layer';
+import {SizeProvider} from '@astryxdesign/core/SizeContext';
 import type {ColumnWidth} from '@astryxdesign/core/Table';
+import {useTheme} from '@astryxdesign/core/theme';
 import {VisuallyHidden} from '@astryxdesign/core/VisuallyHidden';
 import {
   colorVars,
@@ -168,6 +171,25 @@ interface PendingFocus {
   target: 'first-field' | 'remove' | 'add';
 }
 
+interface PendingAddScrollAnchor {
+  addTop: number;
+  expectedKeys: string[];
+  itemKey: string;
+}
+
+interface LayoutSnapshot {
+  element: HTMLElement;
+  rect: DOMRect;
+}
+
+interface PendingMutationMotion<T> {
+  before: Map<string, LayoutSnapshot>;
+  duration: number;
+  easing: string;
+  entryOffset: string;
+  matchesValue: (nextValue: T[]) => boolean;
+}
+
 const styles = stylex.create({
   group: {
     display: 'flex',
@@ -182,7 +204,7 @@ const styles = stylex.create({
     flexDirection: 'column',
     gap: {
       default: spacingVars['--spacing-2'],
-      '@container list-input (max-width: 640px)': spacingVars['--spacing-4'],
+      '@container list-input (max-width: 640px)': spacingVars['--spacing-8'],
     },
     listStyleType: 'none',
     margin: 0,
@@ -208,13 +230,13 @@ const styles = stylex.create({
     gridTemplateColumns: 'minmax(0, 1fr)',
   },
   rowWithReorder: {
-    gridTemplateColumns: `minmax(0, 1fr) ${sizeVars['--size-element-sm']}`,
+    gridTemplateColumns: `minmax(0, 1fr) ${sizeVars['--size-element-md']}`,
   },
   rowWithRemove: {
-    gridTemplateColumns: `minmax(0, 1fr) ${sizeVars['--size-element-sm']}`,
+    gridTemplateColumns: `minmax(0, 1fr) ${sizeVars['--size-element-md']}`,
   },
   rowWithBothControls: {
-    gridTemplateColumns: `minmax(0, 1fr) ${sizeVars['--size-element-sm']} ${sizeVars['--size-element-sm']}`,
+    gridTemplateColumns: `minmax(0, 1fr) ${sizeVars['--size-element-md']} ${sizeVars['--size-element-md']}`,
   },
   fields: {
     display: {
@@ -280,7 +302,7 @@ const styles = stylex.create({
     alignItems: 'center',
     alignSelf: 'end',
     justifyContent: 'center',
-    minHeight: sizeVars['--size-element-sm'],
+    minHeight: sizeVars['--size-element-md'],
   },
   removeControlCell: {
     gridColumn: {
@@ -363,6 +385,93 @@ function joinIDs(...ids: Array<string | undefined>): string | undefined {
   return resolved.length > 0 ? resolved.join(' ') : undefined;
 }
 
+const focusableFieldSelector =
+  '[data-list-input-cell] input, [data-list-input-cell] select, [data-list-input-cell] textarea, [data-list-input-cell] button, [data-list-input-cell] [tabindex]:not([tabindex="-1"])';
+
+function getScrollableAncestors(element: HTMLElement): HTMLElement[] {
+  const scrollRoots: HTMLElement[] = [];
+  let current = element.parentElement;
+
+  while (current != null) {
+    const overflowY = window.getComputedStyle(current).overflowY;
+    const isScrollable =
+      (overflowY === 'auto' ||
+        overflowY === 'scroll' ||
+        overflowY === 'overlay') &&
+      current.scrollHeight > current.clientHeight;
+
+    if (isScrollable) {
+      scrollRoots.push(current);
+    }
+    current = current.parentElement;
+  }
+
+  return scrollRoots;
+}
+
+function isVerticallyVisible(element: HTMLElement): boolean {
+  const elementBounds = element.getBoundingClientRect();
+  const viewportBottom =
+    window.innerHeight || document.documentElement.clientHeight;
+  let visibleTop = 0;
+  let visibleBottom = viewportBottom;
+  let current = element.parentElement;
+
+  while (current != null) {
+    const overflowY = window.getComputedStyle(current).overflowY;
+    if (
+      overflowY === 'auto' ||
+      overflowY === 'scroll' ||
+      overflowY === 'overlay' ||
+      overflowY === 'hidden' ||
+      overflowY === 'clip'
+    ) {
+      const bounds = current.getBoundingClientRect();
+      const contentTop = bounds.top + current.clientTop;
+      visibleTop = Math.max(visibleTop, contentTop);
+      visibleBottom = Math.min(
+        visibleBottom,
+        contentTop + current.clientHeight,
+      );
+    }
+    current = current.parentElement;
+  }
+
+  return (
+    elementBounds.top >= visibleTop && elementBounds.bottom <= visibleBottom
+  );
+}
+
+function scrollByInstantly(
+  scrollRoot: HTMLElement | null,
+  delta: number,
+): void {
+  const styleTarget = scrollRoot ?? document.documentElement;
+  const previousBehavior =
+    styleTarget.style.getPropertyValue('scroll-behavior');
+  const previousPriority =
+    styleTarget.style.getPropertyPriority('scroll-behavior');
+  styleTarget.style.setProperty('scroll-behavior', 'auto', 'important');
+
+  try {
+    if (scrollRoot != null) {
+      scrollRoot.scrollTop += delta;
+    } else {
+      window.scrollBy(0, delta);
+    }
+  } finally {
+    if (previousBehavior === '') {
+      styleTarget.style.removeProperty('scroll-behavior');
+    } else {
+      styleTarget.style.setProperty(
+        'scroll-behavior',
+        previousBehavior,
+        previousPriority,
+      );
+    }
+  }
+}
+
 const viewTransitionRootClassNames =
   stylex
     .props(reorderStyles.viewTransitionRoot)
@@ -412,13 +521,87 @@ function transitionName(scope: string, key: Key): string {
   return `${scope}-${String(key)}`.replace(/[^a-zA-Z0-9_-]/g, '-');
 }
 
+function parseDuration(value: string): number {
+  const normalizedValue = value.trim();
+  const duration = Number.parseFloat(normalizedValue);
+  if (!Number.isFinite(duration)) {
+    return 0;
+  }
+  if (normalizedValue.endsWith('ms')) {
+    return duration;
+  }
+  return normalizedValue.endsWith('s') ? duration * 1000 : 0;
+}
+
+function captureMutationLayout(
+  root: HTMLElement,
+  activeAnimations: Map<HTMLElement, Animation>,
+): Map<string, LayoutSnapshot> {
+  const snapshots = new Map<string, LayoutSnapshot>();
+  const elements: HTMLElement[] = [];
+  for (const child of root.children) {
+    if (!(child instanceof HTMLElement)) {
+      continue;
+    }
+    if (child.tagName === 'OL') {
+      for (const item of child.children) {
+        if (
+          item instanceof HTMLElement &&
+          item.dataset.listInputMotionKey != null
+        ) {
+          elements.push(item);
+        }
+      }
+    } else if (child.dataset.listInputMotionKey != null) {
+      elements.push(child);
+    }
+  }
+  for (const element of elements) {
+    const key = element.dataset.listInputMotionKey;
+    if (key == null) {
+      continue;
+    }
+    const rect = element.getBoundingClientRect();
+    activeAnimations.get(element)?.cancel();
+    activeAnimations.delete(element);
+    snapshots.set(key, {element, rect});
+  }
+  return snapshots;
+}
+
+function startMutationAnimation(
+  element: HTMLElement,
+  keyframes: Keyframe[],
+  options: KeyframeAnimationOptions,
+  activeAnimations: Map<HTMLElement, Animation>,
+): void {
+  try {
+    const animation = element.animate(keyframes, options);
+    activeAnimations.set(element, animation);
+    void animation.finished.then(
+      () => {
+        if (activeAnimations.get(element) === animation) {
+          activeAnimations.delete(element);
+        }
+      },
+      () => {
+        if (activeAnimations.get(element) === animation) {
+          activeAnimations.delete(element);
+        }
+      },
+    );
+  } catch {
+    // Motion is progressive enhancement; the controlled update already ran.
+  }
+}
+
 /**
  * A compact editor for short collections of consistent, simple records.
  *
  * ListInput owns list semantics, add/remove controls, handle-only reordering,
- * focus restoration, announcements, and list/item/field validation placement.
- * Consumers keep ownership of the controlled data and render each field with
- * standard Astryx inputs.
+ * live collection motion, focus restoration, announcements, and list/item/
+ * field validation placement. Consumers keep ownership of the controlled data
+ * and render each field with standard Astryx inputs.
  *
  * @example
  * ```
@@ -463,14 +646,29 @@ export function ListInput<T>({
   const statusID = status?.message ? `${groupID}-status` : undefined;
   const reorderInstructionsID = `${groupID}-reorder-instructions`;
   const rowRefs = useRef(new Map<string, HTMLDivElement>());
+  const groupRef = useRef<HTMLDivElement>(null);
   const addButtonRef = useRef<HTMLButtonElement>(null);
   const pendingFocusRef = useRef<PendingFocus | null>(null);
+  const pendingAddScrollAnchorRef = useRef<PendingAddScrollAnchor | null>(null);
+  const pendingMutationMotionRef = useRef<PendingMutationMotion<T> | null>(
+    null,
+  );
+  const activeMutationAnimationsRef = useRef(new Map<HTMLElement, Animation>());
   const dragPreviewRef = useRef<HTMLDivElement>(null);
   const reorderStateRef = useRef<ReorderState<T> | null>(null);
   const [reorderState, setReorderStateState] = useState<ReorderState<T> | null>(
     null,
   );
   const [announcement, setAnnouncement] = useState('');
+  const {tokens: themeTokens} = useTheme();
+  const mutationDuration = parseDuration(
+    themeTokens['--duration-fast-max'] ?? '',
+  );
+  const mutationEasing = themeTokens['--ease-standard'] ?? 'linear';
+  const mutationEntryOffset = themeTokens['--spacing-2'] ?? '8px';
+  const prefersReducedMotion = useMediaQuery(
+    '(prefers-reduced-motion: reduce)',
+  );
   const {
     render: renderDragPreviewLayer,
     show: showDragPreviewLayer,
@@ -565,6 +763,156 @@ export function ListInput<T>({
     }
   }, [isDisabled, isLoading]);
 
+  useEffect(() => {
+    const activeAnimations = activeMutationAnimationsRef.current;
+    return () => {
+      for (const animation of activeAnimations.values()) {
+        animation.cancel();
+      }
+      activeAnimations.clear();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!prefersReducedMotion) {
+      return;
+    }
+    for (const animation of activeMutationAnimationsRef.current.values()) {
+      animation.cancel();
+    }
+    activeMutationAnimationsRef.current.clear();
+    pendingMutationMotionRef.current = null;
+  }, [prefersReducedMotion]);
+
+  useLayoutEffect(() => {
+    const pendingAnchor = pendingAddScrollAnchorRef.current;
+    if (pendingAnchor == null) {
+      return;
+    }
+    const matchesValue =
+      value.length === pendingAnchor.expectedKeys.length &&
+      value.every(
+        (item, index) =>
+          String(getItemKey(item)) === pendingAnchor.expectedKeys[index],
+      );
+    if (!matchesValue) {
+      pendingAddScrollAnchorRef.current = null;
+      return;
+    }
+    pendingAddScrollAnchorRef.current = null;
+
+    const addButton = addButtonRef.current;
+    if (addButton == null) {
+      return;
+    }
+    const pendingFocus = pendingFocusRef.current;
+    const addedRow = rowRefs.current.get(pendingAnchor.itemKey);
+    const focusTarget =
+      pendingFocus?.target === 'first-field' &&
+      pendingFocus.itemKey === pendingAnchor.itemKey
+        ? (addedRow?.querySelector<HTMLElement>(focusableFieldSelector) ?? null)
+        : null;
+    if (focusTarget != null) {
+      focusTarget.focus({preventScroll: true});
+      pendingFocusRef.current = null;
+    }
+
+    // Resolve after insertion: the new record may make a nearer overflow
+    // container scrollable for the first time. Cascade any clamped remainder
+    // outward so a partially growing inner container does not displace Add.
+    const scrollRoots = getScrollableAncestors(addButton);
+    for (const scrollRoot of scrollRoots) {
+      const scrollDelta =
+        addButton.getBoundingClientRect().top - pendingAnchor.addTop;
+      if (Math.abs(scrollDelta) < 0.5) {
+        break;
+      }
+      scrollByInstantly(scrollRoot, scrollDelta);
+    }
+    const viewportDelta =
+      addButton.getBoundingClientRect().top - pendingAnchor.addTop;
+    if (Math.abs(viewportDelta) >= 0.5) {
+      scrollByInstantly(null, viewportDelta);
+    }
+
+    // Keeping the newly focused field visible takes priority when the nearest
+    // scroll root cannot absorb the complete anchoring delta.
+    if (focusTarget != null && !isVerticallyVisible(focusTarget)) {
+      focusTarget.scrollIntoView?.({block: 'nearest', inline: 'nearest'});
+    }
+  }, [getItemKey, value]);
+
+  useLayoutEffect(() => {
+    const pendingMotion = pendingMutationMotionRef.current;
+    if (pendingMotion == null) {
+      return;
+    }
+    if (!pendingMotion.matchesValue(value)) {
+      pendingMutationMotionRef.current = null;
+      return;
+    }
+    pendingMutationMotionRef.current = null;
+    const root = groupRef.current;
+    if (root == null) {
+      return;
+    }
+
+    const activeAnimations = activeMutationAnimationsRef.current;
+    const after = captureMutationLayout(root, activeAnimations);
+    const options: KeyframeAnimationOptions = {
+      duration: pendingMotion.duration,
+      easing: pendingMotion.easing,
+    };
+    const hasSizeChange = Array.from(after).some(([key, nextSnapshot]) => {
+      const previousSnapshot = pendingMotion.before.get(key);
+      return (
+        previousSnapshot != null &&
+        (Math.abs(previousSnapshot.rect.width - nextSnapshot.rect.width) >=
+          0.5 ||
+          Math.abs(previousSnapshot.rect.height - nextSnapshot.rect.height) >=
+            0.5)
+      );
+    });
+    const hasEnteringParticipant = Array.from(after.keys()).some(
+      key => !pendingMotion.before.has(key),
+    );
+    for (const [key, nextSnapshot] of after) {
+      const previousSnapshot = pendingMotion.before.get(key);
+      if (previousSnapshot == null) {
+        startMutationAnimation(
+          nextSnapshot.element,
+          [
+            {transform: `translateY(${pendingMotion.entryOffset})`},
+            {transform: 'translateY(0)'},
+          ],
+          options,
+          activeAnimations,
+        );
+        continue;
+      }
+      // Appended rows already carry the orientation cue; moving the Add action
+      // from beneath them would temporarily overlap the new live controls.
+      if (hasSizeChange || hasEnteringParticipant) {
+        continue;
+      }
+
+      const deltaX = previousSnapshot.rect.left - nextSnapshot.rect.left;
+      const deltaY = previousSnapshot.rect.top - nextSnapshot.rect.top;
+      if (Math.abs(deltaX) < 0.5 && Math.abs(deltaY) < 0.5) {
+        continue;
+      }
+      startMutationAnimation(
+        nextSnapshot.element,
+        [
+          {transform: `translate(${deltaX}px, ${deltaY}px)`},
+          {transform: 'translate(0, 0)'},
+        ],
+        options,
+        activeAnimations,
+      );
+    }
+  }, [value]);
+
   useLayoutEffect(() => {
     const pendingFocus = pendingFocusRef.current;
     if (pendingFocus == null) {
@@ -578,7 +926,7 @@ export function ListInput<T>({
       const selector =
         pendingFocus.target === 'remove'
           ? '[data-list-input-remove]'
-          : '[data-list-input-cell] input, [data-list-input-cell] select, [data-list-input-cell] textarea, [data-list-input-cell] button, [data-list-input-cell] [tabindex]:not([tabindex="-1"])';
+          : focusableFieldSelector;
       target = row?.querySelector<HTMLElement>(selector) ?? null;
     }
     if (target != null) {
@@ -630,16 +978,95 @@ export function ListInput<T>({
   const mutationsDisabled = isDisabled || isLoading;
   const hasReachedMax = maxItems != null && value.length >= maxItems;
 
-  const handleAdd = () => {
+  const cancelMutationAnimations = () => {
+    for (const animation of activeMutationAnimationsRef.current.values()) {
+      animation.cancel();
+    }
+    activeMutationAnimationsRef.current.clear();
+  };
+
+  const settleReorderBeforeMutation = () => {
+    if (reorderState == null && reorderStateRef.current == null) {
+      return;
+    }
+    flushSync(() => setReorderState(null));
+  };
+
+  const prepareMutationMotion = (nextValue: T[]) => {
+    const root = groupRef.current;
+    if (
+      root == null ||
+      prefersReducedMotion ||
+      mutationDuration <= 0 ||
+      typeof root.animate !== 'function'
+    ) {
+      pendingMutationMotionRef.current = null;
+      return;
+    }
+
+    const expectedKeys = nextValue.map(item => String(getItemKey(item)));
+    const pendingMotion: PendingMutationMotion<T> = {
+      before: captureMutationLayout(root, activeMutationAnimationsRef.current),
+      duration: mutationDuration,
+      easing: mutationEasing,
+      entryOffset: mutationEntryOffset,
+      matchesValue: candidate =>
+        candidate.length === expectedKeys.length &&
+        candidate.every(
+          (item, index) => String(getItemKey(item)) === expectedKeys[index],
+        ),
+    };
+    pendingMutationMotionRef.current = pendingMotion;
+    window.setTimeout(() => {
+      // Delayed controlled updates cannot safely reuse viewport measurements
+      // from the originating interaction. Synchronous updates consume the
+      // snapshot in the layout effect before the next task.
+      if (pendingMutationMotionRef.current === pendingMotion) {
+        pendingMutationMotionRef.current = null;
+      }
+    }, 0);
+  };
+
+  const prepareAddScrollAnchor = (nextValue: T[], itemKey: string) => {
+    const addButton = addButtonRef.current;
+    if (addButton == null) {
+      pendingAddScrollAnchorRef.current = null;
+      return;
+    }
+
+    const pendingAnchor: PendingAddScrollAnchor = {
+      addTop: addButton.getBoundingClientRect().top,
+      expectedKeys: nextValue.map(item => String(getItemKey(item))),
+      itemKey,
+    };
+    pendingAddScrollAnchorRef.current = pendingAnchor;
+    window.setTimeout(() => {
+      // Controlled updates that arrive in a later task cannot safely reuse a
+      // pointer position captured during the originating click.
+      if (pendingAddScrollAnchorRef.current === pendingAnchor) {
+        pendingAddScrollAnchorRef.current = null;
+      }
+    }, 0);
+  };
+
+  const handleAdd = (event: React.MouseEvent<HTMLButtonElement>) => {
     if (mutationsDisabled || hasReachedMax) {
       return;
     }
+    settleReorderBeforeMutation();
     const item = createItem();
     const nextValue = [...value, item];
+    const itemKey = String(getItemKey(item));
     pendingFocusRef.current = {
-      itemKey: String(getItemKey(item)),
+      itemKey,
       target: 'first-field',
     };
+    if (event.detail > 0) {
+      prepareAddScrollAnchor(nextValue, itemKey);
+    } else {
+      pendingAddScrollAnchorRef.current = null;
+    }
+    prepareMutationMotion(nextValue);
     onChange(nextValue, {type: 'add', item, index: value.length});
     setAnnouncement(`Added ${itemName} ${value.length + 1}.`);
   };
@@ -664,17 +1091,27 @@ export function ListInput<T>({
     });
   };
 
-  const handleRemove = (item: T, index: number) => {
+  const handleRemove = (item: T) => {
     if (mutationsDisabled) {
       return;
     }
+    settleReorderBeforeMutation();
+    const itemKey = String(getItemKey(item));
+    const index = value.findIndex(
+      candidate => String(getItemKey(candidate)) === itemKey,
+    );
+    if (index < 0) {
+      return;
+    }
+    const removedItem = value[index];
     const nextValue = value.filter((_, itemIndex) => itemIndex !== index);
     const nextFocusItem = nextValue[Math.min(index, nextValue.length - 1)];
     pendingFocusRef.current =
       nextFocusItem == null
         ? {target: 'add'}
         : {itemKey: String(getItemKey(nextFocusItem)), target: 'remove'};
-    onChange(nextValue, {type: 'remove', item, index});
+    prepareMutationMotion(nextValue);
+    onChange(nextValue, {type: 'remove', item: removedItem, index});
     setAnnouncement(`Removed ${itemName} ${index + 1}.`);
   };
 
@@ -697,6 +1134,7 @@ export function ListInput<T>({
     if (mutationsDisabled || !isReorderable) {
       return;
     }
+    cancelMutationAnimations();
     setReorderState({
       itemKey: getItemKey(item),
       fromIndex: index,
@@ -783,6 +1221,7 @@ export function ListInput<T>({
     );
   };
   const moveWithArrowKey = (item: T, fromIndex: number, offset: -1 | 1) => {
+    cancelMutationAnimations();
     const toIndex = Math.max(0, Math.min(fromIndex + offset, value.length - 1));
     if (toIndex === fromIndex) {
       setAnnouncement(
@@ -942,7 +1381,7 @@ export function ListInput<T>({
       : null;
 
   return (
-    <>
+    <SizeProvider value="md">
       <Field
         ref={ref}
         label={label}
@@ -959,6 +1398,7 @@ export function ListInput<T>({
         statusVariant="detached"
         {...rest}>
         <div
+          ref={groupRef}
           id={groupID}
           role="group"
           aria-labelledby={labelID}
@@ -983,7 +1423,9 @@ export function ListInput<T>({
             aria-describedby={joinIDs(descriptionID, statusID)}
             {...stylex.props(styles.list)}>
             {displayValue.length === 0 ? (
-              <li {...stylex.props(styles.emptyItem)}>
+              <li
+                data-list-input-motion-key="state:empty"
+                {...stylex.props(styles.emptyItem)}>
                 <EmptyState
                   title={`No ${itemName}s yet`}
                   description={`Add a ${itemName} to get started.`}
@@ -1010,6 +1452,7 @@ export function ListInput<T>({
                 return (
                   <li
                     key={itemKey}
+                    data-list-input-motion-key={`item:${itemKeyString}`}
                     data-list-input-drop-target={dropPosition ?? undefined}
                     aria-describedby={itemStatusID}
                     aria-invalid={itemStatus?.type === 'error' || undefined}
@@ -1112,10 +1555,10 @@ export function ListInput<T>({
                             tooltip={`Remove ${itemName} ${index + 1}`}
                             icon={<Icon icon="close" size="sm" />}
                             variant="ghost"
-                            size="sm"
+                            size="md"
                             isDisabled={isDisabled || isLoading}
                             data-list-input-remove=""
-                            onClick={() => handleRemove(item, index)}
+                            onClick={() => handleRemove(item)}
                           />
                         </div>
                       ) : null}
@@ -1129,7 +1572,7 @@ export function ListInput<T>({
                             label={`Reorder ${itemName} ${index + 1}`}
                             icon={<Icon icon={GripVerticalIcon} size="sm" />}
                             variant="ghost"
-                            size="sm"
+                            size="md"
                             isDisabled={isDisabled || isLoading}
                             aria-describedby={reorderInstructionsID}
                             aria-pressed={isActiveReorder || undefined}
@@ -1248,7 +1691,9 @@ export function ListInput<T>({
               })
             )}
           </ol>
-          <div {...stylex.props(styles.actionRow, rowLayoutStyle)}>
+          <div
+            data-list-input-motion-key="action:add"
+            {...stylex.props(styles.actionRow, rowLayoutStyle)}>
             <div
               data-list-input-add-content=""
               {...stylex.props(styles.actionContent, contentGridStyle)}>
@@ -1256,7 +1701,7 @@ export function ListInput<T>({
                 ref={addButtonRef}
                 label={`Add ${itemName}`}
                 variant="secondary"
-                size="sm"
+                size="md"
                 width="100%"
                 isDisabled={isDisabled || hasReachedMax}
                 isLoading={isLoading}
@@ -1297,7 +1742,7 @@ export function ListInput<T>({
             },
           )
         : null}
-    </>
+    </SizeProvider>
   );
 }
 
