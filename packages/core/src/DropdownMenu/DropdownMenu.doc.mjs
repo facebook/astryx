@@ -24,7 +24,7 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-dropdown-menu'},
-      {className: 'astryx-dropdown-menu-item', visualProps: ['size']},
+      {className: 'astryx-dropdown-menu-item', visualProps: ['size', 'variant']},
       {
         className: 'astryx-dropdown-menu-radio',
         visualProps: ['size'],
