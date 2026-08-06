@@ -31,12 +31,22 @@ import type {
   OperatorValue,
 } from './types';
 
+// Below the popover layer's 400px floor (see popoverLayerStyles in
+// PowerSearch.tsx) the chip rows collapse from one line to wrapped lines.
+// A container query, not a viewport one, so the rows track the width the
+// popover actually got (#4761).
+const CHIP_ROW_COLLAPSE = '@container (max-width: 399px)';
+
 const styles = stylex.create({
   container: {
     overflow: 'hidden',
+    containerType: 'inline-size',
   },
   content: {
     padding: spacingVars['--spacing-4'],
+  },
+  chipRow: {
+    flexWrap: {default: 'nowrap', [CHIP_ROW_COLLAPSE]: 'wrap'},
   },
   footer: {
     padding: spacingVars['--spacing-3'],
@@ -50,6 +60,9 @@ const styles = stylex.create({
   operatorSelector: {
     flexGrow: 1,
     flexShrink: 0,
+    // Long translated operator labels truncate in the Selector trigger
+    // instead of pushing the row wider than the popover (#4761).
+    maxWidth: '100%',
   },
   valueEditor: {
     flexGrow: 2,
@@ -62,10 +75,12 @@ const styles = stylex.create({
   nestedFieldSelector: {
     flexShrink: 0,
     width: 200,
+    maxWidth: '100%',
   },
   nestedOperatorSelector: {
     flexShrink: 0,
     width: 180,
+    maxWidth: '100%',
   },
   nestedRow: {
     width: '100%',
@@ -308,7 +323,7 @@ function NestedSubFilterRow({
   );
 
   return (
-    <HStack gap={2} vAlign="center">
+    <HStack gap={2} vAlign="center" xstyle={styles.chipRow}>
       <div {...stylex.props(styles.nestedFieldSelector)}>
         <Selector
           label={t('@astryx.powersearch.editor.field')}
@@ -795,7 +810,7 @@ export function PowerSearchEditPopover({
   return (
     <div {...stylex.props(styles.container)} onKeyDown={handleKeyDown}>
       <div {...stylex.props(styles.content)}>
-        <HStack gap={2}>
+        <HStack gap={2} xstyle={styles.chipRow}>
           <div {...stylex.props(styles.fieldSelector)}>
             <Selector
               label={t('@astryx.powersearch.editor.field')}
