@@ -257,7 +257,7 @@ export function TreeList({
     hasRovingTabIndex: true,
   });
 
-  const treeHasExpandableItems = items.some(
+  const hasExpandableItems = items.some(
     item => item.children != null && item.children.length > 0,
   );
 
@@ -305,7 +305,7 @@ export function TreeList({
           startContent={item.startContent}
           endContent={item.endContent}
           hasChildren={hasChildren}
-          treeHasExpandableItems={treeHasExpandableItems}
+          hasExpandableItems={hasExpandableItems}
           onClick={item.onClick}
           href={item.href}
           target={item.target}

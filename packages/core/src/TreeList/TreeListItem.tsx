@@ -291,7 +291,7 @@ export interface TreeListItemInternalProps {
    * all) has no caret to align under, so its rows sit flush (no chevron-column
    * offset). Computed once for the whole tree by TreeList.
    */
-  treeHasExpandableItems: boolean;
+  hasExpandableItems: boolean;
   nestedLevel: number;
   isLast: boolean;
   ancestorsIsLast: ReadonlyArray<boolean>;
@@ -334,7 +334,7 @@ export function TreeListItem({
   isDisabled = false,
   isSelected = false,
   hasChildren,
-  treeHasExpandableItems,
+  hasExpandableItems,
   nestedLevel,
   isLast,
   ancestorsIsLast,
@@ -396,7 +396,7 @@ export function TreeListItem({
   // with the lever. Published as the private `--_tree-indent` and consumed by
   // `contentWrapper`'s stylesheet `margin-inline-start` (kept out of the inline
   // style so the theme layer can override it — see #4308).
-  const reservesChevronColumn = !hasChildren && treeHasExpandableItems;
+  const reservesChevronColumn = !hasChildren && hasExpandableItems;
   const indentDistance = reservesChevronColumn
     ? `calc(${nestedLevel} * var(--tree-list-indent) + ${spacingVars['--spacing-4']} + ${spacingVars['--spacing-2']})`
     : `calc(${nestedLevel} * var(--tree-list-indent))`;
