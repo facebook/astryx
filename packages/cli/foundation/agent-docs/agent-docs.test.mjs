@@ -50,10 +50,7 @@ describe('generateCompressedIndex', () => {
     const result = generateCompressedIndex('1.0.0');
     const frameRule = result.split('\n').find(l => l.includes('Frame first'));
     expect(frameRule).toContain('astryx docs layout');
-    // Naming a shell here duplicates (and eventually contradicts) the doc.
     expect(result).not.toMatch(/AppShell/);
-    // The command reads THIS project's installed docs; the docsite documents the
-    // last published release, so a URL can describe an API that isn't here yet.
     expect(frameRule).not.toMatch(/https?:/);
   });
 
