@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {useEffect, useMemo, useState} from 'react';
+import {useEffect, useMemo, useState, type ComponentProps} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {ComplexSelector} from '@astryxdesign/core/ComplexSelector';
 import {Button} from '@astryxdesign/core/Button';
@@ -724,6 +724,271 @@ export const CategoryTreeSelector: Story = {
       description: {
         story:
           'A second tree-search example showing the same ComplexSelector shell with different hierarchical data and a form action nearby. The custom content relies on TreeList focus behavior and should be checked against WCAG 2.2.',
+      },
+    },
+  },
+};
+
+// --- State coverage stories (hardening #4710) ---
+
+const MOODS = ['Focused', 'Playful', 'Calm'] as const;
+type Mood = (typeof MOODS)[number];
+
+function MoodList({
+  value,
+  onChange,
+}: {
+  value: Mood | null;
+  onChange: (value: Mood) => void;
+}) {
+  return (
+    <VStack gap={1}>
+      {MOODS.map(mood => (
+        <Button
+          key={mood}
+          variant={value === mood ? 'primary' : 'ghost'}
+          label={mood}
+          onClick={() => onChange(mood)}
+        />
+      ))}
+    </VStack>
+  );
+}
+
+function MoodSelector({
+  value: initialValue = 'Focused',
+  ...props
+}: Partial<
+  Omit<
+    ComponentProps<typeof ComplexSelector<Mood | null>>,
+    'value' | 'children'
+  >
+> & {value?: Mood | null}) {
+  const [value, setValue] = useState<Mood | null>(initialValue);
+  return (
+    <ComplexSelector<Mood | null>
+      label="Mood"
+      value={value}
+      onChange={setValue}
+      triggerLabel={value ?? undefined}
+      {...props}>
+      {(selectedValue, onChange, close) => (
+        <MoodList
+          value={selectedValue}
+          onChange={nextValue => {
+            onChange(nextValue);
+            close();
+          }}
+        />
+      )}
+    </ComplexSelector>
+  );
+}
+
+export const SizeVariants: Story = {
+  name: 'Size variants',
+  render: () => (
+    <VStack gap={4} xstyle={styles.wrapper}>
+      <MoodSelector size="sm" label="Small" />
+      <MoodSelector size="md" label="Medium" />
+      <MoodSelector size="lg" label="Large" />
+    </VStack>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'The trigger honors the shared input size scale. Inside a SizeContext container the size cascades like every other input.',
+      },
+    },
+  },
+};
+
+export const WithStatus: Story = {
+  name: 'With status',
+  render: () => (
+    <VStack gap={4} xstyle={styles.wrapper}>
+      <MoodSelector
+        label="Error"
+        status={{type: 'error', message: 'A mood is required.'}}
+      />
+      <MoodSelector
+        label="Warning"
+        status={{
+          type: 'warning',
+          message: 'This mood may clash with the room.',
+        }}
+      />
+      <MoodSelector
+        label="Success"
+        status={{type: 'success', message: 'Great pick.'}}
+      />
+    </VStack>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Status colors the trigger border with the shared input status treatment and swaps the chevron for a status icon, matching Selector and MultiSelector.',
+      },
+    },
+  },
+};
+
+export const StatusVariantComparison: Story = {
+  name: 'Status variant comparison',
+  render: () => (
+    <VStack gap={4} xstyle={styles.wrapper}>
+      <MoodSelector
+        label="Attached"
+        status={{type: 'error', message: 'Attached below the input.'}}
+        statusVariant="attached"
+      />
+      <MoodSelector
+        label="Detached"
+        status={{type: 'error', message: 'Detached with a gap.'}}
+        statusVariant="detached"
+      />
+      <MoodSelector
+        label="Tooltip"
+        status={{type: 'error', message: 'Shown in a tooltip.'}}
+        statusVariant="tooltip"
+      />
+    </VStack>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'The three status message placements. The tooltip variant renders the status icon as a focusable button that reveals the message.',
+      },
+    },
+  },
+};
+
+export const Disabled: Story = {
+  name: 'Disabled',
+  render: () => (
+    <VStack gap={4} xstyle={styles.wrapper}>
+      <MoodSelector label="Disabled" isDisabled />
+      <MoodSelector
+        label="Disabled with status"
+        isDisabled
+        status={{type: 'error', message: 'Still shown while disabled.'}}
+      />
+    </VStack>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Disabled mutes the trigger and blocks opening. A status border still shows so validation context is not lost.',
+      },
+    },
+  },
+};
+
+export const Loading: Story = {
+  name: 'Loading',
+  render: () => (
+    <VStack gap={4} xstyle={styles.wrapper}>
+      <MoodSelector label="Loading" isLoading />
+    </VStack>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'isLoading shows a spinner beside the trigger text and sets aria-busy. Opening stays available, matching sibling selectors.',
+      },
+    },
+  },
+};
+
+export const Placeholder: Story = {
+  name: 'Placeholder (empty)',
+  render: () => (
+    <VStack gap={4} xstyle={styles.wrapper}>
+      <MoodSelector label="No value yet" value={null} />
+    </VStack>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'With no triggerLabel the localized placeholder renders in secondary text, and screen readers announce it as the current value.',
+      },
+    },
+  },
+};
+
+export const LongTriggerText: Story = {
+  name: 'Long trigger text',
+  render: () => {
+    const [value, setValue] = useState(
+      'A very long selection label that cannot possibly fit in the closed trigger and must truncate',
+    );
+    return (
+      <VStack gap={4} xstyle={styles.wrapper}>
+        <ComplexSelector<string>
+          label="Overflow"
+          value={value}
+          onChange={setValue}
+          triggerLabel={value}>
+          {(_selectedValue, onChange, close) => (
+            <Button
+              label="Pick the long option again"
+              onClick={() => {
+                onChange(
+                  'A very long selection label that cannot possibly fit in the closed trigger and must truncate',
+                );
+                close();
+              }}
+            />
+          )}
+        </ComplexSelector>
+      </VStack>
+    );
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Long trigger content truncates with an ellipsis instead of breaking the field layout.',
+      },
+    },
+  },
+};
+
+export const FormComposition: Story = {
+  name: 'Form composition',
+  render: () => {
+    const [roomName, setRoomName] = useState('');
+    return (
+      <VStack gap={4} xstyle={styles.wrapper}>
+        <TextInput
+          label="Room name"
+          placeholder="e.g. Library"
+          value={roomName}
+          onChange={setRoomName}
+        />
+        <MoodSelector
+          label="Room mood"
+          description="Sets the default lighting scene."
+          isRequired
+        />
+        <HStack gap={2}>
+          <Button label="Save" variant="primary" />
+          <Button label="Cancel" variant="secondary" />
+        </HStack>
+      </VStack>
+    );
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'ComplexSelector aligned with sibling inputs in a form: shared label, description, required marker, and width behavior.',
       },
     },
   },

@@ -12,11 +12,7 @@
  */
 
 export {Field} from './Field';
-export type {
-  FieldProps,
-  FieldStatusInput,
-  FieldStatusType,
-} from './Field';
+export type {FieldProps, FieldStatusInput, FieldStatusType} from './Field';
 export {FieldLabel} from './FieldLabel';
 export type {FieldLabelProps} from './FieldLabel';
 export {FieldStatus} from '../FieldStatus';
@@ -34,6 +30,7 @@ export {
   inputWrapperStyles,
   inputStatusBorderStyles,
   inputStatusHoverShadowStyles,
+  inputStatusFocusShadowStyles,
   inputStatusFocusWithinStyles,
   inputStatusFocusStyles,
 } from './inputStyles.stylex';
