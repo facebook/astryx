@@ -50,7 +50,7 @@ export const doc = {
       name: 'hiddenComponents',
       type: 'string[]',
       description:
-        'Sub-component names to hide from human-facing UI (CLI listings, docs catalogs). They stay public and importable — agents and tooling can still discover them via source.',
+        'Sub-component names to hide from human-facing UI (CLI listings, docs catalogs). They stay public and importable; agents and tooling can still discover them via source.',
     },
     {
       name: 'hidden',
@@ -104,7 +104,7 @@ export const doc = {
           name: 'theming.derived',
           type: 'ComponentThemingDerivedVar[]',
           description:
-            'Maps standard CSS properties to internal vars for theme-pipeline expansion. Ordered by priority — earlier entries emit first.',
+            'Maps standard CSS properties to internal vars for theme-pipeline expansion. Ordered by priority: earlier entries emit first.',
         },
       ],
     },
@@ -170,7 +170,7 @@ export const doc = {
       name: 'description',
       type: 'string',
       description:
-        "SubComponentDoc variant (required there): one-sentence description of the sub-component's role within the parent composition. Single/Multi docs have no top-level description — they derive their summary from `usage`.",
+        "SubComponentDoc variant (required there): one-sentence description of the sub-component's role within the parent composition. Single/Multi docs have no top-level description; they derive their summary from `usage`.",
     },
   ],
   examples: [
@@ -187,7 +187,7 @@ export const docs = {
       'A Switch toggles a single setting on or off. Use it for instant, binary preferences that apply immediately without a submit step.',
     bestPractices: [
       {guidance: true, description: 'Apply the change immediately when toggled.'},
-      {guidance: false, description: 'Use a Switch for actions that need confirmation — prefer a Checkbox in a form.'},
+      {guidance: false, description: 'Use a Switch for actions that need confirmation; prefer a Checkbox in a form.'},
     ],
   },
   props: [
@@ -226,9 +226,9 @@ export const docs = {
       type: 'list',
       style: 'unordered',
       items: [
-        'SingleComponentDoc — one primary component; put props directly on the doc via `props`. Use for Switch, Badge, Spinner, TextInput.',
-        'MultiComponentDoc — a directory exporting several components/hooks; list them in `components` (inline ComponentEntry or name-only ComponentRef). Use for Table, Dialog, TabList.',
-        'SubComponentDoc — a single sub-component in its own {Name}.doc.mjs inside the parent directory; set `subComponentOf` to the parent name. It inherits family fields and may omit `usage`.',
+        'SingleComponentDoc: one primary component; put props directly on the doc via `props`. Use for Switch, Badge, Spinner, TextInput.',
+        'MultiComponentDoc: a directory exporting several components/hooks; list them in `components` (inline ComponentEntry or name-only ComponentRef). Use for Table, Dialog, TabList.',
+        'SubComponentDoc: a single sub-component in its own {Name}.doc.mjs inside the parent directory; set `subComponentOf` to the parent name. It inherits family fields and may omit `usage`.',
       ],
     },
     {

@@ -17,7 +17,7 @@ export const doc = {
   summary: 'Compile a defineTheme file to CSS + JS',
   description:
     'Compiles a file that calls defineTheme() into a scoped CSS file, a JS module, and ' +
-    'type declarations — the exact CSS the <Theme> runtime emits. With --check it writes ' +
+    'type declarations: the exact CSS the <Theme> runtime emits. With --check it writes ' +
     'nothing and instead reports whether the committed outputs have drifted from source.',
   fn: 'themeBuild',
   args: [{name: 'file', param: 'file', required: true}],

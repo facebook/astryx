@@ -26,7 +26,7 @@ export const doc = {
       name: 'raw',
       type: 'unknown',
       description:
-        'The CLI stdout to parse — a JSON string, or an object that was already parsed.',
+        'The CLI stdout to parse: a JSON string, or an object that was already parsed.',
       required: true,
     },
   ],
@@ -34,7 +34,7 @@ export const doc = {
     {
       type: 'any',
       description:
-        'The { type, data, meta? } envelope, or a CLIError envelope. The published signature is intentionally untyped — narrow it by casting to the matching *Response type exported from @astryxdesign/cli/json.',
+        'The { type, data, meta? } envelope, or a CLIError envelope. The published signature is intentionally untyped; narrow it by casting to the matching *Response type exported from @astryxdesign/cli/json.',
     },
   ],
   throws: [

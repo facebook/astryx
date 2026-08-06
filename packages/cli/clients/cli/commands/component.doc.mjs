@@ -69,7 +69,7 @@ export const doc = {
     {code: 0, when: 'success'},
     {
       code: 1,
-      when: 'unknown component, category, or package — or @astryxdesign/core cannot be resolved',
+      when: 'unknown component, category, or package, or @astryxdesign/core cannot be resolved',
     },
   ],
   related: ['search', 'hook', 'docs', 'template', 'swizzle'],

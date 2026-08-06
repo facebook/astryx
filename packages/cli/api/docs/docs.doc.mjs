@@ -13,7 +13,7 @@ export const doc = {
   name: 'docs',
   displayName: 'docs()',
   summary:
-    'Read the reference docs — list every topic, one topic, or a single section of a topic.',
+    'Read the reference docs: list every topic, one topic, or a single section of a topic.',
   description:
     'Routes on its arguments: no topic lists every reference-doc topic; a topic ' +
     'returns that full ReferenceDoc (with token-ref blocks inlined); a topic ' +
@@ -75,7 +75,7 @@ export const doc = {
     {
       type: 'docs.detail.section',
       description:
-        'A single ReferenceSection of the topic — the first whose title contains the section query.',
+        'A single ReferenceSection of the topic: the first whose title contains the section query.',
     },
   ],
   throws: [

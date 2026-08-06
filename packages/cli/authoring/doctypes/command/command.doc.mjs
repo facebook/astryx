@@ -15,7 +15,7 @@ export const doc = {
   displayName: 'CommandDoc',
   namespace: 'authoring',
   description:
-    'The doc-type for a CLI command — the terminal binding of an operation. A command ' +
+    'The doc-type for a CLI command: the terminal binding of an operation. A command ' +
     'is not its own behavior; it is a FunctionDoc exposed on the CLI, referenced via `fn`, ' +
     'carrying only CLI-surface facts (args, flags, subcommands, examples, exit codes). ' +
     'A `defineCommand` converter turns it into Commander config + `--help`.',
@@ -231,7 +231,7 @@ export const doc = {
   notes: [
     {
       type: 'prose',
-      text: 'A command carries only CLI-surface facts. Behavior, parameters, returns, and thrown errors live in the FunctionDoc it points at via `fn` — the function does not know it has a CLI.',
+      text: 'A command carries only CLI-surface facts. Behavior, parameters, returns, and thrown errors live in the FunctionDoc it points at via `fn`; the function does not know it has a CLI.',
     },
     {
       type: 'prose',

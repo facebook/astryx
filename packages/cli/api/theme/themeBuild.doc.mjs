@@ -20,7 +20,7 @@ export const doc = {
     'emits the exact CSS the <Theme> runtime does), writes a scoped CSS file, a JS module ' +
     'that re-exports the built theme, and a .d.ts (plus an optional .variants.d.ts when the ' +
     'theme adds custom prop values). With {check: true} it writes nothing and instead compares ' +
-    'each output against disk, returning the drift — the CI guard for committed, generated theme CSS.',
+    'each output against disk, returning the drift: the CI guard for committed, generated theme CSS.',
   importPath: '@astryxdesign/cli/api',
   signature:
     'themeBuild(file: string, options?: {out?: string, check?: boolean}, ctx?: {cwd?: string}): Promise<ThemeBuildResponse | ThemeBuildCheckResponse | null>',
@@ -51,7 +51,7 @@ export const doc = {
       name: 'options.check',
       type: 'boolean',
       description:
-        'Compile in memory and compare each output against what is on disk instead of writing — the CI drift guard.',
+        'Compile in memory and compare each output against what is on disk instead of writing: the CI drift guard.',
       default: 'false',
     },
     {
@@ -86,7 +86,7 @@ export const doc = {
     },
     {
       code: 'ERR_CORE_NOT_FOUND',
-      when: '@astryxdesign/core/theme cannot be imported — a built, resolvable @astryxdesign/core is required',
+      when: '@astryxdesign/core/theme cannot be imported; a built, resolvable @astryxdesign/core is required',
     },
     {
       code: 'ERR_WRITE_FAILED',

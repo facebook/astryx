@@ -69,7 +69,7 @@ export const doc = {
     {
       type: 'init.remove',
       description:
-        'Confirmation that the managed agent-docs block was removed (`data.removed: true`) — returned when `removeAgents` is set.',
+        'Confirmation that the managed agent-docs block was removed (`data.removed: true`), returned when `removeAgents` is set.',
     },
   ],
   throws: [
