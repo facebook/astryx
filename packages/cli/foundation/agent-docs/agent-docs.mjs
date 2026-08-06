@@ -342,10 +342,12 @@ export function generateCompressedIndex(version, {coreDir, invocation = getCliIn
   // Rules — the top error-preventers.
   // Shell choice is deferred to `docs layout` rather than named here: which
   // shell fits depends on the app archetype, and duplicating the answer in the
-  // cheat sheet lets it drift from the doc that actually maintains it.
+  // cheat sheet lets it drift from the doc that actually maintains it. Cite the
+  // command, never the docsite URL — `docs` reads the installed version, while
+  // the site documents the last published release.
   lines.push('RULES:');
   lines.push('- No <div> — components do all layout/spacing, page frame included.');
-  lines.push('- Frame first: before writing any page or screen, read `astryx docs layout` (https://astryx.atmeta.com/docs/layout) — shell choice, region px budgets, responsive contract.');
+  lines.push('- Frame first: read `astryx docs layout` before writing any page or screen — shell choice, region px budgets, responsive contract.');
   lines.push('- Dense data = rows (Table, List/Item) edge-to-edge — never Card-wrapped list items. Card = dashboard widgets, galleries, settings groups only.');
   lines.push('- Status → StatusDot/Token; Badge only for counts and enumerated states, never decoration.');
   // Styling guidance tailored to the project's configured system — never
