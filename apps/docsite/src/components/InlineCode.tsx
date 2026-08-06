@@ -21,13 +21,9 @@ import {Link} from '@astryxdesign/core/Link';
 import {linkifyCode} from './codeLinkifiers';
 
 const styles = stylex.create({
-  // Clear the descenders in monospace commands like `astryx docs typography`.
-  link: {textUnderlineOffset: '0.22em'},
-  // A linked reference drops the chip's background and padding: the box and
-  // the underline read as two competing decorations, and the underline would
-  // span the padding rather than tracking the text. The monospace face still
-  // marks it as the literal command to type.
-  code: {backgroundColor: 'transparent', paddingInline: 0},
+  // Only ever seen on hover, where Link draws its underline. Nudged clear of
+  // the descenders in commands like `astryx docs typography`.
+  link: {textUnderlineOffset: '0.2em'},
 });
 
 export function InlineCode({children}: {children: string}) {
@@ -36,12 +32,14 @@ export function InlineCode({children}: {children: string}) {
     return <Code>{children}</Code>;
   }
 
-  // type/size/color inherit so the link keeps the surrounding text's metrics.
+  // The chip is unchanged at rest — same background, padding, and colour as
+  // any other inline code. Link contributes the hit target and the pointer
+  // cursor, and reveals an underline on hover. `type="inherit"` keeps the
+  // surrounding text's metrics; Code keeps its own colour, so wrapping it
+  // changes nothing visually.
   return (
-    <Link href={href} type="inherit" hasUnderline xstyle={styles.link}>
-      <Code color="inherit" size="inherit" xstyle={styles.code}>
-        {children}
-      </Code>
+    <Link href={href} type="inherit" xstyle={styles.link}>
+      <Code>{children}</Code>
     </Link>
   );
 }
