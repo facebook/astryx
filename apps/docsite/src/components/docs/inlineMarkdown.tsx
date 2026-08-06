@@ -5,8 +5,14 @@
 import {Fragment, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Code} from '@astryxdesign/core/CodeBlock';
+import {docTopicSlugs} from '../../generated/docTopicSlugs';
+import {getDocsCommandHref} from './cliDocsLinks';
 
 const TOKEN = /(`([^`]+)`|\[([^\]]+)\]\(([^)]+)\))/g;
+
+// Docs topics that exist on the site; code spans holding an `astryx docs
+// <topic>` command link to /docs/<topic> only when the topic is real.
+const KNOWN_DOC_TOPICS: ReadonlySet<string> = new Set(docTopicSlugs);
 
 const styles = stylex.create({
   link: {
@@ -29,7 +35,7 @@ const styles = stylex.create({
   },
 });
 
-function renderLink(label: string, href: string, key: number): ReactNode {
+function renderLink(label: ReactNode, href: string, key: number): ReactNode {
   const isExternal = /^https?:\/\//.test(href);
   return (
     <a
@@ -43,7 +49,11 @@ function renderLink(label: string, href: string, key: number): ReactNode {
   );
 }
 
-// Render a small inline markdown subset for authored docs: code spans and links.
+// Render a small inline markdown subset for authored docs: code spans and
+// links. Code spans that hold a real `astryx docs <topic>` command also link
+// to that topic's page (#4739) — done here at render time because authoring
+// [`code`](href) markdown isn't supported by this subset (#4425) and the
+// underlying prose must stay a bare, copy-pasteable command for CLI readers.
 export function renderInlineMarkdown(text: string) {
   const nodes: ReactNode[] = [];
   let lastIndex = 0;
@@ -57,7 +67,14 @@ export function renderInlineMarkdown(text: string) {
     const linkLabel = match[3];
     const linkHref = match[4];
     if (code != null) {
-      nodes.push(<Code key={match.index}>{code}</Code>);
+      const docsHref = getDocsCommandHref(code, KNOWN_DOC_TOPICS);
+      nodes.push(
+        docsHref != null ? (
+          renderLink(<Code>{code}</Code>, docsHref, match.index)
+        ) : (
+          <Code key={match.index}>{code}</Code>
+        ),
+      );
     } else if (linkLabel != null && linkHref != null) {
       nodes.push(renderLink(linkLabel, linkHref, match.index));
     }
