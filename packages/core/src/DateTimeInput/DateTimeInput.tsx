@@ -47,7 +47,13 @@ import {
 import {Icon} from '../Icon';
 import {VisuallyHidden} from '../VisuallyHidden';
 import {Spinner} from '../Spinner';
-import {Calendar, type ISODateString, type CalendarHandle} from '../Calendar';
+import {
+  Calendar,
+  type ISODateString,
+  type CalendarHandle,
+  type DayOfWeek,
+  type DayOfWeekName,
+} from '../Calendar';
 import {useCalendarConstraints} from '../Calendar/hooks';
 import {usePopover} from '../Popover';
 import {useTooltip} from '../Tooltip';
@@ -348,6 +354,14 @@ export interface DateTimeInputProps extends Omit<
    * @default 1
    */
   numberOfMonths?: 1 | 2;
+
+  /**
+   * First day of week in the calendar. Accepts a number
+   * (0 = Sunday … 6 = Saturday) or a three-letter day name ('sun'–'sat',
+   * case-insensitive).
+   * @default 0
+   */
+  weekStartsOn?: DayOfWeek | DayOfWeekName;
 }
 
 function splitDateTime(dt: ISODateTimeString | undefined): {
@@ -425,6 +439,7 @@ export function DateTimeInput({
   status,
   labelTooltip,
   numberOfMonths = 1,
+  weekStartsOn,
   width,
   xstyle,
   className,
@@ -1050,6 +1065,7 @@ export function DateTimeInput({
           max={calendarMax}
           dateConstraints={dateConstraints}
           numberOfMonths={numberOfMonths}
+          weekStartsOn={weekStartsOn}
         />,
         {placement: 'below', alignment: 'start'},
       )}

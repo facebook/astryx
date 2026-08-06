@@ -949,6 +949,61 @@ describe('DateInput', () => {
       expect(screen.getByDisplayValue('Mar 10, 2026')).toBeInTheDocument();
     });
   });
+  describe('weekStartsOn', () => {
+    // The calendar popover renders in the top layer; jsdom keeps the content in
+    // the DOM but role queries skip it, so read the columnheaders directly.
+    const openAndReadWeekdays = (container: HTMLElement): (string | null)[] => {
+      fireEvent.keyDown(screen.getByRole('combobox'), {key: 'ArrowDown'});
+      return Array.from(container.querySelectorAll('[role="columnheader"]'))
+        .slice(0, 7)
+        .map(h => h.textContent);
+    };
+
+    it('defaults to a Sunday-first week', () => {
+      const {container} = render(
+        <DateInput label="Date" onChange={() => {}} />,
+      );
+      expect(openAndReadWeekdays(container)).toEqual([
+        'Su',
+        'Mo',
+        'Tu',
+        'We',
+        'Th',
+        'Fr',
+        'Sa',
+      ]);
+    });
+
+    it('forwards a numeric weekStartsOn to the calendar', () => {
+      const {container} = render(
+        <DateInput label="Date" onChange={() => {}} weekStartsOn={1} />,
+      );
+      expect(openAndReadWeekdays(container)).toEqual([
+        'Mo',
+        'Tu',
+        'We',
+        'Th',
+        'Fr',
+        'Sa',
+        'Su',
+      ]);
+    });
+
+    it('accepts a three-letter day name', () => {
+      const {container} = render(
+        <DateInput label="Date" onChange={() => {}} weekStartsOn="mon" />,
+      );
+      expect(openAndReadWeekdays(container)).toEqual([
+        'Mo',
+        'Tu',
+        'We',
+        'Th',
+        'Fr',
+        'Sa',
+        'Su',
+      ]);
+    });
+  });
 });
 
 describe('DateInput statusVariant forwarding', () => {

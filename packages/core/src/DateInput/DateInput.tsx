@@ -48,7 +48,13 @@ import {useInputGroup} from '../InputGroup/InputGroupContext';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {useSize} from '../SizeContext/SizeContext';
 import {Spinner} from '../Spinner';
-import {Calendar, type ISODateString, type CalendarHandle} from '../Calendar';
+import {
+  Calendar,
+  type ISODateString,
+  type CalendarHandle,
+  type DayOfWeek,
+  type DayOfWeekName,
+} from '../Calendar';
 import {useCalendarConstraints} from '../Calendar/hooks';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
 import {usePopover} from '../Popover';
@@ -312,6 +318,14 @@ export interface DateInputProps extends Omit<
   numberOfMonths?: 1 | 2;
 
   /**
+   * First day of week in the calendar popover. Accepts a number
+   * (0 = Sunday … 6 = Saturday) or a three-letter day name ('sun'–'sat',
+   * case-insensitive).
+   * @default 0
+   */
+  weekStartsOn?: DayOfWeek | DayOfWeekName;
+
+  /**
    * How the committed date value is displayed in the text field. Accepts a
    * named format reused from `Timestamp`'s `format` vocabulary (so the same
    * literal renders the same date shape in both components) or a function that
@@ -377,6 +391,7 @@ export function DateInput({
   labelTooltip,
   hasClear = false,
   numberOfMonths = 1,
+  weekStartsOn,
   format = 'date_long',
   width,
   xstyle,
@@ -754,6 +769,7 @@ export function DateInput({
           max={max}
           dateConstraints={dateConstraints}
           numberOfMonths={numberOfMonths}
+          weekStartsOn={weekStartsOn}
         />,
         {placement: 'below', alignment: 'start'},
       )}

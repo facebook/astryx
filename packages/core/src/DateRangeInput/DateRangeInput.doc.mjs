@@ -146,6 +146,13 @@ export const docs = {
       default: '2',
     },
     {
+      name: 'weekStartsOn',
+      type: "0 | 1 | 2 | 3 | 4 | 5 | 6 | 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat'",
+      description:
+        'First day of week in the calendar. A number (0 = Sunday … 6 = Saturday) or a three-letter day name.',
+      default: '0',
+    },
+    {
       name: 'width',
       type: 'SizeValue',
       description:
@@ -314,6 +321,7 @@ export const docsDense = {
     statusVariant: 'How status message is placed: attached overlaps below input; detached floats below w/ spacing; tooltip hides the box and shows it on the status icon.',
     labelTooltip: 'tooltip via info icon at label end',
     numberOfMonths: 'months in calendar (default 2)',
+    weekStartsOn: 'first day of week in calendar (0=Sunday, or name e.g. "mon")',
     changeAction:
       'async action fired after onChange; drives optimistic UI updates via useTransition',
     isLoading: 'loading state; disables interaction + shows a spinner',
