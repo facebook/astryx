@@ -33,11 +33,10 @@ const COLUMN_MIN_WIDTH = 240;
 // tightens the inset at that same point, keyed to the card width (not the
 // window) so it never desyncs.
 // minHeight:100% fills the host so the centered card never leaves an unpainted
-// band; padding keeps it off the surface edges.
+// band; Center's padding prop keeps it off the surface edges.
 const pageStyle: CSSProperties = {
   minHeight: '100%',
   backgroundColor: 'var(--color-background-body)',
-  padding: 'var(--spacing-6)',
 };
 const cardWrap: CSSProperties = {
   width: '100%',
@@ -98,7 +97,7 @@ export default function LoginTwoColumn() {
   };
 
   return (
-    <Center axis="both" style={pageStyle}>
+    <Center axis="both" padding={6} style={pageStyle}>
       <style>{LOGIN_SPLIT_CSS}</style>
       <VStack gap={4} width="100%">
         <div style={cardWrap}>

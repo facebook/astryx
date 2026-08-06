@@ -27,7 +27,6 @@ const pageStyle: CSSProperties = {
   backgroundImage: `url(${BG_URL})`,
   backgroundSize: 'cover',
   backgroundPosition: 'center',
-  padding: 'var(--spacing-6)',
 };
 
 type SSOProvider = {
@@ -98,7 +97,7 @@ export default function LoginSSO() {
   };
 
   return (
-    <Center axis="both" style={pageStyle}>
+    <Center axis="both" padding={6} style={pageStyle}>
       <Card padding={8} width="100%" maxWidth={400}>
         <VStack gap={4} hAlign="stretch">
           {/* ── Step 1: Email entry ── */}
