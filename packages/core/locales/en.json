@@ -611,6 +611,10 @@
     "defaultMessage": "Commands",
     "description": "\"Command\" = an app action a user can invoke (metaphor from CLI), not a Unix command. Screen-reader-only name for the matching-commands list."
   },
+  "@astryx.complexSelector.placeholder": {
+    "defaultMessage": "Select…",
+    "description": "Placeholder text on an empty ComplexSelector trigger button. Same English as `selector.placeholder` but a separate key — the custom surface may warrant different phrasing in some locales. Imperative verb; trailing `…` is one character."
+  },
   "@astryx.contextMenu.label": {
     "defaultMessage": "Context menu",
     "description": "Screen-reader-only fallback name for the right-click / long-press popup menu. \"Context\" = context-specific to the activated element, not linguistic context."

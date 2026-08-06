@@ -10,5 +10,9 @@
   "@astryx.selector.placeholder": {
     "defaultMessage": "Sélectionner…",
     "description": "Placeholder text on an empty Selector trigger button (a dropdown). Imperative verb; trailing `…` is one character. Very short — appears on the button face."
+  },
+  "@astryx.complexSelector.placeholder": {
+    "defaultMessage": "Sélectionner…",
+    "description": "Placeholder text on an empty ComplexSelector trigger button. Same English as `selector.placeholder` but a separate key — the custom surface may warrant different phrasing in some locales. Imperative verb; trailing `…` is one character."
   }
 }

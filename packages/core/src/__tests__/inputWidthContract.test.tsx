@@ -4,6 +4,7 @@ import {describe, it, expect} from 'vitest';
 
 import {docs as CheckboxInputDocs} from '../CheckboxInput/CheckboxInput.doc.mjs';
 import {docs as CheckboxListDocs} from '../CheckboxList/CheckboxList.doc.mjs';
+import {docs as ComplexSelectorDocs} from '../ComplexSelector/ComplexSelector.doc.mjs';
 import {docs as DateInputDocs} from '../DateInput/DateInput.doc.mjs';
 import {docs as DateRangeInputDocs} from '../DateRangeInput/DateRangeInput.doc.mjs';
 import {docs as DateTimeInputDocs} from '../DateTimeInput/DateTimeInput.doc.mjs';
@@ -23,6 +24,7 @@ import {docs as TypeaheadDocs} from '../Typeahead/Typeahead.doc.mjs';
 const inputDocsSuite = [
   {name: 'CheckboxInput', docs: CheckboxInputDocs},
   {name: 'CheckboxList', docs: CheckboxListDocs},
+  {name: 'ComplexSelector', docs: ComplexSelectorDocs},
   {name: 'DateInput', docs: DateInputDocs},
   {name: 'DateRangeInput', docs: DateRangeInputDocs},
   {name: 'DateTimeInput', docs: DateTimeInputDocs},
