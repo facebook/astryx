@@ -23,7 +23,7 @@ Open-sourcing changed the audience. The trigger came from the community after re
 
 That report framed the real scope. It was not just "translate these strings" – it was someone building in a language that also reads the other direction. Localization and layout direction are different problems, but if we wanted to unblock that use case, we needed both.
 
-We also had prior localization experience, so the rough edges were familiar: string length changes break layouts, and concatenated phrases stop making sense once word order shifts. The hard part was RTL.
+I'd spent a good chunk of my career on localization before this, so the rough edges were familiar to me: strings whose length swings wildly between languages and break layouts, plural rules that differ from one language to the next, and phrases assembled from fragments that stop making sense once word order shifts. The hard part, then as now, was RTL.
 
 ## Why we didn't just adopt an i18n framework
 
