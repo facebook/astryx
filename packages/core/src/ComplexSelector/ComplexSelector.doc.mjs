@@ -92,7 +92,7 @@ export const docs = {
         {
           name: 'size',
           type: "'sm' | 'md' | 'lg'",
-          description: 'Trigger and field size.',
+          description: 'Exact trigger height: sm 28px, md 32px, or lg 36px.',
           default: "'md'",
         },
         {
@@ -210,8 +210,7 @@ export const docsDense = {
     value: 'Controlled value.',
     onChange: 'Commit value.',
     changeAction: 'Async action after onChange; drives optimistic value/busy.',
-    children:
-      'Render custom dialog content from (value,onChange,close,state).',
+    children: 'Render custom dialog content from (value,onChange,close,state).',
     triggerLabel: 'Closed trigger label/content.',
     placement: 'Popup placement.',
     accessibility:
