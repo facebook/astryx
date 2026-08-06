@@ -7,14 +7,14 @@ import {Markdown} from '@astryxdesign/core/Markdown';
 import type {MarkdownComponents} from '@astryxdesign/core/Markdown';
 import {VStack} from '@astryxdesign/core/Layout';
 import {Text} from '@astryxdesign/core/Text';
-import {AutolinkedCode} from './AutolinkedCode';
+import {InlineCode} from './InlineCode';
 
 type TextProps = ComponentProps<typeof Text>;
 
 // Component-page prose (prop descriptions, dos and don'ts, theming notes)
 // cites doc topics the same way /docs prose does, e.g. "Icon name — see
-// `astryx docs icons`". Route those spans through the same autolinker.
-const MARKDOWN_COMPONENTS: MarkdownComponents = {inlineCode: AutolinkedCode};
+// `astryx docs icons`". Route those spans through the same linkifiers.
+const MARKDOWN_COMPONENTS: MarkdownComponents = {inlineCode: InlineCode};
 
 interface MarkdownTextProps {
   children: string;
