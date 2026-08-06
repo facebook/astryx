@@ -45,6 +45,8 @@ Go back {step, number} {step, plural, one {page} other {pages}}
 
 The words matter, but so do the placeholders and plural branches. Those are what make the string render correctly in each locale. English has two plural forms; Arabic has six; Russian and Polish have four; Japanese has one. If translation drops a placeholder or preserves only the English plural logic, the result is not just awkward – it can be wrong or fail at runtime. That is why we treated translation as a correctness problem as much as a language problem.
 
+![A results-count string rendered in Russian at counts 1, 2, and 5. The naive version, using only English one/other rules, shows the same wrong ending ("результаты") for every count. The correct version, using Russian's one/few/many/other CLDR categories, shows three different endings: результат, результата, результатов.](/blog/internationalizing-astryx/russian-plurals.png)
+
 ## Right-to-left, and the bugs that hide from your linter
 
 Translating everything into Arabic still leaves a broken UI if the layout stays left-to-right. Most RTL support is mechanical: use CSS logical properties such as `margin-inline-start` instead of `margin-left`, set `dir="rtl"`, and let the browser mirror the layout. A lint rule can enforce that, and ours does.
@@ -59,6 +61,8 @@ transform: translateX(-50%);
 Each line is valid on its own. A linter sees a logical inset and approves. But together they anchor an element to the logical start edge and then shift it with a physical transform that does not flip in RTL. Under `dir="rtl"`, the element lands on the wrong side by its own width. There is no bad token to grep for. The bug lives in the interaction.
 
 Icons fail the same way. You can mirror a chevron by swapping the glyph in JS or by flipping it in CSS. Either approach is fine. Do both on the same element and they cancel, so the arrow points the wrong way. Again, both decisions look reasonable in isolation.
+
+![Astryx Calendar showing a selected date range under RTL, before and after the fix. Before, the range highlight is a square-cornered rectangle because its physical corner-radius properties don't flip. After, it's a smoothly rounded pill whose caps sit on the correct reading-direction edges.](/blog/internationalizing-astryx/calendar-rtl-before-after.png)
 
 Static analysis is weak against this class of problem because every property can be individually correct. So we built an [RTL audit that renders every component story in both directions and compares geometry](https://github.com/facebook/astryx/pull/4517). For each absolutely positioned element it measures center-X relative to the parent in LTR, renders again in RTL, and checks that the element mirrored to the opposite side within tolerance. Elements that should have flipped but did not show up immediately. So did double-flipped icons that stayed put when they should have moved.
 
@@ -79,6 +83,8 @@ The actual fan-out was less interesting than the checks around it. We piloted th
 The nominally "done" output still needed review, because the validator only covers structure. So we ran a second, different model over the finished set with the opposite job: ignore syntax, look for meaning, register, and idiom. It caught a systematic error the validator never could. Several button labels had been translated as nouns where the language needed an imperative verb – effectively "closing" instead of "close," "sending" instead of "send." Hebrew surfaced the pattern most clearly, and once we fixed it we found more cases of the same. That second pass earned its place by catching the class of errors rules cannot see.
 
 We uploaded all 29 as approved translations so the library renders today, while leaving room for the community to improve wording over time.
+
+![The demo todo app running in Arabic, fully right-to-left: navigation on the right, a populated list of Arabic todos, controls and component internals localized.](/blog/internationalizing-astryx/todo-arabic.png)
 
 ## What's still open
 
