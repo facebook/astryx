@@ -34,8 +34,8 @@ until they merge to `main`.
   types alongside the component, and a set `displayName`.
 - **Changesets.** Consumer-visible changes need a changeset (`pnpm
 changeset:new`) with a `[category]` first line and a `@handle` contributor
-  line. Pre-1.0 bumps are always `patch`; signal breaking changes with the
-  `[breaking]` category, not a `major` bump.
+  line. Pre-1.0 bumps are `patch`, except `[breaking]`, which is `minor`.
+  `major` is never used pre-1.0.
 - **Keep code comments minimal.** Comment _why_, not _what_. Flag narration
   comments, commented-out code, and changelog-in-code.
 

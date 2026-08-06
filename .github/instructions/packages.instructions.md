@@ -30,8 +30,8 @@ in what order, so effort lands where the risk is — and so the risk checks
   consumers may depend on. (The tell for an _accidental_ breaking change:
   unrelated tests/examples/call sites had to be edited — see the silent-breaking
   rule in Judgment.) A real breaking change must be **intentional and signalled
-  with a `[breaking]` changeset category** (pre-1.0 stays a `patch` bump — never
-  ask for `minor`/`major`; the category is the signal), and for a
+  with a `[breaking]` changeset category** (pre-1.0 that means a `minor` bump;
+  every other category is `patch`, and `major` is never used), and for a
   removed/renamed/changed public API, a **codemod** under `astryx upgrade`.
   Flag a breaking change with no `[breaking]` changeset (and no codemod where one
   is warranted) as blocking.
@@ -479,7 +479,7 @@ and the Design review section above), or to add `hidden: true` until it does.
   `@example` fences in JSDoc must be plain ` ``` ` (never language-tagged), or
   Storybook autodocs won't render them.
 - **Changeset** present for consumer-visible changes, with `[category]` +
-  `@handle`, patch-only pre-1.0.
+  `@handle`; pre-1.0 bumps are `patch`, except `[breaking]`, which is `minor`.
 
 ## Judgment
 
