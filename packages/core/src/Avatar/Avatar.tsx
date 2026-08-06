@@ -337,17 +337,22 @@ export interface AvatarProps extends BaseProps<HTMLDivElement> {
   onClick?: React.MouseEventHandler<HTMLElement>;
 }
 
-// Guarded like this repo's other newer-API checks (scheduler.yield, checkVisibility, showPopover).
+/**
+ * Guarded like this repo's other newer-API checks (scheduler.yield,
+ * checkVisibility, showPopover).
+ */
 const graphemeSegmenter =
   typeof Intl.Segmenter === 'function'
     ? new Intl.Segmenter(undefined, {granularity: 'grapheme'})
     : null;
 
-// First grapheme cluster of a string; falls back to codepoint iteration without Intl.Segmenter.
+/**
+ * First grapheme cluster of a string; falls back to codepoint iteration
+ * without Intl.Segmenter.
+ */
 function firstGrapheme(word: string): string {
   if (graphemeSegmenter) {
-    const {value} = graphemeSegmenter.segment(word)[Symbol.iterator]().next();
-    return value?.segment ?? '';
+    return [...graphemeSegmenter.segment(word)][0]?.segment ?? '';
   }
   return [...word][0] ?? '';
 }
