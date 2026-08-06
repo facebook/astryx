@@ -195,6 +195,7 @@ const styles = stylex.create({
     display: 'flex',
     flexDirection: 'column',
     minWidth: 0,
+    overflowAnchor: 'none',
     width: '100%',
     containerType: 'inline-size',
     containerName: 'list-input',
@@ -409,7 +410,7 @@ function getScrollableAncestors(element: HTMLElement): HTMLElement[] {
   return scrollRoots;
 }
 
-function isVerticallyVisible(element: HTMLElement): boolean {
+function isVerticallyPerceivable(element: HTMLElement): boolean {
   const elementBounds = element.getBoundingClientRect();
   const viewportBottom =
     window.innerHeight || document.documentElement.clientHeight;
@@ -437,9 +438,8 @@ function isVerticallyVisible(element: HTMLElement): boolean {
     current = current.parentElement;
   }
 
-  return (
-    elementBounds.top >= visibleTop && elementBounds.bottom <= visibleBottom
-  );
+  const elementCenter = (elementBounds.top + elementBounds.bottom) / 2;
+  return elementCenter >= visibleTop && elementCenter <= visibleBottom;
 }
 
 function scrollByInstantly(
@@ -647,7 +647,10 @@ export function ListInput<T>({
   const reorderInstructionsID = `${groupID}-reorder-instructions`;
   const rowRefs = useRef(new Map<string, HTMLDivElement>());
   const groupRef = useRef<HTMLDivElement>(null);
+  const addActionRef = useRef<HTMLDivElement>(null);
   const addButtonRef = useRef<HTMLButtonElement>(null);
+  const addPointerAnchorTopRef = useRef<number | null>(null);
+  const addAnchorFrameRef = useRef<number | null>(null);
   const pendingFocusRef = useRef<PendingFocus | null>(null);
   const pendingAddScrollAnchorRef = useRef<PendingAddScrollAnchor | null>(null);
   const pendingMutationMotionRef = useRef<PendingMutationMotion<T> | null>(
@@ -766,6 +769,9 @@ export function ListInput<T>({
   useEffect(() => {
     const activeAnimations = activeMutationAnimationsRef.current;
     return () => {
+      if (addAnchorFrameRef.current != null) {
+        window.cancelAnimationFrame(addAnchorFrameRef.current);
+      }
       for (const animation of activeAnimations.values()) {
         animation.cancel();
       }
@@ -801,8 +807,8 @@ export function ListInput<T>({
     }
     pendingAddScrollAnchorRef.current = null;
 
-    const addButton = addButtonRef.current;
-    if (addButton == null) {
+    const addAction = addActionRef.current;
+    if (addAction == null) {
       return;
     }
     const pendingFocus = pendingFocusRef.current;
@@ -820,25 +826,40 @@ export function ListInput<T>({
     // Resolve after insertion: the new record may make a nearer overflow
     // container scrollable for the first time. Cascade any clamped remainder
     // outward so a partially growing inner container does not displace Add.
-    const scrollRoots = getScrollableAncestors(addButton);
-    for (const scrollRoot of scrollRoots) {
-      const scrollDelta =
-        addButton.getBoundingClientRect().top - pendingAnchor.addTop;
-      if (Math.abs(scrollDelta) < 0.5) {
-        break;
+    const preserveAddPosition = () => {
+      const scrollRoots = getScrollableAncestors(addAction);
+      for (const scrollRoot of scrollRoots) {
+        const scrollDelta =
+          addAction.getBoundingClientRect().top - pendingAnchor.addTop;
+        if (Math.abs(scrollDelta) < 0.5) {
+          break;
+        }
+        scrollByInstantly(scrollRoot, scrollDelta);
       }
-      scrollByInstantly(scrollRoot, scrollDelta);
-    }
-    const viewportDelta =
-      addButton.getBoundingClientRect().top - pendingAnchor.addTop;
-    if (Math.abs(viewportDelta) >= 0.5) {
-      scrollByInstantly(null, viewportDelta);
-    }
+      const viewportDelta =
+        addAction.getBoundingClientRect().top - pendingAnchor.addTop;
+      if (Math.abs(viewportDelta) >= 0.5) {
+        scrollByInstantly(null, viewportDelta);
+      }
+    };
+    preserveAddPosition();
 
-    // Keeping the newly focused field visible takes priority when the nearest
-    // scroll root cannot absorb the complete anchoring delta.
-    if (focusTarget != null && !isVerticallyVisible(focusTarget)) {
+    // Slight clipping should not move Add away from an active pointer. Only a
+    // meaningfully hidden target takes priority over pointer anchoring.
+    if (focusTarget != null && !isVerticallyPerceivable(focusTarget)) {
       focusTarget.scrollIntoView?.({block: 'nearest', inline: 'nearest'});
+    } else {
+      // Recheck once after the browser's native anchoring/focus phase. This is
+      // interaction-scoped work, not a persistent scroll or resize observer.
+      if (addAnchorFrameRef.current != null) {
+        window.cancelAnimationFrame(addAnchorFrameRef.current);
+      }
+      addAnchorFrameRef.current = window.requestAnimationFrame(() => {
+        addAnchorFrameRef.current = null;
+        if (addAction.isConnected) {
+          preserveAddPosition();
+        }
+      });
     }
   }, [getItemKey, value]);
 
@@ -1027,15 +1048,19 @@ export function ListInput<T>({
     }, 0);
   };
 
-  const prepareAddScrollAnchor = (nextValue: T[], itemKey: string) => {
-    const addButton = addButtonRef.current;
-    if (addButton == null) {
+  const prepareAddScrollAnchor = (
+    nextValue: T[],
+    itemKey: string,
+    pointerDownTop?: number,
+  ) => {
+    const addAction = addActionRef.current;
+    if (addAction == null) {
       pendingAddScrollAnchorRef.current = null;
       return;
     }
 
     const pendingAnchor: PendingAddScrollAnchor = {
-      addTop: addButton.getBoundingClientRect().top,
+      addTop: pointerDownTop ?? addAction.getBoundingClientRect().top,
       expectedKeys: nextValue.map(item => String(getItemKey(item))),
       itemKey,
     };
@@ -1047,6 +1072,22 @@ export function ListInput<T>({
         pendingAddScrollAnchorRef.current = null;
       }
     }, 0);
+  };
+
+  const handleAddPointerDown = (
+    event: React.PointerEvent<HTMLButtonElement>,
+  ) => {
+    if (
+      event.button !== 0 ||
+      !event.isPrimary ||
+      mutationsDisabled ||
+      hasReachedMax
+    ) {
+      addPointerAnchorTopRef.current = null;
+      return;
+    }
+    addPointerAnchorTopRef.current =
+      addActionRef.current?.getBoundingClientRect().top ?? null;
   };
 
   const handleAdd = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -1062,10 +1103,15 @@ export function ListInput<T>({
       target: 'first-field',
     };
     if (event.detail > 0) {
-      prepareAddScrollAnchor(nextValue, itemKey);
+      prepareAddScrollAnchor(
+        nextValue,
+        itemKey,
+        addPointerAnchorTopRef.current ?? undefined,
+      );
     } else {
       pendingAddScrollAnchorRef.current = null;
     }
+    addPointerAnchorTopRef.current = null;
     prepareMutationMotion(nextValue);
     onChange(nextValue, {type: 'add', item, index: value.length});
     setAnnouncement(`Added ${itemName} ${value.length + 1}.`);
@@ -1692,6 +1738,7 @@ export function ListInput<T>({
             )}
           </ol>
           <div
+            ref={addActionRef}
             data-list-input-motion-key="action:add"
             {...stylex.props(styles.actionRow, rowLayoutStyle)}>
             <div
@@ -1705,6 +1752,10 @@ export function ListInput<T>({
                 width="100%"
                 isDisabled={isDisabled || hasReachedMax}
                 isLoading={isLoading}
+                onPointerDown={handleAddPointerDown}
+                onPointerCancel={() => {
+                  addPointerAnchorTopRef.current = null;
+                }}
                 onClick={handleAdd}
               />
             </div>

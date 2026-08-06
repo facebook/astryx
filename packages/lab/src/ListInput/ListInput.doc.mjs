@@ -142,7 +142,7 @@ export const docs = {
   ],
   usage: {
     description:
-      'ListInput edits a compact, ordered collection of records with consistent fields, built-in add and remove actions, and optional reordering. Standard Astryx controls rendered in its columns inherit the medium control size so inputs align with the Add, remove, reorder, and validation affordances; an explicit field size still takes precedence. Pointer activation keeps Add at its viewport position by adjusting available vertical scroll containers from nearest to outermost, which supports repeated adding without chasing the action. Added rows enter with tokenized translate motion; after removal, surviving rows animate into their new positions when their geometry stays stable. Motion never delays onChange, focus handoff, or the announcement, while reduced-motion preferences and unsupported browsers use an instant change. Use it for lists with fewer than seven records and up to three simple fields per record, such as guests, travelers, or tag options. Use a Table for larger collections and a card or step-based form when records need many, complex, or inconsistent fields.',
+      'ListInput edits a compact, ordered collection of records with consistent fields, built-in add and remove actions, and optional reordering. Standard Astryx controls rendered in its columns inherit the medium control size so inputs align with the Add, remove, reorder, and validation affordances; an explicit field size still takes precedence. Pointer activation measures Add before pointer-down blur or validation can change layout, then keeps it at that viewport position by adjusting available vertical scroll containers from nearest to outermost. The correction is interaction-scoped and rechecked for one animation frame without persistent scroll or resize observation. Added rows enter with tokenized translate motion; after removal, surviving rows animate into their new positions when their geometry stays stable. Motion never delays onChange, focus handoff, or the announcement, while reduced-motion preferences and unsupported browsers use an instant change. Use it for lists with fewer than seven records and up to three simple fields per record, such as guests, travelers, or tag options. Use a Table for larger collections and a card or step-based form when records need many, complex, or inconsistent fields.',
     bestPractices: [
       {
         guidance: true,
@@ -177,7 +177,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Keep repeated pointer adding spatially stable by preserving the Add action’s viewport position, beginning with the nearest vertical scroll container and cascading any clamped remainder outward. Let visibility of the newly focused field take priority when available scrolling cannot absorb the complete offset; keyboard activation follows the normal focus flow.',
+          'Keep repeated pointer adding spatially stable by measuring Add before pointer-down blur or validation changes layout, then preserving that viewport position from the nearest vertical scroll container outward. Slight field clipping should not move Add away from the pointer; a meaningfully hidden focused field still takes priority. Keyboard activation follows the normal focus flow.',
       },
       {
         guidance: false,

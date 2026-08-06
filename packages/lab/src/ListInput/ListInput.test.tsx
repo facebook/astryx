@@ -314,14 +314,22 @@ describe('ListInput', () => {
     const setScrollStyle = vi.spyOn(innerScroll.style, 'setProperty');
 
     const addButton = screen.getByRole('button', {name: 'Add guest'});
-    vi.spyOn(addButton, 'getBoundingClientRect').mockImplementation(() =>
+    const addAction = addButton.closest<HTMLElement>(
+      '[data-list-input-motion-key="action:add"]',
+    )!;
+    let anchorFrame: FrameRequestCallback | undefined;
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation(callback => {
+      anchorFrame = callback;
+      return 1;
+    });
+    vi.spyOn(addAction, 'getBoundingClientRect').mockImplementation(() =>
       createRect(
         screen.getAllByRole('listitem').length * 40 -
           innerScroll.scrollTop -
           outerScroll.scrollTop,
       ),
     );
-    const initialTop = addButton.getBoundingClientRect().top;
+    const initialTop = addAction.getBoundingClientRect().top;
 
     fireEvent.click(addButton, {detail: 1});
 
@@ -333,7 +341,90 @@ describe('ListInput', () => {
       'important',
     );
     expect(innerScroll.style.scrollBehavior).toBe('smooth');
-    expect(addButton.getBoundingClientRect().top).toBe(initialTop);
+    expect(addAction.getBoundingClientRect().top).toBe(initialTop);
+    expect(screen.getByDisplayValue('Linus')).toHaveFocus();
+
+    outerScroll.scrollTop = 25;
+    expect(addAction.getBoundingClientRect().top).toBe(initialTop + 5);
+    anchorFrame?.(0);
+    expect(outerScroll.scrollTop).toBe(30);
+    expect(addAction.getBoundingClientRect().top).toBe(initialTop);
+  });
+
+  it('anchors from pointer down before blur-driven validation changes layout', () => {
+    function BlurGrowingList() {
+      const [value, setValue] = useState([guests[0]]);
+      const [isTouched, setIsTouched] = useState(false);
+      const blurColumns = [
+        {
+          key: 'name',
+          header: 'Name',
+          renderInput: ({item, label, updateItem}) => (
+            <input
+              aria-label={label}
+              value={item.name}
+              onChange={event =>
+                updateItem({...item, name: event.currentTarget.value}, 'name')
+              }
+              onBlur={() => setIsTouched(true)}
+            />
+          ),
+        },
+      ] satisfies ListInputColumn<Guest>[];
+      return (
+        <div data-blur-scroll="" style={{height: 100, overflowY: 'auto'}}>
+          <ListInput<Guest>
+            label="Guests"
+            itemName="guest"
+            value={value}
+            onChange={setValue}
+            getItemKey={guest => guest.id}
+            createItem={() => createdGuest}
+            columns={blurColumns}
+            getItemStatus={guest =>
+              isTouched && guest.id === 'ada'
+                ? {type: 'error', message: 'Review this guest'}
+                : undefined
+            }
+          />
+        </div>
+      );
+    }
+
+    const {container} = render(<BlurGrowingList />);
+    const scrollRoot =
+      container.querySelector<HTMLElement>('[data-blur-scroll]')!;
+    Object.defineProperties(scrollRoot, {
+      clientHeight: {configurable: true, value: 100},
+      scrollHeight: {configurable: true, value: 400},
+    });
+    const addButton = screen.getByRole('button', {name: 'Add guest'});
+    const addAction = addButton.closest<HTMLElement>(
+      '[data-list-input-motion-key="action:add"]',
+    )!;
+    vi.spyOn(addAction, 'getBoundingClientRect').mockImplementation(() =>
+      createRect(
+        screen.getAllByRole('listitem').length * 40 +
+          (screen.queryByText('Review this guest') == null ? 0 : 20) -
+          scrollRoot.scrollTop,
+      ),
+    );
+    const initialTop = addAction.getBoundingClientRect().top;
+    const firstInput = screen.getByDisplayValue('Ada');
+    firstInput.focus();
+
+    fireEvent.pointerDown(addButton, {
+      button: 0,
+      isPrimary: true,
+      pointerId: 21,
+    });
+    fireEvent.blur(firstInput);
+    expect(screen.getByText('Review this guest')).toBeInTheDocument();
+    expect(addAction.getBoundingClientRect().top).toBe(initialTop + 20);
+    fireEvent.click(addButton, {detail: 1});
+
+    expect(scrollRoot.scrollTop).toBe(60);
+    expect(addAction.getBoundingClientRect().top).toBe(initialTop);
     expect(screen.getByDisplayValue('Linus')).toHaveFocus();
   });
 
