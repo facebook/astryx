@@ -34,7 +34,7 @@ const meta: Meta<typeof ComplexSelector> = {
     docs: {
       description: {
         component:
-          'A high-level selector shell for rich custom content. The component owns the field, trigger, popover, focus restore, and async changeAction flow while consumers render the content. Custom content should use Astryx focus hooks where appropriate and be evaluated against WCAG 2.2.',
+          'A high-level selector shell for rich custom content. The component owns the field, trigger, popover, focus restore, and async changeAction flow while consumers render the content. Its sm, md, and lg triggers use the 28px, 32px, and 36px element-height tokens. Custom content should use Astryx focus hooks where appropriate and be evaluated against WCAG 2.2.',
       },
     },
   },

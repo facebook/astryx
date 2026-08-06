@@ -4,8 +4,8 @@
 
 /**
  * @file ComplexSelector.tsx
- * @input Uses React, StyleX, Field, usePopover
- * @output Exports ComplexSelector component for custom selector surfaces
+ * @input Uses React, StyleX, Field, and usePopover
+ * @output Exports ComplexSelector with exact token-sized selector triggers
  * @position Core implementation; consumed by index.ts
  *
  * SYNC: When modified, update:
@@ -137,13 +137,13 @@ const styles = stylex.create({
     padding: spacingVars['--spacing-3'],
   },
   sm: {
-    minHeight: sizeVars['--size-element-sm'],
+    height: sizeVars['--size-element-sm'],
   },
   md: {
-    minHeight: sizeVars['--size-element-md'],
+    height: sizeVars['--size-element-md'],
   },
   lg: {
-    minHeight: sizeVars['--size-element-lg'],
+    height: sizeVars['--size-element-lg'],
   },
   disabled: {
     cursor: 'not-allowed',
