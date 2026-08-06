@@ -8,27 +8,48 @@ export const docs = {
   displayName: 'Radio Control',
   isHiddenFromOverview: true,
   description:
-    'Standalone radio input and circle. Composed by RadioListItem; usable on its own with props (no RadioList context).',
+    'The standalone radio control primitive: the native radio input plus its circle and dot. Renders only the control (no visible label), so it composes into custom surfaces — cards, table cells, bespoke rows — without a RadioList. Composed by RadioListItem for the labeled/grouped case.',
+  // Documented here so a standalone consumer can discover the theme targets
+  // from the control's own page. The themingTargets guard validates the call
+  // sites against the directory doc (RadioList.doc.mjs); this block is the
+  // human-facing surface for the primitive.
+  theming: {
+    targets: [
+      {
+        className: 'astryx-radio',
+        visualProps: ['size'],
+        states: ['checked', 'disabled'],
+      },
+      {className: 'astryx-radio-dot', visualProps: ['size']},
+    ],
+  },
   playground: {
     defaults: {
       label: 'Option',
-      name: 'radio-control',
+      htmlName: 'radio-control',
       value: 'option-1',
-      checked: true,
+      isChecked: true,
     },
   },
   props: [
     {
-      name: 'checked',
+      name: 'label',
+      type: 'string',
+      description:
+        'Accessible name, applied as aria-label. Required so a standalone control always has a name (mirrors the icon-only Button convention: label becomes aria-label when there is no visible text). Pair the control with your own visible text for a labeled option.',
+      required: true,
+    },
+    {
+      name: 'isChecked',
       type: 'boolean',
-      description: 'Whether the radio is selected.',
+      description: 'Whether the radio is selected (controlled).',
       required: true,
     },
     {
       name: 'onChange',
-      type: '(value: string) => void',
+      type: '(value: string, e: ChangeEvent<HTMLInputElement>) => void',
       description:
-        'Callback fired with `value` when the user selects this radio. No-op while disabled.',
+        'Fired with the selected value and the change event when the user selects this radio. No-op while disabled.',
       required: true,
     },
     {
@@ -38,17 +59,10 @@ export const docs = {
       required: true,
     },
     {
-      name: 'name',
+      name: 'htmlName',
       type: 'string',
       description:
-        'The HTML name shared by the radio group so the browser single-selects within it.',
-      required: true,
-    },
-    {
-      name: 'label',
-      type: 'string',
-      description:
-        'Accessible name for a standalone control (applied as aria-label). Omit when an external <label htmlFor> names the input (as RadioList does) to avoid double-naming.',
+        'The HTML name shared by the radio group so the browser single-selects within it. When omitted, a unique name is generated so a lone control behaves as its own group.',
     },
     {
       name: 'size',
@@ -69,17 +83,16 @@ export const docs = {
       default: 'false',
     },
     {
-      name: 'keepFocusableWhenDisabled',
-      type: 'boolean',
+      name: 'disabledMessage',
+      type: 'string',
       description:
-        'When disabled, keep the input focusable via aria-disabled (and detached from the form) so a group disabled-reason tooltip stays keyboard-discoverable. Selection stays blocked.',
-      default: 'false',
+        'Explains why the radio is disabled. With isDisabled, shows a tooltip on hover and keyboard focus and keeps the control focusable (via aria-disabled) so the reason is AT-discoverable. Selection stays blocked. Mirrors CheckboxInput.',
     },
     {
       name: 'id',
       type: 'string',
       description:
-        'Id applied to the input so an external <label htmlFor> can target it. When omitted, a unique id is generated.',
+        'Id applied to the input so an external <label htmlFor> can also target it. When omitted, a unique id is generated.',
     },
   ],
 };
@@ -89,18 +102,36 @@ export const docsZh = {
   isHiddenFromOverview: true,
   displayName: 'Radio Control',
   description:
-    '独立的单选输入和圆圈。由 RadioListItem 组合；也可通过 props 独立使用（无需 RadioList 上下文）。',
+    '独立的单选控件基础组件：原生单选输入及其圆圈和圆点。仅渲染控件本身（无可见标签），因此可组合进卡片、表格单元格、自定义行等界面，无需 RadioList。由 RadioListItem 组合用于带标签/分组的场景。',
+  theming: {
+    targets: [
+      {
+        className: 'astryx-radio',
+        visualProps: ['size'],
+        states: ['checked', 'disabled'],
+      },
+      {className: 'astryx-radio-dot', visualProps: ['size']},
+    ],
+  },
   props: [
     {
-      name: 'checked',
+      name: 'label',
+      type: 'string',
+      description:
+        '无障碍名称，作为 aria-label。必填，使独立控件始终有名称（沿用仅图标 Button 约定：无可见文本时 label 作为 aria-label）。请为控件搭配可见文本以形成带标签的选项。',
+      required: true,
+    },
+    {
+      name: 'isChecked',
       type: 'boolean',
-      description: '单选按钮是否被选中。',
+      description: '单选按钮是否被选中（受控）。',
       required: true,
     },
     {
       name: 'onChange',
-      type: '(value: string) => void',
-      description: '用户选择此单选按钮时触发，回调参数为 value。禁用时不触发。',
+      type: '(value: string, e: ChangeEvent<HTMLInputElement>) => void',
+      description:
+        '用户选择此单选按钮时触发，回调参数为 value 和变更事件。禁用时不触发。',
       required: true,
     },
     {
@@ -110,16 +141,10 @@ export const docsZh = {
       required: true,
     },
     {
-      name: 'name',
-      type: 'string',
-      description: '单选组共享的 HTML name，使浏览器在组内单选。',
-      required: true,
-    },
-    {
-      name: 'label',
+      name: 'htmlName',
       type: 'string',
       description:
-        '独立控件的无障碍名称（作为 aria-label）。当外部 <label htmlFor> 已命名输入（如 RadioList）时省略，避免重复命名。',
+        '单选组共享的 HTML name，使浏览器在组内单选。省略时自动生成唯一 name，使单个控件作为自己的组。',
     },
     {
       name: 'size',
@@ -140,17 +165,16 @@ export const docsZh = {
       default: 'false',
     },
     {
-      name: 'keepFocusableWhenDisabled',
-      type: 'boolean',
+      name: 'disabledMessage',
+      type: 'string',
       description:
-        '禁用时通过 aria-disabled 保持可聚焦（并脱离表单），使组禁用原因提示可通过键盘发现。选择仍被阻止。',
-      default: 'false',
+        '说明单选按钮为何被禁用。配合 isDisabled 时，在悬停和键盘聚焦时显示提示，并通过 aria-disabled 保持可聚焦，使原因可被辅助技术发现。选择仍被阻止。与 CheckboxInput 一致。',
     },
     {
       name: 'id',
       type: 'string',
       description:
-        '应用于输入的 id，使外部 <label htmlFor> 可定位。省略时自动生成唯一 id。',
+        '应用于输入的 id，使外部 <label htmlFor> 也可定位。省略时自动生成唯一 id。',
     },
   ],
 };
@@ -160,18 +184,18 @@ export const docsDense = {
   isHiddenFromOverview: true,
   displayName: 'Radio Control',
   description:
-    'Standalone radio input + circle. Composed by RadioListItem; usable alone via props.',
+    'Standalone radio control primitive (input + circle + dot). No visible label; composes into custom surfaces. Used by RadioListItem.',
   propDescriptions: {
-    checked: 'Whether the radio is selected.',
-    onChange: 'Fired w/ value on select. No-op while disabled.',
+    label: 'Accessible name (aria-label). Required.',
+    isChecked: 'Whether the radio is selected (controlled).',
+    onChange: 'Fired w/ (value, event) on select. No-op while disabled.',
     value: 'Value reported when selected.',
-    name: 'HTML name shared by the radio group.',
-    label: 'Accessible name (aria-label); omit when external <label htmlFor> names it.',
+    htmlName: 'HTML name shared by the radio group (generated if omitted).',
     size: 'Size of the radio control.',
     isDisabled: 'Whether the radio is disabled.',
     isRequired: 'Whether the radio is required.',
-    keepFocusableWhenDisabled:
-      'Keep focusable via aria-disabled when disabled (for group tooltip).',
-    id: 'Id for the input so external <label htmlFor> can target it.',
+    disabledMessage:
+      'Reason shown (tooltip) when disabled; keeps the control focusable for AT.',
+    id: 'Id for the input so an external <label htmlFor> can target it.',
   },
 };

@@ -19,9 +19,9 @@ describe('RadioControl', () => {
     render(
       <RadioControl
         label="Email"
-        name="notify"
+        htmlName="notify"
         value="email"
-        checked={false}
+        isChecked={false}
         onChange={() => {}}
       />,
     );
@@ -30,13 +30,13 @@ describe('RadioControl', () => {
     expect(radio).toHaveAttribute('aria-label', 'Email');
   });
 
-  it('reflects the checked prop', () => {
+  it('reflects the isChecked prop', () => {
     const {rerender} = render(
       <RadioControl
         label="Email"
-        name="notify"
+        htmlName="notify"
         value="email"
-        checked={false}
+        isChecked={false}
         onChange={() => {}}
       />,
     );
@@ -45,28 +45,47 @@ describe('RadioControl', () => {
     rerender(
       <RadioControl
         label="Email"
-        name="notify"
+        htmlName="notify"
         value="email"
-        checked={true}
+        isChecked={true}
         onChange={() => {}}
       />,
     );
     expect(screen.getByRole('radio', {name: 'Email'})).toBeChecked();
   });
 
-  it('fires onChange with the value when clicked', () => {
+  it('fires onChange with the value and the change event when clicked', () => {
     const onChange = vi.fn();
     render(
       <RadioControl
         label="Email"
-        name="notify"
+        htmlName="notify"
         value="email"
-        checked={false}
+        isChecked={false}
         onChange={onChange}
       />,
     );
     fireEvent.click(screen.getByRole('radio', {name: 'Email'}));
-    expect(onChange).toHaveBeenCalledWith('email');
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange.mock.calls[0][0]).toBe('email');
+    // Hands back the DOM event (matches CheckboxInput's onChange signature).
+    expect(onChange.mock.calls[0][1]).toBeDefined();
+    expect(onChange.mock.calls[0][1].target).toBeInstanceOf(HTMLInputElement);
+  });
+
+  it('generates a group name when htmlName is omitted', () => {
+    render(
+      <RadioControl
+        label="Email"
+        value="email"
+        isChecked={false}
+        onChange={() => {}}
+      />,
+    );
+    // A lone control still behaves as its own group: the input carries a name.
+    const radio = screen.getByRole('radio', {name: 'Email'});
+    expect(radio).toHaveAttribute('name');
+    expect(radio.getAttribute('name')).not.toBe('');
   });
 
   it('does not fire onChange when disabled', () => {
@@ -74,9 +93,9 @@ describe('RadioControl', () => {
     render(
       <RadioControl
         label="Email"
-        name="notify"
+        htmlName="notify"
         value="email"
-        checked={false}
+        isChecked={false}
         isDisabled
         onChange={onChange}
       />,
@@ -93,9 +112,9 @@ describe('RadioControl', () => {
     const {container} = render(
       <RadioControl
         label="Email"
-        name="notify"
+        htmlName="notify"
         value="email"
-        checked={true}
+        isChecked={true}
         onChange={() => {}}
       />,
     );
@@ -107,9 +126,9 @@ describe('RadioControl', () => {
     const {container} = render(
       <RadioControl
         label="Email"
-        name="notify"
+        htmlName="notify"
         value="email"
-        checked={false}
+        isChecked={false}
         onChange={() => {}}
       />,
     );
@@ -119,42 +138,83 @@ describe('RadioControl', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('uses the provided id so an external label can target it', () => {
+  it('uses the provided id so an external label can also target it', () => {
     render(
       <>
-        <label htmlFor="my-radio">External label</label>
+        <label htmlFor="my-radio">Email</label>
         <RadioControl
           id="my-radio"
-          name="notify"
+          label="Email"
+          htmlName="notify"
           value="email"
-          checked={false}
+          isChecked={false}
           onChange={() => {}}
         />
       </>,
     );
-    // Named by the external <label htmlFor>, not aria-label (no double-naming).
-    const radio = screen.getByRole('radio', {name: 'External label'});
+    const radio = screen.getByRole('radio', {name: 'Email'});
     expect(radio).toHaveAttribute('id', 'my-radio');
-    expect(radio).not.toHaveAttribute('aria-label');
   });
 
-  it('keeps a disabled control focusable when keepFocusableWhenDisabled is set', () => {
+  it('applies xstyle/className/style to the root wrapper, not the hidden input', () => {
+    const {container} = render(
+      <RadioControl
+        label="Email"
+        htmlName="notify"
+        value="email"
+        isChecked={false}
+        onChange={() => {}}
+        className="probe-root"
+        data-testid="radio-input"
+      />,
+    );
+    // className lands on the wrapper (the styleable root), while data-* passes
+    // through to the input via {...rest}.
+    const root = container.querySelector('.probe-root');
+    expect(root).toBeInTheDocument();
+    expect(root?.tagName).toBe('DIV');
+    expect(screen.getByTestId('radio-input').tagName).toBe('INPUT');
+  });
+
+  it('forwards ...rest to the input but cannot clobber the radio type', () => {
+    render(
+      <RadioControl
+        label="Email"
+        htmlName="notify"
+        value="email"
+        isChecked={false}
+        onChange={() => {}}
+        // Contract props are set after {...rest}: a stray type can't win.
+        {...({type: 'checkbox'} as object)}
+      />,
+    );
+    expect(screen.getByRole('radio', {name: 'Email'})).toHaveAttribute(
+      'type',
+      'radio',
+    );
+  });
+
+  it('keeps a disabled control focusable and shows a reason via disabledMessage', () => {
     const onChange = vi.fn();
     render(
       <RadioControl
         label="Email"
-        name="notify"
+        htmlName="notify"
         value="email"
-        checked={false}
+        isChecked={false}
         isDisabled
-        keepFocusableWhenDisabled
+        disabledMessage="Locked by your administrator"
         onChange={onChange}
       />,
     );
     const radio = screen.getByRole('radio', {name: 'Email'});
+    // Focusable-disabled: aria-disabled instead of the native disabled attr,
+    // detached from form submission via a dropped name.
     expect(radio).not.toBeDisabled();
     expect(radio).toHaveAttribute('aria-disabled', 'true');
-    expect(radio).toHaveAttribute('form', '');
+    expect(radio).not.toHaveAttribute('name');
+    // aria-describedby wires the reason for AT discovery.
+    expect(radio).toHaveAttribute('aria-describedby');
     fireEvent.click(radio);
     expect(onChange).not.toHaveBeenCalled();
   });

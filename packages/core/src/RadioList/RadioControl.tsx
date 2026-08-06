@@ -4,14 +4,16 @@
 
 /**
  * @file RadioControl.tsx
- * @input Uses React useId, mergeProps, themeProps
+ * @input Uses React useId, use, mergeProps, mergeRefs, useTooltip, themeProps
  * @output Exports RadioControl component, RadioControlProps, RadioControlSize
  * @position Core implementation; consumed by RadioListItem and index.ts
  *
- * The self-contained radio control: the visually-hidden native
+ * The self-contained radio control primitive: the visually-hidden native
  * `<input type="radio">` plus its `astryx-radio` circle and `astryx-radio-dot`
- * inner dot. Takes everything as props so it works standalone, and is composed
- * by RadioListItem (which reads RadioListContext and forwards the values down).
+ * inner dot. It renders only the control (no visible label text) and takes
+ * everything as props, so it composes into bespoke surfaces — cards, table
+ * cells, custom rows — without a `RadioList`. `RadioListItem` composes it for
+ * the labeled/grouped case.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/RadioList/RadioControl.doc.mjs
@@ -21,7 +23,7 @@
  * - /packages/cli/assets/templates/blocks/components/RadioList/ (showcase blocks)
  */
 
-import React, {useId} from 'react';
+import React, {useId, use, type ChangeEvent} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
 import {
@@ -30,8 +32,10 @@ import {
   easeVars,
   borderVars,
 } from '../theme/tokens.stylex';
-import {mergeProps} from '../utils';
+import {mergeProps, mergeRefs} from '../utils';
+import {useTooltip} from '../Tooltip';
 import {radioScope} from './radio.markers.stylex';
+import {RadioListContext} from './RadioList';
 import {themeProps} from '../utils/themeProps';
 
 /**
@@ -67,7 +71,10 @@ const styles = stylex.create({
     borderStyle: 'solid',
     borderRadius: '50%',
     transitionProperty: 'background-color, border-color',
-    transitionDuration: durationVars['--duration-fast'],
+    transitionDuration: {
+      default: durationVars['--duration-fast'],
+      '@media (prefers-reduced-motion: reduce)': '0s',
+    },
     transitionTimingFunction: easeVars['--ease-standard'],
     boxSizing: 'border-box',
   },
@@ -169,31 +176,33 @@ export interface RadioControlProps extends Omit<
 > {
   ref?: React.Ref<HTMLInputElement>;
   /**
-   * Whether the radio is selected. Named `checked` to mirror the native
-   * `<input type="radio">` it controls.
+   * Accessible name for the control, applied as `aria-label`. Required so a
+   * standalone control always has a name — this mirrors the icon-only `Button`
+   * convention, where `label` becomes `aria-label` when there is no visible
+   * text. When `RadioListItem` composes the control it passes the row's label
+   * here and also renders that text as the visible, clickable row label; the
+   * accessible name resolves to this string either way.
    */
-  // eslint-disable-next-line @astryx/boolean-prop-naming
-  checked: boolean;
+  label: string;
   /**
-   * Callback fired with `value` when the user selects this radio. No-op while
-   * disabled.
+   * Whether the radio is selected (controlled).
    */
-  onChange: (value: string) => void;
+  isChecked: boolean;
+  /**
+   * Callback fired with the selected `value` (and the change event) when the
+   * user selects this radio. No-op while disabled.
+   */
+  onChange: (value: string, e: ChangeEvent<HTMLInputElement>) => void;
   /**
    * The value submitted / reported when this radio is selected.
    */
   value: string;
   /**
    * The HTML `name` shared by the radio group so the browser roves and
-   * single-selects within it.
+   * single-selects within it. When omitted, a unique name is generated so a
+   * lone control still behaves as its own group.
    */
-  name: string;
-  /**
-   * Accessible name for a standalone control, applied as `aria-label` on the
-   * input. Omit it when an external `<label htmlFor>` names the input (as
-   * RadioList does) to avoid double-naming.
-   */
-  label?: string;
+  htmlName?: string;
   /**
    * The size of the radio control.
    * @default 'md'
@@ -210,14 +219,13 @@ export interface RadioControlProps extends Omit<
    */
   isRequired?: boolean;
   /**
-   * When disabled, keep the input focusable via `aria-disabled` instead of the
-   * native `disabled` attribute (and detach it from the form so it is excluded
-   * from submission). Lets a group's disabled-reason tooltip stay keyboard- and
-   * AT-discoverable. Selection is still blocked by the onChange guard.
-   * @default false
+   * Explains why the radio is disabled. When set together with `isDisabled`,
+   * the control shows a tooltip with this text on hover and keyboard focus, and
+   * stays focusable (via `aria-disabled` instead of the native `disabled`
+   * attribute) so the reason is discoverable by keyboard and assistive
+   * technology. Selection stays blocked. Mirrors `CheckboxInput`.
    */
-  // eslint-disable-next-line @astryx/boolean-prop-naming
-  keepFocusableWhenDisabled?: boolean;
+  disabledMessage?: string;
   /**
    * Id applied to the input so an external `<label htmlFor>` can target it. When
    * omitted, a unique id is generated.
@@ -226,102 +234,151 @@ export interface RadioControlProps extends Omit<
 }
 
 /**
- * A self-contained radio control: the native `<input type="radio">` and its
- * `astryx-radio` circle. Works standalone and is composed by RadioListItem.
+ * A self-contained radio control primitive: the native `<input type="radio">`
+ * and its `astryx-radio` circle. Renders only the control (no visible label),
+ * works standalone, and is composed by `RadioListItem`.
  *
- * Provide `label` for a standalone control (it becomes the input's
- * `aria-label`); omit it when an external `<label htmlFor>` already names the
- * input (as RadioList does) so the control is not double-named.
+ * `label` is the accessible name (applied as `aria-label`), following the
+ * icon-only `Button` convention for controls with no visible text. Pair the
+ * control with your own visible text for a labeled option.
  *
  * @example
  * ```
  * <RadioControl
  *   label="Email"
- *   name="notify"
+ *   htmlName="notify"
  *   value="email"
- *   checked={value === 'email'}
+ *   isChecked={value === 'email'}
  *   onChange={setValue}
  * />
  * ```
  */
 export function RadioControl({
   ref,
-  checked,
+  label,
+  isChecked,
   onChange,
   value,
-  name,
-  label,
+  htmlName,
   size = 'md',
   isDisabled = false,
   isRequired = false,
-  keepFocusableWhenDisabled = false,
+  disabledMessage,
   id,
   xstyle,
   className,
   style,
+  'aria-describedby': ariaDescribedByProp,
   ...rest
 }: RadioControlProps) {
   const generatedID = useId();
   const inputID = id ?? generatedID;
-  const keepsFocusable = isDisabled && keepFocusableWhenDisabled;
+  // Radios single-select within a shared `name`. A lone control still needs a
+  // name to be its own group, so fall back to a generated one when `htmlName`
+  // is omitted (unlike a checkbox, which doesn't group).
+  const generatedName = useId();
+  const groupName = htmlName ?? generatedName;
+
+  // Disabled-reason handling mirrors CheckboxInput. A control renders its own
+  // reason tooltip when it has a `disabledMessage`; a control inside a
+  // RadioList whose whole group is disabled-with-message stays focusable so the
+  // group's single tooltip (rendered on the radiogroup container) is
+  // keyboard-discoverable, without rendering a tooltip of its own.
+  const showsOwnDisabledMessage = isDisabled && !!disabledMessage;
+  const radioListContext = use(RadioListContext);
+  const isFocusableDisabled =
+    isDisabled &&
+    (showsOwnDisabledMessage ||
+      (radioListContext?.hasDisabledMessage ?? false));
+
+  const disabledMessageTooltip = useTooltip({
+    placement: 'above',
+    // The control is not naturally focusable while disabled; focusin bubbles up
+    // from the input, so always attach focus listeners.
+    focusTrigger: 'always',
+    isEnabled: showsOwnDisabledMessage,
+  });
+
+  const ariaDescribedBy =
+    [
+      ariaDescribedByProp,
+      showsOwnDisabledMessage ? disabledMessageTooltip.describedBy : null,
+    ]
+      .filter(Boolean)
+      .join(' ') || undefined;
 
   return (
     <div
-      {...stylex.props(
-        styles.radioWrapper,
-        wrapperSizeStyles[size],
-        !isDisabled && styles.radioWrapperFocus,
+      ref={el => {
+        // Interaction (hover/focus) listeners for the disabled-message tooltip
+        // attach to the control's own wrapper. Gated internally by isEnabled,
+        // so attaching unconditionally is safe.
+        disabledMessageTooltip.interactionRef(el);
+      }}
+      {...mergeProps(
+        stylex.props(
+          styles.radioWrapper,
+          wrapperSizeStyles[size],
+          // Own hover scope so a standalone control gets a hover state;
+          // RadioListItem also applies radioScope on the row so row-hover still
+          // drives the circle.
+          !isDisabled && radioScope,
+          (!isDisabled || isFocusableDisabled) && styles.radioWrapperFocus,
+          xstyle,
+        ),
+        className,
+        style,
       )}>
       <input
-        ref={ref}
+        {...rest}
+        ref={mergeRefs(ref, disabledMessageTooltip.positionRef)}
         id={inputID}
         type="radio"
-        name={name}
+        // Withhold the name while disabled: with a disabledMessage (or in a
+        // disabled-with-message group) the input stays focusable (not natively
+        // disabled), and a disabled control must not submit.
+        name={isDisabled ? undefined : groupName}
         value={value}
-        checked={checked}
-        disabled={isDisabled && !keepsFocusable}
-        aria-disabled={keepsFocusable ? 'true' : undefined}
-        // A focusable-disabled radio is not natively disabled, so detach it
-        // from the form instead: it keeps its name (grouping) but is excluded
-        // from submission, matching a natively disabled control.
-        form={keepsFocusable ? '' : undefined}
+        checked={isChecked}
+        disabled={isDisabled && !isFocusableDisabled}
+        aria-disabled={isFocusableDisabled ? 'true' : undefined}
         required={isRequired}
         aria-label={label}
-        onChange={() => {
+        aria-describedby={ariaDescribedBy}
+        // `onChange` is the value-based handler declared on this interface (the
+        // native DOM `onChange` is omitted from the props), so there is no
+        // separate consumer DOM handler to compose with here — just guard the
+        // disabled state and report the value. Placed after `{...rest}` so a
+        // stray consumer handler can't clobber the selection contract.
+        onChange={(e: ChangeEvent<HTMLInputElement>) => {
           if (isDisabled) {
             return;
           }
-          onChange(value);
+          onChange(value, e);
         }}
-        {...mergeProps(
-          stylex.props(
-            styles.input,
-            wrapperSizeStyles[size],
-            isDisabled && styles.inputDisabled,
-            xstyle,
-          ),
-          className,
-          style,
+        {...stylex.props(
+          styles.input,
+          wrapperSizeStyles[size],
+          isDisabled && styles.inputDisabled,
         )}
-        {...rest}
       />
       <div
         aria-hidden="true"
         {...mergeProps(
           themeProps('radio', {
             size,
-            checked: checked ? 'checked' : null,
+            checked: isChecked ? 'checked' : null,
             disabled: isDisabled ? 'disabled' : null,
           }),
           stylex.props(
             styles.radio,
             radioSizeStyles[size],
-            checked ? styles.radioChecked : styles.radioUnchecked,
+            isChecked ? styles.radioChecked : styles.radioUnchecked,
             isDisabled && styles.radioDisabled,
-            isDisabled && !checked && styles.radioDisabledUnchecked,
+            isDisabled && !isChecked && styles.radioDisabledUnchecked,
           ),
         )}>
-        {checked && (
+        {isChecked && (
           <div
             {...mergeProps(
               themeProps('radio-dot', {size}),
@@ -330,6 +387,8 @@ export function RadioControl({
           />
         )}
       </div>
+      {showsOwnDisabledMessage &&
+        disabledMessageTooltip.renderTooltip(disabledMessage)}
     </div>
   );
 }

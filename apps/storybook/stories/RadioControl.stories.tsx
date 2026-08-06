@@ -11,17 +11,17 @@ const meta: Meta<typeof RadioControl> = {
   argTypes: {
     label: {
       control: 'text',
-      description: 'Accessible name (aria-label) for a standalone control',
+      description: 'Accessible name (aria-label) for the control',
     },
     value: {
       control: 'text',
       description: 'Value reported when this radio is selected',
     },
-    name: {
+    htmlName: {
       control: 'text',
       description: 'HTML name shared by the radio group',
     },
-    checked: {
+    isChecked: {
       control: 'boolean',
       description: 'Whether the radio is selected',
     },
@@ -38,37 +38,28 @@ const meta: Meta<typeof RadioControl> = {
       control: 'boolean',
       description: 'Whether the radio is required',
     },
+    disabledMessage: {
+      control: 'text',
+      description: 'Reason shown when disabled (keeps the control focusable)',
+    },
   },
 };
 
 export default meta;
 type Story = StoryObj<typeof RadioControl>;
 
+// The control renders only the circle — pair it with your own visible text.
+// A radio is selected by choosing it; it is deselected by choosing another in
+// the same group (see ControlledGroup), never by clicking it again — so a lone
+// radio is not a toggle. This default shows a single selected control.
 export const Default: Story = {
-  // A single radio can't normally be un-selected by clicking it (native radio
-  // behavior — you deselect by choosing another in the group; see
-  // ControlledGroup). To make this standalone demo interactive, drive the
-  // checked state purely from onClick (which fires on every click), with a
-  // no-op onChange to satisfy the controlled input. Mixing onChange (fires
-  // only when the radio becomes checked) with onClick desyncs the toggle, so
-  // onClick is the single source of truth here.
-  render: args => {
-    const [checked, setChecked] = useState(args.checked ?? false);
-    return (
-      <RadioControl
-        {...args}
-        checked={checked}
-        onChange={() => {}}
-        onClick={() => setChecked(c => !c)}
-      />
-    );
-  },
   args: {
     label: 'Email',
-    name: 'notify',
+    htmlName: 'notify',
     value: 'email',
-    checked: true,
+    isChecked: true,
   },
+  render: args => <RadioControl {...args} onChange={() => {}} />,
 };
 
 export const Sizes: Story = {
@@ -76,18 +67,18 @@ export const Sizes: Story = {
     <div style={{display: 'flex', alignItems: 'center', gap: 24}}>
       <RadioControl
         label="Small"
-        name="sizes"
+        htmlName="sizes"
         value="sm"
         size="sm"
-        checked
+        isChecked
         onChange={() => {}}
       />
       <RadioControl
         label="Medium"
-        name="sizes"
+        htmlName="sizes"
         value="md"
         size="md"
-        checked
+        isChecked
         onChange={() => {}}
       />
     </div>
@@ -99,17 +90,17 @@ export const Disabled: Story = {
     <div style={{display: 'flex', alignItems: 'center', gap: 24}}>
       <RadioControl
         label="Disabled unchecked"
-        name="disabled"
+        htmlName="disabled"
         value="a"
-        checked={false}
+        isChecked={false}
         isDisabled
         onChange={() => {}}
       />
       <RadioControl
         label="Disabled checked"
-        name="disabled"
+        htmlName="disabled"
         value="b"
-        checked
+        isChecked
         isDisabled
         onChange={() => {}}
       />
@@ -117,6 +108,25 @@ export const Disabled: Story = {
   ),
 };
 
+// Disabled with a reason: the control stays focusable and surfaces the reason
+// on hover / keyboard focus, so it is discoverable by assistive technology.
+export const DisabledWithReason: Story = {
+  render: () => (
+    <RadioControl
+      label="Legacy mode"
+      htmlName="mode"
+      value="legacy"
+      isChecked={false}
+      isDisabled
+      disabledMessage="Locked by your administrator"
+      onChange={() => {}}
+    />
+  ),
+};
+
+// Grouping and single-select come from a shared htmlName: selecting one option
+// deselects the others. This is the correct way to build a radio group by
+// composing the control with your own layout and visible labels.
 export const ControlledGroup: Story = {
   render: () => {
     const [value, setValue] = useState('email');
@@ -132,9 +142,10 @@ export const ControlledGroup: Story = {
             key={opt.value}
             style={{display: 'flex', alignItems: 'center', gap: 8}}>
             <RadioControl
-              name="channel"
+              label={opt.label}
+              htmlName="channel"
               value={opt.value}
-              checked={value === opt.value}
+              isChecked={value === opt.value}
               onChange={setValue}
             />
             {opt.label}
