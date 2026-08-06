@@ -27,9 +27,12 @@ export {InfoTip, type InfoTipProps, type InfoTipSize} from './InfoTip';
 // TransferList — controlled dual-panel collection input
 export {
   TransferList,
+  TransferListSelector,
   transferListVars,
   type TransferListOption,
   type TransferListProps,
+  type TransferListSelectorCommitBehavior,
+  type TransferListSelectorProps,
 } from './TransferList';
 
 // Chat — experimental reasoning display

@@ -2,18 +2,18 @@
 
 /**
  * @file TransferList.stories.tsx
- * @input TransferList option data plus Core selector, layout, and table primitives
- * @output Storybook examples for standalone and composed TransferList patterns
+ * @input TransferListSelector option data, commit behavior, and advanced Core selector and table primitives
+ * @output Storybook examples for immediate/staged selectors plus advanced TransferList composition
  * @position Lab Storybook documentation and visual validation
  *
- * SYNC: When TransferList behavior changes, update its source, docs, and tests.
+ * SYNC: When selector commit behavior or TransferList interaction changes, update source, docs, and tests.
  */
 
-import {useState} from 'react';
+import {useRef, useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
-import {TransferList} from '@astryxdesign/lab';
-import type {TransferListOption} from '@astryxdesign/lab';
+import {TransferList, TransferListSelector} from '@astryxdesign/lab';
+import type {TransferListOption, TransferListProps} from '@astryxdesign/lab';
 import {Button} from '@astryxdesign/core/Button';
 import {ComplexSelector} from '@astryxdesign/core/ComplexSelector';
 import {Divider} from '@astryxdesign/core/Divider';
@@ -51,6 +51,12 @@ const styles = stylex.create({
     padding: 0,
     overflow: 'hidden',
   },
+  narrowSelectorContent: {
+    width: 'min(360px, calc(100vw - 32px))',
+    maxWidth: 'min(360px, calc(100vw - 32px))',
+    maxHeight: 'calc(100vh - 32px)',
+    padding: 0,
+  },
   viewOptionsSurface: {
     display: 'flex',
     flexDirection: 'column',
@@ -86,23 +92,11 @@ const styles = stylex.create({
     paddingBlock: spacingVars['--spacing-3'],
     paddingInline: spacingVars['--spacing-3'],
   },
-  footerLink: {
-    height: 'auto',
-    paddingBlock: 0,
-    paddingInline: 0,
-    borderRadius: 0,
-    color: colorVars['--color-text-accent'],
-    backgroundImage: {
-      default: 'none',
-      ':hover': 'none',
-      ':active': 'none',
-    },
-  },
 });
 
-const meta: Meta<typeof TransferList> = {
-  title: 'Lab/TransferList',
-  component: TransferList,
+const meta: Meta<typeof TransferListSelector> = {
+  title: 'Lab/TransferListSelector',
+  component: TransferListSelector,
   tags: ['autodocs'],
   parameters: {
     layout: 'centered',
@@ -161,28 +155,61 @@ const BASIC_OPTIONS: ReadonlyArray<TransferListOption<string>> = [
   },
 ];
 
-function BasicExample() {
+const BASIC_DESCRIPTION =
+  'Choose which fields appear. Changes take effect immediately, and drag reorder commits on release.';
+
+const BASIC_TRANSFER_LIST_PROPS = {
+  label: 'Visible fields',
+  options: BASIC_OPTIONS,
+  selectedLabel: 'Visible fields',
+  availableLabel: 'Available fields',
+  hasSelectAll: true,
+  hasClear: true,
+} satisfies Omit<TransferListProps<string>, 'value' | 'onChange'>;
+
+function DefaultExample() {
   const defaults = ['name', 'owner', 'status'];
   const [value, setValue] = useState<readonly string[]>(defaults);
+  const [isOpen, setIsOpen] = useState(true);
 
   return (
-    <TransferList
-      label="Visible fields"
-      description="Choose which fields appear. The drag preview follows your pointer, and the display order changes on release."
-      options={BASIC_OPTIONS}
+    <TransferListSelector
+      {...BASIC_TRANSFER_LIST_PROPS}
+      description={BASIC_DESCRIPTION}
       value={value}
       onChange={setValue}
-      selectedLabel="Visible fields"
-      availableLabel="Available fields"
-      hasSelectAll
-      hasClear
-      onReset={() => setValue(defaults)}
+      triggerLabel={`${value.length} visible fields`}
+      isOpen={isOpen}
+      onOpenChange={setIsOpen}
     />
   );
 }
 
-export const Basic: Story = {
-  render: () => <BasicExample />,
+export const Default: Story = {
+  render: () => <DefaultExample />,
+};
+
+function StagedChangesExample() {
+  const defaults = ['name', 'owner', 'status'];
+  const [value, setValue] = useState<readonly string[]>(defaults);
+  const [isOpen, setIsOpen] = useState(true);
+
+  return (
+    <TransferListSelector
+      {...BASIC_TRANSFER_LIST_PROPS}
+      description="Review the complete field selection before applying it."
+      value={value}
+      onChange={setValue}
+      commitBehavior="staged"
+      triggerLabel={`${value.length} visible fields`}
+      isOpen={isOpen}
+      onOpenChange={setIsOpen}
+    />
+  );
+}
+
+export const StagedChanges: Story = {
+  render: () => <StagedChangesExample />,
 };
 
 const GROUPED_OPTIONS: ReadonlyArray<TransferListOption<string>> = [
@@ -191,14 +218,17 @@ const GROUPED_OPTIONS: ReadonlyArray<TransferListOption<string>> = [
     label: 'Name',
     description: 'Required identity field',
     group: 'Identity',
-    isDisabled: true,
-    disabledMessage: 'Name is required and cannot be removed.',
+    isTransferDisabled: true,
+    isReorderDisabled: true,
+    disabledMessage: 'Name is required and fixed in position.',
   },
   {
     value: 'owner',
     label: 'Owner',
     description: 'Person responsible for the work',
     group: 'Identity',
+    isTransferDisabled: true,
+    disabledMessage: 'Owner must remain visible but can be reordered.',
   },
   {
     value: 'team',
@@ -211,6 +241,9 @@ const GROUPED_OPTIONS: ReadonlyArray<TransferListOption<string>> = [
     label: 'Status',
     description: 'Current workflow state',
     group: 'Planning',
+    isReorderDisabled: true,
+    disabledMessage:
+      'Status can be hidden but its current position is fixed while selected.',
   },
   {
     value: 'priority',
@@ -243,9 +276,9 @@ function GroupedAndLockedExample() {
   const [value, setValue] = useState<readonly string[]>(defaults);
 
   return (
-    <TransferList
+    <TransferListSelector
       label="Record fields"
-      description="Fields are grouped by purpose. Required fields stay selected and explain why they are locked."
+      description="Fields are grouped by purpose. Removal and reordering constraints can be applied independently."
       options={GROUPED_OPTIONS}
       value={value}
       onChange={setValue}
@@ -253,7 +286,7 @@ function GroupedAndLockedExample() {
       availableLabel="Hidden"
       hasSelectAll
       hasClear
-      onReset={() => setValue(defaults)}
+      triggerLabel={`${value.length} shown fields`}
     />
   );
 }
@@ -270,7 +303,7 @@ function UnorderedExample() {
   ]);
 
   return (
-    <TransferList
+    <TransferListSelector
       label="Included filters"
       description="Use an unordered transfer list when selection matters but display order does not."
       options={BASIC_OPTIONS}
@@ -279,9 +312,9 @@ function UnorderedExample() {
       selectedLabel="Included"
       availableLabel="Not included"
       isReorderable={false}
-      hasSearch={false}
       hasSelectAll
       hasClear
+      triggerLabel={`${value.length} included filters`}
     />
   );
 }
@@ -296,21 +329,28 @@ function NarrowContainerExample() {
     'owner',
     'status',
   ]);
+  const [isOpen, setIsOpen] = useState(true);
 
   return (
-    <Section width={360} padding={0} variant="transparent">
-      <TransferList
-        label="Mobile field settings"
-        description="The two panels stack when horizontal space is limited."
-        options={BASIC_OPTIONS}
-        value={value}
-        onChange={setValue}
-        selectedLabel="Visible"
-        availableLabel="Available"
-        hasSelectAll
-        hasClear
-      />
-    </Section>
+    <TransferListSelector
+      label="Mobile field settings"
+      description="The two panels stack when horizontal space is limited."
+      options={BASIC_OPTIONS}
+      value={value}
+      onChange={setValue}
+      triggerLabel={`${value.length} visible fields`}
+      width="min(360px, calc(100vw - 32px))"
+      placement="below"
+      alignment="start"
+      isOpen={isOpen}
+      onOpenChange={setIsOpen}
+      contentXstyle={styles.narrowSelectorContent}
+      selectedLabel="Visible"
+      availableLabel="Available"
+      isReorderable={false}
+      hasSelectAll
+      hasClear
+    />
   );
 }
 
@@ -335,7 +375,7 @@ function LargePoolExample() {
   );
 
   return (
-    <TransferList
+    <TransferListSelector
       label="Report fields"
       description="Search a pool of 200 options while preserving the chosen display order."
       options={LARGE_POOL_OPTIONS}
@@ -343,9 +383,11 @@ function LargePoolExample() {
       onChange={setValue}
       selectedLabel="In report"
       availableLabel="Available"
+      hasSearch
       searchPlaceholder="Search 200 fields"
       hasSelectAll
       hasClear
+      triggerLabel={`${value.length} report fields`}
     />
   );
 }
@@ -440,7 +482,7 @@ const PROJECT_TRANSFER_OPTIONS: ReadonlyArray<
   value: option.key,
   label: option.label,
   group: option.group,
-  isDisabled: option.isAlwaysVisible,
+  isTransferDisabled: option.isAlwaysVisible,
   disabledMessage: option.isAlwaysVisible
     ? 'Project is the primary identity column and must stay visible.'
     : undefined,
@@ -476,11 +518,6 @@ const SAVED_VIEWS: ReadonlyArray<{
   },
 ];
 
-const SAVED_VIEW_OPTIONS = [
-  ...SAVED_VIEWS.map(view => ({value: view.value, label: view.label})),
-  {value: 'custom', label: 'Custom', disabled: true},
-];
-
 function hasSameOrderedColumns(
   left: ReadonlyArray<ProjectColumnKey>,
   right: ReadonlyArray<ProjectColumnKey>,
@@ -498,7 +535,10 @@ function TableColumnSettingsExample() {
   const [draftColumns, setDraftColumns] = useState<
     ReadonlyArray<ProjectColumnKey>
   >(DEFAULT_PROJECT_COLUMNS);
+  const [savedViews, setSavedViews] = useState(SAVED_VIEWS);
+  const [activeSavedView, setActiveSavedView] = useState('standard');
   const [isOpen, setIsOpen] = useState(true);
+  const nextSavedViewNumberRef = useRef(1);
 
   const columnSettingsState = useTableColumnSettingsState<ProjectColumnKey>({
     columns: PROJECT_COLUMN_OPTIONS,
@@ -511,21 +551,47 @@ function TableColumnSettingsExample() {
     ProjectColumnKey
   >(columnSettingsState.columnSettingsConfig);
 
-  const activeSavedView =
-    SAVED_VIEWS.find(view => hasSameOrderedColumns(view.columns, draftColumns))
+  const savedViewOptions = [
+    ...savedViews.map(view => ({value: view.value, label: view.label})),
+    {value: 'custom', label: 'Custom', disabled: true},
+  ];
+
+  const findSavedViewValue = (
+    nextColumns: ReadonlyArray<ProjectColumnKey>,
+  ): string =>
+    savedViews.find(view => hasSameOrderedColumns(view.columns, nextColumns))
       ?.value ?? 'custom';
 
   const selectSavedView = (nextValue: string) => {
-    const nextView = SAVED_VIEWS.find(view => view.value === nextValue);
+    const nextView = savedViews.find(view => view.value === nextValue);
     if (nextView == null) {
       return;
     }
+    setActiveSavedView(nextView.value);
     setDraftColumns(nextView.columns);
+  };
+
+  const changeDraftColumns = (nextColumns: ReadonlyArray<ProjectColumnKey>) => {
+    setDraftColumns(nextColumns);
+    setActiveSavedView(findSavedViewValue(nextColumns));
+  };
+
+  const saveCurrentColumnsAsView = () => {
+    const nextNumber = nextSavedViewNumberRef.current;
+    nextSavedViewNumberRef.current += 1;
+    const nextView = {
+      value: `saved-${nextNumber}`,
+      label: `Saved view ${nextNumber}`,
+      columns: [...draftColumns],
+    };
+    setSavedViews(currentViews => [...currentViews, nextView]);
+    setActiveSavedView(nextView.value);
   };
 
   const handleOpenChange = (nextIsOpen: boolean) => {
     if (nextIsOpen) {
       setDraftColumns(appliedColumns);
+      setActiveSavedView(findSavedViewValue(appliedColumns));
     }
     setIsOpen(nextIsOpen);
   };
@@ -573,7 +639,7 @@ function TableColumnSettingsExample() {
                 <Selector
                   label="Column preset"
                   isLabelHidden
-                  options={SAVED_VIEW_OPTIONS}
+                  options={savedViewOptions}
                   value={activeSavedView}
                   onChange={selectSavedView}
                   width="100%"
@@ -583,19 +649,20 @@ function TableColumnSettingsExample() {
                   icon={<Icon icon={Plus} size="sm" color="inherit" />}
                   variant="secondary"
                   size="sm"
-                  isDisabled
+                  onClick={saveCurrentColumnsAsView}
                 />
               </div>
-              <Divider />
               <div {...stylex.props(styles.transferListSection)}>
                 <TransferList
                   label="Table columns"
                   isLabelHidden
                   options={PROJECT_TRANSFER_OPTIONS}
                   value={draftColumns}
-                  onChange={setDraftColumns}
+                  onChange={changeDraftColumns}
                   selectedLabel="Visible fields"
                   availableLabel="Available fields"
+                  hasSearch
+                  searchPlaceholder="Search columns"
                   hasSelectAll
                   hasClear
                 />
@@ -605,21 +672,33 @@ function TableColumnSettingsExample() {
                 <Button
                   label="Restore columns to default"
                   variant="ghost"
-                  xstyle={styles.footerLink}
                   onClick={() => {
                     setDraftColumns(DEFAULT_PROJECT_COLUMNS);
+                    setActiveSavedView('standard');
                   }}>
                   Restore to default
                 </Button>
-                <Button
-                  label="Apply column changes"
-                  variant="primary"
-                  onClick={() => {
-                    commit(draftColumns);
-                    close();
-                  }}>
-                  Apply
-                </Button>
+                <HStack gap={2}>
+                  <Button
+                    label="Cancel column changes"
+                    variant="ghost"
+                    onClick={() => {
+                      setDraftColumns(appliedColumns);
+                      setActiveSavedView(findSavedViewValue(appliedColumns));
+                      close();
+                    }}>
+                    Cancel
+                  </Button>
+                  <Button
+                    label="Apply column changes"
+                    variant="primary"
+                    onClick={() => {
+                      commit(draftColumns);
+                      close();
+                    }}>
+                    Apply
+                  </Button>
+                </HStack>
               </div>
             </div>
           )}
@@ -640,5 +719,6 @@ function TableColumnSettingsExample() {
 }
 
 export const TableColumnSettings: Story = {
+  name: 'Advanced: Table column settings',
   render: () => <TableColumnSettingsExample />,
 };

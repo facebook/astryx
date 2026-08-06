@@ -3,7 +3,7 @@
 /**
  * @file TransferList.test.tsx
  * @input Uses Vitest, Testing Library, and the data-driven TransferList API
- * @output Behavioral coverage for transfer, filtering, and pointer/keyboard reordering
+ * @output Behavioral coverage for immediate transfers, filtering, and vertically constrained pointer/keyboard reordering
  * @position Lab tests; validates TransferList.tsx
  *
  * SYNC: When TransferList.tsx behavior changes, update these tests.
@@ -38,8 +38,35 @@ const LOCKED_OPTIONS: ReadonlyArray<TransferListOption<string>> = [
     value: 'owner',
     label: 'Owner',
     group: 'Identity',
-    isDisabled: true,
-    disabledMessage: 'Required',
+    isTransferDisabled: true,
+    isReorderDisabled: true,
+    disabledMessage: 'Owner is required and fixed in position.',
+  },
+  OPTIONS[2],
+  OPTIONS[3],
+];
+
+const TRANSFER_LOCKED_OPTIONS: ReadonlyArray<TransferListOption<string>> = [
+  OPTIONS[0],
+  {
+    value: 'owner',
+    label: 'Owner',
+    group: 'Identity',
+    isTransferDisabled: true,
+    disabledMessage: 'Owner is required.',
+  },
+  OPTIONS[2],
+  OPTIONS[3],
+];
+
+const REORDER_LOCKED_OPTIONS: ReadonlyArray<TransferListOption<string>> = [
+  OPTIONS[0],
+  {
+    value: 'owner',
+    label: 'Owner',
+    group: 'Identity',
+    isReorderDisabled: true,
+    disabledMessage: 'Owner has a fixed position.',
   },
   OPTIONS[2],
   OPTIONS[3],
@@ -180,7 +207,9 @@ describe('TransferList', () => {
 
     it('keeps support metadata out of rows while retaining search and groups', async () => {
       const user = userEvent.setup();
-      render(<ControlledTransferList initialValue={['name', 'status']} />);
+      render(
+        <ControlledTransferList initialValue={['name', 'status']} hasSearch />,
+      );
 
       expect(screen.queryByText('Primary identifier')).not.toBeInTheDocument();
       expect(screen.getAllByText('Identity').length).toBeGreaterThan(0);
@@ -266,6 +295,7 @@ describe('TransferList', () => {
       render(
         <ControlledTransferList
           initialValue={['name', 'status']}
+          hasSearch
           searchLabel="Filter columns"
           searchPlaceholder="Find a column"
           noResultsText="No matching columns"
@@ -283,33 +313,33 @@ describe('TransferList', () => {
       );
     });
 
-    it('enables search and reordering by default', () => {
+    it('disables search and enables reordering by default', () => {
       render(<ControlledTransferList initialValue={['name']} />);
 
-      expect(screen.getByRole('searchbox')).toBeInTheDocument();
+      expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
       expect(
         screen.getByRole('button', {name: 'Reorder Name'}),
       ).toBeInTheDocument();
     });
 
-    it('can turn off search and reordering', () => {
+    it('can turn on search and turn off reordering', () => {
       render(
         <ControlledTransferList
           initialValue={['name']}
-          hasSearch={false}
+          hasSearch
           isReorderable={false}
         />,
       );
 
-      expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
+      expect(screen.getByRole('searchbox')).toBeInTheDocument();
       expect(
         screen.queryByRole('button', {name: 'Reorder Name'}),
       ).not.toBeInTheDocument();
     });
   });
 
-  describe('disabled values and bulk actions', () => {
-    it('marks a disabled selected value as required and exposes no actions', () => {
+  describe('option constraints and bulk actions', () => {
+    it('keeps locked controls visible and disabled', () => {
       render(
         <ControlledTransferList
           options={LOCKED_OPTIONS}
@@ -317,23 +347,60 @@ describe('TransferList', () => {
         />,
       );
 
-      const selectedList = screen.getByRole('list', {
-        name: 'Selected columns',
-      });
-      expect(within(selectedList).getByText('Required')).toBeInTheDocument();
       expect(
-        screen.queryByRole('button', {name: 'Remove Owner'}),
-      ).not.toBeInTheDocument();
+        screen.getByRole('button', {name: 'Remove Owner'}),
+      ).toHaveAttribute('aria-disabled', 'true');
       expect(
-        screen.queryByRole('button', {name: 'Reorder Owner'}),
-      ).not.toBeInTheDocument();
+        screen.getByRole('button', {name: 'Reorder Owner'}),
+      ).toHaveAttribute('aria-disabled', 'true');
     });
 
-    it('adds all available values in option order', async () => {
+    it('applies transfer and reorder constraints independently', async () => {
+      const user = userEvent.setup();
+      const onValueChange = vi.fn();
+      const constrainedOptions = [
+        {
+          ...OPTIONS[1],
+          isTransferDisabled: true,
+          disabledMessage: 'Owner is required.',
+        },
+        {
+          ...OPTIONS[2],
+          isReorderDisabled: true,
+          disabledMessage: 'Status has a fixed position.',
+        },
+      ];
+      render(
+        <ControlledTransferList
+          options={constrainedOptions}
+          initialValue={['owner', 'status']}
+          onValueChange={onValueChange}
+        />,
+      );
+
+      expect(
+        screen.getByRole('button', {name: 'Remove Owner'}),
+      ).toHaveAttribute('aria-disabled', 'true');
+      expect(
+        screen.getByRole('button', {name: 'Reorder Owner'}),
+      ).not.toHaveAttribute('aria-disabled');
+      expect(
+        screen.getByRole('button', {name: 'Remove Status'}),
+      ).not.toHaveAttribute('aria-disabled');
+      expect(
+        screen.getByRole('button', {name: 'Reorder Status'}),
+      ).toHaveAttribute('aria-disabled', 'true');
+
+      await user.click(screen.getByRole('button', {name: 'Remove Status'}));
+      expect(onValueChange).toHaveBeenCalledWith(['owner']);
+    });
+
+    it('adds all transfer-enabled available values in option order', async () => {
       const user = userEvent.setup();
       const onValueChange = vi.fn();
       render(
         <ControlledTransferList
+          options={TRANSFER_LOCKED_OPTIONS}
           initialValue={['status']}
           hasSelectAll
           onValueChange={onValueChange}
@@ -341,20 +408,15 @@ describe('TransferList', () => {
       );
 
       await user.click(screen.getByRole('button', {name: 'Add all'}));
-      expect(onValueChange).toHaveBeenCalledWith([
-        'status',
-        'name',
-        'owner',
-        'updated',
-      ]);
+      expect(onValueChange).toHaveBeenCalledWith(['status', 'name', 'updated']);
     });
 
-    it('clears removable values but retains disabled selected values', async () => {
+    it('clears removable values but retains transfer-disabled values', async () => {
       const user = userEvent.setup();
       const onValueChange = vi.fn();
       render(
         <ControlledTransferList
-          options={LOCKED_OPTIONS}
+          options={TRANSFER_LOCKED_OPTIONS}
           initialValue={['status', 'owner', 'updated']}
           hasClear
           onValueChange={onValueChange}
@@ -363,23 +425,6 @@ describe('TransferList', () => {
 
       await user.click(screen.getByRole('button', {name: 'Clear'}));
       expect(onValueChange).toHaveBeenCalledWith(['owner']);
-    });
-
-    it('delegates reset behavior to the consumer', async () => {
-      const user = userEvent.setup();
-      const onReset = vi.fn();
-      const onValueChange = vi.fn();
-      render(
-        <ControlledTransferList
-          initialValue={['status']}
-          onReset={onReset}
-          onValueChange={onValueChange}
-        />,
-      );
-
-      await user.click(screen.getByRole('button', {name: 'Reset'}));
-      expect(onReset).toHaveBeenCalledTimes(1);
-      expect(onValueChange).not.toHaveBeenCalled();
     });
   });
 
@@ -414,8 +459,72 @@ describe('TransferList', () => {
     });
   });
 
+  describe('transfer updates', () => {
+    it('commits individual and bulk changes immediately', () => {
+      const onValueChange = vi.fn();
+      render(
+        <ControlledTransferList
+          initialValue={['name']}
+          hasClear
+          hasSelectAll
+          onValueChange={onValueChange}
+        />,
+      );
+
+      fireEvent.click(screen.getByRole('button', {name: 'Add Owner'}));
+
+      expect(onValueChange).toHaveBeenLastCalledWith(['name', 'owner']);
+      expect(
+        within(screen.getByRole('list', {name: 'Selected columns'})).getByText(
+          'Owner',
+        ),
+      ).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', {name: 'Remove Owner'}));
+      expect(onValueChange).toHaveBeenLastCalledWith(['name']);
+
+      fireEvent.click(screen.getByRole('button', {name: 'Add all'}));
+      expect(onValueChange).toHaveBeenLastCalledWith([
+        'name',
+        'owner',
+        'status',
+        'updated',
+      ]);
+
+      fireEvent.click(screen.getByRole('button', {name: 'Clear'}));
+      expect(onValueChange).toHaveBeenLastCalledWith([]);
+    });
+  });
+
   describe('pointer reordering', () => {
-    it('keeps rows stationary, follows both pointer axes, and commits once', () => {
+    it('mounts the drag preview in the nearest top-layer container', () => {
+      const {container} = render(
+        <div data-testid="popover-host" popover="auto">
+          <ControlledTransferList initialValue={['name', 'owner', 'status']} />
+        </div>,
+      );
+      const rows = [
+        ...container.querySelectorAll<HTMLElement>('[data-transfer-list-row]'),
+      ];
+      mockRowBounds(rows);
+
+      const handle = container.querySelector<HTMLButtonElement>(
+        '[aria-label="Reorder Owner"]',
+      );
+      expect(handle).not.toBeNull();
+      fireEvent.pointerDown(handle as HTMLButtonElement, {
+        button: 0,
+        pointerId: 7,
+        clientX: 300,
+        clientY: 50,
+      });
+
+      const preview = document.querySelector<HTMLElement>(
+        '[data-transfer-list-drag-preview]',
+      );
+      expect(preview?.parentElement).toBe(screen.getByTestId('popover-host'));
+    });
+
+    it('keeps rows stationary, locks X, follows pointer Y, and commits once', () => {
       const onValueChange = vi.fn();
       const {container} = render(
         <ControlledTransferList
@@ -465,7 +574,7 @@ describe('TransferList', () => {
       });
 
       expect(preview!.style.getPropertyValue('--x-transform')).toBe(
-        'translate3d(45px, -5px, 0)',
+        'translate3d(0px, -5px, 0)',
       );
       expect([
         ...container.querySelectorAll<HTMLElement>('[data-transfer-list-row]'),
@@ -488,7 +597,7 @@ describe('TransferList', () => {
       });
 
       expect(preview!.style.getPropertyValue('--x-transform')).toBe(
-        'translate3d(-55px, 105px, 0)',
+        'translate3d(0px, 105px, 0)',
       );
       expect(rows[0]).not.toHaveAttribute('data-transfer-list-drop-target');
       expect(rows[2]).toHaveAttribute(
@@ -513,7 +622,7 @@ describe('TransferList', () => {
       ).not.toBeInTheDocument();
     });
 
-    it('clears a sub-threshold gesture without changing the value', () => {
+    it('ignores a horizontal-only gesture without changing the value', () => {
       const onValueChange = vi.fn();
       const {container} = render(
         <ControlledTransferList
@@ -536,7 +645,7 @@ describe('TransferList', () => {
       expect(
         fireEvent.pointerMove(handle, {
           pointerId: 8,
-          clientX: 14,
+          clientX: 210,
           clientY: 10,
         }),
       ).toBe(true);
@@ -547,12 +656,17 @@ describe('TransferList', () => {
         document.querySelector('[data-transfer-list-drag-preview]'),
       ).toBeInTheDocument();
       expect(
+        document
+          .querySelector<HTMLElement>('[data-transfer-list-drag-preview]')
+          ?.style.getPropertyValue('--x-transform'),
+      ).toBe('translate3d(0px, 0px, 0)');
+      expect(
         container.querySelector('[data-transfer-list-drop-target]'),
       ).not.toBeInTheDocument();
 
       fireEvent.pointerUp(handle, {
         pointerId: 8,
-        clientX: 14,
+        clientX: 210,
         clientY: 10,
       });
 
@@ -605,11 +719,11 @@ describe('TransferList', () => {
       expect(onValueChange).not.toHaveBeenCalled();
     });
 
-    it('keeps disabled selected options as pointer-order barriers', () => {
+    it('keeps reorder-disabled selected options as pointer-order barriers', () => {
       const onValueChange = vi.fn();
       const {container} = render(
         <ControlledTransferList
-          options={LOCKED_OPTIONS}
+          options={REORDER_LOCKED_OPTIONS}
           initialValue={['name', 'owner', 'status', 'updated']}
           onValueChange={onValueChange}
         />,
@@ -737,12 +851,12 @@ describe('TransferList', () => {
       expect(handle).toHaveFocus();
     });
 
-    it('does not allow a value to cross a disabled selected value', async () => {
+    it('does not allow a value to cross a reorder-disabled value', async () => {
       const user = userEvent.setup();
       const onValueChange = vi.fn();
       render(
         <ControlledTransferList
-          options={LOCKED_OPTIONS}
+          options={REORDER_LOCKED_OPTIONS}
           initialValue={['name', 'owner', 'status', 'updated']}
           onValueChange={onValueChange}
         />,

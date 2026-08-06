@@ -5,7 +5,7 @@
 /**
  * @file TransferList.tsx
  * @input Controlled option data, React DOM portals, and shared Lab reorder styles
- * @output Exports the generic TransferList component and its public prop types
+ * @output Exports TransferList with immediate transfers, vertical reordering, and responsive scroll ownership
  * @position Lab collection input; consumed by index.ts, docs, tests, and Storybook
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -44,6 +44,7 @@ import {
   borderVars,
   colorVars,
   spacingVars,
+  typeScaleVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
 import {mergeProps, mergeRefs, themeProps} from '@astryxdesign/core/utils';
 import {reorderStyles} from '../reorderStyles';
@@ -58,9 +59,11 @@ export interface TransferListOption<T extends string = string> {
   description?: ReactNode;
   /** Optional group heading on the available side. */
   group?: string;
-  /** Prevents transfer and reordering while retaining the option in value. */
-  isDisabled?: boolean;
-  /** Explains why the option cannot be changed. */
+  /** Prevents moving the option between the selected and available lists. */
+  isTransferDisabled?: boolean;
+  /** Prevents reordering the selected option and keeps its position fixed. */
+  isReorderDisabled?: boolean;
+  /** Explains why a transfer or reorder action is unavailable. */
   disabledMessage?: string;
 }
 
@@ -86,7 +89,7 @@ export interface TransferListProps<T extends string = string> extends Omit<
   selectedLabel?: string;
   /** Heading for the available panel. @default 'Available' */
   availableLabel?: string;
-  /** Shows one search field that filters both panels. @default true */
+  /** Shows one search field that filters both panels. @default false */
   hasSearch?: boolean;
   /** Accessible label for search. Defaults to `Search ${label}`. */
   searchLabel?: string;
@@ -96,10 +99,8 @@ export interface TransferListProps<T extends string = string> extends Omit<
   isReorderable?: boolean;
   /** Shows an Add all action. @default false */
   hasSelectAll?: boolean;
-  /** Shows a Clear action. Disabled selected options are retained. */
+  /** Shows a Clear action. Transfer-disabled selected options are retained. */
   hasClear?: boolean;
-  /** Shows a Reset action; the consumer owns the reset target. */
-  onReset?: () => void;
   /** Customizes primary row content without changing built-in behavior. */
   renderOption?: (option: TransferListOption<T>) => ReactNode;
   /** Empty copy for the selected panel. */
@@ -118,12 +119,10 @@ interface ReorderSession<T extends string> {
   fromIndex: number;
   toIndex: number;
   pointerId?: number;
-  pointerStartX?: number;
   pointerStartY?: number;
-  pointerOffsetX?: number;
   pointerOffsetY?: number;
-  pointerClientX?: number;
   pointerClientY?: number;
+  previewX?: number;
   previewWidth?: number;
   hasPointerMoved?: boolean;
 }
@@ -132,12 +131,10 @@ type PointerGeometry = Required<
   Pick<
     ReorderSession<string>,
     | 'pointerId'
-    | 'pointerStartX'
     | 'pointerStartY'
-    | 'pointerOffsetX'
     | 'pointerOffsetY'
-    | 'pointerClientX'
     | 'pointerClientY'
+    | 'previewX'
     | 'previewWidth'
   >
 >;
@@ -146,7 +143,7 @@ const styles = stylex.create({
   root: {
     display: 'flex',
     flexDirection: 'column',
-    gap: spacingVars['--spacing-3'],
+    gap: 0,
     minWidth: 0,
     containerType: 'inline-size',
   },
@@ -154,12 +151,14 @@ const styles = stylex.create({
     display: 'flex',
     flexDirection: 'column',
     gap: spacingVars['--spacing-1'],
+    paddingInline: spacingVars['--spacing-3'],
   },
   controls: {
     display: 'flex',
     alignItems: 'flex-end',
     gap: spacingVars['--spacing-2'],
     minWidth: 0,
+    padding: spacingVars['--spacing-3'],
   },
   search: {flex: 1, minWidth: 0},
   panels: {
@@ -201,8 +200,15 @@ const styles = stylex.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacingVars['--spacing-2'],
+    backgroundColor: {
+      default: 'transparent',
+      '@container (max-width: 40rem)': colorVars['--color-background-body'],
+    },
     paddingBlock: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-3'],
+    borderBlockEndWidth: borderVars['--border-width'],
+    borderBlockEndStyle: 'solid',
+    borderBlockEndColor: colorVars['--color-border'],
   },
   headerAction: {
     height: 'auto',
@@ -215,29 +221,62 @@ const styles = stylex.create({
       ':hover': 'none',
       ':active': 'none',
     },
+    textDecoration: {
+      default: 'none',
+      ':hover': 'underline',
+    },
+    fontSize: typeScaleVars['--text-body-size'],
+    fontWeight: typeScaleVars['--text-body-weight'],
+    lineHeight: typeScaleVars['--text-body-leading'],
   },
   panelBody: {
-    minBlockSize: transferListVars['--transfer-list-panel-min-block-size'],
-    maxBlockSize: transferListVars['--transfer-list-panel-max-block-size'],
-    overflowY: 'auto',
-    overscrollBehavior: 'contain',
-    scrollbarGutter: 'stable',
+    minBlockSize: {
+      default: transferListVars['--transfer-list-panel-min-block-size'],
+      '@container (max-width: 40rem)': 0,
+    },
+    maxBlockSize: {
+      default: transferListVars['--transfer-list-panel-max-block-size'],
+      '@container (max-width: 40rem)': 'none',
+    },
+    overflowY: {
+      default: 'auto',
+      '@container (max-width: 40rem)': 'visible',
+    },
+    overscrollBehavior: {
+      default: 'contain',
+      '@container (max-width: 40rem)': 'auto',
+    },
+    scrollbarGutter: {
+      default: 'stable',
+      '@container (max-width: 40rem)': 'auto',
+    },
     padding: 0,
   },
   groupHeading: {
     paddingBlock: spacingVars['--spacing-1'],
-    paddingInline: spacingVars['--spacing-2'],
-    marginBlockStart: spacingVars['--spacing-2'],
+    paddingInline: spacingVars['--spacing-3'],
+    marginBlockStart: {
+      default: spacingVars['--spacing-1'],
+      ':first-child': 0,
+    },
   },
-  item: {minWidth: 0},
+  item: {
+    minWidth: 0,
+    paddingInline: spacingVars['--spacing-3'],
+  },
+  reorderHandle: {
+    marginInlineStart: `calc(-1 * ${spacingVars['--spacing-1-5']})`,
+  },
   draggingItem: {backgroundColor: colorVars['--color-accent-muted']},
-  disabledReason: {maxWidth: '8rem'},
   dragPreviewContainer: {listStyleType: 'none'},
   empty: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    minBlockSize: transferListVars['--transfer-list-panel-min-block-size'],
+    minBlockSize: {
+      default: transferListVars['--transfer-list-panel-min-block-size'],
+      '@container (max-width: 40rem)': 0,
+    },
     padding: spacingVars['--spacing-4'],
     textAlign: 'center',
   },
@@ -248,7 +287,6 @@ const dynamicStyles = stylex.create({
     width,
     transform: `translate3d(${x}px, ${y}px, 0)`,
   }),
-  rowTransition: (name: string) => ({viewTransitionName: name}),
 });
 
 function moveItem<T>(
@@ -260,24 +298,6 @@ function moveItem<T>(
   const [item] = nextValue.splice(fromIndex, 1);
   nextValue.splice(toIndex, 0, item);
   return nextValue;
-}
-
-function animateControlledUpdate(update: () => void): void {
-  const prefersReducedMotion = window.matchMedia?.(
-    '(prefers-reduced-motion: reduce)',
-  ).matches;
-  if (
-    !prefersReducedMotion &&
-    typeof document.startViewTransition === 'function'
-  ) {
-    document.startViewTransition(() => flushSync(update));
-    return;
-  }
-  update();
-}
-
-function transitionName(scope: string, value: string): string {
-  return `${scope}-${value}`.replace(/[^a-zA-Z0-9_-]/g, '-');
 }
 
 function matchesQuery<T extends string>(
@@ -323,13 +343,12 @@ export function TransferList<T extends string = string>({
   onChange,
   selectedLabel = 'Selected',
   availableLabel = 'Available',
-  hasSearch = true,
+  hasSearch = false,
   searchLabel,
   searchPlaceholder = 'Search…',
   isReorderable = true,
   hasSelectAll = false,
   hasClear = false,
-  onReset,
   renderOption,
   selectedEmptyText = 'No selected options',
   availableEmptyText = 'No available options',
@@ -461,7 +480,6 @@ export function TransferList<T extends string = string>({
         }
       }
       element.setAttribute('tabindex', '-1');
-      element.style.viewTransitionName = 'none';
     }
     previewHost.replaceChildren(clone);
     return () => {
@@ -486,7 +504,7 @@ export function TransferList<T extends string = string>({
             ? selectedPanelRef.current
             : availablePanelRef.current;
         const actions = panel?.querySelectorAll<HTMLButtonElement>(
-          `[data-transfer-list-action="${side}"]:not([disabled])`,
+          `[data-transfer-list-action="${side}"]:not([disabled]):not([aria-disabled="true"])`,
         );
         if (actions && actions.length > 0) {
           actions[Math.min(index, actions.length - 1)]?.focus();
@@ -507,12 +525,16 @@ export function TransferList<T extends string = string>({
 
   const addOption = useCallback(
     (option: TransferListOption<T>, index: number) => {
-      if (option.isDisabled || currentValueRef.current.includes(option.value)) {
+      if (
+        option.isTransferDisabled ||
+        currentValueRef.current.includes(option.value)
+      ) {
         return;
       }
-      commit([...currentValueRef.current, option.value]);
+      const nextValue = [...currentValueRef.current, option.value];
+      commit(nextValue);
       announce(
-        `${option.label} added. ${itemCount(currentValueRef.current.length)} selected.`,
+        `${option.label} added. ${itemCount(nextValue.length)} selected.`,
       );
       focusAfterTransfer('available', index);
     },
@@ -521,12 +543,15 @@ export function TransferList<T extends string = string>({
 
   const removeOption = useCallback(
     (option: TransferListOption<T>, index: number) => {
-      if (option.isDisabled) {
+      if (option.isTransferDisabled) {
         return;
       }
-      commit(currentValueRef.current.filter(item => item !== option.value));
+      const nextValue = currentValueRef.current.filter(
+        item => item !== option.value,
+      );
+      commit(nextValue);
       announce(
-        `${option.label} removed. ${itemCount(currentValueRef.current.length)} selected.`,
+        `${option.label} removed. ${itemCount(nextValue.length)} selected.`,
       );
       focusAfterTransfer('selected', index);
     },
@@ -537,7 +562,8 @@ export function TransferList<T extends string = string>({
     const additions = options
       .filter(
         option =>
-          !option.isDisabled && !currentValueRef.current.includes(option.value),
+          !option.isTransferDisabled &&
+          !currentValueRef.current.includes(option.value),
       )
       .map(option => option.value);
     if (additions.length > 0) {
@@ -549,7 +575,7 @@ export function TransferList<T extends string = string>({
   const clearSelected = useCallback(() => {
     const nextValue = currentValueRef.current.filter(optionValue => {
       const option = optionByValue.get(optionValue);
-      return option == null || option.isDisabled;
+      return option == null || option.isTransferDisabled;
     });
     const removed = currentValueRef.current.length - nextValue.length;
     if (removed > 0) {
@@ -565,14 +591,14 @@ export function TransferList<T extends string = string>({
       let end = orderedValue.length - 1;
       for (let cursor = index - 1; cursor >= 0; cursor -= 1) {
         const option = optionByValue.get(orderedValue[cursor] as T);
-        if (option == null || option.isDisabled) {
+        if (option == null || option.isReorderDisabled) {
           start = cursor + 1;
           break;
         }
       }
       for (let cursor = index + 1; cursor < orderedValue.length; cursor += 1) {
         const option = optionByValue.get(orderedValue[cursor] as T);
-        if (option == null || option.isDisabled) {
+        if (option == null || option.isReorderDisabled) {
           end = cursor - 1;
           break;
         }
@@ -607,7 +633,7 @@ export function TransferList<T extends string = string>({
       mode: 'keyboard' | 'pointer',
       pointerGeometry?: PointerGeometry,
     ) => {
-      if (option.isDisabled || !isReorderable) {
+      if (option.isReorderDisabled || !isReorderable) {
         return;
       }
       const index = currentValueRef.current.indexOf(option.value);
@@ -655,7 +681,7 @@ export function TransferList<T extends string = string>({
         );
         flushSync(() => setReorderSession(null));
         if (hasChanged) {
-          animateControlledUpdate(() => commit(nextValue));
+          commit(nextValue);
           announce(
             `${session.label} dropped at position ${session.toIndex + 1} of ${session.originalValue.length}.`,
           );
@@ -744,7 +770,7 @@ export function TransferList<T extends string = string>({
       event: ReactPointerEvent<HTMLButtonElement>,
       option: TransferListOption<T>,
     ) => {
-      if (event.button !== 0) {
+      if (event.button !== 0 || option.isReorderDisabled) {
         return;
       }
       const sourceRow = selectedRowRefs.current.get(option.value);
@@ -756,12 +782,10 @@ export function TransferList<T extends string = string>({
       event.currentTarget.setPointerCapture?.(event.pointerId);
       beginReorder(option, 'pointer', {
         pointerId: event.pointerId,
-        pointerStartX: event.clientX,
         pointerStartY: event.clientY,
-        pointerOffsetX: event.clientX - bounds.left,
         pointerOffsetY: event.clientY - bounds.top,
-        pointerClientX: event.clientX,
         pointerClientY: event.clientY,
+        previewX: bounds.left,
         previewWidth: bounds.width,
       });
     },
@@ -781,13 +805,10 @@ export function TransferList<T extends string = string>({
       ) {
         return;
       }
-      const horizontalDistance =
-        event.clientX - (session.pointerStartX ?? event.clientX);
       const verticalDistance =
         event.clientY - (session.pointerStartY ?? event.clientY);
       const hasCrossedThreshold =
-        session.hasPointerMoved ||
-        Math.hypot(horizontalDistance, verticalDistance) >= 5;
+        session.hasPointerMoved || Math.abs(verticalDistance) >= 5;
       let targetIndex = session.fromIndex;
       if (hasCrossedThreshold) {
         event.preventDefault();
@@ -825,7 +846,6 @@ export function TransferList<T extends string = string>({
       }
       const nextSession = {
         ...session,
-        pointerClientX: event.clientX,
         pointerClientY: event.clientY,
         hasPointerMoved: hasCrossedThreshold,
         toIndex: targetIndex,
@@ -885,18 +905,9 @@ export function TransferList<T extends string = string>({
     side: 'selected' | 'available',
     index: number,
   ) => {
-    const disabledReason = option.disabledMessage ?? 'This item is locked';
-    if (option.isDisabled) {
-      return (
-        <Text
-          type="supporting"
-          color="secondary"
-          maxLines={1}
-          xstyle={styles.disabledReason}>
-          {disabledReason}
-        </Text>
-      );
-    }
+    const isTransferDisabled = option.isTransferDisabled === true;
+    const disabledReason =
+      option.disabledMessage ?? `${option.label} cannot be moved`;
     if (side === 'available') {
       return (
         <IconButton
@@ -904,6 +915,8 @@ export function TransferList<T extends string = string>({
           icon={<Plus size={16} strokeWidth={1.5} aria-hidden />}
           size="sm"
           variant="ghost"
+          isDisabled={isTransferDisabled}
+          tooltip={isTransferDisabled ? disabledReason : undefined}
           data-transfer-list-action="available"
           onClick={() => addOption(option, index)}
         />
@@ -915,6 +928,8 @@ export function TransferList<T extends string = string>({
         icon={<X size={16} strokeWidth={1.5} aria-hidden />}
         size="sm"
         variant="ghost"
+        isDisabled={isTransferDisabled}
+        tooltip={isTransferDisabled ? disabledReason : undefined}
         data-transfer-list-action="selected"
         onClick={() => removeOption(option, index)}
       />
@@ -923,23 +938,30 @@ export function TransferList<T extends string = string>({
 
   const dragPreviewPosition =
     reorderSession?.mode === 'pointer' &&
-    reorderSession.pointerClientX != null &&
     reorderSession.pointerClientY != null &&
-    reorderSession.pointerOffsetX != null &&
     reorderSession.pointerOffsetY != null &&
+    reorderSession.previewX != null &&
     reorderSession.previewWidth != null
       ? {
-          x: reorderSession.pointerClientX - reorderSession.pointerOffsetX,
+          x: reorderSession.previewX,
           y: reorderSession.pointerClientY - reorderSession.pointerOffsetY,
           width: reorderSession.previewWidth,
         }
       : null;
+  const dragPreviewPortalTarget =
+    typeof document === 'undefined'
+      ? null
+      : (rootRef.current?.closest<HTMLElement>('[popover], dialog[open]') ??
+        document.body);
 
   const reorderControl = (option: TransferListOption<T>) => {
-    if (!isReorderable || option.isDisabled) {
+    if (!isReorderable) {
       return undefined;
     }
     const active = reorderSession?.value === option.value;
+    const isReorderDisabled = option.isReorderDisabled === true;
+    const disabledReason =
+      option.disabledMessage ?? `${option.label} cannot be reordered`;
     return (
       <IconButton
         label={`Reorder ${option.label}`}
@@ -948,7 +970,13 @@ export function TransferList<T extends string = string>({
         icon={<GripVertical size={16} strokeWidth={1.5} aria-hidden />}
         size="sm"
         variant="ghost"
-        xstyle={[reorderStyles.handle, active && reorderStyles.handleActive]}
+        isDisabled={isReorderDisabled}
+        tooltip={isReorderDisabled ? disabledReason : undefined}
+        xstyle={[
+          styles.reorderHandle,
+          reorderStyles.handle,
+          active && reorderStyles.handleActive,
+        ]}
         onClick={() => handleReorderClick(option)}
         onKeyDown={event => handleReorderKeyDown(event, option)}
         onPointerDown={event => handlePointerDown(event, option)}
@@ -1001,8 +1029,6 @@ export function TransferList<T extends string = string>({
         endContent={optionActions(option, side, index)}
         xstyle={[
           styles.item,
-          side === 'selected' &&
-            dynamicStyles.rowTransition(transitionName(labelId, option.value)),
           active && reorderSession?.mode === 'keyboard' && styles.draggingItem,
           isPointerSource && reorderStyles.source,
           dropPosition === 'before' && reorderStyles.dropBefore,
@@ -1016,11 +1042,12 @@ export function TransferList<T extends string = string>({
         }
         {...themeProps('transfer-list-item', {
           side,
-          state: option.isDisabled
-            ? 'disabled'
-            : active
-              ? 'reordering'
-              : 'enabled',
+          state:
+            option.isTransferDisabled || option.isReorderDisabled
+              ? 'disabled'
+              : active
+                ? 'reordering'
+                : 'enabled',
         })}
       />
     );
@@ -1059,26 +1086,21 @@ export function TransferList<T extends string = string>({
         )}
       </div>
 
-      {(hasSearch || onReset != null) && (
+      {hasSearch && (
         <div {...stylex.props(styles.controls)}>
-          {hasSearch && (
-            <TextInput
-              ref={searchRef}
-              role="searchbox"
-              label={searchLabel ?? `Search ${label}`}
-              isLabelHidden
-              value={query}
-              placeholder={searchPlaceholder}
-              startIcon={<Icon icon="search" size="sm" color="secondary" />}
-              hasClear
-              width="100%"
-              xstyle={styles.search}
-              onChange={handleSearch}
-            />
-          )}
-          {onReset != null && (
-            <Button label="Reset" size="sm" variant="ghost" onClick={onReset} />
-          )}
+          <TextInput
+            ref={searchRef}
+            role="searchbox"
+            label={searchLabel ?? `Search ${label}`}
+            isLabelHidden
+            value={query}
+            placeholder={searchPlaceholder}
+            startIcon={<Icon icon="search" size="sm" color="secondary" />}
+            hasClear
+            width="100%"
+            xstyle={styles.search}
+            onChange={handleSearch}
+          />
         </div>
       )}
 
@@ -1102,7 +1124,7 @@ export function TransferList<T extends string = string>({
             stylex.props(styles.panel),
           )}>
           <div {...stylex.props(styles.panelHeader)}>
-            <Text id={selectedHeadingId} type="label">
+            <Text id={selectedHeadingId} type="label" color="secondary">
               {selectedLabel}
             </Text>
             {hasClear && (
@@ -1114,14 +1136,17 @@ export function TransferList<T extends string = string>({
                 data-transfer-list-header-action="true"
                 isDisabled={
                   !value.some(
-                    optionValue => !optionByValue.get(optionValue)?.isDisabled,
+                    optionValue =>
+                      !optionByValue.get(optionValue)?.isTransferDisabled,
                   )
                 }
                 onClick={clearSelected}
               />
             )}
           </div>
-          <div {...stylex.props(styles.panelBody)}>
+          <div
+            data-transfer-list-panel-body="selected"
+            {...stylex.props(styles.panelBody)}>
             {selectedOptions.length > 0 ? (
               <List
                 density="compact"
@@ -1131,7 +1156,9 @@ export function TransferList<T extends string = string>({
                 )}
               </List>
             ) : (
-              <div {...stylex.props(styles.empty)}>
+              <div
+                data-transfer-list-empty="selected"
+                {...stylex.props(styles.empty)}>
                 <Text type="supporting" color="secondary">
                   {normalizedQuery === '' ? selectedEmptyText : noResultsText}
                 </Text>
@@ -1150,7 +1177,7 @@ export function TransferList<T extends string = string>({
             stylex.props(styles.panel, styles.panelDivider),
           )}>
           <div {...stylex.props(styles.panelHeader)}>
-            <Text id={availableHeadingId} type="label">
+            <Text id={availableHeadingId} type="label" color="secondary">
               {availableLabel}
             </Text>
             {hasSelectAll && (
@@ -1163,7 +1190,7 @@ export function TransferList<T extends string = string>({
                 isDisabled={
                   !options.some(
                     option =>
-                      !option.isDisabled &&
+                      !option.isTransferDisabled &&
                       !currentValueRef.current.includes(option.value),
                   )
                 }
@@ -1171,7 +1198,9 @@ export function TransferList<T extends string = string>({
               />
             )}
           </div>
-          <div {...stylex.props(styles.panelBody)}>
+          <div
+            data-transfer-list-panel-body="available"
+            {...stylex.props(styles.panelBody)}>
             {availableOptions.length > 0 ? (
               <List
                 density="compact"
@@ -1182,7 +1211,7 @@ export function TransferList<T extends string = string>({
                       <li
                         role="presentation"
                         {...stylex.props(styles.groupHeading)}>
-                        <Text type="supporting" weight="semibold">
+                        <Text type="body" weight="bold" color="primary">
                           {group || 'Other'}
                         </Text>
                       </li>
@@ -1198,7 +1227,9 @@ export function TransferList<T extends string = string>({
                 ))}
               </List>
             ) : (
-              <div {...stylex.props(styles.empty)}>
+              <div
+                data-transfer-list-empty="available"
+                {...stylex.props(styles.empty)}>
                 <Text type="supporting" color="secondary">
                   {normalizedQuery === '' ? availableEmptyText : noResultsText}
                 </Text>
@@ -1207,7 +1238,7 @@ export function TransferList<T extends string = string>({
           </div>
         </div>
       </div>
-      {dragPreviewPosition != null && typeof document !== 'undefined'
+      {dragPreviewPosition != null && dragPreviewPortalTarget != null
         ? createPortal(
             <div
               ref={dragPreviewRef}
@@ -1223,7 +1254,7 @@ export function TransferList<T extends string = string>({
                 ),
               )}
             />,
-            document.body,
+            dragPreviewPortalTarget,
           )
         : null}
     </div>
