@@ -337,6 +337,21 @@ export interface AvatarProps extends BaseProps<HTMLDivElement> {
   onClick?: React.MouseEventHandler<HTMLElement>;
 }
 
+// Guarded like this repo's other newer-API checks (scheduler.yield, checkVisibility, showPopover).
+const graphemeSegmenter =
+  typeof Intl.Segmenter === 'function'
+    ? new Intl.Segmenter(undefined, {granularity: 'grapheme'})
+    : null;
+
+// First grapheme cluster of a string; falls back to codepoint iteration without Intl.Segmenter.
+function firstGrapheme(word: string): string {
+  if (graphemeSegmenter) {
+    const {value} = graphemeSegmenter.segment(word)[Symbol.iterator]().next();
+    return value?.segment ?? '';
+  }
+  return [...word][0] ?? '';
+}
+
 /**
  * Generates initials from a name string.
  * Takes the first letter of the first two words.
@@ -352,9 +367,11 @@ function getInitials(name: string): string {
     return '';
   }
   if (words.length === 1) {
-    return words[0].charAt(0).toUpperCase();
+    return firstGrapheme(words[0]).toUpperCase();
   }
-  return (words[0].charAt(0) + words[words.length - 1].charAt(0)).toUpperCase();
+  return (
+    firstGrapheme(words[0]) + firstGrapheme(words[words.length - 1])
+  ).toUpperCase();
 }
 
 /**
