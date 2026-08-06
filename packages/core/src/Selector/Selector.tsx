@@ -31,6 +31,7 @@ import * as stylex from '@stylexjs/stylex';
 import {usePopover} from '../Popover/usePopover';
 import {useTooltip} from '../Tooltip';
 import {Icon, renderIconSlot, type IconType} from '../Icon';
+import {SelectionIndicator} from '../Indicator';
 import type {IconName} from '../Icon';
 import {
   Field,
@@ -1043,14 +1044,21 @@ export function Selector<T extends SelectorOptionType>(
               <DefaultOption option={item} />
             )}
           </span>
-          {isSelected && (
-            <Icon
-              icon="selector-selected-option"
-              fallbackIcon="check"
-              size="sm"
-              color="accent"
-            />
-          )}
+          {/*
+            Rendered in every state, not just when selected: a theme can map
+            this slot to an indicator (a radio, say), and an unselected radio
+            still draws an empty circle. The icon form keeps the default
+            behavior of marking only the selected option.
+          */}
+          <SelectionIndicator
+            slot="selector-selected-option"
+            fallback="check"
+            state={isSelected ? 'checked' : 'unchecked'}
+            isDisabled={item.disabled}
+            iconSize="sm"
+            iconColor="accent"
+            indicatorSize="sm"
+          />
         </div>
       );
     },

@@ -13,6 +13,7 @@
 import type {ReactNode} from 'react';
 import {defaultIcons} from './defaultIcons';
 import type {DefinedTheme} from '../theme/defineTheme';
+import type {IndicatorName} from '../Indicator/types';
 import {getRegisteredTheme} from '../theme/themeRegistry';
 import {warnOnce} from '../utils/devWarning';
 
@@ -80,9 +81,72 @@ export interface ComponentIconSlotMap {
 }
 
 export type ComponentIconSlotName = keyof ComponentIconSlotMap & string;
+
+/**
+ * The subset of {@link ComponentIconSlotMap} slots that also accept a stateful
+ * indicator (a checkbox or radio visual) instead of a static glyph.
+ *
+ * A slot may be declared here **only** if its component renders the slot
+ * through `<SelectionIndicator>`: an indicator draws in every state (an
+ * unselected radio is an empty circle), so the component has to render the
+ * slot unconditionally and pass the current state, rather than rendering an
+ * icon only while selected. Slots consumed with `useIcon()` / `<Icon>` can't
+ * express that and stay icon-only.
+ *
+ * External packages add their own with module augmentation:
+ *
+ * ```ts
+ * declare module '@astryxdesign/core/Icon' {
+ *   interface ComponentIconSlotMap { 'my-list-selected': true }
+ *   interface ComponentIndicatorSlotMap { 'my-list-selected': true }
+ * }
+ * ```
+ */
+export interface ComponentIndicatorSlotMap {
+  'selector-selected-option': true;
+}
+
+export type ComponentIndicatorSlotName = keyof ComponentIndicatorSlotMap &
+  string;
+
+/**
+ * A reference to a named indicator from `defineTheme({indicators})`, usable as
+ * the value of an indicator-capable component icon slot.
+ */
+export interface ComponentIndicatorRef {
+  indicator: IndicatorName;
+}
+
+/**
+ * Theme mappings for component icon slots.
+ *
+ * Plain icon slots take a global icon name or `null` (render nothing).
+ * Indicator-capable slots additionally take `{indicator: name}`, which swaps
+ * the static glyph for a stateful indicator that renders in every state.
+ */
 export type ComponentIconMap = Partial<
-  Record<ComponentIconSlotName, IconName | null>
->;
+  Record<
+    Exclude<ComponentIconSlotName, ComponentIndicatorSlotName>,
+    IconName | null
+  >
+> &
+  Partial<
+    Record<
+      ComponentIndicatorSlotName,
+      IconName | ComponentIndicatorRef | null
+    >
+  >;
+
+/** Narrow a slot mapping to an indicator reference. */
+export function isComponentIndicatorRef(
+  value: unknown,
+): value is ComponentIndicatorRef {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof (value as ComponentIndicatorRef).indicator === 'string'
+  );
+}
 
 export type IconRegistrySource = DefinedTheme | string | null | undefined;
 
@@ -227,6 +291,22 @@ export function getExtendedIcon(
 }
 
 /**
+ * Read a component icon slot's raw theme mapping.
+ *
+ * `undefined` means the theme did not map the slot (use the component
+ * default), `null` means "render nothing", a string is a global icon name, and
+ * an object is an {@link ComponentIndicatorRef}.
+ */
+export function getComponentIconMapping(
+  slot: ComponentIconSlotName,
+  source?: IconRegistrySource,
+): IconName | ComponentIndicatorRef | null | undefined {
+  return getTheme(source)?.componentIcons?.[
+    slot as ComponentIndicatorSlotName
+  ];
+}
+
+/**
  * Resolve a component-specific semantic slot to a concrete icon name.
  *
  * The mapping is theme-scoped: `componentIcons[slot]` chooses which global icon
@@ -238,10 +318,23 @@ export function getComponentIconName(
   fallback: IconName | null,
   source?: IconRegistrySource,
 ): IconName | null {
-  const theme = getTheme(source);
-  const mapped = theme?.componentIcons?.[slot];
+  const mapped = getComponentIconMapping(slot, source);
 
   if (mapped === undefined) {
+    return fallback;
+  }
+
+  // An indicator mapping only renders through <SelectionIndicator>. Reaching
+  // an icon-only consumer means the slot isn't indicator-capable (a type error
+  // at authoring time), so keep the component default rather than dropping the
+  // affordance entirely.
+  if (isComponentIndicatorRef(mapped)) {
+    warnOnce(
+      `icon-registry:indicator-on-icon-slot:${slot}`,
+      'Icon',
+      `componentIcons['${slot}'] maps to an indicator, but this slot renders a static icon. ` +
+        'Only indicator-capable slots support {indicator}; falling back to the component default.',
+    );
     return fallback;
   }
 

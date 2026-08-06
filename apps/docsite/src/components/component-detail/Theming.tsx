@@ -173,6 +173,7 @@ interface IconSlotDoc {
   slot: string;
   default: string | null;
   description: string;
+  indicators?: boolean;
 }
 
 interface IconSlotsTableProps {
@@ -195,6 +196,11 @@ function IconSlotsTable({icons}: IconSlotsTableProps) {
               <Text type="code" color="secondary">
                 {icon.default ?? 'none'}
               </Text>
+              {icon.indicators && (
+                <Text type="body" color="secondary">
+                  Also accepts an indicator
+                </Text>
+              )}
               <MarkdownText type="body" color="secondary">
                 {icon.description}
               </MarkdownText>
@@ -208,6 +214,7 @@ function IconSlotsTable({icons}: IconSlotsTableProps) {
   const data = icons.map(icon => ({
     slot: icon.slot as unknown,
     fallback: (icon.default ?? 'none') as unknown,
+    indicators: (icon.indicators ? 'yes' : 'no') as unknown,
     description: icon.description as unknown,
   })) as Record<string, unknown>[];
 
@@ -232,6 +239,16 @@ function IconSlotsTable({icons}: IconSlotsTableProps) {
           renderCell: (item: Record<string, unknown>) => (
             <Text type="code" color="secondary">
               {item.fallback as string}
+            </Text>
+          ),
+        },
+        {
+          key: 'indicators',
+          header: 'Accepts indicator',
+          width: pixel(150),
+          renderCell: (item: Record<string, unknown>) => (
+            <Text type="body" color="secondary">
+              {item.indicators as string}
             </Text>
           ),
         },
@@ -402,6 +419,9 @@ export function Theming({theming, props}: ThemingProps) {
               icon names with <Text type="code">defineTheme</Text>{' '}
               <Text type="code">componentIcons</Text>. Use{' '}
               <Text type="code">null</Text> to intentionally render no icon.
+              Slots that accept an indicator also take{' '}
+              <Text type="code">{"{indicator: 'radio'}"}</Text>, which swaps the
+              glyph for a stateful control visual that draws in every state.
             </Text>
             <IconSlotsTable icons={iconSlots} />
           </VStack>

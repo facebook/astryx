@@ -68,6 +68,7 @@ export * from './SelectableCard';
 export * from './Selector';
 export * from './MultiSelector';
 export * from './Icon';
+export * from './Indicator';
 export * from './InputGroup';
 export * from './Item';
 export * from './Text';

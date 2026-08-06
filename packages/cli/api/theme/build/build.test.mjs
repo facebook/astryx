@@ -114,6 +114,35 @@ describe('themeBuild() — receipt', () => {
   });
 
 
+  it('preserves an imported indicator registry in the built theme object', async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'brand-indicators.mjs'),
+      'export const brandIndicators = {radio: () => null};\n',
+    );
+    const themeFile = path.join(tmpDir, 'indicator-theme.mjs');
+    fs.writeFileSync(
+      themeFile,
+      `import { brandIndicators } from './brand-indicators.mjs';
+
+export default {
+        name: 'indicator-theme',
+        tokens: { '--color-bg': '#fff' },
+        indicators: brandIndicators,
+      };
+`,
+    );
+
+    const result = await themeBuild('indicator-theme.mjs', {}, {cwd: tmpDir});
+
+    expect(result?.type).toBe('theme.build');
+    const js = fs.readFileSync(path.join(tmpDir, 'indicator-theme.js'), 'utf-8');
+    // Indicators are components, so the built module re-imports the binding
+    // rather than trying to serialize it.
+    expect(js).toContain("import { brandIndicators } from './brand-indicators.mjs'");
+    expect(js).toContain('indicators: brandIndicators,');
+    expect(js).toContain('export { brandIndicators };');
+  });
+
   it('preserves component icon mappings in the built theme object', async () => {
     const themeFile = path.join(tmpDir, 'component-icons.mjs');
     fs.writeFileSync(

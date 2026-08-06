@@ -747,6 +747,7 @@ export interface ComponentIconSlotDoc {
   slot: string;
   default: string | null;
   description: string;
+  indicators?: boolean;
 }
 
 export interface ComponentVar {
