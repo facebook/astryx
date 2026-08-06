@@ -338,8 +338,7 @@ export interface AvatarProps extends BaseProps<HTMLDivElement> {
 }
 
 /**
- * Guarded like this repo's other newer-API checks (scheduler.yield,
- * checkVisibility, showPopover).
+ * Reuse a single segmenter when the runtime supports Intl.Segmenter.
  */
 const graphemeSegmenter =
   typeof Intl.Segmenter === 'function'
@@ -347,13 +346,13 @@ const graphemeSegmenter =
     : null;
 
 /**
- * First grapheme cluster of a string; falls back to codepoint iteration
- * without Intl.Segmenter.
+ * Return the first user-perceived character, with a code-point fallback.
  */
 function firstGrapheme(word: string): string {
   if (graphemeSegmenter) {
     return [...graphemeSegmenter.segment(word)][0]?.segment ?? '';
   }
+
   return [...word][0] ?? '';
 }
 
