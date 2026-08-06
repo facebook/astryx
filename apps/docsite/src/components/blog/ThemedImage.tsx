@@ -19,9 +19,10 @@
 
 'use client';
 
-import {useEffect, useState} from 'react';
+import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {useThemeMode} from '../../app/providers';
+import {blogDarkImages} from '../../generated/blogRegistry';
 
 const styles = stylex.create({
   image: {
@@ -84,34 +85,21 @@ export function ThemedImage({lightSrc, darkSrc, alt}: ThemedImageProps) {
 /**
  * Markdown image override for post bodies. Markdown carries a single `src`, so
  * we derive a candidate dark-mode variant by convention (`foo.png` ->
- * `foo.dark.png`) and only use it if that asset actually exists — probed once
- * on mount. This keeps ThemedImage's API explicit (lightSrc/darkSrc) while
- * letting plain-markdown posts opt into a dark variant just by dropping a
- * `*.dark.*` file next to the image. Posts with no dark variant (the common
- * case) render a single framed image with no broken-image risk.
+ * `foo.dark.png`) and use it only if that asset is in the build-time
+ * `blogDarkImages` manifest (scanned from public/blog by generate-data.mjs).
+ * This keeps ThemedImage's API explicit (lightSrc/darkSrc) while letting
+ * plain-markdown posts opt into a dark variant just by dropping a `*.dark.*`
+ * file next to the image — no runtime existence probe, no broken-image flash.
+ * Posts with no dark variant (the common case) render a single framed image.
  */
 export function MarkdownImage({src, alt}: {src: string; alt: string}) {
   const m = /^(.*)\.([a-zA-Z0-9]+)$/.exec(src);
   const candidate =
     m && !m[1].endsWith('.dark') ? `${m[1]}.dark.${m[2]}` : undefined;
-
-  const [darkSrc, setDarkSrc] = useState<string | undefined>(undefined);
-  useEffect(() => {
-    if (candidate == null) {
-      return;
-    }
-    let active = true;
-    const probe = new Image();
-    probe.onload = () => {
-      if (active) {
-        setDarkSrc(candidate);
-      }
-    };
-    probe.src = candidate;
-    return () => {
-      active = false;
-    };
-  }, [candidate]);
+  const darkSrc =
+    candidate != null && blogDarkImages.includes(candidate)
+      ? candidate
+      : undefined;
 
   return <ThemedImage lightSrc={src} darkSrc={darkSrc} alt={alt} />;
 }
