@@ -62,6 +62,17 @@ const menuItemStyles = stylex.create({
     opacity: 0.5,
     cursor: 'not-allowed',
   },
+  destructive: {
+    // Recolor the label/description via the Item custom properties, and tint
+    // the focus/hover background with the error color instead of the neutral
+    // overlay. Semantic error tokens keep it theme-aware.
+    '--_item-label-color': colorVars['--color-error'],
+    '--_item-description-color': colorVars['--color-error'],
+    backgroundColor: {
+      default: 'transparent',
+      ':focus': colorVars['--color-error-muted'],
+    },
+  },
 });
 
 const itemSizeStyles = stylex.create({
@@ -91,6 +102,11 @@ export interface DropdownMenuItemProps extends Pick<
   isDisabled?: boolean;
   /** Additional content to render after the label/description. */
   endContent?: ReactNode;
+  /**
+   * Visual variant. `'destructive'` renders the label, description, and icon in
+   * the error color for dangerous actions (e.g. Delete). @default 'default'
+   */
+  variant?: 'default' | 'destructive';
 }
 
 /**
@@ -103,7 +119,7 @@ export interface DropdownMenuItemProps extends Pick<
  * ```
  * <DropdownMenu button={{ label: 'Actions' }}>
  *   <DropdownMenuItem icon={PencilIcon} label="Edit" onClick={handleEdit} />
- *   <DropdownMenuItem label="Delete" endContent={<Badge label="⌘D" />} onClick={handleDelete} />
+ *   <DropdownMenuItem label="Delete" variant="destructive" onClick={handleDelete} />
  * </DropdownMenu>
  * ```
  */
@@ -114,6 +130,7 @@ export function DropdownMenuItem({
   onClick,
   isDisabled = false,
   endContent,
+  variant = 'default',
   xstyle,
   className,
   style,
@@ -134,6 +151,8 @@ export function DropdownMenuItem({
     [isDisabled],
   );
 
+  const isDestructive = variant === 'destructive';
+
   return (
     <Item
       role="menuitem"
@@ -141,7 +160,10 @@ export function DropdownMenuItem({
       onPointerMove={handlePointerMove}
       startContent={
         icon
-          ? renderIconSlot(icon, {size: 'sm', color: 'secondary'})
+          ? renderIconSlot(icon, {
+              size: 'sm',
+              color: isDestructive ? 'error' : 'secondary',
+            })
           : undefined
       }
       label={label}
@@ -152,13 +174,20 @@ export function DropdownMenuItem({
       xstyle={[
         menuItemStyles.root,
         itemSizeStyles[menuSize],
+        isDestructive && menuItemStyles.destructive,
         isDisabled && menuItemStyles.disabled,
         xstyle,
       ]}
-      {...mergeProps(themeProps('dropdown-menu-item', {size: menuSize}), {
-        className,
-        style,
-      })}
+      {...mergeProps(
+        themeProps('dropdown-menu-item', {
+          size: menuSize,
+          variant: isDestructive ? 'destructive' : null,
+        }),
+        {
+          className,
+          style,
+        },
+      )}
     />
   );
 }

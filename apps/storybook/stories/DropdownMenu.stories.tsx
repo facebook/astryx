@@ -180,6 +180,30 @@ export const WithDisabledItems: Story = {
   ),
 };
 
+export const DestructiveItem: Story = {
+  name: 'Destructive item',
+  render: () => (
+    <DropdownMenu
+      button={{label: 'Actions'}}
+      items={[
+        {label: 'Edit', onClick: () => console.log('Edit')},
+        {
+          label: 'Duplicate',
+          icon: 'copy',
+          onClick: () => console.log('Duplicate'),
+        },
+        {type: 'divider'},
+        {
+          label: 'Delete',
+          icon: 'close',
+          variant: 'destructive',
+          onClick: () => console.log('Delete'),
+        },
+      ]}
+    />
+  ),
+};
+
 // Controlled mode
 export const Controlled: Story = {
   render: () => {

@@ -537,6 +537,78 @@ describe('DropdownMenu theming slots', () => {
   });
 });
 
+describe('DropdownMenuItem destructive variant', () => {
+  it('marks a compound-mode item destructive via data-variant', () => {
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuItem
+          label="Delete"
+          variant="destructive"
+          onClick={() => {}}
+        />
+        <DropdownMenuItem label="Edit" onClick={() => {}} />
+      </DropdownMenu>,
+    );
+
+    const del = screen.getByRole('menuitem', {name: 'Delete', hidden: true});
+    const edit = screen.getByRole('menuitem', {name: 'Edit', hidden: true});
+    expect(del).toHaveAttribute('data-variant', 'destructive');
+    // Default items carry no variant attribute, so existing usage is unchanged.
+    expect(edit).not.toHaveAttribute('data-variant');
+  });
+
+  it('forwards variant from the data-driven items API', () => {
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        items={[
+          {label: 'Delete', variant: 'destructive', onClick: () => {}},
+          {label: 'Edit', onClick: () => {}},
+        ]}
+      />,
+    );
+
+    expect(
+      screen.getByRole('menuitem', {name: 'Delete', hidden: true}),
+    ).toHaveAttribute('data-variant', 'destructive');
+    expect(
+      screen.getByRole('menuitem', {name: 'Edit', hidden: true}),
+    ).not.toHaveAttribute('data-variant');
+  });
+
+  it('forwards variant to items nested inside a section', () => {
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        items={[
+          {
+            type: 'section',
+            title: 'Danger zone',
+            items: [
+              {label: 'Delete', variant: 'destructive', onClick: () => {}},
+            ],
+          },
+        ]}
+      />,
+    );
+
+    expect(
+      screen.getByRole('menuitem', {name: 'Delete', hidden: true}),
+    ).toHaveAttribute('data-variant', 'destructive');
+  });
+
+  it('defaults to no variant attribute', () => {
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuItem label="Edit" onClick={() => {}} />
+      </DropdownMenu>,
+    );
+    expect(
+      screen.getByRole('menuitem', {name: 'Edit', hidden: true}),
+    ).not.toHaveAttribute('data-variant');
+  });
+});
+
 describe('DropdownMenu button customization', () => {
   it('renders with different button variants', () => {
     const {rerender} = render(

@@ -32,7 +32,7 @@ export const docs = {
     {
       name: 'items',
       type: 'ContextMenuOption[]',
-      description: 'Array of menu entries. Each entry is one of: an action item `{label, onClick?, icon?, isDisabled?}`, a divider `{type: "divider"}`, or a section `{type: "section", title?, items: [...action items]}`.',
+      description: 'Array of menu entries. Each entry is one of: an action item `{label, onClick?, icon?, isDisabled?, variant?}` (variant `"destructive"` renders it in the error color), a divider `{type: "divider"}`, or a section `{type: "section", title?, items: [...action items]}`.',
       required: true,
     },
     {

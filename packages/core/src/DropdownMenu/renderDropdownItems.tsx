@@ -88,6 +88,7 @@ export function renderDropdownItems(items: DropdownMenuOption[]): ReactNode {
               label={item.label}
               onClick={item.onClick}
               isDisabled={item.isDisabled}
+              variant={item.variant}
             />
           ))}
         </div>,
@@ -116,6 +117,7 @@ export function renderDropdownItems(items: DropdownMenuOption[]): ReactNode {
             label={option.label}
             onClick={option.onClick}
             isDisabled={option.isDisabled}
+            variant={option.variant}
           />,
         );
       }
