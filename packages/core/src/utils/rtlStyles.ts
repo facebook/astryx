@@ -3,16 +3,18 @@
 /**
  * @file rtlStyles.ts
  * @input None
- * @output Shared StyleX style that horizontally mirrors an element under RTL
- * @position Core utility; applied to directional-icon wrappers in Calendar,
- *   Lightbox, and the Table expand/disclosure plugins
+ * @output Shared StyleX styles for RTL-safe mirroring and inline centering
+ * @position Core utility; applied to directional-icon wrappers throughout
+ *   navigation, disclosure, gallery, and table controls
  *
- * `mirror` flips its element on the horizontal axis only when an ancestor
- * carries `dir="rtl"`. Using `scaleX(-1)` (not `scale(-1, -1)`) keeps the
- * vertical axis intact, and applying it OUTSIDE any state-driven rotation lets
- * it compose correctly — e.g. a Table disclosure chevron still rotates to point
- * down when expanded under RTL. The `:is([dir="rtl"] *)` selector matches the
- * MobileNav drawer convention; a bare `direction: rtl` alone won't trigger it.
+ * `mirror` normalizes directional-icon wrappers to inline-flex so their SVGs
+ * are centered without inheriting a text baseline, then flips the wrapper on
+ * the horizontal axis only when an ancestor carries `dir="rtl"`. Using
+ * `scaleX(-1)` (not `scale(-1, -1)`) keeps the vertical axis intact, and
+ * applying it OUTSIDE any state-driven rotation lets it compose correctly —
+ * e.g. a Table disclosure chevron still rotates to point down when expanded
+ * under RTL. The `:is([dir="rtl"] *)` selector matches the MobileNav drawer
+ * convention; a bare `direction: rtl` alone won't trigger it.
  *
  * `centerInline(blockOffset?)` horizontally centers an absolutely-positioned,
  * auto-width element on the inline axis, correctly in BOTH LTR and RTL, with an
@@ -39,6 +41,9 @@ import * as stylex from '@stylexjs/stylex';
 
 export const rtlStyles = stylex.create({
   mirror: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
     transform: {default: null, ':is([dir="rtl"] *)': 'scaleX(-1)'},
   },
   centerInline: (blockOffset: string) => ({
