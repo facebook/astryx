@@ -348,8 +348,11 @@ export function generateCompressedIndex(version, {coreDir, invocation = getCliIn
   lines.push('RULES:');
   lines.push('- No <div> — components do all layout/spacing, page frame included.');
   lines.push('- Frame first: read `astryx docs layout` before writing any page or screen — page frame, region widths, breakpoint behavior.');
-  lines.push('- Dense data = rows (Table, List/Item) edge-to-edge — never Card-wrapped list items. Card = dashboard widgets, galleries, settings groups only.');
-  lines.push('- Status → StatusDot/Token; Badge only for counts and enumerated states, never decoration.');
+  // Card soup is the signature failure of generated UI, and this block is the
+  // only surface that's in context without a tool call — so the rule stays, but
+  // only as the mapping an agent can act on. The enumerated cases behind it live
+  // in `docs layout` (Cards vs Rows), cited above.
+  lines.push('- Dense data = rows (Table, List/Item), never Card-wrapped list items; Card is for standalone widgets. Status = StatusDot/Token; Badge = counts only.');
   // Styling guidance tailored to the project's configured system — never
   // recommend a path that isn't compiled here (xstyle needs the StyleX compiler;
   // utilities need Tailwind). Tokens are always the source of truth.
