@@ -30,7 +30,7 @@
  * ```
  */
 
-import type {IconRegistry} from '../Icon/globalIconRegistry';
+import type {ComponentIconMap, IconRegistry} from '../Icon/globalIconRegistry';
 import type {TypographyConfig, FontWeight} from './types';
 import {
   resolveOnMedia,
@@ -281,6 +281,11 @@ export interface DefineThemeInput {
   /** Icon registry — maps semantic icon names to React nodes */
   icons?: Partial<IconRegistry>;
   /**
+   * Component icon slot mappings — maps component-specific purposes to global
+   * semantic icon names. Use `null` to intentionally render no icon.
+   */
+  componentIcons?: ComponentIconMap;
+  /**
    * Default syntax highlighting theme for code components.
    * Sets --color-syntax-* tokens at the theme root. Can be overridden
    * per-region (or per-instance) by wrapping in SyntaxTheme.
@@ -329,6 +334,8 @@ export interface DefinedTheme {
   components?: ComponentStyleMap;
   /** Icon registry */
   icons?: Partial<IconRegistry>;
+  /** Component icon slot mappings */
+  componentIcons?: ComponentIconMap;
   /** Whether this theme has been pre-compiled by theme build CLI */
   __built?: true;
   /**
@@ -622,11 +629,19 @@ export function defineTheme(input: DefineThemeInput): DefinedTheme {
       ? {...base.icons, ...input.icons}
       : (input.icons ?? base?.icons);
 
+  // 6. Merge component icon mappings — input mappings override base mappings.
+  // `null` is an intentional override meaning “render no icon”.
+  const componentIcons =
+    input.componentIcons && base?.componentIcons
+      ? {...base.componentIcons, ...input.componentIcons}
+      : (input.componentIcons ?? base?.componentIcons);
+
   const theme: DefinedTheme = {
     name: input.name,
     tokens,
     components,
     icons,
+    componentIcons,
     __inputTokens: input.tokens,
     __onDark,
     __onLight,

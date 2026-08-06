@@ -70,6 +70,7 @@ export type {
   ComponentBestPractice,
   ComponentSlotElement,
   ComponentPlaygroundConfig,
+  ComponentIconSlotDoc,
   ComponentThemingTarget,
   ComponentThemingVar,
   ComponentThemingDerivedVar,

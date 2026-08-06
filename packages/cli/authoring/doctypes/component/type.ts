@@ -10,6 +10,7 @@ import type {
   ComponentExampleDoc,
   ComponentPlaygroundConfig,
   ComponentPropDoc,
+  ComponentIconSlotDoc,
   ComponentThemingDerivedVar,
   ComponentThemingTarget,
   ComponentThemingVar,
@@ -110,6 +111,8 @@ export interface ComponentBaseDoc {
     /** Selector targets rendered by this component.
      *  Each entry corresponds to an `themeProps()` call in the source. */
     targets: ComponentThemingTarget[];
+    /** Component-specific icon slots exposed for theme icon mapping. */
+    icons?: ComponentIconSlotDoc[];
     /** CSS custom properties exposed for theming. */
     vars?: ComponentThemingVar[];
     /** Maps standard CSS properties to internal vars for theme pipeline

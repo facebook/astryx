@@ -306,12 +306,6 @@ const styles = stylex.create({
     flex: 1,
     minWidth: 0,
   },
-  itemCheckmark: {
-    flexShrink: 0,
-    width: 16,
-    height: 16,
-    color: colorVars['--color-icon-primary'],
-  },
   itemHighlighted: {
     backgroundColor: colorVars['--color-overlay-hover'],
   },
@@ -1049,7 +1043,14 @@ export function Selector<T extends SelectorOptionType>(
               <DefaultOption option={item} />
             )}
           </span>
-          {isSelected && <Icon icon="check" size="sm" color="accent" />}
+          {isSelected && (
+            <Icon
+              icon="selector-selected-option"
+              fallbackIcon="check"
+              size="sm"
+              color="accent"
+            />
+          )}
         </div>
       );
     },

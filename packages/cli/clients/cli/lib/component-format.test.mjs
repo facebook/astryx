@@ -92,6 +92,31 @@ describe('formatFull theming override keys', () => {
     expect(out).not.toContain("'astryx-base-table': {");
     expect(out).not.toContain("'astryx-table-cell': {");
   });
+
+
+  it('prints component icon slots in theming docs', () => {
+    const docs = {
+      name: 'Selector',
+      description: 'A selector.',
+      theming: {
+        targets: [{className: 'astryx-selector'}],
+        icons: [
+          {
+            slot: 'selector-selected-option',
+            default: 'check',
+            description: 'Icon shown for the selected option.',
+          },
+        ],
+      },
+    };
+    const out = formatFull(docs);
+
+    expect(out).toContain('Component icon slots');
+    expect(out).toContain('`selector-selected-option`');
+    expect(out).toContain('`check`');
+    expect(out).toContain('defineTheme({ componentIcons })');
+  });
+
 });
 
 /** Pipes that actually separate cells — a `\|` is content, not a separator. */

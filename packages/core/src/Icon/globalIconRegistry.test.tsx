@@ -10,6 +10,8 @@ import {
   getIconRegistry,
   getIcon,
   getExtendedIcon,
+  getComponentIcon,
+  getComponentIconName,
   resetIcons,
 } from './globalIconRegistry';
 
@@ -115,6 +117,38 @@ describe('iconRegistry (global, RSC-compatible)', () => {
 
     expect(getIcon('close', theme)).toBe('global-close');
     expect(getIcon('check', theme)).toBe('theme-check');
+  });
+
+  it('resolves component icon slots from a registered theme name', () => {
+    defineTheme({
+      name: 'brand',
+      icons: {success: 'theme-success'},
+      componentIcons: {'selector-selected-option': 'success'},
+    });
+
+    expect(
+      getComponentIconName('selector-selected-option', 'check', 'brand'),
+    ).toBe('success');
+    expect(getComponentIcon('selector-selected-option', 'check', 'brand')).toBe(
+      'theme-success',
+    );
+  });
+
+  it('falls back for unmapped component icon slots and honors null mappings', () => {
+    const theme = defineTheme({
+      name: 'brand',
+      componentIcons: {'selector-selected-option': null},
+    });
+
+    expect(getComponentIconName('selector-selected-option', 'check')).toBe(
+      'check',
+    );
+    expect(
+      getComponentIconName('selector-selected-option', 'check', theme),
+    ).toBe(null);
+    expect(
+      getComponentIcon('selector-selected-option', 'check', theme),
+    ).toBeNull();
   });
 
   it('resetIcons clears the global registry', () => {

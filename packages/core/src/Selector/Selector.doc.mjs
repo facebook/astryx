@@ -29,6 +29,14 @@ export const docs = {
       {className: 'astryx-selector-clear-icon'},
       {className: 'astryx-selector-indicator-icon', states: ['state']},
     ],
+    icons: [
+      {
+        slot: 'selector-selected-option',
+        default: 'check',
+        description:
+          'Icon shown at the end of the currently selected option in the listbox. Map to another global icon name, or null to hide it.',
+      },
+    ],
   },
   description: 'Dropdown selector for choosing from a list of options.',
   props: [
