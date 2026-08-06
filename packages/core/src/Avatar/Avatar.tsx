@@ -31,6 +31,7 @@ import {AvatarSizeContext} from './AvatarSizeContext';
 import {useAvatarGroup} from '../AvatarGroup/AvatarGroupContext';
 import {mergeProps, mergeRefs} from '../utils';
 import {themeProps} from '../utils/themeProps';
+import {firstGrapheme} from '../utils/grapheme';
 import {useTooltip} from '../Tooltip/useTooltip';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
@@ -335,25 +336,6 @@ export interface AvatarProps extends BaseProps<HTMLDivElement> {
    * meaningful accessible name via `alt` or `name`.
    */
   onClick?: React.MouseEventHandler<HTMLElement>;
-}
-
-/**
- * Reuse a single segmenter when the runtime supports Intl.Segmenter.
- */
-const graphemeSegmenter =
-  typeof Intl.Segmenter === 'function'
-    ? new Intl.Segmenter(undefined, {granularity: 'grapheme'})
-    : null;
-
-/**
- * Return the first user-perceived character, with a code-point fallback.
- */
-function firstGrapheme(word: string): string {
-  if (graphemeSegmenter) {
-    return [...graphemeSegmenter.segment(word)][0]?.segment ?? '';
-  }
-
-  return [...word][0] ?? '';
 }
 
 /**

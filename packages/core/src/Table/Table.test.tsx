@@ -95,6 +95,12 @@ describe('columnUtils', () => {
     it('handles single character', () => {
       expect(capitalize('a')).toBe('A');
     });
+
+    it('uppercases an astral-plane letter without splitting it (#4759)', () => {
+      // Deseret 𐐨 (U+10428) uppercases to 𐐀 (U+10400); charAt(0) would grab
+      // half the surrogate pair and leave the string unchanged.
+      expect(capitalize('\u{10428}pple')).toBe('\u{10400}pple');
+    });
   });
 
   describe('generateColumns', () => {

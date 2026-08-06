@@ -54,6 +54,7 @@ import {formatFilterValue} from './formatFilterValue';
 import {PowerSearchEditPopover} from './PowerSearchEditPopover';
 import {resolveOperatorLabel} from './resolveOperatorLabel';
 import {themeProps} from '../utils/themeProps';
+import {truncateGraphemes} from '../utils/grapheme';
 import {useTranslator} from '../i18n';
 import type {
   PowerSearchConfig,
@@ -118,7 +119,9 @@ const resultCountStyles = stylex.create({
 });
 
 function truncateString(value: string, limit: number): string {
-  return value.length > limit + 3 ? value.slice(0, limit) + '...' : value;
+  // Same semantics as before — strings within limit + 3 pass through, longer
+  // ones cut to limit + '...' — but counted in graphemes, not code units.
+  return truncateGraphemes(value, limit + 3, '...');
 }
 
 function getEnumLabel(values: ReadonlyArray<EnumItem>, value: string): string {
