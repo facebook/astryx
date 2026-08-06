@@ -447,7 +447,19 @@ and the Design review section above), or to add `hidden: true` until it does.
   Flag an added wrapper when a lighter path exists:
   - _Styling:_ components extend `BaseProps` (they take `xstyle`), so apply style
     directly — `<Divider xstyle={hasOutline && styles.titleDivider} />` — instead
-    of wrapping the component in a styled `<div>`.
+    of wrapping the component in a styled `<div>`. This is the shape that shipped
+    the off-center pagination carets (#4752): the mirror span put an extra
+    element between the button's flex centering and the `Icon`, and moving the
+    same style onto `<Icon xstyle={rtlStyles.mirror} />` fixed it. `@astryx/no-style-only-wrapper`
+    reports the mechanical cases (a `div`/`span` whose only attributes are
+    styles, wrapping a single Astryx component); it is a warning while the
+    existing sites are migrated, so treat a **new** one as a review finding
+    rather than assuming lint blocks it. The wrapper is legitimate when it does
+    something the child cannot: establishing a flex/grid **container** (moving
+    `display: flex` onto the child would restyle the child's own content),
+    padding around the child's border box, or carrying semantics/behavior
+    (`role`, `aria-*`, a `ref`, an event handler). Say which one applies rather
+    than deleting the node reflexively.
   - _Behavior:_ reach for the behavior **hook** or **prop** the system already
     exposes rather than a wrapper component. E.g. a tooltip is available via the
     `tooltip` prop / `useTooltip` hook, and there are hooks for many behaviors
