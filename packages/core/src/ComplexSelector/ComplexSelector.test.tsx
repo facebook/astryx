@@ -105,17 +105,16 @@ describe('ComplexSelector', () => {
       />,
     );
 
-    await user.click(
-      screen.getByRole('button', {name: 'Fruit blend Apple Ripe'}),
-    );
+    await user.click(screen.getByRole('combobox'));
     await user.click(
       screen.getByRole('gridcell', {name: 'Banana Juicy', ...h}),
     );
 
     expect(onChange).toHaveBeenCalledWith({fruit: 'Banana', ripeness: 'Juicy'});
-    expect(
-      screen.getByRole('button', {name: 'Fruit blend Apple Ripe'}),
-    ).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByRole('combobox')).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
   });
 
   it('gives the popup clearance on both block edges, not just the leading one (#4803)', async () => {
@@ -126,7 +125,7 @@ describe('ComplexSelector', () => {
         onChange={() => {}}
       />,
     );
-    await user.click(screen.getByRole('button', {name: 'Fruit blend'}));
+    await user.click(screen.getByRole('combobox'));
     const popup = document.querySelector('[popover]') as HTMLElement;
     expect(popup).not.toBeNull();
     const style = getComputedStyle(popup);
@@ -156,9 +155,7 @@ describe('ComplexSelector', () => {
       />,
     );
 
-    await user.click(
-      screen.getByRole('button', {name: 'Fruit blend Apple Ripe'}),
-    );
+    await user.click(screen.getByRole('combobox'));
     await user.click(
       screen.getByRole('gridcell', {name: 'Banana Crisp', ...h}),
     );
@@ -185,7 +182,7 @@ describe('ComplexSelector', () => {
       </ComplexSelector>,
     );
 
-    const trigger = screen.getByRole('button', {name: 'Fruit blend Apple'});
+    const trigger = screen.getByRole('combobox');
     await user.click(trigger);
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
 
@@ -225,28 +222,31 @@ function wrapperOf(container: HTMLElement): HTMLElement {
 }
 
 describe('ComplexSelector hardening (#4710)', () => {
-  describe('trigger accessible name', () => {
-    it('announces the current value after the label', () => {
+  describe('trigger value announcement', () => {
+    it('exposes the current value through the combobox value slot', () => {
       render(
         <FruitComplexSelector
           value={{fruit: 'Apple', ripeness: 'Ripe'}}
           onChange={vi.fn()}
         />,
       );
-      expect(
-        screen.getByRole('button', {name: 'Fruit blend Apple Ripe'}),
-      ).toBeInTheDocument();
+      // role=combobox reads its value from the element contents — the same
+      // mechanism Selector and MultiSelector use. The accessible name stays
+      // the label alone, where aria-required/aria-invalid are also valid.
+      const trigger = screen.getByRole('combobox', {name: 'Fruit blend'});
+      expect(trigger).toHaveTextContent('Apple Ripe');
+      expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
     });
 
-    it('announces the placeholder when no value is selected', () => {
+    it('exposes the placeholder as the value when nothing is selected', () => {
       render(
         <ComplexSelector label="Fruit blend" value={null}>
           {() => <div>content</div>}
         </ComplexSelector>,
       );
       expect(
-        screen.getByRole('button', {name: 'Fruit blend Select…'}),
-      ).toBeInTheDocument();
+        screen.getByRole('combobox', {name: 'Fruit blend'}),
+      ).toHaveTextContent('Select…');
     });
   });
 
@@ -259,7 +259,7 @@ describe('ComplexSelector hardening (#4710)', () => {
           onChange={vi.fn()}
         />,
       );
-      const trigger = screen.getByRole('button', {name: /Fruit blend/});
+      const trigger = screen.getByRole('combobox');
       trigger.focus();
       await user.keyboard('{ArrowDown}');
       expect(trigger).toHaveAttribute('aria-expanded', 'true');
@@ -273,7 +273,7 @@ describe('ComplexSelector hardening (#4710)', () => {
           onChange={vi.fn()}
         />,
       );
-      const trigger = screen.getByRole('button', {name: /Fruit blend/});
+      const trigger = screen.getByRole('combobox');
       trigger.focus();
       await user.keyboard('{ArrowUp}');
       expect(trigger).toHaveAttribute('aria-expanded', 'true');
@@ -287,7 +287,7 @@ describe('ComplexSelector hardening (#4710)', () => {
           onChange={vi.fn()}
         />,
       );
-      const trigger = screen.getByRole('button', {name: /Fruit blend/});
+      const trigger = screen.getByRole('combobox');
       await user.click(trigger);
       expect(trigger).toHaveAttribute('aria-expanded', 'true');
       // The dialog auto-focuses its first element on the next animation
@@ -428,7 +428,7 @@ describe('ComplexSelector hardening (#4710)', () => {
           {() => <div>content</div>}
         </ComplexSelector>,
       );
-      const trigger = screen.getByRole('button', {name: /Fruit blend/});
+      const trigger = screen.getByRole('combobox');
       const statusButton = screen.getByRole('button', {name: 'Error details'});
       const tooltipId = statusButton.getAttribute('aria-describedby');
       expect(tooltipId).toBeTruthy();
@@ -447,7 +447,7 @@ describe('ComplexSelector hardening (#4710)', () => {
           {() => <div>content</div>}
         </ComplexSelector>,
       );
-      expect(screen.getByRole('button', {name: /Fruit blend/})).toHaveAttribute(
+      expect(screen.getByRole('combobox')).toHaveAttribute(
         'aria-invalid',
         'true',
       );
@@ -460,9 +460,7 @@ describe('ComplexSelector hardening (#4710)', () => {
           {() => <div>content</div>}
         </ComplexSelector>,
       );
-      expect(
-        screen.getByRole('button', {name: /Fruit blend/}),
-      ).not.toHaveAttribute('aria-invalid');
+      expect(screen.getByRole('combobox')).not.toHaveAttribute('aria-invalid');
     });
   });
 
@@ -526,9 +524,7 @@ describe('ComplexSelector hardening (#4710)', () => {
           </ComplexSelector>
         </InternationalizationProvider>,
       );
-      expect(
-        screen.getByRole('button', {name: /Pick something…/}),
-      ).toBeInTheDocument();
+      expect(screen.getByRole('combobox')).toHaveTextContent('Pick something…');
     });
   });
 
@@ -560,7 +556,7 @@ describe('ComplexSelector hardening (#4710)', () => {
           {() => <div>content</div>}
         </ComplexSelector>,
       );
-      const trigger = screen.getByRole('button', {name: /Fruit blend/});
+      const trigger = screen.getByRole('combobox');
       expect(trigger).toBeDisabled();
       await user.click(trigger.parentElement as HTMLElement);
       expect(trigger).toHaveAttribute('aria-expanded', 'false');
@@ -576,10 +572,7 @@ describe('ComplexSelector hardening (#4710)', () => {
           {() => <div>content</div>}
         </ComplexSelector>,
       );
-      expect(screen.getByRole('button', {name: /Fruit blend/})).toHaveAttribute(
-        'aria-busy',
-        'true',
-      );
+      expect(screen.getByRole('combobox')).toHaveAttribute('aria-busy', 'true');
       expect(container.querySelector('.astryx-spinner')).not.toBeNull();
     });
 
@@ -596,7 +589,7 @@ describe('ComplexSelector hardening (#4710)', () => {
           {() => <div>content</div>}
         </ComplexSelector>,
       );
-      const trigger = screen.getByRole('button', {name: /Fruit blend/});
+      const trigger = screen.getByRole('combobox');
       expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
       expect(trigger).toHaveAttribute('aria-required', 'true');
 
@@ -625,7 +618,7 @@ describe('ComplexSelector hardening (#4710)', () => {
         '.astryx-complex-selector-indicator-icon',
       );
       expect(indicator).toHaveAttribute('data-state', 'collapsed');
-      await user.click(screen.getByRole('button', {name: /Fruit blend/}));
+      await user.click(screen.getByRole('combobox'));
       expect(indicator).toHaveAttribute('data-state', 'expanded');
     });
 
@@ -656,7 +649,7 @@ describe('ComplexSelector hardening (#4710)', () => {
         </ComplexSelector>,
       );
 
-      await user.click(screen.getByRole('button', {name: /Fruit blend/}));
+      await user.click(screen.getByRole('combobox'));
       await user.click(
         screen.getByRole('button', {name: 'Choose Banana', ...h}),
       );

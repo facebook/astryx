@@ -336,7 +336,6 @@ export function ComplexSelector<Value>({
 
   const triggerId = useId();
   const labelId = useId();
-  const valueId = useId();
   const contentId = useId();
   const descriptionId = useId();
   const statusMessageId = useId();
@@ -433,15 +432,17 @@ export function ComplexSelector<Value>({
         <button
           id={triggerId}
           type="button"
+          // A combobox may open a dialog popup (aria-haspopup="dialog").
+          // The role gives the trigger a value slot — screen readers read
+          // the current selection from the element contents, the same
+          // mechanism Selector/MultiSelector use — and makes aria-required
+          // and aria-invalid valid, which a plain button role does not.
+          role="combobox"
           aria-haspopup="dialog"
           aria-expanded={popover.isOpen}
           aria-controls={contentId}
           aria-describedby={ariaDescribedBy}
-          // The label alone would override the button's content in the
-          // accessible name, so the value span is referenced too — a plain
-          // button has no combobox value slot for screen readers to read the
-          // current selection from.
-          aria-labelledby={`${labelId} ${valueId}`}
+          aria-labelledby={labelId}
           aria-required={isRequired ? 'true' : undefined}
           aria-invalid={status?.type === 'error' ? 'true' : undefined}
           aria-busy={isBusy || undefined}
@@ -457,9 +458,7 @@ export function ComplexSelector<Value>({
             }
           }}
           {...stylex.props(styles.trigger)}>
-          <span id={valueId} {...stylex.props(styles.triggerText)}>
-            {triggerContent}
-          </span>
+          <span {...stylex.props(styles.triggerText)}>{triggerContent}</span>
         </button>
         {isBusy && <Spinner size="sm" />}
         {/*
