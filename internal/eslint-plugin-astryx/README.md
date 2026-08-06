@@ -183,3 +183,37 @@ export function Badge({label}) {
 - If the component legitimately needs client behavior, remove it from the presentational list
 
 See: https://github.com/facebook/astryx/issues/493
+
+### `@astryx/no-nullish-jsx-guard`
+
+Flags a bare nullish check (`!= null`, `!== null`, `!== undefined`) used as a JSX render guard for a value that is then rendered as a child. `!= null` only rejects `null`/`undefined`, but React also renders nothing for `false`, `true`, and `''` — all of which pass a `!= null` guard and leak an empty wrapper element into the DOM. Use `isRenderable(value)` from `@astryxdesign/core/utils` instead (it also excludes boolean and empty-string values; `0` stays renderable).
+
+**Scope (deliberately conservative):** only flags when both (1) the guard renders JSX and (2) the guarded value is rendered as a JSX _child_ of that branch. A value used only as a prop (`{user != null && <Profile user={user} />}`) is **not** flagged, since it is a data object, not a rendered slot.
+
+**Bad:**
+
+```tsx
+{
+  sideNav != null && <aside>{sideNav}</aside>;
+}
+{
+  label != null ? <span>{label}</span> : null;
+}
+```
+
+**Good:**
+
+```tsx
+import {isRenderable} from '@astryxdesign/core/utils';
+
+{
+  isRenderable(sideNav) && <aside>{sideNav}</aside>;
+}
+{
+  isRenderable(label) ? <span>{label}</span> : null;
+}
+```
+
+Ships as a **warning in both tiers** while core migrates its existing call sites; promote to `error` in strict mode once migrated. Provides an ESLint suggestion that rewrites the comparison to `isRenderable(value)` (add the import manually).
+
+See: https://github.com/facebook/astryx/issues/2538
