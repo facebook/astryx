@@ -105,8 +105,8 @@ export interface DropdownMenuItemData {
   isDisabled?: boolean;
   icon?: ReactNode | IconType;
   /**
-   * Visual variant. `'destructive'` renders the item in the error color for
-   * dangerous actions (e.g. Delete). Ignored for submenu rows. @default 'default'
+   * Visual variant for a leaf item. `'destructive'` renders it in the error
+   * color for dangerous actions (e.g. Delete). @default 'default'
    */
   variant?: 'default' | 'destructive';
   /**
