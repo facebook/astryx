@@ -33,6 +33,9 @@ export const docs = {
       {className: 'astryx-avatar-status-dot', visualProps: ['variant']},
       {className: 'astryx-avatar-status-dot-glyph', visualProps: ['shape']},
     ],
+    vars: [
+      {name: '--_avatar-group-overlap', description: 'Negative inline offset applied to every avatar after the first when avatars are stacked in an AvatarGroup. Set from the group size; a more negative value tightens the stack.', default: 'set at runtime from the group avatar size (px)', private: true},
+    ],
   },
   description: 'Displays a user avatar with image, initials fallback, and optional status indicator.',
   props: [
