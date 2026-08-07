@@ -417,14 +417,30 @@ async function autoPositionalMirror(page, port, storyId, component) {
   await settle(page);
   const revealedL = PM_REVEAL ? await revealInteractionGated(page) : false;
   const ltr = await detectPositioned(page);
+
+  // Short-circuit before the RTL navigation: with no LTR candidate there is
+  // nothing to measure an RTL center against, so the second load can't change
+  // the verdict. Most stories have zero candidates, so this is most of D5's
+  // cost. Checking `ltr && rtl` here instead would report a vacuous "pass" —
+  // the compare loop runs min(ltr, rtl) = 0 times and never sets anyFail.
+  if (ltr.length === 0) {
+    if (revealedL) card.notes.push('opened an interaction-gated surface before scanning');
+    card.notes.push('no logical-anchor + physical-transform candidates in LTR');
+    return card;
+  }
+
   await page.goto(storyUrl(port, storyId, true), {waitUntil: 'domcontentloaded'});
   await settle(page);
   const revealedR = PM_REVEAL ? await revealInteractionGated(page) : false;
   const rtl = await detectPositioned(page);
   if (revealedL || revealedR) card.notes.push('opened an interaction-gated surface before scanning');
 
-  if (ltr.length === 0 && rtl.length === 0) {
-    card.notes.push('no logical-anchor + physical-transform candidates');
+  // Same reasoning in the other direction: zero comparisons is not a pass.
+  if (rtl.length === 0) {
+    card.candidates = ltr.length;
+    card.notes.push(
+      `${ltr.length} candidate(s) in LTR but none in RTL — nothing to compare (not evaluated)`,
+    );
     return card;
   }
   card.candidates = Math.max(ltr.length, rtl.length);

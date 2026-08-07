@@ -453,6 +453,14 @@ When the audit reports baseline entries as "resolved", delete them from
 > component is accessible — keyboard flows, focus order, screen-reader
 > semantics, and contrast in context still need manual checks.
 
+### RTL audits
+
+PRs that touch components also run an RTL audit (`pr-rtl`), scoped to the
+changed components like `pr-a11y`. It is soft-gated — findings show in the job
+summary but don't block. Repro locally with `pnpm rtl:audit -- --filter Avatar`
+(the `--` matters: `pnpm -F` is itself `--filter`). See
+`apps/storybook/rtl-audit/README.md`.
+
 ## Versioning & Releases
 
 We use [Changesets](https://github.com/changesets/changesets) for versioning, with a thin Astryx layer on top so changelogs stay categorized, contributor-attributed, and aligned with our pre-1.0 conventions.
