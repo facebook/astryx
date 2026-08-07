@@ -14,4 +14,5 @@ export {
   type ComplexSelectorRenderState,
   type ComplexSelectorSize,
   type ComplexSelectorStatus,
+  type ComplexSelectorVariant,
 } from './ComplexSelector';
