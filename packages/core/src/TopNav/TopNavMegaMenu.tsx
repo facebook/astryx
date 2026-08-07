@@ -493,11 +493,9 @@ function DefaultMegaMenu({
           <div {...stylex.props(styles.panelContent)}>
             {/* Menu items section */}
             {items != null && (
-              <div {...stylex.props(styles.menuWrapper)}>
-                <Grid columns={2} gap={2}>
-                  {items}
-                </Grid>
-              </div>
+              <Grid columns={2} gap={2} xstyle={styles.menuWrapper}>
+                {items}
+              </Grid>
             )}
 
             {/* Featured section */}

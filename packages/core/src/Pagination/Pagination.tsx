@@ -165,6 +165,9 @@ export interface PaginationProps extends Omit<
 // Styles
 // =============================================================================
 
+/** Width (px) of the page-size Selector field. */
+const PAGE_SIZE_SELECTOR_WIDTH = 80;
+
 const styles = stylex.create({
   root: {
     display: 'flex',
@@ -264,9 +267,6 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
-  },
-  pageSizeSelectorControl: {
-    width: 80,
   },
   disabled: {
     opacity: 0.5,
@@ -791,17 +791,19 @@ export function Pagination({
       data-testid={testId}>
       {pageSizeOptions != null && pageSizeOptions.length > 0 && (
         <div {...stylex.props(styles.pageSizeSelector)}>
-          <div {...stylex.props(styles.pageSizeSelectorControl)}>
-            <Selector
-              label={itemsPerPageLabel}
-              isLabelHidden
-              options={pageSizeOptions.map(opt => String(opt))}
-              value={String(pageSize)}
-              onChange={handlePageSizeChange}
-              size={buttonSize}
-              isDisabled={isDisabled}
-            />
-          </div>
+          <Selector
+            label={itemsPerPageLabel}
+            isLabelHidden
+            options={pageSizeOptions.map(opt => String(opt))}
+            value={String(pageSize)}
+            onChange={handlePageSizeChange}
+            size={buttonSize}
+            isDisabled={isDisabled}
+            // `width`, not `xstyle`: Selector's xstyle lands on the trigger
+            // box, while `width` sizes the whole field — which is what the
+            // removed wrapper did.
+            width={PAGE_SIZE_SELECTOR_WIDTH}
+          />
         </div>
       )}
       <div {...stylex.props(styles.controls)}>
@@ -812,9 +814,11 @@ export function Pagination({
             variant="ghost"
             size={buttonSize}
             icon={
-              <span {...stylex.props(rtlStyles.mirror)}>
-                <Icon icon="chevronsLeft" size={isSm ? 'sm' : 'md'} />
-              </span>
+              <Icon
+                icon="chevronsLeft"
+                size={isSm ? 'sm' : 'md'}
+                xstyle={rtlStyles.mirror}
+              />
             }
             onClick={handleFirst}
             isDisabled={isDisabled || !hasPrevious}
