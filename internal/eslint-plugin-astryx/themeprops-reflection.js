@@ -78,6 +78,18 @@ const rule = {
         'today, but the moment this target reflects a visual prop the ' +
         'attributes will be missing. Spread the whole result — ' +
         "{...themeProps('{{target}}')} — or merge it with mergeProps().",
+      clobberedByLaterProp:
+        "'{{attribute}}' is written AFTER the spread that carries the theme " +
+        "target '{{target}}', so it overwrites it — when the consumer passes " +
+        'no {{attribute}}, the {{attribute}} React sees is `undefined` and the ' +
+        'target never reaches the DOM at all. Merge them instead: ' +
+        "mergeProps(themeProps('{{target}}'), {{{attribute}}}), or put the " +
+        'spread last.',
+      bypassedThemeProps:
+        "stableClassName('{{target}}') builds the theme class by hand. Only " +
+        'themeProps() emits the class token together with the data-* ' +
+        'reflection, so a target minted this way can never carry state. Call ' +
+        "themeProps('{{target}}', {…}) and spread the result.",
       handAuthoredState:
         "'{{attribute}}' is hand-authored on an element that already carries " +
         "the theme target '{{target}}'. State must flow through themeProps " +
@@ -175,6 +187,28 @@ const rule = {
         return;
       }
 
+      // `{...themeProps('x')} className={className}` — the later attribute
+      // wins, target and all. (ChatSendButton shipped this shape.)
+      const spreadIndex = opening.attributes.findIndex(
+        (attribute) =>
+          attribute.type === 'JSXSpreadAttribute' &&
+          scanner.themeTargets({attributes: [attribute]}).length > 0,
+      );
+      if (spreadIndex !== -1) {
+        for (const attribute of opening.attributes.slice(spreadIndex + 1)) {
+          if (
+            attribute.type === 'JSXAttribute' &&
+            attribute.name?.name === 'className'
+          ) {
+            context.report({
+              node: attribute,
+              messageId: 'clobberedByLaterProp',
+              data: {attribute: 'className', target: targets[0].name},
+            });
+          }
+        }
+      }
+
       for (const target of targets) {
         if (target.viaClassName) {
           report(target.node);
@@ -240,6 +274,27 @@ const rule = {
           node.callee.name === 'themeProps'
         ) {
           bareCalls.push(node);
+          return;
+        }
+        // The naming module is where the prefix lives; themeProps is the only
+        // caller that should be building a stable class from it.
+        if (
+          node.callee?.type === 'Identifier' &&
+          node.callee.name === 'stableClassName' &&
+          !scanner.filename.includes('themeProps') &&
+          !scanner.filename.includes('naming')
+        ) {
+          const [nameArg] = node.arguments;
+          context.report({
+            node,
+            messageId: 'bypassedThemeProps',
+            data: {
+              target:
+                nameArg?.type === 'Literal' && typeof nameArg.value === 'string'
+                  ? nameArg.value
+                  : 'component',
+            },
+          });
         }
       },
     };
