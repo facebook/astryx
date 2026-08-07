@@ -14,9 +14,10 @@
  *
  * The default (desktop) trigger opens on hover and click. Hover opens are
  * transient; click/keyboard opens are pinned. A click shortly after hover-open
- * confirms and pins instead of closing. The panel remains an auto popover for
- * native dismissal and sibling exclusivity; `popoverTarget` registers the
- * trigger as its native invoker so the guard runs before any dismiss.
+ * confirms and pins the panel instead of closing it. The panel remains an auto
+ * popover for native dismissal and sibling exclusivity; `popoverTarget`
+ * registers the trigger as its native invoker so the guard runs before any
+ * dismiss.
  *
  * Supports three render modes via TopNavRenderContext:
  * - 'default': desktop popover mega menu (hover/click triggered)
@@ -137,7 +138,10 @@ const styles = stylex.create({
   // own content, keeping the surface radius/shadow static at the edges.
   // Internal scroll is a stopgap until the mobile bottom-sheet lands.
   panelViewportFit: {
-    display: 'flex',
+    display: {
+      default: 'none',
+      ':popover-open': 'flex',
+    },
     flexDirection: 'column',
     maxHeight: `calc(100% - ${spacingVars['--spacing-3']})`,
   },
@@ -492,6 +496,9 @@ function DefaultMegaMenu({
         stickyRef.current = true;
         popover.show({skipAutoFocus: true});
       } else if (Date.now() - hoverOpenedAtRef.current < CLICK_GUARD_MS) {
+        // A click that naturally follows a hover-open confirms the open state
+        // instead of toggling the panel shut. From here it behaves like any
+        // other click-open and stays pinned until explicit dismissal.
         stickyRef.current = true;
         hoverOpenedAtRef.current = 0;
       } else {

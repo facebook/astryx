@@ -250,9 +250,9 @@ describe('TopNavMegaMenu — popup semantics', () => {
 // Hover → click guard (default mode) — issue #3121
 //
 // The trigger opens on hover and on click. A hover-open records a timestamp so
-// the click that naturally follows a hover is ignored for CLICK_GUARD_MS (the
-// panel just appeared under the cursor) instead of toggling it shut. Deliberate
-// clicks — outside that window, or with no preceding hover — still toggle.
+// the click that naturally follows a hover confirms and pins the panel for
+// CLICK_GUARD_MS (the panel just appeared under the cursor) instead of toggling
+// it shut. Deliberate clicks outside that window still toggle.
 // =============================================================================
 
 describe('TopNavMegaMenu — hover/click guard (default mode)', () => {
@@ -286,6 +286,14 @@ describe('TopNavMegaMenu — hover/click guard (default mode)', () => {
 
     // The click that naturally follows the hover must NOT toggle it shut.
     await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    // It is still a click interaction, so it pins the panel just like a
+    // click-open. Leaving the trigger must not dismiss it.
+    await user.unhover(trigger);
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
   });
 
