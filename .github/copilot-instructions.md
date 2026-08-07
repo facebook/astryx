@@ -173,12 +173,17 @@ truth. Run every **new** target through this checklist:
    `button`, `divider`), never an appearance (`check`, `caret`, `marker`).
    State is never a name segment: it rides `themeProps({selected})`, which emits
    the class token and the `data-*` attribute together.
-5. **Is there a named consumer?** "Structural selectors are brittle, so here's a
+5. **Could the parent target reach it by inheritance?** If the property
+   cascades (font, color), put it on the parent target rather than minting a
+   child one — a child target on a `renderX` fallback silently misses every
+   custom-rendered result (principle 4).
+6. **Is there a named consumer?** "Structural selectors are brittle, so here's a
    seam" is not a justification. Say what appearance the target unlocks and who
    asked for it — and check whether the answer is really a design convergence
    (principle 7) rather than a theming surface.
 
-**Blocking:** (3) a target on a wrapper rather than the component; a state
+**Blocking:** (3) a target on a wrapper rather than the component; (5) a target
+on a `renderX` fallback, which cannot reach custom-rendered content; a state
 minted as its own `-selected`/`-disabled` sub-target; a hand-authored `data-*`
 alongside `themeProps`; `className={themeProps(...).className}` or a `className`
 written **after** the `themeProps` spread — both silently drop the target or its
@@ -189,7 +194,7 @@ element — that is a design question about the element's existence, not a themi
 one.
 
 **Maintainer judgment:** (1) and (2) where the element paints a little but the
-seam is mostly structural, (5) in every case, and any question of whether the
+seam is mostly structural, (6) in every case, and any question of whether the
 target should exist at all.
 
 The `@astryx/theming-target-*` and `@astryx/themeprops-reflection` rules check
