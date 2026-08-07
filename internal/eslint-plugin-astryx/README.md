@@ -299,8 +299,13 @@ turning one on is one line in `index.js`.
 theming targets" in
 [Theming Infrastructure](https://github.com/facebook/astryx/wiki/Theming-Infrastructure).
 These rules encode the mechanically checkable subset of that page; the
-`Principle` column below cites what each check enforces. Where the wiki and a
-rule disagree, the wiki wins and the rule is wrong.
+`Principle` column below cites what each check enforces.
+
+**Rules and principles are reconciled as of this PR** — every divergence found
+while encoding them was resolved on one side or the other, and the audit is in
+the PR description. A divergence is a bug in the rule or a gap in the
+principle, not a tolerated state: when one turns up, fix it rather than
+recording which side wins.
 
 A theming target (`themeProps('selector-option')`) is a public API commitment:
 a stable `.astryx-*` class a theme writes CSS against. These rules check the
@@ -318,14 +323,34 @@ module are read from that module via `stylex-style-source.js`.
 
 #### `@astryx/theming-target-shape`
 
-| Check (messageId)                                     | Principle                                                 | What it flags                                                                                                | On `packages/` | Proposed tier                                      |
-| ----------------------------------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | -------------- | -------------------------------------------------- |
-| `layoutOnlyTarget`                                    | P1 — target the element that carries the styling          | A sub-element target on an element whose styles declare no paint property                                    | 5              | `warn`                                             |
-| `wrapperTarget`                                       | P1 + attach to the component                              | A target on a paint-free `div`/`span` whose only child is an Astryx component — it belongs on that component | 4              | `warn` (→ `error` once fixed)                      |
-| `unstyledTarget`                                      | P1 — "if nothing at that spot paints, there is no target" | A target on an element with no styles at all and nothing wrapped                                             | 0              | `error`                                            |
-| `layoutOnlyRootTarget` (opt-in: `checkRootTargets`)   | P1                                                        | A component's OWN root target, when the root paints nothing                                                  | 55             | off — layout primitives legitimately trip it       |
-| `stateVariesOnlyLayout` (opt-in: `checkStateSurface`) | P1 refinement — the _state seam_ only moves layout        | The target declares runtime state, but that state only moves layout (a `transform`)                          | 0              | `warn` — worth turning on                          |
-| `underDeclaredState` (opt-in: `checkStateSurface`)    | P2 — state and size are data on the target                | The element's styles vary with a state the target does not pass to `themeProps`                              | 16             | off — a real backlog, each item needs a human call |
+| Check (messageId)                                                 | Principle                                                 | What it flags                                                                                                                                             | On `packages/` | Proposed tier                                      |
+| ----------------------------------------------------------------- | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- | -------------------------------------------------- |
+| `layoutOnlyTarget`                                                | P1 — target the element that carries the styling          | A sub-element target on an element whose styles declare no paint property                                                                                 | 5              | `warn`                                             |
+| `wrapperTarget`                                                   | P1 + attach to the component                              | A target on a paint-free `div`/`span` whose only child is an Astryx component — it belongs on that component                                              | 4              | `warn` (→ `error` once fixed)                      |
+| `unstyledTarget`                                                  | P1 — "if nothing at that spot paints, there is no target" | A target on an element with no styles at all and nothing wrapped                                                                                          | 0              | `error`                                            |
+| `layoutOnlyRootTarget` (opt-in: `checkRootTargets`)               | P1                                                        | A component's OWN root target, when the root paints nothing                                                                                               | 55             | off — layout primitives legitimately trip it       |
+| `stateVariesOnlyLayout` (opt-in: `checkStateSurface`)             | P1 refinement — the _state seam_ only moves layout        | The target declares runtime state, but that state only moves layout (a `transform`)                                                                       | 0              | `warn` — worth turning on                          |
+| `underDeclaredState` (opt-in: `checkStateSurface`)                | P2 — state and size are data on the target                | The element's styles vary with a state the target does not pass to `themeProps`                                                                           | 16             | off — a real backlog, each item needs a human call |
+| `targetOnRenderPropFallback`                                      | P4 — prefer inheritance over child targets                | A target on a fallback element that a `render*` callback renders in place of, so it misses all custom-rendered content — principle 4's named anti-pattern | 0              | `warn`                                             |
+| `inheritableOnRenderPropFallback`                                 | P4                                                        | Inheritable typography/color on such a fallback, where hoisting it to the row target would cover both render paths                                        | 0              | `warn`                                             |
+| `inheritablePropertyOnChild` (opt-in: `checkInheritableHoisting`) | P4, broadly                                               | Any inheritable property on an untargeted descendant of a target-carrying element                                                                         | 111            | off — see below                                    |
+
+**On hoisting inheritable properties (P4).** The broad form of this check —
+flag `font*` / `color` / `lineHeight` / `letterSpacing` / `textAlign` /
+`textTransform` on any untargeted descendant of a target — is implementable and
+measures **111 hits**, but most of them are correct code: a Banner's title and
+description (`packages/core/src/Banner/Banner.tsx:460,462`) declare different
+typography _because they should differ_, and nothing in the AST distinguishes
+that from a declaration begging to be hoisted. It ships off by default, as an
+exploration aid rather than a check.
+
+The two default-on P4 checks use a narrower predicate that does not depend on
+design intent: a **render-prop fallback**. In
+`renderOption ? renderOption(item) : <span {...stylex.props(styles.itemLabel)}>`,
+the fallback's typography demonstrably reaches one of two render paths — that
+divergence is in the AST, not in anyone's judgment. It is the case principle 4
+describes, and a target on such a fallback is the `-label` anti-pattern the
+principle names outright.
 
 The rule stays silent when it cannot see the whole picture: a target spread onto
 an Astryx component (the paint is inside the component), a style it cannot
