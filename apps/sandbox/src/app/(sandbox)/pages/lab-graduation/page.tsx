@@ -2,20 +2,19 @@
 
 /**
  * @file page.tsx
- * @position Lab → Core graduation dashboard. Tracks every @astryxdesign/lab
+ * @position Lab -> Core graduation dashboard. Tracks every @astryxdesign/lab
  *   component against the core-graduation bar and lets the community upvote
  *   which components should graduate next.
- * @input None — component roster and criteria signals are defined inline.
+ * @input None -- component roster and criteria signals are defined inline.
  * @output A sandbox page rendering the graduation matrix and upvote column.
  *
  * The graduation criteria mirror the "core bar" from the Component Lifecycle
  * wiki (https://github.com/facebook/astryx/wiki/Component-Lifecycle) and
- * packages/lab/README.md: a component graduates from lab to core only after it
- * clears full accessibility, hover guards, a theming story, status states,
- * spec compliance, and vibe testing — on top of the foundational tests + docs
- * build gate. The checkmarks here are a first-pass, best-effort snapshot meant
- * to visualize the gap, not an authoritative pass/fail (that's the Hardening
- * Protocol's job). Upvotes are stored client-side to gauge community demand.
+ * packages/lab/README.md. Each criterion column maps to a specific wiki guide
+ * (see CRITERIA below and the "How the columns map" section on the page). The
+ * checkmarks are a first-pass, best-effort snapshot meant to visualize the gap,
+ * not an authoritative pass/fail (that's the Hardening Protocol's job). Upvotes
+ * are stored client-side to gauge community demand and start at zero.
  */
 
 'use client';
@@ -26,11 +25,15 @@ import {VStack, HStack} from '@astryxdesign/core/Layout';
 import {Text, Heading} from '@astryxdesign/core/Text';
 import {Card} from '@astryxdesign/core/Card';
 import {Badge} from '@astryxdesign/core/Badge';
+import {Code} from '@astryxdesign/core/Code';
 import {Icon} from '@astryxdesign/core/Icon';
 import {IconButton} from '@astryxdesign/core/IconButton';
 import {Tooltip} from '@astryxdesign/core/Tooltip';
 import {ProgressBar} from '@astryxdesign/core/ProgressBar';
 import {Banner} from '@astryxdesign/core/Banner';
+import {Link} from '@astryxdesign/core/Link';
+import {List, ListItem} from '@astryxdesign/core/List';
+import {Theme} from '@astryxdesign/core/theme';
 import {Table, proportional, pixel} from '@astryxdesign/core/Table';
 import type {TableColumn} from '@astryxdesign/core/Table';
 import {
@@ -41,14 +44,21 @@ import {
 } from '@astryxdesign/core/theme/tokens.stylex';
 import * as stylex from '@stylexjs/stylex';
 
+import {docsiteTheme} from './docsiteTheme';
+
+const WIKI = 'https://github.com/facebook/astryx/wiki';
+
 // =============================================================================
-// Graduation criteria — the "core bar" from the Component Lifecycle wiki.
+// Graduation criteria -- the "core bar" from the Component Lifecycle wiki.
+// Each criterion links to the wiki guide that defines its bar.
 // =============================================================================
 
 interface Criterion {
   key: string;
   label: string;
   description: string;
+  /** The wiki guide that defines this criterion's bar. */
+  wiki: {title: string; href: string};
 }
 
 const CRITERIA: Criterion[] = [
@@ -56,49 +66,72 @@ const CRITERIA: Criterion[] = [
     key: 'tests',
     label: 'Tests',
     description:
-      'Behavior, keyboard, and ARIA unit tests colocated with the component (build-gate foundation).',
+      'Behavior, keyboard, and ARIA unit tests colocated with the component.',
+    wiki: {
+      title: 'Component Build Protocol',
+      href: `${WIKI}/Component-Build-Protocol`,
+    },
   },
   {
     key: 'docs',
     label: 'Docs',
     description:
       'Typed .doc.mjs authoring file so the CLI and docsite can surface the API.',
+    wiki: {
+      title: 'Component Build Protocol',
+      href: `${WIKI}/Component-Build-Protocol`,
+    },
   },
   {
     key: 'a11y',
     label: 'A11y / Keyboard',
     description:
-      'Full WAI-ARIA APG keyboard support and the shared a11y primitives (useFocusTrap, useAnnounce, focus hooks). Hard requirement for graduation.',
+      'Full WAI-ARIA APG keyboard support and the shared a11y primitives (useFocusTrap, useAnnounce, focus hooks).',
+    wiki: {
+      title: 'Accessibility Checklist',
+      href: `${WIKI}/Accessibility-Checklist`,
+    },
   },
   {
     key: 'theming',
     label: 'Theming',
     description:
       'themeProps on the correct elements so every registered theme can target the component.',
+    wiki: {
+      title: 'Theming Infrastructure',
+      href: `${WIKI}/Theming-Infrastructure`,
+    },
   },
   {
     key: 'hover',
     label: 'Hover guards',
     description:
-      ':hover feedback guarded behind @media (hover: hover) so touch devices are not stuck in a hover state.',
+      ':hover feedback guarded behind @media (hover: hover), plus reduced-motion and spacing-grid checks.',
+    wiki: {title: 'Design Conventions', href: `${WIKI}/Design-Conventions`},
   },
   {
     key: 'status',
     label: 'Status states',
     description:
       'Error / warning / success treatment where the component accepts input (n/a for non-input components).',
+    wiki: {title: 'API Conventions', href: `${WIKI}/API-Conventions`},
   },
   {
     key: 'spec',
     label: 'Spec compliance',
     description:
-      'Built against an approved spec with the API conventions applied — verified during Hardening.',
+      'Built against an approved spec with the API conventions applied -- verified during Hardening.',
+    wiki: {
+      title: 'Component Specification Protocol',
+      href: `${WIKI}/Component-Specification-Protocol`,
+    },
   },
   {
     key: 'vibe',
     label: 'Vibe tested',
     description:
       'Passed the nightly vibe-test battery so the API is validated with real LLM usage.',
+    wiki: {title: 'Vibe Tests', href: `${WIKI}/Vibe-Tests`},
   },
 ];
 
@@ -117,7 +150,6 @@ interface LabComponent {
   name: string;
   summary: string;
   signals: Record<string, Cell>;
-  seedVotes: number;
 }
 
 const COMPONENTS: LabComponent[] = [
@@ -135,7 +167,6 @@ const COMPONENTS: LabComponent[] = [
       spec: 'unknown',
       vibe: 'unknown',
     },
-    seedVotes: 14,
   },
   {
     name: 'Chart',
@@ -150,7 +181,6 @@ const COMPONENTS: LabComponent[] = [
       spec: 'unknown',
       vibe: 'unknown',
     },
-    seedVotes: 22,
   },
   {
     name: 'Chat',
@@ -166,7 +196,6 @@ const COMPONENTS: LabComponent[] = [
       spec: 'unknown',
       vibe: 'unknown',
     },
-    seedVotes: 41,
   },
   {
     name: 'ChatReasoning',
@@ -181,7 +210,6 @@ const COMPONENTS: LabComponent[] = [
       spec: 'unknown',
       vibe: 'unknown',
     },
-    seedVotes: 9,
   },
   {
     name: 'CircularProgress',
@@ -196,7 +224,6 @@ const COMPONENTS: LabComponent[] = [
       spec: 'unknown',
       vibe: 'unknown',
     },
-    seedVotes: 18,
   },
   {
     name: 'CodeEditor',
@@ -211,7 +238,6 @@ const COMPONENTS: LabComponent[] = [
       spec: 'unknown',
       vibe: 'unknown',
     },
-    seedVotes: 33,
   },
   {
     name: 'Drawer',
@@ -226,7 +252,6 @@ const COMPONENTS: LabComponent[] = [
       spec: 'unknown',
       vibe: 'unknown',
     },
-    seedVotes: 27,
   },
   {
     name: 'InfoTip',
@@ -241,7 +266,6 @@ const COMPONENTS: LabComponent[] = [
       spec: 'unknown',
       vibe: 'unknown',
     },
-    seedVotes: 11,
   },
   {
     name: 'ListInput',
@@ -256,7 +280,6 @@ const COMPONENTS: LabComponent[] = [
       spec: 'unknown',
       vibe: 'unknown',
     },
-    seedVotes: 7,
   },
   {
     name: 'LogStream',
@@ -271,7 +294,6 @@ const COMPONENTS: LabComponent[] = [
       spec: 'unknown',
       vibe: 'unknown',
     },
-    seedVotes: 15,
   },
   {
     name: 'Radial',
@@ -286,7 +308,6 @@ const COMPONENTS: LabComponent[] = [
       spec: 'unknown',
       vibe: 'unknown',
     },
-    seedVotes: 6,
   },
   {
     name: 'RichTextEditor',
@@ -302,7 +323,6 @@ const COMPONENTS: LabComponent[] = [
       spec: 'unknown',
       vibe: 'unknown',
     },
-    seedVotes: 38,
   },
   {
     name: 'SVGIcon',
@@ -317,7 +337,6 @@ const COMPONENTS: LabComponent[] = [
       spec: 'unknown',
       vibe: 'unknown',
     },
-    seedVotes: 4,
   },
   {
     name: 'Sankey',
@@ -332,7 +351,6 @@ const COMPONENTS: LabComponent[] = [
       spec: 'unknown',
       vibe: 'unknown',
     },
-    seedVotes: 8,
   },
   {
     name: 'Schedule',
@@ -347,7 +365,6 @@ const COMPONENTS: LabComponent[] = [
       spec: 'unknown',
       vibe: 'unknown',
     },
-    seedVotes: 19,
   },
   {
     name: 'Stat',
@@ -362,7 +379,6 @@ const COMPONENTS: LabComponent[] = [
       spec: 'unknown',
       vibe: 'unknown',
     },
-    seedVotes: 24,
   },
   {
     name: 'Stepper',
@@ -377,7 +393,6 @@ const COMPONENTS: LabComponent[] = [
       spec: 'unknown',
       vibe: 'unknown',
     },
-    seedVotes: 29,
   },
   {
     name: 'ThreeD',
@@ -392,7 +407,6 @@ const COMPONENTS: LabComponent[] = [
       spec: 'unknown',
       vibe: 'unknown',
     },
-    seedVotes: 5,
   },
   {
     name: 'Tour',
@@ -407,7 +421,6 @@ const COMPONENTS: LabComponent[] = [
       spec: 'unknown',
       vibe: 'unknown',
     },
-    seedVotes: 16,
   },
 ];
 
@@ -470,7 +483,7 @@ function CriterionCell({state, label}: {state: Cell; label: string}) {
       <Tooltip content={`${label}: needs human / pipeline sign-off`}>
         <span {...stylex.props(styles.cellWrap, styles.cellUnknown)}>
           <Text type="supporting" color="secondary">
-            —
+            &mdash;
           </Text>
         </span>
       </Tooltip>
@@ -498,7 +511,7 @@ export default function LabGraduationPage() {
   const [votes, setVotes] = useState<Record<string, number>>(() => {
     const seed: Record<string, number> = {};
     for (const c of COMPONENTS) {
-      seed[c.name] = c.seedVotes;
+      seed[c.name] = 0;
     }
     if (typeof window !== 'undefined') {
       try {
@@ -593,6 +606,7 @@ export default function LabGraduationPage() {
   type Row = (typeof rows)[number];
 
   const readyCount = rows.filter(r => r.passed === r.total).length;
+  const totalVotes = rows.reduce((sum, r) => sum + r.votes, 0);
   const topDemand = [...rows].sort((a, b) => b.votes - a.votes)[0];
 
   const columns: TableColumn<Row>[] = [
@@ -669,82 +683,140 @@ export default function LabGraduationPage() {
   ];
 
   return (
-    <div {...stylex.props(styles.page)}>
-      <VStack gap={5}>
-        <VStack gap={2}>
-          <HStack gap={2} vAlign="center">
-            <Heading level={1}>Lab → Core graduation</Heading>
-            <Badge variant="purple" label="Coming soon" />
-          </HStack>
-          <Text type="large" color="secondary">
-            Every component in <code>@astryxdesign/lab</code> and how far it is
-            from graduating into <code>@astryxdesign/core</code>. The bar comes
-            from the Component Lifecycle promotion gate: full accessibility,
-            theming, status states, spec compliance, and vibe testing.
-          </Text>
-        </VStack>
+    <Theme theme={docsiteTheme}>
+      <div {...stylex.props(styles.page)}>
+        <VStack gap={5}>
+          <VStack gap={2}>
+            <HStack gap={2} vAlign="center">
+              <Heading level={1}>Lab &rarr; Core graduation</Heading>
+              <Badge variant="purple" label="Coming soon" />
+            </HStack>
+            <Text type="large" color="secondary">
+              Every component in <Code>@astryxdesign/lab</Code> and how far it
+              is from graduating into <Code>@astryxdesign/core</Code>. The bar
+              comes from the{' '}
+              <Link href={`${WIKI}/Component-Lifecycle`} isExternalLink>
+                Component Lifecycle
+              </Link>{' '}
+              promotion gate: full accessibility, theming, status states, spec
+              compliance, and vibe testing.
+            </Text>
+          </VStack>
 
-        <HStack gap={3} wrap="wrap">
-          <SummaryStat label="In lab" value={COMPONENTS.length} />
-          <SummaryStat label="Meeting the full bar" value={readyCount} />
-          <SummaryStat
-            label="Most requested"
-            value={topDemand ? `${topDemand.name} (${topDemand.votes})` : '—'}
-          />
-        </HStack>
-
-        <Banner
-          status="info"
-          title="These checkmarks are a first-pass snapshot"
-          description="Criteria signals are derived from a source scan and are meant to visualize the gap, not certify a pass. Spec compliance and vibe testing require human / pipeline sign-off (shown as —). The Hardening Protocol remains the source of truth for an actual graduation."
-        />
-
-        <Card>
-          <div {...stylex.props(styles.tableWrap)}>
-            <Table
-              data={rows}
-              columns={columns}
-              idKey="name"
-              density="spacious"
-              dividers="rows"
-              hasHover
+          <HStack gap={3} wrap="wrap">
+            <SummaryStat label="In lab" value={COMPONENTS.length} />
+            <SummaryStat label="Meeting the full bar" value={readyCount} />
+            <SummaryStat label="Total upvotes" value={totalVotes} />
+            <SummaryStat
+              label="Most requested"
+              value={
+                topDemand && topDemand.votes > 0
+                  ? `${topDemand.name} (${topDemand.votes})`
+                  : 'No votes yet'
+              }
             />
-          </div>
-        </Card>
-
-        <div {...stylex.props(styles.legend)}>
-          <Heading level={4}>Legend</Heading>
-          <HStack gap={4} wrap="wrap">
-            <LegendItem>
-              <span {...stylex.props(styles.cellWrap, styles.cellPass)}>
-                <Icon icon="check" size="sm" />
-              </span>
-              <Text type="supporting">Meets the bar</Text>
-            </LegendItem>
-            <LegendItem>
-              <span {...stylex.props(styles.cellWrap, styles.cellGap)}>
-                <Icon icon="warning" size="xsm" color="secondary" />
-              </span>
-              <Text type="supporting">Gap remaining</Text>
-            </LegendItem>
-            <LegendItem>
-              <span {...stylex.props(styles.cellWrap, styles.cellUnknown)}>
-                <Text type="supporting" color="secondary">
-                  —
-                </Text>
-              </span>
-              <Text type="supporting">Needs sign-off</Text>
-            </LegendItem>
-            <LegendItem>
-              <span {...stylex.props(styles.cellWrap)}>
-                <Icon icon="close" size="xsm" color="secondary" />
-              </span>
-              <Text type="supporting">Not applicable</Text>
-            </LegendItem>
           </HStack>
-        </div>
-      </VStack>
-    </div>
+
+          <Banner
+            status="info"
+            title="These checkmarks are a first-pass snapshot"
+            description="Criteria signals are derived from a source scan and are meant to visualize the gap, not certify a pass. Spec compliance and vibe testing require human / pipeline sign-off (shown as a dash). The Hardening Protocol remains the source of truth for an actual graduation. Upvotes start at zero and are stored in this browser only."
+          />
+
+          <Card>
+            <div {...stylex.props(styles.tableWrap)}>
+              <Table
+                data={rows}
+                columns={columns}
+                idKey="name"
+                density="spacious"
+                dividers="rows"
+                hasHover
+              />
+            </div>
+          </Card>
+
+          <div {...stylex.props(styles.legend)}>
+            <Heading level={4}>Legend</Heading>
+            <HStack gap={4} wrap="wrap">
+              <LegendItem>
+                <span {...stylex.props(styles.cellWrap, styles.cellPass)}>
+                  <Icon icon="check" size="sm" />
+                </span>
+                <Text type="supporting">Meets the bar</Text>
+              </LegendItem>
+              <LegendItem>
+                <span {...stylex.props(styles.cellWrap, styles.cellGap)}>
+                  <Icon icon="warning" size="xsm" color="secondary" />
+                </span>
+                <Text type="supporting">Gap remaining</Text>
+              </LegendItem>
+              <LegendItem>
+                <span {...stylex.props(styles.cellWrap, styles.cellUnknown)}>
+                  <Text type="supporting" color="secondary">
+                    &mdash;
+                  </Text>
+                </span>
+                <Text type="supporting">Needs sign-off</Text>
+              </LegendItem>
+              <LegendItem>
+                <span {...stylex.props(styles.cellWrap)}>
+                  <Icon icon="close" size="xsm" color="secondary" />
+                </span>
+                <Text type="supporting">Not applicable</Text>
+              </LegendItem>
+            </HStack>
+          </div>
+
+          <VStack gap={3}>
+            <VStack gap={1}>
+              <Heading level={3}>
+                How the columns map to the graduation guides
+              </Heading>
+              <Text type="supporting" color="secondary">
+                Each criterion is defined by a wiki guide. Click through for the
+                authoritative bar.
+              </Text>
+            </VStack>
+            <Card>
+              <div {...stylex.props(styles.mappingWrap)}>
+                <List>
+                  {CRITERIA.map(crit => (
+                    <ListItem
+                      key={crit.key}
+                      label={crit.label}
+                      description={crit.description}
+                      startContent={
+                        <span {...stylex.props(styles.mappingIcon)}>
+                          <Icon icon="check" size="sm" color="secondary" />
+                        </span>
+                      }
+                      endContent={
+                        <Link href={crit.wiki.href} isExternalLink>
+                          {crit.wiki.title}
+                        </Link>
+                      }
+                    />
+                  ))}
+                </List>
+              </div>
+            </Card>
+            <Text type="supporting" color="secondary">
+              The full journey and the two promotion gates live in the{' '}
+              <Link href={`${WIKI}/Component-Lifecycle`} isExternalLink>
+                Component Lifecycle
+              </Link>{' '}
+              guide; the accessibility bar is a hard requirement documented in
+              the{' '}
+              <Link href={`${WIKI}/Accessibility-Checklist`} isExternalLink>
+                Accessibility Checklist
+              </Link>{' '}
+              and <Code>packages/lab/README.md</Code>.
+            </Text>
+          </VStack>
+        </VStack>
+      </div>
+    </Theme>
   );
 }
 
@@ -787,6 +859,14 @@ const styles = stylex.create({
   tableWrap: {
     padding: spacingVars['--spacing-2'],
     overflowX: 'auto',
+  },
+  mappingWrap: {
+    padding: spacingVars['--spacing-2'],
+  },
+  mappingIcon: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   summaryStat: {
     display: 'flex',
