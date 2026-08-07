@@ -1343,7 +1343,10 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         <div
           key="empty"
           role="presentation"
-          {...stylex.props(styles.emptyState)}>
+          {...mergeProps(
+            themeProps('multi-selector-empty-state'),
+            stylex.props(styles.emptyState),
+          )}>
           No results found
         </div>,
       );

@@ -26,6 +26,7 @@ export const docs = {
         visualProps: ['variant', 'size', 'status'],
       },
       {className: 'astryx-selector-option'},
+      {className: 'astryx-selector-empty-state'},
       {className: 'astryx-selector-clear-icon'},
       {className: 'astryx-selector-indicator-icon', states: ['state']},
     ],

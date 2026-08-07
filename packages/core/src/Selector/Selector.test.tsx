@@ -1318,6 +1318,28 @@ describe('Selector statusVariant forwarding', () => {
   });
 });
 
+describe('Selector empty-state theme target', () => {
+  const OPTIONS = ['Apple', 'Banana', 'Cherry'];
+
+  it('renders the astryx-selector-empty-state target on the "No results found" element', async () => {
+    const user = userEvent.setup();
+    const {container} = render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    await user.type(screen.getByRole('combobox', h), 'xyz');
+
+    const empty = container.querySelector('.astryx-selector-empty-state');
+    expect(empty).not.toBeNull();
+    expect(empty).toHaveTextContent('No results found');
+  });
+});
+
 describe('Selector clear icon theme target', () => {
   // Resolve the clear glyph span (the astryx-icon element inside the clear
   // button), independent of the theme target class.

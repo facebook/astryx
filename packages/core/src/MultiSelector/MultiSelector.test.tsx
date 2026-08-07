@@ -1509,6 +1509,29 @@ describe('MultiSelector statusVariant forwarding', () => {
   });
 });
 
+describe('MultiSelector empty-state theme target', () => {
+  const OPTIONS = ['Apple', 'Banana', 'Cherry'];
+
+  it('renders the astryx-multi-selector-empty-state target on the "No results found" element', async () => {
+    const user = userEvent.setup();
+    const {container} = render(
+      <MultiSelector
+        label="Fruit"
+        options={OPTIONS}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    await user.type(screen.getByRole('combobox', h), 'xyz');
+
+    const empty = container.querySelector('.astryx-multi-selector-empty-state');
+    expect(empty).not.toBeNull();
+    expect(empty).toHaveTextContent('No results found');
+  });
+});
+
 describe('MultiSelector clear icon theme target', () => {
   const ICON_OPTIONS = ['Apple', 'Banana', 'Orange'];
 
