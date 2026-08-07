@@ -66,7 +66,8 @@ jobs:
         run: |
           node apps/storybook/rtl-audit/rtl-audit.mjs \
             --storybook-dir apps/storybook/dist \
-            --output rtl-weekly-report.json
+            --output rtl-weekly-report.json \
+            --concurrency 4
 
       - name: Summarize report
         id: summarize

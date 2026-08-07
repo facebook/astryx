@@ -206,7 +206,11 @@ pnpm rtl:audit -- --filter Pagination
 # PascalCase names — this is what pr-rtl passes):
 pnpm rtl:audit -- --filter Avatar,TableTree
 
-# An absent or EMPTY --filter audits the whole library: ~1400 stories, ~25 min.
+# An absent or EMPTY --filter audits the whole library: ~1400 stories.
+
+# Parallelise the sweep across N browser pages (default 1 = serial). Results
+# are ordered by input, so the report is byte-identical at any N.
+pnpm rtl:audit -- --concurrency 4
 
 # Just the broad auto-discovery net, or just the curated dims:
 pnpm rtl:audit -- --auto-only
