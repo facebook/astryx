@@ -226,6 +226,25 @@ describe('MoreMenu', () => {
     ).toHaveFocus();
   });
 
+  it('keeps a consumer className alongside the theme class', () => {
+    // The target used to be assembled by hand — `stableClassName('more-menu')`
+    // string-concatenated with the consumer className. Routing it through
+    // themeProps()/mergeProps() must not change what lands on the panel.
+    render(<MoreMenu items={defaultItems} className="consumer" />);
+    const menu = screen.getByRole('menu', {hidden: true});
+    expect(menu).toHaveClass('astryx-more-menu');
+    expect(menu).toHaveClass('consumer');
+  });
+
+  it('keeps the dropdown-menu theme class on the same element', () => {
+    // astryx-more-menu shares the panel with DropdownMenu's own target; a
+    // merge bug in either one would drop the other.
+    render(<MoreMenu items={defaultItems} />);
+    const menu = screen.getByRole('menu', {hidden: true});
+    expect(menu).toHaveClass('astryx-more-menu');
+    expect(menu).toHaveClass('astryx-dropdown-menu');
+  });
+
   describe('placement and alignment', () => {
     const positionAreaOf = (menu: HTMLElement) =>
       menu

@@ -15,22 +15,50 @@
  * calls in the source. Nothing kept the two in agreement.
  *
  * Drift is not cosmetic. `targets` is what theme authors and codegen read to
- * learn which selectors exist; an undocumented class is an unthemeable element.
+ * learn which selectors exist; an undocumented class is an unthemeable element,
+ * and a documented class nothing renders is a selector that silently matches
+ * nothing in a theme author's CSS.
  *
- * Policy is SUBSET, not equality: every class rendered by `themeProps()` must be
- * documented, and every prop key passed to it must appear in that target's
- * `visualProps` or `states`. Docs may list MORE than the source passes —
- * components forward props they don't themselves reflect (Timestamp passes
- * `{format}` but documents `type`/`color`/`format`), and that is intentional.
+ * SCOPE — the `docs` block is checked PACKAGE-WIDE, across `@astryxdesign/core`
+ * and `@astryxdesign/lab`. Package-wide rather than per-directory because a
+ * class is legitimately rendered in one directory and documented in another:
+ * `Code/` and `Heading/` ship no doc of their own (CodeBlock and Text document
+ * them), and `hooks/useInputStatusIcon` renders `astryx-input-status-icon`,
+ * which Field documents. Across both packages because `packages/lab` renders 10
+ * targets of its own and was never scanned.
+ *
+ * The `docsZh` block stays a PER-DIRECTORY check: only some components carry a
+ * zh translation, so a package-wide set would report every untranslated
+ * component as drift. Its job here is translation parity for the directories
+ * that do have one.
+ *
+ * POLICY, per direction:
+ * - Rendered ⊆ documented — every class `themeProps()` renders must appear in
+ *   some `theming.targets[]`, and every prop key passed to it must appear in
+ *   that target's `visualProps` or `states`. Docs may list MORE keys than the
+ *   source passes: components forward props they don't themselves reflect
+ *   (Timestamp passes `{format}` but documents `type`/`color`/`format`), and
+ *   that is intentional.
+ * - Documented ⊆ rendered — every documented `className` must be rendered by a
+ *   real `themeProps()` call somewhere in the package. This direction was
+ *   unguarded and sat at exactly one violation (`astryx-more-menu`, which built
+ *   its class through `stableClassName()` instead); it is pinned at zero here
+ *   while it is cheap to hold.
  */
 
 import {describe, it, expect} from 'vitest';
 import {readdirSync, readFileSync} from 'node:fs';
-import {join} from 'node:path';
+import {join, relative, resolve} from 'node:path';
 import ts from 'typescript';
 import {stableClassName} from '../naming';
 
 const SRC_DIR = join(__dirname, '..');
+
+/** The published packages whose `themeProps()` surface this file guards. */
+const PACKAGES = [
+  {name: '@astryxdesign/core', src: SRC_DIR},
+  {name: '@astryxdesign/lab', src: resolve(__dirname, '../../../lab/src')},
+];
 
 // ---------------------------------------------------------------------------
 // Source scanning: find themeProps() call sites via the TypeScript AST
@@ -52,6 +80,13 @@ interface ThemeTargetSite {
  * form: shorthand (`{variant}`), renamed (`{variant: fillVariant}` — the KEY is
  * the prop, not the value), and multi-line. A regex reading identifiers after
  * `:` would record `fillVariant`, a prop that does not exist.
+ *
+ * A third argument may carry `legacyNames: ['old-name']` (see
+ * `ThemePropsOptions`): renamed targets whose old class is still emitted beside
+ * the new one during a deprecation window. Those land on the SAME element with
+ * the same data-* attributes, so each is reported as its own rendered site —
+ * otherwise the documented ⊆ rendered direction would read a deliberately
+ * documented deprecated target as unrendered.
  */
 function extractThemeTargets(
   sourceText: string,
@@ -111,7 +146,57 @@ function extractThemeTargets(
         }
 
         sites.push(site);
+
+        // `themeProps(name, props, {legacyNames: ['old']})` emits the old
+        // class alongside the new one, on the same element and with the same
+        // data-* attributes. Record each as a rendered site so a documented
+        // deprecated target is not mistaken for a dead selector.
+        const optionsArg = node.arguments[2];
+        if (optionsArg != null && ts.isObjectLiteralExpression(optionsArg)) {
+          for (const option of optionsArg.properties) {
+            if (
+              !ts.isPropertyAssignment(option) ||
+              option.name == null ||
+              !(
+                ts.isIdentifier(option.name) ||
+                ts.isStringLiteralLike(option.name)
+              ) ||
+              option.name.text !== 'legacyNames' ||
+              !ts.isArrayLiteralExpression(option.initializer)
+            ) {
+              continue;
+            }
+            for (const element of option.initializer.elements) {
+              // Non-literal entries can't be resolved statically; themeProps'
+              // own docs ask call sites to pass plain string literals.
+              if (ts.isStringLiteralLike(element)) {
+                sites.push({
+                  className: stableClassName(element.text),
+                  propKeys: [...site.propKeys],
+                  isOpaque: site.isOpaque,
+                });
+              }
+            }
+          }
+        }
       }
+    }
+
+    // `usePopover({surfaceTarget: 'x'})` puts `astryx-x` on the popup surface
+    // usePopover owns — an element the component cannot render itself, so the
+    // literal is the only trace of it (#5009). The CLI's sibling guard reads
+    // it the same way.
+    if (
+      ts.isPropertyAssignment(node) &&
+      (ts.isIdentifier(node.name) || ts.isStringLiteralLike(node.name)) &&
+      node.name.text === 'surfaceTarget' &&
+      ts.isStringLiteralLike(node.initializer)
+    ) {
+      sites.push({
+        className: stableClassName(node.initializer.text),
+        propKeys: [],
+        isOpaque: false,
+      });
     }
 
     ts.forEachChild(node, visit);
@@ -194,6 +279,37 @@ describe('extractThemeTargets', () => {
     ]);
   });
 
+  it('records a surfaceTarget literal as a rendered site', () => {
+    expect(
+      extractThemeTargets(`usePopover({role: 'none', surfaceTarget: 'x'})`),
+    ).toEqual([{className: 'astryx-x', propKeys: [], isOpaque: false}]);
+  });
+
+  it('records a legacyNames entry as its own rendered site', () => {
+    // The class is emitted beside the new one on the same element, carrying
+    // the same data-* attributes — so it inherits the prop keys.
+    expect(
+      extractThemeTargets(
+        `themeProps('radio-indicator', {size}, {legacyNames: ['radio']})`,
+      ),
+    ).toEqual([
+      {
+        className: 'astryx-radio-indicator',
+        propKeys: ['size'],
+        isOpaque: false,
+      },
+      {className: 'astryx-radio', propKeys: ['size'], isOpaque: false},
+    ]);
+  });
+
+  it('ignores a legacyNames entry it cannot resolve statically', () => {
+    expect(
+      extractThemeTargets(
+        `themeProps('radio-indicator', {}, {legacyNames: [OLD_NAME]})`,
+      ).map(s => s.className),
+    ).toEqual(['astryx-radio-indicator']);
+  });
+
   it('marks a spread props bag opaque rather than guessing its keys', () => {
     const [site] = extractThemeTargets(`themeProps('card', {...rest})`);
     expect(site.isOpaque).toBe(true);
@@ -215,7 +331,7 @@ describe('extractThemeTargets', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Discovery: every component dir's rendered classes vs its documented targets
+// Discovery
 // ---------------------------------------------------------------------------
 
 interface DocTarget {
@@ -227,15 +343,181 @@ interface DocTarget {
 type DocBlock = {theming?: {targets?: DocTarget[]}};
 type ComponentDocModule = {docs?: DocBlock; docsZh?: DocBlock};
 
-interface ComponentInfo {
-  dir: string;
-  sites: ThemeTargetSite[];
-  /** The doc blocks that carry theming.targets, by the key they live under. */
-  docBlocks: {key: 'docs' | 'docsZh'; targets: DocTarget[]}[];
+/** A themeProps() call site, tagged with the file it came from. */
+interface PackageSite extends ThemeTargetSite {
+  /** Path relative to the package src root, for failure messages. */
+  file: string;
 }
 
-function discoverComponents(): ComponentInfo[] {
-  const results: ComponentInfo[] = [];
+/** Every documented target for one className, unioned across the package. */
+interface PackageTarget {
+  keys: Set<string>;
+  /** Doc files (package-relative) that declare this className. */
+  files: Set<string>;
+}
+
+interface PackageInfo {
+  name: string;
+  sites: PackageSite[];
+  targets: Map<string, PackageTarget>;
+}
+
+/**
+ * Walk a package `src/` collecting source files and doc files. Recursive: doc
+ * files do not all sit one level down (`Table/plugins/*.doc.mjs`), and neither
+ * do the components that render targets.
+ */
+function walkPackage(dir: string): {sources: string[]; docs: string[]} {
+  const sources: string[] = [];
+  const docs: string[] = [];
+  for (const entry of readdirSync(dir, {withFileTypes: true})) {
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (entry.name === 'node_modules' || entry.name === '__tests__') {
+        continue;
+      }
+      const nested = walkPackage(full);
+      sources.push(...nested.sources);
+      docs.push(...nested.docs);
+    } else if (entry.name.endsWith('.doc.mjs')) {
+      docs.push(full);
+    } else if (
+      (entry.name.endsWith('.tsx') || entry.name.endsWith('.ts')) &&
+      !entry.name.includes('.test.') &&
+      !entry.name.endsWith('.d.ts')
+    ) {
+      sources.push(full);
+    }
+  }
+  return {sources, docs};
+}
+
+function discoverPackage(name: string, src: string): PackageInfo {
+  const {sources, docs} = walkPackage(src);
+
+  const sites: PackageSite[] = [];
+  for (const file of sources) {
+    for (const site of extractThemeTargets(readFileSync(file, 'utf-8'), file)) {
+      sites.push({...site, file: relative(src, file)});
+    }
+  }
+
+  const targets = new Map<string, PackageTarget>();
+  for (const file of docs) {
+    let mod: ComponentDocModule;
+    try {
+      mod = require(file) as ComponentDocModule;
+    } catch {
+      continue;
+    }
+    for (const target of mod.docs?.theming?.targets ?? []) {
+      if (typeof target?.className !== 'string') {
+        continue;
+      }
+      const existing = targets.get(target.className) ?? {
+        keys: new Set<string>(),
+        files: new Set<string>(),
+      };
+      for (const key of [
+        ...(target.visualProps ?? []),
+        ...(target.states ?? []),
+      ]) {
+        existing.keys.add(key);
+      }
+      existing.files.add(relative(src, file));
+      targets.set(target.className, existing);
+    }
+  }
+
+  return {name, sites, targets};
+}
+
+// ---------------------------------------------------------------------------
+// The guard — `docs`, package-wide, both directions
+// ---------------------------------------------------------------------------
+
+describe.each(PACKAGES)('$name theming.targets', ({name, src}) => {
+  const pkg = discoverPackage(name, src);
+  const rendered = new Map<string, PackageSite[]>();
+  for (const site of pkg.sites) {
+    const list = rendered.get(site.className) ?? [];
+    list.push(site);
+    rendered.set(site.className, list);
+  }
+
+  it('finds themeProps call sites and documented targets', () => {
+    // A refactor that renames themeProps, or a package root that stops
+    // resolving, must not silently disable this file.
+    expect(pkg.sites.length).toBeGreaterThan(0);
+    expect(pkg.targets.size).toBeGreaterThan(0);
+  });
+
+  it('every rendered class is documented', () => {
+    const undocumented = [...rendered.entries()]
+      .filter(([className]) => !pkg.targets.has(className))
+      .map(([className, sites]) => `${className} (${sites[0].file})`)
+      .sort();
+    expect(
+      undocumented,
+      `${name} renders ${undocumented.length} astryx-* class(es) that no ` +
+        `*.doc.mjs in the package documents under docs.theming.targets. An ` +
+        `undocumented class is an unthemeable element — theme authors and ` +
+        `codegen read targets[] to learn which selectors exist. Add ` +
+        `{className: '...'} entries.`,
+    ).toEqual([]);
+  });
+
+  it('every prop key passed to themeProps is documented', () => {
+    const missing = new Set<string>();
+    for (const site of pkg.sites) {
+      const target = pkg.targets.get(site.className);
+      if (target == null) {
+        continue; // Reported by the class test above.
+      }
+      for (const propKey of site.propKeys) {
+        if (!target.keys.has(propKey)) {
+          missing.add(`${site.className}: ${propKey} (${site.file})`);
+        }
+      }
+    }
+    expect(
+      [...missing].sort(),
+      `${name} passes prop keys to themeProps() that no doc lists under the ` +
+        `target's visualProps/states. Each one is a [data-*] selector ` +
+        `consumers cannot discover.`,
+    ).toEqual([]);
+  });
+
+  it('every documented target is actually rendered', () => {
+    const unrendered = [...pkg.targets.entries()]
+      .filter(([className]) => !rendered.has(className))
+      .map(([className, target]) => `${className} (${[...target.files][0]})`)
+      .sort();
+    expect(
+      unrendered,
+      `${name} documents ${unrendered.length} theming target(s) that no ` +
+        `themeProps() call renders. A documented selector nothing emits is ` +
+        `worse than an undocumented one: a theme author writes CSS against ` +
+        `it and it silently matches nothing. Either render the class through ` +
+        `themeProps() or drop the targets[] entry. (Building the class by ` +
+        `hand with stableClassName() does not count — that is how ` +
+        `astryx-more-menu hid here.)`,
+    ).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// docsZh — per-directory translation parity, core only
+// ---------------------------------------------------------------------------
+
+interface ZhComponentInfo {
+  dir: string;
+  sites: ThemeTargetSite[];
+  targets: DocTarget[];
+}
+
+function discoverZhComponents(): ZhComponentInfo[] {
+  const results: ZhComponentInfo[] = [];
   const dirs = readdirSync(SRC_DIR, {withFileTypes: true})
     .filter(d => d.isDirectory())
     .map(d => d.name);
@@ -276,78 +558,62 @@ function discoverComponents(): ComponentInfo[] {
       continue;
     }
 
-    const docBlocks: ComponentInfo['docBlocks'] = [];
-    for (const key of ['docs', 'docsZh'] as const) {
-      const targets = mod[key]?.theming?.targets;
-      // Only blocks that already document a theming surface are held to it —
-      // a doc with no theming block at all is a separate (documentation) gap.
-      if (targets != null) {
-        docBlocks.push({key, targets});
-      }
-    }
-    if (docBlocks.length === 0) {
+    // Only blocks that already document a theming surface are held to it — a
+    // doc with no theming block at all is a separate (documentation) gap.
+    const targets = mod.docsZh?.theming?.targets;
+    if (targets == null) {
       continue;
     }
 
-    results.push({dir, sites, docBlocks});
+    results.push({dir, sites, targets});
   }
   return results;
 }
 
-// ---------------------------------------------------------------------------
-// The guard
-// ---------------------------------------------------------------------------
-
-describe('theming.targets matches the themeProps() call sites', () => {
-  const components = discoverComponents();
+describe('docsZh theming.targets matches the themeProps() call sites', () => {
+  const components = discoverZhComponents();
 
   it('finds components to check', () => {
-    // A refactor that renames themeProps must not silently disable this file.
     expect(components.length).toBeGreaterThan(0);
   });
 
-  for (const {dir, sites, docBlocks} of components) {
+  for (const {dir, sites, targets} of components) {
     const renderedClasses = [...new Set(sites.map(s => s.className))].sort();
+    const documented = new Set(targets.map(t => t.className));
 
-    for (const {key, targets} of docBlocks) {
-      const documented = new Set(targets.map(t => t.className));
+    it(`${dir} (docsZh): every rendered class is documented`, () => {
+      const undocumented = renderedClasses.filter(c => !documented.has(c));
+      expect(
+        undocumented,
+        `${dir} renders ${undocumented.length} astryx-* class(es) that ` +
+          `${dir}.doc.mjs docsZh.theming.targets does not document: ` +
+          `${undocumented.join(', ')}. Keep the zh doc in step with the ` +
+          `English one.`,
+      ).toEqual([]);
+    });
 
-      it(`${dir} (${key}): every rendered class is documented`, () => {
-        const undocumented = renderedClasses.filter(c => !documented.has(c));
-        expect(
-          undocumented,
-          `${dir} renders ${undocumented.length} astryx-* class(es) that ` +
-            `${dir}.doc.mjs ${key}.theming.targets does not document: ` +
-            `${undocumented.join(', ')}. An undocumented class is an ` +
-            `unthemeable element — theme authors and codegen read targets[] ` +
-            `to learn which selectors exist. Add {className: '...'} entries.`,
-        ).toEqual([]);
-      });
-
-      it(`${dir} (${key}): every visual prop passed to themeProps is documented`, () => {
-        const missing: string[] = [];
-        for (const site of sites) {
-          const target = targets.find(t => t.className === site.className);
-          if (target == null) {
-            continue; // Reported by the class test above.
-          }
-          const known = new Set([
-            ...(target.visualProps || []),
-            ...(target.states || []),
-          ]);
-          for (const propKey of site.propKeys) {
-            if (!known.has(propKey)) {
-              missing.push(`${site.className}: ${propKey}`);
-            }
+    it(`${dir} (docsZh): every visual prop passed to themeProps is documented`, () => {
+      const missing: string[] = [];
+      for (const site of sites) {
+        const target = targets.find(t => t.className === site.className);
+        if (target == null) {
+          continue; // Reported by the class test above.
+        }
+        const known = new Set([
+          ...(target.visualProps || []),
+          ...(target.states || []),
+        ]);
+        for (const propKey of site.propKeys) {
+          if (!known.has(propKey)) {
+            missing.push(`${site.className}: ${propKey}`);
           }
         }
-        expect(
-          [...new Set(missing)],
-          `${dir} passes prop keys to themeProps() that ${dir}.doc.mjs ` +
-            `${key}.theming.targets does not list under visualProps/states. ` +
-            `Each one is a [data-*] selector consumers cannot discover.`,
-        ).toEqual([]);
-      });
-    }
+      }
+      expect(
+        [...new Set(missing)],
+        `${dir} passes prop keys to themeProps() that ${dir}.doc.mjs ` +
+          `docsZh.theming.targets does not list under visualProps/states.`,
+      ).toEqual([]);
+    });
   }
 });

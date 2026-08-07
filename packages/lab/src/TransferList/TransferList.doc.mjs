@@ -33,6 +33,18 @@ export const docs = {
   ],
   description:
     'A selector field for moving options between selected and available lists and optionally ordering the selected values. Changes commit immediately by default; staged commit behavior adds an internal draft and Apply/Cancel footer. TransferList remains the lower-level content primitive for custom ComplexSelector surfaces.',
+  theming: {
+    targets: [
+      {className: 'astryx-transfer-list'},
+      {className: 'astryx-transfer-list-collection'},
+      {className: 'astryx-transfer-list-panel', visualProps: ['side']},
+      {
+        className: 'astryx-transfer-list-item',
+        visualProps: ['side'],
+        states: ['state'],
+      },
+    ],
+  },
   props: [
     {
       name: 'label',

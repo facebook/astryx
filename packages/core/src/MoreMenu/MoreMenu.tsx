@@ -26,7 +26,7 @@ import type {DropdownMenuOption} from '../DropdownMenu';
 import type {LayerAlignment, LayerPlacement} from '../Layer';
 import type {ButtonVariant, ButtonSize} from '../Button';
 import type {BaseProps} from '../BaseProps';
-import {stableClassName} from '../naming';
+import {mergeProps, themeProps} from '../utils';
 import {useTranslator} from '../i18n';
 
 export interface MoreMenuProps extends Pick<
@@ -140,11 +140,9 @@ export function MoreMenu({
 
   return (
     <DropdownMenu
-      className={
-        classNameProp
-          ? `${stableClassName('more-menu')} ${classNameProp}`
-          : stableClassName('more-menu')
-      }
+      // The target lands on DropdownMenu's popover panel, which only exists
+      // while the menu is open — there is no open/closed state to reflect.
+      {...mergeProps(themeProps('more-menu'), {className: classNameProp})}
       xstyle={xstyle}
       style={style}
       isMenuOpen={isMenuOpen}

@@ -62,7 +62,6 @@ import {useSize} from '../SizeContext/SizeContext';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
-import {stableClassName} from '../naming';
 import {useTranslator} from '../i18n';
 
 export type {DateRange} from '../Calendar';
@@ -626,7 +625,7 @@ export function DateRangeInput({
           <InputClearButton
             label={t('@astryx.dateInput.clear', {label})}
             onClick={handleClear}
-            iconClassName={stableClassName('date-range-input-clear-icon')}
+            iconClassName={themeProps('date-range-input-clear-icon').className}
           />
         )}
         {isBusy && <Spinner size="sm" />}
