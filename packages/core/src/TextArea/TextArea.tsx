@@ -66,7 +66,14 @@ const styles = stylex.create({
   wrapper: {
     zIndex: 1,
     display: 'block',
-    padding: 0,
+    // Zero the shared wrapper inset with matching longhands, not the `padding`
+    // shorthand: StyleX ranks longhands above shorthands regardless of merge
+    // order, so a `padding: 0` shorthand loses to the base's
+    // paddingBlock/paddingInline. The wrapper would keep a duplicate inset that
+    // the <textarea>'s own padding then doubles — insetting the text and
+    // pushing the native resize grip in from the corner.
+    paddingBlock: 0,
+    paddingInline: 0,
     // Internal inline padding for the textarea's text. Defined on the wrapper
     // so the counter (a sibling overlay) inherits the same value and stays
     // aligned with the text edge. Kept as an internal var so it can later be
