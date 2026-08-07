@@ -30,6 +30,8 @@ import {CheckboxInput} from '../CheckboxInput';
 import {themeProps, mergeProps} from '../utils';
 const styles = stylex.create({
   painted: {backgroundColor: 'red', borderRadius: 4},
+  label: {fontWeight: '600', color: 'blue', overflow: 'hidden'},
+  plainLabel: {overflow: 'hidden', minWidth: 0},
   dropdown: {boxSizing: 'border-box', maxHeight: 300, overflowY: 'auto', padding: 4},
   fade: {opacity: 1, transition: 'opacity 100ms'},
   row: {display: 'flex', alignItems: 'center'},
@@ -111,6 +113,24 @@ ruleTester.run('theming-target-shape', rule, {
       code: `${setup} const a = <div {...mergeProps(themeProps('x-option', {size}), stylex.props(styles.painted, sizeStyles[size]))} />;`,
       options: stateOptions,
     },
+    // --- render-prop fallback (on by default) ---
+    // No render prop in play: an ordinary styled child is not this check's
+    // business (the broad version is `checkInheritableHoisting`, off).
+    {
+      code: `${setup} const a = <div {...mergeProps(themeProps('x-option'), stylex.props(styles.painted))}><span {...stylex.props(styles.label)}>t</span></div>;`,
+    },
+    // The fallback declares nothing inheritable, so there is nothing to hoist.
+    {
+      code: `${setup} const a = <div {...mergeProps(themeProps('x-option'), stylex.props(styles.painted))}>{renderOption ? renderOption(item) : <span {...stylex.props(styles.plainLabel)}>t</span>}</div>;`,
+    },
+    // No target on the ancestor: not a theming question.
+    {
+      code: `${setup} const a = <div {...stylex.props(styles.painted)}>{renderOption ? renderOption(item) : <span {...stylex.props(styles.label)}>t</span>}</div>;`,
+    },
+    // The fallback is a composed component; its styles are not in this file.
+    {
+      code: `${setup} const a = <div {...mergeProps(themeProps('x-option'), stylex.props(styles.painted))}>{renderOption ? renderOption(item) : <Icon icon="x" />}</div>;`,
+    },
     // Off by default, even though the state only moves layout.
     {
       code: `${setup} const a = <div {...mergeProps(themeProps('x-indicator', {state}), stylex.props(styles.painted, isOpen && styles.rotated))} />;`,
@@ -178,6 +198,53 @@ ruleTester.run('theming-target-shape', rule, {
         {
           messageId: 'layoutOnlyRootTarget',
           data: {target: 'card', properties: 'display, alignItems'},
+        },
+      ],
+    },
+    // --- render-prop fallback ---
+    // Inheritable typography on a fallback the callback replaces.
+    {
+      code: `${setup} const a = <div {...mergeProps(themeProps('x-option'), stylex.props(styles.painted))}>{renderOption ? renderOption(item) : <span {...stylex.props(styles.label)}>t</span>}</div>;`,
+      errors: [
+        {
+          messageId: 'inheritableOnRenderPropFallback',
+          data: {
+            target: 'x-option',
+            callback: 'renderOption',
+            properties: 'fontWeight, color',
+          },
+        },
+      ],
+    },
+    // Branch order does not matter.
+    {
+      code: `${setup} const a = <div {...mergeProps(themeProps('x-option'), stylex.props(styles.painted))}>{!renderOption ? <span {...stylex.props(styles.label)}>t</span> : renderOption(item)}</div>;`,
+      errors: [{messageId: 'inheritableOnRenderPropFallback'}],
+    },
+    // #4628's shape: giving the fallback its own target is principle 4's named
+    // anti-pattern, not an exemption — the callback's output never carries it.
+    {
+      code: `${setup} const a = <div {...mergeProps(themeProps('x-option'), stylex.props(styles.painted))}>{renderOption ? renderOption(item) : <span {...mergeProps(themeProps('x-option-label'), stylex.props(styles.label))}>t</span>}</div>;`,
+      errors: [
+        {
+          messageId: 'targetOnRenderPropFallback',
+          data: {
+            target: 'x-option',
+            fallbackTarget: 'x-option-label',
+            callback: 'renderOption',
+            properties: 'fontWeight, color',
+          },
+        },
+      ],
+    },
+    // --- checkInheritableHoisting (broad, opt-in) ---
+    {
+      code: `${setup} const a = <div {...mergeProps(themeProps('x-option'), stylex.props(styles.painted))}><span {...stylex.props(styles.label)}>t</span></div>;`,
+      options: [{checkInheritableHoisting: true}],
+      errors: [
+        {
+          messageId: 'inheritablePropertyOnChild',
+          data: {target: 'x-option', properties: 'fontWeight, color'},
         },
       ],
     },

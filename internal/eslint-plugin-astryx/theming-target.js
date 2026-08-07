@@ -244,6 +244,32 @@ const PAINT_PATTERN =
   /(color|background|border|shadow|font|fill|stroke|outline|decoration|gradient)/i;
 
 /**
+ * Properties that CASCADE to descendants. Declaring one of these on an
+ * untargeted child of a target-carrying element means a theme that restyles
+ * the target cannot reach the child — and any sibling render path (a
+ * `renderOption` callback, say) never gets the treatment at all. Hoisting the
+ * declaration to the target element fixes both (principle 4).
+ *
+ * Deliberately the typographic set plus `color`: these are the ones a theme
+ * routinely wants to set once on a row and have reach everything inside it.
+ */
+export const INHERITABLE_PROPERTIES = new Set([
+  'color',
+  'font',
+  'fontFamily',
+  'fontFeatureSettings',
+  'fontSize',
+  'fontStyle',
+  'fontVariant',
+  'fontVariantNumeric',
+  'fontWeight',
+  'letterSpacing',
+  'lineHeight',
+  'textAlign',
+  'textTransform',
+]);
+
+/**
  * Bindings that carry the CONSUMER's styles into a component's own
  * `stylex.props()` call. They are an escape hatch, not part of the component's
  * declared theming surface.
