@@ -655,7 +655,10 @@ export function NumberInput({
         {...rest}
         ref={mergeRefs(ref, inputRef)}
         id={id}
-        name={htmlName}
+        // Withhold the name while disabled: with a disabledMessage the input
+        // stays focusable (not natively disabled), and a disabled control must
+        // not submit.
+        name={isDisabled ? undefined : htmlName}
         type="number"
         autoComplete={autoComplete}
         value={displayValue}

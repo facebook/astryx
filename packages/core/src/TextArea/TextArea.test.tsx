@@ -673,6 +673,61 @@ describe('TextArea', () => {
     });
   });
 
+  describe('form participation', () => {
+    it('submits the value under htmlName', () => {
+      const {container} = render(
+        <form>
+          <TextArea
+            label="Notes"
+            htmlName="notes"
+            value="hello"
+            onChange={() => {}}
+          />
+        </form>,
+      );
+      const data = new FormData(container.querySelector('form')!);
+      expect(data.get('notes')).toBe('hello');
+    });
+
+    it('is excluded from form data when disabled', () => {
+      const {container} = render(
+        <form>
+          <TextArea
+            label="Notes"
+            htmlName="notes"
+            value="hello"
+            onChange={() => {}}
+            isDisabled
+          />
+        </form>,
+      );
+      expect([
+        ...new FormData(container.querySelector('form')!).keys(),
+      ]).toEqual([]);
+    });
+
+    // Regression: a disabledMessage swaps the native `disabled` attribute for
+    // aria-disabled + readOnly so the reason stays focus-discoverable, but
+    // read-only fields still submit — the name has to be withheld too.
+    it('is excluded from form data when disabled, even with a disabledMessage', () => {
+      const {container} = render(
+        <form>
+          <TextArea
+            label="Notes"
+            htmlName="notes"
+            value="hello"
+            onChange={() => {}}
+            isDisabled
+            disabledMessage="Notes are locked while the review is open"
+          />
+        </form>,
+      );
+      expect([
+        ...new FormData(container.querySelector('form')!).keys(),
+      ]).toEqual([]);
+    });
+  });
+
   describe('click-to-focus', () => {
     it('focuses textarea when clicking the start icon', () => {
       render(

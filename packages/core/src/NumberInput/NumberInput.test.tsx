@@ -687,6 +687,61 @@ describe('NumberInput', () => {
     });
   });
 
+  describe('form participation', () => {
+    it('submits the value under htmlName', () => {
+      const {container} = render(
+        <form>
+          <NumberInput
+            label="Quantity"
+            htmlName="quantity"
+            value={42}
+            onChange={() => {}}
+          />
+        </form>,
+      );
+      const data = new FormData(container.querySelector('form')!);
+      expect(data.get('quantity')).toBe('42');
+    });
+
+    it('is excluded from form data when disabled', () => {
+      const {container} = render(
+        <form>
+          <NumberInput
+            label="Quantity"
+            htmlName="quantity"
+            value={42}
+            onChange={() => {}}
+            isDisabled
+          />
+        </form>,
+      );
+      expect([
+        ...new FormData(container.querySelector('form')!).keys(),
+      ]).toEqual([]);
+    });
+
+    // Regression: a disabledMessage swaps the native `disabled` attribute for
+    // aria-disabled + readOnly so the reason stays focus-discoverable, but
+    // read-only fields still submit — the name has to be withheld too.
+    it('is excluded from form data when disabled, even with a disabledMessage', () => {
+      const {container} = render(
+        <form>
+          <NumberInput
+            label="Quantity"
+            htmlName="quantity"
+            value={42}
+            onChange={() => {}}
+            isDisabled
+            disabledMessage="Quantity is fixed by the contract"
+          />
+        </form>,
+      );
+      expect([
+        ...new FormData(container.querySelector('form')!).keys(),
+      ]).toEqual([]);
+    });
+  });
+
   describe('autoComplete prop', () => {
     it('sets autocomplete attribute when autoComplete is provided', () => {
       render(
