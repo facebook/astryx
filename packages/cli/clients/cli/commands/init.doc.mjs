@@ -53,6 +53,7 @@ export const doc = {
   examples: [
     {label: 'Default setup', cli: 'astryx init'},
     {label: 'All features, no prompts', cli: 'astryx init --all'},
+    {label: 'Machine-readable receipt', cli: 'astryx init --json'},
   ],
   exitCodes: [
     {code: 0, when: 'success'},
