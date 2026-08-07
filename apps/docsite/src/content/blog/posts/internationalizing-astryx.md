@@ -19,29 +19,33 @@ relatedDocs:
 
 Astryx grew out of Meta's internal design system, and that heritage shows up in internationalization. Most internal tools shipped in English to an English-speaking workforce, so translation and right-to-left support were rarely priorities. Components carried hardcoded English strings and left-to-right assumptions because, internally, nobody was asking for anything else.
 
-Open-sourcing changed the audience. The trigger came from the community after release: a developer shipping an Arabic and Kurdish app filed a proposal pointing out that several components hardcoded user-facing and assistive strings in English with no way to override them. Table sort labels, pagination controls, Calendar month names. Their app was blocked, and the workaround was to fork the components to change a few words.  They offered a fix, but we wanted to make sure we sat down and had a more comprehensive look.
+Open-sourcing changed the audience. The trigger came from the community after release: a developer shipping an Arabic and Kurdish app filed a proposal pointing out that several components hardcoded user-facing and assistive strings in English with no way to override them. Table sort labels, pagination controls, Calendar month names. Their app was blocked, and the workaround was to fork the components to change a few words. They offered a fix, but we wanted to make sure we sat down and had a more comprehensive look.
 
 I'd spent a good chunk of my career on localization before this, so when the work came up I offered to take it. The rough edges were familiar to me: strings length changing between translations, assumptions about how to pluralize, and concatenated strings making translation difficult to languages with different word order. Right to left languages in particular can be a challenge, breaking layout assumptions. It's been a number of years since I've had to think about these problems, so I leaned on AI assistants to resurvey the modern i18n landscape – what the standards look like now, what the popular React libraries settled on – before committing to a design.
 
 ## Why we didn't just adopt an i18n framework
 
-The obvious move was to wire in an established runtime such as `react-intl`, Lingui, or i18next. This would have been cheapest to build, but it means that now Astryx carries even more dependency baggage.  A hard dependency on one runtime would add bundle weight and collide with teams that already standardized on something else, leaving them to run two systems side by side or replace their own. Ideally we don't want to "force" users to use our same frameworks.
+The obvious move was to wire in an established runtime such as `react-intl`, Lingui, or i18next. This would have been cheapest to build, but it means that now Astryx carries even more dependency baggage. A hard dependency on one runtime would add bundle weight and collide with teams that already standardized on something else, leaving them to run two systems side by side or replace their own. Ideally we don't want to "force" users to use our same frameworks.
 
 So we separated format from framework. We adopted ICU MessageFormat as the string format because every serious i18n runtime already speaks it, and we used `intl-messageformat` as the default formatter behind a small adapter. If a consumer already runs `react-intl` or another compatible stack, they can hand Astryx their formatter instead.
 
+We wrote all of this up as an RFC first, and set a handful of constraints before writing any code: it had to work in server components, stay framework-agnostic (Vite, Next, Remix, static builds — no hard-coded router), support switching language at runtime, and keep translation contributions low-friction so the community isn't blocked on an npm publish to fix a string. One early question was whether to code-split the locale data so an app only ships the languages it uses. We measured it and dropped the idea: a full locale pack is roughly 2 KB gzipped – about the size of our icon set – so splitting it would have added machinery to save almost nothing. Cheap to measure, and it saved us from building something we didn't need.
+
 That decision also let us keep the API small: one provider carrying a locale, one hook to read translations, and English defaults baked in so components still render without any setup. Adoption stays incremental.
 
-## A string is more than its words
+## Plurals are where "just translate it" falls apart
 
-One thing this work reinforces is that a user-facing string is often structured data, not just prose. A real Astryx message looks like this:
+If translating a UI were only swapping words, you could hand a translator a spreadsheet of strings and be done. Plurals are the first place that breaks. Take a string like this:
 
 ```text
 Go back {step, number} {step, plural, one {page} other {pages}}
 ```
 
-The words matter, but so do the placeholders and plural branches. Those are what make the string render correctly in each locale. English has two plural forms; Arabic has six; Russian and Polish have four; Japanese has one. If translation drops a placeholder or preserves only the English plural logic, the result is not just awkward – it can be wrong or fail at runtime. That is why we treated translation as a correctness problem as much as a language problem.
+In English there are two cases: one page, N pages. But "how many plural forms does a language have" is not universal. Arabic has six. Russian and Polish have four. Japanese has one. Feed that string to a naive translation that only fills the English `one`/`other` slots, and it will render a grammatically wrong ending for most numbers in most of the world's languages – not a typo you can eyeball, but the wrong word form for "5" versus "2" versus "21". The count below is the same message rendered in Russian: the naive version repeats one ending for everything, while the correct version picks a different word form per number.
 
 ![A results-count string rendered in Russian at counts 1, 2, and 5. The naive version, using only English one/other rules, shows the same wrong ending ("результаты") for every count. The correct version, using Russian's one/few/many/other CLDR categories, shows three different endings: результат, результата, результатов.](/blog/internationalizing-astryx/russian-plurals.png)
+
+So the strings aren't prose – they're small programs, with placeholders and plural logic the runtime evaluates per locale. Drop a placeholder or keep only the English plural cases and the output isn't just awkward, it's wrong, and sometimes it fails to render at all. That reframing – translation as a correctness problem, not just a language one – shaped how we validated the machine translations later.
 
 ## Right-to-left, and the bugs that hide from your linter
 
