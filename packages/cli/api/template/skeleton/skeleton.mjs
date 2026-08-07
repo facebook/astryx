@@ -2,7 +2,8 @@
 
 /**
  * @file `template.skeleton` leaf — a layout skeleton (structural tags with
- * spatial annotations) plus the components a resolved template composes.
+ * spatial annotations) plus the Astryx components a resolved template
+ * composes (each listed name resolves through `astryx component <Name>`).
  *
  * @position api/template/skeleton — derives a compact layout reference from the
  *   resolved match's source; the template dispatcher routes `--skeleton` here.
@@ -225,9 +226,10 @@ function extractSkeleton(source) {
  * "specify a template name" error the dispatcher's resolution would surface.
  * @param {import('../../../foundation/discovery/template-adapter.mjs').DiscoveredTemplate | undefined} match
  * @param {import('../../../foundation/discovery/template-adapter.mjs').DiscoveredTemplate[]} templates
+ * @param {Set<string>|null} [knownComponents] registry of resolvable component names, or null to skip filtering
  * @returns {import('../template.type.mjs').TemplateSkeletonResponse}
  */
-export function templateSkeleton(match, templates) {
+export function templateSkeleton(match, templates, knownComponents = null) {
   if (!match) {
     throw new AstryxError(
       'Specify a template name for --skeleton',
@@ -248,7 +250,7 @@ export function templateSkeleton(match, templates) {
     data: {
       template: match.dirName,
       description: match.description,
-      components: extractComponents(match.filePath),
+      components: extractComponents(match.filePath, knownComponents),
       skeleton: extractSkeleton(src),
     },
   };
