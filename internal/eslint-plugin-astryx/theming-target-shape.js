@@ -53,6 +53,7 @@
 import {
   classifyProperties,
   createFileScanner,
+  INHERITABLE_PROPERTIES,
   isHostElement,
   isIgnorableChild,
   jsxNameText,
@@ -210,6 +211,27 @@ const rule = {
         'that state selects change only {{properties}} — layout, not paint. A ' +
         'state seam whose only effect is structural belongs in a declared var, ' +
         'not a class target.',
+      targetOnRenderPropFallback:
+        "Theme target '{{fallbackTarget}}' is on a fallback that {{callback}}" +
+        '() renders in place of, so the target silently misses every ' +
+        'custom-rendered {{callback}} result — principle 4: "a dedicated ' +
+        '-label target that only wraps the fallback span is both redundant ' +
+        'and inconsistent." Put the inheritable declarations ({{properties}}) ' +
+        "on '{{target}}' and let both paths inherit them.",
+      inheritableOnRenderPropFallback:
+        'This fallback element declares {{properties}}, which cascade, but ' +
+        '{{callback}}() renders in its place and never gets them — the two ' +
+        'render paths already diverge. It also has no target of its own, so a ' +
+        "theme reaching '{{target}}' cannot restyle it. Hoist the inheritable " +
+        "declarations to the '{{target}}' element: one seam then covers both " +
+        'paths (principle 4 — prefer inheritance over child targets).',
+      inheritablePropertyOnChild:
+        'This element declares {{properties}}, which cascade — but it sits ' +
+        "inside the theme target '{{target}}' and has no target of its own, " +
+        'so a theme that restyles that target cannot reach it. Hoist the ' +
+        "declaration to the '{{target}}' element and let it inherit: one seam " +
+        'then covers every render path, including custom-rendered content ' +
+        'that never renders this element at all.',
       underDeclaredState:
         "Theme target '{{target}}' is on an element whose styles vary with " +
         '{{missing}}, but themeProps() does not pass {{missing}}. A theme ' +
@@ -240,6 +262,23 @@ const rule = {
               'Breadcrumbs) whose root legitimately only lays out, and the ' +
               'target cannot be moved anywhere in any case.',
           },
+          checkRenderPropFallback: {
+            type: 'boolean',
+            description:
+              'Report inheritable typography/color on a fallback element ' +
+              'that a render-prop callback replaces. Narrow by construction: ' +
+              'the divergence between the two render paths is visible in the ' +
+              'AST, so this does not depend on design intent.',
+          },
+          checkInheritableHoisting: {
+            type: 'boolean',
+            description:
+              'Also report inheritable typography/color declared on an ' +
+              'untargeted descendant of a target-carrying element. Off by ' +
+              'default: a descendant often needs to DIFFER from its parent ' +
+              '(a muted caption in a card), which is indistinguishable from ' +
+              'a hoistable declaration without knowing the design intent.',
+          },
           checkStateSurface: {
             type: 'boolean',
             description:
@@ -261,6 +300,8 @@ const rule = {
     const allowFiles = options.allowFiles ?? [];
     const checkStateSurface = options.checkStateSurface === true;
     const checkRootTargets = options.checkRootTargets === true;
+    const checkInheritableHoisting = options.checkInheritableHoisting === true;
+    const checkRenderPropFallback = options.checkRenderPropFallback !== false;
     const scanner = createFileScanner(context);
     if (allowFiles.some((pattern) => scanner.filename.includes(pattern))) {
       return {};
@@ -457,8 +498,218 @@ const rule = {
         for (const node of elements) {
           checkElement(node);
         }
+        if (checkRenderPropFallback) {
+          for (const node of elements) {
+            checkRenderPropFallbacks(node);
+          }
+        }
+        if (checkInheritableHoisting) {
+          for (const node of elements) {
+            checkInheritableChildren(node);
+          }
+        }
       },
     };
+
+    /**
+     * The narrow, intent-independent case: `renderThing ? renderThing(x) :
+     * <span {...stylex.props(styles.label)}>`. The fallback's typography
+     * applies to exactly one of the two render paths, which is a divergence
+     * the AST shows directly — no guess about design intent required.
+     */
+    function checkRenderPropFallbacks(node) {
+      const targets = scanner
+        .themeTargets(node.openingElement)
+        .filter((target) => target.name != null && !allowTargets.has(target.name));
+      if (targets.length === 0) {
+        return;
+      }
+      const targetName = targets[0].name;
+
+      for (const {fallback, callback} of renderPropBranches(node)) {
+        if (!isHostElement(fallback.openingElement.name)) {
+          continue;
+        }
+        // A target ON the fallback is not an exemption — it is principle 4's
+        // named anti-pattern, because the callback's output never carries it.
+        const fallbackTargets = scanner
+          .themeTargets(fallback.openingElement)
+          .filter((target) => target.name != null);
+        const {all} = scanner.styleArguments(fallback.openingElement);
+        const properties = [];
+        let ok = true;
+        for (const argument of all) {
+          const names = scanner.resolveStyleProperties(argument);
+          if (names == null) {
+            ok = false;
+            break;
+          }
+          properties.push(...names);
+        }
+        if (!ok) continue;
+        const inheritable = [
+          ...new Set(properties.filter((name) => INHERITABLE_PROPERTIES.has(name))),
+        ];
+        if (inheritable.length === 0) continue;
+        if (fallbackTargets.length > 0) {
+          for (const fallbackTarget of fallbackTargets) {
+            if (allowTargets.has(fallbackTarget.name)) continue;
+            context.report({
+              node: fallback.openingElement,
+              messageId: 'targetOnRenderPropFallback',
+              data: {
+                target: targetName,
+                fallbackTarget: fallbackTarget.name,
+                callback,
+                properties: inheritable.slice(0, 6).join(', '),
+              },
+            });
+          }
+          continue;
+        }
+        context.report({
+          node: fallback.openingElement,
+          messageId: 'inheritableOnRenderPropFallback',
+          data: {
+            target: targetName,
+            callback,
+            properties: inheritable.slice(0, 6).join(', '),
+          },
+        });
+      }
+    }
+
+    /**
+     * Inheritable declarations on untargeted descendants of a target-carrying
+     * element (principle 4: prefer inheritance over child targets).
+     */
+    function checkInheritableChildren(node) {
+      const targets = scanner
+        .themeTargets(node.openingElement)
+        .filter((target) => target.name != null && !allowTargets.has(target.name));
+      if (targets.length === 0) {
+        return;
+      }
+      const targetName = targets[0].name;
+
+      const visit = (current) => {
+        for (const child of current.children ?? []) {
+          if (child.type !== 'JSXElement') {
+            // Descend through expression containers: `{cond && <span …/>}`.
+            if (child.type === 'JSXExpressionContainer') {
+              collectElements(child).forEach(inspect);
+            }
+            continue;
+          }
+          inspect(child);
+        }
+      };
+
+      const inspect = (child) => {
+        // A child with its own target is a seam in its own right.
+        if (scanner.themeTargets(child.openingElement).length > 0) {
+          return;
+        }
+        // A composed component styles itself; its declarations are not here.
+        if (!isHostElement(child.openingElement.name)) {
+          return;
+        }
+        const {all} = scanner.styleArguments(child.openingElement);
+        const properties = [];
+        let resolved = true;
+        for (const argument of all) {
+          const names = scanner.resolveStyleProperties(argument);
+          if (names == null) {
+            resolved = false;
+            break;
+          }
+          properties.push(...names);
+        }
+        if (resolved) {
+          const inheritable = [
+            ...new Set(properties.filter((name) => INHERITABLE_PROPERTIES.has(name))),
+          ];
+          if (inheritable.length > 0) {
+            context.report({
+              node: child.openingElement,
+              messageId: 'inheritablePropertyOnChild',
+              data: {
+                target: targetName,
+                properties: inheritable.slice(0, 6).join(', '),
+              },
+            });
+          }
+        }
+        visit(child);
+      };
+
+      visit(node);
+    }
+
+    /**
+     * `cb ? cb(x) : <el/>` and `cb ? <el/> : cb(x)` inside a subtree: the
+     * styled fallback element and the callback that replaces it.
+     */
+    function renderPropBranches(root) {
+      const found = [];
+      const seen = new Set();
+      const visit = (current) => {
+        if (current == null || typeof current.type !== 'string') return;
+        if (seen.has(current)) return;
+        seen.add(current);
+        if (current.type === 'ConditionalExpression') {
+          for (const [a, b] of [
+            [current.consequent, current.alternate],
+            [current.alternate, current.consequent],
+          ]) {
+            const callback = renderCallbackName(a);
+            if (callback != null && b?.type === 'JSXElement') {
+              found.push({fallback: b, callback});
+            }
+          }
+        }
+        for (const key of Object.keys(current)) {
+          if (key === 'parent') continue;
+          const value = current[key];
+          if (Array.isArray(value)) value.forEach(visit);
+          else visit(value);
+        }
+      };
+      visit(root);
+      return found;
+    }
+
+    /** `renderOption(item)` → 'renderOption'; anything else → null. */
+    function renderCallbackName(node) {
+      if (
+        node?.type === 'CallExpression' &&
+        node.callee?.type === 'Identifier' &&
+        /^render[A-Z]/.test(node.callee.name)
+      ) {
+        return node.callee.name;
+      }
+      return null;
+    }
+
+    /** JSX elements nested inside an expression container. */
+    function collectElements(root) {
+      const found = [];
+      const walkExpression = (current) => {
+        if (current == null || typeof current.type !== 'string') return;
+        if (current.type === 'JSXElement') {
+          found.push(current);
+          return; // inspect() recurses into it
+        }
+        for (const key of Object.keys(current)) {
+          if (key === 'parent') continue;
+          const value = current[key];
+          if (Array.isArray(value)) value.forEach(walkExpression);
+          else walkExpression(value);
+        }
+      };
+      walkExpression(root);
+      return found;
+    }
 
     /** The one Astryx component this element wraps, if that is all it holds. */
     function soleAstryxChild(node) {
