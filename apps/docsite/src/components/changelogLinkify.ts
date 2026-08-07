@@ -1,10 +1,14 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * Pure markdown post-processors for the changelog view. Each turns a raw
- * pattern in the rendered CHANGELOG text into a markdown link before it is
- * handed to <Markdown>. Kept side-effect-free and colocated so they can be
- * unit tested without rendering the component.
+ * Pure markdown post-processors. Each turns a raw pattern in authored markdown
+ * into a markdown link before it is handed to a renderer. Kept side-effect-free
+ * so they can be unit tested without rendering the component.
+ *
+ * `linkifyPRs` / `linkifyContributors` / `stripTitle` are changelog-specific.
+ * `linkifyComponents` is shared: the changelog runs it over CHANGELOG text
+ * before <Markdown>, and the docs pages run it over `.doc.mjs` prose before
+ * renderInlineMarkdown (see docs/docsLinkify.ts).
  */
 
 import {GITHUB_REPO} from '../constants';
@@ -33,8 +37,36 @@ export function linkifyContributors(markdown: string): string {
   );
 }
 
+/**
+ * Spans the component linkifier copies through verbatim: fenced blocks, inline
+ * code spans, and existing markdown links. Whatever sits inside one of those is
+ * already deliberate authoring, so rewriting it would either double-link it or
+ * splice link syntax into a literal. In the changelog this doubles as the
+ * author's opt-out — backticking a name suppresses its auto-link. On the docs
+ * site, InlineCode still resolves an exact-name code span to its page
+ * (codeLinkifiers.ts); this pass stays out of the span either way.
+ *
+ * Adjacency lookarounds alone are not enough: they miss `<Theme>` and
+ * `packages/core/src/Icon/x.tsx`, where the name is inside the span but not
+ * touching its delimiters.
+ */
+const OPAQUE_SPAN = /```[\s\S]*?```|`[^`]+`|\[[^\]]*\]\([^)]*\)/g;
+
+export interface LinkifyComponentsOptions {
+  /**
+   * Emit a backticked label — `` [`Button`](/components/Button) `` — so the
+   * auto-link renders as monospace. Off by default; the changelog wants plain
+   * prose labels.
+   */
+  monospace?: boolean;
+}
+
 /** Link bare component names (e.g. `Button`, `XDSButton`) to their doc page. */
-export function linkifyComponents(markdown: string, names: string[]): string {
+export function linkifyComponents(
+  markdown: string,
+  names: string[],
+  options?: LinkifyComponentsOptions,
+): string {
   if (names.length === 0) {
     return markdown;
   }
@@ -52,13 +84,23 @@ export function linkifyComponents(markdown: string, names: string[]): string {
     'g',
   );
 
-  return markdown.replace(pattern, match => {
-    const href = nameToHref.get(match);
-    if (!href) {
-      return match;
-    }
-    return '[' + match + '](' + href + ')';
-  });
+  const linkify = (text: string): string =>
+    text.replace(pattern, match => {
+      const href = nameToHref.get(match);
+      if (!href) {
+        return match;
+      }
+      const label = options?.monospace === true ? '`' + match + '`' : match;
+      return '[' + label + '](' + href + ')';
+    });
+
+  let out = '';
+  let lastIndex = 0;
+  for (const span of markdown.matchAll(OPAQUE_SPAN)) {
+    out += linkify(markdown.slice(lastIndex, span.index)) + span[0];
+    lastIndex = span.index + span[0].length;
+  }
+  return out + linkify(markdown.slice(lastIndex));
 }
 
 /** Strip the leading `# Title` line (the package name h1) from a changelog. */

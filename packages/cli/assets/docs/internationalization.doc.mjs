@@ -300,7 +300,7 @@ export default function App() {
       content: [
         {
           type: 'prose',
-          text: 'Astryx generates a `pseudo` locale that wraps every string in `⟦…⟧` and replaces letters with accented look-alikes. Switch to it in development to catch hardcoded astryx strings and layout issues caused by longer text.',
+          text: 'Astryx generates a `pseudo` locale that wraps every string in `⟦…⟧` and replaces letters with accented look-alikes. Turn it on in development to catch hardcoded astryx strings and layout issues caused by longer text.',
         },
         {
           type: 'code',
