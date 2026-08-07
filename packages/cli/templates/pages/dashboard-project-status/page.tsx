@@ -2,20 +2,8 @@
 
 'use client';
 
-/**
- * Project / Program / Launch Status Tracker — a delivery status dashboard.
- *
- * Content-only (root `Layout`); the host supplies the app shell. Composed of
- * distinct status widgets stacked in the content column:
- *
- *   RAG roll-up header | milestone Gantt | workstream table | risks panel | burn-down
- *
- * The release-phase control (All / Build / Beta / GA) filters the milestones,
- * workstreams, and risks so each phase reads as its own status view. All data
- * is deterministic (fixed fixtures, no clocks/random) so previews stay stable.
- */
-
 import {useMemo, useState, type CSSProperties} from 'react';
+import * as stylex from '@stylexjs/stylex';
 import {
   VStack,
   HStack,
@@ -23,20 +11,18 @@ import {
   Layout,
   LayoutContent,
   LayoutHeader,
+  LayoutPanel,
 } from '@astryxdesign/core/Layout';
-import {Grid} from '@astryxdesign/core/Grid';
 import {Text, Heading} from '@astryxdesign/core/Text';
 import {Card} from '@astryxdesign/core/Card';
+import {Section} from '@astryxdesign/core/Section';
 import {Button} from '@astryxdesign/core/Button';
 import {Icon} from '@astryxdesign/core/Icon';
 import {Divider} from '@astryxdesign/core/Divider';
 import {Badge} from '@astryxdesign/core/Badge';
-import {StatusDot} from '@astryxdesign/core/StatusDot';
-import type {StatusDotVariant} from '@astryxdesign/core/StatusDot';
 import {Token} from '@astryxdesign/core/Token';
 import {ProgressBar} from '@astryxdesign/core/ProgressBar';
 import {Avatar} from '@astryxdesign/core/Avatar';
-import {Banner} from '@astryxdesign/core/Banner';
 import {
   SegmentedControl,
   SegmentedControlItem,
@@ -60,8 +46,6 @@ import {
 } from 'recharts';
 import {
   CheckCircleIcon,
-  ExclamationTriangleIcon,
-  NoSymbolIcon,
   ArrowDownTrayIcon,
   FlagIcon,
 } from '@heroicons/react/24/outline';
@@ -103,12 +87,12 @@ interface Risk {
   detail: string;
 }
 
-// ============= RAG MAPPING =============
+// ============= LABEL & TONE MAPPING =============
 
-const RAG_DOT: Record<Rag, StatusDotVariant> = {
-  onTrack: 'success',
-  atRisk: 'warning',
-  blocked: 'error',
+const PHASE_LABEL: Record<Exclude<Phase, 'all'>, string> = {
+  build: 'Build',
+  beta: 'Beta',
+  ga: 'GA',
 };
 
 const RAG_LABEL: Record<Rag, string> = {
@@ -123,7 +107,8 @@ const RAG_BADGE: Record<Rag, 'green' | 'yellow' | 'red'> = {
   blocked: 'red',
 };
 
-const RAG_PROGRESS: Record<Rag, 'success' | 'warning' | 'error'> = {
+// Semantic tone per status — drives the progress bar variant.
+const RAG_TONE: Record<Rag, 'success' | 'warning' | 'error'> = {
   onTrack: 'success',
   atRisk: 'warning',
   blocked: 'error',
@@ -320,23 +305,14 @@ const RISKS: Risk[] = [
   },
 ];
 
-const PHASE_OF: Record<Exclude<Phase, 'all'>, string> = {
-  build: 'Build',
-  beta: 'Beta',
-  ga: 'GA',
-};
-
-// ============= BURN-DOWN DATA =============
-
-// Ideal vs. actual remaining scope (story points) over 13 weeks.
+// Ideal vs. actual remaining scope (story points), one entry per week.
 const BURNDOWN = (() => {
   const total = 320;
-  const weeks = 13;
-  const idealStep = total / (weeks - 1);
   // Actual trails ideal mid-project (scope discovery), recovers late.
   const actualRemaining = [
     320, 300, 286, 262, 240, 226, 210, 182, 150, 132, 96, 54, 20,
   ];
+  const idealStep = total / (actualRemaining.length - 1);
   return actualRemaining.map((actual, i) => ({
     week: i,
     label: `W${i + 1}`,
@@ -345,7 +321,48 @@ const BURNDOWN = (() => {
   }));
 })();
 
+// ============= DERIVED FROM DATA =============
+
+// Both aggregates describe the whole program, so they never change with the
+// phase filter and are computed once at module scope.
+
+const OVERALL_PERCENT = Math.round(
+  WORKSTREAMS.reduce((sum, w) => sum + w.percent, 0) / WORKSTREAMS.length,
+);
+
+// Worst status across every workstream wins.
+const PROGRAM_STATUS: Rag = WORKSTREAMS.some(w => w.status === 'blocked')
+  ? 'blocked'
+  : WORKSTREAMS.some(w => w.status === 'atRisk')
+    ? 'atRisk'
+    : 'onTrack';
+
+// Milestones, workstreams and risks all carry a `phase`, so one filter serves
+// all three.
+function byPhase<T extends {phase: Exclude<Phase, 'all'>}>(
+  items: T[],
+  phase: Phase,
+): T[] {
+  return phase === 'all' ? items : items.filter(item => item.phase === phase);
+}
+
 // ============= SHARED PIECES =============
+
+// The second page section caps at a content column and centers within it, so
+// its content stays aligned even though the section background runs the full
+// width of the viewport.
+const pageStyles = stylex.create({
+  contentWidth: {
+    width: '100%',
+    maxWidth: 1440,
+    marginInline: 'auto',
+  },
+  // Content is full bleed (padding={0}), so add breathing room below the last
+  // section instead of letting it butt against the scroll container's edge.
+  contentBottomPad: {
+    paddingBlockEnd: 'var(--spacing-10)',
+  },
+});
 
 // Icon's `color` prop only takes semantic names, but the legend swatch must
 // match the exact chart series color — inline color required (same pattern as
@@ -359,34 +376,6 @@ function LegendDot({color, label}: {color: string; label: string}) {
         {label}
       </Text>
     </HStack>
-  );
-}
-
-// ============= RAG ROLL-UP HEADER =============
-
-function RollupCard({
-  rag,
-  count,
-  icon,
-}: {
-  rag: Rag;
-  count: number;
-  icon: typeof CheckCircleIcon;
-}) {
-  const iconColor =
-    rag === 'onTrack' ? 'success' : rag === 'atRisk' ? 'warning' : 'error';
-  return (
-    <Card>
-      <HStack gap={3} vAlign="center">
-        <Icon icon={icon} size="lg" color={iconColor} />
-        <VStack gap={0}>
-          <Heading level={2}>{count}</Heading>
-          <Text type="supporting" color="secondary">
-            {RAG_LABEL[rag]}
-          </Text>
-        </VStack>
-      </HStack>
-    </Card>
   );
 }
 
@@ -410,14 +399,11 @@ function GanttTooltip({
   return (
     <Card padding={3}>
       <VStack gap={1}>
-        <HStack gap={2} vAlign="center">
-          <StatusDot variant={RAG_DOT[m.status]} label={RAG_LABEL[m.status]} />
-          <Text type="body" weight="semibold">
-            {m.name}
-          </Text>
-        </HStack>
+        <Text type="body" weight="semibold">
+          {m.name}
+        </Text>
         <Text type="supporting" color="secondary">
-          {m.dateLabel} · {PHASE_OF[m.phase]}
+          {m.dateLabel} · {PHASE_LABEL[m.phase]}
         </Text>
       </VStack>
     </Card>
@@ -511,7 +497,7 @@ const columns: TableColumn<Workstream>[] = [
           {item.name}
         </Text>
         <Text type="supporting" color="secondary">
-          {PHASE_OF[item.phase]}
+          {PHASE_LABEL[item.phase]}
         </Text>
       </VStack>
     ),
@@ -536,7 +522,7 @@ const columns: TableColumn<Workstream>[] = [
         <ProgressBar
           value={item.percent}
           max={100}
-          variant={RAG_PROGRESS[item.status]}
+          variant={RAG_TONE[item.status]}
           label={`${item.name} progress`}
           isLabelHidden
         />
@@ -570,11 +556,43 @@ const columns: TableColumn<Workstream>[] = [
 
 // ============= RISKS PANEL =============
 
-const RISK_STATUS: Record<Rag, 'error' | 'warning' | 'info'> = {
-  blocked: 'error',
-  atRisk: 'warning',
-  onTrack: 'info',
-};
+function RiskCard({risk}: {risk: Risk}) {
+  return (
+    <Card padding={4}>
+      <VStack gap={3}>
+        <HStack gap={2} vAlign="start">
+          <StackItem size="fill">
+            <Text type="body" weight="semibold">
+              {risk.title}
+            </Text>
+          </StackItem>
+          <Badge
+            variant={RAG_BADGE[risk.severity]}
+            label={RAG_LABEL[risk.severity]}
+          />
+        </HStack>
+
+        <Text type="supporting" color="secondary">
+          {risk.detail}
+        </Text>
+
+        <Divider />
+
+        <HStack gap={3} vAlign="center" hAlign="between" wrap="wrap">
+          <HStack gap={2} vAlign="center">
+            <Avatar name={risk.owner} size="sm" />
+            <Text type="supporting" color="secondary">
+              {risk.owner}
+            </Text>
+          </HStack>
+          <Text type="supporting" color="secondary">
+            {risk.workstream} · {PHASE_LABEL[risk.phase]}
+          </Text>
+        </HStack>
+      </VStack>
+    </Card>
+  );
+}
 
 function RisksPanel({risks}: {risks: Risk[]}) {
   if (risks.length === 0) {
@@ -590,36 +608,7 @@ function RisksPanel({risks}: {risks: Risk[]}) {
   return (
     <VStack gap={3}>
       {risks.map(risk => (
-        <Banner
-          key={risk.id}
-          status={RISK_STATUS[risk.severity]}
-          title={risk.title}
-          description={
-            <VStack gap={2}>
-              <Text type="supporting" color="secondary">
-                {risk.detail}
-              </Text>
-              <HStack gap={4} vAlign="center" wrap="wrap">
-                <HStack gap={2} vAlign="center">
-                  <Avatar name={risk.owner} size="sm" />
-                  <Text type="supporting" color="secondary">
-                    {risk.owner}
-                  </Text>
-                </HStack>
-                <Text type="supporting" color="secondary">
-                  {risk.workstream} · {PHASE_OF[risk.phase]}
-                </Text>
-              </HStack>
-            </VStack>
-          }
-          container="card"
-          endContent={
-            <Badge
-              variant={RAG_BADGE[risk.severity]}
-              label={RAG_LABEL[risk.severity]}
-            />
-          }
-        />
+        <RiskCard key={risk.id} risk={risk} />
       ))}
     </VStack>
   );
@@ -729,7 +718,7 @@ function BurndownChart() {
 function SectionHeading({title, hint}: {title: string; hint?: string}) {
   return (
     <HStack hAlign="between" vAlign="center" gap={3}>
-      <Heading level={3}>{title}</Heading>
+      <Heading level={2}>{title}</Heading>
       {hint ? (
         <Text type="supporting" color="secondary">
           {hint}
@@ -744,199 +733,154 @@ function SectionHeading({title, hint}: {title: string; hint?: string}) {
 export default function LaunchStatusTrackerPage() {
   const [phase, setPhase] = useState<Phase>('all');
 
-  const milestones = useMemo(
-    () =>
-      phase === 'all' ? MILESTONES : MILESTONES.filter(m => m.phase === phase),
-    [phase],
-  );
-  const workstreams = useMemo(
-    () =>
-      phase === 'all'
-        ? WORKSTREAMS
-        : WORKSTREAMS.filter(w => w.phase === phase),
-    [phase],
-  );
-  const risks = useMemo(
-    () => (phase === 'all' ? RISKS : RISKS.filter(r => r.phase === phase)),
-    [phase],
-  );
-
-  // Roll-up counts always reflect the whole program, not the phase filter.
-  const rollup = useMemo(() => {
-    const count = (rag: Rag) =>
-      WORKSTREAMS.filter(w => w.status === rag).length;
-    return {
-      onTrack: count('onTrack'),
-      atRisk: count('atRisk'),
-      blocked: count('blocked'),
-    };
-  }, []);
-
-  const overall = useMemo(() => {
-    const avg =
-      WORKSTREAMS.reduce((sum, w) => sum + w.percent, 0) / WORKSTREAMS.length;
-    return Math.round(avg);
-  }, []);
-
-  const programStatus: Rag =
-    rollup.blocked > 0 ? 'blocked' : rollup.atRisk > 0 ? 'atRisk' : 'onTrack';
+  const milestones = useMemo(() => byPhase(MILESTONES, phase), [phase]);
+  const workstreams = useMemo(() => byPhase(WORKSTREAMS, phase), [phase]);
+  const risks = useMemo(() => byPhase(RISKS, phase), [phase]);
 
   return (
     <Layout
       height="fill"
-      contentWidth={1440}
       header={
-        <LayoutHeader hasDivider>
-          <HStack gap={3} vAlign="center" wrap="wrap">
-            <StackItem size="fill">
+        <LayoutHeader padding={6} hasDivider>
+          <HStack gap={3} vAlign="center" hAlign="between" wrap="wrap">
+            <VStack gap={2}>
+              <Heading level={1}>Aurora Launch</Heading>
               <HStack gap={2} vAlign="center">
-                <Icon icon={FlagIcon} size="md" color="secondary" />
-                <VStack gap={0}>
-                  <Heading level={1}>Aurora launch</Heading>
-                  <HStack gap={2} vAlign="center">
-                    <StatusDot
-                      variant={RAG_DOT[programStatus]}
-                      label={RAG_LABEL[programStatus]}
-                    />
-                    <Text type="supporting" color="secondary">
-                      {RAG_LABEL[programStatus]} · target GA
-                    </Text>
-                    <Timestamp
-                      value="2026-06-30T00:00:00Z"
-                      format="date"
-                      color="secondary"
-                    />
-                  </HStack>
-                </VStack>
+                <Badge variant="yellow" label={RAG_LABEL[PROGRAM_STATUS]} />
+                <Text type="body" color="secondary">
+                  Target GA
+                </Text>
+                <Text type="body" color="secondary">
+                  •
+                </Text>
+                <Timestamp
+                  value="2026-06-30T00:00:00Z"
+                  format="date"
+                  type="body"
+                  color="secondary"
+                />
               </HStack>
-            </StackItem>
-            <SegmentedControl
-              label="Release phase"
-              value={phase}
-              onChange={value => setPhase(value as Phase)}
-              size="sm">
-              <SegmentedControlItem label="All" value="all" />
-              <SegmentedControlItem label="Build" value="build" />
-              <SegmentedControlItem label="Beta" value="beta" />
-              <SegmentedControlItem label="GA" value="ga" />
-            </SegmentedControl>
-            <Button
-              label="Export status"
-              variant="secondary"
-              size="sm"
-              icon={<Icon icon={ArrowDownTrayIcon} size="sm" />}
-            />
+            </VStack>
+            <HStack gap={3}>
+              <SegmentedControl
+                label="Release phase"
+                value={phase}
+                onChange={value => setPhase(value as Phase)}>
+                <SegmentedControlItem label="All" value="all" />
+                <SegmentedControlItem label="Build" value="build" />
+                <SegmentedControlItem label="Beta" value="beta" />
+                <SegmentedControlItem label="GA" value="ga" />
+              </SegmentedControl>
+              <Button
+                label="Export status"
+                variant="secondary"
+                icon={<Icon icon={ArrowDownTrayIcon} size="sm" />}
+              />
+            </HStack>
           </HStack>
         </LayoutHeader>
       }
+      end={
+        <LayoutPanel
+          width={400}
+          padding={6}
+          hasDivider
+          role="complementary"
+          label="Blockers and risks">
+          <VStack gap={4}>
+            <SectionHeading
+              title="Blockers & risks"
+              hint={`${risks.length} open`}
+            />
+            <RisksPanel risks={risks} />
+          </VStack>
+        </LayoutPanel>
+      }
       content={
-        <LayoutContent padding={6}>
+        <LayoutContent padding={0} xstyle={pageStyles.contentBottomPad}>
           <VStack gap={6}>
-            {/* RAG roll-up header */}
-            <Grid columns={{minWidth: 220, repeat: 'fit'}} gap={4}>
-              <RollupCard
-                rag="onTrack"
-                count={rollup.onTrack}
-                icon={CheckCircleIcon}
-              />
-              <RollupCard
-                rag="atRisk"
-                count={rollup.atRisk}
-                icon={ExclamationTriangleIcon}
-              />
-              <RollupCard
-                rag="blocked"
-                count={rollup.blocked}
-                icon={NoSymbolIcon}
-              />
-              <Card>
-                <VStack gap={2}>
-                  <Text type="label" color="secondary">
-                    Overall completion
-                  </Text>
-                  <Heading level={2}>{overall}%</Heading>
+            <Section variant="transparent" padding={6} dividers={['bottom']}>
+              <VStack gap={8}>
+                {/* Overall progress */}
+                <VStack gap={4}>
+                  <HStack gap={2} vAlign="center" hAlign="between">
+                    <Heading level={2}>Overall completion</Heading>
+                    <Text type="large" color="secondary">
+                      {OVERALL_PERCENT}%
+                    </Text>
+                  </HStack>
                   <ProgressBar
-                    value={overall}
+                    value={OVERALL_PERCENT}
                     max={100}
-                    variant={RAG_PROGRESS[programStatus]}
+                    variant={RAG_TONE[PROGRAM_STATUS]}
                     label="Overall completion"
                     isLabelHidden
                   />
                 </VStack>
-              </Card>
-            </Grid>
 
-            <Divider />
+                <Divider />
 
-            {/* Milestone Gantt timeline */}
-            <VStack gap={4}>
-              <SectionHeading
-                title="Milestone timeline"
-                hint="Project days 0–90 · dashed line marks today"
-              />
-              <Card>
-                {milestones.length === 0 ? (
-                  <EmptyState
-                    title="No milestones in this phase"
-                    description="Switch phases to see other milestones."
-                    icon={<Icon icon={FlagIcon} size="lg" />}
-                    isCompact
+                {/* Milestone timeline */}
+                <VStack gap={4}>
+                  <SectionHeading
+                    title="Milestone timeline"
+                    hint="Project days 0–90 · dashed line marks today"
                   />
-                ) : (
-                  <GanttChart milestones={milestones} />
-                )}
-              </Card>
-            </VStack>
-
-            <Divider />
-
-            {/* Workstream table + risks panel side by side on wide screens */}
-            <Grid columns={{minWidth: 420, repeat: 'fit'}} gap={6}>
-              <VStack gap={4}>
-                <SectionHeading
-                  title="Workstreams"
-                  hint={`${workstreams.length} of ${WORKSTREAMS.length}`}
-                />
-                {workstreams.length === 0 ? (
-                  <EmptyState
-                    title="No workstreams in this phase"
-                    description="Switch phases to see other workstreams."
-                    icon={<Icon icon={FlagIcon} size="lg" />}
-                    isCompact
-                  />
-                ) : (
-                  <Table<Workstream>
-                    data={workstreams}
-                    columns={columns}
-                    idKey="id"
-                    density="balanced"
-                    dividers="rows"
-                    hasHover
-                  />
-                )}
+                  {milestones.length === 0 ? (
+                    <EmptyState
+                      title="No milestones in this phase"
+                      description="Switch phases to see other milestones."
+                      icon={<Icon icon={FlagIcon} size="lg" />}
+                      isCompact
+                    />
+                  ) : (
+                    <GanttChart milestones={milestones} />
+                  )}
+                </VStack>
               </VStack>
+            </Section>
 
-              <VStack gap={4}>
-                <SectionHeading
-                  title="Blockers & risks"
-                  hint={`${risks.length} open`}
-                />
-                <RisksPanel risks={risks} />
+            <Section variant="transparent" padding={6}>
+              <VStack gap={10} xstyle={pageStyles.contentWidth}>
+                {/* Workstream table */}
+                <VStack gap={6}>
+                  <SectionHeading
+                    title="Workstreams"
+                    hint={`${workstreams.length} of ${WORKSTREAMS.length}`}
+                  />
+                  <Card>
+                    {workstreams.length === 0 ? (
+                      <EmptyState
+                        title="No workstreams in this phase"
+                        description="Switch phases to see other workstreams."
+                        icon={<Icon icon={FlagIcon} size="lg" />}
+                        isCompact
+                      />
+                    ) : (
+                      <Table<Workstream>
+                        data={workstreams}
+                        columns={columns}
+                        idKey="id"
+                        density="balanced"
+                        dividers="rows"
+                        hasHover
+                      />
+                    )}
+                  </Card>
+                </VStack>
+
+                {/* Burn-down / progress-over-time */}
+                <VStack gap={6}>
+                  <SectionHeading
+                    title="Scope burndown"
+                    hint={`Remaining story points · ${BURNDOWN.length} weeks`}
+                  />
+                  <Card>
+                    <BurndownChart />
+                  </Card>
+                </VStack>
               </VStack>
-            </Grid>
-
-            <Divider />
-
-            {/* Burn-down / progress-over-time */}
-            <VStack gap={4}>
-              <SectionHeading
-                title="Scope burndown"
-                hint="Remaining story points · 13 weeks"
-              />
-              <Card>
-                <BurndownChart />
-              </Card>
-            </VStack>
+            </Section>
           </VStack>
         </LayoutContent>
       }

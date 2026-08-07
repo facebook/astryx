@@ -2,22 +2,8 @@
 
 'use client';
 
-/**
- * Executive / Weekly Business Review — a leadership scorecard dashboard.
- *
- * Content-only (root `Layout`); the host supplies the app shell. The page has
- * two modes, driven by the header's "One-pager" toggle:
- *
- *   Full mode:     scorecard row | OKR attainment | 2x2 trend grid | narrative
- *   One-pager mode: condensed single-column summary sized to read/print as one
- *                   page — smaller charts, tighter spacing, callouts inline.
- *
- * The period control (WoW / MoM / QoQ) reshapes every scorecard delta, the OKR
- * targets, the trend charts, and the auto-generated narrative. All data is
- * deterministic (fixed fixtures, no clocks/random) so previews stay stable.
- */
-
 import {useMemo, useState, type CSSProperties} from 'react';
+import * as stylex from '@stylexjs/stylex';
 import {
   VStack,
   HStack,
@@ -25,23 +11,21 @@ import {
   Layout,
   LayoutContent,
   LayoutHeader,
+  LayoutPanel,
 } from '@astryxdesign/core/Layout';
+import {useMediaQuery} from '@astryxdesign/core/hooks';
 import {Grid} from '@astryxdesign/core/Grid';
 import {Text, Heading} from '@astryxdesign/core/Text';
 import {Card} from '@astryxdesign/core/Card';
 import {Button} from '@astryxdesign/core/Button';
 import {Icon} from '@astryxdesign/core/Icon';
 import {Divider} from '@astryxdesign/core/Divider';
-import {Badge} from '@astryxdesign/core/Badge';
-import {StatusDot} from '@astryxdesign/core/StatusDot';
-import type {StatusDotVariant} from '@astryxdesign/core/StatusDot';
+import {Avatar} from '@astryxdesign/core/Avatar';
 import {ProgressBar} from '@astryxdesign/core/ProgressBar';
-import {Banner} from '@astryxdesign/core/Banner';
 import {
   SegmentedControl,
   SegmentedControlItem,
 } from '@astryxdesign/core/SegmentedControl';
-import {ToggleButton} from '@astryxdesign/core/ToggleButton';
 import {Timestamp} from '@astryxdesign/core/Timestamp';
 import {
   AreaChart,
@@ -54,14 +38,9 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import {
-  ArrowUpIcon,
-  ArrowDownIcon,
-  ArrowRightIcon,
-  DocumentArrowDownIcon,
-  ArrowDownTrayIcon,
-} from '@heroicons/react/24/outline';
+import {ArrowDownTrayIcon} from '@heroicons/react/24/outline';
 import {StopIcon} from '@heroicons/react/24/solid';
+import {TriangleIcon} from 'lucide-react';
 
 // ============= TYPES =============
 
@@ -99,22 +78,10 @@ interface TrendSeries {
 
 // ============= RAG COLOR MAPPING =============
 
-const RAG_DOT: Record<Rag, StatusDotVariant> = {
+const RAG_ICON: Record<Rag, 'success' | 'warning' | 'error'> = {
   green: 'success',
   amber: 'warning',
   red: 'error',
-};
-
-const RAG_BADGE: Record<Rag, 'green' | 'yellow' | 'red'> = {
-  green: 'green',
-  amber: 'yellow',
-  red: 'red',
-};
-
-const RAG_LABEL: Record<Rag, string> = {
-  green: 'On track',
-  amber: 'At risk',
-  red: 'Off track',
 };
 
 // A delta becomes RAG by magnitude + whether the direction is favorable.
@@ -188,6 +155,26 @@ const KPIS: Kpi[] = [
     higherIsBetter: true,
   },
 ];
+
+// The scorecard is one flat grid of 6 tiles: 1 column (small), 2 (medium),
+// 3 (large) — i.e. 1x6, 2x3, 3x2. The tiers are pinned to viewport width
+// rather than derived from tile width via auto-fill, so the breakpoints are
+// explicit. The ranges are non-overlapping, so exactly one ever matches and
+// the result can't depend on StyleX's at-rule ordering or on source order.
+const SCORECARD_MEDIUM = '@media (min-width: 768px) and (max-width: 1199.98px)';
+const SCORECARD_LARGE = '@media (min-width: 1200px)';
+
+// Overrides Grid's own grid-template-columns. Grid routes its track template
+// through a CSS var and applies `xstyle` last, so this wins.
+const scorecardStyles = stylex.create({
+  grid: {
+    gridTemplateColumns: {
+      default: '1fr',
+      [SCORECARD_MEDIUM]: 'repeat(2, 1fr)',
+      [SCORECARD_LARGE]: 'repeat(3, 1fr)',
+    },
+  },
+});
 
 // ============= OKR / GOAL ATTAINMENT =============
 
@@ -307,8 +294,10 @@ const TRENDS: TrendSeries[] = [
 
 // ============= AUTO-GENERATED NARRATIVE =============
 
+type CalloutStatus = 'success' | 'warning' | 'info';
+
 interface Callout {
-  status: 'success' | 'warning' | 'info';
+  status: CalloutStatus;
   title: string;
   detail: string;
 }
@@ -399,20 +388,33 @@ function LegendDot({color, label}: {color: string; label: string}) {
   );
 }
 
-function DeltaBadge({deltaPct, rag}: {deltaPct: number; rag: Rag}) {
-  const flat = deltaPct === 0;
-  const arrow = flat
-    ? ArrowRightIcon
-    : deltaPct > 0
-      ? ArrowUpIcon
-      : ArrowDownIcon;
+// lucide's Triangle points up, so down and flat are the same glyph rotated —
+// one marker, three directions, no second import to keep visually in sync.
+const deltaStyles = stylex.create({
+  down: {transform: 'rotate(180deg)'},
+  flat: {transform: 'rotate(90deg)'},
+});
+
+function DeltaIndicator({deltaPct, rag}: {deltaPct: number; rag: Rag}) {
   const sign = deltaPct > 0 ? '+' : '';
+  const direction =
+    deltaPct === 0 ? deltaStyles.flat : deltaPct < 0 ? deltaStyles.down : null;
   return (
-    <Badge
-      variant={RAG_BADGE[rag]}
-      label={`${sign}${deltaPct.toFixed(1)}%`}
-      icon={<Icon icon={arrow} size="xsm" color="inherit" />}
-    />
+    <HStack gap={2} vAlign="center">
+      <Text type="body" color="secondary">
+        {sign}
+        {deltaPct.toFixed(1)}%
+      </Text>
+      {/* Triangle ships as an outline; filling it gives the solid delta
+          marker that scorecards conventionally use. */}
+      <Icon
+        icon={TriangleIcon}
+        size="xsm"
+        color={RAG_ICON[rag]}
+        fill="currentColor"
+        xstyle={direction}
+      />
+    </HStack>
   );
 }
 
@@ -460,36 +462,18 @@ function makeTrendTooltip(unit: string) {
 
 // ============= SCORECARD =============
 
-function ScorecardTile({
-  kpi,
-  period,
-  isCompact,
-}: {
-  kpi: Kpi;
-  period: Period;
-  isCompact: boolean;
-}) {
+function ScorecardTile({kpi, period}: {kpi: Kpi; period: Period}) {
   const deltaPct = kpi.delta[period];
   const rag = ragFor(deltaPct, kpi.higherIsBetter);
   return (
-    <Card padding={isCompact ? 4 : 5}>
-      <VStack gap={isCompact ? 1 : 2}>
-        <HStack hAlign="between" vAlign="center">
-          <Text type="label" color="secondary">
-            {kpi.label}
-          </Text>
-          <StatusDot
-            variant={RAG_DOT[rag]}
-            label={RAG_LABEL[rag]}
-            tooltip={RAG_LABEL[rag]}
-          />
-        </HStack>
-        <Heading level={isCompact ? 3 : 2}>{kpi.value}</Heading>
-        <HStack gap={2} vAlign="center">
-          <DeltaBadge deltaPct={deltaPct} rag={rag} />
-          <Text type="supporting" color="secondary">
-            {period}
-          </Text>
+    <Card padding={5}>
+      <VStack gap={1}>
+        <Text type="label" color="secondary">
+          {kpi.label}
+        </Text>
+        <HStack gap={4} vAlign="center">
+          <Heading level={2}>{kpi.value}</Heading>
+          <DeltaIndicator deltaPct={deltaPct} rag={rag} />
         </HStack>
       </VStack>
     </Card>
@@ -498,21 +482,20 @@ function ScorecardTile({
 
 // ============= OKR ATTAINMENT =============
 
-function OkrRow({okr, isCompact}: {okr: Okr; isCompact: boolean}) {
+function OkrRow({okr}: {okr: Okr}) {
   const pct = Math.round((okr.actual / okr.target) * 100);
   const rag = okrRag(pct);
+  // `owner` is "Name · Title"; the avatar wants the person, not the title.
+  const ownerName = okr.owner.split('·')[0].trim();
   return (
     <VStack gap={2}>
       <HStack hAlign="between" vAlign="center" gap={3}>
         <StackItem size="fill">
-          <HStack gap={2} vAlign="center">
-            <StatusDot variant={RAG_DOT[rag]} label={RAG_LABEL[rag]} />
-            <Text type="body" weight="semibold">
-              {okr.objective}
-            </Text>
-          </HStack>
+          <Heading level={4}>{okr.objective}</Heading>
         </StackItem>
-        <Badge variant={RAG_BADGE[rag]} label={`${pct}%`} />
+        <Text type="supporting" color="secondary">
+          {pct}%
+        </Text>
       </HStack>
       <ProgressBar
         value={okr.actual}
@@ -521,25 +504,26 @@ function OkrRow({okr, isCompact}: {okr: Okr; isCompact: boolean}) {
         label={okr.objective}
         isLabelHidden
       />
-      {!isCompact && (
-        <HStack hAlign="between" vAlign="center">
+      <HStack hAlign="between" vAlign="center" gap={4}>
+        <HStack gap={2} vAlign="center">
+          <Avatar size="sm" name={ownerName} />
           <Text type="supporting" color="secondary">
             {okr.owner}
           </Text>
-          <Text type="supporting" color="secondary">
-            {okr.actual}
-            {okr.unit} / {okr.target}
-            {okr.unit} target
-          </Text>
         </HStack>
-      )}
+        <Text type="supporting" color="secondary">
+          {okr.actual}
+          {okr.unit} / {okr.target}
+          {okr.unit} target
+        </Text>
+      </HStack>
     </VStack>
   );
 }
 
 // ============= TREND CHART =============
 
-function TrendChart({trend, height}: {trend: TrendSeries; height: number}) {
+function TrendChart({trend}: {trend: TrendSeries}) {
   const gradientId = `grad-${trend.key}`;
   const TrendTooltip = useMemo(
     () => makeTrendTooltip(trend.unit),
@@ -550,24 +534,22 @@ function TrendChart({trend, height}: {trend: TrendSeries; height: number}) {
     ((latest.current - latest.prior) / latest.prior) * 100,
   );
   return (
-    <Card>
-      <VStack gap={3}>
+    <Card padding={5}>
+      <VStack gap={6}>
         <HStack hAlign="between" vAlign="center">
-          <VStack gap={0}>
-            <Text type="label" color="secondary">
-              {trend.title}
-            </Text>
-            <Heading level={4}>
+          <HStack gap={2}>
+            <Heading level={3}>{trend.title}</Heading>
+            <Heading level={3} color="secondary">
               {latest.current.toLocaleString()}
               {trend.unit}
             </Heading>
-          </VStack>
-          <Badge
-            variant={deltaPct >= 0 ? 'green' : 'red'}
-            label={`${deltaPct >= 0 ? '+' : ''}${deltaPct}% vs prior`}
-          />
+          </HStack>
+          <Text type="supporting" color="secondary">
+            {deltaPct >= 0 ? '+' : ''}
+            {deltaPct}% vs prior
+          </Text>
         </HStack>
-        <ResponsiveContainer width="100%" height={height}>
+        <ResponsiveContainer width="100%" height={200}>
           {trend.kind === 'area' ? (
             <AreaChart
               data={trend.data}
@@ -683,17 +665,59 @@ function TrendChart({trend, height}: {trend: TrendSeries; height: number}) {
 
 // ============= NARRATIVE =============
 
+// Each callout is a discrete, independently-removable observation, so Card is
+// the right container. Card variants are for categorization, not status — the
+// status reads from the leading icon (glyph + semantic color + accessible
+// name), never from the card surface.
+const CALLOUT_ICON: Record<CalloutStatus, 'success' | 'warning' | 'info'> = {
+  success: 'success',
+  warning: 'warning',
+  info: 'info',
+};
+
+const CALLOUT_ICON_COLOR: Record<
+  CalloutStatus,
+  'success' | 'warning' | 'accent'
+> = {
+  success: 'success',
+  warning: 'warning',
+  info: 'accent',
+};
+
+const CALLOUT_LABEL: Record<CalloutStatus, string> = {
+  success: 'Positive',
+  warning: 'Needs attention',
+  info: 'Context',
+};
+
+function NarrativeCard({callout}: {callout: Callout}) {
+  return (
+    <Card padding={5}>
+      <HStack gap={3} vAlign="start">
+        <Icon
+          icon={CALLOUT_ICON[callout.status]}
+          color={CALLOUT_ICON_COLOR[callout.status]}
+          size="md"
+          label={CALLOUT_LABEL[callout.status]}
+        />
+        <StackItem size="fill">
+          <VStack gap={1}>
+            <Heading level={4}>{callout.title}</Heading>
+            <Text type="body" color="secondary">
+              {callout.detail}
+            </Text>
+          </VStack>
+        </StackItem>
+      </HStack>
+    </Card>
+  );
+}
+
 function NarrativeBlock({period}: {period: Period}) {
   return (
-    <VStack gap={3}>
+    <VStack gap={2}>
       {NARRATIVE[period].map(callout => (
-        <Banner
-          key={callout.title}
-          status={callout.status}
-          title={callout.title}
-          description={callout.detail}
-          container="card"
-        />
+        <NarrativeCard key={callout.title} callout={callout} />
       ))}
     </VStack>
   );
@@ -704,7 +728,7 @@ function NarrativeBlock({period}: {period: Period}) {
 function SectionHeading({title, hint}: {title: string; hint?: string}) {
   return (
     <HStack hAlign="between" vAlign="center" gap={3}>
-      <Heading level={3}>{title}</Heading>
+      <Heading level={2}>{title}</Heading>
       {hint ? (
         <Text type="supporting" color="secondary">
           {hint}
@@ -714,15 +738,26 @@ function SectionHeading({title, hint}: {title: string; hint?: string}) {
   );
 }
 
+// ============= PAGE CHROME =============
+
+const pageStyles = stylex.create({
+  // Deepen the scroll container's bottom gutter past the padding={6} default so
+  // the last section doesn't butt against the edge. The matching container var
+  // is updated too, since bleed children (Divider, Section) read it to pull
+  // themselves back out to the content edge.
+  contentBottomPad: {
+    paddingBlockEnd: 'var(--spacing-10)',
+    '--container-padding-block-end': 'var(--spacing-10)',
+  },
+});
+
 // ============= MAIN =============
 
 export default function ExecutiveReviewPage() {
   const [period, setPeriod] = useState<Period>('WoW');
-  const [onePager, setOnePager] = useState(false);
-
-  const scorecardKpis = onePager ? KPIS.slice(0, 4) : KPIS;
-  const chartHeight = onePager ? 120 : 200;
-  const stackGap = onePager ? 4 : 6;
+  // The narrative rail needs ~400px of its own; below that the content column
+  // would be too cramped for the 2-up trend grid, so the rail folds inline.
+  const isNarrow = useMediaQuery('(max-width: 1024px)');
 
   const okrSummary = useMemo(() => {
     const pcts = OKRS.map(o => (o.actual / o.target) * 100);
@@ -733,142 +768,110 @@ export default function ExecutiveReviewPage() {
   return (
     <Layout
       height="fill"
-      contentWidth={onePager ? 900 : 1440}
+      contentWidth={1440}
       header={
-        <LayoutHeader hasDivider>
-          <HStack gap={3} vAlign="center" wrap="wrap">
-            <StackItem size="fill">
-              <VStack gap={0}>
-                <Heading level={1}>Weekly Business Review</Heading>
-                <HStack gap={2} vAlign="center">
-                  <Text type="supporting" color="secondary">
-                    {PERIOD_SUBTITLE[period]}
-                  </Text>
-                  <Text type="supporting" color="secondary">
-                    · Generated
-                  </Text>
-                  <Timestamp
-                    value="2026-06-30T08:00:00Z"
-                    format="date"
-                    color="secondary"
-                  />
-                </HStack>
-              </VStack>
-            </StackItem>
-            <SegmentedControl
-              label="Comparison period"
-              value={period}
-              onChange={value => setPeriod(value as Period)}
-              size="sm">
-              <SegmentedControlItem label="WoW" value="WoW" />
-              <SegmentedControlItem label="MoM" value="MoM" />
-              <SegmentedControlItem label="QoQ" value="QoQ" />
-            </SegmentedControl>
-            <ToggleButton
-              label="One-pager"
-              icon={<Icon icon={DocumentArrowDownIcon} size="sm" />}
-              isPressed={onePager}
-              onPressedChange={setOnePager}
-              size="sm"
-            />
-            <Button
-              label="Export"
-              variant="secondary"
-              size="sm"
-              icon={<Icon icon={ArrowDownTrayIcon} size="sm" />}
-            />
+        <LayoutHeader padding={6} hasDivider>
+          <HStack gap={3} vAlign="center" hAlign="between" wrap="wrap">
+            <VStack gap={1}>
+              <Heading level={1}>Weekly Business Review</Heading>
+              <HStack gap={2} vAlign="center">
+                <Text type="body" color="secondary">
+                  {PERIOD_SUBTITLE[period]}
+                </Text>
+                <Text type="body" color="secondary">
+                  · Generated
+                </Text>
+                <Timestamp
+                  value="2026-06-30T08:00:00Z"
+                  format="date"
+                  type="body"
+                  color="secondary"
+                />
+              </HStack>
+            </VStack>
+            <HStack gap={3}>
+              <SegmentedControl
+                label="Comparison period"
+                value={period}
+                onChange={value => setPeriod(value as Period)}>
+                <SegmentedControlItem label="WoW" value="WoW" />
+                <SegmentedControlItem label="MoM" value="MoM" />
+                <SegmentedControlItem label="QoQ" value="QoQ" />
+              </SegmentedControl>
+              <Button
+                label="Export"
+                variant="secondary"
+                icon={<Icon icon={ArrowDownTrayIcon} size="sm" />}
+              />
+            </HStack>
           </HStack>
         </LayoutHeader>
       }
       content={
-        <LayoutContent padding={onePager ? 5 : 6}>
-          <VStack gap={stackGap}>
-            {/* Scorecard row */}
-            <VStack gap={3}>
-              <SectionHeading
-                title="Scorecard"
-                hint={`Headline KPIs · ${period} change`}
-              />
-              <Grid
-                columns={{minWidth: onePager ? 200 : 240, repeat: 'fit'}}
-                gap={4}>
-                {scorecardKpis.map(kpi => (
-                  <ScorecardTile
-                    key={kpi.key}
-                    kpi={kpi}
-                    period={period}
-                    isCompact={onePager}
-                  />
-                ))}
-              </Grid>
-            </VStack>
-
-            {/* One-pager: narrative sits directly under the scorecard so the
-                summary reads top-to-bottom on a single page. */}
-            {onePager && (
-              <VStack gap={3}>
-                <SectionHeading title="What changed & why" />
+        <LayoutContent padding={6} xstyle={pageStyles.contentBottomPad}>
+          <VStack gap={10}>
+            {/* Narrative lives in the end rail; it folds in here when narrow. */}
+            {isNarrow && (
+              <VStack gap={6}>
+                <SectionHeading title="What changed & why" hint="AI summary" />
                 <NarrativeBlock period={period} />
               </VStack>
             )}
 
-            <Divider />
+            {/* Scorecard row */}
+            <VStack gap={6}>
+              <SectionHeading title="Scorecards" hint="Performance metrics" />
+              <Grid gap={2} xstyle={scorecardStyles.grid}>
+                {KPIS.map(kpi => (
+                  <ScorecardTile key={kpi.key} kpi={kpi} period={period} />
+                ))}
+              </Grid>
+            </VStack>
 
             {/* OKR attainment */}
-            <VStack gap={4}>
+            <VStack gap={6}>
               <SectionHeading title="Goal attainment" hint={okrSummary} />
-              <Card padding={onePager ? 4 : 6}>
-                <VStack gap={onePager ? 4 : 6}>
+              <Card padding={6}>
+                <VStack gap={6}>
                   {OKRS.map((okr, i) => (
-                    <VStack gap={onePager ? 4 : 6} key={okr.objective}>
+                    <VStack gap={6} key={okr.objective}>
                       {i > 0 && <Divider />}
-                      <OkrRow okr={okr} isCompact={onePager} />
+                      <OkrRow okr={okr} />
                     </VStack>
                   ))}
                 </VStack>
               </Card>
             </VStack>
 
-            <Divider />
-
             {/* Trend section: 2x2 grid */}
-            <VStack gap={4}>
+            <VStack gap={6}>
               <SectionHeading
                 title="Trends"
                 hint="Current vs. prior period · trailing 12 weeks"
               />
-              <Grid
-                columns={
-                  onePager
-                    ? {minWidth: 260, repeat: 'fit'}
-                    : {minWidth: 340, repeat: 'fit'}
-                }
-                gap={4}>
+              <Grid columns={{minWidth: 330, repeat: 'fit'}} gap={3}>
                 {TRENDS.map(trend => (
-                  <TrendChart
-                    key={trend.key}
-                    trend={trend}
-                    height={chartHeight}
-                  />
+                  <TrendChart key={trend.key} trend={trend} />
                 ))}
               </Grid>
             </VStack>
-
-            {/* Full mode: narrative closes out the review. */}
-            {!onePager && (
-              <>
-                <Divider />
-                <VStack gap={4}>
-                  <SectionHeading
-                    title="What changed & why"
-                    hint="Auto-generated summary"
-                  />
-                  <NarrativeBlock period={period} />
-                </VStack>
-              </>
-            )}
           </VStack>
         </LayoutContent>
+      }
+      end={
+        isNarrow ? undefined : (
+          <LayoutPanel
+            width={400}
+            padding={6}
+            hasDivider
+            role="complementary"
+            label="What changed and why">
+            <VStack gap={6}>
+              <SectionHeading title="What changed & why" hint="AI summary" />
+              <NarrativeBlock period={period} />
+            </VStack>
+          </LayoutPanel>
+        )
       }
     />
   );
