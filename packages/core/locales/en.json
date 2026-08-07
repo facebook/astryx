@@ -914,5 +914,17 @@
   "@astryx.token.remove": {
     "defaultMessage": "Remove {label}",
     "description": "Screen-reader-only label on the \"×\" on an individual Token/chip. Example: `Remove John Smith`, `Remove Active`. Imperative verb."
+  },
+  "@astryx.avatarStatusDot.away": {
+    "defaultMessage": "Away",
+    "description": "Default accessible label for a neutral AvatarStatusDot representing away/offline presence."
+  },
+  "@astryx.avatarStatusDot.busy": {
+    "defaultMessage": "Busy",
+    "description": "Default accessible label for an error AvatarStatusDot representing busy/do-not-disturb presence."
+  },
+  "@astryx.avatarStatusDot.online": {
+    "defaultMessage": "Online",
+    "description": "Default accessible label for a success AvatarStatusDot representing online presence."
   }
 }

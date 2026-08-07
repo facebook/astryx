@@ -1,9 +1,6 @@
 ---
-'@astryxdesign/core': minor
+'@astryxdesign/core': patch
 ---
 
-feat: add default accessible labels to AvatarStatusDot per variant
-
-AvatarStatusDot now resolves a default accessible label ("Online", "Away", "Busy") when no explicit `label` prop is given, ensuring screen readers always have status meaning to announce (WCAG 2.1 SC 1.4.1). The label resolves as: explicit `label` prop → default per variant → none.
-
-Custom augmented variants (via `AvatarStatusDotVariantMap` module augmentation) have no default label and continue to render without `role="img"`, as documented.
+[feat] AvatarStatusDot: default accessible labels per variant come from the i18n catalog instead of hardcoded English. When no explicit `label` prop is given, the dot now resolves its accessible name from `@astryx.avatarStatusDot.online` / `.away` / `.busy` (Online / Away / Busy), so screen readers always have a status meaning to announce and the strings localize like the rest of astryx (WCAG 2.1 SC 1.4.1). Explicit `label` remains the highest-precedence value; custom augmented variants keep no default and render without `role="img"`.
+@gonzoblasco

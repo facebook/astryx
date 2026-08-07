@@ -4,6 +4,7 @@ import {describe, it, expect} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
+import {InternationalizationProvider} from '../i18n';
 import {Avatar} from './Avatar';
 import {AvatarStatusDot, type AvatarStatusDotVariant} from './AvatarStatusDot';
 
@@ -283,6 +284,56 @@ describe('AvatarStatusDot', () => {
     it('has no img role for custom augmented variants without a default label', () => {
       const dot = renderDot({variant: 'away' as AvatarStatusDotVariant});
       expect(dot).not.toHaveAttribute('role');
+    });
+
+    it('localizes the default label through the i18n catalog', () => {
+      const {container} = render(
+        <InternationalizationProvider
+          locale="fr"
+          overrides={{
+            fr: {
+              '@astryx.avatarStatusDot.online': 'En ligne',
+              '@astryx.avatarStatusDot.away': 'Absent',
+              '@astryx.avatarStatusDot.busy': 'Occupé',
+            },
+          }}>
+          <Avatar
+            name="Ada Lovelace"
+            size={48}
+            status={
+              <>
+                <AvatarStatusDot variant="success" />
+                <AvatarStatusDot variant="neutral" />
+                <AvatarStatusDot variant="error" />
+              </>
+            }
+          />
+        </InternationalizationProvider>,
+      );
+      const dots = Array.from(container.querySelectorAll(DOT_SELECTOR));
+      expect(dots.map(d => d.getAttribute('aria-label'))).toEqual([
+        'En ligne',
+        'Absent',
+        'Occupé',
+      ]);
+    });
+
+    it('keeps an explicit label as the highest-precedence value over the catalog default', () => {
+      const {container} = render(
+        <InternationalizationProvider
+          locale="fr"
+          overrides={{
+            fr: {'@astryx.avatarStatusDot.online': 'En ligne'},
+          }}>
+          <Avatar
+            name="Ada Lovelace"
+            size={48}
+            status={<AvatarStatusDot variant="success" label="Verified" />}
+          />
+        </InternationalizationProvider>,
+      );
+      const dot = container.querySelector(DOT_SELECTOR) as HTMLElement;
+      expect(dot).toHaveAttribute('aria-label', 'Verified');
     });
   });
 
