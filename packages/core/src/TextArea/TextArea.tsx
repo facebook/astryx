@@ -22,6 +22,7 @@ import {
   useTransition,
   useRef,
   useCallback,
+  useMemo,
   type ChangeEvent,
   type ClipboardEvent,
   type FocusEvent,
@@ -301,7 +302,9 @@ export interface TextAreaProps extends Omit<
    * characters (grapheme clusters) — an emoji or flag sequence counts as one.
    * When set, displays a character counter below the textarea.
    * Does not enforce the limit natively — the counter shows error styling
-   * when exceeded, and the consumer can validate via onChange.
+   * when exceeded, and the consumer can validate via onChange. Validate with
+   * `graphemeLength` (exported from this package) rather than `value.length`
+   * so enforcement matches the displayed count.
    */
   maxLength?: number;
   /**
@@ -483,8 +486,12 @@ export function TextArea({
 
   // Counter semantics count user-perceived characters (grapheme clusters),
   // so an emoji or flag sequence counts as one character, not its code units.
-  // Only measured when a counter exists — segmentation is O(value length).
-  const valueLength = maxLength != null ? graphemeLength(optimisticValue) : 0;
+  // Only measured when a counter exists — segmentation is O(value length),
+  // and memoized so re-renders that keep the same value skip it entirely.
+  const valueLength = useMemo(
+    () => (maxLength != null ? graphemeLength(optimisticValue) : 0),
+    [maxLength, optimisticValue],
+  );
 
   const effectivelyDisabled = isDisabled || isBusy;
 

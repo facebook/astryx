@@ -14,7 +14,9 @@ import {graphemeLength, firstGrapheme, truncateGraphemes} from './grapheme';
 const EMOJI = '\u{1F600}'; // 😀
 const FLAG = '\u{1F1F9}\u{1F1F7}'; // 🇹🇷
 const FAMILY = '\u{1F468}‍\u{1F469}‍\u{1F467}‍\u{1F466}'; // 👨‍👩‍👧‍👦
-const E_ACUTE = 'é'; // é as base + combining mark
+// é as base + combining mark, spelled as an escape so NFC-normalizing
+// tools cannot silently precompose the fixture into single-code-unit é.
+const E_ACUTE = 'e\u0301';
 
 describe('graphemeLength', () => {
   it('returns 0 for the empty string', () => {
@@ -41,6 +43,7 @@ describe('graphemeLength', () => {
 
   it('counts a combining-mark character as one', () => {
     expect(graphemeLength(E_ACUTE)).toBe(1);
+    expect(E_ACUTE.length).toBe(2); // sanity: code units differ
   });
 
   it('counts mixed content by user-perceived characters', () => {
@@ -127,6 +130,7 @@ describe('code-point fallback (no Intl.Segmenter)', () => {
 
     expect(fallback.graphemeLength(EMOJI.repeat(2))).toBe(2);
     expect(fallback.firstGrapheme(`${EMOJI}x`)).toBe(EMOJI);
+    expect(fallback.firstGrapheme('')).toBe('');
     expect(fallback.truncateGraphemes(EMOJI.repeat(4), 3)).toBe(
       `${EMOJI.repeat(2)}…`,
     );

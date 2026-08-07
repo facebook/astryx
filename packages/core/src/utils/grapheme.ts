@@ -48,13 +48,16 @@ export function graphemeLength(str: string): number {
 
 /**
  * The first user-perceived character of a string, or '' when empty.
- * Grapheme-safe replacement for `.charAt(0)`.
+ * Grapheme-safe replacement for `.charAt(0)`. Reads only the first segment,
+ * so cost does not scale with the length of the string.
  */
 export function firstGrapheme(str: string): string {
   if (graphemeSegmenter) {
-    return [...graphemeSegmenter.segment(str)][0]?.segment ?? '';
+    const first = graphemeSegmenter.segment(str)[Symbol.iterator]().next();
+    return first.done ? '' : first.value.segment;
   }
-  return [...str][0] ?? '';
+  const codePoint = str.codePointAt(0);
+  return codePoint == null ? '' : String.fromCodePoint(codePoint);
 }
 
 /**
