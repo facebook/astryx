@@ -4,6 +4,7 @@ import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Avatar} from './Avatar';
+import {AvatarStatusDot} from './AvatarStatusDot';
 
 describe('Avatar', () => {
   it('exposes role="img" with the name as accessible name', () => {
@@ -36,17 +37,42 @@ describe('Avatar', () => {
     expect(innerImg).toHaveAttribute('alt', '');
   });
 
-  it('renders fallback initials through the themeable font-size var, not a bare px literal', () => {
+  it('renders fallback initials at the proportional size via a StyleX class, not an inline property', () => {
     render(<Avatar name="Ada Lovelace" size="sm" data-testid="a" />);
     const initials = screen.getByText('AL');
-    // The seam: the dynamic font size resolves to the Avatar-scoped var (with
-    // the proportional `size × 0.4` default baked in as the fallback), so a
-    // theme can re-scope it per size. A regression to a bare px literal would
-    // break theming.
+    // The default proportional size (sm = 24 × 0.4 = 9.6px) is fed to StyleX as
+    // a dynamic value: StyleX applies `font-size` through a class and sets only
+    // the computed value inline (as a custom property). Because the property
+    // lands via a class, a theme's `.astryx-avatar-fallback.<size>` rule in the
+    // theme layer overrides it per size tier — no internal var seam needed.
     const style = initials.getAttribute('style') ?? '';
-    expect(style).toContain('var(--_avatar-fallback-font-size,');
-    // Default still reproduces the proportional scale (sm = 24 × 0.4 = 9.6px).
-    expect(style).toMatch(/var\(--_avatar-fallback-font-size,\s*9\.6\d*px\)/);
+    expect(style).toMatch(/9\.6\d*px/);
+    // Regression guard: the seam must NOT reintroduce the removed internal var.
+    expect(style).not.toContain('--_avatar-fallback-font-size');
+  });
+
+  it('marks the fallback surface with the stable theming class (initials and icon)', () => {
+    // The background is themed directly on `.astryx-avatar-fallback`, so both
+    // the initials and the default-icon fallback must carry the class.
+    const {rerender} = render(<Avatar name="Ada Lovelace" />);
+    expect(screen.getByText('AL').className).toContain(
+      'astryx-avatar-fallback',
+    );
+
+    rerender(<Avatar />);
+    const icon = document.querySelector('.astryx-avatar-fallback');
+    expect(icon).not.toBeNull();
+    expect(icon?.querySelector('svg')).not.toBeNull();
+  });
+
+  it('does not split an emoji surrogate pair when generating initials', () => {
+    render(<Avatar name="😀 Ada" data-testid="avatar" />);
+    expect(screen.getByTestId('avatar')).toHaveTextContent('😀A');
+  });
+
+  it('preserves a complete grapheme when generating initials', () => {
+    render(<Avatar name="🇬🇧 Ada" data-testid="avatar" />);
+    expect(screen.getByTestId('avatar')).toHaveTextContent('🇬🇧A');
   });
 
   it('retries a new src after a previous src failed to load', () => {
@@ -64,6 +90,98 @@ describe('Avatar', () => {
     const img = wrapper.querySelector('img');
     expect(img).not.toBeNull();
     expect(img).toHaveAttribute('src', 'https://example.com/ada.jpg');
+  });
+
+  describe('status in the accessible name (WCAG 4.1.2)', () => {
+    // The avatar root is role="img", which prunes descendant semantics —
+    // a label inside the status subtree is never announced on its own.
+    // Avatar composes the status element's `label` into its own name.
+    it('composes the status label into the accessible name for image avatars', () => {
+      render(
+        <Avatar
+          name="Ada Lovelace"
+          src="https://example.com/ada.jpg"
+          status={<AvatarStatusDot variant="success" label="Online" />}
+        />,
+      );
+      expect(
+        screen.getByRole('img', {name: 'Ada Lovelace, Online'}),
+      ).toBeInTheDocument();
+    });
+
+    it('composes the status label into the accessible name for initials avatars', () => {
+      render(
+        <Avatar
+          name="Ada Lovelace"
+          status={<AvatarStatusDot variant="error" label="Busy" />}
+        />,
+      );
+      const avatar = screen.getByRole('img', {name: 'Ada Lovelace, Busy'});
+      expect(avatar).toBeInTheDocument();
+      expect(avatar).toHaveTextContent('AL');
+    });
+
+    it('composes the status label with alt when alt overrides name', () => {
+      render(
+        <Avatar
+          name="Ada"
+          alt="Ada Lovelace, profile photo"
+          status={<AvatarStatusDot label="Online" />}
+        />,
+      );
+      expect(
+        screen.getByRole('img', {name: 'Ada Lovelace, profile photo, Online'}),
+      ).toBeInTheDocument();
+    });
+
+    it('keeps the plain name when there is no status', () => {
+      render(<Avatar name="Ada Lovelace" data-testid="a" />);
+      expect(screen.getByTestId('a')).toHaveAttribute(
+        'aria-label',
+        'Ada Lovelace',
+      );
+    });
+
+    it('keeps the plain name when the status dot has no label', () => {
+      render(
+        <Avatar
+          name="Ada Lovelace"
+          data-testid="a"
+          status={<AvatarStatusDot variant="success" />}
+        />,
+      );
+      expect(screen.getByTestId('a')).toHaveAttribute(
+        'aria-label',
+        'Ada Lovelace',
+      );
+    });
+
+    it('keeps the plain name for custom status nodes without a label prop', () => {
+      render(<Avatar name="Ada Lovelace" data-testid="a" status={<span />} />);
+      expect(screen.getByTestId('a')).toHaveAttribute(
+        'aria-label',
+        'Ada Lovelace',
+      );
+    });
+
+    it('announces a labelled status even on an otherwise decorative avatar', () => {
+      // A labelled status is meaningful information on its own — the avatar
+      // must not stay aria-hidden and swallow it.
+      render(
+        <Avatar data-testid="a" status={<AvatarStatusDot label="Online" />} />,
+      );
+      const el = screen.getByTestId('a');
+      expect(el).toHaveAttribute('role', 'img');
+      expect(el).toHaveAttribute('aria-label', 'Online');
+      expect(el).not.toHaveAttribute('aria-hidden');
+    });
+
+    it('stays decorative with an unlabelled status and no name', () => {
+      render(<Avatar data-testid="a" status={<AvatarStatusDot />} />);
+      const el = screen.getByTestId('a');
+      expect(el).toHaveAttribute('aria-hidden', 'true');
+      expect(el).not.toHaveAttribute('aria-label');
+    });
   });
 
   it('retries a new fallbackSrc after a previous fallbackSrc failed to load', () => {

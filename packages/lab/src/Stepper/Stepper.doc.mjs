@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../../../core/src/docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'Stepper',
@@ -74,6 +74,12 @@ export const docs = {
           type: "'compact' | 'balanced' | 'spacious'",
           description: 'Controls the padding of all steps.',
           default: "'balanced'",
+        },
+        {
+          name: 'indicatorPosition',
+          type: "'separated' | 'on-track'",
+          description: 'Position of step indicators relative to the connector track.',
+          default: "'separated'",
         },
         {
           name: 'xstyle',
@@ -159,7 +165,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../../../core/src/docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'numbered step sequence for multi-step workflows',
   usage: {
@@ -206,7 +212,7 @@ export const docsDense = {
   ],
 };
 
-/** @type {import('../../../core/src/docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docsZh = {
   name: 'Stepper',
   displayName: 'Stepper',

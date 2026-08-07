@@ -5,6 +5,7 @@ import {
   buildInitialState,
   buildRuntimePreviewState,
   getMissingRequiredProps,
+  hasInteractivePlayground,
   isOverlayPreviewClosed,
   pickPrimaryProps,
 } from '../components/component-detail/interactiveState';
@@ -489,5 +490,62 @@ describe('component detail preview state', () => {
     expect(isOverlayPreviewClosed({}, {isOpen: false})).toBe(false);
     expect(isOverlayPreviewClosed(null, {isOpen: false})).toBe(false);
     expect(isOverlayPreviewClosed(undefined, {})).toBe(false);
+  });
+});
+
+// ── Simplified layout for provider/utility pages (#2733) ───────────────────
+// Utility entries like LinkProvider are non-visual providers: auto-generated
+// playground knobs render an empty stage with an unsatisfiable required
+// `component` prop. They must get the hook-style static layout instead,
+// while Utility docs that curate a playground (Theme) keep the interactive
+// Properties tab.
+describe('hasInteractivePlayground', () => {
+  it('gives regular components an interactive playground', () => {
+    expect(
+      hasInteractivePlayground({
+        category: 'Action',
+        params: null,
+        playground: null,
+      }),
+    ).toBe(true);
+    expect(
+      hasInteractivePlayground({
+        category: null,
+        params: null,
+        playground: null,
+      }),
+    ).toBe(true);
+  });
+
+  it('never gives hooks a playground', () => {
+    expect(
+      hasInteractivePlayground({
+        category: 'Utility',
+        params: [{name: 'query', type: 'string', description: ''}],
+        playground: null,
+      }),
+    ).toBe(false);
+  });
+
+  it('gives playground-less Utility entries the static layout', () => {
+    // LinkProvider, LayerProvider, VisuallyHidden shape
+    expect(
+      hasInteractivePlayground({
+        category: 'Utility',
+        params: null,
+        playground: null,
+      }),
+    ).toBe(false);
+  });
+
+  it('keeps the playground for Utility docs that curate one', () => {
+    // Theme, MediaTheme, SyntaxTheme shape
+    expect(
+      hasInteractivePlayground({
+        category: 'Utility',
+        params: null,
+        playground: {defaults: {mode: 'light'}},
+      }),
+    ).toBe(true);
   });
 });

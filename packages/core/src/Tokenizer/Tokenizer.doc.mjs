@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'Tokenizer',
@@ -192,7 +192,14 @@ export const docs = {
     {
       name: 'handleRef',
       type: 'React.Ref<TokenizerHandle>',
-      description: 'Imperative handle for focus() and blur() control.',
+      description:
+        'Imperative handle exposing focusInput(), focusFirstToken(), focusLastToken(), clearInput(), and selectAll().',
+    },
+    {
+      name: 'width',
+      type: 'SizeValue',
+      description:
+        'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
     },
     {
       name: 'xstyle',
@@ -230,7 +237,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docsZh = {
   name: 'Tokenizer',
   displayName: 'Tokenizer',
@@ -444,7 +451,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'Multi-select typeahead w/ token chips for selected items. Composes BaseTypeahead for search+Token for chips.',
   usage: {

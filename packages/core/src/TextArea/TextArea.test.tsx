@@ -335,6 +335,23 @@ describe('TextArea', () => {
       expect(messageElement).toHaveAttribute('id');
       expect(describedBy).toContain(messageElement.id);
     });
+
+    it('shows both the loading spinner and the status icon while busy', () => {
+      const {container} = render(
+        <TextArea
+          label="Description"
+          value=""
+          onChange={() => {}}
+          isLoading
+          status={{type: 'error'}}
+        />,
+      );
+      // Matches the other inputs: spinner (role="status") and the status icon
+      // render side by side in the end slot, not mutually exclusively.
+      expect(screen.getByRole('status')).toBeInTheDocument();
+      // Status icon svg is also present alongside the spinner.
+      expect(container.querySelectorAll('svg').length).toBeGreaterThan(0);
+    });
   });
 
   it('renders tooltip info icon when labelTooltip is provided', () => {
@@ -506,7 +523,70 @@ describe('TextArea', () => {
       expect(screen.getByText('5/50')).toBeInTheDocument();
     });
 
-    it('counter has aria-live region for screen reader announcements', () => {
+    it('announces remaining characters politely as the value nears the limit', async () => {
+      const user = userEvent.setup();
+      function Wrapper() {
+        const [val, setVal] = useState('x'.repeat(44));
+        return (
+          <TextArea
+            label="Description"
+            value={val}
+            onChange={setVal}
+            maxLength={50}
+          />
+        );
+      }
+      render(<Wrapper />);
+      // Type one more char to cross into the "near the limit" zone (45/50).
+      await user.type(screen.getByRole('textbox'), 'x');
+      const politeRegion = () =>
+        document.querySelector('[data-astryx-live-region="polite"]');
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('5 characters remaining');
+      });
+    });
+
+    it('announces over-limit assertively once the value exceeds the max', async () => {
+      const user = userEvent.setup();
+      function Wrapper() {
+        const [val, setVal] = useState('x'.repeat(50));
+        return (
+          <TextArea
+            label="Description"
+            value={val}
+            onChange={setVal}
+            maxLength={50}
+          />
+        );
+      }
+      render(<Wrapper />);
+      await user.type(screen.getByRole('textbox'), 'x');
+      const assertiveRegion = () =>
+        document.querySelector('[data-astryx-live-region="assertive"]');
+      await waitFor(() => {
+        expect(assertiveRegion()).toHaveTextContent(
+          '1 character over the limit',
+        );
+      });
+    });
+
+    it('shows a non-color over-limit indicator icon when exceeded', () => {
+      const {container} = render(
+        <TextArea
+          label="Description"
+          value={'x'.repeat(55)}
+          onChange={() => {}}
+          maxLength={50}
+        />,
+      );
+      // The counter renders a warning icon (a shape cue) alongside the red
+      // count, so the over-limit state is not conveyed by color alone.
+      const counter = screen.getByText('55/50').closest('div');
+      expect(counter?.querySelector('svg')).toBeInTheDocument();
+      expect(container).toBeInTheDocument();
+    });
+
+    it('does not show the over-limit indicator icon within the limit', () => {
       render(
         <TextArea
           label="Description"
@@ -515,9 +595,8 @@ describe('TextArea', () => {
           maxLength={50}
         />,
       );
-      const liveRegion = document.querySelector('[aria-live="polite"]');
-      expect(liveRegion).toBeInTheDocument();
-      expect(liveRegion).toHaveTextContent('5 characters remaining');
+      const counter = screen.getByText('45/50').closest('div');
+      expect(counter?.querySelector('svg')).not.toBeInTheDocument();
     });
 
     it('counter is linked to textarea via aria-describedby', () => {
@@ -534,6 +613,22 @@ describe('TextArea', () => {
       const counter = screen.getByText('5/50');
       expect(counter).toHaveAttribute('id');
       expect(describedBy).toContain(counter.id);
+    });
+
+    it('renders the counter inside the input container (same wrapper as textarea)', () => {
+      render(
+        <TextArea
+          label="Description"
+          value="Hello"
+          onChange={() => {}}
+          maxLength={50}
+        />,
+      );
+      const textarea = screen.getByRole('textbox');
+      const counter = screen.getByText('5/50');
+      // The counter now lives inside the bordered input container as a sibling
+      // overlay of the textarea, not below it as an out-of-container element.
+      expect(textarea.parentElement).toBe(counter.parentElement);
     });
   });
 
@@ -737,11 +832,15 @@ describe('TextArea', () => {
   });
 });
 
-
 describe('TextArea statusVariant forwarding', () => {
   it('defaults to attached (status renders with data-variant="attached")', () => {
     const {container} = render(
-      <TextArea label="Bio" value="" onChange={() => {}} status={{type: 'error', message: 'Required'}} />,
+      <TextArea
+        label="Bio"
+        value=""
+        onChange={() => {}}
+        status={{type: 'error', message: 'Required'}}
+      />,
     );
     expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
       'data-variant',
@@ -751,7 +850,13 @@ describe('TextArea statusVariant forwarding', () => {
 
   it('forwards statusVariant="detached" to the underlying Field status', () => {
     const {container} = render(
-      <TextArea label="Bio" value="" onChange={() => {}} status={{type: 'error', message: 'Required'}} statusVariant="detached" />,
+      <TextArea
+        label="Bio"
+        value=""
+        onChange={() => {}}
+        status={{type: 'error', message: 'Required'}}
+        statusVariant="detached"
+      />,
     );
     expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
       'data-variant',

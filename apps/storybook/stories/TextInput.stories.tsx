@@ -519,8 +519,10 @@ export const StatusVariantComparison: Story = {
   render: () => {
     const [a, setA] = useState('invalid@');
     const [b, setB] = useState('invalid@');
+    const [c, setC] = useState('invalid@');
     return (
-      <div style={{display: 'flex', flexDirection: 'column', gap: 24, width: 280}}>
+      <div
+        style={{display: 'flex', flexDirection: 'column', gap: 24, width: 280}}>
         <TextInput
           label="Attached (default)"
           value={a}
@@ -533,6 +535,13 @@ export const StatusVariantComparison: Story = {
           onChange={setB}
           status={{type: 'error', message: 'Enter a valid email'}}
           statusVariant="detached"
+        />
+        <TextInput
+          label="Tooltip (focus, hover, or tap the status icon)"
+          value={c}
+          onChange={setC}
+          status={{type: 'error', message: 'Enter a valid email'}}
+          statusVariant="tooltip"
         />
       </div>
     );

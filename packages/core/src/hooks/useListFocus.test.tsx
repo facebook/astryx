@@ -11,6 +11,7 @@
  */
 
 import {describe, it, expect} from 'vitest';
+import type {KeyboardEvent as ReactKeyboardEvent} from 'react';
 import {render, screen, fireEvent} from '@testing-library/react';
 import {useListFocus} from './useListFocus';
 
@@ -437,5 +438,90 @@ describe('useListFocus RTL auto-detection (WCAG 1.3.2)', () => {
     screen.getByTestId('One').focus();
     fireEvent.keyDown(menu, {key: 'ArrowLeft'});
     expect(screen.getByTestId('Two')).toHaveFocus();
+  });
+});
+
+// A menu whose second item contains a NESTED role="menu" (mirrors an inline
+// submenu flyout). Exercises boundarySelector: item scoping + event ownership.
+function NestedMenu() {
+  const {listRef, handleKeyDown, ownsEvent} = useListFocus<HTMLDivElement>({
+    boundarySelector: '[role="menu"]',
+    wrap: false,
+  });
+  return (
+    <div ref={listRef} role="menu" onKeyDown={handleKeyDown}>
+      <div role="menuitem" tabIndex={-1} data-testid="Outer1">
+        Outer1
+      </div>
+      <div role="menuitem" tabIndex={-1} data-testid="Outer2">
+        Outer2
+        {/* Nested submenu rendered inline (like a popover flyout). */}
+        <div role="menu" data-testid="inner-menu">
+          <div role="menuitem" tabIndex={-1} data-testid="Inner1">
+            Inner1
+          </div>
+          <div role="menuitem" tabIndex={-1} data-testid="Inner2">
+            Inner2
+          </div>
+        </div>
+      </div>
+      <div role="menuitem" tabIndex={-1} data-testid="Outer3">
+        Outer3
+      </div>
+      {/* Surface ownership for assertions. */}
+      <input
+        data-testid="probe-owns"
+        onKeyDown={e => {
+          e.currentTarget.setAttribute('data-owns', String(ownsEvent(e)));
+        }}
+      />
+    </div>
+  );
+}
+
+// Variant with the ownsEvent probe placed INSIDE the nested menu, so a key
+// event from it reports as not-owned by the outer list.
+function NestedMenuWithInnerProbe() {
+  const {listRef, handleKeyDown, ownsEvent} = useListFocus<HTMLDivElement>({
+    boundarySelector: '[role="menu"]',
+    wrap: false,
+  });
+  const report = (e: ReactKeyboardEvent<HTMLInputElement>) => {
+    e.currentTarget.setAttribute('data-owns', String(ownsEvent(e)));
+  };
+  return (
+    <div ref={listRef} role="menu" onKeyDown={handleKeyDown}>
+      <div role="menuitem" tabIndex={-1} data-testid="Outer1">
+        Outer1
+      </div>
+      <div role="menu" data-testid="inner-menu">
+        <input data-testid="inner-probe" onKeyDown={report} />
+      </div>
+    </div>
+  );
+}
+
+describe('useListFocus boundarySelector (nested lists)', () => {
+  it("ArrowDown skips over a nested list's items to the next own item", () => {
+    render(<NestedMenu />);
+    const menu = screen.getAllByRole('menu')[0];
+    screen.getByTestId('Outer2').focus();
+    fireEvent.keyDown(menu, {key: 'ArrowDown'});
+    // Lands on Outer3, not Inner1 (which is inside the nested menu).
+    expect(screen.getByTestId('Outer3')).toHaveFocus();
+  });
+
+  it('ownsEvent is true for an event originating at this level', () => {
+    render(<NestedMenu />);
+    const ownProbe = screen.getByTestId('probe-owns');
+    fireEvent.keyDown(ownProbe, {key: 'ArrowDown'});
+    expect(ownProbe).toHaveAttribute('data-owns', 'true');
+  });
+
+  it('ownsEvent is false for an event from inside a nested list', () => {
+    render(<NestedMenuWithInnerProbe />);
+    const innerProbe = screen.getByTestId('inner-probe');
+    fireEvent.keyDown(innerProbe, {key: 'ArrowDown'});
+    expect(innerProbe).toHaveAttribute('data-owns', 'false');
   });
 });

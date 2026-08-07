@@ -2,7 +2,9 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState} from 'react';
+import {Button} from '@astryxdesign/core/Button';
 import {Selector, SelectorOption} from '@astryxdesign/core/Selector';
+import {Theme, defineTheme} from '@astryxdesign/core/theme';
 import {UserIcon, CogIcon, BellIcon} from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof Selector> = {
@@ -49,6 +51,11 @@ const meta: Meta<typeof Selector> = {
       control: 'radio',
       options: ['sm', 'md', 'lg'],
       description: 'Size variant of the selector',
+    },
+    variant: {
+      control: 'radio',
+      options: ['input', 'ghost'],
+      description: 'Visual trigger style',
     },
     placement: {
       control: 'select',
@@ -274,6 +281,91 @@ export const WithSections: Story = {
   },
 };
 
+// Searchable with sections: filtering keeps group headers and drops empty groups
+export const SearchableWithSections: Story = {
+  render: args => {
+    const {
+      value: argsValue,
+      onChange: _onChange,
+      changeAction: _ca,
+      hasClear: _hc,
+      ...rest
+    } = args;
+    const [value, setValue] = useState(argsValue ?? undefined);
+    return (
+      <Selector
+        {...rest}
+        label="Fruit"
+        hasSearch
+        options={[
+          {
+            type: 'section',
+            title: 'Citrus',
+            options: [
+              {value: 'orange', label: 'Orange'},
+              {value: 'lemon', label: 'Lemon'},
+              {value: 'lime', label: 'Lime'},
+              {value: 'grapefruit', label: 'Grapefruit'},
+            ],
+          },
+          {
+            type: 'section',
+            title: 'Tropical',
+            options: [
+              {value: 'mango', label: 'Mango'},
+              {value: 'pineapple', label: 'Pineapple'},
+              {value: 'papaya', label: 'Papaya'},
+              {value: 'guava', label: 'Guava'},
+            ],
+          },
+        ]}
+        value={value}
+        onChange={v => setValue(v)}
+      />
+    );
+  },
+  args: {
+    placeholder: 'Select a fruit...',
+  },
+};
+
+// Searchable: the dropdown search field has a built-in leading magnifier icon
+// and a trailing clear (✕) button that appears once a query is typed.
+export const Searchable: Story = {
+  render: args => {
+    const {
+      value: argsValue,
+      onChange: _onChange,
+      changeAction: _ca,
+      hasClear: _hc,
+      ...rest
+    } = args;
+    const [value, setValue] = useState(argsValue ?? undefined);
+    return (
+      <Selector
+        {...rest}
+        label="Fruit"
+        hasSearch
+        options={[
+          'Apple',
+          'Apricot',
+          'Banana',
+          'Blueberry',
+          'Cherry',
+          'Grapefruit',
+          'Mango',
+          'Orange',
+        ]}
+        value={value}
+        onChange={v => setValue(v)}
+      />
+    );
+  },
+  args: {
+    placeholder: 'Select a fruit...',
+  },
+};
+
 // Custom render
 export const CustomRender: Story = {
   render: args => {
@@ -343,6 +435,55 @@ export const SizeVariants: Story = {
           onChange={setValue3}
           placeholder="Large size (36px)"
         />
+      </div>
+    );
+  },
+  decorators: [Story => <Story />],
+};
+
+// Ghost variant for toolbar composition
+export const GhostVariant: Story = {
+  render: () => {
+    const [view, setView] = useState<string | undefined>('week');
+    const [density, setDensity] = useState<string | undefined>('comfortable');
+    return (
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          width: 'max-content',
+        }}>
+        <Button label="Today" variant="ghost" />
+        <Selector
+          label="View"
+          isLabelHidden
+          variant="ghost"
+          size="md"
+          options={[
+            {value: 'day', label: 'Day'},
+            {value: 'week', label: 'Week'},
+            {value: 'month', label: 'Month'},
+          ]}
+          value={view}
+          onChange={setView}
+        />
+        <Selector
+          label="Density"
+          isLabelHidden
+          variant="ghost"
+          size="md"
+          options={[
+            {value: 'compact', label: 'Compact'},
+            {value: 'comfortable', label: 'Comfortable'},
+            {value: 'spacious', label: 'Spacious'},
+          ]}
+          value={density}
+          onChange={setDensity}
+          status={{type: 'warning', message: 'This setting affects all users'}}
+          statusVariant="tooltip"
+        />
+        <Button label="Export" variant="ghost" />
       </div>
     );
   },
@@ -609,7 +750,8 @@ export const StatusVariantComparison: Story = {
     const [a, setA] = useState<string | undefined>();
     const [b, setB] = useState<string | undefined>();
     return (
-      <div style={{display: 'flex', flexDirection: 'column', gap: 24, width: 280}}>
+      <div
+        style={{display: 'flex', flexDirection: 'column', gap: 24, width: 280}}>
         <Selector
           label="Attached (default)"
           options={[
@@ -637,4 +779,61 @@ export const StatusVariantComparison: Story = {
     );
   },
   decorators: [Story => <Story />],
+};
+
+/**
+ * Theme the clear and chevron glyphs precisely via `defineTheme`.
+ *
+ * - `components['selector-clear-icon'].base` scopes overrides to the clear icon
+ *   itself (via the `astryx-selector-clear-icon` target), so a theme can
+ *   recolor it, morph its color on hover, and resize it — without a fragile
+ *   descendant selector or raw CSS.
+ * - `components['selector-indicator-icon']` scopes overrides to the chevron,
+ *   and its `state:expanded` restyles the open state, which the icon reflects
+ *   as a `data-state` attribute.
+ *
+ * Same-element rules in `@layer astryx-theme` win over each icon's own base
+ * color/size.
+ */
+const iconTheme = defineTheme({
+  name: 'selector-icon-demo',
+  components: {
+    'selector-clear-icon': {
+      base: {
+        width: '12px',
+        height: '12px',
+        fontSize: '12px',
+        color: 'var(--color-icon-secondary)',
+        ':hover': {color: 'var(--color-accent)'},
+      },
+    },
+    'selector-indicator-icon': {
+      base: {
+        width: '14px',
+        height: '14px',
+        fontSize: '14px',
+        color: 'var(--color-icon-secondary)',
+      },
+      'state:expanded': {
+        color: 'var(--color-accent)',
+      },
+    },
+  },
+});
+
+export const ThemedIcons: Story = {
+  render: () => {
+    const [value, setValue] = useState<string | null>('Banana');
+    return (
+      <Theme theme={iconTheme} mode="light">
+        <Selector
+          label="Icons themed (accent on hover/open)"
+          options={['Apple', 'Banana', 'Cherry']}
+          value={value}
+          onChange={setValue}
+          hasClear
+        />
+      </Theme>
+    );
+  },
 };

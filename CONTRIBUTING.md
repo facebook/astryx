@@ -294,6 +294,98 @@ export * from './MyComponent';
 > committed automatically when changes land on `main`. If you need to verify your
 > component will be included, run `pnpm sync:exports:check`.
 
+## Accessibility Checklist
+
+Every new component — and any change to an interactive one — must clear the
+**[Accessibility Checklist](https://github.com/facebook/astryx/wiki/Accessibility-Checklist)**
+(wiki) before review. The checklist lives on the wiki so accessibility
+experts can refine it without a code PR; reviewers block on it (see the
+blocking criteria in `.github/copilot-instructions.md`), and it is a hard
+requirement for a lab → core promotion (see `packages/lab/README.md`).
+
+Two repo-side rules worth restating here:
+
+- Compose the shared primitives — `VisuallyHidden`, `useAnnounce`,
+  `useFocusTrap`, and the focus hooks (`useListFocus`, `useGridFocus`,
+  `useTreeFocus`) — rather than hand-rolling equivalents. They implement the
+  WAI-ARIA APG patterns and are tested once; a bespoke reimplementation of
+  one is a review reject.
+- CI is the enforcement layer, not a replacement for the checklist: the
+  `pr-a11y` workflow runs an axe audit on every PR, a weekly workflow scans
+  the full component surface, and the `useAnnounce` lint rule rejects
+  hand-wired `aria-live` regions. axe only catches static, DOM-level issues —
+  keyboard behavior, focus management, and announcement timing are exactly
+  what the checklist and the component's unit tests cover.
+
+## Working on the `astryx` CLI
+
+The CLI (`packages/cli/`) is layered so behavior, presentation, and contracts stay separable:
+
+- **`clients/cli/`** — the Commander program and per-command handlers. A handler is a _thin wrapper_: parse flags → call the matching `api/` function → render (JSON via `jsonOut`, or text via the formatter kit in `clients/cli/formatters/`).
+- **`api/`** — the programmatic API (`@astryxdesign/cli/api`). Each command maps to `api/<name>/`, whose functions return a typed `{ type, data }` envelope. This is the behavior source of truth, so `astryx --json` and the imported function return identical data.
+- **`authoring/`** — the pure data contracts (`@astryxdesign/cli/authoring`): the TypeScript types you author objects against (config, integration, codemod, and the doc-types) plus the sealed zod parsers the CLI runs at the load boundary.
+- **`foundation/`** — the bottom layer: cross-cutting infra that everything above builds on — the `{ type, data }` JSON contract, the stable `ERROR_CODES`, discovery (components, templates), integration contribution validators, and path-safety. It never imports `api/` or `clients/`; if foundation needs something, that something belongs in foundation.
+
+### The CLI documents itself
+
+Every CLI surface has a colocated, typed `.doc.mjs` next to what it describes, annotated with a `@type` from `@astryxdesign/cli/authoring`:
+
+| Surface                                                                                 | Doc-type                                             | Lives next to                                              |
+| --------------------------------------------------------------------------------------- | ---------------------------------------------------- | ---------------------------------------------------------- |
+| An API function (a hook or an `api/` export)                                            | `FunctionDoc`                                        | `api/<name>/<fn>.doc.mjs`                                  |
+| A CLI command                                                                           | `CommandDoc` (references its `FunctionDoc` via `fn`) | `clients/cli/commands/<name>.doc.mjs`                      |
+| An authored object (config, integration, codemod, the doc-types, the response envelope) | `SchemaDoc`                                          | beside the schema (`authoring/**`, `foundation/response/`) |
+| A closed vocabulary (error codes, response types)                                       | `EnumDoc`                                            | `foundation/response/`                                     |
+| A long-form topic (tokens, principles, theming, …)                                      | `ReferenceDoc`                                       | `assets/docs/<topic>.doc.mjs`                              |
+
+These are not free-form. `parseDoc` validates each at load, and a **drift harness** (`packages/cli/test/drift/`) enforces that they mirror their source of truth: every `CommandDoc`'s `fn`/args/options match the live CLI, and the `EnumDoc`s equal `ERROR_CODES` / the manifest's response-type set exactly. A doc that drifts fails CI.
+
+### What's enforced for you
+
+Most of the conventions above are mechanical, so they're checked rather than reviewed:
+
+| Rule                                                                                                                                              | Enforced by                      |
+| ------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| the layer directions hold: `authoring/` imports no other layer, `foundation/` never imports `api/` or `clients/`, `api/` never imports `clients/` | ESLint (`no-restricted-imports`) |
+| zod stays sealed behind the `authoring/` parsers                                                                                                  | ESLint (`no-restricted-imports`) |
+| commands register via `defineCommand`, never straight onto Commander                                                                              | ESLint (`no-restricted-syntax`)  |
+| each doc-type ships `type.ts` + `parse.mjs` + `<kind>.doc.mjs`, re-exports its parser, and appears in `parseDoc`'s `@returns`                     | `pnpm check:cli-structure`       |
+| each `api/<name>/` ships its typedefs, a `FunctionDoc`, and a test                                                                                | `pnpm check:cli-structure`       |
+| every `CommandDoc`/`EnumDoc` matches the live CLI                                                                                                 | the drift harness                |
+
+You never hand-write the `.d.mts` declarations. `scripts/sync-api-types.mjs` emits them for both `api/` and `authoring/` from the `.mjs` JSDoc — gitignored, regenerated at `prepack`, and stamped `@generated`. Edit the JSDoc and run `pnpm -F @astryxdesign/cli sync:api-types`.
+
+That matters because a hand-written declaration _shadows_ the JSDoc in its `.mjs`, and both ways it can lie shipped once: a missing declaration made a strict consumer resolve the parser as `any` (surfacing only at pack time as TS7016, since local typechecks run with `checkJs` and never exercise the packed surface), and a stale `parseDoc` union silently dropped three doc kinds from the published type while still compiling. Generation removes both. The one declaration still written by hand is `authoring/index.d.ts`, the curated public barrel.
+
+### Adding a command
+
+Author the docs _before_ the handler: `defineCommand` builds the Commander command from the `CommandDoc`, so the handler needs it to exist.
+
+1. Add the behavior under `api/<name>/`, with a colocated `<name>.type.mjs` (the `Options` + `{ type, data }` response typedefs — the shape source of truth) and a test.
+2. Author the docs — a `FunctionDoc` at `api/<name>/<fn>.doc.mjs` and a `CommandDoc` at `clients/cli/commands/<name>.doc.mjs`. Copy the `search` pair as a template.
+3. Write the thin handler in `clients/cli/commands/<name>.mjs`, registering it with `defineCommand(program, <name>Command, {fn: <name>Fn, action})` so `--help` and the manifest come from the doc. Call its `register<Name>` from `clients/cli/index.mjs`.
+4. Run the checks below. The drift harness catches a doc that disagrees with the live command, and `check:cli-structure` catches a missing typedef, doc, or test.
+
+### Testing the CLI
+
+```bash
+# Run the CLI locally (no build needed)
+node packages/cli/clients/cli/bin/astryx.mjs --help
+
+# Validate every colocated doc parses + mirrors its source of truth
+pnpm -F @astryxdesign/cli test              # includes the drift suite
+pnpm -F @astryxdesign/cli typecheck:authoring
+
+# Structural conventions (doc-type quartets, api/ leaf contents). Also runs as
+# part of `pnpm lint` via check:repo, and in the pre-commit hook.
+pnpm check:cli-structure
+
+# Keep the generated CLI README tables (commands, error codes, response types)
+# in sync with the manifest + EnumDocs. After an intended change, refresh + review:
+pnpm -F @astryxdesign/cli readme            # regenerate the tables
+pnpm -F @astryxdesign/cli readme:check      # CI gate: fails on any un-refreshed drift
+```
+
 ## Testing
 
 ### Run Tests
@@ -324,6 +416,42 @@ src/Button/
 ├── Button.tsx
 └── Button.test.tsx   # Tests live here
 ```
+
+### Accessibility audits
+
+PRs that touch components run an axe-core audit (the `pr-a11y` CI job) over
+the Storybook stories of the changed components. The job **fails** when it
+finds a violation that is not listed in the checked-in baseline,
+`.github/a11y-baseline.json`. Violations are keyed
+`Component::Story::rule-id`, so unrelated markup churn does not invalidate
+baseline entries.
+
+To reproduce and fix a failure locally:
+
+```bash
+# One-time setup
+pnpm storybook:build
+npx playwright install chromium
+
+# Audit specific components against the baseline (what CI does)
+pnpm a11y:audit -- --components Button,Dialog
+```
+
+Fix the violation whenever possible. If it is a known, intentional exception,
+add it to the baseline (scoped to the affected components, and expect
+reviewers to ask why):
+
+```bash
+pnpm a11y:baseline -- --components Button,Dialog
+```
+
+When the audit reports baseline entries as "resolved", delete them from
+`.github/a11y-baseline.json` — the baseline should only shrink over time.
+
+> **Scope caveat:** axe-core automates only a subset of WCAG (roughly a
+> third of the success criteria). A green `pr-a11y` job does not mean a
+> component is accessible — keyboard flows, focus order, screen-reader
+> semantics, and contrast in context still need manual checks.
 
 ## Versioning & Releases
 

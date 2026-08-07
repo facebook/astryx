@@ -1,8 +1,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect, vi} from 'vitest';
+import {createRef} from 'react';
 import {render, screen, fireEvent} from '@testing-library/react';
-import {Carousel} from './Carousel';
+import {Carousel, type CarouselHandle} from './Carousel';
 
 // Mock ResizeObserver (not available in jsdom)
 class MockResizeObserver {
@@ -257,6 +258,236 @@ describe('Carousel', () => {
       fireEvent.wheel(scroller, {shiftKey: true, deltaY: 120, deltaX: 0});
 
       expect(scrollBy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('hasLoop', () => {
+    // jsdom doesn't lay out elements, so we fake an overflowing scroll
+    // container, force it to rest at an edge, and capture scrollBy calls.
+    function getScroller() {
+      const region = screen.getByRole('region');
+      return region.firstElementChild as HTMLElement;
+    }
+
+    function makeOverflowing(el: HTMLElement, scrollLeft: number) {
+      Object.defineProperty(el, 'scrollWidth', {
+        value: 500,
+        configurable: true,
+      });
+      Object.defineProperty(el, 'clientWidth', {
+        value: 200,
+        configurable: true,
+      });
+      Object.defineProperty(el, 'scrollLeft', {
+        value: scrollLeft,
+        writable: true,
+        configurable: true,
+      });
+      // Drive the overflow hook's scroll listener so overflowStart/End settle.
+      fireEvent.scroll(el);
+    }
+
+    it('keeps both navigation buttons enabled at the edges when looping', () => {
+      render(
+        <Carousel hasLoop aria-label="Looping">
+          <div>Item 1</div>
+          <div>Item 2</div>
+        </Carousel>,
+      );
+      const scroller = getScroller();
+      // At the start edge: without loop the left button would be disabled.
+      makeOverflowing(scroller, 0);
+
+      expect(screen.getByLabelText('Scroll left')).toBeEnabled();
+      expect(screen.getByLabelText('Scroll right')).toBeEnabled();
+    });
+
+    it('wraps to the start when pressing next at the end', () => {
+      render(
+        <Carousel hasLoop aria-label="Looping">
+          <div>Item 1</div>
+          <div>Item 2</div>
+        </Carousel>,
+      );
+      const scroller = getScroller();
+      // At the end edge (scrolled fully right): overflowEnd is false.
+      makeOverflowing(scroller, 300);
+      const scrollBy = vi.fn();
+      scroller.scrollBy = scrollBy;
+
+      fireEvent.click(screen.getByLabelText('Scroll right'));
+
+      // Overshoots toward the start by the full scroll width; the browser
+      // clamps to scrollLeft 0.
+      expect(scrollBy).toHaveBeenCalledWith({
+        left: -500,
+        behavior: 'smooth',
+      });
+    });
+
+    it('wraps to the end when pressing prev at the start', () => {
+      render(
+        <Carousel hasLoop aria-label="Looping">
+          <div>Item 1</div>
+          <div>Item 2</div>
+        </Carousel>,
+      );
+      const scroller = getScroller();
+      makeOverflowing(scroller, 0);
+      const scrollBy = vi.fn();
+      scroller.scrollBy = scrollBy;
+
+      fireEvent.click(screen.getByLabelText('Scroll left'));
+
+      // Overshoots toward the end by the full scroll width.
+      expect(scrollBy).toHaveBeenCalledWith({
+        left: 500,
+        behavior: 'smooth',
+      });
+    });
+
+    it('does not wrap when content fits without overflowing', () => {
+      render(
+        <Carousel hasLoop aria-label="Looping">
+          <div>Only item</div>
+        </Carousel>,
+      );
+      const scroller = getScroller();
+      Object.defineProperty(scroller, 'scrollWidth', {
+        value: 200,
+        configurable: true,
+      });
+      Object.defineProperty(scroller, 'clientWidth', {
+        value: 200,
+        configurable: true,
+      });
+      Object.defineProperty(scroller, 'scrollLeft', {
+        value: 0,
+        writable: true,
+        configurable: true,
+      });
+      fireEvent.scroll(scroller);
+      const scrollBy = vi.fn();
+      scroller.scrollBy = scrollBy;
+
+      // Buttons are hidden/disabled with no overflow; invoking scroll is a
+      // no-op wrap-wise — a normal (non-wrap) scrollBy still runs, but there
+      // is nothing to wrap to, so the overshoot branch must not fire.
+      fireEvent.click(screen.getByLabelText('Scroll right'));
+
+      // Either not called (button disabled) or called with a normal delta —
+      // never the full-scrollWidth overshoot.
+      if (scrollBy.mock.calls.length > 0) {
+        expect(scrollBy).not.toHaveBeenCalledWith(
+          expect.objectContaining({left: 500}),
+        );
+        expect(scrollBy).not.toHaveBeenCalledWith(
+          expect.objectContaining({left: -500}),
+        );
+      }
+    });
+  });
+
+  describe('handleRef', () => {
+    function getScroller() {
+      const region = screen.getByRole('region');
+      return region.firstElementChild as HTMLElement;
+    }
+
+    function makeOverflowing(el: HTMLElement, scrollLeft: number) {
+      Object.defineProperty(el, 'scrollWidth', {
+        value: 500,
+        configurable: true,
+      });
+      Object.defineProperty(el, 'clientWidth', {
+        value: 200,
+        configurable: true,
+      });
+      Object.defineProperty(el, 'scrollLeft', {
+        value: scrollLeft,
+        writable: true,
+        configurable: true,
+      });
+      fireEvent.scroll(el);
+    }
+
+    it('exposes scrollNext/scrollPrev that drive the scroll container', () => {
+      const handle = createRef<CarouselHandle>();
+      render(
+        <Carousel handleRef={handle} aria-label="Handle">
+          <div>Item 1</div>
+          <div>Item 2</div>
+        </Carousel>,
+      );
+      const scroller = getScroller();
+      makeOverflowing(scroller, 100);
+      const scrollBy = vi.fn();
+      scroller.scrollBy = scrollBy;
+
+      handle.current?.scrollNext();
+      expect(scrollBy).toHaveBeenCalledTimes(1);
+      expect(scrollBy.mock.calls[0][0].left).toBeGreaterThan(0);
+
+      handle.current?.scrollPrev();
+      expect(scrollBy).toHaveBeenCalledTimes(2);
+      expect(scrollBy.mock.calls[1][0].left).toBeLessThan(0);
+    });
+
+    it('reports canScrollNext/canScrollPrev from live overflow state', () => {
+      const handle = createRef<CarouselHandle>();
+      render(
+        <Carousel handleRef={handle} aria-label="Handle">
+          <div>Item 1</div>
+          <div>Item 2</div>
+        </Carousel>,
+      );
+      const scroller = getScroller();
+
+      // At the start: can scroll toward the end, not the start.
+      makeOverflowing(scroller, 0);
+      expect(handle.current?.canScrollPrev()).toBe(false);
+      expect(handle.current?.canScrollNext()).toBe(true);
+
+      // Scroll into the middle: both directions available.
+      makeOverflowing(scroller, 150);
+      expect(handle.current?.canScrollPrev()).toBe(true);
+      expect(handle.current?.canScrollNext()).toBe(true);
+    });
+
+    it('reports both directions scrollable under hasLoop when overflowing', () => {
+      const handle = createRef<CarouselHandle>();
+      render(
+        <Carousel handleRef={handle} hasLoop aria-label="Handle">
+          <div>Item 1</div>
+          <div>Item 2</div>
+        </Carousel>,
+      );
+      const scroller = getScroller();
+      // Rest at the start edge — normally canScrollPrev would be false.
+      makeOverflowing(scroller, 0);
+
+      expect(handle.current?.canScrollPrev()).toBe(true);
+      expect(handle.current?.canScrollNext()).toBe(true);
+    });
+
+    it('scrollTo scrolls the container and clamps out-of-range indices', () => {
+      const handle = createRef<CarouselHandle>();
+      render(
+        <Carousel handleRef={handle} aria-label="Handle">
+          <div>Item 1</div>
+          <div>Item 2</div>
+          <div>Item 3</div>
+        </Carousel>,
+      );
+      const scroller = getScroller();
+      const scrollBy = vi.fn();
+      scroller.scrollBy = scrollBy;
+
+      // Out-of-range index is clamped to the last item — no throw, one call.
+      expect(() => handle.current?.scrollTo(99)).not.toThrow();
+      expect(scrollBy).toHaveBeenCalledTimes(1);
+      // Uses scrollBy (contained to the carousel), never scrollIntoView.
+      expect(scrollBy.mock.calls[0][0]).toHaveProperty('left');
     });
   });
 });

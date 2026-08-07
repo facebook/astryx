@@ -17,7 +17,7 @@
  * - /packages/core/src/TopNav/TopNav.test.tsx
  * - /packages/core/src/TopNav/index.ts
  * - /apps/storybook/stories/TopNav.stories.tsx
- * - /packages/cli/templates/blocks/components/TopNav/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/TopNav/ (showcase blocks)
  */
 
 import {useMemo, useRef, type ReactNode} from 'react';
@@ -31,7 +31,7 @@ import {
 } from '../theme/tokens.stylex';
 import {usePopover} from '../Popover/usePopover';
 import {Link} from '../Link';
-import {getIcon} from '../Icon/globalIconRegistry';
+import {useIcon} from '../Icon';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
 import {mergeProps, mergeRefs} from '../utils';
@@ -227,14 +227,8 @@ export interface TopNavHeadingProps extends BaseProps<HTMLElement> {
   heading?: string;
   /**
    * Link for the heading (e.g., product home).
-   * Alias: `href` (for backward compatibility).
    */
   headingHref?: string;
-  /**
-   * @deprecated Use `headingHref` instead.
-   * URL to navigate to when the heading is clicked.
-   */
-  href?: string;
   /**
    * Text above the heading (e.g., suite name).
    */
@@ -304,8 +298,7 @@ export function TopNavHeading({
   logo,
   logoLabel,
   heading,
-  headingHref: headingHrefProp,
-  href,
+  headingHref,
   superheading,
   superheadingHref,
   subheading,
@@ -320,9 +313,8 @@ export function TopNavHeading({
   ...props
 }: TopNavHeadingProps) {
   const t = useTranslator();
+  const chevronDownIcon = useIcon('chevronDown');
   const LinkComponent = useLinkComponent(as);
-  // Support both headingHref and legacy href
-  const headingHref = headingHrefProp ?? href;
   // When the logo is wrapped in a link it needs its own accessible name (the
   // logo image itself is decorative). Prefer an explicit logoLabel, fall back
   // to the heading text. axe: link-name.
@@ -412,7 +404,7 @@ export function TopNavHeading({
   );
 
   const chevronElement = showChevron && (
-    <span {...stylex.props(styles.chevron)}>{getIcon('chevronDown')}</span>
+    <span {...stylex.props(styles.chevron)}>{chevronDownIcon}</span>
   );
 
   const headerEndContentElement = headerEndContent && (
@@ -428,9 +420,7 @@ export function TopNavHeading({
       onClick={triggerProps.onClick}>
       {logo && <span {...stylex.props(styles.logo)}>{logo}</span>}
       {renderTextContent(
-        <span {...stylex.props(styles.popoverChevron)}>
-          {getIcon('chevronDown')}
-        </span>,
+        <span {...stylex.props(styles.popoverChevron)}>{chevronDownIcon}</span>,
       )}
     </button>
   );
@@ -507,7 +497,7 @@ export function TopNavHeading({
               }}
               {...popover.triggerProps}
               {...stylex.props(styles.chevron, styles.interactive)}>
-              {getIcon('chevronDown')}
+              {chevronDownIcon}
             </button>,
           )}
           {headerEndContentElement}
@@ -576,7 +566,7 @@ export function TopNavHeading({
                 }}
                 {...popover.triggerProps}
                 {...stylex.props(styles.chevron, styles.interactive)}>
-                {getIcon('chevronDown')}
+                {chevronDownIcon}
               </button>
             ) : undefined,
           )}

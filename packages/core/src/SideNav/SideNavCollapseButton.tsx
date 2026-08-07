@@ -14,16 +14,16 @@
  * SYNC: When modified, update:
  * - /packages/core/src/SideNav/SideNav.doc.mjs
  * - /packages/core/src/SideNav/index.ts
- * - /packages/cli/templates/blocks/components/SideNav/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/SideNav/ (showcase blocks)
  */
 
 import React, {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {durationVars, easeVars} from '../theme/tokens.stylex';
-import {getIcon} from '../Icon/globalIconRegistry';
+import {useIcon} from '../Icon';
 import {Button} from '../Button';
 import type {BaseProps} from '../BaseProps';
-import {composeEventHandlers} from '../utils';
+import {composeEventHandlers, rtlStyles} from '../utils';
 import {
   useSideNavCollapse,
   type SideNavCollapseState,
@@ -107,6 +107,7 @@ export function SideNavCollapseButton({
   ...props
 }: SideNavCollapseButtonProps) {
   const t = useTranslator();
+  const chevronLeftIcon = useIcon('chevronLeft');
   const {isCollapsed, toggle, isCollapsible} =
     useSideNavCollapseState(handleRef);
   const {isMobile} = useAppShellMobile();
@@ -131,12 +132,14 @@ export function SideNavCollapseButton({
       onClick={composeEventHandlers(onClickProp, toggle)}
       icon={
         children ?? (
-          <span
-            {...stylex.props(
-              styles.chevron,
-              isCollapsed && styles.chevronCollapsed,
-            )}>
-            {getIcon('chevronLeft')}
+          <span {...stylex.props(rtlStyles.mirror)}>
+            <span
+              {...stylex.props(
+                styles.chevron,
+                isCollapsed && styles.chevronCollapsed,
+              )}>
+              {chevronLeftIcon}
+            </span>
           </span>
         )
       }

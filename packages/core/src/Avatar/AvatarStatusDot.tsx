@@ -12,7 +12,7 @@
  * - /packages/core/src/Avatar/Avatar.doc.mjs (features, files table)
  * - /packages/core/src/Avatar/index.ts (exports)
  * - /apps/storybook/stories/Avatar.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Avatar/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Avatar/ (showcase blocks)
  */
 
 import React, {use, type ReactNode} from 'react';
@@ -22,6 +22,7 @@ import {colorVars, radiusVars} from '../theme/tokens.stylex';
 import {AvatarSizeContext} from './AvatarSizeContext';
 import {isRenderable, mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
+import type {AvatarStatusDotVariantMap} from './index';
 
 /**
  * Discrete size tier of the status dot, derived from the avatar size.
@@ -66,32 +67,6 @@ function resolveStatusDotSize(avatarSize: number): {
 }
 
 /**
- * Extensible variant map for AvatarStatusDot.
- *
- * Theme packages can add custom variants via TypeScript module augmentation:
- * @example
- * ```
- * declare module '@astryxdesign/core/Avatar' {
- *   interface AvatarStatusDotVariantMap {
- *     'away': true;
- *   }
- * }
- * ```
- *
- * Custom variants render no background fill, no ink colour, and no built-in
- * shape glyph — the theme must supply the fill and, if it passes an `icon`,
- * a `color` for it to paint with. It should also supply a non-colour mark
- * so the status is not distinguishable by colour alone (a WCAG 1.4.1
- * failure): pass `icon`, or theme a glyph onto the dot via
- * `.astryx-avatar-status-dot[data-variant="..."]` (e.g. a `::before` mark).
- */
-export interface AvatarStatusDotVariantMap {
-  success: true;
-  neutral: true;
-  error: true;
-}
-
-/**
  * AvatarStatusDot variant type. Extensible via module augmentation of AvatarStatusDotVariantMap.
  */
 export type AvatarStatusDotVariant = keyof AvatarStatusDotVariantMap;
@@ -115,10 +90,12 @@ export interface AvatarStatusDotProps extends BaseProps<HTMLDivElement> {
    * Describes the meaning of the indicator for screen readers
    * (e.g. "Online", "Accepted", "John Doe is busy").
    *
-   * Note: inside an Avatar the label is currently not announced — the
-   * Avatar root is `role="img"`, which prunes descendant semantics.
-   * Pass it anyway; composing status into the avatar's accessible name
-   * is a planned Avatar-level fix.
+   * Note: inside an Avatar the dot sits in the avatar's `role="img"`
+   * subtree, where descendant semantics are pruned — the dot is never its
+   * own stop there. Instead, Avatar reads this `label` and composes it into
+   * its own accessible name (e.g. "Jane Doe, Online"), which is how the
+   * status reaches assistive tech (WCAG 4.1.2). Standalone dots (outside an
+   * Avatar) expose `role="img"` with this label directly.
    */
   label?: string;
   /**

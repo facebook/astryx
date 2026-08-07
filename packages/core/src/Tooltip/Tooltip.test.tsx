@@ -221,4 +221,50 @@ describe('Tooltip', () => {
       expect(onOpenChange).not.toHaveBeenCalledWith(false);
     });
   });
+
+  describe('press-to-dismiss', () => {
+    it('hides the tooltip when the trigger is pressed', async () => {
+      const onOpenChange = vi.fn();
+      render(
+        <Tooltip content="Copy link" onOpenChange={onOpenChange} delay={0}>
+          <button type="button">Trigger</button>
+        </Tooltip>,
+      );
+
+      const trigger = screen.getByRole('button', {name: 'Trigger'});
+      fireEvent.mouseEnter(trigger);
+      await waitFor(() => {
+        expect(onOpenChange).toHaveBeenCalledWith(true);
+      });
+
+      fireEvent.pointerDown(trigger);
+      await waitFor(() => {
+        expect(onOpenChange).toHaveBeenCalledWith(false);
+      });
+    });
+
+    it('does not press-dismiss a controlled tooltip', async () => {
+      const onOpenChange = vi.fn();
+      render(
+        <Tooltip
+          content="Controlled"
+          isOpen
+          onOpenChange={onOpenChange}
+          delay={0}>
+          <button type="button">Trigger</button>
+        </Tooltip>,
+      );
+
+      const trigger = screen.getByRole('button', {name: 'Trigger'});
+      await waitFor(() => {
+        expect(onOpenChange).toHaveBeenCalledWith(true);
+      });
+      onOpenChange.mockClear();
+
+      fireEvent.pointerDown(trigger);
+      // Give any (incorrect) async hide a chance to run.
+      await new Promise(r => setTimeout(r, 20));
+      expect(onOpenChange).not.toHaveBeenCalledWith(false);
+    });
+  });
 });

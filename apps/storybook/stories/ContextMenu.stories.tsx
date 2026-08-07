@@ -330,7 +330,7 @@ export const WithSelectableItems: Story = {
             <ContextMenuRadioGroup
               value={sort}
               onChange={setSort}
-              aria-label="Sort by">
+              label="Sort by">
               <ContextMenuRadioItem value="name" label="Sort by name" />
               <ContextMenuRadioItem value="date" label="Sort by date" />
               <ContextMenuRadioItem value="size" label="Sort by size" />

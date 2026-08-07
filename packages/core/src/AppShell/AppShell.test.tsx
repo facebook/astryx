@@ -20,6 +20,7 @@ import {
 } from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import {AppShell} from './AppShell';
+import {InternationalizationProvider} from '../i18n';
 import {MobileNav} from '../MobileNav';
 import {SideNav, SideNavItem, SideNavSection} from '../SideNav';
 import {TopNav, TopNavHeading, TopNavItem} from '../TopNav';
@@ -203,6 +204,60 @@ describe('AppShell', () => {
     );
     const main = screen.getByRole('main');
     expect(main).toHaveAttribute('id', 'astryx-app-shell-main');
+  });
+
+  it('moves focus to the main content when the skip link is activated', () => {
+    render(
+      <AppShell>
+        <div>Content</div>
+      </AppShell>,
+    );
+    const skipLink = screen.getByTestId('skip-to-content');
+    const main = screen.getByRole('main');
+    // The target must be programmatically focusable for focus to move
+    expect(main).toHaveAttribute('tabindex', '-1');
+    fireEvent.click(skipLink);
+    expect(document.activeElement).toBe(main);
+  });
+
+  it('skip link text comes from the i18n catalog', () => {
+    render(
+      <InternationalizationProvider
+        locale="en"
+        overrides={{en: {'@astryx.appShell.skipToContent': 'Jump to main'}}}>
+        <AppShell>
+          <div>Content</div>
+        </AppShell>
+      </InternationalizationProvider>,
+    );
+    expect(screen.getByTestId('skip-to-content').textContent).toBe(
+      'Jump to main',
+    );
+  });
+
+  // ===========================================================================
+  // Banner landmark
+  // ===========================================================================
+
+  it('exposes the header region as a banner landmark', () => {
+    render(
+      <AppShell topNav={<div>Top Nav</div>}>
+        <div>Content</div>
+      </AppShell>,
+    );
+    const banner = screen.getByRole('banner');
+    expect(banner).toBeInTheDocument();
+    // banner must be top-level — not nested inside another landmark
+    expect(screen.getByRole('main')).not.toContainElement(banner);
+  });
+
+  it('does not render a banner landmark without header content', () => {
+    render(
+      <AppShell>
+        <div>Content</div>
+      </AppShell>,
+    );
+    expect(screen.queryByRole('banner')).not.toBeInTheDocument();
   });
 
   // ===========================================================================

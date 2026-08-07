@@ -136,35 +136,23 @@ describe('List', () => {
     expect(container.querySelector('ul')).toBeInTheDocument();
   });
 
-  it('adds role="list" when listStyle is none (Safari fix)', () => {
-    const {container} = render(
-      <List>
-        <ListItem label="Item" />
-      </List>,
-    );
-    const ul = container.querySelector('ul');
-    expect(ul).toHaveAttribute('role', 'list');
-  });
-
-  it('does not add role="list" when listStyle is disc', () => {
-    const {container} = render(
-      <List listStyle="disc">
-        <ListItem label="Item" />
-      </List>,
-    );
-    const ul = container.querySelector('ul');
-    expect(ul).not.toHaveAttribute('role');
-  });
-
-  it('does not add role="list" when listStyle is decimal', () => {
-    const {container} = render(
-      <List listStyle="decimal">
-        <ListItem label="Item" />
-      </List>,
-    );
-    const ol = container.querySelector('ol');
-    expect(ol).not.toHaveAttribute('role');
-  });
+  it.each(['none', 'disc', 'circle', 'decimal'] as const)(
+    'adds an explicit role="list" when listStyle is %s (Safari fix)',
+    listStyle => {
+      // The base list style always sets list-style-type: none (markers are
+      // custom-rendered by ListItem), so Safari/VoiceOver drops the implicit
+      // list role for EVERY variant — the explicit role must always be there.
+      render(
+        <List listStyle={listStyle}>
+          <ListItem label="Item 1" />
+          <ListItem label="Item 2" />
+        </List>,
+      );
+      const list = screen.getByRole('list');
+      expect(list).toHaveAttribute('role', 'list');
+      expect(screen.getAllByRole('listitem')).toHaveLength(2);
+    },
+  );
 
   it('renders items as <li> elements', () => {
     const {container} = render(

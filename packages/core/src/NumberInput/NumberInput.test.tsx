@@ -965,11 +965,15 @@ describe('keyboard clearing with hasClear (#3599)', () => {
   });
 });
 
-
 describe('NumberInput statusVariant forwarding', () => {
   it('defaults to attached (status renders with data-variant="attached")', () => {
     const {container} = render(
-      <NumberInput label="Amount" value={null} onChange={() => {}} status={{type: 'error', message: 'Must be positive'}} />,
+      <NumberInput
+        label="Amount"
+        value={null}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Must be positive'}}
+      />,
     );
     expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
       'data-variant',
@@ -979,11 +983,42 @@ describe('NumberInput statusVariant forwarding', () => {
 
   it('forwards statusVariant="detached" to the underlying Field status', () => {
     const {container} = render(
-      <NumberInput label="Amount" value={null} onChange={() => {}} status={{type: 'error', message: 'Must be positive'}} statusVariant="detached" />,
+      <NumberInput
+        label="Amount"
+        value={null}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Must be positive'}}
+        statusVariant="detached"
+      />,
     );
     expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
       'data-variant',
       'detached',
     );
+  });
+
+  it('stops wheel propagation while focused so ancestor containers do not scroll', () => {
+    const onScrollableWheel = vi.fn();
+    render(
+      <div onWheel={onScrollableWheel}>
+        <NumberInput label="Amount" value={5} onChange={() => {}} />
+      </div>,
+    );
+    const input = screen.getByRole('spinbutton');
+    input.focus();
+    fireEvent.wheel(input, {deltaY: 100});
+    expect(onScrollableWheel).not.toHaveBeenCalled();
+  });
+
+  it('does not stop wheel propagation when the input is not focused', () => {
+    const onScrollableWheel = vi.fn();
+    render(
+      <div onWheel={onScrollableWheel}>
+        <NumberInput label="Amount" value={5} onChange={() => {}} />
+      </div>,
+    );
+    const input = screen.getByRole('spinbutton');
+    fireEvent.wheel(input, {deltaY: 100});
+    expect(onScrollableWheel).toHaveBeenCalledTimes(1);
   });
 });

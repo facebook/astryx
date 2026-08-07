@@ -20,10 +20,10 @@
  * - /packages/core/src/DropdownMenu/DropdownMenu.test.tsx
  * - /packages/core/src/DropdownMenu/index.ts
  * - /apps/storybook/stories/DropdownMenu.stories.tsx
- * - /packages/cli/templates/blocks/components/DropdownMenu/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/DropdownMenu/ (showcase blocks)
  */
 
-import {useCallback, type ReactNode} from 'react';
+import {useCallback, type PointerEvent, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {renderIconSlot, type IconType} from '../Icon';
 import {Item} from '../Item';
@@ -36,6 +36,7 @@ import {
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {useDropdownMenuContext} from './DropdownMenuContext';
+import {focusMenuItemOnHover} from './menuItemHover';
 import {themeProps} from '../utils/themeProps';
 
 const menuItemStyles = stylex.create({
@@ -51,7 +52,6 @@ const menuItemStyles = stylex.create({
     backgroundColor: {
       default: 'transparent',
       ':focus': colorVars['--color-overlay-hover'],
-      ':hover': colorVars['--color-overlay-hover'],
     },
     border: 'none',
     cursor: 'pointer',
@@ -129,10 +129,16 @@ export function DropdownMenuItem({
     ctx?.closeMenu();
   }, [isDisabled, onClick, ctx]);
 
+  const handlePointerMove = useCallback(
+    (e: PointerEvent<HTMLElement>) => focusMenuItemOnHover(e, isDisabled),
+    [isDisabled],
+  );
+
   return (
     <Item
       role="menuitem"
       tabIndex={isDisabled ? undefined : -1}
+      onPointerMove={handlePointerMove}
       startContent={
         icon
           ? renderIconSlot(icon, {size: 'sm', color: 'secondary'})

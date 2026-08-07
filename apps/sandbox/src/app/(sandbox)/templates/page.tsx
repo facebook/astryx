@@ -17,7 +17,10 @@ import {
   pixel,
 } from '@astryxdesign/core/Table';
 import type {TableColumn, TableSortState} from '@astryxdesign/core/Table';
-import type {TableFilterState, TableFilterValue} from '@astryxdesign/core/Table';
+import type {
+  TableFilterState,
+  TableFilterValue,
+} from '@astryxdesign/core/Table';
 import {usePowerSearchConfig} from '@astryxdesign/core/PowerSearch';
 import type {PowerSearchFilter} from '@astryxdesign/core/PowerSearch';
 import {Link} from '@astryxdesign/core/Link';
@@ -48,8 +51,8 @@ const rows: TemplateRow[] = [
     href: t.href,
     type: 'Page' as const,
     component: 'n/a',
-    codePath: `packages/cli/templates/pages/${t.slug}/page.tsx`,
-    docPath: `packages/cli/templates/pages/${t.slug}/template.doc.mjs`,
+    codePath: `packages/cli/assets/templates/pages/${t.slug}/page.tsx`,
+    docPath: `packages/cli/assets/templates/pages/${t.slug}/template.doc.mjs`,
     isReady: t.isReady,
     isShowcase: false,
   })),
@@ -60,8 +63,8 @@ const rows: TemplateRow[] = [
     href: b.href,
     type: 'Block' as const,
     component: b.component,
-    codePath: `packages/cli/templates/blocks/components/${b.component}/${b.slug}.tsx`,
-    docPath: `packages/cli/templates/blocks/components/${b.component}/${b.slug}.doc.mjs`,
+    codePath: `packages/cli/assets/templates/blocks/components/${b.component}/${b.slug}.tsx`,
+    docPath: `packages/cli/assets/templates/blocks/components/${b.component}/${b.slug}.doc.mjs`,
     isReady: b.isReady,
     isShowcase: b.isShowcase,
   })),

@@ -11,7 +11,7 @@
  * - /packages/core/src/Field/Field.doc.mjs (compat docs when public API changes)
  * - /packages/core/src/FieldStatus/index.ts (exports if types change)
  * - /packages/core/src/Field/index.ts (compat re-export if public API changes)
- * - /packages/cli/templates/blocks/components/FieldStatus/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/FieldStatus/ (showcase blocks)
  */
 
 'use client';
@@ -33,6 +33,7 @@ import {useEntryAnimation} from '../hooks/useEntryAnimation';
 import {themeProps} from '../utils/themeProps';
 import {Icon} from '../Icon';
 import type {IconName} from '../Icon';
+import type {FieldStatusVariantMap} from './index';
 
 /**
  * Maps each status type to its status glyph. Mirrors the mapping the input
@@ -56,8 +57,8 @@ const styles = stylex.create({
     paddingBlockStart: `calc(${spacingVars['--spacing-1-5']} + ${spacingVars['--spacing-2']})`,
     paddingBlockEnd: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-2'],
-    borderBottomLeftRadius: radiusVars['--radius-element'],
-    borderBottomRightRadius: radiusVars['--radius-element'],
+    borderEndStartRadius: radiusVars['--radius-element'],
+    borderEndEndRadius: radiusVars['--radius-element'],
   },
   detached: {
     marginTop: spacingVars['--spacing-1'],
@@ -71,9 +72,12 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-1'],
   },
   detachedIcon: {
-    // Match the height of the first text line so the glyph top-aligns to it
-    // (rather than to the flex box) when the message wraps to multiple lines.
-    lineHeight: typeScaleVars['--text-supporting-leading'],
+    // Center the glyph within the first text-line box so it aligns to the
+    // first line of the message (rather than the top of the flex row) when the
+    // message wraps to multiple lines.
+    display: 'inline-flex',
+    alignItems: 'center',
+    height: `calc(${typeScaleVars['--text-supporting-size']} * ${typeScaleVars['--text-supporting-leading']})`,
     flexShrink: 0,
   },
 });
@@ -92,24 +96,6 @@ const colorStyles = stylex.create({
     color: colorVars['--color-text-green'],
   },
 });
-
-/**
- * Extensible variant map for FieldStatus.
- *
- * Theme packages can add custom variants via TypeScript module augmentation:
- * @example
- * ```
- * declare module '@astryxdesign/core/FieldStatus' {
- *   interface FieldStatusVariantMap {
- *     'inline': true;
- *   }
- * }
- * ```
- */
-export interface FieldStatusVariantMap {
-  attached: true;
-  detached: true;
-}
 
 /**
  * FieldStatus variant type. Extensible via module augmentation of FieldStatusVariantMap.
@@ -143,7 +129,9 @@ export interface FieldStatusProps extends BaseProps<HTMLDivElement> {
  * decorative for assistive tech (`aria-hidden`): the message text already names
  * the status in words and is announced through the live region. The `attached`
  * variant keeps its status affordance on the bordered input, so it renders no
- * icon here to avoid a duplicate.
+ * icon here to avoid a duplicate. The `tooltip` variant renders no message box
+ * at all — the input surfaces the status through a tooltip on its on-field
+ * icon — so callers skip rendering FieldStatus for it.
  *
  * Screen-reader announcements go through the persistent `useAnnounce` live
  * regions (assertive for errors, polite otherwise) rather than `role`/
@@ -210,7 +198,18 @@ export function FieldStatus({
       {variant === 'detached' ? (
         <span {...stylex.props(styles.detachedContent)}>
           <span {...stylex.props(styles.detachedIcon)}>
-            <Icon icon={statusIconMap[type]} size="sm" color="inherit" />
+            <Icon
+              icon={statusIconMap[type]}
+              size="sm"
+              color="inherit"
+              // Stable theme target on the detached message box's leading glyph
+              // itself, so a theme can restyle just this icon (color, size) —
+              // and each status — via `defineTheme`. Same-element rules in
+              // @layer astryx-theme win over the icon's own base
+              // width/height/fontSize, which a field-level target could not
+              // reach.
+              {...themeProps('field-status-icon', {type})}
+            />
           </span>
           <span>{message}</span>
         </span>

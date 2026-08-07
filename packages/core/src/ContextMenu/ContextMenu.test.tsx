@@ -136,6 +136,21 @@ describe('ContextMenu', () => {
     expect(HTMLElement.prototype.hidePopover).toHaveBeenCalled();
   });
 
+  it('closes the menu when Tab is pressed inside it (APG menu pattern)', () => {
+    render(
+      <ContextMenu items={[{label: 'Item 1'}]}>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+
+    fireEvent.contextMenu(screen.getByText('Right-click me'));
+    expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
+
+    const menu = screen.getByRole('menu', {hidden: true});
+    fireEvent.keyDown(menu, {key: 'Tab'});
+    expect(HTMLElement.prototype.hidePopover).toHaveBeenCalled();
+  });
+
   it('ignores Escape during IME composition', () => {
     render(
       <ContextMenu items={[{label: 'Item 1'}]}>
@@ -552,7 +567,7 @@ describe('ContextMenu selectable items', () => {
             <ContextMenuRadioGroup
               value="name"
               onChange={() => {}}
-              aria-label="Sort by">
+              label="Sort by">
               <ContextMenuRadioItem value="name" label="Sort by name" />
               <ContextMenuRadioItem value="date" label="Sort by date" />
             </ContextMenuRadioGroup>
@@ -587,7 +602,7 @@ describe('ContextMenu selectable items', () => {
             <ContextMenuRadioGroup
               value="name"
               onChange={onSort}
-              aria-label="Sort by">
+              label="Sort by">
               <ContextMenuRadioItem value="name" label="Sort by name" />
               <ContextMenuRadioItem value="date" label="Sort by date" />
             </ContextMenuRadioGroup>
@@ -801,6 +816,48 @@ describe('ContextMenu keyboard access for menuitemradio/menuitemcheckbox (#3829)
     fireEvent.keyDown(menu, {key: 'ArrowDown'});
     expect(
       screen.getByRole('menuitemradio', {name: 'Oldest', hidden: true}),
+    ).toHaveFocus();
+  });
+
+  it('renders a submenu from a nested items array and keyboard-reaches an item after it', () => {
+    // Same inline-flyout scoping the DropdownMenu fix covers: the submenu's
+    // items must not pollute the ContextMenu's roving order, and an item after
+    // the submenu row must stay keyboard-reachable.
+    const onDelete = vi.fn();
+    render(
+      <ContextMenu
+        items={[
+          {label: 'Cut', onClick: () => {}},
+          {
+            label: 'Move to',
+            items: [
+              {label: 'Folder A', onClick: () => {}},
+              {label: 'Folder B', onClick: () => {}},
+            ],
+          },
+          {type: 'divider'},
+          {label: 'Delete', onClick: onDelete},
+        ]}>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+    fireEvent.contextMenu(screen.getByText('Right-click me'));
+    // Two role="menu" exist (the context menu + the inline submenu flyout);
+    // the context menu is the first in DOM order.
+    const menu = screen.getAllByRole('menu', {hidden: true})[0];
+    // The submenu trigger renders as a menuitem with aria-haspopup.
+    const submenuTrigger = screen.getByRole('menuitem', {
+      name: /Move to/,
+      hidden: true,
+    });
+    expect(submenuTrigger).toHaveAttribute('aria-haspopup', 'menu');
+    // Cut → Move to → Delete, one step per press (submenu items not swept in).
+    screen.getByRole('menuitem', {name: 'Cut', hidden: true}).focus();
+    fireEvent.keyDown(menu, {key: 'ArrowDown'});
+    expect(submenuTrigger).toHaveFocus();
+    fireEvent.keyDown(menu, {key: 'ArrowDown'});
+    expect(
+      screen.getByRole('menuitem', {name: 'Delete', hidden: true}),
     ).toHaveFocus();
   });
 });

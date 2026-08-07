@@ -63,6 +63,12 @@ export default defineConfig({
         find: /^@astryxdesign\/core\/(.*)$/,
         replacement: path.join(coreSrc, '$1'),
       },
+      // Map the bare specifier to source too (charts package tests import
+      // runtime components like Text/VisuallyHidden from the package root).
+      {
+        find: /^@astryxdesign\/core$/,
+        replacement: path.join(coreSrc, 'index.ts'),
+      },
     ],
   },
   test: {
@@ -82,7 +88,7 @@ export default defineConfig({
     execArgv: ['--max-old-space-size=4096'],
     // Test projects (migrated from vitest.workspace.ts). Partitioning rule
     // (nothing can fall through):
-    //   - `ui`   = packages/core + packages/lab — need jsdom, the StyleX babel
+    //   - `ui`   = packages/core + packages/lab + packages/charts — need jsdom, the StyleX babel
     //              transform, and the jest-dom setup; inherit all of that from
     //              the root config via `extends: true`.
     //   - `node` = everything else (CLI, build tooling, scripts, internal
@@ -100,6 +106,7 @@ export default defineConfig({
           include: [
             'packages/core/src/**/*.test.{ts,tsx,mjs}',
             'packages/lab/src/**/*.test.{ts,tsx,mjs}',
+            'packages/charts/src/**/*.test.{ts,tsx,mjs}',
           ],
         },
       },
@@ -138,6 +145,7 @@ export default defineConfig({
             ...configDefaults.exclude,
             'packages/core/**',
             'packages/lab/**',
+            'packages/charts/**',
           ],
         },
       },

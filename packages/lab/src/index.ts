@@ -13,7 +13,6 @@
  */
 
 // Code components — syntax highlighting domain
-export {CodeBlock, type CodeBlockProps} from './CodeBlock';
 export {CodeEditor, type CodeEditorProps} from './CodeEditor';
 export {
   tokenize,
@@ -34,6 +33,20 @@ export * from './Chat';
 
 // Drawer — experimental overlay panel
 export {Drawer, type DrawerProps} from './Drawer';
+
+// BottomSheet — mobile touch sheet on a native modal <dialog>
+export {BottomSheet, type BottomSheetProps} from './BottomSheet';
+
+// Tour — guided product-tour / NUX walkthrough (facebook/astryx#4239)
+export {
+  Tour,
+  type TourProps,
+  TourStep,
+  type TourStepProps,
+  useTour,
+  type UseTourReturn,
+  type TourDismissSource,
+} from './Tour';
 
 // Stat — experimental KPI/metric display
 export {
@@ -235,10 +248,26 @@ export {
 export {
   RichTextEditor,
   type RichTextEditorProps,
+  type RichTextEditorRef,
   type RichTextEditorStatus,
   type RichTextEditorStatusType,
   type RichTextEditorSize,
+  type Transformer,
   RichTextView,
   type RichTextViewProps,
   sharedEditorTheme,
+  markdownToEditorStateJSON,
+  editorStateJSONToMarkdown,
+  type MarkdownSerializerOptions,
+  RichTextEditorToolbar,
+  type RichTextEditorToolbarProps,
+  RICHTEXT_ICON_KEYS,
+  RichTextEditorAutoLinkPlugin,
+  type RichTextEditorAutoLinkPluginProps,
+  DEFAULT_LINK_MATCHERS,
+  NEW_TAB_LINK_ATTRIBUTES,
+  sanitizeUrl,
+  validateUrl,
+  URL_MATCHER,
+  EMAIL_MATCHER,
 } from './RichTextEditor';

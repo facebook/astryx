@@ -10,7 +10,7 @@
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/TreeList/TreeListItem.tsx
- * - /packages/cli/templates/blocks/components/TreeList/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/TreeList/ (showcase blocks)
  */
 
 import * as stylex from '@stylexjs/stylex';
@@ -26,8 +26,10 @@ const LINE_WIDTH = 1;
  */
 const BRANCH_MARGIN = `calc(${spacingVars['--spacing-2']} + ${spacingVars['--spacing-0-5']})`;
 
-/** Per-level indent width, matching --spacing-4 (16px). */
-const LEVEL_INDENT = spacingVars['--spacing-4'];
+/** Per-level indent width. Reads the public, themeable `--tree-list-indent`
+ * lever set on the tree-list root (default `--spacing-4`, 16px), so the guide
+ * lines stay aligned with the row indent when a theme retunes the step. */
+const LEVEL_INDENT = 'var(--tree-list-indent)';
 
 const styles = stylex.create({
   container: {
@@ -37,10 +39,10 @@ const styles = stylex.create({
   },
   verticalLine: {
     borderRadius: 1,
-    left: 0,
+    insetInlineStart: 0,
     margin: 'auto',
     position: 'absolute',
-    right: 0,
+    insetInlineEnd: 0,
     width: LINE_WIDTH,
     backgroundColor: colorVars['--color-border-emphasized'],
   },
@@ -92,7 +94,7 @@ export function TreeListBranches({
               key={level}
               {...mergeProps(stylex.props(styles.container), {
                 style: {
-                  left: branchOffset,
+                  insetInlineStart: branchOffset,
                 },
               })}>
               <div
@@ -109,7 +111,7 @@ export function TreeListBranches({
         <div
           {...mergeProps(stylex.props(styles.container), {
             style: {
-              left: `calc(${BRANCH_MARGIN} + ${nestedLevel - 1} * ${LEVEL_INDENT})`,
+              insetInlineStart: `calc(${BRANCH_MARGIN} + ${nestedLevel - 1} * ${LEVEL_INDENT})`,
             },
           })}>
           <div

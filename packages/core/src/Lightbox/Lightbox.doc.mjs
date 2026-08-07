@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'Lightbox',
@@ -44,7 +44,7 @@ export const docs = {
     {
       name: 'hasZoom',
       type: 'boolean',
-      description: 'Enable zoom on double-click (images only). When zoomed, drag to pan.',
+      description: 'Enable zoom on double-click, or Enter/Space/+/- via keyboard (images only). When zoomed, drag or use arrow keys to pan.',
       default: 'false',
     },
     {
@@ -85,7 +85,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docsZh = {
   name: 'Lightbox',
   displayName: 'Lightbox',
@@ -148,7 +148,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'Fullscreen overlay for viewing images and videos at full resolution with gallery navigation and zoom.',
   usage: {
@@ -168,7 +168,7 @@ export const docsDense = {
     media: 'Single media object or array for gallery mode.',
     index: 'Current index in gallery mode.',
     onIndexChange: 'Callback when gallery index changes.',
-    hasZoom: 'Enable double-click zoom and drag pan (images only).',
+    hasZoom: 'Enable zoom (double-click, Enter/Space, or +/-) and pan (drag or arrow keys) for images.',
     xstyle: 'StyleX styles for layout customization.',
   },
 };

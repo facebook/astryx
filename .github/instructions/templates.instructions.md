@@ -1,13 +1,14 @@
 ---
-applyTo: "packages/cli/templates/**"
+applyTo: 'packages/cli/assets/templates/**'
 ---
 
 # Template review instructions
 
 These are Astryx **templates** — page templates (`templates/pages/<name>/page.tsx`
-+ `template.doc.mjs`) and block templates (`templates/blocks/.../[Name].tsx` +
-`[Name].doc.mjs`). They are copy-paste examples, so they carry design
-responsibility beyond any single component.
+
+- `template.doc.mjs`) and block templates (`templates/blocks/.../[Name].tsx` +
+  `[Name].doc.mjs`). They are copy-paste examples, so they carry design
+  responsibility beyond any single component.
 
 > **Scope note.** These files also match `packages.instructions.md`. For
 > template files, the component-authoring checklist there (forwardRef,
@@ -26,14 +27,14 @@ hard-block).
 
 Quick triage before grading. Two questions:
 
-- **New template vs. edit to an existing one?** A *new* template that lands
+- **New template vs. edit to an existing one?** A _new_ template that lands
   already-visible (its `.doc.mjs` isn't `hidden: true`) skipped hidden-staging —
   flag it (see Lifecycle note) and hold it to the full B+ bar. An edit to an
   existing template is scoped to what changed.
 - **Content-only vs. structural?** A copy/mock-data tweak is a fast grade
   (purity + metadata); a layout/root/`AppShell` change needs the full Layout &
   Structure pass. State it briefly, e.g. `Triage: edit to existing template,
-  layout change → full structure pass`.
+layout change → full structure pass`.
 
 ## Score the 7 categories (100 pts)
 
@@ -54,13 +55,13 @@ Quick triage before grading. Two questions:
    `className`/`stylex.props()` usage. Token-valued Astryx props do **not**
    count.
 4. **Layout & structure (15)** —
-   - *Page templates:* root is `Layout` or `Center`, never `AppShell` or a raw
+   - _Page templates:_ root is `Layout` or `Center`, never `AppShell` or a raw
      `<div>` — **exception:** `Shell -` category templates must root in
      `AppShell` with global `TopNav`/`SideNav`. No global app chrome otherwise
      (in-page nav → `LayoutPanel` start slot; page header → `LayoutHeader`).
      Responsive grids use `Grid` + `minChildWidth`; centering uses `Center`.
      Single page only — navigation links inert (`href="#"` / `onClick`).
-   - *Block templates:* not wrapped in `AppShell`, single-pattern focus,
+   - _Block templates:_ not wrapped in `AppShell`, single-pattern focus,
      ~20–100 lines.
 5. **Doc metadata (10)** — read the `.doc.mjs`. Pages need
    `type:'page'`, `name`, `description`, `isReady`. Blocks need `type:'block'`,
@@ -98,7 +99,7 @@ dark.
 Templates are authored **hidden** and revealed only after they clear this bar
 (`hidden: true` / a `hiddenComponents` entry in the `.doc.mjs` keeps a template
 out of `--list`). The thing to catch is a template that **skips hidden-staging**:
-**flag a diff that adds a *new* template/block whose `.doc.mjs` is not
+**flag a diff that adds a _new_ template/block whose `.doc.mjs` is not
 `hidden: true`** — it's publicly listed the moment it lands and may not be
 hardened yet. Ask the author to confirm it grades **B or above**, or to add
 `hidden: true` until it does. See

@@ -13,7 +13,7 @@
  * - /packages/core/src/TimeInput/TimeInput.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/TimeInput/index.ts (exports if types change)
  * - /apps/storybook/stories/TimeInput.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/TimeInput/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/TimeInput/ (showcase blocks)
  */
 
 import {
@@ -29,7 +29,6 @@ import {
   type FocusEvent,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {IconName} from '../Icon';
 import {
   colorVars,
   sizeVars,
@@ -41,7 +40,6 @@ import {
 import {
   Field,
   type InputStatus,
-  type InputStatusType,
   inputWrapperStyles,
   inputStatusBorderStyles,
   inputStatusHoverShadowStyles,
@@ -68,6 +66,7 @@ import type {SizeValue} from '../utils/types';
 import {useSize} from '../SizeContext/SizeContext';
 import {useAnnounce} from '../hooks/useAnnounce';
 import {useInputContainer} from '../hooks/useInputContainer';
+import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {useTooltip} from '../Tooltip';
@@ -303,6 +302,7 @@ export interface TimeInputProps extends Omit<
    * How the status message is placed relative to the input.
    * - 'attached': message overlaps directly below the input (bordered treatment)
    * - 'detached': message floats below as a separate element with spacing
+   * - 'tooltip': no message box; the status icon becomes a focusable info-tip button that reveals the message on hover, keyboard focus, or tap
    * @default 'attached'
    */
   statusVariant?: FieldStatusVariant;
@@ -409,26 +409,21 @@ export function TimeInput({
   });
 
   // Status icon mapping
-  const statusIconMap: Record<InputStatusType, IconName> = {
-    warning: 'warning',
-    error: 'error',
-    success: 'success',
-  };
-
-  const statusIconColorMap: Record<
-    InputStatusType,
-    'warning' | 'error' | 'success'
-  > = {
-    warning: 'warning',
-    error: 'error',
-    success: 'success',
-  };
+  const {statusIcon, describedBy: statusTooltipDescribedBy} =
+    useInputStatusIcon({
+      status,
+      statusVariant,
+      isInGroup: !!inputGroup,
+    });
 
   const {ariaLabelledBy, ariaDescribedBy} = getInputARIA(
     inputLabelID,
     [
       description ? descriptionID : null,
-      status?.message ? statusMessageID : null,
+      statusVariant !== 'tooltip' && status?.message ? statusMessageID : null,
+      // The tooltip variant renders no message box; describe the input by the
+      // tooltip's content instead so the status is still announced.
+      statusTooltipDescribedBy,
       showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
     ],
     inputGroup,
@@ -619,7 +614,7 @@ export function TimeInput({
           sizeStyles[size],
           isDisabled && inputWrapperStyles.disabled,
           status && inputStatusBorderStyles[status.type],
-          status && inputStatusHoverShadowStyles[status.type],
+          status && !isDisabled && inputStatusHoverShadowStyles[status.type],
           status && inputStatusFocusWithinStyles[status.type],
           inputGroup && groupStyles.inGroup,
           xstyle,
@@ -690,13 +685,7 @@ export function TimeInput({
           <Icon icon="close" size="sm" color="secondary" />
         </button>
       )}
-      {status && !inputGroup && (
-        <Icon
-          icon={statusIconMap[status.type]}
-          size="md"
-          color={statusIconColorMap[status.type]}
-        />
-      )}
+      {statusIcon}
     </div>
   );
 

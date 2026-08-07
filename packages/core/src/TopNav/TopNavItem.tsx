@@ -13,7 +13,7 @@
  * - /packages/core/src/TopNav/TopNav.test.tsx
  * - /packages/core/src/TopNav/index.ts
  * - /apps/storybook/stories/TopNav.stories.tsx
- * - /packages/cli/templates/blocks/components/TopNav/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/TopNav/ (showcase blocks)
  */
 
 import type {ReactNode} from 'react';
@@ -131,6 +131,8 @@ export interface TopNavItemProps extends BaseProps<HTMLAnchorElement> {
   isSelected?: boolean;
   /**
    * Whether the nav item is disabled.
+   * A disabled item renders as a plain anchor without an href (and without
+   * target), so it cannot navigate and is removed from the tab order.
    * @default false
    */
   isDisabled?: boolean;
@@ -158,6 +160,15 @@ export interface TopNavItemProps extends BaseProps<HTMLAnchorElement> {
 }
 
 /**
+ * Click handler for disabled items. The disabled anchor renders without an
+ * href, so there is no navigation to block in practice; preventDefault is a
+ * defensive guard against synthetic/programmatic clicks.
+ */
+function preventDefaultClick(event: React.MouseEvent<HTMLAnchorElement>): void {
+  event.preventDefault();
+}
+
+/**
  * A navigation item for use within TopNav startContent.
  *
  * Renders as an anchor element with hover/selected states.
@@ -178,6 +189,9 @@ export interface TopNavItemProps extends BaseProps<HTMLAnchorElement> {
  */
 export function TopNavItem({
   as,
+  href,
+  target,
+  onClick,
   label,
   isSelected = false,
   isDisabled = false,
@@ -195,22 +209,34 @@ export function TopNavItem({
   const renderMode = useTopNavRenderMode();
   const {closeMobileNav} = useAppShellMobile();
 
+  // A disabled item renders as a plain <a> with no href: an href-less anchor
+  // is not focusable and exposes no link affordance, so programmatic focus +
+  // Enter, AT activation commands, and middle-click cannot navigate or fire
+  // the consumer onClick. The router LinkComponent is deliberately skipped —
+  // a disabled item performs no navigation, and custom router links may
+  // require a live href. target is omitted with the href. (Mirrors the
+  // disabled paths of Link and SideNavItem.)
+  const Root = isDisabled ? 'a' : LinkComponent;
+
   // =========================================================================
   // Drawer mode — render as a SideNavItem-style vertical list element
   // =========================================================================
   if (renderMode === 'drawer') {
-    const handleDrawerClick = (e: React.MouseEvent) => {
+    const handleDrawerClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
       if (isDisabled) {
+        preventDefaultClick(e);
         return;
       }
       // Forward the original onClick if present
-      (props as {onClick?: (e: React.MouseEvent) => void}).onClick?.(e);
+      onClick?.(e);
       closeMobileNav();
     };
 
     return (
-      <LinkComponent
+      <Root
         ref={ref}
+        href={isDisabled ? undefined : href}
+        target={isDisabled ? undefined : target}
         aria-label={isIconOnly ? label : undefined}
         aria-current={isSelected ? 'page' : undefined}
         aria-disabled={isDisabled || undefined}
@@ -235,7 +261,7 @@ export function TopNavItem({
         onClick={handleDrawerClick}>
         {icon}
         {!isIconOnly && (children ?? label)}
-      </LinkComponent>
+      </Root>
     );
   }
 
@@ -244,8 +270,11 @@ export function TopNavItem({
   // =========================================================================
 
   return (
-    <LinkComponent
+    <Root
       ref={ref}
+      href={isDisabled ? undefined : href}
+      target={isDisabled ? undefined : target}
+      onClick={isDisabled ? preventDefaultClick : onClick}
       aria-label={isIconOnly ? label : undefined}
       aria-current={isSelected ? 'page' : undefined}
       aria-disabled={isDisabled || undefined}
@@ -267,7 +296,7 @@ export function TopNavItem({
       {...props}>
       {icon}
       {!isIconOnly && (children ?? label)}
-    </LinkComponent>
+    </Root>
   );
 }
 

@@ -30,8 +30,8 @@ in what order, so effort lands where the risk is — and so the risk checks
   consumers may depend on. (The tell for an _accidental_ breaking change:
   unrelated tests/examples/call sites had to be edited — see the silent-breaking
   rule in Judgment.) A real breaking change must be **intentional and signalled
-  with a `[breaking]` changeset category** (pre-1.0 stays a `patch` bump — never
-  ask for `minor`/`major`; the category is the signal), and for a
+  with a `[breaking]` changeset category** (pre-1.0 that means a `minor` bump;
+  every other category is `patch`, and `major` is never used), and for a
   removed/renamed/changed public API, a **codemod** under `astryx upgrade`.
   Flag a breaking change with no `[breaking]` changeset (and no codemod where one
   is warranted) as blocking.
@@ -447,7 +447,19 @@ and the Design review section above), or to add `hidden: true` until it does.
   Flag an added wrapper when a lighter path exists:
   - _Styling:_ components extend `BaseProps` (they take `xstyle`), so apply style
     directly — `<Divider xstyle={hasOutline && styles.titleDivider} />` — instead
-    of wrapping the component in a styled `<div>`.
+    of wrapping the component in a styled `<div>`. This is the shape that shipped
+    the off-center pagination carets (#4752): the mirror span put an extra
+    element between the button's flex centering and the `Icon`, and moving the
+    same style onto `<Icon xstyle={rtlStyles.mirror} />` fixed it. `@astryx/no-style-only-wrapper`
+    reports the mechanical cases (a `div`/`span` whose only attributes are
+    styles, wrapping a single Astryx component); it is a warning while the
+    existing sites are migrated, so treat a **new** one as a review finding
+    rather than assuming lint blocks it. The wrapper is legitimate when it does
+    something the child cannot: establishing a flex/grid **container** (moving
+    `display: flex` onto the child would restyle the child's own content),
+    padding around the child's border box, or carrying semantics/behavior
+    (`role`, `aria-*`, a `ref`, an event handler). Say which one applies rather
+    than deleting the node reflexively.
   - _Behavior:_ reach for the behavior **hook** or **prop** the system already
     exposes rather than a wrapper component. E.g. a tooltip is available via the
     `tooltip` prop / `useTooltip` hook, and there are hooks for many behaviors
@@ -479,7 +491,7 @@ and the Design review section above), or to add `hidden: true` until it does.
   `@example` fences in JSDoc must be plain ` ``` ` (never language-tagged), or
   Storybook autodocs won't render them.
 - **Changeset** present for consumer-visible changes, with `[category]` +
-  `@handle`, patch-only pre-1.0.
+  `@handle`; pre-1.0 bumps are `patch`, except `[breaking]`, which is `minor`.
 
 ## Judgment
 

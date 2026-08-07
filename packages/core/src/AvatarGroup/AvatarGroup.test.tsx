@@ -4,7 +4,8 @@ import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {AvatarGroup} from './AvatarGroup';
 import {AvatarGroupOverflow} from './AvatarGroupOverflow';
-import {Avatar} from '../Avatar';
+import {Avatar, AvatarStatusDot} from '../Avatar';
+import {InternationalizationProvider} from '../i18n';
 
 describe('AvatarGroup', () => {
   it('renders all avatar children', () => {
@@ -19,6 +20,21 @@ describe('AvatarGroup', () => {
     expect(screen.getByLabelText('Alice')).toBeInTheDocument();
     expect(screen.getByLabelText('Bob')).toBeInTheDocument();
     expect(screen.getByLabelText('Charlie')).toBeInTheDocument();
+  });
+
+  it('composes a labelled status into a grouped avatar accessible name (WCAG 4.1.2)', () => {
+    render(
+      <AvatarGroup>
+        <Avatar
+          name="Alice"
+          status={<AvatarStatusDot variant="success" label="Online" />}
+        />
+        <Avatar name="Bob" />
+      </AvatarGroup>,
+    );
+
+    expect(screen.getByLabelText('Alice, Online')).toBeInTheDocument();
+    expect(screen.getByLabelText('Bob')).toBeInTheDocument();
   });
 
   it('renders with role="group" and default aria-label', () => {
@@ -223,7 +239,26 @@ describe('AvatarGroupOverflow — hardening', () => {
     );
 
     expect(screen.getByText('+4912')).toBeInTheDocument();
-    expect(screen.getByLabelText('4912 more')).toBeInTheDocument();
+    // The aria-label routes through the catalog's `{count, number}` ICU
+    // argument, so the en locale adds a grouping separator.
+    expect(screen.getByLabelText('4,912 more')).toBeInTheDocument();
+  });
+
+  it('localizes the overflow label through the i18n catalog', () => {
+    render(
+      <InternationalizationProvider
+        locale="fr"
+        overrides={{
+          fr: {'@astryx.avatarGroup.overflow': '{count, number} de plus'},
+        }}>
+        <AvatarGroup>
+          <Avatar name="Alice" />
+          <AvatarGroupOverflow count={3} />
+        </AvatarGroup>
+      </InternationalizationProvider>,
+    );
+
+    expect(screen.getByLabelText('3 de plus')).toBeInTheDocument();
   });
 });
 
