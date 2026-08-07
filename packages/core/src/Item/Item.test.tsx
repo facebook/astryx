@@ -508,4 +508,223 @@ describe('Item', () => {
     expect(screen.getByText('Alice')).toBeInTheDocument();
     expect(screen.getByText(/commented/)).toBeInTheDocument();
   });
+
+  // ===========================================================================
+  // Variants (#4179)
+  //
+  // These assert the *compiled CSS*, not just prop plumbing. StyleX runs with
+  // `runtimeInjection: true` under vitest (see vitest.config.ts), so the real
+  // atomic rules land in document.styleSheets and can be read back.
+  // ===========================================================================
+
+  type MatchedRule = {selector: string; css: string; media: string};
+
+  /** Every injected rule whose selector targets one of this element's atomic classes. */
+  function rulesFor(el: HTMLElement): MatchedRule[] {
+    // StyleX debug classes (`Item__styles.root`) carry a dot and are escaped in
+    // selectors; the atomic classes are what actually hold declarations.
+    const atomics = el.className
+      .split(/\s+/)
+      .filter(c => /^x[0-9a-z]+$/i.test(c));
+    const found: MatchedRule[] = [];
+
+    const walk = (rules: CSSRuleList, media: string) => {
+      for (const rule of Array.from(rules)) {
+        const grouping = rule as CSSGroupingRule;
+        if (grouping.cssRules != null && grouping.cssRules.length > 0) {
+          const condition = (rule as CSSMediaRule).conditionText ?? '';
+          walk(grouping.cssRules, condition || media);
+          continue;
+        }
+        const styleRule = rule as CSSStyleRule;
+        if (!styleRule.selectorText) {
+          continue;
+        }
+        if (atomics.some(c => styleRule.selectorText.includes(`.${c}`))) {
+          found.push({
+            selector: styleRule.selectorText,
+            css: styleRule.style.cssText,
+            media,
+          });
+        }
+      }
+    };
+
+    for (const sheet of Array.from(document.styleSheets)) {
+      try {
+        walk(sheet.cssRules, '');
+      } catch {
+        continue;
+      }
+    }
+    return found;
+  }
+
+  /** StyleX bumps specificity with `:not(#\#)` — strip it to see real pseudos. */
+  const realSelector = (selector: string) =>
+    selector.replace(/:not\(#\\?#\)/g, '');
+
+  /**
+   * jsdom's CSS serializer differs from the authored source in two harmless
+   * ways: it rewrites the block-direction logical longhands to their physical
+   * equivalents (`padding-block-start` → `padding-top`) and drops the space
+   * after commas inside functions. Normalize both so assertions can be written
+   * in the spelling the component actually uses.
+   */
+  const normalize = (css: string) =>
+    css
+      .replace(/,\s*/g, ', ')
+      .replace(/\bpadding-top\b/g, 'padding-block-start')
+      .replace(/\bpadding-bottom\b/g, 'padding-block-end');
+
+  /** Declarations that apply in the resting state (no pseudo-class, no media). */
+  function baseCss(el: HTMLElement): string {
+    return normalize(
+      rulesFor(el)
+        .filter(r => r.media === '' && !realSelector(r.selector).includes(':'))
+        .map(r => r.css)
+        .join(' '),
+    );
+  }
+
+  /** Declarations that apply only while hovered. */
+  function hoverCss(el: HTMLElement): string {
+    return normalize(
+      rulesFor(el)
+        .filter(r => realSelector(r.selector).includes(':hover'))
+        .map(r => r.css)
+        .join(' '),
+    );
+  }
+
+  const renderItem = (props: Record<string, unknown>) => {
+    render(<Item label="Item" data-testid="item" {...props} />);
+    return screen.getByTestId('item');
+  };
+
+  it('reflects variant as a data attribute for theming', () => {
+    expect(renderItem({variant: 'outline'})).toHaveAttribute(
+      'data-variant',
+      'outline',
+    );
+  });
+
+  it('reflects transparent as the default variant, mirroring Card', () => {
+    // Like Card's `default`, the default variant is a first-class value:
+    // always reflected so themes can target the resting state.
+    expect(renderItem({})).toHaveAttribute('data-variant', 'transparent');
+  });
+
+  it('paints no surface for the transparent variant', () => {
+    const css = baseCss(renderItem({variant: 'transparent'}));
+    expect(css).not.toContain('background-color:');
+    expect(css).not.toContain('border-style: solid');
+  });
+
+  it('paints the muted background for the muted variant', () => {
+    expect(baseCss(renderItem({variant: 'muted'}))).toContain(
+      'background-color: var(--color-background-muted)',
+    );
+  });
+
+  it('draws a border for the outline variant without a background fill', () => {
+    const css = baseCss(renderItem({variant: 'outline'}));
+    expect(css).toContain('border-style: solid');
+    expect(css).toContain('border-color: var(--color-border-emphasized)');
+    expect(css).toContain('border-width: var(--border-width)');
+    expect(css).not.toContain('background-color: var(--color-background-card)');
+  });
+
+  it('draws no border for the muted variant', () => {
+    expect(baseCss(renderItem({variant: 'muted'}))).not.toContain(
+      'border-style: solid',
+    );
+  });
+
+  it('leaves an item without the variant prop surface-free, as before', () => {
+    const css = baseCss(renderItem({}));
+    expect(css).not.toContain('border-style: solid');
+    expect(css).not.toContain('background-color:');
+  });
+
+  it('rejects the removed filled-card variant at the type level', () => {
+    // The aligned set is transparent/outline/muted — there is no
+    // bordered-and-filled surface (#4277 review).
+    // @ts-expect-error -- 'default' is not an ItemVariant
+    const rejected = <Item label="x" variant="default" />;
+    void rejected;
+  });
+
+  it('subtracts the border width from padding so the inset stays on the spacing scale', () => {
+    const css = baseCss(renderItem({variant: 'outline'}));
+    // Longhands, so they outrank the shorthand padding StyleX gives lower
+    // specificity — same technique as Card's withBorder.
+    for (const side of [
+      'padding-inline-start',
+      'padding-inline-end',
+      'padding-block-start',
+      'padding-block-end',
+    ]) {
+      expect(css).toMatch(
+        new RegExp(
+          `${side}: calc\\(var\\(--[\\w-]+\\) - var\\(--border-width\\)\\)`,
+        ),
+      );
+    }
+  });
+
+  it('keeps element radius on a bordered variant rather than container radius', () => {
+    const css = baseCss(renderItem({variant: 'outline'}));
+    expect(css).toContain('border-radius: var(--radius-element)');
+    expect(css).not.toContain('--radius-container');
+  });
+
+  // --- Interaction states must LAYER over the variant surface, not replace it.
+  //
+  // --color-background-muted and --color-overlay-hover are byte-identical in
+  // light mode (both light-dark(#0536590C, ...)). So a hover that writes
+  // background-color would give a muted Item *zero* hover feedback. The
+  // overlays therefore ride on background-image (a separate layer painted
+  // above background-color) — the same technique used by TreeListItem and
+  // AvatarGroupOverflow.
+
+  it('layers the hover overlay above the variant surface instead of replacing it', () => {
+    const el = renderItem({variant: 'muted', onClick: () => {}});
+    expect(hoverCss(el)).toContain(
+      'background-image: linear-gradient(var(--color-overlay-hover), var(--color-overlay-hover))',
+    );
+    expect(hoverCss(el)).not.toContain('background-color');
+    // ...and the surface underneath survives the hover.
+    expect(baseCss(el)).toContain(
+      'background-color: var(--color-background-muted)',
+    );
+  });
+
+  it('layers the selected state above the variant surface', () => {
+    const el = renderItem({variant: 'muted', isSelected: true});
+    expect(baseCss(el)).toContain(
+      'background-image: linear-gradient(var(--color-accent-muted), var(--color-accent-muted))',
+    );
+    expect(baseCss(el)).toContain(
+      'background-color: var(--color-background-muted)',
+    );
+  });
+
+  it('layers the highlighted state above the variant surface', () => {
+    const el = renderItem({variant: 'muted', isHighlighted: true});
+    expect(baseCss(el)).toContain(
+      'background-image: linear-gradient(var(--color-overlay-hover), var(--color-overlay-hover))',
+    );
+    expect(baseCss(el)).toContain(
+      'background-color: var(--color-background-muted)',
+    );
+  });
+
+  it('does not give a no-variant item a background-color surface for its states', () => {
+    // Guards the refactor: overlays moved off background-color entirely, so a
+    // plain Item composites exactly as before over whatever is behind it.
+    const el = renderItem({isSelected: true, onClick: () => {}});
+    expect(baseCss(el)).not.toContain('background-color: var(--color-accent');
+    expect(hoverCss(el)).not.toContain('background-color');
+  });
 });

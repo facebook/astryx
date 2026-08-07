@@ -17,7 +17,7 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'astryx-item', visualProps: ['density', 'align']},
+      {className: 'astryx-item', visualProps: ['density', 'align', 'variant']},
     ],
   },
   components: [
@@ -34,6 +34,7 @@ export const docs = {
         {name: 'as', type: "'div' | 'li' | 'span'", description: 'HTML element to render as the root.', default: "'div'"},
         {name: 'align', type: "'center' | 'start'", description: 'Vertical alignment of start/end content slots.', default: "'center'"},
         {name: 'density', type: "'compact' | 'balanced' | 'spacious'", description: 'Spacing density. "compact" uses 4px block padding, "balanced" uses 8px, and "spacious" uses 12px block and inline padding.', default: "'balanced'"},
+        {name: 'variant', type: "'transparent' | 'outline' | 'muted'", description: 'Surface treatment. "transparent" paints no surface, "outline" draws the border only, and "muted" draws the muted background with no border. The surfaced variants use Card\'s tokens at Item\'s element radius.', default: "'transparent'"},
         {name: 'labelLines', type: 'number', description: 'Max lines before label truncates with ellipsis.'},
         {name: 'descriptionLines', type: 'number', description: 'Max lines before description truncates with ellipsis.'},
         {name: 'onClick', type: '(event: MouseEvent) => void', description: 'Click handler. Makes the item clickable with button semantics.'},
@@ -88,6 +89,7 @@ export const docsZh = {
         as: '根元素的 HTML 元素。',
         align: '起始/结束内容插槽的垂直对齐方式。',
         density: '间距密度。"compact" 使用 4px 块内距，"balanced" 使用 8px，"spacious" 使用 12px 块内距和内联内距。',
+        variant: '表面处理。"transparent" 不绘制表面（默认值），"outline" 仅绘制边框，"muted" 绘制柔和背景且无边框。',
         labelLines: '标签截断前的最大行数。',
         descriptionLines: '描述截断前的最大行数。',
         onClick: '点击处理函数。使项目可点击，具有按钮语义。',
@@ -157,6 +159,8 @@ export const docsDense = {
         as: 'Root HTML element.',
         align: 'Vertical alignment of start/end content slots.',
         density: 'Spacing: "compact" (4px), "balanced" (8px), or "spacious" (12px).',
+        variant:
+          'Surface: "transparent" (no surface, default), "outline" (border only), "muted" (muted bg).',
         labelLines: 'Max label lines before truncation.',
         descriptionLines: 'Max description lines before truncation.',
         onClick: 'Click handler; enables button semantics.',
