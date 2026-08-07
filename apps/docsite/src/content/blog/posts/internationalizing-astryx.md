@@ -68,19 +68,15 @@ The hard part was reducing false positives across roughly 1,300 positioned eleme
 
 That is the lesson worth keeping: the RTL bugs that reach production are rarely a stray `left` – they are valid pieces that break in combination, so the reliable check is rendered geometry, not static rules.
 
-## Seeding 29 languages, as a correctness problem
+## Seeding 29 languages
 
-Once the seam existed and RTL behavior was under control, we had about 250 strings and a [Crowdin](https://crowdin.com/project/astryx) project with 29 empty languages. Community translation is the long-term source of truth, but until strings exist every locale just renders English. Using an LLM to seed the first pass was straightforward. The important part was putting a validator in front of it.
+With the machinery in place, we had about 250 strings and a [Crowdin](https://crowdin.com/project/astryx) project with 29 empty languages. In the past this is where you'd wait — translations trickle in as contributors volunteer their languages. LLMs let us jumpstart it instead: generate a solid first pass for all 29 now, and let the community refine from there.
 
-Because the strings carry structure, the first failure mode to guard against was not awkward wording. It was dropped placeholders, renamed arguments, parse errors, and plural categories missing for the target language. So we built a validator that runs every candidate string through the same ICU parser Astryx uses at runtime, compares placeholders against the source, and checks plural coverage against CLDR rules. Parse failures and placeholder mismatches are hard failures. Missing plural categories are warnings. That let us gate on what a machine can judge with certainty.
+Our translation format helped more than expected here. Each string ships with a `description` of where and how it's used — the Dialog close button, for instance, notes that "Close" means dismiss the dialog, not nearby. That context was written for human translators, but an AI translator benefits from it just as much: both get the string _and_ the intent, not a bare word to guess at.
 
-We also passed the per-string `description` field into prompts. Those notes existed for human translators, but they helped the model just as much. The Dialog close button, for example, carries a note clarifying that "Close" means dismiss the dialog, not nearby. Context written once paid off twice.
+Then we played two models against each other. One generated; a deterministic validator ran every candidate through the same ICU parser Astryx uses at runtime, rejecting dropped placeholders or missing plural categories outright. But the validator only judges structure, so a second, different model reviewed the output for meaning, register, and idiom — and caught things rules can't, like button labels translated as nouns where the language needs an imperative ("closing" instead of "close"). Hebrew showed the pattern most clearly; fixing it surfaced more of the same.
 
-The actual fan-out was less interesting than the checks around it. We piloted the hardest cases first, then seeded the rest, and re-ran validation over all 29 languages. The result was 7,250 entries with zero ICU failures.
-
-The nominally "done" output still needed review, because the validator only covers structure. So we ran a second, different model over the finished set with the opposite job: ignore syntax, look for meaning, register, and idiom. It caught a systematic error the validator never could. Several button labels had been translated as nouns where the language needed an imperative verb – effectively "closing" instead of "close," "sending" instead of "send." Hebrew surfaced the pattern most clearly, and once we fixed it we found more cases of the same. That second pass earned its place by catching the class of errors rules cannot see.
-
-We uploaded all 29 as approved translations so the library renders today, while leaving room for the community to improve wording over time.
+The result was all 29 languages seeded and rendering today. To be clear, we still expect a fluent human to beat the machine — so these are a starting point, not a verdict, and corrections and contributions are very welcome.
 
 ![The demo todo app running in Arabic, fully right-to-left: navigation on the right, a populated list of Arabic todos, controls and component internals localized.](/blog/internationalizing-astryx/todo-arabic.png)
 
