@@ -1,6 +1,6 @@
 ---
-title: 'Translating a component library, safely'
-description: "How internationalization and RTL came to Astryx: surveying the modern i18n landscape, why we didn't just adopt a framework, and using automation to catch RTL bugs a linter can't see."
+title: 'Astryx now speaks multiple languages!'
+description: "How internationalization and RTL came to Astryx: surveying the modern i18n landscape and using automation to catch RTL bugs a linter can't see."
 date: '2026-08-06'
 type: 'engineering'
 draft: false
@@ -17,19 +17,15 @@ relatedDocs:
     href: '/blog/how-astryx-works'
 ---
 
-Astryx grew out of Meta's internal design system, and that heritage shows up in internationalization. Most internal tools shipped in English to an English-speaking workforce, so translation and right-to-left support were never priorities. Components carried hardcoded English strings and left-to-right assumptions because, internally, nobody was asking for anything else.
+Astryx grew out of Meta's internal design system, and that heritage shows up in internationalization. Most internal tools shipped in English to an English-speaking workforce, so translation and right-to-left support were rarely priorities. Components carried hardcoded English strings and left-to-right assumptions because, internally, nobody was asking for anything else.
 
-Open-sourcing changed the audience. The trigger came from the community after release: a developer shipping an Arabic and Kurdish app filed a proposal pointing out that several components hardcoded user-facing and assistive strings in English with no way to override them. Table sort labels, pagination controls, Calendar month names. Their app was blocked, and the workaround was to fork the components to change a few words. They offered to write the fix.
+Open-sourcing changed the audience. The trigger came from the community after release: a developer shipping an Arabic and Kurdish app filed a proposal pointing out that several components hardcoded user-facing and assistive strings in English with no way to override them. Table sort labels, pagination controls, Calendar month names. Their app was blocked, and the workaround was to fork the components to change a few words.  They offered a fix, but we wanted to make sure we sat down and had a more comprehensive look.
 
-That report framed the real scope. It was not just "translate these strings" – it was someone building in a language that also reads the other direction. Localization and layout direction are different problems, but if we wanted to unblock that use case, we needed both.
-
-I'd spent a good chunk of my career on localization before this, so when the work came up I volunteered to take it on. The rough edges were familiar to me: strings whose length swings wildly between languages and break layouts, plural rules that differ from one language to the next, and phrases assembled from fragments that stop making sense once word order shifts. The hard part, then as now, was RTL. It had been a few years since I'd done this in anger, though, so I leaned on AI assistants to resurvey the modern i18n landscape – what the standards look like now, what the popular React libraries settled on – before committing to a design.
+I'd spent a good chunk of my career on localization before this, so when the work came up I offered to take it. The rough edges were familiar to me: strings length changing between translations, assumptions about how to pluralize, and concatenated strings making translation difficult to languages with different word order. Right to left languages in particular can be a challenge, breaking layout assumptions. It's been a number of years since I've had to think about these problems, so I leaned on AI assistants to resurvey the modern i18n landscape – what the standards look like now, what the popular React libraries settled on – before committing to a design.
 
 ## Why we didn't just adopt an i18n framework
 
-The obvious move was to wire in an established runtime such as `react-intl`, Lingui, or i18next. We deliberately did not, for a reason specific to being a component library rather than an app.
-
-Astryx should not force an application's i18n choices. A hard dependency on one runtime would add bundle weight and collide with teams that already standardized on something else, leaving them to run two systems side by side or replace their own. A library does not own the app it lives in, so it should not dictate the app's translation stack.
+The obvious move was to wire in an established runtime such as `react-intl`, Lingui, or i18next. This would have been cheapest to build, but it means that now Astryx carries even more dependency baggage.  A hard dependency on one runtime would add bundle weight and collide with teams that already standardized on something else, leaving them to run two systems side by side or replace their own. Ideally we don't want to "force" users to use our same frameworks.
 
 So we separated format from framework. We adopted ICU MessageFormat as the string format because every serious i18n runtime already speaks it, and we used `intl-messageformat` as the default formatter behind a small adapter. If a consumer already runs `react-intl` or another compatible stack, they can hand Astryx their formatter instead.
 
