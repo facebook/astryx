@@ -5,6 +5,11 @@
  * @description A theming target must sit on the element that PAINTS the thing
  * being themed.
  *
+ * Canonical criteria: "Principles for authoring theming targets" in the wiki's
+ * Theming Infrastructure page — https://github.com/facebook/astryx/wiki/Theming-Infrastructure
+ * This rule encodes principle 1 (and, behind `checkStateSurface`, principle 2);
+ * the wiki is the source of truth, not this comment.
+ *
  * From the wiki's "Principles for authoring theming targets" (principle 1) and
  * the paint-not-layout rule: a target is a paint seam — color, background,
  * border, font, radius, shadow. Layout (`display`, `position`, flex/grid,

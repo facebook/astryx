@@ -7,6 +7,10 @@
  * class and leave the state behind, and do not hand-author the state next to
  * it.
  *
+ * Canonical criteria: principle 2 of "Principles for authoring theming
+ * targets" in the wiki's Theming Infrastructure page —
+ * https://github.com/facebook/astryx/wiki/Theming-Infrastructure
+ *
  * `themeProps('selector', {size, variant})` returns
  * `{className: 'astryx-selector md secondary', 'data-size': 'md',
  * 'data-variant': 'secondary'}`. Two shapes break that pairing:

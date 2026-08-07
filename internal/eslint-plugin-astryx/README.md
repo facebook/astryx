@@ -102,11 +102,16 @@ so it is never applied by `--fix`.
 
 **Status: prototype.** All three are registered on the plugin but are NOT in
 `configs.strict` / `configs.recommended` yet, and are not wired into
-`eslint.config.js` — the criteria they encode ("Principles for authoring
-theming targets" in the wiki, plus paint-not-layout and
-`{parent}-{position}-{component}`) are still being settled. Measured counts
-against `packages/` and the proposed tier for each check are below; turning one
-on is one line in `index.js`.
+`eslint.config.js` — the criteria they encode are still being settled. Measured
+counts against `packages/` and the proposed tier for each check are below;
+turning one on is one line in `index.js`.
+
+**The criteria are canonical in the wiki**, under "Principles for authoring
+theming targets" in
+[Theming Infrastructure](https://github.com/facebook/astryx/wiki/Theming-Infrastructure).
+These rules encode the mechanically checkable subset of that page; the
+`Principle` column below cites what each check enforces. Where the wiki and a
+rule disagree, the wiki wins and the rule is wrong.
 
 A theming target (`themeProps('selector-option')`) is a public API commitment:
 a stable `.astryx-*` class a theme writes CSS against. These rules check the
@@ -124,14 +129,14 @@ module are read from that module via `stylex-style-source.js`.
 
 #### `@astryx/theming-target-shape`
 
-| Check (messageId)                                     | What it flags                                                                                                | On `packages/` | Proposed tier                                      |
-| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | -------------- | -------------------------------------------------- |
-| `layoutOnlyTarget`                                    | A sub-element target on an element whose styles declare no paint property                                    | 5              | `warn`                                             |
-| `wrapperTarget`                                       | A target on a paint-free `div`/`span` whose only child is an Astryx component — it belongs on that component | 4              | `warn` (→ `error` once fixed)                      |
-| `unstyledTarget`                                      | A target on an element with no styles at all and nothing wrapped                                             | 0              | `error`                                            |
-| `layoutOnlyRootTarget` (opt-in: `checkRootTargets`)   | A component's OWN root target, when the root paints nothing                                                  | 55             | off — layout primitives legitimately trip it       |
-| `stateVariesOnlyLayout` (opt-in: `checkStateSurface`) | The target declares runtime state, but that state only moves layout (a `transform`)                          | 0              | `warn` — worth turning on                          |
-| `underDeclaredState` (opt-in: `checkStateSurface`)    | The element's styles vary with a state the target does not pass to `themeProps`                              | 16             | off — a real backlog, each item needs a human call |
+| Check (messageId)                                     | Principle                                                 | What it flags                                                                                                | On `packages/` | Proposed tier                                      |
+| ----------------------------------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | -------------- | -------------------------------------------------- |
+| `layoutOnlyTarget`                                    | P1 — target the element that carries the styling          | A sub-element target on an element whose styles declare no paint property                                    | 5              | `warn`                                             |
+| `wrapperTarget`                                       | P1 + attach to the component                              | A target on a paint-free `div`/`span` whose only child is an Astryx component — it belongs on that component | 4              | `warn` (→ `error` once fixed)                      |
+| `unstyledTarget`                                      | P1 — "if nothing at that spot paints, there is no target" | A target on an element with no styles at all and nothing wrapped                                             | 0              | `error`                                            |
+| `layoutOnlyRootTarget` (opt-in: `checkRootTargets`)   | P1                                                        | A component's OWN root target, when the root paints nothing                                                  | 55             | off — layout primitives legitimately trip it       |
+| `stateVariesOnlyLayout` (opt-in: `checkStateSurface`) | P1 refinement — the _state seam_ only moves layout        | The target declares runtime state, but that state only moves layout (a `transform`)                          | 0              | `warn` — worth turning on                          |
+| `underDeclaredState` (opt-in: `checkStateSurface`)    | P2 — state and size are data on the target                | The element's styles vary with a state the target does not pass to `themeProps`                              | 16             | off — a real backlog, each item needs a human call |
 
 The rule stays silent when it cannot see the whole picture: a target spread onto
 an Astryx component (the paint is inside the component), a style it cannot
@@ -157,11 +162,11 @@ component's declared surface.
 
 #### `@astryx/theming-target-name`
 
-| Check (messageId)           | What it flags                                                                                                                        | On `packages/` | Proposed tier |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | -------------- | ------------- |
-| `appearanceInComponentSlot` | Target attached to a leaf Astryx component whose last segment names an appearance (`-check` on an `<Icon>`) instead of the component | 3              | `warn`        |
-| `missingPosition`           | `{parent}-{component}` with no position segment, on a composed component                                                             | 0              | `warn`        |
-| `stateSubTarget`            | A target name ending in `-disabled` / `-selected` / `-checked` / …                                                                   | 0              | `error`       |
+| Check (messageId)           | Principle                                | What it flags                                                                                                                        | On `packages/` | Proposed tier |
+| --------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | -------------- | ------------- |
+| `appearanceInComponentSlot` | P3 — one vocabulary per concept          | Target attached to a leaf Astryx component whose last segment names an appearance (`-check` on an `<Icon>`) instead of the component | 3              | `warn`        |
+| `missingPosition`           | Name by position                         | `{parent}-{component}` with no position segment, on a composed component                                                             | 0              | `warn`        |
+| `stateSubTarget`            | P2 — never mint a `-selected` sub-target | A target name ending in `-disabled` / `-selected` / `-checked` / …                                                                   | 0              | `error`       |
 
 The component-slot check runs only for **leaf** components (`Icon`,
 `CheckboxInput`, `Divider`, `Button`, …; see `DEFAULT_COMPONENT_SLOTS`) and
@@ -183,7 +188,10 @@ exists to serve. Position words are an open vocabulary and are not checked.
 #### `@astryx/themeprops-reflection`
 
 `themeProps()` returns the class token **and** the `data-*` reflection of the
-visual props. These are mechanical bugs, not judgment calls.
+visual props. Every check here enforces **P2** — "reflect variants and runtime
+state through `themeProps({ ... })`, which emits both the class token and the
+kebab-cased `data-*` attribute together." These are mechanical bugs, not
+judgment calls.
 
 | Check (messageId)        | What it flags                                                                                                    | On `packages/` | Proposed tier |
 | ------------------------ | ---------------------------------------------------------------------------------------------------------------- | -------------- | ------------- |
@@ -199,6 +207,16 @@ own JS reads (`data-value`, `data-date`, `data-page`), and routing those through
 `themeProps` would change what they mean.
 
 **Options:** `allowDataAttributes`, `allowFiles`.
+
+#### What these rules do NOT check
+
+Principles 6 (a target needs a stated visual intent, ideally a real use case)
+and 7 (consolidate at the design level first) are human judgment and always
+will be — no AST says whether a consumer needs a seam. Principle 3's
+cross-component convergence and principle 5 (do not expose internal structure)
+are also out of reach: both need a repo-wide target registry, not a per-file
+rule. **Lint checks the shape of a target; a human decides whether it should
+exist.**
 
 ### `@astryx/require-letter-spacing`
 
