@@ -428,9 +428,6 @@ export function TextInput({
         {...rest}
         ref={mergeRefs(ref, inputRef)}
         id={id}
-        // Withhold the name while disabled: with a disabledMessage the input
-        // stays focusable (not natively disabled), and a disabled control must
-        // not submit.
         name={isDisabled ? undefined : htmlName}
         type={type}
         value={optimisticValue}

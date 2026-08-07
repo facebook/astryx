@@ -544,9 +544,6 @@ export function TextArea({
           {...rest}
           ref={mergeRefs(ref, textareaRef)}
           id={id}
-          // Withhold the name while disabled: with a disabledMessage the
-          // textarea stays focusable (not natively disabled), and a disabled
-          // control must not submit.
           name={isDisabled ? undefined : htmlName}
           value={optimisticValue}
           onChange={handleChange}
