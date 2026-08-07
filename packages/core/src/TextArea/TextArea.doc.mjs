@@ -181,6 +181,18 @@ export const docs = {
     targets: [
       {className: 'astryx-textarea', visualProps: ['size', 'status']},
     ],
+    vars: [
+      {
+        name: '--_textarea-inline-padding',
+        description:
+          "Inline padding of the textarea's text. The wrapper stays flush (padding: 0) so the native resize grip sits in the true corner; this var carries the inset on the inner <textarea>, and the start icon, status/spinner, and character counter align to it.",
+        default: 'var(--spacing-2)',
+        private: true,
+      },
+    ],
+    derived: [
+      {property: 'paddingInline', vars: ['--_textarea-inline-padding'], replaces: true},
+    ],
   },
   usage: {
     description:
@@ -356,6 +368,18 @@ export const docsZh = {
   theming: {
     targets: [
       {className: 'astryx-textarea', visualProps: ['size', 'status']},
+    ],
+    vars: [
+      {
+        name: '--_textarea-inline-padding',
+        description:
+          '文本域文本的行内内边距。外层容器保持无内边距（padding: 0），使原生缩放手柄位于真正的角落；该变量在内部 <textarea> 上承载内边距，起始图标、状态/加载指示器和字符计数器都与之对齐。',
+        default: 'var(--spacing-2)',
+        private: true,
+      },
+    ],
+    derived: [
+      {property: 'paddingInline', vars: ['--_textarea-inline-padding'], replaces: true},
     ],
   },
   usage: {

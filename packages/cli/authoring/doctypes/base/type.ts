@@ -270,6 +270,12 @@ export interface ComponentThemingDerivedVar {
   /** Named expansion strategy instead of specific vars.
    *  `'container'` — expands padding to 7 container layout tokens. */
   expand?: 'container';
+  /** Emit only the internal `vars`, dropping the source property from the
+   *  generated rule. Use when the class-carrying element must not receive the
+   *  standard property itself — the value reaches a child through the var
+   *  (e.g. TextArea's flush wrapper drives the inner textarea's inline
+   *  padding). Without this, the property is emitted alongside the var. */
+  replaces?: boolean;
 }
 
 /**

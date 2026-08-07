@@ -475,6 +475,27 @@ describe('derived var expansion', () => {
     expect(rule).toContain('border-radius: 16px');
     expect(rule).toContain('--_card-radius: 16px');
   });
+
+  it('replaces paddingInline with the var for textarea (no raw property)', () => {
+    const theme = defineTheme({
+      name: 'test-derived-textarea',
+      components: {
+        textarea: {
+          base: {paddingInline: 'var(--eps-input-padding-x)'},
+        },
+      },
+    });
+    const rules = generateThemeRules(theme);
+    const rule = rules.find(r => r.includes('.astryx-textarea'));
+    expect(rule).toBeDefined();
+    // Value flows to the inner <textarea> via the var…
+    expect(rule).toContain(
+      '--_textarea-inline-padding: var(--eps-input-padding-x)',
+    );
+    // …and must NOT land on the flush wrapper, which would re-inset the
+    // full-bleed textarea and push the native resize grip off the corner.
+    expect(rule).not.toContain('padding-inline: var(--eps-input-padding-x)');
+  });
 });
 
 describe('brutalist-style derived expansion', () => {
