@@ -5,6 +5,11 @@
  * @description The name of a theming target is part of its contract, so it has
  * a shape: `{parent}-{position}-{component}`.
  *
+ * Canonical criteria: "Principles for authoring theming targets" in the wiki's
+ * Theming Infrastructure page — https://github.com/facebook/astryx/wiki/Theming-Infrastructure
+ * This rule encodes the mechanical half of principle 3 (a shared vocabulary)
+ * and principle 2's "state is not a name"; the wiki is the source of truth.
+ *
  * Two things are mechanically checkable in that shape, and this rule checks
  * only those two:
  *
