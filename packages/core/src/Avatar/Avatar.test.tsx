@@ -75,6 +75,11 @@ describe('Avatar', () => {
     expect(screen.getByTestId('avatar')).toHaveTextContent('🇬🇧A');
   });
 
+  it('keeps a ZWJ family emoji intact when generating initials', () => {
+    render(<Avatar name="👨‍👩‍👧‍👦 Ada" data-testid="avatar" />);
+    expect(screen.getByTestId('avatar')).toHaveTextContent('👨‍👩‍👧‍👦A');
+  });
+
   it('retries a new src after a previous src failed to load', () => {
     const {rerender} = render(
       <Avatar name="Ada" src="https://example.com/broken.jpg" />,

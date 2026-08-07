@@ -70,6 +70,8 @@ export type {ISOTimeString, ParsedTime} from './timeParser';
 export {parseStyleKey} from './parseStyleKey';
 export {getKey, type Key, type KeyFallback} from './getKey';
 
+export {graphemeLength, firstGrapheme, truncateGraphemes} from './grapheme';
+
 export {mergeProps} from './mergeProps';
 export {mergeRefs} from './mergeRefs';
 export {composeEventHandlers} from './composeEventHandlers';
