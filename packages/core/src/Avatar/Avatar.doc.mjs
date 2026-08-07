@@ -93,7 +93,7 @@ export const docs = {
       name: 'as',
       type: 'ElementType',
       description:
-        'Custom link component used when `href` is set (e.g. Next.js `Link`). Overrides the provider-level LinkProvider default. Only applies with `href`.',
+        'Custom link component used when `href` is set (e.g. `next/link`). Overrides the provider-level LinkProvider default. Only applies with `href`.',
     },
     {
       name: 'target',
