@@ -178,7 +178,6 @@ import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
-import {stableClassName} from '../naming';
 import {useTranslator, InternationalizationContext} from '../i18n';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
@@ -833,7 +832,7 @@ function PointerDateField({
         <InputClearButton
           label={t('@astryx.dateInput.clear', {label})}
           onClick={handleClear}
-          iconClassName={stableClassName('date-input-clear-icon')}
+          iconClassName={themeProps('date-input-clear-icon').className}
         />
       )}
       {isBusy && <Spinner size="sm" />}

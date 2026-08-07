@@ -9,6 +9,12 @@ export const docs = {
   category: 'Content',
   keywords: ['log', 'stream', 'terminal', 'console', 'output', 'logs', 'tail'],
 
+  theming: {
+    targets: [
+      {className: 'astryx-log-stream', visualProps: ['variant']},
+    ],
+  },
+
   usage: {
     description:
       'Experimental streaming log viewer: mono grid rows (timestamp | level | source | message) with token-derived level accents, expandable per-row detail panels, follow-scroll live tailing with a "Jump to latest" affordance, and an always-dark terminal variant. Appended rows fade in via @starting-style. Live announcements follow the pinning state: the role="log" region is aria-live="polite" only while following the tail, and aria-live="off" while unfollowed, so a busy stream never floods assistive tech.',

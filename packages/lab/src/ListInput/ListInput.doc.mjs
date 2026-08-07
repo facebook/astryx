@@ -18,6 +18,11 @@ export const docs = {
     'guest list',
     'traveler details',
   ],
+  theming: {
+    targets: [
+      {className: 'astryx-list-input', states: ['state', 'reorderable']},
+    ],
+  },
   props: [
     {
       name: 'label',

@@ -8,6 +8,12 @@ export const docs = {
   group: 'SVGIcon',
   category: 'Content',
 
+  theming: {
+    targets: [
+      {className: 'astryx-svg-icon', visualProps: ['variation', 'size', 'color']},
+    ],
+  },
+
   usage: {
     description: '',
   },

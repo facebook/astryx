@@ -157,7 +157,12 @@ export const docs = {
     },
   ],
   theming: {
-    targets: [{className: 'astryx-rich-text-editor', visualProps: []}],
+    targets: [
+      {
+        className: 'astryx-rich-text-editor',
+        visualProps: ['size', 'status'],
+      },
+    ],
   },
   usage: {
     description:

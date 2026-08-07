@@ -80,7 +80,6 @@ import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
-import {stableClassName} from '../naming';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
 import {VisuallyHidden} from '../VisuallyHidden';
@@ -1651,7 +1650,7 @@ export function Selector<T extends SelectorOptionType>(
           <InputClearButton
             label={t('@astryx.selector.clearLabel', {label})}
             onClick={handleClear}
-            iconClassName={stableClassName('selector-clear-icon')}
+            iconClassName={themeProps('selector-clear-icon').className}
           />
         )}
         {/*
