@@ -1,5 +1,17 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/**
+ * @file ComplexSelector.stories.tsx
+ * @input Uses React state, Astryx primitives, and ComplexSelector
+ * @output Storybook examples for rich selector surfaces and trigger variants
+ * @position Core component stories and visual integration coverage
+ *
+ * SYNC: When modified, update:
+ * - /packages/core/src/ComplexSelector/ComplexSelector.tsx
+ * - /packages/core/src/ComplexSelector/ComplexSelector.doc.mjs
+ * - /packages/core/src/ComplexSelector/ComplexSelector.test.tsx
+ */
+
 import type {Meta, StoryObj} from '@storybook/react';
 import {useEffect, useMemo, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
@@ -373,6 +385,20 @@ const styles = stylex.create({
     color: colorVars['--color-text-secondary'],
     textAlign: 'center',
   },
+  toolbarDemo: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: spacingVars['--spacing-1'],
+    width: 360,
+    padding: spacingVars['--spacing-1'],
+    borderRadius: radiusVars['--radius-container'],
+    backgroundColor: colorVars['--color-background-muted'],
+  },
+  toolbarContent: {
+    width: 280,
+    padding: spacingVars['--spacing-3'],
+  },
 });
 
 function formatFruitValue(value: FruitValue) {
@@ -724,6 +750,74 @@ export const CategoryTreeSelector: Story = {
       description: {
         story:
           'A second tree-search example showing the same ComplexSelector shell with different hierarchical data and a form action nearby. The custom content relies on TreeList focus behavior and should be checked against WCAG 2.2.',
+      },
+    },
+  },
+};
+
+type ViewDensity = 'Comfortable' | 'Compact';
+
+export const ControlledToolbarTrigger: Story = {
+  name: 'Controlled toolbar trigger',
+  render: () => {
+    const [density, setDensity] = useState<ViewDensity>('Comfortable');
+    const [isOpen, setIsOpen] = useState(false);
+
+    return (
+      <div {...stylex.props(styles.toolbarDemo)}>
+        <Button
+          label={
+            isOpen ? 'Close options externally' : 'Open options externally'
+          }
+          variant="ghost"
+          size="sm"
+          onClick={() => setIsOpen(currentIsOpen => !currentIsOpen)}
+        />
+        <ComplexSelector<ViewDensity>
+          label="View options"
+          isLabelHidden
+          value={density}
+          onChange={setDensity}
+          triggerLabel={`Density: ${density}`}
+          variant="ghost"
+          startIcon="viewColumns"
+          alignment="end"
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          contentXstyle={styles.toolbarContent}>
+          {(selectedDensity, onChange, close) => (
+            <VStack gap={3}>
+              <Text type="supporting" color="secondary">
+                The parent owns visibility. Choosing a density commits the value
+                and requests that the surface close.
+              </Text>
+              <HStack gap={2}>
+                {(['Comfortable', 'Compact'] as const).map(option => (
+                  <Button
+                    key={option}
+                    label={option}
+                    size="sm"
+                    variant={
+                      selectedDensity === option ? 'primary' : 'secondary'
+                    }
+                    onClick={() => {
+                      onChange(option);
+                      close();
+                    }}
+                  />
+                ))}
+              </HStack>
+            </VStack>
+          )}
+        </ComplexSelector>
+      </div>
+    );
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'A compact toolbar composition using the ghost trigger, a leading icon, end-aligned content, and parent-controlled visibility. The external button and the selector trigger both update the same open state.',
       },
     },
   },
