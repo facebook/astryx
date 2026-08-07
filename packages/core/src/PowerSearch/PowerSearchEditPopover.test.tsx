@@ -304,6 +304,7 @@ const probe = stylex.create({
     minWidth: `min(400px, calc(100% - ${spacingVars['--spacing-4']}))`,
   },
   fixedLayerMinWidth: {minWidth: 400},
+  queryContainer: {containerType: 'inline-size'},
   responsiveWrap: {
     flexWrap: {default: 'nowrap', [CHIP_ROW_COLLAPSE]: 'wrap'},
   },
@@ -313,7 +314,13 @@ const probe = stylex.create({
 
 function atomicClasses(style: (typeof probe)[keyof typeof probe]): string[] {
   const {className = ''} = stylex.props(style);
-  return className.split(' ').filter(c => c !== '' && !c.includes('__'));
+  const classes = className
+    .split(' ')
+    .filter(c => c !== '' && !c.includes('__'));
+  // A probe resolving to no atomic classes would make every assertion built
+  // on it vacuous, including the not-toHaveClass loops; fail loudly instead.
+  expect(classes.length).toBeGreaterThan(0);
+  return classes;
 }
 
 function expectProbeClasses(
@@ -353,6 +360,16 @@ describe('narrow-width layout (#4761)', () => {
     expect(row.children).toHaveLength(3);
     return row;
   }
+
+  it('popover root establishes the container the collapse query measures', () => {
+    const {container} = render(<EditHarness />);
+
+    // Without inline-size containment on the root, no @container condition
+    // in this file can match and the chip rows would never wrap.
+    const root = container.firstElementChild as HTMLElement;
+    expect(root).not.toBeNull();
+    expectProbeClasses(root, probe.queryContainer);
+  });
 
   it('filter chip row wraps below the collapse width instead of overflowing', () => {
     const {container} = render(<EditHarness />);
