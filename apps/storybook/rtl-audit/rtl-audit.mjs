@@ -739,13 +739,6 @@ function componentFromId(id) {
       fail: pmFails.length,
       na: pmResults.filter(r => r.verdict === 'N-A').length,
       tolerancePx: PM_TOL,
-      // Avatar status-dot is a KNOWN-REAL bug on main: the dot uses a physical
-      // `right` anchor + `translate(50%,50%)`, so it stays bottom-right in RTL
-      // instead of mirroring to bottom-left. The fix is on the #4564 branch, not
-      // main — so on this branch (off main) D5 correctly flags Avatar. It is a
-      // real finding, NOT a false positive, and is left to surface (soft-gate =
-      // non-blocking). Documented so reviewers know it clears once #4564 lands.
-      knownRealPending: ['Avatar (status-dot) — real RTL bug on main, fix in #4564'],
       // fails carry per-element cls + LTR/RTL relCenterX + delta (actionable).
       results: pmResults,
     },

@@ -166,12 +166,6 @@ function buildSummary(report, status) {
       }
     }
     lines.push(...truncateRows(rows), '');
-    if (pm.knownRealPending?.length) {
-      lines.push(
-        `> **Known, pending a fix branch:** ${pm.knownRealPending.join('; ')}.`,
-        '',
-      );
-    }
   }
 
   const curatedFails = curatedFailuresOf(report);

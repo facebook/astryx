@@ -559,10 +559,6 @@ jobs:
                       if (!(c.fails || []).length) out.push(`| ${c.storyId} | (error) | — | — | ${(c.notes||[]).join("; ")} |`);
                     }
                     out.push("");
-                    if (pm.knownRealPending && pm.knownRealPending.length) {
-                      out.push("> **Known real bug pending a fix branch:** " + pm.knownRealPending.join("; ") + ". This is a genuine RTL bug on `main`, not a false positive — it clears once that branch lands. Soft-gate = non-blocking.");
-                      out.push("");
-                    }
                   } else {
                     out.push("_No positional-mirror FAILs._");
                     out.push("");
