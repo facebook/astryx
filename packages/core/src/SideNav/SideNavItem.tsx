@@ -162,10 +162,12 @@ const styles = stylex.create({
     cursor: 'pointer',
   },
   // Popover surface for collapsed items with children. usePopover's own
-  // render() already supplies the bordered/rounded/elevated surface
-  // (background, --radius-container, shadow) around this content — adding
-  // another border here draws a sharp-cornered rectangle inside that rounded
-  // surface instead of one coherent menu.
+  // render() already supplies the elevated surface (background,
+  // --radius-container, --shadow-low) around this content — it carries no
+  // border of its own, so the shadow alone defines the edge, same as every
+  // other usePopover consumer. This div's own square border was the only
+  // border in the stack, and its 0-radius corners cut across the outer
+  // 12px-radius arcs instead of nesting inside them.
   popoverSurface: {
     paddingBlock: spacingVars['--spacing-1'],
     paddingInline: spacingVars['--spacing-1'],
