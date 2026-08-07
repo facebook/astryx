@@ -4,8 +4,8 @@
 
 /**
  * @file ComplexSelector.tsx
- * @input Uses React, StyleX, Field, and usePopover
- * @output Exports ComplexSelector with exact token-sized selector triggers
+ * @input Uses React, StyleX, Field, Icon slots, Layer positioning, and usePopover
+ * @output Exports a controlled or uncontrolled rich-selector shell with exact token-sized input and ghost triggers
  * @position Core implementation; consumed by index.ts
  *
  * SYNC: When modified, update:
@@ -18,8 +18,10 @@
 
 import React, {
   useCallback,
+  useEffect,
   useId,
   useOptimistic,
+  useRef,
   useTransition,
   type ReactNode,
 } from 'react';
@@ -27,15 +29,17 @@ import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
 import {Field, inputWrapperStyles, type FieldStatusVariant} from '../Field';
-import {Icon} from '../Icon';
+import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {Spinner} from '../Spinner';
 import {useTranslator} from '../i18n';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
+import type {LayerAlignment, LayerPlacement} from '../Layer/useLayer';
 import {usePopover} from '../Popover/usePopover';
 import {
   colorVars,
   durationVars,
   easeVars,
+  fontWeightVars,
   radiusVars,
   sizeVars,
   spacingVars,
@@ -98,6 +102,47 @@ const styles = stylex.create({
   placeholder: {
     color: colorVars['--color-text-secondary'],
   },
+  triggerGhost: {
+    width: 'auto',
+    borderWidth: 0,
+    backgroundColor: 'transparent',
+    backgroundImage: {
+      default: null,
+      ':hover': {
+        '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
+      },
+      ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
+    },
+    boxShadow: {
+      default: 'none',
+      ':hover:not(:focus-within)': {
+        '@media (hover: hover)': 'none',
+      },
+      ':focus-within': 'none',
+    },
+    fontWeight: fontWeightVars['--font-weight-medium'],
+    outline: {
+      default: 'none',
+      ':has(:focus-visible)': `2px solid ${colorVars['--color-accent']}`,
+    },
+    outlineOffset: {
+      default: '0',
+      ':has(:focus-visible)': '3px',
+    },
+    transitionProperty:
+      'background-image, background-color, color, opacity, transform',
+    transform: {
+      default: 'scale(1)',
+      ':active': 'scale(0.98)',
+    },
+  },
+  triggerGhostDisabled: {
+    backgroundImage: 'none',
+    transform: {
+      default: 'none',
+      ':active': 'none',
+    },
+  },
   triggerIcon: {
     flexShrink: 0,
     display: 'flex',
@@ -143,6 +188,8 @@ const styles = stylex.create({
     },
   },
 });
+
+export type ComplexSelectorVariant = 'input' | 'ghost';
 
 export type ComplexSelectorSize = 'sm' | 'md' | 'lg';
 
@@ -205,10 +252,20 @@ export interface ComplexSelectorProps<Value> extends Omit<
   labelTooltip?: string;
   /** Trigger and field size. */
   size?: ComplexSelectorSize;
+  /** Visual trigger style. Ghost matches toolbar buttons. */
+  variant?: ComplexSelectorVariant;
+  /** Icon displayed at the start of the trigger. */
+  startIcon?: ReactNode | IconType;
   /** Width of the field. */
   width?: SizeValue;
   /** Popup placement. */
-  placement?: 'above' | 'below' | 'start' | 'end';
+  placement?: LayerPlacement;
+  /** Popup alignment along the placement axis. */
+  alignment?: LayerAlignment;
+  /** Whether the selector surface is open. Omit for uncontrolled behavior. */
+  isOpen?: boolean;
+  /** Called when the selector surface requests an open-state change. */
+  onOpenChange?: (isOpen: boolean) => void;
   /** StyleX styles for the popup content container. */
   contentXstyle?: StyleXStyles;
   /** Test ID for the trigger container. */
@@ -260,8 +317,13 @@ export function ComplexSelector<Value>({
   statusVariant = 'attached',
   labelTooltip,
   size = 'md',
+  variant = 'input',
+  startIcon,
   width,
   placement = 'below',
+  alignment = 'start',
+  isOpen: controlledIsOpen,
+  onOpenChange,
   contentXstyle,
   xstyle,
   className,
@@ -271,6 +333,10 @@ export function ComplexSelector<Value>({
 }: ComplexSelectorProps<Value>) {
   const t = useTranslator();
   const placeholder = placeholderFromProps ?? t('@astryx.selector.placeholder');
+  const effectiveStatusVariant =
+    variant === 'ghost' && statusVariant === 'attached'
+      ? 'detached'
+      : statusVariant;
 
   const triggerId = useId();
   const labelId = useId();
@@ -285,18 +351,78 @@ export function ComplexSelector<Value>({
       .filter((id): id is string => id != null)
       .join(' ') || undefined;
 
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const lastHideTimeRef = useRef(0);
+  const isControlled = controlledIsOpen !== undefined;
+  const controlledIsOpenRef = useRef(controlledIsOpen);
+  controlledIsOpenRef.current = controlledIsOpen;
+
   const [isPending, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const isBusy = isLoading || isPending;
+
+  const handlePopoverShow = useCallback(() => {
+    if (!isControlled) {
+      onOpenChange?.(true);
+    }
+  }, [isControlled, onOpenChange]);
+
+  const handlePopoverHide = useCallback(() => {
+    lastHideTimeRef.current = Date.now();
+    if (!isControlled || controlledIsOpenRef.current === true) {
+      onOpenChange?.(false);
+    }
+    triggerRef.current?.focus();
+  }, [isControlled, onOpenChange]);
 
   const popover = usePopover({
     dialogLabel: label,
     hasCloseButton: false,
     hasAutoFocus: true,
-    onHide: () => {
-      document.getElementById(triggerId)?.focus();
-    },
+    onShow: handlePopoverShow,
+    onHide: handlePopoverHide,
   });
+
+  useEffect(() => {
+    if (!isControlled) {
+      return;
+    }
+    if (controlledIsOpen && !popover.isOpen) {
+      popover.show();
+    } else if (!controlledIsOpen && popover.isOpen) {
+      popover.hide();
+    }
+  }, [controlledIsOpen, isControlled, popover]);
+
+  const isOpen = isControlled ? controlledIsOpen : popover.isOpen;
+
+  const requestOpenChange = useCallback(
+    (nextIsOpen: boolean) => {
+      if (isControlled) {
+        if (nextIsOpen !== controlledIsOpen) {
+          onOpenChange?.(nextIsOpen);
+        }
+        return;
+      }
+      if (nextIsOpen) {
+        popover.show();
+      } else {
+        popover.hide();
+      }
+    },
+    [controlledIsOpen, isControlled, onOpenChange, popover],
+  );
+
+  const handleTriggerClick = useCallback(() => {
+    if (isDisabled || Date.now() - lastHideTimeRef.current < 50) {
+      return;
+    }
+    requestOpenChange(!isOpen);
+  }, [isDisabled, isOpen, requestOpenChange]);
+
+  const close = useCallback(() => {
+    requestOpenChange(false);
+  }, [requestOpenChange]);
 
   const commitValue = useCallback(
     (nextValue: Value) => {
@@ -315,8 +441,8 @@ export function ComplexSelector<Value>({
 
   const content = (
     <div id={contentId} {...stylex.props(styles.content, contentXstyle)}>
-      {children(optimisticValue, commitValue, popover.hide, {
-        isOpen: popover.isOpen,
+      {children(optimisticValue, commitValue, close, {
+        isOpen,
         isBusy,
         triggerId,
         contentId,
@@ -330,13 +456,10 @@ export function ComplexSelector<Value>({
         ref={popover.triggerRef}
         data-testid={testId}
         {...props}
-        onClick={() => {
-          if (!isDisabled) {
-            popover.toggle();
-          }
-        }}
+        onClick={handleTriggerClick}
         {...mergeProps(
           themeProps('complex-selector', {
+            variant,
             size,
             status: status?.type ?? null,
           }),
@@ -344,8 +467,10 @@ export function ComplexSelector<Value>({
             inputWrapperStyles.base,
             styles.triggerContainer,
             styles[size],
-            styles.focusRing,
+            variant === 'input' && styles.focusRing,
+            variant === 'ghost' && styles.triggerGhost,
             isDisabled && inputWrapperStyles.disabled,
+            variant === 'ghost' && isDisabled && styles.triggerGhostDisabled,
             isDisabled && styles.disabled,
             triggerLabel == null && styles.placeholder,
             xstyle,
@@ -353,11 +478,14 @@ export function ComplexSelector<Value>({
           className,
           style,
         )}>
+        {startIcon &&
+          renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
         <button
+          ref={triggerRef}
           id={triggerId}
           type="button"
           aria-haspopup="dialog"
-          aria-expanded={popover.isOpen}
+          aria-expanded={isOpen}
           aria-controls={contentId}
           aria-describedby={ariaDescribedBy}
           aria-labelledby={labelId}
@@ -366,9 +494,9 @@ export function ComplexSelector<Value>({
           aria-busy={isBusy || undefined}
           disabled={isDisabled}
           onKeyDown={event => {
-            if (event.key === 'ArrowDown' && !popover.isOpen && !isDisabled) {
+            if (event.key === 'ArrowDown' && !isOpen && !isDisabled) {
               event.preventDefault();
-              popover.show();
+              requestOpenChange(true);
             }
           }}
           {...stylex.props(styles.trigger)}>
@@ -378,14 +506,14 @@ export function ComplexSelector<Value>({
         <span
           {...stylex.props(
             styles.triggerIcon,
-            popover.isOpen && styles.triggerIconOpen,
+            isOpen && styles.triggerIconOpen,
           )}>
           <Icon
             icon="chevronDown"
             size="sm"
             color="inherit"
             {...themeProps('complex-selector-indicator-icon', {
-              state: popover.isOpen ? 'expanded' : 'collapsed',
+              state: isOpen ? 'expanded' : 'collapsed',
             })}
           />
         </span>
@@ -393,7 +521,7 @@ export function ComplexSelector<Value>({
 
       {popover.render(content, {
         placement,
-        alignment: 'start',
+        alignment,
         xstyle: [styles.popover, layerAnimations[placement]],
       })}
     </>
@@ -419,7 +547,7 @@ export function ComplexSelector<Value>({
             }
           : undefined
       }
-      statusVariant={statusVariant}
+      statusVariant={effectiveStatusVariant}
       labelTooltip={labelTooltip}
       width={width}>
       {selectorContent}
