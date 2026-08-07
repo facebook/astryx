@@ -76,8 +76,7 @@
   "dependencies": {
     "d3-array": "^3.2.4",
     "d3-scale": "^4.0.2",
-    "d3-shape": "^3.2.0",
-    "lucide-react": "^1.18.0"
+    "d3-shape": "^3.2.0"
   },
   "devDependencies": {
     "@astryxdesign/cli": "workspace:*",

@@ -4,9 +4,9 @@
  * @file TransferList.doc.mjs
  * @input TransferListSelector and TransferList public APIs, commit behavior, and usage guidance
  * @output Documents the default-immediate selector, optional staged commits, and advanced TransferList composition
- * @position Lab documentation consumed by tooling and Storybook autodocs
+ * @position Lab documentation consumed by component tooling
  *
- * SYNC: When modified, update TransferListSelector.tsx, TransferList.tsx, commit-behavior tests, package exports, and Storybook examples.
+ * SYNC: When modified, update TransferListSelector.tsx, TransferList.tsx, commit-behavior tests, and package exports.
  */
 
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */

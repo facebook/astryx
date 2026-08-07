@@ -6,13 +6,12 @@
  * @file TransferListSelector.tsx
  * @input Controlled option data, ComplexSelector, TransferList, and action controls
  * @output Exports the immediate-or-staged TransferListSelector composition and its public prop type
- * @position Lab collection input shell; consumed by the TransferList entry point, docs, tests, and Storybook
+ * @position Lab collection input shell; consumed by the TransferList entry point, docs, and tests
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/lab/src/TransferList/TransferListSelector.test.tsx
  * - /packages/lab/src/TransferList/TransferList.doc.mjs
  * - /packages/lab/src/TransferList/index.ts
- * - /apps/storybook/stories/TransferList.stories.tsx
  */
 
 import {useCallback, useEffect, useRef, useState, type ReactNode} from 'react';

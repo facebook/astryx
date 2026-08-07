@@ -4,15 +4,14 @@
 
 /**
  * @file TransferList.tsx
- * @input Controlled option data, React DOM portals, and shared Lab reorder styles
+ * @input Controlled option data, React DOM portals, local action glyphs, and shared Lab reorder styles
  * @output Exports TransferList with immediate transfers, vertical reordering, and responsive scroll ownership
- * @position Lab collection input; consumed by index.ts, docs, tests, and Storybook
+ * @position Lab collection input; consumed by index.ts, TransferListSelector, docs, and tests
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/lab/src/TransferList/TransferList.doc.mjs
  * - /packages/lab/src/TransferList/TransferList.test.tsx
  * - /packages/lab/src/TransferList/index.ts
- * - /apps/storybook/stories/TransferList.stories.tsx
  */
 
 import {
@@ -29,7 +28,6 @@ import {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {createPortal, flushSync} from 'react-dom';
-import {GripVertical, Plus, X} from 'lucide-react';
 import type {BaseProps} from '@astryxdesign/core';
 import {Button} from '@astryxdesign/core/Button';
 import {Icon} from '@astryxdesign/core/Icon';
@@ -49,6 +47,67 @@ import {
 import {mergeProps, mergeRefs, themeProps} from '@astryxdesign/core/utils';
 import {reorderStyles} from '../reorderStyles';
 import {transferListVars} from './tokens.stylex';
+
+function PlusIcon() {
+  return (
+    <svg
+      className="lucide lucide-plus"
+      width={16}
+      height={16}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden>
+      <path d="M5 12h14" />
+      <path d="M12 5v14" />
+    </svg>
+  );
+}
+
+function RemoveIcon() {
+  return (
+    <svg
+      className="lucide lucide-x"
+      width={16}
+      height={16}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden>
+      <path d="M18 6 6 18" />
+      <path d="m6 6 12 12" />
+    </svg>
+  );
+}
+
+function GripVerticalIcon() {
+  return (
+    <svg
+      className="lucide lucide-grip-vertical"
+      width={16}
+      height={16}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden>
+      <circle cx="9" cy="5" r="1" />
+      <circle cx="9" cy="12" r="1" />
+      <circle cx="9" cy="19" r="1" />
+      <circle cx="15" cy="5" r="1" />
+      <circle cx="15" cy="12" r="1" />
+      <circle cx="15" cy="19" r="1" />
+    </svg>
+  );
+}
 
 export interface TransferListOption<T extends string = string> {
   /** Stable value written to the controlled value array. */
@@ -912,7 +971,7 @@ export function TransferList<T extends string = string>({
       return (
         <IconButton
           label={`Add ${option.label}`}
-          icon={<Plus size={16} strokeWidth={1.5} aria-hidden />}
+          icon={<PlusIcon />}
           size="sm"
           variant="ghost"
           isDisabled={isTransferDisabled}
@@ -925,7 +984,7 @@ export function TransferList<T extends string = string>({
     return (
       <IconButton
         label={`Remove ${option.label}`}
-        icon={<X size={16} strokeWidth={1.5} aria-hidden />}
+        icon={<RemoveIcon />}
         size="sm"
         variant="ghost"
         isDisabled={isTransferDisabled}
@@ -967,7 +1026,7 @@ export function TransferList<T extends string = string>({
         label={`Reorder ${option.label}`}
         aria-describedby={reorderInstructionsId}
         aria-pressed={active}
-        icon={<GripVertical size={16} strokeWidth={1.5} aria-hidden />}
+        icon={<GripVerticalIcon />}
         size="sm"
         variant="ghost"
         isDisabled={isReorderDisabled}
