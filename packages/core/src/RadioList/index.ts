@@ -4,8 +4,8 @@
 
 /**
  * @file index.ts
- * @input Imports RadioList, RadioListItem components and types
- * @output Exports RadioList, RadioListProps, RadioListItem, RadioListItemProps
+ * @input Imports RadioList, RadioListItem, RadioControl components and types
+ * @output Exports RadioList, RadioListProps, RadioListItem, RadioListItemProps, RadioControl, RadioControlProps
  * @position Component entry point; re-exported by /packages/core/src/index.ts
  *
  * SYNC: When modified, update this header
@@ -19,3 +19,5 @@ export type {
 } from './RadioList';
 export {RadioListItem} from './RadioListItem';
 export type {RadioListItemProps} from './RadioListItem';
+export {RadioControl} from './RadioControl';
+export type {RadioControlProps, RadioControlSize} from './RadioControl';
