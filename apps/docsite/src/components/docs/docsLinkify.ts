@@ -9,8 +9,10 @@
  * Labels are emitted as code spans, giving the monospace API references the
  * docs want; renderInlineMarkdown renders that shape as a monospace link.
  *
- * Authors opt a mention out by writing it as a code span — `linkifyComponents`
- * treats code spans and existing links as opaque.
+ * Code spans and existing links are opaque to this pass. A backticked mention
+ * is InlineCode's territory — it links the span only when the whole span is a
+ * documented name (see codeLinkifiers.ts). An explicit link renders as
+ * written, which is the author's override for both layers.
  */
 
 import {linkifyComponents} from '../changelogLinkify';

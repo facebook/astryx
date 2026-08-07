@@ -41,8 +41,10 @@ export function linkifyContributors(markdown: string): string {
  * Spans the component linkifier copies through verbatim: fenced blocks, inline
  * code spans, and existing markdown links. Whatever sits inside one of those is
  * already deliberate authoring, so rewriting it would either double-link it or
- * splice link syntax into a literal. This doubles as the author's opt-out —
- * backticking a name suppresses its auto-link.
+ * splice link syntax into a literal. In the changelog this doubles as the
+ * author's opt-out — backticking a name suppresses its auto-link. On the docs
+ * site, InlineCode still resolves an exact-name code span to its page
+ * (codeLinkifiers.ts); this pass stays out of the span either way.
  *
  * Adjacency lookarounds alone are not enough: they miss `<Theme>` and
  * `packages/core/src/Icon/x.tsx`, where the name is inside the span but not

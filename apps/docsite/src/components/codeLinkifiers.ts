@@ -11,13 +11,16 @@
  * Docs prose cites sibling topics as the literal CLI command — "Semantic
  * tokens, not hardcoded values (see `astryx docs tokens`)". That is what an
  * agent should type, so it stays copy-pasteable code; linkifying it gives a
- * human somewhere to click.
+ * human somewhere to click. Component mentions work the same way: authors
+ * write `<InternationalizationProvider>` as literal code, and the span
+ * resolves to that component's doc page.
  *
  * To teach the site a new kind of cross-reference, write a CodeLinkifier and
  * append it to LINKIFIERS.
  */
 
 import {docTopics} from '../generated/docsRegistry';
+import {components} from '../generated/componentRegistry';
 
 /** Returns an href for a code span it recognizes, or null to pass. */
 type CodeLinkifier = (code: string) => string | null;
@@ -45,7 +48,36 @@ const docTopic: CodeLinkifier = code => {
   return KNOWN_TOPICS.has(topic) ? `/docs/${topic}` : null;
 };
 
-const LINKIFIERS: CodeLinkifier[] = [docTopic];
+/** Every documented component and hook name; each has a /components page. */
+const KNOWN_COMPONENTS = new Set(
+  Object.values(components)
+    .flat()
+    .map(c => c.name),
+);
+
+/**
+ * `Button`, `<InternationalizationProvider>`, `<Button />` -> the component's
+ * doc page.
+ *
+ * A span has to be exactly one documented name — bare, or as a lone JSX tag —
+ * so snippets like `<Button open>` and phrases that merely contain a name stay
+ * plain code. Case-sensitive on purpose: `button` is the HTML element,
+ * `Button` the component. XDS-prefixed aliases resolve to the unprefixed page,
+ * matching the prose linkifier (changelogLinkify's linkifyComponents).
+ */
+const componentName: CodeLinkifier = code => {
+  const jsx = /^<([A-Z][A-Za-z\d]*)\s*\/?>$/.exec(code);
+  const name = jsx != null ? jsx[1] : code;
+  if (KNOWN_COMPONENTS.has(name)) {
+    return `/components/${name}`;
+  }
+  if (name.startsWith('XDS') && KNOWN_COMPONENTS.has(name.slice(3))) {
+    return `/components/${name.slice(3)}`;
+  }
+  return null;
+};
+
+const LINKIFIERS: CodeLinkifier[] = [docTopic, componentName];
 
 /** Resolve an inline code span to a docs href, or null to leave it alone. */
 export function linkifyCode(code: string): string | null {
