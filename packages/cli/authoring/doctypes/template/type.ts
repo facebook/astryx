@@ -132,6 +132,7 @@ export type TemplateCategory =
   | 'Tools - IDE'
   | 'Tools - Incident Console'
   | 'Tools - Kanban Board'
+  | 'Tools - Scheduling'
   | 'Tools - Notebook/Report Page'
   | 'Tools - Diff Compare Viewer'
   | 'Tools - Search Results Page'
