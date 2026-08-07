@@ -15,6 +15,8 @@ import {formatZodError} from '../_shared/errors.mjs';
 /** @typedef {import('./type').AstryxConfig} AstryxConfig */
 /** @typedef {import('./type').PostCodemodHook} PostCodemodHook */
 /** @typedef {import('./type').XleComponent} XleComponent */
+/** @typedef {import('./type').DebugConfig} DebugConfig */
+/** @typedef {import('../debug/type').DebugEventHandler} DebugEventHandler */
 
 // Typed `z.custom` so `z.infer` reproduces the real function type (not `unknown`).
 const buildCommand = /** @type {z.ZodType<PostCodemodHook['buildCommand']>} */ (
@@ -36,6 +38,12 @@ const xleComponentSchema = z
   })
   .strict();
 
+// Typed `z.custom` so `z.infer` reproduces the real handler type (not
+// `unknown`), the same way the post-codemod hook above keeps its signature.
+const debugSchema = /** @type {z.ZodType<DebugEventHandler>} */ (
+  z.custom(value => typeof value === 'function', {message: 'Expected a function'})
+);
+
 const configSchema = z
   .object({
     integrations: z.array(z.string()).optional(),
@@ -44,6 +52,7 @@ const configSchema = z
       .object({postCodemod: z.array(postCodemodHookSchema).optional()})
       .strict()
       .optional(),
+    debug: debugSchema.optional(),
     experimental: z
       .object({
         xle: z
