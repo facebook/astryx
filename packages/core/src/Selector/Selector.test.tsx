@@ -3,7 +3,7 @@
 /**
  * @file Selector.test.tsx
  * @input Uses vitest, @testing-library/react, @testing-library/user-event
- * @output Unit tests for Selector
+ * @output Unit tests for Selector behavior and selected-item geometry
  * @position Tests; validates Selector behavior
  *
  * SYNC: When Selector.tsx API changes, update these tests.
@@ -98,36 +98,103 @@ function rect({
   };
 }
 
-function mockSelectorRects() {
+function mockSelectorRects({
+  anchor = rect({top: 160, bottom: 190, height: 30}),
+  trigger = rect({top: 160, bottom: 190, height: 30}),
+  listbox = rect({top: 190, bottom: 310, height: 120}),
+  selectedItem = rect({top: 220, bottom: 250, height: 30}),
+  listboxLayoutHeight = listbox.height,
+  selectedItemLayoutTop = selectedItem.top - listbox.top,
+  selectedItemLayoutHeight = selectedItem.height,
+  viewportHeight = 200,
+}: {
+  anchor?: DOMRect;
+  trigger?: DOMRect;
+  listbox?: DOMRect;
+  selectedItem?: DOMRect;
+  listboxLayoutHeight?: number;
+  selectedItemLayoutTop?: number;
+  selectedItemLayoutHeight?: number;
+  viewportHeight?: number;
+} = {}) {
   const originalGetBoundingClientRect =
     HTMLElement.prototype.getBoundingClientRect;
   const originalInnerHeight = Object.getOwnPropertyDescriptor(
     window,
     'innerHeight',
   );
+  const originalOffsetTop = Object.getOwnPropertyDescriptor(
+    HTMLElement.prototype,
+    'offsetTop',
+  );
+  const originalOffsetHeight = Object.getOwnPropertyDescriptor(
+    HTMLElement.prototype,
+    'offsetHeight',
+  );
   HTMLElement.prototype.getBoundingClientRect = function () {
+    if (this.classList.contains('astryx-selector')) {
+      return anchor;
+    }
     // The trigger is role="combobox" by default, or a plain button with
     // aria-haspopup="listbox" in hasSearch mode — match either.
     if (
       this.getAttribute('role') === 'combobox' ||
       this.getAttribute('aria-haspopup') === 'listbox'
     ) {
-      return rect({top: 160, bottom: 190, height: 30});
+      return trigger;
     }
     if (this.getAttribute('role') === 'listbox') {
-      return rect({top: 190, bottom: 310, height: 120});
+      return listbox;
     }
     if (this.id.endsWith('-item-1')) {
-      return rect({top: 220, bottom: 250, height: 30});
+      return selectedItem;
     }
     return originalGetBoundingClientRect.call(this);
   };
+  Object.defineProperty(HTMLElement.prototype, 'offsetTop', {
+    configurable: true,
+    get() {
+      if (this.getAttribute('role') === 'listbox') {
+        return 0;
+      }
+      if (this.id.endsWith('-item-1')) {
+        return selectedItemLayoutTop;
+      }
+      return 0;
+    },
+  });
+  Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
+    configurable: true,
+    get() {
+      if (this.getAttribute('role') === 'listbox') {
+        return listboxLayoutHeight;
+      }
+      if (this.id.endsWith('-item-1')) {
+        return selectedItemLayoutHeight;
+      }
+      return 0;
+    },
+  });
   Object.defineProperty(window, 'innerHeight', {
-    value: 200,
+    value: viewportHeight,
     configurable: true,
   });
   return () => {
     HTMLElement.prototype.getBoundingClientRect = originalGetBoundingClientRect;
+    if (originalOffsetTop) {
+      Object.defineProperty(
+        HTMLElement.prototype,
+        'offsetTop',
+        originalOffsetTop,
+      );
+    }
+    if (originalOffsetHeight) {
+      Object.defineProperty(
+        HTMLElement.prototype,
+        'offsetHeight',
+        originalOffsetHeight,
+      );
+    }
     if (originalInnerHeight) {
       Object.defineProperty(window, 'innerHeight', originalInnerHeight);
     }
@@ -263,6 +330,81 @@ describe('Selector', () => {
     } finally {
       restoreRects();
     }
+  });
+
+  it('aligns the selected item using untransformed layout geometry', async () => {
+    const restoreRects = mockSelectorRects({
+      anchor: rect({top: 160, bottom: 192, height: 32}),
+      trigger: rect({top: 166, bottom: 186, height: 20}),
+      // Simulate the 0.95 entry scale in visual rects while retaining the
+      // untransformed 120px list / 36px item offset used for positioning.
+      listbox: rect({top: 190, bottom: 304, height: 114}),
+      selectedItem: rect({
+        top: 224.2,
+        bottom: 254.6,
+        height: 30.4,
+      }),
+      listboxLayoutHeight: 120,
+      selectedItemLayoutTop: 36,
+      selectedItemLayoutHeight: 32,
+      viewportHeight: 900,
+    });
+    const user = userEvent.setup();
+    try {
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Banana"
+          onChange={() => {}}
+        />,
+      );
+
+      await user.click(screen.getByRole('combobox'));
+      const popover = screen
+        .getByRole('listbox', {hidden: true})
+        .closest('[popover]');
+      await waitFor(() => {
+        // 68px geometric alignment plus the 1px optical correction.
+        expect(popover?.getAttribute('style')).toContain(
+          'margin-block-start: -69px',
+        );
+      });
+    } finally {
+      restoreRects();
+    }
+  });
+
+  it('adds the border inset only to input-variant dropdowns', async () => {
+    const user = userEvent.setup();
+    const {unmount} = render(
+      <Selector
+        label="Input fruit"
+        options={OPTIONS}
+        value="Banana"
+        onChange={() => {}}
+      />,
+    );
+
+    await user.click(screen.getByRole('combobox'));
+    const inputDropdownClass = screen.getByRole('listbox', h).className;
+    unmount();
+
+    render(
+      <Selector
+        label="Ghost fruit"
+        options={OPTIONS}
+        value="Banana"
+        variant="ghost"
+        onChange={() => {}}
+      />,
+    );
+    await user.click(screen.getByRole('combobox'));
+    const ghostDropdownClass = screen.getByRole('listbox', h).className;
+
+    // The bordered input gets one extra StyleX rule for its border-width
+    // correction; the borderless ghost keeps the base menu inset.
+    expect(inputDropdownClass).not.toBe(ghostDropdownClass);
   });
 
   it('does not apply selected-item overlay offset when placement is explicit', async () => {
