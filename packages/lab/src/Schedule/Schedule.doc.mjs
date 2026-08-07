@@ -8,6 +8,12 @@ export const docs = {
   group: 'Schedule',
   category: 'Content',
 
+  theming: {
+    targets: [
+      {className: 'astryx-schedule'},
+    ],
+  },
+
   usage: {
     description:
       'Schedule is a read-only calendar surface that renders events as a month grid, a day or week time grid, or a list grouped by day: the layout comes from a view object you pass in. It handles timezone-aware date math, paging between ranges, and async event loading, and exposes header slots that plugins fill with navigation controls. Use it to display an existing schedule; it has no event selection, creation, or editing affordances.',

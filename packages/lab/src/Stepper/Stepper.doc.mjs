@@ -28,9 +28,13 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'astryx-stepper', visualProps: ['orientation']},
+      {
+        className: 'astryx-stepper',
+        visualProps: ['orientation', 'indicatorPosition'],
+      },
       {className: 'astryx-step', visualProps: ['progress', 'status']},
       {className: 'astryx-step-bar'},
+      {className: 'astryx-step-connector'},
     ],
   },
   components: [

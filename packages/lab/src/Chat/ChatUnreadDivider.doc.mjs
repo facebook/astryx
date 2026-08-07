@@ -7,6 +7,11 @@ export const docs = {
   subComponentOf: 'Chat',
   displayName: 'Chat Unread Divider',
   description: 'Error-colored rule with a trailing label marking where unread messages begin in a chat thread. Rendered as an aria separator with an accessible label. Distinct from ChatSystemMessage\'s divider variant, which is for neutral date breaks.',
+  theming: {
+    targets: [
+      {className: 'astryx-chat-unread-divider'},
+    ],
+  },
   props: [
     {
       name: 'label',
