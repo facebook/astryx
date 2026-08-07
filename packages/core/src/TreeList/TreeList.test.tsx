@@ -678,31 +678,71 @@ describe('TreeList', () => {
       expect(css).toContain('--tree-list-row-gap: var(--spacing-1)');
     });
 
-    it('the guide height accounts for the row gap so the connector spans it', () => {
-      // The connector guide segment reads --tree-list-row-gap in its height so
-      // it bridges the gap the row box opens — the line stays continuous
-      // without any consumer-side guide tuning. jsdom exposes the compiled
-      // stylesheet height rule on the guide element.
-      const {container} = render(<TreeList items={nestedItemsExpanded} />);
-      const guide = container.querySelector<HTMLElement>(
+    it('the guide of a row with a sibling below spans into it (verticalFull)', () => {
+      // A row that is NOT last in its group bridges the 1px hairline into the
+      // next contiguous sibling so the connector reads as one continuous line.
+      // Assert the APPLIED class on that row's own connector — not a global
+      // stylesheet regex — so the isLast ? verticalLast : verticalFull branch
+      // is actually exercised (Child 1 has Child 2 below it).
+      render(<TreeList items={nestedItemsExpanded} />);
+      const child1 = screen.getByText('Child 1').closest('li')!;
+      const guide = child1.firstElementChild!.querySelector(
         '.astryx-tree-list-guide',
       );
       expect(guide).not.toBeNull();
-      const rules = collectCssText();
-      // The guide's height declaration references the row-gap var.
-      expect(rules).toMatch(
-        /height:\s*calc\([^;]*var\(--tree-list-row-gap[^;]*\)/,
-      );
+      expect(guide!.className).toContain('verticalFull');
+      expect(guide!.className).not.toContain('verticalLast');
     });
 
-    it('clamps the last-in-group guide so it does not overhang the gap', () => {
-      // The last connector uses a height that subtracts half the row gap so it
-      // ends at the row box bottom instead of hanging into empty space below
-      // the last row.
+    it('clamps the last-in-group guide so it does not overhang the gap (verticalLast)', () => {
+      // The last row in a group has nothing below it, so its connector must NOT
+      // run through the row wrapper's bottom padding into empty space — it uses
+      // verticalLast, which subtracts half the row gap. Assert the applied class
+      // on the last child's own connector (Child 2 is last in its group), so a
+      // reverted branch is caught.
       render(<TreeList items={nestedItemsExpanded} />);
+      const child2 = screen.getByText('Child 2').closest('li')!;
+      const guide = child2.firstElementChild!.querySelector(
+        '.astryx-tree-list-guide',
+      );
+      expect(guide).not.toBeNull();
+      expect(guide!.className).toContain('verticalLast');
+      expect(guide!.className).not.toContain('verticalFull');
+    });
+
+    it('carries the inter-row gap as collapse-proof padding on the row wrapper, not the paint target', () => {
+      // Finding from review: the gap must be `padding-block` (which cannot
+      // collapse) on the row WRAPPER, not `margin-block` on the row box — a
+      // margin there collapses through the position:relative wrapper and the
+      // <li>, delivering only half the configured gap. It also must not sit on
+      // `tree-list-item`, which is a paint seam (per the theming-target
+      // guidelines): layout longhands do not belong on a paintable target.
+      const {container} = render(<TreeList items={simpleItems} />);
+      const item = container.querySelector<HTMLElement>(
+        '.astryx-tree-list-item',
+      );
+      expect(item).not.toBeNull();
+      const rowWrapper = item!.parentElement!;
+
       const rules = collectCssText();
+      // Map the rowWrapper's compiled class to its declaration block and assert
+      // it declares padding-block from the row-gap lever (half above/below).
+      const rowWrapperClass = Array.from(rowWrapper.classList).find(c =>
+        c.includes('rowWrapper'),
+      );
+      expect(rowWrapperClass).toBeDefined();
+      // The gap rides padding-block (collapse-proof), keyed off the lever.
       expect(rules).toMatch(
-        /height:\s*calc\([^;]*var\(--tree-list-row-gap[^;]*\)\s*\/\s*2\)/,
+        /padding-block:\s*calc\(\s*var\(--tree-list-row-gap[^)]*\)\s*\/\s*2\s*\)/,
+      );
+      // And the paint target (tree-list-item / contentWrapper) must NOT carry a
+      // margin-block gap — the layout seam has moved off the paintable element.
+      const itemClass = Array.from(item!.classList).find(c =>
+        c.includes('contentWrapper'),
+      );
+      expect(itemClass).toBeDefined();
+      expect(rules).not.toMatch(
+        /margin-block:\s*calc\([^;]*var\(--tree-list-row-gap/,
       );
     });
   });

@@ -70,6 +70,17 @@ const styles = stylex.create({
   },
   rowWrapper: {
     position: 'relative',
+    // Inter-row gap. Half the public `--tree-list-row-gap` lever sits above and
+    // half below the row box; because this is PADDING (not margin) it cannot
+    // collapse, so adjacent rows end up a full gap apart — and it rides the
+    // `rowWrapper`, which carries no theme target, so the paintable
+    // `tree-list-item` stays a pure paint seam (layout lives off it). The <li>s
+    // stay contiguous — the gap is padding INSIDE each <li>, not space between
+    // them — so the per-<li> connector guide can still span it and read as a
+    // continuous line (see TreeListBranches). The lever's default is a subtle
+    // `--spacing-0-5` (2px, set on the tree-list root); a theme widens or closes
+    // it via the `tree-list` target.
+    paddingBlock: 'calc(var(--tree-list-row-gap, 0px) / 2)',
   },
   contentWrapper: {
     borderRadius: radiusVars['--radius-element'],
@@ -82,15 +93,6 @@ const styles = stylex.create({
     position: 'relative',
     boxSizing: 'border-box',
     textAlign: 'start',
-    // Inter-row gap. Half the public `--tree-list-row-gap` lever sits above and
-    // half below the row box, so adjacent rows end up a full gap apart. The gap
-    // lives on the row box — NOT the <li> — so the <li>s stay contiguous and the
-    // per-<li> connector guide (drawn full-height inside the <li>) can span the
-    // gap and read as a continuous line (see TreeListBranches). Default `0px`
-    // preserves the contiguous look; a theme opens the gap via the `tree-list`
-    // target. Declared here (in `@layer astryx-base`) so the theme layer can
-    // override it in normal cascade order.
-    marginBlock: 'calc(var(--tree-list-row-gap, 0px) / 2)',
     // Per-level indent. Declared here (not inline) so it lives in
     // `@layer astryx-base` and the theme layer can override it in normal
     // cascade order — an inline longhand would outrank every layer. The row
