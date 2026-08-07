@@ -612,9 +612,12 @@ export function Lightbox({
           <div {...stylex.props(styles.navButton, styles.navPrev)}>
             <IconButton
               icon={
-                <span {...stylex.props(rtlStyles.mirror)}>
-                  <Icon icon="chevronLeft" size="sm" color="inherit" />
-                </span>
+                <Icon
+                  icon="chevronLeft"
+                  size="sm"
+                  color="inherit"
+                  xstyle={rtlStyles.mirror}
+                />
               }
               label={t('@astryx.lightbox.previous')}
               variant="ghost"
@@ -679,9 +682,12 @@ export function Lightbox({
           <div {...stylex.props(styles.navButton, styles.navNext)}>
             <IconButton
               icon={
-                <span {...stylex.props(rtlStyles.mirror)}>
-                  <Icon icon="chevronRight" size="sm" color="inherit" />
-                </span>
+                <Icon
+                  icon="chevronRight"
+                  size="sm"
+                  color="inherit"
+                  xstyle={rtlStyles.mirror}
+                />
               }
               label={t('@astryx.lightbox.next')}
               variant="ghost"

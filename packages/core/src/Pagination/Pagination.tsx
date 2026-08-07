@@ -865,9 +865,11 @@ export function Pagination({
             variant="ghost"
             size={buttonSize}
             icon={
-              <span {...stylex.props(rtlStyles.mirror)}>
-                <Icon icon="chevronsRight" size={isSm ? 'sm' : 'md'} />
-              </span>
+              <Icon
+                icon="chevronsRight"
+                size={isSm ? 'sm' : 'md'}
+                xstyle={rtlStyles.mirror}
+              />
             }
             onClick={handleLast}
             isDisabled={isDisabled || !hasNext}

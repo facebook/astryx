@@ -560,9 +560,11 @@ export function Carousel({
               )}>
               <Button
                 icon={
-                  <span {...stylex.props(rtlStyles.mirror)}>
-                    <Icon icon="chevronLeft" size="xsm" />
-                  </span>
+                  <Icon
+                    icon="chevronLeft"
+                    size="xsm"
+                    xstyle={rtlStyles.mirror}
+                  />
                 }
                 label={t('@astryx.carousel.scrollLeft')}
                 variant="ghost"
@@ -585,9 +587,11 @@ export function Carousel({
               )}>
               <Button
                 icon={
-                  <span {...stylex.props(rtlStyles.mirror)}>
-                    <Icon icon="chevronRight" size="xsm" />
-                  </span>
+                  <Icon
+                    icon="chevronRight"
+                    size="xsm"
+                    xstyle={rtlStyles.mirror}
+                  />
                 }
                 label={t('@astryx.carousel.scrollRight')}
                 variant="ghost"
