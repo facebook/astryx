@@ -235,6 +235,16 @@ export {
 export * from './Stepper';
 export * from './CircularProgress';
 
+// ListInput — compact editor for small repeated records (RFC facebook/astryx#4531)
+export {
+  ListInput,
+  type ListInputProps,
+  type ListInputColumn,
+  type ListInputChange,
+  type ListInputRenderContext,
+  type ListInputValueContext,
+} from './ListInput';
+
 // LogStream — experimental streaming log viewer
 export {
   LogStream,
