@@ -20,6 +20,9 @@
  * - no-unstable-merged-refs: Flags render-time mergeRefs callbacks and unstable callback inputs to useMergedRefs
  * - no-light-dark-outside-theme: Flags CSS light-dark() in component source (a light/dark decision belongs to the theme layer, where a token pair reaches both schemes in every theme)
  * - no-raw-color: Flags a raw colour value (hex, rgb(), hsl(), oklch(), …) anywhere in component source, including inside light-dark()/color-mix(), behind a const, in a template literal, or as a var() fallback — the shapes no-hardcoded-styles cannot see
+ * - theming-target-shape: A themeProps() target must sit on an element that paints (not a layout-only box or a wrapper)
+ * - theming-target-name: Theme target names follow {parent}-{position}-{component}; state is data, not a name
+ * - themeprops-reflection: Spread the whole themeProps() result — .className drops the data-* state reflection
  *
  * Philosophy: Strict for agents (CI), lenient for humans (local dev)
  * - "strict" config: All rules as errors - use in CI/agent environments
@@ -32,6 +35,9 @@ import docblockExampleFormatRule from './docblock-example-format.js';
 import noStylexNullOverrideRule from './no-stylex-null-override.js';
 import noStyleOnlyWrapperRule from './no-style-only-wrapper.js';
 import noWrapperTransformRule from './no-wrapper-transform.js';
+import themingTargetShapeRule from './theming-target-shape.js';
+import themingTargetNameRule from './theming-target-name.js';
+import themePropsReflectionRule from './themeprops-reflection.js';
 import noReactIntrospectionRule from './no-react-introspection.js';
 import noClassnameClobberRule from './no-classname-clobber.js';
 import noHardcodedAnchorRule from './no-hardcoded-anchor.js';
@@ -332,6 +338,9 @@ const plugin = {
     'no-stylex-null-override': noStylexNullOverrideRule,
     'no-style-only-wrapper': noStyleOnlyWrapperRule,
     'no-wrapper-transform': noWrapperTransformRule,
+    'theming-target-shape': themingTargetShapeRule,
+    'theming-target-name': themingTargetNameRule,
+    'themeprops-reflection': themePropsReflectionRule,
     'no-react-introspection': noReactIntrospectionRule,
     'no-classname-clobber': noClassnameClobberRule,
     'no-hardcoded-anchor': noHardcodedAnchorRule,
