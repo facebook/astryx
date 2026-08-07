@@ -77,6 +77,57 @@ must carry regardless are what it is itself responsible for: the pre-push
 checks, a changeset for a consumer-visible change, and screenshots for a visual
 change.
 
+## Adding a theming target
+
+A `themeProps()` target is a public API commitment: a stable `.astryx-*` class
+an unknown external consumer writes CSS against, and one we cannot rename
+without breaking them. The authoring principles live in
+[Theming Infrastructure](https://github.com/facebook/astryx/wiki/Theming-Infrastructure)
+("Principles for authoring theming targets") — that page is the source of
+truth. Run every **new** target through this checklist:
+
+1. **Does the element paint?** A target is a paint seam — color, background,
+   border, font, radius, shadow. An element that only lays out (`display`,
+   flex/grid, `margin`/`padding`, width/height, `transform`) has nothing for a
+   theme to restyle.
+2. **Is the layout value declared?** Layout is themeable only where the
+   component declared it and still owns the structure — a component var, a
+   `derived` entry, container-padding expansion. Arbitrary layout CSS on a class
+   target is not.
+3. **Is it attached to the component?** If the themed thing is an internally
+   composed Astryx component, the target rides that instance's
+   `className`/`xstyle` passthrough. Never mint a wrapper to hold a target.
+4. **Is the name compositional?** `{parent}-{position}-{component}` — position
+   from the shared vocabulary (trigger/option/item/row/header/leading/trailing/
+   menu), and the last segment the actual component (`icon`, `checkbox`,
+   `button`, `divider`), never an appearance (`check`, `caret`, `marker`).
+   State is never a name segment: it rides `themeProps({selected})`, which emits
+   the class token and the `data-*` attribute together.
+5. **Is there a named consumer?** "Structural selectors are brittle, so here's a
+   seam" is not a justification. Say what appearance the target unlocks and who
+   asked for it — and check whether the answer is really a design convergence
+   (principle 7) rather than a theming surface.
+
+**Blocking:** (3) a target on a wrapper rather than the component; a state
+minted as its own `-selected`/`-disabled` sub-target; a hand-authored `data-*`
+alongside `themeProps`; `className={themeProps(...).className}` or a `className`
+written **after** the `themeProps` spread — both silently drop the target or its
+`data-*` reflection, which is a real bug under
+[the latent-bug rule](#severity--score-the-failure-not-its-likelihood).
+Also blocking: a target whose stated purpose is to `display: none` an internal
+element — that is a design question about the element's existence, not a theming
+one.
+
+**Maintainer judgment:** (1) and (2) where the element paints a little but the
+seam is mostly structural, (5) in every case, and any question of whether the
+target should exist at all.
+
+The `@astryx/theming-target-*` and `@astryx/themeprops-reflection` rules check
+the mechanical subset (see `internal/eslint-plugin-astryx/README.md` for which
+check maps to which principle). They are prototypes and are not enabled in
+either shipped config, so **review owns every new target** — do not assume lint
+caught it.
+
 ## Same bar for every author
 
 **Who opened the PR does not change the review.** Apply the same checks, the
