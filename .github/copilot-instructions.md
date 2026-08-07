@@ -28,6 +28,18 @@ until they merge to `main`.
   the generated capability reference in
   `internal/stylex-capabilities/CAPABILITIES.md` (mirrored in the `STYLEX-CAPS`
   block of `CLAUDE.md`).
+- **Style Astryx components directly — no styling-only wrappers.** Every
+  component extends `BaseProps`, so it takes `xstyle`. A `<div>`/`<span>` added
+  only to carry styles around a component is not a neutral extra node: it takes
+  the component out of its parent's flex/grid child relationship, which is how
+  the pagination carets lost their centering (#4752). Point at `xstyle` —
+  `<Icon icon="chevronsLeft" xstyle={rtlStyles.mirror} />`, not
+  `<span {...stylex.props(rtlStyles.mirror)}><Icon … /></span>`. A wrapper that
+  does something the child cannot — establishes a flex/grid _container_, pads
+  around the child's border box, carries semantics, behavior, or a `ref` — is
+  fine. `@astryx/no-style-only-wrapper` catches the mechanical cases, but it
+  runs as a warning while existing sites are migrated, so review still owns new
+  ones.
 - **Semantic tokens only.** No hardcoded color, spacing, radius, or shadow
   values; components stay theme-agnostic.
 - **TypeScript strict**, functional components with `forwardRef`, exported prop
