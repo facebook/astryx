@@ -46,6 +46,7 @@ import {API_VERSION} from '../../../foundation/response/json.mjs';
  * @type {Record<string, string[]>}
  */
 export const RESPONSE_TYPES = {
+  init: ['init.run', 'init.remove'],
   component: [
     'component.list',
     'component.detail',
@@ -120,7 +121,7 @@ const EXAMPLES = {
     'astryx validate-integration',
     'astryx validate-integration @acme/widgets --json',
   ],
-  init: ['astryx init'],
+  init: ['astryx init', 'astryx init --all --json'],
   'layout expand': [
     `astryx layout expand 'V[g6] > C{card-callout}*4' ./src/Page.tsx`,
   ],
