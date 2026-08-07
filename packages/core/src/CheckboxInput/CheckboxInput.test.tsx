@@ -542,6 +542,42 @@ describe('CheckboxInput', () => {
       expect(data.get('terms')).toBe('on');
     });
 
+    // Regression: a disabledMessage swaps the native `disabled` attribute for
+    // aria-disabled, which leaves the checkbox subject to constraint
+    // validation. An unchecked `required` box the user is told they cannot
+    // touch would then block submission of the whole form.
+    it('does not block form submission when required and disabled with a disabledMessage', () => {
+      const {container} = render(
+        <form>
+          <CheckboxInput
+            label="Terms"
+            htmlName="terms"
+            value={false}
+            onChange={() => {}}
+            isRequired
+            isDisabled
+            disabledMessage="Terms are managed by your administrator"
+          />
+        </form>,
+      );
+      expect(container.querySelector('form')!.checkValidity()).toBe(true);
+    });
+
+    it('still blocks submission when required and unchecked but enabled', () => {
+      const {container} = render(
+        <form>
+          <CheckboxInput
+            label="Terms"
+            htmlName="terms"
+            value={false}
+            onChange={() => {}}
+            isRequired
+          />
+        </form>,
+      );
+      expect(container.querySelector('form')!.checkValidity()).toBe(false);
+    });
+
     it('is excluded from form data when disabled, even with a disabledMessage', () => {
       const {container} = render(
         <form>

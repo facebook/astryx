@@ -523,6 +523,12 @@ export function Switch({
         // isDisabled guard in onChange below.
         disabled={isDisabled && !showsDisabledMessage}
         aria-disabled={showsDisabledMessage ? 'true' : undefined}
+        // A focusable-disabled switch is not natively disabled, so it would
+        // still be constraint-validated — an off `required` switch the user
+        // cannot reach would block submission outright. Detach it from the
+        // form, matching a natively disabled control (and the same treatment
+        // RadioListItem applies).
+        form={showsDisabledMessage ? '' : undefined}
         required={isRequired}
         onChange={e => {
           if (isDisabled || isBusy) {

@@ -520,6 +520,12 @@ export function CheckboxInput({
             // still blocked by the isDisabled guard in onChange below.
             disabled={isDisabled && !isFocusableDisabled}
             aria-disabled={isFocusableDisabled ? 'true' : undefined}
+            // A focusable-disabled checkbox is not natively disabled, so it
+            // would still be constraint-validated — an unchecked `required` box
+            // the user cannot reach would block submission outright. Detach it
+            // from the form, matching a natively disabled control (and the same
+            // treatment RadioListItem applies).
+            form={isFocusableDisabled ? '' : undefined}
             readOnly={isReadOnly}
             required={isRequired}
             onChange={e => {
