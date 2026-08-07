@@ -708,18 +708,3 @@ export function generateThemeCSS(theme: DefinedTheme): ThemeCSSOutput {
 
   return {prose: proseCss, component: componentCss};
 }
-
-/**
- * Generate the full CSS string for a theme as a single string.
- * @deprecated Use generateThemeCSS() which returns { prose, component } for proper layering.
- * This flat version is kept for backwards compatibility with tests and simple cases.
- */
-export function generateThemeCSSFlat(theme: DefinedTheme): string {
-  const rules = generateThemeRules(theme);
-  if (rules.length === 0) {
-    return '';
-  }
-  const scopeSelector = themeScopeStart(theme.name);
-  const inner = rules.join('\n\n');
-  return `@scope (${scopeSelector}) to (${THEME_SCOPE_TO}) {\n${inner}\n}`;
-}

@@ -10,14 +10,27 @@
  *
  * The expression argument may also come from --file or stdin (`-`),
  * which is how multi-line outline (XLO) input usually arrives.
+ *
+ * The command surface (group + subcommand descriptions, args, flags) is sourced
+ * from the colocated CommandDocs via `defineCommand`; this file supplies only the
+ * actions.
  */
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {jsonOut, humanLog} from '../../../foundation/response/json.mjs';
+import {jsonOut} from '../../../foundation/response/json.mjs';
+import {emit, section, text, list, record, code, WARN} from '../formatters/index.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {layoutExpand, layoutCheck, layoutGrammar} from '../../../api/layout/layout.mjs';
+import {defineCommand} from '../lib/define-command.mjs';
+import {doc as layoutGroup} from './layout.doc.mjs';
+import {doc as layoutExpandCommand} from './layout-expand.doc.mjs';
+import {doc as layoutCheckCommand} from './layout-check.doc.mjs';
+import {doc as layoutGrammarCommand} from './layout-grammar.doc.mjs';
+import {doc as layoutExpandFn} from '../../../api/layout/layoutExpand.doc.mjs';
+import {doc as layoutCheckFn} from '../../../api/layout/layoutCheck.doc.mjs';
+import {doc as layoutGrammarFn} from '../../../api/layout/layoutGrammar.doc.mjs';
 
 /**
  * The api layer's @returns for these functions widen the `type` discriminator
@@ -98,18 +111,11 @@ async function readExpression(expr, options = {}) {
  * @param {import('commander').Command} program
  */
 export function registerLayout(program) {
-  const layoutCmd = program
-    .command('layout')
-    .description('Generate XDS layouts from compressed expressions (XLE/XLO)');
+  const layoutCmd = defineCommand(program, layoutGroup);
 
-  layoutCmd
-    .command('expand [expression] [path]')
-    .description('Expand a layout expression into validated XDS TSX')
-    .option('--file <file>', 'Read the expression from a file')
-    .option('--form <form>', 'Input surface: compact, outline, or auto', 'auto')
-    .option('--name <name>', 'Generated component name (PascalCase)', 'GeneratedLayout')
-    .option('--loose', 'Downgrade unknown {block} hints to TODO placeholders')
-    .action(async (/** @type {string} */ expression, /** @type {string} */ targetPath, /** @type {LayoutExpandOptions} */ options) => {
+  defineCommand(layoutCmd, layoutExpandCommand, {
+    fn: layoutExpandFn,
+    action: async (/** @type {string} */ expression, /** @type {string} */ targetPath, /** @type {LayoutExpandOptions} */ options) => {
       const json = program.opts().json || false;
       const source = await readExpression(expression, options);
       if (!source || source.trim() === '') {
@@ -136,26 +142,36 @@ export function registerLayout(program) {
       }
       if (json) return jsonOut(result);
 
-      for (const warning of result.data.warnings) humanLog(`⚠ ${warning}`);
-      if (result.data.written) {
-        humanLog(`\n✓ Expanded to ${result.data.written}`);
-        humanLog(`  Components: ${result.data.componentsUsed.join(', ')}`);
-        if (result.data.todos.length > 0) {
-          humanLog(`  TODOs: ${result.data.todos.length} (search for "TODO(xle)")`);
-        }
-        humanLog('');
-      } else {
-        humanLog(result.data.code);
+      /** @type {import('../formatters/index.mjs').Block[]} */
+      const out = [];
+      if (result.data.warnings.length > 0) {
+        out.push(text(result.data.warnings.map(w => `${WARN} ${w}`).join('\n')));
       }
-    });
+      if (result.data.written) {
+        out.push(
+          text(`[ok] Expanded to ${result.data.written}`),
+          record(
+            {
+              components: result.data.componentsUsed,
+              todos:
+                result.data.todos.length > 0
+                  ? `${result.data.todos.length} (search for "TODO(xle)")`
+                  : '',
+            },
+            {labels: {components: 'Components', todos: 'TODOs'}},
+          ),
+        );
+      } else {
+        // Raw expanded TSX (no target path) — preformatted, emitted verbatim.
+        out.push(code(result.data.code));
+      }
+      emit(...out);
+    },
+  });
 
-  layoutCmd
-    .command('check [expression]')
-    .description('Validate a layout expression and echo canonical compact/outline forms')
-    .option('--file <file>', 'Read the expression from a file')
-    .option('--form <form>', 'Input surface: compact, outline, or auto', 'auto')
-    .option('--loose', 'Downgrade unknown {block} hints to TODO placeholders')
-    .action(async (/** @type {string} */ expression, /** @type {LayoutCheckOptions} */ options) => {
+  defineCommand(layoutCmd, layoutCheckCommand, {
+    fn: layoutCheckFn,
+    action: async (/** @type {string} */ expression, /** @type {LayoutCheckOptions} */ options) => {
       const json = program.opts().json || false;
       const source = await readExpression(expression, options);
       if (!source || source.trim() === '') {
@@ -188,27 +204,33 @@ export function registerLayout(program) {
 
       const {valid, form, errors, warnings, compact, outline} = result.data;
       if (!valid) {
-        humanLog(`\n✗ Invalid (${errors.length} error${errors.length === 1 ? '' : 's'}):`);
-        for (const e of errors) {
-          humanLog(`  - ${e.formatted}`);
-          if (e.suggestions && e.suggestions.length > 0) humanLog(`    did you mean: ${e.suggestions.join(', ')}?`);
-        }
-        humanLog('');
+        // Each error: the formatted issue, with a hanging "did you mean" line.
+        const items = errors.map(e =>
+          e.suggestions && e.suggestions.length > 0
+            ? [e.formatted, `did you mean: ${e.suggestions.join(', ')}?`]
+            : [e.formatted],
+        );
+        emit(
+          text(`[fail] Invalid (${errors.length} error${errors.length === 1 ? '' : 's'}):`),
+          list(items),
+        );
         return;
       }
-      humanLog(`\n✓ Valid (parsed as ${form})`);
-      for (const warning of warnings) humanLog(`⚠ ${warning}`);
-      humanLog('\ncompact:');
-      humanLog(`  ${compact}`);
-      humanLog('\noutline:');
-      humanLog(outline.split('\n').map(l => `  ${l}`).join('\n'));
-      humanLog('');
-    });
 
-  layoutCmd
-    .command('grammar')
-    .description('Print the XLE/XLO cheatsheet (alias table generated from this branch)')
-    .action(async () => {
+      /** @type {import('../formatters/index.mjs').Block[]} */
+      const out = [text(`[ok] Valid (parsed as ${form})`)];
+      if (warnings.length > 0) {
+        out.push(text(warnings.map(w => `${WARN} ${w}`).join('\n')));
+      }
+      // The canonical compact/outline surfaces are preformatted — emit verbatim.
+      out.push(section('compact'), code(compact), section('outline'), code(outline));
+      emit(...out);
+    },
+  });
+
+  defineCommand(layoutCmd, layoutGrammarCommand, {
+    fn: layoutGrammarFn,
+    action: async () => {
       const json = program.opts().json || false;
       /** @type {LayoutGrammarResponse} */
       let result;
@@ -220,6 +242,8 @@ export function registerLayout(program) {
         return;
       }
       if (json) return jsonOut(result);
-      humanLog(result.data.text);
-    });
+      // The cheatsheet is a preformatted document — emit verbatim.
+      emit(code(result.data.text));
+    },
+  });
 }

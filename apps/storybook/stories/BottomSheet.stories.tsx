@@ -19,6 +19,15 @@ const meta: Meta<typeof BottomSheet> = {
   tags: ['autodocs'],
   parameters: {
     layout: 'fullscreen',
+    // Render each story in its own iframe in the Docs page. BottomSheet is a
+    // viewport-anchored overlay (position:fixed, dvh heights, detents from
+    // visualViewport); an iframe gives it a real mini-viewport, so both the
+    // modal (top-layer) and non-modal sheets render contained and with correct
+    // physics — instead of a modal escaping to cover the whole Docs page while
+    // a non-modal gets trapped/janky in the preview card.
+    docs: {
+      story: {inline: false, height: '560px'},
+    },
   },
   decorators: [
     Story => (
@@ -76,6 +85,60 @@ export const TallSheet: Story = {
               </Text>
               <Divider />
               {Array.from({length: 12}, (_, i) => (
+                <VStack key={i} gap={1}>
+                  <Text type="label">Place {i + 1}</Text>
+                  <Text type="supporting" color="secondary">
+                    {(0.2 + i * 0.3).toFixed(1)} mi away
+                  </Text>
+                </VStack>
+              ))}
+            </VStack>
+          </Section>
+        </BottomSheet>
+      </>
+    );
+  },
+};
+
+export const NonModal: Story = {
+  render: () => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [count, setCount] = useState(0);
+    return (
+      <>
+        {/* With hasScrim={false} the sheet is non-modal: this background stays
+            clickable while the sheet is open (no scrim, no scroll lock). Open
+            the sheet, then tap the counter — it still responds. The story
+            renders in its own iframe in Docs (see meta docs.story), so the
+            sheet gets a real mini-viewport and behaves correctly. */}
+        <VStack gap={3}>
+          <Heading level={3}>Live page (background)</Heading>
+          <Text type="supporting" color="secondary">
+            A non-modal sheet (hasScrim={'{false}'}) leaves this content
+            interactive. Open the sheet, then tap the counter below — it keeps
+            working, and there is no dimming behind the sheet.
+          </Text>
+          <Button label="Open sheet" onClick={() => setIsOpen(true)} />
+          <Button
+            label={`Background clicks: ${count}`}
+            onClick={() => setCount(c => c + 1)}
+          />
+        </VStack>
+        <BottomSheet
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          label="Nearby places"
+          hasScrim={false}
+          height="capped">
+          <Section padding={4}>
+            <VStack gap={3}>
+              <Heading level={3}>Non-modal sheet</Heading>
+              <Text type="supporting" color="secondary">
+                No scrim; the page behind stays live. Drag the handle to resize,
+                flick down to dismiss, or press Escape while focus is here.
+              </Text>
+              <Divider />
+              {Array.from({length: 8}, (_, i) => (
                 <VStack key={i} gap={1}>
                   <Text type="label">Place {i + 1}</Text>
                   <Text type="supporting" color="secondary">

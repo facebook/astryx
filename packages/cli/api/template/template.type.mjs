@@ -26,7 +26,6 @@
  * @typedef {object} TemplateListEntry
  * @property {string} id - Stable template id (relative path under the templates root, minus the .doc.* suffix).
  * @property {string} name
- * @property {string} displayName - (deprecated) Alias of `name`, retained for back-compat.
  * @property {string} description
  * @property {'page' | 'block'} type
  * @property {string} package - Owning package; core (built-in) templates report '@astryxdesign/core'.

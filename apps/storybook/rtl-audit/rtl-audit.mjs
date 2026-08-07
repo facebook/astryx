@@ -54,6 +54,11 @@ const TARGETS_PATH = getArg('targets') || path.join(HERE, 'targets.json');
 const FILTER = (getArg('filter') || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
 const AUTO_ONLY = hasFlag('auto-only');
 const CURATED_ONLY = hasFlag('curated-only');
+// Worker pool size. Each worker owns its own Playwright page; stories are
+// independent, and the run is dominated by page-load latency rather than CPU.
+// Defaults to 1 (serial) so the per-PR job's behaviour is unchanged while the
+// suite is still soft-gated; rtl-weekly.yml opts into 4 for the full sweep.
+const CONCURRENCY = Math.max(1, Number(getArg('concurrency') || process.env.RTL_CONCURRENCY || 1));
 // D5 positional-mirror reveal: opening interaction-gated surfaces on EVERY core
 // story (1365 stories) is expensive and, at that scale, a flake/timeout risk
 // during the soft-gate window. The fully-validated bug class (Avatar status-dot,
@@ -417,14 +422,30 @@ async function autoPositionalMirror(page, port, storyId, component) {
   await settle(page);
   const revealedL = PM_REVEAL ? await revealInteractionGated(page) : false;
   const ltr = await detectPositioned(page);
+
+  // Short-circuit before the RTL navigation: with no LTR candidate there is
+  // nothing to measure an RTL center against, so the second load can't change
+  // the verdict. Most stories have zero candidates, so this is most of D5's
+  // cost. Checking `ltr && rtl` here instead would report a vacuous "pass" —
+  // the compare loop runs min(ltr, rtl) = 0 times and never sets anyFail.
+  if (ltr.length === 0) {
+    if (revealedL) card.notes.push('opened an interaction-gated surface before scanning');
+    card.notes.push('no logical-anchor + physical-transform candidates in LTR');
+    return card;
+  }
+
   await page.goto(storyUrl(port, storyId, true), {waitUntil: 'domcontentloaded'});
   await settle(page);
   const revealedR = PM_REVEAL ? await revealInteractionGated(page) : false;
   const rtl = await detectPositioned(page);
   if (revealedL || revealedR) card.notes.push('opened an interaction-gated surface before scanning');
 
-  if (ltr.length === 0 && rtl.length === 0) {
-    card.notes.push('no logical-anchor + physical-transform candidates');
+  // Same reasoning in the other direction: zero comparisons is not a pass.
+  if (rtl.length === 0) {
+    card.candidates = ltr.length;
+    card.notes.push(
+      `${ltr.length} candidate(s) in LTR but none in RTL — nothing to compare (not evaluated)`,
+    );
     return card;
   }
   card.candidates = Math.max(ltr.length, rtl.length);
@@ -613,10 +634,32 @@ function componentFromId(id) {
   return seg;
 }
 
+// Run `fn` over `items` with `pages.length` workers, each pinned to its own
+// page. Results are written by index, so the output array is in input order
+// regardless of completion order — the report stays byte-identical to a serial
+// run. Progress lines still print as they land, so they interleave.
+async function mapPool(items, pages, fn) {
+  const out = new Array(items.length);
+  let next = 0;
+  await Promise.all(
+    pages.slice(0, Math.max(1, Math.min(pages.length, items.length))).map(async page => {
+      for (let i = next++; i < items.length; i = next++) {
+        out[i] = await fn(items[i], page);
+      }
+    }),
+  );
+  return out;
+}
+
 (async () => {
   const {server, port} = await serve(path.resolve(DIST));
   const browser = await chromium.launch();
-  const page = await browser.newPage({viewport: {width: 1100, height: 760}, deviceScaleFactor: 1});
+  const pages = await Promise.all(
+    Array.from({length: CONCURRENCY}, () =>
+      browser.newPage({viewport: {width: 1100, height: 760}, deviceScaleFactor: 1}),
+    ),
+  );
+  const page = pages[0]; // curated dims run serially on the first page
 
   let entries = {};
   try {
@@ -642,37 +685,47 @@ function componentFromId(id) {
       const comp = componentFromId(id);
       if (!perComponent.has(comp)) perComponent.set(comp, id);
     }
-    for (const [comp, id] of perComponent) {
-      if (FILTER.length && !FILTER.includes(comp.toLowerCase())) continue;
-      try {
-        const card = await autoD1(page, port, id, comp);
-        autoResults.push(card);
-        if (card.verdict !== 'N-A') {
-          console.error(`AUTO ${card.verdict.toUpperCase().padEnd(4)} ${comp.padEnd(24)} icons=${card.icons}`);
+    const d1Targets = [...perComponent]
+      .filter(([comp]) => !FILTER.length || FILTER.includes(comp.toLowerCase()))
+      .map(([comp, id]) => ({comp, id}));
+    autoResults.push(
+      ...(await mapPool(d1Targets, pages, async ({comp, id}, workerPage) => {
+        try {
+          const card = await autoD1(workerPage, port, id, comp);
+          if (card.verdict !== 'N-A') {
+            console.error(`AUTO ${card.verdict.toUpperCase().padEnd(4)} ${comp.padEnd(24)} icons=${card.icons}`);
+          }
+          return card;
+        } catch (e) {
+          console.error(`AUTO ERROR ${comp}: ${String(e).slice(0, 120)}`);
+          return {component: comp, storyId: id, dim: 'D1', verdict: 'ERROR', notes: [String(e).slice(0, 160)], icons: 0};
         }
-      } catch (e) {
-        autoResults.push({component: comp, storyId: id, dim: 'D1', verdict: 'ERROR', notes: [String(e).slice(0, 160)], icons: 0});
-        console.error(`AUTO ERROR ${comp}: ${String(e).slice(0, 120)}`);
-      }
-    }
+      })),
+    );
     // D5 positional-mirror over every core story.
-    for (const id of storyIds) {
-      const comp = componentFromId(id);
-      if (FILTER.length && !FILTER.includes(comp.toLowerCase())) continue;
-      try {
-        const card = await autoPositionalMirror(page, port, id, comp);
-        pmResults.push(card);
-        if (card.verdict !== 'N-A') {
-          console.error(`PM   ${card.verdict.toUpperCase().padEnd(4)} ${comp.padEnd(24)} ${id.padEnd(40)} cand=${card.candidates}`);
+    const pmTargets = storyIds
+      .map(id => ({id, comp: componentFromId(id)}))
+      .filter(({comp}) => !FILTER.length || FILTER.includes(comp.toLowerCase()));
+    pmResults.push(
+      ...(await mapPool(pmTargets, pages, async ({id, comp}, workerPage) => {
+        try {
+          const card = await autoPositionalMirror(workerPage, port, id, comp);
+          if (card.verdict !== 'N-A') {
+            console.error(`PM   ${card.verdict.toUpperCase().padEnd(4)} ${comp.padEnd(24)} ${id.padEnd(40)} cand=${card.candidates}`);
+          }
+          return card;
+        } catch (e) {
+          console.error(`PM   ERROR ${comp} ${id}: ${String(e).slice(0, 120)}`);
+          return {component: comp, storyId: id, dim: 'D5-positional', verdict: 'ERROR', notes: [String(e).slice(0, 160)], candidates: 0, fails: []};
         }
-      } catch (e) {
-        pmResults.push({component: comp, storyId: id, dim: 'D5-positional', verdict: 'ERROR', notes: [String(e).slice(0, 160)], candidates: 0, fails: []});
-        console.error(`PM   ERROR ${comp} ${id}: ${String(e).slice(0, 120)}`);
-      }
-    }
+      })),
+    );
   }
 
   // ---- (B) curated precision dims ----
+  // Deliberately serial on one page: only a handful of targets, and these do
+  // multi-step interactions (setup clicks, scroll assertions) where a shared
+  // machine under load is more likely to change behaviour than to save time.
   const curatedResults = [];
   if (!AUTO_ONLY) {
     let targets = [];
@@ -696,6 +749,7 @@ function componentFromId(id) {
     }
   }
 
+  await Promise.all(pages.map(p => p.close().catch(() => {})));
   await browser.close();
   server.close();
 
@@ -723,13 +777,6 @@ function componentFromId(id) {
       fail: pmFails.length,
       na: pmResults.filter(r => r.verdict === 'N-A').length,
       tolerancePx: PM_TOL,
-      // Avatar status-dot is a KNOWN-REAL bug on main: the dot uses a physical
-      // `right` anchor + `translate(50%,50%)`, so it stays bottom-right in RTL
-      // instead of mirroring to bottom-left. The fix is on the #4564 branch, not
-      // main — so on this branch (off main) D5 correctly flags Avatar. It is a
-      // real finding, NOT a false positive, and is left to surface (soft-gate =
-      // non-blocking). Documented so reviewers know it clears once #4564 lands.
-      knownRealPending: ['Avatar (status-dot) — real RTL bug on main, fix in #4564'],
       // fails carry per-element cls + LTR/RTL relCenterX + delta (actionable).
       results: pmResults,
     },

@@ -284,11 +284,7 @@ const styles = stylex.create({
 
 export type SwitchLabelPosition = 'start' | 'end';
 
-export type SwitchLabelSpacing =
-  | 'hug'
-  | 'spread'
-  /** @deprecated Use `'hug'` instead. */
-  | 'default';
+export type SwitchLabelSpacing = 'hug' | 'spread';
 
 export interface SwitchProps extends Omit<BaseProps, 'onChange'> {
   /** Ref forwarded to the root element */
@@ -402,8 +398,6 @@ export interface SwitchProps extends Omit<BaseProps, 'onChange'> {
    * Spacing behavior between label and switch.
    * - 'hug': Label and switch are positioned next to each other
    * - 'spread': Label and switch are pushed to opposite ends
-   *
-   * 'default' is a deprecated alias for 'hug'.
    * @default 'hug'
    */
   labelSpacing?: SwitchLabelSpacing;
@@ -481,10 +475,6 @@ export function Switch({
   const isBusy = isLoading || optimisticValue !== value;
 
   const isOn = optimisticValue === true;
-
-  // 'default' is a deprecated alias for 'hug' (#2889).
-  const resolvedLabelSpacing: SwitchLabelSpacing =
-    labelSpacing === 'default' ? 'hug' : labelSpacing;
 
   // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
   // tooltip listeners attach to the switch row (which already exists) and the
@@ -617,8 +607,7 @@ export function Switch({
       {...mergeProps(
         themeProps('switch-field', {
           labelPosition: labelPosition !== 'end' ? labelPosition : undefined,
-          labelSpacing:
-            resolvedLabelSpacing !== 'hug' ? resolvedLabelSpacing : undefined,
+          labelSpacing: labelSpacing !== 'hug' ? labelSpacing : undefined,
         }),
         stylex.props(width != null && dynamicWidthStyles.width(width), xstyle),
         className,
@@ -637,7 +626,7 @@ export function Switch({
         }}
         {...stylex.props(
           styles.container,
-          resolvedLabelSpacing === 'spread' && styles.containerSpread,
+          labelSpacing === 'spread' && styles.containerSpread,
           !isDisabled && switchScope,
         )}>
         {' '}
@@ -654,14 +643,13 @@ export function Switch({
         )}
       </div>
       {status?.message && (
-        <div {...stylex.props(styles.statusGap)}>
-          <FieldStatus
-            type={status.type}
-            message={status.message}
-            id={statusMessageID}
-            variant="detached"
-          />
-        </div>
+        <FieldStatus
+          type={status.type}
+          message={status.message}
+          id={statusMessageID}
+          variant="detached"
+          xstyle={styles.statusGap}
+        />
       )}
       {showsDisabledMessage &&
         disabledMessageTooltip.renderTooltip(disabledMessage)}

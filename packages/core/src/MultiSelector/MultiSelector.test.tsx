@@ -22,8 +22,12 @@ import {MultiSelector} from './MultiSelector';
 import {Icon} from '../Icon';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {defineTheme} from '../theme/defineTheme';
-import {generateThemeCSSFlat} from '../theme/generateThemeRules';
+import {generateThemeCSS} from '../theme/generateThemeRules';
 
+function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
+  const {prose, component} = generateThemeCSS(theme);
+  return [prose, component].filter(Boolean).join('\n\n');
+}
 // Module-level constants to satisfy @eslint-react/no-unstable-default-props.
 const ANNOUNCE_OPTIONS = ['Apple', 'Banana', 'Orange'] as const;
 const EMPTY_VALUE: string[] = [];
@@ -1458,6 +1462,51 @@ describe('MultiSelector statusVariant forwarding', () => {
       container.querySelector('.astryx-multi-selector-indicator-icon'),
     ).not.toBeNull();
   });
+
+  it('detaches attached status by default for the ghost variant', () => {
+    const {container} = render(
+      <MultiSelector
+        label="Fruit"
+        options={['Apple', 'Banana']}
+        value={[]}
+        onChange={() => {}}
+        variant="ghost"
+        status={{type: 'error', message: 'Required'}}
+      />,
+    );
+    expect(container.querySelector('.astryx-multi-selector')).toHaveAttribute(
+      'data-variant',
+      'ghost',
+    );
+    expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+      'data-variant',
+      'detached',
+    );
+  });
+
+  it('uses a status tooltip for ghost multi-selectors when requested', () => {
+    const {container} = render(
+      <MultiSelector
+        label="Fruit"
+        options={['Apple', 'Banana']}
+        value={[]}
+        onChange={() => {}}
+        variant="ghost"
+        status={{type: 'warning', message: 'Some rows are hidden'}}
+        statusVariant="tooltip"
+      />,
+    );
+    expect(container.querySelector('.astryx-field-status')).toBeNull();
+    const statusButton = screen.getByRole('button', {
+      name: /warning details/i,
+    });
+    const tooltip = screen.getByRole('tooltip', h);
+    expect(tooltip).toHaveTextContent('Some rows are hidden');
+    expect(statusButton.getAttribute('aria-describedby')).toContain(tooltip.id);
+    expect(
+      screen.getByRole('combobox').getAttribute('aria-describedby'),
+    ).toContain(tooltip.id);
+  });
 });
 
 describe('MultiSelector clear icon theme target', () => {
@@ -1560,7 +1609,7 @@ describe('MultiSelector clear icon theme target', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('.astryx-multi-selector-clear-icon {');
     expect(css).toContain('width: 12px');
     expect(css).toContain('height: 12px');
@@ -1673,11 +1722,152 @@ describe('MultiSelector indicator (chevron) icon theme target', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('.astryx-multi-selector-indicator-icon {');
     expect(css).toContain('width: 14px');
     expect(css).toContain('height: 14px');
     expect(css).toContain('.astryx-multi-selector-indicator-icon.expanded');
     expect(css).toContain('color: var(--color-icon-primary)');
+  });
+});
+
+describe('MultiSelector search affordances', () => {
+  it('renders a decorative (aria-hidden) magnifier icon whenever hasSearch is on', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={['Apple', 'Banana', 'Orange']}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    const search = screen.getByRole('combobox', h);
+    // The search field is a TextInput; the magnifier is its startIcon, so it
+    // sits inside the input container as a sibling of the <input>.
+    const wrapper = search.parentElement;
+    const magnifier = wrapper?.querySelector('.astryx-icon');
+    expect(magnifier).toBeTruthy();
+    expect(magnifier?.getAttribute('aria-hidden')).toBe('true');
+    expect(magnifier?.getAttribute('aria-label')).toBeNull();
+  });
+
+  it('renders the clear button once a query is typed and clears + refocuses on click', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={['Apple', 'Banana', 'Orange']}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    const search = screen.getByRole('combobox', h);
+    await user.type(search, 'ap');
+    expect(search).toHaveValue('ap');
+
+    // The clear button is TextInput's built-in hasClear affordance; its name is
+    // derived from the field label ("Search options").
+    const clear = screen.getByRole('button', {
+      name: 'Clear Search options',
+      hidden: true,
+    });
+
+    await user.click(clear);
+    expect(search).toHaveValue('');
+    expect(search).toHaveFocus();
+  });
+
+  it('does not render the clear button when the query is empty', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={['Apple', 'Banana', 'Orange']}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    expect(
+      screen.queryByRole('button', {
+        name: 'Clear Search options',
+        hidden: true,
+      }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('keeps the combobox contract on the input, not the affordances', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={['Apple', 'Banana', 'Orange']}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    const search = screen.getByRole('combobox', h);
+    expect(search.tagName).toBe('INPUT');
+    expect(search).toHaveAttribute('aria-autocomplete', 'list');
+  });
+
+  it('tabs from the search input to the clear button (keeping the popup open) when a query is showing it', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={['Apple', 'Banana', 'Orange']}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    const trigger = screen.getByRole('button', {name: 'Fruit'});
+    const search = screen.getByRole('combobox', h);
+    await user.type(search, 'ap');
+    expect(search).toHaveFocus();
+
+    // Forward-tab lands on the clear (✕) button and the popup stays open, so
+    // the affordance is keyboard-reachable rather than being skipped when the
+    // input's Tab dismisses the popup.
+    await user.tab();
+    const clear = screen.getByRole('button', {
+      name: 'Clear Search options',
+      hidden: true,
+    });
+    expect(clear).toHaveFocus();
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('dismisses on Tab from the search input when there is no query (no clear button)', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={['Apple', 'Banana', 'Orange']}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    const trigger = screen.getByRole('button', {name: 'Fruit'});
+    await user.click(trigger);
+    const search = screen.getByRole('combobox', h);
+    // Focus moves into the search input on open (via rAF).
+    await waitFor(() => expect(search).toHaveFocus());
+
+    // With no query there is no clear button, so Tab dismisses the popup as a
+    // plain combobox does.
+    await user.tab();
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
 });

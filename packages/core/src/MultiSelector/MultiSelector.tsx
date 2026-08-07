@@ -41,6 +41,7 @@ import {
 } from '../Field';
 import {Divider} from '../Divider';
 import {Spinner} from '../Spinner';
+import {TextInput} from '../TextInput';
 import {CheckboxInput} from '../CheckboxInput';
 import {Badge} from '../Badge';
 import {
@@ -176,6 +177,47 @@ const styles = stylex.create({
   triggerIconStatus: {
     transition: 'none',
   },
+  triggerGhost: {
+    width: 'auto',
+    borderWidth: 0,
+    backgroundColor: 'transparent',
+    backgroundImage: {
+      default: null,
+      ':hover': {
+        '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
+      },
+      ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
+    },
+    boxShadow: {
+      default: 'none',
+      ':hover:not(:focus-within)': {
+        '@media (hover: hover)': 'none',
+      },
+      ':focus-within': 'none',
+    },
+    fontWeight: fontWeightVars['--font-weight-medium'],
+    outline: {
+      default: 'none',
+      ':has(:focus-visible)': `2px solid ${colorVars['--color-accent']}`,
+    },
+    outlineOffset: {
+      default: '0',
+      ':has(:focus-visible)': '3px',
+    },
+    transitionProperty:
+      'background-image, background-color, color, opacity, transform',
+    transform: {
+      default: 'scale(1)',
+      ':active': 'scale(0.98)',
+    },
+  },
+  triggerGhostDisabled: {
+    backgroundImage: 'none',
+    transform: {
+      default: 'none',
+      ':active': 'none',
+    },
+  },
 
   // Clear button
   clearButton: {
@@ -187,6 +229,24 @@ const styles = stylex.create({
     borderWidth: 0,
     borderStyle: 'none',
     backgroundColor: 'transparent',
+    cursor: 'pointer',
+    borderRadius: radiusVars['--radius-element'],
+    outline: {
+      default: 'none',
+      ':focus-visible': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
+    },
+    outlineOffset: 1,
+  },
+  statusButton: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 0,
+    margin: 0,
+    borderWidth: 0,
+    borderStyle: 'none',
+    backgroundColor: 'transparent',
+    color: 'inherit',
     cursor: 'pointer',
     borderRadius: radiusVars['--radius-element'],
     outline: {
@@ -210,32 +270,14 @@ const styles = stylex.create({
     marginBlockStart: spacingVars['--spacing-1'],
   },
 
-  // Search input
+  // Search field. The inner TextInput owns the border, focus ring, magnifier
+  // (startIcon), and clear button (hasClear); this wrapper only supplies the
+  // dropdown's inline/block padding around it.
   searchWrapper: {
+    display: 'flex',
+    alignItems: 'center',
     paddingInline: spacingVars['--spacing-2'],
     paddingBlock: spacingVars['--spacing-1'],
-  },
-  searchInput: {
-    boxSizing: 'border-box',
-    width: '100%',
-    paddingBlock: spacingVars['--spacing-1'],
-    paddingInline: spacingVars['--spacing-2'],
-    borderWidth: borderVars['--border-width'],
-    borderStyle: 'solid',
-    borderColor: colorVars['--color-border-emphasized'],
-    borderRadius: radiusVars['--radius-element'],
-    backgroundColor: colorVars['--color-background-surface'],
-    fontFamily: typographyVars['--font-family-body'],
-    fontSize: {
-      default: typeScaleVars['--text-label-size'],
-      '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-label-size']})`,
-    },
-    color: colorVars['--color-text-primary'],
-    outline: {
-      default: 'none',
-      ':focus': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: '0',
   },
 
   // Select-all wrapper
@@ -364,7 +406,15 @@ const STATUS_ICON_COLOR_MAP: Record<
   success: 'success',
 };
 
+const STATUS_BUTTON_LABEL_KEY: Record<MultiSelectorStatusType, string> = {
+  warning: '@astryx.input.statusButton.warning',
+  error: '@astryx.input.statusButton.error',
+  success: '@astryx.input.statusButton.success',
+};
+
 export type MultiSelectorSize = 'sm' | 'md' | 'lg';
+
+export type MultiSelectorVariant = 'input' | 'ghost';
 
 export type MultiSelectorStatusType = 'warning' | 'error' | 'success';
 
@@ -478,14 +528,23 @@ export interface MultiSelectorProps<
   size?: MultiSelectorSize;
 
   /**
+   * Visual style of the selector trigger.
+   * - 'input': bordered input-style trigger for forms
+   * - 'ghost': borderless trigger matching ghost buttons, for toolbars
+   * @default 'input'
+   */
+  variant?: MultiSelectorVariant;
+
+  /**
    * Status indicator for the selector.
    */
   status?: MultiSelectorStatus;
   /**
    * How the status message is placed relative to the input.
-   * - 'attached': message overlaps directly below the input (bordered treatment)
+   * - 'attached': message overlaps directly below the bordered input (input variant only)
    * - 'detached': message floats below as a separate element with spacing
-   * @default 'attached'
+   * - 'tooltip': message is exposed from the on-field status icon
+   * @default 'attached' for input selectors; 'detached' for ghost selectors
    */
   statusVariant?: FieldStatusVariant;
 
@@ -630,6 +689,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   isLoading = false,
   placeholder: placeholderFromProps,
   size: sizeProp,
+  variant = 'input',
   status,
   statusVariant = 'attached',
   labelTooltip,
@@ -658,6 +718,11 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   const searchPlaceholder =
     searchPlaceholderFromProps ?? t('@astryx.multiSelector.searchPlaceholder');
   const size = useSize(sizeProp, 'md');
+  const effectiveStatusVariant =
+    variant === 'ghost' && statusVariant === 'attached'
+      ? 'detached'
+      : statusVariant;
+
   const triggerId = useId();
   const listboxId = useId();
   const descriptionId = useId();
@@ -669,6 +734,9 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   const inputGroup = useInputGroup();
 
   const [searchQuery, setSearchQuery] = useState('');
+  // A typed query shows TextInput's built-in clear (✕) button, which becomes
+  // the next tab stop after the search input.
+  const hasQuery = searchQuery.length > 0;
 
   // Snapshot of which values were selected when the dropdown opened.
   // Stored as state (not a ref) so sortedItems recomputes exactly once on open,
@@ -694,12 +762,21 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     focusTrigger: 'always',
     isEnabled: showsDisabledMessage,
   });
+  const statusTooltip = useTooltip({
+    placement: 'above',
+    isEnabled: effectiveStatusVariant === 'tooltip' && !!status?.message,
+  });
 
   const {ariaLabelledBy, ariaDescribedBy} = getInputARIA(
     inputLabelId,
     [
       description ? descriptionId : null,
-      status?.message ? statusMessageId : null,
+      !inputGroup && effectiveStatusVariant !== 'tooltip' && status?.message
+        ? statusMessageId
+        : null,
+      effectiveStatusVariant === 'tooltip' && status?.message
+        ? statusTooltip.describedBy
+        : null,
       showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
     ],
     inputGroup,
@@ -818,8 +895,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   // not re-speak on unrelated re-renders. Reuses the announce instance shared
   // with the selection-count announcements above.
   const handleSearchChange = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      const nextQuery = event.target.value;
+    (nextQuery: string) => {
       setSearchQuery(nextQuery);
       if (nextQuery.length === 0) {
         // Emptying the query clears the region rather than announcing a count.
@@ -1065,13 +1141,41 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       return null;
     }
     return (
-      <div {...stylex.props(styles.searchWrapper)}>
-        <input
+      <div
+        {...stylex.props(styles.searchWrapper)}
+        onKeyDown={e => {
+          // The clear (✕) button lives inside the TextInput, after the input in
+          // DOM order. When it is focused and the user tabs forward there is
+          // nothing else in the popup, so dismiss it (Shift+Tab returns to the
+          // input natively). Key events originating on the input are handled on
+          // the input below; ignore them here so we don't double-dismiss.
+          if (e.target === searchRef.current) {
+            return;
+          }
+          if (e.key === 'Tab' && !e.shiftKey) {
+            onKeyDown(e);
+          }
+        }}>
+        <TextInput
           ref={searchRef}
           id={searchId}
+          // The search field IS a TextInput: the leading magnifier is its
+          // `startIcon` and the trailing clear (✕) is its built-in `hasClear`
+          // (which resets the value and refocuses the input). We add no bespoke
+          // affordance chrome — the field just looks and behaves like every
+          // other Astryx input.
+          label={t('@astryx.multiSelector.searchOptions')}
+          isLabelHidden
+          startIcon="search"
+          hasClear
+          size="sm"
+          // Fill the dropdown's width (minus the wrapper's inline padding) so
+          // the field is flush end-to-end rather than sized to its content.
+          width="100%"
           // When hasSearch is set, focus moves into this input on open, so it —
           // not the trigger — must be the combobox reporting the highlighted
-          // option via aria-activedescendant (comboboxes-4).
+          // option via aria-activedescendant (comboboxes-4). role + aria-* pass
+          // through to the underlying <input> via BaseProps.
           role="combobox"
           aria-expanded={popover.isOpen}
           aria-controls={listboxId}
@@ -1081,12 +1185,10 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
               ? getItemId(highlightedIndex)
               : undefined
           }
-          aria-label={t('@astryx.multiSelector.searchOptions')}
-          type="text"
           value={searchQuery}
           onChange={handleSearchChange}
           onKeyDown={e => {
-            // Arrow keys navigate options; Enter toggles; Escape/Tab close.
+            // Arrow keys navigate options; Enter toggles; Escape closes.
             // Space and Home/End are left to the input (type a space / move
             // the caret) per the APG editable combobox; PageUp/PageDown are
             // the sanctioned substitute for jumping to the first/last option.
@@ -1096,14 +1198,19 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
               e.key === 'PageUp' ||
               e.key === 'PageDown' ||
               e.key === 'Enter' ||
-              e.key === 'Escape' ||
-              e.key === 'Tab'
+              e.key === 'Escape'
             ) {
+              onKeyDown(e);
+              return;
+            }
+            // Tab: when a query is showing the clear (✕) button, forward-tab
+            // moves focus to it (keeping the popup open) so the affordance is
+            // keyboard-reachable. Every other Tab dismisses the popup as usual.
+            if (e.key === 'Tab' && (e.shiftKey || !hasQuery)) {
               onKeyDown(e);
             }
           }}
           placeholder={searchPlaceholder}
-          {...stylex.props(styles.searchInput)}
         />
       </div>
     );
@@ -1112,6 +1219,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     searchId,
     listboxId,
     searchQuery,
+    hasQuery,
     searchPlaceholder,
     handleSearchChange,
     onKeyDown,
@@ -1315,7 +1423,10 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
 
   // The detached message box renders its own leading status icon, so the
   // on-field icon would duplicate it — keep the chevron indicator instead.
-  const showStatusIcon = status != null && statusVariant !== 'detached';
+  const showStatusIcon =
+    status != null && effectiveStatusVariant !== 'detached';
+  const showStatusTooltip =
+    status != null && effectiveStatusVariant === 'tooltip' && !!status.message;
 
   const multiSelectorContent = (
     <>
@@ -1330,16 +1441,27 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         onClick={onTriggerClick}
         data-testid={testId}
         {...mergeProps(
-          themeProps('multi-selector', {size, status: status?.type ?? null}),
+          themeProps('multi-selector', {
+            variant,
+            size,
+            status: status?.type ?? null,
+          }),
           stylex.props(
             inputWrapperStyles.base,
             styles.triggerContainer,
             sizeStyles[size],
+            variant === 'ghost' && styles.triggerGhost,
             isDisabled && inputWrapperStyles.disabled,
+            variant === 'ghost' && isDisabled && styles.triggerGhostDisabled,
             optimisticValue.length === 0 && styles.triggerPlaceholder,
-            status && inputStatusBorderStyles[status.type],
-            status && !isDisabled && inputStatusHoverShadowStyles[status.type],
-            inputGroup && groupStyles.inGroup,
+            variant !== 'ghost' &&
+              status &&
+              inputStatusBorderStyles[status.type],
+            variant !== 'ghost' &&
+              status &&
+              !isDisabled &&
+              inputStatusHoverShadowStyles[status.type],
+            variant !== 'ghost' && inputGroup && groupStyles.inGroup,
             xstyle,
           ),
           className,
@@ -1422,11 +1544,27 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
             showStatusIcon && styles.triggerIconStatus,
           )}>
           {showStatusIcon ? (
-            <Icon
-              icon={STATUS_ICON_MAP[status.type]}
-              size="sm"
-              color={STATUS_ICON_COLOR_MAP[status.type]}
-            />
+            showStatusTooltip ? (
+              <button
+                ref={statusTooltip.ref}
+                type="button"
+                aria-label={t(STATUS_BUTTON_LABEL_KEY[status.type])}
+                aria-describedby={statusTooltip.describedBy}
+                onClick={e => e.stopPropagation()}
+                {...stylex.props(styles.statusButton)}>
+                <Icon
+                  icon={STATUS_ICON_MAP[status.type]}
+                  size="sm"
+                  color={STATUS_ICON_COLOR_MAP[status.type]}
+                />
+              </button>
+            ) : (
+              <Icon
+                icon={STATUS_ICON_MAP[status.type]}
+                size="sm"
+                color={STATUS_ICON_COLOR_MAP[status.type]}
+              />
+            )
           ) : (
             <Icon
               icon="chevronDown"
@@ -1463,6 +1601,8 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         },
       )}
 
+      {showStatusTooltip && statusTooltip.renderTooltip(status?.message ?? '')}
+
       {showsDisabledMessage &&
         disabledMessageTooltip.renderTooltip(disabledMessage)}
     </>
@@ -1491,7 +1631,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
             }
           : undefined
       }
-      statusVariant={statusVariant}
+      statusVariant={effectiveStatusVariant}
       labelTooltip={labelTooltip}
       width={width}>
       {multiSelectorContent}

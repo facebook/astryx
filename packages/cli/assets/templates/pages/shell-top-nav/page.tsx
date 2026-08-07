@@ -146,7 +146,7 @@ export default function ShellTopNav() {
               logo={
                 <NavIcon icon={<Icon icon={ShoppingBagIcon} size="sm" />} />
               }
-              href="#"
+              headingHref="#"
             />
           }
           centerContent={
@@ -158,7 +158,7 @@ export default function ShellTopNav() {
                   <MegaFeatured
                     title="The Autumn Edit"
                     description="Layering staples in warm, earthy tones."
-                    image="https://lookaside.facebook.com/assets/astryx/texture-beige-horizontal-1.png"
+                    image="/template-assets/texture-beige-horizontal-1.png"
                     imageAlt="Autumn collection lookbook"
                     linkLabel="Shop the edit"
                     linkHref="#autumn-edit"
@@ -172,7 +172,7 @@ export default function ShellTopNav() {
                   <MegaFeatured
                     title="Meet Studio Mara"
                     description="Modern tailoring, made to last."
-                    image="https://lookaside.facebook.com/assets/astryx/texture-beige-horizontal-2.png"
+                    image="/template-assets/texture-beige-horizontal-2.png"
                     imageAlt="Studio Mara lookbook"
                     linkLabel="Discover the label"
                     linkHref="#studio-mara"
@@ -208,7 +208,7 @@ export default function ShellTopNav() {
         {[0, 1, 2].map(section => (
           <VStack key={section} gap={4}>
             <Card variant="muted" padding={0} width={200} height={24} />
-            <Grid minChildWidth={160} gap={4}>
+            <Grid columns={{minWidth: 160, repeat: 'fit'}} gap={4}>
               {CATEGORY_TILES.map(tile => (
                 <VStack key={tile} gap={2}>
                   <Card variant="muted" padding={0} width="100%" height={120} />

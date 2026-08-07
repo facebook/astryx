@@ -76,9 +76,7 @@ export const docs = {
       type: 'DialogPosition',
       description:
         'Static position for the dialog; centered by default when omitted. ' +
-        'Prefer logical `start`/`end` (they map correctly under RTL) over the ' +
-        'deprecated physical `left`/`right`, which do not mirror. Logical ' +
-        'wins if both are set.',
+        'Use logical `start`/`end` for inline offsets so positioned dialogs mirror correctly under RTL.',
     },
     {
       name: 'variant',

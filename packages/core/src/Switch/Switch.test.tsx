@@ -619,31 +619,6 @@ describe('Switch', () => {
       expect(getField(explicit)).not.toHaveAttribute('data-label-spacing');
       expect(getField(explicit).className).toBe(getField(implicit).className);
     });
-
-    it("treats the deprecated 'default' value as an alias for hug", () => {
-      const {container: hug} = render(
-        <Switch
-          label="Notify"
-          value={false}
-          onChange={() => {}}
-          labelSpacing="hug"
-        />,
-      );
-      const {container: deprecated} = render(
-        <Switch
-          label="Notify"
-          value={false}
-          onChange={() => {}}
-          labelSpacing="default"
-        />,
-      );
-      expect(getField(deprecated)).not.toHaveAttribute('data-label-spacing');
-      expect(getField(deprecated).className).toBe(getField(hug).className);
-      // The switch row keeps the hug layout, not the spread justification.
-      expect(getField(deprecated).firstElementChild?.className).toBe(
-        getField(hug).firstElementChild?.className,
-      );
-    });
   });
   describe('form participation', () => {
     it('submits under htmlName when on', () => {

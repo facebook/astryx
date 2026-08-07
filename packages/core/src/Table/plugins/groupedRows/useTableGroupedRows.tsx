@@ -177,7 +177,7 @@ const styles = stylex.create({
  * toggle, the group label, and a member count; collapsing hides that group's
  * data rows while keeping the header visible.
  *
- * Mirrors {@link useTableRowExpansionState}: the consumer owns the
+ * Mirrors other controlled Table state helpers: the consumer owns the
  * `collapsedGroups` set and this hook returns `{data, plugin, idKey}` —
  * pass all three to `<Table>`.
  *

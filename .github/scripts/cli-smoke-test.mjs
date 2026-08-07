@@ -85,43 +85,52 @@ const DETAIL_LEVELS = detailMatch
 
 console.log(`detail levels: ${DETAIL_LEVELS.join(', ')}`);
 
+// Parse a command's --json envelope. The JSON output is the CLI's source of
+// truth; the human text is a projection, so discovery must not scrape it.
+function runJson(args) {
+  const {stdout} = run(args);
+  try {
+    return JSON.parse(stdout);
+  } catch {
+    return null;
+  }
+}
+
 // ---------------------------------------------------------------------------
-// 2. Discover components from astryx component --list
+// 2. Discover components from astryx component --list --json
 // ---------------------------------------------------------------------------
 console.log('\ncomponent listing');
 check('astryx component --list', ['component', '--list']);
 
-const listResult = run(['component', '--list']);
-const componentNames = listResult.stdout
-  .split('\n')
-  .filter(line => /^\s+[A-Z]/.test(line))
-  .map(line => line.trim().split(/\s{2,}/)[0]);
+// data.components is a map of category/group key -> [{name, package}, ...].
+const listData = runJson(['component', '--list', '--json'])?.data;
+const componentGroups =
+  /** @type {Record<string, Array<{name: string}>>} */ (listData?.components ?? {});
+const componentNames = Object.values(componentGroups)
+  .flat()
+  .map(entry => entry.name);
 
 console.log(`discovered ${componentNames.length} components`);
 
 if (componentNames.length === 0) {
-  console.log('\nFATAL: no components discovered from --list output. Aborting.');
+  console.log('\nFATAL: no components discovered from --list --json output. Aborting.');
   process.exit(1);
 }
 
 // ---------------------------------------------------------------------------
-// 3. Discover categories from the --list output
+// 3. Categories are the group keys of the component map (valid --category args)
 // ---------------------------------------------------------------------------
-const categories = listResult.stdout
-  .split('\n')
-  .filter(line => /^[A-Z].*\(group\)$/.test(line))
-  .map(line => line.replace(/\s*\(group\)$/, ''));
+const categories = Object.keys(componentGroups);
 
 console.log(`discovered ${categories.length} categories: ${categories.join(', ')}`);
 
 // ---------------------------------------------------------------------------
-// 4. Discover doc topics from astryx docs
+// 4. Discover doc topics from astryx docs --json
 // ---------------------------------------------------------------------------
-const docsResult = run(['docs']);
-const docTopics = docsResult.stdout
-  .split('\n')
-  .filter(line => /^\s{2}\w+\s{2,}/.test(line))
-  .map(line => line.trim().split(/\s{2,}/)[0]);
+const docsData = runJson(['docs', '--json'])?.data;
+const docTopics =
+  /** @type {Array<{topic: string}>} */ (Array.isArray(docsData) ? docsData : [])
+    .map(entry => entry.topic);
 
 console.log(`discovered ${docTopics.length} doc topics: ${docTopics.join(', ')}`);
 

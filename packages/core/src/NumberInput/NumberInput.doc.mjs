@@ -192,7 +192,6 @@ export const docs = {
       {name: 'Description', required: false, description: 'Additional description text below the label.'},
       {name: 'Icon', required: false, description: 'An optional icon within the input.'},
       {name: 'Placeholder', required: false, description: 'Placeholder text shown when the input is empty.'},
-      {name: 'Spinner', required: false, description: 'Increment and decrement controls for the value.'},
     ],
   },
 };
@@ -379,7 +378,6 @@ export const docsZh = {
       {name: 'Description', required: false, description: 'Additional description text below the label.'},
       {name: 'Icon', required: false, description: 'An optional icon within the input.'},
       {name: 'Placeholder', required: false, description: 'Placeholder text shown when the input is empty.'},
-      {name: 'Spinner', required: false, description: 'Increment and decrement controls for the value.'},
     ],
   },
 };
@@ -402,7 +400,6 @@ export const docsDense = {
       {name: 'Description', required: false, description: 'Additional description text below the label.'},
       {name: 'Icon', required: false, description: 'An optional icon within the input.'},
       {name: 'Placeholder', required: false, description: 'Placeholder text shown when the input is empty.'},
-      {name: 'Spinner', required: false, description: 'Increment and decrement controls for the value.'},
     ],
   },
   propDescriptions: {

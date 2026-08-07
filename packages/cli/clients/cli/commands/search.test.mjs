@@ -191,10 +191,13 @@ describe('search CLI — exit codes + JSON contract', () => {
     expect(parsed.data.results).toEqual([]);
   });
 
-  it('shows the follow-up command hint in human output', async () => {
+  it('renders each result as a greppable key: value record', async () => {
     const r = await runCli(['search', 'button'], REPO_ROOT);
     expect(r.stdout).toContain('astryx component Button');
-    expect(r.stdout).toContain('[component]');
+    // Fields mirror the JSON object and are line-greppable.
+    expect(r.stdout).toMatch(/^name:\s+Button$/m);
+    expect(r.stdout).toMatch(/^domain:\s+component$/m);
+    expect(r.stdout).toContain('description:');
   });
 
   it('--verbose exits 0 and prints import/match detail', async () => {
@@ -205,6 +208,9 @@ describe('search CLI — exit codes + JSON contract', () => {
     const r = await runCli(['search', 'button', '--verbose'], REPO_ROOT);
     expect(r.status).toBe(0);
     expect(r.stdout).toContain('import:');
-    expect(r.stdout).toContain('match:');
+    // Ranking detail: pre-formatter this was a single `match: <reason> (score N)`
+    // line; it's now separate `score:` / `reason:` record fields mirroring --json.
+    expect(r.stdout).toContain('score:');
+    expect(r.stdout).toContain('reason:');
   });
 }, SCAN_TIMEOUT);

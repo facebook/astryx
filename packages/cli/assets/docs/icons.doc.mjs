@@ -29,6 +29,8 @@ export const docs = {
             ['chevronDown', 'Dropdown triggers, expand/collapse'],
             ['chevronLeft', 'Navigate back, previous'],
             ['chevronRight', 'Navigate forward, next'],
+            ['chevronsLeft', 'Jump to first, skip to start'],
+            ['chevronsRight', 'Jump to last, skip to end'],
             ['check', 'Checkbox checked, confirm'],
             ['success', 'Success status indicator'],
             ['error', 'Error status indicator'],

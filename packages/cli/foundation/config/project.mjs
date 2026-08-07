@@ -42,15 +42,15 @@ import {
 } from '../discovery/component-discovery.mjs';
 import {findCoreDir} from '../fs/paths.mjs';
 import {
-  discoverTemplates,
+  discoverAll as discoverTemplates,
   discoverIntegrationTemplatesForOne,
-} from '../../api/template/template.mjs';
+} from '../discovery/template-adapter.mjs';
 import {getTransformsBetween} from '../../assets/codemods/registry.mjs';
 import {
   discoverIntegrationCodemods,
   selectIntegrationCodemods,
 } from '../../assets/codemods/integration-discovery.mjs';
-import {validateLoadedIntegration} from '../../api/integration/validate-integration.mjs';
+import {validateLoadedIntegration} from '../integrations/validate-contributions.mjs';
 import {
   InMemoryConfigCache,
   cacheKey,

@@ -33,6 +33,7 @@ export * from './Calendar';
 export * from './Center';
 export * from './CodeBlock';
 export * from './CommandPalette';
+export * from './ComplexSelector';
 export * from './Chat';
 export * from './Markdown';
 export * from './Citation';
@@ -173,24 +174,3 @@ export * from './theme';
 
 // Internationalization
 export * from './i18n';
-
-// Doc types — for external library authors writing .doc.mjs files.
-// @deprecated Import these from `@astryxdesign/cli/authoring` instead. These
-// re-exports are kept for one release cycle and will be removed; `astryx upgrade`
-// repoints them automatically.
-export type {
-  ComponentDoc,
-  SingleComponentDoc,
-  MultiComponentDoc,
-  ComponentPropDoc,
-  ComponentEntry,
-  ComponentThemingTarget,
-  ComponentThemingVar,
-  ComponentThemingDerivedVar,
-  ComponentTranslationDoc,
-  ComponentGroupDoc,
-  ReferenceDoc,
-  ReferenceSection,
-  ReferenceContentBlock,
-  ReferenceTokenPreviewType,
-} from '@astryxdesign/cli/authoring';

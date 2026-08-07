@@ -74,12 +74,21 @@ export function nearestOffset(
 }
 
 /**
- * Scrim opacity (1 = fully visible, 0 = hidden) for a drag/settle `offset`.
+ * Minimum scrim opacity at the peek detent. The scrim thins to a glance state
+ * but never fully vanishes, because a modal sheet keeps the background inert —
+ * a fully clear backdrop would read as "interactive" when it isn't. (For a
+ * genuinely interactive, undimmed peek, use a non-modal sheet, `hasScrim=false`.)
+ */
+export const MIN_PEEK_SCRIM_OPACITY = 0.3;
+
+/**
+ * Scrim opacity (1 = fully visible) for a drag/settle `offset`.
  * The scrim stays full while the sheet is at or above its second-shortest
- * detent, then fades to 0 as it collapses onto the shortest ("peek") detent —
- * a glance state that reveals the content behind — and stays hidden below it.
- * A single-detent sheet has no peek, so it instead fades across the dismiss
- * overshoot toward `dismissOffset`.
+ * detent, then fades as it collapses onto the shortest ("peek") detent — a
+ * glance state that thins the backdrop to `MIN_PEEK_SCRIM_OPACITY` (not fully
+ * gone, since the sheet is still modal) and holds there below it.
+ * A single-detent sheet has no peek, so it instead fades all the way to 0
+ * across the dismiss overshoot toward `dismissOffset` (the sheet is leaving).
  */
 export function scrimOpacityForOffset(
   offset: number,
@@ -87,15 +96,19 @@ export function scrimOpacityForOffset(
   dismissOffset: number,
 ): number {
   const shortest = offsets[offsets.length - 1];
-  const fadeStart = offsets.length >= 2 ? offsets[offsets.length - 2] : 0;
-  const fadeEnd = offsets.length >= 2 ? shortest : dismissOffset;
+  const hasPeek = offsets.length >= 2;
+  const fadeStart = hasPeek ? offsets[offsets.length - 2] : 0;
+  const fadeEnd = hasPeek ? shortest : dismissOffset;
+  // Peek is a resting state on a still-modal sheet, so keep a floor; the
+  // dismiss overshoot is a sheet on its way out, so let it clear completely.
+  const floor = hasPeek ? MIN_PEEK_SCRIM_OPACITY : 0;
   if (offset <= fadeStart) {
     return 1;
   }
   if (offset >= fadeEnd) {
-    return 0;
+    return floor;
   }
-  return 1 - (offset - fadeStart) / (fadeEnd - fadeStart);
+  return 1 - (1 - floor) * ((offset - fadeStart) / (fadeEnd - fadeStart));
 }
 
 /**

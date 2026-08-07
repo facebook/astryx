@@ -19,7 +19,7 @@
  *     ADDS a one-line nudge.
  */
 
-import {validateLoadedIntegration} from '../../api/integration/validate-integration.mjs';
+import {validateLoadedIntegration} from './validate-contributions.mjs';
 
 /**
  * For each configured (already-loaded) integration, compute its issues using

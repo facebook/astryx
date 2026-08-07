@@ -468,7 +468,7 @@ function PositionedModalExample() {
       <Dialog
         isOpen={isOpen}
         onOpenChange={open => setIsOpen(open)}
-        position={{top: 100, right: 20}}
+        position={{top: 100, end: 20}}
         width={350}>
         <Layout
           header={
@@ -480,7 +480,7 @@ function PositionedModalExample() {
           content={
             <LayoutContent>
               <Text type="body">
-                This modal is positioned at top: 100px, right: 20px instead of
+                This modal is positioned at top: 100px, end: 20px instead of
                 being centered.
               </Text>
             </LayoutContent>

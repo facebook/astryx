@@ -272,23 +272,6 @@ export const easeDefaults = {
 export const easeVars = stylex.defineVars(easeDefaults);
 
 export type EaseVarName = keyof typeof easeDefaults;
-
-// =============================================================================
-// Motion Tokens — Deprecated (transition shorthand)
-// =============================================================================
-
-/** @deprecated Use durationVars + easeVars instead */
-export const transitionDefaults = {
-  '--transition-fast': '0.15s ease',
-  '--transition-normal': '0.2s ease',
-} as const;
-
-/** @deprecated Use durationVars + easeVars instead */
-export const transitionRaw = transitionDefaults;
-
-/** @deprecated Use durationVars + easeVars instead */
-export const transitionVars = stylex.defineVars(transitionDefaults);
-
 // =============================================================================
 // Typography Tokens - Font Families
 // =============================================================================
@@ -347,8 +330,6 @@ export type SpacingVarName = keyof typeof spacingDefaults;
 export type SizeVarName = keyof typeof sizeDefaults;
 export type RadiusVarName = keyof typeof radiusDefaults;
 export type ShadowVarName = keyof typeof shadowDefaults;
-/** @deprecated Use DurationVarName | EaseVarName instead */
-export type TransitionVarName = keyof typeof transitionDefaults;
 export type TypographyVarName = keyof typeof typographyDefaults;
 export type TextSizeVarName = keyof typeof textSizeDefaults;
 export type FontWeightVarName = keyof typeof fontWeightDefaults;

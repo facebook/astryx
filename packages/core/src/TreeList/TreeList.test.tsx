@@ -15,8 +15,12 @@ import userEvent from '@testing-library/user-event';
 import {TreeList} from './TreeList';
 import type {TreeListItemData} from './TreeListTypes';
 import {defineTheme} from '../theme/defineTheme';
-import {generateThemeCSSFlat} from '../theme/generateThemeRules';
+import {generateThemeCSS} from '../theme/generateThemeRules';
 
+function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
+  const {prose, component} = generateThemeCSS(theme);
+  return [prose, component].filter(Boolean).join('\n\n');
+}
 const simpleItems: TreeListItemData[] = [
   {id: 'a', label: 'Item A'},
   {id: 'b', label: 'Item B'},
@@ -485,7 +489,7 @@ describe('TreeList', () => {
           },
         },
       });
-      const css = generateThemeCSSFlat(theme);
+      const css = generateThemeTestCSS(theme);
       expect(css).toContain('.astryx-tree-list-guide {');
       expect(css).toContain('background-color: var(--color-accent)');
     });
@@ -501,7 +505,7 @@ describe('TreeList', () => {
           },
         },
       });
-      const css = generateThemeCSSFlat(theme);
+      const css = generateThemeTestCSS(theme);
       expect(css).toContain('.astryx-tree-list-guide {');
       expect(css).toContain('display: none');
     });
@@ -525,7 +529,7 @@ describe('TreeList', () => {
           },
         },
       });
-      const css = generateThemeCSSFlat(theme);
+      const css = generateThemeTestCSS(theme);
       expect(css).toContain('.astryx-tree-list {');
       expect(css).toContain('--tree-list-indent: var(--spacing-5)');
     });
@@ -609,7 +613,7 @@ describe('TreeList', () => {
           },
         },
       });
-      const css = generateThemeCSSFlat(theme);
+      const css = generateThemeTestCSS(theme);
       expect(css).toContain('.astryx-tree-list-chevron {');
       expect(css).toContain('color: var(--color-accent)');
       expect(css).toContain('.astryx-tree-list-chevron.expanded');
@@ -667,7 +671,7 @@ describe('TreeList', () => {
           },
         },
       });
-      const css = generateThemeCSSFlat(theme);
+      const css = generateThemeTestCSS(theme);
       expect(css).toContain('.astryx-tree-list-item-label {');
       expect(css).toContain('color: var(--color-text-primary)');
       expect(css).toContain('.astryx-tree-list-item-label.selected');

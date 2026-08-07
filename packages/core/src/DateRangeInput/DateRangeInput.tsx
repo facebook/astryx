@@ -45,7 +45,13 @@ import {
 } from '../Field';
 import {Icon} from '../Icon';
 import {Spinner} from '../Spinner';
-import {Calendar, type ISODateString, type DateRange} from '../Calendar';
+import {
+  Calendar,
+  type ISODateString,
+  type DateRange,
+  type DayOfWeek,
+  type DayOfWeekName,
+} from '../Calendar';
 import {usePopover} from '../Popover';
 import {useTooltip} from '../Tooltip';
 import {mergeProps} from '../utils';
@@ -355,6 +361,14 @@ export interface DateRangeInputProps extends Omit<
    * @default 2
    */
   numberOfMonths?: 1 | 2;
+
+  /**
+   * First day of week in the calendar. Accepts a number
+   * (0 = Sunday … 6 = Saturday) or a three-letter day name ('sun'–'sat',
+   * case-insensitive).
+   * @default 0
+   */
+  weekStartsOn?: DayOfWeek | DayOfWeekName;
 }
 
 /**
@@ -396,6 +410,7 @@ export function DateRangeInput({
   statusVariant = 'attached',
   labelTooltip,
   numberOfMonths = 2,
+  weekStartsOn,
   width,
   xstyle,
   className,
@@ -667,6 +682,7 @@ export function DateRangeInput({
             max={max}
             dateConstraints={dateConstraints}
             numberOfMonths={numberOfMonths}
+            weekStartsOn={weekStartsOn}
           />
         </div>,
         {placement: 'below', alignment: 'start'},

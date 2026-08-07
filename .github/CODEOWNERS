@@ -1,7 +1,7 @@
 # Default reviewers for the Astryx repository
 # See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 
-* @cixzhang @imdreamrunner @ejhammond
+* @cixzhang @imdreamrunner
 
 /packages/cli/ @josephfarina
 

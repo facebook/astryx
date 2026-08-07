@@ -19,9 +19,13 @@ import type {CalendarHandle} from './Calendar';
 import type {ISODateString} from './Calendar';
 import {calendarStyles} from './styles';
 import {defineTheme} from '../theme/defineTheme';
-import {generateThemeCSSFlat} from '../theme/generateThemeRules';
+import {generateThemeCSS} from '../theme/generateThemeRules';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 
+function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
+  const {prose, component} = generateThemeCSS(theme);
+  return [prose, component].filter(Boolean).join('\n\n');
+}
 afterEach(() => {
   __resetLiveRegionsForTest();
 });
@@ -1148,7 +1152,7 @@ describe('Calendar', () => {
           },
         },
       });
-      const css = generateThemeCSSFlat(theme);
+      const css = generateThemeTestCSS(theme);
       expect(css).toContain('.astryx-calendar-day.today-only');
       expect(css).toContain('.astryx-calendar-day.today-in-range');
       expect(css).toContain('box-shadow: inset 0 0 0 2px var(--color-accent)');
@@ -1229,7 +1233,7 @@ describe('Calendar', () => {
           },
         },
       });
-      const css = generateThemeCSSFlat(theme);
+      const css = generateThemeTestCSS(theme);
       expect(css).toContain('.astryx-calendar-nav {');
       expect(css).toContain('color: var(--color-accent)');
       expect(css).toContain('.astryx-calendar-nav.next');

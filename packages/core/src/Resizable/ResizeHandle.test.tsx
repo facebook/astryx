@@ -150,7 +150,55 @@ describe('ResizeHandle', () => {
     const separator = getSeparator();
     act(() => separator.focus());
     fireEvent.keyDown(separator, {key: 'Enter'});
-    expect(separator).toHaveAttribute('aria-valuenow', '0');
+    // The panel's real size is 0, but aria-valuenow must never drop below
+    // aria-valuemin (WCAG 4.1.2) — it clamps to the minimum and the state
+    // is announced via aria-valuetext instead.
+    expect(separator).toHaveAttribute('aria-valuenow', '100');
+    expect(separator).toHaveAttribute('aria-valuetext', 'Collapsed');
+  });
+
+  it('keeps aria-valuenow >= aria-valuemin and announces "Collapsed" while collapsed', () => {
+    render(
+      <Harness
+        config={{
+          defaultSize: 200,
+          minSizePx: 100,
+          maxSizePx: 400,
+          collapsible: true,
+        }}
+      />,
+    );
+    const separator = getSeparator();
+    act(() => separator.focus());
+    fireEvent.keyDown(separator, {key: 'Enter'});
+
+    const valueNow = Number(separator.getAttribute('aria-valuenow'));
+    const valueMin = Number(separator.getAttribute('aria-valuemin'));
+    expect(valueNow).toBeGreaterThanOrEqual(valueMin);
+    expect(separator).toHaveAttribute('aria-valuetext', 'Collapsed');
+  });
+
+  it('removes aria-valuetext when the panel is expanded', () => {
+    render(
+      <Harness
+        config={{
+          defaultSize: 200,
+          minSizePx: 100,
+          maxSizePx: 400,
+          collapsible: true,
+        }}
+      />,
+    );
+    const separator = getSeparator();
+    expect(separator).not.toHaveAttribute('aria-valuetext');
+
+    act(() => separator.focus());
+    fireEvent.keyDown(separator, {key: 'Enter'}); // collapse
+    expect(separator).toHaveAttribute('aria-valuetext', 'Collapsed');
+
+    fireEvent.keyDown(separator, {key: 'Enter'}); // expand again
+    expect(separator).not.toHaveAttribute('aria-valuetext');
+    expect(separator).toHaveAttribute('aria-valuenow', '100');
   });
 
   // --- Disabled guard ---

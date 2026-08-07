@@ -9,13 +9,19 @@
  * @position Lab implementation; consumed by index.ts, tested by BottomSheet.test.tsx, demonstrated in Storybook
  *
  * A mobile touch surface that rises from the bottom edge: grab handle, snap
- * points, and swipe-to-dismiss. It owns a native modal `<dialog>` directly and
+ * points, and swipe-to-dismiss. It owns a native `<dialog>` directly and
  * composes core primitives (`useScrollLock`, `<dialog>.showModal()` for the
  * top layer + focus trap, a `::backdrop` scrim) rather than delegating to a
  * heavier overlay component — so it controls its own sizing and can render a
  * full-height transparent shell with the visible sheet bottom-anchored inside.
  * That shell is what lets the sheet translate freely (including a little past
  * fully-open) without clipping against a fixed dialog edge.
+ *
+ * `hasScrim` picks the presentation: `true` (default) uses `showModal()` (top
+ * layer, focus trap, scrim, scroll lock, background inert); `false` uses
+ * `show()` for a non-modal sheet with no scrim, leaving the page behind
+ * interactive and scrollable (the transparent shell is pointer-events:none so
+ * taps pass through).
  *
  * The drag/snap/dismiss machinery lives in `useSheetGestures`; the offset
  * geometry lives in the pure, tested `snapOffsets` module. Both are internal
@@ -43,6 +49,12 @@ import {
 import {useDevWarning, useScrollLock} from '@astryxdesign/core/hooks';
 import {mergeProps, mergeRefs, themeProps} from '@astryxdesign/core/utils';
 import {useSheetGestures} from './useSheetGestures';
+
+// A non-modal sheet (hasScrim={false}) uses show() instead of showModal(), so
+// it isn't in the native top layer and needs an explicit z-index to sit above
+// page content. No z-index token exists in the theme; 1000 matches the Drawer
+// / app-level overlay convention.
+const NON_MODAL_Z = 1000;
 
 // Detent fractions of the viewport, ascending (peek / mid / full). Detents
 // that land within DETENT_DEDUP_PX of each other (e.g. a hug height next to a
@@ -111,12 +123,36 @@ const styles = stylex.create({
   dialogOpen: {
     display: 'block',
   },
+  // Non-modal (hasScrim={false}) shell: the full-viewport dialog must NOT
+  // intercept taps, or it would swallow every click meant for the interactive
+  // page behind it. Pointer events pass straight through the transparent shell
+  // (and the positioner, which is already none) to the page; the sheet surface
+  // re-enables them (styles.sheet -> pointerEvents:auto). This also inherently
+  // removes tap-outside-to-dismiss, which is correct when there's no scrim.
+  // show() doesn't use the native top layer, so an explicit z-index keeps the
+  // sheet above page content.
+  //
+  // Size to 100% (of the positioning context) rather than the base 100dvw/dvh:
+  // a modal sheet is in the top layer so its `fixed` box is always the viewport,
+  // but a non-modal `show()` dialog is a normal `fixed` element, so if any
+  // ancestor establishes a containing block (transform / filter / contain —
+  // e.g. Storybook's Docs preview wrapper), viewport units measured from that
+  // shifted origin overflow and mis-anchor the sheet. `inset:0 + 100%` fills
+  // whatever the containing block is, so the sheet stays correctly anchored.
+  dialogNonModal: {
+    pointerEvents: 'none',
+    zIndex: NON_MODAL_Z,
+    width: '100%',
+    height: '100%',
+  },
   // Opacity is a var the drag handler lowers toward dismissal;
   // @starting-style animates the entrance fade-in.
+  // Plain dim, no backdrop blur: bottom sheets on both Material and iOS dim
+  // without blurring, so this intentionally diverges from the other overlays
+  // (Drawer/Dialog/MobileNav/Lightbox, which share a blur(2px) scrim).
   scrim: {
     '::backdrop': {
       backgroundColor: colorVars['--color-overlay'],
-      backdropFilter: 'blur(2px)',
       opacity: {
         default: 'var(--_sheet-scrim-opacity, 1)',
         '@starting-style': 0,
@@ -256,17 +292,34 @@ export interface BottomSheetProps extends BaseProps<HTMLDialogElement> {
    */
   height?: BottomSheetHeight | number | string;
 
+  /**
+   * Whether to render a modal scrim behind the sheet.
+   * - `true` (default) — `showModal()`: renders in the top layer with a focus
+   *   trap, a `::backdrop` scrim, body scroll lock, and tap-scrim-to-dismiss.
+   *   The background is inert. Use for focused tasks (filters, forms).
+   * - `false` — `show()`: a non-modal sheet with **no scrim**. The page behind
+   *   stays interactive and scrollable (like Material's *standard* bottom
+   *   sheet, or an iOS undimmed detent). Escape still closes while focus is
+   *   inside the sheet, and drag/flick-to-dismiss still work. Use for a peek
+   *   surface that coexists with the page (e.g. a panel over a live map).
+   * @default true
+   */
+  hasScrim?: boolean;
+
   /** Test ID for the root element. */
   'data-testid'?: string;
 }
 
 /**
  * A mobile touch sheet that rises from the bottom edge, with a grab handle,
- * drag-to-resize snap points, and swipe-to-dismiss. It owns a native modal
- * `<dialog>` (top layer, focus trap, `::backdrop` scrim) and locks body scroll
- * while open; a slow drag settles to the nearest snap point, a flick down
- * dismisses, and Escape closes — so the swipe always has a keyboard
- * equivalent.
+ * drag-to-resize snap points, and swipe-to-dismiss. It owns a native
+ * `<dialog>` and, by default (`hasScrim`), enters the top layer with a focus
+ * trap + `::backdrop` scrim and locks body scroll; a slow drag settles to the
+ * nearest snap point, a flick down dismisses, and Escape closes — so the swipe
+ * always has a keyboard equivalent.
+ *
+ * With `hasScrim={false}` it opens non-modally (`show()`, no scrim), leaving
+ * the page behind interactive and scrollable.
  *
  * @example
  * ```
@@ -286,6 +339,7 @@ export function BottomSheet({
   label,
   children,
   height = 'capped',
+  hasScrim = true,
   xstyle,
   ...props
 }: BottomSheetProps) {
@@ -295,7 +349,7 @@ export function BottomSheet({
   const close = useCallback(() => onOpenChange(false), [onOpenChange]);
 
   // Set imperatively (not via state) so a 60fps drag doesn't re-render. The
-  // hook reports the scrim opacity for the current detent (hidden at the peek).
+  // hook reports the scrim opacity for the current detent (a faint floor at the peek).
   const handleScrimOpacity = useCallback((opacity: number) => {
     dialogRef.current?.style.setProperty(
       '--_sheet-scrim-opacity',
@@ -310,24 +364,32 @@ export function BottomSheet({
     onScrimOpacity: handleScrimOpacity,
   });
 
-  // showModal() enters the top layer with a focus trap + ::backdrop; on close
-  // we animate out (below) then restore focus to the opener.
+  // Modal: showModal() enters the top layer with a focus trap + ::backdrop and
+  // we restore focus to the opener on close. Standard: show() is non-modal, so
+  // we neither trap nor steal focus (the background stays interactive) — we
+  // only honor an explicit data-autofocus.
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) {
       return;
     }
     if (isOpen) {
-      triggerRef.current = document.activeElement as HTMLElement | null;
       dialog.style.setProperty('--_sheet-scrim-opacity', '1');
       if (!dialog.open) {
-        dialog.showModal();
-        // Override showModal()'s default (first tabbable) to land on the panel,
-        // so AT reads from the label — unless a descendant sets data-autofocus.
+        // Only remember/restore focus for modal sheets; a non-modal sheet must
+        // not yank focus back from whatever the user does in the live page.
+        if (hasScrim) {
+          triggerRef.current = document.activeElement as HTMLElement | null;
+          dialog.showModal();
+        } else {
+          dialog.show();
+        }
+        // Land on the panel (so AT reads from the label) for modal sheets;
+        // otherwise only honor a descendant data-autofocus.
         const autofocus = dialog.querySelector<HTMLElement>('[data-autofocus]');
         if (autofocus) {
           autofocus.focus();
-        } else {
+        } else if (hasScrim) {
           sheetNodeRef.current?.focus();
         }
       }
@@ -364,9 +426,11 @@ export function BottomSheet({
         sheet?.removeEventListener('transitionend', onEnd);
       };
     }
-  }, [isOpen]);
+  }, [isOpen, hasScrim]);
 
-  useScrollLock(isOpen);
+  // Only a modal sheet locks body scroll; a non-modal sheet leaves the page
+  // scrollable behind it.
+  useScrollLock(isOpen && hasScrim);
 
   // Enforce an accessible name: label is required by types, but a JS caller
   // can still pass an empty string, leaving the sheet unnamed.
@@ -385,7 +449,8 @@ export function BottomSheet({
     [close],
   );
   // Explicit Escape handler in addition to the native `cancel` event, for
-  // environments that don't synthesize `cancel`.
+  // environments that don't synthesize `cancel` (and the show() path, which
+  // never fires `cancel`). Only fires when focus is inside the sheet.
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLDialogElement>) => {
       if (event.key === 'Escape') {
@@ -395,13 +460,16 @@ export function BottomSheet({
     },
     [close],
   );
+  // Tap-outside-to-dismiss only applies to modal sheets (the scrim). A non-modal
+  // sheet has no scrim and its transparent shell is pointer-events:none, so taps
+  // pass through to the page rather than dismissing.
   const handleClick = useCallback(
     (event: React.MouseEvent<HTMLDialogElement>) => {
-      if (event.target === event.currentTarget) {
+      if (hasScrim && event.target === event.currentTarget) {
         close();
       }
     },
-    [close],
+    [close, hasScrim],
   );
 
   const isNamed = typeof height === 'string' && height in HEIGHT_BUDGETS;
@@ -417,11 +485,14 @@ export function BottomSheet({
       {...stylex.props(
         styles.dialog,
         isOpen && styles.dialogOpen,
-        styles.scrim,
+        // Modal: paint the ::backdrop scrim (top layer). Non-modal: no scrim,
+        // pass taps through to the page, and sit above content via z-index.
+        hasScrim && styles.scrim,
+        !hasScrim && styles.dialogNonModal,
       )}
       ref={mergeRefs(ref, dialogRef)}
       aria-label={label}
-      aria-modal="true"
+      aria-modal={hasScrim ? 'true' : undefined}
       onCancel={handleCancel}
       onClick={handleClick}
       onKeyDown={handleKeyDown}

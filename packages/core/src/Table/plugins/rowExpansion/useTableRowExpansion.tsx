@@ -598,13 +598,12 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
                 ? t('@astryx.tableRowExpansion.collapseRow')
                 : t('@astryx.tableRowExpansion.expandRow'),
               icon: (
-                <span {...stylex.props(rtlStyles.mirror)}>
-                  <Icon
-                    icon={isExpanded ? 'chevronDown' : 'chevronRight'}
-                    size="xsm"
-                    aria-hidden
-                  />
-                </span>
+                <Icon
+                  icon={isExpanded ? 'chevronDown' : 'chevronRight'}
+                  size="xsm"
+                  aria-hidden
+                  xstyle={rtlStyles.mirror}
+                />
               ),
               onSelect: () => onToggle(key),
             },

@@ -12,6 +12,11 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+
+function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
+  const {prose, component} = generateThemeCSS(theme);
+  return [prose, component].filter(Boolean).join('\n\n');
+}
 // getButton/queryButton instead of getByRole('button', {name}): the closed
 // popover keeps a two-month Calendar (~85 role=button nodes) mounted, which
 // made every role+name query compute ~85 accessible names through jsdom's
@@ -21,7 +26,7 @@ import {DateRangeInput} from './DateRangeInput';
 import type {DateRange} from './DateRangeInput';
 import {Icon} from '../Icon';
 import {defineTheme} from '../theme/defineTheme';
-import {generateThemeCSSFlat} from '../theme/generateThemeRules';
+import {generateThemeCSS} from '../theme/generateThemeRules';
 
 describe('DateRangeInput', () => {
   it('renders with label', () => {
@@ -506,6 +511,72 @@ describe('DateRangeInput statusVariant forwarding', () => {
       'detached',
     );
   });
+
+  describe('weekStartsOn', () => {
+    // The calendar popover renders in the top layer; jsdom keeps the content in
+    // the DOM but role queries skip it, so read the columnheaders directly.
+    const openAndReadWeekdays = (container: HTMLElement): (string | null)[] => {
+      fireEvent.click(getButton('Open calendar'));
+      return Array.from(container.querySelectorAll('[role="columnheader"]'))
+        .slice(0, 7)
+        .map(h => h.textContent);
+    };
+
+    it('defaults to a Sunday-first week', () => {
+      const {container} = render(
+        <DateRangeInput label="Range" value={null} onChange={() => {}} />,
+      );
+      expect(openAndReadWeekdays(container)).toEqual([
+        'Su',
+        'Mo',
+        'Tu',
+        'We',
+        'Th',
+        'Fr',
+        'Sa',
+      ]);
+    });
+
+    it('forwards a numeric weekStartsOn to the calendar', () => {
+      const {container} = render(
+        <DateRangeInput
+          label="Range"
+          value={null}
+          onChange={() => {}}
+          weekStartsOn={1}
+        />,
+      );
+      expect(openAndReadWeekdays(container)).toEqual([
+        'Mo',
+        'Tu',
+        'We',
+        'Th',
+        'Fr',
+        'Sa',
+        'Su',
+      ]);
+    });
+
+    it('accepts a three-letter day name', () => {
+      const {container} = render(
+        <DateRangeInput
+          label="Range"
+          value={null}
+          onChange={() => {}}
+          weekStartsOn="mon"
+        />,
+      );
+      expect(openAndReadWeekdays(container)).toEqual([
+        'Mo',
+        'Tu',
+        'We',
+        'Th',
+        'Fr',
+        'Sa',
+        'Su',
+      ]);
+    });
+  });
 });
 
 describe('DateRangeInput icon theme targets', () => {
@@ -603,7 +674,7 @@ describe('DateRangeInput icon theme targets', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('.astryx-date-range-input-clear-icon');
     expect(css).toContain('.astryx-date-range-input-toggle-icon');
     expect(css).toContain(':hover');

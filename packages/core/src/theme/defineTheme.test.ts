@@ -2,13 +2,12 @@
 
 import {describe, it, expect, vi} from 'vitest';
 import type {IconRegistry} from '../Icon/globalIconRegistry';
-import {
-  defineTheme,
-  generateThemeCSS,
-  generateThemeCSSFlat,
-  isDefinedTheme,
-} from './defineTheme';
+import {defineTheme, generateThemeCSS, isDefinedTheme} from './defineTheme';
 
+function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
+  const {prose, component} = generateThemeCSS(theme);
+  return [prose, component].filter(Boolean).join('\n\n');
+}
 describe('defineTheme', () => {
   it('creates a theme with name', () => {
     const theme = defineTheme({name: 'test'});
@@ -100,7 +99,7 @@ describe('generateThemeCSS', () => {
         '--radius-container': '16px',
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('@scope');
     expect(css).toContain('--color-accent: light-dark(#0077B6, #48CAE4)');
     expect(css).toContain('--radius-container: 16px');
@@ -110,7 +109,7 @@ describe('generateThemeCSS', () => {
 
   it('includes prose rules even with no overrides', () => {
     const theme = defineTheme({name: 'empty'});
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('@scope');
     expect(css).toContain(':where(h1, h2, h3, h4, h5, h6)');
     expect(css).toContain('font-family: var(--font-family-heading)');
@@ -192,7 +191,7 @@ describe('generateThemeCSS with components', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('.astryx-card {');
     expect(css).toContain('border-width: 2px');
     expect(css).toContain('border-color: var(--color-accent)');
@@ -211,7 +210,7 @@ describe('generateThemeCSS with components', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('.astryx-button.secondary');
     expect(css).toContain('background-color: rgba(0,0,0,0.06)');
   });
@@ -227,7 +226,7 @@ describe('generateThemeCSS with components', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('.astryx-button.destructive.sm');
     expect(css).toContain('padding: 2px 6px');
   });
@@ -241,7 +240,7 @@ describe('generateThemeCSS with components', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('font-family: "Playfair Display", serif');
     expect(css).not.toContain('fontFamily');
   });
@@ -254,7 +253,7 @@ describe('generateThemeCSS with components', () => {
         card: {base: {borderWidth: '1px'}},
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('@scope');
     expect(css).toContain('--radius-container: 20px');
     expect(css).toContain('.astryx-card {');
@@ -488,7 +487,7 @@ describe('custom status via components', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     // parseStyleKey('status:neutral') → '.neutral', so CSS should have .astryx-banner.neutral
     expect(css).toContain('.astryx-banner.neutral');
     expect(css).toContain('background-color: var(--color-background-muted)');
@@ -521,7 +520,7 @@ describe('custom status via components', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('.astryx-button.primary-muted');
     expect(css).toContain('background-color: #ECF5FF');
   });
@@ -733,7 +732,7 @@ describe('pseudo-class overrides in components', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     // Base rule
     expect(css).toContain('.astryx-radio {');
     expect(css).toContain('border-color: #8F9296');
@@ -761,7 +760,7 @@ describe('pseudo-class overrides in components', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('.astryx-button.primary-muted {');
     expect(css).toContain('background-color: #ECF5FF');
     expect(css).toContain('.astryx-button.primary-muted:hover {');
@@ -783,7 +782,7 @@ describe('pseudo-class overrides in components', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     // Should NOT emit an empty base rule
     expect(css).not.toMatch(/\.astryx-switch\s*\{\s*\}/);
     // Should emit the pseudo rule
@@ -802,7 +801,7 @@ describe('pseudo-class overrides in components', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('.astryx-card {');
     expect(css).toContain('border-width: 2px');
     expect(css).toContain('border-color: var(--color-accent)');
@@ -821,7 +820,7 @@ describe('container padding mapping', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     // Should NOT emit raw padding property (only the scoped token)
     expect(css).not.toMatch(/[^-]padding: 20px/);
     // Should emit component-scoped shorthand token
@@ -840,7 +839,7 @@ describe('container padding mapping', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('--astryx-card-padding-inline: 20px');
     expect(css).toContain('--astryx-card-padding-block-start: 16px');
     expect(css).toContain('--astryx-card-padding-block-end: 16px');
@@ -857,7 +856,7 @@ describe('container padding mapping', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('--astryx-card-padding-inline: 16px');
     expect(css).toContain('--astryx-card-padding-block-start: 24px');
     expect(css).toContain('--astryx-card-padding-block-end: 24px');
@@ -875,7 +874,7 @@ describe('container padding mapping', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     // Section — uniform → shorthand
     expect(css).toContain('--astryx-section-padding: 12px');
     // Dialog — asymmetric → directional
@@ -892,7 +891,7 @@ describe('container padding mapping', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     // Button is not a container — padding passes through as-is
     expect(css).toContain('padding: 8px 16px');
     expect(css).not.toContain('--astryx-button-padding');
@@ -911,7 +910,7 @@ describe('container padding mapping', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     // Non-padding props pass through
     expect(css).toContain('--_card-radius: 16px');
     expect(css).toContain('background-color: white');
@@ -929,7 +928,7 @@ describe('container padding mapping', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('--astryx-card-padding-block-start: 16px');
     expect(css).toContain('--astryx-card-padding-block-end: 12px');
     expect(css).toContain('--astryx-card-padding-inline: 20px');
@@ -944,7 +943,7 @@ describe('container padding mapping', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('--astryx-card-padding-block-start: 16px');
     expect(css).toContain('--astryx-card-padding-block-end: 24px');
   });
@@ -958,7 +957,7 @@ describe('container padding mapping', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('--astryx-card-padding-inline-start: 12px');
     expect(css).toContain('--astryx-card-padding-inline-end: 20px');
   });
@@ -972,7 +971,7 @@ describe('container padding mapping', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('--astryx-card-padding-block-start: 32px');
     expect(css).not.toContain('--astryx-card-padding-block-end');
     expect(css).not.toContain('--astryx-card-padding-inline');
@@ -987,7 +986,7 @@ describe('container padding mapping', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('--astryx-card-padding-inline-start: 8px');
     expect(css).toContain('--astryx-card-padding-inline-end: 24px');
   });

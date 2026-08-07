@@ -188,25 +188,25 @@ describe('useSheetGestures', () => {
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 
-  it('fades the scrim from full to hidden as it collapses onto the peek detent', () => {
+  it('fades the scrim from full toward the peek floor as it collapses onto the peek detent', () => {
     const onScrimOpacity = vi.fn();
     // Sheet 400, detents at 200 and 300 -> offsets [0, 100, 200]. The fade
     // spans the mid detent (offset 100) to the peek detent (offset 200):
-    // full at/above 100, hidden at/below 200.
+    // full at/above 100, thinned to the peek floor (0.3) at/below 200.
     const {hook} = setup({snapHeights: () => [200, 300], onScrimOpacity});
     const t = makeTarget();
     down(hook, 0, 0, t);
     move(hook, 60, 200, t); // offset 60, above the mid detent -> full
-    move(hook, 150, 600, t); // offset 150, halfway through the fade -> ~0.5
-    move(hook, 220, 1000, t); // offset 220, past the peek -> hidden
+    move(hook, 150, 600, t); // offset 150, halfway -> between 1 and 0.3 (~0.65)
+    move(hook, 220, 1000, t); // offset 220, past the peek -> peek floor
     const values = onScrimOpacity.mock.calls.map(c => c[0]);
     expect(values[0]).toBe(1);
-    expect(values[1]).toBeGreaterThan(0.4);
-    expect(values[1]).toBeLessThan(0.6);
-    expect(values[values.length - 1]).toBe(0);
+    expect(values[1]).toBeGreaterThan(0.55);
+    expect(values[1]).toBeLessThan(0.75);
+    expect(values[values.length - 1]).toBeCloseTo(0.3);
   });
 
-  it('keeps the scrim hidden when settled at the peek detent', () => {
+  it('thins the scrim to the peek floor when settled at the peek detent (still modal)', () => {
     const onScrimOpacity = vi.fn();
     const {hook} = setup({snapHeights: () => [200, 300], onScrimOpacity});
     const t = makeTarget();
@@ -216,9 +216,10 @@ describe('useSheetGestures', () => {
     move(hook, 200, 900, t);
     up(hook, 200, 1400, t);
     expect(hook.result.current.settledOffset).toBe(200);
-    // Last reported opacity (on settle) is hidden.
+    // Last reported opacity (on settle) is the peek floor, not fully hidden —
+    // the sheet is still modal, so the backdrop keeps a minimum dim.
     const values = onScrimOpacity.mock.calls.map(c => c[0]);
-    expect(values[values.length - 1]).toBe(0);
+    expect(values[values.length - 1]).toBeCloseTo(0.3);
   });
 
   it('magnetically settles the live drag onto a nearby detent', () => {

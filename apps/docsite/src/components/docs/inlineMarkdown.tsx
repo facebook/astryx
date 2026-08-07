@@ -5,6 +5,7 @@
 import {Fragment, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Code} from '@astryxdesign/core/CodeBlock';
+import {InlineCode} from '../InlineCode';
 import {tokenizeInline, type InlineToken} from './inlineTokens';
 
 type LinkToken = Extract<InlineToken, {type: 'link'}>;
@@ -55,7 +56,7 @@ export function renderInlineMarkdown(text: string) {
   return tokenizeInline(text).map((token, i) => (
     <Fragment key={i}>
       {token.type === 'code' ? (
-        <Code>{token.value}</Code>
+        <InlineCode>{token.value}</InlineCode>
       ) : token.type === 'link' ? (
         renderLink(token)
       ) : (
