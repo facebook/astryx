@@ -55,7 +55,7 @@ import type {BaseProps} from '@astryxdesign/core';
 import {VisuallyHidden} from '@astryxdesign/core/VisuallyHidden';
 import type {SizeValue} from '@astryxdesign/core/utils';
 import {useSize} from '@astryxdesign/core/SizeContext';
-import {themeProps} from '@astryxdesign/core/utils';
+import {mergeProps, themeProps} from '@astryxdesign/core/utils';
 
 import {
   LexicalComposer,
@@ -509,23 +509,25 @@ export const RichTextEditor = forwardRef<
       labelTooltip={labelTooltip}
       width={width}>
       <div
-        {...themeProps('rich-text-editor', {
-          size,
-          status: status?.type ?? null,
-        })}
-        {...stylex.props(
-          inputWrapperStyles.base,
-          styles.wrapper,
-          sizeStyles[size],
-          (isDisabled || isReadOnly) && inputWrapperStyles.disabled,
-          isDisabled && styles.disabled,
-          status && inputStatusBorderStyles[status.type],
-          status && inputStatusHoverShadowStyles[status.type],
-          status && inputStatusFocusWithinStyles[status.type],
-          xstyle,
-        )}
-        className={className}
-        style={style}>
+        {...mergeProps(
+          themeProps('rich-text-editor', {
+            size,
+            status: status?.type ?? null,
+          }),
+          stylex.props(
+            inputWrapperStyles.base,
+            styles.wrapper,
+            sizeStyles[size],
+            (isDisabled || isReadOnly) && inputWrapperStyles.disabled,
+            isDisabled && styles.disabled,
+            status && inputStatusBorderStyles[status.type],
+            status && inputStatusHoverShadowStyles[status.type],
+            status && inputStatusFocusWithinStyles[status.type],
+            xstyle,
+          ),
+          className,
+          style,
+        )}>
         <LexicalComposer initialConfig={initialConfig}>
           <div {...stylex.props(styles.editorRoot)}>
             <RichTextPlugin
@@ -748,7 +750,9 @@ function EditorRefBridge({
         // $generateHtmlFromNodes serializes the whole document (null selection)
         // to HTML; must run in a read context and requires a DOM.
         // `@lexical/html` is a subpackage (built dist) — safe.
-        editor.getEditorState().read(() => $generateHtmlFromNodes(editor, null)),
+        editor
+          .getEditorState()
+          .read(() => $generateHtmlFromNodes(editor, null)),
       getEditor: () => editor,
     }),
     [editor, editable, transformers],
@@ -778,7 +782,7 @@ function CharCountPlugin({
     // `declare` class fields) and fails. Both APIs used here are methods on the
     // editor instance, so no top-level `lexical` value import is needed.
     onCountChange(editor.getRootElement()?.textContent?.length ?? 0);
-    return editor.registerTextContentListener((textContent) => {
+    return editor.registerTextContentListener(textContent => {
       onCountChange(textContent.length);
     });
   }, [editor, onCountChange]);
