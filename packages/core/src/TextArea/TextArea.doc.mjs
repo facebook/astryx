@@ -181,6 +181,9 @@ export const docs = {
     targets: [
       {className: 'astryx-textarea', visualProps: ['size', 'status']},
     ],
+    vars: [
+      {name: '--_textarea-inline-padding', description: 'Base inline padding of the textarea. Read inside calc() to leave room for the character counter and status icon, so it is not the element padding directly.', default: 'var(--spacing-2)', private: true},
+    ],
   },
   usage: {
     description:

@@ -32,6 +32,9 @@ export const docs = {
     ],
     vars: [
       {name: '--tree-list-indent', description: 'Per-level indentation step. Each nesting level indents its rows by this distance, and the guide lines follow it so they stay aligned. Set it on the `tree-list` target to retune the metric (e.g. `var(--spacing-5)` for a wider indent).', default: 'var(--spacing-4)'},
+      {name: '--_tree-indent', description: 'Distance one row is indented, computed per row from --tree-list-indent and the row depth. Set --tree-list-indent to retune indentation; this is the resolved value.', default: '0px', private: true},
+      {name: '--_tree-focus-outline', description: 'Focus ring of a single row. Published on every <li> (default none) so a nested row shadows its ancestor and the ring never leaks past the focused treeitem.', default: 'none', private: true},
+      {name: '--_tree-focus-outline-offset', description: 'Offset of the row focus ring, published alongside --_tree-focus-outline with the same per-row shadowing.', default: '0', private: true},
     ],
   },
   components: [
