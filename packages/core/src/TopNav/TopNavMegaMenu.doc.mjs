@@ -7,9 +7,6 @@ export const docs = {
   subComponentOf: 'TopNav',
   displayName: 'Top Nav Mega Menu',
   description: 'Navigation item that displays a full-width mega menu panel on hover. Uses a slots API with items and featured props. TopNavMegaMenuItem renders itself in both desktop and mobile drawer modes. Supports inline collapsible drawer via render mode context.',
-  playground: {
-    wrapper: {component: 'TopNav'},
-  },
   props: [
     {
       name: 'label',
