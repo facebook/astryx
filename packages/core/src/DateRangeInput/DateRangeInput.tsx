@@ -563,6 +563,7 @@ export function DateRangeInput({
           themeProps('date-range-input', {
             size,
             status: status?.type ?? null,
+            disabled: isDisabled ? 'disabled' : null,
           }),
           stylex.props(
             inputWrapperStyles.base,

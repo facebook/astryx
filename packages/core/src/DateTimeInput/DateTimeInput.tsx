@@ -892,6 +892,7 @@ export function DateTimeInput({
           themeProps('date-time-input', {
             size,
             status: status?.type ?? null,
+            disabled: isDisabled ? 'disabled' : null,
           }),
           stylex.props(styles.row, xstyle),
           className,

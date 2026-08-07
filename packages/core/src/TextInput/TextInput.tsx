@@ -404,7 +404,11 @@ export function TextInput({
       onClick={handleWrapperClick}
       onMouseUp={handleWrapperMouseUp}
       {...mergeProps(
-        themeProps('text-input', {size, status: status?.type ?? null}),
+        themeProps('text-input', {
+          size,
+          status: status?.type ?? null,
+          disabled: isDisabled ? 'disabled' : null,
+        }),
         stylex.props(
           inputWrapperStyles.base,
           sizeStyles[size],

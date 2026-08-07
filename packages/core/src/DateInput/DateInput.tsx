@@ -650,7 +650,11 @@ export function DateInput({
       }}
       {...rest}
       {...mergeProps(
-        themeProps('date-input', {size, status: status?.type ?? null}),
+        themeProps('date-input', {
+          size,
+          status: status?.type ?? null,
+          disabled: isDisabled ? 'disabled' : null,
+        }),
         stylex.props(
           inputWrapperStyles.base,
           sizeStyles[size],

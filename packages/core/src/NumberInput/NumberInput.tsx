@@ -630,7 +630,11 @@ export function NumberInput({
       onClick={handleWrapperClick}
       onMouseUp={handleWrapperMouseUp}
       {...mergeProps(
-        themeProps('number-input', {size, status: status?.type ?? null}),
+        themeProps('number-input', {
+          size,
+          status: status?.type ?? null,
+          disabled: isDisabled ? 'disabled' : null,
+        }),
         stylex.props(
           inputWrapperStyles.base,
           styles.wrapper,

@@ -809,3 +809,25 @@ describe('TextInput statusVariant forwarding', () => {
     expect(statusButton.getAttribute('aria-describedby')).toContain(tooltip.id);
   });
 });
+
+describe('TextInput disabled theme state', () => {
+  // Reflecting isDisabled on the root theming target lets a theme gate its own
+  // hover/border treatment on disabled (data-disabled + a .disabled variant),
+  // mirroring how status is reflected — without structural :has() CSS.
+  it('reflects disabled on the root target so themes can gate paint on it', () => {
+    const {container} = render(
+      <TextInput label="Name" value="" onChange={() => {}} isDisabled />,
+    );
+    const root = container.querySelector('.astryx-text-input');
+    expect(root).toHaveAttribute('data-disabled', 'disabled');
+    expect(root).toHaveClass('disabled');
+  });
+
+  it('omits data-disabled when enabled, like status does', () => {
+    const {container} = render(
+      <TextInput label="Name" value="" onChange={() => {}} />,
+    );
+    const root = container.querySelector('.astryx-text-input');
+    expect(root).not.toHaveAttribute('data-disabled');
+  });
+});

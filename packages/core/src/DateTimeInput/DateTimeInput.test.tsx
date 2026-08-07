@@ -987,3 +987,22 @@ describe('DateTimeInput', () => {
     });
   });
 });
+
+describe('DateTimeInput disabled theme state', () => {
+  it('reflects disabled on the root target so themes can gate paint on it', () => {
+    const {container} = render(
+      <DateTimeInput label="Meeting" onChange={() => {}} isDisabled />,
+    );
+    const root = container.querySelector('.astryx-date-time-input');
+    expect(root).toHaveAttribute('data-disabled', 'disabled');
+    expect(root).toHaveClass('disabled');
+  });
+
+  it('omits data-disabled when enabled, like status does', () => {
+    const {container} = render(
+      <DateTimeInput label="Meeting" onChange={() => {}} />,
+    );
+    const root = container.querySelector('.astryx-date-time-input');
+    expect(root).not.toHaveAttribute('data-disabled');
+  });
+});

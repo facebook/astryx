@@ -1232,3 +1232,20 @@ describe('DateInput calendar-toggle icon theme target', () => {
     expect(css).toContain('color: var(--color-icon-primary)');
   });
 });
+
+describe('DateInput disabled theme state', () => {
+  it('reflects disabled on the root target so themes can gate paint on it', () => {
+    const {container} = render(
+      <DateInput label="Date" onChange={() => {}} isDisabled />,
+    );
+    const root = container.querySelector('.astryx-date-input');
+    expect(root).toHaveAttribute('data-disabled', 'disabled');
+    expect(root).toHaveClass('disabled');
+  });
+
+  it('omits data-disabled when enabled, like status does', () => {
+    const {container} = render(<DateInput label="Date" onChange={() => {}} />);
+    const root = container.querySelector('.astryx-date-input');
+    expect(root).not.toHaveAttribute('data-disabled');
+  });
+});

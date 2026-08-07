@@ -518,7 +518,11 @@ export function TextArea({
         onClick={handleWrapperClick}
         onMouseUp={handleWrapperMouseUp}
         {...mergeProps(
-          themeProps('textarea', {size, status: status?.type ?? null}),
+          themeProps('textarea', {
+            size,
+            status: status?.type ?? null,
+            disabled: isDisabled ? 'disabled' : null,
+          }),
           stylex.props(
             inputWrapperStyles.base,
             styles.wrapper,

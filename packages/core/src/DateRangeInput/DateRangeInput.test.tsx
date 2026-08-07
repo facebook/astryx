@@ -682,3 +682,27 @@ describe('DateRangeInput icon theme targets', () => {
     expect(css).toContain('14px');
   });
 });
+
+describe('DateRangeInput disabled theme state', () => {
+  it('reflects disabled on the root target so themes can gate paint on it', () => {
+    const {container} = render(
+      <DateRangeInput
+        label="Range"
+        value={null}
+        onChange={() => {}}
+        isDisabled
+      />,
+    );
+    const root = container.querySelector('.astryx-date-range-input');
+    expect(root).toHaveAttribute('data-disabled', 'disabled');
+    expect(root).toHaveClass('disabled');
+  });
+
+  it('omits data-disabled when enabled, like status does', () => {
+    const {container} = render(
+      <DateRangeInput label="Range" value={null} onChange={() => {}} />,
+    );
+    const root = container.querySelector('.astryx-date-range-input');
+    expect(root).not.toHaveAttribute('data-disabled');
+  });
+});

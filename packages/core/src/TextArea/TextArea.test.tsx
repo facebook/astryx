@@ -864,3 +864,22 @@ describe('TextArea statusVariant forwarding', () => {
     );
   });
 });
+
+describe('TextArea disabled theme state', () => {
+  it('reflects disabled on the root target so themes can gate paint on it', () => {
+    const {container} = render(
+      <TextArea label="Description" value="" onChange={() => {}} isDisabled />,
+    );
+    const root = container.querySelector('.astryx-textarea');
+    expect(root).toHaveAttribute('data-disabled', 'disabled');
+    expect(root).toHaveClass('disabled');
+  });
+
+  it('omits data-disabled when enabled, like status does', () => {
+    const {container} = render(
+      <TextArea label="Description" value="" onChange={() => {}} />,
+    );
+    const root = container.querySelector('.astryx-textarea');
+    expect(root).not.toHaveAttribute('data-disabled');
+  });
+});

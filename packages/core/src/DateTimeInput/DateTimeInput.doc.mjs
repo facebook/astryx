@@ -195,7 +195,7 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-date-time-input', visualProps: ['size', 'status']},
+      {className: 'astryx-date-time-input', visualProps: ['size', 'status'], states: ['disabled']},
       {
         className: 'astryx-date-time-input-date-segment',
         visualProps: ['size', 'status'],
@@ -499,7 +499,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-date-time-input', visualProps: ['size', 'status']},
+      {className: 'astryx-date-time-input', visualProps: ['size', 'status'], states: ['disabled']},
       {
         className: 'astryx-date-time-input-date-segment',
         visualProps: ['size', 'status'],
