@@ -31,19 +31,19 @@ So we separated format from framework. We adopted ICU MessageFormat – the stri
 
 We wrote it up as [an RFC](https://github.com/facebook/astryx/issues/3641) first and fixed the constraints before any code: work in server components, stay framework-agnostic (Vite, Next, Remix, static builds — no hard-coded router), support switching language at runtime, and keep translations inside core rather than as a matrix of per-locale packages to version and keep in lockstep. One early question — whether to code-split the locale data so an app ships only the languages it uses — we settled by measuring rather than guessing: a full locale pack is roughly 2 KB gzipped, about the size of our icon set, so splitting would have added machinery to save almost nothing.
 
-## Plurals are where "just translate it" falls apart
+## Plurals are now a solved problem
 
-If translating a UI were only swapping words, you could hand a translator a spreadsheet of strings and be done. Plurals are the first place that breaks. Take a string like this:
+Plurals are deceptively easy to get wrong, because English lets you cheat. How many UIs have you seen with a label like `1 item(s)`, or code that tacks on an "s" whenever a count isn't 1? It reads fine enough in English to ship — and then falls apart the moment you translate, because "how many plural forms a language has" isn't universal. Arabic has six. Russian and Polish have four. Japanese has one. The `one`/`other` assumption is baked in so deeply you don't notice it until someone asks which of six Arabic forms you meant.
+
+The good news — and this genuinely wasn't true a few years ago — is that the platform handles this now. ICU MessageFormat lets a string declare its plural cases, and `Intl.PluralRules`, a widely-supported browser API backed by CLDR data, knows which form each number takes in each locale. So instead of hand-rolling pluralization and getting it wrong, a string just names its cases and lets the runtime pick:
 
 ```text
 Go back {step, number} {step, plural, one {page} other {pages}}
 ```
 
-In English there are two cases: one page, N pages. But "how many plural forms does a language have" is not universal. Arabic has six. Russian and Polish have four. Japanese has one. Feed that string to a naive translation that only fills the English `one`/`other` slots, and it will render a grammatically wrong ending for most numbers in most of the world's languages – not a typo you can eyeball, but the wrong word form for "5" versus "2" versus "21". The count below is the same message rendered in Russian: the naive version repeats one ending for everything, while the correct version picks a different word form per number.
-
 ![A results-count string rendered in Russian at counts 1, 2, and 5. The naive version, using only English one/other rules, shows the same wrong ending ("результаты") for every count. The correct version, using Russian's one/few/many/other CLDR categories, shows three different endings: результат, результата, результатов.](/blog/internationalizing-astryx/russian-plurals.png)
 
-So the strings aren't prose – they're small programs, with placeholders and plural logic the runtime evaluates per locale. Drop a placeholder or keep only the English plural cases and the output isn't just awkward, it's wrong, and sometimes it fails to render at all. That reframing – translation as a correctness problem, not just a language one – shaped how we validated the machine translations later.
+There's a bonus to expressing plurals this way: because the cases are declared as data rather than baked into prose, a translation that's missing a form — or that quietly kept only the English ones — isn't just wrong, it's _detectable_. That mattered a lot once we started translating in bulk.
 
 ## Right-to-left, and the bugs that hide from your linter
 
