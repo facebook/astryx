@@ -98,6 +98,12 @@ export const categories: SandboxCategory[] = [
         href: '/pages/example/',
         description: 'General component composition examples',
       },
+      {
+        name: 'Lab → Core Graduation',
+        href: '/pages/lab-graduation/',
+        description:
+          'Track every lab component against the core graduation bar and upvote what should graduate next',
+      },
     ],
   },
   {
