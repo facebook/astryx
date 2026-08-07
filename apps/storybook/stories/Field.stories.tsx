@@ -4,6 +4,7 @@ import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
 import {Field} from '@astryxdesign/core/Field';
+import {FieldProvider} from '@astryxdesign/core/Field';
 import {TextInput} from '@astryxdesign/core/TextInput';
 import {EnvelopeIcon} from '@heroicons/react/24/outline';
 import {
@@ -69,6 +70,14 @@ const meta: Meta<typeof Field> = {
     description: {control: 'text'},
     isOptional: {control: 'boolean'},
     isRequired: {control: 'boolean'},
+    requiredIndicator: {
+      control: 'select',
+      options: ['text', 'asterisk', 'none'],
+    },
+    optionalIndicator: {
+      control: 'select',
+      options: ['text', 'none'],
+    },
     labelTooltip: {control: 'text'},
   },
 };
@@ -158,6 +167,55 @@ export const RequiredField: Story = {
           onChange={setValue}
         />
       </Field>
+    );
+  },
+};
+
+export const RequiredAsterisk: Story = {
+  name: 'Required (asterisk)',
+  args: {label: 'Username', isRequired: true, requiredIndicator: 'asterisk'},
+  render: args => {
+    const [value, setValue] = useState('');
+    return (
+      <Field {...args} inputID="username-asterisk-input">
+        <NativeInput
+          id="username-asterisk-input"
+          placeholder="Enter your username"
+          value={value}
+          onChange={setValue}
+        />
+      </Field>
+    );
+  },
+};
+
+export const MarkOnlyOptional: Story = {
+  name: 'Provider: mark only optional',
+  render: () => {
+    const [a, setA] = useState('');
+    const [b, setB] = useState('');
+    // Required fields show nothing; optional fields show "Optional".
+    return (
+      <FieldProvider requiredIndicator="none" optionalIndicator="text">
+        <div style={{display: 'flex', flexDirection: 'column', gap: 16}}>
+          <Field label="Username" isRequired inputID="mo-username">
+            <NativeInput
+              id="mo-username"
+              placeholder="Required — no indicator"
+              value={a}
+              onChange={setA}
+            />
+          </Field>
+          <Field label="Nickname" isOptional inputID="mo-nickname">
+            <NativeInput
+              id="mo-nickname"
+              placeholder="Shows Optional"
+              value={b}
+              onChange={setB}
+            />
+          </Field>
+        </div>
+      </FieldProvider>
     );
   },
 };

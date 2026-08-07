@@ -32,6 +32,11 @@ import {Tooltip} from '../Tooltip';
 import {useTranslator} from '../i18n';
 import {themeProps} from '../utils/themeProps';
 import {useInputContainer} from '../hooks';
+import {useFieldIndicators} from './useFieldIndicators';
+import type {
+  OptionalIndicator,
+  RequiredIndicator,
+} from './FieldIndicatorContext';
 
 const styles = stylex.create({
   label: {
@@ -69,6 +74,10 @@ const styles = stylex.create({
     fontSize: typeScaleVars['--text-supporting-size'],
     lineHeight: typeScaleVars['--text-supporting-leading'],
     color: colorVars['--color-text-secondary'],
+  },
+  requiredAsterisk: {
+    color: colorVars['--color-error'],
+    fontWeight: fontWeightVars['--font-weight-normal'],
   },
   description: {
     fontFamily: typographyVars['--font-family-body'],
@@ -137,6 +146,18 @@ export interface FieldLabelProps extends BaseProps<HTMLLabelElement> {
    */
   isRequired?: boolean;
   /**
+   * How the required indicator is displayed: the localized `'text'`, a red
+   * `'asterisk'`, or `'none'`. Overrides any `FieldProvider` default. The
+   * control's `aria-required` is unaffected, so screen readers still announce
+   * required-ness regardless of the visible style. @default 'text'
+   */
+  requiredIndicator?: RequiredIndicator;
+  /**
+   * How the optional indicator is displayed: the localized `'text'` or
+   * `'none'`. Overrides any `FieldProvider` default. @default 'text'
+   */
+  optionalIndicator?: OptionalIndicator;
+  /**
    * Icon to display before the label text.
    */
   labelIcon?: ReactNode | IconType;
@@ -177,6 +198,8 @@ export function FieldLabel({
   isDisabled = false,
   isOptional = false,
   isRequired = false,
+  requiredIndicator,
+  optionalIndicator,
   labelIcon,
   labelTooltip,
   description,
@@ -188,10 +211,31 @@ export function FieldLabel({
   ...rest
 }: FieldLabelProps) {
   const t = useTranslator();
-  const statusText = isOptional
+  const {required: requiredMode, optional: optionalMode} = useFieldIndicators({
+    requiredIndicator,
+    optionalIndicator,
+  });
+
+  // The localized word for whichever state applies. Kept even in `asterisk`
+  // mode: it feeds the visually-hidden accessible text so the meaning survives
+  // when only a `*` is shown.
+  const statusWord = isOptional
     ? t('@astryx.field.optional')
     : isRequired
       ? t('@astryx.field.required')
+      : null;
+
+  // Resolve what the indicator renders. `isOptional` takes precedence over
+  // `isRequired` (a field is one or the other), mirroring the prior behavior.
+  // - text     → the word, inline (announced as part of the label).
+  // - asterisk → a red `*` (aria-hidden) + the word rendered sr-only, so it is
+  //   still in the accessible name; required-ness is also on the control via
+  //   aria-required, so nothing is lost.
+  // - none     → nothing visible; required-ness still comes from aria-required.
+  const indicatorMode = isOptional
+    ? optionalMode
+    : isRequired
+      ? requiredMode
       : null;
 
   // A group label (e.g. for a radiogroup) must not be a literal `<label>`
@@ -239,11 +283,21 @@ export function FieldLabel({
     <>
       {labelIcon && renderIconSlot(labelIcon, {size: 'sm', color: 'inherit'})}
       {label}
-      {statusText && (
+      {statusWord && indicatorMode === 'text' && (
         <span {...stylex.props(styles.optionalRequired)}>
           <span aria-hidden="true"> ∙ </span>
-          {statusText}
+          {statusWord}
         </span>
+      )}
+      {statusWord && indicatorMode === 'asterisk' && (
+        <>
+          <span
+            aria-hidden="true"
+            {...stylex.props(styles.optionalRequired, styles.requiredAsterisk)}>
+            {' *'}
+          </span>
+          <span {...stylex.props(styles.srOnly)}>{statusWord}</span>
+        </>
       )}
       {labelTooltip && (
         <Tooltip content={labelTooltip} placement="above">
