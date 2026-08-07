@@ -7,12 +7,13 @@
  * is installed and the project hasn't run init yet, print a one-line next-step
  * so agents/humans discover it (this is the most common fresh-install entry).
  *
- * Self-contained: core is a separate package and cannot import the CLI, so the
- * agent-doc locations + marker below intentionally DUPLICATE the CLI's agent-doc
- * discovery in packages/cli/src/commands/agent-docs.mjs — keep them aligned with
- * that file. The .hermes.md / HERMES.md entries are an intentional superset (the
- * CLI writes those via `--agent hermes`). Non-interactive, never fails the
- * install, and quiet in the monorepo build, during npx's fetch, and once set up.
+ * Self-contained: core is a separate package and cannot import the CLI (the CLI
+ * peer-depends on core, so importing it would be a cycle), so the agent-doc
+ * locations + markers below intentionally MIRROR the CLI's dependency-free leaf
+ * packages/cli/foundation/agent-docs/agent-doc-state.mjs. They are exported and
+ * pinned to that leaf by a drift test in src/postinstall.test.mjs, so the two
+ * copies cannot silently diverge. Non-interactive, never fails the install, and
+ * quiet in the monorepo build, during npx's fetch, and once set up.
  */
 
 import fs from 'node:fs';
@@ -21,9 +22,10 @@ import {fileURLToPath, pathToFileURL} from 'node:url';
 
 const HERE = fileURLToPath(import.meta.url);
 
-// Duplicates the CLI's agent-doc locations + markers — keep aligned with
-// packages/cli/src/commands/agent-docs.mjs. Hermes files are an intentional superset.
-const AGENT_DOC_PATHS = [
+// Mirrors the CLI's dependency-free leaf, packages/cli/foundation/agent-docs/
+// agent-doc-state.mjs. Exported so src/postinstall.test.mjs can pin both lists
+// to that leaf and fail the build if they drift apart.
+export const AGENT_DOC_PATHS = [
   'AGENTS.md',
   'CLAUDE.md',
   '.claude/CLAUDE.md',
@@ -31,7 +33,7 @@ const AGENT_DOC_PATHS = [
   '.hermes.md',
   'HERMES.md',
 ];
-const MARKERS = ['<!-- ASTRYX:START -->', '<!-- XDS:START -->'];
+export const MARKERS = ['<!-- ASTRYX:START -->', '<!-- XDS:START -->'];
 
 /**
  * True when the project already has the Astryx agent prompt installed (an Astryx
