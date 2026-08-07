@@ -604,7 +604,9 @@ export function createFileScanner(context) {
 
     /**
      * Arguments of every `stylex.props()` call on an opening element, split
-     * into unconditional and conditional (`cond && styles.x`) arguments.
+     * into all arguments and the STATE-SELECTED ones: `cond && styles.x`,
+     * `cond ? a : b`, and table lookups (`sizeStyles[size]`). All three are
+     * how a component varies its styles with a prop or runtime state.
      */
     styleArguments(opening) {
       const all = [];
@@ -621,7 +623,8 @@ export function createFileScanner(context) {
             all.push(argument);
             if (
               argument.type === 'LogicalExpression' ||
-              argument.type === 'ConditionalExpression'
+              argument.type === 'ConditionalExpression' ||
+              (argument.type === 'MemberExpression' && argument.computed)
             ) {
               conditional.push(argument);
             }

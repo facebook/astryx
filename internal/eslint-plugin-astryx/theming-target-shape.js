@@ -54,15 +54,29 @@ import {
   mentionsConsumerStyles,
 } from './theming-target.js';
 
-/** Prop keys that name a state/variant a theme would want to key on. */
-const STATE_PROP_HINTS = new Set([
+/**
+ * Prop keys that name RUNTIME state — something that changes while the
+ * component is on screen. Only these are held to "a state seam should paint":
+ * `size` and `variant` must be reflected on the target whatever they change
+ * (principle 2 is explicit that an option which can be sized must carry
+ * `size`), so a size table that only moves padding is not a finding.
+ */
+const RUNTIME_STATE_HINTS = new Set([
   'state',
   'selected',
   'checked',
   'disabled',
   'expanded',
+  'collapsed',
   'open',
   'active',
+  'highlighted',
+  'pressed',
+]);
+
+/** Prop keys that name a state or variant a theme would want to key on. */
+const STATE_PROP_HINTS = new Set([
+  ...RUNTIME_STATE_HINTS,
   'variant',
   'size',
   'status',
@@ -345,30 +359,70 @@ const rule = {
 
       /** State words the element's conditional styles actually switch on. */
       const conditionalWords = new Set();
-      const conditionalProperties = [];
+      /** Properties selected by RUNTIME state specifically. */
+      const runtimeStateProperties = [];
+      let runtimeStateArgs = 0;
       let conditionalResolved = true;
       for (const argument of conditional) {
         const test =
-          argument.type === 'LogicalExpression' ? argument.left : argument.test;
-        for (const word of stateWordsInTest(test)) {
+          argument.type === 'LogicalExpression'
+            ? argument.left
+            : argument.type === 'ConditionalExpression'
+              ? argument.test
+              : // `sizeStyles[size]` — the key expression names the state.
+                argument.property;
+        const words = stateWordsInTest(test);
+        for (const word of words) {
           conditionalWords.add(word);
         }
+        const isRuntime = [...words].some((word) =>
+          RUNTIME_STATE_HINTS.has(word),
+        );
         const resolved = scanner.resolveStyleProperties(argument);
         if (resolved == null) {
           conditionalResolved = false;
           continue;
         }
-        conditionalProperties.push(...resolved);
+        if (isRuntime) {
+          runtimeStateArgs++;
+          runtimeStateProperties.push(...resolved);
+        }
       }
 
       for (const target of targets) {
-        const declared = new Set(target.propKeys);
         if (target.isOpaque) {
           continue;
         }
+        const declared = new Set(target.propKeys);
 
-        if (declared.size > 0 && conditionalResolved && conditional.length > 0) {
-          const bucketed = classifyProperties(conditionalProperties);
+        // An undeclared state is the more actionable finding: the target is
+        // missing a seam entirely, rather than exposing a weak one. A target
+        // that declares the generic `state` key (`state: 'expanded'`) covers
+        // every runtime state word — that IS how the state is spelled here.
+        const coversRuntimeState = declared.has('state');
+        const missing = [...conditionalWords].filter(
+          (word) =>
+            !declared.has(word) &&
+            !(coversRuntimeState && RUNTIME_STATE_HINTS.has(word)),
+        );
+        if (missing.length > 0) {
+          context.report({
+            node: target.node,
+            messageId: 'underDeclaredState',
+            data: {
+              target: target.name,
+              missing: missing.join(', '),
+              example: missing.map((word) => `${word} option`).join(' / '),
+            },
+          });
+          continue;
+        }
+
+        const declaresRuntimeState = [...declared].some((key) =>
+          RUNTIME_STATE_HINTS.has(key),
+        );
+        if (declaresRuntimeState && conditionalResolved && runtimeStateArgs > 0) {
+          const bucketed = classifyProperties(runtimeStateProperties);
           if (bucketed.paint.length === 0 && !bucketed.hasVar) {
             context.report({
               node: target.node,
@@ -383,23 +437,7 @@ const rule = {
                   .join(', '),
               },
             });
-            continue;
           }
-        }
-
-        const missing = [...conditionalWords].filter(
-          (word) => !declared.has(word),
-        );
-        if (missing.length > 0) {
-          context.report({
-            node: target.node,
-            messageId: 'underDeclaredState',
-            data: {
-              target: target.name,
-              missing: missing.join(', '),
-              example: missing.map((word) => `${word} option`).join(' / '),
-            },
-          });
         }
       }
     }

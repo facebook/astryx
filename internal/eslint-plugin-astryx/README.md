@@ -287,6 +287,107 @@ const ref = useMergedRefs(forwardedRef, internalRef);
 
 The rule is an error in both tiers because core contains no render-time
 `mergeRefs(...)` JSX ref callsites.
+### Theming targets — `theming-target-shape`, `theming-target-name`, `themeprops-reflection`
+
+**Status: prototype.** All three are registered on the plugin but are NOT in
+`configs.strict` / `configs.recommended` yet, and are not wired into
+`eslint.config.js` — the criteria they encode ("Principles for authoring
+theming targets" in the wiki, plus paint-not-layout and
+`{parent}-{position}-{component}`) are still being settled. Measured counts
+against `packages/` and the proposed tier for each check are below; turning one
+on is one line in `index.js`.
+
+A theming target (`themeProps('selector-option')`) is a public API commitment:
+a stable `.astryx-*` class a theme writes CSS against. These rules check the
+part of "is this a good target?" that is mechanical. Whether a real consumer
+needs the target, whether it has a stated visual intent, and whether the design
+should converge instead (principles 6 and 7) stay human.
+
+Shared analysis lives in `theming-target.js`: which `themeProps()` calls land on
+an element (spread, through `mergeProps`, through a local `const`, or via
+`.className`), which `stylex.props()` arguments it applies, and whether those
+declare **paint** (color, background, border, font, radius, shadow), **layout**
+(display, position, flex/grid, margin/padding, width/height, transform), or
+neither (opacity, transition, cursor). Style objects imported from another
+module are read from that module via `stylex-style-source.js`.
+
+#### `@astryx/theming-target-shape`
+
+| Check (messageId)                                     | What it flags                                                                                                | On `packages/` | Proposed tier                                      |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | -------------- | -------------------------------------------------- |
+| `layoutOnlyTarget`                                    | A sub-element target on an element whose styles declare no paint property                                    | 5              | `warn`                                             |
+| `wrapperTarget`                                       | A target on a paint-free `div`/`span` whose only child is an Astryx component — it belongs on that component | 4              | `warn` (→ `error` once fixed)                      |
+| `unstyledTarget`                                      | A target on an element with no styles at all and nothing wrapped                                             | 0              | `error`                                            |
+| `layoutOnlyRootTarget` (opt-in: `checkRootTargets`)   | A component's OWN root target, when the root paints nothing                                                  | 55             | off — layout primitives legitimately trip it       |
+| `stateVariesOnlyLayout` (opt-in: `checkStateSurface`) | The target declares runtime state, but that state only moves layout (a `transform`)                          | 0              | `warn` — worth turning on                          |
+| `underDeclaredState` (opt-in: `checkStateSurface`)    | The element's styles vary with a state the target does not pass to `themeProps`                              | 16             | off — a real backlog, each item needs a human call |
+
+The rule stays silent when it cannot see the whole picture: a target spread onto
+an Astryx component (the paint is inside the component), a style it cannot
+resolve, an element that sets a CSS custom property (it feeds the derived-var
+pipeline), and SVG (which paints through presentation attributes). The
+consumer's `xstyle` is not treated as unknown — it is not part of the
+component's declared surface.
+
+**Bad:**
+
+```tsx
+// styles.dropdown: boxSizing, maxHeight, overflowY, padding — nothing paints
+<div {...mergeProps(themeProps('selector-dropdown'), stylex.props(styles.dropdown))}>
+
+// the target belongs on <CheckboxInput>, not on the box holding it
+<div inert {...mergeProps(themeProps('x-option-checkbox'), stylex.props(styles.box))}>
+  <CheckboxInput label="" />
+</div>
+```
+
+**Options:** `allowTargets`, `allowFiles`, `checkRootTargets`,
+`checkStateSurface`.
+
+#### `@astryx/theming-target-name`
+
+| Check (messageId)           | What it flags                                                                                                                        | On `packages/` | Proposed tier |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | -------------- | ------------- |
+| `appearanceInComponentSlot` | Target attached to a leaf Astryx component whose last segment names an appearance (`-check` on an `<Icon>`) instead of the component | 3              | `warn`        |
+| `missingPosition`           | `{parent}-{component}` with no position segment, on a composed component                                                             | 0              | `warn`        |
+| `stateSubTarget`            | A target name ending in `-disabled` / `-selected` / `-checked` / …                                                                   | 0              | `error`       |
+
+The component-slot check runs only for **leaf** components (`Icon`,
+`CheckboxInput`, `Divider`, `Button`, …; see `DEFAULT_COMPONENT_SLOTS`) and
+skips the component's own root target. Both narrowings are deliberate: principle
+3 makes `{component}-option` the correct name for an option row in every
+list-like component, so holding a row primitive to
+`{parent}-{position}-{component}` would argue with the principle the rule
+exists to serve. Position words are an open vocabulary and are not checked.
+
+**Bad → good:**
+
+```tsx
+<Icon icon="check" {...themeProps('selector-check')} />        // ❌ appearance
+<Icon icon="check" {...themeProps('selector-option-icon')} />  // ✅ position + component
+```
+
+**Options:** `allowTargets`, `allowFiles`, `componentSlots`.
+
+#### `@astryx/themeprops-reflection`
+
+`themeProps()` returns the class token **and** the `data-*` reflection of the
+visual props. These are mechanical bugs, not judgment calls.
+
+| Check (messageId)        | What it flags                                                                                                    | On `packages/` | Proposed tier |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------- | -------------- | ------------- |
+| `droppedStateReflection` | `className={themeProps('x', {size}).className}` — the `data-*` attributes never render                           | 0              | `error`       |
+| `clobberedByLaterProp`   | `{...themeProps('x')} className={className}` — the later prop overwrites the target, so it never reaches the DOM | 2              | `error`       |
+| `bypassedThemeProps`     | `stableClassName('x')` used to build a theme class by hand, so state can never ride along                        | 2              | `error`       |
+| `classNameOnly`          | `.className` on a call with no visual props — drops nothing today, becomes the bug tomorrow                      | 3              | `warn`        |
+| `handAuthoredState`      | `data-state`/`data-selected`/… hand-written on an element that already carries a target                          | 0              | `error`       |
+
+`handAuthoredState` only looks at a short list of state attribute names: most
+`data-*` attributes in the codebase are identity or query hooks the component's
+own JS reads (`data-value`, `data-date`, `data-page`), and routing those through
+`themeProps` would change what they mean.
+
+**Options:** `allowDataAttributes`, `allowFiles`.
 
 ### `@astryx/require-letter-spacing`
 
