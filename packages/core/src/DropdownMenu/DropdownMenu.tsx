@@ -35,9 +35,9 @@ import * as stylex from '@stylexjs/stylex';
 import {usePopover} from '../Popover/usePopover';
 import {Button, type ButtonProps} from '../Button';
 import {Icon} from '../Icon';
-import type {IconType} from '../Icon';
 
 import {renderDropdownItems} from './renderDropdownItems';
+import type {DropdownMenuItemProps} from './DropdownMenuItem';
 import {
   MENU_ITEM_ROLES,
   MENU_ITEM_SELECTOR,
@@ -99,16 +99,23 @@ const styles = stylex.create({
 // Types
 // =============================================================================
 
-export interface DropdownMenuItemData {
-  label: string;
-  onClick?: () => void;
-  isDisabled?: boolean;
-  icon?: ReactNode | IconType;
+/**
+ * Data-mode shape for one menu row.
+ *
+ * The item fields are sourced from `DropdownMenuItemProps` — data mode renders
+ * through `DropdownMenuItem`, so the two APIs describe the same thing and must
+ * not drift. Only the fields listed here are part of the data API; add a key to
+ * the `Pick` to expose more of the item's props to `items`.
+ */
+export interface DropdownMenuItemData extends Pick<
+  DropdownMenuItemProps,
+  'icon' | 'onClick' | 'isDisabled' | 'variant'
+> {
   /**
-   * Visual variant for a leaf item. `'destructive'` renders it in the error
-   * color for dangerous actions (e.g. Delete). @default 'default'
+   * Primary label text. Narrowed to `string` from the item's `ReactNode`:
+   * data mode derives each row's React key from the label.
    */
-  variant?: 'default' | 'destructive';
+  label: string;
   /**
    * Nested submenu entries. When present, this row becomes a submenu (a
    * flyout revealing `items`) instead of a leaf action — no separate item

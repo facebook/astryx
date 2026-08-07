@@ -6,7 +6,7 @@
  * @position Utility; used by DropdownMenu to unify data-driven and compound paths
  */
 
-import type {ReactNode} from 'react';
+import type {ReactElement, ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Divider} from '../Divider';
 import {DropdownMenuItem} from './DropdownMenuItem';
@@ -48,6 +48,20 @@ function getSectionKey(section: DropdownMenuSection, index: number): string {
 }
 
 /**
+ * Renders one leaf row as a `DropdownMenuItem`.
+ *
+ * `items` is stripped because it selects the submenu shape rather than being an
+ * item prop; every other field of `DropdownMenuItemData` is a
+ * `DropdownMenuItem` prop by construction (the type is `Pick`ed from
+ * `DropdownMenuItemProps`), so the data path forwards them wholesale and can't
+ * silently drop a field the data API advertises.
+ */
+function renderLeafItem(item: DropdownMenuItemData): ReactElement {
+  const {items: _submenuItems, ...itemProps} = item;
+  return <DropdownMenuItem key={getItemKey(item)} {...itemProps} />;
+}
+
+/**
  * Converts data-driven items into DropdownMenuItem components,
  * so both modes share the same rendering and keyboard navigation path.
  */
@@ -81,16 +95,7 @@ export function renderDropdownItems(items: DropdownMenuOption[]): ReactNode {
               {option.title}
             </div>
           )}
-          {option.items.map(item => (
-            <DropdownMenuItem
-              key={getItemKey(item)}
-              icon={item.icon}
-              label={item.label}
-              onClick={item.onClick}
-              isDisabled={item.isDisabled}
-              variant={item.variant}
-            />
-          ))}
+          {option.items.map(renderLeafItem)}
         </div>,
       );
     } else if (!('type' in option)) {
@@ -110,16 +115,7 @@ export function renderDropdownItems(items: DropdownMenuOption[]): ReactNode {
           </DropdownMenuSubMenu>,
         );
       } else {
-        elements.push(
-          <DropdownMenuItem
-            key={getItemKey(option)}
-            icon={option.icon}
-            label={option.label}
-            onClick={option.onClick}
-            isDisabled={option.isDisabled}
-            variant={option.variant}
-          />,
-        );
+        elements.push(renderLeafItem(option));
       }
     }
   }
