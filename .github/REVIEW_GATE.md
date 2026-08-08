@@ -86,7 +86,12 @@ internal contributors' PRs. Owners still self-serve their own domain.
      entitled CODEOWNER approved?
        → drop needs:code-review · status → success 🟢 · neutralize stale check
 
-③ branch protection on main
+③ every 15 min  ──schedule──►  review-clear.yml sweep (same clearOne)
+     open PRs whose gate is unresolved (label OR pending status)
+     entitled owner already approved? → clear it
+     ⇒ a clear lost to a transient failure heals itself; never creates a gate
+
+④ branch protection on main
      required status context "review-required": pending blocks, success allows
      + 1 required approving review (native)
      ⇒ blocks non-admin merges even for write-access internal contributors
@@ -114,12 +119,31 @@ to failure).
 
 ## Recovery / manual re-flag
 
-`review-signal.yml` has a `workflow_dispatch`:
+**Normally you don't need this — the gate self-heals.** `review-clear.yml` runs a
+clear-only sweep every 15 minutes: any open PR still carrying an unresolved code
+gate (the label, or a pending `review-required` status) is re-checked, and
+cleared if an entitled owner has already approved. So a clear that is lost to a
+transient failure — a workflow that dies in "Set up job" during a GitHub Actions
+incident, a dropped webhook, a cancelled or timed-out run — costs minutes rather
+than needing a human to notice. The sweep can only ever *remove* a gate that an
+approval already satisfied; it never creates one.
+
+To force it immediately, `workflow_dispatch` **Review clear** (cheap: it only
+reads reviews and statuses).
+
+`review-signal.yml` also has a `workflow_dispatch` for a full re-flag, which
+recomputes gates from scratch (heavier — it re-reads every PR's files and diff):
 - blank `pr` input → re-flag **all** open PRs (backfill / mass recovery)
 - a PR number → re-flag just that one
 
-Use it if a PR's `review-required` ever gets stuck (e.g. the workflow was added
+Use that one if a gate needs to be re-*derived* (e.g. the workflow was added
 after the PR was opened, or a stale check run lingers).
+
+> **A human cannot hand-clear this gate.** Branch protection requires the
+> `review-required` context *from the GitHub Actions app* (`app_id` 15368). A
+> status posted with a personal token turns the PR's rollup green but does not
+> satisfy the requirement — the merge stays blocked. Only a workflow run can
+> genuinely clear it, which is why the automated sweep is the recovery path.
 
 ## The Copilot reviewer is separate
 

@@ -18,6 +18,23 @@
 # Clearing only ever REMOVES the code gate — an approval can satisfy a gate, not
 # create one — so this needs no risk detection. It never checks out or runs
 # PR-controlled code.
+#
+# SELF-HEALING (schedule). The approval event is ONE-SHOT: if this run dies, the
+# gate stays pending forever and only a human noticing it can recover it. That
+# is not hypothetical — during the 2026-08-06 GitHub Actions incident this
+# workflow failed in "Set up job" ("Failed to resolve action download info:
+# Service Unavailable") before a single line of script ran, and #4750 sat
+# blocked on an approval it already had. A cron sweep therefore re-runs the same
+# clear over any open PR whose code gate is still unresolved, so a transient
+# failure (setup failure, dropped webhook, cancelled run, timed-out queue) costs
+# minutes instead of needing a human. The sweep is CLEAR-ONLY, exactly like the
+# event path — it can only remove a gate an entitled owner already approved
+# away, never create one — so running it unattended on a timer is safe.
+#
+# Note this is also why a human can't just hand-fix a stuck gate: branch
+# protection requires the "review-required" context FROM THE GITHUB ACTIONS APP
+# (app_id 15368). A status posted by a user shows green in the PR's rollup but
+# does NOT satisfy the requirement — only a workflow can truly clear this gate.
 
 name: Review clear
 
@@ -25,12 +42,21 @@ on:
   workflow_run:
     workflows: ["Review signal"]
     types: [completed]
+  # Self-healing sweep — see SELF-HEALING above. GitHub may delay or drop
+  # scheduled runs when Actions is busy; that's tolerable, the next tick
+  # reconciles just the same.
+  schedule:
+    - cron: "*/15 * * * *"
+  # Manual lever: force an immediate sweep without the heavyweight
+  # review-signal backfill (which re-reads every open PR's files and diff).
+  workflow_dispatch:
 
 permissions: {}
 
 jobs:
   clear:
-    if: github.event.workflow_run.event == 'pull_request_review'
+    # workflow_run: only for review submissions. schedule/dispatch: always.
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.event == 'pull_request_review'
     runs-on: ubuntu-slim
     permissions:
       pull-requests: write
@@ -45,8 +71,53 @@ jobs:
         with:
           script: |
             const { owner, repo } = context.repo;
-            const run = context.payload.workflow_run;
             const CODE = 'needs:code-review';
+
+            // Entitled code approvers come from the ENGOWNERS repo variable
+            // (passed in as env above). Any eng owner's approval clears the code
+            // gate — eng owns the code, and the GitHub-native CODEOWNERS set is
+            // a subset of ENGOWNERS, so ENGOWNERS covers it. No file read / no
+            // content API, so there is nothing to 502 on. If the variable is
+            // empty/unset, DON'T clear (leave the gate as-is) and let
+            // review-signal's flag job reconcile — declining to clear is the
+            // safe direction here; an empty list is never "everyone".
+            const codeApprovers = new Set(
+              ((process.env.ENG_OWNERS || '').match(/@?[A-Za-z0-9-]+/g) || [])
+                .map((h) => h.replace(/^@/, '').toLowerCase()),
+            );
+            if (!codeApprovers.size) {
+              core.warning('ENGOWNERS variable empty/unset; not clearing (flag job will reconcile).');
+              return;
+            }
+
+            // ---- Which PRs to consider? --------------------------------
+            // Event path: the one PR the review belonged to.
+            // Sweep path (schedule/dispatch): every open PR still carrying an
+            // unresolved code gate. Both then run the SAME clearOne() below, so
+            // the recovery path can never drift from the live one.
+            let targets;
+            if (context.eventName === 'workflow_run') {
+              const one = await resolveFromRun(context.payload.workflow_run);
+              if (!one) { core.info('No PR resolved for this review run.'); return; }
+              targets = [one];
+            } else {
+              targets = await findUnresolvedGates();
+              core.info(`Sweep: ${targets.length} open PR(s) with an unresolved code gate.`);
+            }
+
+            let failures = 0;
+            for (const prNumber of targets) {
+              try {
+                await clearOne(prNumber);
+              } catch (e) {
+                failures += 1;
+                core.warning(`#${prNumber}: ${e.message}`);
+              }
+            }
+            if (failures) core.setFailed(`${failures} PR(s) failed to reconcile; see warnings.`);
+            return;
+
+            // ============================================================
 
             // Resolve the PR the review belonged to.
             //
@@ -57,6 +128,7 @@ jobs:
             // the payload branch resolves the PR. The reliable signal is the
             // triggering run's own head_branch (correct even for forks); find
             // the open PR whose head branch matches.
+            async function resolveFromRun(run) {
             let prNumber = null;
             const prs0 = run.pull_requests || [];
             if (prs0.length) {
@@ -83,29 +155,39 @@ jobs:
                 core.warning(`Could not resolve PR from branch ${run.head_branch}: ${e.message}`);
               }
             }
-            if (!prNumber) { core.info('No PR resolved for this review run.'); return; }
+            return prNumber;
+            }
 
+            // Open PRs whose code gate is still unresolved. Checked on BOTH
+            // signals — the label AND a pending review-required status — because
+            // a half-applied recovery can leave one without the other, and a
+            // gate is only really clear when both are.
+            async function findUnresolvedGates() {
+              const open = await github.paginate(github.rest.pulls.list, {
+                owner, repo, state: 'open', per_page: 100,
+              });
+              const out = [];
+              for (const pr of open) {
+                if ((pr.labels || []).some((l) => l.name === CODE)) { out.push(pr.number); continue; }
+                try {
+                  const { data } = await github.rest.repos.getCombinedStatusForRef({
+                    owner, repo, ref: pr.head.sha,
+                  });
+                  if ((data.statuses || []).some(
+                    (s) => s.context === 'review-required' && s.state === 'pending',
+                  )) out.push(pr.number);
+                } catch (e) {
+                  core.warning(`Could not read statuses for #${pr.number}: ${e.message}`);
+                }
+              }
+              return out;
+            }
+
+            async function clearOne(prNumber) {
             // Full PR (labels + head sha).
             const { data: full } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
             const headSha = full.head.sha;
             const labels = full.labels.map((l) => l.name);
-
-            // Entitled code approvers come from the ENGOWNERS repo variable
-            // (passed in as env above). Any eng owner's approval clears the code
-            // gate — eng owns the code, and the GitHub-native CODEOWNERS set is
-            // a subset of ENGOWNERS, so ENGOWNERS covers it. No file read / no
-            // content API, so there is nothing to 502 on. If the variable is
-            // empty/unset, DON'T clear (leave the gate as-is) and let
-            // review-signal's flag job reconcile — declining to clear is the
-            // safe direction here; an empty list is never "everyone".
-            const codeApprovers = new Set(
-              ((process.env.ENG_OWNERS || '').match(/@?[A-Za-z0-9-]+/g) || [])
-                .map((h) => h.replace(/^@/, '').toLowerCase()),
-            );
-            if (!codeApprovers.size) {
-              core.warning('ENGOWNERS variable empty/unset; not clearing (flag job will reconcile).');
-              return;
-            }
 
             // Did an entitled owner approve (latest review state per user)?
             let codeApproved = false;
@@ -168,3 +250,4 @@ jobs:
             } catch (e) {
               core.warning(`Could not neutralize stale check-run: ${e.message}`);
             }
+            } // end clearOne
