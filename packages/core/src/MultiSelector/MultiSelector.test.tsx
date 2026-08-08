@@ -1894,3 +1894,121 @@ describe('MultiSelector search affordances', () => {
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
 });
+
+describe('MultiSelector dropdown row theme targets', () => {
+  const ROW_OPTIONS = ['Apple', 'Banana', 'Orange'];
+
+  it('renders astryx-multi-selector-option on every dropdown option row', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={ROW_OPTIONS}
+        value={[]}
+        onChange={() => {}}
+      />,
+    );
+    await user.click(screen.getByRole('combobox'));
+    const options = screen.getAllByRole('option', h);
+    expect(options).toHaveLength(3);
+    for (const option of options) {
+      expect(option).toHaveClass('astryx-multi-selector-option');
+    }
+  });
+
+  it('renders astryx-multi-selector-option-checkbox on the per-row checkbox wrapper', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={ROW_OPTIONS}
+        value={[]}
+        onChange={() => {}}
+      />,
+    );
+    await user.click(screen.getByRole('combobox'));
+    const options = screen.getAllByRole('option', h);
+    for (const option of options) {
+      const checkboxWrapper = option.querySelector(
+        '.astryx-multi-selector-option-checkbox',
+      );
+      expect(checkboxWrapper).not.toBeNull();
+    }
+  });
+
+  it('does not render the fallback label when renderOption is used', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={[{value: 'apple', label: 'Apple'}]}
+        value={[]}
+        onChange={() => {}}
+        renderOption={option => (
+          <span data-testid="custom-row">{option.label}</span>
+        )}
+      />,
+    );
+    await user.click(screen.getByRole('combobox'));
+    const option = screen.getAllByRole('option', h)[0];
+    // The row itself is still targetable; only the fallback label is replaced.
+    expect(option).toHaveClass('astryx-multi-selector-option');
+    expect(within(option).getByTestId('custom-row')).toHaveTextContent('Apple');
+  });
+
+  it('gives the Select All row both option and select-all targets, and the divider its target', async () => {
+    const user = userEvent.setup();
+    const {container} = render(
+      <MultiSelector
+        label="Fruit"
+        options={ROW_OPTIONS}
+        value={[]}
+        onChange={() => {}}
+        hasSelectAll
+      />,
+    );
+    await user.click(screen.getByRole('combobox'));
+
+    const selectAllRow = screen.getAllByRole('option', h)[0];
+    expect(selectAllRow).toHaveTextContent('Select all');
+    expect(selectAllRow).toHaveClass('astryx-multi-selector-option');
+    expect(selectAllRow).toHaveClass('astryx-multi-selector-select-all');
+
+    // Regular rows are not tagged with the select-all target.
+    const regularRows = screen.getAllByRole('option', h).slice(1);
+    for (const row of regularRows) {
+      expect(row).not.toHaveClass('astryx-multi-selector-select-all');
+    }
+
+    // The divider rendered after the Select All row carries its own target.
+    expect(
+      container.querySelector('.astryx-multi-selector-select-all-divider'),
+    ).not.toBeNull();
+  });
+
+  it('exposes the row, checkbox, and select-all divider targets to defineTheme', () => {
+    const theme = defineTheme({
+      name: 'multi-selector-row-slots-test',
+      components: {
+        'multi-selector-option': {
+          base: {borderRadius: '8px', fontWeight: '600'},
+        },
+        'multi-selector-option-checkbox': {
+          base: {transform: 'scale(1.2)'},
+        },
+        'multi-selector-select-all': {
+          base: {backgroundColor: 'var(--color-background-subtle)'},
+        },
+        'multi-selector-select-all-divider': {
+          base: {display: 'none'},
+        },
+      },
+    });
+    const css = generateThemeTestCSS(theme);
+    expect(css).toContain('.astryx-multi-selector-option {');
+    expect(css).toContain('.astryx-multi-selector-option-checkbox {');
+    expect(css).toContain('.astryx-multi-selector-select-all {');
+    expect(css).toContain('.astryx-multi-selector-select-all-divider {');
+    expect(css).toContain('display: none');
+  });
+});
