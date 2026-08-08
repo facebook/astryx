@@ -37,17 +37,6 @@ const styles = stylex.create({
     },
     transitionTimingFunction: easeVars['--ease-standard'],
   },
-  focus: {
-    outline: {
-      default: 'none',
-      [stylex.when.ancestor(':has(:focus-visible)', indicatorScope)]:
-        `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: null,
-      [stylex.when.ancestor(':has(:focus-visible)', indicatorScope)]: '2px',
-    },
-  },
   // State-dependent colors with ancestor hover behavior
   unchecked: {
     // Foreground for the inherit-shade loading spinner (reads currentColor):
@@ -170,7 +159,9 @@ const indeterminateSizeStyles = stylex.create({
  * indeterminate bar.
  *
  * Decorative and non-interactive — it renders `aria-hidden` and owns no input,
- * role, or focus behavior. Themes replace it wholesale through
+ * role, or focus behavior. The focus ring lives on the owner's control wrapper
+ * (see CheckboxInput), so a theme that replaces this component keeps a visible
+ * focus indicator for free. Themes replace it wholesale through
  * `defineTheme({indicators: {checkbox: MyCheckbox}})`, or restyle it through
  * the `checkbox` theme target like any other component.
  *
@@ -211,7 +202,6 @@ export function CheckboxIndicator({
         stylex.props(
           styles.box,
           boxSizeStyles[size],
-          !isDisabled && styles.focus,
           isCheckedOrIndeterminate ? styles.checked : styles.unchecked,
           isDisabled && styles.disabled,
           isDisabled && !isCheckedOrIndeterminate && styles.disabledUnchecked,

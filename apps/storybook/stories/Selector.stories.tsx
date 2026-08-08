@@ -906,7 +906,9 @@ const selectorCustomIndicatorTheme = defineTheme({
           justifyContent: 'center',
           width: 20,
           height: 20,
-          color: state === 'checked' ? '#7c3aed' : '#c4c7cc',
+          // The brand hex is the point of the demo — a theme author's palette.
+          // The resting/neutral shade stays a token.
+          color: state === 'checked' ? '#7c3aed' : 'var(--color-border)',
         }}>
         {state === 'checked' ? '◉' : '○'}
       </span>
