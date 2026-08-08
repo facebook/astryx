@@ -20,6 +20,7 @@ import {SideNavHeading} from './SideNavHeading';
 import {SideNavItem} from './SideNavItem';
 import {SideNavSection} from './SideNavSection';
 import {LinkProvider} from '../Link/LinkProvider';
+import {readAnchorNames} from '../Layer/anchorName';
 import {
   SideNavCollapseContext,
   type SideNavImperativeCollapseHandle,
@@ -591,6 +592,70 @@ describe('SideNavHeading collapsed', () => {
     for (const button of Array.from(document.querySelectorAll('button'))) {
       expect(menu!.contains(button)).toBe(false);
     }
+  });
+
+  // The menu popup positions itself via CSS anchor positioning: its
+  // position-anchor id must resolve to an anchor-name on the trigger, or the
+  // popover falls back to the viewport's containing block (#4789). The
+  // collapsed tooltip writes its own anchor-name onto the same element, so
+  // the assertion is membership of the popover's id — not mere presence.
+  function findMenuPopoverAnchorId(): string | undefined {
+    const menuPopover = Array.from(document.querySelectorAll('[popover]')).find(
+      el => el.querySelector('[role="menu"]'),
+    );
+    return (menuPopover?.getAttribute('style') ?? '')
+      .match(/position-anchor:\s*([^;]+)/)?.[1]
+      ?.trim();
+  }
+
+  it('anchors the collapsed menu popup to the icon-only trigger', async () => {
+    const user = userEvent.setup();
+    render(
+      <CollapsedWrapper>
+        <SideNavHeading
+          heading="My App"
+          icon={<span data-testid="app-icon">🏠</span>}
+          menu={
+            <>
+              <div role="menuitem">Alpha</div>
+              <div role="menuitem">Beta</div>
+            </>
+          }
+        />
+      </CollapsedWrapper>,
+    );
+    const trigger = screen.getByRole('button', {name: 'My App'});
+    await user.click(trigger);
+
+    const anchorId = findMenuPopoverAnchorId();
+    expect(anchorId).toBeDefined();
+    expect(readAnchorNames(trigger)).toContain(anchorId);
+  });
+
+  it('anchors the expanded menu popup to its trigger (collapsed parity)', async () => {
+    const user = userEvent.setup();
+    render(
+      <SideNavHeading
+        heading="My App"
+        data-testid="nav-heading"
+        menu={
+          <>
+            <div role="menuitem">Alpha</div>
+            <div role="menuitem">Beta</div>
+          </>
+        }
+      />,
+    );
+    // In expanded whole-heading-trigger mode the anchor-name rides the
+    // heading root (the popup aligns to the full heading, not the chevron
+    // button that opens it).
+    await user.click(screen.getByRole('button', {name: 'Open menu'}));
+
+    const anchorId = findMenuPopoverAnchorId();
+    expect(anchorId).toBeDefined();
+    expect(readAnchorNames(screen.getByTestId('nav-heading'))).toContain(
+      anchorId,
+    );
   });
 });
 
