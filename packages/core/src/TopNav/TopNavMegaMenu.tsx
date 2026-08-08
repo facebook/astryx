@@ -12,6 +12,13 @@
  * eliminating z-index stacking. CSS anchor positioning places the panel below
  * the nav wrapper.
  *
+ * The default (desktop) trigger opens on hover and click. Hover opens are
+ * transient; click/keyboard opens are pinned. A click shortly after hover-open
+ * confirms and pins the panel instead of closing it. The panel remains an auto
+ * popover for native dismissal and sibling exclusivity; `popoverTarget`
+ * registers the trigger as its native invoker so the guard runs before any
+ * dismiss.
+ *
  * Supports three render modes via TopNavRenderContext:
  * - 'default': desktop popover mega menu (hover/click triggered)
  * - 'mobile-bar': returns null (hidden in compact mobile bar)
@@ -131,7 +138,10 @@ const styles = stylex.create({
   // own content, keeping the surface radius/shadow static at the edges.
   // Internal scroll is a stopgap until the mobile bottom-sheet lands.
   panelViewportFit: {
-    display: 'flex',
+    display: {
+      default: 'none',
+      ':popover-open': 'flex',
+    },
     flexDirection: 'column',
     maxHeight: `calc(100% - ${spacingVars['--spacing-3']})`,
   },
@@ -354,6 +364,8 @@ TopNavMegaMenu.displayName = 'TopNavMegaMenu';
 // DefaultMegaMenu — desktop popover mode
 // =============================================================================
 
+const CLICK_GUARD_MS = 500;
+
 function DefaultMegaMenu({
   ref,
   label,
@@ -368,26 +380,36 @@ function DefaultMegaMenu({
   const showTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const triggerButtonRef = useRef<HTMLButtonElement | null>(null);
-  const clickLockedRef = useRef(false);
+  const hoverOpenedAtRef = useRef(0);
+  const stickyRef = useRef(false);
 
   const handlePopoverShow = useCallback(() => {
     onOpenChange?.(true);
   }, [onOpenChange]);
 
   const handlePopoverHide = useCallback(() => {
+    hoverOpenedAtRef.current = 0;
+    stickyRef.current = false;
     onOpenChange?.(false);
   }, [onOpenChange]);
 
   const popover = usePopover({
     // role: 'none' — the panel exposes its own role="group" labeled by
-    // `label`. Focus stays on the trigger while the panel is open, so a
-    // role="dialog" aria-modal="true" wrapper would announce an unnamed
-    // modal dialog around a grid of links.
+    // `label`. Pointer/hover opens keep focus on the trigger; keyboard and
+    // assistive-tech opens move focus into the panel (a labeled group you exit
+    // with Escape or by tabbing out). Either way role="dialog"
+    // aria-modal="true" would be wrong: it announces an unnamed modal dialog
+    // around a grid of links (and, when focus stays on the trigger, marks the
+    // focused control inert).
     role: 'none',
     // hasSurface: false — mega menu provides its own surface (panelContainer)
     // with border-top and custom overflow. Animation is applied via the
     // render() call's xstyle prop (panelAnimation), not the hook options.
     hasSurface: false,
+    // Keep native outside-click/Escape dismissal and sibling exclusivity.
+    // The trigger's popoverTarget association prevents its activation from
+    // being treated as an ordinary outside interaction.
+    hasLightDismiss: true,
     onShow: handlePopoverShow,
     onHide: handlePopoverHide,
   });
@@ -417,40 +439,75 @@ function DefaultMegaMenu({
   const scheduleShow = useCallback(() => {
     clearTimeouts();
     showTimeoutRef.current = setTimeout(() => {
+      hoverOpenedAtRef.current = Date.now();
       popover.show({skipAutoFocus: true});
     }, delay);
-  }, [clearTimeouts, popover, delay]);
+  }, [clearTimeouts, delay, popover]);
 
   const scheduleHide = useCallback(() => {
     clearTimeouts();
     hideTimeoutRef.current = setTimeout(() => {
       popover.hide();
     }, hideDelay);
-  }, [clearTimeouts, popover, hideDelay]);
+  }, [clearTimeouts, hideDelay, popover]);
 
-  const handleMouseEnter = useCallback(() => {
-    if (!clickLockedRef.current) {
+  const focusFirstPanelItem = useCallback(() => {
+    popover.contentRef.current
+      ?.querySelector<HTMLElement>(
+        'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      )
+      ?.focus();
+  }, [popover.contentRef]);
+
+  const handleTriggerMouseEnter = useCallback(() => {
+    clearTimeouts();
+    if (!popover.isOpen) {
       scheduleShow();
     }
-  }, [scheduleShow]);
+  }, [clearTimeouts, popover.isOpen, scheduleShow]);
+
+  const handlePanelMouseEnter = useCallback(() => {
+    clearTimeouts();
+  }, [clearTimeouts]);
 
   const handleMouseLeave = useCallback(() => {
-    if (!clickLockedRef.current) {
+    if (!stickyRef.current) {
       scheduleHide();
     }
   }, [scheduleHide]);
 
-  const handleClick = useCallback(() => {
-    clearTimeouts();
-    if (popover.isOpen) {
-      clickLockedRef.current = false;
-      popover.hide();
-      triggerButtonRef.current?.focus();
-    } else {
-      clickLockedRef.current = true;
-      popover.show();
-    }
-  }, [popover, clearTimeouts]);
+  const handleClick = useCallback(
+    (event: React.MouseEvent<HTMLButtonElement>) => {
+      // Cancel the native invoker toggle so this guard is the single source of
+      // truth for trigger activation. popoverTarget still establishes the
+      // invoker relationship used by native light-dismiss and stacking.
+      event.preventDefault();
+      clearTimeouts();
+
+      if (event.detail === 0) {
+        stickyRef.current = true;
+        hoverOpenedAtRef.current = 0;
+        if (popover.isOpen) {
+          focusFirstPanelItem();
+        } else {
+          popover.show();
+        }
+      } else if (!popover.isOpen) {
+        stickyRef.current = true;
+        popover.show({skipAutoFocus: true});
+      } else if (Date.now() - hoverOpenedAtRef.current < CLICK_GUARD_MS) {
+        // A click that naturally follows a hover-open confirms the open state
+        // instead of toggling the panel shut. From here it behaves like any
+        // other click-open and stays pinned until explicit dismissal.
+        stickyRef.current = true;
+        hoverOpenedAtRef.current = 0;
+      } else {
+        popover.hide();
+        triggerButtonRef.current?.focus();
+      }
+    },
+    [clearTimeouts, focusFirstPanelItem, popover],
+  );
 
   useEffect(() => {
     return () => {
@@ -464,8 +521,10 @@ function DefaultMegaMenu({
         ref={mergeRefs(triggerButtonRef, ref)}
         type="button"
         {...popover.triggerProps}
+        // Native invoker prevents trigger light-dismiss.
+        popoverTarget={popover.id}
         onClick={handleClick}
-        onMouseEnter={handleMouseEnter}
+        onMouseEnter={handleTriggerMouseEnter}
         onMouseLeave={handleMouseLeave}
         {...mergeProps(
           themeProps('top-nav-mega-menu'),
@@ -487,7 +546,7 @@ function DefaultMegaMenu({
           // for action menus; link mega menus are the documented anti-case).
           role="group"
           aria-label={label}
-          onMouseEnter={handleMouseEnter}
+          onMouseEnter={handlePanelMouseEnter}
           onMouseLeave={handleMouseLeave}
           {...stylex.props(styles.panelContainer)}>
           <div {...stylex.props(styles.panelContent)}>
