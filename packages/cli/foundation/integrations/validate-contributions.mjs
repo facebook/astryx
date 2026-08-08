@@ -23,6 +23,8 @@ import * as fs from 'node:fs';
 import {discoverIntegrationCodemods} from '../../assets/codemods/integration-discovery.mjs';
 import {discoverIntegrationTemplatesForOne} from '../discovery/template-adapter.mjs';
 import * as componentDiscovery from '../discovery/component-discovery.mjs';
+import {loadModuleWithParser} from '../fs/module-loader.mjs';
+import {parseAppShell} from '../../authoring/app-shell/parse.mjs';
 
 /**
  * @typedef {import('./issue').AstryxIntegrationIssue} Issue
@@ -133,6 +135,35 @@ async function runContributionChecks(integration, issues) {
   await checkCodemods(integration, issues);
   await checkTemplates(integration, issues);
   await checkComponents(integration, issues);
+  await checkAppShell(integration, issues);
+}
+
+/**
+ * Validate the integration's app shell. The declared module must exist and load
+ * + validate against the app-shell schema. A missing file is a
+ * `missing_app_shell` error; a load/parse failure is `invalid_app_shell`.
+ * @param {LoadedIntegration} integration loaded-integration-shaped object
+ * @param {Issue[]} issues
+ */
+async function checkAppShell(integration, issues) {
+  const file = integration.appShell;
+  if (!file) return;
+  if (!fs.existsSync(file)) {
+    issues.push(
+      issueError(
+        'missing_app_shell',
+        `Declared appShell module does not exist on disk: ${file}`,
+      ),
+    );
+    return;
+  }
+  try {
+    await loadModuleWithParser(file, parseAppShell, {label: 'app shell'});
+  } catch (err) {
+    issues.push(
+      issueError('invalid_app_shell', /** @type {any} */ (err).message),
+    );
+  }
 }
 
 /**

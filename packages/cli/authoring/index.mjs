@@ -17,6 +17,7 @@
 export {parseConfig} from './config/parse.mjs';
 export {parseIntegration} from './integration/parse.mjs';
 export {parseCodemod} from './codemod/parse.mjs';
+export {parseAppShell} from './app-shell/parse.mjs';
 export {parseDoc} from './doctypes/parse.mjs';
 export {parseComponent} from './doctypes/component/parse.mjs';
 export {parseHook} from './doctypes/hook/parse.mjs';

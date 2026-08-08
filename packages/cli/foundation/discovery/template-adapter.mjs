@@ -650,7 +650,17 @@ const UBIQUITOUS = new Set([
  * @returns {string[]}
  */
 export function extractComponents(pagePath) {
-  const src = fs.readFileSync(pagePath, 'utf-8');
+  return extractComponentsFromSource(fs.readFileSync(pagePath, 'utf-8'));
+}
+
+/**
+ * Like {@link extractComponents} but operates on an in-memory source string.
+ * Used by the show leaf so the reported component list reflects any
+ * app shell applied to the emitted source.
+ * @param {string} src
+ * @returns {string[]}
+ */
+export function extractComponentsFromSource(src) {
   // Match JSX opening tags, e.g. `<Section` or the legacy `<XDSSection`.
   // Templates author bare component names post un-prefix migration
   // (P2380608025), so the `XDS` prefix is optional. Anchoring on the `<`

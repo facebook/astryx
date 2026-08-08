@@ -45,6 +45,7 @@
  * @property {'page' | 'block'} data.type
  * @property {string[]} data.components
  * @property {string} data.source
+ * @property {string[]} [data.transformedBy] - Package whose app shell wrapped the emitted source (present only when `withShell` applied one).
  */
 
 /**
@@ -67,6 +68,22 @@
  * @property {string} data.outputDir
  * @property {string} data.fileName
  * @property {number} data.filesCopied
+ * @property {string[]} [data.transformedBy] - Package whose app shell wrapped the scaffolded source (present only when `withShell` applied one).
+ */
+
+/**
+ * What `withShell` (CLI `--with-shell`) did for one emitted template. The CLI
+ * turns this into a single line naming the shell and where it came from, so a
+ * user always knows whether they got their integration's shell or core's
+ * default — or why asking for one changed nothing.
+ *
+ * @typedef {object} ShellOutcome
+ * @property {'wrapped' | 'available' | 'already-shell' | 'not-applicable'} status - `available` when the shell wasn't asked for but would apply (the CLI turns it into a hint); `already-shell` for a `Shell -` category template (it IS a shell); `not-applicable` for a block, or for the shell owner's own template.
+ * @property {string} component - The shell component (e.g. `'MetaAppFrame'`).
+ * @property {string} package - The package providing it.
+ * @property {boolean} isDefault - Whether this is core's default `AppShell`.
+ * @property {string} [description] - The shell author's one-line explanation.
+ * @property {string} [reason] - Why nothing happened, for `not-applicable`.
  */
 
 /**

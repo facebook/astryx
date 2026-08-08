@@ -27,6 +27,7 @@ import {loadModuleWithParser, findPresentFiles} from '../fs/module-loader.mjs';
  * @property {string} [components]
  * @property {string} [templates]
  * @property {string} [codemods]
+ * @property {string} [appShell] absolute path to the app-shell module
  * @property {string} [issuesUrl]
  * @property {string} __spec
  * @property {string} __packageDir
@@ -187,6 +188,7 @@ export async function loadIntegrations(specs = [], {cwd = process.cwd()} = {}) {
       components: resolveRoot(manifest.components),
       templates: resolveRoot(manifest.templates),
       codemods: resolveRoot(manifest.codemods),
+      appShell: resolveRoot(manifest.appShell),
       issuesUrl: manifest.issuesUrl,
       __spec: spec,
       __packageDir: packageDir,

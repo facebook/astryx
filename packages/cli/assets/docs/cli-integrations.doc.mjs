@@ -53,7 +53,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'typescript',
-          code: "// astryx.integration.ts\nexport default {\n  components: './components',\n  templates: './templates',\n  codemods: './codemods',\n  issuesUrl: 'https://github.com/acme/widgets/issues',\n};",
+          code: "// astryx.integration.ts\nexport default {\n  components: './components',\n  templates: './templates',\n  codemods: './codemods',\n  appShell: './astryx/app-shell.ts',\n  issuesUrl: 'https://github.com/acme/widgets/issues',\n};",
         },
         {
           type: 'prose',
@@ -110,6 +110,45 @@ export const docs = {
       ],
     },
     {
+      title: 'App Shell',
+      category: 'guide',
+      content: [
+        {
+          type: 'prose',
+          text: 'Page templates are content-only: they root at `Layout` (or `Center`) and never render their own `AppShell`, because whoever consumes a template owns the chrome around it. That makes the shell a single swappable layer. Astryx core provides the default one; point the integration file\'s `appShell` field at a module that default-exports your shell and it replaces core\'s — so every template, including the built-in OSS ones, can come out inside YOUR shell without the core templates knowing you exist.',
+        },
+        {
+          type: 'prose',
+          text: 'It is a pure output-layer and it is opt-in. Nothing on disk is ever edited, and `astryx template <id>` still emits the bare, content-only page by default. Users ask for the shell with `--with-shell`.',
+        },
+        {
+          type: 'code',
+          lang: 'typescript',
+          code: "// astryx/app-shell.ts\nimport type {AstryxAppShell} from '@astryxdesign/cli/authoring';\nimport type {AppFrameProps} from '@acme/widgets';\n\n// Parameterize with the shell's props for a fully type-safe `props`.\nexport default {\n  component: 'AppFrame',\n  from: '@acme/widgets',\n  props: {surface: 'internal'},\n  description: 'nav, search, and the standard Acme chrome',\n} satisfies AstryxAppShell<AppFrameProps>;",
+        },
+        {
+          type: 'prose',
+          text: 'Naming the component and the module it comes from is the whole contract: the CLI wraps the page\'s returned JSX and adds the matching import as one unit, so the shell can never be emitted un-imported, and re-emitting never double-wraps.',
+        },
+        {
+          type: 'prose',
+          text: 'Shell `props` may be primitives (`string`/`number`/`boolean`) or JSON-shaped objects/arrays — e.g. `props: {options: {analytics: true, tags: [\'a\', \'b\']}}` renders `options={{analytics: true, tags: [\'a\', \'b\']}}`. They must be statically serializable; functions, `ReactNode`, and references to imported values are intentionally out of scope. When you parameterize with the shell\'s props type, only its statically-renderable props are offered and typos are compile errors.',
+        },
+        {
+          type: 'prose',
+          text: 'A project has exactly ONE shell. If two integrations both declare `appShell`, the first in `integrations` order wins and the clash is reported as an issue rather than nesting them. The shell is also never applied to a template that already renders one (the `Shell -` demos), to block templates, or to its own package\'s templates.',
+        },
+        {
+          type: 'prose',
+          text: 'The CLI always says which shell a user got, naming the component and the package and whether it replaced the default — so provide a `description`, since that is what a consumer reads when deciding whether they want it. In `--json` the applied package is reported via `transformedBy`.',
+        },
+        {
+          type: 'prose',
+          text: 'The shell module is validated at the load boundary and dry-run by `astryx validate-integration`; at runtime a broken shell is skipped with a warning rather than breaking the command.',
+        },
+      ],
+    },
+    {
       title: 'Codemods',
       category: 'guide',
       content: [
@@ -124,7 +163,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'All authoring types are exported from `@astryxdesign/cli/authoring`: `ComponentDoc`, `HookDoc`, and `ReferenceDoc` for docs, `TemplateDoc` for templates, and `AstryxConfig`, `AstryxIntegration`, and `AstryxCodemod` for the project files. Consumers can also run their own post-codemod hooks, such as a reinstall or rebuild, via `hooks.postCodemod` in their `astryx.config`.',
+          text: 'All authoring types are exported from `@astryxdesign/cli/authoring`: `ComponentDoc`, `HookDoc`, and `ReferenceDoc` for docs, `TemplateDoc` for templates, `AstryxAppShell` for an app shell, and `AstryxConfig`, `AstryxIntegration`, and `AstryxCodemod` for the project files. Consumers can also run their own post-codemod hooks, such as a reinstall or rebuild, via `hooks.postCodemod` in their `astryx.config`.',
         },
       ],
     },
