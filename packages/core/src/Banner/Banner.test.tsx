@@ -3,7 +3,8 @@
 /**
  * @file Banner.test.tsx
  * @input Uses vitest, @testing-library/react, Banner component
- * @output Unit tests for Banner component behavior
+ * @output Unit tests for Banner component behavior, including the status
+ *   icon inheriting its color from the 'banner-icon' wrapper (#4166)
  * @position Testing; validates Banner.tsx implementation
  *
  * SYNC: When modified, update this header
@@ -335,6 +336,65 @@ describe('Banner', () => {
     const ref = {current: null as HTMLDivElement | null};
     render(<Banner ref={ref} status="info" title="Ref Test" />);
     expect(ref.current).toBeInstanceOf(HTMLDivElement);
+  });
+
+  // =========================================================================
+  // Status icon color theming (#4166)
+  // =========================================================================
+
+  it('renders the default status icon with color="inherit" for every status', () => {
+    // The status color default lives on the .astryx-banner-icon wrapper and
+    // the glyph inherits it, so theme 'banner-icon' + 'status:X' overrides
+    // that set `color` reach the SVG (stroke/fill: currentColor).
+    const statuses = ['info', 'warning', 'error', 'success'] as const;
+    for (const status of statuses) {
+      const {container, unmount} = render(
+        <Banner status={status} title={`${status} banner`} />,
+      );
+      const icon = container.querySelector('.astryx-banner-icon .astryx-icon');
+      expect(icon).not.toBeNull();
+      expect(icon).toHaveAttribute('data-color', 'inherit');
+      unmount();
+    }
+  });
+
+  it('does not hard-code the accent color variant on the info status icon', () => {
+    // Regression pin for #4166: the info icon carried data-color="accent",
+    // which kept its color unreachable by 'status:info' theme overrides on
+    // the 'banner-icon' target.
+    const {container} = render(<Banner status="info" title="Info" />);
+    expect(
+      container.querySelector('.astryx-banner-icon [data-color="accent"]'),
+    ).toBeNull();
+  });
+
+  it('applies the status color default on the wrapper only for the default icon', () => {
+    // Default icon path: the wrapper carries an extra StyleX color class.
+    // Custom icon path: the wrapper keeps only its layout classes, so a
+    // custom icon's inherited color is unchanged.
+    const {container: defaultContainer} = render(
+      <Banner status="info" title="Default icon" />,
+    );
+    const {container: customContainer} = render(
+      <Banner status="info" title="Custom icon" icon={<span>i</span>} />,
+    );
+    const defaultWrapper = defaultContainer.querySelector(
+      '.astryx-banner-icon',
+    );
+    const customWrapper = customContainer.querySelector('.astryx-banner-icon');
+    expect(defaultWrapper).not.toBeNull();
+    expect(customWrapper).not.toBeNull();
+
+    const defaultClasses = new Set(defaultWrapper?.className.split(/\s+/));
+    const customClasses = Array.from(
+      new Set(customWrapper?.className.split(/\s+/)),
+    );
+    // Every custom-path class also exists on the default path…
+    for (const cls of customClasses) {
+      expect(defaultClasses.has(cls)).toBe(true);
+    }
+    // …and the default path adds the status color class on top.
+    expect(defaultClasses.size).toBeGreaterThan(customClasses.length);
   });
 
   // =========================================================================
