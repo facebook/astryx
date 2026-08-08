@@ -19,10 +19,11 @@
  *
  * Expansion state flows through an external store (TreeStore) so each
  * row's expander subscribes independently — a toggle re-renders only the
- * affected cells, not the whole body. Row ARIA (aria-level,
- * aria-expanded) is applied imperatively via a ref callback on each
- * <tr>, exactly like selection's row styling; each subscription
- * self-cleans when the row disconnects.
+ * affected cells, not the whole body. Rows carry no tree ARIA at all:
+ * aria-level and aria-expanded are only valid on role=row inside a
+ * treegrid (axe aria-conditional-attr), and the host is a native
+ * <table>. Hierarchy is conveyed by the tree column's indent; expansion
+ * state by aria-expanded on the expander button.
  *
  * When `hasExpandableRows` is false (flat data), every transform is a
  * pass-through: adopting the plugin ahead of hierarchical data is a
@@ -42,7 +43,7 @@ import {
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, radiusVars, spacingVars} from '../../../theme/tokens.stylex';
 import {Icon} from '../../../Icon';
-import {mergeRefs, rtlStyles} from '../../../utils';
+import {rtlStyles} from '../../../utils';
 import type {
   TablePlugin,
   TableColumn,
@@ -190,27 +191,6 @@ function useRowMetaSnapshot<T extends Record<string, unknown>>(
   );
 
   return useSyncExternalStore(store.subscribe, getSnapshot, getSnapshot);
-}
-
-// =============================================================================
-// Row ARIA (imperative, mirrors selection's row styling)
-// =============================================================================
-
-function applyRowTreeAria(
-  el: HTMLTableRowElement,
-  meta: TableTreeRowMeta | undefined,
-): void {
-  if (!meta) {
-    el.removeAttribute('aria-level');
-    el.removeAttribute('aria-expanded');
-    return;
-  }
-  el.setAttribute('aria-level', String(meta.level + 1));
-  if (meta.hasChildren) {
-    el.setAttribute('aria-expanded', String(meta.isExpanded));
-  } else {
-    el.removeAttribute('aria-expanded');
-  }
 }
 
 // =============================================================================
@@ -453,8 +433,7 @@ export function useTableTreeData<T extends Record<string, unknown>>(
   const store = storeRef.current;
 
   // Notify subscribers on every render — useSyncExternalStore only
-  // re-renders cells whose snapshot actually changed. Row ref subscribers
-  // apply imperative ARIA independently.
+  // re-renders cells whose snapshot actually changed.
   useEffect(() => {
     store.notify();
   });
@@ -606,35 +585,11 @@ export function useTableTreeData<T extends Record<string, unknown>>(
       },
 
       transformBodyRow(props: BodyRowRenderProps, item: T) {
-        // Attach a ref that subscribes to the store for imperative row
-        // ARIA. The ref returns a cleanup so React unsubscribes on
-        // detach — without it, every row re-render would leak one
-        // subscription (toggles shift rowIndex and re-render rows, so
-        // the listener set would grow on every toggle). The ref is
-        // attached even when no row is expandable so tree ARIA is
-        // removed if the data turns flat.
-        const treeRef: React.RefCallback<HTMLTableRowElement> = el => {
-          if (!el) {
-            return;
-          }
-          const apply = () => {
-            const cfg = store.getConfig();
-            applyRowTreeAria(
-              el,
-              cfg.hasExpandableRows ? cfg.getRowMeta(item) : undefined,
-            );
-          };
-          apply();
-          const unsub = store.subscribe(apply);
-          return () => {
-            unsub();
-          };
-        };
-
-        const withRef = {
-          ...props,
-          ref: props.ref ? mergeRefs(props.ref, treeRef) : treeRef,
-        };
+        // Rows deliberately carry no tree ARIA: aria-level and
+        // aria-expanded are only valid on role=row inside a treegrid
+        // (axe aria-conditional-attr), and the host is a native <table>.
+        // Hierarchy is conveyed by the tree column's indent; expansion
+        // state by aria-expanded on the expander button.
 
         // Whole-row-click expansion (opt-in). Only expandable rows are
         // clickable; leaves and flat data stay inert. `hasExpandableRows` is
@@ -646,13 +601,13 @@ export function useTableTreeData<T extends Record<string, unknown>>(
           cfg.hasExpandableRows &&
           cfg.getRowMeta(item)?.hasChildren === true;
         if (!rowClickExpandable) {
-          return withRef;
+          return props;
         }
 
         return {
-          ...withRef,
+          ...props,
           htmlProps: {
-            ...withRef.htmlProps,
+            ...props.htmlProps,
             onClick: (event: React.MouseEvent<HTMLTableRowElement>) => {
               // Don't hijack clicks on interactive cell content (the chevron
               // already stops propagation, but a composed selection checkbox,
@@ -671,7 +626,7 @@ export function useTableTreeData<T extends Record<string, unknown>>(
               cfg.onToggleItem(item);
             },
           },
-          xstyle: [...withRef.xstyle, treeStyles.clickableRow],
+          xstyle: [...props.xstyle, treeStyles.clickableRow],
         };
       },
     };

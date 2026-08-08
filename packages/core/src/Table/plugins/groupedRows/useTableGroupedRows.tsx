@@ -306,7 +306,6 @@ export function useTableGroupedRows<T extends Record<string, unknown>>(
             // button below is the accessible, keyboard-operable control, so the
             // row keeps its implicit `row` role (no role override here).
             onClick: toggle,
-            'aria-expanded': !collapsed,
           },
           xstyle: [...props.xstyle, styles.headerRow],
           children: (

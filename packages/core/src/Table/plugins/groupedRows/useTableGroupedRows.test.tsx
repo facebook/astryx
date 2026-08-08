@@ -118,12 +118,19 @@ describe('useTableGroupedRows', () => {
     expect(coreToggle).toHaveAttribute('aria-expanded', 'true');
   });
 
-  it('sets aria-expanded on the header row reflecting collapse state', () => {
+  it('keeps aria-expanded off header rows — the chevron button carries it (axe aria-conditional-attr: rows outside a treegrid)', () => {
     render(<Harness initialCollapsed={new Set(['Core'])} />);
     const rows = screen.getAllByRole('row');
     // rows[1] = Core header (collapsed), rows[2] = Infra header (expanded).
-    expect(rows[1]).toHaveAttribute('aria-expanded', 'false');
-    expect(rows[2]).toHaveAttribute('aria-expanded', 'true');
+    expect(rows[1]).not.toHaveAttribute('aria-expanded');
+    expect(rows[2]).not.toHaveAttribute('aria-expanded');
+    // The collapse state lives on the chevron buttons instead.
+    expect(
+      screen.getByRole('button', {name: 'Expand group Core'}),
+    ).toHaveAttribute('aria-expanded', 'false');
+    expect(
+      screen.getByRole('button', {name: 'Collapse group Infra'}),
+    ).toHaveAttribute('aria-expanded', 'true');
   });
 
   it('respects groupOrder in the flattened data', () => {

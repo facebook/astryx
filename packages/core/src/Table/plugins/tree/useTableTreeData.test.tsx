@@ -317,23 +317,20 @@ describe('useTableTreeData — row-click expansion', () => {
 // =============================================================================
 
 describe('useTableTreeData — row ARIA', () => {
-  it('sets 1-based aria-level on every body row', () => {
+  it('never sets aria-level on rows — the indent conveys hierarchy (axe aria-conditional-attr: rows outside a treegrid)', () => {
     render(<TreeTable defaultExpandedIds={['src', 'components']} />);
 
-    expect(getRowByText('src')).toHaveAttribute('aria-level', '1');
-    expect(getRowByText('components')).toHaveAttribute('aria-level', '2');
-    expect(getRowByText('Button.tsx')).toHaveAttribute('aria-level', '3');
-    expect(getRowByText('README.md')).toHaveAttribute('aria-level', '1');
+    expect(getRowByText('src')).not.toHaveAttribute('aria-level');
+    expect(getRowByText('components')).not.toHaveAttribute('aria-level');
+    expect(getRowByText('Button.tsx')).not.toHaveAttribute('aria-level');
+    expect(getRowByText('README.md')).not.toHaveAttribute('aria-level');
   });
 
-  it('sets aria-expanded on expandable rows and omits it on leaves', () => {
+  it('never sets aria-expanded on rows — only the expander button carries it (axe aria-conditional-attr: rows outside a treegrid)', () => {
     render(<TreeTable defaultExpandedIds={['src']} />);
 
-    expect(getRowByText('src')).toHaveAttribute('aria-expanded', 'true');
-    expect(getRowByText('components')).toHaveAttribute(
-      'aria-expanded',
-      'false',
-    );
+    expect(getRowByText('src')).not.toHaveAttribute('aria-expanded');
+    expect(getRowByText('components')).not.toHaveAttribute('aria-expanded');
     expect(getRowByText('utils.ts')).not.toHaveAttribute('aria-expanded');
     expect(getRowByText('README.md')).not.toHaveAttribute('aria-expanded');
   });
@@ -410,11 +407,12 @@ describe('useTableTreeData — stability when the data shape changes', () => {
     }
   });
 
-  it('removes tree ARIA from rows when nested data becomes flat', () => {
+  it('keeps rows free of tree ARIA when nested data becomes flat', () => {
     const {rerender} = render(
       <TreeTable data={fileTree} defaultExpandedIds={['src']} />,
     );
-    expect(getRowByText('src')).toHaveAttribute('aria-level', '1');
+    // Nested too: rows never carry aria-level (axe aria-conditional-attr).
+    expect(getRowByText('src')).not.toHaveAttribute('aria-level');
 
     rerender(<TreeTable data={flat} />);
 
@@ -533,7 +531,9 @@ describe('useTableTreeData — indentation', () => {
     );
 
     const leafRow = getRowByText('leaf-e');
-    expect(leafRow).toHaveAttribute('aria-level', '5');
+    // Depth is conveyed by the indent, never aria-level (axe
+    // aria-conditional-attr: rows outside a treegrid).
+    expect(leafRow).not.toHaveAttribute('aria-level');
     const wrapper = within(leafRow).getByText('leaf-e').closest('td')
       ?.firstElementChild as HTMLElement;
     expect(wrapper.getAttribute('style')).toContain('calc(4 *');
@@ -559,7 +559,7 @@ describe('useTableTreeData — treeColumnKey', () => {
 
   it('falls back to the first column when the configured column is absent', () => {
     // e.g. columnSettings hid the configured tree column — the expander
-    // must not vanish while rows still announce aria-expanded.
+    // must not vanish: the button is the sole carrier of expansion state.
     render(<TreeTable treeColumnKey="not-a-column" />);
 
     const srcRow = getRowByText('src');
@@ -639,7 +639,7 @@ describe('useTableTreeData — degenerate configurations', () => {
     expect(() => render(<ZeroColumnsTable />)).not.toThrow();
   });
 
-  it('updates aria-level in place when a row is reparented deeper', () => {
+  it('updates the indent in place when a row is reparented deeper, without aria-level (axe aria-conditional-attr)', () => {
     const flat: FileRow[] = [
       {
         id: 'a',
@@ -661,14 +661,22 @@ describe('useTableTreeData — degenerate configurations', () => {
       },
     ];
 
+    const moverIndent = () =>
+      (
+        within(getRowByText('mover')).getByText('mover').closest('td')
+          ?.firstElementChild as HTMLElement
+      ).getAttribute('style') ?? '';
+
     const {rerender} = render(
       <TreeTable data={flat} defaultExpandedIds={['a']} />,
     );
-    expect(getRowByText('mover')).toHaveAttribute('aria-level', '1');
+    expect(moverIndent()).not.toContain('calc');
+    expect(getRowByText('mover')).not.toHaveAttribute('aria-level');
 
     rerender(<TreeTable data={nested} defaultExpandedIds={['a']} />);
 
-    expect(getRowByText('mover')).toHaveAttribute('aria-level', '2');
+    expect(moverIndent()).toContain('calc(1 *');
+    expect(getRowByText('mover')).not.toHaveAttribute('aria-level');
   });
 });
 
