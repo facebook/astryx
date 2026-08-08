@@ -5,8 +5,9 @@
  * @file Design Judge — vision LLM evaluation of visual fidelity
  *
  * Compares rendered screenshots against human-provided ideal reference
- * images using a vision LLM (Anthropic Claude). Scores across 5 visual
- * sub-signals on a 0-100 scale, producing a weighted overall Design score.
+ * images using a vision LLM (Anthropic Claude or MiniMax-M3). Scores across
+ * 5 visual sub-signals on a 0-100 scale, producing a weighted overall Design
+ * score.
  *
  * Sub-signals:
  *   1. Layout Fidelity    (25%) — structural regions, grid, stacking
@@ -19,6 +20,7 @@
  *
  * Usage:
  *   tsx src/design-judge.ts --iteration <id> [--prompts <p1,p2>] [--passes 3]
+ *   tsx src/design-judge.ts --iteration <id> --provider minimax [--region cn_zh]
  *
  * @input Screenshot PNGs from screenshot-previews.ts + ideal PNGs from ideals/
  * @output Design scores in results/<iteration>/design-scores.json
@@ -64,6 +66,10 @@ export interface DesignScores {
   iterationId: string;
   timestamp: string;
   model: string;
+  /** Provider used for judging (anthropic, minimax, ...). */
+  provider?: string;
+  /** Provider region (e.g. global_en, cn_zh). */
+  region?: string;
   passCount: number;
   results: DesignResult[];
   /** Aggregated scores by prompt × target */
@@ -84,6 +90,61 @@ const WEIGHTS: Record<keyof DesignSubScores, number> = {
   components: 0.15,
   color: 0.15,
 };
+
+// ============================================================
+// Judge provider registry
+//
+// The Anthropic and MiniMax vision judges expose different request/response
+// shapes over different base URLs, so each provider is described once here and
+// the provider config is referenced by name from the CLI. MiniMax also serves
+// a separate China (cn_zh) endpoint set alongside the global (global_en) one.
+// ============================================================
+
+interface JudgeProviderRegion {
+  anthropic_base_url: string;
+  openai_base_url: string;
+}
+
+interface JudgeProvider {
+  /** Default model used when --model is not passed on the CLI. */
+  defaultModel: string;
+  /** Base URL the Anthropic-compatible request is sent to. */
+  anthropicBaseUrl(region: string): string;
+  /** Regions supported by the provider. */
+  regions: Record<string, JudgeProviderRegion>;
+}
+
+const PROVIDERS: Record<string, JudgeProvider> = {
+  anthropic: {
+    defaultModel: 'claude-sonnet-4-20250514',
+    anthropicBaseUrl: () => 'https://api.anthropic.com/v1/messages',
+    regions: {
+      global_en: {
+        anthropic_base_url: 'https://api.anthropic.com/v1/messages',
+        openai_base_url: 'https://api.anthropic.com',
+      },
+    },
+  },
+  minimax: {
+    defaultModel: 'MiniMax-M3',
+    anthropicBaseUrl: region => {
+      const cfg = PROVIDERS.minimax.regions[region] ?? PROVIDERS.minimax.regions.global_en;
+      return cfg.anthropic_base_url;
+    },
+    regions: {
+      global_en: {
+        anthropic_base_url: 'https://api.minimax.io/anthropic/v1/messages',
+        openai_base_url: 'https://api.minimax.io/v1',
+      },
+      cn_zh: {
+        anthropic_base_url: 'https://api.minimaxi.com/anthropic/v1/messages',
+        openai_base_url: 'https://api.minimaxi.com/v1',
+      },
+    },
+  },
+};
+
+const DEFAULT_REGION = 'global_en';
 
 // ============================================================
 // Judge prompt
@@ -121,8 +182,63 @@ Return ONLY valid JSON (no markdown, no explanation outside the JSON):
 }
 
 // ============================================================
-// Anthropic Vision API
+// Vision API
 // ============================================================
+
+/**
+ * Parsed judge payload returned by every vision provider. The JSON shape is
+ * identical across providers because the judge prompt asks for the same
+ * sub-signal fields.
+ */
+interface JudgeJson {
+  layout: number;
+  hierarchy: number;
+  spacing: number;
+  components: number;
+  color: number;
+  overall: number;
+  notes: string;
+}
+
+/**
+ * Pull the JSON judge payload out of a model text response. The judge prompt
+ * asks for JSON only, but some providers still wrap it in markdown fences.
+ */
+function extractJudgeJson(text: string): JudgeJson {
+  let jsonStr = text.trim();
+  const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    jsonStr = jsonMatch[0];
+  }
+  return JSON.parse(jsonStr) as JudgeJson;
+}
+
+/**
+ * Convert a raw JudgeJson into a DesignJudgment, recomputing the overall so
+ * the weighted sub-signal scores (not the model's own arithmetic) decide the
+ * final number.
+ */
+function judgeJsonToJudgment(parsed: JudgeJson): DesignJudgment {
+  const overall = Math.round(
+    parsed.layout * WEIGHTS.layout +
+      parsed.hierarchy * WEIGHTS.hierarchy +
+      parsed.spacing * WEIGHTS.spacing +
+      parsed.components * WEIGHTS.components +
+      parsed.color * WEIGHTS.color,
+  );
+
+  return {
+    scores: {
+      layout: clamp(parsed.layout),
+      hierarchy: clamp(parsed.hierarchy),
+      spacing: clamp(parsed.spacing),
+      components: clamp(parsed.components),
+      color: clamp(parsed.color),
+    },
+    overall: clamp(overall),
+    notes: parsed.notes || '',
+  };
+}
 
 async function callVisionJudge(
   idealImagePath: string,
@@ -201,43 +317,101 @@ async function callVisionJudge(
     throw new Error('No text response from Anthropic API');
   }
 
-  // Parse JSON from response (handle potential markdown wrapping)
-  let jsonStr = textBlock.text.trim();
-  const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
-  if (jsonMatch) {
-    jsonStr = jsonMatch[0];
+  return judgeJsonToJudgment(extractJudgeJson(textBlock.text));
+}
+
+// ============================================================
+// MiniMax Vision API
+//
+// MiniMax exposes an Anthropic-compatible Messages endpoint (served from
+// https://api.minimax.io/anthropic for the global region and
+// https://api.minimaxi.com/anthropic for the China region). It authenticates
+// with a Bearer token held in the MINIMAX_API_KEY secret and returns the
+// standard Anthropic Messages response shape, so the same base64 image content
+// blocks and the same JSON-extraction path as the Anthropic judge apply.
+// ============================================================
+
+export async function callMiniMaxVisionJudge(
+  idealImagePath: string,
+  screenshotPath: string,
+  promptText: string,
+  model: string,
+  region: string,
+): Promise<DesignJudgment> {
+  const apiKey = process.env.MINIMAX_API_KEY;
+  if (!apiKey) {
+    throw new Error(
+      'MINIMAX_API_KEY environment variable is required for the minimax ' +
+        'judge.\nSet it in GitHub Actions secrets or export it locally.',
+    );
   }
 
-  const parsed = JSON.parse(jsonStr) as {
-    layout: number;
-    hierarchy: number;
-    spacing: number;
-    components: number;
-    color: number;
-    overall: number;
-    notes: string;
-  };
+  const idealBase64 = fs.readFileSync(idealImagePath).toString('base64');
+  const screenshotBase64 = fs.readFileSync(screenshotPath).toString('base64');
 
-  // Recompute overall to ensure correct weighting
-  const overall = Math.round(
-    parsed.layout * WEIGHTS.layout +
-      parsed.hierarchy * WEIGHTS.hierarchy +
-      parsed.spacing * WEIGHTS.spacing +
-      parsed.components * WEIGHTS.components +
-      parsed.color * WEIGHTS.color,
-  );
+  const idealMediaType = idealImagePath.endsWith('.png')
+    ? 'image/png'
+    : 'image/jpeg';
+  const screenshotMediaType = screenshotPath.endsWith('.png')
+    ? 'image/png'
+    : 'image/jpeg';
 
-  return {
-    scores: {
-      layout: clamp(parsed.layout),
-      hierarchy: clamp(parsed.hierarchy),
-      spacing: clamp(parsed.spacing),
-      components: clamp(parsed.components),
-      color: clamp(parsed.color),
+  const provider = PROVIDERS.minimax;
+  const baseUrl = provider.anthropicBaseUrl(region);
+  const response = await fetch(baseUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+      'anthropic-version': '2023-06-01',
     },
-    overall: clamp(overall),
-    notes: parsed.notes || '',
+    body: JSON.stringify({
+      model,
+      max_tokens: 1024,
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'image',
+              source: {
+                type: 'base64',
+                media_type: idealMediaType,
+                data: idealBase64,
+              },
+            },
+            {
+              type: 'image',
+              source: {
+                type: 'base64',
+                media_type: screenshotMediaType,
+                data: screenshotBase64,
+              },
+            },
+            {
+              type: 'text',
+              text: buildJudgePrompt(promptText),
+            },
+          ],
+        },
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`MiniMax API error (${response.status}): ${errorText}`);
+  }
+
+  const data = (await response.json()) as {
+    content: Array<{type: string; text?: string}>;
   };
+  const textBlock = data.content.find(b => b.type === 'text');
+  if (!textBlock?.text) {
+    throw new Error('No text response from MiniMax API');
+  }
+
+  return judgeJsonToJudgment(extractJudgeJson(textBlock.text));
 }
 
 // ============================================================
@@ -396,15 +570,19 @@ function parseArgs(): {
   dryRun: boolean;
   viewport: string;
   theme: string;
+  provider: string;
+  region: string;
 } {
   const args = process.argv.slice(2);
   let iteration = '';
   let prompts: string[] | undefined;
   let passes = 3;
-  let model = 'claude-sonnet-4-20250514';
+  let provider = 'anthropic';
+  let model = '';
   let dryRun = false;
   let viewport = 'desktop';
   let theme = 'light';
+  let region = '';
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--iteration' && args[i + 1]) {
@@ -413,8 +591,12 @@ function parseArgs(): {
       prompts = args[++i].split(',');
     } else if (args[i] === '--passes' && args[i + 1]) {
       passes = parseInt(args[++i], 10);
+    } else if (args[i] === '--provider' && args[i + 1]) {
+      provider = args[++i];
     } else if (args[i] === '--model' && args[i + 1]) {
       model = args[++i];
+    } else if (args[i] === '--region' && args[i + 1]) {
+      region = args[++i];
     } else if (args[i] === '--viewport' && args[i + 1]) {
       viewport = args[++i];
     } else if (args[i] === '--theme' && args[i + 1]) {
@@ -424,19 +606,61 @@ function parseArgs(): {
     }
   }
 
-  if (!iteration) {
+  if (!PROVIDERS[provider]) {
     console.error(
-      'Usage: tsx src/design-judge.ts --iteration <id> [--prompts <p1,p2>] [--passes 3] [--model <model>] [--viewport desktop] [--theme light] [--dry-run]',
+      `Unknown --provider "${provider}". Supported: ${Object.keys(PROVIDERS).join(', ')}`,
     );
     process.exit(1);
   }
 
-  return {iteration, prompts, passes, model, dryRun, viewport, theme};
+  // Default the model and region from the provider registry when not given.
+  if (!model) {
+    model = PROVIDERS[provider].defaultModel;
+  }
+  if (!region) {
+    region = DEFAULT_REGION;
+  }
+  if (!PROVIDERS[provider].regions[region]) {
+    console.error(
+      `Unknown --region "${region}" for provider "${provider}". Supported: ${Object.keys(
+        PROVIDERS[provider].regions,
+      ).join(', ')}`,
+    );
+    process.exit(1);
+  }
+
+  if (!iteration) {
+    console.error(
+      'Usage: tsx src/design-judge.ts --iteration <id> [--provider anthropic|minimax] [--region global_en|cn_zh] [--prompts <p1,p2>] [--passes 3] [--model <model>] [--viewport desktop] [--theme light] [--dry-run]',
+    );
+    process.exit(1);
+  }
+
+  return {
+    iteration,
+    prompts,
+    passes,
+    model,
+    dryRun,
+    viewport,
+    theme,
+    provider,
+    region,
+  };
 }
 
 async function main() {
-  const {iteration, prompts, passes, model, dryRun, viewport, theme} =
-    parseArgs();
+  const {
+    iteration,
+    prompts,
+    passes,
+    model,
+    dryRun,
+    viewport,
+    theme,
+    provider,
+    region,
+  } = parseArgs();
   const resultsDir = getResultsDir();
   const iterDir = path.join(resultsDir, iteration);
   const screenshotsDir = path.join(iterDir, 'screenshots');
@@ -468,6 +692,7 @@ async function main() {
   }
 
   console.log(`\n🎨 Design Judge — ${model}`);
+  console.log(`   Provider: ${provider}, Region: ${region}`);
   console.log(`   Iteration: ${iteration}`);
   console.log(`   Passes per screenshot: ${passes}`);
   console.log(`   Viewport: ${viewport}, Theme: ${theme}`);
@@ -536,12 +761,21 @@ async function main() {
       const judgments: DesignJudgment[] = [];
       for (let pass = 1; pass <= passes; pass++) {
         try {
-          const judgment = await callVisionJudge(
-            idealPath,
-            screenshotPath,
-            promptText,
-            model,
-          );
+          const judgment =
+            provider === 'minimax'
+              ? await callMiniMaxVisionJudge(
+                  idealPath,
+                  screenshotPath,
+                  promptText,
+                  model,
+                  region,
+                )
+              : await callVisionJudge(
+                  idealPath,
+                  screenshotPath,
+                  promptText,
+                  model,
+                );
           judgments.push(judgment);
           console.log(
             `     Pass ${pass}/${passes}: ${judgment.overall} ` +
@@ -603,6 +837,8 @@ async function main() {
     iterationId: iteration,
     timestamp: new Date().toISOString(),
     model,
+    provider,
+    region,
     passCount: passes,
     results,
     summary,
@@ -630,7 +866,9 @@ async function main() {
   }
 }
 
-main().catch(err => {
-  console.error(err);
-  process.exit(1);
-});
+if (!process.env.VITEST) {
+  main().catch(err => {
+    console.error(err);
+    process.exit(1);
+  });
+}
