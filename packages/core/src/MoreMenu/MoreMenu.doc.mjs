@@ -46,7 +46,13 @@ export const docs = {
       type: 'boolean',
       description: 'Whether the menu trigger is disabled.',
       default: 'false',
-    },    {
+    },
+    {
+      name: 'onOpenChange',
+      type: '(isOpen: boolean) => void',
+      description: 'Callback fired when the menu opens or closes.',
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
