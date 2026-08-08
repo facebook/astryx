@@ -418,6 +418,7 @@ export function TextInput({
           size,
           status: status?.type ?? null,
           disabled: isDisabled ? 'disabled' : null,
+          readonly: isReadOnly ? 'readonly' : null,
         }),
         stylex.props(
           inputWrapperStyles.base,

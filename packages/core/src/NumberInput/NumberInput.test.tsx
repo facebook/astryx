@@ -1195,3 +1195,21 @@ describe('NumberInput disabled theme state', () => {
     expect(root).not.toHaveAttribute('data-disabled');
   });
 });
+
+describe('NumberInput readonly theme state', () => {
+  it('reflects readonly on the root target so themes can gate paint on it', () => {
+    const {container} = render(
+      <NumberInput label="Qty" value={1} onChange={() => {}} isReadOnly />,
+    );
+    const root = container.querySelector('.astryx-number-input');
+    expect(root).toHaveAttribute('data-readonly', 'readonly');
+  });
+
+  it('omits data-readonly when editable', () => {
+    const {container} = render(
+      <NumberInput label="Qty" value={1} onChange={() => {}} />,
+    );
+    const root = container.querySelector('.astryx-number-input');
+    expect(root).not.toHaveAttribute('data-readonly');
+  });
+});

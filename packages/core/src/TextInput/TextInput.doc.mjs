@@ -156,7 +156,7 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-text-input', visualProps: ['size', 'status'], states: ['disabled']},
+      {className: 'astryx-text-input', visualProps: ['size', 'status'], states: ['disabled', 'readonly']},
     ],
   },
   usage: {
@@ -329,7 +329,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-text-input', visualProps: ['size', 'status'], states: ['disabled']},
+      {className: 'astryx-text-input', visualProps: ['size', 'status'], states: ['disabled', 'readonly']},
     ],
   },
   usage: {

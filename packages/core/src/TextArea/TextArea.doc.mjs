@@ -186,7 +186,7 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-textarea', visualProps: ['size', 'status'], states: ['disabled']},
+      {className: 'astryx-textarea', visualProps: ['size', 'status'], states: ['disabled', 'readonly']},
     ],
     vars: [
       {
@@ -381,7 +381,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-textarea', visualProps: ['size', 'status'], states: ['disabled']},
+      {className: 'astryx-textarea', visualProps: ['size', 'status'], states: ['disabled', 'readonly']},
     ],
     vars: [
       {
