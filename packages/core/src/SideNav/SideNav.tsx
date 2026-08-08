@@ -143,6 +143,7 @@ const styles = stylex.create({
   },
   stickyBottomCollapsed: {
     paddingBlockStart: 0,
+    alignItems: 'center',
   },
   // Drawer footer — pushed to bottom of the scrollable content area
   drawerFooter: {
