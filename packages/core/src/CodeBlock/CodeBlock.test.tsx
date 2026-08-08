@@ -304,4 +304,133 @@ describe('CodeBlock', () => {
     expect(container.querySelector('[data-astryx-syntax-theme]')).toBeNull();
     expect(container.firstElementChild?.tagName).toBe('PRE');
   });
+
+  describe('renderCopyButton', () => {
+    it('renders the custom control instead of the built-in copy button', () => {
+      render(
+        <CodeBlock
+          code="const x = 1;"
+          language="javascript"
+          renderCopyButton={({copy, label}) => (
+            <button type="button" onClick={copy}>
+              {label}
+            </button>
+          )}
+        />,
+      );
+      // The built-in button uses the localized "Copy code" label; the custom
+      // one here surfaces that same label as its text, and there is exactly one
+      // copy control (the built-in button is not also rendered).
+      const buttons = screen
+        .getAllByRole('button')
+        .filter(b => b.textContent === 'Copy code');
+      expect(buttons).toHaveLength(1);
+    });
+
+    it('drives the block clipboard + copied flow through copy/copied/label', async () => {
+      render(
+        <CodeBlock
+          code="const x = 1;"
+          language="javascript"
+          renderCopyButton={({isCopied, copy, label}) => (
+            <button type="button" onClick={copy} data-copied={isCopied}>
+              {label}
+            </button>
+          )}
+        />,
+      );
+      const button = screen.getByRole('button', {name: 'Copy code'});
+      expect(button).toHaveAttribute('data-copied', 'false');
+
+      fireEvent.click(button);
+      expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+        'const x = 1;',
+      );
+
+      // The block owns the copied-state timer, so the render prop re-renders
+      // with copied=true and the localized "Copied" label.
+      await waitFor(() => {
+        expect(screen.getByRole('button', {name: 'Copied'})).toHaveAttribute(
+          'data-copied',
+          'true',
+        );
+      });
+    });
+
+    it('still announces "Copied" to the live region for a custom control', async () => {
+      render(
+        <CodeBlock
+          code="const x = 1;"
+          language="javascript"
+          renderCopyButton={({copy, label}) => (
+            <button type="button" onClick={copy}>
+              {label}
+            </button>
+          )}
+        />,
+      );
+      fireEvent.click(screen.getByRole('button', {name: 'Copy code'}));
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('Copied');
+      });
+    });
+
+    it('fires onCopy for a custom control', async () => {
+      const onCopy = vi.fn();
+      render(
+        <CodeBlock
+          code="const x = 1;"
+          language="javascript"
+          onCopy={onCopy}
+          renderCopyButton={({copy, label}) => (
+            <button type="button" onClick={copy}>
+              {label}
+            </button>
+          )}
+        />,
+      );
+      fireEvent.click(screen.getByRole('button', {name: 'Copy code'}));
+      await waitFor(() => {
+        expect(onCopy).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    it('renders no copy control when hasCopyButton is false, even with renderCopyButton', () => {
+      render(
+        <CodeBlock
+          code="const x = 1;"
+          language="javascript"
+          hasCopyButton={false}
+          renderCopyButton={({copy, label}) => (
+            <button type="button" onClick={copy}>
+              {label}
+            </button>
+          )}
+        />,
+      );
+      expect(screen.queryByRole('button', {name: 'Copy code'})).toBeNull();
+    });
+
+    it('keeps a custom control out of the collapsible header role="button"', () => {
+      render(
+        <CodeBlock
+          code={LONG_CODE}
+          language="javascript"
+          title="example"
+          isCollapsible
+          renderCopyButton={({copy, label}) => (
+            <button type="button" onClick={copy}>
+              {label}
+            </button>
+          )}
+        />,
+      );
+      const header = screen
+        .getAllByRole('button')
+        .find(el => el.hasAttribute('aria-expanded'));
+      const copyButton = screen.getByRole('button', {name: 'Copy code'});
+      expect(header).toBeTruthy();
+      expect(header!.contains(copyButton)).toBe(false);
+    });
+  });
 });

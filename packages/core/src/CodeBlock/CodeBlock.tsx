@@ -4,7 +4,7 @@
 /**
  * @file CodeBlock.tsx
  * @input Uses React, StyleX, theme tokens, CSS Custom Highlight API, SyntaxTheme provider
- * @output Exports CodeBlock component and CodeBlockProps
+ * @output Exports CodeBlock component, CodeBlockProps, and CodeBlockCopyRenderProps
  * @position Core implementation; read-only syntax-highlighted code display
  */
 
@@ -421,6 +421,18 @@ function renderLines(
 // Props
 // ---------------------------------------------------------------------------
 
+/**
+ * State and helpers passed to a `renderCopyButton` render prop.
+ */
+export interface CodeBlockCopyRenderProps {
+  /** Whether the code was copied within the last confirmation window. */
+  isCopied: boolean;
+  /** Copy the code to the clipboard and run the confirmation flow. */
+  copy: () => void;
+  /** Localized accessible label reflecting the current copied state. */
+  label: string;
+}
+
 export interface CodeBlockProps extends BaseProps<HTMLPreElement> {
   ref?: React.Ref<HTMLPreElement>;
   code: string;
@@ -430,6 +442,29 @@ export interface CodeBlockProps extends BaseProps<HTMLPreElement> {
   hasLineNumbers?: boolean;
   highlightLines?: number[];
   hasCopyButton?: boolean;
+  /**
+   * Render your own copy control in place of the built-in one. The block keeps
+   * ownership of placement (in the header, or the floating corner when there is
+   * no header), the clipboard write, the copied-state timer, and the polite
+   * live-region announcement — the render prop only supplies the visual
+   * control. Return an element wired to the given `copy`/`isCopied`/`label`.
+   * Ignored when `hasCopyButton` is `false`.
+   *
+   * @example
+   * ```
+   * <CodeBlock
+   *   code={code}
+   *   renderCopyButton={({isCopied, copy, label}) => (
+   *     <IconButton
+   *       label={label}
+   *       icon={<Icon icon={isCopied ? 'check' : 'copy'} />}
+   *       onClick={copy}
+   *     />
+   *   )}
+   * />
+   * ```
+   */
+  renderCopyButton?: (props: CodeBlockCopyRenderProps) => React.ReactNode;
   onCopy?: () => void;
   isWrapped?: boolean;
   maxHeight?: number | string;
@@ -729,6 +764,7 @@ export function CodeBlock({
   hasLineNumbers = false,
   highlightLines,
   hasCopyButton = true,
+  renderCopyButton,
   onCopy,
   isWrapped = false,
   maxHeight,
@@ -826,24 +862,47 @@ export function CodeBlock({
     <Icon icon={copied ? 'check' : 'copy'} size="sm" color="inherit" />
   );
 
-  const copyButtonEl = hasCopyButton ? (
-    <button
-      type="button"
-      onClick={e => {
-        // Stop propagation so copying does not toggle the collapsible header.
-        e.stopPropagation();
+  const copyLabel = copied
+    ? t('@astryx.codeBlock.copied')
+    : t('@astryx.codeBlock.copyCode');
+
+  let copyButtonEl: React.ReactNode = null;
+  if (hasCopyButton && renderCopyButton) {
+    // The consumer owns the control's appearance; the block still owns the
+    // clipboard write, the copied-state timer, the announcement, and — in the
+    // header-less case — the corner placement, so the render prop needs no
+    // positioning of its own. In header mode the control sits as the header's
+    // trailing flex child, exactly where the built-in button goes.
+    const custom = renderCopyButton({
+      isCopied: copied,
+      copy: () => {
         void handleCopy();
-      }}
-      aria-label={
-        copied ? t('@astryx.codeBlock.copied') : t('@astryx.codeBlock.copyCode')
-      }
-      {...stylex.props(
-        styles.copyButton,
-        !showHeader && styles.copyButtonAbsolute,
-      )}>
-      {copyIcon}
-    </button>
-  ) : null;
+      },
+      label: copyLabel,
+    });
+    copyButtonEl = showHeader ? (
+      custom
+    ) : (
+      <span {...stylex.props(styles.copyButtonAbsolute)}>{custom}</span>
+    );
+  } else if (hasCopyButton) {
+    copyButtonEl = (
+      <button
+        type="button"
+        onClick={e => {
+          // Stop propagation so copying does not toggle the collapsible header.
+          e.stopPropagation();
+          void handleCopy();
+        }}
+        aria-label={copyLabel}
+        {...stylex.props(
+          styles.copyButton,
+          !showHeader && styles.copyButtonAbsolute,
+        )}>
+        {copyIcon}
+      </button>
+    );
+  }
 
   const headerEl = showHeader ? (
     <div

@@ -12,7 +12,7 @@
  */
 
 export {CodeBlock} from './CodeBlock';
-export type {CodeBlockProps} from './CodeBlock';
+export type {CodeBlockProps, CodeBlockCopyRenderProps} from './CodeBlock';
 
 export {Code} from '../Code';
 export type {CodeProps, CodeColor, CodeSize} from '../Code';

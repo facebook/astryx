@@ -2,6 +2,8 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {CodeBlock} from '@astryxdesign/core/CodeBlock';
+import {IconButton} from '@astryxdesign/core/IconButton';
+import {Icon} from '@astryxdesign/core/Icon';
 
 const meta: Meta<typeof CodeBlock> = {
   title: 'Core/CodeBlock',
@@ -319,4 +321,26 @@ export const Collapsible: Story = {
     hasLineNumbers: true,
     isCollapsible: true,
   },
+};
+
+export const CustomCopyButton: Story = {
+  args: {
+    code: tsExample,
+    language: 'typescript',
+    title: 'useUser.ts',
+  },
+  render: args => (
+    <CodeBlock
+      {...args}
+      renderCopyButton={({isCopied, copy, label}) => (
+        <IconButton
+          label={label}
+          size="sm"
+          variant="ghost"
+          icon={<Icon icon={isCopied ? 'check' : 'copy'} />}
+          onClick={copy}
+        />
+      )}
+    />
+  ),
 };

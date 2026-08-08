@@ -52,6 +52,11 @@ export const docs = {
       default: 'true',
     },
     {
+      name: 'renderCopyButton',
+      type: '(props: { isCopied: boolean; copy: () => void; label: string }) => ReactNode',
+      description: 'Render a custom copy control in place of the built-in button. The block keeps ownership of placement, the clipboard write, the copied-state timer, and the copy announcement; the render prop only supplies the visual control. Ignored when hasCopyButton is false.',
+    },
+    {
       name: 'onCopy',
       type: '() => void',
       description: 'Callback after the code is copied.',
