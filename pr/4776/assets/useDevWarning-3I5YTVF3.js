@@ -1,1 +1,0 @@
-import{i as e,s as t}from"./preload-helper-CT_b8DTk.js";import{t as n}from"./react-B7Te67-h.js";import{o as r}from"./utils-Btww_hcj.js";function i(e,t,n=!0){let r=(0,a.useRef)(!1);(0,a.useEffect)(()=>{n&&!r.current&&(r.current=!0)},[e,t,n])}var a,o=e((()=>{a=t(n(),1),r()}));export{i as n,o as t};
