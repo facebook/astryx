@@ -123,6 +123,10 @@ export const TEMPLATE_COMPONENTS: Record<
     () =>
       import('../../../../packages/cli/assets/templates/pages/product-gallery/page'),
   ),
+  scheduling: lazy(
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/scheduling/page'),
+  ),
   settings: lazy(
     () =>
       import('../../../../packages/cli/assets/templates/pages/settings/page'),
