@@ -821,6 +821,510 @@ describe('DateTimeInput', () => {
     });
   });
 
+  // ===========================================================================
+  // Time-option dropdown (#2727)
+  // ===========================================================================
+
+  describe('timeOptionInterval', () => {
+    // The dropdown renders through the same popover as the calendar, so its
+    // content lands in the top layer: jsdom keeps the nodes in the DOM but
+    // role queries skip them. Read the options off the container directly,
+    // exactly as the weekStartsOn tests read columnheaders.
+    const optionsIn = (container: HTMLElement): HTMLElement[] =>
+      Array.from(container.querySelectorAll('[role="option"]'));
+
+    const labelsIn = (container: HTMLElement): (string | null)[] =>
+      optionsIn(container).map(o => o.textContent);
+
+    // ---- opt-in gate --------------------------------------------------------
+
+    it('adds no listbox and no second combobox without timeOptionInterval', () => {
+      const {container} = render(
+        <DateTimeInput
+          label="Meeting"
+          value={'2026-03-15T14:30' as ISODateTimeString}
+          onChange={() => {}}
+        />,
+      );
+
+      // The date input stays the only combobox on the field. 30+ existing
+      // assertions use the singular getByRole('combobox'); a second one would
+      // break every one of them, and every downstream consumer's too.
+      expect(screen.getAllByRole('combobox')).toHaveLength(1);
+
+      const timeInput = screen.getByLabelText('Meeting time');
+      expect(timeInput).not.toHaveAttribute('role', 'combobox');
+      fireEvent.click(timeInput);
+      expect(optionsIn(container)).toHaveLength(0);
+    });
+
+    // ---- option generation --------------------------------------------------
+
+    it('renders one option per interval step across the day', () => {
+      const {container} = render(
+        <DateTimeInput
+          label="Meeting"
+          value={'2026-03-15T14:30' as ISODateTimeString}
+          timeOptionInterval={30}
+          onChange={() => {}}
+        />,
+      );
+
+      fireEvent.click(screen.getByLabelText('Meeting time'));
+      // A full day at 30-minute cadence.
+      expect(optionsIn(container)).toHaveLength(48);
+    });
+
+    it('renders 24 options at an hourly interval', () => {
+      const {container} = render(
+        <DateTimeInput
+          label="Meeting"
+          value={'2026-03-15T14:30' as ISODateTimeString}
+          timeOptionInterval={60}
+          onChange={() => {}}
+        />,
+      );
+
+      fireEvent.click(screen.getByLabelText('Meeting time'));
+      const labels = labelsIn(container);
+      expect(labels).toHaveLength(24);
+      // The 12 AM - 11 PM list the issue asks for.
+      expect(labels[0]).toBe('12:00 AM');
+      expect(labels[23]).toBe('11:00 PM');
+    });
+
+    it('labels options in 24-hour format when hourFormat is 24h', () => {
+      const {container} = render(
+        <DateTimeInput
+          label="Meeting"
+          value={'2026-03-15T14:30' as ISODateTimeString}
+          timeOptionInterval={60}
+          hourFormat="24h"
+          onChange={() => {}}
+        />,
+      );
+
+      fireEvent.click(screen.getByLabelText('Meeting time'));
+      const labels = labelsIn(container);
+      expect(labels[0]).toBe('00:00');
+      expect(labels[13]).toBe('13:00');
+    });
+
+    it('includes seconds in option labels when hasSeconds is set', () => {
+      const {container} = render(
+        <DateTimeInput
+          label="Meeting"
+          value={'2026-03-15T14:30:00' as ISODateTimeString}
+          timeOptionInterval={60}
+          hasSeconds
+          onChange={() => {}}
+        />,
+      );
+
+      fireEvent.click(screen.getByLabelText('Meeting time'));
+      expect(labelsIn(container)[0]).toBe('12:00:00 AM');
+    });
+
+    // ---- committing ---------------------------------------------------------
+
+    it('commits the clicked option and keeps the selected date', () => {
+      const onChange = vi.fn();
+      const {container} = render(
+        <DateTimeInput
+          label="Meeting"
+          value={'2026-03-15T14:30' as ISODateTimeString}
+          timeOptionInterval={60}
+          onChange={onChange}
+        />,
+      );
+
+      fireEvent.click(screen.getByLabelText('Meeting time'));
+      // 09:00 is the tenth hourly option.
+      fireEvent.click(optionsIn(container)[9]);
+
+      expect(onChange).toHaveBeenCalledTimes(1);
+      expect(onChange.mock.calls[0][0]).toBe('2026-03-15T09:00');
+    });
+
+    it('marks the committed option as selected, not merely highlighted', () => {
+      const {container} = render(
+        <DateTimeInput
+          label="Meeting"
+          value={'2026-03-15T14:00' as ISODateTimeString}
+          timeOptionInterval={60}
+          onChange={() => {}}
+        />,
+      );
+
+      fireEvent.click(screen.getByLabelText('Meeting time'));
+      const selected = optionsIn(container).filter(
+        o => o.getAttribute('aria-selected') === 'true',
+      );
+      expect(selected).toHaveLength(1);
+      expect(selected[0].textContent).toBe('2:00 PM');
+    });
+
+    // ---- keyboard: the arrow-key collision ----------------------------------
+
+    it('keeps ArrowUp stepping by timeIncrement while the list is closed', () => {
+      const onChange = vi.fn();
+      render(
+        <DateTimeInput
+          label="Meeting"
+          value={'2026-03-15T14:30' as ISODateTimeString}
+          timeIncrement={15}
+          timeOptionInterval={30}
+          onChange={onChange}
+        />,
+      );
+
+      const timeInput = screen.getByLabelText('Meeting time');
+      // Closed list: arrows still step the value, as they always have.
+      fireEvent.keyDown(timeInput, {key: 'ArrowUp'});
+
+      expect(onChange).toHaveBeenCalledTimes(1);
+      expect(onChange.mock.calls[0][0]).toContain('14:45');
+      expect(timeInput).toHaveAttribute('aria-expanded', 'false');
+    });
+
+    it('opens the list on Alt+ArrowDown without changing the value', () => {
+      const onChange = vi.fn();
+      const {container} = render(
+        <DateTimeInput
+          label="Meeting"
+          value={'2026-03-15T14:30' as ISODateTimeString}
+          timeOptionInterval={30}
+          onChange={onChange}
+        />,
+      );
+
+      const timeInput = screen.getByLabelText('Meeting time');
+      fireEvent.keyDown(timeInput, {key: 'ArrowDown', altKey: true});
+
+      expect(timeInput).toHaveAttribute('aria-expanded', 'true');
+      expect(onChange).not.toHaveBeenCalled();
+      expect(optionsIn(container)).toHaveLength(48);
+    });
+
+    it('moves the active option with ArrowDown while open, without committing', () => {
+      const onChange = vi.fn();
+      const {container} = render(
+        <DateTimeInput
+          label="Meeting"
+          value={'2026-03-15T14:00' as ISODateTimeString}
+          timeOptionInterval={60}
+          onChange={onChange}
+        />,
+      );
+
+      const timeInput = screen.getByLabelText('Meeting time');
+      fireEvent.keyDown(timeInput, {key: 'ArrowDown', altKey: true});
+      // Opening starts the highlight on the committed value (14:00).
+      expect(timeInput).toHaveAttribute(
+        'aria-activedescendant',
+        optionsIn(container)[14].id,
+      );
+
+      fireEvent.keyDown(timeInput, {key: 'ArrowDown'});
+      expect(timeInput).toHaveAttribute(
+        'aria-activedescendant',
+        optionsIn(container)[15].id,
+      );
+      // Navigating is not selecting.
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('commits the active option on Enter and closes the list', () => {
+      const onChange = vi.fn();
+      render(
+        <DateTimeInput
+          label="Meeting"
+          value={'2026-03-15T14:00' as ISODateTimeString}
+          timeOptionInterval={60}
+          onChange={onChange}
+        />,
+      );
+
+      const timeInput = screen.getByLabelText('Meeting time');
+      fireEvent.keyDown(timeInput, {key: 'ArrowDown', altKey: true});
+      fireEvent.keyDown(timeInput, {key: 'ArrowDown'});
+      fireEvent.keyDown(timeInput, {key: 'Enter'});
+
+      expect(onChange).toHaveBeenCalledTimes(1);
+      expect(onChange.mock.calls[0][0]).toBe('2026-03-15T15:00');
+      expect(timeInput).toHaveAttribute('aria-expanded', 'false');
+    });
+
+    it('jumps to the first and last option with Home and End', () => {
+      const {container} = render(
+        <DateTimeInput
+          label="Meeting"
+          value={'2026-03-15T14:00' as ISODateTimeString}
+          timeOptionInterval={60}
+          onChange={() => {}}
+        />,
+      );
+
+      const timeInput = screen.getByLabelText('Meeting time');
+      fireEvent.keyDown(timeInput, {key: 'ArrowDown', altKey: true});
+
+      fireEvent.keyDown(timeInput, {key: 'Home'});
+      expect(timeInput).toHaveAttribute(
+        'aria-activedescendant',
+        optionsIn(container)[0].id,
+      );
+
+      fireEvent.keyDown(timeInput, {key: 'End'});
+      expect(timeInput).toHaveAttribute(
+        'aria-activedescendant',
+        optionsIn(container)[23].id,
+      );
+    });
+
+    it('closes on Escape without committing', () => {
+      const onChange = vi.fn();
+      render(
+        <DateTimeInput
+          label="Meeting"
+          value={'2026-03-15T14:00' as ISODateTimeString}
+          timeOptionInterval={60}
+          onChange={onChange}
+        />,
+      );
+
+      const timeInput = screen.getByLabelText('Meeting time');
+      fireEvent.keyDown(timeInput, {key: 'ArrowDown', altKey: true});
+      fireEvent.keyDown(timeInput, {key: 'ArrowDown'});
+      fireEvent.keyDown(timeInput, {key: 'Escape'});
+
+      expect(timeInput).toHaveAttribute('aria-expanded', 'false');
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    // ---- typed entry keeps working -----------------------------------------
+
+    it('moves the highlight to the closest option as the user types, without dropping options', () => {
+      const {container} = render(
+        <DateTimeInput
+          label="Meeting"
+          value={'2026-03-15T14:00' as ISODateTimeString}
+          timeOptionInterval={60}
+          onChange={() => {}}
+        />,
+      );
+
+      const timeInput = screen.getByLabelText('Meeting time');
+      fireEvent.click(timeInput);
+      fireEvent.change(timeInput, {target: {value: '9:00 PM'}});
+
+      // Free-form entry is the contract here: the list narrows nothing, it
+      // follows the typed value so Enter still lands on something sensible.
+      expect(optionsIn(container)).toHaveLength(24);
+      expect(timeInput).toHaveAttribute(
+        'aria-activedescendant',
+        optionsIn(container)[21].id,
+      );
+    });
+
+    // ---- constraints --------------------------------------------------------
+
+    it('drops options outside min/max on the boundary date', () => {
+      const {container} = render(
+        <DateTimeInput
+          label="Meeting"
+          value={'2026-03-15T14:00' as ISODateTimeString}
+          min={'2026-03-15T09:00' as ISODateTimeString}
+          max={'2026-03-15T17:00' as ISODateTimeString}
+          timeOptionInterval={60}
+          onChange={() => {}}
+        />,
+      );
+
+      fireEvent.click(screen.getByLabelText('Meeting time'));
+      const labels = labelsIn(container);
+      // 09:00 through 17:00 inclusive.
+      expect(labels).toHaveLength(9);
+      expect(labels[0]).toBe('9:00 AM');
+      expect(labels[8]).toBe('5:00 PM');
+    });
+
+    it('offers the whole day when the selected date is inside the min/max range', () => {
+      const {container} = render(
+        <DateTimeInput
+          label="Meeting"
+          value={'2026-03-16T14:00' as ISODateTimeString}
+          min={'2026-03-15T09:00' as ISODateTimeString}
+          max={'2026-03-17T17:00' as ISODateTimeString}
+          timeOptionInterval={60}
+          onChange={() => {}}
+        />,
+      );
+
+      fireEvent.click(screen.getByLabelText('Meeting time'));
+      // The time bound only bites on the boundary date itself.
+      expect(optionsIn(container)).toHaveLength(24);
+    });
+
+    // ---- a11y wiring + disabled --------------------------------------------
+
+    it('wires the time input as a combobox onto the listbox', () => {
+      const {container} = render(
+        <DateTimeInput
+          label="Meeting"
+          value={'2026-03-15T14:00' as ISODateTimeString}
+          timeOptionInterval={60}
+          onChange={() => {}}
+        />,
+      );
+
+      const timeInput = screen.getByLabelText('Meeting time');
+      expect(timeInput).toHaveAttribute('role', 'combobox');
+      expect(timeInput).toHaveAttribute('aria-expanded', 'false');
+      expect(timeInput).toHaveAttribute('aria-autocomplete', 'list');
+
+      fireEvent.click(timeInput);
+      const listbox = container.querySelector('[role="listbox"]');
+      expect(listbox).not.toBeNull();
+      expect(timeInput).toHaveAttribute('aria-controls', listbox?.id);
+      // Named, so the list is not an anonymous group to a screen reader.
+      expect(listbox).toHaveAttribute('aria-label');
+    });
+
+    it('does not open the list when disabled', () => {
+      render(
+        <DateTimeInput
+          label="Meeting"
+          value={'2026-03-15T14:00' as ISODateTimeString}
+          timeOptionInterval={60}
+          isDisabled
+          onChange={() => {}}
+        />,
+      );
+
+      const timeInput = screen.getByLabelText('Meeting time');
+      fireEvent.click(timeInput);
+      fireEvent.keyDown(timeInput, {key: 'ArrowDown', altKey: true});
+
+      // The layer mounts its content whether or not it is open — visibility is
+      // the popover attribute's job, which jsdom does not apply. So assert the
+      // open state itself, not the presence of option nodes.
+      expect(timeInput).toHaveAttribute('aria-expanded', 'false');
+      expect(timeInput).not.toHaveAttribute('aria-controls');
+    });
+
+    it('does not open the list for a focusable-disabled field', () => {
+      // With disabledMessage the input drops the native `disabled` attribute so
+      // the reason stays discoverable, which means clicks and keys really do
+      // reach it. This is the case the guards have to catch — a natively
+      // disabled input never delivers the events in the first place.
+      render(
+        <DateTimeInput
+          label="Meeting"
+          value={'2026-03-15T14:00' as ISODateTimeString}
+          timeOptionInterval={60}
+          isDisabled
+          disabledMessage="Pick a project first"
+          onChange={() => {}}
+        />,
+      );
+
+      const timeInput = screen.getByLabelText('Meeting time');
+      expect(timeInput).not.toBeDisabled();
+
+      fireEvent.click(timeInput);
+      expect(timeInput).toHaveAttribute('aria-expanded', 'false');
+
+      fireEvent.keyDown(timeInput, {key: 'ArrowDown', altKey: true});
+      expect(timeInput).toHaveAttribute('aria-expanded', 'false');
+    });
+
+    it('mounts no option nodes until the list is opened', () => {
+      // The layer renders its children whether open or closed, so an
+      // unconditional list would park a day's worth of divs in the DOM of
+      // every opted-in field. At a 5-minute cadence that is 288 nodes.
+      const {container} = render(
+        <DateTimeInput
+          label="Meeting"
+          value={'2026-03-15T14:00' as ISODateTimeString}
+          timeOptionInterval={5}
+          onChange={() => {}}
+        />,
+      );
+
+      expect(optionsIn(container)).toHaveLength(0);
+      expect(container.querySelector('[role="listbox"]')).toBeNull();
+
+      fireEvent.click(screen.getByLabelText('Meeting time'));
+      expect(optionsIn(container)).toHaveLength(288);
+    });
+
+    it('marks the selected option when the value carries unwanted seconds', () => {
+      // splitDateTime slices the string after the T, so an external value of
+      // 14:00:00 with hasSeconds off leaves valueParts.time as "14:00:00"
+      // while every option is "14:00". A raw equality check silently marks
+      // nothing selected.
+      const {container} = render(
+        <DateTimeInput
+          label="Meeting"
+          value={'2026-03-15T14:00:00' as ISODateTimeString}
+          timeOptionInterval={60}
+          onChange={() => {}}
+        />,
+      );
+
+      fireEvent.click(screen.getByLabelText('Meeting time'));
+      const selected = optionsIn(container).filter(
+        o => o.getAttribute('aria-selected') === 'true',
+      );
+      expect(selected).toHaveLength(1);
+      expect(selected[0].textContent).toBe('2:00 PM');
+    });
+
+    it('keeps focus in the time field when opening evicts the calendar', () => {
+      // Both layers are popover="auto", so showing the time list closes the
+      // calendar. The calendar's onHide returns focus to the date input —
+      // which would rip focus out of the field the user is working in.
+      render(
+        <DateTimeInput
+          label="Meeting"
+          value={'2026-03-15T14:00' as ISODateTimeString}
+          timeOptionInterval={60}
+          onChange={() => {}}
+        />,
+      );
+
+      const dateInput = screen.getAllByRole('combobox')[0];
+      const timeInput = screen.getByLabelText('Meeting time');
+
+      fireEvent.keyDown(dateInput, {key: 'ArrowDown'});
+      expect(dateInput).toHaveAttribute('aria-expanded', 'true');
+
+      timeInput.focus();
+      fireEvent.keyDown(timeInput, {key: 'ArrowDown', altKey: true});
+
+      expect(timeInput).toHaveAttribute('aria-expanded', 'true');
+      expect(timeInput).toHaveFocus();
+    });
+
+    it('starts closed and opens only when asked', () => {
+      render(
+        <DateTimeInput
+          label="Meeting"
+          value={'2026-03-15T14:00' as ISODateTimeString}
+          timeOptionInterval={60}
+          onChange={() => {}}
+        />,
+      );
+
+      const timeInput = screen.getByLabelText('Meeting time');
+      expect(timeInput).toHaveAttribute('aria-expanded', 'false');
+      expect(timeInput).not.toHaveAttribute('aria-activedescendant');
+
+      fireEvent.click(timeInput);
+      expect(timeInput).toHaveAttribute('aria-expanded', 'true');
+    });
+  });
+
   describe('weekStartsOn', () => {
     // The calendar popover renders in the top layer; jsdom keeps the content in
     // the DOM but role queries skip it, so read the columnheaders directly.

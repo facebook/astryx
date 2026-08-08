@@ -20,6 +20,7 @@ import {
   useId,
   useState,
   useCallback,
+  useEffect,
   useRef,
   useMemo,
   useOptimistic,
@@ -34,6 +35,7 @@ import {
   spacingVars,
   typographyVars,
   typeScaleVars,
+  fontWeightVars,
   borderVars,
 } from '../theme/tokens.stylex';
 import {
@@ -62,6 +64,7 @@ import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
 import {
   type ISOTimeString,
   parseDateInput,
+  parseISOTime,
   parseTimeInput,
   formatDisplayTime12h,
   formatDisplayTime24h,
@@ -94,6 +97,12 @@ export type DateTimeInputSize = 'sm' | 'md' | 'lg';
 
 /** Supported minute increments for arrow-key stepping of the time field. */
 export type DateTimeInputTimeIncrement = 1 | 5 | 10 | 15 | 30;
+
+/**
+ * Supported minute cadences for the preset-time dropdown. Every value divides
+ * an hour evenly, so each option lands on a round clock time.
+ */
+export type DateTimeInputTimeOptionInterval = 5 | 10 | 15 | 30 | 60;
 
 export type {
   InputStatus as DateTimeInputStatus,
@@ -164,6 +173,37 @@ const styles = stylex.create({
   timeWrapper: {
     flex: 1,
     flexBasis: 0,
+  },
+  // Preset-time list. Paddings and states mirror BaseTypeahead's dropdown and
+  // Selector's options so every list in the system reads the same.
+  timeListbox: {
+    boxSizing: 'border-box',
+    maxHeight: 300,
+    overflowY: 'auto',
+    padding: spacingVars['--spacing-1'],
+    minWidth: 'anchor-size(width)',
+  },
+  timeOption: {
+    boxSizing: 'border-box',
+    display: 'flex',
+    alignItems: 'center',
+    width: '100%',
+    paddingBlock: spacingVars['--spacing-1-5'],
+    paddingInline: spacingVars['--spacing-2'],
+    borderRadius: radiusVars['--radius-element'],
+    cursor: 'pointer',
+    textAlign: 'start',
+    fontFamily: typographyVars['--font-family-body'],
+    fontSize: typeScaleVars['--text-body-size'],
+    lineHeight: typeScaleVars['--text-body-leading'],
+    color: colorVars['--color-text-primary'],
+    backgroundColor: 'transparent',
+  },
+  timeOptionHighlighted: {
+    backgroundColor: colorVars['--color-overlay-hover'],
+  },
+  timeOptionSelected: {
+    fontWeight: fontWeightVars['--font-weight-medium'],
   },
 });
 
@@ -303,6 +343,22 @@ export interface DateTimeInputProps extends Omit<
   timeIncrement?: DateTimeInputTimeIncrement;
 
   /**
+   * Minute cadence for a dropdown of preset times on the time field. Set it to
+   * turn the time field into a combobox listing every valid time at that
+   * cadence (`60` gives the 12 AM - 11 PM list, `15` a quarter-hour list).
+   *
+   * Omitted, the time field stays a plain text input: typed entry and
+   * arrow-key stepping only, with no combobox semantics added to the
+   * accessibility tree. Typed entry keeps working when the dropdown is on —
+   * the list is a shortcut, not a restriction, so a time between two options
+   * can still be typed.
+   *
+   * Independent of `timeIncrement`, which governs arrow-key stepping. Setting
+   * both to the same value is the usual choice for scheduling flows.
+   */
+  timeOptionInterval?: DateTimeInputTimeOptionInterval;
+
+  /**
    * Whether to show a clear button when a value is set.
    * @default false
    */
@@ -391,6 +447,8 @@ function combineDateTime(
   return `${date}T${time}` as ISODateTimeString;
 }
 
+const MINUTES_PER_DAY = 24 * 60;
+
 function getDefaultTime(hasSeconds: boolean): ISOTimeString {
   const now = new Date();
   return formatISOTime(
@@ -431,6 +489,7 @@ export function DateTimeInput({
   hasSeconds = false,
   hourFormat = '12h',
   timeIncrement = 1,
+  timeOptionInterval,
   hasClear = false,
   placeholder: placeholderFromProps,
   timePlaceholder: timePlaceholderFromProps,
@@ -596,6 +655,40 @@ export function DateTimeInput({
     return timePlaceholder;
   }, [isTimeFocused, timeDisplayValue, hourFormat, timePlaceholder]);
 
+  // --- Preset time options (#2727) ---
+  // Opt-in: without timeOptionInterval the time field keeps exactly the
+  // semantics it shipped with — a plain text input, no combobox role, no
+  // second listbox in the accessibility tree.
+  const hasTimeOptions = timeOptionInterval !== undefined;
+
+  const timeOptions = useMemo(() => {
+    if (timeOptionInterval === undefined) {
+      return [];
+    }
+    const options: {time: ISOTimeString; label: string}[] = [];
+    for (
+      let minutes = 0;
+      minutes < MINUTES_PER_DAY;
+      minutes += timeOptionInterval
+    ) {
+      const time = formatISOTime(
+        {
+          hour: Math.floor(minutes / 60),
+          minute: minutes % 60,
+          second: 0,
+        },
+        hasSeconds,
+      );
+      // The same bound the typed path enforces, so the list can never offer a
+      // time that typing the identical string would reject.
+      if (!isTimeInRange(time, timeMin, timeMax)) {
+        continue;
+      }
+      options.push({time, label: formatDisplayTime(time, hasSeconds)});
+    }
+    return options;
+  }, [timeOptionInterval, hasSeconds, timeMin, timeMax, formatDisplayTime]);
+
   // --- Unified change handler ---
   const fireChange = useCallback(
     (newValue: ISODateTimeString | undefined) => {
@@ -614,10 +707,21 @@ export function DateTimeInput({
   );
 
   // --- Popover ---
+  // Both layers are popover="auto", so opening the time list evicts the
+  // calendar and fires this onHide. Returning focus to the date input is right
+  // when the calendar itself was dismissed, and wrong once the user has moved
+  // to the time field — there it would rip focus out from under them.
+  const handleCalendarHide = useCallback(() => {
+    if (document.activeElement === timeInputRef.current) {
+      return;
+    }
+    dateInputRef.current?.focus();
+  }, []);
+
   const popover = usePopover({
     dialogLabel: t('@astryx.dateTimeInput.dialogLabel'),
     closeButtonLabel: t('@astryx.dateInput.closeCalendar'),
-    onHide: () => dateInputRef.current?.focus(),
+    onHide: handleCalendarHide,
   });
 
   const handleCalendarToggle = useCallback(() => {
@@ -747,6 +851,165 @@ export function DateTimeInput({
     [popover, commitDatePendingInput, isEffectivelyDisabled],
   );
 
+  // --- Time-option popover (#2727) ---
+  const timeListboxId = useId();
+  const [highlightedTimeIndex, setHighlightedTimeIndex] = useState(-1);
+
+  // With popover="auto", showing the popover between pointerdown and
+  // pointerup/click lets the browser's light-dismiss treat that same click as
+  // "outside" and close it again. Defer the show past the click, as
+  // BaseTypeahead does for the same reason.
+  const timePointerActiveRef = useRef(false);
+
+  const timePopover = usePopover({
+    hasLightDismiss: true,
+    hasCloseButton: false,
+    hasAutoFocus: false,
+    // The popup's own role="listbox" carries the semantics; the input keeps
+    // DOM focus, so announcing a dialog here would misrepresent it.
+    role: 'none',
+    onHide: () => setHighlightedTimeIndex(-1),
+  });
+
+  // Anchor the list to the time wrapper, not the date input the field's own
+  // trigger ref points at.
+  useEffect(() => {
+    if (!hasTimeOptions) {
+      return;
+    }
+    const el = timeContainerRef.current;
+    if (el) {
+      timePopover.triggerRef(el);
+    }
+    return () => {
+      timePopover.triggerRef(null);
+    };
+  }, [timePopover, hasTimeOptions]);
+
+  const timeOptionId = useCallback(
+    (index: number) => `${timeListboxId}-option-${index}`,
+    [timeListboxId],
+  );
+
+  // Keep the active option visible. The listbox is a fixed-height scroll
+  // container, so without this a list opens at midnight with the highlight far
+  // below the fold, and keyboard navigation walks off-screen. Mirrors
+  // BaseTypeahead's scrollIntoView({block: 'nearest'}).
+  useEffect(() => {
+    if (
+      !timePopover.isOpen ||
+      highlightedTimeIndex < 0 ||
+      highlightedTimeIndex >= timeOptions.length
+    ) {
+      return;
+    }
+    document
+      .getElementById(timeOptionId(highlightedTimeIndex))
+      ?.scrollIntoView?.({block: 'nearest'});
+  }, [
+    timePopover.isOpen,
+    highlightedTimeIndex,
+    timeOptionId,
+    timeOptions.length,
+  ]);
+
+  /**
+   * The selected time in the same shape the options carry. splitDateTime slices
+   * whatever follows the `T`, so a caller passing `14:00:00` with hasSeconds
+   * off leaves `"14:00:00"` against options of `"14:00"` — comparing raw would
+   * mark nothing selected, silently.
+   */
+  const selectedOptionTime = useMemo(() => {
+    if (!valueParts.time) {
+      return undefined;
+    }
+    const parsed = parseISOTime(valueParts.time);
+    return parsed ? formatISOTime(parsed, hasSeconds) : undefined;
+  }, [valueParts.time, hasSeconds]);
+
+  /**
+   * Index of the option at or immediately before `time`, so opening on a value
+   * that is not itself an option (13:07 in a 15-minute list) still lands the
+   * highlight somewhere sensible instead of nowhere.
+   */
+  const closestOptionIndex = useCallback(
+    (time: ISOTimeString | undefined) => {
+      if (!time || timeOptions.length === 0) {
+        return -1;
+      }
+      let candidate = -1;
+      for (let i = 0; i < timeOptions.length; i++) {
+        if (timeOptions[i].time <= time) {
+          candidate = i;
+        } else {
+          break;
+        }
+      }
+      // A value below every option (min pushes the list past it) still gets the
+      // first option rather than an empty highlight.
+      return candidate === -1 ? 0 : candidate;
+    },
+    [timeOptions],
+  );
+
+  const showTimeOptions = useCallback(() => {
+    if (!hasTimeOptions || isEffectivelyDisabled || timePopover.isOpen) {
+      return;
+    }
+    setHighlightedTimeIndex(closestOptionIndex(selectedOptionTime));
+    // useInputContainer routes wrapper clicks through input.click() once the
+    // input advertises a popup, and a programmatic click does not focus. The
+    // input must hold DOM focus or aria-activedescendant announces nothing.
+    timeInputRef.current?.focus();
+    if (timePointerActiveRef.current) {
+      document.addEventListener(
+        'click',
+        () =>
+          requestAnimationFrame(() => timePopover.show({skipAutoFocus: true})),
+        {once: true},
+      );
+    } else {
+      timePopover.show({skipAutoFocus: true});
+    }
+  }, [
+    hasTimeOptions,
+    isEffectivelyDisabled,
+    timePopover,
+    closestOptionIndex,
+    selectedOptionTime,
+  ]);
+
+  /**
+   * The single commit path for a time chosen from the list. Deliberately the
+   * same shape as the typed path: same range check, same date requirement, so
+   * picking 9:00 AM and typing "9:00 AM" are indistinguishable downstream.
+   */
+  const commitTimeOption = useCallback(
+    (time: ISOTimeString) => {
+      if (isEffectivelyDisabled || !isTimeInRange(time, timeMin, timeMax)) {
+        return;
+      }
+      setTimePendingInput(null);
+      if (time !== valueParts.time && valueParts.date) {
+        const combined = combineDateTime(valueParts.date, time);
+        if (combined) {
+          fireChange(combined);
+        }
+      }
+      timePopover.hide();
+      timeInputRef.current?.focus();
+    },
+    [
+      isEffectivelyDisabled,
+      timeMin,
+      timeMax,
+      valueParts.time,
+      valueParts.date,
+      fireChange,
+      timePopover,
+    ],
+  );
+
   // --- Time handlers ---
   const handleTimeInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -759,6 +1022,14 @@ export function DateTimeInput({
       setTimePendingInput(text);
 
       const parsed = parseTimeInput(text, hasSeconds);
+
+      // Typing narrows nothing — free-form entry is the contract, and a time
+      // between two options must stay reachable. The list instead follows the
+      // typed value so Enter lands somewhere the user expects.
+      if (timePopover.isOpen && parsed) {
+        setHighlightedTimeIndex(closestOptionIndex(parsed));
+      }
+
       if (
         parsed &&
         isTimeInRange(parsed, timeMin, timeMax) &&
@@ -780,6 +1051,8 @@ export function DateTimeInput({
       valueParts.date,
       fireChange,
       isEffectivelyDisabled,
+      timePopover.isOpen,
+      closestOptionIndex,
     ],
   );
 
@@ -819,6 +1092,61 @@ export function DateTimeInput({
 
   const handleTimeKeyDown = useCallback(
     (e: KeyboardEvent<HTMLInputElement>) => {
+      // The dropdown claims the arrow keys only while it is open. Closed, they
+      // keep stepping the value by timeIncrement exactly as they always have —
+      // that behaviour is documented and tested, so the list borrows Alt+Arrow
+      // Down (the APG "open without moving" binding) to open instead.
+      if (hasTimeOptions && !isEffectivelyDisabled) {
+        if (e.key === 'Escape' && timePopover.isOpen) {
+          e.preventDefault();
+          timePopover.hide();
+          return;
+        }
+
+        if (e.key === 'ArrowDown' && e.altKey) {
+          e.preventDefault();
+          showTimeOptions();
+          return;
+        }
+
+        if (timePopover.isOpen && timeOptions.length > 0) {
+          switch (e.key) {
+            case 'ArrowDown':
+              e.preventDefault();
+              setHighlightedTimeIndex(i =>
+                i < timeOptions.length - 1 ? i + 1 : i,
+              );
+              return;
+            case 'ArrowUp':
+              e.preventDefault();
+              setHighlightedTimeIndex(i => (i > 0 ? i - 1 : i));
+              return;
+            case 'Home':
+              e.preventDefault();
+              setHighlightedTimeIndex(0);
+              return;
+            case 'End':
+              e.preventDefault();
+              setHighlightedTimeIndex(timeOptions.length - 1);
+              return;
+            case 'Enter': {
+              e.preventDefault();
+              const option = timeOptions[highlightedTimeIndex];
+              if (option) {
+                commitTimeOption(option.time);
+              }
+              return;
+            }
+            case 'Tab':
+              // Let focus leave; blur commits any typed text as usual.
+              timePopover.hide();
+              return;
+            default:
+              break;
+          }
+        }
+      }
+
       if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
         e.preventDefault();
 
@@ -846,7 +1174,21 @@ export function DateTimeInput({
         }
       }
     },
-    [valueParts, hasSeconds, timeIncrement, timeMin, timeMax, fireChange],
+    [
+      valueParts,
+      hasSeconds,
+      timeIncrement,
+      timeMin,
+      timeMax,
+      fireChange,
+      hasTimeOptions,
+      isEffectivelyDisabled,
+      timePopover,
+      timeOptions,
+      highlightedTimeIndex,
+      showTimeOptions,
+      commitTimeOption,
+    ],
   );
 
   // --- Clear ---
@@ -1024,7 +1366,38 @@ export function DateTimeInput({
             onFocus={handleTimeFocus}
             onBlur={handleTimeBlur}
             onKeyDown={handleTimeKeyDown}
+            onClick={hasTimeOptions ? showTimeOptions : undefined}
+            onPointerDown={
+              hasTimeOptions
+                ? () => {
+                    timePointerActiveRef.current = true;
+                    document.addEventListener(
+                      'click',
+                      () => {
+                        timePointerActiveRef.current = false;
+                      },
+                      {once: true},
+                    );
+                  }
+                : undefined
+            }
             placeholder={resolvedTimePlaceholder}
+            // Combobox semantics appear only with the dropdown opted in, so a
+            // field without it keeps a single combobox on the date half.
+            role={hasTimeOptions ? 'combobox' : undefined}
+            aria-expanded={hasTimeOptions ? timePopover.isOpen : undefined}
+            aria-controls={
+              hasTimeOptions && timePopover.isOpen ? timeListboxId : undefined
+            }
+            aria-autocomplete={hasTimeOptions ? 'list' : undefined}
+            aria-activedescendant={
+              hasTimeOptions &&
+              timePopover.isOpen &&
+              highlightedTimeIndex >= 0 &&
+              highlightedTimeIndex < timeOptions.length
+                ? timeOptionId(highlightedTimeIndex)
+                : undefined
+            }
             // With a disabledMessage the input keeps focusability via
             // aria-disabled so the reason is focus-discoverable; typing is
             // blocked with readOnly and the mutation guards.
@@ -1070,6 +1443,52 @@ export function DateTimeInput({
         />,
         {placement: 'below', alignment: 'start'},
       )}
+
+      {hasTimeOptions &&
+        timePopover.render(
+          // The layer renders its children open or closed, so mount the list
+          // only while it is open — a 5-minute cadence is 288 nodes that would
+          // otherwise sit in the DOM of every opted-in field for its lifetime.
+          !timePopover.isOpen ? null : (
+            <div
+              id={timeListboxId}
+              role="listbox"
+              aria-label={t('@astryx.dateTimeInput.timeOptionsLabel', {label})}
+              {...mergeProps(
+                themeProps('date-time-input-time-listbox'),
+                stylex.props(styles.timeListbox),
+              )}>
+              {timeOptions.map((option, index) => {
+                const isSelected = option.time === selectedOptionTime;
+                return (
+                  <div
+                    key={option.time}
+                    id={timeOptionId(index)}
+                    role="option"
+                    aria-selected={isSelected}
+                    tabIndex={-1}
+                    // Pointer-down commit: the input must not lose focus to the
+                    // option, or blur would fire its own commit first.
+                    onPointerDown={e => e.preventDefault()}
+                    onClick={() => commitTimeOption(option.time)}
+                    onMouseEnter={() => setHighlightedTimeIndex(index)}
+                    {...mergeProps(
+                      themeProps('date-time-input-time-option'),
+                      stylex.props(
+                        styles.timeOption,
+                        index === highlightedTimeIndex &&
+                          styles.timeOptionHighlighted,
+                        isSelected && styles.timeOptionSelected,
+                      ),
+                    )}>
+                    {option.label}
+                  </div>
+                );
+              })}
+            </div>
+          ),
+          {placement: 'below', alignment: 'start'},
+        )}
 
       {showsDisabledMessage &&
         disabledMessageTooltip.renderTooltip(disabledMessage)}

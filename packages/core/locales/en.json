@@ -643,6 +643,10 @@
     "defaultMessage": "{label} time",
     "description": "Screen-reader-only accessible name for the time-of-day slot in a DateTimeInput. Example: `Start date time`; reorder freely (e.g. \"time of {label}\")."
   },
+  "@astryx.dateTimeInput.timeOptionsLabel": {
+    "defaultMessage": "{label} time options",
+    "description": "Screen-reader-only accessible name for the list of preset times that drops down from a DateTimeInput's time slot. `{label}` is the field's own label — example: `Meeting time options`. Plural: the list holds every selectable time."
+  },
   "@astryx.dateRangeInput.placeholder": {
     "defaultMessage": "Select date range",
     "description": "Grey placeholder inside an empty DateRangeInput field. Represents picking a start–end date pair. Imperative verb."
