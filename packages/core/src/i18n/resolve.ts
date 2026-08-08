@@ -73,74 +73,71 @@ export function resolveLocaleChain(locale: Locale): Locale[] {
   return chain;
 }
 
-function lookup(
-  key: string,
+function getLookup(
   locale: Locale,
   messages: MessagesByLocale,
-  overrides: Overrides | undefined,
-): string | null {
+  overrides?: Overrides,
+): Record<string, string> {
+  const lookup = {} as Record<string, string>;
   const chain = resolveLocaleChain(locale);
-
   // 1 + 2. Overrides (most specific to least specific in the chain)
-  if (overrides !== undefined) {
-    for (const tag of chain) {
-      const value = overrides[tag]?.[key];
-      if (value !== undefined) {
-        return value;
+  for (const tag of chain) {
+    if (overrides?.[tag]) {
+      for (const [key, value] of Object.entries(overrides[tag])) {
+        if (lookup[key] === undefined && value !== null) {
+          lookup[key] = value;
+        }
+      }
+    }
+    if (messages[tag]) {
+      for (const [key, value] of Object.entries(messages[tag])) {
+        if (lookup[key] === undefined && value?.defaultMessage !== null) {
+          lookup[key] = value?.defaultMessage;
+        }
       }
     }
   }
-
-  // 3 + 4. Shipped catalogs (most specific to least specific)
-  for (const tag of chain) {
-    const entry = messages[tag]?.[key];
-    if (entry !== undefined) {
-      return entry.defaultMessage;
+  for (const [key, value] of Object.entries(EN_CATALOG)) {
+    if (lookup[key] === undefined && value?.defaultMessage !== null) {
+      lookup[key] = value?.defaultMessage;
     }
   }
-
-  // 5. Shipped en catalog — always present
-  const enEntry = EN_CATALOG[key];
-  if (enEntry !== undefined) {
-    return enEntry.defaultMessage;
-  }
-
-  // 6. Nothing found
-  return null;
+  return lookup;
 }
 
-export function resolve(
-  key: string,
-  values: Record<string, unknown> | undefined,
+export function getResolve(
   locale: Locale,
   messages: MessagesByLocale,
-  overrides: Overrides | undefined,
-): string {
-  const result = lookup(key, locale, messages, overrides);
+  overrides?: Overrides,
+) {
+  const lookup = getLookup(locale, messages, overrides);
 
-  if (result === null) {
-    // Fires ONLY when a key is missing from every source including the
-    // shipped `en` catalog — a real bug (typo, stale catalog, deleted key).
-    // Fallback to `en` from a non-en locale is expected and stays silent,
-    // matching the FormatJS / i18next default.
-    warnOnce(
-      `astryx-i18n:${locale}::${key}`,
-      'astryx-i18n',
-      `missing key: ${key} (locale: ${locale})`,
-    );
-    return key;
-  }
+  return (key: string, values: Record<string, unknown> | undefined) => {
+    const result = lookup[key];
+    if (result === undefined) {
+      // Fires ONLY when a key is missing from every source including the
+      // shipped `en` catalog — a real bug (typo, stale catalog, deleted key).
+      // Fallback to `en` from a non-en locale is expected and stays silent,
+      // matching the FormatJS / i18next default.
+      warnOnce(
+        `astryx-i18n:${locale}::${key}`,
+        'astryx-i18n',
+        `missing key: ${key} (locale: ${locale})`,
+      );
+      return key;
+    }
 
-  if (values === undefined) {
-    // Static string — skip the parser entirely for the common case
-    return result;
-  }
+    if (values === undefined) {
+      // Static string — skip the parser entirely for the common case
+      return result;
+    }
 
-  const formatted = getFormatter(result, locale).format(values);
-  // IntlMessageFormat.format returns string | (string | React elements) — we
-  // only ever pass string values so it will be a string; assert for the type
-  // system.
-  return formatted as string;
+    const formatted = getFormatter(result, locale).format(values);
+    // IntlMessageFormat.format returns string | (string | React elements) — we
+    // only ever pass string values so it will be a string; assert for the type
+    // system.
+    return formatted as string;
+  };
 }
 
 /**
