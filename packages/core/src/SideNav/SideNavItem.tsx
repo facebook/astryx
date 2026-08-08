@@ -35,7 +35,6 @@ import {
   typeScaleVars,
   durationVars,
   easeVars,
-  borderVars,
   radiusVars,
 } from '../theme/tokens.stylex';
 import {renderIconSlot, useIcon, type IconType} from '../Icon';
@@ -162,11 +161,14 @@ const styles = stylex.create({
     textAlign: 'start',
     cursor: 'pointer',
   },
-  // Popover surface for collapsed items with children
+  // Popover surface for collapsed items with children. usePopover's own
+  // render() already supplies the elevated surface (background,
+  // --radius-container, --shadow-low) around this content — it carries no
+  // border of its own, so the shadow alone defines the edge, same as every
+  // other usePopover consumer. This div's own square border was the only
+  // border in the stack, and its 0-radius corners cut across the outer
+  // 12px-radius arcs instead of nesting inside them.
   popoverSurface: {
-    borderWidth: borderVars['--border-width'],
-    borderStyle: 'solid',
-    borderColor: colorVars['--color-border'],
     paddingBlock: spacingVars['--spacing-1'],
     paddingInline: spacingVars['--spacing-1'],
     marginInlineStart: spacingVars['--spacing-1'],
