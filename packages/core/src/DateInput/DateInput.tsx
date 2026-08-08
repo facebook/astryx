@@ -741,7 +741,7 @@ export function DateInput({
           user would get no feedback that their entry was rejected (WCAG 3.3.1).
         */}
       <VisuallyHidden as="div" role="alert" aria-live="assertive">
-        {!isInputValid ? 'Invalid date' : ''}
+        {!isInputValid ? t('@astryx.dateInput.invalidDate') : ''}
       </VisuallyHidden>
       {hasClear && value !== undefined && !isEffectivelyDisabled && (
         <button

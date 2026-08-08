@@ -591,10 +591,12 @@ export function DateTimeInput({
 
   const resolvedTimePlaceholder = useMemo(() => {
     if (isTimeFocused && !timeDisplayValue) {
-      return hourFormat === '12h' ? 'e.g., 2:30 PM' : 'e.g., 14:30';
+      return hourFormat === '12h'
+        ? t('@astryx.dateTimeInput.timeHint12h')
+        : t('@astryx.dateTimeInput.timeHint24h');
     }
     return timePlaceholder;
-  }, [isTimeFocused, timeDisplayValue, hourFormat, timePlaceholder]);
+  }, [isTimeFocused, timeDisplayValue, hourFormat, timePlaceholder, t]);
 
   // --- Unified change handler ---
   const fireChange = useCallback(
@@ -975,7 +977,7 @@ export function DateTimeInput({
             rejected (WCAG 3.3.1).
           */}
           <VisuallyHidden as="div" role="alert" aria-live="assertive">
-            {!isDateInputValid ? 'Invalid date' : ''}
+            {!isDateInputValid ? t('@astryx.dateInput.invalidDate') : ''}
           </VisuallyHidden>
           {hasClear && value !== undefined && !isEffectivelyDisabled && (
             <button
@@ -1051,7 +1053,7 @@ export function DateTimeInput({
             technology (WCAG 3.3.1).
           */}
           <VisuallyHidden as="div" role="alert" aria-live="assertive">
-            {!isTimeInputValid ? 'Invalid time' : ''}
+            {!isTimeInputValid ? t('@astryx.dateTimeInput.invalidTime') : ''}
           </VisuallyHidden>
         </div>
       </div>

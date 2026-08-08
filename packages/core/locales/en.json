@@ -639,6 +639,22 @@
     "defaultMessage": "Clear {label}",
     "description": "Aria label for the clear-value button in DateInput / DateRangeInput / DateTimeInput. `{label}` is the field's own label so screen readers announce e.g. 'Clear Start date'."
   },
+  "@astryx.dateInput.invalidDate": {
+    "defaultMessage": "Invalid date",
+    "description": "Live-region announcement for screen readers when typed text in a DateInput or DateTimeInput does not parse as a valid date. Terse (noun phrase, not a sentence)."
+  },
+  "@astryx.dateTimeInput.invalidTime": {
+    "defaultMessage": "Invalid time",
+    "description": "Live-region announcement for screen readers when typed text in a DateTimeInput's time slot does not parse as a valid time. Terse (noun phrase, not a sentence)."
+  },
+  "@astryx.dateTimeInput.timeHint12h": {
+    "defaultMessage": "e.g., 2:30 PM",
+    "description": "Placeholder hint shown in the DateTimeInput time field when focused and empty with 12-hour format. Gives an example of expected input format."
+  },
+  "@astryx.dateTimeInput.timeHint24h": {
+    "defaultMessage": "e.g., 14:30",
+    "description": "Placeholder hint shown in the DateTimeInput time field when focused and empty with 24-hour format. Gives an example of expected input format."
+  },
   "@astryx.dateTimeInput.timeSuffix": {
     "defaultMessage": "{label} time",
     "description": "Screen-reader-only accessible name for the time-of-day slot in a DateTimeInput. Example: `Start date time`; reorder freely (e.g. \"time of {label}\")."
