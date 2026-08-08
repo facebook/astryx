@@ -389,6 +389,13 @@ export function SideNav({
   });
 
   const toggle = useCallback(() => {
+    // With collapse disabled the resize hook ignores collapse(), so going
+    // further would leave collapseStateRef reporting a state the nav never
+    // entered — and nothing re-renders to correct it.
+    if (isResizable && !isCollapsible) {
+      return;
+    }
+
     const next = !collapsed;
 
     collapseStateRef.current = {
@@ -398,9 +405,12 @@ export function SideNav({
 
     if (isResizable) {
       // The hook's onCollapseChange already drives setCollapsedState, so
-      // notifying here as well would fire onCollapsedChange twice per
-      // click. If the hook already matches (e.g. a controlled parent moved
-      // the prop without toggle), notify directly instead.
+      // notifying here as well would fire onCollapsedChange twice per click.
+      // When the hook is already collapsed — a controlled parent that
+      // refused a drag-collapse, say — collapse() is a no-op that notifies
+      // nothing, so notify directly to keep the click meaningful. (The
+      // mirrored expand-side case still routes through expand(), which
+      // restores the last pre-collapse width.)
       if (next && resizableHook.isCollapsed) {
         setCollapsedState(next);
       } else if (next) {
@@ -411,7 +421,7 @@ export function SideNav({
     } else {
       setCollapsedState(next);
     }
-  }, [collapsed, setCollapsedState, isResizable, resizableHook]);
+  }, [collapsed, setCollapsedState, isResizable, isCollapsible, resizableHook]);
 
   const showResizeHandle = isResizable && !collapsed;
 

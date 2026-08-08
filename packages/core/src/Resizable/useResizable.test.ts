@@ -126,8 +126,9 @@ describe('useResizable persistence', () => {
   });
 
   it('does not clobber the saved width when collapse is called twice', () => {
+    const onCollapseChange = vi.fn();
     const {result} = renderHook(() =>
-      useResizable({...BASE_CONFIG, collapsible: true}),
+      useResizable({...BASE_CONFIG, collapsible: true, onCollapseChange}),
     );
     act(() => result.current.resize(300));
     act(() => result.current.collapse());
@@ -137,6 +138,8 @@ describe('useResizable persistence', () => {
       size: 300,
       isCollapsed: true,
     });
+    // The second call is inert, so it must not re-notify either.
+    expect(onCollapseChange).toHaveBeenCalledTimes(1);
     act(() => result.current.expand());
     expect(result.current.size).toBe(300);
   });
@@ -243,6 +246,95 @@ describe('useResizable persistence', () => {
     expect(result.current.isCollapsed).toBe(true);
     expect(onCollapseChange).toHaveBeenCalledTimes(1);
     expect(onCollapseChange).toHaveBeenCalledWith(true);
+  });
+
+  it('does not notify onCollapseChange when resizing an already expanded region', () => {
+    const onCollapseChange = vi.fn();
+    const {result} = renderHook(() =>
+      useResizable({...BASE_CONFIG, collapsible: true, onCollapseChange}),
+    );
+    act(() => result.current.resize(300));
+    act(() => result.current.resize(320));
+    expect(onCollapseChange).not.toHaveBeenCalled();
+  });
+
+  it('notifies once when expand and resize run in the same tick', () => {
+    const onCollapseChange = vi.fn();
+    const {result} = renderHook(() =>
+      useResizable({...BASE_CONFIG, collapsible: true, onCollapseChange}),
+    );
+    act(() => result.current.collapse());
+    onCollapseChange.mockClear();
+
+    act(() => {
+      result.current.expand();
+      result.current.resize(280);
+    });
+
+    expect(onCollapseChange).toHaveBeenCalledTimes(1);
+    expect(onCollapseChange).toHaveBeenCalledWith(false);
+    expect(result.current.isCollapsed).toBe(false);
+  });
+
+  it('reports the final state when collapse and resize run in the same tick', () => {
+    const onCollapseChange = vi.fn();
+    const {result} = renderHook(() =>
+      useResizable({...BASE_CONFIG, collapsible: true, onCollapseChange}),
+    );
+    act(() => result.current.resize(300));
+    onCollapseChange.mockClear();
+
+    act(() => {
+      result.current.collapse();
+      result.current.resize(280);
+    });
+
+    // The region ends expanded, so the consumer must not be left believing
+    // it collapsed.
+    expect(result.current.isCollapsed).toBe(false);
+    expect(onCollapseChange.mock.calls).toEqual([[true], [false]]);
+  });
+
+  it('handles a whole drag gesture through the props captured at pointer down', () => {
+    const onCollapseChange = vi.fn();
+    const {result} = renderHook(() =>
+      useResizable({
+        ...BASE_CONFIG,
+        collapsible: true,
+        collapsedSize: 160,
+        onCollapseChange,
+      }),
+    );
+    act(() => result.current.resize(300));
+    onCollapseChange.mockClear();
+
+    // ResizeHandle registers its pointermove listener once at pointer down,
+    // so the entire gesture runs against this one props object.
+    const gesture = result.current.props;
+    act(() => gesture._onResizeStart());
+    act(() => gesture._onResizeMove(-200));
+    act(() => gesture._onResizeMove(-210));
+
+    expect(result.current.isCollapsed).toBe(true);
+    expect(onCollapseChange).toHaveBeenCalledTimes(1);
+
+    // Dragging back above the threshold in the same gesture re-expands.
+    act(() => gesture._onResizeMove(50));
+    expect(result.current.isCollapsed).toBe(false);
+    expect(result.current.size).toBe(350);
+    expect(onCollapseChange.mock.calls).toEqual([[true], [false]]);
+  });
+
+  it('treats an explicit regions: undefined as a single-region config', () => {
+    const {result} = renderHook(() =>
+      useResizable({
+        defaultSize: 240,
+        autoSaveId: AUTO_SAVE_ID,
+        regions: undefined,
+      }),
+    );
+    expect(result.current.size).toBe(240);
+    expect(result.current.isCollapsed).toBe(false);
   });
 });
 

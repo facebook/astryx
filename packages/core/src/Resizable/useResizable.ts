@@ -275,6 +275,15 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
     () =>
       (initialIsCollapsed ?? persisted?.isCollapsed ?? false) && collapsible,
   );
+  // Mirrors isCollapsed so the callbacks below read the live value. They are
+  // reached from stale closures in two real cases: two imperative calls in
+  // one tick, and a drag, whose pointermove listener holds the props object
+  // captured at pointer down for the whole gesture.
+  const isCollapsedRef = useRef(isCollapsed);
+  const setCollapsed = useCallback((value: boolean) => {
+    isCollapsedRef.current = value;
+    setIsCollapsed(value);
+  }, []);
   const preCollapseSizeRef = useRef(size);
   const dragStartSizeRef = useRef(size);
 
@@ -292,30 +301,34 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
   }, [size, isCollapsed, autoSaveId]);
 
   const collapse = useCallback(() => {
-    // The isCollapsed guard keeps a repeated call from overwriting
+    // The already-collapsed guard keeps a repeated call from overwriting
     // preCollapseSizeRef with the zeroed collapsed size.
-    if (!collapsible || isCollapsed) {
+    if (!collapsible || isCollapsedRef.current) {
       return;
     }
     preCollapseSizeRef.current = size;
-    setIsCollapsed(true);
+    setCollapsed(true);
     setSize(0);
     onCollapseChange?.(true);
     onSizeChange?.(0);
-  }, [collapsible, isCollapsed, size, onCollapseChange, onSizeChange]);
+  }, [collapsible, size, setCollapsed, onCollapseChange, onSizeChange]);
 
   const expand = useCallback(() => {
-    setIsCollapsed(false);
+    const wasCollapsed = isCollapsedRef.current;
+    setCollapsed(false);
     const restored = preCollapseSizeRef.current || resolvedDefault;
     const newSize = clampSize(restored, minSizePx, maxSizePx, snaps);
     setSize(newSize);
-    onCollapseChange?.(false);
+    if (wasCollapsed) {
+      onCollapseChange?.(false);
+    }
     onSizeChange?.(newSize);
   }, [
     resolvedDefault,
     minSizePx,
     maxSizePx,
     snaps,
+    setCollapsed,
     onCollapseChange,
     onSizeChange,
   ]);
@@ -323,37 +336,38 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
   const resize = useCallback(
     (newSize: number) => {
       const clamped = clampSize(newSize, minSizePx, maxSizePx, snaps);
+      const wasCollapsed = isCollapsedRef.current;
       setSize(clamped);
-      setIsCollapsed(false);
+      setCollapsed(false);
       // Resizing out of the collapsed state is an implicit expand — notify
       // like the drag path does when it crosses back over the threshold.
-      if (isCollapsed) {
+      if (wasCollapsed) {
         onCollapseChange?.(false);
       }
       onSizeChange?.(clamped);
     },
-    [minSizePx, maxSizePx, snaps, isCollapsed, onCollapseChange, onSizeChange],
+    [minSizePx, maxSizePx, snaps, setCollapsed, onCollapseChange, onSizeChange],
   );
 
   const onResizeStart = useCallback(() => {
-    dragStartSizeRef.current = isCollapsed ? 0 : size;
-  }, [size, isCollapsed]);
+    dragStartSizeRef.current = isCollapsedRef.current ? 0 : size;
+  }, [size]);
 
   const onResizeMove = useCallback(
     (delta: number) => {
       const raw = dragStartSizeRef.current + delta;
       if (collapsible && raw < collapsedSize) {
-        if (!isCollapsed) {
-          preCollapseSizeRef.current = size;
+        if (!isCollapsedRef.current) {
+          preCollapseSizeRef.current = dragStartSizeRef.current || size;
+          setCollapsed(true);
+          setSize(0);
           onCollapseChange?.(true);
+          onSizeChange?.(0);
         }
-        setIsCollapsed(true);
-        setSize(0);
-        onSizeChange?.(0);
         return;
       }
-      if (isCollapsed && raw >= collapsedSize) {
-        setIsCollapsed(false);
+      if (isCollapsedRef.current && raw >= collapsedSize) {
+        setCollapsed(false);
         onCollapseChange?.(false);
       }
       const clamped = clampSize(raw, minSizePx, maxSizePx, snaps);
@@ -363,11 +377,11 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
     [
       collapsible,
       collapsedSize,
-      isCollapsed,
       size,
       minSizePx,
       maxSizePx,
       snaps,
+      setCollapsed,
       onSizeChange,
       onCollapseChange,
     ],
@@ -448,11 +462,12 @@ export function useResizable(
 export function useResizable(
   config: UseResizableSingleConfig | UseResizableMultiConfig,
 ): ResizableRegion | Record<string, ResizableRegion> {
-  if ('regions' in config) {
-    // The cast is sound: only a multi config carries `regions` at runtime
-    // (the single config types it `never`, which no longer narrows via `in`).
+  // The null check matters: `regions?: never` on the single config lets a
+  // caller pass an explicit `regions: undefined`, which `in` still reports as
+  // present. Without it that config would reach Object.entries(undefined).
+  if ('regions' in config && config.regions != null) {
     // eslint-disable-next-line @eslint-react/rules-of-hooks, react-compiler/react-compiler -- branch is determined by call-site type (stable per call site)
-    return useMultiResizable(config as UseResizableMultiConfig);
+    return useMultiResizable(config);
   }
   // eslint-disable-next-line @eslint-react/rules-of-hooks, react-compiler/react-compiler -- branch is determined by call-site type (stable per call site)
   return useSingleResizable(config);
