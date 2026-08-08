@@ -231,6 +231,14 @@ describe('RichTextEditor', () => {
     expect(screen.getByText('Notes')).toBeInTheDocument();
   });
 
+  it('names the textbox from the visible label', () => {
+    // The contenteditable surface is a <div>, so a <label htmlFor> association
+    // does not apply — the accessible name must come from aria-labelledby
+    // pointing at the label element's id (axe: aria-input-field-name).
+    render(<RichTextEditor label="Notes" />);
+    expect(screen.getByRole('textbox', {name: 'Notes'})).toBeInTheDocument();
+  });
+
   it('shows the placeholder when empty', () => {
     render(<RichTextEditor label="Notes" placeholder="Write something…" />);
     expect(screen.getByText('Write something…')).toBeInTheDocument();
@@ -754,6 +762,23 @@ describe('RichTextView', () => {
       'contenteditable',
       'false',
     );
+  });
+
+  it('names the read-only textbox with a default accessible name', () => {
+    // Lexical's ContentEditable keeps role="textbox" (with aria-readonly) even
+    // when non-editable, so the region must carry an accessible name
+    // (axe: aria-input-field-name).
+    render(<RichTextView value={HELLO_STATE} />);
+    expect(
+      screen.getByRole('textbox', {name: 'Rich text content'}),
+    ).toBeInTheDocument();
+  });
+
+  it('names the read-only textbox from the label prop', () => {
+    render(<RichTextView value={HELLO_STATE} label="Meeting notes" />);
+    expect(
+      screen.getByRole('textbox', {name: 'Meeting notes'}),
+    ).toBeInTheDocument();
   });
 
   it('renders custom read-only plugins passed via the plugins prop', () => {

@@ -10,7 +10,7 @@
  *   (lab), re-exported from @astryxdesign/lab
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/lab/src/RichTextEditor/RichTextView.test.tsx
+ * - /packages/lab/src/RichTextEditor/RichTextEditor.test.tsx (RichTextView describe block)
  * - /packages/lab/src/RichTextEditor/index.ts
  * - /packages/lab/src/index.ts (barrel re-export)
  * - /apps/storybook/stories/RichTextEditor.stories.tsx
@@ -58,6 +58,14 @@ export interface RichTextViewProps extends BaseProps {
    * `JSON.stringify(editorState.toJSON())`).
    */
   value: string;
+  /**
+   * Accessible name for the read-only text region. Lexical renders the region
+   * with `role="textbox"` (plus `aria-readonly`) even when non-editable, so it
+   * must carry a name for screen readers. Override with something contextual
+   * (e.g. `'Meeting notes'`).
+   * @default 'Rich text content'
+   */
+  label?: string;
   /**
    * Additional Lexical nodes to register beyond the default OSS set. Must match
    * the nodes used to author `value` so custom node types deserialize.
@@ -140,6 +148,7 @@ function SyncValuePlugin({value}: {value: string}): null {
  */
 export function RichTextView({
   value,
+  label = 'Rich text content',
   nodes,
   plugins,
   namespace = 'astryx-view',
@@ -214,7 +223,7 @@ export function RichTextView({
       <LexicalComposer initialConfig={initialConfig}>
         <SyncValuePlugin value={value} />
         <RichTextPlugin
-          contentEditable={<ContentEditable />}
+          contentEditable={<ContentEditable aria-label={label} />}
           placeholder={null}
           ErrorBoundary={LexicalErrorBoundary}
         />
