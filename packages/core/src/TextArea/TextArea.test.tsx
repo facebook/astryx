@@ -736,8 +736,6 @@ describe('TextArea', () => {
       expect(screen.getByRole('textbox')).toHaveAttribute('readonly');
     });
 
-    // The point of isReadOnly: unlike isDisabled, the value still reaches the
-    // server. This is the "visible, locked, still submitted" case.
     it('still submits its value with the form', () => {
       const {container} = render(
         <form>
