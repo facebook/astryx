@@ -4,7 +4,7 @@
 
 /**
  * @file DateTimeInput.tsx
- * @input Uses React, Field, Calendar, usePopover, time parsing utilities
+ * @input Uses React, Field, Calendar, usePopover, useAnnounce, time parsing utilities
  * @output Exports DateTimeInput component, DateTimeInputProps
  * @position Core implementation; consumed by index.ts, tested by DateTimeInput.test.tsx
  *
@@ -80,6 +80,7 @@ import {
 
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
+import {useAnnounce} from '../hooks/useAnnounce';
 import {useSize} from '../SizeContext/SizeContext';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
@@ -448,6 +449,10 @@ export function DateTimeInput({
   ...rest
 }: DateTimeInputProps) {
   const t = useTranslator();
+  // Speaks arrow-key stepping results through the persistent live regions:
+  // stepping programmatically rewrites a plain textbox's value, which screen
+  // readers do not announce on their own (WCAG 4.1.2).
+  const announce = useAnnounce();
   const placeholder =
     placeholderFromProps ?? t('@astryx.dateTimeInput.placeholder');
   const timePlaceholder =
@@ -842,11 +847,23 @@ export function DateTimeInput({
           const combined = combineDateTime(valueParts.date, newTime);
           if (combined) {
             fireChange(combined);
+            // Screen readers do not announce the programmatic value rewrite,
+            // so speak the new time explicitly (WCAG 4.1.2).
+            announce(formatDisplayTime(newTime, hasSeconds));
           }
         }
       }
     },
-    [valueParts, hasSeconds, timeIncrement, timeMin, timeMax, fireChange],
+    [
+      valueParts,
+      hasSeconds,
+      timeIncrement,
+      timeMin,
+      timeMax,
+      fireChange,
+      announce,
+      formatDisplayTime,
+    ],
   );
 
   // --- Clear ---
@@ -975,7 +992,7 @@ export function DateTimeInput({
             rejected (WCAG 3.3.1).
           */}
           <VisuallyHidden as="div" role="alert" aria-live="assertive">
-            {!isDateInputValid ? 'Invalid date' : ''}
+            {!isDateInputValid ? t('@astryx.dateInput.invalidDate') : ''}
           </VisuallyHidden>
           {hasClear && value !== undefined && !isEffectivelyDisabled && (
             <button
@@ -1051,7 +1068,7 @@ export function DateTimeInput({
             technology (WCAG 3.3.1).
           */}
           <VisuallyHidden as="div" role="alert" aria-live="assertive">
-            {!isTimeInputValid ? 'Invalid time' : ''}
+            {!isTimeInputValid ? t('@astryx.timeInput.invalidTime') : ''}
           </VisuallyHidden>
         </div>
       </div>
