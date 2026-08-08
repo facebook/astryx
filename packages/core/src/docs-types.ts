@@ -839,6 +839,7 @@ export type TemplateCategory =
   | 'Dashboard - Tabbed'
   | 'Dashboard - Filterable'
   | 'Dashboard - Portfolio'
+  | 'Dashboard - Project Status'
   // Table
   | 'Table - Basic'
   | 'Table - Grouped'
