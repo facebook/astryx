@@ -37,6 +37,7 @@ import {
   colorVars,
   spacingVars,
   typeScaleVars,
+  fontWeightVars,
   radiusVars,
 } from '../theme/tokens.stylex';
 import {BreadcrumbContext} from './Breadcrumbs';
@@ -179,7 +180,7 @@ const itemStyles = stylex.create({
     color: colorVars['--color-text-secondary'],
   },
   current: {
-    fontWeight: 'inherit',
+    fontWeight: fontWeightVars['--font-weight-semibold'],
   },
   defaultCurrent: {
     color: colorVars['--color-text-primary'],
