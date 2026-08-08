@@ -115,7 +115,10 @@ const styles = stylex.create({
   },
   popover: {
     minWidth: 'anchor-size(width)',
+    // Both block edges carry the gap so the popup keeps its clearance
+    // whichever way it opens (placement="above" spaces via the end edge).
     marginBlockStart: spacingVars['--spacing-1'],
+    marginBlockEnd: spacingVars['--spacing-1'],
   },
   content: {
     boxSizing: 'border-box',

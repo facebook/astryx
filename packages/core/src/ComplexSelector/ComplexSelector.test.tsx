@@ -12,7 +12,23 @@
 import {describe, expect, it, vi} from 'vitest';
 import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import * as stylex from '@stylexjs/stylex';
+import {spacingVars} from '../theme/tokens.stylex';
 import {ComplexSelector} from './ComplexSelector';
+
+// StyleX emits one deterministic atomic class per property/value pair, so an
+// element carries a probe's class exactly when it has the same declaration.
+// The dev-mode debug class (contains "__") varies by source location and is
+// excluded from the comparison.
+const probe = stylex.create({
+  blockStartGap: {marginBlockStart: spacingVars['--spacing-1']},
+  blockEndGap: {marginBlockEnd: spacingVars['--spacing-1']},
+});
+
+function atomicClasses(style: (typeof probe)[keyof typeof probe]): string[] {
+  const {className = ''} = stylex.props(style);
+  return className.split(' ').filter(c => c !== '' && !c.includes('__'));
+}
 
 type FruitValue = {
   fruit: 'Apple' | 'Banana';
@@ -152,5 +168,34 @@ describe('ComplexSelector', () => {
 
     await user.click(screen.getByRole('button', {name: 'Done', ...h}));
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('keeps the popup gap on both block edges so placement="above" clears the trigger', async () => {
+    // #4803: the popup layer only set marginBlockStart, which spaces a popup
+    // opening downward but leaves an upward-opening one flush against the
+    // trigger. Both block edges must carry the gap, mirroring Popover's `gap`
+    // style, so the clearance holds whichever way the layer opens.
+    const user = userEvent.setup();
+    render(
+      <ComplexSelector
+        label="Fruit blend"
+        value="Apple"
+        triggerLabel="Apple"
+        placement="above">
+        {() => <div>Surface</div>}
+      </ComplexSelector>,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit blend'}));
+
+    const layer = document.querySelector('[popover]');
+    expect(layer).not.toBeNull();
+    const startGapClasses = atomicClasses(probe.blockStartGap);
+    const endGapClasses = atomicClasses(probe.blockEndGap);
+    // Guard against a vacuous pass if the probe ever compiles to no classes.
+    expect(startGapClasses.length).toBeGreaterThan(0);
+    expect(endGapClasses.length).toBeGreaterThan(0);
+    for (const cls of [...startGapClasses, ...endGapClasses]) {
+      expect(layer!.classList.contains(cls)).toBe(true);
+    }
   });
 });
