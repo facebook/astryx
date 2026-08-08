@@ -4,7 +4,8 @@
  * @file editorTheme.ts
  * @input Uses StyleX + Astryx design tokens
  * @output Exports sharedEditorTheme(), which builds a Lexical EditorThemeClasses
- *   object mapping Lexical's theme slots to StyleX-generated class names.
+ *   object mapping Lexical's theme slots to StyleX-generated class names and
+ *   normalizes paragraph spacing for editor/view alignment.
  * @position Shared by RichTextEditor.tsx and RichTextView.tsx so editor and
  *   read-only view render identically.
  *
@@ -24,7 +25,11 @@ import type {EditorThemeClasses} from 'lexical';
 
 const editorTheme = stylex.create({
   paragraph: {
-    marginBlock: spacingVars['--spacing-1'],
+    // A leading margin collapses through Lexical's wrapper and stacks with the
+    // input inset. Keep the same between-paragraph rhythm on the end edge so
+    // the first line aligns with TextArea and the empty-editor placeholder.
+    marginBlockStart: spacingVars['--spacing-0'],
+    marginBlockEnd: spacingVars['--spacing-1'],
   },
   h1: {
     fontFamily: typographyVars['--font-family-heading'],

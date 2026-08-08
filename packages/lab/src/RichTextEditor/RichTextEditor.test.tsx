@@ -3,13 +3,16 @@
 /**
  * @file RichTextEditor.test.tsx
  * @input Uses vitest, @testing-library/react, RichTextEditor + RichTextView
- * @output Unit tests for the opt-in Lexical editor components
+ * @output Unit tests for the opt-in Lexical editor components, including
+ *   accessible label wiring, shared input visuals/status variants,
+ *   placeholder semantics, canonical link-dialog layout, and top-toolbar
+ *   ordering and horizontal scrolling
  * @position Testing; validates RichTextEditor.tsx and RichTextView.tsx
  *
  * SYNC: When the editor components change, update these tests to match.
  */
 
-import {describe, it, expect, vi, beforeAll} from 'vitest';
+import {describe, it, expect, vi, beforeAll, afterAll} from 'vitest';
 import {render, screen, waitFor, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {createRef, useEffect} from 'react';
@@ -42,6 +45,50 @@ import {
   NEW_TAB_LINK_ATTRIBUTES,
 } from './RichTextEditorAutoLinkPlugin';
 import {sanitizeUrl, validateUrl} from './linkUtils';
+
+// Closed popover-backed tooltips are intentionally hidden from the default
+// accessibility tree until their trigger opens them.
+const h = {hidden: true} as const;
+
+const originalShowModal = Object.getOwnPropertyDescriptor(
+  HTMLDialogElement.prototype,
+  'showModal',
+);
+const originalDialogClose = Object.getOwnPropertyDescriptor(
+  HTMLDialogElement.prototype,
+  'close',
+);
+
+beforeAll(() => {
+  // JSDOM does not implement the native dialog lifecycle used by Dialog.
+  HTMLDialogElement.prototype.showModal = function () {
+    this.setAttribute('open', '');
+  };
+  HTMLDialogElement.prototype.close = function () {
+    this.removeAttribute('open');
+  };
+});
+
+afterAll(() => {
+  if (originalShowModal) {
+    Object.defineProperty(
+      HTMLDialogElement.prototype,
+      'showModal',
+      originalShowModal,
+    );
+  } else {
+    delete (HTMLDialogElement.prototype as {showModal?: unknown}).showModal;
+  }
+  if (originalDialogClose) {
+    Object.defineProperty(
+      HTMLDialogElement.prototype,
+      'close',
+      originalDialogClose,
+    );
+  } else {
+    delete (HTMLDialogElement.prototype as {close?: unknown}).close;
+  }
+});
 
 // Small plugin that captures the editor instance so tests can drive real
 // Lexical updates (jsdom does not implement contenteditable editing).
@@ -223,17 +270,69 @@ const HELLO_STATE = JSON.stringify({
 });
 
 describe('RichTextEditor', () => {
+  it('keeps TextArea-style input visuals alongside consumer props', () => {
+    const {container} = render(
+      <RichTextEditor
+        label="Notes"
+        className="custom-editor"
+        style={{width: '42rem'}}
+      />,
+    );
+
+    const wrapper = container.querySelector('.astryx-rich-text-editor');
+    expect(wrapper).toBeInTheDocument();
+    expect(wrapper).toHaveClass('custom-editor');
+    expect(wrapper).toHaveAttribute('data-size', 'md');
+    expect(wrapper).toHaveStyle({width: '42rem'});
+    expect(
+      [...(wrapper?.classList ?? [])].some(className =>
+        className.startsWith('x'),
+      ),
+    ).toBe(true);
+  });
+
   it('renders a labelled editable textbox', () => {
     render(<RichTextEditor label="Notes" />);
-    const textbox = screen.getByRole('textbox');
+    const textbox = screen.getByRole('textbox', {name: 'Notes'});
+    const label = screen.getByText('Notes');
+
     expect(textbox).toBeInTheDocument();
     expect(textbox).toHaveAttribute('contenteditable', 'true');
-    expect(screen.getByText('Notes')).toBeInTheDocument();
+    expect(label).toHaveAttribute(
+      'id',
+      textbox.getAttribute('aria-labelledby'),
+    );
+    expect(textbox).toHaveAttribute('id', label.getAttribute('for'));
+  });
+
+  it('applies minHeight only to the editable content surface', () => {
+    const {container, rerender} = render(<RichTextEditor label="Notes" />);
+    const wrapper = container.querySelector('.astryx-rich-text-editor');
+
+    expect(
+      screen.getByRole('textbox').style.getPropertyValue('--x-minHeight'),
+    ).toBe('4.5rem');
+    expect(wrapper).not.toHaveStyle({'--x-minHeight': '4.5rem'});
+
+    rerender(<RichTextEditor label="Notes" minHeight={180} />);
+    expect(
+      screen.getByRole('textbox').style.getPropertyValue('--x-minHeight'),
+    ).toBe('180px');
+
+    rerender(<RichTextEditor label="Notes" minHeight="12rem" />);
+    expect(
+      screen.getByRole('textbox').style.getPropertyValue('--x-minHeight'),
+    ).toBe('12rem');
   });
 
   it('shows the placeholder when empty', () => {
     render(<RichTextEditor label="Notes" placeholder="Write something…" />);
-    expect(screen.getByText('Write something…')).toBeInTheDocument();
+    const textbox = screen.getByRole('textbox');
+    const visualPlaceholder = screen.getByText('Write something…');
+
+    expect(textbox).toHaveAttribute('aria-placeholder', 'Write something…');
+    expect(visualPlaceholder).toHaveAttribute('aria-hidden', 'true');
+    expect(textbox.parentElement).toContainElement(visualPlaceholder);
   });
 
   it('renders the initial value from defaultValue', async () => {
@@ -268,6 +367,71 @@ describe('RichTextEditor', () => {
     );
     expect(screen.getByRole('textbox')).toHaveAttribute('aria-invalid', 'true');
     expect(screen.getByText('Required')).toBeInTheDocument();
+  });
+
+  it.each(['error', 'warning', 'success'] as const)(
+    'renders an in-editor %s icon for the default attached status',
+    type => {
+      const {container} = render(
+        <RichTextEditor
+          label="Notes"
+          status={{type, message: `${type} message`}}
+        />,
+      );
+
+      const statusIcon = container.querySelector('.astryx-input-status-icon');
+      expect(statusIcon).toBeInTheDocument();
+      expect(statusIcon).toHaveAttribute('data-status', type);
+      expect(statusIcon).toHaveAttribute('data-size', 'md');
+      expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+        'data-variant',
+        'attached',
+      );
+    },
+  );
+
+  it('uses the detached message icon and suppresses the in-editor icon', () => {
+    const {container} = render(
+      <RichTextEditor
+        label="Notes"
+        status={{type: 'warning', message: 'Review this value'}}
+        statusVariant="detached"
+      />,
+    );
+
+    expect(
+      container.querySelector('.astryx-input-status-icon'),
+    ).not.toBeInTheDocument();
+    expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+      'data-variant',
+      'detached',
+    );
+    expect(
+      container.querySelector('.astryx-field-status-icon'),
+    ).toBeInTheDocument();
+  });
+
+  it('surfaces tooltip status through a focusable in-editor icon', () => {
+    const {container} = render(
+      <RichTextEditor
+        label="Notes"
+        status={{type: 'error', message: 'Required'}}
+        statusVariant="tooltip"
+      />,
+    );
+
+    expect(
+      container.querySelector('.astryx-field-status'),
+    ).not.toBeInTheDocument();
+    const statusButton = screen.getByRole('button', {
+      name: /error details/i,
+    });
+    const tooltip = screen.getByRole('tooltip', h);
+    const textbox = screen.getByRole('textbox');
+    expect(statusButton).toHaveAttribute('type', 'button');
+    expect(statusButton.getAttribute('aria-describedby')).toContain(tooltip.id);
+    expect(textbox.getAttribute('aria-describedby')).toContain(tooltip.id);
+    expect(tooltip).toHaveTextContent('Required');
   });
 
   it('sets aria-required when required', () => {
@@ -930,24 +1094,85 @@ describe('markdown serializers', () => {
 });
 
 describe('RichTextEditorToolbar', () => {
-  it('renders inside the editor plugins slot with formatting controls', () => {
-    render(
-      <RichTextEditor label="Notes" plugins={<RichTextEditorToolbar />} />,
+  it('treats a false conditional toolbar as absent', () => {
+    const {container, rerender} = render(
+      <RichTextEditor label="Notes" toolbar={false} tabEscapeHint="" />,
     );
-    // Toolbar landmark with its accessible label.
+    const conditionalBodyClass = container.querySelector(
+      '.astryx-rich-text-editor',
+    )?.firstElementChild?.className;
+
+    rerender(<RichTextEditor label="Notes" tabEscapeHint="" />);
+
     expect(
-      screen.getByRole('toolbar', {name: 'Text formatting'}),
-    ).toBeInTheDocument();
-    // A representative set of format buttons are present and labelled.
+      container.querySelector('.astryx-rich-text-editor')?.firstElementChild
+        ?.className,
+    ).toBe(conditionalBodyClass);
+    expect(screen.queryByRole('toolbar')).not.toBeInTheDocument();
+  });
+
+  it('renders flush at the top before the editing surface', () => {
+    const {container} = render(
+      <RichTextEditor label="Notes" toolbar={<RichTextEditorToolbar />} />,
+    );
+    const toolbar = screen.getByRole('toolbar', {name: 'Text formatting'});
+    const textbox = screen.getByRole('textbox');
+    const editor = container.querySelector('.astryx-rich-text-editor');
+    const toolbarRegion = toolbar.parentElement?.parentElement;
+    const editorBody = toolbarRegion?.nextElementSibling;
+
+    expect(toolbar).toHaveClass('astryx-toolbar');
+    expect(toolbar).toHaveAttribute('data-size', 'sm');
+    expect(screen.getByRole('button', {name: 'Bold'})).toHaveAttribute(
+      'data-size',
+      'sm',
+    );
+    expect(
+      toolbar.compareDocumentPosition(textbox) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(toolbarRegion?.parentElement).toBe(editor);
+    expect(editorBody).toBeInstanceOf(HTMLElement);
+    // Vitest's JSDOM setup does not load compiled StyleX CSS. The WithToolbar
+    // story provides visual coverage for flush edges and preserved body inset;
+    // here we verify that the dedicated body receives its StyleX layout.
+    expect(
+      [...(editorBody?.classList ?? [])].some(className =>
+        className.startsWith('x'),
+      ),
+    ).toBe(true);
+
+    // Block formatting is consolidated into a selector, while history and
+    // inline formatting remain direct buttons.
+    expect(
+      screen.getByRole('combobox', {name: 'Block format'}).parentElement,
+    ).toHaveAttribute('data-size', 'sm');
+    const historyDivider = screen.getByRole('separator', {
+      name: 'History and block formats',
+    });
+    const inlineDivider = screen.getByRole('separator', {
+      name: 'Block and inline formats',
+    });
+    expect(historyDivider).toHaveAttribute('aria-orientation', 'vertical');
+    expect(inlineDivider).toHaveAttribute('aria-orientation', 'vertical');
+
+    const blockSelector = screen.getByRole('combobox', {
+      name: 'Block format',
+    });
+    expect(
+      historyDivider.compareDocumentPosition(blockSelector) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(
+      blockSelector.compareDocumentPosition(inlineDivider) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     for (const name of [
       'Bold',
       'Italic',
       'Underline',
       'Strikethrough',
       'Inline code',
-      'Quote',
-      'Bulleted list',
-      'Numbered list',
       'Undo',
       'Redo',
     ]) {
@@ -955,17 +1180,28 @@ describe('RichTextEditorToolbar', () => {
     }
   });
 
-  it('renders one heading button per configured level', () => {
+  it('renders configured headings and block formats in the selector', async () => {
+    const user = userEvent.setup();
     render(
       <RichTextEditor
         label="Notes"
-        plugins={<RichTextEditorToolbar headingLevels={['h1', 'h2']} />}
+        toolbar={<RichTextEditorToolbar headingLevels={['h1', 'h2']} />}
       />,
     );
-    expect(screen.getByRole('button', {name: 'Heading 1'})).toBeInTheDocument();
-    expect(screen.getByRole('button', {name: 'Heading 2'})).toBeInTheDocument();
+    await user.click(screen.getByRole('combobox', {name: 'Block format'}));
+
+    for (const name of [
+      'Paragraph',
+      'Heading 1',
+      'Heading 2',
+      'Bulleted list',
+      'Numbered list',
+      'Block quote',
+    ]) {
+      expect(screen.getByRole('option', {name, ...h})).toBeInTheDocument();
+    }
     expect(
-      screen.queryByRole('button', {name: 'Heading 3'}),
+      screen.queryByRole('option', {name: 'Heading 3', ...h}),
     ).not.toBeInTheDocument();
   });
 
@@ -973,7 +1209,7 @@ describe('RichTextEditorToolbar', () => {
     render(
       <RichTextEditor
         label="Notes"
-        plugins={<RichTextEditorToolbar label="Editor controls" />}
+        toolbar={<RichTextEditorToolbar label="Editor controls" />}
       />,
     );
     expect(
@@ -985,7 +1221,7 @@ describe('RichTextEditorToolbar', () => {
     render(
       <RichTextEditor
         label="Notes"
-        plugins={
+        toolbar={
           <RichTextEditorToolbar
             endContent={<button type="button">Custom</button>}
           />
@@ -995,12 +1231,35 @@ describe('RichTextEditorToolbar', () => {
     expect(screen.getByRole('button', {name: 'Custom'})).toBeInTheDocument();
   });
 
+  it('keeps every formatting action directly available in the scroll row', () => {
+    render(
+      <RichTextEditor label="Notes" toolbar={<RichTextEditorToolbar />} />,
+    );
+
+    const actionRow = screen.getByRole('group', {
+      name: 'Formatting actions',
+    });
+    for (const name of [
+      'Bold',
+      'Italic',
+      'Underline',
+      'Strikethrough',
+      'Inline code',
+      'Link',
+    ]) {
+      expect(actionRow).toContainElement(screen.getByRole('button', {name}));
+    }
+    expect(
+      screen.queryByRole('button', {name: 'More text formatting options'}),
+    ).not.toBeInTheDocument();
+  });
+
   it('disables formatting controls when the editor is read-only', () => {
     render(
       <RichTextEditor
         label="Notes"
         isReadOnly
-        plugins={<RichTextEditorToolbar />}
+        toolbar={<RichTextEditorToolbar />}
       />,
     );
     expect(screen.getByRole('button', {name: 'Bold'})).toBeDisabled();
@@ -1012,12 +1271,14 @@ describe('RichTextEditorToolbar', () => {
     });
     try {
       render(
-        <RichTextEditor label="Notes" plugins={<RichTextEditorToolbar />} />,
+        <RichTextEditor label="Notes" toolbar={<RichTextEditorToolbar />} />,
       );
       // The Bold control uses the theme's registered glyph instead of the
       // bundled inline default.
       const bold = screen.getByRole('button', {name: 'Bold'});
-      expect(bold).toContainElement(screen.getByTestId('themed-bold'));
+      expect(
+        bold.querySelector('[data-testid="themed-bold"]'),
+      ).toBeInTheDocument();
     } finally {
       resetIcons();
     }
@@ -1069,16 +1330,51 @@ describe('linkUtils', () => {
 describe('RichTextEditorToolbar — links', () => {
   it('renders a Link button by default', () => {
     render(
-      <RichTextEditor label="Notes" plugins={<RichTextEditorToolbar />} />,
+      <RichTextEditor label="Notes" toolbar={<RichTextEditorToolbar />} />,
     );
     expect(screen.getByRole('button', {name: 'Link'})).toBeInTheDocument();
+  });
+
+  it('opens an Astryx Dialog instead of the browser prompt by default', async () => {
+    const browserPrompt = vi.spyOn(window, 'prompt').mockReturnValue(null);
+    try {
+      render(
+        <RichTextEditor label="Notes" toolbar={<RichTextEditorToolbar />} />,
+      );
+
+      fireEvent.click(screen.getByRole('button', {name: 'Link'}));
+
+      expect(browserPrompt).not.toHaveBeenCalled();
+      await waitFor(() =>
+        expect(
+          screen.getByRole('dialog', {name: 'Insert link', ...h}),
+        ).toBeInTheDocument(),
+      );
+      const dialog = screen.getByRole('dialog', {
+        name: 'Insert link',
+        ...h,
+      });
+      expect(dialog.querySelector('.astryx-layout-header')).toBeInTheDocument();
+      expect(
+        dialog.querySelector('.astryx-layout-content'),
+      ).toBeInTheDocument();
+      expect(dialog.querySelector('.astryx-layout-footer')).toBeInTheDocument();
+      expect(
+        screen.getByRole('textbox', {name: 'URL', ...h}),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', {name: 'Add link', ...h}),
+      ).toBeInTheDocument();
+    } finally {
+      browserPrompt.mockRestore();
+    }
   });
 
   it('omits the Link button when hasLink is false', () => {
     render(
       <RichTextEditor
         label="Notes"
-        plugins={<RichTextEditorToolbar hasLink={false} />}
+        toolbar={<RichTextEditorToolbar hasLink={false} />}
       />,
     );
     expect(
@@ -1091,7 +1387,7 @@ describe('RichTextEditorToolbar — links', () => {
     render(
       <RichTextEditor
         label="Notes"
-        plugins={<RichTextEditorToolbar promptForUrl={promptForUrl} />}
+        toolbar={<RichTextEditorToolbar promptForUrl={promptForUrl} />}
       />,
     );
     const textbox = screen.getByRole('textbox');
@@ -1117,12 +1413,8 @@ describe('RichTextEditorToolbar — links', () => {
     render(
       <RichTextEditor
         label="Notes"
-        plugins={
-          <>
-            <RichTextEditorToolbar promptForUrl={promptForUrl} />
-            <CaptureEditor onReady={e => (editor = e)} />
-          </>
-        }
+        toolbar={<RichTextEditorToolbar promptForUrl={promptForUrl} />}
+        plugins={<CaptureEditor onReady={e => (editor = e)} />}
       />,
     );
     await waitFor(() => expect(editor).toBeDefined());
@@ -1172,12 +1464,8 @@ describe('RichTextEditorToolbar — links', () => {
     render(
       <RichTextEditor
         label="Notes"
-        plugins={
-          <>
-            <RichTextEditorToolbar promptForUrl={promptForUrl} />
-            <CaptureEditor onReady={e => (editor = e)} />
-          </>
-        }
+        toolbar={<RichTextEditorToolbar promptForUrl={promptForUrl} />}
+        plugins={<CaptureEditor onReady={e => (editor = e)} />}
       />,
     );
     await waitFor(() => expect(editor).toBeDefined());
@@ -1286,12 +1574,8 @@ describe('RichTextEditorToolbar — new-tab links', () => {
     render(
       <RichTextEditor
         label="Notes"
-        plugins={
-          <>
-            <RichTextEditorToolbar promptForUrl={promptForUrl} />
-            <CaptureEditor onReady={e => (editor = e)} />
-          </>
-        }
+        toolbar={<RichTextEditorToolbar promptForUrl={promptForUrl} />}
+        plugins={<CaptureEditor onReady={e => (editor = e)} />}
       />,
     );
     await waitFor(() => expect(editor).toBeDefined());
@@ -1340,15 +1624,13 @@ describe('RichTextEditorToolbar — new-tab links', () => {
     render(
       <RichTextEditor
         label="Notes"
-        plugins={
-          <>
-            <RichTextEditorToolbar
-              promptForUrl={promptForUrl}
-              linkOpensInNewTab={false}
-            />
-            <CaptureEditor onReady={e => (editor = e)} />
-          </>
+        toolbar={
+          <RichTextEditorToolbar
+            promptForUrl={promptForUrl}
+            linkOpensInNewTab={false}
+          />
         }
+        plugins={<CaptureEditor onReady={e => (editor = e)} />}
       />,
     );
     await waitFor(() => expect(editor).toBeDefined());
