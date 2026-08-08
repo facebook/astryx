@@ -51,6 +51,12 @@ export interface ResizableConfig {
 }
 
 export interface UseResizableSingleConfig extends ResizableRegionConfig {
+  /**
+   * Marks this config as single-region, so a multi-region config held in a
+   * variable (which skips excess-property checks) still resolves to the
+   * multi-region overload instead of silently matching this one.
+   */
+  regions?: never;
   /** Unique key for localStorage persistence. */
   autoSaveId?: string;
   /**
@@ -164,7 +170,8 @@ interface PersistedResizableState {
  *   recorded collapse state, so `isCollapsed` is null (unknown)
  * - a plain `0` — written by legacy collapse, which made the region restore
  *   as a zero-width expanded panel (#4790); read as "collapsed, no saved
- *   size"
+ *   size" (an object entry with an unusable size but an explicit
+ *   `isCollapsed: true` maps the same way)
  *
  * Exported for SideNav, which needs the persisted collapse flag to seed its
  * own collapse state before the hook's first render. Not part of the public
@@ -197,6 +204,12 @@ export function loadPersistedState(
       };
       if (typeof size === 'number' && Number.isFinite(size) && size > 0) {
         return {size, isCollapsed: isCollapsed === true};
+      }
+      // The size is unusable, but an explicit collapsed flag is still
+      // trustworthy — mirror the legacy plain-0 mapping so the region
+      // restores as a recoverable collapsed rail rather than expanded.
+      if (isCollapsed === true) {
+        return {size: null, isCollapsed: true};
       }
     }
   } catch {
@@ -312,9 +325,14 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
       const clamped = clampSize(newSize, minSizePx, maxSizePx, snaps);
       setSize(clamped);
       setIsCollapsed(false);
+      // Resizing out of the collapsed state is an implicit expand — notify
+      // like the drag path does when it crosses back over the threshold.
+      if (isCollapsed) {
+        onCollapseChange?.(false);
+      }
       onSizeChange?.(clamped);
     },
-    [minSizePx, maxSizePx, snaps, onSizeChange],
+    [minSizePx, maxSizePx, snaps, isCollapsed, onCollapseChange, onSizeChange],
   );
 
   const onResizeStart = useCallback(() => {
@@ -431,8 +449,10 @@ export function useResizable(
   config: UseResizableSingleConfig | UseResizableMultiConfig,
 ): ResizableRegion | Record<string, ResizableRegion> {
   if ('regions' in config) {
+    // The cast is sound: only a multi config carries `regions` at runtime
+    // (the single config types it `never`, which no longer narrows via `in`).
     // eslint-disable-next-line @eslint-react/rules-of-hooks, react-compiler/react-compiler -- branch is determined by call-site type (stable per call site)
-    return useMultiResizable(config);
+    return useMultiResizable(config as UseResizableMultiConfig);
   }
   // eslint-disable-next-line @eslint-react/rules-of-hooks, react-compiler/react-compiler -- branch is determined by call-site type (stable per call site)
   return useSingleResizable(config);

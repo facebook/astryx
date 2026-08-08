@@ -10,7 +10,7 @@
  */
 
 import React from 'react';
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, act, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {useRef, useState, type ReactNode} from 'react';
@@ -1178,6 +1178,122 @@ describe('SideNav resizable persistence (#4790)', () => {
     render(<InvertingParent />);
     expect(screen.getByRole('navigation').style.width).toBe('340px');
     expect(handler).not.toHaveBeenCalled();
+  });
+});
+
+// =============================================================================
+// Resizable + collapsible persistence — edge cases (#4790)
+// =============================================================================
+
+describe('SideNav resizable persistence edge cases (#4790)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('restores a persisted collapse under StrictMode without callbacks or storage damage', () => {
+    localStorage.setItem(
+      NAV_STORAGE_KEY,
+      JSON.stringify({size: 340, isCollapsed: true}),
+    );
+    const onCollapsedChange = vi.fn();
+    const onWidthChange = vi.fn();
+    render(
+      <React.StrictMode>
+        <SideNav
+          collapsible={{onCollapsedChange}}
+          resizable={{
+            defaultWidth: 300,
+            minWidth: 150,
+            maxWidth: 600,
+            autoSaveId: NAV_SAVE_ID,
+            onWidthChange,
+          }}>
+          Content
+        </SideNav>
+      </React.StrictMode>,
+    );
+
+    expect(
+      screen.getByRole('button', {name: 'Expand sidebar'}),
+    ).toBeInTheDocument();
+    expect(onCollapsedChange).not.toHaveBeenCalled();
+    expect(onWidthChange).not.toHaveBeenCalled();
+    expect(JSON.parse(localStorage.getItem(NAV_STORAGE_KEY) ?? 'null')).toEqual(
+      {size: 340, isCollapsed: true},
+    );
+  });
+
+  it('fires onCollapsedChange exactly once per toggle click', async () => {
+    const onCollapsedChange = vi.fn();
+    const user = userEvent.setup();
+    render(<PersistedSideNav collapsible={{onCollapsedChange}} />);
+
+    await user.click(screen.getByRole('button', {name: 'Collapse sidebar'}));
+    expect(onCollapsedChange).toHaveBeenCalledTimes(1);
+    expect(onCollapsedChange).toHaveBeenLastCalledWith(true);
+
+    await user.click(screen.getByRole('button', {name: 'Expand sidebar'}));
+    expect(onCollapsedChange).toHaveBeenCalledTimes(2);
+    expect(onCollapsedChange).toHaveBeenLastCalledWith(false);
+  });
+
+  it('never writes to localStorage without autoSaveId', async () => {
+    const user = userEvent.setup();
+    render(
+      <SideNav collapsible resizable>
+        Content
+      </SideNav>,
+    );
+    expect(localStorage.length).toBe(0);
+
+    await user.click(screen.getByRole('button', {name: 'Collapse sidebar'}));
+    expect(localStorage.length).toBe(0);
+
+    await user.click(screen.getByRole('button', {name: 'Expand sidebar'}));
+    expect(localStorage.length).toBe(0);
+  });
+
+  it('fires onWidthChange(0) on an interactive collapse while storage keeps the width', async () => {
+    const onWidthChange = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <SideNav
+        collapsible
+        resizable={{
+          defaultWidth: 300,
+          minWidth: 150,
+          maxWidth: 600,
+          autoSaveId: NAV_SAVE_ID,
+          onWidthChange,
+        }}>
+        Content
+      </SideNav>,
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Collapse sidebar'}));
+    expect(onWidthChange).toHaveBeenCalledTimes(1);
+    expect(onWidthChange).toHaveBeenCalledWith(0);
+    expect(JSON.parse(localStorage.getItem(NAV_STORAGE_KEY) ?? 'null')).toEqual(
+      {size: 300, isCollapsed: true},
+    );
+  });
+
+  it('renders expanded at the default width when localStorage.getItem throws', () => {
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('SecurityError');
+    });
+    render(<PersistedSideNav />);
+    expect(screen.getByRole('navigation').style.width).toBe('300px');
+  });
+
+  it('clamps a persisted width above maxWidth on restore', () => {
+    localStorage.setItem(NAV_STORAGE_KEY, '900');
+    render(<PersistedSideNav />);
+    expect(screen.getByRole('navigation').style.width).toBe('600px');
   });
 });
 

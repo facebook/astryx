@@ -396,13 +396,20 @@ export function SideNav({
       isCollapsed: next,
     };
 
-    setCollapsedState(next);
     if (isResizable) {
-      if (next) {
+      // The hook's onCollapseChange already drives setCollapsedState, so
+      // notifying here as well would fire onCollapsedChange twice per
+      // click. If the hook already matches (e.g. a controlled parent moved
+      // the prop without toggle), notify directly instead.
+      if (next && resizableHook.isCollapsed) {
+        setCollapsedState(next);
+      } else if (next) {
         resizableHook.collapse();
       } else {
         resizableHook.expand();
       }
+    } else {
+      setCollapsedState(next);
     }
   }, [collapsed, setCollapsedState, isResizable, resizableHook]);
 
