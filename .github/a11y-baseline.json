@@ -1014,16 +1014,6 @@
       "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/landmark-unique?application=playwright"
     },
     {
-      "key": "TableRowStatus::Default::empty-table-header",
-      "impact": "minor",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/empty-table-header?application=playwright"
-    },
-    {
-      "key": "TableRowStatus::Raw Colors::empty-table-header",
-      "impact": "minor",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/empty-table-header?application=playwright"
-    },
-    {
       "key": "TableTree::Default::aria-conditional-attr",
       "impact": "serious",
       "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/aria-conditional-attr?application=playwright"

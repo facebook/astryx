@@ -495,6 +495,10 @@
     "defaultMessage": "Apply",
     "description": "Primary button label inside a table's filter panel/popover; commits pending filter values. Imperative verb; pairs with `Reset`."
   },
+  "@astryx.table.rowStatus.columnHeader": {
+    "defaultMessage": "Row status",
+    "description": "Screen-reader-only column header for the narrow status-indicator gutter a Table gains from useTableRowStatus. Sighted users see a blank gutter; assistive tech announces this as the column name."
+  },
   "@astryx.table.selection.selectAllRows": {
     "defaultMessage": "Select all rows",
     "description": "Aria label for the \"select all rows\" checkbox in a Table header."
