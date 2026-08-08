@@ -742,6 +742,100 @@ describe('NumberInput', () => {
     });
   });
 
+  describe('isReadOnly', () => {
+    it('marks the input read-only', () => {
+      render(
+        <NumberInput
+          label="Quantity"
+          value={42}
+          onChange={() => {}}
+          isReadOnly
+        />,
+      );
+      expect(screen.getByRole('spinbutton')).toHaveAttribute('readonly');
+    });
+
+    it('still submits its value with the form', () => {
+      const {container} = render(
+        <form>
+          <NumberInput
+            label="Quantity"
+            htmlName="quantity"
+            value={42}
+            onChange={() => {}}
+            isReadOnly
+          />
+        </form>,
+      );
+      expect(
+        new FormData(container.querySelector('form')!).get('quantity'),
+      ).toBe('42');
+    });
+
+    it('does not call onChange when the user types', async () => {
+      const user = userEvent.setup();
+      const handleChange = vi.fn();
+      render(
+        <NumberInput
+          label="Quantity"
+          value={42}
+          onChange={handleChange}
+          isReadOnly
+        />,
+      );
+      await user.type(screen.getByRole('spinbutton'), '7');
+      expect(handleChange).not.toHaveBeenCalled();
+    });
+
+    it('stays focusable and is not disabled', async () => {
+      const user = userEvent.setup();
+      render(
+        <NumberInput
+          label="Quantity"
+          value={42}
+          onChange={() => {}}
+          isReadOnly
+        />,
+      );
+      const input = screen.getByRole('spinbutton');
+      expect(input).not.toBeDisabled();
+      await user.tab();
+      expect(input).toHaveFocus();
+    });
+
+    it('hides the clear button', () => {
+      render(
+        <NumberInput
+          label="Quantity"
+          value={42}
+          onChange={() => {}}
+          hasClear
+          isReadOnly
+        />,
+      );
+      expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    });
+
+    it('lets isDisabled win when both are set', () => {
+      const {container} = render(
+        <form>
+          <NumberInput
+            label="Quantity"
+            htmlName="quantity"
+            value={42}
+            onChange={() => {}}
+            isReadOnly
+            isDisabled
+          />
+        </form>,
+      );
+      expect(screen.getByRole('spinbutton')).toBeDisabled();
+      expect([
+        ...new FormData(container.querySelector('form')!).keys(),
+      ]).toEqual([]);
+    });
+  });
+
   describe('autoComplete prop', () => {
     it('sets autocomplete attribute when autoComplete is provided', () => {
       render(
@@ -1099,5 +1193,23 @@ describe('NumberInput disabled theme state', () => {
     );
     const root = container.querySelector('.astryx-number-input');
     expect(root).not.toHaveAttribute('data-disabled');
+  });
+});
+
+describe('NumberInput readonly theme state', () => {
+  it('reflects readonly on the root target so themes can gate paint on it', () => {
+    const {container} = render(
+      <NumberInput label="Qty" value={1} onChange={() => {}} isReadOnly />,
+    );
+    const root = container.querySelector('.astryx-number-input');
+    expect(root).toHaveAttribute('data-readonly', 'readonly');
+  });
+
+  it('omits data-readonly when editable', () => {
+    const {container} = render(
+      <NumberInput label="Qty" value={1} onChange={() => {}} />,
+    );
+    const root = container.querySelector('.astryx-number-input');
+    expect(root).not.toHaveAttribute('data-readonly');
   });
 });
