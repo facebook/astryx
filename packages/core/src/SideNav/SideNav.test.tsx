@@ -183,6 +183,24 @@ describe('SideNav', () => {
     expect(nav.children).toHaveLength(1);
   });
 
+  it('centers footer content when collapsed, matching the children slot', () => {
+    render(
+      <SideNav
+        collapsible={{isCollapsed: true, hasButton: false}}
+        footer={<span data-testid="footer">Footer</span>}>
+        <span data-testid="content">Content</span>
+      </SideNav>,
+    );
+
+    // Control: the collapsed rail centers the children slot...
+    const scrollable = screen.getByTestId('content').parentElement!;
+    expect(getComputedStyle(scrollable).alignItems).toBe('center');
+
+    // ...and the footer slot must center the same way, not stretch.
+    const stickyBottom = screen.getByTestId('footer').parentElement!;
+    expect(getComputedStyle(stickyBottom).alignItems).toBe('center');
+  });
+
   it('fires a consumer onClick on the collapse button in addition to toggling', async () => {
     const user = userEvent.setup();
     const onClick = vi.fn();
