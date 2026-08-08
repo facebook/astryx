@@ -5,9 +5,10 @@
 /**
  * @file RichTextEditor.tsx
  * @input Uses React, useId, Lexical (lexical + @lexical/react), Field,
- *   VisuallyHidden, design tokens
- * @output Exports RichTextEditor component, RichTextEditorProps, RichTextEditorStatus,
- *   RichTextEditorStatusType, RichTextEditorSize
+ *   VisuallyHidden, useInputStatusIcon, mergeProps, design tokens
+ * @output Exports an accessibly labelled RichTextEditor component with a flush
+ *   top toolbar slot and configurable editable-surface minimum height, RichTextEditorProps,
+ *   RichTextEditorStatus, RichTextEditorStatusType, RichTextEditorSize
  * @position Experimental (lab) implementation; consumed by RichTextEditor/index.ts and
  *   re-exported from @astryxdesign/lab. Tested by RichTextEditor.test.tsx.
  *
@@ -50,12 +51,13 @@ import {
   inputStatusBorderStyles,
   inputStatusHoverShadowStyles,
   inputStatusFocusWithinStyles,
+  type FieldStatusVariant,
 } from '@astryxdesign/core/Field';
 import type {BaseProps} from '@astryxdesign/core';
+import {useInputStatusIcon} from '@astryxdesign/core/hooks';
 import {VisuallyHidden} from '@astryxdesign/core/VisuallyHidden';
-import type {SizeValue} from '@astryxdesign/core/utils';
+import {mergeProps, themeProps, type SizeValue} from '@astryxdesign/core/utils';
 import {useSize} from '@astryxdesign/core/SizeContext';
-import {themeProps} from '@astryxdesign/core/utils';
 
 import {
   LexicalComposer,
@@ -129,41 +131,73 @@ const EMPTY_EDITOR_STATE_JSON = JSON.stringify({
 
 const styles = stylex.create({
   wrapper: {
+    // Establish a new container boundary so Toolbar's Section does not escape
+    // padding inherited from an ancestor Section outside the editor field.
+    '--container-padding-inline-start': '0px',
+    '--container-padding-inline-end': '0px',
+    '--container-padding-block-start': '0px',
+    '--container-padding-block-end': '0px',
     flexDirection: 'column',
     alignItems: 'stretch',
-    paddingBlock: spacingVars['--spacing-1'],
+    gap: spacingVars['--spacing-0'],
+    paddingBlock: spacingVars['--spacing-0'],
+    paddingInline: spacingVars['--spacing-0'],
     minHeight: 'auto',
+  },
+  editorBody: {
+    position: 'relative',
+    boxSizing: 'border-box',
+    width: '100%',
+    paddingBlock: spacingVars['--spacing-1'],
+    paddingInline: spacingVars['--spacing-2'],
+  },
+  editorBodyWithToolbar: {
+    borderTopWidth: 1,
+    borderTopStyle: 'solid',
+    borderTopColor: colorVars['--color-border'],
+  },
+  editorBodyWithStatus: {
+    // Reserve the same trailing space as TextArea: the normal text inset plus
+    // room for the 20px status icon and its gap.
+    paddingInlineEnd: `calc(${spacingVars['--spacing-2']} + ${spacingVars['--spacing-6']})`,
   },
   contentEditable: {
     display: 'block',
     width: '100%',
-    minHeight: '4.5rem',
     borderWidth: 0,
     borderStyle: 'none',
     padding: 0,
     outline: 'none',
+    color: colorVars['--color-text-primary'],
+  },
+  placeholder: {
+    position: 'absolute',
+    top: spacingVars['--spacing-0'],
+    insetInlineStart: 0,
+    pointerEvents: 'none',
+    userSelect: 'none',
+    color: colorVars['--color-text-secondary'],
+  },
+  editorRoot: {
+    position: 'relative',
+    width: '100%',
+    // ContentEditable and Lexical's sibling placeholder inherit one shared
+    // text style. This keeps their leading and coarse-pointer sizing identical
+    // to TextInput/TextArea without duplicating placeholder typography.
     fontFamily: typographyVars['--font-family-body'],
     fontSize: {
       default: typeScaleVars['--text-body-size'],
       '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
     },
     lineHeight: typeScaleVars['--text-body-leading'],
-    color: colorVars['--color-text-primary'],
   },
-  placeholder: {
+  statusIcon: {
     position: 'absolute',
-    top: spacingVars['--spacing-1'],
-    insetInlineStart: 0,
-    pointerEvents: 'none',
-    userSelect: 'none',
-    color: colorVars['--color-text-secondary'],
-    fontFamily: typographyVars['--font-family-body'],
-    fontSize: typeScaleVars['--text-body-size'],
-    lineHeight: typeScaleVars['--text-body-leading'],
-  },
-  editorRoot: {
-    position: 'relative',
-    width: '100%',
+    top: spacingVars['--spacing-2'],
+    insetInlineEnd: spacingVars['--spacing-2'],
+    zIndex: 1,
+    display: 'flex',
+    alignItems: 'center',
   },
   disabled: {
     cursor: 'not-allowed',
@@ -181,7 +215,11 @@ const styles = stylex.create({
   },
 });
 
-const sizeStyles = stylex.create({
+const dynamicStyles = stylex.create({
+  contentEditableMinHeight: (minHeight: SizeValue) => ({minHeight}),
+});
+
+const editorBodySizeStyles = stylex.create({
   sm: {},
   md: {},
   lg: {
@@ -303,10 +341,26 @@ export interface RichTextEditorProps extends Omit<
    */
   status?: RichTextEditorStatus;
   /**
+   * How the status message is placed relative to the editor.
+   * - 'attached': message overlaps directly below the editor and the status
+   *   icon remains inside the editing surface
+   * - 'detached': message floats below with its own leading status icon
+   * - 'tooltip': no message box; the in-editor status icon becomes a focusable
+   *   info-tip button that reveals the message
+   * @default 'attached'
+   */
+  statusVariant?: FieldStatusVariant;
+  /**
    * Width of the field. Numbers are treated as pixels, strings are used as-is
    * (e.g. `'100%'`).
    */
   width?: SizeValue;
+  /**
+   * Minimum height of the editable content surface. Numbers are treated as
+   * pixels, strings are used as CSS lengths.
+   * @default '4.5rem'
+   */
+  minHeight?: SizeValue;
   /** Tooltip text to display in an info icon at the end of the label. */
   labelTooltip?: string;
   /**
@@ -321,9 +375,16 @@ export interface RichTextEditorProps extends Omit<
    */
   nodes?: ReadonlyArray<Klass<LexicalNode>>;
   /**
+   * Toolbar content rendered edge-to-edge at the top of the field, before the
+   * padded editing surface. Pass `<RichTextEditorToolbar />` here so the
+   * toolbar stays inside the Lexical composer while retaining correct visual
+   * and keyboard order.
+   */
+  toolbar?: ReactNode;
+  /**
    * Additional Lexical plugins to render inside the composer. Use this to
-   * compose extra behaviour (toolbars, mentions, autolink, etc.) on top of the
-   * base editor. Plugins receive the editor via `useLexicalComposerContext()`.
+   * compose extra behaviour (mentions, autolink, etc.) on top of the base
+   * editor. Plugins receive the editor via `useLexicalComposerContext()`.
    */
   plugins?: ReactNode;
   /**
@@ -383,9 +444,9 @@ export interface RichTextEditorProps extends Omit<
  * `@lexical/*` are optional peer dependencies — install them to use this
  * component.
  *
- * The editor is intentionally minimal and extensible: pass `nodes` and
- * `plugins` to layer richer behaviour (toolbars, mentions, hover cards) on top
- * without forking.
+ * The editor is intentionally minimal and extensible: pass `toolbar`, `nodes`,
+ * and `plugins` to layer richer behaviour (formatting, mentions, hover cards)
+ * on top without forking.
  *
  * The forwarded `RichTextEditorRef` exposes imperative `focus()` and `clear()`
  * methods for callers that manage the editor from outside.
@@ -418,10 +479,13 @@ export const RichTextEditor = forwardRef<
     isReadOnly = false,
     isDisabled = false,
     status,
+    statusVariant = 'attached',
     width,
+    minHeight = '4.5rem',
     labelTooltip,
     size: sizeProp,
     nodes,
+    toolbar,
     plugins,
     hasMarkdownShortcuts = true,
     transformers = TRANSFORMERS,
@@ -437,7 +501,8 @@ export const RichTextEditor = forwardRef<
   ref: Ref<RichTextEditorRef>,
 ) {
   const size = useSize(sizeProp, 'md');
-  const id = useId();
+  const inputID = useId();
+  const labelID = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
   const placeholderID = useId();
@@ -475,11 +540,21 @@ export const RichTextEditor = forwardRef<
   };
 
   const hasTabEscapeHint = editable && tabEscapeHint !== '';
+  const hasToolbar = toolbar != null && typeof toolbar !== 'boolean';
+
+  const {statusIcon, describedBy: statusTooltipDescribedBy} =
+    useInputStatusIcon({
+      status,
+      statusVariant,
+    });
 
   const ariaDescribedBy =
     [
       description ? descriptionID : null,
-      status?.message ? statusMessageID : null,
+      statusVariant !== 'tooltip' && status?.message ? statusMessageID : null,
+      // Tooltip status renders no FieldStatus message box. Reference the
+      // tooltip layer so assistive technology still receives the message.
+      statusTooltipDescribedBy,
       placeholder ? placeholderID : null,
       maxLength != null ? counterID : null,
       hasTabEscapeHint ? tabEscapeHintID : null,
@@ -492,7 +567,8 @@ export const RichTextEditor = forwardRef<
       label={label}
       isLabelHidden={isLabelHidden}
       description={description}
-      inputID={id}
+      inputID={inputID}
+      labelID={labelID}
       descriptionID={description ? descriptionID : undefined}
       isOptional={isOptional}
       isRequired={isRequired}
@@ -506,68 +582,87 @@ export const RichTextEditor = forwardRef<
             }
           : undefined
       }
+      statusVariant={statusVariant}
       labelTooltip={labelTooltip}
       width={width}>
       <div
-        {...themeProps('rich-text-editor', {
-          size,
-          status: status?.type ?? null,
-        })}
-        {...stylex.props(
-          inputWrapperStyles.base,
-          styles.wrapper,
-          sizeStyles[size],
-          (isDisabled || isReadOnly) && inputWrapperStyles.disabled,
-          isDisabled && styles.disabled,
-          status && inputStatusBorderStyles[status.type],
-          status && inputStatusHoverShadowStyles[status.type],
-          status && inputStatusFocusWithinStyles[status.type],
-          xstyle,
-        )}
-        className={className}
-        style={style}>
+        {...mergeProps(
+          themeProps('rich-text-editor', {
+            size,
+            status: status?.type ?? null,
+          }),
+          stylex.props(
+            inputWrapperStyles.base,
+            styles.wrapper,
+            (isDisabled || isReadOnly) && inputWrapperStyles.disabled,
+            isDisabled && styles.disabled,
+            status && inputStatusBorderStyles[status.type],
+            status &&
+              !isDisabled &&
+              !isReadOnly &&
+              inputStatusHoverShadowStyles[status.type],
+            status && inputStatusFocusWithinStyles[status.type],
+            xstyle,
+          ),
+          className,
+          style,
+        )}>
         <LexicalComposer initialConfig={initialConfig}>
-          <div {...stylex.props(styles.editorRoot)}>
-            <RichTextPlugin
-              contentEditable={
-                <EditorContentEditable
-                  ariaLabel={isLabelHidden ? label : undefined}
-                  ariaLabelledBy={isLabelHidden ? undefined : id}
-                  ariaDescribedBy={ariaDescribedBy}
-                  ariaRequired={isRequired && !isOptional}
-                  ariaInvalid={status?.type === 'error'}
-                  placeholderText={placeholder}
-                  placeholderID={placeholderID}
-                  rest={rest}
-                />
-              }
-              placeholder={null}
-              ErrorBoundary={LexicalErrorBoundary}
-            />
-            <HistoryPlugin />
-            <ListPlugin />
-            <LinkPlugin />
-            <TabIndentationPlugin />
-            <TabFocusEscapePlugin />
-            {hasMarkdownShortcuts && (
-              <MarkdownShortcutPlugin transformers={markdownTransformers} />
-            )}
-            {hasAutoFocus && <AutoFocusOnMount />}
-            {onChange && (
-              <OnChangePlugin
-                onChange={onChange}
-                ignoreHistoryMergeTagChange
-                ignoreSelectionChange
+          {hasToolbar ? toolbar : null}
+          <div
+            {...stylex.props(
+              styles.editorBody,
+              hasToolbar && styles.editorBodyWithToolbar,
+              !!statusIcon && styles.editorBodyWithStatus,
+              editorBodySizeStyles[size],
+            )}>
+            <div {...stylex.props(styles.editorRoot)}>
+              <RichTextPlugin
+                contentEditable={
+                  <EditorContentEditable
+                    id={inputID}
+                    ariaLabel={isLabelHidden ? label : undefined}
+                    ariaLabelledBy={isLabelHidden ? undefined : labelID}
+                    ariaDescribedBy={ariaDescribedBy}
+                    ariaRequired={isRequired && !isOptional}
+                    ariaInvalid={status?.type === 'error'}
+                    placeholderText={placeholder}
+                    placeholderID={placeholderID}
+                    minHeight={minHeight}
+                    rest={rest}
+                  />
+                }
+                placeholder={null}
+                ErrorBoundary={LexicalErrorBoundary}
               />
-            )}
-            {plugins}
-            <EditorRefBridge
-              editorRef={ref}
-              editable={editable}
-              transformers={markdownTransformers}
-            />
-            {maxLength != null && (
-              <CharCountPlugin onCountChange={setCharCount} />
+              <HistoryPlugin />
+              <ListPlugin />
+              <LinkPlugin />
+              <TabIndentationPlugin />
+              <TabFocusEscapePlugin />
+              {hasMarkdownShortcuts && (
+                <MarkdownShortcutPlugin transformers={markdownTransformers} />
+              )}
+              {hasAutoFocus && <AutoFocusOnMount />}
+              {onChange && (
+                <OnChangePlugin
+                  onChange={onChange}
+                  ignoreHistoryMergeTagChange
+                  ignoreSelectionChange
+                />
+              )}
+              {plugins}
+              <EditorRefBridge
+                editorRef={ref}
+                editable={editable}
+                transformers={markdownTransformers}
+              />
+              {maxLength != null && (
+                <CharCountPlugin onCountChange={setCharCount} />
+              )}
+            </div>
+            {statusIcon && (
+              <div {...stylex.props(styles.statusIcon)}>{statusIcon}</div>
             )}
           </div>
         </LexicalComposer>
@@ -748,7 +843,9 @@ function EditorRefBridge({
         // $generateHtmlFromNodes serializes the whole document (null selection)
         // to HTML; must run in a read context and requires a DOM.
         // `@lexical/html` is a subpackage (built dist) — safe.
-        editor.getEditorState().read(() => $generateHtmlFromNodes(editor, null)),
+        editor
+          .getEditorState()
+          .read(() => $generateHtmlFromNodes(editor, null)),
       getEditor: () => editor,
     }),
     [editor, editable, transformers],
@@ -778,7 +875,7 @@ function CharCountPlugin({
     // `declare` class fields) and fails. Both APIs used here are methods on the
     // editor instance, so no top-level `lexical` value import is needed.
     onCountChange(editor.getRootElement()?.textContent?.length ?? 0);
-    return editor.registerTextContentListener((textContent) => {
+    return editor.registerTextContentListener(textContent => {
       onCountChange(textContent.length);
     });
   }, [editor, onCountChange]);
@@ -791,6 +888,7 @@ function CharCountPlugin({
  * neither) is satisfied by two concrete branches rather than a spread.
  */
 function EditorContentEditable({
+  id,
   ariaLabel,
   ariaLabelledBy,
   ariaDescribedBy,
@@ -798,8 +896,10 @@ function EditorContentEditable({
   ariaInvalid,
   placeholderText,
   placeholderID,
+  minHeight,
   rest,
 }: {
+  id: string;
   ariaLabel?: string;
   ariaLabelledBy?: string;
   ariaDescribedBy?: string;
@@ -807,9 +907,11 @@ function EditorContentEditable({
   ariaInvalid: boolean;
   placeholderText?: string;
   placeholderID: string;
+  minHeight: SizeValue;
   rest: Record<string, unknown>;
 }) {
   const shared = {
+    id,
     role: 'textbox' as const,
     'aria-multiline': 'true' as const,
     'aria-label': ariaLabel,
@@ -817,7 +919,10 @@ function EditorContentEditable({
     'aria-describedby': ariaDescribedBy,
     'aria-required': ariaRequired ? ('true' as const) : undefined,
     'aria-invalid': ariaInvalid ? ('true' as const) : undefined,
-    ...stylex.props(styles.contentEditable),
+    ...stylex.props(
+      styles.contentEditable,
+      dynamicStyles.contentEditableMinHeight(minHeight),
+    ),
     ...rest,
   };
   if (placeholderText) {
