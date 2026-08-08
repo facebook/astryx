@@ -21,6 +21,10 @@
  * - Focus trapping
  * - Escape key handling via `cancel` event
  *
+ * Focus RESTORATION is not delegated to the browser. The drawer captures the
+ * element that opened it and refocuses it on close, mirroring Dialog — the
+ * implicit `<dialog>` restore has been observed dropping focus to `<body>`.
+ *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/MobileNav/index.ts (exports if types change)
  * - /packages/cli/assets/templates/blocks/components/MobileNav/ (showcase blocks)
@@ -315,6 +319,9 @@ export function MobileNav({
 
   const dialogRef = useRef<HTMLDialogElement>(null);
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
+  // Element that was focused when the drawer opened. Used to resolve the
+  // drawer side and to hand focus back when the drawer closes.
+  const triggerElementRef = useRef<HTMLElement | null>(null);
   // Resolved side — computed from trigger position when side='auto'
   const [resolvedSide, setResolvedSide] = useState<'start' | 'end'>(
     side === 'auto' ? 'end' : side,
@@ -334,13 +341,21 @@ export function MobileNav({
     }
 
     if (isOpen) {
+      if (!dialog.open) {
+        // Capture the opener before showModal() pulls focus into the top
+        // layer. Only on the transition into open — re-running this effect
+        // for a `side` change must not overwrite it with an element that
+        // now lives inside the drawer.
+        triggerElementRef.current =
+          document.activeElement as HTMLElement | null;
+      }
+
       // Determine drawer side from trigger position when auto
       if (side === 'auto') {
-        const trigger = document.activeElement as HTMLElement | null;
+        const trigger = triggerElementRef.current;
         if (trigger && trigger !== document.body) {
           const rect = trigger.getBoundingClientRect();
           const triggerCenter = rect.left + rect.width / 2;
-          // eslint-disable-next-line @eslint-react/set-state-in-effect -- side is resolved from trigger layout immediately before showModal()
           setResolvedSide(
             triggerCenter < window.innerWidth / 2 ? 'start' : 'end',
           );
@@ -389,6 +404,38 @@ export function MobileNav({
       }
     };
   }, [isOpen, side]);
+
+  // Return focus to whatever opened the drawer, mirroring Dialog. Browsers are
+  // supposed to do this themselves when a modal <dialog> closes, but that has
+  // been observed to fail (focus lands on <body>), so restore it explicitly.
+  //
+  // Deliberately a separate effect declared AFTER the open/close effect above:
+  // React tears effects down in declaration order, so this cleanup runs once
+  // that one has already closed the native dialog. Focusing an element outside
+  // an open modal dialog is a no-op while the top layer holds the rest of the
+  // document inert, so the ordering is load-bearing — keep this effect last.
+  //
+  // The cleanup is also the only hook that fires inside AppShell: the drawer
+  // lives in an <Activity> that flips to mode="hidden" on close, which tears
+  // effects down with a stale isOpen instead of re-running them with
+  // isOpen=false. Restoring on teardown covers close, unmount, and Activity
+  // hiding with one code path.
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+    return () => {
+      const trigger = triggerElementRef.current;
+      triggerElementRef.current = null;
+      // Skip when there was no real opener (activeElement was <body>) or the
+      // opener has since left the DOM — focusing <body> would blur the page,
+      // and a detached node cannot take focus.
+      if (!trigger || trigger === document.body || !trigger.isConnected) {
+        return;
+      }
+      trigger.focus();
+    };
+  }, [isOpen]);
 
   // Handle native cancel event (Escape key) — prevent default and route through onOpenChange
   const handleCancel = useCallback(
