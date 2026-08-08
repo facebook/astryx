@@ -42,6 +42,7 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
+import {composeEventHandlers} from '../utils/composeEventHandlers';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 
@@ -266,6 +267,7 @@ export function ComplexSelector<Value>({
   className,
   style,
   'data-testid': testId,
+  onClick: onClickProp,
   ...props
 }: ComplexSelectorProps<Value>) {
   const t = useTranslator();
@@ -329,11 +331,11 @@ export function ComplexSelector<Value>({
         ref={popover.triggerRef}
         data-testid={testId}
         {...props}
-        onClick={() => {
+        onClick={composeEventHandlers(onClickProp, () => {
           if (!isDisabled) {
             popover.toggle();
           }
-        }}
+        })}
         {...mergeProps(
           themeProps('complex-selector', {
             size,

@@ -466,9 +466,9 @@ export function ContextMenu({
     <>
       <div
         ref={mergeRefs(ref, triggerRef)}
+        {...triggerProps}
         onContextMenu={handleContextMenu}
         {...longPressHandlers}
-        {...triggerProps}
         data-testid={testId}
         {...stylex.props(
           styles.trigger,
