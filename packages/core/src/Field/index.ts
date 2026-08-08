@@ -12,13 +12,18 @@
  */
 
 export {Field} from './Field';
-export type {
-  FieldProps,
-  FieldStatusInput,
-  FieldStatusType,
-} from './Field';
+export type {FieldProps, FieldStatusInput, FieldStatusType} from './Field';
 export {FieldLabel} from './FieldLabel';
 export type {FieldLabelProps} from './FieldLabel';
+export {FieldProvider} from './FieldProvider';
+export type {FieldProviderProps} from './FieldProvider';
+export {FieldIndicatorContext} from './FieldIndicatorContext';
+export type {
+  FieldIndicatorContextValue,
+  RequiredIndicator,
+  OptionalIndicator,
+} from './FieldIndicatorContext';
+export {useFieldIndicators} from './useFieldIndicators';
 export {FieldStatus} from '../FieldStatus';
 export type {
   FieldStatusProps,

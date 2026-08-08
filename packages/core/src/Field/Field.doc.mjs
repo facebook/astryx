@@ -97,6 +97,20 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'requiredIndicator',
+      type: "'text' | 'asterisk' | 'none'",
+      description:
+        "How the required indicator is shown: the localized word, a red asterisk, or nothing. Overrides any FieldProvider default; the control's aria-required is unaffected.",
+      default: "'text'",
+    },
+    {
+      name: 'optionalIndicator',
+      type: "'text' | 'none'",
+      description:
+        'How the optional indicator is shown: the localized word or nothing. Overrides any FieldProvider default.',
+      default: "'text'",
+    },
+    {
       name: 'labelIcon',
       type: 'IconType',
       description: 'Icon to display before the label text. See `astryx docs icons` for valid semantic names.',

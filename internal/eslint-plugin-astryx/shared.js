@@ -31,6 +31,7 @@ export const COMPONENT_RULE_ALLOWED = new Set([
   // Provider components — render no DOM element
   'LayerProviderProps',
   'LinkProviderProps',
+  'FieldProviderProps',
   'MediaThemeProps',
   'InternationalizationProviderProps',
   // Hook return-value / editor-config prop bags — not DOM-component props

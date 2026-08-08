@@ -15,6 +15,7 @@ import userEvent from '@testing-library/user-event';
 import {TestIcon} from '../__tests__/TestIcon';
 import {InternationalizationProvider} from '../i18n';
 import {FieldLabel} from './FieldLabel';
+import {FieldProvider} from './FieldProvider';
 
 describe('FieldLabel', () => {
   it('renders label text', () => {
@@ -196,5 +197,106 @@ describe('FieldLabel', () => {
       // would fold it into the control's accessible name.
       expect(description.closest('label')).toBeNull();
     });
+  });
+});
+
+describe('FieldLabel indicator modes', () => {
+  it('defaults to the "Required" / "Optional" text', () => {
+    const {rerender} = render(
+      <FieldLabel label="Name" inputID="i" isRequired />,
+    );
+    expect(screen.getByText(/Required/)).toBeInTheDocument();
+    rerender(<FieldLabel label="Name" inputID="i" isOptional />);
+    expect(screen.getByText(/Optional/)).toBeInTheDocument();
+  });
+
+  it('renders a red asterisk and keeps "Required" for screen readers', () => {
+    const {container} = render(
+      <FieldLabel
+        label="Name"
+        inputID="i"
+        isRequired
+        requiredIndicator="asterisk"
+      />,
+    );
+    // Visible asterisk, hidden from AT.
+    const asterisk = screen.getByText('*', {exact: false, selector: 'span'});
+    expect(asterisk).toHaveAttribute('aria-hidden', 'true');
+    // The word is still present (sr-only) so the accessible name conveys it.
+    expect(screen.getByText('Required')).toBeInTheDocument();
+    expect(container.textContent).toContain('*');
+  });
+
+  it('renders nothing visible in "none" mode', () => {
+    render(
+      <FieldLabel
+        label="Name"
+        inputID="i"
+        isRequired
+        requiredIndicator="none"
+      />,
+    );
+    expect(screen.queryByText(/Required/)).not.toBeInTheDocument();
+    expect(screen.queryByText('*')).not.toBeInTheDocument();
+  });
+
+  it('applies optionalIndicator="none" to hide the Optional text', () => {
+    render(
+      <FieldLabel
+        label="Name"
+        inputID="i"
+        isOptional
+        optionalIndicator="none"
+      />,
+    );
+    expect(screen.queryByText(/Optional/)).not.toBeInTheDocument();
+  });
+
+  it('never renders an asterisk for an optional field', () => {
+    // OptionalIndicator has no asterisk mode; a required-style asterisk prop is
+    // ignored when the field is optional.
+    render(
+      <FieldLabel
+        label="Name"
+        inputID="i"
+        isOptional
+        requiredIndicator="asterisk"
+      />,
+    );
+    expect(screen.queryByText('*')).not.toBeInTheDocument();
+    expect(screen.getByText(/Optional/)).toBeInTheDocument();
+  });
+});
+
+describe('FieldProvider', () => {
+  it('sets the default indicator mode for fields in the subtree', () => {
+    render(
+      <FieldProvider requiredIndicator="none" optionalIndicator="text">
+        <FieldLabel label="A" inputID="a" isRequired />
+        <FieldLabel label="B" inputID="b" isOptional />
+      </FieldProvider>,
+    );
+    // Required is hidden; optional still shows its word.
+    expect(screen.queryByText(/Required/)).not.toBeInTheDocument();
+    expect(screen.getByText(/Optional/)).toBeInTheDocument();
+  });
+
+  it('lets a per-field prop override the provider', () => {
+    render(
+      <FieldProvider requiredIndicator="none">
+        <FieldLabel
+          label="A"
+          inputID="a"
+          isRequired
+          requiredIndicator="asterisk"
+        />
+      </FieldProvider>,
+    );
+    expect(screen.getByText('*', {selector: 'span'})).toBeInTheDocument();
+  });
+
+  it('falls back to text when no provider and no prop', () => {
+    render(<FieldLabel label="A" inputID="a" isRequired />);
+    expect(screen.getByText(/Required/)).toBeInTheDocument();
   });
 });

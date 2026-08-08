@@ -21,6 +21,10 @@ import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {FieldLabel} from './FieldLabel';
+import type {
+  OptionalIndicator,
+  RequiredIndicator,
+} from './FieldIndicatorContext';
 import {FieldStatus} from '../FieldStatus/FieldStatus';
 import type {FieldStatusVariant} from '../FieldStatus/FieldStatus';
 import {spacingVars, borderVars} from '../theme/tokens.stylex';
@@ -136,6 +140,17 @@ export interface FieldProps extends Omit<
    */
   isRequired?: boolean;
   /**
+   * How the required indicator is displayed: `'text'`, `'asterisk'`, or
+   * `'none'`. Overrides any `FieldProvider` default. Does not affect the
+   * control's `aria-required`. @default 'text'
+   */
+  requiredIndicator?: RequiredIndicator;
+  /**
+   * How the optional indicator is displayed: `'text'` or `'none'`. Overrides
+   * any `FieldProvider` default. @default 'text'
+   */
+  optionalIndicator?: OptionalIndicator;
+  /**
    * Whether the associated input is disabled.
    * @default false
    */
@@ -197,6 +212,8 @@ export function Field({
   descriptionID,
   isOptional = false,
   isRequired = false,
+  requiredIndicator,
+  optionalIndicator,
   isDisabled = false,
   labelIcon,
   status,
@@ -234,6 +251,8 @@ export function Field({
       isDisabled={isDisabled}
       isOptional={isOptional}
       isRequired={isRequired}
+      requiredIndicator={requiredIndicator}
+      optionalIndicator={optionalIndicator}
       labelIcon={labelIcon}
       labelTooltip={labelTooltip}
       description={isHorizontalLabels ? undefined : description}
