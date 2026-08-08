@@ -21,6 +21,14 @@
  *   }
  * }
  * ```
+ *
+ * Custom variants render no background fill, no ink colour, and no built-in
+ * shape glyph — the theme must supply the fill, and it should also supply a
+ * non-colour mark so the status is not distinguishable by colour alone (a
+ * WCAG 1.4.1 failure). Supply the mark by registering a dot-scaled icon
+ * under the scoped registry key `statusdot:<variant>` (e.g.
+ * `defineTheme({icons: {'statusdot:critical': <CriticalGlyph />}})`); it
+ * renders centred in the dot's 8px field, painted from `currentColor`.
  */
 export interface StatusDotVariantMap {
   success: true;
