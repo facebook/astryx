@@ -95,11 +95,12 @@ export function hasActiveFocusTrapEscape(): boolean {
 }
 
 /**
- * Whether an Escape keydown should be ignored because it is cancelling an
- * in-progress IME composition. CJK/IME users press Escape to cancel
- * composition; that must not close the surrounding overlay. `keyCode === 229`
- * covers browsers that fire keydown before `isComposing` is set. Exported so
- * other overlays (Dialog, Drawer, CommandPalette) share one definition.
+ * Whether a keydown should be ignored because it belongs to an in-progress IME
+ * composition. CJK/IME users drive the candidate window with the keys the UI
+ * wants: Escape cancels a composition, Enter commits one, and the arrows walk
+ * the candidates. `keyCode === 229` covers browsers that fire keydown before
+ * `isComposing` is set. Exported so overlays (Dialog, Drawer, CommandPalette)
+ * and text-entry widgets (BaseTypeahead, PowerSearch) share one definition.
  */
 export function isImeKeyEvent(event: {
   isComposing?: boolean;

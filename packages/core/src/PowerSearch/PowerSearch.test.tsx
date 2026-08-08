@@ -425,11 +425,51 @@ describe('PowerSearch', () => {
   });
 });
 
+describe('PowerSearch IME composition', () => {
+  const contentConfig: PowerSearchConfig = {
+    ...config,
+    contentSearchFieldKey: 'title',
+  };
+
+  it('does not commit a content-search filter when Enter ends a composition', async () => {
+    const onChange = vi.fn();
+    render(
+      <PowerSearch config={contentConfig} filters={[]} onChange={onChange} />,
+    );
+    const input = screen.getByRole('combobox');
+
+    // A Korean IME leaves the trailing `어` composing after the full phrase.
+    fireEvent.change(input, {target: {value: '한국어'}});
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    // Enter here belongs to the IME — it commits `어`, it does not submit.
+    fireEvent.keyDown(input, {key: 'Enter', isComposing: true});
+    expect(onChange).not.toHaveBeenCalled();
+
+    // The next Enter files one filter for the phrase, not a second for `어`.
+    fireEvent.keyDown(input, {key: 'Enter'});
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange.mock.calls[0][0]).toEqual([
+      expect.objectContaining({
+        field: 'title',
+        operator: 'contains',
+        value: {type: 'string', value: '한국어'},
+      }),
+    ]);
+  });
+});
 
 describe('PowerSearch statusVariant forwarding', () => {
   it('defaults to attached (status renders with data-variant="attached")', () => {
     const {container} = render(
-      <PowerSearch config={config} filters={[]} onChange={() => {}} status={{type: 'error', message: 'Required'}} />,
+      <PowerSearch
+        config={config}
+        filters={[]}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Required'}}
+      />,
     );
     expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
       'data-variant',
@@ -439,7 +479,13 @@ describe('PowerSearch statusVariant forwarding', () => {
 
   it('forwards statusVariant="detached" to the underlying Field status', () => {
     const {container} = render(
-      <PowerSearch config={config} filters={[]} onChange={() => {}} status={{type: 'error', message: 'Required'}} statusVariant="detached" />,
+      <PowerSearch
+        config={config}
+        filters={[]}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Required'}}
+        statusVariant="detached"
+      />,
     );
     expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
       'data-variant',
