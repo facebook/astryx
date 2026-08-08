@@ -19,7 +19,7 @@
  * - /packages/core/src/Breadcrumbs/Breadcrumbs.test.tsx
  * - /packages/core/src/Breadcrumbs/index.ts
  * - /apps/storybook/stories/Breadcrumbs.stories.tsx
- * - /packages/cli/templates/blocks/components/Breadcrumbs/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Breadcrumbs/ (showcase blocks)
  */
 
 import React, {
@@ -45,7 +45,7 @@ import type {LinkComponentType} from '../Link/types';
 import {mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
-import {getIcon} from '../Icon/globalIconRegistry';
+import {useIcon} from '../Icon';
 import {usePopover} from '../Popover/usePopover';
 import {useListFocus} from '../hooks/useListFocus';
 import {useTypeahead} from '../hooks/useTypeahead';
@@ -507,6 +507,8 @@ function BreadcrumbMenuTrigger({
     role: 'none',
   });
 
+  const chevronDownIcon = useIcon('chevronDown');
+
   const closeMenu = useCallback(() => {
     popover.hide();
   }, [popover]);
@@ -623,7 +625,7 @@ function BreadcrumbMenuTrigger({
         )}>
         {children}
         <span aria-hidden="true" {...stylex.props(itemStyles.chevron)}>
-          {getIcon('chevronDown')}
+          {chevronDownIcon}
         </span>
       </button>
 

@@ -13,7 +13,7 @@
  * - /packages/core/src/TimeInput/TimeInput.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/TimeInput/index.ts (exports if types change)
  * - /apps/storybook/stories/TimeInput.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/TimeInput/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/TimeInput/ (showcase blocks)
  */
 
 import {
@@ -608,7 +608,11 @@ export function TimeInput({
       onClick={handleWrapperClick}
       onMouseUp={handleWrapperMouseUp}
       {...mergeProps(
-        themeProps('time-input', {size, status: status?.type ?? null}),
+        themeProps('time-input', {
+          size,
+          status: status?.type ?? null,
+          disabled: isDisabled ? 'disabled' : null,
+        }),
         stylex.props(
           inputWrapperStyles.base,
           sizeStyles[size],

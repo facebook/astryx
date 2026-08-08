@@ -13,7 +13,7 @@
  * - /packages/core/src/TextInput/TextInput.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/TextInput/index.ts (exports if types change)
  * - /apps/storybook/stories/TextInput.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/TextInput/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/TextInput/ (showcase blocks)
  */
 
 import {
@@ -404,7 +404,11 @@ export function TextInput({
       onClick={handleWrapperClick}
       onMouseUp={handleWrapperMouseUp}
       {...mergeProps(
-        themeProps('text-input', {size, status: status?.type ?? null}),
+        themeProps('text-input', {
+          size,
+          status: status?.type ?? null,
+          disabled: isDisabled ? 'disabled' : null,
+        }),
         stylex.props(
           inputWrapperStyles.base,
           sizeStyles[size],
@@ -424,7 +428,7 @@ export function TextInput({
         {...rest}
         ref={mergeRefs(ref, inputRef)}
         id={id}
-        name={htmlName}
+        name={isDisabled ? undefined : htmlName}
         type={type}
         value={optimisticValue}
         onChange={handleChange}

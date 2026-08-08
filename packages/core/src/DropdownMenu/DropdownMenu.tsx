@@ -19,7 +19,7 @@
  * - /packages/core/src/DropdownMenu/DropdownMenu.test.tsx
  * - /packages/core/src/DropdownMenu/index.ts
  * - /apps/storybook/stories/DropdownMenu.stories.tsx
- * - /packages/cli/templates/blocks/components/DropdownMenu/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/DropdownMenu/ (showcase blocks)
  */
 
 import React, {
@@ -35,9 +35,9 @@ import * as stylex from '@stylexjs/stylex';
 import {usePopover} from '../Popover/usePopover';
 import {Button, type ButtonProps} from '../Button';
 import {Icon} from '../Icon';
-import type {IconType} from '../Icon';
 
 import {renderDropdownItems} from './renderDropdownItems';
+import type {DropdownMenuItemProps} from './DropdownMenuItem';
 import {
   MENU_ITEM_ROLES,
   MENU_ITEM_SELECTOR,
@@ -50,7 +50,7 @@ import {
 import {useListFocus} from '../hooks/useListFocus';
 import {useTypeahead} from '../hooks/useTypeahead';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
-import type {LayerPlacement} from '../Layer/useLayer';
+import type {LayerAlignment, LayerPlacement} from '../Layer/useLayer';
 import {
   spacingVars,
   radiusVars,
@@ -99,11 +99,23 @@ const styles = stylex.create({
 // Types
 // =============================================================================
 
-export interface DropdownMenuItemData {
+/**
+ * Data-mode shape for one menu row.
+ *
+ * The item fields are sourced from `DropdownMenuItemProps` — data mode renders
+ * through `DropdownMenuItem`, so the two APIs describe the same thing and must
+ * not drift. Only the fields listed here are part of the data API; add a key to
+ * the `Pick` to expose more of the item's props to `items`.
+ */
+export interface DropdownMenuItemData extends Pick<
+  DropdownMenuItemProps,
+  'icon' | 'onClick' | 'isDisabled' | 'variant'
+> {
+  /**
+   * Primary label text. Narrowed to `string` from the item's `ReactNode`:
+   * data mode derives each row's React key from the label.
+   */
   label: string;
-  onClick?: () => void;
-  isDisabled?: boolean;
-  icon?: ReactNode | IconType;
   /**
    * Nested submenu entries. When present, this row becomes a submenu (a
    * flyout revealing `items`) instead of a leaf action — no separate item
@@ -144,6 +156,13 @@ interface DropdownMenuBaseProps extends BaseProps {
    * @default 'below'
    */
   placement?: LayerPlacement;
+
+  /**
+   * Alignment along the placement axis.
+   * Uses the same alignment values as other Astryx layer-based components.
+   * @default 'start'
+   */
+  alignment?: LayerAlignment;
 
   'data-testid'?: string;
 }
@@ -198,6 +217,7 @@ export function DropdownMenu({
   onClick,
   hasChevron = true,
   placement = 'below',
+  alignment = 'start',
   className,
   style,
   xstyle,
@@ -235,27 +255,21 @@ export function DropdownMenu({
   // Close menu + return focus to trigger
   const handleLayerHide = useCallback(() => {
     lastHideTimeRef.current = Date.now();
-    if (isControlled) {
-      onOpenChange?.(false);
-    } else {
+    onOpenChange?.(false);
+    if (!isControlled) {
       setInternalIsOpen(false);
     }
     buttonRef.current?.focus();
   }, [isControlled, onOpenChange]);
 
-  // Track whether to focus the first item when the menu opens
+  // Defer item focus until the layer has committed open, so focus restore
+  // captures the trigger instead of the first menu item.
   const shouldFocusOnOpenRef = useRef(false);
 
   const handleLayerShow = useCallback(() => {
-    if (isControlled) {
-      onOpenChange?.(true);
-    } else {
+    onOpenChange?.(true);
+    if (!isControlled) {
       setInternalIsOpen(true);
-    }
-    if (shouldFocusOnOpenRef.current) {
-      shouldFocusOnOpenRef.current = false;
-      // focusFirst is called via openAndFocus below — defer to rAF
-      // so the popover content is rendered before we query for items
     }
   }, [isControlled, onOpenChange]);
 
@@ -305,17 +319,26 @@ export function DropdownMenu({
       ),
   });
 
-  // Sync controlled open state → popover, and focus first item on open
+  // Sync controlled open state → popover.
   useEffect(() => {
     if (isControlled) {
       if (controlledIsOpen && !popover.isOpen) {
+        shouldFocusOnOpenRef.current = true;
         popover.show();
-        requestAnimationFrame(() => focusFirst());
       } else if (!controlledIsOpen && popover.isOpen) {
         popover.hide();
       }
     }
-  }, [controlledIsOpen, isControlled, popover, focusFirst]);
+  }, [controlledIsOpen, isControlled, popover]);
+
+  // Move focus into the menu only after the layer has committed open.
+  useEffect(() => {
+    if (!popover.isOpen || !shouldFocusOnOpenRef.current) {
+      return;
+    }
+    shouldFocusOnOpenRef.current = false;
+    requestAnimationFrame(() => focusFirst());
+  }, [popover.isOpen, focusFirst]);
 
   // Extend useListFocus with Enter/Space activation + typeahead
   const listKeyDown = useCallback(
@@ -356,9 +379,9 @@ export function DropdownMenu({
   );
 
   const openAndFocus = useCallback(() => {
+    shouldFocusOnOpenRef.current = true;
     popover.show();
-    requestAnimationFrame(() => focusFirst());
-  }, [popover, focusFirst]);
+  }, [popover]);
 
   const handleButtonClick = useCallback(() => {
     // If the menu was just closed by light dismiss (e.g. iOS Safari fires
@@ -474,7 +497,7 @@ export function DropdownMenu({
         </div>,
         {
           placement,
-          alignment: 'start',
+          alignment,
           xstyle: [popoverXstyle, popoverGapStyle, layerAnimations[placement]],
         },
       )}

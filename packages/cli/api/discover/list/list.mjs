@@ -14,9 +14,9 @@ import {toEntry} from '../_adapter.mjs';
  * envelope carrying `meta.configured`, so callers can distinguish "nothing
  * configured" from "configured but nothing discovered".
  *
- * @param {import('../../../lib/package-scanner.mjs').ScannedPackage[]} packages
+ * @param {import('../_package-scanner.mjs').ScannedPackage[]} packages
  * @param {{configured: boolean}} meta
- * @returns {import('../../../types/discover').DiscoverListResponse}
+ * @returns {import('../discover.type.mjs').DiscoverListResponse}
  */
 export function list(packages, {configured}) {
   if (packages.length === 0) {

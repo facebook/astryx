@@ -786,7 +786,7 @@ export function CodeBlock({
       setCopied(true);
       // Swapping the button's aria-label alone isn't reliably announced by
       // screen readers, so confirm the copy via a polite live region.
-      announce('Copied');
+      announce(t('@astryx.codeBlock.copied'));
       onCopy?.();
       // Restart the reset timer on every copy — otherwise a rapid re-copy
       // is reverted early by the previous click's timer.
@@ -800,7 +800,7 @@ export function CodeBlock({
     } catch {
       // Clipboard failures leave the copied state unchanged.
     }
-  }, [code, onCopy, announce]);
+  }, [code, onCopy, announce, t]);
 
   const sizeStyle = size === 'sm' ? styles.sizeSm : styles.sizeMd;
   // Digits in the largest line number — sizes the gutter column width.

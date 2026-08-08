@@ -13,7 +13,7 @@
  * - /packages/lab/src/Stepper/Stepper.test.tsx
  * - /packages/lab/src/Stepper/index.ts
  * - /apps/storybook/stories/Stepper.stories.tsx
- * - /packages/cli/templates/blocks/components/Stepper/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Stepper/ (showcase blocks)
  */
 
 import {type ReactNode} from 'react';
@@ -31,6 +31,8 @@ import {
 import {mergeProps} from '@astryxdesign/core/utils';
 import type {BaseProps} from '@astryxdesign/core';
 import {Icon} from '@astryxdesign/core/Icon';
+import {VisuallyHidden} from '@astryxdesign/core/VisuallyHidden';
+import {useTranslator} from '@astryxdesign/core/i18n';
 import {useStepperContext} from './StepperContext';
 import {themeProps} from '@astryxdesign/core/utils';
 import type {StepStatus} from './StepStatus';
@@ -81,6 +83,11 @@ export interface StepProps extends BaseProps<HTMLLIElement> {
    * `accent` is color-only. The current (in-progress) step always keeps its
    * current-step indicator regardless of `status`. Never recolors the
    * connector/track.
+   *
+   * Because the indicator glyphs are decorative (aria-hidden), the status also
+   * reaches assistive technology as text: visually hidden "completed" /
+   * "warning" / "error" next to the label, and composed into the accessible
+   * name of clickable steps.
    */
   status?: StepStatus;
   /**
@@ -630,6 +637,7 @@ export function Step({
   'data-testid': dataTestId,
   ...rest
 }: StepProps) {
+  const t = useTranslator();
   const ctx = useStepperContext();
   const {
     activeStep,
@@ -806,6 +814,36 @@ export function Step({
     }
   }
 
+  // Every indicator glyph above is aria-hidden (pure decoration), so the
+  // step's progress/status must also reach assistive tech as text
+  // (WCAG 1.4.1 / 1.3.1). `error`/`warning` announce the semantic status;
+  // `success` and a completed step both announce "completed". The current
+  // step is announced via aria-current="step" instead, and not-started steps
+  // stay silent (the default state needs no qualifier).
+  const statusText: string | null =
+    status === 'error'
+      ? t('@astryx.step.status.error')
+      : status === 'warning'
+        ? t('@astryx.step.status.warning')
+        : status === 'success' || progress === 'completed'
+          ? t('@astryx.step.status.completed')
+          : null;
+
+  // Rendered next to the label: hidden text for static steps, and composed
+  // into the button's accessible name for clickable ones (an aria-label on
+  // the button would otherwise override the hidden text). Two separate keys
+  // rather than string concatenation so translations control the joiner.
+  const statusTextNode =
+    statusText != null ? <VisuallyHidden>{statusText}</VisuallyHidden> : null;
+  const stepAriaLabel =
+    statusText != null
+      ? t('@astryx.step.goToStepWithStatus', {
+          stepNumber: step + 1,
+          label,
+          status: statusText,
+        })
+      : t('@astryx.step.goToStep', {stepNumber: step + 1, label});
+
   const hasIndicator = indicator !== 'none';
   const isNumber =
     hasIndicator &&
@@ -827,6 +865,7 @@ export function Step({
     <div {...stylex.props(styles.iconLabelRow)}>
       {indicatorNode}
       <span {...stylex.props(styles.label, labelColorStyle)}>{label}</span>
+      {statusTextNode}
       {isOptional && (
         <>
           <span {...stylex.props(styles.optionalDot)}>•</span>
@@ -900,6 +939,7 @@ export function Step({
           isVertical ? styles.otLabelRowStart : styles.otLabelRowCenter,
         )}>
         <span {...stylex.props(styles.label, labelColorStyle)}>{label}</span>
+        {statusTextNode}
         {isOptional && (
           <>
             <span {...stylex.props(styles.optionalDot)}>•</span>
@@ -980,7 +1020,7 @@ export function Step({
             <button
               type="button"
               onClick={handleClick}
-              aria-label={`Go to step ${step + 1}: ${label}`}
+              aria-label={stepAriaLabel}
               {...stylex.props(
                 styles.otInteractive,
                 styles.otRowWrap,
@@ -1058,7 +1098,7 @@ export function Step({
           <button
             type="button"
             onClick={handleClick}
-            aria-label={`Go to step ${step + 1}: ${label}`}
+            aria-label={stepAriaLabel}
             {...stylex.props(
               styles.otInteractive,
               styles.otColWrap,
@@ -1112,7 +1152,7 @@ export function Step({
             <button
               type="button"
               onClick={handleClick}
-              aria-label={`Go to step ${step + 1}: ${label}`}
+              aria-label={stepAriaLabel}
               {...stylex.props(
                 styles.buttonReset,
                 styles.focusRing,
@@ -1168,7 +1208,7 @@ export function Step({
         <button
           type="button"
           onClick={handleClick}
-          aria-label={`Go to step ${step + 1}: ${label}`}
+          aria-label={stepAriaLabel}
           {...stylex.props(
             styles.buttonReset,
             styles.focusRing,

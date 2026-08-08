@@ -250,6 +250,32 @@ export const HeaderExpandAllControl: Story = {
 };
 
 /**
+ * `hasRowClickExpansion` lets a click anywhere on an expandable row toggle it,
+ * in addition to the chevron. Leaf rows stay inert, and the chevron still works
+ * on its own (it stops propagation, so a chevron click never double-toggles).
+ */
+export const RowClickExpansion: Story = {
+  render: () => {
+    const {visibleData, treeConfig} = useTableTreeState<OrgRow>({
+      data: orgChart,
+      idKey: 'id',
+      defaultExpandedIds: ['eng'],
+    });
+    const tree = useTableTreeData({...treeConfig, hasRowClickExpansion: true});
+
+    return (
+      <Table
+        data={visibleData}
+        columns={columns}
+        idKey="id"
+        hasHover
+        plugins={{tree}}
+      />
+    );
+  },
+};
+
+/**
  * The `indent` token controls the step per level: `sm` (spacing-3), `md`
  * (spacing-4, the default), and `lg` (spacing-6).
  */

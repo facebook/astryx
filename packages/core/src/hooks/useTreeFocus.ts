@@ -4,7 +4,7 @@
 
 /**
  * @file useTreeFocus.ts
- * @input Uses React useCallback, useRef, useIsomorphicLayoutEffect
+ * @input Uses React useCallback, useRef, useIsomorphicLayoutEffect, isRtlElement
  * @output Exports useTreeFocus hook for WAI-ARIA tree keyboard navigation
  * @position Core hook; used by TreeList for roving tabindex + APG tree keyboard model
  *
@@ -16,6 +16,7 @@
 
 import {useCallback, useRef} from 'react';
 import {useIsomorphicLayoutEffect} from './useIsomorphicLayoutEffect';
+import {isRtlElement} from './isRtlElement';
 
 /** Keys handled by the tree keyboard model (used to gate typeahead). */
 const NAVIGATION_KEYS = new Set([
@@ -429,7 +430,17 @@ export function useTreeFocus<T extends HTMLElement = HTMLElement>(
         return;
       }
 
-      switch (e.key) {
+      // Under RTL, swap the horizontal arrows to a logical key so the
+      // expand/collapse case bodies (written LTR-first) stay unchanged.
+      let key = e.key;
+      if (key === 'ArrowLeft' || key === 'ArrowRight') {
+        const rtl = isRtlElement(treeRef.current);
+        if (rtl) {
+          key = key === 'ArrowLeft' ? 'ArrowRight' : 'ArrowLeft';
+        }
+      }
+
+      switch (key) {
         case 'ArrowDown': {
           e.preventDefault();
           focusEnabledFrom(items, currentIndex < 0 ? 0 : currentIndex + 1, 1);

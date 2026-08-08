@@ -737,6 +737,68 @@ describe('Typeahead edit mode', () => {
   });
 });
 
+describe('Typeahead collapsed input tab order', () => {
+  it('removes the invisible input from the Tab order while a token is shown', () => {
+    render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={fruits[0]}
+        onChange={() => {}}
+      />,
+    );
+    // While the token is shown the input is collapsed (width 0 / opacity 0);
+    // it must stay programmatically focusable for token interactions but must
+    // not be an invisible Tab stop (WCAG 2.4.3 / 2.4.7).
+    expect(screen.getByRole('combobox')).toHaveAttribute('tabindex', '-1');
+  });
+
+  it('Tab from the token skips the invisible input', async () => {
+    const user = userEvent.setup();
+    render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={fruits[0]}
+        onChange={() => {}}
+      />,
+    );
+    // Focus the token's internal button, then Tab away — focus must not land
+    // on the visually hidden combobox input.
+    const tokenButton = screen.getByRole('button', {name: fruits[0].label});
+    tokenButton.focus();
+    await user.tab();
+    expect(screen.getByRole('combobox')).not.toHaveFocus();
+  });
+
+  it('keeps the input in the Tab order when no token is shown', () => {
+    render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+      />,
+    );
+    expect(screen.getByRole('combobox')).not.toHaveAttribute('tabindex');
+  });
+
+  it('restores the input to the Tab order in edit mode', () => {
+    render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={fruits[0]}
+        onChange={() => {}}
+      />,
+    );
+    // Entering edit mode removes the token and uncollapses the input
+    const tokenText = screen.getByText(fruits[0].label);
+    fireEvent.click(tokenText.closest('div')!);
+    expect(screen.getByRole('combobox')).not.toHaveAttribute('tabindex');
+  });
+});
+
 describe('BaseTypeahead paste behavior', () => {
   it('pasting text triggers search results like typing', async () => {
     const user = userEvent.setup();

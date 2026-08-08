@@ -6,18 +6,18 @@
  * This module is BOTH the template dispatcher and the stable import surface for
  * the template family. `template()` discovers the available templates, resolves
  * the requested one, and routes to a leaf (list/show/skeleton/copy). The shared
- * discovery/IO + cross-command helpers live in `./_adapter.mjs` and are
+ * discovery/IO + cross-command helpers live in `foundation/discovery/template-adapter.mjs` and are
  * RE-EXPORTED here so external import paths (`api/template/template.mjs`) —
  * used by component, layout, search, init, discover, validate-integration, and
  * lib/project — keep resolving unchanged.
  *
  * @position api/template — the template dispatcher + barrel; leaves live under
- *   ./list, ./show, ./skeleton, ./copy and shared discovery under ./_adapter.
+ *   ./list, ./show, ./skeleton, ./copy and shared discovery in foundation/discovery.
  */
 
-import {discoverAll, pkgOf} from './_adapter.mjs';
+import {discoverAll, pkgOf} from '../../foundation/discovery/template-adapter.mjs';
 import {AstryxError} from '../error.mjs';
-import {ERROR_CODES} from '../../lib/error-codes.mjs';
+import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 import {templateList} from './list/list.mjs';
 import {templateShow} from './show/show.mjs';
 import {templateSkeleton} from './skeleton/skeleton.mjs';
@@ -37,22 +37,23 @@ export {
   findRelatedBlocks,
   findShowcase,
   extractComponents,
-} from './_adapter.mjs';
+} from '../../foundation/discovery/template-adapter.mjs';
 
 /**
- * @typedef {import('./_adapter.mjs').DiscoveredTemplate} DiscoveredTemplate
+ * @typedef {import('../../foundation/discovery/template-adapter.mjs').DiscoveredTemplate} DiscoveredTemplate
  */
 /**
- * @typedef {import('./_adapter.mjs').TemplateDiscoveryError} TemplateDiscoveryError
+ * @typedef {import('../../foundation/discovery/template-adapter.mjs').TemplateDiscoveryError} TemplateDiscoveryError
  */
 /**
- * @typedef {import('./_adapter.mjs').TemplateDocModule} TemplateDocModule
+ * @typedef {import('../../foundation/discovery/template-adapter.mjs').TemplateDocModule} TemplateDocModule
  */
 
 /**
  * @param {string} [name]
  * @param {object} [options]
  * @param {string} [options.targetPath]
+ * @param {boolean} [options.overwrite]
  * @param {boolean} [options.list]
  * @param {boolean} [options.skeleton]
  * @param {boolean} [options.show]
@@ -67,6 +68,7 @@ export async function template(name, options = {}) {
     skeleton = false,
     show = false,
     targetPath,
+    overwrite = false,
     type,
     package: packageFilter,
     cwd = process.cwd(),
@@ -111,5 +113,5 @@ export async function template(name, options = {}) {
     return templateShow(match);
   }
 
-  return templateCopy(match, {targetPath, cwd});
+  return templateCopy(match, {targetPath, cwd, overwrite});
 }

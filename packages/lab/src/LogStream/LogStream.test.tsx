@@ -223,6 +223,31 @@ describe('LogStream', () => {
     expect(scroller.scrollTop).toBe(1000);
   });
 
+  it('mutes live announcements while unfollowed and restores them while following (controlled)', () => {
+    const {rerender} = render(
+      <LogStream entries={ENTRIES} isFollowing={false} />,
+    );
+    const log = screen.getByRole('log');
+    expect(log).toHaveAttribute('aria-live', 'off');
+    rerender(<LogStream entries={ENTRIES} isFollowing />);
+    expect(log).toHaveAttribute('aria-live', 'polite');
+  });
+
+  it('unmutes the live region when "Jump to latest" resumes following (uncontrolled)', () => {
+    render(<LogStream entries={ENTRIES} maxHeight={200} />);
+    const log = screen.getByRole('log');
+    // Initially unpinned — the stream must not announce.
+    expect(log).toHaveAttribute('aria-live', 'off');
+    // Scroll away from the tail so the "Jump to latest" affordance appears.
+    setScrollMetrics(log, {scrollHeight: 1000, clientHeight: 200});
+    log.scrollTop = 100;
+    fireEvent.scroll(log);
+    expect(log).toHaveAttribute('aria-live', 'off');
+    // Re-pinning restores polite announcements.
+    fireEvent.click(screen.getByRole('button', {name: /jump to latest/i}));
+    expect(log).toHaveAttribute('aria-live', 'polite');
+  });
+
   it('renderEntry replaces the default row', () => {
     render(
       <LogStream

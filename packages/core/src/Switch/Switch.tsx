@@ -13,7 +13,7 @@
  * - /packages/core/src/Switch/Switch.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Switch/index.ts (exports if types change)
  * - /apps/storybook/stories/Switch.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Switch/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Switch/ (showcase blocks)
  */
 
 import {
@@ -99,12 +99,23 @@ const thumbOnSizeStyles = stylex.create({
   sm: {
     width: 16,
     height: 16,
-    transform: 'translateX(12px)',
+    // The thumb rests at the inline-start edge (flex-start, which flexbox
+    // already mirrors under RTL). The on-state travel toward the inline-end
+    // edge is a physical translateX, so it must flip sign under RTL — right
+    // in LTR, left in RTL — so the switch mirrors per convention (Material,
+    // iOS): off-thumb on the reading-start side, on-thumb on the reading-end.
+    transform: {
+      default: 'translateX(12px)',
+      ':is([dir="rtl"] *)': 'translateX(-12px)',
+    },
   },
   md: {
     width: 20,
     height: 20,
-    transform: 'translateX(14px)',
+    transform: {
+      default: 'translateX(14px)',
+      ':is([dir="rtl"] *)': 'translateX(-14px)',
+    },
   },
 });
 
@@ -162,6 +173,21 @@ const styles = stylex.create({
     },
     transitionTimingFunction: easeVars['--ease-standard'],
     boxSizing: 'border-box',
+    // Forced colors (Windows High Contrast) strips painted backgrounds, which
+    // would leave the track invisible. A system-color border keeps the
+    // control's bounds perceivable (WCAG 1.4.11).
+    borderWidth: {
+      default: 0,
+      '@media (forced-colors: active)': '1px',
+    },
+    borderStyle: {
+      default: 'none',
+      '@media (forced-colors: active)': 'solid',
+    },
+    borderColor: {
+      default: null,
+      '@media (forced-colors: active)': 'CanvasText',
+    },
   },
   trackFocus: {
     outline: {
@@ -178,21 +204,39 @@ const styles = stylex.create({
   trackOff: {
     backgroundColor: {
       default: colorVars['--color-background-gray'],
+      // Off = empty (Canvas) track; on = Highlight track, so the two states
+      // stay distinguishable under forced colors.
+      '@media (forced-colors: active)': 'Canvas',
+      // The ancestor-hover tint is a non-system color-mix, and its rule
+      // outranks the plain forced-colors rule above. Left ungated it would
+      // reassert on hover under forced colors, where the UA flattens the
+      // color-mix back to Canvas — so the HighlightText thumb would sit on a
+      // white track (white-on-white). Gating on `forced-colors: none` keeps
+      // the tint out of forced colors and lets the system-color track stand.
       [stylex.when.ancestor(':hover', switchScope)]: {
-        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-background-gray']}, ${colorVars['--color-tint-hover']} 5%)`,
+        '@media (hover: hover) and (forced-colors: none)': `color-mix(in srgb, ${colorVars['--color-background-gray']}, ${colorVars['--color-tint-hover']} 5%)`,
       },
     },
   },
   trackOn: {
     backgroundColor: {
       default: colorVars['--color-accent'],
+      '@media (forced-colors: active)': 'Highlight',
+      // See trackOff: gate the hover tint out of forced colors so it cannot
+      // flatten the Highlight track to white under the HighlightText thumb.
       [stylex.when.ancestor(':hover', switchScope)]: {
-        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-tint-hover']} 15%)`,
+        '@media (hover: hover) and (forced-colors: none)': `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-tint-hover']} 15%)`,
       },
     },
   },
   trackDisabled: {
     opacity: 0.5,
+    // Opacity dimming does not survive forced colors; GrayText is the
+    // platform's disabled affordance there.
+    borderColor: {
+      default: null,
+      '@media (forced-colors: active)': 'GrayText',
+    },
   },
   trackDisabledOff: {
     backgroundColor: colorVars['--color-background-gray'],
@@ -202,13 +246,28 @@ const styles = stylex.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radiusVars['--radius-full'],
-    backgroundColor: colorVars['--color-background-surface'],
     transitionProperty: 'transform, width, height',
     transitionDuration: {
       default: durationVars['--duration-fast'],
       '@media (prefers-reduced-motion: reduce)': '0s',
     },
     transitionTimingFunction: easeVars['--ease-standard'],
+  },
+  // The thumb fill lives on the on/off styles (not the shared thumb style)
+  // because forced colors needs a per-state system color: CanvasText on the
+  // empty off track, HighlightText on the Highlight on track. Sizing stays in
+  // thumbOffSizeStyles/thumbOnSizeStyles; only the fill is state-dependent.
+  thumbOff: {
+    backgroundColor: {
+      default: colorVars['--color-background-surface'],
+      '@media (forced-colors: active)': 'CanvasText',
+    },
+  },
+  thumbOn: {
+    backgroundColor: {
+      default: colorVars['--color-background-surface'],
+      '@media (forced-colors: active)': 'HighlightText',
+    },
   },
   labelWrapper: {
     display: 'flex',
@@ -225,11 +284,7 @@ const styles = stylex.create({
 
 export type SwitchLabelPosition = 'start' | 'end';
 
-export type SwitchLabelSpacing =
-  | 'hug'
-  | 'spread'
-  /** @deprecated Use `'hug'` instead. */
-  | 'default';
+export type SwitchLabelSpacing = 'hug' | 'spread';
 
 export interface SwitchProps extends Omit<BaseProps, 'onChange'> {
   /** Ref forwarded to the root element */
@@ -343,8 +398,6 @@ export interface SwitchProps extends Omit<BaseProps, 'onChange'> {
    * Spacing behavior between label and switch.
    * - 'hug': Label and switch are positioned next to each other
    * - 'spread': Label and switch are pushed to opposite ends
-   *
-   * 'default' is a deprecated alias for 'hug'.
    * @default 'hug'
    */
   labelSpacing?: SwitchLabelSpacing;
@@ -422,10 +475,6 @@ export function Switch({
   const isBusy = isLoading || optimisticValue !== value;
 
   const isOn = optimisticValue === true;
-
-  // 'default' is a deprecated alias for 'hug' (#2889).
-  const resolvedLabelSpacing: SwitchLabelSpacing =
-    labelSpacing === 'default' ? 'hug' : labelSpacing;
 
   // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
   // tooltip listeners attach to the switch row (which already exists) and the
@@ -526,6 +575,7 @@ export function Switch({
             stylex.props(
               styles.thumb,
               isOn ? thumbOnSizeStyles[size] : thumbOffSizeStyles[size],
+              isOn ? styles.thumbOn : styles.thumbOff,
             ),
           )}>
           {isBusy && <Spinner size="sm" />}
@@ -557,8 +607,7 @@ export function Switch({
       {...mergeProps(
         themeProps('switch-field', {
           labelPosition: labelPosition !== 'end' ? labelPosition : undefined,
-          labelSpacing:
-            resolvedLabelSpacing !== 'hug' ? resolvedLabelSpacing : undefined,
+          labelSpacing: labelSpacing !== 'hug' ? labelSpacing : undefined,
         }),
         stylex.props(width != null && dynamicWidthStyles.width(width), xstyle),
         className,
@@ -577,7 +626,7 @@ export function Switch({
         }}
         {...stylex.props(
           styles.container,
-          resolvedLabelSpacing === 'spread' && styles.containerSpread,
+          labelSpacing === 'spread' && styles.containerSpread,
           !isDisabled && switchScope,
         )}>
         {' '}
@@ -594,14 +643,13 @@ export function Switch({
         )}
       </div>
       {status?.message && (
-        <div {...stylex.props(styles.statusGap)}>
-          <FieldStatus
-            type={status.type}
-            message={status.message}
-            id={statusMessageID}
-            variant="detached"
-          />
-        </div>
+        <FieldStatus
+          type={status.type}
+          message={status.message}
+          id={statusMessageID}
+          variant="detached"
+          xstyle={styles.statusGap}
+        />
       )}
       {showsDisabledMessage &&
         disabledMessageTooltip.renderTooltip(disabledMessage)}

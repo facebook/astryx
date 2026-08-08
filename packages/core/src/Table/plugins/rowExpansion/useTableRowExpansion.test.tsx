@@ -9,6 +9,7 @@ import {
   useTableRowExpansion,
   useTableRowExpansionState,
 } from './useTableRowExpansion';
+import {InternationalizationProvider} from '../../../i18n';
 
 // popover mock for context-menu tests
 beforeEach(() => {
@@ -113,6 +114,24 @@ describe('useTableRowExpansion', () => {
     fireEvent.contextMenu(screen.getByText('Folder A'));
     const items = screen.getAllByRole('menuitem', {
       name: /expand row/i,
+      hidden: true,
+    });
+    expect(items.length).toBeGreaterThan(0);
+  });
+
+  it('localizes the context-menu action label through the i18n catalog', () => {
+    render(
+      <InternationalizationProvider
+        locale="fr"
+        overrides={{
+          fr: {'@astryx.tableRowExpansion.expandRow': 'Développer la ligne'},
+        }}>
+        <Harness />
+      </InternationalizationProvider>,
+    );
+    fireEvent.contextMenu(screen.getByText('Folder A'));
+    const items = screen.getAllByRole('menuitem', {
+      name: /Développer la ligne/,
       hidden: true,
     });
     expect(items.length).toBeGreaterThan(0);

@@ -50,10 +50,8 @@ export const Default: Story = {
       heading={
         <TopNavHeading
           heading="My App"
-          logo={
-            <NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
-          }
-          href="#"
+          logo={<NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />}
+          headingHref="#"
         />
       }
       startContent={
@@ -112,7 +110,7 @@ export const MultipleMenus: Story = {
   render: () => (
     <TopNav
       label="Main navigation"
-      heading={<TopNavHeading heading="Platform" href="#" />}
+      heading={<TopNavHeading heading="Platform" headingHref="#" />}
       startContent={
         <>
           <TopNavMenu
@@ -167,11 +165,9 @@ export const MegaMenu: Story = {
             <TopNavHeading
               heading="Acme"
               logo={
-                <NavIcon
-                  icon={<CubeIcon style={{width: 16, height: 16}} />}
-                />
+                <NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
               }
-              href="#"
+              headingHref="#"
             />
           }
           startContent={
@@ -249,7 +245,7 @@ export const MegaMenuSimple: Story = {
     <div style={{position: 'relative'}}>
       <TopNav
         label="Simple navigation"
-        heading={<TopNavHeading heading="App" href="#" />}
+        heading={<TopNavHeading heading="App" headingHref="#" />}
         startContent={
           <>
             <TopNavItem label="Home" href="#" isSelected />

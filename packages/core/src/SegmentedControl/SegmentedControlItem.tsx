@@ -12,7 +12,7 @@
  * - /packages/core/src/SegmentedControl/SegmentedControl.doc.mjs
  * - /packages/core/src/SegmentedControl/index.ts
  * - /packages/core/src/SegmentedControl/SegmentedControl.test.tsx
- * - /packages/cli/templates/blocks/components/SegmentedControl/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/SegmentedControl/ (showcase blocks)
  */
 
 import React, {type ReactNode} from 'react';
@@ -103,9 +103,27 @@ const styles = stylex.create({
     },
   },
   selected: {
-    color: colorVars['--color-text-primary'],
+    // Forced colors (Windows High Contrast) strips the painted surface fill
+    // and box shadow, which would leave the selected segment with no state
+    // indication beyond font weight. Highlight/HighlightText is the platform
+    // convention for a selected item (WCAG 1.4.11).
+    //
+    // forced-color-adjust must be `none` here: the segment is a <button>, and
+    // the UA keeps native form-control colors (ButtonFace surface) for it under
+    // forced colors, ignoring the authored Highlight fill — the label kept its
+    // HighlightText color, giving white text on a white surface. Opting the
+    // selected segment out of UA remapping makes both the Highlight surface and
+    // the HighlightText label render as authored, restoring figure-ground.
+    forcedColorAdjust: 'none',
+    color: {
+      default: colorVars['--color-text-primary'],
+      '@media (forced-colors: active)': 'HighlightText',
+    },
     fontWeight: fontWeightVars['--font-weight-semibold'],
-    backgroundColor: colorVars['--color-background-surface'],
+    backgroundColor: {
+      default: colorVars['--color-background-surface'],
+      '@media (forced-colors: active)': 'Highlight',
+    },
     boxShadow: shadowVars['--shadow-low'],
   },
   disabled: {

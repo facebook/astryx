@@ -13,7 +13,7 @@
  * - /packages/core/src/NumberInput/NumberInput.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/NumberInput/index.ts (exports if types change)
  * - /apps/storybook/stories/NumberInput.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/NumberInput/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/NumberInput/ (showcase blocks)
  */
 
 import {
@@ -81,6 +81,18 @@ const styles = stylex.create({
     borderWidth: 0,
     borderStyle: 'none',
     padding: 0,
+    // Hide the browser's native number spinners; the component provides its own
+    // affordances (keyboard entry, optional clear button) and the spinners
+    // clash with the input's visual treatment and sizing.
+    MozAppearance: 'textfield',
+    '::-webkit-inner-spin-button': {
+      WebkitAppearance: 'none',
+      margin: 0,
+    },
+    '::-webkit-outer-spin-button': {
+      WebkitAppearance: 'none',
+      margin: 0,
+    },
     fontFamily: typographyVars['--font-family-body'],
     fontSize: {
       default: typeScaleVars['--text-body-size'],
@@ -579,6 +591,16 @@ export function NumberInput({
     ],
   );
 
+  // While focused, a wheel gesture steps the value — keep that gesture from
+  // also bubbling up and scrolling an ancestor container (page, Dialog,
+  // ScrollArea). When the input isn't focused the wheel isn't stepping the
+  // value, so normal scrolling is left alone.
+  const handleWheel = useCallback((e: React.WheelEvent<HTMLInputElement>) => {
+    if (document.activeElement === e.currentTarget) {
+      e.stopPropagation();
+    }
+  }, []);
+
   // Handle clear button click
   const handleClear = useCallback(() => {
     if (hasClear) {
@@ -608,7 +630,11 @@ export function NumberInput({
       onClick={handleWrapperClick}
       onMouseUp={handleWrapperMouseUp}
       {...mergeProps(
-        themeProps('number-input', {size, status: status?.type ?? null}),
+        themeProps('number-input', {
+          size,
+          status: status?.type ?? null,
+          disabled: isDisabled ? 'disabled' : null,
+        }),
         stylex.props(
           inputWrapperStyles.base,
           styles.wrapper,
@@ -629,7 +655,7 @@ export function NumberInput({
         {...rest}
         ref={mergeRefs(ref, inputRef)}
         id={id}
-        name={htmlName}
+        name={isDisabled ? undefined : htmlName}
         type="number"
         autoComplete={autoComplete}
         value={displayValue}
@@ -637,6 +663,7 @@ export function NumberInput({
         onFocus={handleFocus}
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
+        onWheel={handleWheel}
         placeholder={placeholder}
         // With a disabledMessage the input keeps focusability via aria-disabled
         // so the reason is focus-discoverable; readOnly + the handler guards

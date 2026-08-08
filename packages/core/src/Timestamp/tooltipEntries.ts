@@ -34,8 +34,9 @@ import type {InstantFormat} from './formatInstant';
  *
  * Every `TimestampFormat` that names a fixed instant, plus `'full'` — the long
  * absolute style the tooltip has always shown ("February 19, 2026 at 5:00:00 PM
- * UTC"). `'relative'` and `'auto'` are excluded: a relative phrase ignores any
- * zone, which would make `timezoneID` silently inert on that line.
+ * UTC"). `'relative'`, `'relative_short'`, and `'auto'` are excluded: a
+ * relative phrase ignores any zone, which would make `timezoneID` silently
+ * inert on that line.
  *
  * `'full'` lives only in this vocabulary, never in `TimestampFormat` — nothing
  * asked for it as a visible display format, and keeping it out means new
@@ -71,12 +72,26 @@ export interface TimestampTooltipEntry {
    * Supplied already translated; Timestamp never invents or localizes labels.
    */
   label?: string;
+  /**
+   * Whether this row shows a copy-to-clipboard button, rendered in a dedicated
+   * trailing action column so the buttons line up across rows regardless of
+   * each value's width. The action column is only reserved when at least one
+   * row is copyable, so a fully read-only card has no trailing gutter.
+   *
+   * Defaults to `false` — rows are read-only unless opted in. Set `true` for a
+   * row whose value is worth pasting elsewhere, such as a machine-readable
+   * `system_date_time` value shown beside human-readable zones that only need
+   * to be read.
+   * @default false
+   */
+  isCopyable?: boolean;
 }
 
 /** A rendered tooltip line. */
 export interface TimestampTooltipLine {
   label?: string;
   value: string;
+  isCopyable: boolean;
 }
 
 // =============================================================================
@@ -197,6 +212,7 @@ export function formatTooltipLines(
 
     return {
       ...(entry.label === undefined ? {} : {label: entry.label}),
+      isCopyable: entry.isCopyable ?? false,
       value: formatInstant(date, format, {
         timeZone,
         isTimezoneShown: shouldShowZoneName(

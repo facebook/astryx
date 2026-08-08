@@ -215,9 +215,9 @@ export const dayCellStyles = stylex.create({
       content: '""',
       position: 'absolute',
       top: '-2px',
-      right: '-2px',
+      insetInlineEnd: '-2px',
       bottom: '-2px',
-      left: '-2px',
+      insetInlineStart: '-2px',
     },
   },
 

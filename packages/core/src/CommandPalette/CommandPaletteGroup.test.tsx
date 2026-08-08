@@ -10,8 +10,12 @@ import {describe, it, expect} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {CommandPaletteGroup} from './CommandPaletteGroup';
 import {defineTheme} from '../theme/defineTheme';
-import {generateThemeCSSFlat} from '../theme/generateThemeRules';
+import {generateThemeCSS} from '../theme/generateThemeRules';
 
+function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
+  const {prose, component} = generateThemeCSS(theme);
+  return [prose, component].filter(Boolean).join('\n\n');
+}
 describe('CommandPaletteGroup', () => {
   it('renders heading', () => {
     render(
@@ -116,7 +120,7 @@ describe('CommandPaletteGroup', () => {
           },
         },
       });
-      const css = generateThemeCSSFlat(theme);
+      const css = generateThemeTestCSS(theme);
       expect(css).toContain('.astryx-command-palette-group-heading {');
       expect(css).toContain('padding-block: var(--spacing-2)');
       expect(css).toContain('font-weight: var(--font-weight-bold)');

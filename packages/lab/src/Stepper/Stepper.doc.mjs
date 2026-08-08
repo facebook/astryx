@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../../../core/src/docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'Stepper',
@@ -165,7 +165,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../../../core/src/docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'numbered step sequence for multi-step workflows',
   usage: {
@@ -212,7 +212,7 @@ export const docsDense = {
   ],
 };
 
-/** @type {import('../../../core/src/docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docsZh = {
   name: 'Stepper',
   displayName: 'Stepper',

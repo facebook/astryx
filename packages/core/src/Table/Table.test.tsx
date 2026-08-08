@@ -401,20 +401,6 @@ describe('BaseTable', () => {
     expect(ref).toHaveBeenCalledWith(expect.any(HTMLTableElement));
   });
 
-  it('passes tableProps to the table element', () => {
-    render(
-      <BaseTable
-        data={users}
-        columns={columns}
-        tableProps={{'aria-label': 'Users table'}}
-      />,
-    );
-    expect(screen.getByRole('table')).toHaveAttribute(
-      'aria-label',
-      'Users table',
-    );
-  });
-
   describe('root element styling props (#3679)', () => {
     it('applies className to the table element', () => {
       render(<Table data={users} columns={columns} className="custom-table" />);
@@ -446,27 +432,6 @@ describe('BaseTable', () => {
       expect(table).toHaveAttribute('data-analytics', 'tables');
     });
 
-    it('composes with deprecated tableProps, direct props winning conflicts', () => {
-      render(
-        <Table
-          data={users}
-          columns={columns}
-          className="direct"
-          style={{opacity: 1}}
-          tableProps={{
-            className: 'legacy',
-            style: {color: 'red', opacity: 0.5},
-          }}
-        />,
-      );
-      const table = screen.getByRole('table');
-      expect(table.className).toContain('legacy');
-      expect(table.className).toContain('direct');
-      // Direct style wins the conflicting key; non-conflicting legacy survives.
-      expect(table.style.opacity).toBe('1');
-      expect(table.style.color).toBe('red');
-    });
-
     it('keeps the computed column min-width over a consumer style.minWidth', () => {
       const {tableMinWidth} = resolveColumnWidths(columns);
       render(
@@ -481,20 +446,6 @@ describe('BaseTable', () => {
       const plain: TableColumn<User>[] = [{key: 'name'}, {key: 'age'}];
       render(<Table data={users} columns={plain} style={{minWidth: '10px'}} />);
       expect(screen.getByRole('table').style.minWidth).toBe('10px');
-    });
-
-    it('direct id and aria attributes beat the same keys in tableProps', () => {
-      render(
-        <Table
-          data={users}
-          columns={columns}
-          id="direct-id"
-          aria-label="Direct"
-          tableProps={{id: 'legacy-id', 'aria-label': 'Legacy'}}
-        />,
-      );
-      const table = screen.getByRole('table', {name: 'Direct'});
-      expect(table.id).toBe('direct-id');
     });
 
     it('keeps the astryx theme classes alongside a consumer className', () => {
@@ -885,6 +836,33 @@ describe('Table', () => {
     it('renders with spacious density', () => {
       render(<Table data={users} columns={columns} density="spacious" />);
       expect(screen.getAllByRole('row')).toHaveLength(4);
+    });
+
+    it('reflects density as data-density on cells and header cells (theme hook)', () => {
+      // The density lives in internal StyleX classes, so cells expose it as a
+      // data-density attribute on the stable astryx-table-cell /
+      // astryx-table-header-cell targets. This lets a theme override padding
+      // per density (e.g. hold the inline inset while varying the block) via
+      // `defineTheme` — the padding split is otherwise unreachable.
+      const {rerender} = render(
+        <Table data={users} columns={columns} density="spacious" />,
+      );
+      const cell = screen.getAllByRole('cell')[0];
+      const header = screen.getAllByRole('columnheader')[0];
+      expect(cell.className).toContain('astryx-table-cell');
+      expect(cell).toHaveAttribute('data-density', 'spacious');
+      expect(header.className).toContain('astryx-table-header-cell');
+      expect(header).toHaveAttribute('data-density', 'spacious');
+
+      rerender(<Table data={users} columns={columns} density="compact" />);
+      expect(screen.getAllByRole('cell')[0]).toHaveAttribute(
+        'data-density',
+        'compact',
+      );
+      expect(screen.getAllByRole('columnheader')[0]).toHaveAttribute(
+        'data-density',
+        'compact',
+      );
     });
   });
 

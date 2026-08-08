@@ -11,9 +11,37 @@
     "defaultMessage": "Go to next page",
     "description": "Aria label for the next-page button."
   },
+  "@astryx.pagination.previousBy": {
+    "defaultMessage": "Go back {step, number} {step, plural, one {page} other {pages}}",
+    "description": "Aria label for the previous button when it advances more than one page per click (the `step` prop > 1). `step` is the number of pages skipped."
+  },
+  "@astryx.pagination.nextBy": {
+    "defaultMessage": "Go forward {step, number} {step, plural, one {page} other {pages}}",
+    "description": "Aria label for the next button when it advances more than one page per click (the `step` prop > 1). `step` is the number of pages skipped."
+  },
+  "@astryx.pagination.first": {
+    "defaultMessage": "Go to first page",
+    "description": "Aria label for the first-page button (« double chevron) in the input pagination variant."
+  },
+  "@astryx.pagination.last": {
+    "defaultMessage": "Go to last page",
+    "description": "Aria label for the last-page button (» double chevron) in the input pagination variant."
+  },
   "@astryx.pagination.goToPage": {
     "defaultMessage": "Go to page {page, number}",
     "description": "Aria label for an individual page-number button. `page` is 1-based."
+  },
+  "@astryx.pagination.goToPageInput": {
+    "defaultMessage": "Go to page",
+    "description": "Aria label for the editable page/row number box in the input pagination variant. No number — the box holds the value itself."
+  },
+  "@astryx.pagination.pageLabel": {
+    "defaultMessage": "Page",
+    "description": "Visible label before the editable box in the input pagination variant. Example: \"Page [ 1 ] / 10\"."
+  },
+  "@astryx.pagination.ofTotalPages": {
+    "defaultMessage": "/ {total, number}",
+    "description": "Visible total shown after the editable box in the input pagination variant. Example: the \"/ 10\" in \"Page [ 1 ] / 10\"."
   },
   "@astryx.pagination.pageIndicators": {
     "defaultMessage": "Page indicators",
@@ -235,6 +263,10 @@
     "defaultMessage": "Mobile navigation",
     "description": "Screen-reader-only accessible name for the mobile-only navigation region on small viewports. \"Mobile\" = phone/tablet (small screen), not \"movable\"."
   },
+  "@astryx.appShell.skipToContent": {
+    "defaultMessage": "Skip to content",
+    "description": "Text of the skip link — the first focusable element on the page, visible only while keyboard-focused. Activating it jumps focus past the navigation to the main content area. Imperative verb; keep short."
+  },
   "@astryx.avatar.nameWithStatus": {
     "defaultMessage": "{name}, {status}",
     "description": "Screen-reader accessible name for an Avatar showing a status indicator; composes the person's name with the status label, e.g. \"Jane Doe, Online\". {name} = the avatar's name/alt text, {status} = the status dot's label. Adjust separator and order per locale."
@@ -246,6 +278,10 @@
   "@astryx.avatarGroup.keyboardHint": {
     "defaultMessage": "Use arrow keys to move between avatars",
     "description": "Screen-reader-only instruction attached (via aria-describedby) to a group of interactive avatars that share a single Tab stop. Tells keyboard users the Left/Right arrow keys move focus between the avatars. Only announced when the group has interactive (link/button) avatars."
+  },
+  "@astryx.avatarGroup.overflow": {
+    "defaultMessage": "{count, number} more",
+    "description": "Accessible name for the \"+N\" overflow indicator at the end of an AvatarGroup — announces how many additional avatars are not shown. Example: `5 more`. The visible \"+N\" text is unaffected; this is the aria-label only."
   },
   "@astryx.banner.dismiss": {
     "defaultMessage": "Dismiss",
@@ -406,6 +442,10 @@
   "@astryx.multiSelector.searchOptions": {
     "defaultMessage": "Search options",
     "description": "Screen-reader-only accessible name for that same search input inside a MultiSelector."
+  },
+  "@astryx.multiSelector.selectAllPartiallySelected": {
+    "defaultMessage": "{label}, partially selected",
+    "description": "Accessible name for the MultiSelector select-all option while only some options are selected. `{label}` is the visible select-all label (e.g. \"Select all\"). ARIA forbids aria-selected=\"mixed\" on options, so the indeterminate state is conveyed through the name instead. \"Partially\" = some but not all."
   },
   "@astryx.popover.close": {
     "defaultMessage": "Close popover",
@@ -647,6 +687,10 @@
     "defaultMessage": "Search…",
     "description": "Grey placeholder text inside the empty PowerSearch input. Imperative verb; trailing `…` is one character."
   },
+  "@astryx.resizable.collapsed": {
+    "defaultMessage": "Collapsed",
+    "description": "aria-valuetext for the Resizable drag handle (role=separator) while its panel is collapsed to zero size. Replaces the numeric value announcement, since the numeric value is clamped to the minimum while collapsed. Adjective describing the panel state, not a verb/command."
+  },
   "@astryx.resizable.handle.label": {
     "defaultMessage": "Resize handle",
     "description": "Screen-reader-only accessible name for the small draggable divider between two Resizable panels (users drag it to change the split ratio)."
@@ -682,6 +726,10 @@
   "@astryx.banner.expand": {
     "defaultMessage": "Expand",
     "description": "\"Expand\" = reveal more, not grow physically. Aria label AND tooltip on the same toggle when currently collapsed. Pairs with `banner.collapse`."
+  },
+  "@astryx.button.loading": {
+    "defaultMessage": "Loading",
+    "description": "Screen-reader-only live-region announcement while a Button is in its loading state (spinner shown, action in flight). Progressive sense (\"work in progress\"), not a noun. Kept separate from `typeahead.loading` — translations may diverge."
   },
   "@astryx.chatComposerDrawer.expand": {
     "defaultMessage": "Expand {label}",
@@ -747,6 +795,14 @@
     "defaultMessage": "Code",
     "description": "Screen-reader-only fallback name for a code-snippet scroll container when the code's language is unknown. \"Code\" = source code, not secret code or code of conduct."
   },
+  "@astryx.field.optional": {
+    "defaultMessage": "Optional",
+    "description": "Visible indicator shown next to a form field's label when the field is optional (isOptional). Mutually exclusive with the required indicator. Very short — appears inline after the label text."
+  },
+  "@astryx.field.required": {
+    "defaultMessage": "Required",
+    "description": "Visible indicator shown next to a form field's label when the field must be filled in (isRequired). Mutually exclusive with the optional indicator. Very short — appears inline after the label text."
+  },
   "@astryx.fileInput.clearLabel": {
     "defaultMessage": "Clear {label}",
     "description": "Screen-reader-only label on the X that removes the selected file from a FileInput. Example: `Clear Attachment`, `Clear Résumé`."
@@ -759,9 +815,33 @@
     "defaultMessage": "{label}, {fileNames}",
     "description": "Accessible name for a FileInput trigger that has files attached, composing the field label with the selected filenames. Example: `Attachments, report.pdf, notes.txt`."
   },
+  "@astryx.keyboardHint.toNavigate": {
+    "defaultMessage": "to navigate",
+    "description": "Trailing text in the keyboard-hint badge, shown after arrow-key icons — reads as `← → to navigate`. Lowercase sentence fragment completing the visual phrase; the badge is aria-hidden, so this is for sighted users only."
+  },
   "@astryx.lightbox.mediaViewer": {
     "defaultMessage": "Media viewer",
     "description": "Screen-reader-only fallback name for the Lightbox dialog when the current media item has no alt text. Should rarely render — consumers should provide alt."
+  },
+  "@astryx.lightbox.zoom": {
+    "defaultMessage": "Zoom",
+    "description": "Screen-reader-only label on the Lightbox image acting as a zoom toggle button (aria-pressed reflects zoomed state). Verb (\"to zoom\"), very short."
+  },
+  "@astryx.lightbox.zoomedIn": {
+    "defaultMessage": "Zoomed in, use arrow keys to pan",
+    "description": "Polite screen-reader announcement after zooming into a Lightbox image, including a hint that arrow keys pan while zoomed. Pairs with `lightbox.zoomedOut`."
+  },
+  "@astryx.lightbox.zoomedOut": {
+    "defaultMessage": "Zoomed out",
+    "description": "Polite screen-reader announcement after zooming back out of a Lightbox image. Pairs with `lightbox.zoomedIn`."
+  },
+  "@astryx.metadataList.showMore": {
+    "defaultMessage": "Show more",
+    "description": "Button label under a MetadataList that reveals items hidden beyond the configured maximum. Toggles with `metadataList.showLess` — keep the pair parallel in your language."
+  },
+  "@astryx.metadataList.showLess": {
+    "defaultMessage": "Show less",
+    "description": "Button label under a MetadataList that re-hides the extra items revealed by `metadataList.showMore`. Keep the pair parallel."
   },
   "@astryx.mobileNav.navigation": {
     "defaultMessage": "Navigation",
@@ -835,6 +915,26 @@
     "defaultMessage": "Expand all rows",
     "description": "Screen-reader-only label on the header expand-all/collapse-all button when at least one row is collapsed (clicking expands every expandable row). Part of the four-way set."
   },
+  "@astryx.step.goToStep": {
+    "defaultMessage": "Go to step {stepNumber, number}: {label}",
+    "description": "Accessible name for a clickable step in the lab Stepper. {stepNumber} is the 1-based position, {label} is the step's visible label."
+  },
+  "@astryx.step.goToStepWithStatus": {
+    "defaultMessage": "Go to step {stepNumber, number}: {label}, {status}",
+    "description": "Accessible name for a clickable lab Stepper step that also carries a status. {status} is one of the translated `step.status.*` words (completed/warning/error). Keep the pattern parallel to `step.goToStep`."
+  },
+  "@astryx.step.status.completed": {
+    "defaultMessage": "completed",
+    "description": "Screen-reader-only status word rendered next to a lab Stepper step label when the step is done (either progress-completed or status=success). Lowercase adjective; it is read mid-sentence after the step label."
+  },
+  "@astryx.step.status.warning": {
+    "defaultMessage": "warning",
+    "description": "Screen-reader-only status word rendered next to a lab Stepper step label when status=warning. Lowercase noun/adjective; read mid-sentence after the step label."
+  },
+  "@astryx.step.status.error": {
+    "defaultMessage": "error",
+    "description": "Screen-reader-only status word rendered next to a lab Stepper step label when status=error. Lowercase noun; read mid-sentence after the step label."
+  },
   "@astryx.tableTree.collapseRow": {
     "defaultMessage": "Collapse row",
     "description": "Aria label for the Table tree-data expander chevron when the row is currently expanded."
@@ -850,6 +950,14 @@
   "@astryx.tableTree.expandAllRows": {
     "defaultMessage": "Expand all rows",
     "description": "Aria label for the Table tree-data header toggle when rows are collapsed and clicking it expands them."
+  },
+  "@astryx.textArea.charactersRemaining": {
+    "defaultMessage": "{count, number} {count, plural, one {character} other {characters}} remaining",
+    "description": "Screen-reader-only announcement of how many characters the user can still type before hitting a TextArea's maxLength. Announced politely as the count nears the limit. `{count}` is the number remaining — example: `12 characters remaining`."
+  },
+  "@astryx.textArea.charactersOverLimit": {
+    "defaultMessage": "{count, number} {count, plural, one {character} other {characters}} over the limit",
+    "description": "Screen-reader-only assertive announcement when the user has typed past a TextArea's maxLength. `{count}` is how many characters over — example: `3 characters over the limit`."
   },
   "@astryx.textInput.clearLabel": {
     "defaultMessage": "Clear {label}",
@@ -870,6 +978,22 @@
   "@astryx.timeInput.clearLabel": {
     "defaultMessage": "Clear {label}",
     "description": "Screen-reader-only label on the X that clears the value from a TimeInput. Example: `Clear Start time`."
+  },
+  "@astryx.timestamp.copyValue": {
+    "defaultMessage": "Copy {value}",
+    "description": "Aria label on a Timestamp copyable-hover-card row's copy button, in its default state. `value` is the formatted instant that row shows (e.g. `Copy February 19, 2026 at 5:00:00 PM UTC`). Imperative verb. Pairs with `timestamp.copied` (post-click state)."
+  },
+  "@astryx.timestamp.copy": {
+    "defaultMessage": "Copy",
+    "description": "Short label shown in the tooltip on a Timestamp copyable-hover-card row's copy button (hover/focus), in its default state. Imperative verb. Pairs with `timestamp.copied` (post-click state). The full `copyValue` string remains the button's aria-label for assistive tech."
+  },
+  "@astryx.timestamp.copied": {
+    "defaultMessage": "Copied",
+    "description": "Aria label on a Timestamp copy button for ~1.5s after a successful copy, and the text announced to a polite live region. Past-participle (\"has been copied\"); pairs with `timestamp.copyValue`."
+  },
+  "@astryx.timestamp.detailsLabel": {
+    "defaultMessage": "Timestamp details",
+    "description": "Accessible name for the Timestamp copyable hover card popup, which lists the instant in the configured time zones/formats with a copy button per row."
   },
   "@astryx.token.remove": {
     "defaultMessage": "Remove {label}",

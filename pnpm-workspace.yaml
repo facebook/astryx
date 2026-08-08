@@ -45,6 +45,14 @@ overrides:
   esbuild: '>=0.28.1'
   '@babel/core': ^7.29.6
   hono: ^4.12.25
+  # @modelcontextprotocol/sdk 1.x resolves @hono/node-server ^1, which is
+  # vulnerable to path traversal in serve-static on Windows via encoded
+  # backslashes (%5C). Patched only in 2.0.5 — a semver-major the sdk's ^1
+  # range can never reach on its own. The sdk only calls getRequestListener
+  # (with overrideGlobalObjects), which 2.x exports unchanged, and 2.x peers
+  # on hono ^4 — already held above. Drop this entry once the sdk depends on
+  # @hono/node-server 2.x itself.
+  '@hono/node-server': ^2.0.5
   # read-yaml-file 1.x is hard-wired to js-yaml 3.x (`safeLoad`), which has no
   # fix for CVE-2026-53550 — patched only in js-yaml 4.2.0. Overriding js-yaml
   # alone breaks it (4.x renamed safeLoad -> load), so lift the package instead:
@@ -53,7 +61,10 @@ overrides:
   # + .sync). The floor below then holds that chain on the patched 4.x line.
   read-yaml-file: ^2.1.0
   read-yaml-file>js-yaml: ^4.2.0
-  '@changesets/parse>js-yaml': '>=4.2.0'
+  # Constrain to 4.x — the 5.x line has DoS vulnerabilities (GHSA-pm4m-ph32-ghv5,
+  # GHSA-724g-mxrg-4qvm) patched only in 5.2.2. @changesets/parse declares ^4.1.1
+  # anyway, so keep it on 4.x where the advisory does not apply.
+  '@changesets/parse>js-yaml': ^4.2.0
   fast-uri: ^3.1.4
   brace-expansion: ^2.1.2
   # next pulls sharp as an optional dependency for image optimization and still

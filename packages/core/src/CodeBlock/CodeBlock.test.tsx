@@ -14,6 +14,7 @@ import {act, render, screen, fireEvent, waitFor} from '@testing-library/react';
 import {CodeBlock} from './CodeBlock';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {dracula} from '../theme/syntax';
+import {InternationalizationProvider} from '../i18n';
 
 function politeRegion(): HTMLElement | null {
   return document.querySelector('[data-astryx-live-region="polite"]');
@@ -70,6 +71,22 @@ describe('CodeBlock', () => {
     await waitFor(() => {
       expect(politeRegion()).toHaveTextContent('Copied');
     });
+  });
+
+  it('localizes the copy announcement through the i18n catalog', async () => {
+    render(
+      <InternationalizationProvider
+        locale="fr"
+        overrides={{fr: {'@astryx.codeBlock.copied': 'Copié'}}}>
+        <CodeBlock code="const x = 1;" language="javascript" />
+      </InternationalizationProvider>,
+    );
+    // The button label and the live-region announcement share the same key.
+    fireEvent.click(screen.getByRole('button', {name: 'Copy code'}));
+    await waitFor(() => {
+      expect(politeRegion()).toHaveTextContent('Copié');
+    });
+    expect(screen.getByRole('button', {name: 'Copié'})).toBeInTheDocument();
   });
 
   it('keeps the copied indicator a full 2s after a rapid re-copy', async () => {

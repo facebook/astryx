@@ -15,19 +15,19 @@ import {
   assertWithin,
   isFilePathArg,
   PathSafetyError,
-} from '../../../utils/path-safety.mjs';
+} from '../../../foundation/fs/path-safety.mjs';
 import {AstryxError} from '../../error.mjs';
-import {ERROR_CODES} from '../../../lib/error-codes.mjs';
-import {stripTemplateAssetRefs} from '../_adapter.mjs';
+import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
+import {stripTemplateAssetRefs} from '../../../foundation/discovery/template-adapter.mjs';
 
 /**
  * Scaffold an already-resolved template to `targetPath` (relative to `cwd`) and
  * return the `template.copy` receipt.
- * @param {import('../_adapter.mjs').DiscoveredTemplate} match
- * @param {{targetPath: string, cwd: string}} ctx
- * @returns {import('../../../types/template').TemplateCopyResponse}
+ * @param {import('../../../foundation/discovery/template-adapter.mjs').DiscoveredTemplate} match
+ * @param {{targetPath: string, cwd: string, overwrite?: boolean}} ctx
+ * @returns {import('../template.type.mjs').TemplateCopyResponse}
  */
-export function templateCopy(match, {targetPath, cwd}) {
+export function templateCopy(match, {targetPath, cwd, overwrite = false}) {
   if (!fs.existsSync(match.filePath)) {
     throw new AstryxError(
       `No source file found for template "${match.dirName}"`,
@@ -71,6 +71,19 @@ export function templateCopy(match, {targetPath, cwd}) {
     outputFileName =
       match.type === 'block' ? path.basename(match.filePath) : 'page.tsx';
     outputFilePath = path.join(outputDir, outputFileName);
+  }
+
+  // Refuse to clobber an existing file unless the caller opts in. The CLI has
+  // its own pre-flight collision message, but the API is a public surface
+  // (@astryxdesign/cli/api) and must enforce this itself — same guard the peer
+  // theme/add write-leaf applies.
+  if (!overwrite && fs.existsSync(outputFilePath)) {
+    const rel = path.relative(cwd, outputFilePath) || outputFilePath;
+    throw new AstryxError(
+      `Refusing to overwrite existing file ${rel}. Re-run with overwrite to replace it.`,
+      undefined,
+      ERROR_CODES.ERR_FILE_EXISTS,
+    );
   }
 
   fs.mkdirSync(outputDir, {recursive: true});

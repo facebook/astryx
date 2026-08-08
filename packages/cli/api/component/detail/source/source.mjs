@@ -10,7 +10,7 @@
 
 import * as fs from 'node:fs';
 import {AstryxError} from '../../../error.mjs';
-import {ERROR_CODES} from '../../../../lib/error-codes.mjs';
+import {ERROR_CODES} from '../../../../foundation/response/error-codes.mjs';
 
 /**
  * Read a resolved component source path into the `component.detail.source`
@@ -18,7 +18,7 @@ import {ERROR_CODES} from '../../../../lib/error-codes.mjs';
  * @param {string} componentName - bare name, echoed back as `data.component`
  * @param {string|null} sourcePath - the resolved source path (null → not found)
  * @param {{name: string, notFoundInPackage?: string|null}} ctx - `name` is the caller's original input; `notFoundInPackage` scopes the not-found message to a package
- * @returns {import('../../../../types/component').ComponentDetailSourceResponse}
+ * @returns {import('../../component.type.mjs').ComponentDetailSourceResponse}
  */
 export function componentDetailSource(componentName, sourcePath, {name, notFoundInPackage = null}) {
   if (!sourcePath) {

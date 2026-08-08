@@ -12,9 +12,9 @@
  * - /packages/core/src/SelectableCard/SelectableCard.doc.mjs (props table, features)
  * - /packages/core/src/SelectableCard/index.ts (exports if types change)
  * - /apps/storybook/stories/SelectableCard.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Card/SelectableCardShowcase.tsx (showcase block)
- * - /packages/cli/templates/blocks/components/Card/SelectableCardMulti.tsx (block)
- * - /packages/cli/templates/blocks/components/Card/SelectableCardElevated.tsx (block)
+ * - /packages/cli/assets/templates/blocks/components/Card/SelectableCardShowcase.tsx (showcase block)
+ * - /packages/cli/assets/templates/blocks/components/Card/SelectableCardMulti.tsx (block)
+ * - /packages/cli/assets/templates/blocks/components/Card/SelectableCardElevated.tsx (block)
  *
  * Composes Card for all visual styling. Adds selection state with
  * an inset box-shadow (zero layout jitter) and useClickableContainer
@@ -22,6 +22,7 @@
  *
  * A hidden <input type="checkbox"> inside the card provides the accessible
  * role, label, and checked state — the card surface itself has no role/tabIndex.
+ * Space toggles it natively; Enter is wired up as an additional toggle key.
  *
  * For static display, use Card.
  * For navigation or action cards, use ClickableCard.
@@ -30,6 +31,7 @@
 import {
   type ReactNode,
   type MouseEvent,
+  type KeyboardEvent,
   useRef,
   useCallback,
   type Ref,
@@ -311,6 +313,19 @@ export function SelectableCard({
     [isDisabled, isSelected, onChange],
   );
 
+  // The focusable control is a native checkbox, which toggles on Space but
+  // ignores Enter. Add Enter as an extra toggle key; Space keeps its native
+  // handling, so we deliberately do not toggle on Space here (would double).
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent<HTMLInputElement>) => {
+      if (!isDisabled && event.key === 'Enter') {
+        event.preventDefault();
+        onChange(!isSelected);
+      }
+    },
+    [isDisabled, isSelected, onChange],
+  );
+
   const {onClick, onMouseUp} = useClickableContainer({
     containerRef,
     interactiveRef,
@@ -369,6 +384,7 @@ export function SelectableCard({
         aria-label={label}
         disabled={isDisabled}
         onChange={() => onChange(!isSelected)}
+        onKeyDown={handleKeyDown}
         {...stylex.props(styles.srOnly)}
       />
       {children}

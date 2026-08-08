@@ -687,6 +687,61 @@ describe('NumberInput', () => {
     });
   });
 
+  describe('form participation', () => {
+    it('submits the value under htmlName', () => {
+      const {container} = render(
+        <form>
+          <NumberInput
+            label="Quantity"
+            htmlName="quantity"
+            value={42}
+            onChange={() => {}}
+          />
+        </form>,
+      );
+      const data = new FormData(container.querySelector('form')!);
+      expect(data.get('quantity')).toBe('42');
+    });
+
+    it('is excluded from form data when disabled', () => {
+      const {container} = render(
+        <form>
+          <NumberInput
+            label="Quantity"
+            htmlName="quantity"
+            value={42}
+            onChange={() => {}}
+            isDisabled
+          />
+        </form>,
+      );
+      expect([
+        ...new FormData(container.querySelector('form')!).keys(),
+      ]).toEqual([]);
+    });
+
+    // Regression: a disabledMessage swaps the native `disabled` attribute for
+    // aria-disabled + readOnly so the reason stays focus-discoverable, but
+    // read-only fields still submit — the name has to be withheld too.
+    it('is excluded from form data when disabled, even with a disabledMessage', () => {
+      const {container} = render(
+        <form>
+          <NumberInput
+            label="Quantity"
+            htmlName="quantity"
+            value={42}
+            onChange={() => {}}
+            isDisabled
+            disabledMessage="Quantity is fixed by the contract"
+          />
+        </form>,
+      );
+      expect([
+        ...new FormData(container.querySelector('form')!).keys(),
+      ]).toEqual([]);
+    });
+  });
+
   describe('autoComplete prop', () => {
     it('sets autocomplete attribute when autoComplete is provided', () => {
       render(
@@ -965,11 +1020,15 @@ describe('keyboard clearing with hasClear (#3599)', () => {
   });
 });
 
-
 describe('NumberInput statusVariant forwarding', () => {
   it('defaults to attached (status renders with data-variant="attached")', () => {
     const {container} = render(
-      <NumberInput label="Amount" value={null} onChange={() => {}} status={{type: 'error', message: 'Must be positive'}} />,
+      <NumberInput
+        label="Amount"
+        value={null}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Must be positive'}}
+      />,
     );
     expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
       'data-variant',
@@ -979,11 +1038,66 @@ describe('NumberInput statusVariant forwarding', () => {
 
   it('forwards statusVariant="detached" to the underlying Field status', () => {
     const {container} = render(
-      <NumberInput label="Amount" value={null} onChange={() => {}} status={{type: 'error', message: 'Must be positive'}} statusVariant="detached" />,
+      <NumberInput
+        label="Amount"
+        value={null}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Must be positive'}}
+        statusVariant="detached"
+      />,
     );
     expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
       'data-variant',
       'detached',
     );
+  });
+
+  it('stops wheel propagation while focused so ancestor containers do not scroll', () => {
+    const onScrollableWheel = vi.fn();
+    render(
+      <div onWheel={onScrollableWheel}>
+        <NumberInput label="Amount" value={5} onChange={() => {}} />
+      </div>,
+    );
+    const input = screen.getByRole('spinbutton');
+    input.focus();
+    fireEvent.wheel(input, {deltaY: 100});
+    expect(onScrollableWheel).not.toHaveBeenCalled();
+  });
+
+  it('does not stop wheel propagation when the input is not focused', () => {
+    const onScrollableWheel = vi.fn();
+    render(
+      <div onWheel={onScrollableWheel}>
+        <NumberInput label="Amount" value={5} onChange={() => {}} />
+      </div>,
+    );
+    const input = screen.getByRole('spinbutton');
+    fireEvent.wheel(input, {deltaY: 100});
+    expect(onScrollableWheel).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('NumberInput disabled theme state', () => {
+  it('reflects disabled on the root target so themes can gate paint on it', () => {
+    const {container} = render(
+      <NumberInput
+        label="Quantity"
+        value={null}
+        onChange={() => {}}
+        isDisabled
+      />,
+    );
+    const root = container.querySelector('.astryx-number-input');
+    expect(root).toHaveAttribute('data-disabled', 'disabled');
+    expect(root).toHaveClass('disabled');
+  });
+
+  it('omits data-disabled when enabled, like status does', () => {
+    const {container} = render(
+      <NumberInput label="Quantity" value={null} onChange={() => {}} />,
+    );
+    const root = container.querySelector('.astryx-number-input');
+    expect(root).not.toHaveAttribute('data-disabled');
   });
 });

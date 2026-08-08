@@ -3,7 +3,7 @@
 /**
  * @file Selector.test.tsx
  * @input Uses vitest, @testing-library/react, @testing-library/user-event
- * @output Unit tests for Selector
+ * @output Unit tests for Selector behavior and selected-item geometry
  * @position Tests; validates Selector behavior
  *
  * SYNC: When Selector.tsx API changes, update these tests.
@@ -24,8 +24,12 @@ import {Icon} from '../Icon';
 import {InputGroup, InputGroupText} from '../InputGroup';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {defineTheme} from '../theme/defineTheme';
-import {generateThemeCSSFlat} from '../theme/generateThemeRules';
+import {generateThemeCSS} from '../theme/generateThemeRules';
 
+function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
+  const {prose, component} = generateThemeCSS(theme);
+  return [prose, component].filter(Boolean).join('\n\n');
+}
 function politeRegion(): HTMLElement | null {
   return document.querySelector('[data-astryx-live-region="polite"]');
 }
@@ -94,36 +98,103 @@ function rect({
   };
 }
 
-function mockSelectorRects() {
+function mockSelectorRects({
+  anchor = rect({top: 160, bottom: 190, height: 30}),
+  trigger = rect({top: 160, bottom: 190, height: 30}),
+  listbox = rect({top: 190, bottom: 310, height: 120}),
+  selectedItem = rect({top: 220, bottom: 250, height: 30}),
+  listboxLayoutHeight = listbox.height,
+  selectedItemLayoutTop = selectedItem.top - listbox.top,
+  selectedItemLayoutHeight = selectedItem.height,
+  viewportHeight = 200,
+}: {
+  anchor?: DOMRect;
+  trigger?: DOMRect;
+  listbox?: DOMRect;
+  selectedItem?: DOMRect;
+  listboxLayoutHeight?: number;
+  selectedItemLayoutTop?: number;
+  selectedItemLayoutHeight?: number;
+  viewportHeight?: number;
+} = {}) {
   const originalGetBoundingClientRect =
     HTMLElement.prototype.getBoundingClientRect;
   const originalInnerHeight = Object.getOwnPropertyDescriptor(
     window,
     'innerHeight',
   );
+  const originalOffsetTop = Object.getOwnPropertyDescriptor(
+    HTMLElement.prototype,
+    'offsetTop',
+  );
+  const originalOffsetHeight = Object.getOwnPropertyDescriptor(
+    HTMLElement.prototype,
+    'offsetHeight',
+  );
   HTMLElement.prototype.getBoundingClientRect = function () {
+    if (this.classList.contains('astryx-selector')) {
+      return anchor;
+    }
     // The trigger is role="combobox" by default, or a plain button with
     // aria-haspopup="listbox" in hasSearch mode — match either.
     if (
       this.getAttribute('role') === 'combobox' ||
       this.getAttribute('aria-haspopup') === 'listbox'
     ) {
-      return rect({top: 160, bottom: 190, height: 30});
+      return trigger;
     }
     if (this.getAttribute('role') === 'listbox') {
-      return rect({top: 190, bottom: 310, height: 120});
+      return listbox;
     }
     if (this.id.endsWith('-item-1')) {
-      return rect({top: 220, bottom: 250, height: 30});
+      return selectedItem;
     }
     return originalGetBoundingClientRect.call(this);
   };
+  Object.defineProperty(HTMLElement.prototype, 'offsetTop', {
+    configurable: true,
+    get() {
+      if (this.getAttribute('role') === 'listbox') {
+        return 0;
+      }
+      if (this.id.endsWith('-item-1')) {
+        return selectedItemLayoutTop;
+      }
+      return 0;
+    },
+  });
+  Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
+    configurable: true,
+    get() {
+      if (this.getAttribute('role') === 'listbox') {
+        return listboxLayoutHeight;
+      }
+      if (this.id.endsWith('-item-1')) {
+        return selectedItemLayoutHeight;
+      }
+      return 0;
+    },
+  });
   Object.defineProperty(window, 'innerHeight', {
-    value: 200,
+    value: viewportHeight,
     configurable: true,
   });
   return () => {
     HTMLElement.prototype.getBoundingClientRect = originalGetBoundingClientRect;
+    if (originalOffsetTop) {
+      Object.defineProperty(
+        HTMLElement.prototype,
+        'offsetTop',
+        originalOffsetTop,
+      );
+    }
+    if (originalOffsetHeight) {
+      Object.defineProperty(
+        HTMLElement.prototype,
+        'offsetHeight',
+        originalOffsetHeight,
+      );
+    }
     if (originalInnerHeight) {
       Object.defineProperty(window, 'innerHeight', originalInnerHeight);
     }
@@ -259,6 +330,81 @@ describe('Selector', () => {
     } finally {
       restoreRects();
     }
+  });
+
+  it('aligns the selected item using untransformed layout geometry', async () => {
+    const restoreRects = mockSelectorRects({
+      anchor: rect({top: 160, bottom: 192, height: 32}),
+      trigger: rect({top: 166, bottom: 186, height: 20}),
+      // Simulate the 0.95 entry scale in visual rects while retaining the
+      // untransformed 120px list / 36px item offset used for positioning.
+      listbox: rect({top: 190, bottom: 304, height: 114}),
+      selectedItem: rect({
+        top: 224.2,
+        bottom: 254.6,
+        height: 30.4,
+      }),
+      listboxLayoutHeight: 120,
+      selectedItemLayoutTop: 36,
+      selectedItemLayoutHeight: 32,
+      viewportHeight: 900,
+    });
+    const user = userEvent.setup();
+    try {
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Banana"
+          onChange={() => {}}
+        />,
+      );
+
+      await user.click(screen.getByRole('combobox'));
+      const popover = screen
+        .getByRole('listbox', {hidden: true})
+        .closest('[popover]');
+      await waitFor(() => {
+        // 68px geometric alignment plus the 1px optical correction.
+        expect(popover?.getAttribute('style')).toContain(
+          'margin-block-start: -69px',
+        );
+      });
+    } finally {
+      restoreRects();
+    }
+  });
+
+  it('adds the border inset only to input-variant dropdowns', async () => {
+    const user = userEvent.setup();
+    const {unmount} = render(
+      <Selector
+        label="Input fruit"
+        options={OPTIONS}
+        value="Banana"
+        onChange={() => {}}
+      />,
+    );
+
+    await user.click(screen.getByRole('combobox'));
+    const inputDropdownClass = screen.getByRole('listbox', h).className;
+    unmount();
+
+    render(
+      <Selector
+        label="Ghost fruit"
+        options={OPTIONS}
+        value="Banana"
+        variant="ghost"
+        onChange={() => {}}
+      />,
+    );
+    await user.click(screen.getByRole('combobox'));
+    const ghostDropdownClass = screen.getByRole('listbox', h).className;
+
+    // The bordered input gets one extra StyleX rule for its border-width
+    // correction; the borderless ghost keeps the base menu inset.
+    expect(inputDropdownClass).not.toBe(ghostDropdownClass);
   });
 
   it('does not apply selected-item overlay offset when placement is explicit', async () => {
@@ -611,6 +757,28 @@ describe('Selector', () => {
       // the a11y announcement.
       const listbox = screen.getByRole('listbox', h);
       expect(within(listbox).getByText('No results found')).toBeInTheDocument();
+    });
+
+    it('empty-state message is not exposed as a listbox child', async () => {
+      const user = userEvent.setup();
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Apple"
+          onChange={() => {}}
+          hasSearch
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      await user.type(screen.getByRole('combobox', h), 'xyz');
+
+      // role="listbox" only permits option/group children — the visual
+      // empty-state message must be presentational (it is announced through
+      // the result-count live region instead).
+      const listbox = screen.getByRole('listbox', h);
+      const empty = within(listbox).getByText('No results found');
+      expect(empty).toHaveAttribute('role', 'presentation');
     });
 
     it('calls onChange when selecting a filtered option', async () => {
@@ -1219,6 +1387,99 @@ describe('Selector statusVariant forwarding', () => {
       'detached',
     );
   });
+
+  it('keeps the on-field status icon for the attached variant', () => {
+    const {container} = render(
+      <Selector
+        label="Fruit"
+        options={['Apple', 'Banana']}
+        status={{type: 'error', message: 'Required'}}
+      />,
+    );
+    // Attached: the status glyph replaces the chevron indicator on the field.
+    expect(
+      container.querySelector('.astryx-selector-indicator-icon'),
+    ).toBeNull();
+  });
+
+  it('suppresses the on-field status icon for the detached variant', () => {
+    const {container} = render(
+      <Selector
+        label="Fruit"
+        options={['Apple', 'Banana']}
+        status={{type: 'error', message: 'Required'}}
+        statusVariant="detached"
+      />,
+    );
+    // Detached: the message box below carries its own leading icon, so the
+    // field keeps its chevron indicator rather than duplicating the glyph.
+    expect(
+      container.querySelector('.astryx-selector-indicator-icon'),
+    ).not.toBeNull();
+  });
+
+  it('detaches attached status by default for the ghost variant', () => {
+    const {container} = render(
+      <Selector
+        label="Fruit"
+        options={['Apple', 'Banana']}
+        variant="ghost"
+        status={{type: 'error', message: 'Required'}}
+      />,
+    );
+    expect(container.querySelector('.astryx-selector')).toHaveAttribute(
+      'data-variant',
+      'ghost',
+    );
+    expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+      'data-variant',
+      'detached',
+    );
+  });
+
+  it('uses a status tooltip for ghost selectors when requested', () => {
+    const {container} = render(
+      <Selector
+        label="Fruit"
+        options={['Apple', 'Banana']}
+        variant="ghost"
+        status={{type: 'warning', message: 'Visible to all users'}}
+        statusVariant="tooltip"
+      />,
+    );
+    expect(container.querySelector('.astryx-field-status')).toBeNull();
+    const statusButton = screen.getByRole('button', {
+      name: /warning details/i,
+    });
+    const tooltip = screen.getByRole('tooltip', h);
+    expect(tooltip).toHaveTextContent('Visible to all users');
+    expect(statusButton.getAttribute('aria-describedby')).toContain(tooltip.id);
+    expect(
+      screen.getByRole('combobox').getAttribute('aria-describedby'),
+    ).toContain(tooltip.id);
+  });
+});
+
+describe('Selector empty-state theme target', () => {
+  const OPTIONS = ['Apple', 'Banana', 'Cherry'];
+
+  it('renders the astryx-selector-empty-state target on the "No results found" element', async () => {
+    const user = userEvent.setup();
+    const {container} = render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    await user.type(screen.getByRole('combobox', h), 'xyz');
+
+    const empty = container.querySelector('.astryx-selector-empty-state');
+    expect(empty).not.toBeNull();
+    expect(empty).toHaveTextContent('No results found');
+  });
 });
 
 describe('Selector clear icon theme target', () => {
@@ -1319,7 +1580,7 @@ describe('Selector clear icon theme target', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('.astryx-selector-clear-icon {');
     expect(css).toContain('width: 12px');
     expect(css).toContain('height: 12px');
@@ -1413,11 +1674,210 @@ describe('Selector indicator (chevron) icon theme target', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('.astryx-selector-indicator-icon {');
     expect(css).toContain('width: 14px');
     expect(css).toContain('height: 14px');
     expect(css).toContain('.astryx-selector-indicator-icon.expanded');
     expect(css).toContain('color: var(--color-icon-primary)');
+  });
+});
+
+describe('Selector search affordances', () => {
+  it('renders a decorative (aria-hidden) magnifier icon whenever hasSearch is on', async () => {
+    const user = userEvent.setup();
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value="Apple"
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    const search = screen.getByRole('combobox', {hidden: true});
+    // The search field is a TextInput; the magnifier is its startIcon, so it
+    // sits inside the input container as a sibling of the <input>.
+    const container = search.parentElement;
+    const magnifier = container?.querySelector('.astryx-icon');
+    expect(magnifier).toBeTruthy();
+    // Decorative: the icon is hidden from assistive tech and carries no name.
+    expect(magnifier?.getAttribute('aria-hidden')).toBe('true');
+    expect(magnifier?.getAttribute('aria-label')).toBeNull();
+  });
+
+  it('renders the clear button once a query is typed and clears + refocuses on click', async () => {
+    const user = userEvent.setup();
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value="Apple"
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    const search = screen.getByRole('combobox', {hidden: true});
+    await user.type(search, 'ap');
+    expect(search).toHaveValue('ap');
+
+    // The clear button is TextInput's built-in hasClear affordance; its name is
+    // derived from the field label ("Search options").
+    const clear = screen.getByRole('button', {
+      name: 'Clear Search options',
+      hidden: true,
+    });
+
+    await user.click(clear);
+    expect(search).toHaveValue('');
+    expect(search).toHaveFocus();
+  });
+
+  it('does not render the clear button when the query is empty', async () => {
+    const user = userEvent.setup();
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value="Apple"
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    expect(
+      screen.queryByRole('button', {
+        name: 'Clear Search options',
+        hidden: true,
+      }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('keeps the combobox contract on the input, not the affordances', async () => {
+    const user = userEvent.setup();
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value="Apple"
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    // Exactly one combobox — the input. The magnifier and clear button are not
+    // part of the combobox contract.
+    const comboboxes = screen.getAllByRole('combobox', {hidden: true});
+    expect(comboboxes).toHaveLength(1);
+    expect(comboboxes[0].tagName).toBe('INPUT');
+    expect(comboboxes[0]).toHaveAttribute('aria-autocomplete', 'list');
+  });
+
+  it('tabs from the search input to the clear button (keeping the popup open) when a query is showing it', async () => {
+    const user = userEvent.setup();
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value="Apple"
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    const trigger = screen.getByRole('button', {name: 'Fruit'});
+    const search = screen.getByRole('combobox', {hidden: true});
+    await user.type(search, 'ap');
+    expect(search).toHaveFocus();
+
+    // Forward-tab lands on the clear (✕) button and the popup stays open, so
+    // the affordance is keyboard-reachable rather than being skipped when the
+    // input's Tab dismisses the popup.
+    await user.tab();
+    const clear = screen.getByRole('button', {
+      name: 'Clear Search options',
+      hidden: true,
+    });
+    expect(clear).toHaveFocus();
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+});
+
+describe('Selector selected-marker theme target (selector-check)', () => {
+  const openOptions = (): HTMLElement[] => screen.getAllByRole('option', h);
+
+  it('renders the astryx-selector-check target on the selected row only', () => {
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value="Banana"
+        onChange={() => {}}
+        isDefaultOpen
+      />,
+    );
+    const options = openOptions();
+    const selected = options.find(
+      o => o.getAttribute('aria-selected') === 'true',
+    )!;
+    const check = selected.querySelector('.astryx-selector-check');
+    expect(check).toBeInTheDocument();
+    // The target lands on the checkmark glyph itself, so a theme can restyle or
+    // hide it (e.g. to compose its own selected indicator via renderOption).
+    expect(check).toHaveClass('astryx-icon');
+
+    const unselected = options.filter(
+      o => o.getAttribute('aria-selected') !== 'true',
+    );
+    for (const row of unselected) {
+      expect(row.querySelector('.astryx-selector-check')).not.toBeInTheDocument();
+    }
+  });
+
+  it('renders the default checkmark byte-identically aside from the target class', () => {
+    // The added target class is purely additive — it changes nothing about the
+    // glyph's own color/size until a theme targets it.
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value="Banana"
+        onChange={() => {}}
+        isDefaultOpen
+      />,
+    );
+    const selected = screen
+      .getAllByRole('option', h)
+      .find(o => o.getAttribute('aria-selected') === 'true')!;
+    const check = selected.querySelector(
+      '.astryx-selector-check',
+    ) as HTMLElement;
+
+    const {container: refContainer} = render(
+      <Icon icon="check" size="sm" color="accent" />,
+    );
+    const refIcon = refContainer.querySelector('.astryx-icon') as HTMLElement;
+    const styleClasses = (el: HTMLElement) =>
+      el.className
+        .split(' ')
+        .filter(c => c !== 'astryx-selector-check')
+        .sort();
+    expect(styleClasses(check)).toEqual(styleClasses(refIcon));
+  });
+
+  it('exposes selector-check so a theme can hide or restyle the marker', () => {
+    const theme = defineTheme({
+      name: 'selector-check-test',
+      components: {
+        'selector-check': {
+          base: {display: 'none'},
+        },
+      },
+    });
+    const css = generateThemeTestCSS(theme);
+    expect(css).toContain('.astryx-selector-check {');
+    expect(css).toContain('display: none');
   });
 });

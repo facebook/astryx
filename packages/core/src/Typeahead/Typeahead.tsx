@@ -15,7 +15,7 @@
  * SYNC: When modified, update:
  * - /packages/core/src/Typeahead/index.ts
  * - /apps/storybook/stories/Typeahead.stories.tsx
- * - /packages/cli/templates/blocks/components/Typeahead/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Typeahead/ (showcase blocks)
  */
 
 import React, {
@@ -467,6 +467,12 @@ export function Typeahead<T extends SearchableItem>({
           anchorRef={wrapperRef}
           onKeyDown={handleKeyDown}
           inputXStyle={showToken ? styles.inputHidden : undefined}
+          // While the token is shown the input is collapsed (width 0 /
+          // opacity 0) — take it out of the Tab order so keyboard users
+          // don't hit an invisible stop (WCAG 2.4.3 / 2.4.7). It stays
+          // programmatically focusable: entering edit mode and clearing
+          // both refocus it after it uncollapses.
+          inputTabIndex={showToken ? -1 : undefined}
           size={size}
         />
         {hasClear && value && !isDisabled && (

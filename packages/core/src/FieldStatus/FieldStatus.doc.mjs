@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docs = {
   name: 'FieldStatus',
   displayName: 'Field Status',
@@ -12,6 +12,7 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-field-status', visualProps: ['type', 'variant']},
+      {className: 'astryx-field-status-icon', visualProps: ['type']},
     ],
   },
   props: [
@@ -63,7 +64,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
     'Validation feedback message for fields/custom controls. Supports error, warning, success and attached/detached variants. Announced via persistent live regions (assertive for errors, polite otherwise).',

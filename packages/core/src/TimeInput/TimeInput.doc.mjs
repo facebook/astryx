@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'TimeInput',
@@ -257,12 +257,12 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-time-input', visualProps: ['size', 'status']},
+      {className: 'astryx-time-input', visualProps: ['size', 'status'], states: ['disabled']},
     ],
   },
 };
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docsZh = {
   name: 'TimeInput',
 
@@ -406,7 +406,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-time-input', visualProps: ['size', 'status']},
+      {className: 'astryx-time-input', visualProps: ['size', 'status'], states: ['disabled']},
     ],
   },
   usage: {
@@ -489,7 +489,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
     'Time input that converts free-text entry to standard format with arrow-key adjustment.',

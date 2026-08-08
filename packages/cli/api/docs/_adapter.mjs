@@ -3,7 +3,7 @@
 /**
  * @file Shared doc-loading and topic-resolution helpers for the docs leaves.
  *
- * @input packages/cli/docs/{topic}.doc.mjs and, when a --dense/--zh overlay is
+ * @input packages/cli/assets/docs/{topic}.doc.mjs and, when a --dense/--zh overlay is
  *   requested, the sibling {topic}.doc.dense.mjs / {topic}.doc.zh.mjs.
  * @output Topic discovery map, overlay-merged reference-doc data, and a combined
  *   resolve step ({topics, docsData}) that the detail and section leaves share.
@@ -14,18 +14,18 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {pathToFileURL} from 'node:url';
-import {CLI_ROOT} from '../../utils/paths.mjs';
+import {CLI_ROOT} from '../../foundation/fs/paths.mjs';
 import {AstryxError} from '../error.mjs';
-import {ERROR_CODES} from '../../lib/error-codes.mjs';
+import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 
-const DOCS_DIR = path.join(CLI_ROOT, 'docs');
+const DOCS_DIR = path.join(CLI_ROOT, 'assets', 'docs');
 
 /**
  * @returns {Record<string, string>}
  */
 export function discoverTopics() {
   /** @type {Record<string, string>} */
-  const topics = {};
+  const topics = Object.create(null);
   if (!fs.existsSync(DOCS_DIR)) return topics;
   for (const file of fs.readdirSync(DOCS_DIR)) {
     const match = file.match(/^([\w-]+)\.doc\.mjs$/);
@@ -37,7 +37,7 @@ export function discoverTopics() {
 /**
  * @param {string} docPath
  * @param {{lang?: string|null}} [opts]
- * @returns {Promise<import('../../types/docs').DocsDetailResponse['data']>}
+ * @returns {Promise<import('./docs.type.mjs').DocsDetailResponse['data']>}
  */
 export async function loadReferenceDocs(docPath, {lang} = {}) {
   const mod = await import(pathToFileURL(docPath).href);
@@ -71,7 +71,7 @@ export async function loadReferenceDocs(docPath, {lang} = {}) {
     ...docs,
     description: translation.description || docs.description,
     sections: docs.sections.map(
-      (/** @type {import('../../../core/src/docs-types').ReferenceSection} */ section) => {
+      (/** @type {import('@astryxdesign/cli/authoring').ReferenceSection} */ section) => {
         const ts = bySection.get(section.title);
         if (!ts) return section;
         return {
@@ -79,7 +79,7 @@ export async function loadReferenceDocs(docPath, {lang} = {}) {
           title: ts.title || section.title,
           content: section.content.map(
             (
-              /** @type {import('../../../core/src/docs-types').ContentBlock} */ block,
+              /** @type {import('@astryxdesign/cli/authoring').ReferenceContentBlock} */ block,
               /** @type {number} */ bi,
             ) => {
               const tb = ts.content?.[bi];
@@ -108,13 +108,24 @@ export async function loadReferenceDocs(docPath, {lang} = {}) {
  * @param {boolean} [options.dense]
  * @returns {Promise<{
  *   topics: Record<string, string>,
- *   docsData: import('../../types/docs').DocsDetailResponse['data'],
+ *   docsData: import('./docs.type.mjs').DocsDetailResponse['data'],
  * }>}
  */
 export async function resolveTopicDocs(topic, options = {}) {
   const {lang = null, zh = false, dense = false} = options;
   const effectiveLang = lang || (dense ? 'dense' : zh ? 'zh' : null);
   const topics = discoverTopics();
+
+  // A public API caller could pass a non-string topic; `.toLowerCase()` below
+  // would throw a raw TypeError (no ERR_* code → downgrades to ERR_UNKNOWN).
+  // Surface the same stable code the unknown-topic path uses.
+  if (typeof topic !== 'string') {
+    throw new AstryxError(
+      `Unknown topic "${String(topic)}"`,
+      Object.keys(topics).map(t => ({name: t, reason: 'available topic'})),
+      ERROR_CODES.ERR_UNKNOWN_TOPIC,
+    );
+  }
 
   const normalized = topic.toLowerCase();
   if (!topics[normalized]) {

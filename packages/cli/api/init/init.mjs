@@ -12,26 +12,21 @@
  *   - `init.remove` (remove/remove.mjs) — the `--remove-agents` path
  *
  * This module also re-exports the leaf symbols the CLI + tests import by name
- * (`getNextSteps`, `noopInitLogger`) so api/index.mjs, the command handler
+ * (`getNextSteps`) so api/index.mjs, the command handler
  * (cli/commands/init.mjs), and the test suite stay unchanged.
  */
 
 import {run} from './run/run.mjs';
 import {remove} from './remove/remove.mjs';
-import {noopInitLogger} from './_adapter.mjs';
 
 export {getNextSteps} from './run/run.mjs';
-export {noopInitLogger} from './_adapter.mjs';
 
 /**
  * Re-exported types so callers can keep referencing them off the init barrel
- * (e.g. cli/commands/init.mjs uses `import('../../api/init/init.mjs').InitOptions`
- * and `.InitLogger`). The canonical shapes stay central in types/api.d.ts +
- * types/init.d.ts; these aliases just preserve the barrel's original type
- * surface after the split.
- * @typedef {import('../../types/api').InitOptions} InitOptions
- * @typedef {import('./_adapter.mjs').InitLogger} InitLogger
- * @typedef {import('../../types/init').InitRunData} InitRunData
+ * (e.g. cli/commands/init.mjs uses `import('../../api/init/init.mjs').InitOptions`).
+ * The canonical shapes stay colocated in api/init/init.type.mjs.
+ * @typedef {import('./init.type.mjs').InitOptions} InitOptions
+ * @typedef {import('./init.type.mjs').InitRunData} InitRunData
  */
 
 /**
@@ -42,12 +37,12 @@ export {noopInitLogger} from './_adapter.mjs';
  * code.
  *
  * @param {InitOptions} [options]
- * @param {{cwd?: string, logger?: InitLogger}} [ctx]
- * @returns {Promise<import('../../types/init').InitRunResponse | import('../../types/init').InitRemoveResponse>}
+ * @param {{cwd?: string}} [ctx]
+ * @returns {Promise<import('./init.type.mjs').InitRunResponse | import('./init.type.mjs').InitRemoveResponse>}
  */
-export async function init(options = {}, {cwd = process.cwd(), logger = noopInitLogger} = {}) {
+export async function init(options = {}, {cwd = process.cwd()} = {}) {
   if (options.removeAgents) {
-    return remove({cwd, logger});
+    return remove({cwd});
   }
-  return run(options, {cwd, logger});
+  return run(options, {cwd});
 }

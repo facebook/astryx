@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'TextArea',
@@ -98,7 +98,7 @@ export const docs = {
       name: 'maxLength',
       type: 'number',
       description:
-        'Maximum number of characters allowed. When set, a character counter (current/max) is displayed below the textarea. Does not enforce the limit natively; the counter shows error styling when exceeded.',
+        'Maximum number of characters allowed. When set, a character counter (current/max) is displayed inside the input container, anchored to the bottom-right beneath the text. Does not enforce the limit natively; when exceeded the counter turns red and shows a warning icon (a non-color cue), and screen-reader users hear the remaining/over-limit count announced.',
     },
     {
       name: 'status',
@@ -179,7 +179,19 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-textarea', visualProps: ['size', 'status']},
+      {className: 'astryx-textarea', visualProps: ['size', 'status'], states: ['disabled']},
+    ],
+    vars: [
+      {
+        name: '--_textarea-inline-padding',
+        description:
+          "Inline padding of the textarea's text. The wrapper stays flush (padding: 0) so the native resize grip sits in the true corner; this var carries the inset on the inner <textarea>, and the start icon, status/spinner, and character counter align to it.",
+        default: 'var(--spacing-2)',
+        private: true,
+      },
+    ],
+    derived: [
+      {property: 'paddingInline', vars: ['--_textarea-inline-padding'], replaces: true},
     ],
   },
   usage: {
@@ -198,7 +210,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docsZh = {
   name: 'TextArea',
   displayName: 'Text Area',
@@ -355,7 +367,19 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-textarea', visualProps: ['size', 'status']},
+      {className: 'astryx-textarea', visualProps: ['size', 'status'], states: ['disabled']},
+    ],
+    vars: [
+      {
+        name: '--_textarea-inline-padding',
+        description:
+          '文本域文本的行内内边距。外层容器保持无内边距（padding: 0），使原生缩放手柄位于真正的角落；该变量在内部 <textarea> 上承载内边距，起始图标、状态/加载指示器和字符计数器都与之对齐。',
+        default: 'var(--spacing-2)',
+        private: true,
+      },
+    ],
+    derived: [
+      {property: 'paddingInline', vars: ['--_textarea-inline-padding'], replaces: true},
     ],
   },
   usage: {
@@ -374,7 +398,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'Multi-line text input for collecting longer user input.',
   usage: {
@@ -407,7 +431,7 @@ export const docsDense = {
     isLoading: 'Loading state w/ spinner inside input.',
     placeholder: 'Placeholder when textarea empty.',
     rows: 'Visible text rows.',
-    maxLength: 'Max chars allowed. Shows counter (current/max) below textarea. No native enforcement.',
+    maxLength: 'Max chars allowed. Shows counter (current/max) inside the container, bottom-right beneath the text. No native enforcement; over-limit shows red + a warning icon and is announced to screen readers.',
     status: 'Colored border+icon status. Optional floating message below textarea.',
     statusVariant: 'How status message is placed: attached overlaps below input; detached floats below w/ spacing; tooltip hides the box and shows it on the status icon.',
     labelTooltip: 'Tooltip in info icon at label end.',

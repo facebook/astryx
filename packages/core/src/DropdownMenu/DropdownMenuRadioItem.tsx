@@ -145,7 +145,7 @@ export interface DropdownMenuRadioItemProps extends Omit<
  *
  * @example
  * ```
- * <DropdownMenuRadioGroup value={sort} onChange={setSort} aria-label="Sort by">
+ * <DropdownMenuRadioGroup value={sort} onChange={setSort} label="Sort by">
  *   <DropdownMenuRadioItem value="newest" label="Newest" />
  *   <DropdownMenuRadioItem value="oldest" label="Oldest" icon="clock" />
  * </DropdownMenuRadioGroup>
@@ -212,7 +212,16 @@ export function DropdownMenuRadioItem({
             ),
           )}>
           {isChecked && (
-            <span {...stylex.props(styles.dot, dotSizeStyles[controlSize])} />
+            <span
+              {...mergeProps(
+                themeProps('dropdown-menu-radio-dot', {
+                  size: controlSize,
+                  checked: 'checked',
+                  disabled: isDisabled ? 'disabled' : null,
+                }),
+                stylex.props(styles.dot, dotSizeStyles[controlSize]),
+              )}
+            />
           )}
         </span>
       }

@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Stepper} from './Stepper';
 import {Step} from './Step';
@@ -95,7 +95,7 @@ describe('Stepper', () => {
       </Stepper>,
     );
     await user.click(
-      screen.getByRole('button', {name: 'Go to step 1: Step 1'}),
+      screen.getByRole('button', {name: 'Go to step 1: Step 1, completed'}),
     );
     expect(handleClick).toHaveBeenCalledWith(0);
   });
@@ -156,7 +156,7 @@ describe('Stepper', () => {
       </Stepper>,
     );
     expect(
-      screen.queryByRole('button', {name: 'Go to step 1: Step 1'}),
+      screen.queryByRole('button', {name: /Go to step 1: Step 1/}),
     ).not.toBeInTheDocument();
   });
 
@@ -411,5 +411,86 @@ describe('Stepper', () => {
     // glyph it shows an icon instead.
     expect(future.textContent).not.toContain('2');
     expect(future.querySelector('svg')).toBeTruthy();
+  });
+
+  it('exposes progress/status as visually hidden text (indicators are aria-hidden)', () => {
+    render(
+      <Stepper activeStep={2}>
+        <Step step={0} label="Account" data-testid="done" />
+        <Step step={1} label="Payment" status="error" data-testid="failed" />
+        <Step step={2} label="Review" data-testid="current" />
+        <Step step={3} label="Confirm" data-testid="upcoming" />
+      </Stepper>,
+    );
+    // Completed step announces "completed"; error status wins over completion.
+    expect(
+      within(screen.getByTestId('done')).getByText('completed'),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('failed')).getByText('error'),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('failed')).queryByText('completed'),
+    ).not.toBeInTheDocument();
+    // Current step is announced via aria-current, not hidden text; upcoming
+    // steps stay silent.
+    expect(
+      within(screen.getByTestId('current')).queryByText('completed'),
+    ).not.toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('upcoming')).queryByText(
+        /completed|error|warning/,
+      ),
+    ).not.toBeInTheDocument();
+  });
+
+  it('exposes warning and success statuses as visually hidden text', () => {
+    render(
+      <Stepper activeStep={2}>
+        <Step step={0} label="Build" status="warning" data-testid="warned" />
+        <Step step={1} label="Deploy" status="success" data-testid="passed" />
+      </Stepper>,
+    );
+    expect(
+      within(screen.getByTestId('warned')).getByText('warning'),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('passed')).getByText('completed'),
+    ).toBeInTheDocument();
+  });
+
+  it('composes status into the accessible name of clickable steps', () => {
+    render(
+      <Stepper activeStep={2} onStepClick={() => {}}>
+        <Step step={0} label="Account" />
+        <Step step={1} label="Payment" status="error" />
+        <Step step={2} label="Review" />
+      </Stepper>,
+    );
+    expect(
+      screen.getByRole('button', {name: 'Go to step 1: Account, completed'}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: 'Go to step 2: Payment, error'}),
+    ).toBeInTheDocument();
+    // The current step gets no status suffix (aria-current covers it).
+    expect(
+      screen.getByRole('button', {name: 'Go to step 3: Review'}),
+    ).toBeInTheDocument();
+  });
+
+  it('exposes hidden status text in the on-track layout too', () => {
+    render(
+      <Stepper activeStep={1} indicatorPosition="on-track">
+        <Step step={0} label="Account" data-testid="ot-done" />
+        <Step step={1} label="Payment" data-testid="ot-current" />
+      </Stepper>,
+    );
+    expect(
+      within(screen.getByTestId('ot-done')).getByText('completed'),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('ot-current')).queryByText('completed'),
+    ).not.toBeInTheDocument();
   });
 });

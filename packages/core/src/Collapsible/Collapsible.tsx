@@ -24,7 +24,7 @@
  * - /packages/core/src/Collapsible/index.ts (exports)
  * - /packages/core/src/Collapsible/Collapsible.doc.mjs
  * - /apps/storybook/stories/Collapsible.stories.tsx
- * - /packages/cli/templates/blocks/components/Collapsible/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Collapsible/ (showcase blocks)
  */
 
 import {use, useId, type ReactNode} from 'react';
@@ -42,7 +42,7 @@ import {
 
 import {useCollapsible} from './useCollapsible';
 import {CollapsibleGroupPresentationContext} from './CollapsibleGroupContext';
-import {getIcon} from '../Icon/globalIconRegistry';
+import {useIcon} from '../Icon';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
@@ -293,7 +293,7 @@ export function Collapsible({
   const isDivided = presentation?.hasDividers ?? false;
   const density = presentation?.density ?? null;
 
-  const chevronIcon = getIcon('chevronDown');
+  const chevronIcon = useIcon('chevronDown');
 
   // Links the trigger to the region it shows/hides so assistive tech can move
   // from the button to its controlled content (disclosure pattern).

@@ -15,11 +15,17 @@
  *      (e.g. `textAlign: 'left'`, `float: 'right'`, `clear: 'left'`). The
  *      suggested fix replaces only the value; the key is left alone.
  *
- * SEVERITY: shipped at `warn` in BOTH the `strict` and `recommended` tiers
- *   (see index.js). The core package still has known un-migrated Phase-4
- *   physical properties (Calendar radii, Slider positioning, Table gradients)
- *   that would break CI if this were an `error`. Ship at warn until RTL Phase 4
- *   (Calendar/Slider/Table) migration lands; flip to error afterward.
+ *   EXCEPTION — inline centering: `left: '50%'` paired with a `translate`/
+ *   `translateX` in the same style object is a deliberate, direction-symmetric
+ *   centering idiom (physical anchor + physical translate reference the same
+ *   edge). Logicalizing it to `insetInlineStart` BREAKS RTL centering, so the
+ *   rule flags it with a distinct, non-autofixing message that points to the
+ *   shared `rtlStyles.centerInline()` helper (the one sanctioned place the
+ *   physical `left` lives, behind a single suppression).
+ *
+ * SEVERITY: shipped at `error` in both the `strict` and `recommended` tiers
+ *   (see index.js). The RTL physical→logical migration is complete, so this
+ *   rule gates against regressions rather than merely warning.
  *
  * AUTOFIX: this rule is fixable (`meta.fixable: 'code'`).
  *   - VALUE-BASED fixes are always safe: only the value literal is replaced.
@@ -121,6 +127,38 @@ function objectHasKey(objectExpression, keyName) {
   });
 }
 
+/**
+ * Detects the inline-CENTERING pattern that must NOT be logicalized:
+ * `left: '50%'` (or `'-50%'`) paired, in the same style object, with a
+ * `transform` containing a `translate`/`translateX` — the physical anchor and
+ * the physical translate reference the SAME physical edge, so the pair centers
+ * symmetrically in both LTR and RTL. Renaming `left` → `insetInlineStart` here
+ * flips the anchor under RTL while the translate stays physical, breaking the
+ * centering by the element's own width. Callers should use the shared
+ * `rtlStyles.centerInline(blockOffset)` helper instead (which owns the one
+ * sanctioned physical-`left` suppression). Returns true when this Property is
+ * the `left: '50%'` of such a centering pair.
+ */
+function isInlineCenteringLeft(node) {
+  const value = getStaticValue(node.value);
+  if (value !== '50%' && value !== '-50%') return false;
+  const obj = node.parent;
+  if (!obj || obj.type !== 'ObjectExpression') return false;
+  return obj.properties.some((prop) => {
+    if (prop.type !== 'Property') return false;
+    const name = prop.key?.name ?? prop.key?.value;
+    if (name !== 'transform') return false;
+    // transform value may be a string literal or a template literal
+    let text = '';
+    if (prop.value?.type === 'Literal' && typeof prop.value.value === 'string') {
+      text = prop.value.value;
+    } else if (prop.value?.type === 'TemplateLiteral') {
+      text = prop.value.quasis.map((q) => q.value.raw).join(' ');
+    }
+    return /\btranslate(X)?\s*\(/.test(text);
+  });
+}
+
 const rule = {
   meta: {
     type: 'problem',
@@ -142,6 +180,10 @@ const rule = {
       physicalKeyConflict:
         '`{{physical}}` conflicts with `{{logical}}` already set on this ' +
         'style object — remove `{{physical}}`.',
+      inlineCentering:
+        '`left: {{value}}` with a `translate` centers this element — do NOT ' +
+        'rename it to `insetInlineStart` (that breaks centering under RTL). ' +
+        'Use the shared `rtlStyles.centerInline(blockOffset)` helper instead.',
     },
     schema: [],
   },
@@ -156,6 +198,18 @@ const rule = {
         // KEY-BASED: the object key is itself a physical property.
         const logicalKey = PHYSICAL_KEY_MAP[propName];
         if (logicalKey) {
+          // Special case: `left: '50%'` + a centering `translate` must NOT be
+          // logicalized (it would break RTL centering). Point at the shared
+          // helper instead, and do NOT autofix.
+          if (propName === 'left' && isInlineCenteringLeft(node)) {
+            context.report({
+              node: node.key,
+              messageId: 'inlineCentering',
+              data: {value: getStaticValue(node.value)},
+            });
+            return;
+          }
+
           // Guard: if the logical key is ALSO present in the same object,
           // renaming would create a duplicate/silent collision. Ambiguous
           // which value the author meant — surface a distinct message, no fix.

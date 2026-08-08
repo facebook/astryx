@@ -13,7 +13,7 @@
  * - /packages/core/src/DateRangeInput/DateRangeInput.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/DateRangeInput/index.ts (exports if types change)
  * - /apps/storybook/stories/DateRangeInput.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/DateRangeInput/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/DateRangeInput/ (showcase blocks)
  */
 
 import {useId, useCallback, useMemo, useOptimistic, useTransition} from 'react';
@@ -45,7 +45,13 @@ import {
 } from '../Field';
 import {Icon} from '../Icon';
 import {Spinner} from '../Spinner';
-import {Calendar, type ISODateString, type DateRange} from '../Calendar';
+import {
+  Calendar,
+  type ISODateString,
+  type DateRange,
+  type DayOfWeek,
+  type DayOfWeekName,
+} from '../Calendar';
 import {usePopover} from '../Popover';
 import {useTooltip} from '../Tooltip';
 import {mergeProps} from '../utils';
@@ -355,6 +361,14 @@ export interface DateRangeInputProps extends Omit<
    * @default 2
    */
   numberOfMonths?: 1 | 2;
+
+  /**
+   * First day of week in the calendar. Accepts a number
+   * (0 = Sunday … 6 = Saturday) or a three-letter day name ('sun'–'sat',
+   * case-insensitive).
+   * @default 0
+   */
+  weekStartsOn?: DayOfWeek | DayOfWeekName;
 }
 
 /**
@@ -396,6 +410,7 @@ export function DateRangeInput({
   statusVariant = 'attached',
   labelTooltip,
   numberOfMonths = 2,
+  weekStartsOn,
   width,
   xstyle,
   className,
@@ -548,6 +563,7 @@ export function DateRangeInput({
           themeProps('date-range-input', {
             size,
             status: status?.type ?? null,
+            disabled: isDisabled ? 'disabled' : null,
           }),
           stylex.props(
             inputWrapperStyles.base,
@@ -667,6 +683,7 @@ export function DateRangeInput({
             max={max}
             dateConstraints={dateConstraints}
             numberOfMonths={numberOfMonths}
+            weekStartsOn={weekStartsOn}
           />
         </div>,
         {placement: 'below', alignment: 'start'},
