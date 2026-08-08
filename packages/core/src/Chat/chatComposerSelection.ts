@@ -58,6 +58,78 @@ export function ensureCaretInside(editable: HTMLElement): Selection | null {
 }
 
 /**
+ * Whether a range spans no visible content — no text and no element
+ * (tokens, `<br>`). An empty or whitespace-free range between a
+ * boundary and the caret means the caret is at that boundary.
+ */
+function isRangeEmpty(range: Range): boolean {
+  const contents = range.cloneContents();
+  return contents.textContent === '' && contents.querySelector('*') === null;
+}
+
+/**
+ * Whether the current selection's start boundary sits at the very
+ * beginning of `editable`'s content.
+ *
+ * Used by the composer to decide when ArrowUp should recall message
+ * history versus move the caret up a line: history is only recalled
+ * when the caret is at the very start of the draft. Detection is
+ * content-based rather than boundary-point comparison, so a caret at
+ * offset 0 of the leading text node counts as the start (browsers
+ * normalize the caret into the text node, not onto the editable).
+ *
+ * Returns `false` when there is no selection, the range is not inside
+ * `editable`, or the boundary APIs are unavailable — callers treat
+ * that as "not at the boundary" and let the browser move the caret.
+ */
+export function isSelectionAtStart(editable: HTMLElement): boolean {
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) {
+    return false;
+  }
+  const range = selection.getRangeAt(0);
+  if (!editable.contains(range.startContainer)) {
+    return false;
+  }
+  const before = document.createRange();
+  before.selectNodeContents(editable);
+  try {
+    before.setEnd(range.startContainer, range.startOffset);
+  } catch {
+    return false;
+  }
+  return isRangeEmpty(before);
+}
+
+/**
+ * Whether the current selection's end boundary sits at the very end of
+ * `editable`'s content.
+ *
+ * The ArrowDown counterpart to {@link isSelectionAtStart}: history is
+ * only stepped forward when the caret is at the very end of the draft.
+ *
+ * Returns `false` under the same conditions as {@link isSelectionAtStart}.
+ */
+export function isSelectionAtEnd(editable: HTMLElement): boolean {
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) {
+    return false;
+  }
+  const range = selection.getRangeAt(0);
+  if (!editable.contains(range.endContainer)) {
+    return false;
+  }
+  const after = document.createRange();
+  after.selectNodeContents(editable);
+  try {
+    after.setStart(range.endContainer, range.endOffset);
+  } catch {
+    return false;
+  }
+  return isRangeEmpty(after);
+}
+
+/**
  * Insert plain text at the current selection, scoped to `editable`.
  *
  * Ensures a caret exists inside `editable` first (see `ensureCaretInside`)
