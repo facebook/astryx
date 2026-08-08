@@ -10,11 +10,11 @@
  */
 
 import React from 'react';
-import {describe, it, expect, vi} from 'vitest';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, act, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {useRef, useState, type ReactNode} from 'react';
-import {SideNav} from './SideNav';
+import {SideNav, type SideNavProps} from './SideNav';
 import {SideNavCollapseButton} from './SideNavCollapseButton';
 import {SideNavHeading} from './SideNavHeading';
 import {SideNavItem} from './SideNavItem';
@@ -978,6 +978,206 @@ describe('SideNav resizable', () => {
   it('drag handle has separator role', () => {
     render(<SideNav resizable>Content</SideNav>);
     expect(screen.getByRole('separator')).toBeInTheDocument();
+  });
+});
+
+// =============================================================================
+// Resizable + collapsible persistence (#4790)
+// =============================================================================
+
+const NAV_SAVE_ID = 'app.sidenav.width';
+const NAV_STORAGE_KEY = `astryx-resizable:${NAV_SAVE_ID}`;
+
+function PersistedSideNav({
+  collapsible = true,
+}: {
+  collapsible?: SideNavProps['collapsible'];
+}) {
+  return (
+    <SideNav
+      collapsible={collapsible}
+      resizable={{
+        defaultWidth: 300,
+        minWidth: 150,
+        maxWidth: 600,
+        autoSaveId: NAV_SAVE_ID,
+      }}>
+      Content
+    </SideNav>
+  );
+}
+
+describe('SideNav resizable persistence (#4790)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it('restores the collapsed rail after collapsing and remounting', async () => {
+    const user = userEvent.setup();
+    const {unmount} = render(<PersistedSideNav />);
+    await user.click(screen.getByRole('button', {name: 'Collapse sidebar'}));
+    unmount();
+
+    render(<PersistedSideNav />);
+    const nav = screen.getByRole('navigation');
+    expect(
+      screen.getByRole('button', {name: 'Expand sidebar'}),
+    ).toBeInTheDocument();
+    // Collapsed width comes from the rail style, never an inline width.
+    expect(nav.style.width).toBe('');
+  });
+
+  it('restores the pre-collapse width when expanding after a remount', async () => {
+    localStorage.setItem(NAV_STORAGE_KEY, '340');
+    const user = userEvent.setup();
+    const {unmount} = render(<PersistedSideNav />);
+    expect(screen.getByRole('navigation').style.width).toBe('340px');
+    await user.click(screen.getByRole('button', {name: 'Collapse sidebar'}));
+    unmount();
+
+    render(<PersistedSideNav />);
+    await user.click(screen.getByRole('button', {name: 'Expand sidebar'}));
+    expect(screen.getByRole('navigation').style.width).toBe('340px');
+  });
+
+  it('recovers a stored width of 0 written before the fix', async () => {
+    localStorage.setItem(NAV_STORAGE_KEY, '0');
+    const user = userEvent.setup();
+    render(<PersistedSideNav />);
+
+    expect(screen.getByRole('navigation').style.width).toBe('');
+    // Restored as collapsed — the expand affordance is reachable again.
+    await user.click(screen.getByRole('button', {name: 'Expand sidebar'}));
+    // Re-query: expanding remounts the nav inside the resizable container.
+    expect(screen.getByRole('navigation').style.width).toBe('300px');
+  });
+
+  it('keeps a controlled expanded SideNav visible when storage says collapsed', () => {
+    localStorage.setItem(
+      NAV_STORAGE_KEY,
+      JSON.stringify({size: 340, isCollapsed: true}),
+    );
+    render(
+      <PersistedSideNav
+        collapsible={{isCollapsed: false, onCollapsedChange: () => {}}}
+      />,
+    );
+    expect(screen.getByRole('navigation').style.width).toBe('340px');
+  });
+
+  it('records the collapsed state in storage for a controlled collapsed SideNav', () => {
+    render(
+      <PersistedSideNav
+        collapsible={{isCollapsed: true, onCollapsedChange: () => {}}}
+      />,
+    );
+    expect(JSON.parse(localStorage.getItem(NAV_STORAGE_KEY) ?? 'null')).toEqual(
+      {size: 300, isCollapsed: true},
+    );
+  });
+
+  it('does not fire onCollapsedChange while restoring a persisted collapse', () => {
+    localStorage.setItem(
+      NAV_STORAGE_KEY,
+      JSON.stringify({size: 340, isCollapsed: true}),
+    );
+    const onCollapsedChange = vi.fn();
+    render(<PersistedSideNav collapsible={{onCollapsedChange}} />);
+    expect(
+      screen.getByRole('button', {name: 'Expand sidebar'}),
+    ).toBeInTheDocument();
+    expect(onCollapsedChange).not.toHaveBeenCalled();
+  });
+
+  it('still restores a plain persisted width', () => {
+    localStorage.setItem(NAV_STORAGE_KEY, '320');
+    render(<PersistedSideNav />);
+    expect(screen.getByRole('navigation').style.width).toBe('320px');
+    expect(
+      screen.getByRole('button', {name: 'Collapse sidebar'}),
+    ).toBeInTheDocument();
+  });
+
+  it('falls back to the default width on corrupt storage', () => {
+    localStorage.setItem(NAV_STORAGE_KEY, 'garbage');
+    render(<PersistedSideNav />);
+    expect(screen.getByRole('navigation').style.width).toBe('300px');
+  });
+
+  it('keeps defaultIsCollapsed when only a legacy width entry exists', async () => {
+    localStorage.setItem(NAV_STORAGE_KEY, '320');
+    const user = userEvent.setup();
+    render(<PersistedSideNav collapsible={{defaultIsCollapsed: true}} />);
+
+    // A width-only entry says nothing about collapse; the default stands,
+    // but the saved width is still honored on expand.
+    await user.click(screen.getByRole('button', {name: 'Expand sidebar'}));
+    expect(screen.getByRole('navigation').style.width).toBe('320px');
+  });
+
+  it('lets a persisted expanded entry win over defaultIsCollapsed', () => {
+    localStorage.setItem(
+      NAV_STORAGE_KEY,
+      JSON.stringify({size: 320, isCollapsed: false}),
+    );
+    render(<PersistedSideNav collapsible={{defaultIsCollapsed: true}} />);
+    expect(screen.getByRole('navigation').style.width).toBe('320px');
+    expect(
+      screen.getByRole('button', {name: 'Collapse sidebar'}),
+    ).toBeInTheDocument();
+  });
+
+  it('starts collapsed from defaultIsCollapsed without firing callbacks and records it in storage', () => {
+    const onCollapsedChange = vi.fn();
+    const onWidthChange = vi.fn();
+    render(
+      <SideNav
+        collapsible={{defaultIsCollapsed: true, onCollapsedChange}}
+        resizable={{
+          defaultWidth: 300,
+          minWidth: 150,
+          maxWidth: 600,
+          autoSaveId: NAV_SAVE_ID,
+          onWidthChange,
+        }}>
+        Content
+      </SideNav>,
+    );
+
+    expect(
+      screen.getByRole('button', {name: 'Expand sidebar'}),
+    ).toBeInTheDocument();
+    expect(onCollapsedChange).not.toHaveBeenCalled();
+    expect(onWidthChange).not.toHaveBeenCalled();
+    expect(JSON.parse(localStorage.getItem(NAV_STORAGE_KEY) ?? 'null')).toEqual(
+      {size: 300, isCollapsed: true},
+    );
+  });
+
+  it('does not loop or fire callbacks for a toggle-style controlled parent with a persisted collapse', () => {
+    localStorage.setItem(
+      NAV_STORAGE_KEY,
+      JSON.stringify({size: 340, isCollapsed: true}),
+    );
+    const handler = vi.fn();
+    function InvertingParent() {
+      const [isCollapsed, setIsCollapsed] = useState(false);
+      return (
+        <PersistedSideNav
+          collapsible={{
+            isCollapsed,
+            onCollapsedChange: value => {
+              handler(value);
+              setIsCollapsed(previous => !previous);
+            },
+          }}
+        />
+      );
+    }
+
+    render(<InvertingParent />);
+    expect(screen.getByRole('navigation').style.width).toBe('340px');
+    expect(handler).not.toHaveBeenCalled();
   });
 });
 
