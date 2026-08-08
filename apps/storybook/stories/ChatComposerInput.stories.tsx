@@ -114,7 +114,7 @@ export const Controlled: Story = {
             />
           }
         />
-        <div style={{fontSize: 12, fontFamily: 'monospace', color: '#888'}}>
+        <div style={{fontSize: 12, fontFamily: 'monospace', color: '#4E606F'}}>
           Value: {JSON.stringify(value)}
         </div>
       </div>
@@ -140,9 +140,7 @@ export const Disabled: Story = {
     <ChatComposer
       onSubmit={() => {}}
       isDisabled
-      input={
-        <ChatComposerInput isDisabled placeholder="Input is disabled" />
-      }
+      input={<ChatComposerInput isDisabled placeholder="Input is disabled" />}
     />
   ),
 };
@@ -175,7 +173,8 @@ export const MessageHistory: Story = {
           }
         />
         {log.length > 0 && (
-          <div style={{fontSize: 12, fontFamily: 'monospace', color: '#666'}}>
+          <div
+            style={{fontSize: 12, fontFamily: 'monospace', color: '#4E606F'}}>
             {log.map((msg, i) => (
               <div key={i}>→ {msg}</div>
             ))}
@@ -202,7 +201,7 @@ export const FilePaste: Story = {
           }
         />
         {files.length > 0 && (
-          <div style={{fontSize: 12, color: '#666'}}>
+          <div style={{fontSize: 12, color: '#4E606F'}}>
             Files: {files.join(', ')}
           </div>
         )}
@@ -252,11 +251,12 @@ export const MentionTrigger: Story = {
             />
           }
         />
-        <div style={{fontSize: 12, fontFamily: 'monospace', color: '#888'}}>
+        <div style={{fontSize: 12, fontFamily: 'monospace', color: '#4E606F'}}>
           Value: {JSON.stringify(value)}
         </div>
         {log.length > 0 && (
-          <div style={{fontSize: 12, fontFamily: 'monospace', color: '#666'}}>
+          <div
+            style={{fontSize: 12, fontFamily: 'monospace', color: '#4E606F'}}>
             {log.map((msg, i) => (
               <div key={i}>→ {msg}</div>
             ))}
@@ -370,7 +370,7 @@ export const MultipleTriggers: Story = {
             />
           }
         />
-        <div style={{fontSize: 12, fontFamily: 'monospace', color: '#888'}}>
+        <div style={{fontSize: 12, fontFamily: 'monospace', color: '#4E606F'}}>
           Value: {JSON.stringify(value)}
         </div>
       </div>

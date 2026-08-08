@@ -325,7 +325,7 @@ export const Creatable: Story = {
           hasCreate
           placeholder="Type a tag and press Enter..."
         />
-        <p style={{marginTop: 8, fontSize: 14, color: '#666'}}>
+        <p style={{marginTop: 8, fontSize: 14, color: '#4E606F'}}>
           {tags.length} tag{tags.length !== 1 ? 's' : ''} added
         </p>
       </div>

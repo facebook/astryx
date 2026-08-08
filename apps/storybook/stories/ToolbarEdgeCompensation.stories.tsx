@@ -46,7 +46,9 @@ function AlignmentGuide({
 }) {
   return (
     <div>
-      <div style={{marginBottom: 8, fontSize: 12, color: '#666'}}>{label}</div>
+      <div style={{marginBottom: 8, fontSize: 12, color: '#4E606F'}}>
+        {label}
+      </div>
       {children}
     </div>
   );
@@ -1053,9 +1055,7 @@ export const CardLayoutContentWidthToolbar: Story = {
               <LayoutHeader hasDivider padding={0}>
                 <Toolbar
                   label="Card layout header"
-                  startContent={
-                    <Heading level={4}>Notifications</Heading>
-                  }
+                  startContent={<Heading level={4}>Notifications</Heading>}
                 />
               </LayoutHeader>
             }

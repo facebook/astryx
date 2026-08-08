@@ -132,7 +132,7 @@ export const ServerSide: Story = {
 
     return (
       <div style={{maxWidth: 600}}>
-        <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
+        <p style={{marginBottom: 8, fontSize: 14, color: '#4E606F'}}>
           Server-side: data is pre-sliced, no paginatedData() needed.
         </p>
         <Table
@@ -189,7 +189,7 @@ export const CursorBased: Story = {
 
     return (
       <div style={{maxWidth: 600}}>
-        <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
+        <p style={{marginBottom: 8, fontSize: 14, color: '#4E606F'}}>
           Cursor-based: total unknown, only hasMore={String(hasMore)}.
         </p>
         <Table
@@ -280,7 +280,7 @@ export const WithSelection: Story = {
 
     return (
       <div style={{maxWidth: 600}}>
-        <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
+        <p style={{marginBottom: 8, fontSize: 14, color: '#4E606F'}}>
           Pagination + Selection composed. Selected: {selectedKeys.size}
         </p>
         <Table
