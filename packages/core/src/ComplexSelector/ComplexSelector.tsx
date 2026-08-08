@@ -30,7 +30,7 @@ import {Icon} from '../Icon';
 import {Spinner} from '../Spinner';
 import {useTranslator} from '../i18n';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
-import {usePopover} from '../Popover/usePopover';
+import {popoverSurfaceStyles, usePopover} from '../Popover/usePopover';
 import {
   colorVars,
   durationVars,
@@ -208,7 +208,14 @@ export interface ComplexSelectorProps<Value> extends Omit<
   width?: SizeValue;
   /** Popup placement. */
   placement?: 'above' | 'below' | 'start' | 'end';
-  /** StyleX styles for the popup content container. */
+  /**
+   * StyleX styles for the popup content container.
+   *
+   * The container is the popup surface itself (it carries the
+   * `astryx-complex-selector-popup` theme target and paints the surface),
+   * so these styles can override background, border, radius, and shadow
+   * as well as the content padding.
+   */
   contentXstyle?: StyleXStyles;
   /** Test ID for the trigger container. */
   'data-testid'?: string;
@@ -292,6 +299,10 @@ export function ComplexSelector<Value>({
     dialogLabel: label,
     hasCloseButton: false,
     hasAutoFocus: true,
+    // The content container paints the surface itself so that the
+    // `astryx-complex-selector-popup` theme target reaches the element
+    // owning background, border, radius, and width (#4804).
+    hasSurface: false,
     onHide: () => {
       document.getElementById(triggerId)?.focus();
     },
@@ -313,7 +324,16 @@ export function ComplexSelector<Value>({
   const triggerContent = triggerLabel ?? placeholder;
 
   const content = (
-    <div id={contentId} {...stylex.props(styles.content, contentXstyle)}>
+    <div
+      id={contentId}
+      {...mergeProps(
+        themeProps('complex-selector-popup'),
+        stylex.props(
+          popoverSurfaceStyles.surface,
+          styles.content,
+          contentXstyle,
+        ),
+      )}>
       {children(optimisticValue, commitValue, popover.hide, {
         isOpen: popover.isOpen,
         isBusy,

@@ -20,6 +20,7 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-complex-selector', visualProps: ['size', 'status']},
+      {className: 'astryx-complex-selector-popup'},
       {
         className: 'astryx-complex-selector-indicator-icon',
         states: ['state'],
@@ -109,7 +110,8 @@ export const docs = {
         {
           name: 'contentXstyle',
           type: 'StyleXStyles',
-          description: 'StyleX styles for the popup content container.',
+          description:
+            'StyleX styles for the popup content container. The container is the popup surface (it carries the astryx-complex-selector-popup theme target), so these can override background, border, radius, and shadow as well as padding.',
         },
       ],
     },

@@ -31,15 +31,22 @@ import {rtlStyles} from '../utils';
 import {useTranslator} from '../i18n';
 import {useDevWarning} from '../hooks/useDevWarning';
 
-const styles = stylex.create({
-  // Default popover surface — background, radius, shadow.
-  // Applied automatically unless hasSurface is false.
-  // Consumers that need a raw positioned layer should use useLayer instead.
+// Default popover surface — background, radius, shadow.
+// Applied automatically unless hasSurface is false.
+// Consumers that need a raw positioned layer should use useLayer instead.
+// Exported so popover-based components that opt out via `hasSurface: false`
+// can paint the identical surface on their own stable-classed element
+// (e.g. ComplexSelector's `astryx-complex-selector-popup` theme target)
+// without duplicating these declarations.
+export const popoverSurfaceStyles = stylex.create({
   surface: {
     backgroundColor: colorVars['--color-background-popover'],
     borderRadius: radiusVars['--radius-container'],
     boxShadow: shadowVars['--shadow-low'],
   },
+});
+
+const styles = stylex.create({
   // Focus trap container
   contentWrapper: {
     position: 'relative',
@@ -414,7 +421,7 @@ export function usePopover(options: UsePopoverOptions = {}): UsePopoverReturn {
           aria-label={role === 'dialog' ? dialogLabel : undefined}
           {...stylex.props(
             styles.contentWrapper,
-            hasSurface && styles.surface,
+            hasSurface && popoverSurfaceStyles.surface,
             xstyle,
           )}>
           {children}
