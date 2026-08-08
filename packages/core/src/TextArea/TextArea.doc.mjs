@@ -193,6 +193,9 @@ export const docs = {
     derived: [
       {property: 'paddingInline', vars: ['--_textarea-inline-padding'], replaces: true},
     ],
+    vars: [
+      {name: '--_textarea-inline-padding', description: 'Base inline padding of the textarea. Read inside calc() to leave room for the character counter and status icon, so it is not the element padding directly.', default: 'var(--spacing-2)', private: true},
+    ],
   },
   usage: {
     description:
