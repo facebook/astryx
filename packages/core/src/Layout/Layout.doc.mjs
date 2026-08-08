@@ -93,6 +93,21 @@ export const docs = {
       description: 'Height behavior: fill the container or grow with content.',
       default: "'fill'",
     },
+    {
+      name: 'contentWidth',
+      type: 'SizeValue',
+      description: 'Maximum width of the content within each slot (header, content, footer, panels).',
+    },
+    {
+      name: 'padding',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+      description: 'Padding at the layout outer edges using the spacing scale step.',
+    },
+    {
+      name: 'defaultHasDividers',
+      type: 'boolean',
+      description: 'Default divider visibility for LayoutHeader and LayoutFooter children.',
+    },
   ],
   components: [
     {name: 'LayoutHeader'},
