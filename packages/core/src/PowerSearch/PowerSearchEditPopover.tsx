@@ -20,6 +20,7 @@ import {HStack, VStack} from '../Stack';
 import {Icon} from '../Icon';
 import {TreeList, type TreeListItemData} from '../TreeList';
 import {useTranslator} from '../i18n';
+import {isImeKeyEvent} from '../hooks/useFocusTrap';
 import {spacingVars, typeScaleVars} from '../theme/tokens.stylex';
 import {PowerSearchValueEditor} from './PowerSearchValueEditor';
 import {resolveOperatorLabel} from './resolveOperatorLabel';
@@ -702,6 +703,11 @@ export function PowerSearchEditPopover({
   // Handle Enter to save, Escape to cancel
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
+      // While a filter value is being composed, Enter and Escape belong to the
+      // IME — they must not save or discard the whole filter.
+      if (isImeKeyEvent(e.nativeEvent)) {
+        return;
+      }
       if (e.key === 'Enter' && !isSaveDisabled && !e.defaultPrevented) {
         e.preventDefault();
         handleSave();

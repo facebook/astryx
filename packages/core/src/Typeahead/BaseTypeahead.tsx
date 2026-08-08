@@ -30,6 +30,7 @@ import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {usePopover} from '../Popover/usePopover';
 import {useAnnounce} from '../hooks/useAnnounce';
+import {isImeKeyEvent} from '../hooks/useFocusTrap';
 import {TypeaheadItem} from './TypeaheadItem';
 import {Icon} from '../Icon';
 import {
@@ -630,6 +631,13 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
     (e: React.KeyboardEvent<HTMLInputElement>) => {
       externalOnKeyDown?.(e);
       if (e.defaultPrevented) {
+        return;
+      }
+
+      // Never navigate or select mid-composition — an IME owns Enter, Escape
+      // and the arrows. Selecting on a composing Enter also clears the query
+      // while the composition is live, stranding the pending syllable.
+      if (isImeKeyEvent(e.nativeEvent)) {
         return;
       }
 
