@@ -728,6 +728,79 @@ describe('TextArea', () => {
     });
   });
 
+  describe('isReadOnly', () => {
+    it('marks the textarea read-only', () => {
+      render(
+        <TextArea label="Notes" value="hello" onChange={() => {}} isReadOnly />,
+      );
+      expect(screen.getByRole('textbox')).toHaveAttribute('readonly');
+    });
+
+    // The point of isReadOnly: unlike isDisabled, the value still reaches the
+    // server. This is the "visible, locked, still submitted" case.
+    it('still submits its value with the form', () => {
+      const {container} = render(
+        <form>
+          <TextArea
+            label="Notes"
+            htmlName="notes"
+            value="hello"
+            onChange={() => {}}
+            isReadOnly
+          />
+        </form>,
+      );
+      expect(new FormData(container.querySelector('form')!).get('notes')).toBe(
+        'hello',
+      );
+    });
+
+    it('does not call onChange when the user types', async () => {
+      const user = userEvent.setup();
+      const handleChange = vi.fn();
+      render(
+        <TextArea
+          label="Notes"
+          value="hello"
+          onChange={handleChange}
+          isReadOnly
+        />,
+      );
+      await user.type(screen.getByRole('textbox'), 'xyz');
+      expect(handleChange).not.toHaveBeenCalled();
+    });
+
+    it('stays focusable and is not disabled', async () => {
+      const user = userEvent.setup();
+      render(
+        <TextArea label="Notes" value="hello" onChange={() => {}} isReadOnly />,
+      );
+      const textarea = screen.getByRole('textbox');
+      expect(textarea).not.toBeDisabled();
+      await user.tab();
+      expect(textarea).toHaveFocus();
+    });
+
+    it('lets isDisabled win when both are set', () => {
+      const {container} = render(
+        <form>
+          <TextArea
+            label="Notes"
+            htmlName="notes"
+            value="hello"
+            onChange={() => {}}
+            isReadOnly
+            isDisabled
+          />
+        </form>,
+      );
+      expect(screen.getByRole('textbox')).toBeDisabled();
+      expect([
+        ...new FormData(container.querySelector('form')!).keys(),
+      ]).toEqual([]);
+    });
+  });
+
   describe('click-to-focus', () => {
     it('focuses textarea when clicking the start icon', () => {
       render(

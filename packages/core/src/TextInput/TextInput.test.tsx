@@ -426,6 +426,102 @@ describe('TextInput', () => {
     });
   });
 
+  describe('isReadOnly', () => {
+    it('marks the input read-only', () => {
+      render(
+        <TextInput
+          label="Owner"
+          value="alice"
+          onChange={() => {}}
+          isReadOnly
+        />,
+      );
+      expect(screen.getByRole('textbox')).toHaveAttribute('readonly');
+    });
+
+    // The point of isReadOnly: unlike isDisabled, the value still reaches the
+    // server. This is the "visible, locked, still submitted" case.
+    it('still submits its value with the form', () => {
+      const {container} = render(
+        <form>
+          <TextInput
+            label="Owner"
+            htmlName="owner"
+            value="alice"
+            onChange={() => {}}
+            isReadOnly
+          />
+        </form>,
+      );
+      expect(new FormData(container.querySelector('form')!).get('owner')).toBe(
+        'alice',
+      );
+    });
+
+    it('does not call onChange when the user types', async () => {
+      const user = userEvent.setup();
+      const handleChange = vi.fn();
+      render(
+        <TextInput
+          label="Owner"
+          value="alice"
+          onChange={handleChange}
+          isReadOnly
+        />,
+      );
+      await user.type(screen.getByRole('textbox'), 'xyz');
+      expect(handleChange).not.toHaveBeenCalled();
+    });
+
+    it('stays focusable and is not disabled', async () => {
+      const user = userEvent.setup();
+      render(
+        <TextInput
+          label="Owner"
+          value="alice"
+          onChange={() => {}}
+          isReadOnly
+        />,
+      );
+      const input = screen.getByRole('textbox');
+      expect(input).not.toBeDisabled();
+      await user.tab();
+      expect(input).toHaveFocus();
+    });
+
+    it('hides the clear button', () => {
+      render(
+        <TextInput
+          label="Owner"
+          value="alice"
+          onChange={() => {}}
+          hasClear
+          isReadOnly
+        />,
+      );
+      expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    });
+
+    it('lets isDisabled win when both are set', () => {
+      const {container} = render(
+        <form>
+          <TextInput
+            label="Owner"
+            htmlName="owner"
+            value="alice"
+            onChange={() => {}}
+            isReadOnly
+            isDisabled
+          />
+        </form>,
+      );
+      expect(screen.getByRole('textbox')).toBeDisabled();
+      expect([
+        ...new FormData(container.querySelector('form')!).keys(),
+      ]).toEqual([]);
+    });
+  });
+
   describe('onEnter', () => {
     it('calls onEnter when Enter key is pressed', async () => {
       const user = userEvent.setup();

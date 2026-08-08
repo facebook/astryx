@@ -71,6 +71,13 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'isReadOnly',
+      type: 'boolean',
+      description:
+        'Makes the textarea read-only: the value is shown at full opacity and still submits with the form, but cannot be edited. Unlike isDisabled, a read-only textarea is not dimmed and stays in the tab order. isDisabled takes precedence when both are set.',
+      default: 'false',
+    },
+    {
       name: 'disabledMessage',
       type: 'string',
       description:
@@ -272,6 +279,13 @@ export const docsZh = {
       default: 'false',
     },
     {
+      name: 'isReadOnly',
+      type: 'boolean',
+      description:
+        '将文本域设为只读：值以完整不透明度显示并仍随表单提交，但无法编辑。与 isDisabled 不同，只读文本域不会变暗，并保留在 Tab 顺序中。同时设置时 isDisabled 优先。',
+      default: 'false',
+    },
+    {
       name: 'disabledMessage',
       type: 'string',
       description:
@@ -426,6 +440,8 @@ export const docsDense = {
     isOptional: 'Shows "Optional" indicator. Mutually exclusive w/ isRequired.',
     isRequired: 'Shows "Required" indicator+sets aria-required. Mutually exclusive w/ isOptional.',
     isDisabled: 'Disables textarea, prevents interaction.',
+    isReadOnly:
+      'Read-only: value visible + still submits, but not editable. Unlike isDisabled: not dimmed, stays in tab order.',
     disabledMessage:
       'Explains why textarea is disabled. With isDisabled, shows tooltip on hover/focus + keeps textarea focusable via aria-disabled (field becomes read-only). Use instead of wrapping a disabled TextArea in Tooltip.',
     isLoading: 'Loading state w/ spinner inside input.',
