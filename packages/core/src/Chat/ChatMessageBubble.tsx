@@ -122,6 +122,7 @@ const styles = stylex.create({
     paddingBlock: 0,
   },
   // Slot padding — matches bubble's paddingInline per density
+  // SYNC: ChatMessageContent.tsx inset* styles use the same mapping.
   metadataPaddingCompact: {
     paddingInline: spacingVars['--spacing-4'],
   },

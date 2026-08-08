@@ -41,6 +41,11 @@ import {useTranslator} from '../i18n';
 export interface ChatMessageProps extends BaseProps<HTMLElement> {
   ref?: React.Ref<HTMLElement>;
   sender: ChatMessageSender;
+  /**
+   * Message body — bubbles, tool calls, images, or any free-form content.
+   * Custom (non-bubble) children render flush with the message edge; wrap
+   * them in ChatMessageContent to align them with the bubble's text column.
+   */
   children: ReactNode;
   avatar?: ReactNode;
   /**

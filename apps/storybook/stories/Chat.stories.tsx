@@ -5,10 +5,13 @@ import {
   ChatMessageList,
   ChatMessage,
   ChatMessageBubble,
+  ChatMessageContent,
   ChatMessageMetadata,
   ChatSystemMessage,
 } from '@astryxdesign/core/Chat';
 import {Avatar} from '@astryxdesign/core/Avatar';
+import {ClickableCard} from '@astryxdesign/core/ClickableCard';
+import {Text} from '@astryxdesign/core/Text';
 import {Markdown} from '@astryxdesign/core/Markdown';
 import {Token} from '@astryxdesign/core/Token';
 import {HStack} from '@astryxdesign/core/Stack';
@@ -229,6 +232,46 @@ export function Button({ label, variant = 'primary' }) {
             />
             <Markdown density="compact">{`The Button uses StyleX for styles and reads variant from props.`}</Markdown>
           </ChatMessageBubble>
+        </ChatMessage>
+      </ChatMessageList>
+    </div>
+  ),
+};
+
+export const CustomContent: StoryObj = {
+  name: 'Custom Content',
+  render: () => (
+    <div style={{display: 'flex', flexDirection: 'column'}}>
+      <ChatMessageList style={{maxWidth: 520}}>
+        <ChatMessage sender="user">
+          <ChatMessageBubble>Can you pull up the Q3 report?</ChatMessageBubble>
+        </ChatMessage>
+        <ChatMessage sender="assistant">
+          <ChatMessageBubble name="Navi">
+            Sure, here is the artifact from last quarter.
+          </ChatMessageBubble>
+          {/* ChatMessageContent insets custom content to the bubble's text
+              column and spans the full message column (#2574). */}
+          <ChatMessageContent>
+            <ClickableCard
+              label="Open Q3 performance report"
+              onClick={() => {}}>
+              <Text type="body" weight="semibold" display="block">
+                Q3 Performance Report
+              </Text>
+              <Text type="supporting" color="secondary" display="block">
+                12 pages · updated 2 days ago
+              </Text>
+            </ClickableCard>
+          </ChatMessageContent>
+          <ChatMessageContent>
+            <ChatMessageMetadata
+              timestamp={
+                <Timestamp value="2026-03-15T14:32:00" format="time" />
+              }
+              footer={<span>Claude Opus 4.6</span>}
+            />
+          </ChatMessageContent>
         </ChatMessage>
       </ChatMessageList>
     </div>
