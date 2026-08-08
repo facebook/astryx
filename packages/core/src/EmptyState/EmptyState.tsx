@@ -157,6 +157,7 @@ export function EmptyState({
   return (
     <div
       ref={ref}
+      {...props}
       role="status"
       {...mergeProps(
         themeProps('empty-state', {variant: isCompact ? 'compact' : null}),
@@ -167,8 +168,7 @@ export function EmptyState({
         ),
         className,
         style,
-      )}
-      {...props}>
+      )}>
       {icon != null && <div aria-hidden="true">{icon}</div>}
       <div {...stylex.props(styles.textGroup)}>
         {createElement(
