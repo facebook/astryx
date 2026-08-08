@@ -26,6 +26,35 @@ export const DIMENSION_LABELS: Record<UniversalDimension, string> = {
   design: 'Design',
 };
 
+/**
+ * True when any prompt's accessibility score is backed by runtime axe data
+ * (issue #4145). Older results have no a11y metrics and read as static-only.
+ */
+export function hasRuntimeA11y(
+  byPrompt: Record<string, UniversalScore>,
+): boolean {
+  return Object.values(byPrompt).some(
+    s => s.accessibility?.metrics?.runtime === true,
+  );
+}
+
+/**
+ * Dimension label that is honest about what backs the accessibility score:
+ * without runtime axe data the static scan only measures raw-HTML footgun
+ * avoidance, so it is labeled as hygiene rather than accessibility.
+ */
+export function dimensionLabel(
+  dim: UniversalDimension,
+  runtimeA11y: boolean,
+): string {
+  if (dim === 'accessibility') {
+    return runtimeA11y
+      ? 'Accessibility (runtime + hygiene)'
+      : 'A11y Hygiene (composition)';
+  }
+  return DIMENSION_LABELS[dim];
+}
+
 export function scoreToStatusVariant(
   score: number,
 ): 'success' | 'neutral' | 'warning' | 'error' {

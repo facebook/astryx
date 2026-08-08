@@ -19,7 +19,11 @@ import type {
   UniversalAggregate,
 } from './types.js';
 import {getResultsDir, writeJson, ensureTsxFiles} from './utils.js';
-import {evaluate, getDimensionNames} from './universal-eval.js';
+import {
+  evaluate,
+  getDimensionNames,
+  getA11yDimensionLabel,
+} from './universal-eval.js';
 
 const DIMENSION_LABELS: Partial<Record<UniversalDimension, string>> = {
   correctness: 'Correctness',
@@ -347,6 +351,20 @@ async function main() {
     return;
   }
 
+  // A11y scoring basis (issue #4145): without runtime axe data the
+  // accessibility score only measures raw-HTML footgun avoidance.
+  const a11yMetrics = Object.values(byPrompt).map(s => s.accessibility.metrics);
+  const a11yRuntimeCount = a11yMetrics.filter(m => m?.runtime).length;
+  const hasRuntimeA11y = a11yRuntimeCount > 0;
+  const a11yEligibleSites = a11yMetrics.reduce(
+    (s, m) => s + (m?.eligibleSites ?? 0),
+    0,
+  );
+  const axeViolationRules = a11yMetrics.reduce(
+    (s, m) => s + (m?.axeViolationCount ?? 0),
+    0,
+  );
+
   // Print formatted table
   console.log(`\n📊 Universal Evaluation — Iteration ${iteration}`);
   console.log(`   ${promptCount} prompts, target: ${target}\n`);
@@ -355,7 +373,13 @@ async function main() {
   console.log('│ Dimension           │ Score │');
   console.log('├─────────────────────┼───────┤');
   for (const dim of dimensions) {
-    const label = (DIMENSION_LABELS[dim] || dim).padEnd(19);
+    const rawLabel =
+      dim === 'accessibility'
+        ? hasRuntimeA11y
+          ? 'Accessibility'
+          : 'A11y Hygiene'
+        : DIMENSION_LABELS[dim] || dim;
+    const label = rawLabel.padEnd(19);
     const score = String(averages[dim]).padStart(3);
     console.log(`│ ${label} │  ${score}  │`);
   }
@@ -372,6 +396,22 @@ async function main() {
   console.log('└─────────────────────┴───────┘');
 
   console.log(`\n🌙 Dark Mode: ${darkModeRate}%`);
+
+  console.log(`\n♿ A11y basis: ${getA11yDimensionLabel(hasRuntimeA11y)}`);
+  if (hasRuntimeA11y) {
+    console.log(
+      `   Runtime axe: ${a11yRuntimeCount}/${promptCount} prompt(s) scanned, ${axeViolationRules} violation rule(s)`,
+    );
+  } else {
+    console.log(
+      '   No axe-results.json — run axe-previews for runtime checks (focus, ARIA, contrast)',
+    );
+  }
+  console.log(
+    `   Static-scan eligible sites: ${a11yEligibleSites}${
+      a11yEligibleSites === 0 ? ' (hygiene score is 100 by construction)' : ''
+    }`,
+  );
 
   // Efficiency metrics summary
   const allEfficiency = Object.values(byPrompt)
