@@ -9,8 +9,8 @@
  * SYNC: When TopNav components change, update tests to match new behavior
  */
 
-import {describe, it, expect, vi} from 'vitest';
-import {fireEvent, render, screen} from '@testing-library/react';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
+import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {TopNav} from './TopNav';
 import {TopNavRenderContext} from './TopNavRenderContext';
@@ -19,6 +19,57 @@ import {NavIcon} from '../NavIcon';
 import {TopNavItem} from './TopNavItem';
 import {TopNavMegaMenuFeaturedCard} from './TopNavMegaMenuFeaturedCard';
 import {LinkProvider} from '../Link/LinkProvider';
+
+const originalMatchMedia = window.matchMedia;
+
+// Mock matchMedia so hover-mode ('(hover: hover)') interactions can be
+// exercised. This is scoped to the hover-open click guard tests only (see the
+// dedicated describe block below) so it does not bleed into tests that rely on
+// the default (non-hover) environment.
+function mockHoverMatchMedia() {
+  window.matchMedia = vi.fn().mockImplementation(query => ({
+    matches: query === '(hover: hover)',
+    media: query,
+    onchange: null,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  }));
+}
+
+// Mock showPopover/hidePopover (not implemented in jsdom) so popover
+// interactions can be exercised across the whole suite.
+beforeEach(() => {
+  HTMLElement.prototype.showPopover = vi.fn(function (this: HTMLElement) {
+    this.setAttribute('popover-open', '');
+    const event = new Event('toggle', {bubbles: false});
+    Object.defineProperty(event, 'newState', {value: 'open'});
+    this.dispatchEvent(event);
+  });
+  HTMLElement.prototype.hidePopover = vi.fn(function (this: HTMLElement) {
+    this.removeAttribute('popover-open');
+    const event = new Event('toggle', {bubbles: false});
+    Object.defineProperty(event, 'newState', {value: 'closed'});
+    this.dispatchEvent(event);
+  });
+  const originalMatches = HTMLElement.prototype.matches;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (HTMLElement.prototype as any).matches = function (
+    selector: string,
+  ): boolean {
+    if (selector === ':popover-open') {
+      return this.hasAttribute('popover-open');
+    }
+    return originalMatches.call(this, selector);
+  };
+});
+
+afterEach(() => {
+  window.matchMedia = originalMatchMedia;
+  vi.restoreAllMocks();
+});
 
 function CustomLink({
   children,
@@ -374,6 +425,99 @@ describe('TopNavHeading', () => {
       for (const child of Array.from(menu!.children)) {
         expect(child).toHaveAttribute('role', 'menuitem');
       }
+    });
+  });
+
+  // The hover-open click guard needs a hover-capable environment
+  // ('(hover: hover)'). Scope the matchMedia mock to these tests only so it
+  // does not bleed into tests that rely on the default (non-hover)
+  // environment.
+  describe('hover-open click guard', () => {
+    beforeEach(() => {
+      mockHoverMatchMedia();
+    });
+
+    afterEach(() => {
+      window.matchMedia = originalMatchMedia;
+    });
+
+    it('keeps a hover-open menu open on an immediate trigger click', async () => {
+      const now = vi.spyOn(Date, 'now');
+      now.mockReturnValue(1000);
+      render(
+        <TopNavHeading
+          heading="Services"
+          data-testid="top-nav-heading"
+          menu={<a href="/services">Services overview</a>}
+        />,
+      );
+
+      fireEvent.mouseEnter(screen.getByTestId('top-nav-heading'));
+      const trigger = screen.getByRole('button', {name: 'Open menu'});
+      await waitFor(() =>
+        expect(trigger).toHaveAttribute('aria-expanded', 'true'),
+      );
+
+      now.mockReturnValue(1200);
+      fireEvent.click(trigger);
+
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    it('still allows click-to-close after the hover guard window', async () => {
+      const now = vi.spyOn(Date, 'now');
+      now.mockReturnValue(1000);
+      render(
+        <TopNavHeading
+          heading="Services"
+          data-testid="top-nav-heading"
+          menu={<a href="/services">Services overview</a>}
+        />,
+      );
+
+      fireEvent.mouseEnter(screen.getByTestId('top-nav-heading'));
+      const trigger = screen.getByRole('button', {name: 'Open menu'});
+      await waitFor(() =>
+        expect(trigger).toHaveAttribute('aria-expanded', 'true'),
+      );
+
+      now.mockReturnValue(1601);
+      fireEvent.click(trigger);
+
+      await waitFor(() =>
+        expect(trigger).toHaveAttribute('aria-expanded', 'false'),
+      );
+    });
+
+    it('does not re-arm the click guard when re-hovering an open menu', async () => {
+      const now = vi.spyOn(Date, 'now');
+      now.mockReturnValue(1000);
+      render(
+        <TopNavHeading
+          heading="Services"
+          data-testid="top-nav-heading"
+          menu={<a href="/services">Services overview</a>}
+        />,
+      );
+
+      const heading = screen.getByTestId('top-nav-heading');
+      fireEvent.mouseEnter(heading);
+      const trigger = screen.getByRole('button', {name: 'Open menu'});
+      await waitFor(() =>
+        expect(trigger).toHaveAttribute('aria-expanded', 'true'),
+      );
+
+      // Re-enter the trigger of the already-open menu past the guard window;
+      // the guard must not restart from this second hover
+      now.mockReturnValue(1601);
+      fireEvent.mouseEnter(heading);
+
+      now.mockReturnValue(1700);
+      fireEvent.click(trigger);
+
+      await waitFor(() =>
+        expect(trigger).toHaveAttribute('aria-expanded', 'false'),
+      );
     });
   });
 });
