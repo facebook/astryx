@@ -9,6 +9,12 @@ export const docs = {
   category: 'Chat',
   keywords: ['reasoning', 'thinking', 'thought', 'chain-of-thought', 'chat', 'llm', 'ai'],
 
+  theming: {
+    targets: [
+      {className: 'astryx-chat-reasoning', states: ['expanded', 'streaming']},
+    ],
+  },
+
   usage: {
     description:
       'Compact collapsible container for displaying model reasoning or chain-of-thought details. Shows a single-line summary when collapsed and expands to reveal full reasoning text.',
