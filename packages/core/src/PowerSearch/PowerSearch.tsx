@@ -103,7 +103,12 @@ const tokenValueStyles = stylex.create({
 const popoverLayerStyles = stylex.create({
   layer: {
     width: 'anchor-size(width)',
-    minWidth: 400,
+    // Floor for comfortable editing, yielding when the available inline
+    // space cannot fit it, so the editor stays on-screen at narrow viewport
+    // widths (#4761). Percentages resolve against the position-area region
+    // (anchor start edge to viewport end), falling back to the viewport
+    // where area sizing is not honored.
+    minWidth: `min(400px, calc(100% - ${spacingVars['--spacing-4']}))`,
     marginTop: spacingVars['--spacing-1'],
   },
 });
