@@ -38,7 +38,12 @@ export const docs = {
     {
       name: 'autoSaveId',
       type: 'string',
-      description: 'Key for localStorage persistence of size across sessions.',
+      description: 'Key for localStorage persistence of size and collapse state across sessions.',
+    },
+    {
+      name: 'initialIsCollapsed',
+      type: 'boolean',
+      description: 'Initial collapse state; wins over a persisted collapse flag. For components that own collapse state (e.g. SideNav).',
     },
   ],
   returns: [
@@ -96,7 +101,8 @@ export const docsDense = {
     maxSizePx: 'max size in px.',
     collapsible: 'whether dragging below collapsed threshold collapses region to zero.',
     snaps: 'px values to snap to during drag.',
-    autoSaveId: 'key for localStorage persistence of size across sessions.',
+    autoSaveId: 'key for localStorage persistence of size + collapse state across sessions.',
+    initialIsCollapsed: 'initial collapse state; wins over persisted collapse flag.',
   },
   returnDescriptions: {
     size: 'current size in px.',
