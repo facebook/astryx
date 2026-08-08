@@ -14,6 +14,11 @@
  *
  * Both modes use useListFocus for DOM-based keyboard navigation.
  *
+ * Initial focus on open follows the input modality: a keyboard open
+ * (Enter / Space / ArrowDown on the trigger) focuses the first enabled item
+ * (APG menu-button); a pointer open focuses the menu container itself so no
+ * item reads as pre-selected, and the first ArrowDown then moves to item 1.
+ *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/DropdownMenu/DropdownMenu.doc.mjs
  * - /packages/core/src/DropdownMenu/DropdownMenu.test.tsx
@@ -266,6 +271,13 @@ export function DropdownMenu({
   // captures the trigger instead of the first menu item.
   const shouldFocusOnOpenRef = useRef(false);
 
+  // How the next open was initiated. Keyboard (and programmatic) opens focus
+  // the first enabled item per the APG menu-button pattern; pointer opens
+  // focus the menu container instead, so no item is visually highlighted as
+  // if pre-selected (#4477). Reset to 'keyboard' after every open so
+  // programmatic controlled opens keep the item-focus behavior.
+  const openModalityRef = useRef<'keyboard' | 'pointer'>('keyboard');
+
   const handleLayerShow = useCallback(() => {
     onOpenChange?.(true);
     if (!isControlled) {
@@ -331,14 +343,26 @@ export function DropdownMenu({
     }
   }, [controlledIsOpen, isControlled, popover]);
 
-  // Move focus into the menu only after the layer has committed open.
+  // Move focus into the menu only after the layer has committed open,
+  // honoring the input modality: keyboard (and programmatic) opens land on
+  // the first enabled item per the APG menu-button pattern; pointer opens
+  // focus the menu container itself (tabIndex={-1}) so no item is
+  // highlighted as if pre-selected (#4477). Container focus keeps arrows,
+  // typeahead, Escape and Tab in the menu's onKeyDown, and is also the
+  // fallback when no item is focusable (e.g. all disabled), mirroring the
+  // submenu flyout fallback.
   useEffect(() => {
     if (!popover.isOpen || !shouldFocusOnOpenRef.current) {
       return;
     }
     shouldFocusOnOpenRef.current = false;
-    requestAnimationFrame(() => focusFirst());
-  }, [popover.isOpen, focusFirst]);
+    requestAnimationFrame(() => {
+      if (openModalityRef.current === 'pointer' || !focusFirst()) {
+        listRef.current?.focus();
+      }
+      openModalityRef.current = 'keyboard';
+    });
+  }, [popover.isOpen, focusFirst, listRef]);
 
   // Extend useListFocus with Enter/Space activation + typeahead
   const listKeyDown = useCallback(
@@ -378,36 +402,51 @@ export function DropdownMenu({
     [listNavKeyDown, closeMenu, typeahead, ownsEvent],
   );
 
-  const openAndFocus = useCallback(() => {
-    shouldFocusOnOpenRef.current = true;
-    popover.show();
-  }, [popover]);
+  const openAndFocus = useCallback(
+    (modality: 'keyboard' | 'pointer' = 'keyboard') => {
+      openModalityRef.current = modality;
+      shouldFocusOnOpenRef.current = true;
+      popover.show();
+    },
+    [popover],
+  );
 
-  const handleButtonClick = useCallback(() => {
-    // If the menu was just closed by light dismiss (e.g. iOS Safari fires
-    // pointerdown → hide before the trigger's click), the click would
-    // otherwise immediately re-open it. Short-circuit within the guard window.
-    if (Date.now() - lastHideTimeRef.current < 50) {
-      return;
-    }
-    onClick?.();
-    if (isControlled) {
-      onOpenChange?.(!controlledIsOpen);
-    } else {
-      if (popover.isOpen) {
-        popover.hide();
-      } else {
-        openAndFocus();
+  const handleButtonClick = useCallback(
+    (e: React.MouseEvent<HTMLButtonElement>) => {
+      // If the menu was just closed by light dismiss (e.g. iOS Safari fires
+      // pointerdown → hide before the trigger's click), the click would
+      // otherwise immediately re-open it. Short-circuit within the guard
+      // window.
+      if (Date.now() - lastHideTimeRef.current < 50) {
+        return;
       }
-    }
-  }, [
-    onClick,
-    isControlled,
-    onOpenChange,
-    controlledIsOpen,
-    popover,
-    openAndFocus,
-  ]);
+      onClick?.();
+      // detail === 0 marks a synthesized click (screen reader / AT
+      // activation): treat it as keyboard so those users still land on the
+      // first item. Real pointer clicks report detail >= 1.
+      const modality = e.detail === 0 ? 'keyboard' : 'pointer';
+      if (isControlled) {
+        if (!controlledIsOpen) {
+          openModalityRef.current = modality;
+        }
+        onOpenChange?.(!controlledIsOpen);
+      } else {
+        if (popover.isOpen) {
+          popover.hide();
+        } else {
+          openAndFocus(modality);
+        }
+      }
+    },
+    [
+      onClick,
+      isControlled,
+      onOpenChange,
+      controlledIsOpen,
+      popover,
+      openAndFocus,
+    ],
+  );
 
   const handleButtonKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -480,6 +519,11 @@ export function DropdownMenu({
           ref={listRef}
           id={menuId}
           role="menu"
+          // Focus target for pointer opens (not in the Tab order): holding
+          // focus on the container keeps key events (arrows, typeahead,
+          // Escape, Tab) inside the menu without highlighting any item.
+          // Mirrors the DropdownMenuSubMenu flyout container.
+          tabIndex={-1}
           // Give the menu an accessible name from its trigger's label, so
           // screen readers announce e.g. "Actions menu" rather than an unnamed
           // menu (menus-13).
