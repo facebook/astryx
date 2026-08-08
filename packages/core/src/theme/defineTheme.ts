@@ -38,6 +38,10 @@ import {
   type ResolvedOnMedia,
 } from './onMediaTokens';
 import {
+  mediaSurfaceComponents,
+  type MediaSurface,
+} from './mediaSurfaceRegistry';
+import {
   colorDefaults,
   spacingDefaults,
   sizeDefaults,
@@ -90,6 +94,14 @@ export type TokenName = CoreTokenName | DomainTokenName;
  * Tuples are converted to CSS light-dark() at theme creation time.
  */
 export type TokenValue = string | [light: string, dark: string];
+
+/**
+ * Components that support media-surface control via the `surfaces` field.
+ * Derived from the internal media-surface registry.
+ */
+export type MediaSurfaceComponent = 'toast' | 'tooltip';
+
+export type {MediaSurface} from './mediaSurfaceRegistry';
 
 /**
  * CSS property values for a style rule.
@@ -317,6 +329,36 @@ export interface DefineThemeInput {
    * but for the inverse case (e.g. dark-mode page with a light popover).
    */
   onLight?: OnMediaOverrides;
+  /**
+   * Per-component media-surface control.
+   *
+   * Some components (Toast, Tooltip) render their content on an *inverted*
+   * surface by default — a high-contrast panel whose `color-scheme` flips
+   * opposite to the ambient mode. Set a component to `'normal'` to opt it
+   * out: the inversion is disabled and the theme then owns that component's
+   * surface through the ordinary `components.<name>` overrides. This is the
+   * sanctioned path for apps consolidating onto Astryx whose existing
+   * toast/tooltip designs are not media-inverted.
+   *
+   * Omitted components keep their built-in default (`'inverted'`).
+   *
+   * @example
+   * ```tsx
+   * defineTheme({
+   *   name: 'my-app',
+   *   // Disable the inverted toast surface…
+   *   surfaces: {toast: 'normal'},
+   *   // …then style it like any other component.
+   *   components: {
+   *     toast: {
+   *       base: {backgroundColor: 'var(--color-background-popover)'},
+   *       'type:error': {backgroundColor: 'var(--color-error-muted)'},
+   *     },
+   *   },
+   * });
+   * ```
+   */
+  surfaces?: Partial<Record<MediaSurfaceComponent, MediaSurface>>;
 }
 
 /** A defined theme — ready to pass to <Theme> */
@@ -350,6 +392,13 @@ export interface DefinedTheme {
    * @internal
    */
   __onLight?: ResolvedOnMedia;
+  /**
+   * Resolved per-component media-surface choices (defaults merged with the
+   * theme's `surfaces` input). Consumed by generateThemeRules to emit
+   * per-component surface CSS.
+   * @internal
+   */
+  __surfaces?: Record<string, MediaSurface>;
 }
 
 // =============================================================================
@@ -616,6 +665,24 @@ export function defineTheme(input: DefineThemeInput): DefinedTheme {
   const __onDark = resolveOnMedia('dark', input.onDark);
   const __onLight = resolveOnMedia('light', input.onLight);
 
+  // 4b. Resolve per-component media surfaces: registry default ('inverted')
+  //     merged with the theme's `surfaces` opt-out, plus any inherited from
+  //     a base theme via `extends`.
+  const __surfaces: Record<string, MediaSurface> = {};
+  for (const component of mediaSurfaceComponents()) {
+    __surfaces[component] = 'inverted';
+  }
+  if (base?.__surfaces) {
+    Object.assign(__surfaces, base.__surfaces);
+  }
+  if (input.surfaces) {
+    for (const [component, surface] of Object.entries(input.surfaces)) {
+      if (surface !== undefined) {
+        __surfaces[component] = surface;
+      }
+    }
+  }
+
   // 5. Merge icons — input icons override base icons
   const icons =
     input.icons && base?.icons
@@ -630,6 +697,7 @@ export function defineTheme(input: DefineThemeInput): DefinedTheme {
     __inputTokens: input.tokens,
     __onDark,
     __onLight,
+    __surfaces,
   };
 
   registerTheme(theme);
@@ -644,6 +712,7 @@ export {
   generateThemeRules,
   generateThemeRulesSplit,
   generateOnMediaCSS,
+  generateMediaSurfaceCSS,
   generateThemeCSS,
   type ThemeRulesSplit,
   type ThemeCSSOutput,

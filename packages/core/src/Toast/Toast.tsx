@@ -18,8 +18,6 @@ import {
   typeScaleDefaults,
 } from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
-import {useTheme} from '../theme';
-import {MediaTheme} from '../theme/MediaTheme';
 import type {ToastType, ToastDismissReason} from './types';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
@@ -56,6 +54,11 @@ const styles = stylex.create({
     alignItems: 'flex-start',
     gap: spacingVars['--spacing-3'],
     width: '100%',
+    // Explicit color anchor for the inverted surface — the theme's generated
+    // media-surface CSS re-points --color-text-primary on this wrapper
+    // (.astryx-toast-content), so reading it here keeps text legible against
+    // the inverted background.
+    color: colorVars['--color-text-primary'],
   },
   variantError: {
     backgroundColor: colorVars['--color-background-error-inverted'],
@@ -91,10 +94,11 @@ export interface ToastProps {
 /**
  * Individual toast notification.
  *
- * Renders with inverted surface colors for the default variant,
- * and error-inverted for the error variant. Uses MediaTheme
- * to set the correct token context for children. Pauses auto-dismiss
- * on hover and focus.
+ * Renders on an inverted surface by default (its content's color-scheme
+ * flips opposite to the ambient mode via the theme's generated media-surface
+ * CSS); the error variant is always on a dark surface. A theme can
+ * opt out with `defineTheme({ surfaces: { toast: 'normal' } })`. Pauses
+ * auto-dismiss on hover and focus.
  *
  * @example
  * ```
@@ -196,10 +200,6 @@ export function Toast({
   }, [onDismiss]);
 
   const isError = type === 'error';
-  // Determine media mode: inverted surface is always dark in light mode,
-  // always light in dark mode. Error toast is always on a dark surface.
-  const {mode} = useTheme();
-  const mediaMode = isError || mode === 'light' ? 'dark' : 'light';
 
   return (
     <div
@@ -218,23 +218,26 @@ export function Toast({
           isExiting && styles.exiting,
         ),
       )}>
-      <MediaTheme mode={mediaMode}>
-        <div {...stylex.props(styles.inner)}>
-          <div {...stylex.props(styles.content)}>{body}</div>
+      {/* astryx-toast-content: media-surface flip target (mediaSurfaceRegistry) */}
+      <div
+        {...mergeProps(
+          {className: 'astryx-toast-content'},
+          stylex.props(styles.inner),
+        )}>
+        <div {...stylex.props(styles.content)}>{body}</div>
 
-          <div {...stylex.props(styles.endContent)}>
-            {endContent}
-            <Button
-              variant="ghost"
-              size="sm"
-              icon={<Icon icon="close" size="sm" color="inherit" />}
-              label={t('@astryx.toast.dismiss')}
-              onClick={handleDismiss}
-              isIconOnly
-            />
-          </div>
+        <div {...stylex.props(styles.endContent)}>
+          {endContent}
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={<Icon icon="close" size="sm" color="inherit" />}
+            label={t('@astryx.toast.dismiss')}
+            onClick={handleDismiss}
+            isIconOnly
+          />
         </div>
-      </MediaTheme>
+      </div>
     </div>
   );
 }

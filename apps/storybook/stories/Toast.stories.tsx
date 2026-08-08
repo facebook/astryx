@@ -2,13 +2,15 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState, useRef} from 'react';
-import {useToast, ToastViewport} from '@astryxdesign/core/Toast';
+import {useToast, ToastViewport, Toast} from '@astryxdesign/core/Toast';
 import type {ToastType} from '@astryxdesign/core/Toast';
 import {Button} from '@astryxdesign/core/Button';
 import {Link} from '@astryxdesign/core/Link';
 import {Card} from '@astryxdesign/core/Card';
 import {Stack} from '@astryxdesign/core/Stack';
 import {Dialog} from '@astryxdesign/core/Dialog';
+import {Theme, defineTheme} from '@astryxdesign/core/theme';
+import {neutralTheme} from '@astryxdesign/theme-neutral';
 
 const meta: Meta = {
   title: 'Core/Toast',
@@ -369,3 +371,137 @@ function DialogToastContent({onClose}: {onClose: () => void}) {
     </Stack>
   );
 }
+
+// =============================================================================
+// Theme opt-out: surfaces.toast = 'normal'
+// =============================================================================
+
+/**
+ * A theme that opts Toast out of the inverted media surface. Toasts then
+ * render on the app's normal popover surface instead of the high-contrast
+ * inverted panel — the sanctioned path for apps consolidating onto Astryx
+ * whose existing toast design isn't media-inverted.
+ */
+const normalToastTheme = defineTheme({
+  name: 'toast-normal-surface',
+  extends: neutralTheme,
+  surfaces: {toast: 'normal'},
+  // Opting out disables the inversion; the theme then owns the toast surface
+  // through ordinary component overrides. Text needs no override — the toast
+  // content already reads `--color-text-primary`, which resolves correctly on
+  // a non-inverted surface.
+  components: {
+    toast: {
+      base: {backgroundColor: 'var(--color-background-popover)'},
+      'type:error': {backgroundColor: 'var(--color-error-muted)'},
+    },
+  },
+});
+
+/**
+ * A theme that keeps the inverted surface but recolors the error variant via
+ * onDark, so the always-dark error toast picks up a custom accent.
+ */
+const customErrorToastTheme = defineTheme({
+  name: 'toast-custom-error',
+  extends: neutralTheme,
+  onDark: {tokens: {'--color-accent': '#FFD166'}},
+});
+
+const noop = () => {};
+
+function ToastPair() {
+  return (
+    <Stack gap={2}>
+      <Toast
+        type="info"
+        body="Saved to your workspace."
+        endContent={<Link href="#">Undo</Link>}
+        isAutoHide={false}
+        autoHideDuration={0}
+        onDismiss={noop}
+      />
+      <Toast
+        type="error"
+        body="Could not save changes."
+        endContent={<Link href="#">Retry</Link>}
+        isAutoHide={false}
+        autoHideDuration={0}
+        onDismiss={noop}
+      />
+    </Stack>
+  );
+}
+
+export const ThemedSurfaceOptOut: StoryObj = {
+  render: function ThemedSurfaceOptOutStory() {
+    return (
+      <Stack gap={4}>
+        <p>
+          Toast renders on an inverted media surface by default (dark panel in a
+          light app, light panel in a dark app). A theme opts out with{' '}
+          <code>
+            surfaces: {'{'} toast: 'normal' {'}'}
+          </code>
+          , so the toast uses the app&apos;s ordinary surface tokens. The error
+          variant always stays on its attention-grabbing dark surface in both.
+          Each column pins an explicit mode so the light/dark inversion is
+          visible side by side.
+        </p>
+        {(['light', 'dark'] as const).map(mode => (
+          <Stack key={mode} gap={2}>
+            <strong>Mode: {mode}</strong>
+            <Stack direction="horizontal" gap={6} wrap="wrap">
+              <Theme theme={neutralTheme} mode={mode}>
+                <Stack
+                  gap={2}
+                  style={{
+                    backgroundColor: 'var(--color-background-body)',
+                    padding: 16,
+                    borderRadius: 12,
+                  }}>
+                  <strong>Default (inverted surface)</strong>
+                  <ToastPair />
+                </Stack>
+              </Theme>
+              <Theme theme={normalToastTheme} mode={mode}>
+                <Stack
+                  gap={2}
+                  style={{
+                    backgroundColor: 'var(--color-background-body)',
+                    padding: 16,
+                    borderRadius: 12,
+                  }}>
+                  <strong>surfaces.toast = &apos;normal&apos;</strong>
+                  <ToastPair />
+                </Stack>
+              </Theme>
+            </Stack>
+          </Stack>
+        ))}
+        <Stack gap={2}>
+          <strong>Custom error accent (onDark) — inverted surface</strong>
+          <Theme theme={customErrorToastTheme} mode="light">
+            <Stack
+              gap={2}
+              style={{
+                backgroundColor: 'var(--color-background-body)',
+                padding: 16,
+                borderRadius: 12,
+              }}>
+              <ToastPair />
+            </Stack>
+          </Theme>
+        </Stack>
+      </Stack>
+    );
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Themes control whether Toast renders on the inverted media surface. `defineTheme({ surfaces: { toast: 'normal' } })` opts out app-wide; the error variant remains on its dark surface regardless, and a theme's `onDark` tokens recolor that always-dark error content.",
+      },
+    },
+  },
+};

@@ -22,6 +22,7 @@ export {
   defineTheme,
   generateThemeCSS,
   generateOnMediaCSS,
+  generateMediaSurfaceCSS,
   generateThemeRules,
   generateThemeRulesSplit,
   type ThemeCSSOutput,
@@ -43,6 +44,8 @@ export type {
   TokenValue,
   ComponentStyleMap,
   StyleOverrides,
+  MediaSurface,
+  MediaSurfaceComponent,
 } from './defineTheme';
 
 export type {

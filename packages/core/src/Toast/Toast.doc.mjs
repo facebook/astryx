@@ -127,7 +127,7 @@ export const docsZh = {
 /** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
-    'toast notification w/ auto-dismiss, stacking, dedup, smooth animations; MediaTheme inverted surface',
+    'toast notification w/ auto-dismiss, stacking, dedup, smooth animations; inverted media surface (opt out via theme surfaces)',
   usage: {
     description:
       'Brief non-blocking notification for action confirmations and temporary info. Use where user needs feedback not decisions: saves, deletes, status changes. useToast() hook for production (positioning, stacking, auto-dismiss, dedup via ToastViewport). Toast renders inline for previews/docs/static showcases.',

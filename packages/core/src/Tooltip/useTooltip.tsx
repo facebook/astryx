@@ -29,6 +29,7 @@ import {
 } from '../Layer/useLayer';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import {themeProps} from '../utils/themeProps';
+import {mergeProps} from '../utils';
 import {
   colorVars,
   radiusVars,
@@ -45,11 +46,13 @@ import {
 const HOVER_BRIDGE_DELAY = 100;
 
 const styles = stylex.create({
-  // Base container styles - inverted colors for high contrast
+  // Base container styles — inverted surface for high contrast. The
+  // background resolves in the ambient color scheme (dark panel in a light
+  // app); the content wrapper's color-scheme is flipped by the theme's
+  // generated media-surface CSS, keeping this unified with Toast. A theme can
+  // opt out via `defineTheme({ surfaces: { tooltip: 'normal' } })`.
   container: {
-    // Inverted color palette: dark background, light text
-    backgroundColor: colorVars['--color-text-primary'],
-    color: colorVars['--color-background-surface'],
+    backgroundColor: colorVars['--color-background-inverted'],
     borderRadius: radiusVars['--radius-container'],
     // Typography
     fontFamily: typographyVars['--font-family-body'],
@@ -77,6 +80,10 @@ const styles = stylex.create({
     paddingInlineEnd: spacingVars['--spacing-2'],
     maxWidth: 300,
     wordBreak: 'break-word',
+    // Explicit color anchor — the theme's generated media-surface CSS
+    // re-points --color-text-primary on this wrapper (.astryx-tooltip-content)
+    // for the inverted surface.
+    color: colorVars['--color-text-primary'],
   },
 });
 
@@ -510,7 +517,14 @@ export function useTooltip(options: TooltipOptions = {}): TooltipReturn {
       };
 
       return layer.render(
-        <div {...stylex.props(styles.content)}>{children}</div>,
+        // astryx-tooltip-content: media-surface flip target (mediaSurfaceRegistry)
+        <div
+          {...mergeProps(
+            {className: 'astryx-tooltip-content'},
+            stylex.props(styles.content),
+          )}>
+          {children}
+        </div>,
         renderProps,
       );
     },

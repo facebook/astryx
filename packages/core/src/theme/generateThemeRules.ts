@@ -18,6 +18,7 @@
 import type {DefinedTheme} from './defineTheme';
 import {parseStyleKey} from '../utils/parseStyleKey';
 import {getDerivedVars} from './derivedVarRegistry';
+import {getMediaSurface, mediaSurfaceComponents} from './mediaSurfaceRegistry';
 import {cssVar, classPrefix, dataAttrNamespace} from '../naming';
 
 /**
@@ -681,6 +682,134 @@ export function generateOnMediaCSS(theme: DefinedTheme): string {
 }
 
 /**
+ * Generate per-theme media-surface CSS for registered components (Toast,
+ * Tooltip).
+ *
+ * The inverted surface is emitted here, per theme, from the theme's resolved
+ * `__onDark` / `__onLight` token sets — so a theme that customizes its media
+ * tokens gets a 1:1 reflection on its toast/tooltip, and the build output
+ * shows the concrete `color: var(--color-on-dark|light)` mapping.
+ *
+ * The flip is scoped to the component's named content wrapper (e.g.
+ * `.astryx-toast-content`), not the root, so the root's own `light-dark()` background resolves in the ambient
+ * scheme (that's what makes the panel visibly inverted). Direction is keyed on
+ * the theme scope root's `data-theme` (explicit light/dark) and on
+ * `prefers-color-scheme` (system, no explicit `data-theme`):
+ *
+ *   ambient light  → content flips to dark  → onDark tokens (on-dark color)
+ *   ambient dark   → content flips to light → onLight tokens (on-light color)
+ *
+ * `data-theme` is read on the `@scope` root (the nearest `[data-astryx-theme]`
+ * element — the root `Theme` syncs both attributes onto `<html>`, and each
+ * nested `Theme` writes both onto its own wrapper). A nested `Theme` left at
+ * the default `mode="system"` therefore has no `data-theme` and resolves via
+ * `prefers-color-scheme`; pass an explicit `mode` to a nested `Theme` to pin
+ * the inversion direction for content rendered directly under it.
+ *
+ * A theme opts a component out with `surfaces: { toast: 'normal' }`: no
+ * inverted (or error-always-dark) block is emitted for it at all. The theme
+ * then owns that component's surface through the ordinary `components.<name>`
+ * overrides (e.g. `components: { toast: { base: { backgroundColor: ... } } }`),
+ * which the generator never competes with. When inverted (the default),
+ * Toast's error variant always stays on a dark surface regardless of ambient
+ * mode.
+ *
+ * <!-- SYNC: packages/core/src/theme/mediaSurfaceRegistry.ts -->
+ */
+export function generateMediaSurfaceCSS(theme: DefinedTheme): string {
+  const surfaces = theme.__surfaces;
+  const onDark = theme.__onDark?.tokens;
+  const onLight = theme.__onLight?.tokens;
+  if (!surfaces || !onDark || !onLight) {
+    return '';
+  }
+
+  const cls = (c: string) => `.${classPrefix}-${c}`;
+
+  const invertedContentSelectors: string[] = [];
+  const errorAlwaysDark: string[] = [];
+
+  for (const component of mediaSurfaceComponents()) {
+    const entry = getMediaSurface(component);
+    if (!entry) {
+      continue;
+    }
+
+    // Opt-out: skip the inversion entirely (including the always-dark error
+    // variant). The component keeps its base surface until the theme sets its
+    // own via a `components.<name>` override — opting out is a deliberate,
+    // two-part theme decision, so the generator emits nothing here and never
+    // competes with that override.
+    if (surfaces[component] === 'normal') {
+      continue;
+    }
+
+    const errorVariant = entry.alwaysDarkVariant;
+    // Target the component's named content wrapper — not `> *` — so the flip
+    // applies to exactly the surface element and never leaks to sibling nodes.
+    const content = `.${entry.contentClass}`;
+
+    // Inverted (default): the content flips opposite to ambient.
+    invertedContentSelectors.push(
+      errorVariant
+        ? `${cls(component)}:not([data-type="${errorVariant}"]) ${content}`
+        : `${cls(component)} ${content}`,
+    );
+
+    // The always-dark variant (Toast error) is inverted-dark regardless of
+    // ambient mode.
+    if (errorVariant) {
+      errorAlwaysDark.push(
+        `${cls(component)}[data-type="${errorVariant}"] ${content}`,
+      );
+    }
+  }
+
+  const decls = (tokens: Record<string, string>) =>
+    Object.entries(tokens)
+      .map(([prop, value]) => `    ${prop}: ${value};`)
+      .join('\n');
+
+  const scopeSelector = themeScopeStart(theme.name);
+  const scopeTo = THEME_SCOPE_TO;
+  const scoped = (inner: string) =>
+    `@scope (${scopeSelector}) to (${scopeTo}) {\n${inner}\n}`;
+
+  const blocks: string[] = [];
+
+  if (invertedContentSelectors.length > 0) {
+    const list = invertedContentSelectors.join(',\n  ');
+    blocks.push(
+      scoped(
+        `  :scope[data-theme="light"] :is(\n  ${list}\n  ) {\n${decls(onDark)}\n  }`,
+      ),
+    );
+    blocks.push(
+      scoped(
+        `  :scope[data-theme="dark"] :is(\n  ${list}\n  ) {\n${decls(onLight)}\n  }`,
+      ),
+    );
+    blocks.push(
+      `@media (prefers-color-scheme: light) {\n${scoped(
+        `  :scope:not([data-theme]) :is(\n  ${list}\n  ) {\n${decls(onDark)}\n  }`,
+      )}\n}`,
+    );
+    blocks.push(
+      `@media (prefers-color-scheme: dark) {\n${scoped(
+        `  :scope:not([data-theme]) :is(\n  ${list}\n  ) {\n${decls(onLight)}\n  }`,
+      )}\n}`,
+    );
+  }
+
+  if (errorAlwaysDark.length > 0) {
+    const list = errorAlwaysDark.join(',\n  ');
+    blocks.push(scoped(`  :is(\n  ${list}\n  ) {\n${decls(onDark)}\n  }`));
+  }
+
+  return blocks.join('\n\n');
+}
+
+/**
  * Generate layered CSS for a theme — runtime path.
  *
  * Returns two CSS blocks for injection into different layers:
@@ -715,6 +844,13 @@ export function generateThemeCSS(theme: DefinedTheme): ThemeCSSOutput {
     componentCss = componentCss
       ? `${componentCss}\n\n${onMediaCss}`
       : onMediaCss;
+  }
+
+  const mediaSurfaceCss = generateMediaSurfaceCSS(theme);
+  if (mediaSurfaceCss) {
+    componentCss = componentCss
+      ? `${componentCss}\n\n${mediaSurfaceCss}`
+      : mediaSurfaceCss;
   }
 
   return {prose: proseCss, component: componentCss};
