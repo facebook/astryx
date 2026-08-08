@@ -1894,3 +1894,58 @@ describe('MultiSelector search affordances', () => {
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
 });
+
+describe('MultiSelector disabled state theme target', () => {
+  const getSelectorRoot = (container: HTMLElement): HTMLElement => {
+    const root = container.querySelector('.astryx-multi-selector');
+    if (root == null) {
+      throw new Error('multi-selector root not found');
+    }
+    return root as HTMLElement;
+  };
+
+  it('reflects data-state="disabled" on the root when disabled', () => {
+    const {container} = render(
+      <MultiSelector
+        label="Fruit"
+        options={['Apple', 'Banana', 'Orange']}
+        value={[]}
+        onChange={() => {}}
+        isDisabled
+      />,
+    );
+    expect(getSelectorRoot(container)).toHaveAttribute(
+      'data-disabled',
+      'disabled',
+    );
+  });
+
+  it('omits the disabled class/attribute when enabled', () => {
+    const {container} = render(
+      <MultiSelector
+        label="Fruit"
+        options={['Apple', 'Banana', 'Orange']}
+        value={[]}
+        onChange={() => {}}
+      />,
+    );
+    const root = getSelectorRoot(container);
+    expect(root).not.toHaveAttribute('data-disabled');
+    expect(root).not.toHaveClass('disabled');
+  });
+
+  it('exposes the disabled state so a theme can key on it', () => {
+    const theme = defineTheme({
+      name: 'multi-selector-disabled-state-test',
+      components: {
+        'multi-selector': {
+          'disabled:disabled': {opacity: '0.4'},
+        },
+      },
+    });
+    const css = generateThemeTestCSS(theme);
+    expect(css).toContain('.astryx-multi-selector.disabled');
+    expect(css).toContain('opacity: 0.4');
+  });
+});
+

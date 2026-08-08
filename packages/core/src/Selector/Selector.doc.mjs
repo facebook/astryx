@@ -24,6 +24,7 @@ export const docs = {
       {
         className: 'astryx-selector',
         visualProps: ['variant', 'size', 'status'],
+        states: ['disabled'],
       },
       {className: 'astryx-selector-option'},
       {className: 'astryx-selector-empty-state'},
