@@ -5,7 +5,7 @@
  * @input Uses theme tokens (color, spacing, radius, shadow, transition)
  * @output Exports shared input wrapper appearance styles
  * @position Shared styles consumed by TextInput, TextArea, NumberInput, DateInput,
- *   TimeInput, Selector, Typeahead, and Tokenizer
+ *   TimeInput, Selector, ComplexSelector, Typeahead, and Tokenizer
  *
  * Centralizes the input wrapper appearance (borders, focus outlines, hover shadows,
  * disabled state, status variants) so all input components stay in sync.
@@ -115,6 +115,45 @@ export const inputStatusHoverShadowStyles = stylex.create({
       ':hover:not(:focus-within)': {
         '@media (hover: hover)': shadowVars['--shadow-inset-success'],
       },
+    },
+  },
+});
+
+/**
+ * Status shadow styles that preserve the keyboard focus ring.
+ *
+ * `inputStatusHoverShadowStyles` replaces the base wrapper's whole boxShadow
+ * map, which silently drops the base `:focus-within` accent ring — with a
+ * status set, tabbing to the control produces no visible change. This variant
+ * carries both conditions, so the status hover shadow and the shared focus
+ * ring coexist. Keyed by InputStatusType.
+ */
+export const inputStatusFocusShadowStyles = stylex.create({
+  warning: {
+    boxShadow: {
+      default: 'none',
+      ':hover:not(:focus-within)': {
+        '@media (hover: hover)': shadowVars['--shadow-inset-warning'],
+      },
+      ':focus-within': `inset 0px 0px 0px 2px ${colorVars['--color-accent-muted']}`,
+    },
+  },
+  error: {
+    boxShadow: {
+      default: 'none',
+      ':hover:not(:focus-within)': {
+        '@media (hover: hover)': shadowVars['--shadow-inset-error'],
+      },
+      ':focus-within': `inset 0px 0px 0px 2px ${colorVars['--color-accent-muted']}`,
+    },
+  },
+  success: {
+    boxShadow: {
+      default: 'none',
+      ':hover:not(:focus-within)': {
+        '@media (hover: hover)': shadowVars['--shadow-inset-success'],
+      },
+      ':focus-within': `inset 0px 0px 0px 2px ${colorVars['--color-accent-muted']}`,
     },
   },
 });
