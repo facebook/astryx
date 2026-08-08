@@ -387,7 +387,11 @@ export function SideNavHeading({
   if (isCollapsed && icon) {
     const collapsedIcon = <span {...stylex.props(styles.icon)}>{icon}</span>;
 
-    const collapsedSetRef = mergeRefs<HTMLElement>(collapsedItemRef, ref);
+    const collapsedSetRef = mergeRefs<HTMLElement>(
+      collapsedItemRef,
+      ref,
+      menu ? popover.triggerRef : undefined,
+    );
 
     let collapsedElement: ReactNode;
 
