@@ -1,5 +1,14 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/**
+ * @file ComplexSelector.doc.mjs
+ * @input ComplexSelector public API and composition contract
+ * @output Exports full and dense component documentation
+ * @position Core documentation consumed by CLI and Storybook autodocs
+ *
+ * SYNC: When modified, update ComplexSelector.tsx, tests, and stories.
+ */
+
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
@@ -19,7 +28,10 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-complex-selector', visualProps: ['size', 'status']},
+      {
+        className: 'astryx-complex-selector',
+        visualProps: ['variant', 'size', 'status'],
+      },
       {
         className: 'astryx-complex-selector-indicator-icon',
         states: ['state'],
@@ -31,7 +43,7 @@ export const docs = {
       name: 'ComplexSelector',
       displayName: 'Complex Selector',
       description:
-        'A field and dialog-popover shell for custom selector content.',
+        'An input or toolbar trigger and dialog-popover shell for custom selector content.',
       props: [
         {
           name: 'label',
@@ -92,8 +104,20 @@ export const docs = {
         {
           name: 'size',
           type: "'sm' | 'md' | 'lg'",
-          description: 'Trigger and field size.',
+          description: 'Exact trigger height: sm 28px, md 32px, or lg 36px.',
           default: "'md'",
+        },
+        {
+          name: 'variant',
+          type: "'input' | 'ghost'",
+          description:
+            'Visual trigger style. Input is the bordered form treatment; ghost matches toolbar buttons.',
+          default: "'input'",
+        },
+        {
+          name: 'startIcon',
+          type: 'ReactNode | IconType',
+          description: 'Icon displayed at the start of the trigger.',
         },
         {
           name: 'width',
@@ -107,6 +131,24 @@ export const docs = {
           default: "'below'",
         },
         {
+          name: 'alignment',
+          type: "'start' | 'center' | 'end'",
+          description: 'Popup alignment along the placement axis.',
+          default: "'start'",
+        },
+        {
+          name: 'isOpen',
+          type: 'boolean',
+          description:
+            'Controlled open state. Omit to let ComplexSelector own visibility.',
+        },
+        {
+          name: 'onOpenChange',
+          type: '(isOpen: boolean) => void',
+          description:
+            'Called when the trigger, close helper, Escape, or light dismiss requests a visibility change.',
+        },
+        {
           name: 'contentXstyle',
           type: 'StyleXStyles',
           description: 'StyleX styles for the popup content container.',
@@ -118,6 +160,16 @@ export const docs = {
     description:
       'Use ComplexSelector when a selection needs richer custom content than a Selector option row. It is intentionally one component: ComplexSelector owns the field, trigger, popover, focus restore, and changeAction flow, while the content render prop owns the selector-specific accessible structure.',
     bestPractices: [
+      {
+        guidance: true,
+        description:
+          'Use variant="ghost" with a startIcon when the selector is triggered from a toolbar. Use alignment="end" when a wide surface should align its end edge to the trigger.',
+      },
+      {
+        guidance: true,
+        description:
+          'For staged editors, keep draft state in the composed content and call the provided onChange helper only from Apply. Cancel or dismiss without committing.',
+      },
       {
         guidance: true,
         description:
@@ -163,7 +215,7 @@ export const docsDense = {
   group: 'Selector',
   category: 'Data Input',
   description:
-    'Field+dialog-popover shell for rich custom selectors. Content gets value/onChange/close/state; content owns semantics. Use focus hooks and evaluate custom content against WCAG 2.2.',
+    'Input/ghost trigger + dialog-popover shell for rich custom selectors. Content gets value/onChange/close/state; content owns semantics. Use focus hooks and evaluate custom content against WCAG 2.2.',
   usage: {
     description:
       'Use when a selection needs richer custom content than a Selector row. One component: it owns field, trigger, popover, focus restore, and changeAction; the render prop owns the selector-specific accessible structure.',
@@ -210,10 +262,14 @@ export const docsDense = {
     value: 'Controlled value.',
     onChange: 'Commit value.',
     changeAction: 'Async action after onChange; drives optimistic value/busy.',
-    children:
-      'Render custom dialog content from (value,onChange,close,state).',
+    children: 'Render custom dialog content from (value,onChange,close,state).',
     triggerLabel: 'Closed trigger label/content.',
+    variant: 'input for forms; ghost for toolbar triggers.',
+    startIcon: 'Leading trigger icon.',
     placement: 'Popup placement.',
+    alignment: 'Popup alignment.',
+    isOpen: 'Optional controlled visibility.',
+    onOpenChange: 'Visibility change request.',
     accessibility:
       'Custom content must provide its own accessible structure. Use focus hooks and evaluate against WCAG 2.2.',
   },
