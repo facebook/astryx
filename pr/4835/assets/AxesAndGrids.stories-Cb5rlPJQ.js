@@ -1,0 +1,8 @@
+import{n as e}from"./rolldown-runtime-DkW27tQK.js";import{t}from"./jsx-runtime-DeHZSEgm.js";import{d as n,f as r,g as i,h as a,i as o,m as s,p as c,r as l}from"./_data-DNraWrUw.js";import{n as u,t as d}from"./bar-5Bcz6no5.js";var f,p,m,h;function g(){return(g=e((()=>{i(),u(),r(),s(),l(),f=t(),p={title:`Charts/Chrome/Axes & Grids`,argTypes:{horizontalGrid:{control:`boolean`},verticalGrid:{control:`boolean`},bottomAxisLine:{control:`boolean`},leftAxisLine:{control:`boolean`},showTicks:{control:`boolean`}},args:{horizontalGrid:!0,verticalGrid:!1,bottomAxisLine:!0,leftAxisLine:!1,showTicks:!1}},m={render:e=>(0,f.jsx)(a,{data:o,xKey:`month`,series:[d(`revenue`,{color:`#3b82f6`})],grid:(0,f.jsx)(n,{horizontal:e.horizontalGrid,vertical:e.verticalGrid}),axes:(0,f.jsxs)(f.Fragment,{children:[(0,f.jsx)(c,{position:`bottom`,showAxisLine:e.bottomAxisLine,showTicks:e.showTicks}),(0,f.jsx)(c,{position:`left`,showAxisLine:e.leftAxisLine,showTicks:e.showTicks})]}),height:300})},m.parameters={...m.parameters,docs:{...m.parameters?.docs,source:{originalSource:`{
+  render: args => <Chart data={monthlyData} xKey="month" series={[bar('revenue', {
+    color: '#3b82f6'
+  })]} grid={<ChartGrid horizontal={args.horizontalGrid} vertical={args.verticalGrid} />} axes={<>
+          <ChartAxis position="bottom" showAxisLine={args.bottomAxisLine} showTicks={args.showTicks} />
+          <ChartAxis position="left" showAxisLine={args.leftAxisLine} showTicks={args.showTicks} />
+        </>} height={300} />
+}`,...m.parameters?.docs?.source},description:{story:`Toggle grid lines, axis edge lines, and tick marks independently.`,...m.parameters?.docs?.description}}},h=[`Playground`]})))()}g();export{m as Playground,h as __namedExportsOrder,p as default};

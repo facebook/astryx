@@ -1,0 +1,7 @@
+import{n as e}from"./rolldown-runtime-DkW27tQK.js";import{t}from"./jsx-runtime-DeHZSEgm.js";import{a as n,c as r,o as i}from"./ChartAxis-BYz-LLki.js";function a({dataKey:e,color:t,radius:n=4}){let{data:a,xKey:s,xScale:c,yScale:l}=i();if(!r(c))return null;let u=l(0);return(0,o.jsx)(`g`,{children:a.map((r,i)=>{let a=c(String(r[s]));if(a==null)return null;let d=typeof r[e]==`number`?r[e]:0,f=l(d),p=Math.min(f,u),m=Math.abs(f-u);return(0,o.jsx)(`rect`,{x:a,y:p,width:c.bandwidth(),height:Math.max(0,m),fill:t,rx:n,ry:n},i)})})}var o;function s(){return(s=e((()=>{n(),o=t(),a.__docgenInfo={description:`Bar marks. Requires a band xScale (categorical x-axis).
+Bars grow from the zero line — handles both positive and negative values.
+
+@example
+\`\`\`
+<ChartBar dataKey="revenue" color={useChartColors().categorical(1)[0]} />
+\`\`\``,methods:[],displayName:`ChartBar`,props:{dataKey:{required:!0,tsType:{name:`string`},description:`Which data key to visualize`},color:{required:!0,tsType:{name:`string`},description:`Bar fill color (hex string, CSS var, etc.)`},radius:{required:!1,tsType:{name:`number`},description:`Corner radius on bar tops`,defaultValue:{value:`4`,computed:!1}}}}})))()}export{s as n,a as t};

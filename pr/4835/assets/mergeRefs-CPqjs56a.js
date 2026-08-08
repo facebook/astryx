@@ -1,0 +1,1 @@
+import{n as e}from"./rolldown-runtime-DkW27tQK.js";function t(...e){return t=>{let n=[];for(let r of e)if(typeof r==`function`){let e=r(t);typeof e==`function`&&n.push(e)}else r!=null&&(r.current=t);if(n.length>0)return()=>{for(let e of n)e()}}}function n(){return(n=e((()=>{})))()}export{t as n,n as t};

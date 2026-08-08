@@ -1,0 +1,7 @@
+import{n as e}from"./rolldown-runtime-DkW27tQK.js";import{t}from"./react-BZJXY1be.js";import{t as n}from"./jsx-runtime-DeHZSEgm.js";import{a as r,c as i,o as a}from"./ChartAxis-BYz-LLki.js";function o({horizontal:e=!0,vertical:t=!1}){let{width:n,height:r,xScale:o,yScale:l}=a(),u=(0,s.useMemo)(()=>e?l.ticks(5).map(e=>l(e)):[],[e,l]),d=(0,s.useMemo)(()=>{if(!t)return[];if(i(o))return o.domain().map(e=>(o(e)??0)+o.bandwidth()/2);let e=o;return e.ticks(5).map(t=>e(t))},[t,o]);return(0,c.jsxs)(`g`,{children:[u.map(e=>(0,c.jsx)(`line`,{x1:0,x2:n,y1:e,y2:e,stroke:`var(--color-border)`,strokeOpacity:.5,strokeDasharray:`4 4`},`h-${e}`)),d.map(e=>(0,c.jsx)(`line`,{x1:e,x2:e,y1:0,y2:r,stroke:`var(--color-border)`,strokeOpacity:.5,strokeDasharray:`4 4`},`v-${e}`))]})}var s,c;function l(){return(l=e((()=>{s=t(),r(),c=n(),o.__docgenInfo={description:`Grid lines behind chart marks.
+
+@example
+\`\`\`
+<ChartGrid horizontal />
+<ChartGrid horizontal vertical />
+\`\`\``,methods:[],displayName:`ChartGrid`,props:{horizontal:{required:!1,tsType:{name:`boolean`},description:`Show horizontal grid lines (default: true)`,defaultValue:{value:`true`,computed:!1}},vertical:{required:!1,tsType:{name:`boolean`},description:`Show vertical grid lines`,defaultValue:{value:`false`,computed:!1}}}}})))()}export{l as n,o as t};

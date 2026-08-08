@@ -1,0 +1,1 @@
+import{n as e}from"./rolldown-runtime-DkW27tQK.js";function t(e){return`${a}-${e}`}function n(e){return`data-${o}-${e}`}function r(e){return`--${s}-${e}`}var i,a,o,s;function c(){return(c=e((()=>{i=`astryx`,a=i,o=i,s=i})))()}export{c as a,o as i,r as n,t as o,n as r,a as t};

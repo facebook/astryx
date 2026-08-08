@@ -1,0 +1,17 @@
+import{n as e}from"./rolldown-runtime-DkW27tQK.js";import{t}from"./react-BZJXY1be.js";import{t as n}from"./jsx-runtime-DeHZSEgm.js";import{n as r,t as i}from"./band-D7FKm_1g.js";import{a,c as o,o as s}from"./ChartAxis-BYz-LLki.js";import{a as c,c as l,i as u,n as d,o as f,r as p,s as m}from"./webgl-C09eFXzS.js";function h(e,t){let n=Math.max(0,Math.min(1,t));if(e.length===1)return e[0];let r=n*(e.length-1),i=Math.floor(r),a=Math.min(i+1,e.length-1),o=r-i;return[e[i][0]+o*(e[a][0]-e[i][0]),e[i][1]+o*(e[a][1]-e[i][1]),e[i][2]+o*(e[a][2]-e[i][2])]}function g({xKey:e,yKey:t,valueKey:n,colorRange:r,domain:a,cellGap:c=1}){let{data:g,xScale:x,width:S,height:C}=s(),w=(0,_.useRef)(null),T=(0,_.useRef)(null),E=(0,_.useRef)(null),D=(0,_.useRef)(null),O=(0,_.useMemo)(()=>r.map(u),[r]),k=(0,_.useMemo)(()=>{let e=[...new Set(g.map(e=>String(e[t])))];return i().domain(e).range([0,C]).padding(.05)},[g,t,C]),A=(0,_.useMemo)(()=>{if(a)return a;let e=1/0,t=-1/0;for(let r of g){let i=r[n];typeof i==`number`&&(i<e&&(e=i),i>t&&(t=i))}return[e,t]},[g,n,a]);return(0,_.useEffect)(()=>{let e=D.current;if(e)return w.current||=document.createElement(`canvas`),f(e,w.current,S,C)},[S,C]),(0,_.useEffect)(()=>{let r=w.current;if(!r||S<=0||C<=0||!o(x))return;l(r,S,C),T.current||=p(r);let i=T.current;if(!i)return;E.current||=d(i,y,b);let a=E.current;if(!a)return;i.viewport(0,0,r.width,r.height),m(i),i.useProgram(a);let s=[],u=[],[f,_]=A,v=_-f||1,D=c,j=x.bandwidth(),M=k.bandwidth(),N=typeof x.step==`function`?x.step():j,P=k.step();for(let r of g){let i=x(String(r[e])),a=k(String(r[t]));if(i==null||a==null)continue;let o=((typeof r[n]==`number`?r[n]:0)-f)/v,[c,l,d]=h(O,o),p=i+j/2,m=a+M/2,g=p-N/2+D/2,_=p+N/2-D/2,y=m-P/2+D/2,b=m+P/2-D/2;s.push(g,y,_,y,g,b,_,y,_,b,g,b);for(let e=0;e<6;e++)u.push(c,l,d)}let F=i.createBuffer();i.bindBuffer(i.ARRAY_BUFFER,F),i.bufferData(i.ARRAY_BUFFER,new Float32Array(s),i.STATIC_DRAW);let I=i.getAttribLocation(a,`a_position`);i.enableVertexAttribArray(I),i.vertexAttribPointer(I,2,i.FLOAT,!1,0,0);let L=i.createBuffer();i.bindBuffer(i.ARRAY_BUFFER,L),i.bufferData(i.ARRAY_BUFFER,new Float32Array(u),i.STATIC_DRAW);let R=i.getAttribLocation(a,`a_color`);i.enableVertexAttribArray(R),i.vertexAttribPointer(R,3,i.FLOAT,!1,0,0),i.uniform2f(i.getUniformLocation(a,`u_resolution`),S,C),i.drawArrays(i.TRIANGLES,0,s.length/2),i.deleteBuffer(F),i.deleteBuffer(L)},[g,e,t,n,x,k,S,C,A,O,c]),S<=0||C<=0?null:(0,v.jsx)(`g`,{ref:D})}var _,v,y,b;function x(){return(x=e((()=>{_=t(),r(),a(),c(),v=n(),y=`
+  attribute vec2 a_position;
+  attribute vec3 a_color;
+  uniform vec2 u_resolution;
+  varying vec3 v_color;
+  void main() {
+    vec2 clip = (a_position / u_resolution) * 2.0 - 1.0;
+    gl_Position = vec4(clip.x, -clip.y, 0.0, 1.0);
+    v_color = a_color;
+  }
+`,b=`
+  precision mediump float;
+  varying vec3 v_color;
+  void main() {
+    gl_FragColor = vec4(v_color, 1.0);
+  }
+`,g.__docgenInfo={description:``,methods:[],displayName:`ChartHeatmapGL`,props:{xKey:{required:!0,tsType:{name:`string`},description:``},yKey:{required:!0,tsType:{name:`string`},description:``},valueKey:{required:!0,tsType:{name:`string`},description:``},colorRange:{required:!0,tsType:{name:`Array`,elements:[{name:`string`}],raw:`string[]`},description:``},domain:{required:!1,tsType:{name:`tuple`,raw:`[number, number]`,elements:[{name:`number`},{name:`number`}]},description:``},cellGap:{required:!1,tsType:{name:`number`},description:``,defaultValue:{value:`1`,computed:!1}}}}})))()}export{x as n,g as t};

@@ -1,0 +1,63 @@
+import{n as e}from"./rolldown-runtime-DkW27tQK.js";import{t}from"./react-BZJXY1be.js";import{n,t as r}from"./Text-BfjtEFtP.js";import{t as i}from"./jsx-runtime-DeHZSEgm.js";import{n as a,t as o}from"./Icon-C24cO4CC.js";import{n as s,t as c}from"./Avatar-DiNe9zDi.js";import{n as l,t as u}from"./Badge-QS1Y3zur.js";import{n as d,t as f}from"./Item-iMHCR9kf.js";import{n as p,t as m}from"./Stack-D-ryFIvw.js";import{n as h,t as g}from"./BellIcon-Bd5nOtNP.js";import{i as _,n as v,r as y,t as b}from"./PencilSquareIcon-BKDZE26W.js";import{n as x,t as S}from"./Cog6ToothIcon-LKkqufPn.js";import{n as C,t as w}from"./DocumentIcon-BnBIfm1v.js";import{n as T,t as E}from"./MagnifyingGlassIcon-uXl564nY.js";import{n as D,t as O}from"./UserIcon-DxfptEP-.js";var k,A,j,M,N,P,F,I,L,R,z,B,V;function H(){return(H=e((()=>{k=t(),d(),s(),l(),a(),n(),p(),D(),x(),C(),v(),h(),_(),T(),A=i(),j={title:`Core/Item`,component:f,tags:[`autodocs`],argTypes:{align:{control:`select`,options:[`center`,`start`]},density:{control:`select`,options:[`compact`,`balanced`,`spacious`]}}},M={render:()=>(0,A.jsx)(f,{startContent:(0,A.jsx)(o,{icon:O,size:`sm`}),label:`Alice Johnson`,description:`Software Engineer`,endContent:(0,A.jsx)(u,{label:`Admin`})})},N={render:()=>(0,A.jsxs)(m,{gap:0,children:[(0,A.jsx)(f,{startContent:(0,A.jsx)(c,{name:`Alice Johnson`,size:40}),label:`Alice Johnson`,description:`Engineering Lead`,endContent:(0,A.jsx)(u,{label:`Admin`}),onClick:()=>{}}),(0,A.jsx)(f,{startContent:(0,A.jsx)(c,{name:`Bob Smith`,size:40}),label:`Bob Smith`,description:`Product Designer`,onClick:()=>{}}),(0,A.jsx)(f,{startContent:(0,A.jsx)(c,{name:`Carol Williams`,size:40}),label:`Carol Williams`,description:`Data Scientist`,endContent:(0,A.jsx)(r,{color:`secondary`,children:`Away`}),onClick:()=>{}})]})},P={render:()=>(0,A.jsxs)(m,{gap:0,children:[(0,A.jsx)(f,{startContent:(0,A.jsx)(c,{name:`Alice`,size:40}),label:(0,A.jsxs)(A.Fragment,{children:[(0,A.jsx)(`b`,{children:`Alice`}),` commented on your PR`]}),description:`Looks good, one nit on the error handling...`,endContent:(0,A.jsx)(r,{color:`secondary`,children:`2h ago`}),descriptionLines:1,onClick:()=>{}}),(0,A.jsx)(f,{startContent:(0,A.jsx)(`div`,{className:`x78zum5 x6s0dn4 xl56j7k x100vrsf x1vqgdyp x16rqkct x17x4s8c`,children:(0,A.jsx)(o,{icon:g,size:`sm`})}),label:`Build completed successfully`,description:`Pipeline #4521 — all 42 tests passed`,endContent:(0,A.jsx)(r,{color:`secondary`,children:`5h ago`}),descriptionLines:1,onClick:()=>{}})]})},F={render:()=>(0,A.jsxs)(m,{gap:0,children:[(0,A.jsx)(f,{startContent:(0,A.jsx)(o,{icon:b,size:`sm`}),label:`Edit`,density:`compact`,onClick:()=>{}}),(0,A.jsx)(f,{startContent:(0,A.jsx)(o,{icon:S,size:`sm`}),label:`Settings`,description:`Manage your preferences`,density:`compact`,onClick:()=>{}}),(0,A.jsx)(f,{startContent:(0,A.jsx)(o,{icon:y,size:`sm`}),label:`Messages`,density:`compact`,endContent:(0,A.jsx)(u,{label:`12`}),onClick:()=>{}})]})},I={render:()=>(0,A.jsxs)(m,{gap:0,children:[(0,A.jsx)(f,{startContent:(0,A.jsx)(o,{icon:g,size:`sm`}),label:`Product updates`,description:`Major announcements and release notes`,density:`spacious`}),(0,A.jsx)(f,{startContent:(0,A.jsx)(o,{icon:y,size:`sm`}),label:`Team messages`,description:`Direct messages, mentions, and thread replies`,endContent:(0,A.jsx)(u,{label:`4`}),density:`spacious`})]})},L={render:function(){let[e,t]=(0,k.useState)(new Set([`doc1`])),n=e=>t(t=>{let n=new Set(t);return n.has(e)?n.delete(e):n.add(e),n});return(0,A.jsxs)(m,{gap:0,children:[(0,A.jsx)(f,{startContent:(0,A.jsx)(o,{icon:w,size:`sm`}),label:`design-spec.pdf`,description:`Modified 2 hours ago`,endContent:(0,A.jsx)(r,{color:`secondary`,children:`2.4 MB`}),isSelected:e.has(`doc1`),onClick:()=>n(`doc1`)}),(0,A.jsx)(f,{startContent:(0,A.jsx)(o,{icon:w,size:`sm`}),label:`architecture-diagram.png`,description:`Modified yesterday`,endContent:(0,A.jsx)(r,{color:`secondary`,children:`1.2 MB`}),isSelected:e.has(`doc2`),onClick:()=>n(`doc2`)}),(0,A.jsx)(f,{startContent:(0,A.jsx)(o,{icon:w,size:`sm`}),label:`meeting-notes.md`,description:`Modified 3 days ago`,endContent:(0,A.jsx)(r,{color:`secondary`,children:`48 KB`}),isSelected:e.has(`doc3`),onClick:()=>n(`doc3`)})]})}},R={render:()=>(0,A.jsxs)(m,{gap:0,children:[(0,A.jsx)(f,{startContent:(0,A.jsx)(o,{icon:E,size:`sm`}),label:(0,A.jsxs)(A.Fragment,{children:[`Astryx `,(0,A.jsx)(`b`,{children:`Button`}),` Component`]}),description:`Primary interactive element for triggering actions...`,descriptionLines:1,href:`/docs/button`}),(0,A.jsx)(f,{startContent:(0,A.jsx)(o,{icon:E,size:`sm`}),label:(0,A.jsxs)(A.Fragment,{children:[`Astryx `,(0,A.jsx)(`b`,{children:`Button`}),`Group`]}),description:`Groups related buttons into a single connected control...`,descriptionLines:1,href:`/docs/button-group`})]})},z={render:()=>(0,A.jsxs)(m,{gap:0,children:[(0,A.jsx)(f,{startContent:(0,A.jsx)(o,{icon:O,size:`sm`}),label:`Active item`,description:`This item is interactive`,onClick:()=>{}}),(0,A.jsx)(f,{startContent:(0,A.jsx)(o,{icon:O,size:`sm`}),label:`Disabled item`,description:`This item cannot be interacted with`,onClick:()=>{},isDisabled:!0})]})},B={render:()=>(0,A.jsx)(f,{align:`start`,startContent:(0,A.jsx)(c,{name:`Alice`,size:40}),label:`Alice Johnson`,description:`This is a longer description that wraps across multiple lines to demonstrate the align=start behavior, which positions the start and end content at the top rather than vertically centering them.`,endContent:(0,A.jsx)(r,{color:`secondary`,children:`Just now`})})},M.parameters={...M.parameters,docs:{...M.parameters?.docs,source:{originalSource:`{
+  render: () => <Item startContent={<Icon icon={UserIcon} size="sm" />} label="Alice Johnson" description="Software Engineer" endContent={<Badge label="Admin" />} />
+}`,...M.parameters?.docs?.source},description:{story:`Basic item with all slots populated.`,...M.parameters?.docs?.description}}},N.parameters={...N.parameters,docs:{...N.parameters?.docs,source:{originalSource:`{
+  render: () => <Stack gap={0}>
+      <Item startContent={<Avatar name="Alice Johnson" size={40} />} label="Alice Johnson" description="Engineering Lead" endContent={<Badge label="Admin" />} onClick={() => {}} />
+      <Item startContent={<Avatar name="Bob Smith" size={40} />} label="Bob Smith" description="Product Designer" onClick={() => {}} />
+      <Item startContent={<Avatar name="Carol Williams" size={40} />} label="Carol Williams" description="Data Scientist" endContent={<Text color="secondary">Away</Text>} onClick={() => {}} />
+    </Stack>
+}`,...N.parameters?.docs?.source},description:{story:`Contact list with avatars and roles.`,...N.parameters?.docs?.description}}},P.parameters={...P.parameters,docs:{...P.parameters?.docs,source:{originalSource:`{
+  render: () => <Stack gap={0}>
+      <Item startContent={<Avatar name="Alice" size={40} />} label={<>
+            <b>Alice</b> commented on your PR
+          </>} description="Looks good, one nit on the error handling..." endContent={<Text color="secondary">2h ago</Text>} descriptionLines={1} onClick={() => {}} />
+      <Item startContent={<div {...stylex.props(storyStyles.iconCircle)}>
+            <Icon icon={BellIcon} size="sm" />
+          </div>} label="Build completed successfully" description="Pipeline #4521 — all 42 tests passed" endContent={<Text color="secondary">5h ago</Text>} descriptionLines={1} onClick={() => {}} />
+    </Stack>
+}`,...P.parameters?.docs?.source},description:{story:`Notification inbox with timestamps and truncation.`,...P.parameters?.docs?.description}}},F.parameters={...F.parameters,docs:{...F.parameters?.docs,source:{originalSource:`{
+  render: () => <Stack gap={0}>
+      <Item startContent={<Icon icon={PencilSquareIcon} size="sm" />} label="Edit" density="compact" onClick={() => {}} />
+      <Item startContent={<Icon icon={Cog6ToothIcon} size="sm" />} label="Settings" description="Manage your preferences" density="compact" onClick={() => {}} />
+      <Item startContent={<Icon icon={ChatBubbleLeftIcon} size="sm" />} label="Messages" density="compact" endContent={<Badge label="12" />} onClick={() => {}} />
+    </Stack>
+}`,...F.parameters?.docs?.source},description:{story:`Compact menu items with icons.`,...F.parameters?.docs?.description}}},I.parameters={...I.parameters,docs:{...I.parameters?.docs,source:{originalSource:`{
+  render: () => <Stack gap={0}>
+      <Item startContent={<Icon icon={BellIcon} size="sm" />} label="Product updates" description="Major announcements and release notes" density="spacious" />
+      <Item startContent={<Icon icon={ChatBubbleLeftIcon} size="sm" />} label="Team messages" description="Direct messages, mentions, and thread replies" endContent={<Badge label="4" />} density="spacious" />
+    </Stack>
+}`,...I.parameters?.docs?.source},description:{story:`Spacious item rows for roomy layouts.`,...I.parameters?.docs?.description}}},L.parameters={...L.parameters,docs:{...L.parameters?.docs,source:{originalSource:`{
+  render: function FileBrowserStory() {
+    const [selected, setSelected] = useState<Set<string>>(new Set(['doc1']));
+    const toggle = (id: string) => setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+    return <Stack gap={0}>
+        <Item startContent={<Icon icon={DocumentIcon} size="sm" />} label="design-spec.pdf" description="Modified 2 hours ago" endContent={<Text color="secondary">2.4 MB</Text>} isSelected={selected.has('doc1')} onClick={() => toggle('doc1')} />
+        <Item startContent={<Icon icon={DocumentIcon} size="sm" />} label="architecture-diagram.png" description="Modified yesterday" endContent={<Text color="secondary">1.2 MB</Text>} isSelected={selected.has('doc2')} onClick={() => toggle('doc2')} />
+        <Item startContent={<Icon icon={DocumentIcon} size="sm" />} label="meeting-notes.md" description="Modified 3 days ago" endContent={<Text color="secondary">48 KB</Text>} isSelected={selected.has('doc3')} onClick={() => toggle('doc3')} />
+      </Stack>;
+  }
+}`,...L.parameters?.docs?.source},description:{story:`File browser with selection state.`,...L.parameters?.docs?.description}}},R.parameters={...R.parameters,docs:{...R.parameters?.docs,source:{originalSource:`{
+  render: () => <Stack gap={0}>
+      <Item startContent={<Icon icon={MagnifyingGlassIcon} size="sm" />} label={<>
+            Astryx <b>Button</b> Component
+          </>} description="Primary interactive element for triggering actions..." descriptionLines={1} href="/docs/button" />
+      <Item startContent={<Icon icon={MagnifyingGlassIcon} size="sm" />} label={<>
+            Astryx <b>Button</b>Group
+          </>} description="Groups related buttons into a single connected control..." descriptionLines={1} href="/docs/button-group" />
+    </Stack>
+}`,...R.parameters?.docs?.source},description:{story:`Search results with highlighted terms and links.`,...R.parameters?.docs?.description}}},z.parameters={...z.parameters,docs:{...z.parameters?.docs,source:{originalSource:`{
+  render: () => <Stack gap={0}>
+      <Item startContent={<Icon icon={UserIcon} size="sm" />} label="Active item" description="This item is interactive" onClick={() => {}} />
+      <Item startContent={<Icon icon={UserIcon} size="sm" />} label="Disabled item" description="This item cannot be interacted with" onClick={() => {}} isDisabled />
+    </Stack>
+}`,...z.parameters?.docs?.source},description:{story:`Disabled items.`,...z.parameters?.docs?.description}}},B.parameters={...B.parameters,docs:{...B.parameters?.docs,source:{originalSource:`{
+  render: () => <Item align="start" startContent={<Avatar name="Alice" size={40} />} label="Alice Johnson" description="This is a longer description that wraps across multiple lines to demonstrate the align=start behavior, which positions the start and end content at the top rather than vertically centering them." endContent={<Text color="secondary">Just now</Text>} />
+}`,...B.parameters?.docs?.source},description:{story:`Top-aligned layout for multi-line content.`,...B.parameters?.docs?.description}}},V=[`Default`,`ContactList`,`Notifications`,`CompactMenu`,`SpaciousRows`,`FileBrowser`,`SearchResults`,`Disabled`,`AlignStart`]})))()}H();export{B as AlignStart,F as CompactMenu,N as ContactList,M as Default,z as Disabled,L as FileBrowser,P as Notifications,R as SearchResults,I as SpaciousRows,V as __namedExportsOrder,j as default};

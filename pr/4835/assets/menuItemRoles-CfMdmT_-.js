@@ -1,0 +1,1 @@
+import{n as e}from"./rolldown-runtime-DkW27tQK.js";var t,n,r;function i(){return(i=e((()=>{t=new Set([`menuitem`,`menuitemradio`,`menuitemcheckbox`]),n=[...t].map(e=>`[role="${e}"]:not([aria-disabled="true"])`).join(`,`),r=`[role="menu"]`})))()}export{i,t as n,n as r,r as t};

@@ -1,0 +1,1 @@
+import{n as e}from"./rolldown-runtime-DkW27tQK.js";function t(e){return function(){return e}}function n(){return(n=e((()=>{})))()}function r(e){return typeof e==`object`&&`length`in e?e:Array.from(e)}function i(){return(i=e((()=>{Array.prototype.slice})))()}export{n as i,i as n,t as r,r as t};

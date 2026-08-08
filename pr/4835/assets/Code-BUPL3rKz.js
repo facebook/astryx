@@ -1,0 +1,12 @@
+import{n as e}from"./rolldown-runtime-DkW27tQK.js";import{n as t,t as n}from"./stylex-Dft6gtPK.js";import{n as r}from"./mergeProps-JRyAvMxc.js";import{n as i,t as a}from"./themeProps-CREkzZh6.js";import{t as o}from"./jsx-runtime-DeHZSEgm.js";function s({children:e,color:n=`primary`,size:a,xstyle:o,className:s,style:f,ref:p,...m}){return(0,c.jsx)(`code`,{ref:p,...m,...r(i(`code`,{color:n}),t(l.base,u[n],a&&d[a],o),s,f),children:e})}var c,l,u,d;function f(){return(f=e((()=>{n(),a(),c=o(),l={base:{kMv6JI:`astryx9m5x89`,kGuDYH:`astryxp03k98`,kLWn49:`astryx15bjb6t`,kWkggS:`astryxwmxj5m`,kg3NbH:`astryx7a5moj`,k8WAf4:`astryx1hp7d8q`,kaIpWk:`astryxx3sua9`,kHjlTd:`astryx1mzt3pk`,kTgw9:`astryx13faqbe`,$$css:!0}},u={primary:{kMwMTN:`astryx1tgivj0`,$$css:!0},secondary:{kMwMTN:`astryxv1l7n4`,$$css:!0},inherit:{kMwMTN:`astryx1heor9g`,$$css:!0}},d={inherit:{kGuDYH:`astryx1qlqyl8`,kLWn49:`astryx15bjb6t`,$$css:!0}},s.displayName=`Code`,s.__docgenInfo={description:`Inline code element. Renders a styled \`<code>\` with monospace font,
+muted background, and design-system-consistent sizing.
+
+For fenced code blocks with syntax highlighting, use \`CodeBlock\`.
+
+@example
+\`\`\`
+<Text type="body">
+  Use <Code>const x = 1</Code> to declare a variable.
+</Text>
+\`\`\``,methods:[],displayName:`Code`,props:{xstyle:{required:!1,tsType:{name:`StyleXStyles`},description:"StyleX styles created via `stylex.create()`. Merged with the component's\nbase styles inside a single `stylex.props()` call for optimal deduplication.\n\n@example\n```\nconst overrides = stylex.create({ root: { marginBottom: 8 } });\n<Component xstyle={overrides.root} />\n```"},ref:{required:!1,tsType:{name:`ReactRef`,raw:`React.Ref<HTMLElement>`,elements:[{name:`HTMLElement`}]},description:`Ref forwarded to the root element`},color:{required:!1,tsType:{name:`union`,raw:`'primary' | 'secondary' | 'inherit'`,elements:[{name:`literal`,value:`'primary'`},{name:`literal`,value:`'secondary'`},{name:`literal`,value:`'inherit'`}]},description:`Text color. Mirrors the Text color subset.
+@default 'primary'`,defaultValue:{value:`'primary'`,computed:!1}},size:{required:!1,tsType:{name:`literal`,value:`'inherit'`},description:"Font size. Set to `'inherit'` to adopt the surrounding text's font-size\nand line-height (useful for inline code inside larger/smaller text)."},children:{required:!0,tsType:{name:`ReactNode`},description:`Code content`}},composes:[`Omit`]}})))()}export{f as n,s as t};

@@ -1,0 +1,51 @@
+const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["./ProgressBarMarkTooltip-CpeT7GEk.js","./rolldown-runtime-DkW27tQK.js","./jsx-runtime-DeHZSEgm.js","./Tooltip-Ypc-fkfG.js","./react-BZJXY1be.js","./useTooltip-Cm0gpSWG.js","./themeProps-CREkzZh6.js","./naming-DuIRtD9i.js","./useLayer-EhGBKttH.js","./stylex-Dft6gtPK.js","./layerAnimations.stylex-18OH5AHk.js","./tokens.stylex-C15xwlpu.js","./useIsomorphicLayoutEffect-vnms8l8s.js"])))=>i.map(i=>d[i]);
+import{n as e}from"./rolldown-runtime-DkW27tQK.js";import{n as t,t as n}from"./preload-helper-wdlQj8DP.js";import{t as r}from"./react-BZJXY1be.js";import{n as i,t as a}from"./stylex-Dft6gtPK.js";import{n as o}from"./mergeProps-JRyAvMxc.js";import{n as s,t as c}from"./themeProps-CREkzZh6.js";import{t as l}from"./jsx-runtime-DeHZSEgm.js";import{n as u,t as d}from"./VisuallyHidden-Z2NjNH-_.js";function f(e,t){return`${t>0?Math.round(e/t*100):0}%`}function p({value:e=0,max:t=100,label:n,isLabelHidden:r=!1,hasValueLabel:a=!1,formatValueLabel:c=f,variant:l=`accent`,isIndeterminate:u=!1,isDisabled:p=!1,marks:x,xstyle:S,className:C,style:w,"data-testid":T,ref:E,...D}){let O=(0,m.useId)(),k=Number.isFinite(e)?e:0,A=Number.isFinite(t)?t:0,j=Math.min(Math.max(0,k),A),M=A>0?j/A*100:0,N=c(j,A),P=a&&!u,F=p?`disabled`:l,I=!u&&x?x.filter(e=>Number.isFinite(e.value)).map(e=>{let t=Math.min(Math.max(0,e.value),A),n=A>0?t/A*100:0;return{value:e.value,label:e.label,pct:n,isOnFill:M>0&&n<=M}}):[];return(0,h.jsxs)(`div`,{ref:E,...o(s(`progressbar`,{variant:l}),i(_.container,S),C,w),"data-testid":T,...D,children:[!r||P?(0,h.jsxs)(`div`,{className:`astryx78zum5 astryx1qughib astryx1pha0wt`,children:[(0,h.jsx)(`span`,{id:O,...{0:{className:`astryxjm74w1 astryxw6l6zx astryx1e4wzip astryx1tgivj0`},2:{className:`astryxjm74w1 astryxw6l6zx astryx1e4wzip astryx1tgivj0 astryx10l6tqk astryx1i1rx1s astryxjm9jq1 astryx1717udv astryxkdpibf astryxb3r6kr astryxzpqnlu astryxuxw1ft astryxc342km`},1:{className:`astryxjm74w1 astryxw6l6zx astryx1e4wzip astryxnbbluu`},3:{className:`astryxjm74w1 astryxw6l6zx astryx1e4wzip astryx10l6tqk astryx1i1rx1s astryxjm9jq1 astryx1717udv astryxkdpibf astryxb3r6kr astryxzpqnlu astryxuxw1ft astryxc342km astryxnbbluu`}}[!!r<<1|!!p<<0],children:n}),P&&(0,h.jsx)(`span`,{...{0:{className:`astryxjm74w1 astryxw6l6zx astryx1sodnla astryxv1l7n4`},1:{className:`astryxjm74w1 astryxw6l6zx astryx1sodnla astryxnbbluu`}}[!!p<<0],children:N})]}):(0,h.jsx)(d,{id:O,children:n}),(0,h.jsxs)(`div`,{role:`progressbar`,"aria-valuenow":u?void 0:j,"aria-valuemin":u?void 0:0,"aria-valuemax":u?void 0:A,"aria-labelledby":O,"aria-valuetext":u?void 0:N,...o(s(`progressbar-track`),{0:{className:`astryx1n2onr6 astryxh8yej3 astryxdk7pt astryxwmxj5m astryxjspbzw`},1:{className:`astryx1n2onr6 astryxh8yej3 astryxdk7pt astryxwmxj5m astryxjspbzw astryxb3r6kr`}}[!!u<<0]),children:[u?(0,h.jsx)(`div`,{...o(s(`progressbar-fill`,{variant:F}),i(_.indeterminateFill,v[F]))}):(0,h.jsx)(`div`,{...o(s(`progressbar-fill`,{variant:F}),i(_.fill,v[F])),style:{width:`${M}%`}}),I.map(e=>{let t=(0,h.jsx)(`span`,{tabIndex:0,...o(s(`progressbar-mark`,{variant:F,placement:e.isOnFill?`fill`:`track`}),i(_.mark,e.isOnFill?y[F]:p?b.trackDisabled:b.track)),style:{insetInlineStart:`${e.pct}%`}});return(0,h.jsx)(m.Suspense,{fallback:t,children:(0,h.jsx)(g,{content:e.label,children:t})},`${e.value}:${e.label}`)})]})]})}var m,h,g,_,v,y,b;function x(){return(x=e((()=>{m=r(),a(),c(),u(),h=l(),t(),g=(0,m.lazy)(async()=>n(()=>import(`./ProgressBarMarkTooltip-CpeT7GEk.js`),__vite__mapDeps([0,1,2,3,4,5,6,7,8,9,10,11,12]),import.meta.url)),_={container:{k1xSpc:`astryx78zum5`,kXwgrk:`astryxdt5ytf`,kOIVth:`astryxzye2dw`,kzqmXN:`astryxh8yej3`,k7Eaqz:`astryx900493`,$$css:!0},fill:{kZKoxP:`astryx5yr21d`,kaIpWk:`astryxjspbzw`,k1ekBW:`astryxxrbq2n`,kIyJzY:`astryx80gvsz`,kAMwcw:`astryxlr8y92`,$$css:!0},indeterminateFill:{kZKoxP:`astryx5yr21d`,kzqmXN:`astryxz84dc7`,kaIpWk:`astryxjspbzw`,kKVMdj:`astryx1kfvj8g astryx6up6ha`,k44tkh:`astryxmg6eyc astryxnh0sag`,kyAemX:`astryx4hg4is`,ko0y90:`astryxa4qsjk`,$$css:!0},mark:{kVAEAm:`astryx10l6tqk`,k87sOh:`astryxwa60dl`,kzqmXN:`astryxfo62xy`,kZKoxP:`astryxdk7pt`,kI3sdo:`astryx1a2a7pz astryx17nn4n9`,kInvED:`astryx1wfwxd8 astryx7s97pk`,k3aq6I:`astryx11lhmoz astryxoffwj3`,$$css:!0}},v={accent:{kWkggS:`astryx1ewilqj`,$$css:!0},success:{kWkggS:`astryxdsz4j9`,$$css:!0},warning:{kWkggS:`astryx1q8g9m5`,$$css:!0},error:{kWkggS:`astryx1pjz0fi`,$$css:!0},neutral:{kWkggS:`astryx16fr6go`,$$css:!0},disabled:{kWkggS:`astryx16fr6go`,$$css:!0}},y={accent:{kWkggS:`astryx1azo05`,$$css:!0},success:{kWkggS:`astryx9mohwv`,$$css:!0},warning:{kWkggS:`astryxmgwp2l`,$$css:!0},error:{kWkggS:`astryxfba6wv`,$$css:!0},neutral:{kWkggS:`astryx19aspcf`,$$css:!0},disabled:{kWkggS:`astryxdomwnj`,$$css:!0}},b={track:{kWkggS:`astryx19aspcf`,$$css:!0},trackDisabled:{kWkggS:`astryxdomwnj`,$$css:!0}},p.displayName=`ProgressBar`,p.__docgenInfo={description:`A progress bar for displaying determinate or indeterminate progress.
+
+In determinate mode, displays a known value within a range (upload progress,
+disk usage, etc). In indeterminate mode, shows an animated loading indicator
+for unknown progress.
+
+ProgressBar is intentionally minimal — compose additional labels, status
+icons, and descriptions alongside the bar using layout components rather
+than adding props to ProgressBar itself. The exception is on-track content
+like \`marks\`, which are positioned by value over the track.
+
+Styles use Astryx theme tokens via StyleX.
+Wrap your app in <Theme> to apply a theme.
+
+@example
+\`\`\`
+<ProgressBar value={75} label="Upload progress" />
+<ProgressBar isIndeterminate label="Loading..." />
+<ProgressBar value={3.2} max={5} label="Disk usage" hasValueLabel
+  formatValueLabel={(v, m) => \`\${v} GB / \${m} GB\`} />
+<ProgressBar value={30} label="Canceled" isDisabled hasValueLabel />
+<ProgressBar value={45} label="Fundraiser" marks={[{value: 80, label: 'Goal'}]} />
+\`\`\`
+
+A mark's height, width, and color are directly themeable via the
+\`progressbar-mark\` target. The target reflects \`data-placement\`
+(\`"fill"\` when the mark sits inside the filled area, \`"track"\` when it is
+still out on the bare track) and \`data-variant\` (the fill's variant), so a
+theme can style the two cases separately — e.g. a taller "goal flag" tick
+that overhangs the bar (centered, so the overhang is symmetric):
+
+@example
+\`\`\`
+defineTheme({
+  name: 'campaign',
+  components: {
+    'progressbar-mark': {base: {height: '16px', backgroundColor: 'red'}},
+  },
+});
+\`\`\``,methods:[],displayName:`ProgressBar`,props:{xstyle:{required:!1,tsType:{name:`StyleXStyles`},description:"StyleX styles created via `stylex.create()`. Merged with the component's\nbase styles inside a single `stylex.props()` call for optimal deduplication.\n\n@example\n```\nconst overrides = stylex.create({ root: { marginBottom: 8 } });\n<Component xstyle={overrides.root} />\n```"},ref:{required:!1,tsType:{name:`ReactRef`,raw:`React.Ref<HTMLDivElement>`,elements:[{name:`HTMLDivElement`}]},description:`Ref forwarded to the root element`},value:{required:!1,tsType:{name:`number`},description:"Current value of the progress bar.\nIgnored when `isIndeterminate` is true.",defaultValue:{value:`0`,computed:!1}},max:{required:!1,tsType:{name:`number`},description:`Maximum value of the progress bar.
+@default 100`,defaultValue:{value:`100`,computed:!1}},label:{required:!0,tsType:{name:`string`},description:"Accessible label for the progress bar. Required for a11y.\nShown visually above the bar unless `isLabelHidden` is true."},isLabelHidden:{required:!1,tsType:{name:`boolean`},description:`When true, the label is visually hidden but remains accessible to screen readers.
+@default false`,defaultValue:{value:`false`,computed:!1}},hasValueLabel:{required:!1,tsType:{name:`boolean`},description:`When true, displays the formatted value (e.g. "75%") next to the label.
+Ignored when \`isIndeterminate\` is true.
+@default false`,defaultValue:{value:`false`,computed:!1}},formatValueLabel:{required:!1,tsType:{name:`signature`,type:`function`,raw:`(value: number, max: number) => string`,signature:{arguments:[{type:{name:`number`},name:`value`},{type:{name:`number`},name:`max`}],return:{name:`string`}}},description:"Custom formatter for the value label.\n@default (value, max) => `${Math.round((value / max) * 100)}%`",defaultValue:{value:`function defaultFormatValueLabel(value: number, max: number): string {
+  const pct = max > 0 ? Math.round((value / max) * 100) : 0;
+  return \`\${pct}%\`;
+}`,computed:!1}},variant:{required:!1,tsType:{name:`ProgressBarVariantMap`},description:`Visual style variant mapped to semantic color tokens.
+@default 'accent'`,defaultValue:{value:`'accent'`,computed:!1}},isIndeterminate:{required:!1,tsType:{name:`boolean`},description:"When true, renders an animated indeterminate progress indicator.\nUse when the progress amount is unknown (e.g. loading, processing).\nThe `value` and `hasValueLabel` props are ignored in this mode.\nRespects `prefers-reduced-motion` by slowing the animation.\n@default false",defaultValue:{value:`false`,computed:!1}},marks:{required:!1,tsType:{name:`ReadonlyArray`,elements:[{name:`ProgressBarMark`}],raw:`ReadonlyArray<ProgressBarMark>`},description:"Target marks drawn on the track at fixed points in the same `0..max`\nscale as `value` — e.g. a goal line. Marks stay visible whether progress\nis below or past them, and take their color from what they sit on: a mark\ninside the filled area uses the fill variant's on-color (on-accent,\non-warning, on-error, …), while a mark still out on the bare track uses\n`--color-text-primary` (`--color-text-secondary` on a disabled bar, which\ndims everything it draws). Each mark's required `label` names it for\nassistive tech and is revealed via a `Tooltip` on hover/focus. Ignored when\n`isIndeterminate` is true."},isDisabled:{required:!1,tsType:{name:`boolean`},description:`When true, the progress bar is visually disabled — the fill bar and
+text use disabled colors. Use for canceled or inactive operations.
+@default false`,defaultValue:{value:`false`,computed:!1}},"data-testid":{required:!1,tsType:{name:`string`},description:`Test ID for testing utilities.`}},composes:[`Omit`]}})))()}export{x as n,p as t};

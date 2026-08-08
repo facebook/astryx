@@ -1,0 +1,1 @@
+import{n as e}from"./rolldown-runtime-DkW27tQK.js";function t(e,t){return e==null?`fallback:${typeof t==`function`?t():t}`:`id:${e}`}function n(){return(n=e((()=>{})))()}export{n,t};

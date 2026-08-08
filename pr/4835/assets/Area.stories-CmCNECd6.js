@@ -1,0 +1,18 @@
+import{n as e}from"./rolldown-runtime-DkW27tQK.js";import{t}from"./jsx-runtime-DeHZSEgm.js";import{a as n,i as r,l as i,n as a,t as o,u as s}from"./monotone-BkTzO5Uw.js";import{n as c,t as l}from"./area-DkR6_U8B.js";import{a as u,i as d,o as f,t as p}from"./step-D28a0Rej.js";import{d as m,f as h,g,h as _,i as v,m as y,p as b,r as x,y as S}from"./_data-DNraWrUw.js";import{r as C,t as w}from"./markColor-fgmtp3ym.js";import{n as T,t as E}from"./line-BJMqy3Wb.js";function D(e){return Number.isFinite(e.px)&&Number.isFinite(e.py)&&Number.isFinite(e.py0)}function O(e,t={}){let r=t.color,i=typeof t.opacity==`number`&&Number.isFinite(t.opacity)?Math.min(1,Math.max(0,t.opacity)):.3,o=t.curve??`monotone`,s=t.gradient??!1,c=t.stroke??!0,u={type:`area`,key:e,dataKeys:[e],color:r,label:t.label??e,layout:{stack:t.stack,includeZero:!0},resolve(t,n){let{data:r,xKey:i,xScale:a,yScale:o}=t,s=[];for(let t=0;t<r.length;t++){let c=r[t],l,u;if(n){let e=n[t];l=e?o(e.y1):NaN,u=e?o(e.y0):NaN}else{let t=c[e];l=o(typeof t==`number`&&Number.isFinite(t)?t:NaN),u=o(0)}s.push({px:S(c,i,a),py:l,py0:u,dataIndex:t})}return s},render(t){if(t.length===0)return null;let d=A[o]??a,f=l().defined(D).x(e=>e.px).y0(e=>e.py0).y1(e=>e.py).curve(d)(t)??``,p=n().defined(D).x(e=>e.px).y(e=>e.py).curve(d)(t)??``,m=`area-grad-${(u._uid??e).replace(/[^a-zA-Z0-9_-]/g,`-`)}`,h=C(u,r);return(0,k.jsxs)(`g`,{children:[s&&(0,k.jsx)(`defs`,{children:(0,k.jsxs)(`linearGradient`,{id:m,x1:`0`,y1:`0`,x2:`0`,y2:`1`,children:[(0,k.jsx)(`stop`,{offset:`0%`,stopColor:h,stopOpacity:i}),(0,k.jsx)(`stop`,{offset:`100%`,stopColor:h,stopOpacity:0})]})}),(0,k.jsx)(`path`,{d:f,fill:s?`url(#${m})`:h,fillOpacity:s?1:i,stroke:`none`}),c&&(0,k.jsx)(`path`,{d:p,fill:`none`,stroke:h,strokeWidth:2})]})}};return u}var k,A;function j(){return(j=e((()=>{c(),i(),o(),u(),p(),r(),w(),k=t(),A={linear:s,monotone:a,natural:f,step:d}})))()}var M,N,P,F,I,L;function R(){return(R=e((()=>{g(),j(),E(),h(),y(),x(),M=t(),N={title:`Charts/Area`,component:_},P=(0,M.jsxs)(M.Fragment,{children:[(0,M.jsx)(b,{position:`bottom`}),(0,M.jsx)(b,{position:`left`})]}),F={render:()=>(0,M.jsx)(_,{data:v,xKey:`month`,title:`Revenue over time`,series:[O(`revenue`,{color:`#3b82f6`,gradient:!0}),T(`revenue`,{color:`#3b82f6`})],grid:(0,M.jsx)(m,{}),axes:P,height:300})},I={render:()=>(0,M.jsx)(_,{data:v,xKey:`month`,title:`Revenue & Costs`,series:[O(`revenue`,{color:`#3b82f6`,stack:`total`,label:`Revenue`}),O(`costs`,{color:`#ef4444`,stack:`total`,label:`Costs`})],legend:!0,grid:(0,M.jsx)(m,{}),axes:P,height:300})},F.parameters={...F.parameters,docs:{...F.parameters?.docs,source:{originalSource:`{
+  render: () => <Chart data={monthlyData} xKey="month" title="Revenue over time" series={[area('revenue', {
+    color: '#3b82f6',
+    gradient: true
+  }), line('revenue', {
+    color: '#3b82f6'
+  })]} grid={<ChartGrid />} axes={axes} height={300} />
+}`,...F.parameters?.docs?.source}}},I.parameters={...I.parameters,docs:{...I.parameters?.docs,source:{originalSource:`{
+  render: () => <Chart data={monthlyData} xKey="month" title="Revenue & Costs" series={[area('revenue', {
+    color: '#3b82f6',
+    stack: 'total',
+    label: 'Revenue'
+  }), area('costs', {
+    color: '#ef4444',
+    stack: 'total',
+    label: 'Costs'
+  })]} legend grid={<ChartGrid />} axes={axes} height={300} />
+}`,...I.parameters?.docs?.source}}},L=[`Gradient`,`Stacked`]})))()}R();export{F as Gradient,I as Stacked,L as __namedExportsOrder,N as default};

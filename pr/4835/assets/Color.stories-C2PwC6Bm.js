@@ -1,0 +1,12 @@
+import{n as e}from"./rolldown-runtime-DkW27tQK.js";import{t}from"./jsx-runtime-DeHZSEgm.js";import{d as n,f as r,g as i,h as a,i as o,m as s,o as c,p as l,r as u}from"./_data-DNraWrUw.js";import{n as d,t as f}from"./bar-5Bcz6no5.js";import{n as p,t as m}from"./line-BJMqy3Wb.js";var h,g,_,v,y,b;function x(){return(x=e((()=>{i(),d(),m(),r(),s(),u(),h=t(),g={title:`Charts/Color`,component:a},_=(0,h.jsxs)(h.Fragment,{children:[(0,h.jsx)(l,{position:`bottom`}),(0,h.jsx)(l,{position:`left`})]}),v={render:()=>(0,h.jsx)(a,{data:o,xKey:`month`,title:`Auto palette`,subtitle:`No colors passed — assigned from the theme's categorical palette`,series:[f(`revenue`,{group:`g`}),f(`costs`,{group:`g`}),p(`trend`)],legend:!0,grid:(0,h.jsx)(n,{}),axes:_,height:320})},y={render:()=>(0,h.jsx)(a,{data:c,xKey:`month`,title:`Green when positive, red when negative`,series:[f(`profit`,{label:`Profit`,color:e=>e.profit>=0?`var(--color-success)`:`var(--color-error)`})],legend:!0,grid:(0,h.jsx)(n,{}),axes:_,height:320})},v.parameters={...v.parameters,docs:{...v.parameters?.docs,source:{originalSource:`{
+  render: () => <Chart data={monthlyData} xKey="month" title="Auto palette" subtitle="No colors passed — assigned from the theme's categorical palette" series={[bar('revenue', {
+    group: 'g'
+  }), bar('costs', {
+    group: 'g'
+  }), line('trend')]} legend grid={<ChartGrid />} axes={axes} height={320} />
+}`,...v.parameters?.docs?.source},description:{story:`No colors passed — the chart assigns distinct colors from the theme palette.`,...v.parameters?.docs?.description}}},y.parameters={...y.parameters,docs:{...y.parameters?.docs,source:{originalSource:`{
+  render: () => <Chart data={profitLossData} xKey="month" title="Green when positive, red when negative" series={[bar('profit', {
+    label: 'Profit',
+    color: d => d.profit as number >= 0 ? 'var(--color-success)' : 'var(--color-error)'
+  })]} legend grid={<ChartGrid />} axes={axes} height={320} />
+}`,...y.parameters?.docs?.source},description:{story:`Per-datum color via an accessor; the series still shows in the legend.`,...y.parameters?.docs?.description}}},b=[`AutoPalette`,`AccessorColor`]})))()}x();export{y as AccessorColor,v as AutoPalette,b as __namedExportsOrder,g as default};
