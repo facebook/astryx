@@ -28,7 +28,7 @@ const styles = stylex.create({
   layerDemo: {
     padding: '1.5rem',
     borderRadius: 12,
-    backgroundColor: 'var(--color-background-secondary)',
+    backgroundColor: 'var(--color-background-surface)',
   },
   customButton: {
     borderRadius: 999,
