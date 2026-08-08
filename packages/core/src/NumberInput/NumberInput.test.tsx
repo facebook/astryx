@@ -10,7 +10,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {act, render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {TestIcon} from '../__tests__/TestIcon';
 import {InputGroup} from '../InputGroup';
@@ -1017,6 +1017,527 @@ describe('keyboard clearing with hasClear (#3599)', () => {
     fireEvent.blur(input);
     expect(onChange).not.toHaveBeenCalled();
     expect((input as HTMLInputElement).value).toBe('42');
+  });
+});
+
+// =============================================================================
+// changeAction — input-family convention parity (#4186)
+// =============================================================================
+
+describe('changeAction', () => {
+  it('fires onChange then changeAction with the committed number', async () => {
+    const user = userEvent.setup();
+    const order: string[] = [];
+    const onChange = vi.fn(() => order.push('onChange'));
+    const changeAction = vi.fn(() => {
+      order.push('changeAction');
+    });
+
+    render(
+      <NumberInput
+        label="Qty"
+        value={1}
+        onChange={onChange}
+        changeAction={changeAction}
+      />,
+    );
+
+    await user.clear(screen.getByLabelText('Qty'));
+    await user.type(screen.getByLabelText('Qty'), '7');
+
+    expect(onChange).toHaveBeenLastCalledWith(7);
+    expect(changeAction).toHaveBeenLastCalledWith(7);
+    expect(order.slice(-2)).toEqual(['onChange', 'changeAction']);
+  });
+
+  it('shows the optimistic value while changeAction is pending', async () => {
+    const user = userEvent.setup();
+    // Collect every resolver, not just the newest: the parent below never
+    // applies the value, so blur re-commits the same number and a second
+    // action goes in flight. Leaving either one dangling wedges React's
+    // transition chain for every test that follows in this file.
+    const settle: (() => void)[] = [];
+    const changeAction = vi.fn(
+      async () =>
+        new Promise<void>(resolve => {
+          settle.push(resolve);
+        }),
+    );
+
+    // Controlled parent that has NOT applied the new value yet.
+    render(
+      <>
+        <NumberInput
+          label="Qty"
+          value={1}
+          onChange={() => {}}
+          changeAction={changeAction}
+        />
+        <button type="button">elsewhere</button>
+      </>,
+    );
+
+    const input = screen.getByLabelText('Qty');
+    await user.clear(input);
+    await user.type(input, '7');
+
+    // Blur clears the pending text, so the field falls back to the value
+    // pipeline. That is the only moment the optimistic state is
+    // load-bearing: without it the parent's stale 1 snaps back mid-flight.
+    await user.click(screen.getByRole('button', {name: 'elsewhere'}));
+
+    await waitFor(() => expect(changeAction).toHaveBeenLastCalledWith(7));
+    expect(input).toHaveValue(7);
+
+    await act(async () => {
+      settle.forEach(resolve => resolve());
+    });
+  });
+
+  it('does not fire changeAction while the typed value is invalid', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const changeAction = vi.fn();
+
+    render(
+      <NumberInput
+        label="Qty"
+        value={1}
+        onChange={onChange}
+        changeAction={changeAction}
+        min={0}
+        max={10}
+      />,
+    );
+
+    await user.clear(screen.getByLabelText('Qty'));
+    await user.type(screen.getByLabelText('Qty'), '99');
+
+    // 99 is out of range, so nothing is committed through either channel.
+    expect(onChange).not.toHaveBeenCalledWith(99);
+    expect(changeAction).not.toHaveBeenCalledWith(99);
+  });
+
+  it('fires changeAction with null when the value is cleared', async () => {
+    const user = userEvent.setup();
+    const changeAction = vi.fn();
+
+    render(
+      <NumberInput
+        label="Qty"
+        value={5}
+        onChange={() => {}}
+        changeAction={changeAction}
+        hasClear
+      />,
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Clear Qty'}));
+
+    await waitFor(() => expect(changeAction).toHaveBeenCalledWith(null));
+  });
+
+  it('still commits through onChange when no changeAction is given', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+
+    render(<NumberInput label="Qty" value={1} onChange={onChange} />);
+
+    await user.clear(screen.getByLabelText('Qty'));
+    await user.type(screen.getByLabelText('Qty'), '7');
+
+    expect(onChange).toHaveBeenLastCalledWith(7);
+  });
+
+  it('does not re-commit a number that is already in flight', async () => {
+    const user = userEvent.setup();
+    const settle: (() => void)[] = [];
+    const onChange = vi.fn();
+    const changeAction = vi.fn(
+      async () =>
+        new Promise<void>(resolve => {
+          settle.push(resolve);
+        }),
+    );
+
+    render(
+      <>
+        <NumberInput
+          label="Qty"
+          value={1}
+          onChange={onChange}
+          changeAction={changeAction}
+        />
+        <button type="button">elsewhere</button>
+      </>,
+    );
+
+    const input = screen.getByLabelText('Qty');
+    await user.clear(input);
+    await user.type(input, '7');
+
+    // Blur reaches the commit path again with the same number. The parent has
+    // not applied it yet, so a guard that compares against the stale `value`
+    // dispatches the async action a second time for a single edit.
+    await user.click(screen.getByRole('button', {name: 'elsewhere'}));
+
+    expect(changeAction).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      settle.forEach(resolve => resolve());
+    });
+  });
+
+  it('commits a number typed back to the pre-flight value while in flight', async () => {
+    const user = userEvent.setup();
+    const settle: (() => void)[] = [];
+    const onChange = vi.fn();
+    const changeAction = vi.fn(
+      async () =>
+        new Promise<void>(resolve => {
+          settle.push(resolve);
+        }),
+    );
+
+    render(
+      <NumberInput
+        label="Qty"
+        value={1}
+        onChange={onChange}
+        changeAction={changeAction}
+      />,
+    );
+
+    const input = screen.getByLabelText('Qty');
+    await user.clear(input);
+    await user.type(input, '7');
+    await waitFor(() => expect(changeAction).toHaveBeenLastCalledWith(7));
+
+    // 7 is in flight and the parent still holds 1. Typing back to 1 is a real
+    // edit that must reach both channels — comparing against the stale `value`
+    // would silently drop it and leave the server on 7.
+    await user.clear(input);
+    await user.type(input, '1');
+
+    await waitFor(() => expect(changeAction).toHaveBeenLastCalledWith(1));
+    expect(onChange).toHaveBeenLastCalledWith(1);
+
+    await act(async () => {
+      settle.forEach(resolve => resolve());
+    });
+  });
+
+  it('does not re-commit a number that is already in flight when Enter is pressed', async () => {
+    const settle: (() => void)[] = [];
+    const onChange = vi.fn();
+    const changeAction = vi.fn(
+      async () =>
+        new Promise<void>(resolve => {
+          settle.push(resolve);
+        }),
+    );
+
+    render(
+      <NumberInput
+        label="Qty"
+        value={1}
+        onChange={onChange}
+        changeAction={changeAction}
+      />,
+    );
+
+    const input = screen.getByLabelText('Qty');
+    fireEvent.change(input, {target: {value: '7'}});
+
+    // Enter reaches the commit path again with the number the change event has
+    // already sent. Enter is the ordinary submit gesture here, so this is the
+    // twin of the blur case and needs its own guard.
+    fireEvent.keyDown(input, {key: 'Enter'});
+
+    expect(changeAction).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      settle.forEach(resolve => resolve());
+    });
+  });
+
+  it('fires changeAction from the deferred blur commit', async () => {
+    const settle: (() => void)[] = [];
+    const onChange = vi.fn();
+    const changeAction = vi.fn(
+      async () =>
+        new Promise<void>(resolve => {
+          settle.push(resolve);
+        }),
+    );
+
+    const field = (v: number) => (
+      <>
+        <NumberInput
+          label="Qty"
+          value={v}
+          onChange={onChange}
+          changeAction={changeAction}
+        />
+        <button type="button">elsewhere</button>
+      </>
+    );
+
+    const {rerender} = render(field(5));
+
+    const input = screen.getByLabelText('Qty');
+    // '5.0' parses to the number the field already holds, so typing commits
+    // nothing and the pending text survives into the blur handler.
+    fireEvent.change(input, {target: {value: '5.0'}});
+    expect(changeAction).not.toHaveBeenCalled();
+
+    // The value changes underneath the focused field, so blur now has real
+    // work to do — and it has to reach changeAction, not only onChange.
+    // Without this, a regression leaves the UI correct and the server stale.
+    rerender(field(9));
+    fireEvent.blur(input);
+
+    await waitFor(() => expect(changeAction).toHaveBeenCalledWith(5));
+    expect(onChange).toHaveBeenCalledWith(5);
+
+    await act(async () => {
+      settle.forEach(resolve => resolve());
+    });
+  });
+
+  it('fires changeAction from the deferred Enter commit', async () => {
+    const settle: (() => void)[] = [];
+    const onChange = vi.fn();
+    const changeAction = vi.fn(
+      async () =>
+        new Promise<void>(resolve => {
+          settle.push(resolve);
+        }),
+    );
+
+    const field = (v: number) => (
+      <NumberInput
+        label="Qty"
+        value={v}
+        onChange={onChange}
+        changeAction={changeAction}
+      />
+    );
+
+    const {rerender} = render(field(5));
+
+    const input = screen.getByLabelText('Qty');
+    fireEvent.change(input, {target: {value: '5.0'}});
+    expect(changeAction).not.toHaveBeenCalled();
+
+    rerender(field(9));
+    fireEvent.keyDown(input, {key: 'Enter'});
+
+    await waitFor(() => expect(changeAction).toHaveBeenCalledWith(5));
+    expect(onChange).toHaveBeenCalledWith(5);
+
+    await act(async () => {
+      settle.forEach(resolve => resolve());
+    });
+  });
+
+  it('does not re-dispatch a clear that is already in flight', async () => {
+    const user = userEvent.setup();
+    const settle: (() => void)[] = [];
+    const onChange = vi.fn();
+    const changeAction = vi.fn(
+      async () =>
+        new Promise<void>(resolve => {
+          settle.push(resolve);
+        }),
+    );
+
+    render(
+      <NumberInput
+        label="Qty"
+        value={5}
+        hasClear
+        onChange={onChange}
+        changeAction={changeAction}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Clear Qty'}));
+
+    // The parent has not applied null yet, so the button is still mounted —
+    // now sitting over an already-empty field. A second click must not send a
+    // second clear to the server.
+    await user.click(screen.getByRole('button', {name: 'Clear Qty'}));
+
+    expect(changeAction).toHaveBeenCalledTimes(1);
+    expect(changeAction).toHaveBeenCalledWith(null);
+    expect(onChange).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      settle.forEach(resolve => resolve());
+    });
+  });
+
+  it('does not re-dispatch a keyboard clear that is already in flight', async () => {
+    const settle: (() => void)[] = [];
+    const onChange = vi.fn();
+    const changeAction = vi.fn(
+      async () =>
+        new Promise<void>(resolve => {
+          settle.push(resolve);
+        }),
+    );
+
+    render(
+      <NumberInput
+        label="Qty"
+        value={5}
+        hasClear
+        min={0}
+        max={10}
+        onChange={onChange}
+        changeAction={changeAction}
+      />,
+    );
+
+    const input = screen.getByLabelText('Qty');
+    fireEvent.change(input, {target: {value: ''}});
+    fireEvent.blur(input);
+
+    // Reach the empty-and-blur path a second time while the first clear is
+    // still in flight. It needs a detour through a non-empty entry: the field
+    // already displays '', so a change event straight back to '' is deduped by
+    // React and never reaches the handler. 99 is out of range, so it parses to
+    // null and leaves the in-flight clear untouched on the way past — and
+    // unlike '-' it survives the number input's own value sanitizing.
+    fireEvent.change(input, {target: {value: '99'}});
+    fireEvent.change(input, {target: {value: ''}});
+    fireEvent.blur(input);
+
+    expect(changeAction).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      settle.forEach(resolve => resolve());
+    });
+  });
+
+  it('does not re-dispatch a keyboard clear committed with Enter', async () => {
+    const settle: (() => void)[] = [];
+    const onChange = vi.fn();
+    const changeAction = vi.fn(
+      async () =>
+        new Promise<void>(resolve => {
+          settle.push(resolve);
+        }),
+    );
+
+    render(
+      <NumberInput
+        label="Qty"
+        value={5}
+        hasClear
+        onChange={onChange}
+        changeAction={changeAction}
+      />,
+    );
+
+    const input = screen.getByLabelText('Qty');
+    fireEvent.change(input, {target: {value: ''}});
+    fireEvent.keyDown(input, {key: 'Enter'});
+
+    fireEvent.change(input, {target: {value: ''}});
+    fireEvent.keyDown(input, {key: 'Enter'});
+
+    expect(changeAction).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      settle.forEach(resolve => resolve());
+    });
+  });
+
+  it('marks the input aria-busy and shows a spinner while changeAction is in flight', async () => {
+    const user = userEvent.setup();
+    const settle: (() => void)[] = [];
+    const changeAction = vi.fn(
+      async () =>
+        new Promise<void>(resolve => {
+          settle.push(resolve);
+        }),
+    );
+
+    render(
+      <NumberInput
+        label="Qty"
+        value={1}
+        onChange={() => {}}
+        changeAction={changeAction}
+      />,
+    );
+
+    const input = screen.getByLabelText('Qty');
+    expect(input).not.toHaveAttribute('aria-busy');
+
+    await user.clear(input);
+    await user.type(input, '7');
+
+    // The parent never applies 7, so the optimistic value stays ahead of
+    // `value` for as long as the action is in flight. That mismatch is the
+    // busy signal the rest of the family derives (TextInput, TimeInput,
+    // Selector) — it does not depend on the pending text clearing.
+    await waitFor(() => expect(input).toHaveAttribute('aria-busy', 'true'));
+    expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+
+    await act(async () => {
+      settle.forEach(resolve => resolve());
+    });
+
+    // Ending the transition reverts the optimistic value, so the busy
+    // signal has to clear itself even though the parent never applied 7.
+    await waitFor(() => expect(input).not.toHaveAttribute('aria-busy'));
+    expect(
+      screen.queryByRole('status', {name: 'Loading'}),
+    ).not.toBeInTheDocument();
+  });
+});
+
+describe('isLoading', () => {
+  it('sets aria-busy and shows a spinner when isLoading is true', () => {
+    render(<NumberInput label="Qty" isLoading value={1} onChange={() => {}} />);
+
+    const input = screen.getByLabelText('Qty');
+    expect(input).toHaveAttribute('aria-busy', 'true');
+    expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+    // Busy is an announcement, not a lock — the field stays editable, as in
+    // TextInput and TimeInput.
+    expect(input).not.toBeDisabled();
+  });
+
+  it('does not set aria-busy or render a spinner when idle', () => {
+    render(<NumberInput label="Qty" value={1} onChange={() => {}} />);
+
+    expect(screen.getByLabelText('Qty')).not.toHaveAttribute('aria-busy');
+    expect(
+      screen.queryByRole('status', {name: 'Loading'}),
+    ).not.toBeInTheDocument();
+  });
+
+  it('does not report busy for a NaN value', () => {
+    // NaN is a legal `number`, and a parent deriving the value with
+    // parseFloat/Number hands one over routinely. It is also the only value
+    // that is not equal to itself, so an identity comparison would leave this
+    // field announcing "Loading" forever with nothing able to clear it.
+    render(
+      <NumberInput label="Qty" value={Number('abc')} onChange={() => {}} />,
+    );
+
+    expect(screen.getByLabelText('Qty')).not.toHaveAttribute('aria-busy');
+    expect(
+      screen.queryByRole('status', {name: 'Loading'}),
+    ).not.toBeInTheDocument();
   });
 });
 
