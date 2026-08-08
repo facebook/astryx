@@ -20,6 +20,7 @@ import type {BaseProps} from '../BaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, radiusVars} from '../theme/tokens.stylex';
 import {AvatarSizeContext} from './AvatarSizeContext';
+import {useTranslator} from '../i18n';
 import {isRenderable, mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import type {AvatarStatusDotVariantMap} from './index';
@@ -89,6 +90,10 @@ export interface AvatarStatusDotProps extends BaseProps<HTMLDivElement> {
    * Accessible label for the status dot.
    * Describes the meaning of the indicator for screen readers
    * (e.g. "Online", "Accepted", "John Doe is busy").
+   *
+   * When omitted, a default label is derived from the variant
+   * ("Online", "Away", "Busy") so the status is never conveyed by
+   * colour alone (WCAG 2.1 SC 1.4.1).
    *
    * Note: inside an Avatar the dot sits in the avatar's `role="img"`
    * subtree, where descendant semantics are pruned — the dot is never its
@@ -176,6 +181,26 @@ const variantStyleMap: Partial<
   neutral: styles.neutral,
   error: styles.error,
 };
+
+/**
+ * i18n catalog keys for the default accessible label per variant, used when
+ * no explicit `label` prop is provided. Ensures screen readers always have
+ * a status meaning to announce, even at the smallest avatar tier where
+ * shape glyphs are too small to be reliably perceived (WCAG 2.1 SC 1.4.1).
+ *
+ * Uses presence-oriented naming ("Online", "Away", "Busy") rather than
+ * semantic variant names ("Success", "Neutral", "Error") because the dot
+ * represents a person's real-time status.
+ *
+ * The English defaults ship in the catalog (`packages/core/locales/en.json`)
+ * so library-provided accessible labels localize like the rest of astryx.
+ */
+const defaultVariantLabelKeys: Partial<Record<AvatarStatusDotVariant, string>> =
+  {
+    success: '@astryx.avatarStatusDot.online',
+    neutral: '@astryx.avatarStatusDot.away',
+    error: '@astryx.avatarStatusDot.busy',
+  };
 
 /**
  * Built-in shape glyph per variant, so each status differs by shape and not
@@ -318,11 +343,21 @@ export function AvatarStatusDot({
   // the dot's small inner field would make each illegible.
   const glyphShape = showsIcon ? undefined : glyphShapeMap[variant];
 
+  // Resolve label: explicit prop → default per variant → none.
+  // A default label ensures screen readers always convey status meaning,
+  // even when the consumer doesn't provide one (WCAG 2.1 SC 1.4.1).
+  const t = useTranslator();
+  const defaultLabelKey = defaultVariantLabelKeys[variant];
+  const resolvedLabel =
+    label ?? (defaultLabelKey != null ? t(defaultLabelKey) : undefined);
+
   return (
     <div
       {...props}
       ref={ref}
-      {...(label ? {role: 'img', 'aria-label': label} : undefined)}
+      {...(resolvedLabel
+        ? {role: 'img', 'aria-label': resolvedLabel}
+        : undefined)}
       {...mergeProps(
         themeProps('avatar-status-dot', {variant}),
         stylex.props(
