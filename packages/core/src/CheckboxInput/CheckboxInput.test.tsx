@@ -542,10 +542,6 @@ describe('CheckboxInput', () => {
       expect(data.get('terms')).toBe('on');
     });
 
-    // Regression: a disabledMessage swaps the native `disabled` attribute for
-    // aria-disabled, which leaves the checkbox subject to constraint
-    // validation. An unchecked `required` box the user is told they cannot
-    // touch would then block submission of the whole form.
     it('does not block form submission when required and disabled with a disabledMessage', () => {
       const {container} = render(
         <form>
