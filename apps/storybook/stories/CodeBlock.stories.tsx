@@ -1,5 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/**
+ * @file CodeBlock.stories.tsx
+ * @input Uses Storybook and the core CodeBlock component
+ * @output CodeBlock examples, controls, and narrow sticky-gutter regression case
+ * @position Storybook documentation for CodeBlock
+ */
+
 import type {Meta, StoryObj} from '@storybook/react';
 import {CodeBlock} from '@astryxdesign/core/CodeBlock';
 
@@ -41,6 +48,7 @@ const meta: Meta<typeof CodeBlock> = {
       description: 'Container presentation style',
     },
     hasLineNumbers: {control: 'boolean'},
+    hasStickyLineNumbers: {control: 'boolean'},
     hasCopyButton: {control: 'boolean'},
     isWrapped: {control: 'boolean'},
     isCollapsible: {control: 'boolean'},
@@ -244,6 +252,37 @@ const result = someVeryLongFunctionName(parameterOne, parameterTwo, parameterThr
     language: 'typescript',
     isWrapped: true,
     hasLineNumbers: true,
+  },
+};
+
+export const StickyLineNumbers: Story = {
+  args: {
+    code: Array.from(
+      {length: 50},
+      (_, index) =>
+        `const requestConfiguration${index + 1} = createRequestConfiguration({authenticationStrategy: 'service-token', retryAttempts: 3, timeoutMilliseconds: 30000});`,
+    ).join('\n'),
+    language: 'typescript',
+    title: 'request.ts',
+    hasLineNumbers: true,
+    hasStickyLineNumbers: true,
+    width: '200px',
+    maxHeight: 280,
+  },
+};
+
+export const StickyLineNumbersWrapped: Story = {
+  args: {
+    code: `const requestConfiguration = createRequestConfiguration({authenticationStrategy: 'service-token', retryAttempts: 3, timeoutMilliseconds: 30000, headers: {'x-client-version': applicationVersion}});
+const response = await executeRequest(requestConfiguration, {signal: abortController.signal, validateStatus: status => status >= 200 && status < 500});
+return normalizeServiceResponse(response, {includeMetadata: true, preserveHeaders: false, deserializeDates: true});`,
+    language: 'typescript',
+    title: 'wrapped-request.ts',
+    hasLineNumbers: true,
+    hasStickyLineNumbers: true,
+    isWrapped: true,
+    highlightLines: [2],
+    width: '100%',
   },
 };
 
