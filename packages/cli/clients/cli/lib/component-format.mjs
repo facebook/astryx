@@ -185,13 +185,14 @@ function formatComponentIconSlotsTable(docs) {
   if (!docs.theming?.icons?.length) return '';
 
   const lines = [];
-  lines.push('| Slot | Default icon | Description |');
-  lines.push('|------|--------------|-------------|');
+  lines.push('| Slot | Default icon | Accepts indicator | Description |');
+  lines.push('|------|--------------|-------------------|-------------|');
 
   for (const icon of docs.theming.icons) {
     const fallback = icon.default == null ? 'none' : icon.default;
+    const indicators = icon.indicators ? 'yes' : 'no';
     lines.push(
-      `| \`${mdCell(icon.slot)}\` | \`${mdCell(fallback)}\` | ${mdCell(icon.description || '')} |`,
+      `| \`${mdCell(icon.slot)}\` | \`${mdCell(fallback)}\` | ${indicators} | ${mdCell(icon.description || '')} |`,
     );
   }
 
@@ -320,7 +321,11 @@ export function formatFull(docs, options = {}) {
     }
 
     if (docs.theming.icons?.length) {
-      sections.push('**Component icon slots** — override these through `defineTheme({ componentIcons })`.\n');
+      sections.push(
+        '**Component icon slots** — override these through `defineTheme({ componentIcons })`. ' +
+          'Slots marked "Accepts indicator" also take `{indicator: \'checkbox\' | \'radio\'}` ' +
+          'to swap the glyph for a stateful control visual that renders in every state.\n',
+      );
       sections.push(formatComponentIconSlotsTable(docs) + '\n');
     }
 
@@ -547,7 +552,10 @@ export function formatBrief(docs, componentName, importHint, options = {}) {
   // Component icon slots (if any)
   if (docs.theming?.icons?.length) {
     const slots = docs.theming.icons
-      .map((/** @type {any} */ icon) => `${icon.slot}→${icon.default ?? 'none'}`)
+      .map(
+        (/** @type {any} */ icon) =>
+          `${icon.slot}→${icon.default ?? 'none'}${icon.indicators ? ' (or indicator)' : ''}`,
+      )
       .join(', ');
     output.push(`  Icon slots: ${slots}`);
   }

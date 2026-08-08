@@ -292,6 +292,11 @@
       "types": "./dist/Icon/index.d.ts",
       "default": "./dist/Icon/index.js"
     },
+    "./Indicator": {
+      "source": "./src/Indicator/index.ts",
+      "types": "./dist/Indicator/index.d.ts",
+      "default": "./dist/Indicator/index.js"
+    },
     "./IconButton": {
       "source": "./src/IconButton/index.ts",
       "types": "./dist/IconButton/index.d.ts",

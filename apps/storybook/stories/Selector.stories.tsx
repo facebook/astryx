@@ -863,3 +863,74 @@ export const ComponentIconMapping: Story = {
     );
   },
 };
+
+// The selection mark is a component icon slot, and this slot accepts a
+// stateful indicator as well as a static glyph. Mapping it to the radio
+// indicator turns the listbox into single-select radios: the radio draws an
+// empty circle on unselected options, where the default check icon draws
+// nothing at all.
+const selectorRadioIndicatorTheme = defineTheme({
+  name: 'selector-radio-indicator-demo',
+  componentIcons: {
+    'selector-selected-option': {indicator: 'radio'},
+  },
+});
+
+export const RadioSelectionIndicator: Story = {
+  render: () => {
+    const [value, setValue] = useState<string | undefined>('Banana');
+    return (
+      <Theme theme={selectorRadioIndicatorTheme} mode="light">
+        <Selector
+          label="Selected option uses the radio indicator"
+          options={['Apple', 'Banana', 'Cherry']}
+          value={value}
+          onChange={setValue}
+        />
+      </Theme>
+    );
+  },
+};
+
+// The same slot with a themed indicator component: themes are not limited to
+// the built-in checkbox/radio visuals.
+const selectorCustomIndicatorTheme = defineTheme({
+  name: 'selector-custom-indicator-demo',
+  indicators: {
+    radio: ({state}) => (
+      <span
+        aria-hidden="true"
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: 20,
+          height: 20,
+          // The brand hex is the point of the demo — a theme author's palette.
+          // The resting/neutral shade stays a token.
+          color: state === 'checked' ? '#7c3aed' : 'var(--color-border)',
+        }}>
+        {state === 'checked' ? '◉' : '○'}
+      </span>
+    ),
+  },
+  componentIcons: {
+    'selector-selected-option': {indicator: 'radio'},
+  },
+});
+
+export const CustomSelectionIndicator: Story = {
+  render: () => {
+    const [value, setValue] = useState<string | undefined>('Banana');
+    return (
+      <Theme theme={selectorCustomIndicatorTheme} mode="light">
+        <Selector
+          label="Selected option uses a theme-provided indicator"
+          options={['Apple', 'Banana', 'Cherry']}
+          value={value}
+          onChange={setValue}
+        />
+      </Theme>
+    );
+  },
+};

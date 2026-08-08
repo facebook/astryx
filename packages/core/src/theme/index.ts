@@ -139,7 +139,19 @@ export type {
   ComponentIconMap,
   ComponentIconSlotMap,
   ComponentIconSlotName,
+  ComponentIndicatorRef,
+  ComponentIndicatorSlotMap,
+  ComponentIndicatorSlotName,
 } from '../Icon';
+export type {
+  IndicatorComponent,
+  IndicatorMap,
+  IndicatorName,
+  IndicatorProps,
+  IndicatorRegistry,
+  IndicatorSize,
+  IndicatorState,
+} from '../Indicator';
 export {
   resolveThemeToken,
   resolveThemeTokens,

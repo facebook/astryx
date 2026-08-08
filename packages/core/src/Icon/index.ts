@@ -22,7 +22,9 @@ export {
   getIcon,
   getExtendedIcon,
   getComponentIcon,
+  getComponentIconMapping,
   getComponentIconName,
+  isComponentIndicatorRef,
   resetIcons,
 } from './globalIconRegistry';
 export type {
@@ -33,4 +35,7 @@ export type {
   ComponentIconSlotMap,
   ComponentIconSlotName,
   ComponentIconMap,
+  ComponentIndicatorRef,
+  ComponentIndicatorSlotMap,
+  ComponentIndicatorSlotName,
 } from './globalIconRegistry';

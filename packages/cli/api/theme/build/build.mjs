@@ -677,6 +677,10 @@ function extractThemeDefinitionLegacy(filePath) {
     /icons:\s*[a-zA-Z_][a-zA-Z0-9_]*/g,
     'icons: undefined',
   );
+  objStr = objStr.replace(
+    /indicators:\s*[a-zA-Z_][a-zA-Z0-9_]*/g,
+    'indicators: undefined',
+  );
 
   try {
     return eval(`(${objStr})`);
@@ -691,23 +695,31 @@ function extractThemeDefinitionLegacy(filePath) {
 }
 
 /**
- * Extract icon import info from a theme source file.
- * Returns { importPath, exportName } or null if no icons.
+ * Extract import info for a theme field whose value is an imported binding.
+ *
+ * Fields holding runtime values (React nodes for `icons`, components for
+ * `indicators`) can't be serialized into the built module, so the built module
+ * re-imports the original binding instead.
  *
  * Looks for patterns like:
  *   import { defaultIconRegistry } from './icons';
  *   icons: defaultIconRegistry,
+ *
  * @param {string} filePath
+ * @param {string} field - Theme field name (e.g. 'icons', 'indicators')
  * @returns {{exportName: string, importPath: string} | null}
  */
-function extractIconInfo(filePath) {
+function extractImportedFieldInfo(filePath, field) {
   const content = fs.readFileSync(filePath, 'utf8');
 
-  // Find the icons field in defineTheme
-  const iconsMatch = content.match(/icons:\s*([a-zA-Z_][a-zA-Z0-9_]*)/);
-  if (!iconsMatch) return null;
+  // Find the field in defineTheme. The leading boundary keeps `icons` from
+  // matching inside `componentIcons`.
+  const fieldMatch = content.match(
+    new RegExp(`(?:^|[^a-zA-Z0-9_])${field}:\\s*([a-zA-Z_][a-zA-Z0-9_]*)`),
+  );
+  if (!fieldMatch) return null;
 
-  const varName = /** @type {string} */ (iconsMatch[1]);
+  const varName = /** @type {string} */ (fieldMatch[1]);
 
   // Find the import for that variable
   const importRegex = new RegExp(
@@ -724,25 +736,35 @@ function extractIconInfo(filePath) {
 
 /**
  * Generate a minimal JS module for a built theme.
- * Includes the theme name, marker, and re-exports the icon registry.
- * All styling is in the CSS file.
+ * Includes the theme name, marker, and re-exports the icon and indicator
+ * registries. All styling is in the CSS file.
  * @param {any} themeDef
  * @param {{exportName: string, importPath: string} | null} iconInfo
+ * @param {{exportName: string, importPath: string} | null} [indicatorInfo]
  * @returns {string}
  */
-function generateBuiltModule(themeDef, iconInfo) {
+function generateBuiltModule(themeDef, iconInfo, indicatorInfo = null) {
   const iconImport = iconInfo
     ? `import { ${iconInfo.exportName} } from '${iconInfo.importPath}';\n`
     : '';
+  const indicatorImport = indicatorInfo
+    ? `import { ${indicatorInfo.exportName} } from '${indicatorInfo.importPath}';\n`
+    : '';
   const iconsField = iconInfo ? `  icons: ${iconInfo.exportName},` : '';
+  const indicatorsField = indicatorInfo
+    ? `  indicators: ${indicatorInfo.exportName},`
+    : '';
   const componentIconsField = themeDef.componentIcons
     ? `  componentIcons: ${JSON.stringify(themeDef.componentIcons, null, 2)
         .split('\n')
         .map((line, i) => (i === 0 ? line : '  ' + line))
         .join('\n')},`
     : '';
-  const iconReExport = iconInfo ? `
-export { ${iconInfo.exportName} };
+  const reExportNames = [iconInfo?.exportName, indicatorInfo?.exportName]
+    .filter(Boolean)
+    .join(', ');
+  const iconReExport = reExportNames ? `
+export { ${reExportNames} };
 ` : '';
 
   // Resolve token values — tuples become light-dark() strings
@@ -759,7 +781,7 @@ export { ${iconInfo.exportName} };
     .map((line, i) => (i === 0 ? line : '  ' + line))
     .join('\n');
 
-  return `${iconImport}/**
+  return `${iconImport}${indicatorImport}/**
  * ${themeDef.name} theme — built by \`${getCliInvocation()} theme build\`
  * Import the CSS file alongside this module:
  *
@@ -771,6 +793,7 @@ export const ${toIdentifier(themeDef.name)}Theme = {
   __built: true,
   tokens: ${tokensStr},
 ${iconsField}
+${indicatorsField}
 ${componentIconsField}
 };
 ${iconReExport}`;
@@ -780,13 +803,24 @@ ${iconReExport}`;
  * Generate TypeScript declarations for a built theme module.
  * @param {any} themeDef
  * @param {{exportName: string, importPath: string} | null} iconInfo
+ * @param {{exportName: string, importPath: string} | null} indicatorInfo
  * @param {string | null} variantsFileName
  * @returns {string}
  */
-function generateBuiltTypes(themeDef, iconInfo, variantsFileName) {
+function generateBuiltTypes(
+  themeDef,
+  iconInfo,
+  indicatorInfo,
+  variantsFileName,
+) {
   const iconType = iconInfo
     ? `import type { IconRegistry } from '@astryxdesign/core/Icon';
 export declare const ${iconInfo.exportName}: IconRegistry;
+`
+    : '';
+  const indicatorType = indicatorInfo
+    ? `import type { IndicatorRegistry } from '@astryxdesign/core/Indicator';
+export declare const ${indicatorInfo.exportName}: IndicatorRegistry;
 `
     : '';
   // Pull in the generated custom-variant augmentations so that importing the
@@ -798,7 +832,7 @@ export declare const ${iconInfo.exportName}: IconRegistry;
 `
     : '';
   return `${variantsRef}import type { DefinedTheme } from '@astryxdesign/core/theme';
-${iconType}export declare const ${toIdentifier(themeDef.name)}Theme: DefinedTheme;
+${iconType}${indicatorType}export declare const ${toIdentifier(themeDef.name)}Theme: DefinedTheme;
 `;
 }
 
@@ -1170,7 +1204,8 @@ export async function themeBuild(
   const jsPath = path.join(outDir, `${baseName}.js`);
   const dtsPath = path.join(outDir, `${baseName}.d.ts`);
 
-  const iconInfo = extractIconInfo(filePath);
+  const iconInfo = extractImportedFieldInfo(filePath, 'icons');
+  const indicatorInfo = extractImportedFieldInfo(filePath, 'indicators');
 
   // Type augmentation .d.ts if theme has custom prop values. Computed
   // before the main .d.ts so the latter can reference it (see below).
@@ -1194,10 +1229,10 @@ export async function themeBuild(
     generatedHeader(sourceRelative, 'css', buildCommand, versions) + css;
   const jsContent =
     generatedHeader(sourceRelative, 'js', buildCommand, versions) +
-    generateBuiltModule(resolvedTheme || themeDef, iconInfo);
+    generateBuiltModule(resolvedTheme || themeDef, iconInfo, indicatorInfo);
   const dtsContent =
     generatedHeader(sourceRelative, 'ts', buildCommand, versions) +
-    generateBuiltTypes(themeDef, iconInfo, variantsFileName);
+    generateBuiltTypes(themeDef, iconInfo, indicatorInfo, variantsFileName);
 
   // Atomic-ish write: stage every file as `<dest>.tmp`, then rename
   // each into place. If any stage step fails we clean up partials and

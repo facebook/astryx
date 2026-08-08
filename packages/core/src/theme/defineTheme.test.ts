@@ -1071,6 +1071,20 @@ describe('defineTheme extends', () => {
     });
   });
 
+  it('merges indicator overrides through extends', () => {
+    const checkbox = () => null;
+    const radio = () => null;
+    const base = defineTheme({name: 'base', indicators: {checkbox}});
+    const child = defineTheme({
+      name: 'child',
+      extends: base,
+      indicators: {radio},
+    });
+
+    expect(child.indicators?.checkbox).toBe(checkbox);
+    expect(child.indicators?.radio).toBe(radio);
+  });
+
   it('preserves component icon mappings', () => {
     const theme = defineTheme({
       name: 'icons',

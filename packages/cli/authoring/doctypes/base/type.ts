@@ -324,6 +324,15 @@ export interface ComponentIconSlotDoc {
   default: string | null;
   /** What this slot represents semantically. */
   description: string;
+  /**
+   * Whether the slot also accepts a stateful indicator —
+   * `{indicator: 'radio'}` — instead of a static icon name.
+   *
+   * Only true for slots the component renders through `<SelectionIndicator>`,
+   * which draws in every state. Icon-only slots render a glyph in the selected
+   * state and nothing otherwise, so an indicator has no place to draw.
+   */
+  indicators?: boolean;
 }
 
 /**

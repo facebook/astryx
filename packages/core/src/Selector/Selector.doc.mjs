@@ -33,8 +33,9 @@ export const docs = {
       {
         slot: 'selector-selected-option',
         default: 'check',
+        indicators: true,
         description:
-          'Icon shown at the end of the currently selected option in the listbox. Map to another global icon name, or null to hide it.',
+          'Marks the currently selected option in the listbox. Map to another global icon name, to null to hide it, or to {indicator: "radio"} / {indicator: "checkbox"} for a stateful control visual — an indicator also draws on unselected options (an empty circle), where an icon marks the selected option only.',
       },
     ],
   },

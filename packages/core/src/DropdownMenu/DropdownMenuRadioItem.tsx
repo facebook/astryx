@@ -14,26 +14,21 @@
  * state + onChange come from DropdownMenuRadioGroupContext. Keyboard nav +
  * Enter/Space activation come from the parent DropdownMenu.
  *
- * The round radio visual (circle + center dot) is decorative (aria-hidden) —
- * the row owns the checked state. Its size is derived from the menu's item size
- * and it swaps to the inline-end of the row on coarse-pointer (touch) devices
- * via CSS `order`. The dot is a shaped element, not an icon (a filled circle
- * has no registry glyph).
+ * The round radio visual is the shared radio indicator, decorative
+ * (aria-hidden) — the row owns the checked state, and menu radios pick up the
+ * same `radio` theming (and any theme replacement) as RadioList. This row keeps
+ * the marker box: its size is derived from the menu's item size and it swaps to
+ * the inline-end of the row on coarse-pointer (touch) devices via CSS `order`.
  */
 
 import {useCallback, type PointerEvent, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {renderIconSlot, type IconType} from '../Icon';
+import {useIndicator} from '../Indicator';
 import {Item} from '../Item';
 import {useDropdownMenuContext} from './DropdownMenuContext';
 import {focusMenuItemOnHover} from './menuItemHover';
-import {
-  colorVars,
-  spacingVars,
-  durationVars,
-  easeVars,
-  borderVars,
-} from '../theme/tokens.stylex';
+import {colorVars, spacingVars} from '../theme/tokens.stylex';
 import {mergeProps, themeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {useDropdownMenuRadioGroupContext} from './DropdownMenuContext';
@@ -56,21 +51,13 @@ const styles = stylex.create({
   },
   // Rendered in Item's `marker` slot as a raw flex child. On touch it moves to
   // the inline-end of the row via `order`.
-  circle: {
+  // Layout box for the decorative marker. The painted circle is the radio
+  // indicator inside it, which carries the shared `radio` theme target.
+  markerBox: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
-    boxSizing: 'border-box',
-    borderWidth: borderVars['--border-width'],
-    borderStyle: 'solid',
-    borderRadius: '50%',
-    transitionProperty: 'background-color, border-color',
-    transitionDuration: {
-      default: durationVars['--duration-fast'],
-      '@media (prefers-reduced-motion: reduce)': '0s',
-    },
-    transitionTimingFunction: easeVars['--ease-standard'],
     order: {
       default: 0,
       '@media (pointer: coarse)': 1,
@@ -80,28 +67,13 @@ const styles = stylex.create({
       '@media (pointer: coarse)': 'auto',
     },
   },
-  unchecked: {
-    borderColor: colorVars['--color-border-emphasized'],
-    backgroundColor: colorVars['--color-background-surface'],
-  },
-  checked: {
-    borderColor: colorVars['--color-accent'],
-    backgroundColor: colorVars['--color-accent'],
-  },
-  dot: {
-    borderRadius: '50%',
-    backgroundColor: colorVars['--color-on-accent'],
-  },
 });
 
-const circleSizeStyles = stylex.create({
-  sm: {width: 18, height: 18},
-  md: {width: 22, height: 22},
-});
-
-const dotSizeStyles = stylex.create({
-  sm: {width: 6, height: 6},
-  md: {width: 8, height: 8},
+// Matches the control sizes RadioList uses, so a radio reads the same in a
+// menu row as it does in a radio group.
+const markerSizeStyles = stylex.create({
+  sm: {width: 20, height: 20},
+  md: {width: 24, height: 24},
 });
 
 export interface DropdownMenuRadioItemProps extends Omit<
@@ -173,6 +145,7 @@ export function DropdownMenuRadioItem({
   const menuSize = menuCtx?.menuSize ?? 'md';
   const controlSize = menuSize === 'sm' ? 'sm' : 'md';
   const isChecked = groupCtx.value === value;
+  const RadioControl = useIndicator('radio');
 
   const handleClick = useCallback(() => {
     if (isDisabled) {
@@ -205,24 +178,13 @@ export function DropdownMenuRadioItem({
               checked: isChecked ? 'checked' : null,
               disabled: isDisabled ? 'disabled' : null,
             }),
-            stylex.props(
-              styles.circle,
-              circleSizeStyles[controlSize],
-              isChecked ? styles.checked : styles.unchecked,
-            ),
+            stylex.props(styles.markerBox, markerSizeStyles[controlSize]),
           )}>
-          {isChecked && (
-            <span
-              {...mergeProps(
-                themeProps('dropdown-menu-radio-dot', {
-                  size: controlSize,
-                  checked: 'checked',
-                  disabled: isDisabled ? 'disabled' : null,
-                }),
-                stylex.props(styles.dot, dotSizeStyles[controlSize]),
-              )}
-            />
-          )}
+          <RadioControl
+            state={isChecked ? 'checked' : 'unchecked'}
+            size={controlSize}
+            isDisabled={isDisabled}
+          />
         </span>
       }
       startContent={
