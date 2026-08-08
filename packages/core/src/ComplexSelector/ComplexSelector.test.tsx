@@ -219,7 +219,11 @@ describe('ComplexSelector', () => {
       return Array.from(el.classList)
         .filter(c => c.startsWith('x'))
         .some(c => {
-          const rules = css.match(new RegExp(`\\.${c}[^{]*\\{[^}]*\\}`, 'g'));
+          // The lookahead stops a class from matching a longer class that
+          // shares its prefix (`.x14o` must not match `.x14odbl{…}`).
+          const rules = css.match(
+            new RegExp(`\\.${c}(?![a-zA-Z0-9_-])[^{]*\\{[^}]*\\}`, 'g'),
+          );
           return (rules ?? []).some(
             rule =>
               rule.includes(property) &&
@@ -254,10 +258,15 @@ describe('ComplexSelector', () => {
       expect(popup).not.toBeNull();
       const css = injectedCss();
 
-      // The stable-classed element owns the surface paint…
-      expect(declares(css, popup!, 'background-color')).toBe(true);
-      expect(declares(css, popup!, 'border-radius')).toBe(true);
-      expect(declares(css, popup!, 'box-shadow')).toBe(true);
+      // The stable-classed element owns the surface paint, with the same
+      // tokens every popover surface uses…
+      expect(
+        declares(css, popup!, 'background-color', '--color-background-popover'),
+      ).toBe(true);
+      expect(declares(css, popup!, 'border-radius', '--radius-container')).toBe(
+        true,
+      );
+      expect(declares(css, popup!, 'box-shadow', '--shadow-low')).toBe(true);
 
       // …and the dialog wrapper above it paints no second surface behind, so
       // a theme override genuinely replaces the surface instead of floating
