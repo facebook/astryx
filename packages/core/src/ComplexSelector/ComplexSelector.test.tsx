@@ -12,7 +12,11 @@
 import {describe, expect, it, vi} from 'vitest';
 import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import * as stylex from '@stylexjs/stylex';
 import {ComplexSelector} from './ComplexSelector';
+import {colorVars} from '../theme/tokens.stylex';
+import {defineTheme} from '../theme/defineTheme';
+import {generateThemeRules} from '../theme/generateThemeRules';
 
 type FruitValue = {
   fruit: 'Apple' | 'Banana';
@@ -152,5 +156,181 @@ describe('ComplexSelector', () => {
 
     await user.click(screen.getByRole('button', {name: 'Done', ...h}));
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  // ===========================================================================
+  // Popup theme target (#4804)
+  // ===========================================================================
+
+  describe('popup theme target', () => {
+    // The trigger container publishes `astryx-complex-selector`, but the popup
+    // rendered only anonymous hashed classes: no stable class on the surface,
+    // so neither defineTheme components nor a plain stylesheet could reach its
+    // background, border, radius, or width.
+
+    const fruitValue: FruitValue = {fruit: 'Apple', ripeness: 'Ripe'};
+
+    async function openPopup(
+      user: ReturnType<typeof userEvent.setup>,
+      contentXstyle?: stylex.StyleXStyles,
+    ) {
+      render(
+        <ComplexSelector
+          label="Fruit blend"
+          value={fruitValue}
+          onChange={() => {}}
+          contentXstyle={contentXstyle}
+          triggerLabel="Apple Ripe">
+          {value => <FruitGrid value={value} onChange={() => {}} />}
+        </ComplexSelector>,
+      );
+      await user.click(screen.getByRole('button', {name: 'Fruit blend'}));
+      return document.querySelector('.astryx-complex-selector-popup');
+    }
+
+    // Collect every injected CSS rule (StyleX runtime injection is enabled in
+    // vitest), so assertions read the real declarations behind the popup's
+    // atomic classes instead of hashed class names.
+    function injectedCss(): string {
+      let out = '';
+      for (const sheet of Array.from(document.styleSheets)) {
+        try {
+          for (const rule of Array.from(sheet.cssRules)) {
+            out += rule.cssText + '\n';
+          }
+        } catch {
+          // ignore cross-origin sheets
+        }
+      }
+      out += Array.from(document.querySelectorAll('style'))
+        .map(s => s.textContent || '')
+        .join('\n');
+      return out;
+    }
+
+    // True when one of el's StyleX atomic classes declares `property`
+    // (optionally with a specific value fragment).
+    function declares(
+      css: string,
+      el: Element,
+      property: string,
+      value?: string,
+    ): boolean {
+      return Array.from(el.classList)
+        .filter(c => c.startsWith('x'))
+        .some(c => {
+          // The lookahead stops a class from matching a longer class that
+          // shares its prefix (`.x14o` must not match `.x14odbl{…}`).
+          const rules = css.match(
+            new RegExp(`\\.${c}(?![a-zA-Z0-9_-])[^{]*\\{[^}]*\\}`, 'g'),
+          );
+          return (rules ?? []).some(
+            rule =>
+              rule.includes(property) &&
+              (value == null || rule.includes(value)),
+          );
+        });
+    }
+
+    it('stamps the stable popup class on the popup content container', async () => {
+      const user = userEvent.setup();
+      const popup = await openPopup(user);
+
+      expect(popup).not.toBeNull();
+      // The classed element is the container the trigger controls…
+      expect(popup).toHaveAttribute(
+        'id',
+        screen
+          .getByRole('button', {name: 'Fruit blend'})
+          .getAttribute('aria-controls'),
+      );
+      // …and the custom content renders inside it.
+      expect(
+        popup!.contains(
+          screen.getByRole('grid', {name: 'Fruit blend choices', ...h}),
+        ),
+      ).toBe(true);
+    });
+
+    it('paints the popup surface on the classed element', async () => {
+      const user = userEvent.setup();
+      const popup = await openPopup(user);
+      expect(popup).not.toBeNull();
+      const css = injectedCss();
+
+      // The stable-classed element owns the surface paint, with the same
+      // tokens every popover surface uses…
+      expect(
+        declares(css, popup!, 'background-color', '--color-background-popover'),
+      ).toBe(true);
+      expect(declares(css, popup!, 'border-radius', '--radius-container')).toBe(
+        true,
+      );
+      expect(declares(css, popup!, 'box-shadow', '--shadow-low')).toBe(true);
+
+      // …and the dialog wrapper above it paints no second surface behind, so
+      // a theme override genuinely replaces the surface instead of floating
+      // over a differently-shaped default.
+      const dialog = screen.getByRole('dialog', {name: 'Fruit blend', ...h});
+      expect(popup!.parentElement).toBe(dialog);
+      expect(declares(css, dialog, 'background-color')).toBe(false);
+      expect(declares(css, dialog, 'box-shadow')).toBe(false);
+    });
+
+    it('lets contentXstyle override the surface paint', async () => {
+      // The StyleX escape hatch gains the same reach: with the surface on the
+      // popup element itself, contentXstyle merges after the surface styles
+      // and can replace them.
+      const overrides = stylex.create({
+        surface: {backgroundColor: colorVars['--color-background-surface']},
+      });
+      const user = userEvent.setup();
+      const popup = await openPopup(user, overrides.surface);
+      expect(popup).not.toBeNull();
+      const css = injectedCss();
+
+      expect(
+        declares(css, popup!, 'background-color', '--color-background-surface'),
+      ).toBe(true);
+      // StyleX merge dedupes by property, so the default surface background
+      // is gone rather than merely covered.
+      expect(
+        declares(css, popup!, 'background-color', '--color-background-popover'),
+      ).toBe(false);
+    });
+
+    it('keeps the existing trigger and indicator targets intact', async () => {
+      // Guard, not red proof: both targets exist before this change too.
+      const user = userEvent.setup();
+      await openPopup(user);
+
+      expect(document.querySelector('.astryx-complex-selector')).not.toBeNull();
+      expect(
+        document.querySelector('.astryx-complex-selector-indicator-icon'),
+      ).not.toBeNull();
+    });
+
+    it('emits theme CSS for the popup target via defineTheme', () => {
+      // Guard for the documented route (defineTheme emits for any target
+      // class): the issue's exact use case — a bordered, fixed-width panel.
+      const theme = defineTheme({
+        name: 'complex-selector-popup-test',
+        components: {
+          'complex-selector-popup': {
+            base: {
+              borderWidth: '1px',
+              borderStyle: 'solid',
+              borderColor: 'var(--color-border)',
+              inlineSize: '288px',
+            },
+          },
+        },
+      });
+      const css = generateThemeRules(theme).join('\n');
+
+      expect(css).toContain('.astryx-complex-selector-popup');
+      expect(css).toContain('border-width: 1px');
+      expect(css).toContain('inline-size: 288px');
+    });
   });
 });

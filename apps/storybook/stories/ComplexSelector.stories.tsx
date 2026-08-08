@@ -10,6 +10,7 @@ import {TextInput} from '@astryxdesign/core/TextInput';
 import {HStack, VStack} from '@astryxdesign/core/Layout';
 import {Token} from '@astryxdesign/core/Token';
 import {TreeList, type TreeListItemData} from '@astryxdesign/core/TreeList';
+import {Theme, defineTheme} from '@astryxdesign/core/theme';
 import {useGridFocus} from '@astryxdesign/core/hooks';
 import {
   borderVars,
@@ -724,6 +725,73 @@ export const CategoryTreeSelector: Story = {
       description: {
         story:
           'A second tree-search example showing the same ComplexSelector shell with different hierarchical data and a form action nearby. The custom content relies on TreeList focus behavior and should be checked against WCAG 2.2.',
+      },
+    },
+  },
+};
+
+/**
+ * Theme the popup surface via `defineTheme`.
+ *
+ * The popup container carries the `astryx-complex-selector-popup` theme
+ * target and paints the surface itself, so a theme — or any plain
+ * stylesheet — can restyle the popup's background, border, radius, and
+ * width without StyleX, the popup counterpart of the trigger's `className`
+ * route (#4804). Defaults are unchanged; this story only demonstrates the
+ * override channel.
+ */
+const popupTheme = defineTheme({
+  name: 'complex-selector-popup-demo',
+  components: {
+    'complex-selector-popup': {
+      base: {
+        backgroundColor: 'var(--color-background-muted)',
+        borderWidth: '1px',
+        borderStyle: 'solid',
+        borderColor: 'var(--color-border)',
+        boxShadow: 'none',
+      },
+    },
+  },
+});
+
+export const ThemedPopupSurface: Story = {
+  name: 'Themed popup surface',
+  render: () => {
+    const [value, setValue] = useState<FruitValue>({
+      fruit: 'Apple',
+      ripeness: 'Juicy',
+    });
+
+    return (
+      <Theme theme={popupTheme} mode="light">
+        <VStack gap={4} xstyle={styles.wrapper}>
+          <ComplexSelector<FruitValue>
+            label="Fruit blend"
+            description="The popup renders as a flat, bordered, muted panel through the astryx-complex-selector-popup target."
+            value={value}
+            onChange={setValue}
+            triggerLabel={formatFruitValue(value)}
+            contentXstyle={styles.fruitContent}>
+            {(selectedValue, onChange, close) => (
+              <FruitRipenessMatrix
+                value={selectedValue}
+                onChange={nextValue => {
+                  onChange(nextValue);
+                  close();
+                }}
+              />
+            )}
+          </ComplexSelector>
+        </VStack>
+      </Theme>
+    );
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Apps whose menus are bordered flat panels can match the popup to them with defineTheme alone — no StyleX in the consuming app. The border, background, and shadow land on the element that paints the popup surface.',
       },
     },
   },
