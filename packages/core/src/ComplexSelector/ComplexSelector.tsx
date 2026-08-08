@@ -104,11 +104,18 @@ const styles = stylex.create({
     justifyContent: 'center',
     width: 16,
     height: 16,
+    color: colorVars['--color-icon-secondary'],
+  },
+  // Rotation lives on the chevron glyph itself (passed through `xstyle`), not
+  // on the layout wrapper above, so the icon's
+  // `complex-selector-indicator-icon` theme target and the open/closed
+  // transform sit on one element — a theme can restyle the mark and its
+  // rotation through a single selector. The wrapper keeps only layout.
+  triggerIconRotation: {
     transitionProperty: 'transform',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
     transformOrigin: 'center',
-    color: colorVars['--color-icon-secondary'],
   },
   triggerIconOpen: {
     transform: 'rotate(180deg)',
@@ -374,15 +381,18 @@ export function ComplexSelector<Value>({
           <span {...stylex.props(styles.triggerText)}>{triggerContent}</span>
         </button>
         {isBusy && <Spinner size="sm" />}
-        <span
-          {...stylex.props(
-            styles.triggerIcon,
-            popover.isOpen && styles.triggerIconOpen,
-          )}>
+        <span {...stylex.props(styles.triggerIcon)}>
           <Icon
             icon="chevronDown"
             size="sm"
             color="inherit"
+            // The rotation rides on the glyph rather than the wrapper span so
+            // the theme target below reaches both the mark and its open/closed
+            // transform.
+            xstyle={[
+              styles.triggerIconRotation,
+              popover.isOpen && styles.triggerIconOpen,
+            ]}
             {...themeProps('complex-selector-indicator-icon', {
               state: popover.isOpen ? 'expanded' : 'collapsed',
             })}

@@ -25,7 +25,7 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import {useIcon} from '../Icon';
-import {mergeProps, rtlStyles} from '../utils';
+import {mergeProps} from '../utils';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import {TreeListBranches} from './TreeListBranches';
 import type {TreeListDensity, TreeListVariant} from './TreeListTypes';
@@ -211,11 +211,22 @@ const styles = stylex.create({
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
   },
+  // The RTL mirror is folded into each state's transform rather than living on
+  // a parent span. Both are `transform`, so on one element the later value
+  // would win — spelling out `scaleX(-1) rotate(...)` per state composes them
+  // exactly as the nested elements did, while leaving a single element to
+  // carry the glyph's theme target.
   chevronExpanded: {
-    transform: 'rotate(90deg)',
+    transform: {
+      default: 'rotate(90deg)',
+      ':is([dir="rtl"] *)': 'scaleX(-1) rotate(90deg)',
+    },
   },
   chevronCollapsed: {
-    transform: 'rotate(0deg)',
+    transform: {
+      default: 'rotate(0deg)',
+      ':is([dir="rtl"] *)': 'scaleX(-1) rotate(0deg)',
+    },
   },
 });
 
@@ -407,14 +418,20 @@ export function TreeListItem({
   );
 
   const chevronIcon = (
-    <span {...stylex.props(rtlStyles.mirror)}>
-      <span
-        {...stylex.props(
+    <span
+      {...mergeProps(
+        // The glyph itself is the theme target, and it is the element the
+        // rotation lives on — so a theme can restyle the mark and its
+        // open/closed transform through one selector.
+        themeProps('tree-list-chevron-icon', {
+          state: isExpanded ? 'expanded' : 'collapsed',
+        }),
+        stylex.props(
           styles.chevronSvg,
           isExpanded ? styles.chevronExpanded : styles.chevronCollapsed,
-        )}>
-        {chevronRightIcon}
-      </span>
+        ),
+      )}>
+      {chevronRightIcon}
     </span>
   );
 

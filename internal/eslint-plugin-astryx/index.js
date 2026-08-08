@@ -21,6 +21,7 @@ import presentationalComponentRule from './presentational-component.js';
 import docblockExampleFormatRule from './docblock-example-format.js';
 import noStylexNullOverrideRule from './no-stylex-null-override.js';
 import noStyleOnlyWrapperRule from './no-style-only-wrapper.js';
+import noWrapperTransformRule from './no-wrapper-transform.js';
 import noReactIntrospectionRule from './no-react-introspection.js';
 import noClassnameClobberRule from './no-classname-clobber.js';
 import noHardcodedAnchorRule from './no-hardcoded-anchor.js';
@@ -239,6 +240,7 @@ const plugin = {
     'docblock-example-format': docblockExampleFormatRule,
     'no-stylex-null-override': noStylexNullOverrideRule,
     'no-style-only-wrapper': noStyleOnlyWrapperRule,
+    'no-wrapper-transform': noWrapperTransformRule,
     'no-react-introspection': noReactIntrospectionRule,
     'no-classname-clobber': noClassnameClobberRule,
     'no-hardcoded-anchor': noHardcodedAnchorRule,
@@ -273,6 +275,7 @@ plugin.configs.strict = {
     // flip to 'error' here to prevent regressions — the same path
     // no-physical-properties took.
     '@astryx/no-style-only-wrapper': 'warn',
+    '@astryx/no-wrapper-transform': 'error',
     '@astryx/no-react-introspection': 'error',
     '@astryx/no-classname-clobber': 'error',
     '@astryx/no-hardcoded-anchor': 'error',
@@ -301,6 +304,7 @@ plugin.configs.recommended = {
     '@astryx/docblock-example-format': 'warn',
     '@astryx/no-stylex-null-override': 'warn',
     '@astryx/no-style-only-wrapper': 'warn',
+    '@astryx/no-wrapper-transform': 'error',
     '@astryx/no-react-introspection': 'error',
     '@astryx/no-classname-clobber': 'error',
     '@astryx/no-hardcoded-anchor': 'warn',

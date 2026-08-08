@@ -20,8 +20,11 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-side-nav', visualProps: ['mode']},
+      {className: 'astryx-side-nav-collapse-button-icon', states: ['state']},
       {className: 'astryx-side-nav-heading'},
+      {className: 'astryx-side-nav-heading-chevron-icon', states: ['state']},
       {className: 'astryx-side-nav-item', visualProps: ['size'], states: ['selected']},
+      {className: 'astryx-side-nav-item-chevron-icon', states: ['state']},
       {className: 'astryx-side-nav-section'},
     ],
   },

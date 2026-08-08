@@ -161,6 +161,10 @@ const styles = stylex.create({
     width: spacingVars['--spacing-4'],
     height: spacingVars['--spacing-4'],
     flexShrink: 0,
+  },
+  // Applied to the chevron <Icon> (via `xstyle`) rather than its wrapper, so the
+  // element that rotates is the element a theme targets.
+  chevronIcon: {
     transitionProperty: 'transform',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
@@ -376,13 +380,16 @@ export function TabMenu({
             {triggerLabel}
           </span>
         </span>
-        <span
-          aria-hidden="true"
-          {...stylex.props(
-            styles.chevron,
-            popover.isOpen && styles.chevronOpen,
-          )}>
-          <Icon icon="chevronDown" size="sm" color="inherit" />
+        <span aria-hidden="true" {...stylex.props(styles.chevron)}>
+          <Icon
+            icon="chevronDown"
+            size="sm"
+            color="inherit"
+            xstyle={[styles.chevronIcon, popover.isOpen && styles.chevronOpen]}
+            {...themeProps('tab-menu-chevron-icon', {
+              state: popover.isOpen ? 'open' : 'closed',
+            })}
+          />
         </span>
         {hasSelectedOption && (
           <span

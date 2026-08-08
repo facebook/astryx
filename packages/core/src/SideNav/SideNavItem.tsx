@@ -562,6 +562,24 @@ export function SideNavItem({
     );
   }
 
+  // One chevron element shared by the inline and split-action toggle paths:
+  // the glyph carries the rotation and the theme target together, so a theme
+  // reaches the mark and its open/closed transform through one selector.
+  const expandChevronIcon = (
+    <span
+      {...mergeProps(
+        themeProps('side-nav-item-chevron-icon', {
+          state: isItemCollapsed ? 'collapsed' : 'expanded',
+        }),
+        stylex.props(
+          styles.expandChevron,
+          !isItemCollapsed && styles.expandChevronExpanded,
+        ),
+      )}>
+      {chevronDownIcon}
+    </span>
+  );
+
   const itemContent = (
     <>
       {displayIcon &&
@@ -573,15 +591,10 @@ export function SideNavItem({
       {!isCollapsed && endContent && (
         <span {...stylex.props(styles.endContent)}>{endContent}</span>
       )}
-      {!isCollapsed && isItemCollapsible && !hasIndependentToggle && (
-        <span
-          {...stylex.props(
-            styles.expandChevron,
-            !isItemCollapsed && styles.expandChevronExpanded,
-          )}>
-          {chevronDownIcon}
-        </span>
-      )}
+      {!isCollapsed &&
+        isItemCollapsible &&
+        !hasIndependentToggle &&
+        expandChevronIcon}
     </>
   );
 
@@ -637,13 +650,7 @@ export function SideNavItem({
           aria-expanded={!isItemCollapsed}
           aria-controls={`${id}-children`}
           {...stylex.props(styles.expandToggle)}>
-          <span
-            {...stylex.props(
-              styles.expandChevron,
-              !isItemCollapsed && styles.expandChevronExpanded,
-            )}>
-            {chevronDownIcon}
-          </span>
+          {expandChevronIcon}
         </button>
       </div>
     );

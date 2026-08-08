@@ -208,15 +208,10 @@ const styles = stylex.create({
     marginInline: spacingVars['--spacing-1'],
     cursor: 'pointer',
   },
-  // Chevron inside the popover heading — same as chevron but rotated up
-  popoverChevron: {
-    flexShrink: 0,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: spacingVars['--spacing-7'],
-    minHeight: spacingVars['--spacing-7'],
-    color: colorVars['--color-icon-secondary'],
+  // Chevron inside the popover heading — the same chevron, rotated up. Kept as
+  // a state layered over `chevron` so one element carries the glyph, its
+  // rotation, and the theme target.
+  chevronExpanded: {
     transform: 'rotate(180deg)',
   },
   popover: {
@@ -454,7 +449,15 @@ export function SideNavHeading({
                       )}>
                       {heading}
                     </span>
-                    <span {...stylex.props(styles.popoverChevron)}>
+                    <span
+                      {...mergeProps(
+                        // Rendered only while the menu is open, so the state is
+                        // constant here.
+                        themeProps('side-nav-heading-chevron-icon', {
+                          state: 'expanded',
+                        }),
+                        stylex.props(styles.chevron, styles.chevronExpanded),
+                      )}>
                       {chevronDownIcon}
                     </span>
                   </span>
@@ -551,7 +554,17 @@ export function SideNavHeading({
   );
 
   const chevronElement = showChevron && (
-    <span {...stylex.props(styles.chevron)}>{chevronDownIcon}</span>
+    <span
+      {...mergeProps(
+        // Mirrors the trigger's aria-expanded: the glyph is the theme target,
+        // and the popover's copy of it (below) carries the flipped transform.
+        themeProps('side-nav-heading-chevron-icon', {
+          state: popover.isOpen ? 'expanded' : 'collapsed',
+        }),
+        stylex.props(styles.chevron),
+      )}>
+      {chevronDownIcon}
+    </span>
   );
 
   const headerEndContentElement = headerEndContent && (
@@ -567,7 +580,15 @@ export function SideNavHeading({
       onClick={triggerProps.onClick}>
       {icon && <span {...stylex.props(styles.icon)}>{icon}</span>}
       {renderTextContent(
-        <span {...stylex.props(styles.popoverChevron)}>{chevronDownIcon}</span>,
+        <span
+          {...mergeProps(
+            // Rendered only while the menu is open, so the state is constant
+            // here.
+            themeProps('side-nav-heading-chevron-icon', {state: 'expanded'}),
+            stylex.props(styles.chevron, styles.chevronExpanded),
+          )}>
+          {chevronDownIcon}
+        </span>,
       )}
     </button>
   );
@@ -618,7 +639,15 @@ export function SideNavHeading({
                 triggerProps.onClick();
               }}
               {...popover.triggerProps}
-              {...stylex.props(styles.chevron, styles.interactive)}>
+              {...mergeProps(
+                // The button is the glyph's element here, so it carries the
+                // theme target; `state` tracks the same open/closed fact as
+                // the aria-expanded above.
+                themeProps('side-nav-heading-chevron-icon', {
+                  state: popover.isOpen ? 'expanded' : 'collapsed',
+                }),
+                stylex.props(styles.chevron, styles.interactive),
+              )}>
               {chevronDownIcon}
             </button>,
           )}
@@ -684,7 +713,15 @@ export function SideNavHeading({
                   triggerProps.onClick();
                 }}
                 {...popover.triggerProps}
-                {...stylex.props(styles.chevron, styles.interactive)}>
+                {...mergeProps(
+                  // The button is the glyph's element here, so it carries the
+                  // theme target; `state` tracks the same open/closed fact as
+                  // the aria-expanded above.
+                  themeProps('side-nav-heading-chevron-icon', {
+                    state: popover.isOpen ? 'expanded' : 'collapsed',
+                  }),
+                  stylex.props(styles.chevron, styles.interactive),
+                )}>
                 {chevronDownIcon}
               </button>
             ) : undefined,

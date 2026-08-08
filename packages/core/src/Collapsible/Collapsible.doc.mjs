@@ -18,6 +18,7 @@ export const docs = {
     targets: [
       {className: 'astryx-collapsible', visualProps: ['density']},
       {className: 'astryx-collapsible-trigger', visualProps: ['density']},
+      {className: 'astryx-collapsible-chevron-icon', states: ['state']},
       {className: 'astryx-collapsible-content', visualProps: ['density']},
       {className: 'astryx-collapsible-group', visualProps: ['density']},
     ],

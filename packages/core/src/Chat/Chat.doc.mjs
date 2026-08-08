@@ -28,6 +28,8 @@ export const docs = {
       {className: 'astryx-chat-send-button'},
       {className: 'astryx-chat-tokenized-text'},
       {className: 'astryx-chat-tool-calls'},
+      {className: 'astryx-chat-tool-calls-chevron-icon', states: ['state']},
+      {className: 'astryx-chat-tool-call-chevron-icon', states: ['state']},
       {className: 'astryx-trigger-menu'},
     ],
     vars: [

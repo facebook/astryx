@@ -473,9 +473,15 @@ function DefaultMegaMenu({
         )}>
         {label}
         <span
-          {...stylex.props(
-            styles.chevron,
-            popover.isOpen && styles.chevronOpen,
+          {...mergeProps(
+            // The glyph itself is the theme target, and it is the element the
+            // rotation lives on — so a theme reaches the mark and its
+            // open/closed transform through one selector rather than a
+            // structural descendant of `astryx-top-nav-mega-menu`.
+            themeProps('top-nav-mega-menu-chevron-icon', {
+              state: popover.isOpen ? 'open' : 'closed',
+            }),
+            stylex.props(styles.chevron, popover.isOpen && styles.chevronOpen),
           )}>
           {chevronDownIcon}
         </span>
@@ -541,9 +547,19 @@ function DrawerMegaMenu({
         )}>
         {label}
         <span
-          {...stylex.props(
-            styles.drawerChevron,
-            isExpanded && styles.drawerChevronExpanded,
+          {...mergeProps(
+            // The glyph itself is the theme target, and it is the element the
+            // rotation lives on — so a theme reaches the mark and its
+            // expanded/collapsed transform through one selector. Named apart
+            // from the desktop trigger chevron: the two render in different
+            // modes and a theme may want to move only one.
+            themeProps('top-nav-mega-menu-drawer-chevron-icon', {
+              state: isExpanded ? 'expanded' : 'collapsed',
+            }),
+            stylex.props(
+              styles.drawerChevron,
+              isExpanded && styles.drawerChevronExpanded,
+            ),
           )}>
           {chevronDownIcon}
         </span>
