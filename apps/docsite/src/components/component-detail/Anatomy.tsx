@@ -27,8 +27,10 @@ export function Anatomy({elements}: AnatomyProps) {
 
   return (
     <Section>
-      <VStack gap={2}>
-        <Heading level={3}>Anatomy</Heading>
+      <VStack gap={4}>
+        <Heading level={2} type="display-3">
+          Anatomy
+        </Heading>
         <Table
           data={data}
           columns={[
