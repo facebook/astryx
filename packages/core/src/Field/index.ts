@@ -28,6 +28,7 @@ export type {InputStatus, InputStatusType, InputSize} from './types';
 // Shared input styles
 export {
   inputWrapperStyles,
+  inputAttachedStatusStyles,
   inputStatusBorderStyles,
   inputStatusHoverShadowStyles,
   inputStatusFocusShadowStyles,

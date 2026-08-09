@@ -73,6 +73,27 @@ export const inputWrapperStyles = stylex.create({
 });
 
 /**
+ * Squares off the block-end corners of an input wrapper.
+ *
+ * The `attached` status box tucks itself under the control with a negative
+ * `marginTop` and paints an opaque status tint. Where the wrapper's block-end
+ * corners are rounded its own background stops short of them, so that tint
+ * shows through as two wedges inside the control's own outline. Squaring the
+ * seam lets the control meet the box flush.
+ *
+ * Apply only while an attached status box is actually rendered — a squared-off
+ * bottom with open space beneath it reads as a rendering fault. Logical
+ * properties keep the seam correct in RTL, and both are longhands, so they win
+ * over the base wrapper's `borderRadius` shorthand however they are composed.
+ */
+export const inputAttachedStatusStyles = stylex.create({
+  flush: {
+    borderEndStartRadius: 0,
+    borderEndEndRadius: 0,
+  },
+});
+
+/**
  * Status border colors for input wrappers.
  * Keyed by InputStatusType.
  */

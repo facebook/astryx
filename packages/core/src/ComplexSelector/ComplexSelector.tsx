@@ -27,6 +27,7 @@ import type {StyleXStyles} from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
 import {
   Field,
+  inputAttachedStatusStyles,
   inputStatusBorderStyles,
   inputStatusFocusShadowStyles,
   inputWrapperStyles,
@@ -91,7 +92,14 @@ const styles = stylex.create({
     fontSize: 'inherit',
     lineHeight: 'inherit',
     color: 'inherit',
-    cursor: 'pointer',
+    // The wrapper's `not-allowed` cannot reach the pointer here: this button
+    // covers most of the wrapper and sets a cursor of its own, and an explicit
+    // `pointer` also overrides the browser's native disabled cursor. So the
+    // disabled state has to be gated on this rule.
+    cursor: {
+      default: 'pointer',
+      ':disabled': 'not-allowed',
+    },
     // The wrapper (inputWrapperStyles.base) renders the focus ring via
     // :focus-within when this button is focused, matching TextInput/NumberInput.
     // The button must not draw its own :focus-visible outline or the two stack
@@ -385,6 +393,12 @@ export function ComplexSelector<Value>({
 
   const triggerContent = triggerLabel ?? placeholder;
 
+  // Field tucks the attached status box under the trigger, so the trigger's
+  // block-end corners have to square off to meet it — but only for the exact
+  // case where Field renders that box. Anywhere else the seam is not there and
+  // a squared-off bottom would just look broken.
+  const hasAttachedStatus = statusVariant === 'attached' && !!status?.message;
+
   const content = (
     <div id={contentId} {...stylex.props(styles.content, contentXstyle)}>
       {children(optimisticValue, commitValue, popover.hide, {
@@ -424,6 +438,7 @@ export function ComplexSelector<Value>({
             // key, so it would wipe the base wrapper's focus ring and leave a
             // status'd trigger with no visible keyboard focus indicator.
             status && !isDisabled && inputStatusFocusShadowStyles[status.type],
+            hasAttachedStatus && inputAttachedStatusStyles.flush,
             xstyle,
           ),
           className,

@@ -221,6 +221,59 @@ function wrapperOf(container: HTMLElement): HTMLElement {
   return wrapper as HTMLElement;
 }
 
+/**
+ * A StyleX selector stripped of its `:not(#\#)` specificity padding, leaving
+ * just the condition the declaration is gated on (`''` when unconditional).
+ */
+function conditionOf(selector: string): string {
+  return selector.replaceAll(':not(#\\#)', '').replace(/^\.[A-Za-z0-9_-]+/, '');
+}
+
+/**
+ * What StyleX actually declared for `property` on this element, read back from
+ * the injected stylesheet as `{condition, value}` pairs.
+ *
+ * The vitest config runs StyleX with `runtimeInjection`, so these are the real
+ * rules a browser would apply. Reading them beats `getComputedStyle`, which in
+ * jsdom cannot evaluate a pseudo-class gate like `:disabled` and so cannot tell
+ * "not-allowed when disabled" from "not-allowed always".
+ */
+function declarationsFor(
+  el: HTMLElement,
+  property: string,
+): {condition: string; value: string}[] {
+  const classes = new Set(el.className.split(' ').filter(Boolean));
+  const declaration = new RegExp(`[;{]\\s*${property}:\\s*([^;}]+?)\\s*[;}]`);
+  const found: {condition: string; value: string}[] = [];
+
+  const visit = (rules: CSSRuleList) => {
+    for (const rule of Array.from(rules)) {
+      const selector = (rule as CSSStyleRule).selectorText;
+      if (selector != null) {
+        const owner = selector.split(':')[0];
+        if (owner.startsWith('.') && classes.has(owner.slice(1))) {
+          const match = declaration.exec(rule.cssText);
+          if (match) {
+            found.push({condition: conditionOf(selector), value: match[1]});
+          }
+        }
+      }
+      // Descend into @media/@supports. Style rules carry an empty `cssRules`
+      // of their own in jsdom, so the length check is what keeps this from
+      // treating every rule as a grouping rule and walking past all of them.
+      const nested = (rule as CSSGroupingRule).cssRules;
+      if (nested != null && nested.length > 0) {
+        visit(nested);
+      }
+    }
+  };
+
+  for (const sheet of Array.from(document.styleSheets)) {
+    visit(sheet.cssRules);
+  }
+  return found;
+}
+
 describe('ComplexSelector hardening (#4710)', () => {
   describe('trigger value announcement', () => {
     it('exposes the current value through the combobox value slot', () => {
@@ -464,6 +517,131 @@ describe('ComplexSelector hardening (#4710)', () => {
     });
   });
 
+  describe('attached status seam', () => {
+    /** The trigger wrapper's block-end corner radii, as declared by StyleX. */
+    function endRadii(wrapper: HTMLElement) {
+      return [
+        ...declarationsFor(wrapper, 'border-end-start-radius'),
+        ...declarationsFor(wrapper, 'border-end-end-radius'),
+      ];
+    }
+
+    /** The status box that tucks itself under the trigger, if Field rendered one. */
+    function attachedBoxIn(container: HTMLElement) {
+      return container.querySelector(
+        '.astryx-field-status[data-variant="attached"]',
+      );
+    }
+
+    const squared = [
+      {condition: '', value: '0'},
+      {condition: '', value: '0'},
+    ];
+
+    it.each(['warning', 'error', 'success'] as const)(
+      'squares the block-end corners so the attached %s box meets the trigger flush',
+      type => {
+        const {container} = render(
+          <ComplexSelector
+            label="Fruit blend"
+            value="Apple"
+            triggerLabel="Apple"
+            status={{type, message: 'Status message'}}>
+            {() => <div>content</div>}
+          </ComplexSelector>,
+        );
+        // Guard against a vacuous pass: squaring the corners is only correct
+        // while Field really renders the attached box beneath the trigger.
+        expect(attachedBoxIn(container)).not.toBeNull();
+        expect(endRadii(wrapperOf(container))).toEqual(squared);
+      },
+    );
+
+    it('leaves the block-start corners on the shared field radius', () => {
+      const {container} = render(
+        <ComplexSelector
+          label="Fruit blend"
+          value="Apple"
+          triggerLabel="Apple"
+          status={{type: 'error', message: 'Required'}}>
+          {() => <div>content</div>}
+        </ComplexSelector>,
+      );
+      const wrapper = wrapperOf(container);
+      // Only the seam is squared. The top corners keep the wrapper's themeable
+      // `borderRadius` shorthand, with no longhand override shadowing it.
+      expect(declarationsFor(wrapper, 'border-start-start-radius')).toEqual([]);
+      expect(declarationsFor(wrapper, 'border-start-end-radius')).toEqual([]);
+      expect(declarationsFor(wrapper, 'border-radius')).toContainEqual({
+        condition: '',
+        value: 'var(--_field-radius)',
+      });
+    });
+
+    it('still squares them when the field is disabled', () => {
+      const {container} = render(
+        <ComplexSelector
+          label="Fruit blend"
+          value="Apple"
+          triggerLabel="Apple"
+          isDisabled
+          status={{type: 'error', message: 'Required'}}>
+          {() => <div>content</div>}
+        </ComplexSelector>,
+      );
+      // Disabling dims the field but does not remove the attached box, so the
+      // seam is still there to meet.
+      expect(attachedBoxIn(container)).not.toBeNull();
+      expect(endRadii(wrapperOf(container))).toEqual(squared);
+    });
+
+    it.each([
+      {
+        name: 'there is no status at all',
+        props: {},
+      },
+      {
+        name: 'the status carries no message, so no box renders',
+        props: {status: {type: 'error'} as const},
+      },
+      {
+        name: 'the detached box floats below its own gap',
+        props: {
+          status: {type: 'error', message: 'Required'} as const,
+          statusVariant: 'detached' as const,
+        },
+      },
+      {
+        name: 'the tooltip variant renders no box',
+        props: {
+          status: {type: 'error', message: 'Required'} as const,
+          statusVariant: 'tooltip' as const,
+        },
+      },
+    ])('keeps the corners rounded when $name', ({props}) => {
+      const {container} = render(
+        <ComplexSelector
+          label="Fruit blend"
+          value="Apple"
+          triggerLabel="Apple"
+          {...props}>
+          {() => <div>content</div>}
+        </ComplexSelector>,
+      );
+      const wrapper = wrapperOf(container);
+      // Nothing is tucked under the trigger in these cases — a squared-off
+      // bottom with open space beneath it reads as a rendering fault.
+      expect(attachedBoxIn(container)).toBeNull();
+      // An "expected no declarations" assertion passes just as happily when
+      // the reader is broken, so prove it can still see the wrapper's radius.
+      expect(declarationsFor(wrapper, 'border-radius')).toContainEqual({
+        condition: '',
+        value: 'var(--_field-radius)',
+      });
+      expect(endRadii(wrapper)).toEqual([]);
+    });
+  });
+
   describe('size', () => {
     it('resolves size from SizeContext like sibling inputs', () => {
       const {container} = render(
@@ -560,6 +738,39 @@ describe('ComplexSelector hardening (#4710)', () => {
       expect(trigger).toBeDisabled();
       await user.click(trigger.parentElement as HTMLElement);
       expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    });
+
+    it('gates the trigger cursor on :disabled rather than always pointing', () => {
+      const {container} = render(
+        <ComplexSelector
+          label="Fruit blend"
+          value="Apple"
+          triggerLabel="Apple"
+          isDisabled>
+          {() => <div>content</div>}
+        </ComplexSelector>,
+      );
+      // The wrapper's `not-allowed` cannot reach the pointer here: the trigger
+      // covers most of the wrapper and declares a cursor of its own, which also
+      // overrides the browser's native disabled cursor. So the gate has to sit
+      // on the trigger's own rule.
+      const cursors = declarationsFor(screen.getByRole('combobox'), 'cursor');
+      expect(cursors).toContainEqual({
+        condition: ':disabled',
+        value: 'not-allowed',
+      });
+      // …without turning every enabled trigger into a not-allowed one.
+      expect(cursors).toContainEqual({condition: '', value: 'pointer'});
+      expect(
+        cursors.filter(c => c.condition === '' && c.value === 'not-allowed'),
+      ).toEqual([]);
+      // The wrapper needs no such gate: its own `pointer` and `not-allowed`
+      // land in one `stylex.props` call, so StyleX drops the losing class
+      // outright. Two elements cannot merge that way, which is exactly why the
+      // trigger needed the pseudo-class instead.
+      expect(declarationsFor(wrapperOf(container), 'cursor')).toEqual([
+        {condition: '', value: 'not-allowed'},
+      ]);
     });
 
     it('shows a spinner and aria-busy while loading', () => {
