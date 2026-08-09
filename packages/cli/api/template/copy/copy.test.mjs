@@ -42,6 +42,25 @@ describe('template.copy — overwrite + path safety', () => {
     expect(fs.readFileSync(path.join(dir, 'mine.tsx'), 'utf-8')).not.toBe('USER CODE');
   }, SLOW);
 
+  // Regression: the scaffolded LightboxVideo block kept `type: 'video'` while
+  // its src was rewritten to the image placeholder, so the generated Lightbox
+  // handed SVG image data to a <video> element.
+  it('scaffolds a video block with a video source, not the image placeholder', async () => {
+    await template('LightboxVideo', {
+      type: 'block',
+      targetPath: './dest',
+      cwd: dir,
+    });
+    const out = fs.readFileSync(
+      path.join(dir, 'dest', 'LightboxVideo.tsx'),
+      'utf-8',
+    );
+    expect(out).toContain("type: 'video'");
+    expect(out).not.toContain('/template-assets/');
+    expect(out).toContain('data:video/mp4;base64,');
+    expect(out).not.toContain('data:image/svg+xml');
+  }, SLOW);
+
   it('rejects a traversal target and writes nothing outside cwd', async () => {
     await expect(
       template('blank', {targetPath: '../escape.tsx', cwd: dir}),

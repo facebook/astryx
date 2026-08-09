@@ -153,19 +153,44 @@ const PLACEHOLDER_IMAGE =
   'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20400%20300%22%20preserveAspectRatio%3D%22xMidYMid%20slice%22%3E%3Crect%20width%3D%22400%22%20height%3D%22300%22%20fill%3D%22%23f5f6f8%22%2F%3E%3Cg%20transform%3D%22translate%28200%20150%29%22%20fill%3D%22none%22%20stroke%3D%22%23c2cad6%22%20stroke-width%3D%225%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20x%3D%22-44%22%20y%3D%22-44%22%20width%3D%2288%22%20height%3D%2288%22%20rx%3D%2216%22%2F%3E%3Ccircle%20cx%3D%2218%22%20cy%3D%22-18%22%20r%3D%222.5%22%20fill%3D%22%23c2cad6%22%20stroke%3D%22none%22%2F%3E%3Cpath%20d%3D%22M-34%2030%20L-8%200%20L10%2018%20L20%208%20L34%2024%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E';
 
 /**
- * Demo-image sources to strip from scaffolded projects. Template demo imagery
- * is self-hosted under the docsite's `/template-assets/*` dir (committed there,
+ * Inline placeholder swapped in for demo video when scaffolding a template.
+ * A video source must stay a video: handing {@link PLACEHOLDER_IMAGE} to a
+ * `<video>` produces an element that can never play.
+ *
+ * 640x360, 2 seconds, no audio track (so it never trips an autoplay policy),
+ * H.264 constrained baseline / level 3.1 (`avc1.42C01F`) in MP4 — the profile
+ * every browser decodes. 2,269 bytes decoded, ~3 kB as base64 here. Same
+ * palette and line language as {@link PLACEHOLDER_IMAGE} with a play glyph;
+ * mirrors apps/docsite/public/template-assets/placeholder-video.svg, which is
+ * the reviewable still of what these bytes encode. Like the image placeholder
+ * it is fully self-contained — no network, no project asset dir.
+ */
+const PLACEHOLDER_VIDEO =
+  'data:video/mp4;base64,AAAAJGZ0eXBpc29tAAACAGlzb21pc282aXNvMmF2YzFtcDQxAAACzG1vb3YAAAB4bXZoZAEAAAAAAAAA5p2rqAAAAADmnauoAAAD6AAAAAAAAAAhAAEAAAEAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAIkdHJhawAAAGh0a2hkAQAAAwAAAADmnauoAAAAAOadq6gAAAABAAAAAAAAAAAAAAAhAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAQAAAAAKAAAABaAAAAAABtG1kaWEAAAAsbWRoZAEAAAAAAAAA5p2rqAAAAADmnauoAAB1MAAAAAAAAAAhVcQAAAAAAC1oZGxyAAAAAAAAAAB2aWRlAAAAAAAAAAAAAAAAVmlkZW9IYW5kbGVyAAAAAVNtaW5mAAAAFHZtaGQAAAABAAAAAAAAAAAAAAAlZGluZgAAAB1kcmVmAAAAAAAAAAEAAAANdXJsIAAAAAEAAAABEnN0YmwAAAAQc3RzYwAAAAAAAAAAAAAAEHN0dHMAAAAAAAAAAAAAABRzdHN6AAAAAAAAAAAAAAAAAAAAEHN0Y28AAAAAAAAAAAAAAMZzdHNkAAAAAAAAAAEAAAC2YXZjMQAAAAAAAAABAAAAAQAAAAAAAAAAAAAAAAKAAWgASAAAAEgAAAAAAAAAAQtBVkMxIENvZGluZwAAAAAAAAAAAAAAAAAAAAAAAAAAABj//wAAABBwYXNwAAAAAQAAAAEAAAAUYnRydAAAAAAAAAAAAAAAAAAAAClhdmNDAULAH//hABJnQsAfjGgKAv+WagwMDA8IhGoBAARozjyAAAAAE2NvbHJuY2x4AAYABgAGAAAAAChtdmV4AAAAIHRyZXgAAAAAAAAAAQAAAAEAAAAAAAAAAAAAAAAAAABobW9vZgAAABBtZmhkAAAAAAAAAAEAAABQdHJhZgAAABR0ZmhkAAIAIAAAAAEBAQAAAAAAFHRmZHQBAAAAAAAAAAAAAAAAAAAgdHJ1bgEAAwUAAAABAAAAcAIAAAAAAAPnAAAFMQAABTltZGF0AAAFLWW4AAR///4eigACA15NScnJycnJycnJycnJycnJycnJycnJycnJycnJycnJycnJycnJycnWq6666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666//73coZ4CF6xspCBHvAqo19XeE//5jWY0Y1mXZNra2sev/+gv/itdTQVgWenafjoxFsebxV11111111111111111111111111111/yJ/YixGOZoMwF7VwR77J/zS5EXeRMRdl9+AVxsjZAbHUoySvIEHnjmMP/5A9B/0sra+1Vra2sev7C/+sVIzLzOk0a96AuwRPG9L8fBx75zPyRkCmfnhxsTv5Pwrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr7Qt/5OMdEVb9DoUcTPxtM+/r5HtaWlpaWlv0AP/7UjYepmPiA6FTOi7WPqulpaWlpaWlpaWlpaWlpa666666666666666ds3RZX8HWP/NgKqI3aWiX5qApXwSPYh7JANxjrVc8VVVKQXoUmAiaMBv06erUfDD/+FV+CTwxPVQoq666dNdPXXXXXXXXXXXXXXXXXXXXXXXXXXXXT09cUShLWv66nX/QI4TuM1fR/rVSUV1CqXjoYDhiGZNHvtY2SPD6eoieq+KqSgKz8CL0ZHf5M4TMMU8YLIyj/9fsEHmunrp66666666666666666666666666666enrp6f//3GFfAMdJ4gJByRm4cCCeOq5k1x97WE7jNUGOLFKx8C4Sw94BfPpkBGY2RuLJDEHniFUYPcf4TwkcoIYuJlz66eunrrrrrrrrrrrrrrrrrrrrrrrrrrrrp6evh//Ngh8NJP/5PcZbxGCPeADHKGVjwEg5IzcYSwnv+AXz6ZZIYgym7wIye75bLIZjAYHV5CR8eAXx4jLHgIzGyNxz8izd5f/wRTVIUP/iuunrp66666666666666666666666666666enr+kTfx8JeCFt/o601CLPIBxu5OX/oLQkfHhZyFDTP4r/Sdk30tPXT11111111111111111111111111118PpTmmbQoFnRLLFhms4Ykxv/6Z+wSceGDvXa30tPXHYACaTbSSZsiP/+CVlc0jFEtaFu1u3ZeRngiv7f8EiNrRKuuuuuuuuuuuuuuuuuuuuuuuuuuuuuv80n/w/2uRmS1VV0qKXDyEFMvy0RFp5MHyEQHgGAf8L8xEeaOhZZX5KjqgdWtra2vZ3KXdychrAhVcwOfvrcbWfgJjfDcELPDsAbjKDLi5xOpEReXxw9H5zoe+66666666666666666666666666666667W12tra2trfrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrp6666666666666666666666666666666666666666euuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuunrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrp6666666666666666666666666666666666666666euuuuuuuuuuuuuuuuuuuuuuv/4/wQRQABBr999999999999999999999999999999999999999+AAAATG1mcmEAAAA0dGZyYQEAAAAAAAABAAAAPwAAAAEAAAAAAAAAAAAAAAAAAALwAAAAAQAAAAEAAAABAAAAEG1mcm8AAAAAAAAATA==';
+
+/**
+ * Demo-media sources to strip from scaffolded projects. Template demo media is
+ * self-hosted under the docsite's `/template-assets/*` dir (committed there,
  * mirrored into the sandbox preview by scripts/sync-templates.js). Those paths
  * only resolve inside the Astryx docsite/sandbox, so on scaffold they're
  * replaced with a self-contained placeholder — a scaffolded project has no
  * `/template-assets/` dir and would otherwise 404. Genuine third-party URLs
  * (e.g. brand logos from paypalobjects.com) are intentionally left untouched.
  *
- * @type {RegExp[]}
+ * The trailing extension is captured so each reference can take the placeholder
+ * that matches its media kind.
+ *
+ * @type {RegExp}
  */
-const DEMO_IMAGE_PATTERNS = [
-  /\/template-assets\/[\w-]+\.\w+/g,
-];
+const DEMO_MEDIA_PATTERN = /\/template-assets\/[\w-]+\.(\w+)/g;
+
+/**
+ * Web-deliverable video extensions. Anything else under `/template-assets/` is
+ * treated as an image, which is what every other demo asset is.
+ *
+ * @type {Set<string>}
+ */
+const VIDEO_EXTENSIONS = new Set(['mp4', 'webm', 'mov', 'm4v', 'ogv']);
 
 /**
  * Normalize path into Unix path (using forward slashes) for consistent comparison
@@ -179,16 +204,20 @@ function toPosixPath(p) {
 }
 
 /**
- * Replace demo image references with a self-contained placeholder data URI so
- * scaffolded pages render with zero setup. Builders drop in their own images.
+ * Replace demo media references with a self-contained placeholder data URI so
+ * scaffolded pages render with zero setup. Builders drop in their own media.
+ * The placeholder is chosen per reference from the file extension, so a video
+ * source stays a video — an image placeholder behind `type: 'video'` yields a
+ * `<video>` that cannot play.
  *
  * @param {string} source - Template source code.
- * @returns {string} Source with demo image references replaced.
+ * @returns {string} Source with demo media references replaced.
  */
 export function stripTemplateAssetRefs(source) {
-  return DEMO_IMAGE_PATTERNS.reduce(
-    (out, pattern) => out.replace(pattern, PLACEHOLDER_IMAGE),
-    source,
+  return source.replace(DEMO_MEDIA_PATTERN, (_ref, ext) =>
+    VIDEO_EXTENSIONS.has(ext.toLowerCase())
+      ? PLACEHOLDER_VIDEO
+      : PLACEHOLDER_IMAGE,
   );
 }
 /**
