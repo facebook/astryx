@@ -43,7 +43,6 @@ import * as stylex from '@stylexjs/stylex';
 import {colorVars, radiusVars, spacingVars} from '../../../theme/tokens.stylex';
 import {Icon} from '../../../Icon';
 import {mergeRefs} from '../../../utils';
-import {themeProps} from '../../../utils/themeProps';
 import type {
   TablePlugin,
   TableColumn,

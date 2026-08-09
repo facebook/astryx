@@ -135,14 +135,11 @@ const styles = stylex.create({
     whiteSpace: 'nowrap',
     textAlign: 'start',
   },
+  // Only what Icon does not already provide: `size="sm"` gives the 16px box
+  // and `color` the token, but the glyph still must not shrink inside the flex
+  // trigger.
   triggerIcon: {
     flexShrink: 0,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 16,
-    height: 16,
-    color: colorVars['--color-icon-secondary'],
   },
   // Rotation lives on the chevron glyph itself (passed through `xstyle`), not
   // on the layout wrapper above, so the icon's `selector-indicator-icon` theme
@@ -1282,8 +1279,13 @@ export function Selector<T extends SelectorOptionType>(
             />
           </button>
         )}
-        <span {...stylex.props(styles.triggerIcon)}>
-          {showStatusIcon ? (
+        {/*
+          No wrapper span: Icon's own span already provides the 16px box (`sm`)
+          and the icon color, so the status glyph and the chevron are each
+          directly targetable instead of sharing one untargetable parent — and
+          the two affordances stop sharing a node.
+        */}
+        {showStatusIcon ? (
             showStatusTooltip ? (
               <button
                 ref={statusTooltip.ref}
@@ -1296,6 +1298,7 @@ export function Selector<T extends SelectorOptionType>(
                   icon={STATUS_ICON_MAP[status.type]}
                   size="sm"
                   color={STATUS_ICON_COLOR_MAP[status.type]}
+                  xstyle={styles.triggerIcon}
                 />
               </button>
             ) : (
@@ -1303,17 +1306,19 @@ export function Selector<T extends SelectorOptionType>(
                 icon={STATUS_ICON_MAP[status.type]}
                 size="sm"
                 color={STATUS_ICON_COLOR_MAP[status.type]}
+                xstyle={styles.triggerIcon}
               />
             )
           ) : (
             <Icon
               icon="chevronDown"
               size="sm"
-              color="inherit"
-              // The rotation rides on the glyph rather than the wrapper span so
-              // the theme target below reaches both the mark and its
-              // open/closed transform.
+              color="secondary"
+              // The rotation rides on the glyph, alongside the box and color
+              // the wrapper used to provide, so one element carries the mark,
+              // its open/closed transform, and the theme target.
               xstyle={[
+                styles.triggerIcon,
                 styles.triggerIconRotation,
                 popover.isOpen && styles.triggerIconOpen,
               ]}
@@ -1325,9 +1330,8 @@ export function Selector<T extends SelectorOptionType>(
               {...themeProps('selector-indicator-icon', {
                 state: popover.isOpen ? 'expanded' : 'collapsed',
               })}
-            />
-          )}
-        </span>
+          />
+        )}
       </div>
 
       {popover.render(

@@ -20,7 +20,6 @@ import * as stylex from '@stylexjs/stylex';
 import {spacingVars, colorVars, radiusVars} from '../../../theme/tokens.stylex';
 import {Icon} from '../../../Icon';
 import {rtlStyles} from '../../../utils';
-import {themeProps} from '../../../utils/themeProps';
 import {resolveContextActions} from '../../tableContextMenu';
 import {useTranslator} from '../../../i18n';
 import type {

@@ -20,7 +20,6 @@ import {
   fontWeightVars,
 } from '../../../theme/tokens.stylex';
 import {Icon} from '../../../Icon';
-import {themeProps} from '../../../utils/themeProps';
 import type {TablePlugin} from '../../types';
 import {useTranslator} from '../../../i18n';
 
