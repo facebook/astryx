@@ -1644,7 +1644,7 @@ describe('Selector indicator (chevron) icon theme target', () => {
     const refIcon = refContainer.querySelector('.astryx-icon') as HTMLElement;
 
     // Exclude the additive theme-target classes (the stable target + its
-    // reflected state class) so only the StyleX color/size classes remain.
+    // reflected state class) so only StyleX classes remain.
     const themeTargetClasses = new Set([
       'astryx-selector-indicator-icon',
       'collapsed',
@@ -1656,7 +1656,14 @@ describe('Selector indicator (chevron) icon theme target', () => {
         .filter(c => !themeTargetClasses.has(c))
         .sort();
 
-    expect(styleClasses(icon)).toEqual(styleClasses(refIcon));
+    // A superset, not an exact match: the chevron additionally carries the
+    // rotation styles, which live on the glyph precisely so a theme can reach
+    // the transform through the same selector as the color. The guard that
+    // matters is that every color/size class of a standalone icon is still
+    // present — i.e. the default look has not drifted.
+    expect(styleClasses(icon)).toEqual(
+      expect.arrayContaining(styleClasses(refIcon)),
+    );
   });
 
   it('exposes selector-indicator-icon so a theme reaches the icon size and per-state color', () => {

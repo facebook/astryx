@@ -134,6 +134,10 @@ const styles = stylex.create({
     width: '14px',
     height: '14px',
     color: colorVars['--color-text-disabled'],
+  },
+  // Rides on the chevron <Icon> (via `xstyle`), next to the rotation it
+  // animates, so one element carries both the transform and the theme target.
+  chevronTransition: {
     transition: {
       default: `transform ${durationVars['--duration-fast']} ${easeVars['--ease-standard']}`,
       '@media (prefers-reduced-motion: reduce)': 'none',
@@ -273,10 +277,6 @@ const styles = stylex.create({
     width: '14px',
     height: '14px',
     color: colorVars['--color-text-disabled'],
-    transition: {
-      default: `transform ${durationVars['--duration-fast']} ${easeVars['--ease-standard']}`,
-      '@media (prefers-reduced-motion: reduce)': 'none',
-    },
     marginInlineStart: 'auto',
   },
   callDetailContent: {
@@ -451,12 +451,16 @@ function CallRow({call}: {call: ChatToolCallItem}) {
         <span {...stylex.props(styles.callDuration)}>{call.duration}</span>
       )}
       {hasDetail && (
-        <span
-          {...stylex.props(
-            styles.callDetailChevron,
-            isDetailOpen && styles.chevronExpanded,
-          )}>
-          <Icon icon="chevronDown" size="xsm" color="inherit" />
+        <span {...stylex.props(styles.callDetailChevron)}>
+          <Icon
+            icon="chevronDown"
+            size="xsm"
+            color="inherit"
+            xstyle={[
+              styles.chevronTransition,
+              isDetailOpen && styles.chevronExpanded,
+            ]}
+          />
         </span>
       )}
     </div>
@@ -627,12 +631,16 @@ export function ChatToolCalls(props: ChatToolCallsProps) {
             </>
           )}
         </span>
-        <span
-          {...stylex.props(
-            styles.chevron,
-            isExpanded && styles.chevronExpanded,
-          )}>
-          <Icon icon="chevronDown" size="xsm" color="inherit" />
+        <span {...stylex.props(styles.chevron)}>
+          <Icon
+            icon="chevronDown"
+            size="xsm"
+            color="inherit"
+            xstyle={[
+              styles.chevronTransition,
+              isExpanded && styles.chevronExpanded,
+            ]}
+          />
         </span>
       </div>
 

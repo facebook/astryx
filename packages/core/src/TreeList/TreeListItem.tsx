@@ -24,8 +24,8 @@ import {
   easeVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
-import {useIcon} from '../Icon';
-import {mergeProps, rtlStyles} from '../utils';
+import {Icon} from '../Icon';
+import {mergeProps} from '../utils';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import {TreeListBranches} from './TreeListBranches';
 import type {TreeListDensity, TreeListVariant} from './TreeListTypes';
@@ -207,15 +207,34 @@ const styles = stylex.create({
   },
   chevronSvg: {
     display: 'flex',
+    // The chevron column is sized in spacing tokens by the button/container
+    // around it (--spacing-4 = 16px), not on Icon's rem scale, so the glyph's
+    // box is pinned to that same token. Icon's `sm` (1rem) only coincides with
+    // 16px at a 16px root font-size; drifting off the token would knock the
+    // glyph out of its 16px column.
+    width: spacingVars['--spacing-4'],
+    height: spacingVars['--spacing-4'],
+    fontSize: spacingVars['--spacing-4'],
     transitionProperty: 'transform',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
   },
+  // The RTL mirror is folded into each state's transform rather than living on
+  // a parent span. Both are `transform`, so on one element the later value
+  // would win — spelling out `scaleX(-1) rotate(...)` per state composes them
+  // exactly as the nested elements did, while leaving a single element to
+  // carry the glyph's theme target.
   chevronExpanded: {
-    transform: 'rotate(90deg)',
+    transform: {
+      default: 'rotate(90deg)',
+      ':is([dir="rtl"] *)': 'scaleX(-1) rotate(90deg)',
+    },
   },
   chevronCollapsed: {
-    transform: 'rotate(0deg)',
+    transform: {
+      default: 'rotate(0deg)',
+      ':is([dir="rtl"] *)': 'scaleX(-1) rotate(0deg)',
+    },
   },
 });
 
@@ -328,7 +347,6 @@ export function TreeListItem({
   isTabbable,
 }: TreeListItemInternalProps) {
   const t = useTranslator();
-  const chevronRightIcon = useIcon('chevronRight');
   const labelId = useId();
   const descriptionId = useId();
   const LinkComponent = useLinkComponent();
@@ -406,16 +424,24 @@ export function TreeListItem({
     </>
   );
 
+  // <Icon> renders the glyph's span itself — carrying the pre-existing
+  // astryx-icon target — so the rotation rides on that same element instead of
+  // an extra wrapper: a theme can still restyle the mark and its open/closed
+  // transform through one selector.
   const chevronIcon = (
-    <span {...stylex.props(rtlStyles.mirror)}>
-      <span
-        {...stylex.props(
-          styles.chevronSvg,
-          isExpanded ? styles.chevronExpanded : styles.chevronCollapsed,
-        )}>
-        {chevronRightIcon}
-      </span>
-    </span>
+    <Icon
+      icon="chevronRight"
+      // Nearest size to the 16px chevron column; `chevronSvg` re-pins the exact
+      // box because the column is spacing-token-sized, not rem-sized.
+      size="sm"
+      // The button/container owns the chevron color (--color-icon-secondary);
+      // inheriting keeps that as the single source.
+      color="inherit"
+      xstyle={[
+        styles.chevronSvg,
+        isExpanded ? styles.chevronExpanded : styles.chevronCollapsed,
+      ]}
+    />
   );
 
   const chevron = hasChildren ? (

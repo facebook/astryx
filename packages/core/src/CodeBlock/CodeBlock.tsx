@@ -198,6 +198,10 @@ const styles = stylex.create({
     },
     animationDuration: durationVars['--duration-medium'],
     animationTimingFunction: easeVars['--ease-standard'],
+  },
+  // Applied to the chevron <Icon> (via `xstyle`): the glyph is the element that
+  // rotates and the element a theme targets, so one selector reaches both.
+  collapseChevronIcon: {
     transitionProperty: 'transform',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
@@ -873,12 +877,16 @@ export function CodeBlock({
         )}>
         <span {...stylex.props(styles.headerTitle)}>
           {canCollapse && (
-            <span
-              {...stylex.props(
-                styles.collapseChevron,
-                !isCollapsed && styles.collapseChevronExpanded,
-              )}>
-              <Icon icon="chevronRight" size="xsm" color="inherit" />
+            <span {...stylex.props(styles.collapseChevron)}>
+              <Icon
+                icon="chevronRight"
+                size="xsm"
+                color="inherit"
+                xstyle={[
+                  styles.collapseChevronIcon,
+                  !isCollapsed && styles.collapseChevronExpanded,
+                ]}
+              />
             </span>
           )}
           {title}

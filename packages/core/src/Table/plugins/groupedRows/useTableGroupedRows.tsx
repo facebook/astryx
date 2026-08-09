@@ -20,7 +20,7 @@ import {
   fontWeightVars,
 } from '../../../theme/tokens.stylex';
 import {Icon} from '../../../Icon';
-import {rtlStyles} from '../../../utils';
+import {themeProps} from '../../../utils/themeProps';
 import type {TablePlugin} from '../../types';
 import {useTranslator} from '../../../i18n';
 
@@ -153,12 +153,25 @@ const styles = stylex.create({
     },
   },
   chevronIcon: {
-    display: 'inline-flex',
     transitionProperty: 'transform',
     transitionDuration: '150ms',
   },
-  chevronExpanded: {
-    transform: 'rotate(90deg)',
+  // The RTL mirror is folded into each state's transform rather than living on
+  // a parent span. Both are `transform`, so on one element the later value
+  // would win — spelling out `scaleX(-1) rotate(...)` per state composes them
+  // exactly as the nested elements did, while leaving a single element to
+  // carry the glyph's theme target.
+  chevronIconCollapsed: {
+    transform: {
+      default: 'rotate(0deg)',
+      ':is([dir="rtl"] *)': 'scaleX(-1) rotate(0deg)',
+    },
+  },
+  chevronIconExpanded: {
+    transform: {
+      default: 'rotate(90deg)',
+      ':is([dir="rtl"] *)': 'scaleX(-1) rotate(90deg)',
+    },
   },
   // Emphasized body text — same size as body, heavier weight (Ernest #3).
   label: {
@@ -334,15 +347,19 @@ export function useTableGroupedRows<T extends Record<string, unknown>>(
                         })
                   }
                   aria-expanded={!collapsed}>
-                  <span {...stylex.props(rtlStyles.mirror)}>
-                    <span
-                      {...stylex.props(
-                        styles.chevronIcon,
-                        !collapsed && styles.chevronExpanded,
-                      )}>
-                      <Icon icon="chevronRight" size="xsm" />
-                    </span>
-                  </span>
+                  <Icon
+                    icon="chevronRight"
+                    size="xsm"
+                    // The rotation rides on the glyph rather than a wrapper
+                    // span so the theme target below reaches both the mark and
+                    // its open/closed transform.
+                    xstyle={[
+                      styles.chevronIcon,
+                      collapsed
+                        ? styles.chevronIconCollapsed
+                        : styles.chevronIconExpanded,
+                    ]}
+                  />
                 </button>
                 {content}
               </span>
