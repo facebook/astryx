@@ -157,16 +157,25 @@ const PLACEHOLDER_IMAGE =
  * A video source must stay a video: handing {@link PLACEHOLDER_IMAGE} to a
  * `<video>` produces an element that can never play.
  *
- * 640x360, 2 seconds, no audio track (so it never trips an autoplay policy),
- * H.264 constrained baseline / level 3.1 (`avc1.42C01F`) in MP4 — the profile
- * every browser decodes. 2,269 bytes decoded, ~3 kB as base64 here. Same
- * palette and line language as {@link PLACEHOLDER_IMAGE} with a play glyph;
+ * 640x360, about 1.6 seconds over 3 frames, no audio track (so it never trips
+ * an autoplay policy), H.264 constrained baseline / level 3.1 (`avc1.42C01F`)
+ * in MP4 — the profile every browser decodes. 2,788 bytes decoded, ~3.7 kB as
+ * base64 here. Every one of those properties is asserted in
+ * template.test.mjs, because none of them can be checked by reading the string.
+ * Same palette and line language as {@link PLACEHOLDER_IMAGE} with a play glyph;
  * mirrors apps/docsite/public/template-assets/placeholder-video.svg, which is
- * the reviewable still of what these bytes encode. Like the image placeholder
- * it is fully self-contained — no network, no project asset dir.
+ * the reviewable still of what these bytes encode — keep the two in step if
+ * this is ever regenerated. Like the image placeholder it is fully
+ * self-contained — no network, no project asset dir.
+ *
+ * Regenerating it: encode the SVG frame to H.264 at 640x360 over ~1.6s, then
+ * fix the media header. The encoder used here wrote the MOVIE-timescale
+ * duration into `mdhd`, which claims a track 30x shorter than its own samples;
+ * that field was corrected to the sample total. The "agrees with itself about
+ * how long it is" test fails if a regenerated blob brings the bug back.
  */
 const PLACEHOLDER_VIDEO =
-  'data:video/mp4;base64,AAAAJGZ0eXBpc29tAAACAGlzb21pc282aXNvMmF2YzFtcDQxAAACzG1vb3YAAAB4bXZoZAEAAAAAAAAA5p2rqAAAAADmnauoAAAD6AAAAAAAAAAhAAEAAAEAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAIkdHJhawAAAGh0a2hkAQAAAwAAAADmnauoAAAAAOadq6gAAAABAAAAAAAAAAAAAAAhAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAQAAAAAKAAAABaAAAAAABtG1kaWEAAAAsbWRoZAEAAAAAAAAA5p2rqAAAAADmnauoAAB1MAAAAAAAAAAhVcQAAAAAAC1oZGxyAAAAAAAAAAB2aWRlAAAAAAAAAAAAAAAAVmlkZW9IYW5kbGVyAAAAAVNtaW5mAAAAFHZtaGQAAAABAAAAAAAAAAAAAAAlZGluZgAAAB1kcmVmAAAAAAAAAAEAAAANdXJsIAAAAAEAAAABEnN0YmwAAAAQc3RzYwAAAAAAAAAAAAAAEHN0dHMAAAAAAAAAAAAAABRzdHN6AAAAAAAAAAAAAAAAAAAAEHN0Y28AAAAAAAAAAAAAAMZzdHNkAAAAAAAAAAEAAAC2YXZjMQAAAAAAAAABAAAAAQAAAAAAAAAAAAAAAAKAAWgASAAAAEgAAAAAAAAAAQtBVkMxIENvZGluZwAAAAAAAAAAAAAAAAAAAAAAAAAAABj//wAAABBwYXNwAAAAAQAAAAEAAAAUYnRydAAAAAAAAAAAAAAAAAAAAClhdmNDAULAH//hABJnQsAfjGgKAv+WagwMDA8IhGoBAARozjyAAAAAE2NvbHJuY2x4AAYABgAGAAAAAChtdmV4AAAAIHRyZXgAAAAAAAAAAQAAAAEAAAAAAAAAAAAAAAAAAABobW9vZgAAABBtZmhkAAAAAAAAAAEAAABQdHJhZgAAABR0ZmhkAAIAIAAAAAEBAQAAAAAAFHRmZHQBAAAAAAAAAAAAAAAAAAAgdHJ1bgEAAwUAAAABAAAAcAIAAAAAAAPnAAAFMQAABTltZGF0AAAFLWW4AAR///4eigACA15NScnJycnJycnJycnJycnJycnJycnJycnJycnJycnJycnJycnJycnWq6666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666//73coZ4CF6xspCBHvAqo19XeE//5jWY0Y1mXZNra2sev/+gv/itdTQVgWenafjoxFsebxV11111111111111111111111111111/yJ/YixGOZoMwF7VwR77J/zS5EXeRMRdl9+AVxsjZAbHUoySvIEHnjmMP/5A9B/0sra+1Vra2sev7C/+sVIzLzOk0a96AuwRPG9L8fBx75zPyRkCmfnhxsTv5Pwrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr7Qt/5OMdEVb9DoUcTPxtM+/r5HtaWlpaWlv0AP/7UjYepmPiA6FTOi7WPqulpaWlpaWlpaWlpaWlpa666666666666666ds3RZX8HWP/NgKqI3aWiX5qApXwSPYh7JANxjrVc8VVVKQXoUmAiaMBv06erUfDD/+FV+CTwxPVQoq666dNdPXXXXXXXXXXXXXXXXXXXXXXXXXXXXT09cUShLWv66nX/QI4TuM1fR/rVSUV1CqXjoYDhiGZNHvtY2SPD6eoieq+KqSgKz8CL0ZHf5M4TMMU8YLIyj/9fsEHmunrp66666666666666666666666666666enrp6f//3GFfAMdJ4gJByRm4cCCeOq5k1x97WE7jNUGOLFKx8C4Sw94BfPpkBGY2RuLJDEHniFUYPcf4TwkcoIYuJlz66eunrrrrrrrrrrrrrrrrrrrrrrrrrrrrp6evh//Ngh8NJP/5PcZbxGCPeADHKGVjwEg5IzcYSwnv+AXz6ZZIYgym7wIye75bLIZjAYHV5CR8eAXx4jLHgIzGyNxz8izd5f/wRTVIUP/iuunrp66666666666666666666666666666enr+kTfx8JeCFt/o601CLPIBxu5OX/oLQkfHhZyFDTP4r/Sdk30tPXT11111111111111111111111111118PpTmmbQoFnRLLFhms4Ykxv/6Z+wSceGDvXa30tPXHYACaTbSSZsiP/+CVlc0jFEtaFu1u3ZeRngiv7f8EiNrRKuuuuuuuuuuuuuuuuuuuuuuuuuuuuuv80n/w/2uRmS1VV0qKXDyEFMvy0RFp5MHyEQHgGAf8L8xEeaOhZZX5KjqgdWtra2vZ3KXdychrAhVcwOfvrcbWfgJjfDcELPDsAbjKDLi5xOpEReXxw9H5zoe+66666666666666666666666666666667W12tra2trfrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrp6666666666666666666666666666666666666666euuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuunrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrp6666666666666666666666666666666666666666euuuuuuuuuuuuuuuuuuuuuuv/4/wQRQABBr999999999999999999999999999999999999999+AAAATG1mcmEAAAA0dGZyYQEAAAAAAAABAAAAPwAAAAEAAAAAAAAAAAAAAAAAAALwAAAAAQAAAAEAAAABAAAAEG1mcm8AAAAAAAAATA==';
+  'data:video/mp4;base64,AAAAJGZ0eXBpc29tAAACAGlzb21pc282aXNvMmF2YzFtcDQxAAACzG1vb3YAAAB4bXZoZAEAAAAAAAAA5p3AegAAAADmncB6AAAD6AAAAAAAAAZZAAEAAAEAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAIkdHJhawAAAGh0a2hkAQAAAwAAAADmncB6AAAAAOadwHoAAAABAAAAAAAAAAAAAAZZAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAQAAAAAKAAAABaAAAAAABtG1kaWEAAAAsbWRoZAEAAAAAAAAA5p3AegAAAADmncB6AAB1MAAAAAAAAL5sVcQAAAAAAC1oZGxyAAAAAAAAAAB2aWRlAAAAAAAAAAAAAAAAVmlkZW9IYW5kbGVyAAAAAVNtaW5mAAAAFHZtaGQAAAABAAAAAAAAAAAAAAAlZGluZgAAAB1kcmVmAAAAAAAAAAEAAAANdXJsIAAAAAEAAAABEnN0YmwAAAAQc3RzYwAAAAAAAAAAAAAAEHN0dHMAAAAAAAAAAAAAABRzdHN6AAAAAAAAAAAAAAAAAAAAEHN0Y28AAAAAAAAAAAAAAMZzdHNkAAAAAAAAAAEAAAC2YXZjMQAAAAAAAAABAAAAAQAAAAAAAAAAAAAAAAKAAWgASAAAAEgAAAAAAAAAAQtBVkMxIENvZGluZwAAAAAAAAAAAAAAAAAAAAAAAAAAABj//wAAABBwYXNwAAAAAQAAAAEAAAAUYnRydAAAAAAAAAAAAAAAAAAAAClhdmNDAULAH//hABJnQsAfjGgKAv+WagwMDA8IhGoBAARozjyAAAAAE2NvbHJuY2x4AAYABgAGAAAAAChtdmV4AAAAIHRyZXgAAAAAAAAAAQAAAAEAAAAAAAAAAAAAAAAAAAB4bW9vZgAAABBtZmhkAAAAAAAAAAEAAABgdHJhZgAAABR0ZmhkAAIAIAAAAAEBAQAAAAAAFHRmZHQBAAAAAAAAAAAAAAAAAAAwdHJ1bgEAAwUAAAADAAAAgAIAAAAAAEVhAAAFMQAAdSQAAAHAAAAD5wAAADcAAAcwbWRhdAAABS1luAAEf//+HooAAgNeTUnJycnJycnJycnJycnJycnJycnJycnJycnJycnJycnJycnJycnJ1quuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuv/+93KGeAhesbKQgR7wKqNfV3hP/+Y1mNGNZl2Ta2trHr//oL/4rXU0FYFnp2n46MRbHm8Vdddddddddddddddddddddddddddddf8if2IsRjmaDMBe1cEe+yf80uRF3kTEXZffgFcbI2QGx1KMkryBB545jD/+QPQf9LK2vtVa2trHr+wv/rFSMy8zpNGvegLsETxvS/Hwce+cz8kZApn54cbE7+T8K66666666666666666666666666666+0Lf+TjHRFW/Q6FHEz8bTPv6+R7WlpaWlpb9AD/+1I2HqZj4gOhUzou1j6rpaWlpaWlpaWlpaWlpaWuuuuuuuuuuuuuuunbN0WV/B1j/zYCqiN2lol+agKV8Ej2IeyQDcY61XPFVVSkF6FJgImjAb9Onq1Hww//hVfgk8MT1UKKuuunTXT111111111111111111111111111109PXFEoS1r+up1/0COE7jNX0f61UlFdQql46GA4YhmTR77WNkjw+nqInqviqkoCs/Ai9GR3+TOEzDFPGCyMo//X7BB5rp66euuuuuuuuuuuuuuuuuuuuuuuuuuuunp66en//9xhXwDHSeICQckZuHAgnjquZNcfe1hO4zVBjixSsfAuEsPeAXz6ZARmNkbiyQxB54hVGD3H+E8JHKCGLiZc+unrp66666666666666666666666666666enr4f/zYIfDST/+T3GW8Rgj3gAxyhlY8BIOSM3GEsJ7/gF8+mWSGIMpu8CMnu+WyyGYwGB1eQkfHgF8eIyx4CMxsjcc/Is3eX/8EU1SFD/4rrp66euuuuuuuuuuuuuuuuuuuuuuuuuuuunp6/pE38fCXghbf6OtNQizyAcbuTl/6C0JHx4WchQ0z+K/0nZN9LT109dddddddddddddddddddddddddddfD6U5pm0KBZ0SyxYZrOGJMb/+mfsEnHhg712t9LT1x2AAmk20kmbIj//glZXNIxRLWhbtbt2XkZ4Ir+3/BIja0Srrrrrrrrrrrrrrrrrrrrrrrrrrrrrr/NJ/8P9rkZktVVdKilw8hBTL8tERaeTB8hEB4BgH/C/MRHmjoWWV+So6oHVra2tr2dyl3cnIawIVXMDn763G1n4CY3w3BCzw7AG4ygy4ucTqREXl8cPR+c6Hvuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu1tdra2tra3666666666666666666666666666666666euuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuunrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrp6666666666666666666666666666666666666666euuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuunrrrrrrrrrrrrrrrrrrrrrrr/+P8EEUAAQa/fffffffffffffffffffffffffffffffffffffffgAAAbxh4AB+R4DxFz751zrnXOudc651zrnXOudc651zrnW+qVeqVeqVeqVeqVeXz5FvehfvnXOudc651zrnXOudc651zrnXP5/P5/P5/P5/P5/P5/P5/P/NIQckPLDyTh8R3MABw9d4jvn8/n8/n8/n8/n8/n8/n8/n8/n8/n8/n8/n8/n8/n8/FdahA/n8/n8/n8/n8/n8/n8/n5ubW7F+q61CB/P5/P5/P5/P5/P5/P5/P51m4Ibvp16vYbf5WJWPlYlYq6uvz8efz+fz+fz+fz+fz+fz+fz8Wd8/Hn8/n8/n8/n8/n8/n8/n8/nWKO+fjz+fz+fz+fz+fz+fz+fz+fizvn48/n8/n8/n8/n8/n8/n8/n5xfeTq6ED+fz+fz+fz+fz+fz+fz+fzrXCFzCF+VR7abCC100/iFxC4hevwQ3Y3tCB/P5/P5/P5/P5/P5/P5/PynXOudc651xCwifz+fz+fz+fz+fz+fz+fz+dYaP5/P5/P5/P5/P5/P5/P5/P51hk/n8/n8/n8/n8/n8/n8/n8/n4ZP5/P5/P5/P5/P5/P5/P5/P5+GT+fz+fz+fz+fz+fz+fz+fz+fgQYAAAAAzYeAAvkDeAQA6xIt7wOwv3gq6ygoHvT2VlvcFB3goO8CcHFa2EwthJaCQWgmjr/ttgEqgAAAATG1mcmEAAAA0dGZyYQEAAAAAAAABAAAAPwAAAAEAAAAAAAAAAAAAAAAAAALwAAAAAQAAAAEAAAABAAAAEG1mcm8AAAAAAAAATA==';
 
 /**
  * Demo-media sources to strip from scaffolded projects. Template demo media is
@@ -177,12 +186,15 @@ const PLACEHOLDER_VIDEO =
  * `/template-assets/` dir and would otherwise 404. Genuine third-party URLs
  * (e.g. brand logos from paypalobjects.com) are intentionally left untouched.
  *
- * The trailing extension is captured so each reference can take the placeholder
- * that matches its media kind.
+ * The LAST dotted segment is captured so each reference can take the placeholder
+ * that matches its media kind. Matching the whole filename matters: with a
+ * single-segment pattern, `clip.min.mp4` matched only `clip.min`, so it was
+ * classified from `min` (image) and left a stray `.mp4` glued to the data URI.
+ * `@` is in the name class because the demo-media dir ships `@2x` variants.
  *
  * @type {RegExp}
  */
-const DEMO_MEDIA_PATTERN = /\/template-assets\/[\w-]+\.(\w+)/g;
+const DEMO_MEDIA_PATTERN = /\/template-assets\/[\w@-]+(?:\.[\w@-]+)*\.(\w+)/g;
 
 /**
  * Web-deliverable video extensions. Anything else under `/template-assets/` is
