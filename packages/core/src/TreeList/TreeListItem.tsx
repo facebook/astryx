@@ -24,7 +24,7 @@ import {
   easeVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
-import {useIcon} from '../Icon';
+import {Icon} from '../Icon';
 import {mergeProps} from '../utils';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import {TreeListBranches} from './TreeListBranches';
@@ -207,6 +207,14 @@ const styles = stylex.create({
   },
   chevronSvg: {
     display: 'flex',
+    // The chevron column is sized in spacing tokens by the button/container
+    // around it (--spacing-4 = 16px), not on Icon's rem scale, so the glyph's
+    // box is pinned to that same token. Icon's `sm` (1rem) only coincides with
+    // 16px at a 16px root font-size; drifting off the token would knock the
+    // glyph out of its 16px column.
+    width: spacingVars['--spacing-4'],
+    height: spacingVars['--spacing-4'],
+    fontSize: spacingVars['--spacing-4'],
     transitionProperty: 'transform',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
@@ -339,7 +347,6 @@ export function TreeListItem({
   isTabbable,
 }: TreeListItemInternalProps) {
   const t = useTranslator();
-  const chevronRightIcon = useIcon('chevronRight');
   const labelId = useId();
   const descriptionId = useId();
   const LinkComponent = useLinkComponent();
@@ -417,19 +424,24 @@ export function TreeListItem({
     </>
   );
 
+  // <Icon> renders the glyph's span itself — carrying the pre-existing
+  // astryx-icon target — so the rotation rides on that same element instead of
+  // an extra wrapper: a theme can still restyle the mark and its open/closed
+  // transform through one selector.
   const chevronIcon = (
-    <span
-      {...mergeProps(
-        // The glyph itself is the theme target, and it is the element the
-        // rotation lives on — so a theme can restyle the mark and its
-        // open/closed transform through one selector.
-        stylex.props(
-          styles.chevronSvg,
-          isExpanded ? styles.chevronExpanded : styles.chevronCollapsed,
-        ),
-      )}>
-      {chevronRightIcon}
-    </span>
+    <Icon
+      icon="chevronRight"
+      // Nearest size to the 16px chevron column; `chevronSvg` re-pins the exact
+      // box because the column is spacing-token-sized, not rem-sized.
+      size="sm"
+      // The button/container owns the chevron color (--color-icon-secondary);
+      // inheriting keeps that as the single source.
+      color="inherit"
+      xstyle={[
+        styles.chevronSvg,
+        isExpanded ? styles.chevronExpanded : styles.chevronCollapsed,
+      ]}
+    />
   );
 
   const chevron = hasChildren ? (

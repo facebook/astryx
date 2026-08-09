@@ -31,7 +31,7 @@ import {
 } from '../theme/tokens.stylex';
 import {usePopover} from '../Popover/usePopover';
 import {Link} from '../Link';
-import {useIcon} from '../Icon';
+import {Icon} from '../Icon';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
 import {mergeProps, mergeRefs} from '../utils';
@@ -149,6 +149,16 @@ const styles = stylex.create({
     minHeight: spacingVars['--spacing-7'],
     color: colorVars['--color-icon-secondary'],
   },
+  // The registry chevron is a 1em SVG, so it has always rendered at the
+  // heading's inherited font size. Icon's size box would repin it to a fixed
+  // rem (the nearest, sm, is 1rem = 16px vs the 14px base here), so hold the
+  // glyph on the inherited em — the 28px chevron box above is unchanged, and
+  // the glyph keeps tracking the surrounding text.
+  chevronGlyph: {
+    width: '1em',
+    height: '1em',
+    fontSize: 'inherit',
+  },
   headerEndContent: {
     flexShrink: 0,
     display: 'flex',
@@ -182,14 +192,9 @@ const styles = stylex.create({
     marginInline: spacingVars['--spacing-1'],
     cursor: 'pointer',
   },
+  // Composes over `chevron` — the flipped popover copy differs only by the
+  // rotation, so it carries just that.
   popoverChevron: {
-    flexShrink: 0,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: spacingVars['--spacing-7'],
-    minHeight: spacingVars['--spacing-7'],
-    color: colorVars['--color-icon-secondary'],
     transform: 'rotate(180deg)',
   },
   popover: {
@@ -313,7 +318,6 @@ export function TopNavHeading({
   ...props
 }: TopNavHeadingProps) {
   const t = useTranslator();
-  const chevronDownIcon = useIcon('chevronDown');
   const LinkComponent = useLinkComponent(as);
   // When the logo is wrapped in a link it needs its own accessible name (the
   // logo image itself is decorative). Prefer an explicit logoLabel, fall back
@@ -404,7 +408,12 @@ export function TopNavHeading({
   );
 
   const chevronElement = showChevron && (
-    <span {...stylex.props(styles.chevron)}>{chevronDownIcon}</span>
+    <Icon
+      icon="chevronDown"
+      size="sm"
+      color="secondary"
+      xstyle={[styles.chevron, styles.chevronGlyph]}
+    />
   );
 
   const headerEndContentElement = headerEndContent && (
@@ -420,7 +429,12 @@ export function TopNavHeading({
       onClick={triggerProps.onClick}>
       {logo && <span {...stylex.props(styles.logo)}>{logo}</span>}
       {renderTextContent(
-        <span {...stylex.props(styles.popoverChevron)}>{chevronDownIcon}</span>,
+        <Icon
+          icon="chevronDown"
+          size="sm"
+          color="secondary"
+          xstyle={[styles.chevron, styles.chevronGlyph, styles.popoverChevron]}
+        />,
       )}
     </button>
   );
@@ -488,6 +502,8 @@ export function TopNavHeading({
           )}>
           {logo && <span {...stylex.props(styles.logo)}>{logo}</span>}
           {renderTextContent(
+            // Stays a <button>: this box is the popover trigger, so it carries
+            // the accessible name and handlers — only the glyph moves to Icon.
             <button
               type="button"
               aria-label={t('@astryx.topNav.heading.openMenu')}
@@ -497,7 +513,12 @@ export function TopNavHeading({
               }}
               {...popover.triggerProps}
               {...stylex.props(styles.chevron, styles.interactive)}>
-              {chevronDownIcon}
+              <Icon
+                icon="chevronDown"
+                size="sm"
+                color="inherit"
+                xstyle={styles.chevronGlyph}
+              />
             </button>,
           )}
           {headerEndContentElement}
@@ -557,6 +578,9 @@ export function TopNavHeading({
             ))}
           {renderTextContent(
             showChevron ? (
+              // Stays a <button>: this box is the popover trigger, so it
+              // carries the accessible name and handlers — only the glyph
+              // moves to Icon.
               <button
                 type="button"
                 aria-label={t('@astryx.topNav.heading.openMenu')}
@@ -566,7 +590,12 @@ export function TopNavHeading({
                 }}
                 {...popover.triggerProps}
                 {...stylex.props(styles.chevron, styles.interactive)}>
-                {chevronDownIcon}
+                <Icon
+                  icon="chevronDown"
+                  size="sm"
+                  color="inherit"
+                  xstyle={styles.chevronGlyph}
+                />
               </button>
             ) : undefined,
           )}

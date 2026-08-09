@@ -275,12 +275,7 @@ plugin.configs.strict = {
     // flip to 'error' here to prevent regressions — the same path
     // no-physical-properties took.
     '@astryx/no-style-only-wrapper': 'warn',
-    // Migration in progress: the `useIcon()` call sites (SideNav, TopNav,
-    // Collapsible) hold their rotation on a wrapper span because the hook
-    // returns a ReactNode with nowhere to put styles. Warn until `useIcon`
-    // accepts props and those sites move the transform onto the glyph, then
-    // flip to 'error' — the same path no-style-only-wrapper took.
-    '@astryx/no-wrapper-transform': 'warn',
+    '@astryx/no-wrapper-transform': 'error',
     '@astryx/no-react-introspection': 'error',
     '@astryx/no-classname-clobber': 'error',
     '@astryx/no-hardcoded-anchor': 'error',
@@ -309,12 +304,7 @@ plugin.configs.recommended = {
     '@astryx/docblock-example-format': 'warn',
     '@astryx/no-stylex-null-override': 'warn',
     '@astryx/no-style-only-wrapper': 'warn',
-    // Migration in progress: the `useIcon()` call sites (SideNav, TopNav,
-    // Collapsible) hold their rotation on a wrapper span because the hook
-    // returns a ReactNode with nowhere to put styles. Warn until `useIcon`
-    // accepts props and those sites move the transform onto the glyph, then
-    // flip to 'error' — the same path no-style-only-wrapper took.
-    '@astryx/no-wrapper-transform': 'warn',
+    '@astryx/no-wrapper-transform': 'error',
     '@astryx/no-react-introspection': 'error',
     '@astryx/no-classname-clobber': 'error',
     '@astryx/no-hardcoded-anchor': 'warn',

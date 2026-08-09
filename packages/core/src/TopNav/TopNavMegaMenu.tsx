@@ -44,7 +44,7 @@ import {
 } from '../theme/tokens.stylex';
 import {usePopover} from '../Popover/usePopover';
 import {Grid} from '../Grid/Grid';
-import {useIcon} from '../Icon';
+import {Icon} from '../Icon';
 import {mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {navItemStyles} from '../NavItem/navItemStyles.stylex';
@@ -97,6 +97,14 @@ const styles = stylex.create({
   chevron: {
     display: 'inline-flex',
     alignItems: 'center',
+    // The registry chevron is a 1em SVG, so it has always rendered at the
+    // trigger's own font size (--text-label-size). Icon's size box would repin
+    // it to a fixed rem (the nearest, sm, is 1rem = 16px vs the 14px here), so
+    // hold it on the inherited em: same pixels, and still tracks the type
+    // scale when a theme changes the label size.
+    width: '1em',
+    height: '1em',
+    fontSize: 'inherit',
     transitionProperty: 'transform',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
@@ -197,6 +205,11 @@ const styles = stylex.create({
   },
   drawerChevron: {
     display: 'inline-flex',
+    // Same em pin as styles.chevron above — the drawer header inherits
+    // --text-label-size from navItemStyles.item.
+    width: '1em',
+    height: '1em',
+    fontSize: 'inherit',
     transitionProperty: 'transform',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
@@ -364,7 +377,6 @@ function DefaultMegaMenu({
   onOpenChange,
 }: TopNavMegaMenuProps) {
   const slot = useTopNavSlot();
-  const chevronDownIcon = useIcon('chevronDown');
   const showTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const triggerButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -472,13 +484,12 @@ function DefaultMegaMenu({
           stylex.props(styles.trigger, popover.isOpen && styles.triggerOpen),
         )}>
         {label}
-        <span
-          {...stylex.props(
-            styles.chevron,
-            popover.isOpen && styles.chevronOpen,
-          )}>
-          {chevronDownIcon}
-        </span>
+        <Icon
+          icon="chevronDown"
+          size="sm"
+          color="inherit"
+          xstyle={[styles.chevron, popover.isOpen && styles.chevronOpen]}
+        />
       </button>
       {popover.render(
         <div
@@ -524,7 +535,6 @@ function DrawerMegaMenu({
   featured,
 }: Pick<TopNavMegaMenuProps, 'label' | 'items' | 'featured'>) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const chevronDownIcon = useIcon('chevronDown');
   const menuId = `mega-menu-${label.toLowerCase().replace(/\s+/g, '-')}`;
 
   return (
@@ -540,13 +550,15 @@ function DrawerMegaMenu({
           stylex.props(navItemStyles.item, styles.drawerHeader),
         )}>
         {label}
-        <span
-          {...stylex.props(
+        <Icon
+          icon="chevronDown"
+          size="sm"
+          color="inherit"
+          xstyle={[
             styles.drawerChevron,
             isExpanded && styles.drawerChevronExpanded,
-          )}>
-          {chevronDownIcon}
-        </span>
+          ]}
+        />
       </button>
 
       {/* Animated expand/collapse container */}
