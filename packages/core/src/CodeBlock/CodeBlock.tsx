@@ -886,9 +886,6 @@ export function CodeBlock({
                   styles.collapseChevronIcon,
                   !isCollapsed && styles.collapseChevronExpanded,
                 ]}
-                {...themeProps('codeblock-collapse-icon', {
-                  state: isCollapsed ? 'collapsed' : 'expanded',
-                })}
               />
             </span>
           )}

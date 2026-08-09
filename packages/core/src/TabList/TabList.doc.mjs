@@ -19,7 +19,6 @@ export const docs = {
       {className: 'astryx-tab', states: ['selected']},
       {className: 'astryx-tab-indicator', states: ['selected']},
       {className: 'astryx-tab-menu'},
-      {className: 'astryx-tab-menu-chevron-icon', states: ['state']},
       {className: 'astryx-tab-menu-dropdown'},
       {className: 'astryx-tab-menu-item'},
     ],

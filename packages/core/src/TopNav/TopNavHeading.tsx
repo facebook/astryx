@@ -420,21 +420,7 @@ export function TopNavHeading({
       onClick={triggerProps.onClick}>
       {logo && <span {...stylex.props(styles.logo)}>{logo}</span>}
       {renderTextContent(
-        <span
-          {...mergeProps(
-            // The glyph itself is the theme target, and it is the element the
-            // flipped transform lives on — so a theme reaches the mark and its
-            // rotation through one selector. This copy of the chevron only
-            // shows inside the popover heading, so its rotation is static;
-            // the state still tracks the popover so a theme can style it
-            // while the (always-mounted) popover is closed.
-            themeProps('top-nav-heading-chevron-icon', {
-              state: popover.isOpen ? 'open' : 'closed',
-            }),
-            stylex.props(styles.popoverChevron),
-          )}>
-          {chevronDownIcon}
-        </span>,
+        <span {...stylex.props(styles.popoverChevron)}>{chevronDownIcon}</span>,
       )}
     </button>
   );

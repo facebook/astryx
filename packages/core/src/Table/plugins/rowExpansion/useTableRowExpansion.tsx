@@ -396,9 +396,6 @@ function ExpansionChevron({
             ? expansionStyles.chevronIconExpanded
             : expansionStyles.chevronIconCollapsed,
         ]}
-        {...themeProps('table-expansion-chevron-icon', {
-          state: isExpanded ? 'expanded' : 'collapsed',
-        })}
       />
     </button>
   );
@@ -586,9 +583,6 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
                       ? expansionStyles.chevronIconExpanded
                       : expansionStyles.chevronIconCollapsed,
                   ]}
-                  {...themeProps('table-expansion-chevron-icon', {
-                    state: allExpanded ? 'expanded' : 'collapsed',
-                  })}
                 />
               </button>
             ),

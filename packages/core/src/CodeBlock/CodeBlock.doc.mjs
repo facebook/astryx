@@ -142,7 +142,6 @@ export const docs = {
     targets: [
       {className: 'astryx-code', visualProps: ['color']},
       {className: 'astryx-codeblock', visualProps: ['size', 'language', 'container']},
-      {className: 'astryx-codeblock-collapse-icon', states: ['state']},
     ],
   },
   usage: {

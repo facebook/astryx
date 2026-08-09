@@ -359,9 +359,6 @@ export function useTableGroupedRows<T extends Record<string, unknown>>(
                         ? styles.chevronIconCollapsed
                         : styles.chevronIconExpanded,
                     ]}
-                    {...themeProps('table-group-chevron-icon', {
-                      state: collapsed ? 'collapsed' : 'expanded',
-                    })}
                   />
                 </button>
                 {content}

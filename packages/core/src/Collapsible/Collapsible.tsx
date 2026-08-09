@@ -335,18 +335,9 @@ export function Collapsible({
         )}>
         <span {...stylex.props(styles.triggerLabel)}>{trigger}</span>
         <span
-          {...mergeProps(
-            // The glyph itself is the theme target, and it is the element the
-            // rotation lives on — so a theme reaches the mark and its
-            // open/closed transform through one selector instead of a
-            // structural descendant of `astryx-collapsible-trigger`.
-            themeProps('collapsible-chevron-icon', {
-              state: isOpen ? 'open' : 'closed',
-            }),
-            stylex.props(
-              styles.chevron,
-              isOpen ? styles.chevronOpen : styles.chevronClosed,
-            ),
+          {...stylex.props(
+            styles.chevron,
+            isOpen ? styles.chevronOpen : styles.chevronClosed,
           )}>
           {chevronIcon}
         </span>

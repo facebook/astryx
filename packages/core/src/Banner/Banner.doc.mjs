@@ -120,7 +120,6 @@ export const docs = {
     targets: [
       {className: 'astryx-banner', visualProps: ['container', 'status']},
       {className: 'astryx-banner-icon', visualProps: ['status']},
-      {className: 'astryx-banner-expand-icon', states: ['state']},
       {className: 'astryx-banner-content', visualProps: ['container', 'status']},
     ],
     vars: [
@@ -188,12 +187,6 @@ export const docsZh = {
         className: 'astryx-banner-icon',
         visualProps: [
           'status',
-        ],
-      },
-      {
-        className: 'astryx-banner-expand-icon',
-        states: [
-          'state',
         ],
       },
       {

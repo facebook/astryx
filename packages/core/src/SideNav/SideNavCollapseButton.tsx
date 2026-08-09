@@ -23,14 +23,13 @@ import {durationVars, easeVars} from '../theme/tokens.stylex';
 import {useIcon} from '../Icon';
 import {Button} from '../Button';
 import type {BaseProps} from '../BaseProps';
-import {composeEventHandlers, mergeProps} from '../utils';
+import {composeEventHandlers, rtlStyles} from '../utils';
 import {
   useSideNavCollapse,
   type SideNavCollapseState,
   type SideNavImperativeCollapseHandle,
 } from './SideNavCollapseContext';
 import {useAppShellMobile} from '../AppShell/AppShellMobileContext';
-import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
 // =============================================================================
@@ -45,22 +44,8 @@ const styles = stylex.create({
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
   },
-  // The RTL mirror is folded into each state's transform rather than living on
-  // a parent span. Both are `transform`, so on one element the later value
-  // would win — spelling out `scaleX(-1) …` per state composes them exactly as
-  // the nested elements did, while leaving a single element to carry the
-  // glyph's theme target.
-  chevronExpanded: {
-    transform: {
-      default: 'none',
-      ':is([dir="rtl"] *)': 'scaleX(-1)',
-    },
-  },
   chevronCollapsed: {
-    transform: {
-      default: 'rotate(180deg)',
-      ':is([dir="rtl"] *)': 'scaleX(-1) rotate(180deg)',
-    },
+    transform: 'rotate(180deg)',
   },
 });
 
@@ -147,21 +132,14 @@ export function SideNavCollapseButton({
       onClick={composeEventHandlers(onClickProp, toggle)}
       icon={
         children ?? (
-          <span
-            {...mergeProps(
-              // The rail's collapsed state, not a disclosure: the chevron
-              // points inline-start while expanded and flips when the rail
-              // collapses. The glyph carries both the rotation and the theme
-              // target so one selector reaches the mark and its transform.
-              themeProps('side-nav-collapse-button-icon', {
-                state: isCollapsed ? 'collapsed' : 'expanded',
-              }),
-              stylex.props(
+          <span {...stylex.props(rtlStyles.mirror)}>
+            <span
+              {...stylex.props(
                 styles.chevron,
-                isCollapsed ? styles.chevronCollapsed : styles.chevronExpanded,
-              ),
-            )}>
-            {chevronLeftIcon}
+                isCollapsed && styles.chevronCollapsed,
+              )}>
+              {chevronLeftIcon}
+            </span>
           </span>
         )
       }

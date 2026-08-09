@@ -339,9 +339,6 @@ function TreeExpander({
             ? treeStyles.chevronIconExpanded
             : treeStyles.chevronIconCollapsed,
         ]}
-        {...themeProps('table-tree-chevron-icon', {
-          state: isExpanded ? 'expanded' : 'collapsed',
-        })}
       />
     </button>
   );
@@ -394,9 +391,6 @@ function TreeExpandAllToggle({
             ? treeStyles.chevronIconExpanded
             : treeStyles.chevronIconCollapsed,
         ]}
-        {...themeProps('table-tree-chevron-icon', {
-          state: allExpanded ? 'expanded' : 'collapsed',
-        })}
       />
     </button>
   );

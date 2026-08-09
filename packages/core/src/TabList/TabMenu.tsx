@@ -386,9 +386,6 @@ export function TabMenu({
             size="sm"
             color="inherit"
             xstyle={[styles.chevronIcon, popover.isOpen && styles.chevronOpen]}
-            {...themeProps('tab-menu-chevron-icon', {
-              state: popover.isOpen ? 'open' : 'closed',
-            })}
           />
         </span>
         {hasSelectedOption && (

@@ -493,9 +493,6 @@ export function Banner({
                       styles.chevron,
                       isExpanded && styles.chevronExpanded,
                     ]}
-                    {...themeProps('banner-expand-icon', {
-                      state: isExpanded ? 'expanded' : 'collapsed',
-                    })}
                   />
                 }
                 onClick={handleToggleExpand}

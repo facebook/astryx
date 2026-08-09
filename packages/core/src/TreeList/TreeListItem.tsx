@@ -423,9 +423,6 @@ export function TreeListItem({
         // The glyph itself is the theme target, and it is the element the
         // rotation lives on — so a theme can restyle the mark and its
         // open/closed transform through one selector.
-        themeProps('tree-list-chevron-icon', {
-          state: isExpanded ? 'expanded' : 'collapsed',
-        }),
         stylex.props(
           styles.chevronSvg,
           isExpanded ? styles.chevronExpanded : styles.chevronCollapsed,

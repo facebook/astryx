@@ -460,9 +460,6 @@ function CallRow({call}: {call: ChatToolCallItem}) {
               styles.chevronTransition,
               isDetailOpen && styles.chevronExpanded,
             ]}
-            {...themeProps('chat-tool-call-chevron-icon', {
-              state: isDetailOpen ? 'expanded' : 'collapsed',
-            })}
           />
         </span>
       )}
@@ -643,9 +640,6 @@ export function ChatToolCalls(props: ChatToolCallsProps) {
               styles.chevronTransition,
               isExpanded && styles.chevronExpanded,
             ]}
-            {...themeProps('chat-tool-calls-chevron-icon', {
-              state: isExpanded ? 'expanded' : 'collapsed',
-            })}
           />
         </span>
       </div>
