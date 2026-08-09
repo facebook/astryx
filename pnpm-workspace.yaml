@@ -20,6 +20,8 @@ linkWorkspacePackages: true
 minimumReleaseAge: 10080
 minimumReleaseAgeExclude:
   - '@astryxdesign/*'
+  - 'hono'
+  - 'dompurify'
 
 # Single source of truth for the workspace's vite version: every consumer
 # (root test config, packages/build) declares "vite": "catalog:", so a bump
@@ -35,16 +37,16 @@ catalog:
 overrides:
   '@stylexjs/stylex': ^0.19.0
   prettier: ^3.9.3
-  postcss: ^8.5.18
+  postcss: ^8.5.23
   picomatch: ^4.0.4
   micromatch>picomatch: ^2.3.2
   anymatch>picomatch: ^2.3.2
   minimatch: ^9.0.7
-  dompurify: ^3.4.12
+  dompurify: ^3.4.13
   tmp: '>=0.2.6'
   esbuild: '>=0.28.1'
   '@babel/core': ^7.29.6
-  hono: ^4.12.25
+  hono: ^4.12.34
   # @modelcontextprotocol/sdk 1.x resolves @hono/node-server ^1, which is
   # vulnerable to path traversal in serve-static on Windows via encoded
   # backslashes (%5C). Patched only in 2.0.5 — a semver-major the sdk's ^1
@@ -60,12 +62,13 @@ overrides:
   # is @manypkg/get-packages, and 2.x keeps the same CJS surface (default export
   # + .sync). The floor below then holds that chain on the patched 4.x line.
   read-yaml-file: ^2.1.0
-  read-yaml-file>js-yaml: ^4.2.0
+  read-yaml-file>js-yaml: ^4.3.1
   # Constrain to 4.x — the 5.x line has DoS vulnerabilities (GHSA-pm4m-ph32-ghv5,
   # GHSA-724g-mxrg-4qvm) patched only in 5.2.2. @changesets/parse declares ^4.1.1
   # anyway, so keep it on 4.x where the advisory does not apply.
-  '@changesets/parse>js-yaml': ^4.2.0
-  fast-uri: ^3.1.4
+  '@changesets/parse>js-yaml': ^4.3.1
+  fast-uri: ^3.1.5
+  ip-address: ^10.3.1
   brace-expansion: ^2.1.2
   # next pulls sharp as an optional dependency for image optimization and still
   # resolves 0.34.5, which inherits the libvips advisories CVE-2026-33327,
