@@ -27,7 +27,7 @@ import {
 import type {BaseProps} from '../BaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {useScrollLock} from '../hooks/useScrollLock';
-import {hasActiveFocusTrapEscape, isImeKeyEvent} from '../hooks/useFocusTrap';
+import {isImeKeyEvent, useEscapeStack} from '../hooks/useEscapeStack';
 import {
   colorVars,
   radiusVars,
@@ -428,6 +428,27 @@ export function Dialog({
   const allowEscape = purpose !== 'required';
   const allowBackdropClick = purpose === 'info';
 
+  // Join the shared Escape stack (the same one Popover/menus use via
+  // useFocusTrap) so a single Escape closes only the top-most overlay — whether
+  // the layer on top is a popover OR another Dialog/Sheet. A modal registers
+  // whenever it is open (even a `required` one that won't close): being on the
+  // stack is what lets it claim top-most and swallow the press so an outer
+  // layer never also dismisses. The <dialog> element is the container, so
+  // top-most is resolved by DOM containment for nested modals. `onEscape` is
+  // present (so it registers) but only closes when dismissal is allowed.
+  const escapeActive = isOpen && !isInline;
+  const {isTopmost: isTopmostEscapeLayer} = useEscapeStack({
+    isActive: escapeActive,
+    onEscape: escapeActive
+      ? () => {
+          if (allowEscape) {
+            onOpenChange(false);
+          }
+        }
+      : undefined,
+    getContainer: () => dialogRef.current,
+  });
+
   // Handle open/close state — skip for inline rendering
   useEffect(() => {
     if (isInline) {
@@ -491,13 +512,20 @@ export function Dialog({
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        // Ignore IME composition-cancel, and defer to any popover/menu layered
-        // on top of this dialog so a single Escape closes only the top-most
-        // layer (the popover's own focus trap handles it and stops propagation).
-        if (isImeKeyEvent(event) || hasActiveFocusTrapEscape()) {
+        // Ignore IME composition-cancel. Defer to any overlay layered on top of
+        // this dialog — a popover/menu OR a nested Dialog/Sheet — so a single
+        // Escape closes only the top-most layer. Top-most is resolved by the
+        // shared Escape stack (DOM containment), so this is correct for a
+        // modal-in-modal, not just a popover-in-modal.
+        if (isImeKeyEvent(event) || !isTopmostEscapeLayer()) {
           return;
         }
+        // This dialog is top-most: handle the press and stop it propagating so
+        // an outer Dialog hosting this one does not also dismiss on the same
+        // press. Always preventDefault + stopPropagation (even for a `required`
+        // dialog that won't close) so the event never reaches a layer beneath.
         event.preventDefault();
+        event.stopPropagation();
         if (allowEscape) {
           onOpenChange(false);
         }
@@ -506,7 +534,7 @@ export function Dialog({
 
     dialog.addEventListener('keydown', handleKeyDown);
     return () => dialog.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, isInline, allowEscape, onOpenChange]);
+  }, [isOpen, isInline, allowEscape, onOpenChange, isTopmostEscapeLayer]);
 
   // Dev-time guardrail: an open modal should always have an accessible name.
   // The header-title check reads the DOM, so this stays in an effect; the ref
@@ -542,12 +570,13 @@ export function Dialog({
     }
   };
 
-  // Handle native cancel event (browser Escape handling)
+  // Handle native cancel event (browser Escape handling). The keydown handler
+  // above already handles Escape for the top-most dialog and stops propagation;
+  // this is the fallback for browser-initiated cancels. Defer unless this
+  // dialog is the top-most layer, so a nested overlay's Escape never closes it.
   const handleCancel = (event: React.SyntheticEvent<HTMLDialogElement>) => {
     event.preventDefault();
-    // Defer to a popover/menu layered on top of this dialog; it will dismiss
-    // itself on the same Escape press.
-    if (hasActiveFocusTrapEscape()) {
+    if (!isTopmostEscapeLayer()) {
       return;
     }
     if (allowEscape) {

@@ -11,8 +11,18 @@
  * SYNC: When modified, update this header
  */
 
-export {useFocusTrap} from './useFocusTrap';
+export {useFocusTrap, hasActiveFocusTrapEscape} from './useFocusTrap';
 export type {UseFocusTrapOptions, UseFocusTrapReturn} from './useFocusTrap';
+
+export {
+  useEscapeStack,
+  hasActiveEscapeLayer,
+  isImeKeyEvent,
+} from './useEscapeStack';
+export type {
+  UseEscapeStackOptions,
+  UseEscapeStackReturn,
+} from './useEscapeStack';
 
 export {useAnnounce} from './useAnnounce';
 export type {AnnounceFn, AnnouncePoliteness} from './useAnnounce';

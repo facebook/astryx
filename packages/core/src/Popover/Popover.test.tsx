@@ -387,9 +387,9 @@ describe('Popover', () => {
       expect(trigger).toHaveAttribute('aria-expanded', 'true');
 
       // The Dialog listens for Escape on the dialog element, so fire from a
-      // node inside it. The popover registers no Escape handler, so
-      // hasActiveFocusTrapEscape() is false and the Dialog handles the press
-      // while the popover itself stays open.
+      // node inside it. This popover is fully opted out of Escape dismissal, so
+      // it registers nothing on the shared Escape stack — the Dialog is the
+      // top-most layer and handles the press while the popover stays open.
       fireEvent.keyDown(trigger, {key: 'Escape'});
       expect(onDialogOpenChange).toHaveBeenCalledWith(false);
       expect(trigger).toHaveAttribute('aria-expanded', 'true');

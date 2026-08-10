@@ -12,6 +12,12 @@
  * Based on WAI-ARIA dialog pattern:
  * https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/
  *
+ * Escape coordination (top-most-only dismissal) lives in the shared
+ * `useEscapeStack` hook, so focus-trap overlays (Popover, menus) and native
+ * `<dialog>` overlays (Dialog, Sheet) all share ONE stack and ONE top-most
+ * resolver. This hook registers via `useEscapeStack` and gates its own Escape
+ * keydown on `isTopmost()`.
+ *
  * SYNC: When modified, update:
  * - /packages/core/src/hooks/index.ts
  */
@@ -19,93 +25,23 @@
 import {useCallback, useEffect, useRef} from 'react';
 
 import {FOCUSABLE_SELECTOR} from './focusableSelector';
+import {
+  hasActiveEscapeLayer,
+  isImeKeyEvent,
+  useEscapeStack,
+} from './useEscapeStack';
 
 /**
- * Module-level stack of active focus-trap Escape handlers.
+ * Re-exported from `useEscapeStack` for back-compat. The shared Escape stack
+ * (see `useEscapeStack.ts`) now spans every overlay family, not just focus
+ * traps, so the accurate name is `hasActiveEscapeLayer`; this alias is kept so
+ * existing importers of the focus-trap-specific name keep working.
  *
- * Every active `useFocusTrap` used to attach its own document-level `keydown`
- * listener with no coordination, so a single Escape press closed *every* open
- * layer at once (e.g. a popover nested inside a Dialog closed both). Tracking
- * traps in a shared stack lets only the top-most trap respond to Escape.
- *
- * "Top-most" is resolved by DOM containment first, push order second. Push
- * order alone is not reliable: React runs child effects before parent
- * effects, so when an outer and an inner (DOM-nested) trap mount in the SAME
- * commit, the inner trap pushes first and the outer trap would wrongly win a
- * pure last-pushed comparison.
- */
-interface EscapeStackEntry {
-  handler: () => void;
-  getContainer: () => HTMLElement | null;
-}
-
-const escapeStack: EscapeStackEntry[] = [];
-
-function pushEscapeHandler(entry: EscapeStackEntry): void {
-  escapeStack.push(entry);
-}
-
-function removeEscapeHandler(handler: () => void): void {
-  for (let i = escapeStack.length - 1; i >= 0; i--) {
-    if (escapeStack[i].handler === handler) {
-      escapeStack.splice(i, 1);
-      return;
-    }
-  }
-}
-
-/**
- * Resolve the top-most trap: walk the stack in push order, keeping the
- * deepest container by DOM containment. When a later entry's container
- * contains the current candidate's container, the candidate is nested inside
- * it and stays on top; otherwise the later push wins (containment for nested
- * traps, push order as the tiebreaker for unrelated ones).
- */
-function isTopEscapeHandler(handler: () => void): boolean {
-  if (escapeStack.length === 0) {
-    return false;
-  }
-  let top = escapeStack[0];
-  for (let i = 1; i < escapeStack.length; i++) {
-    const entry = escapeStack[i];
-    const topContainer = top.getContainer();
-    const entryContainer = entry.getContainer();
-    if (
-      topContainer != null &&
-      entryContainer != null &&
-      entryContainer !== topContainer &&
-      entryContainer.contains(topContainer)
-    ) {
-      // The current top is nested inside this entry — it stays on top.
-      continue;
-    }
-    top = entry;
-  }
-  return top.handler === handler;
-}
-
-/**
- * Whether any focus-trap Escape handler is currently active (i.e. a popover
- * layer is open). Other overlay primitives that manage their own Escape (e.g.
- * Dialog) can consult this to defer to a popover layered on top of them,
- * giving topmost-only dismissal until a full layer stack exists.
+ * @deprecated Prefer `hasActiveEscapeLayer` from `useEscapeStack`, or an
+ *   overlay's own `isTopmost()` from `useEscapeStack`.
  */
 export function hasActiveFocusTrapEscape(): boolean {
-  return escapeStack.length > 0;
-}
-
-/**
- * Whether an Escape keydown should be ignored because it is cancelling an
- * in-progress IME composition. CJK/IME users press Escape to cancel
- * composition; that must not close the surrounding overlay. `keyCode === 229`
- * covers browsers that fire keydown before `isComposing` is set. Exported so
- * other overlays (Dialog, Drawer, CommandPalette) share one definition.
- */
-export function isImeKeyEvent(event: {
-  isComposing?: boolean;
-  keyCode?: number;
-}): boolean {
-  return event.isComposing === true || event.keyCode === 229;
+  return hasActiveEscapeLayer();
 }
 
 /**
@@ -256,6 +192,15 @@ export function useFocusTrap<T extends HTMLElement = HTMLElement>(
   // Track if focus change was triggered by keyboard (Tab key)
   const isKeyboardNavigationRef = useRef(false);
 
+  // Register on the shared Escape stack so only the top-most overlay closes on
+  // Escape — coordinated across the whole overlay family (Popover, Dialog, …),
+  // not just focus traps. `isTopmost()` reflects DOM-containment order.
+  const {isTopmost} = useEscapeStack({
+    isActive,
+    onEscape,
+    getContainer: () => containerRef.current,
+  });
+
   /**
    * Focus the first focusable element.
    */
@@ -365,21 +310,6 @@ export function useFocusTrap<T extends HTMLElement = HTMLElement>(
       return;
     }
 
-    // Register this trap on the shared Escape stack so only the top-most
-    // active trap responds to Escape. A stable identity per active period is
-    // enough — we push on activate and remove on cleanup. The container is
-    // read lazily: the ref may not be attached yet at effect time, and the
-    // stack resolves top-most by DOM containment at keydown time.
-    const escapeHandler = () => {
-      onEscape?.();
-    };
-    if (onEscape) {
-      pushEscapeHandler({
-        handler: escapeHandler,
-        getContainer: () => containerRef.current,
-      });
-    }
-
     const handleKeyDown = (event: KeyboardEvent) => {
       const container = containerRef.current;
       if (!container) {
@@ -388,12 +318,9 @@ export function useFocusTrap<T extends HTMLElement = HTMLElement>(
 
       if (event.key === 'Escape' && onEscape) {
         // Ignore Escape that is cancelling an IME composition, already handled
-        // by a nested handler, or not targeting the top-most trap.
-        if (
-          event.defaultPrevented ||
-          isImeKeyEvent(event) ||
-          !isTopEscapeHandler(escapeHandler)
-        ) {
+        // by a nested handler, or not targeting the top-most overlay (resolved
+        // by the shared Escape stack across the whole overlay family).
+        if (event.defaultPrevented || isImeKeyEvent(event) || !isTopmost()) {
           return;
         }
         // Mark handled and stop propagation so an outer layer (e.g. a Dialog
@@ -436,11 +363,8 @@ export function useFocusTrap<T extends HTMLElement = HTMLElement>(
 
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
-      if (onEscape) {
-        removeEscapeHandler(escapeHandler);
-      }
     };
-  }, [isActive, onEscape]);
+  }, [isActive, onEscape, isTopmost]);
 
   return {
     containerRef,

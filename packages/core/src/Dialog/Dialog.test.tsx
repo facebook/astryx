@@ -144,6 +144,90 @@ describe('Dialog', () => {
     });
   });
 
+  describe('nested-modal Escape coordination', () => {
+    // Regression: an Escape pressed inside a modal opened FROM another modal
+    // used to close both — each open <dialog> attached its own keydown listener
+    // and none stopped propagation, so the inner dialog closed and the event
+    // then bubbled to the DOM-nested outer dialog, which closed too. Both
+    // dialogs now register on the shared Escape stack (the same one Popover uses
+    // via useFocusTrap); only the top-most (inner, by DOM containment) handles
+    // the press and stops propagation, so the outer stays open.
+    it('closes only the inner modal, not the outer, on Escape', () => {
+      const onOuterChange = vi.fn();
+      const onInnerChange = vi.fn();
+
+      render(
+        <Dialog
+          isOpen={true}
+          onOpenChange={onOuterChange}
+          purpose="info"
+          aria-label="Outer">
+          Outer content
+          <Dialog
+            isOpen={true}
+            onOpenChange={onInnerChange}
+            purpose="info"
+            aria-label="Inner">
+            Inner content
+          </Dialog>
+        </Dialog>,
+      );
+
+      // Both dialogs are open; the inner <dialog> is a DOM descendant of the
+      // outer one (it renders inside the outer's content).
+      const dialogs = screen.getAllByRole('dialog');
+      expect(dialogs).toHaveLength(2);
+      const outer = dialogs.find(
+        d => d.getAttribute('aria-label') === 'Outer',
+      )!;
+      const inner = dialogs.find(
+        d => d.getAttribute('aria-label') === 'Inner',
+      )!;
+      expect(outer.contains(inner)).toBe(true);
+
+      // Escape from inside the inner dialog: it bubbles up through the inner
+      // <dialog> to the outer one, exactly like a real key press.
+      const escapeEvent = new KeyboardEvent('keydown', {
+        key: 'Escape',
+        bubbles: true,
+        cancelable: true,
+      });
+      inner.dispatchEvent(escapeEvent);
+
+      // Only the inner (top-most) dialog closes; the outer is untouched.
+      expect(onInnerChange).toHaveBeenCalledTimes(1);
+      expect(onInnerChange).toHaveBeenCalledWith(false);
+      expect(onOuterChange).not.toHaveBeenCalled();
+    });
+
+    it('closes the outer modal on Escape once the inner one is gone', () => {
+      // After the inner closes (unmounts, removing its stack entry), a second
+      // Escape reaches the now-top-most outer dialog and closes it.
+      const onOuterChange = vi.fn();
+
+      render(
+        <Dialog
+          isOpen={true}
+          onOpenChange={onOuterChange}
+          purpose="info"
+          aria-label="Outer only">
+          Outer content
+        </Dialog>,
+      );
+
+      const outer = screen.getByRole('dialog');
+      const escapeEvent = new KeyboardEvent('keydown', {
+        key: 'Escape',
+        bubbles: true,
+        cancelable: true,
+      });
+      outer.dispatchEvent(escapeEvent);
+
+      expect(onOuterChange).toHaveBeenCalledTimes(1);
+      expect(onOuterChange).toHaveBeenCalledWith(false);
+    });
+  });
+
   describe('variant: standard', () => {
     it('renders with default variant', () => {
       render(
