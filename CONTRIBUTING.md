@@ -182,15 +182,15 @@ astryx/
 
 ### Common Commands
 
-| Command           | Description                       |
-| ----------------- | --------------------------------- |
-| `pnpm install`    | Install all dependencies          |
+| Command           | Description                                  |
+| ----------------- | -------------------------------------------- |
+| `pnpm install`    | Install all dependencies                     |
 | `pnpm dev`        | Start Storybook (alias for `pnpm storybook`) |
-| `pnpm build`      | Build all packages                |
-| `pnpm test`       | Run all tests                     |
-| `pnpm test:watch` | Run tests in watch mode           |
-| `pnpm storybook`  | Start Storybook at localhost:6006 |
-| `pnpm lint`       | Lint all packages                 |
+| `pnpm build`      | Build all packages                           |
+| `pnpm test`       | Run all tests                                |
+| `pnpm test:watch` | Run tests in watch mode                      |
+| `pnpm storybook`  | Start Storybook at localhost:6006            |
+| `pnpm lint`       | Lint all packages                            |
 
 ## Adding a New Component
 

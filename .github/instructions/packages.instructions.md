@@ -439,6 +439,10 @@ and the Design review section above), or to add `hidden: true` until it does.
   convention: `forwardRef` is rejected by `@eslint-react/no-forward-ref`, and
   `@astryx/require-ref-prop` requires `ref?: React.Ref<T>` on a publicly
   exported props interface.
+- **`'use client'` first.** A file that imports a React client API from `react`
+  must have `'use client';` as its first statement (only comments and blank
+  lines may precede it) — enforced by `pnpm check:use-client`, part of
+  `pnpm check:repo`.
 - **Never hand-edit the `"exports"` field in a package `package.json`.** It is
   auto-generated from `src/` by `scripts/sync-exports.js` and committed on
   `main`. Editing it by hand is a review-reject.
