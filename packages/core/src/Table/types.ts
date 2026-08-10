@@ -379,6 +379,11 @@ export interface TableContextAction {
   group?: string;
   /** When true, the item renders as checked (e.g. the active sort direction). */
   checked?: boolean;
+  /**
+   * Visual variant. `'destructive'` renders the action in the error color for
+   * dangerous operations (e.g. Delete row). @default 'default'
+   */
+  variant?: 'default' | 'destructive';
 }
 
 /**
