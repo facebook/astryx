@@ -13,6 +13,9 @@ import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {CheckboxInput} from './CheckboxInput';
+import {Theme} from '../theme/Theme';
+import {defineTheme} from '../theme/defineTheme';
+import type {IndicatorProps} from '../Indicator';
 import {getForcedColorsRules} from '../__tests__/forcedColors';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 
@@ -597,5 +600,53 @@ describe('forced colors (WCAG 1.4.11)', () => {
     // white as the flattened box, so it needs its own CanvasText color to stay
     // perceivable on the Canvas box.
     expect(getForcedColorsRules()).toContain('color: canvastext;');
+  });
+});
+
+// The checkbox visual is a themeable indicator, but the native input is
+// visually hidden — so the focus ring cannot live inside the replaceable part
+// or a theme could ship a control with no visible focus (WCAG 2.4.7).
+describe('focus ring ownership (WCAG 2.4.7)', () => {
+  // A minimal replacement with no focus handling of its own — what a theme
+  // author would plausibly write.
+  const BareIndicator = (_props: IndicatorProps) => (
+    <span aria-hidden="true" data-testid="bare-indicator" />
+  );
+
+  const bareTheme = defineTheme({
+    name: 'bare-indicator-theme',
+    indicators: {checkbox: BareIndicator},
+  });
+
+  it('keeps the focus ring on the control wrapper, not the indicator', () => {
+    const {container} = render(
+      <CheckboxInput label="Accept" value={false} onChange={() => {}} />,
+    );
+
+    // The wrapper that owns the native input carries the ring.
+    const input = container.querySelector('input[type="checkbox"]');
+    const wrapper = input?.parentElement;
+    const ringClass = [...(wrapper?.classList ?? [])].find(c =>
+      c.includes('checkboxWrapperFocus'),
+    );
+    expect(ringClass).toBeDefined();
+  });
+
+  it('survives replacing the checkbox indicator through a theme', () => {
+    const {container} = render(
+      <Theme theme={bareTheme}>
+        <CheckboxInput label="Accept" value={false} onChange={() => {}} />
+      </Theme>,
+    );
+
+    // The theme's indicator rendered (so the replacement really took effect)...
+    expect(screen.getByTestId('bare-indicator')).toBeInTheDocument();
+    // ...and the focus ring is still there, because the owner holds it.
+    const input = container.querySelector('input[type="checkbox"]');
+    const wrapper = input?.parentElement;
+    const ringClass = [...(wrapper?.classList ?? [])].find(c =>
+      c.includes('checkboxWrapperFocus'),
+    );
+    expect(ringClass).toBeDefined();
   });
 });

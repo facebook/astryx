@@ -130,6 +130,19 @@ export type {
 
 export {useTheme, useThemeName, ThemeContext} from './useTheme';
 export type {UseThemeReturn, ThemeContextValue} from './useTheme';
+
+export type {
+  IndicatorComponent,
+  IndicatorFamily,
+  IndicatorFamilyMap,
+  IndicatorMap,
+  IndicatorName,
+  IndicatorNameOfFamily,
+  IndicatorProps,
+  IndicatorRegistry,
+  IndicatorSize,
+  IndicatorState,
+} from '../Indicator';
 export {
   resolveThemeToken,
   resolveThemeTokens,

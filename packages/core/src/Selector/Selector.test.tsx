@@ -22,9 +22,11 @@ import {useState} from 'react';
 import {Selector} from './Selector';
 import {SelectorOption} from './SelectorOption';
 import {Icon} from '../Icon';
+import {RadioIndicator} from '../Indicator';
 import {InputGroup, InputGroupText} from '../InputGroup';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {defineTheme} from '../theme/defineTheme';
+import {Theme} from '../theme/Theme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
 
 function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
@@ -234,6 +236,60 @@ describe('Selector', () => {
       />,
     );
     expect(screen.getByRole('combobox')).toHaveTextContent('Banana');
+  });
+
+  it('draws the selected mark through the check indicator', () => {
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value="Banana"
+        onChange={() => {}}
+      />,
+    );
+
+    const selected = screen.getByRole('option', {name: /Banana/, hidden: true});
+    // The default check indicator IS the glyph — no wrapper element, so the
+    // host's theme target sits on the same node as astryx-icon.
+    const mark = selected.querySelector('.astryx-selector-check');
+    expect(mark).not.toBeNull();
+    expect(mark).toHaveClass('astryx-icon');
+  });
+
+  it('lets a theme replace the mark with a radio, which draws when unselected too', () => {
+    // The point of the indicator layer: one theme entry, and every
+    // single-selection mark becomes a radio — including the empty circle on
+    // rows that are NOT selected, which a check-only mark never drew.
+    const theme = defineTheme({
+      name: 'selector-radio-mark-test',
+      indicators: {check: RadioIndicator},
+    });
+
+    render(
+      <Theme theme={theme}>
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Banana"
+          onChange={() => {}}
+        />
+      </Theme>,
+    );
+
+    const options = screen.getAllByRole('option', {hidden: true});
+    expect(options.length).toBeGreaterThan(1);
+
+    // Every row has a radio, selected or not.
+    for (const option of options) {
+      expect(option.querySelector('.astryx-radio')).not.toBeNull();
+    }
+
+    // And exactly the selected one is filled.
+    const filled = options.filter(
+      o => o.querySelector('.astryx-radio-dot') != null,
+    );
+    expect(filled).toHaveLength(1);
+    expect(filled[0]).toHaveTextContent('Banana');
   });
 
   it('renders custom option endContent', async () => {
@@ -2385,7 +2441,9 @@ describe('Selector selected-marker theme target (selector-check)', () => {
       o => o.getAttribute('aria-selected') !== 'true',
     );
     for (const row of unselected) {
-      expect(row.querySelector('.astryx-selector-check')).not.toBeInTheDocument();
+      expect(
+        row.querySelector('.astryx-selector-check'),
+      ).not.toBeInTheDocument();
     }
   });
 

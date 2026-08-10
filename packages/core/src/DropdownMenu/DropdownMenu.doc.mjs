@@ -26,12 +26,12 @@ export const docs = {
       {className: 'astryx-dropdown-menu'},
       {className: 'astryx-dropdown-menu-item', visualProps: ['size', 'variant']},
       {
-        className: 'astryx-dropdown-menu-radio',
+        className: 'astryx-dropdown-menu-checkbox',
         visualProps: ['size'],
         states: ['checked', 'disabled'],
       },
       {
-        className: 'astryx-dropdown-menu-radio-dot',
+        className: 'astryx-dropdown-menu-radio',
         visualProps: ['size'],
         states: ['checked', 'disabled'],
       },

@@ -32,6 +32,7 @@ import * as stylex from '@stylexjs/stylex';
 import {usePopover} from '../Popover/usePopover';
 import {useTooltip} from '../Tooltip';
 import {Icon, renderIconSlot, type IconType} from '../Icon';
+import {useIndicator} from '../Indicator';
 import type {IconName} from '../Icon';
 import {
   Field,
@@ -1091,6 +1092,11 @@ export function Selector<T extends SelectorOptionType>(
     t,
   ]);
 
+  // The single-selection mark, resolved from the theme once per render. A
+  // theme that maps `check` to another indicator (a radio, say) changes every
+  // selected-option mark in the app through this one lookup.
+  const SelectionMark = useIndicator('check');
+
   // Render an individual item
   const renderItem = useCallback(
     (item: SelectorOptionData, flatIndex: number) => {
@@ -1120,17 +1126,21 @@ export function Selector<T extends SelectorOptionType>(
               <DefaultOption option={item} />
             )}
           </span>
-          {isSelected && (
-            <Icon
-              icon="check"
-              size="sm"
-              color="accent"
-              // Stable theme target on the selected-row marker, so a theme can
-              // restyle or hide it (e.g. to compose its own selected indicator
-              // via renderOption) without a structural sibling selector.
-              {...themeProps('selector-check')}
-            />
-          )}
+          {/*
+           * Rendered UNCONDITIONALLY, with the state passed down: the default
+           * check draws nothing when unchecked, but a theme that replaces the
+           * `check` indicator with a radio needs the unselected state to draw
+           * its empty circle. `{isSelected && …}` would make that impossible.
+           *
+           * `selector-check` stays the stable target for the mark's position
+           * in the row; the indicator owns what the mark looks like.
+           */}
+          <SelectionMark
+            state={isSelected ? 'checked' : 'unchecked'}
+            size="sm"
+            isDisabled={item.disabled ?? false}
+            {...themeProps('selector-check')}
+          />
         </div>
       );
     },
@@ -1142,6 +1152,7 @@ export function Selector<T extends SelectorOptionType>(
       getItemId,
       onItemSelect,
       onItemMouseEnter,
+      SelectionMark,
     ],
   );
 
@@ -1347,50 +1358,50 @@ export function Selector<T extends SelectorOptionType>(
           the two affordances stop sharing a node.
         */}
         {showStatusIcon ? (
-            showStatusTooltip ? (
-              <button
-                ref={statusTooltip.ref}
-                type="button"
-                aria-label={t(STATUS_BUTTON_LABEL_KEY[status.type])}
-                aria-describedby={statusTooltip.describedBy}
-                onClick={e => e.stopPropagation()}
-                {...stylex.props(styles.statusButton)}>
-                <Icon
-                  icon={STATUS_ICON_MAP[status.type]}
-                  size="sm"
-                  color={STATUS_ICON_COLOR_MAP[status.type]}
-                  xstyle={styles.triggerIcon}
-                />
-              </button>
-            ) : (
+          showStatusTooltip ? (
+            <button
+              ref={statusTooltip.ref}
+              type="button"
+              aria-label={t(STATUS_BUTTON_LABEL_KEY[status.type])}
+              aria-describedby={statusTooltip.describedBy}
+              onClick={e => e.stopPropagation()}
+              {...stylex.props(styles.statusButton)}>
               <Icon
                 icon={STATUS_ICON_MAP[status.type]}
                 size="sm"
                 color={STATUS_ICON_COLOR_MAP[status.type]}
                 xstyle={styles.triggerIcon}
               />
-            )
+            </button>
           ) : (
             <Icon
-              icon="chevronDown"
+              icon={STATUS_ICON_MAP[status.type]}
               size="sm"
-              color="secondary"
-              // The rotation rides on the glyph, alongside the box and color
-              // the wrapper used to provide, so one element carries the mark,
-              // its open/closed transform, and the theme target.
-              xstyle={[
-                styles.triggerIcon,
-                styles.triggerIconRotation,
-                popover.isOpen && styles.triggerIconOpen,
-              ]}
-              // Stable theme target on the chevron glyph itself, so a theme can
-              // restyle just this icon (color, size, hover) — and its
-              // open/closed state — via `defineTheme`. Same-element rules in
-              // @layer astryx-theme win over the icon's own base color/size,
-              // which a button-level target could not reach.
-              {...themeProps('selector-indicator-icon', {
-                state: popover.isOpen ? 'expanded' : 'collapsed',
-              })}
+              color={STATUS_ICON_COLOR_MAP[status.type]}
+              xstyle={styles.triggerIcon}
+            />
+          )
+        ) : (
+          <Icon
+            icon="chevronDown"
+            size="sm"
+            color="secondary"
+            // The rotation rides on the glyph, alongside the box and color
+            // the wrapper used to provide, so one element carries the mark,
+            // its open/closed transform, and the theme target.
+            xstyle={[
+              styles.triggerIcon,
+              styles.triggerIconRotation,
+              popover.isOpen && styles.triggerIconOpen,
+            ]}
+            // Stable theme target on the chevron glyph itself, so a theme can
+            // restyle just this icon (color, size, hover) — and its
+            // open/closed state — via `defineTheme`. Same-element rules in
+            // @layer astryx-theme win over the icon's own base color/size,
+            // which a button-level target could not reach.
+            {...themeProps('selector-indicator-icon', {
+              state: popover.isOpen ? 'expanded' : 'collapsed',
+            })}
           />
         )}
       </div>
