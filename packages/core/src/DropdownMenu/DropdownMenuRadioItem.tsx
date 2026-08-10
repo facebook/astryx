@@ -53,11 +53,11 @@ const styles = stylex.create({
   // the inline-end of the row via `order`.
   // Layout box for the decorative marker. The painted circle is the radio
   // indicator inside it, which carries the shared `radio` theme target.
-  markerBox: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
+  // Placement of the marker within the row. The indicator draws its own box
+  // (size, fill, border) — these are only the rules the MENU owns: where the
+  // marker sits in the row, and that it never takes the pointer.
+  marker: {
+    pointerEvents: 'none',
     order: {
       default: 0,
       '@media (pointer: coarse)': 1,
@@ -71,11 +71,6 @@ const styles = stylex.create({
 
 // Matches the control sizes RadioList uses, so a radio reads the same in a
 // menu row as it does in a radio group.
-const markerSizeStyles = stylex.create({
-  sm: {width: 20, height: 20},
-  md: {width: 24, height: 24},
-});
-
 export interface DropdownMenuRadioItemProps extends Omit<
   BaseProps,
   'role' | 'aria-checked' | 'tabIndex'
@@ -170,22 +165,19 @@ export function DropdownMenuRadioItem({
       tabIndex={isDisabled ? undefined : -1}
       onPointerMove={handlePointerMove}
       marker={
-        <span
-          aria-hidden="true"
-          {...mergeProps(
-            themeProps('dropdown-menu-radio', {
-              size: controlSize,
-              checked: isChecked ? 'checked' : null,
-              disabled: isDisabled ? 'disabled' : null,
-            }),
-            stylex.props(styles.markerBox, markerSizeStyles[controlSize]),
-          )}>
-          <RadioControl
-            state={isChecked ? 'checked' : 'unchecked'}
-            size={controlSize}
-            isDisabled={isDisabled}
-          />
-        </span>
+        // No wrapper — see DropdownMenuCheckboxItem: the target belongs on the
+        // visible circle, and the indicator already owns its control size.
+        <RadioControl
+          state={isChecked ? 'checked' : 'unchecked'}
+          size={controlSize}
+          isDisabled={isDisabled}
+          xstyle={styles.marker}
+          {...themeProps('dropdown-menu-radio', {
+            size: controlSize,
+            checked: isChecked ? 'checked' : null,
+            disabled: isDisabled ? 'disabled' : null,
+          })}
+        />
       }
       startContent={
         icon

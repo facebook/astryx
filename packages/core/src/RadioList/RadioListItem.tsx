@@ -54,17 +54,6 @@ const styles = stylex.create({
   inputDisabled: {
     cursor: 'not-allowed',
   },
-  radioWrapperFocus: {
-    outline: {
-      default: 'none',
-      ':has(:focus-visible)': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':has(:focus-visible)': '2px',
-    },
-    borderRadius: '50%',
-  },
   labelDisabled: {
     color: colorVars['--color-text-disabled'],
     cursor: 'not-allowed',
@@ -168,12 +157,7 @@ export function RadioListItem({
   const RadioControl = useIndicator('radio');
 
   const radioCircle = (
-    <div
-      {...stylex.props(
-        styles.radioWrapper,
-        wrapperSizeStyles[size],
-        !isDisabled && styles.radioWrapperFocus,
-      )}>
+    <div {...stylex.props(styles.radioWrapper, wrapperSizeStyles[size])}>
       <input
         id={id}
         type="radio"

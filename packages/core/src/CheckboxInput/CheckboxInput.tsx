@@ -66,22 +66,6 @@ const styles = stylex.create({
     flexShrink: 0,
     isolation: 'isolate',
   },
-  // The focus ring lives on the wrapper — which owns the (visually hidden)
-  // native input — rather than on the checkbox visual, so replacing the
-  // checkbox indicator through `defineTheme({indicators})` cannot leave the
-  // control without a visible focus indicator (WCAG 2.4.7). Mirrors
-  // RadioListItem's radioWrapperFocus.
-  checkboxWrapperFocus: {
-    outline: {
-      default: 'none',
-      ':has(:focus-visible)': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':has(:focus-visible)': '2px',
-    },
-    borderRadius: radiusVars['--radius-inner'],
-  },
   input: {
     position: 'absolute',
     margin: 0,
@@ -379,12 +363,7 @@ export function CheckboxInput({
           // marker rather than props, so the whole row drives it.
           !isDisabled && indicatorScope,
         )}>
-        <div
-          {...stylex.props(
-            styles.checkboxWrapper,
-            wrapperSizeStyles[size],
-            !isDisabled && styles.checkboxWrapperFocus,
-          )}>
+        <div {...stylex.props(styles.checkboxWrapper, wrapperSizeStyles[size])}>
           <input
             {...rest}
             ref={mergeRefs(

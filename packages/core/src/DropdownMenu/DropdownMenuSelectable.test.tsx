@@ -99,14 +99,13 @@ describe('DropdownMenuCheckboxItem', () => {
       hidden: true,
     });
     expect(row.querySelector('input[type="checkbox"]')).toBeNull();
-    const marker = row.querySelector('.astryx-dropdown-menu-checkbox');
+    // The shared checkbox target, directly on the row — no wrapper, and no
+    // menu-specific target added for it (main reached this element through
+    // `astryx-checkbox` too).
+    const marker = row.querySelector('.astryx-checkbox');
     expect(marker).toBeInTheDocument();
     expect(marker).toHaveAttribute('aria-hidden', 'true');
-    // The indicator inside carries the shared checkbox theme target.
-    expect(marker?.querySelector('.astryx-checkbox')).toHaveAttribute(
-      'data-checked',
-      'checked',
-    );
+    expect(marker).toHaveAttribute('data-checked', 'checked');
   });
 
   it('does not toggle when disabled', async () => {
@@ -177,15 +176,14 @@ describe('DropdownMenuRadioGroup / RadioItem', () => {
       name: 'Newest',
       hidden: true,
     });
-    // The marker box keeps the menu-specific target for layout; the painted
-    // circle is the shared radio indicator, so menu radios and RadioList
-    // radios theme together.
+    // The menu's target and the shared radio target land on the SAME painted
+    // circle, so menu radios and RadioList radios theme together and a theme
+    // never has to reach through a wrapper.
     const box = checked.querySelector('.astryx-dropdown-menu-radio');
+    expect(box).toHaveClass('astryx-radio');
     expect(box).toHaveAttribute('data-size', 'md');
     expect(box).toHaveAttribute('data-checked', 'checked');
-    const indicator = box?.querySelector('.astryx-radio');
-    expect(indicator).toHaveAttribute('data-checked', 'checked');
-    expect(indicator?.querySelector('.astryx-radio-dot')).toBeInTheDocument();
+    expect(box?.querySelector('.astryx-radio-dot')).toBeInTheDocument();
 
     // The unchecked radio still draws its circle, without the dot.
     const unchecked = screen.getByRole('menuitemradio', {

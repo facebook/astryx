@@ -193,9 +193,9 @@ defineTheme({name: 'brand', indicators: {check: RadioIndicator}});`,
           'Use theme tokens for every color, radius, and border width in a replacement. Run `npx astryx docs tokens` for the set.',
       },
       {
-        guidance: false,
+        guidance: true,
         description:
-          'Draw your own focus ring in a replacement. The ring lives on the owning control wrapper so it survives replacement — a second ring would double it.',
+          'Draw the focus ring in a replacement, keyed off the owner scope marker: outline on `stylex.when.ancestor(\':has(:focus-visible)\', indicatorScope)`. The native input is a visually hidden SIBLING, so a plain :focus-visible will never match — and only the indicator knows what shape the ring should trace. Omit it and the control has no visible focus (WCAG 2.4.7).',
       },
       {
         guidance: false,

@@ -603,50 +603,53 @@ describe('forced colors (WCAG 1.4.11)', () => {
   });
 });
 
-// The checkbox visual is a themeable indicator, but the native input is
-// visually hidden — so the focus ring cannot live inside the replaceable part
-// or a theme could ship a control with no visible focus (WCAG 2.4.7).
+// The checkbox visual is a themeable indicator, and the native input inside
+// the control is `opacity: 0` — so whoever draws the focus ring has to be the
+// visible box, or the control has no visible focus at all (WCAG 2.4.7).
+//
+// The indicator draws it, because only the indicator knows its own shape: the
+// ring on a square checkbox and the ring on a round radio are different
+// outlines, and a host drawing the ring would have to hardcode a guess about
+// the indicator it hosts (RadioListItem used to hardcode `border-radius: 50%`
+// for exactly this reason).
+//
+// Focus reaches it the same way hover does — the owner's `indicatorScope`
+// marker — because the input is a visually hidden SIBLING of the indicator,
+// not a descendant. That makes drawing the ring part of the replacement
+// contract, stated as a rule in Indicator.doc.mjs.
 describe('focus ring ownership (WCAG 2.4.7)', () => {
-  // A minimal replacement with no focus handling of its own — what a theme
-  // author would plausibly write.
-  const BareIndicator = (_props: IndicatorProps) => (
-    <span aria-hidden="true" data-testid="bare-indicator" />
-  );
-
-  const bareTheme = defineTheme({
-    name: 'bare-indicator-theme',
-    indicators: {checkbox: BareIndicator},
-  });
-
-  it('keeps the focus ring on the control wrapper, not the indicator', () => {
+  it('draws the ring on the indicator, keyed off the owner scope', () => {
     const {container} = render(
       <CheckboxInput label="Accept" value={false} onChange={() => {}} />,
     );
 
-    // The wrapper that owns the native input carries the ring.
-    const input = container.querySelector('input[type="checkbox"]');
-    const wrapper = input?.parentElement;
-    const ringClass = [...(wrapper?.classList ?? [])].find(c =>
-      c.includes('checkboxWrapperFocus'),
+    const indicator = container.querySelector('.astryx-checkbox');
+    expect(indicator).toBeInTheDocument();
+    const ringClass = [...(indicator?.classList ?? [])].find(c =>
+      c.includes('focusRing'),
     );
     expect(ringClass).toBeDefined();
+
+    // Why the ring needs the ancestor marker rather than a plain
+    // `:focus-visible`: the input is a SIBLING of the indicator, not inside
+    // it, so the indicator can only see focus through a shared ancestor.
+    const input = container.querySelector('input[type="checkbox"]');
+    expect(input).toBeInTheDocument();
+    expect(indicator?.contains(input)).toBe(false);
+    expect(input?.parentElement?.contains(indicator)).toBe(true);
   });
 
-  it('survives replacing the checkbox indicator through a theme', () => {
+  it('no longer hardcodes the ring on the host wrapper', () => {
+    // Regression guard for the shape problem: if a host reintroduces its own
+    // ring, a replaced indicator gets two rings, or one of the wrong shape.
     const {container} = render(
-      <Theme theme={bareTheme}>
-        <CheckboxInput label="Accept" value={false} onChange={() => {}} />
-      </Theme>,
+      <CheckboxInput label="Accept" value={false} onChange={() => {}} />,
     );
-
-    // The theme's indicator rendered (so the replacement really took effect)...
-    expect(screen.getByTestId('bare-indicator')).toBeInTheDocument();
-    // ...and the focus ring is still there, because the owner holds it.
     const input = container.querySelector('input[type="checkbox"]');
     const wrapper = input?.parentElement;
     const ringClass = [...(wrapper?.classList ?? [])].find(c =>
-      c.includes('checkboxWrapperFocus'),
+      c.includes('WrapperFocus'),
     );
-    expect(ringClass).toBeDefined();
+    expect(ringClass).toBeUndefined();
   });
 });

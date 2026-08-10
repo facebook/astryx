@@ -58,11 +58,10 @@ const styles = stylex.create({
   // `aria-hidden` + `inert` + pointer-events:none keep the composed CheckboxInput
   // decorative: it adds no accessible name, and clicks fall through to the row,
   // which owns the role and activation.
-  markerBox: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
+  // Placement of the marker within the row. The indicator draws its own box
+  // (size, fill, border) — these are only the rules the MENU owns: where the
+  // marker sits in the row, and that it never takes the pointer.
+  marker: {
     pointerEvents: 'none',
     order: {
       default: 0,
@@ -77,11 +76,6 @@ const styles = stylex.create({
 
 // Matches the control sizes CheckboxInput uses, so a checkbox reads the same in
 // a menu row as it does in a form.
-const markerSizeStyles = stylex.create({
-  sm: {width: 20, height: 20},
-  md: {width: 24, height: 24},
-});
-
 export interface DropdownMenuCheckboxItemProps extends Omit<
   BaseProps,
   'onChange' | 'role' | 'aria-checked' | 'tabIndex'
@@ -188,22 +182,17 @@ export function DropdownMenuCheckboxItem({
       tabIndex={isDisabled ? undefined : -1}
       onPointerMove={handlePointerMove}
       marker={
-        <span
-          aria-hidden="true"
-          {...mergeProps(
-            themeProps('dropdown-menu-checkbox', {
-              size: controlSize,
-              checked: value ? 'checked' : null,
-              disabled: isDisabled ? 'disabled' : null,
-            }),
-            stylex.props(styles.markerBox, markerSizeStyles[controlSize]),
-          )}>
-          <CheckboxControl
-            state={value ? 'checked' : 'unchecked'}
-            size={controlSize}
-            isDisabled={isDisabled}
-          />
-        </span>
+        // No wrapper, and no menu-specific theme target: the shared
+        // `astryx-checkbox` target is already on this element (main reached
+        // the menu checkbox through it too), so the menu adds only its own
+        // placement rules. A wrapper here would have duplicated the
+        // indicator's control size and moved nothing themeable.
+        <CheckboxControl
+          state={value ? 'checked' : 'unchecked'}
+          size={controlSize}
+          isDisabled={isDisabled}
+          xstyle={styles.marker}
+        />
       }
       startContent={
         icon
