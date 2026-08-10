@@ -187,21 +187,12 @@ export type IconSize = keyof typeof sizeStyles;
 export type IconType = ComponentType<SVGProps<SVGSVGElement>>;
 
 /**
- * Props for Icon component.
- * Extends SVGProps to allow passing additional SVG attributes (used when icon is a component).
+ * Props shared by both forms of Icon; see {@link IconProps} for the `icon` /
+ * `fallbackIcon` pairing.
  */
-export interface IconProps extends Omit<
-  SVGProps<SVGSVGElement>,
-  'ref' | 'color'
-> {
+interface IconBaseProps extends Omit<SVGProps<SVGSVGElement>, 'ref' | 'color'> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<SVGSVGElement>;
-  /**
-   * Icon to render. Can be:
-   * - A semantic name string (e.g. 'close', 'chevronDown') — resolved from theme or built-in fallback
-   * - An SVG icon component (e.g. from @heroicons/react) — rendered directly
-   */
-  icon: IconType | IconName | ComponentIconSlotName;
   /**
    * The color variant of the icon.
    * @default 'inherit'
@@ -247,15 +238,6 @@ export interface IconProps extends Omit<
    */
   label?: string;
   /**
-   * Fallback global icon name when `icon` is a component-specific slot.
-   *
-   * Components use this to render semantic purposes like
-   * `selector-selected-option` while letting themes remap that purpose through
-   * `defineTheme({componentIcons})`. Passing it is what marks `icon` as a slot
-   * rather than a global icon name.
-   */
-  fallbackIcon?: IconName;
-  /**
    * StyleX styles created via `stylex.create()`. Folded into the icon's own
    * `stylex.props()` call (as the last argument) so it merges with the base
    * color/size styles for optimal deduplication, matching how other Astryx
@@ -269,6 +251,43 @@ export interface IconProps extends Omit<
    */
   xstyle?: StyleXStyles;
 }
+
+/**
+ * Props for the Icon component.
+ *
+ * A discriminated union, so the two ways to name an icon can't be mixed up:
+ *
+ * - **A global icon** — a semantic name (`'close'`) or an SVG component. It
+ *   resolves on its own, so `fallbackIcon` is not accepted.
+ * - **A component icon slot** — a semantic purpose (`'selector-selected-option'`)
+ *   a theme may remap through `defineTheme({componentIcons})`. A slot has no
+ *   meaning without the component's own default, so `fallbackIcon` is
+ *   REQUIRED. Without that rule an unmapped slot would resolve to nothing and
+ *   the icon would silently disappear.
+ */
+export type IconProps =
+  | (IconBaseProps & {
+      /**
+       * Icon to render. Either a global semantic name (e.g. `'close'`,
+       * `'chevronDown'`) resolved from the theme or built-in defaults, or an
+       * SVG icon component (e.g. from `@heroicons/react`) rendered directly.
+       */
+      icon: IconType | IconName;
+      /** Not applicable — a global icon needs no fallback. */
+      fallbackIcon?: never;
+    })
+  | (IconBaseProps & {
+      /**
+       * A component-specific icon slot, letting a theme remap this semantic
+       * purpose through `defineTheme({componentIcons})`.
+       */
+      icon: ComponentIconSlotName;
+      /**
+       * The component's own default global icon name, used when the theme does
+       * not map the slot. Required for a slot.
+       */
+      fallbackIcon: IconName;
+    });
 
 /**
  * Derives the ARIA attributes for an icon from its `label` prop.

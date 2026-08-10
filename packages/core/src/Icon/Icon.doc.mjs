@@ -38,7 +38,7 @@ export const docs = {
       name: 'fallbackIcon',
       type: 'IconName',
       description:
-        'Fallback global icon name when icon is a component-specific icon slot. Components use this for semantic purposes like selector-selected-option while letting themes remap through defineTheme({componentIcons}). Passing it is what marks icon as a slot rather than a global icon name. Valid semantic names: close, chevronDown, chevronLeft, chevronRight, chevronsLeft, chevronsRight, check, success, error, warning, info, calendar, clock, externalLink, menu, moreHorizontal, search, arrowUp, arrowDown, arrowsUpDown, funnel, eyeSlash, viewColumns, copy, checkDouble, wrench, stop, microphone.',
+        'Required when icon is a component-specific icon slot, and not accepted otherwise: the component default used when the theme does not map the slot. Components name semantic purposes like selector-selected-option so themes can remap them through defineTheme({componentIcons}). Valid semantic names: close, chevronDown, chevronLeft, chevronRight, chevronsLeft, chevronsRight, check, success, error, warning, info, calendar, clock, externalLink, menu, moreHorizontal, search, arrowUp, arrowDown, arrowsUpDown, funnel, eyeSlash, viewColumns, copy, checkDouble, wrench, stop, microphone.',
     },
     {
       name: 'label',
@@ -102,7 +102,7 @@ export const docsZh = {
       name: 'fallbackIcon',
       type: 'IconName',
       description:
-        '当 icon 为组件专属图标插槽时使用的全局回退图标名称。组件以此表达 selector-selected-option 之类的语义用途，同时允许主题通过 defineTheme({componentIcons}) 重新映射。传入该属性即表示 icon 是一个插槽名而非全局图标名。有效语义名称：close, chevronDown, chevronLeft, chevronRight, chevronsLeft, chevronsRight, check, success, error, warning, info, calendar, clock, externalLink, menu, moreHorizontal, search, arrowUp, arrowDown, arrowsUpDown, funnel, eyeSlash, viewColumns, copy, checkDouble, wrench, stop, microphone。',
+        '仅当 icon 为组件专属图标插槽时必填，其余情况不接受：主题未映射该插槽时使用的组件默认图标。组件以 selector-selected-option 之类的名称表达语义用途，以便主题通过 defineTheme({componentIcons}) 重新映射。有效语义名称：close, chevronDown, chevronLeft, chevronRight, chevronsLeft, chevronsRight, check, success, error, warning, info, calendar, clock, externalLink, menu, moreHorizontal, search, arrowUp, arrowDown, arrowsUpDown, funnel, eyeSlash, viewColumns, copy, checkDouble, wrench, stop, microphone。',
     },
     {
       name: 'label',

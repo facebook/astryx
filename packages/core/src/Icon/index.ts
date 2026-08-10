@@ -12,7 +12,7 @@
  */
 
 export {Icon, renderIconSlot} from './Icon';
-export {useIcon} from './useIcon';
+export {useIcon, useComponentIcon} from './useIcon';
 export type {IconProps, IconColor, IconSize, IconType} from './Icon';
 
 // Global registry (RSC-compatible, no 'use client')

@@ -392,3 +392,32 @@ describe('Icon', () => {
     });
   });
 });
+
+/**
+ * Type-level guarantees for the icon/slot pairing.
+ *
+ * These assert at COMPILE time (`@ts-expect-error` fails the build if the line
+ * stops erroring), which is the only place they can be checked — the whole
+ * point of the union is that the bad calls never reach runtime.
+ *
+ * Before the union, `<Icon icon="selector-selected-option" />` typechecked and
+ * silently rendered nothing: the slot resolved through no fallback, so an
+ * unmapped theme produced a blank where a check should be.
+ */
+describe('Icon — icon/fallbackIcon pairing (types)', () => {
+  it('requires fallbackIcon for a slot and rejects it for a global icon', () => {
+    // A slot with its fallback: the only legal way to write a slot.
+    const withFallback = (
+      <Icon icon="selector-selected-option" fallbackIcon="check" />
+    );
+    expect(withFallback).toBeTruthy();
+
+    // @ts-expect-error a slot without a fallback would resolve to nothing
+    const slotAlone = <Icon icon="selector-selected-option" />;
+    expect(slotAlone).toBeTruthy();
+
+    // @ts-expect-error a global icon resolves on its own; a fallback is meaningless
+    const globalWithFallback = <Icon icon="check" fallbackIcon="close" />;
+    expect(globalWithFallback).toBeTruthy();
+  });
+});

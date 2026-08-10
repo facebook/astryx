@@ -5,6 +5,7 @@ import {defineTheme} from '../theme/defineTheme';
 import {resetThemes} from '../theme/themeRegistry';
 import {__resetDevWarnings} from '../utils/devWarning';
 import {defaultIcons} from './defaultIcons';
+import {useIcon, useComponentIcon} from './useIcon';
 import {
   registerIcons,
   getIconRegistry,
@@ -193,5 +194,31 @@ describe('iconRegistry (global, RSC-compatible)', () => {
       resetIcons();
       expect(getExtendedIcon('richtext:bold', 'fallback')).toBe('fallback');
     });
+  });
+});
+
+/**
+ * Type-level guarantee for the hook split.
+ *
+ * `useIcon` takes a global name and `useComponentIcon` takes a slot plus the
+ * component's default — separate functions so the fallback is a REQUIRED
+ * parameter of the one that needs it, rather than an optional second argument
+ * whose absence silently changed which lookup ran.
+ */
+describe('useIcon / useComponentIcon (types)', () => {
+  it('separates global-name lookup from slot lookup', () => {
+    expect(typeof useIcon).toBe('function');
+    expect(typeof useComponentIcon).toBe('function');
+
+    // Compile-time only — hooks are not called outside a render here.
+    const _checks = () => {
+      useIcon('check');
+      useComponentIcon('selector-selected-option', 'check');
+      // @ts-expect-error a slot is not a global icon name
+      useIcon('selector-selected-option');
+      // @ts-expect-error a slot lookup requires the component's default
+      useComponentIcon('selector-selected-option');
+    };
+    expect(_checks).toBeTypeOf('function');
   });
 });
