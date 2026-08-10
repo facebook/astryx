@@ -5,7 +5,7 @@
 /**
  * @file ComplexSelector.tsx
  * @input Uses React, StyleX, Field, Icon slots, Layer positioning, and usePopover
- * @output Exports a controlled or uncontrolled rich-selector shell with exact token-sized input and ghost triggers
+ * @output Exports a rich-selector shell with exact token-sized input and ghost triggers, plus an imperative open/close handle
  * @position Core implementation; consumed by index.ts
  *
  * SYNC: When modified, update:
@@ -18,8 +18,8 @@
 
 import React, {
   useCallback,
-  useEffect,
   useId,
+  useImperativeHandle,
   useOptimistic,
   useRef,
   useTransition,
@@ -47,6 +47,7 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
+import {composeEventHandlers} from '../utils/composeEventHandlers';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 
@@ -166,6 +167,7 @@ const styles = stylex.create({
   popover: {
     minWidth: 'anchor-size(width)',
     marginBlockStart: spacingVars['--spacing-1'],
+    marginBlockEnd: spacingVars['--spacing-1'],
   },
   content: {
     boxSizing: 'border-box',
@@ -206,6 +208,25 @@ export interface ComplexSelectorRenderState {
   triggerId: string;
   /** ID of the popup content container. */
   contentId: string;
+}
+
+/**
+ * Imperative control surface for ComplexSelector, accessed via the `handleRef`
+ * prop. Methods drive the same popover machinery as the built-in trigger, so
+ * they respect focus restoration, light dismiss, and Escape. Prefer these
+ * callbacks over mirroring open state in the parent — the selector owns its
+ * visibility, and imperative calls avoid the focus-management pitfalls of
+ * syncing an external `isOpen` prop.
+ */
+export interface ComplexSelectorHandle {
+  /** Open the selector surface. No-op when disabled or already open. */
+  open(): void;
+  /** Close the selector surface. Restores focus to the trigger. */
+  close(): void;
+  /** Toggle the selector surface open or closed. */
+  toggle(): void;
+  /** Whether the selector surface is currently open. Reads live state. */
+  isOpen(): boolean;
 }
 
 export interface ComplexSelectorStatus {
@@ -266,10 +287,12 @@ export interface ComplexSelectorProps<Value> extends Omit<
   placement?: LayerPlacement;
   /** Popup alignment along the placement axis. */
   alignment?: LayerAlignment;
-  /** Whether the selector surface is open. Omit for uncontrolled behavior. */
-  isOpen?: boolean;
-  /** Called when the selector surface requests an open-state change. */
-  onOpenChange?: (isOpen: boolean) => void;
+  /**
+   * Imperative handle for programmatic open/close control. Exposes open,
+   * close, toggle, and the isOpen query. Use this instead of mirroring open
+   * state in the parent — the selector owns its visibility.
+   */
+  handleRef?: React.Ref<ComplexSelectorHandle>;
   /** StyleX styles for the popup content container. */
   contentXstyle?: StyleXStyles;
   /** Test ID for the trigger container. */
@@ -326,13 +349,13 @@ export function ComplexSelector<Value>({
   width,
   placement = 'below',
   alignment = 'start',
-  isOpen: controlledIsOpen,
-  onOpenChange,
+  handleRef,
   contentXstyle,
   xstyle,
   className,
   style,
   'data-testid': testId,
+  onClick: onClickProp,
   ...props
 }: ComplexSelectorProps<Value>) {
   const t = useTranslator();
@@ -357,76 +380,63 @@ export function ComplexSelector<Value>({
 
   const triggerRef = useRef<HTMLButtonElement>(null);
   const lastHideTimeRef = useRef(0);
-  const isControlled = controlledIsOpen !== undefined;
-  const controlledIsOpenRef = useRef(controlledIsOpen);
-  controlledIsOpenRef.current = controlledIsOpen;
 
   const [isPending, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const isBusy = isLoading || isPending;
 
-  const handlePopoverShow = useCallback(() => {
-    if (!isControlled) {
-      onOpenChange?.(true);
-    }
-  }, [isControlled, onOpenChange]);
-
   const handlePopoverHide = useCallback(() => {
     lastHideTimeRef.current = Date.now();
-    if (!isControlled || controlledIsOpenRef.current === true) {
-      onOpenChange?.(false);
-    }
     triggerRef.current?.focus();
-  }, [isControlled, onOpenChange]);
+  }, []);
 
   const popover = usePopover({
     dialogLabel: label,
     hasCloseButton: false,
     hasAutoFocus: true,
-    onShow: handlePopoverShow,
     onHide: handlePopoverHide,
   });
 
-  useEffect(() => {
-    if (!isControlled) {
-      return;
-    }
-    if (controlledIsOpen && !popover.isOpen) {
-      popover.show();
-    } else if (!controlledIsOpen && popover.isOpen) {
-      popover.hide();
-    }
-  }, [controlledIsOpen, isControlled, popover]);
-
-  const isOpen = isControlled ? controlledIsOpen : popover.isOpen;
-
-  const requestOpenChange = useCallback(
-    (nextIsOpen: boolean) => {
-      if (isControlled) {
-        if (nextIsOpen !== controlledIsOpen) {
-          onOpenChange?.(nextIsOpen);
-        }
-        return;
-      }
-      if (nextIsOpen) {
-        popover.show();
-      } else {
-        popover.hide();
-      }
-    },
-    [controlledIsOpen, isControlled, onOpenChange, popover],
-  );
+  const isOpen = popover.isOpen;
 
   const handleTriggerClick = useCallback(() => {
     if (isDisabled || Date.now() - lastHideTimeRef.current < 50) {
       return;
     }
-    requestOpenChange(!isOpen);
-  }, [isDisabled, isOpen, requestOpenChange]);
+    if (popover.isOpen) {
+      popover.hide();
+    } else {
+      popover.show();
+    }
+  }, [isDisabled, popover]);
 
   const close = useCallback(() => {
-    requestOpenChange(false);
-  }, [requestOpenChange]);
+    popover.hide();
+  }, [popover]);
+
+  useImperativeHandle(
+    handleRef,
+    () => ({
+      open: () => {
+        if (!isDisabled) {
+          popover.show();
+        }
+      },
+      close: () => popover.hide(),
+      toggle: () => {
+        if (isDisabled) {
+          return;
+        }
+        if (popover.isOpen) {
+          popover.hide();
+        } else {
+          popover.show();
+        }
+      },
+      isOpen: () => popover.isOpen,
+    }),
+    [isDisabled, popover],
+  );
 
   const commitValue = useCallback(
     (nextValue: Value) => {
@@ -460,7 +470,7 @@ export function ComplexSelector<Value>({
         ref={popover.triggerRef}
         data-testid={testId}
         {...props}
-        onClick={handleTriggerClick}
+        onClick={composeEventHandlers(onClickProp, handleTriggerClick)}
         {...mergeProps(
           themeProps('complex-selector', {
             variant,
@@ -500,7 +510,7 @@ export function ComplexSelector<Value>({
           onKeyDown={event => {
             if (event.key === 'ArrowDown' && !isOpen && !isDisabled) {
               event.preventDefault();
-              requestOpenChange(true);
+              popover.show();
             }
           }}
           {...stylex.props(styles.trigger)}>

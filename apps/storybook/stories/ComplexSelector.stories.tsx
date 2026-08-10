@@ -13,9 +13,12 @@
  */
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {useEffect, useMemo, useState} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {ComplexSelector} from '@astryxdesign/core/ComplexSelector';
+import {
+  ComplexSelector,
+  type ComplexSelectorHandle,
+} from '@astryxdesign/core/ComplexSelector';
 import {Button} from '@astryxdesign/core/Button';
 import {Text} from '@astryxdesign/core/Text';
 import {TextInput} from '@astryxdesign/core/TextInput';
@@ -761,17 +764,15 @@ export const ControlledToolbarTrigger: Story = {
   name: 'Controlled toolbar trigger',
   render: () => {
     const [density, setDensity] = useState<ViewDensity>('Comfortable');
-    const [isOpen, setIsOpen] = useState(false);
+    const selectorRef = useRef<ComplexSelectorHandle>(null);
 
     return (
       <div {...stylex.props(styles.toolbarDemo)}>
         <Button
-          label={
-            isOpen ? 'Close options externally' : 'Open options externally'
-          }
+          label="Open options externally"
           variant="ghost"
           size="sm"
-          onClick={() => setIsOpen(currentIsOpen => !currentIsOpen)}
+          onClick={() => selectorRef.current?.toggle()}
         />
         <ComplexSelector<ViewDensity>
           label="View options"
@@ -782,14 +783,14 @@ export const ControlledToolbarTrigger: Story = {
           variant="ghost"
           startIcon="viewColumns"
           alignment="end"
-          isOpen={isOpen}
-          onOpenChange={setIsOpen}
+          handleRef={selectorRef}
           contentXstyle={styles.toolbarContent}>
           {(selectedDensity, onChange, close) => (
             <VStack gap={3}>
               <Text type="supporting" color="secondary">
-                The parent owns visibility. Choosing a density commits the value
-                and requests that the surface close.
+                The selector owns visibility. An external control drives it
+                imperatively via handleRef; choosing a density commits the value
+                and closes the surface.
               </Text>
               <HStack gap={2}>
                 {(['Comfortable', 'Compact'] as const).map(option => (
@@ -817,7 +818,7 @@ export const ControlledToolbarTrigger: Story = {
     docs: {
       description: {
         story:
-          'A compact toolbar composition using the ghost trigger, a leading icon, end-aligned content, and parent-controlled visibility. The external button and the selector trigger both update the same open state.',
+          'A compact toolbar composition using the ghost trigger, a leading icon, end-aligned content, and an external control that opens the selector imperatively through its handleRef. The selector still owns its own visibility, focus restoration, and light dismiss.',
       },
     },
   },

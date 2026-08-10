@@ -3,16 +3,17 @@
 /**
  * @file ComplexSelector.test.tsx
  * @input Uses vitest, Testing Library, user-event, and ComplexSelector
- * @output Unit tests for selection, trigger variants, positioning, and controlled visibility
+ * @output Unit tests for selection, trigger variants, positioning, and the imperative handle
  * @position Tests; validates the ComplexSelector public interaction contract
  *
  * SYNC: When ComplexSelector.tsx API changes, update these tests.
  */
 
+import React from 'react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
-import {fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {ComplexSelector} from './ComplexSelector';
+import {ComplexSelector, type ComplexSelectorHandle} from './ComplexSelector';
 
 const originalMatches = HTMLElement.prototype.matches;
 
@@ -276,58 +277,69 @@ describe('ComplexSelector', () => {
     );
   });
 
-  it('requests controlled visibility changes without toggling itself', async () => {
-    const user = userEvent.setup();
-    const onOpenChange = vi.fn();
-    const view = render(
+  it('exposes imperative open, close, toggle, and isOpen via handleRef', async () => {
+    const handleRef = React.createRef<ComplexSelectorHandle>();
+    render(
+      <ComplexSelector label="View options" value={[]} handleRef={handleRef}>
+        {() => <button type="button">Apply</button>}
+      </ComplexSelector>,
+    );
+    const trigger = screen.getByRole('button', {name: 'View options'});
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(handleRef.current?.isOpen()).toBe(false);
+
+    act(() => {
+      handleRef.current?.open();
+    });
+    await waitFor(() => {
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    });
+    expect(handleRef.current?.isOpen()).toBe(true);
+
+    act(() => {
+      handleRef.current?.close();
+    });
+    await waitFor(() => {
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    });
+    expect(handleRef.current?.isOpen()).toBe(false);
+
+    act(() => {
+      handleRef.current?.toggle();
+    });
+    await waitFor(() => {
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    act(() => {
+      handleRef.current?.toggle();
+    });
+    await waitFor(() => {
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    });
+  });
+
+  it('does not open via the imperative handle when disabled', async () => {
+    const handleRef = React.createRef<ComplexSelectorHandle>();
+    render(
       <ComplexSelector
         label="View options"
         value={[]}
-        isOpen={false}
-        onOpenChange={onOpenChange}>
+        isDisabled
+        handleRef={handleRef}>
         {() => <button type="button">Apply</button>}
       </ComplexSelector>,
     );
     const trigger = screen.getByRole('button', {name: 'View options'});
 
-    await user.click(trigger);
-    expect(onOpenChange).toHaveBeenCalledOnce();
-    expect(onOpenChange).toHaveBeenLastCalledWith(true);
+    act(() => {
+      handleRef.current?.open();
+    });
+    act(() => {
+      handleRef.current?.toggle();
+    });
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
-
-    onOpenChange.mockClear();
-    view.rerender(
-      <ComplexSelector
-        label="View options"
-        value={[]}
-        isOpen
-        onOpenChange={onOpenChange}>
-        {() => <button type="button">Apply</button>}
-      </ComplexSelector>,
-    );
-    await waitFor(() => {
-      expect(trigger).toHaveAttribute('aria-expanded', 'true');
-    });
-    expect(onOpenChange).not.toHaveBeenCalled();
-
-    await user.click(trigger);
-    expect(onOpenChange).toHaveBeenCalledOnce();
-    expect(onOpenChange).toHaveBeenLastCalledWith(false);
-
-    onOpenChange.mockClear();
-    view.rerender(
-      <ComplexSelector
-        label="View options"
-        value={[]}
-        isOpen={false}
-        onOpenChange={onOpenChange}>
-        {() => <button type="button">Apply</button>}
-      </ComplexSelector>,
-    );
-    await waitFor(() => {
-      expect(trigger).toHaveAttribute('aria-expanded', 'false');
-    });
-    expect(onOpenChange).not.toHaveBeenCalled();
+    expect(handleRef.current?.isOpen()).toBe(false);
   });
 
   it('does not reopen from the trigger click that follows light dismiss', async () => {

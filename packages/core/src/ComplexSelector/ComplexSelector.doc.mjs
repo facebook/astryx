@@ -137,16 +137,10 @@ export const docs = {
           default: "'start'",
         },
         {
-          name: 'isOpen',
-          type: 'boolean',
+          name: 'handleRef',
+          type: 'React.Ref<ComplexSelectorHandle>',
           description:
-            'Controlled open state. Omit to let ComplexSelector own visibility.',
-        },
-        {
-          name: 'onOpenChange',
-          type: '(isOpen: boolean) => void',
-          description:
-            'Called when the trigger, close helper, Escape, or light dismiss requests a visibility change.',
+            'Imperative handle for programmatic control. Exposes open(), close(), toggle(), and isOpen().',
         },
         {
           name: 'contentXstyle',
@@ -268,8 +262,7 @@ export const docsDense = {
     startIcon: 'Leading trigger icon.',
     placement: 'Popup placement.',
     alignment: 'Popup alignment.',
-    isOpen: 'Optional controlled visibility.',
-    onOpenChange: 'Visibility change request.',
+    handleRef: 'Imperative open/close/toggle handle.',
     accessibility:
       'Custom content must provide its own accessible structure. Use focus hooks and evaluate against WCAG 2.2.',
   },

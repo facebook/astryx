@@ -10,6 +10,7 @@
 
 export {
   ComplexSelector,
+  type ComplexSelectorHandle,
   type ComplexSelectorProps,
   type ComplexSelectorRenderState,
   type ComplexSelectorSize,
