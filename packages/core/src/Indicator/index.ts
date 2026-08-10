@@ -26,7 +26,7 @@ export type {IndicatorRegistrySource} from './indicatorRegistry';
 
 export {useIndicator} from './useIndicator';
 
-export {indicatorScope} from './indicator.markers.stylex';
+export {indicatorFocusRing, indicatorScope} from './indicator.markers.stylex';
 
 export type {
   IndicatorComponent,

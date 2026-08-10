@@ -103,6 +103,10 @@ export function CheckIndicator({
       icon="check"
       size={iconSizeForIndicator[size]}
       color={isDisabled ? 'disabled' : 'accent'}
+      // No focus ring here, unlike the checkbox and radio indicators: a check
+      // marks a chosen row in a listbox or menu, and the ROW takes focus, not
+      // the mark. (A replacement that lands in a focusable control should
+      // spread `indicatorFocusRing`.)
       xstyle={xstyle}
       // Icon merges className/style with its own rather than shadowing them,
       // so the host's theme target composes with `astryx-icon`.

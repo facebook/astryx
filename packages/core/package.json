@@ -297,6 +297,11 @@
       "types": "./dist/IconButton/index.d.ts",
       "default": "./dist/IconButton/index.js"
     },
+    "./Indicator": {
+      "source": "./src/Indicator/index.ts",
+      "types": "./dist/Indicator/index.d.ts",
+      "default": "./dist/Indicator/index.js"
+    },
     "./InputGroup": {
       "source": "./src/InputGroup/index.ts",
       "types": "./dist/InputGroup/index.d.ts",

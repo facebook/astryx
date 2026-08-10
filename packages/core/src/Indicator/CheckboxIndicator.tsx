@@ -17,7 +17,7 @@ import {
   radiusVars,
 } from '../theme/tokens.stylex';
 import {mergeProps, themeProps} from '../utils';
-import {indicatorScope} from './indicator.markers.stylex';
+import {indicatorFocusRing, indicatorScope} from './indicator.markers.stylex';
 import type {IndicatorProps} from './types';
 
 const styles = stylex.create({
@@ -119,24 +119,6 @@ const styles = stylex.create({
   indeterminateMarkVisible: {
     display: 'block',
   },
-  // The focus ring is drawn HERE, on the visible control, rather than on the
-  // owner's wrapper — the indicator is the only thing that knows its own
-  // shape, and a ring is worthless if it traces the wrong outline.
-  //
-  // The native input is a visually hidden sibling, not a descendant, so focus
-  // arrives the same way hover does: through the owner's `indicatorScope`
-  // marker. Any replacement must do this too (see Indicator docs).
-  focusRing: {
-    outline: {
-      default: 'none',
-      [stylex.when.ancestor(':has(:focus-visible)', indicatorScope)]:
-        `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: null,
-      [stylex.when.ancestor(':has(:focus-visible)', indicatorScope)]: '2px',
-    },
-  },
 });
 
 const boxSizeStyles = stylex.create({
@@ -219,7 +201,7 @@ export function CheckboxIndicator({
         }),
         stylex.props(
           styles.box,
-          styles.focusRing,
+          indicatorFocusRing,
           boxSizeStyles[size],
           isCheckedOrIndeterminate ? styles.checked : styles.unchecked,
           isDisabled && styles.disabled,

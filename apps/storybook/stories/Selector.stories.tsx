@@ -857,7 +857,7 @@ const radioSelectionTheme = defineTheme({
 
 export const RadioSelectionIndicator: Story = {
   render: () => {
-    const [value, setValue] = useState<string | null>('Banana');
+    const [value, setValue] = useState<string | undefined>('Banana');
     return (
       <Theme theme={radioSelectionTheme} mode="light">
         <Selector
@@ -878,7 +878,7 @@ export const RadioSelectionIndicator: Story = {
  */
 export const DefaultSelectionIndicator: Story = {
   render: () => {
-    const [value, setValue] = useState<string | null>('Banana');
+    const [value, setValue] = useState<string | undefined>('Banana');
     return (
       <Selector
         label="Single selection drawn as a check (default)"

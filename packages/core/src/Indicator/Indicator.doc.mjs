@@ -195,7 +195,7 @@ defineTheme({name: 'brand', indicators: {check: RadioIndicator}});`,
       {
         guidance: true,
         description:
-          'Draw the focus ring in a replacement, keyed off the owner scope marker: outline on `stylex.when.ancestor(\':has(:focus-visible)\', indicatorScope)`. The native input is a visually hidden SIBLING, so a plain :focus-visible will never match — and only the indicator knows what shape the ring should trace. Omit it and the control has no visible focus (WCAG 2.4.7).',
+          'Spread the exported `indicatorFocusRing` style onto a replacement\'s root. It is the same style every built-in indicator uses and carries no shape of its own — `outline` follows your border-radius — so you never write focus rules by hand. It has to live on the indicator (not the owning control) because only the indicator knows its shape, and it keys off the owner scope marker because the native input is a visually hidden SIBLING that a plain :focus-visible could never see. Omit it and the control has no visible focus (WCAG 2.4.7).',
       },
       {
         guidance: false,
