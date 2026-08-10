@@ -28,9 +28,10 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'astryx-stepper', visualProps: ['orientation']},
+      {className: 'astryx-stepper', visualProps: ['orientation', 'indicatorPosition']},
       {className: 'astryx-step', visualProps: ['progress', 'status']},
       {className: 'astryx-step-bar'},
+      {className: 'astryx-step-connector'},
     ],
   },
   components: [
@@ -125,7 +126,7 @@ export const docs = {
         {
           name: 'status',
           type: "'accent' | 'success' | 'warning' | 'error'",
-          description: 'Semantic color for the step. Controls color only and maps to the global XDS semantic tokens. Leave unset for the progress-derived default coloring.',
+          description: 'Semantic color for the step. Controls color only and maps to the global Astryx semantic tokens. Leave unset for the progress-derived default coloring.',
         },
         {
           name: 'indicator',
@@ -230,9 +231,10 @@ export const docsZh = {
   },
   theming: {
     targets: [
-      {className: 'astryx-stepper', visualProps: ['orientation']},
+      {className: 'astryx-stepper', visualProps: ['orientation', 'indicatorPosition']},
       {className: 'astryx-step', visualProps: ['progress', 'status']},
       {className: 'astryx-step-bar'},
+      {className: 'astryx-step-connector'},
     ],
   },
   components: [

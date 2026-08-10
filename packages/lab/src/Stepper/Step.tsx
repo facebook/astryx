@@ -162,7 +162,7 @@ function CurrentIcon() {
 
 // --- Styles ---
 
-const BAR_WIDTH = '4px';
+const BAR_WIDTH = spacingVars['--spacing-1'];
 const ICON_SIZE = spacingVars['--spacing-4'];
 const NUMBER_SIZE = spacingVars['--spacing-5'];
 
@@ -869,7 +869,9 @@ export function Step({
       {isOptional && (
         <>
           <span {...stylex.props(styles.optionalDot)}>•</span>
-          <span {...stylex.props(styles.optionalText)}>Optional</span>
+          <span {...stylex.props(styles.optionalText)}>
+            {t('@astryx.step.optional')}
+          </span>
         </>
       )}
       {endContent}
@@ -943,7 +945,9 @@ export function Step({
         {isOptional && (
           <>
             <span {...stylex.props(styles.optionalDot)}>•</span>
-            <span {...stylex.props(styles.optionalText)}>Optional</span>
+            <span {...stylex.props(styles.optionalText)}>
+              {t('@astryx.step.optional')}
+            </span>
           </>
         )}
         {endContent}
