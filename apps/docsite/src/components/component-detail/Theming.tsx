@@ -403,6 +403,25 @@ export function Theming({theming, props}: ThemingProps) {
               <Text type="code">componentIcons</Text>. A slot you leave unmapped
               keeps the component&apos;s default icon.
             </Text>
+            <Text color="secondary">
+              A slot changes which glyph is drawn — never what it means. The
+              component keeps the accessible name, so mapping an error status to
+              a different glyph still announces &ldquo;error&rdquo;; pick a
+              glyph that carries the same meaning to a sighted user.
+            </Text>
+            <Text color="secondary">
+              Slots take precedence over the <Text type="code">icons</Text>{' '}
+              registry: if a theme both re-registers an icon and maps a slot to
+              a different name, the slot decides which entry this purpose uses,
+              and the registry decides what that entry looks like everywhere.
+            </Text>
+            <Text color="secondary">
+              Slot names are API. They are versioned like any other public
+              surface, and <Text type="code">astryx theme build</Text> warns
+              when a theme names a slot this version does not expose — an
+              unknown slot is otherwise silent, falling back to the component
+              default.
+            </Text>
             <IconSlotsTable icons={iconSlots} />
           </VStack>
         )}

@@ -135,6 +135,62 @@ describe('themeBuild() — receipt', () => {
     expect(js).toContain("success");
   });
 
+  it('warns on a component icon slot core does not expose', async () => {
+    // Without this warning the mapping is SILENT: resolution falls back to the
+    // component default, so a typo'd or removed slot builds and ships as a
+    // theme that simply does not apply.
+    const themeFile = path.join(tmpDir, 'bad-slot.mjs');
+    fs.writeFileSync(
+      themeFile,
+      `export default {
+        name: 'bad-slot',
+        tokens: { '--color-bg': '#fff' },
+        componentIcons: {
+          'selector-selected-option': 'success',
+          'selector-selected-optionn': 'success',
+        },
+      };
+`,
+    );
+
+    const result = await themeBuild('bad-slot.mjs', {}, {cwd: tmpDir});
+    const warnings = result?.data?.warnings ?? [];
+
+    // The typo is reported, with the real slot suggested...
+    expect(
+      warnings.some(
+        w =>
+          w.includes('selector-selected-optionn') &&
+          w.includes('Did you mean') &&
+          w.includes('selector-selected-option'),
+      ),
+    ).toBe(true);
+
+    // ...and the valid slot beside it is not.
+    expect(
+      warnings.some(w => w.includes('"selector-selected-option"')),
+    ).toBe(false);
+  });
+
+  it('does not warn when every component icon slot is known', async () => {
+    const themeFile = path.join(tmpDir, 'good-slot.mjs');
+    fs.writeFileSync(
+      themeFile,
+      `export default {
+        name: 'good-slot',
+        tokens: { '--color-bg': '#fff' },
+        componentIcons: { 'selector-selected-option': 'success' },
+      };
+`,
+    );
+
+    const result = await themeBuild('good-slot.mjs', {}, {cwd: tmpDir});
+
+    expect(
+      (result?.data?.warnings ?? []).filter(w => w.includes('icon slot')),
+    ).toEqual([]);
+  });
+
 });
 
 describe('themeBuild() — nothing to build', () => {

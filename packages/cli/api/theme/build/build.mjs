@@ -807,19 +807,26 @@ ${iconType}export declare const ${toIdentifier(themeDef.name)}Theme: DefinedThem
 // =============================================================================
 
 /**
- * Load known theme target keys and visual props from core component docs.
- * Returns null when docs are unavailable so validation can skip unknown-key
- * warnings rather than guessing from a second registry.
+ * Load the theme keys core actually exposes, straight from the component docs:
+ * theme target keys (with their visual props) and component icon slots.
  *
- * @returns {Promise<Record<string, string[]> | null>}
+ * Both are read from the same `*.doc.mjs` files the docsite renders, so there
+ * is no second registry to drift — a slot is "known" precisely when a
+ * component documents it. Returns null for a section when docs are
+ * unavailable, so validation skips unknown-key warnings rather than guessing.
+ *
+ * @returns {Promise<{targets: Record<string, string[]>, iconSlots: Record<string, string>} | null>}
  */
-async function loadKnownComponents() {
+async function loadKnownThemeKeys() {
   const coreRoot = resolveCoreRoot();
   const coreSrc = coreRoot ? path.join(coreRoot, 'src') : null;
   if (!coreSrc || !fs.existsSync(coreSrc)) return null;
 
   /** @type {Record<string, string[]>} */
   const targets = {};
+  /** Slot name → the component that documents it, for the warning message. */
+  /** @type {Record<string, string>} */
+  const iconSlots = {};
 
   /** @param {string} dir */
   async function scan(dir) {
@@ -851,24 +858,38 @@ async function loadKnownComponents() {
           : [];
         targets[key] = [...new Set([...(targets[key] || []), ...props])];
       }
+
+      for (const iconSlot of doc?.theming?.icons || []) {
+        const slot = iconSlot?.slot;
+        if (typeof slot !== 'string' || !slot) continue;
+        iconSlots[slot] = typeof doc?.name === 'string' ? doc.name : '';
+      }
     }
   }
 
   await scan(coreSrc);
-  return Object.keys(targets).length > 0 ? targets : null;
+  if (Object.keys(targets).length === 0) return null;
+  return {targets, iconSlots};
 }
 
-/** @type {Record<string, string[]> | null | undefined} */
-let knownComponentsCache;
+/** @type {{targets: Record<string, string[]>, iconSlots: Record<string, string>} | null | undefined} */
+let knownThemeKeysCache;
+
+/**
+ * @returns {Promise<{targets: Record<string, string[]>, iconSlots: Record<string, string>} | null>}
+ */
+async function getKnownThemeKeys() {
+  if (knownThemeKeysCache === undefined) {
+    knownThemeKeysCache = await loadKnownThemeKeys();
+  }
+  return knownThemeKeysCache;
+}
 
 /**
  * @returns {Promise<Record<string, string[]> | null>}
  */
 async function getKnownComponents() {
-  if (knownComponentsCache === undefined) {
-    knownComponentsCache = await loadKnownComponents();
-  }
-  return knownComponentsCache;
+  return (await getKnownThemeKeys())?.targets ?? null;
 }
 
 /**
@@ -934,6 +955,77 @@ async function validateComponentOverrides(themeDef) {
         }
       }
     }
+  }
+
+  return warnings;
+}
+
+/**
+ * Suggest the closest known keys for a misspelled one.
+ *
+ * @param {string} unknown
+ * @param {string[]} known
+ * @returns {string[]}
+ */
+function similarKeys(unknown, known) {
+  return known
+    .filter(k => {
+      if (k.includes(unknown) || unknown.includes(k)) return true;
+      if (Math.abs(k.length - unknown.length) <= 2) {
+        let diff = 0;
+        const longer = k.length >= unknown.length ? k : unknown;
+        const shorter = k.length < unknown.length ? k : unknown;
+        let j = 0;
+        for (let i = 0; i < longer.length && diff <= 2; i++) {
+          if (longer[i] !== shorter[j]) diff++;
+          else j++;
+        }
+        diff += shorter.length - j;
+        return diff <= 2;
+      }
+      return false;
+    })
+    .slice(0, 3);
+}
+
+/**
+ * Validate component icon slot mappings in a theme definition.
+ *
+ * A slot key core does not expose is otherwise SILENT: resolution falls back
+ * to the component default, so the theme builds, ships, and simply does not
+ * apply. That is the failure this warning exists to make visible — typos, and
+ * themes carrying a slot from a core version that has since renamed or removed
+ * it.
+ *
+ * Known slots come from the component docs (see {@link loadKnownThemeKeys}),
+ * the same source the docsite renders, so a slot is "known" exactly when a
+ * component documents it.
+ *
+ * @param {{componentIcons?: Record<string, unknown>}} themeDef
+ * @returns {Promise<string[]>}
+ */
+async function validateComponentIcons(themeDef) {
+  /** @type {string[]} */
+  const warnings = [];
+  if (!themeDef.componentIcons) return warnings;
+
+  const knownSlots = (await getKnownThemeKeys())?.iconSlots;
+  if (knownSlots == null) return warnings;
+
+  const slotNames = Object.keys(knownSlots);
+  // No component documents an icon slot yet — nothing to validate against.
+  if (slotNames.length === 0) return warnings;
+
+  for (const slot of Object.keys(themeDef.componentIcons)) {
+    if (slot in knownSlots) continue;
+    const similar = similarKeys(slot, slotNames);
+    const hint =
+      similar.length > 0
+        ? ` Did you mean: ${similar.join(', ')}?`
+        : ` Known slots: ${slotNames.join(', ')}`;
+    warnings.push(
+      `Unknown component icon slot "${slot}" — this mapping will be ignored.${hint}`,
+    );
   }
 
   return warnings;
@@ -1035,7 +1127,10 @@ export async function themeBuild(
   }
 
   // Validate component overrides
-  const warnings = await validateComponentOverrides(themeDef);
+  const warnings = [
+    ...(await validateComponentOverrides(themeDef)),
+    ...(await validateComponentIcons(themeDef)),
+  ];
   const warningMessages = [];
   for (const w of warnings) {
     warningMessages.push(w);
