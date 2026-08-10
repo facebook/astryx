@@ -1079,7 +1079,7 @@ describe('defineTheme extends', () => {
     expect(theme.componentIcons?.['selector-selected-option']).toBe('check');
   });
 
-  it('merges component icon mappings — child overrides base including null', () => {
+  it('merges component icon mappings — child overrides base', () => {
     const base = defineTheme({
       name: 'base',
       componentIcons: {'selector-selected-option': 'check'},
@@ -1087,10 +1087,10 @@ describe('defineTheme extends', () => {
     const child = defineTheme({
       name: 'child',
       extends: base,
-      componentIcons: {'selector-selected-option': null},
+      componentIcons: {'selector-selected-option': 'success'},
     });
 
-    expect(child.componentIcons?.['selector-selected-option']).toBeNull();
+    expect(child.componentIcons?.['selector-selected-option']).toBe('success');
   });
 
   it('merges icons — child overrides base', () => {

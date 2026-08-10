@@ -282,7 +282,7 @@ export interface DefineThemeInput {
   icons?: Partial<IconRegistry>;
   /**
    * Component icon slot mappings — maps component-specific purposes to global
-   * semantic icon names. Use `null` to intentionally render no icon.
+   * semantic icon names. Slots left unmapped keep the component's default.
    */
   componentIcons?: Partial<ComponentIconMap>;
   /**
@@ -630,7 +630,8 @@ export function defineTheme(input: DefineThemeInput): DefinedTheme {
       : (input.icons ?? base?.icons);
 
   // 6. Merge component icon mappings — input mappings override base mappings.
-  // `null` is an intentional override meaning “render no icon”.
+  // An unmapped slot keeps the component's default; there is no value that
+  // means “render no icon”.
   const componentIcons =
     input.componentIcons && base?.componentIcons
       ? {...base.componentIcons, ...input.componentIcons}

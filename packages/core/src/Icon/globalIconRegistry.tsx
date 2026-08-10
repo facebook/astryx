@@ -83,12 +83,15 @@ export interface ComponentIconSlotMap {
 
 export type ComponentIconSlotName = keyof ComponentIconSlotMap & string;
 /**
- * Every component icon slot mapped to a global icon name (or `null` for no
- * icon). Themes fill in only the slots they care about, so theme fields spell
- * that out as `Partial<ComponentIconMap>` — matching how `icons` is declared
- * as `Partial<IconRegistry>` over the complete `IconRegistry`.
+ * Every component icon slot mapped to the global icon name that fills it.
+ *
+ * Themes fill in only the slots they care about, so theme fields spell that
+ * out as `Partial<ComponentIconMap>` — matching how `icons` is declared as
+ * `Partial<IconRegistry>` over the complete `IconRegistry`. An absent slot
+ * keeps the component's default; there is deliberately no value meaning
+ * "render nothing" (see the note on `getComponentIconName`).
  */
-export type ComponentIconMap = Record<ComponentIconSlotName, IconName | null>;
+export type ComponentIconMap = Record<ComponentIconSlotName, IconName>;
 
 export type IconRegistrySource = DefinedTheme | string | null | undefined;
 
@@ -236,22 +239,22 @@ export function getExtendedIcon(
  * Resolve a component-specific semantic slot to a concrete icon name.
  *
  * The mapping is theme-scoped: `componentIcons[slot]` chooses which global icon
- * name should represent the component purpose. `undefined` falls back to the
- * component default; `null` intentionally renders no icon.
+ * name represents the component purpose; an unmapped slot keeps the
+ * component's default.
+ *
+ * A theme cannot map a slot to "no icon". `null` would read as "default" at
+ * least as often as it reads as "nothing", and whether a slot renders at all
+ * is the component's call, not a theme's. If suppressing a slot turns out to
+ * be a real need, it should arrive as an explicit symbol that can't be
+ * confused with the default.
  */
 export function getComponentIconName(
   slot: ComponentIconSlotName,
-  fallback: IconName | null,
+  fallback: IconName,
   source?: IconRegistrySource,
-): IconName | null {
+): IconName {
   const theme = getTheme(source);
-  const mapped = theme?.componentIcons?.[slot];
-
-  if (mapped === undefined) {
-    return fallback;
-  }
-
-  return mapped;
+  return theme?.componentIcons?.[slot] ?? fallback;
 }
 
 /**
@@ -259,11 +262,10 @@ export function getComponentIconName(
  */
 export function getComponentIcon(
   slot: ComponentIconSlotName,
-  fallback: IconName | null,
+  fallback: IconName,
   source?: IconRegistrySource,
 ): ReactNode {
-  const iconName = getComponentIconName(slot, fallback, source);
-  return iconName == null ? null : getIcon(iconName, source);
+  return getIcon(getComponentIconName(slot, fallback, source), source);
 }
 
 /**

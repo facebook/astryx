@@ -189,9 +189,8 @@ function formatComponentIconSlotsTable(docs) {
   lines.push('|------|--------------|-------------|');
 
   for (const icon of docs.theming.icons) {
-    const fallback = icon.default == null ? 'none' : icon.default;
     lines.push(
-      `| \`${mdCell(icon.slot)}\` | \`${mdCell(fallback)}\` | ${mdCell(icon.description || '')} |`,
+      `| \`${mdCell(icon.slot)}\` | \`${mdCell(icon.default)}\` | ${mdCell(icon.description || '')} |`,
     );
   }
 
@@ -547,7 +546,7 @@ export function formatBrief(docs, componentName, importHint, options = {}) {
   // Component icon slots (if any)
   if (docs.theming?.icons?.length) {
     const slots = docs.theming.icons
-      .map((/** @type {any} */ icon) => `${icon.slot}→${icon.default ?? 'none'}`)
+      .map((/** @type {any} */ icon) => `${icon.slot}→${icon.default}`)
       .join(', ');
     output.push(`  Icon slots: ${slots}`);
   }

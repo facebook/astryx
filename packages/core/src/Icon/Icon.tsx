@@ -251,10 +251,10 @@ export interface IconProps extends Omit<
    *
    * Components use this to render semantic purposes like
    * `selector-selected-option` while letting themes remap that purpose through
-   * `defineTheme({componentIcons})`. Set to `null` when the default for the
-   * component slot is intentionally no icon.
+   * `defineTheme({componentIcons})`. Passing it is what marks `icon` as a slot
+   * rather than a global icon name.
    */
-  fallbackIcon?: IconName | null;
+  fallbackIcon?: IconName;
   /**
    * StyleX styles created via `stylex.create()`. Folded into the icon's own
    * `stylex.props()` call (as the last argument) so it merges with the base
@@ -384,7 +384,7 @@ function IconFromRegistry({
   spanProps,
 }: {
   name: IconName | ComponentIconSlotName;
-  fallbackIcon?: IconName | null;
+  fallbackIcon?: IconName;
   color: IconColor;
   size: IconSize;
   a11yProps: {role: 'img'; 'aria-label': string} | {'aria-hidden': 'true'};

@@ -26,25 +26,24 @@ export function useIcon(name: IconName): ReactNode;
 /**
  * Resolve a component-specific semantic icon slot from the nearest Theme.
  *
- * `fallback` is the component's default global icon name. A theme can remap
- * the slot through `defineTheme({componentIcons})`; mapping the slot to `null`
- * intentionally renders no icon.
+ * `fallback` is the component's default global icon name, used when the theme
+ * does not remap the slot through `defineTheme({componentIcons})`.
  */
 export function useIcon(
   slot: ComponentIconSlotName,
-  fallback: IconName | null,
+  fallback: IconName,
 ): ReactNode;
 
 export function useIcon(
   nameOrSlot: IconName | ComponentIconSlotName,
-  fallback?: IconName | null,
+  fallback?: IconName,
 ): ReactNode {
   const themeName = useThemeName();
 
-  if (arguments.length === 2) {
+  if (fallback !== undefined) {
     return getComponentIcon(
       nameOrSlot as ComponentIconSlotName,
-      fallback ?? null,
+      fallback,
       themeName,
     );
   }

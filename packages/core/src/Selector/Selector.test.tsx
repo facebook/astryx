@@ -244,10 +244,10 @@ describe('Selector', () => {
     expect(selectedOption).toHaveTextContent('selected-slot-icon');
   });
 
-  it('allows a theme to remove the selected-option icon slot', () => {
+  it('keeps the default check when a theme maps no selected-option slot', () => {
     const theme = defineTheme({
-      name: 'selector-selected-option-null-test',
-      componentIcons: {'selector-selected-option': null},
+      name: 'selector-selected-option-unmapped-test',
+      componentIcons: {},
     });
 
     render(
@@ -265,7 +265,7 @@ describe('Selector', () => {
       name: /Banana/,
       hidden: true,
     });
-    expect(selectedOption.querySelector('.astryx-icon')).toBeNull();
+    expect(selectedOption.querySelector('.astryx-icon')).not.toBeNull();
   });
 
   it('renders custom option endContent', async () => {
@@ -1891,7 +1891,9 @@ describe('Selector selected-marker theme target (selector-check)', () => {
       o => o.getAttribute('aria-selected') !== 'true',
     );
     for (const row of unselected) {
-      expect(row.querySelector('.astryx-selector-check')).not.toBeInTheDocument();
+      expect(
+        row.querySelector('.astryx-selector-check'),
+      ).not.toBeInTheDocument();
     }
   });
 

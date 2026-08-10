@@ -327,7 +327,7 @@ export interface ComponentIconSlotDoc {
   /** Component-specific icon slot name used in `componentIcons`. */
   slot: string;
   /** Default global icon name used when the theme does not map this slot. */
-  default: string | null;
+  default: string;
   /** What this slot represents semantically. */
   description: string;
 }

@@ -1057,9 +1057,9 @@ export function Selector<T extends SelectorOptionType>(
           {isSelected && (
             <Icon
               // The component icon slot chooses WHICH glyph marks the
-              // selected row (a theme can remap it, or map it to null);
-              // `selector-check` is the stable target for how that glyph
-              // LOOKS. The two are independent, so keep both.
+              // selected row (a theme can remap it); `selector-check` is the
+              // stable target for how that glyph LOOKS. The two are
+              // independent, so keep both.
               icon="selector-selected-option"
               fallbackIcon="check"
               size="sm"
@@ -1282,50 +1282,50 @@ export function Selector<T extends SelectorOptionType>(
           the two affordances stop sharing a node.
         */}
         {showStatusIcon ? (
-            showStatusTooltip ? (
-              <button
-                ref={statusTooltip.ref}
-                type="button"
-                aria-label={t(STATUS_BUTTON_LABEL_KEY[status.type])}
-                aria-describedby={statusTooltip.describedBy}
-                onClick={e => e.stopPropagation()}
-                {...stylex.props(styles.statusButton)}>
-                <Icon
-                  icon={STATUS_ICON_MAP[status.type]}
-                  size="sm"
-                  color={STATUS_ICON_COLOR_MAP[status.type]}
-                  xstyle={styles.triggerIcon}
-                />
-              </button>
-            ) : (
+          showStatusTooltip ? (
+            <button
+              ref={statusTooltip.ref}
+              type="button"
+              aria-label={t(STATUS_BUTTON_LABEL_KEY[status.type])}
+              aria-describedby={statusTooltip.describedBy}
+              onClick={e => e.stopPropagation()}
+              {...stylex.props(styles.statusButton)}>
               <Icon
                 icon={STATUS_ICON_MAP[status.type]}
                 size="sm"
                 color={STATUS_ICON_COLOR_MAP[status.type]}
                 xstyle={styles.triggerIcon}
               />
-            )
+            </button>
           ) : (
             <Icon
-              icon="chevronDown"
+              icon={STATUS_ICON_MAP[status.type]}
               size="sm"
-              color="secondary"
-              // The rotation rides on the glyph, alongside the box and color
-              // the wrapper used to provide, so one element carries the mark,
-              // its open/closed transform, and the theme target.
-              xstyle={[
-                styles.triggerIcon,
-                styles.triggerIconRotation,
-                popover.isOpen && styles.triggerIconOpen,
-              ]}
-              // Stable theme target on the chevron glyph itself, so a theme can
-              // restyle just this icon (color, size, hover) — and its
-              // open/closed state — via `defineTheme`. Same-element rules in
-              // @layer astryx-theme win over the icon's own base color/size,
-              // which a button-level target could not reach.
-              {...themeProps('selector-indicator-icon', {
-                state: popover.isOpen ? 'expanded' : 'collapsed',
-              })}
+              color={STATUS_ICON_COLOR_MAP[status.type]}
+              xstyle={styles.triggerIcon}
+            />
+          )
+        ) : (
+          <Icon
+            icon="chevronDown"
+            size="sm"
+            color="secondary"
+            // The rotation rides on the glyph, alongside the box and color
+            // the wrapper used to provide, so one element carries the mark,
+            // its open/closed transform, and the theme target.
+            xstyle={[
+              styles.triggerIcon,
+              styles.triggerIconRotation,
+              popover.isOpen && styles.triggerIconOpen,
+            ]}
+            // Stable theme target on the chevron glyph itself, so a theme can
+            // restyle just this icon (color, size, hover) — and its
+            // open/closed state — via `defineTheme`. Same-element rules in
+            // @layer astryx-theme win over the icon's own base color/size,
+            // which a button-level target could not reach.
+            {...themeProps('selector-indicator-icon', {
+              state: popover.isOpen ? 'expanded' : 'collapsed',
+            })}
           />
         )}
       </div>

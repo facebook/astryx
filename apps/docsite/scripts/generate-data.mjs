@@ -745,7 +745,7 @@ export interface ThemingTarget {
 
 export interface ComponentIconSlotDoc {
   slot: string;
-  default: string | null;
+  default: string;
   description: string;
 }
 

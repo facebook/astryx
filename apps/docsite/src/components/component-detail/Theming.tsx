@@ -171,7 +171,7 @@ function TargetsTable({targets, props}: TargetsTableProps) {
 
 interface IconSlotDoc {
   slot: string;
-  default: string | null;
+  default: string;
   description: string;
 }
 
@@ -193,7 +193,7 @@ function IconSlotsTable({icons}: IconSlotsTableProps) {
                 {icon.slot}
               </Text>
               <Text type="code" color="secondary">
-                {icon.default ?? 'none'}
+                {icon.default}
               </Text>
               <MarkdownText type="body" color="secondary">
                 {icon.description}
@@ -207,7 +207,7 @@ function IconSlotsTable({icons}: IconSlotsTableProps) {
 
   const data = icons.map(icon => ({
     slot: icon.slot as unknown,
-    fallback: (icon.default ?? 'none') as unknown,
+    fallback: icon.default as unknown,
     description: icon.description as unknown,
   })) as Record<string, unknown>[];
 
@@ -400,8 +400,8 @@ export function Theming({theming, props}: ThemingProps) {
             <Text color="secondary">
               These semantic slots map component-specific purposes to global
               icon names with <Text type="code">defineTheme</Text>{' '}
-              <Text type="code">componentIcons</Text>. Use{' '}
-              <Text type="code">null</Text> to intentionally render no icon.
+              <Text type="code">componentIcons</Text>. A slot you leave unmapped
+              keeps the component&apos;s default icon.
             </Text>
             <IconSlotsTable icons={iconSlots} />
           </VStack>

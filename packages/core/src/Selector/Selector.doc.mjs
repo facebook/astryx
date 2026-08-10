@@ -36,7 +36,7 @@ export const docs = {
         slot: 'selector-selected-option',
         default: 'check',
         description:
-          'Icon shown at the end of the currently selected option in the listbox. Map to another global icon name, or null to hide it.',
+          'Icon shown at the end of the currently selected option in the listbox. Map it to another global icon name to change the glyph.',
       },
     ],
   },

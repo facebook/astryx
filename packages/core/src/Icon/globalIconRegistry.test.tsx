@@ -134,21 +134,23 @@ describe('iconRegistry (global, RSC-compatible)', () => {
     );
   });
 
-  it('falls back for unmapped component icon slots and honors null mappings', () => {
+  it('falls back to the component default for unmapped slots', () => {
     const theme = defineTheme({
       name: 'brand',
-      componentIcons: {'selector-selected-option': null},
+      componentIcons: {},
     });
 
+    // No theme at all, and a theme that maps other slots but not this one,
+    // both resolve to the fallback the component passed.
     expect(getComponentIconName('selector-selected-option', 'check')).toBe(
       'check',
     );
     expect(
       getComponentIconName('selector-selected-option', 'check', theme),
-    ).toBe(null);
-    expect(
-      getComponentIcon('selector-selected-option', 'check', theme),
-    ).toBeNull();
+    ).toBe('check');
+    expect(getComponentIcon('selector-selected-option', 'check', theme)).toBe(
+      defaultIcons.check,
+    );
   });
 
   it('resetIcons clears the global registry', () => {
