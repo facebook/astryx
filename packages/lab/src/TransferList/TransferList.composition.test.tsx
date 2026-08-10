@@ -9,7 +9,7 @@
  * SYNC: When the ComplexSelector + TransferList staged contract changes, update this test.
  */
 
-import {useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {describe, expect, it, vi} from 'vitest';
 import {
   fireEvent,
@@ -37,6 +37,27 @@ const PRESETS = {
 
 const hidden = {hidden: true} as const;
 
+function ResetDraftOnOpen({
+  isOpen,
+  appliedValue,
+  onReset,
+}: {
+  isOpen: boolean;
+  appliedValue: readonly Column[];
+  onReset: (value: readonly Column[]) => void;
+}) {
+  const wasOpenRef = useRef(false);
+
+  useEffect(() => {
+    if (isOpen && !wasOpenRef.current) {
+      onReset([...appliedValue]);
+    }
+    wasOpenRef.current = isOpen;
+  }, [appliedValue, isOpen, onReset]);
+
+  return null;
+}
+
 function StagedColumnSelector({
   initialValue = ['name', 'status'],
   onCommit,
@@ -47,7 +68,6 @@ function StagedColumnSelector({
   const [appliedValue, setAppliedValue] =
     useState<readonly Column[]>(initialValue);
   const [draftValue, setDraftValue] = useState<readonly Column[]>(initialValue);
-  const [isOpen, setIsOpen] = useState(false);
 
   return (
     <>
@@ -61,16 +81,14 @@ function StagedColumnSelector({
           onCommit(nextValue);
           setAppliedValue(nextValue);
         }}
-        triggerLabel="View options"
-        isOpen={isOpen}
-        onOpenChange={nextIsOpen => {
-          if (nextIsOpen) {
-            setDraftValue(appliedValue);
-          }
-          setIsOpen(nextIsOpen);
-        }}>
-        {(_value, commit, close) => (
+        triggerLabel="View options">
+        {(_value, commit, close, state) => (
           <div>
+            <ResetDraftOnOpen
+              isOpen={state.isOpen}
+              appliedValue={appliedValue}
+              onReset={setDraftValue}
+            />
             <output data-testid="draft-value">
               {JSON.stringify(draftValue)}
             </output>

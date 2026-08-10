@@ -9,7 +9,7 @@
  * SYNC: When selector commit behavior or TransferList interaction changes, update source, docs, and tests.
  */
 
-import {useRef, useState, type SVGProps} from 'react';
+import {useEffect, useRef, useState, type SVGProps} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
 import {TransferList, TransferListSelector} from '@astryxdesign/lab';
@@ -184,8 +184,6 @@ const BASIC_TRANSFER_LIST_PROPS = {
 function DefaultExample() {
   const defaults = ['name', 'owner', 'status'];
   const [value, setValue] = useState<readonly string[]>(defaults);
-  const [isOpen, setIsOpen] = useState(true);
-
   return (
     <TransferListSelector
       {...BASIC_TRANSFER_LIST_PROPS}
@@ -193,8 +191,6 @@ function DefaultExample() {
       value={value}
       onChange={setValue}
       triggerLabel={`${value.length} visible fields`}
-      isOpen={isOpen}
-      onOpenChange={setIsOpen}
     />
   );
 }
@@ -206,8 +202,6 @@ export const Default: Story = {
 function StagedChangesExample() {
   const defaults = ['name', 'owner', 'status'];
   const [value, setValue] = useState<readonly string[]>(defaults);
-  const [isOpen, setIsOpen] = useState(true);
-
   return (
     <TransferListSelector
       {...BASIC_TRANSFER_LIST_PROPS}
@@ -216,8 +210,6 @@ function StagedChangesExample() {
       onChange={setValue}
       commitBehavior="staged"
       triggerLabel={`${value.length} visible fields`}
-      isOpen={isOpen}
-      onOpenChange={setIsOpen}
     />
   );
 }
@@ -343,8 +335,6 @@ function NarrowContainerExample() {
     'owner',
     'status',
   ]);
-  const [isOpen, setIsOpen] = useState(true);
-
   return (
     <TransferListSelector
       label="Mobile field settings"
@@ -355,9 +345,6 @@ function NarrowContainerExample() {
       triggerLabel={`${value.length} visible fields`}
       width="min(360px, calc(100vw - 32px))"
       placement="below"
-      alignment="start"
-      isOpen={isOpen}
-      onOpenChange={setIsOpen}
       contentXstyle={styles.narrowSelectorContent}
       selectedLabel="Visible"
       availableLabel="Available"
@@ -542,6 +529,36 @@ function hasSameOrderedColumns(
   );
 }
 
+function ResetTableDraftOnOpen({
+  isOpen,
+  appliedColumns,
+  savedViews,
+  setDraftColumns,
+  setActiveSavedView,
+}: {
+  isOpen: boolean;
+  appliedColumns: ReadonlyArray<ProjectColumnKey>;
+  savedViews: ReadonlyArray<(typeof SAVED_VIEWS)[number]>;
+  setDraftColumns: (columns: ReadonlyArray<ProjectColumnKey>) => void;
+  setActiveSavedView: (value: string) => void;
+}) {
+  const wasOpenRef = useRef(false);
+
+  useEffect(() => {
+    if (isOpen && !wasOpenRef.current) {
+      setDraftColumns([...appliedColumns]);
+      setActiveSavedView(
+        savedViews.find(view =>
+          hasSameOrderedColumns(view.columns, appliedColumns),
+        )?.value ?? 'custom',
+      );
+    }
+    wasOpenRef.current = isOpen;
+  }, [appliedColumns, isOpen, savedViews, setActiveSavedView, setDraftColumns]);
+
+  return null;
+}
+
 function TableColumnSettingsExample() {
   const [appliedColumns, setAppliedColumns] = useState<
     ReadonlyArray<ProjectColumnKey>
@@ -551,7 +568,6 @@ function TableColumnSettingsExample() {
   >(DEFAULT_PROJECT_COLUMNS);
   const [savedViews, setSavedViews] = useState(SAVED_VIEWS);
   const [activeSavedView, setActiveSavedView] = useState('standard');
-  const [isOpen, setIsOpen] = useState(true);
   const nextSavedViewNumberRef = useRef(1);
 
   const columnSettingsState = useTableColumnSettingsState<ProjectColumnKey>({
@@ -602,14 +618,6 @@ function TableColumnSettingsExample() {
     setActiveSavedView(nextView.value);
   };
 
-  const handleOpenChange = (nextIsOpen: boolean) => {
-    if (nextIsOpen) {
-      setDraftColumns(appliedColumns);
-      setActiveSavedView(findSavedViewValue(appliedColumns));
-    }
-    setIsOpen(nextIsOpen);
-  };
-
   return (
     <VStack gap={3} width="100%">
       <HStack gap={3} hAlign="between" vAlign="center">
@@ -625,16 +633,18 @@ function TableColumnSettingsExample() {
           value={appliedColumns}
           onChange={setAppliedColumns}
           triggerLabel="View Options"
-          startIcon="viewColumns"
-          variant="ghost"
           placement="below"
-          alignment="end"
-          isOpen={isOpen}
-          onOpenChange={handleOpenChange}
           xstyle={styles.viewOptionsTrigger}
           contentXstyle={styles.viewOptionsContent}>
-          {(_currentColumns, commit, close) => (
+          {(_currentColumns, commit, close, state) => (
             <div {...stylex.props(styles.viewOptionsSurface)}>
+              <ResetTableDraftOnOpen
+                isOpen={state.isOpen}
+                appliedColumns={appliedColumns}
+                savedViews={savedViews}
+                setDraftColumns={setDraftColumns}
+                setActiveSavedView={setActiveSavedView}
+              />
               <div {...stylex.props(styles.viewOptionsHeader)}>
                 <Heading level={3}>View Options</Heading>
                 <IconButton

@@ -3,7 +3,7 @@
 /**
  * @file TransferListSelector.test.tsx
  * @input Uses TransferListSelector, React state, Vitest, and Testing Library
- * @output Unit coverage for immediate and staged commits, synchronization, disabled states, defaults, and prop forwarding
+ * @output Unit coverage for immediate and staged commits, uncontrolled dismissal, synchronization, disabled states, defaults, and prop forwarding
  * @position Lab component test; validates the TransferListSelector public contract
  *
  * SYNC: When TransferListSelector.tsx behavior changes, update this test.
@@ -103,31 +103,11 @@ function Harness({
   );
 }
 
-function ProgrammaticOpenHarness() {
-  const [isOpen, setIsOpen] = useState(false);
-  const [value, setValue] = useState<readonly Column[]>(['name', 'status']);
-
-  return (
-    <>
-      <button type="button" onClick={() => setIsOpen(true)}>
-        Open externally
-      </button>
-      <TransferListSelector
-        label="Visible fields"
-        options={OPTIONS}
-        value={value}
-        onChange={setValue}
-        commitBehavior="staged"
-        isOpen={isOpen}
-        onOpenChange={setIsOpen}
-      />
-    </>
-  );
-}
-
-async function openSelector(): Promise<HTMLButtonElement> {
+async function openSelector(
+  name = 'Visible fields',
+): Promise<HTMLButtonElement> {
   const trigger = screen.getByRole('button', {
-    name: 'Visible fields',
+    name,
   }) as HTMLButtonElement;
   fireEvent.keyDown(trigger, {key: 'ArrowDown'});
   await waitFor(() => {
@@ -200,13 +180,9 @@ describe('TransferListSelector', () => {
         value={['name', 'status']}
         onChange={onChange}
         commitBehavior="staged"
-        isOpen
       />,
     );
-    await screen.findByRole('dialog', {
-      name: 'Visible fields',
-      ...hidden,
-    });
+    await openSelector();
 
     await user.click(
       screen.getByRole('button', {name: 'Add Owner', ...hidden}),
@@ -222,7 +198,6 @@ describe('TransferListSelector', () => {
         value={['name', 'status']}
         onChange={onChange}
         commitBehavior="immediate"
-        isOpen
       />,
     );
     expect(
@@ -237,7 +212,6 @@ describe('TransferListSelector', () => {
         value={['name', 'status']}
         onChange={onChange}
         commitBehavior="staged"
-        isOpen
       />,
     );
     await waitFor(() => {
@@ -375,31 +349,6 @@ describe('TransferListSelector', () => {
     expect(onCommit).not.toHaveBeenCalled();
   });
 
-  it('resets a dirty draft when controlled state opens programmatically', async () => {
-    const user = userEvent.setup();
-    render(<ProgrammaticOpenHarness />);
-
-    await user.click(screen.getByRole('button', {name: 'Open externally'}));
-    const trigger = screen.getByRole('button', {name: 'Visible fields'});
-    await waitFor(() => {
-      expect(trigger).toHaveAttribute('aria-expanded', 'true');
-    });
-    await user.click(
-      screen.getByRole('button', {name: 'Remove Name', ...hidden}),
-    );
-    await user.keyboard('{Escape}');
-    await waitFor(() => {
-      expect(trigger).toHaveAttribute('aria-expanded', 'false');
-    });
-
-    await user.click(screen.getByRole('button', {name: 'Open externally'}));
-    await waitFor(() => {
-      expect(
-        screen.getByRole('button', {name: 'Remove Name', ...hidden}),
-      ).toBeInTheDocument();
-    });
-  });
-
   it('syncs differing applied values without clearing a dirty draft for equal arrays', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
@@ -410,14 +359,9 @@ describe('TransferListSelector', () => {
         value={['name', 'status']}
         onChange={onChange}
         commitBehavior="staged"
-        isOpen
       />,
     );
-    await waitFor(() => {
-      expect(
-        screen.getByRole('dialog', {name: 'Visible fields', ...hidden}),
-      ).toBeInTheDocument();
-    });
+    await openSelector();
 
     await user.click(
       screen.getByRole('button', {name: 'Add Owner', ...hidden}),
@@ -433,7 +377,6 @@ describe('TransferListSelector', () => {
         value={[...(['name', 'status'] as const)]}
         onChange={onChange}
         commitBehavior="staged"
-        isOpen
       />,
     );
     expect(
@@ -447,7 +390,6 @@ describe('TransferListSelector', () => {
         value={['owner', 'updated']}
         onChange={onChange}
         commitBehavior="staged"
-        isOpen
       />,
     );
     await waitFor(() => {
@@ -486,14 +428,24 @@ describe('TransferListSelector', () => {
         value={['name']}
         onChange={() => {}}
         commitBehavior="staged"
-        isOpen
-        isDisabled
       />,
     );
-    const dialog = await screen.findByRole('dialog', {
+    await openSelector();
+    const dialog = screen.getByRole('dialog', {
       name: 'Visible fields',
       ...hidden,
     });
+
+    view.rerender(
+      <TransferListSelector
+        label="Visible fields"
+        options={OPTIONS}
+        value={['name']}
+        onChange={() => {}}
+        commitBehavior="staged"
+        isDisabled
+      />,
+    );
     const fieldset = dialog.querySelector('fieldset');
     expect(fieldset).not.toBeNull();
     expect(fieldset).toBeDisabled();
@@ -518,7 +470,6 @@ describe('TransferListSelector', () => {
         value={['name']}
         onChange={() => {}}
         commitBehavior="staged"
-        isOpen
         isLoading
       />,
     );
@@ -536,7 +487,6 @@ describe('TransferListSelector', () => {
   });
 
   it('forwards intentional selector shell and transfer-list content props', async () => {
-    const onOpenChange = vi.fn();
     render(
       <TransferListSelector
         label="Table columns"
@@ -545,12 +495,8 @@ describe('TransferListSelector', () => {
         value={['name']}
         onChange={() => {}}
         triggerLabel="Customize columns"
-        variant="ghost"
         size="sm"
         placement="below"
-        alignment="end"
-        isOpen
-        onOpenChange={onOpenChange}
         data-testid="column-selector"
         selectedLabel="Shown"
         availableLabel="Hidden"
@@ -569,10 +515,6 @@ describe('TransferListSelector', () => {
       screen.getByText('Choose the columns shown in the table.'),
     ).toBeVisible();
     expect(screen.getByTestId('column-selector')).toHaveAttribute(
-      'data-variant',
-      'ghost',
-    );
-    expect(screen.getByTestId('column-selector')).toHaveAttribute(
       'data-size',
       'sm',
     );
@@ -585,6 +527,7 @@ describe('TransferListSelector', () => {
       '--x-width': 'min(41rem, calc(100vw - 32px))',
     });
 
+    await openSelector('Table columns');
     await waitFor(() => {
       expect(
         screen.getByRole('dialog', {name: 'Table columns', ...hidden}),
@@ -613,7 +556,7 @@ describe('TransferListSelector', () => {
       .getByRole('dialog', {name: 'Table columns', ...hidden})
       .closest('[popover]');
     expect(popover?.getAttribute('style')).toContain(
-      'position-area: self-block-end span-self-inline-start',
+      'position-area: self-block-end span-self-inline-end',
     );
   });
 });

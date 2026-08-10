@@ -178,22 +178,10 @@ export const docs = {
       default: "'Cancel'",
     },
     {
-      name: 'variant',
-      type: "'input' | 'ghost'",
-      description:
-        'Trigger treatment. Use input for fields and ghost for toolbar actions.',
-      default: "'input'",
-    },
-    {
       name: 'size',
       type: "'sm' | 'md' | 'lg'",
       description: 'Trigger and field size.',
       default: "'md'",
-    },
-    {
-      name: 'startIcon',
-      type: 'ReactNode | IconType',
-      description: 'Icon displayed at the start of the trigger.',
     },
     {
       name: 'width',
@@ -207,12 +195,6 @@ export const docs = {
       type: "'above' | 'below' | 'start' | 'end'",
       description: 'Popover placement relative to the trigger.',
       default: "'below'",
-    },
-    {
-      name: 'alignment',
-      type: "'start' | 'center' | 'end'",
-      description: 'Popover alignment along the placement axis.',
-      default: "'start'",
     },
     {
       name: 'isOptional',
@@ -249,18 +231,6 @@ export const docs = {
       name: 'labelTooltip',
       type: 'string',
       description: 'Tooltip text displayed next to the field label.',
-    },
-    {
-      name: 'isOpen',
-      type: 'boolean',
-      description:
-        'Controlled popover visibility. Omit to let the selector own visibility.',
-    },
-    {
-      name: 'onOpenChange',
-      type: '(isOpen: boolean) => void',
-      description:
-        'Called when the trigger, actions, Escape, or light dismiss request a visibility change.',
     },
     {
       name: 'changeAction',
@@ -588,7 +558,6 @@ export const docs = {
 };
 const [applied, setApplied] = useState(savedViews.standard);
 const [draft, setDraft] = useState(applied);
-const [isOpen, setIsOpen] = useState(false);
 const activeSavedView =
   Object.entries(savedViews).find(
     ([, columns]) =>
@@ -596,23 +565,32 @@ const activeSavedView =
       columns.every((column, index) => column === draft[index]),
   )?.[0] ?? 'custom';
 
+function ResetDraftOnOpen({isOpen, value, onReset}) {
+  const wasOpenRef = useRef(false);
+
+  useEffect(() => {
+    if (isOpen && !wasOpenRef.current) {
+      onReset([...value]);
+    }
+    wasOpenRef.current = isOpen;
+  }, [isOpen, onReset, value]);
+
+  return null;
+}
+
 <ComplexSelector
   label="View options"
   isLabelHidden
-  variant="ghost"
-  startIcon="viewColumns"
   triggerLabel="View options"
   value={applied}
-  onChange={setApplied}
-  isOpen={isOpen}
-  onOpenChange={nextIsOpen => {
-    if (nextIsOpen) {
-      setDraft(applied);
-    }
-    setIsOpen(nextIsOpen);
-  }}>
-  {(_appliedValue, commit, close) => (
+  onChange={setApplied}>
+  {(_appliedValue, commit, close, state) => (
     <>
+      <ResetDraftOnOpen
+        isOpen={state.isOpen}
+        value={applied}
+        onReset={setDraft}
+      />
       <Selector
         label="Saved view"
         options={savedViewOptions}
@@ -719,13 +697,10 @@ export const docsDense = {
     noResultsText: 'No search matches message.',
     applyLabel: 'Staged Apply label; default Apply.',
     cancelLabel: 'Staged Cancel label; default Cancel.',
-    variant: 'Input or ghost trigger treatment.',
     size: 'Field and trigger size.',
-    startIcon: 'Leading trigger icon.',
     width:
       'External field width; its default matches the responsive 41rem popup.',
     placement: 'Popover placement relative to trigger.',
-    alignment: 'Popover alignment.',
     isOptional: 'Mark field optional.',
     isRequired: 'Mark field required.',
     isDisabled: 'Disable selector trigger and transfer interaction.',
@@ -733,8 +708,6 @@ export const docsDense = {
     status: 'Field validation status.',
     statusVariant: 'Status placement treatment.',
     labelTooltip: 'Field-label tooltip.',
-    isOpen: 'Optional controlled visibility.',
-    onOpenChange: 'Visibility change request.',
     changeAction:
       'Async action after each immediate commit or changed staged Apply.',
     contentXstyle: 'Popover-content StyleX override.',

@@ -4,8 +4,8 @@
 
 /**
  * @file TransferListSelector.tsx
- * @input Controlled option data, ComplexSelector, TransferList, and action controls
- * @output Exports the immediate-or-staged TransferListSelector composition and its public prop type
+ * @input Controlled option data, uncontrolled ComplexSelector state, TransferList, and action controls
+ * @output Exports the immediate-or-staged TransferListSelector composition with draft cleanup after dismissal
  * @position Lab collection input shell; consumed by the TransferList entry point, docs, and tests
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -78,13 +78,8 @@ type TransferListSelectorShellProp =
   | 'statusVariant'
   | 'labelTooltip'
   | 'size'
-  | 'variant'
-  | 'startIcon'
   | 'width'
   | 'placement'
-  | 'alignment'
-  | 'isOpen'
-  | 'onOpenChange'
   | 'contentXstyle'
   | 'xstyle'
   | 'className'
@@ -140,6 +135,25 @@ function areOrderedValuesEqual<T>(
   );
 }
 
+function ResetDraftAfterClose({
+  isOpen,
+  resetDraft,
+}: {
+  isOpen: boolean;
+  resetDraft: () => void;
+}): null {
+  const wasOpenRef = useRef(isOpen);
+
+  useEffect(() => {
+    if (wasOpenRef.current && !isOpen) {
+      resetDraft();
+    }
+    wasOpenRef.current = isOpen;
+  }, [isOpen, resetDraft]);
+
+  return null;
+}
+
 /**
  * A transfer-list field that opens in a selector popover.
  *
@@ -169,8 +183,6 @@ export function TransferListSelector<T extends string = string>({
   isDisabled,
   isLoading,
   width,
-  isOpen,
-  onOpenChange,
   contentXstyle,
   applyLabel = 'Apply',
   cancelLabel = 'Cancel',
@@ -189,23 +201,12 @@ export function TransferListSelector<T extends string = string>({
   ...selectorProps
 }: TransferListSelectorProps<T>): ReactNode {
   const [draftValue, setDraftValue] = useState<readonly T[]>(value);
-  const previousControlledIsOpenRef = useRef(isOpen);
   const previousAppliedValueRef = useRef<readonly T[]>([...value]);
   const previousCommitBehaviorRef = useRef(commitBehavior);
 
   const resetDraft = useCallback(() => {
     setDraftValue([...value]);
   }, [value]);
-
-  const handleOpenChange = useCallback(
-    (nextIsOpen: boolean) => {
-      if (nextIsOpen) {
-        resetDraft();
-      }
-      onOpenChange?.(nextIsOpen);
-    },
-    [onOpenChange, resetDraft],
-  );
 
   useEffect(() => {
     const previousAppliedValue = previousAppliedValueRef.current;
@@ -214,13 +215,6 @@ export function TransferListSelector<T extends string = string>({
       resetDraft();
     }
   }, [resetDraft, value]);
-
-  useEffect(() => {
-    if (isOpen === true && previousControlledIsOpenRef.current !== true) {
-      resetDraft();
-    }
-    previousControlledIsOpenRef.current = isOpen;
-  }, [isOpen, resetDraft]);
 
   useEffect(() => {
     if (previousCommitBehaviorRef.current !== commitBehavior) {
@@ -241,8 +235,6 @@ export function TransferListSelector<T extends string = string>({
       isDisabled={isDisabled}
       isLoading={isLoading}
       width={width ?? DEFAULT_SELECTOR_WIDTH}
-      isOpen={isOpen}
-      onOpenChange={handleOpenChange}
       contentXstyle={[styles.content, contentXstyle]}>
       {(appliedValue, commit, close, state) => {
         const isStaged = commitBehavior === 'staged';
@@ -252,6 +244,12 @@ export function TransferListSelector<T extends string = string>({
           <div
             aria-busy={state.isBusy || undefined}
             {...stylex.props(styles.surface)}>
+            {isStaged && (
+              <ResetDraftAfterClose
+                isOpen={state.isOpen}
+                resetDraft={resetDraft}
+              />
+            )}
             <fieldset
               disabled={isDisabled || state.isBusy}
               {...stylex.props(styles.fieldset)}>
