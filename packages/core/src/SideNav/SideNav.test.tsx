@@ -969,6 +969,41 @@ describe('SideNav resizable', () => {
     expect(handleWidthChange).toHaveBeenCalledWith(expect.any(Number));
   });
 
+  it('restores as collapsed instead of 0px-expanded when a persisted width of 0 is loaded on mount', () => {
+    const key = 'astryx-resizable:sidenav-collapsed-reload-test';
+    localStorage.setItem(key, '0');
+    try {
+      render(
+        <SideNav
+          collapsible={{}}
+          resizable={{
+            defaultWidth: 260,
+            minWidth: 180,
+            maxWidth: 480,
+            autoSaveId: 'sidenav-collapsed-reload-test',
+          }}>
+          Content
+        </SideNav>,
+      );
+      // useResizable seeds its own isCollapsed as true when it restores a
+      // persisted width of 0, but SideNav's own uncontrolled `collapsed`
+      // state is a separate hook call with no way to see that at
+      // useState-init time. Unreconciled, the nav renders expanded (no
+      // inline width override) with resizableHook.size forced to 0 by the
+      // hook's own isCollapsed — a 0px-wide "expanded" nav, not the compact
+      // icon rail. The collapse button's presence and label are the
+      // observable signal of which layout actually rendered.
+      expect(
+        screen.getByRole('button', {name: 'Expand sidebar'}),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', {name: 'Collapse sidebar'}),
+      ).not.toBeInTheDocument();
+    } finally {
+      localStorage.removeItem(key);
+    }
+  });
+
   it('respects defaultWidth', () => {
     render(<SideNav resizable={{defaultWidth: 300}}>Content</SideNav>);
     const nav = screen.getByRole('navigation');

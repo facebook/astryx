@@ -24,6 +24,7 @@
 import {
   useCallback,
   useImperativeHandle,
+  useLayoutEffect,
   useRef,
   useState,
   type ReactNode,
@@ -359,7 +360,14 @@ export function SideNav({
     [isControlled, onCollapsedChange],
   );
 
-  // Resize hook — callbacks keep SideNav in sync without effects.
+  // Resize hook — ongoing collapse changes (drag past the threshold, or
+  // toggle() below) flow through onCollapseChange, keeping SideNav in sync
+  // without effects. The one exception is the *initial* mount: when
+  // autoSaveId restores a persisted width of 0, useResizable seeds its own
+  // isCollapsed as true, but SideNav's own uncontrolled `collapsed` state
+  // has no way to know that at useState-init time (it's a separate hook
+  // call). Left unreconciled, the nav renders in expanded layout mode with
+  // a 0px width instead of the compact icon rail — see the effect below.
   const resizableHook = useResizable({
     defaultSize: resizableConfig.defaultWidth ?? 260,
     minSizePx: resizableConfig.minWidth ?? 180,
@@ -370,6 +378,23 @@ export function SideNav({
     onSizeChange: resizableConfig.onWidthChange,
     onCollapseChange: isCollapsible ? setCollapsedState : undefined,
   });
+
+  // One-time reconciliation for the persisted-collapsed case above. Runs
+  // before paint so there's no visible flash of the broken expanded/0px
+  // state. Only applies to the uncontrolled case — a controlled
+  // `collapsible.isCollapsed` is the consumer's own source of truth.
+  useLayoutEffect(() => {
+    if (
+      isResizable &&
+      !isControlled &&
+      resizableHook.isCollapsed &&
+      !uncontrolledCollapsed
+    ) {
+      // eslint-disable-next-line @eslint-react/set-state-in-effect -- reconciles the two hooks' independently-initialized collapsed state; see comment above
+      setUncontrolledCollapsed(true);
+    }
+    // eslint-disable-next-line @eslint-react/exhaustive-deps -- mount-only: reconciles the hooks' initial state, not an ongoing sync (toggle()/onCollapseChange already handle that)
+  }, []);
 
   const toggle = useCallback(() => {
     const next = !collapsed;
