@@ -171,6 +171,28 @@ describe('BaseTypeahead', () => {
     });
   });
 
+  it('exposes the empty state as a themeable target', async () => {
+    const {container} = render(
+      <BaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        debounceMs={0}
+        emptySearchResultsText="No results found"
+      />,
+    );
+    const input = screen.getByRole('combobox');
+    fireEvent.change(input, {target: {value: 'zzzzz'}});
+
+    await waitFor(() => {
+      const emptyState = container.querySelector(
+        '.astryx-typeahead-empty-state',
+      );
+      expect(emptyState).not.toBeNull();
+      expect(emptyState).toHaveTextContent('No results found');
+    });
+  });
+
   describe('empty results active descendant (#4059)', () => {
     it('does not set aria-activedescendant when search has 0 results', async () => {
       render(

@@ -809,7 +809,11 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
             stylex.props(styles.dropdown),
           )}>
           {results.length === 0 && hasSearched ? (
-            <div {...stylex.props(styles.emptyState)}>
+            <div
+              {...mergeProps(
+                themeProps('typeahead-empty-state'),
+                stylex.props(styles.emptyState),
+              )}>
               {emptySearchResultsText}
             </div>
           ) : (
