@@ -143,14 +143,11 @@ const styles = stylex.create({
       ':active': 'none',
     },
   },
+  // Only what Icon does not already provide: `sm` gives the 16px box and
+  // `color="secondary"` the color, but the glyph still must not shrink inside
+  // the flex trigger.
   triggerIcon: {
     flexShrink: 0,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 16,
-    height: 16,
-    color: colorVars['--color-icon-secondary'],
   },
   // Rotation lives on the chevron glyph itself (passed through `xstyle`), not
   // on the layout wrapper above, so the icon's
@@ -510,23 +507,19 @@ export function ComplexSelector<Value>({
           <span {...stylex.props(styles.triggerText)}>{triggerContent}</span>
         </button>
         {isBusy && <Spinner size="sm" />}
-        <span {...stylex.props(styles.triggerIcon)}>
-          <Icon
-            icon="chevronDown"
-            size="sm"
-            color="inherit"
-            // The rotation rides on the glyph rather than the wrapper span so
-            // the theme target below reaches both the mark and its open/closed
-            // transform.
-            xstyle={[
-              styles.triggerIconRotation,
-              popover.isOpen && styles.triggerIconOpen,
-            ]}
-            {...themeProps('complex-selector-indicator-icon', {
-              state: isOpen ? 'expanded' : 'collapsed',
-            })}
-          />
-        </span>
+        <Icon
+          icon="chevronDown"
+          size="sm"
+          color="secondary"
+          xstyle={[
+            styles.triggerIcon,
+            styles.triggerIconRotation,
+            popover.isOpen && styles.triggerIconOpen,
+          ]}
+          {...themeProps('complex-selector-indicator-icon', {
+            state: popover.isOpen ? 'expanded' : 'collapsed',
+          })}
+        />
       </div>
 
       {popover.render(content, {

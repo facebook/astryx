@@ -1628,9 +1628,12 @@ describe('Selector indicator (chevron) icon theme target', () => {
     });
   });
 
-  it('renders the default icon (inherit color, sm size) byte-identically', () => {
+  it('renders the default icon (secondary color, sm size) byte-identically', () => {
     // Pixel-identical default guard: the chevron glyph must carry the exact
-    // same StyleX color/size classes as a standalone inherit/sm icon. The added
+    // same StyleX color/size classes as a standalone secondary/sm icon. The
+    // glyph now sets --color-icon-secondary itself rather than inheriting it
+    // from a wrapper span that set the same token, so the rendered color is
+    // unchanged. The added
     // target class + data-state are purely additive — they change nothing until
     // a theme targets them.
     const {container} = render(
@@ -1639,7 +1642,7 @@ describe('Selector indicator (chevron) icon theme target', () => {
     const icon = getIndicatorIcon(container);
 
     const {container: refContainer} = render(
-      <Icon icon="chevronDown" size="sm" color="inherit" />,
+      <Icon icon="chevronDown" size="sm" color="secondary" />,
     );
     const refIcon = refContainer.querySelector('.astryx-icon') as HTMLElement;
 
@@ -1839,7 +1842,9 @@ describe('Selector selected-marker theme target (selector-check)', () => {
       o => o.getAttribute('aria-selected') !== 'true',
     );
     for (const row of unselected) {
-      expect(row.querySelector('.astryx-selector-check')).not.toBeInTheDocument();
+      expect(
+        row.querySelector('.astryx-selector-check'),
+      ).not.toBeInTheDocument();
     }
   });
 

@@ -70,6 +70,17 @@ const styles = stylex.create({
   },
   rowWrapper: {
     position: 'relative',
+    // Inter-row gap. Half the public `--tree-list-row-gap` lever sits above and
+    // half below the row box; because this is PADDING (not margin) it cannot
+    // collapse, so adjacent rows end up a full gap apart — and it rides the
+    // `rowWrapper`, which carries no theme target, so the paintable
+    // `tree-list-item` stays a pure paint seam (layout lives off it). The <li>s
+    // stay contiguous — the gap is padding INSIDE each <li>, not space between
+    // them — so the per-<li> connector guide can still span it and read as a
+    // continuous line (see TreeListBranches). The lever's default is a subtle
+    // `--spacing-0-5` (2px, set on the tree-list root); a theme widens or closes
+    // it via the `tree-list` target.
+    paddingBlock: 'calc(var(--tree-list-row-gap, 0px) / 2)',
   },
   contentWrapper: {
     borderRadius: radiusVars['--radius-element'],
@@ -292,6 +303,16 @@ export interface TreeListItemInternalProps {
   isDisabled?: boolean;
   isSelected?: boolean;
   hasChildren: boolean;
+  /**
+   * Whether the tree contains at least one expandable item anywhere (i.e. a
+   * caret exists somewhere to align labels under). A leaf reserves the chevron
+   * column — the extra offset that lines its label up past an expandable
+   * ancestor/sibling's caret — whenever this is true, so it stays indented
+   * beyond its parent's label. Only a fully flat tree (no expandable items at
+   * all) has no caret to align under, so its rows sit flush (no chevron-column
+   * offset). Computed once for the whole tree by TreeList.
+   */
+  hasExpandableItems: boolean;
   nestedLevel: number;
   isLast: boolean;
   ancestorsIsLast: ReadonlyArray<boolean>;
@@ -334,6 +355,7 @@ export function TreeListItem({
   isDisabled = false,
   isSelected = false,
   hasChildren,
+  hasExpandableItems,
   nestedLevel,
   isLast,
   ancestorsIsLast,
@@ -385,15 +407,19 @@ export function TreeListItem({
 
   // Per-level indent distance. The per-level step is the public, themeable
   // `--tree-list-indent` lever (default `--spacing-4`, set on the tree-list
-  // root). Leaves add a fixed chevron-column offset (chevron width + gap) so
-  // their labels line up with sibling parents' labels; that offset is tied to
+  // root). A leaf adds a fixed chevron-column offset (chevron width + gap) so
+  // its label lines up past an expandable ancestor/sibling's caret — but ONLY
+  // when the tree actually contains an expandable item somewhere. In a fully
+  // flat tree there is no caret to align under, so the offset is pointless and
+  // every row sits flush, like a parent at that level. That offset is tied to
   // the chevron's own dimensions, not the indent step, so it does not scale
   // with the lever. Published as the private `--_tree-indent` and consumed by
   // `contentWrapper`'s stylesheet `margin-inline-start` (kept out of the inline
   // style so the theme layer can override it — see #4308).
-  const indentDistance = hasChildren
-    ? `calc(${nestedLevel} * var(--tree-list-indent))`
-    : `calc(${nestedLevel} * var(--tree-list-indent) + ${spacingVars['--spacing-4']} + ${spacingVars['--spacing-2']})`;
+  const reservesChevronColumn = !hasChildren && hasExpandableItems;
+  const indentDistance = reservesChevronColumn
+    ? `calc(${nestedLevel} * var(--tree-list-indent) + ${spacingVars['--spacing-4']} + ${spacingVars['--spacing-2']})`
+    : `calc(${nestedLevel} * var(--tree-list-indent))`;
   const indentStyle: IndentStyle = {'--_tree-indent': indentDistance};
 
   const labelAndDescription = (
