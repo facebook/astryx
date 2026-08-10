@@ -429,10 +429,16 @@ and the Design review section above), or to add `hidden: true` until it does.
 ## Mechanical checklist
 
 - **Full component surface.** A component under `packages/*/src/<Name>/` should
-  ship `<Name>.tsx`, a colocated `<Name>.test.tsx`, `<Name>.doc.mjs`, a
-  Storybook story, and an `index.ts` export. Flag missing pieces.
-- **`forwardRef` + `displayName`**, `export interface <Name>Props`, and exported
-  types alongside the component.
+  ship `<Name>.tsx`, a colocated `<Name>.test.tsx`, `<Name>.doc.mjs`, and an
+  `index.ts` export, plus a Storybook story at
+  `apps/storybook/stories/<Name>.stories.tsx` (stories are not colocated —
+  `apps/storybook/.storybook/main.ts` only discovers
+  `../stories/**/*.stories.@(js|jsx|mjs|ts|tsx)`). Flag missing pieces.
+- **`ref` declared as a prop + `displayName`**, `export interface <Name>Props`,
+  and exported types alongside the component. React 19 ref-as-prop is the
+  convention: `forwardRef` is rejected by `@eslint-react/no-forward-ref`, and
+  `@astryx/require-ref-prop` requires `ref?: React.Ref<T>` on a publicly
+  exported props interface.
 - **Never hand-edit the `"exports"` field in a package `package.json`.** It is
   auto-generated from `src/` by `scripts/sync-exports.js` and committed on
   `main`. Editing it by hand is a review-reject.

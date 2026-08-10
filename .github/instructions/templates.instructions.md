@@ -11,7 +11,7 @@ These are Astryx **templates** — page templates (`templates/pages/<name>/page.
   responsibility beyond any single component.
 
 > **Scope note.** These files also match `packages.instructions.md`. For
-> template files, the component-authoring checklist there (forwardRef,
+> template files, the component-authoring checklist there (the `ref` prop,
 > sync-exports, colocated `.test.tsx`, etc.) does **not** apply — templates are
 > examples, not published components. Review them by the rubric below (and the
 > shared design and StyleX rules).

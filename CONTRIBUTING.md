@@ -123,7 +123,7 @@ pnpm dev
 
 Storybook will open at http://localhost:6006 with:
 
-- **Theme switcher** - Toggle between Default and Shadcn themes
+- **Theme switcher** - Toggle between the base tokens and the Neutral, Stone, and Y2K themes
 - **Mode switcher** - Toggle between Light and Dark modes
 - **Component stories** - Interactive component examples
 
@@ -165,13 +165,14 @@ playground scope) before booting Next.
 astryx/
 ├── apps/
 │   ├── storybook/      # Component playground (localhost:6006)
+│   ├── docsite/        # Doc site (localhost:3000)
 │   └── sandbox/        # Development testing
 │
 ├── packages/
 │   ├── core/           # Core components (Button, Input, etc.)
 │   ├── cli/            # CLI tooling (astryx)
 │   ├── lab/            # Experimental components (not yet stable)
-│   └── themes/         # Theme presets (default, neutral, daily, and more)
+│   └── themes/         # Theme presets (neutral, stone, y2k, and more)
 │
 └── internal/           # Internal tooling (not published)
     └── test-utils/     # Shared test helpers
@@ -184,7 +185,7 @@ astryx/
 | Command           | Description                       |
 | ----------------- | --------------------------------- |
 | `pnpm install`    | Install all dependencies          |
-| `pnpm dev`        | Start all dev servers             |
+| `pnpm dev`        | Start Storybook (alias for `pnpm storybook`) |
 | `pnpm build`      | Build all packages                |
 | `pnpm test`       | Run all tests                     |
 | `pnpm test:watch` | Run tests in watch mode           |
@@ -207,17 +208,25 @@ mkdir -p packages/core/src/MyComponent
 packages/core/src/MyComponent/
 ├── MyComponent.tsx        # Component implementation
 ├── MyComponent.test.tsx   # Unit tests (colocated)
-├── MyComponent.stories.tsx # Storybook stories
+├── MyComponent.doc.mjs    # Component doc (props, features, examples)
 └── index.ts               # Public exports
+```
+
+Stories are **not** colocated — they live in the Storybook app:
+
+```
+apps/storybook/stories/MyComponent.stories.tsx
 ```
 
 ### 3. Component Template
 
 ````tsx
 // MyComponent.tsx
-import {forwardRef, type HTMLAttributes, type ReactNode} from 'react';
+import type {HTMLAttributes, ReactNode, Ref} from 'react';
 
 export interface MyComponentProps extends HTMLAttributes<HTMLDivElement> {
+  /** Ref forwarded to the root element */
+  ref?: Ref<HTMLDivElement>;
   /** Description for AI-assisted development */
   children: ReactNode;
 }
@@ -230,15 +239,13 @@ export interface MyComponentProps extends HTMLAttributes<HTMLDivElement> {
  * <MyComponent>Hello</MyComponent>
  * ```
  */
-export const MyComponent = forwardRef<HTMLDivElement, MyComponentProps>(
-  ({children, ...props}, ref) => {
-    return (
-      <div ref={ref} {...props}>
-        {children}
-      </div>
-    );
-  },
-);
+export function MyComponent({children, ref, ...props}: MyComponentProps) {
+  return (
+    <div ref={ref} {...props}>
+      {children}
+    </div>
+  );
+}
 
 MyComponent.displayName = 'MyComponent';
 ````
@@ -261,13 +268,19 @@ describe('MyComponent', () => {
 
 ### 5. Story Template
 
+Stories live in the Storybook app, not next to the component —
+`apps/storybook/.storybook/main.ts` discovers them with
+`'../stories/**/*.stories.@(js|jsx|mjs|ts|tsx)'`, so a story anywhere under
+`packages/` is never picked up. Import the component through its published
+entry point, and title it under `Core/` (or `Lab/` for `@astryxdesign/lab`).
+
 ```tsx
-// MyComponent.stories.tsx
+// apps/storybook/stories/MyComponent.stories.tsx
 import type {Meta, StoryObj} from '@storybook/react';
-import {MyComponent} from './MyComponent';
+import {MyComponent} from '@astryxdesign/core/MyComponent';
 
 const meta = {
-  title: 'Components/MyComponent',
+  title: 'Core/MyComponent',
   component: MyComponent,
   tags: ['autodocs'],
 } satisfies Meta<typeof MyComponent>;
@@ -353,7 +366,7 @@ Most of the conventions above are mechanical, so they're checked rather than rev
 | each `api/<name>/` ships its typedefs, a `FunctionDoc`, and a test                                                                                | `pnpm check:cli-structure`       |
 | every `CommandDoc`/`EnumDoc` matches the live CLI                                                                                                 | the drift harness                |
 
-You never hand-write the `.d.mts` declarations. `scripts/sync-api-types.mjs` emits them for both `api/` and `authoring/` from the `.mjs` JSDoc — gitignored, regenerated at `prepack`, and stamped `@generated`. Edit the JSDoc and run `pnpm -F @astryxdesign/cli sync:api-types`.
+You never hand-write the `.d.mts` declarations. `packages/cli/scripts/sync-api-types.mjs` emits them for both `api/` and `authoring/` from the `.mjs` JSDoc — gitignored, regenerated at `prepack`, and stamped `@generated`. Edit the JSDoc and run `pnpm -F @astryxdesign/cli sync:api-types`.
 
 That matters because a hand-written declaration _shadows_ the JSDoc in its `.mjs`, and both ways it can lie shipped once: a missing declaration made a strict consumer resolve the parser as `any` (surfacing only at pack time as TS7016, since local typechecks run with `checkJs` and never exercise the packed surface), and a stale `parseDoc` union silently dropped three doc kinds from the published type while still compiling. Generation removes both. The one declaration still written by hand is `authoring/index.d.ts`, the curated public barrel.
 
@@ -403,8 +416,9 @@ pnpm -F @astryxdesign/core test
 # With coverage
 pnpm test:coverage
 
-# Screenshot tests
-pnpm test:screenshots
+# Accessibility and RTL audits over the built Storybook (see below)
+pnpm a11y:audit
+pnpm rtl:audit
 ```
 
 ### Test Structure
@@ -550,7 +564,10 @@ yet" — open the PR as a draft and mark it ready for review when it's done.
 ## Code Style
 
 - TypeScript strict mode
-- Functional components with `forwardRef`
+- Functional components that declare `ref` as a prop (React 19 — no
+  `forwardRef`; `@eslint-react/no-forward-ref` rejects it, and
+  `@astryx/require-ref-prop` requires `ref?: React.Ref<T>` on a publicly
+  exported props interface)
 - JSDoc comments for AI-assisted development
 - Export types alongside components
 

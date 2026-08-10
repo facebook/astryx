@@ -42,8 +42,11 @@ until they merge to `main`.
   ones.
 - **Semantic tokens only.** No hardcoded color, spacing, radius, or shadow
   values; components stay theme-agnostic.
-- **TypeScript strict**, functional components with `forwardRef`, exported prop
-  types alongside the component, and a set `displayName`.
+- **TypeScript strict**, functional components that declare `ref` as a prop
+  (React 19 — `forwardRef` is rejected by `@eslint-react/no-forward-ref`, and
+  `@astryx/require-ref-prop` requires `ref?: React.Ref<T>` on a publicly
+  exported props interface), exported prop types alongside the component, and a
+  set `displayName`.
 - **Changesets.** Consumer-visible changes need a changeset (`pnpm
 changeset:new`) with a `[category]` first line and a `@handle` contributor
   line. Pre-1.0 bumps are `patch`, except `[breaking]`, which is `minor`.
@@ -124,7 +127,9 @@ fix is an open question — state the block, then ask about the approach.
   match the required format (`@astryx/i18n-key-format`).
 - **Public API-convention violations** (see [API Conventions](https://github.com/facebook/astryx/wiki/API-Conventions)) —
   booleans not `is`/`has`-prefixed, wrong callback shape (`onValueChange` for the
-  primary change instead of `onChange`; missing `onChangeAction` async pattern),
+  primary change instead of `onChange`; missing the `changeAction` async twin —
+  the shipped convention is `<verb>Action` (`changeAction`, `clickAction`),
+  not `on<Verb>Action`),
   inventing a name when a sibling convention exists (match `showOn`, `endContent`,
   etc.), dropping `...rest` / passthrough, or `xstyle`/`className`/`style`
   overwritten instead of merged via `mergeProps`. Public API shape is hard to
