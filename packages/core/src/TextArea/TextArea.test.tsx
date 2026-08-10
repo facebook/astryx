@@ -517,7 +517,7 @@ describe('TextArea', () => {
       expect(screen.getByText('2/5')).toBeInTheDocument();
     });
 
-    it('measures the over-limit state in graphemes (#4759)', () => {
+    it('measures the over-limit state in characters (#4759)', () => {
       // Three ZWJ family emoji: 33 code units, 3 user-perceived characters.
       const family = '\u{1F468}‍\u{1F469}‍\u{1F467}‍\u{1F466}';
       render(
@@ -597,7 +597,7 @@ describe('TextArea', () => {
       });
     });
 
-    it('announces zone transitions using grapheme counts (#4759)', async () => {
+    it('announces zone transitions using character counts (#4759)', async () => {
       function Wrapper() {
         const [val, setVal] = useState('x'.repeat(7));
         return (
@@ -610,7 +610,7 @@ describe('TextArea', () => {
         );
       }
       render(<Wrapper />);
-      // Appending two emoji makes 9 graphemes (11 code units): near the limit
+      // Appending two emoji makes 9 characters (11 code units): near the limit
       // with 1 remaining. Code-unit counting would call this over the limit
       // and announce assertively instead.
       fireEvent.change(screen.getByRole('textbox'), {
@@ -626,7 +626,7 @@ describe('TextArea', () => {
       expect(assertiveRegion()).not.toHaveTextContent('over the limit');
     });
 
-    it('does not flag over-limit while graphemes fit, even when code units exceed (#4759)', () => {
+    it('does not flag over-limit while characters fit, even when code units exceed (#4759)', () => {
       // Three emoji: 6 code units but 3 user-perceived characters — within a
       // maxLength of 4, so no error state anywhere.
       render(

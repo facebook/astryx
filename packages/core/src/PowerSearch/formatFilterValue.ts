@@ -13,10 +13,10 @@
 import type {OperatorValue, FilterValue, EnumItem} from './types';
 import type {InternalConfig} from './useInternalConfig';
 import type {TranslatorFn} from '../i18n';
-import {truncateGraphemes} from '../utils/grapheme';
+import {truncateCharacters} from '../utils/characters';
 
 function truncate(str: string, maxLength: number): string {
-  return truncateGraphemes(str, maxLength);
+  return truncateCharacters(str, maxLength);
 }
 
 function formatEnumLabel(

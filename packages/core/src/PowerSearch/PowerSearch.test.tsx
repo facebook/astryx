@@ -159,7 +159,7 @@ describe('PowerSearch', () => {
   });
 
   describe('token value truncation (#4759)', () => {
-    it('truncates token values by graphemes, not code units', () => {
+    it('truncates token values by characters, not code units', () => {
       const truncConfig: PowerSearchConfig = {
         name: 'trunc',
         fields: [
@@ -172,7 +172,7 @@ describe('PowerSearch', () => {
       };
       // 14 emoji = 28 code units but 14 user-perceived characters.
       // adjustedMaxLength = max(15 - 'Status'.length - 'is'.length, 10) = 10,
-      // so the value truncates only past 13 graphemes, cutting at 10.
+      // so the value truncates only past 13 characters, cutting at 10.
       render(
         <PowerSearch
           config={truncConfig}

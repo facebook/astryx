@@ -54,7 +54,7 @@ import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
 import {useAnnounce} from '../hooks/useAnnounce';
 import {useSize} from '../SizeContext/SizeContext';
 import {themeProps} from '../utils/themeProps';
-import {graphemeLength} from '../utils/grapheme';
+import {characterCount} from '../utils/characters';
 import {useTranslator} from '../i18n';
 
 const COUNTER_WARNING_THRESHOLD = 0.8;
@@ -299,11 +299,11 @@ export interface TextAreaProps extends Omit<
   onPaste?: (e: ClipboardEvent<HTMLTextAreaElement>) => void;
   /**
    * Maximum number of characters allowed, counted as user-perceived
-   * characters (grapheme clusters) — an emoji or flag sequence counts as one.
-   * When set, displays a character counter below the textarea.
+   * characters — an emoji or flag sequence counts as one. When set,
+   * displays a character counter below the textarea.
    * Does not enforce the limit natively — the counter shows error styling
    * when exceeded, and the consumer can validate via onChange. Validate with
-   * `graphemeLength` (exported from this package) rather than `value.length`
+   * `characterCount` (exported from this package) rather than `value.length`
    * so enforcement matches the displayed count.
    */
   maxLength?: number;
@@ -473,7 +473,7 @@ export function TextArea({
     // Guarded here, not just inside announceCounter, so textareas without a
     // maxLength never pay for segmenting the whole value on each keystroke.
     if (maxLength != null) {
-      announceCounter(graphemeLength(newValue));
+      announceCounter(characterCount(newValue));
     }
     onChange?.(newValue, e);
     if (changeAction && !e.defaultPrevented) {
@@ -484,12 +484,12 @@ export function TextArea({
     }
   };
 
-  // Counter semantics count user-perceived characters (grapheme clusters),
-  // so an emoji or flag sequence counts as one character, not its code units.
+  // Counter semantics count user-perceived characters, so an emoji or flag
+  // sequence counts as one character, not its code units.
   // Only measured when a counter exists — segmentation is O(value length),
   // and memoized so re-renders that keep the same value skip it entirely.
   const valueLength = useMemo(
-    () => (maxLength != null ? graphemeLength(optimisticValue) : 0),
+    () => (maxLength != null ? characterCount(optimisticValue) : 0),
     [maxLength, optimisticValue],
   );
 

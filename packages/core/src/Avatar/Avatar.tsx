@@ -31,7 +31,7 @@ import {AvatarSizeContext} from './AvatarSizeContext';
 import {useAvatarGroup} from '../AvatarGroup/AvatarGroupContext';
 import {mergeProps, mergeRefs} from '../utils';
 import {themeProps} from '../utils/themeProps';
-import {firstGrapheme} from '../utils/grapheme';
+import {firstCharacter} from '../utils/characters';
 import {useTooltip} from '../Tooltip/useTooltip';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
@@ -353,10 +353,10 @@ function getInitials(name: string): string {
     return '';
   }
   if (words.length === 1) {
-    return firstGrapheme(words[0]).toUpperCase();
+    return firstCharacter(words[0]).toUpperCase();
   }
   return (
-    firstGrapheme(words[0]) + firstGrapheme(words[words.length - 1])
+    firstCharacter(words[0]) + firstCharacter(words[words.length - 1])
   ).toUpperCase();
 }
 
