@@ -30,7 +30,6 @@ import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
   spacingVars,
-  radiusVars,
   typographyVars,
   typeScaleVars,
   fontWeightVars,
