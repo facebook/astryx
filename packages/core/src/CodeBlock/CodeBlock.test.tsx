@@ -64,6 +64,30 @@ describe('CodeBlock', () => {
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith('const x = 1;');
   });
 
+  it('renders the copy button as a themeable target with a "Copy code" tooltip', () => {
+    render(<CodeBlock code="const x = 1;" language="javascript" />);
+    const copyButton = screen.getByRole('button', {name: 'Copy code'});
+    // Theme seam: a design system can restyle the copy control via this class
+    // without turning the button off and re-implementing it.
+    expect(copyButton).toHaveClass('astryx-codeblock-copy-button');
+    // The button carries a visible "Copy code" hover/focus hint (tooltip),
+    // wired through aria-describedby — a bare <button> could not.
+    expect(copyButton).toHaveAttribute('aria-describedby');
+  });
+
+  it('keeps the copy button tooltip as "Copy code" after copying', async () => {
+    render(<CodeBlock code="const x = 1;" language="javascript" />);
+    fireEvent.click(screen.getByRole('button', {name: 'Copy code'}));
+    await act(async () => {});
+    // The icon flip (copy → check) is the confirmation; the tooltip text does
+    // not change. The accessible name still swaps to "Copied" for AT.
+    const copyButton = screen.getByRole('button', {name: 'Copied'});
+    const tooltipId = copyButton.getAttribute('aria-describedby');
+    expect(tooltipId).toBeTruthy();
+    const tooltip = document.getElementById(tooltipId as string);
+    expect(tooltip).toHaveTextContent('Copy code');
+  });
+
   it('announces "Copied" to a polite live region after copying', async () => {
     render(<CodeBlock code="const x = 1;" language="javascript" />);
     const copyButton = screen.getByRole('button', {name: 'Copy code'});

@@ -142,6 +142,7 @@ export const docs = {
     targets: [
       {className: 'astryx-code', visualProps: ['color']},
       {className: 'astryx-codeblock', visualProps: ['size', 'language', 'container']},
+      {className: 'astryx-codeblock-copy-button'},
     ],
   },
   usage: {

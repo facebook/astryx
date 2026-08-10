@@ -17,6 +17,9 @@ export type {UseFocusTrapOptions, UseFocusTrapReturn} from './useFocusTrap';
 export {useAnnounce} from './useAnnounce';
 export type {AnnounceFn, AnnouncePoliteness} from './useAnnounce';
 
+export {useClipboard} from './useClipboard';
+export type {UseClipboardOptions, UseClipboardReturn} from './useClipboard';
+
 export {useGridFocus} from './useGridFocus';
 export type {UseGridFocusOptions, UseGridFocusReturn} from './useGridFocus';
 
