@@ -210,15 +210,24 @@ describe('useIcon / useComponentIcon (types)', () => {
     expect(typeof useIcon).toBe('function');
     expect(typeof useComponentIcon).toBe('function');
 
-    // Compile-time only — hooks are not called outside a render here.
-    const _checks = () => {
-      useIcon('check');
-      useComponentIcon('selector-selected-option', 'check');
-      // @ts-expect-error a slot is not a global icon name
-      useIcon('selector-selected-option');
-      // @ts-expect-error a slot lookup requires the component's default
-      useComponentIcon('selector-selected-option');
-    };
-    expect(_checks).toBeTypeOf('function');
+    // Asserted on the ARGUMENT TUPLES rather than by calling the hooks: a
+    // call outside a component would break rules-of-hooks, and these only
+    // ever needed to be checked by the compiler.
+    const globalArgs: Parameters<typeof useIcon> = ['check'];
+    const slotArgs: Parameters<typeof useComponentIcon> = [
+      'selector-selected-option',
+      'check',
+    ];
+    expect([globalArgs, slotArgs]).toHaveLength(2);
+
+    type GlobalArgs = Parameters<typeof useIcon>;
+    type SlotArgs = Parameters<typeof useComponentIcon>;
+    const SLOT = 'selector-selected-option';
+
+    // @ts-expect-error a slot is not a global icon name
+    const slotAsGlobal: GlobalArgs = [SLOT];
+    // @ts-expect-error a slot lookup requires the component's default
+    const slotMissingFallback: SlotArgs = [SLOT];
+    expect([slotAsGlobal, slotMissingFallback]).toHaveLength(2);
   });
 });
