@@ -284,7 +284,7 @@ export interface DefineThemeInput {
    * Component icon slot mappings — maps component-specific purposes to global
    * semantic icon names. Use `null` to intentionally render no icon.
    */
-  componentIcons?: ComponentIconMap;
+  componentIcons?: Partial<ComponentIconMap>;
   /**
    * Default syntax highlighting theme for code components.
    * Sets --color-syntax-* tokens at the theme root. Can be overridden
@@ -335,7 +335,7 @@ export interface DefinedTheme {
   /** Icon registry */
   icons?: Partial<IconRegistry>;
   /** Component icon slot mappings */
-  componentIcons?: ComponentIconMap;
+  componentIcons?: Partial<ComponentIconMap>;
   /** Whether this theme has been pre-compiled by theme build CLI */
   __built?: true;
   /**

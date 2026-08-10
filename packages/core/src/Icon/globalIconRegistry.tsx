@@ -82,9 +82,13 @@ export interface ComponentIconSlotMap {
 }
 
 export type ComponentIconSlotName = keyof ComponentIconSlotMap & string;
-export type ComponentIconMap = Partial<
-  Record<ComponentIconSlotName, IconName | null>
->;
+/**
+ * Every component icon slot mapped to a global icon name (or `null` for no
+ * icon). Themes fill in only the slots they care about, so theme fields spell
+ * that out as `Partial<ComponentIconMap>` — matching how `icons` is declared
+ * as `Partial<IconRegistry>` over the complete `IconRegistry`.
+ */
+export type ComponentIconMap = Record<ComponentIconSlotName, IconName | null>;
 
 export type IconRegistrySource = DefinedTheme | string | null | undefined;
 

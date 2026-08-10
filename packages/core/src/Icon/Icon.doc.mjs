@@ -38,7 +38,7 @@ export const docs = {
       name: 'fallbackIcon',
       type: 'IconName | null',
       description:
-        'Fallback global icon name when icon is a component-specific icon slot. Components use this for semantic purposes like selector-selected-option while letting themes remap through defineTheme({componentIcons}). Set null when the component slot defaults to no icon. Valid semantic names: close, chevronDown, chevronLeft, chevronRight, check, success, error, warning, info, calendar, clock, externalLink, menu, moreHorizontal, search, arrowUp, arrowDown, arrowsUpDown, funnel, eyeSlash, viewColumns, copy, checkDouble, wrench, stop, microphone.',
+        'Fallback global icon name when icon is a component-specific icon slot. Components use this for semantic purposes like selector-selected-option while letting themes remap through defineTheme({componentIcons}). Set null when the component slot defaults to no icon. Valid semantic names: close, chevronDown, chevronLeft, chevronRight, chevronsLeft, chevronsRight, check, success, error, warning, info, calendar, clock, externalLink, menu, moreHorizontal, search, arrowUp, arrowDown, arrowsUpDown, funnel, eyeSlash, viewColumns, copy, checkDouble, wrench, stop, microphone.',
     },
     {
       name: 'label',
@@ -102,7 +102,7 @@ export const docsZh = {
       name: 'fallbackIcon',
       type: 'IconName | null',
       description:
-        'Fallback global icon name when icon is a component-specific icon slot. Components use this for semantic purposes like selector-selected-option while letting themes remap through defineTheme({componentIcons}). Set null when the component slot defaults to no icon. Valid semantic names: close, chevronDown, chevronLeft, chevronRight, check, success, error, warning, info, calendar, clock, externalLink, menu, moreHorizontal, search, arrowUp, arrowDown, arrowsUpDown, funnel, eyeSlash, viewColumns, copy, checkDouble, wrench, stop, microphone.',
+        '当 icon 为组件专属图标插槽时使用的全局回退图标名称。组件以此表达 selector-selected-option 之类的语义用途，同时允许主题通过 defineTheme({componentIcons}) 重新映射。若该组件插槽默认不显示图标，请设为 null。有效语义名称：close, chevronDown, chevronLeft, chevronRight, chevronsLeft, chevronsRight, check, success, error, warning, info, calendar, clock, externalLink, menu, moreHorizontal, search, arrowUp, arrowDown, arrowsUpDown, funnel, eyeSlash, viewColumns, copy, checkDouble, wrench, stop, microphone。',
     },
     {
       name: 'label',
