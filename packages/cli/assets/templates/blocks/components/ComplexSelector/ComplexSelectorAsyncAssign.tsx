@@ -40,6 +40,8 @@ export default function ComplexSelectorAsyncAssign() {
   }
 
   return (
+    // A radio group commits on arrow navigation, so closing the popup on
+    // change would dismiss it mid-traversal; the user dismisses it instead.
     <ComplexSelector
       label="Reviewer"
       description="Assignments save as soon as you pick someone"
@@ -59,15 +61,12 @@ export default function ComplexSelectorAsyncAssign() {
       placeholder="Unassigned"
       triggerLabel={selected?.label}
       status={status}>
-      {(value, onChange, close) => (
+      {(value, onChange) => (
         <RadioList
           label="Reviewer"
           isLabelHidden
           value={value}
-          onChange={nextValue => {
-            onChange(nextValue);
-            close();
-          }}>
+          onChange={onChange}>
           {REVIEWERS.map(option => (
             <RadioListItem
               key={option.value}

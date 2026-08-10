@@ -7,9 +7,18 @@ export const doc = {
   name: 'Complex Selector',
   displayName: 'Complex Selector',
   description:
-    'A visibility selector whose popup content is a RadioList; picking an option commits the value and closes the popup.',
+    'A reporting-period picker: quick presets beside a range Calendar, edited as a draft and committed on Apply, in a single field.',
   isReady: true,
   aspectRatio: 4 / 3,
   isShowcase: true,
-  componentsUsed: ['ComplexSelector', 'RadioList'],
+  componentsUsed: [
+    'ComplexSelector',
+    'Calendar',
+    'List',
+    'Button',
+    'Divider',
+    'Text',
+    'HStack',
+    'VStack',
+  ],
 };
