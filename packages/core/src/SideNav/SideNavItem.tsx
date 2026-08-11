@@ -153,10 +153,14 @@ const styles = stylex.create({
   },
   // Primary action element inside the split-action row (link or button).
   // Flex:1 so it fills remaining space, giving a wide click target.
+  // `alignSelf: stretch` makes it fill the row's height too — without it the
+  // element collapses to its line box (20px), under the 24px WCAG 2.5.8
+  // target-size floor even though the row it sits in is 32px tall.
   // Resets both link and button appearance so it blends into the row.
   splitAction: {
     display: 'flex',
     alignItems: 'center',
+    alignSelf: 'stretch',
     gap: spacingVars['--spacing-2'],
     flex: 1,
     minWidth: 0,

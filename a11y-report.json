@@ -1,0 +1,14 @@
+{
+  "components": {
+    "SideNav": {
+      "storiesAudited": 14,
+      "violations": [],
+      "storyDetails": []
+    }
+  },
+  "summary": {
+    "componentsAudited": 1,
+    "totalViolations": 0,
+    "auditedAt": "2026-08-11T05:04:15.048Z"
+  }
+}
