@@ -96,7 +96,10 @@ truth. Run every **new** target through this checklist:
    target is not.
 3. **Is it attached to the component?** If the themed thing is an internally
    composed Astryx component, the target rides that instance's
-   `className`/`xstyle` passthrough. Never mint a wrapper to hold a target.
+   `className`/`xstyle` passthrough. Never mint a wrapper to hold a target, and
+   where a wrapper legitimately remains it carries **layout only** — `display`,
+   alignment, `flexShrink`, positioning. Anything that paints (color,
+   background, border, shadow) belongs on the element that renders the pixels.
 4. **Is the name compositional?** `{parent}-{position}-{component}` — position
    from the shared vocabulary (trigger/option/item/row/header/leading/trailing/
    menu), and the last segment the actual component (`icon`, `checkbox`,
@@ -104,9 +107,17 @@ truth. Run every **new** target through this checklist:
    State is never a name segment: it rides `themeProps({selected})`, which emits
    the class token and the `data-*` attribute together.
 5. **Could the parent target reach it by inheritance?** If the property
-   cascades (font, color), put it on the parent target rather than minting a
-   child one — a child target on a `renderX` fallback silently misses every
-   custom-rendered result (principle 4).
+   cascades (font, color) **and the parent target can actually deliver it as the
+   code stands**, put it on the parent target rather than minting a child one —
+   a child target on a `renderX` fallback silently misses every custom-rendered
+   result (principle 4). Inheritance does **not** arrive when the child sets the
+   property directly on its own element, which is every composed Astryx
+   component with a `color`/`size` prop: `<Icon color="error">` writes `color` on
+   the glyph, and a directly-set value beats an inherited one. In that case
+   principle 4 does not apply and (3) decides — put the target on the component
+   instance, where a same-element rule in `@layer astryx-theme` reaches it. Do
+   not move paint onto the wrapper to make inheritance work; that manufactures a
+   seam on an element that is not part of the contract.
 6. **Is there a named consumer?** "Structural selectors are brittle, so here's a
    seam" is not a justification. Say what appearance the target unlocks and who
    asked for it — and check whether the answer is really a design convergence

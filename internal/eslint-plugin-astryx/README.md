@@ -307,6 +307,20 @@ the PR description. A divergence is a bug in the rule or a gap in the
 principle, not a tolerated state: when one turns up, fix it rather than
 recording which side wins.
 
+**Three known gaps, open and unfixed** (each is a call for the TL, and each is
+listed in the PR description):
+
+1. `wrapperTarget` only fires when the wrapper paints **nothing**, so a wrapper
+   that carries paint is invisible to it — even though a target on a `div`/
+   `span` whose sole child is an Astryx component belongs on the component
+   regardless.
+2. A target on an Astryx component is skipped by `theming-target-shape`
+   entirely. That is the destination these rules point authors at, so the
+   sanctioned shape is also the blind spot, and it widens as the pattern spreads.
+3. `missingPosition` fires on an existing, unrenameable two-segment target
+   (`banner-icon`) once that target is moved onto its `<Icon>` — P3's shape and a
+   shipped public name collide.
+
 A theming target (`themeProps('selector-option')`) is a public API commitment:
 a stable `.astryx-*` class a theme writes CSS against. These rules check the
 part of "is this a good target?" that is mechanical. Whether a real consumer
@@ -339,7 +353,7 @@ module are read from that module via `stylex-style-source.js`.
 flag `font*` / `color` / `lineHeight` / `letterSpacing` / `textAlign` /
 `textTransform` on any untargeted descendant of a target — is implementable and
 measures **111 hits**, but most of them are correct code: a Banner's title and
-description (`packages/core/src/Banner/Banner.tsx:460,462`) declare different
+description (`packages/core/src/Banner/Banner.tsx:461,463`) declare different
 typography _because they should differ_, and nothing in the AST distinguishes
 that from a declaration begging to be hoisted. It ships off by default, as an
 exploration aid rather than a check.
