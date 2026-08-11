@@ -27,7 +27,8 @@ import {
 import type {BaseProps} from '../BaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {useScrollLock} from '../hooks/useScrollLock';
-import {hasActiveFocusTrapEscape, isImeKeyEvent} from '../hooks/useFocusTrap';
+import {hasActiveFocusTrapEscape} from '../hooks/useFocusTrap';
+import {isImeKeyEvent} from '../utils/ime';
 import {
   colorVars,
   radiusVars,

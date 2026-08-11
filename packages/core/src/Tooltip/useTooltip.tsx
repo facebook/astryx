@@ -28,6 +28,7 @@ import {
 } from '../Layer/useLayer';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import {themeProps} from '../utils/themeProps';
+import {isImeKeyEvent} from '../utils/ime';
 import {
   colorVars,
   radiusVars,
@@ -454,7 +455,9 @@ export function useTooltip(options: TooltipOptions = {}): TooltipReturn {
       if (e.key !== 'Escape') {
         return;
       }
-      if (e.isComposing || e.keyCode === 229) {
+      if (isImeKeyEvent(e)) {
+        // Ignore Escape that is committing/cancelling an IME composition;
+        // see utils/ime.ts for why.
         return;
       }
       clearTimeouts();
