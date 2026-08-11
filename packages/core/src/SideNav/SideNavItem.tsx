@@ -4,11 +4,16 @@
 
 /**
  * @file SideNavItem.tsx
- * @input Uses React, ReactNode, StyleX, Icon, IconType
+ * @input Uses React, ReactNode, StyleX, Icon, IconType, useMenuHover
  * @output Exports SideNavItem component and SideNavItemProps
  * @position Core implementation; used inside SideNav children
  *
  * Navigation item with icon, selected state, and nesting.
+ *
+ * Collapsed items with children open their submenu flyout through
+ * `useMenuHover`, the shared hover-intent hook (same one `SideNavHeading` and
+ * `TopNavMenu` use). Hover is a progressive enhancement over the popover's
+ * click behavior and is inert on coarse pointers.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/SideNav/SideNav.doc.mjs
@@ -20,7 +25,6 @@
 
 import {
   useCallback,
-  useEffect,
   useId,
   useMemo,
   useRef,
@@ -43,6 +47,7 @@ import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
 import {usePopover} from '../Popover/usePopover';
+import {useMenuHover} from '../hooks/useMenuHover';
 import {mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {Tooltip} from '../Tooltip';
@@ -446,47 +451,26 @@ export function SideNavItem({
     toggleItemCollapse();
   };
 
-  // Hover handlers for collapsed popover (mirrors TopNavMenu pattern)
-  const showTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const clearPopoverTimeouts = useCallback(() => {
-    if (showTimeoutRef.current) {
-      clearTimeout(showTimeoutRef.current);
-      showTimeoutRef.current = null;
-    }
-    if (hideTimeoutRef.current) {
-      clearTimeout(hideTimeoutRef.current);
-      hideTimeoutRef.current = null;
-    }
-  }, []);
-
-  const schedulePopoverShow = useCallback(() => {
-    clearPopoverTimeouts();
-    showTimeoutRef.current = setTimeout(() => {
-      popover.show({skipAutoFocus: true});
-    }, 150);
-  }, [clearPopoverTimeouts, popover]);
-
-  const schedulePopoverHide = useCallback(() => {
-    clearPopoverTimeouts();
-    hideTimeoutRef.current = setTimeout(() => {
-      popover.hide();
-    }, 200);
-  }, [clearPopoverTimeouts, popover]);
-
-  const handlePopoverMouseEnter = useCallback(() => {
-    schedulePopoverShow();
-  }, [schedulePopoverShow]);
-
-  const handlePopoverMouseLeave = useCallback(() => {
-    schedulePopoverHide();
-  }, [schedulePopoverHide]);
-
-  // The hover-intent timers above outlive the component if it unmounts while
-  // one is pending (a route change on click, or the sidenav expanding out of
-  // collapsed mode), which fires `popover.show()` on a dead tree.
-  useEffect(() => clearPopoverTimeouts, [clearPopoverTimeouts]);
+  // Hover intent for the collapsed submenu flyout — the shared hook, not a
+  // hand-rolled pair of timers. It gates hover on `(hover: hover)` (so a touch
+  // tap never schedules a hover open), only lets `mouseleave` close what hover
+  // opened, and swallows the `mouseenter` that immediately follows a
+  // click-to-close while the pointer is still on the trigger.
+  //
+  // Only the pointer half is wired: the hook's `contentProps.onKeyDown` /
+  // `menuRef` drive a `useListFocus` over `[role="menuitem"]`, and this flyout
+  // is a focus-trapped `role="dialog"` of links and buttons — no menu items —
+  // so attaching them would swallow arrow keys instead of navigating with them.
+  // `DropdownMenuSubMenu` adopts the same pointer-only half for the same
+  // reason. Escape, Tab containment, and focus restore stay with `usePopover`'s
+  // focus trap, unchanged.
+  const {triggerProps: hoverTriggerProps, contentProps: hoverContentProps} =
+    useMenuHover({
+      show: popover.show,
+      hide: popover.hide,
+      isOpen: popover.isOpen,
+      isEnabled: isCollapsed && hasChildren,
+    });
 
   // In collapsed mode: hide items without icons
   if (isCollapsed && !icon) {
@@ -530,9 +514,7 @@ export function SideNavItem({
             ref={mergeRefs(ref, popover.triggerRef)}
             type="button"
             {...rest}
-            onClick={popover.toggle}
-            onMouseEnter={handlePopoverMouseEnter}
-            onMouseLeave={handlePopoverMouseLeave}
+            {...hoverTriggerProps}
             aria-label={label}
             data-testid={testId}
             {...popover.triggerProps}
@@ -542,8 +524,8 @@ export function SideNavItem({
           {popover.render(
             <div
               {...stylex.props(styles.popoverSurface)}
-              onMouseEnter={handlePopoverMouseEnter}
-              onMouseLeave={handlePopoverMouseLeave}
+              onMouseEnter={hoverContentProps.onMouseEnter}
+              onMouseLeave={hoverContentProps.onMouseLeave}
               onClick={() => popover.hide()}>
               <div {...stylex.props(styles.popoverHeader)}>{label}</div>
               <SideNavCollapseContext value={EXPANDED_COLLAPSE_STATE}>
