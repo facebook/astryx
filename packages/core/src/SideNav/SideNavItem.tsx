@@ -40,7 +40,6 @@ import {
   typeScaleVars,
   durationVars,
   easeVars,
-  borderVars,
   radiusVars,
 } from '../theme/tokens.stylex';
 import {Icon, renderIconSlot, type IconType} from '../Icon';
@@ -184,15 +183,29 @@ const styles = stylex.create({
     textAlign: 'start',
     cursor: 'pointer',
   },
-  // Popover surface for collapsed items with children
+  // Content of the flyout for collapsed items with children.
+  //
+  // No border and no background: `usePopover` already paints the panel
+  // (background, `--radius-container`, shadow) on the element this div is
+  // rendered into, which is what every other popover consumer in core relies
+  // on. This div drew a second 1px `--color-border` rectangle at radius 0
+  // inside that rounded panel, so the flyout showed square grey corners inside
+  // rounded ones. The radius here matches the surface's so a theme that
+  // changes `--radius-container` keeps the two in step.
   popoverSurface: {
-    borderWidth: borderVars['--border-width'],
-    borderStyle: 'solid',
-    borderColor: colorVars['--color-border'],
+    borderRadius: radiusVars['--radius-container'],
     paddingBlock: spacingVars['--spacing-1'],
     paddingInline: spacingVars['--spacing-1'],
-    marginInlineStart: spacingVars['--spacing-1'],
     minWidth: 180,
+  },
+  // Gap between the collapsed rail and the flyout, on the positioned layer —
+  // the same place `DropdownMenu` puts it. As `marginInlineStart` on the
+  // content div it only inset the content inside the panel, leaving the panel
+  // flush against the rail and an unbalanced 4px strip down the flyout's
+  // inside edge.
+  popoverGap: {
+    marginInlineStart: spacingVars['--spacing-1'],
+    marginInlineEnd: spacingVars['--spacing-1'],
   },
   popoverHeader: {
     paddingInline: spacingVars['--spacing-2'],
@@ -534,7 +547,7 @@ export function SideNavItem({
                 {children}
               </SideNavCollapseContext>
             </div>,
-            {placement: 'end', alignment: 'start'},
+            {placement: 'end', alignment: 'start', xstyle: styles.popoverGap},
           )}
         </div>
       );
