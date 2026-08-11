@@ -22,15 +22,18 @@ import {HStack, VStack} from '@astryxdesign/core/Stack';
  * `children` slot in particular: it is the path a host uses to show a pending
  * Spinner, and it had no rendered coverage anywhere until this file existed.
  */
-const meta = {
+const meta: Meta<typeof CheckIndicator> = {
   title: 'Core/Indicator',
   component: CheckIndicator,
   parameters: {layout: 'padded'},
   tags: ['autodocs'],
-} satisfies Meta<typeof CheckIndicator>;
+};
 
 export default meta;
-type Story = StoryObj<typeof meta>;
+// Keyed to the component, not to `meta`, matching the other 122 story files —
+// `StoryObj<typeof meta>` would require `args` on every render-only story, and
+// `state` is required on an indicator.
+type Story = StoryObj<typeof CheckIndicator>;
 
 const cellStyle = {
   display: 'inline-flex',
