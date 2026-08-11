@@ -10,7 +10,7 @@
  */
 
 import React from 'react';
-import {describe, it, expect, vi} from 'vitest';
+import {describe, it, expect, vi, afterEach} from 'vitest';
 import {render, screen, act, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {useRef, useState, type ReactNode} from 'react';
@@ -1177,6 +1177,240 @@ describe('SideNavItem (collapsed)', () => {
 });
 
 // =============================================================================
+// SideNavItem — collapsed submenu hover intent (useMenuHover adoption, C12)
+// =============================================================================
+
+/**
+ * Pin the ambient pointer modality. The global test setup polyfills
+ * `matchMedia` with a stub that never matches, which reads as a coarse
+ * pointer — correct as a default, but it means every hover assertion has to
+ * opt into `(hover: hover)` explicitly.
+ */
+function stubPointerModality(modality: 'fine' | 'coarse') {
+  vi.stubGlobal('matchMedia', (query: string) => ({
+    matches: modality === 'fine' && query.includes('hover: hover'),
+    media: query,
+    onchange: null,
+    addListener: () => {},
+    removeListener: () => {},
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    dispatchEvent: () => false,
+  }));
+}
+
+/** The hook's hover-intent delays: 150 ms to show, 200 ms to hide. */
+const SHOW_DELAY = 150;
+const HIDE_DELAY = 200;
+
+describe('SideNavItem — collapsed submenu hover intent', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  function renderFlyout() {
+    renderCollapsed(
+      <SideNavItem label="Settings" icon={StubIcon} data-testid="parent">
+        <SideNavItem label="General" href="/settings/general" />
+        <SideNavItem label="Security" href="/settings/security" />
+      </SideNavItem>,
+    );
+    return screen.getByTestId('parent');
+  }
+
+  const advance = (ms: number) =>
+    act(() => {
+      vi.advanceTimersByTime(ms);
+    });
+
+  it('opens the flyout only after the hover-intent delay', () => {
+    stubPointerModality('fine');
+    vi.useFakeTimers();
+    const trigger = renderFlyout();
+
+    fireEvent.mouseEnter(trigger);
+    // A pointer merely passing over the icon must not open anything.
+    advance(SHOW_DELAY - 1);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+    advance(1);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('closes a hover-opened flyout when the pointer leaves', () => {
+    stubPointerModality('fine');
+    vi.useFakeTimers();
+    const trigger = renderFlyout();
+
+    fireEvent.mouseEnter(trigger);
+    advance(SHOW_DELAY);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    fireEvent.mouseLeave(trigger);
+    advance(HIDE_DELAY);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('keeps a click-opened flyout open when the pointer leaves', () => {
+    stubPointerModality('fine');
+    vi.useFakeTimers();
+    const trigger = renderFlyout();
+
+    fireEvent.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    // Clicking is a commitment: the flyout outlives the pointer, so a user
+    // can travel to it diagonally, or move away and come back.
+    fireEvent.mouseLeave(trigger);
+    advance(HIDE_DELAY * 2);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('does not spring back open when a click dismisses it under a stationary pointer', () => {
+    stubPointerModality('fine');
+    vi.useFakeTimers();
+    const trigger = renderFlyout();
+
+    fireEvent.mouseEnter(trigger);
+    advance(SHOW_DELAY);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    // Click to dismiss. The pointer never left, so the browser fires a fresh
+    // mouseenter as the flyout unmounts from under it — which used to reopen
+    // what the user just closed.
+    fireEvent.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+    fireEvent.mouseEnter(trigger);
+    advance(SHOW_DELAY);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+    // One-shot, not a latch: a deliberate leave-and-return opens it again.
+    fireEvent.mouseLeave(trigger);
+    fireEvent.mouseEnter(trigger);
+    advance(SHOW_DELAY);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('schedules no hover timers on a coarse pointer', () => {
+    stubPointerModality('coarse');
+    vi.useFakeTimers();
+    const trigger = renderFlyout();
+
+    // A touch tap synthesises mouseenter. On a device that cannot hover there
+    // is no hover intent to read, so nothing may be scheduled from it.
+    fireEvent.mouseEnter(trigger);
+    expect(vi.getTimerCount()).toBe(0);
+
+    advance(SHOW_DELAY * 2);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+    // Tapping still opens it — the touch path goes through click, untouched.
+    fireEvent.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('does not open the hover popover after the item unmounts', () => {
+    stubPointerModality('fine');
+    vi.useFakeTimers();
+    const {unmount} = render(
+      <SideNavCollapseContext
+        value={{isCollapsed: true, toggle: () => {}, isCollapsible: true}}>
+        <SideNavItem label="Settings" icon={StubIcon} data-testid="parent">
+          <SideNavItem label="General" href="/settings/general" />
+        </SideNavItem>
+      </SideNavCollapseContext>,
+    );
+
+    fireEvent.mouseEnter(screen.getByTestId('parent'));
+    expect(vi.getTimerCount()).toBeGreaterThan(0);
+
+    unmount();
+
+    // Every timer the item scheduled has to be cleared on unmount — the hook
+    // owns that cleanup now, and it still has to hold.
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('leaves arrow keys in the flyout to the browser', async () => {
+    stubPointerModality('fine');
+    const user = userEvent.setup();
+    renderCollapsed(
+      <SideNavItem label="Settings" icon={StubIcon} data-testid="parent">
+        <SideNavItem label="General" href="/settings/general" />
+        <SideNavItem label="Security" href="/settings/security" />
+      </SideNavItem>,
+    );
+
+    const trigger = screen.getByTestId('parent');
+    await user.click(trigger);
+
+    // The flyout renders as a native popover, which jsdom leaves
+    // `display: none`, so its contents are outside the default a11y-tree
+    // queries.
+    const first = screen.getByRole('link', {name: 'General', hidden: true});
+    first.focus();
+
+    // The flyout is a focus-trapped `role="dialog"` of links, not a
+    // `role="menu"` of menuitems. `useMenuHover`'s list-focus half is
+    // deliberately not wired: attached, it would `preventDefault()` every
+    // arrow key and then find no `[role="menuitem"]` to move to — a keyboard
+    // regression traded for a hover fix.
+    const notPrevented = fireEvent.keyDown(first, {key: 'ArrowDown'});
+    expect(notPrevented).toBe(true);
+    expect(first).toHaveFocus();
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('opens from the keyboard, moves focus into the flyout, and restores it on Escape', async () => {
+    stubPointerModality('fine');
+    const user = userEvent.setup();
+    renderCollapsed(
+      <SideNavItem label="Settings" icon={StubIcon} data-testid="parent">
+        <SideNavItem label="General" href="/settings/general" />
+        <SideNavItem label="Security" href="/settings/security" />
+      </SideNavItem>,
+    );
+
+    const trigger = screen.getByTestId('parent');
+    trigger.focus();
+    await user.keyboard('{Enter}');
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    // Keyboard opens are not hover opens: focus goes into the flyout, where
+    // hover opens deliberately leave it on the trigger (`skipAutoFocus`).
+    await waitFor(() =>
+      expect(
+        screen.getByRole('link', {name: 'General', hidden: true}),
+      ).toHaveFocus(),
+    );
+
+    await user.keyboard('{Escape}');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await waitFor(() => expect(trigger).toHaveFocus());
+  });
+
+  it('leaves focus on the trigger when hover opens the flyout', () => {
+    stubPointerModality('fine');
+    vi.useFakeTimers();
+    const trigger = renderFlyout();
+    trigger.focus();
+
+    fireEvent.mouseEnter(trigger);
+    advance(SHOW_DELAY);
+    act(() => {
+      vi.advanceTimersToNextFrame();
+    });
+
+    // `skipAutoFocus` on the hover path: a pointer user who is mid-hover must
+    // not have the caret yanked out of whatever they were doing.
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    expect(trigger).toHaveFocus();
+  });
+});
+
+// =============================================================================
 // Mobile nav close-on-activate
 // =============================================================================
 
@@ -1660,29 +1894,5 @@ describe('SideNav audit regressions', () => {
     expect(
       await screen.findByRole('button', {name: 'Expand sidebar'}),
     ).toBeInTheDocument();
-  });
-
-  it('does not open the hover popover after the item unmounts', async () => {
-    vi.useFakeTimers();
-    try {
-      const {unmount} = render(
-        <SideNavCollapseContext
-          value={{isCollapsed: true, toggle: () => {}, isCollapsible: true}}>
-          <SideNavItem label="Settings" icon={StubIcon} data-testid="parent">
-            <SideNavItem label="General" href="/settings/general" />
-          </SideNavItem>
-        </SideNavCollapseContext>,
-      );
-
-      fireEvent.mouseEnter(screen.getByTestId('parent'));
-      expect(vi.getTimerCount()).toBeGreaterThan(0);
-
-      unmount();
-
-      // Every timer the item scheduled has to be cleared on unmount.
-      expect(vi.getTimerCount()).toBe(0);
-    } finally {
-      vi.useRealTimers();
-    }
   });
 });
