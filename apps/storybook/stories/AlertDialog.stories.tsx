@@ -196,7 +196,8 @@ export const LongContent: Story = {
 /**
  * The inline preview path (`isInline`). Renders the content in place without
  * `showModal()`, for documentation previews and showcases. It is not a modal:
- * it does not trap focus, block the page, or respond to Escape.
+ * it does not trap focus, block the page, or respond to Escape — so it exposes
+ * `role="group"` rather than `role="alertdialog"`.
  */
 export const Inline: Story = {
   args: {

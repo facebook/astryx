@@ -39,7 +39,8 @@ export interface AlertDialogProps extends BaseProps<HTMLDialogElement> {
 
   /**
    * Renders alert dialog content inline without modal behavior.
-   * For documentation previews and showcases only.
+   * For documentation previews and showcases only. The inline path is not a
+   * modal, so it renders `role="group"` rather than `role="alertdialog"`.
    * @default false
    */
   isInline?: boolean;
@@ -108,6 +109,9 @@ export interface AlertDialogProps extends BaseProps<HTMLDialogElement> {
  * Initial focus goes to the cancel button (least destructive action), pinned
  * with `data-autofocus` so it survives any change to the footer's order.
  *
+ * The `isInline` preview path is not modal, so it renders `role="group"`
+ * instead — the alertdialog role would promise modality it does not have.
+ *
  * @example
  * ```
  * <AlertDialog
@@ -157,7 +161,12 @@ export function AlertDialog({
       onOpenChange={onOpenChange}
       width={width}
       purpose="form"
-      role="alertdialog"
+      // `alertdialog` is a modal role: it promises an interruption the user
+      // has to deal with, a focus trap, and an inert page behind it. The
+      // inline path renders a plain always-present div with none of that, so
+      // the role would misdescribe it. `group` keeps the title and
+      // description associated with a container without claiming a dialog.
+      role={isInline ? 'group' : 'alertdialog'}
       aria-labelledby={titleId}
       aria-describedby={descriptionId}
       {...mergeProps(themeProps('alert-dialog'), {className, style})}

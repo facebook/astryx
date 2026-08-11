@@ -214,6 +214,24 @@ describe('AlertDialog', () => {
         'true',
       );
     });
+
+    describe('the inline preview path', () => {
+      it('does not claim the alertdialog role', () => {
+        render(<AlertDialog {...defaultProps} isInline />);
+        expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+      });
+
+      it('exposes a named group instead, with no aria-modal', () => {
+        render(<AlertDialog {...defaultProps} isInline />);
+        const group = screen.getByRole('group', {name: 'Delete item?'});
+        expect(group).not.toHaveAttribute('aria-modal');
+        const describedBy = group.getAttribute('aria-describedby');
+        expect(describedBy).toBeTruthy();
+        expect(document.getElementById(describedBy!)).toHaveTextContent(
+          'This action cannot be undone.',
+        );
+      });
+    });
   });
 });
 

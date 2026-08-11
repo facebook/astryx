@@ -117,7 +117,7 @@ export const docs = {
       name: 'isInline',
       type: 'boolean',
       default: 'false',
-      description: 'Renders alert dialog content inline without modal behavior. For documentation previews and showcases only.',
+      description: 'Renders alert dialog content inline without modal behavior. For documentation previews and showcases only. Not being a modal, the inline path renders role="group" instead of role="alertdialog".',
     },
   ],
   components: [
