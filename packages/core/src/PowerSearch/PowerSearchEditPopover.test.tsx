@@ -283,4 +283,68 @@ describe('PowerSearch', () => {
     // onSave should NOT be called because the event was already consumed (defaultPrevented)
     expect(onSave).not.toHaveBeenCalled();
   });
+
+  it('does not save or cancel the filter mid-IME-composition', () => {
+    const onSave = vi.fn();
+    const onCancel = vi.fn();
+
+    function Harness() {
+      const internalConfig = useInternalConfig(testConfig);
+      return (
+        <PowerSearchEditPopover
+          config={internalConfig}
+          filter={{
+            field: 'status',
+            operator: 'is',
+            value: {type: 'string', value: '한국어'},
+          }}
+          mode="edit"
+          onSave={onSave}
+          onCancel={onCancel}
+        />
+      );
+    }
+
+    const {container} = render(<Harness />);
+    const input = container.querySelector('input');
+    expect(input).not.toBeNull();
+
+    // Enter commits an IME candidate and Escape cancels one — neither should
+    // act on the filter.
+    act(() => {
+      input?.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'Enter',
+          bubbles: true,
+          cancelable: true,
+          isComposing: true,
+        }),
+      );
+    });
+    expect(onSave).not.toHaveBeenCalled();
+
+    act(() => {
+      input?.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'Escape',
+          bubbles: true,
+          cancelable: true,
+          isComposing: true,
+        }),
+      );
+    });
+    expect(onCancel).not.toHaveBeenCalled();
+
+    // A completed Enter still saves.
+    act(() => {
+      input?.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'Enter',
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
+    });
+    expect(onSave).toHaveBeenCalled();
+  });
 });
