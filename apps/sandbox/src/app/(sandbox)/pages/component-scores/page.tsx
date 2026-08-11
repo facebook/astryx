@@ -15,11 +15,11 @@ import {Card} from '@astryxdesign/core/Card';
 import {Link} from '@astryxdesign/core/Link';
 import {Code} from '@astryxdesign/core/Code';
 import {Table, proportional, pixel} from '@astryxdesign/core/Table';
-import type {TableColumn, TablePlugin} from '@astryxdesign/core/Table';
-import {colorVars} from '@astryxdesign/core/theme/tokens.stylex';
+import type {TableColumn} from '@astryxdesign/core/Table';
 
 import {
   AUDIT_PROMPT,
+  LEDGER_FETCH_TIMEOUT_MS,
   LEDGER_URL,
   LEDGER_WIKI_URL,
   REPO,
@@ -199,45 +199,24 @@ function FreshnessBadge({
 }
 
 // =============================================================================
-// Sticky header
+// No sticky header — a Table limitation, measured
 //
-// Table ships a sticky-COLUMNS plugin but has no sticky header, and this page
-// is 118 rows: scroll past the fold and every cell is an unlabelled em-dash.
-// This goes through Table's documented `transformHeaderCell` seam — the same
-// one useTableStickyColumns uses — rather than reaching around the component.
-// It wants to be a Table prop; see the PR description.
+// 118 rows want a pinned header, and Table has no `isHeaderSticky`. A sticky
+// `<th>` cannot supply one from outside the component either, because
+// `position: sticky` resolves against the nearest scroll container and Table's
+// scroll wrapper is unconditionally one in BOTH axes: it sets `overflow-x:
+// auto` (which it needs, so a wide table survives 390px), and that forces the
+// block axis to compute to `auto` too. `overflow-y: clip` does not escape it —
+// paired with `auto` it computes to `hidden`, which is still a scroll
+// container. Measured in Chromium, not reasoned about: with the page scrolled
+// 1200px the header sat at -907, unpinned, either way.
+//
+// So the header can only pin while the WRAPPER is the vertical scroller — i.e.
+// while the table has a capped height, which is the nested-scrollbar shape we
+// deliberately removed. Page-scroll and a sticky header are mutually exclusive
+// until Table grows the prop. Left undone rather than hand-rolled around; see
+// the PR description.
 // =============================================================================
-
-const stickyHeaderStyles = stylex.create({
-  cell: {
-    position: 'sticky',
-    insetBlockStart: 0,
-    zIndex: 1,
-    // Header cells are transparent by default, so a pinned header needs a
-    // surface of its own or the rows scroll visibly through it.
-    backgroundColor: colorVars['--color-background-body'],
-  },
-  scrollWrapper: {
-    // `position: sticky` resolves against the nearest scrollport, and Table's
-    // scroll wrapper already is one: `overflow-x: auto` forces the block axis
-    // to compute to `auto` as well. So the header can only pin if the wrapper
-    // is also what scrolls vertically. Measured, not assumed — with the sticky
-    // cell alone the header scrolled away with the page.
-    maxBlockSize: '70vh',
-    overflowY: 'auto',
-  },
-});
-
-const stickyHeader: TablePlugin<ScoreRow> = {
-  transformHeaderCell: props => ({
-    ...props,
-    xstyle: [...props.xstyle, stickyHeaderStyles.cell],
-  }),
-  transformScrollWrapper: props => ({
-    ...props,
-    xstyle: [...props.xstyle, stickyHeaderStyles.scrollWrapper],
-  }),
-};
 
 // =============================================================================
 // Page
@@ -273,9 +252,17 @@ export default function ComponentScoresPage() {
   // `no-store`: raw.githubusercontent serves the ledger with `max-age=300`, so
   // the default cache would happily hand back a five-minute-old copy and the
   // page would call it live. A page that says "live" has to have asked.
+  //
+  // Bounded, for the same reason the indicator exists at all: a stalled
+  // connection never rejects, so without this the badge would sit on
+  // "Checking the wiki…" forever rather than admitting it is showing the
+  // snapshot. One controller serves both the timeout and unmount.
   useEffect(() => {
     let cancelled = false;
-    fetch(LEDGER_URL, {cache: 'no-store'})
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), LEDGER_FETCH_TIMEOUT_MS);
+
+    fetch(LEDGER_URL, {cache: 'no-store', signal: controller.signal})
       .then(res =>
         res.ok ? res.json() : Promise.reject(new Error(String(res.status))),
       )
@@ -293,9 +280,13 @@ export default function ComponentScoresPage() {
         if (!cancelled) {
           setSource(snapshot ? 'snapshot' : 'none');
         }
-      });
+      })
+      .finally(() => clearTimeout(timer));
+
     return () => {
       cancelled = true;
+      clearTimeout(timer);
+      controller.abort();
     };
   }, []);
 
@@ -538,7 +529,6 @@ export default function ComponentScoresPage() {
           density="balanced"
           dividers="rows"
           hasHover
-          plugins={{stickyHeader}}
         />
       </VStack>
 

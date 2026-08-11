@@ -263,16 +263,32 @@ export function listComponents(repoRoot = ROOT) {
 const isUrl = source => /^https?:\/\//.test(source);
 
 /**
- * Read a ledger from a path or an http(s) URL.
- * Never throws: a fetch or parse failure resolves to `{ledger: null, error}` so
- * a caller in CI can degrade to a warning instead of failing a pull request on
- * network flake or on the wiki being momentarily unavailable.
+ * How long to wait for the wiki before giving up on it.
+ *
+ * A bare `fetch()` inherits undici's defaults, whose headers timeout is
+ * measured in minutes. The failure this guards is not an error — a 404 or a
+ * refused connection already lands in the catch below — but a STALL: a
+ * connection that opens and then goes quiet. Unbounded, that hangs a CI build
+ * or a terminal instead of falling through to the path that already handles
+ * "no ledger". Generous for a static file of a few tens of KB.
  */
-export async function loadLedger(source) {
+export const LEDGER_FETCH_TIMEOUT_MS = 10_000;
+
+/**
+ * Read a ledger from a path or an http(s) URL.
+ * Never throws: a fetch, timeout or parse failure resolves to
+ * `{ledger: null, error}` so a caller in CI can degrade to a warning instead of
+ * failing a pull request on network flake or on the wiki being momentarily
+ * unavailable.
+ */
+export async function loadLedger(source, {timeoutMs = LEDGER_FETCH_TIMEOUT_MS} = {}) {
   try {
     let text;
     if (isUrl(source)) {
-      const res = await fetch(source, {redirect: 'follow'});
+      const res = await fetch(source, {
+        redirect: 'follow',
+        signal: AbortSignal.timeout(timeoutMs),
+      });
       if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
       text = await res.text();
     } else {
@@ -284,7 +300,13 @@ export async function loadLedger(source) {
     }
     return {ledger, error: null};
   } catch (error) {
-    return {ledger: null, error: `${source}: ${error.message}`};
+    // `AbortSignal.timeout` rejects with a TimeoutError whose message is just
+    // "The operation was aborted" — say what actually happened instead.
+    const message =
+      error.name === 'TimeoutError'
+        ? `no response within ${timeoutMs}ms`
+        : error.message;
+    return {ledger: null, error: `${source}: ${message}`};
   }
 }
 

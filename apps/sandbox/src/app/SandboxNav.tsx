@@ -10,7 +10,7 @@ import {DropdownMenu} from '@astryxdesign/core/DropdownMenu';
 import {Text} from '@astryxdesign/core/Text';
 import {useThemeControls, SANDBOX_THEMES} from './providers';
 import type {ThemeMode} from '@astryxdesign/core/theme';
-import {Icon} from '@astryxdesign/core/Icon';
+import type {IconName, IconType} from '@astryxdesign/core/Icon';
 import {categories, topLevelPages} from './sandboxPages';
 import {
   HomeIcon,
@@ -37,13 +37,20 @@ const categoryIcons: Record<
 
 /**
  * Icons for `topLevelPages`, kept here so that module stays JSX-free — the
- * same split the categories already use. `scores` comes from the icon registry
- * rather than a hand-written SVG (T17).
+ * same split the categories already use.
+ *
+ * These are icon *types* and semantic *names*, never rendered elements.
+ * `SideNavItem` passes its icon through `renderIconSlot`, which applies the
+ * nav's `size: 'sm'` and its selected/disabled colour to a component type or a
+ * registry name — but hands a ReactNode straight to the DOM untouched. An
+ * `<Icon />` element here therefore renders unsized and uncoloured: a ~400px
+ * black glyph over the whole sidebar. `scores` is a registry name (T17), not a
+ * hand-written SVG.
  */
-const topLevelIcons: Record<string, React.ReactNode> = {
-  home: <HomeIcon />,
-  templates: <AppWindowIcon />,
-  scores: <Icon icon="checkDouble" />,
+const topLevelIcons: Record<string, IconType | IconName> = {
+  home: HomeIcon,
+  templates: AppWindowIcon,
+  scores: 'checkDouble',
 };
 
 const styles = stylex.create({

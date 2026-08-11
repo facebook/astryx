@@ -17,6 +17,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {execFileSync} from 'node:child_process';
+import http from 'node:http';
 
 import {describe, it, expect} from 'vitest';
 
@@ -35,6 +36,7 @@ import {
   isComponentDirectory,
   issueBody,
   listComponents,
+  LEDGER_FETCH_TIMEOUT_MS,
   loadLedger,
   repoFromWikiRemote,
   resolveName,
@@ -248,6 +250,47 @@ describe('loadLedger never throws', () => {
     const {ledger, error} = await loadLedger(file);
     expect(error).toBeNull();
     expect(ledger.components).toHaveLength(1);
+  });
+});
+
+describe('the ledger fetch is bounded', () => {
+  /**
+   * The failure that matters is not an error — a 404 already resolves to
+   * `{ledger: null}` — but a STALL: a connection that is accepted and then
+   * goes quiet. A bare fetch() inherits undici's defaults, whose headers
+   * timeout is minutes, which would hang a sandbox build rather than fall
+   * through to the snapshot-less path.
+   */
+  it('gives up on a server that accepts the connection and never answers', async () => {
+    const sockets = new Set();
+    const server = http.createServer(() => {
+      // Deliberately never respond.
+    });
+    server.on('connection', s => {
+      sockets.add(s);
+      s.on('close', () => sockets.delete(s));
+    });
+    await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+    const url = `http://127.0.0.1:${server.address().port}/component-scores.json`;
+
+    try {
+      const started = Date.now();
+      const {ledger, error} = await loadLedger(url, {timeoutMs: 250});
+      const elapsed = Date.now() - started;
+
+      expect(ledger).toBeNull();
+      expect(error).toContain('no response within 250ms');
+      // The point of the test: it came back, and quickly.
+      expect(elapsed).toBeLessThan(3000);
+    } finally {
+      for (const s of sockets) s.destroy();
+      await new Promise(resolve => server.close(resolve));
+    }
+  });
+
+  it('defaults to a bounded timeout rather than undici\'s minutes', () => {
+    expect(LEDGER_FETCH_TIMEOUT_MS).toBeGreaterThan(0);
+    expect(LEDGER_FETCH_TIMEOUT_MS).toBeLessThanOrEqual(30_000);
   });
 });
 

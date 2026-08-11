@@ -34,6 +34,7 @@ import {
   AUDIT_PROMPT,
   DEFAULT_LEDGER_URL,
   DEFAULT_REPO,
+  LEDGER_FETCH_TIMEOUT_MS,
   SECTION_TITLES,
   SECTION_WEIGHTS,
   listComponents,
@@ -49,7 +50,16 @@ const roster = listComponents(REPO_ROOT);
 let snapshot = null;
 let snapshotFetchedAt = null;
 try {
-  const res = await fetch(DEFAULT_LEDGER_URL, {redirect: 'follow'});
+  // Bounded on purpose. A 404 or a refused connection lands in the catch
+  // immediately, but a STALLED connection would not: a bare fetch inherits
+  // undici's defaults, whose headers timeout is measured in minutes. This step
+  // is on the critical path of every sandbox build, including the stable
+  // /sandbox/ deploy from main, so "never fail the build over this" has to
+  // cover hanging too — five seconds is generous for one small static file.
+  const res = await fetch(DEFAULT_LEDGER_URL, {
+    redirect: 'follow',
+    signal: AbortSignal.timeout(5000),
+  });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const parsed = JSON.parse(await res.text());
   if (!Array.isArray(parsed.components)) throw new Error('missing a components array');
@@ -59,9 +69,11 @@ try {
     `componentScores: snapshot of ${parsed.components.length} audited component(s) from the wiki`,
   );
 } catch (e) {
-  // Never fail the build over this. The page fetches the same URL at runtime.
+  // Never fail the build over this — and never hang it either. The page
+  // fetches the same URL at runtime and says which copy it is showing.
+  const why = e.name === 'TimeoutError' ? 'no response within 5000ms' : e.message;
   console.warn(
-    `componentScores: could not snapshot the ledger (${e.message}) — the page will rely on its runtime fetch.`,
+    `componentScores: could not snapshot the ledger (${why}) — the page will rely on its runtime fetch.`,
   );
 }
 
@@ -131,6 +143,14 @@ export interface RosterEntry {
 
 /** The wiki ledger, fetched client-side so the page never needs a rebuild. */
 export const LEDGER_URL = ${JSON.stringify(DEFAULT_LEDGER_URL)};
+
+/**
+ * How long the page waits for that fetch before falling back to the snapshot.
+ * Shared with the CLI so there is one number: a stalled connection never
+ * rejects on its own, and a page stuck on "checking" is the same dishonesty
+ * the freshness indicator exists to prevent.
+ */
+export const LEDGER_FETCH_TIMEOUT_MS = ${JSON.stringify(LEDGER_FETCH_TIMEOUT_MS)};
 
 /** Where audit issues live. */
 export const REPO = ${JSON.stringify(DEFAULT_REPO)};
