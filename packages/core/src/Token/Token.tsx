@@ -173,7 +173,6 @@ const styles = stylex.create({
     overflow: 'hidden',
     minWidth: 0,
   },
-  focusVisibleOutline: {},
   removeButton: {
     all: 'unset',
     display: 'inline-flex',
@@ -400,7 +399,6 @@ export function Token({
             sizeStyles[size],
             colorStyles[color],
             styles.interactive,
-            styles.focusVisibleOutline,
             isDisabled && styles.disabled,
             xstyle,
           ),
@@ -432,7 +430,6 @@ export function Token({
             sizeStyles[size],
             colorStyles[color],
             styles.interactive,
-            styles.focusVisibleOutline,
             isDisabled && styles.disabled,
             xstyle,
           ),

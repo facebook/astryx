@@ -219,7 +219,6 @@ const styles = stylex.create({
       ':active': colorVars['--color-overlay-pressed'],
     },
   },
-  focusVisibleOutline: {},
   highlighted: {
     backgroundColor: colorVars['--color-overlay-hover'],
   },
@@ -555,7 +554,6 @@ export function Item({
           densityStyles[density],
           align === 'start' && styles.alignStart,
           isInteractive && styles.interactive,
-          isInteractive && styles.focusVisibleOutline,
           isHighlighted && styles.highlighted,
           isSelected && styles.selected,
           isDisabled && !hasParentRole && styles.disabled,

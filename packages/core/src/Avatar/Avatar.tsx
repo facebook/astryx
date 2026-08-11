@@ -154,7 +154,6 @@ const styles = stylex.create({
   // Visible focus ring for the name-tooltip tab stop, matching the repo-wide
   // focus-visible outline treatment (see Timestamp, Token, Thumbnail). Only
   // applied when a tooltip is active so keyboard users can reveal it.
-  focusable: {},
   // Reset the intrinsic styling of the interactive element (<a>/<button>) so it
   // is a transparent, correctly-sized wrapper around the avatar visuals. The
   // element carries the focus-visible accent ring for keyboard users.
@@ -587,7 +586,6 @@ export function Avatar({
     focusOutlineProps.focusVisible(
       styles.wrapper,
       isInteractive && styles.interactive,
-      !isInteractive && showTooltip && !avatarGroup && styles.focusable,
       avatarGroup && groupStyles.ring,
       avatarGroup && groupStyles.overlap,
       avatarGroup && groupDynamicStyles.overlap(-avatarGroup.overlap),

@@ -81,7 +81,8 @@ const styles = stylex.create({
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-2'],
-    outline: 'none',
+    // No `outline: 'none'` here: this element receives the shared focus ring,
+    // which already defaults to none, and the shorthand would erase it.
     overflow: 'hidden',
     position: 'relative',
     boxSizing: 'border-box',

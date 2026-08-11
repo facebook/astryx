@@ -219,6 +219,11 @@ const variants = stylex.create({
   destructive: {
     backgroundColor: colorVars['--color-error'],
     color: colorVars['--color-on-error'],
+    // The ring matches the variant it rings: an accent-colored outline on a
+    // red button reads as a different control's focus. Applied after the
+    // shared outline (which sets width/style/offset) so only the color
+    // differs from every other focus ring in the library.
+    outlineColor: {default: null, ':focus-visible': colorVars['--color-error']},
     backgroundImage: {
       default: null,
       ':hover': {
@@ -644,7 +649,6 @@ export function Button({
   const sharedStylexProps = focusOutlineProps.focusVisible(
     styles.base,
     sizeStyles[size],
-    variants[variant],
     isIconOnly && styles.iconOnly,
     buttonDisabled && styles.disabled,
     useAriaDisabled && styles.ariaDisabled,
@@ -662,6 +666,10 @@ export function Button({
     // by the ButtonGroup so the shared surface lifts as one unit.
     !buttonGroup && elevationStyles[elevation],
     width != null && dynamicStyles.width(width),
+    // AFTER the shared focus outline: the outline supplies width/style/offset
+    // for every variant, and `destructive` re-colors just the ring to match
+    // its own surface. Ordering is the mechanism — StyleX is last-wins.
+    variants[variant],
     xstyle,
   );
 

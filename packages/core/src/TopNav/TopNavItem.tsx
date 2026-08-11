@@ -80,7 +80,6 @@ const styles = stylex.create({
     paddingInline: spacingVars['--spacing-2'],
   },
   // Drawer mode — focus outline (base item + selected come from navItemStyles)
-  drawerFocus: {},
 });
 
 export interface TopNavItemProps extends BaseProps<HTMLAnchorElement> {
@@ -233,7 +232,6 @@ export function TopNavItem({
           focusOutlineProps.focusVisible(
             navItemStyles.item,
             navItemStyles[size],
-            styles.drawerFocus,
             isSelected && navItemStyles.selected,
             isDisabled && navItemStyles.disabled,
             xstyle,
