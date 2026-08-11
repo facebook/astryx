@@ -44,6 +44,40 @@ export interface SandboxCategory {
   pages: SandboxPage[];
 }
 
+/**
+ * Sidebar entries that sit ABOVE the `Projects` section, alongside Home —
+ * destinations in their own right rather than pages inside a category.
+ *
+ * These used to be written out in `SandboxNav`; they are data so the next one
+ * is an entry here rather than another branch in the nav component. `icon` is
+ * a key into that file's icon map for the same reason the categories use one:
+ * this module stays JSX-free.
+ */
+export interface SandboxTopLevelPage {
+  /** Label shown in the sidebar */
+  label: string;
+  /** Route path (with trailing slash) */
+  href: string;
+  /** Key into SandboxNav's icon map */
+  icon: string;
+  /**
+   * Match child routes too. Home must not (`/` prefixes everything); a section
+   * with sub-pages should.
+   */
+  matchesChildren?: boolean;
+}
+
+export const topLevelPages: SandboxTopLevelPage[] = [
+  {label: 'Home', href: '/', icon: 'home'},
+  {label: 'Official Templates', href: '/templates/', icon: 'templates'},
+  {
+    label: 'Component Scores',
+    href: '/pages/component-scores/',
+    icon: 'scores',
+    matchesChildren: true,
+  },
+];
+
 export const categories: SandboxCategory[] = [
   {
     label: 'Components & Patterns',
@@ -184,12 +218,6 @@ export const categories: SandboxCategory[] = [
         href: '/pages/doc-preview/',
         description:
           'Token reference docs with live theme previews — color, spacing, typography, and more',
-      },
-      {
-        name: 'Component Scores',
-        href: '/pages/component-scores/',
-        description:
-          'Every component joined with its audit grade, open BLOCKs and last-audited date — live from the wiki ledger',
       },
       {
         name: 'Media Mode',

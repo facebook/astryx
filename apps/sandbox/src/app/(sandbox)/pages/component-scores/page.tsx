@@ -13,21 +13,21 @@ import {Badge} from '@astryxdesign/core/Badge';
 import type {BadgeVariant} from '@astryxdesign/core/Badge';
 import {Card} from '@astryxdesign/core/Card';
 import {Link} from '@astryxdesign/core/Link';
-import {CodeBlock} from '@astryxdesign/core/CodeBlock';
-import {Divider} from '@astryxdesign/core/Divider';
 import {Code} from '@astryxdesign/core/Code';
 import {Table, proportional, pixel} from '@astryxdesign/core/Table';
-import type {TableColumn} from '@astryxdesign/core/Table';
+import type {TableColumn, TablePlugin} from '@astryxdesign/core/Table';
+import {colorVars} from '@astryxdesign/core/theme/tokens.stylex';
 
 import {
   AUDIT_PROMPT,
   LEDGER_URL,
+  LEDGER_WIKI_URL,
   REPO,
   RUBRIC_URL,
-  SCORES_WIKI_URL,
   SECTION_TITLES,
   roster,
   snapshot,
+  snapshotFetchedAt,
   type Ledger,
   type LedgerBlock,
   type LedgerEntry,
@@ -142,6 +142,104 @@ const promptFor = (component: string) =>
   AUDIT_PROMPT.replaceAll('<Component>', component);
 
 // =============================================================================
+// Freshness
+// =============================================================================
+
+/**
+ * Which copy is on screen, said out loud. A stale page that looks live is worse
+ * than one that admits it, so this is a Badge next to the numbers rather than a
+ * line of small print underneath them.
+ */
+function FreshnessBadge({
+  source,
+  updated,
+}: {
+  source: LedgerSource;
+  updated: string | null;
+}) {
+  const snapshotDate = snapshotFetchedAt?.slice(0, 10) ?? null;
+  const state = {
+    loading: {
+      variant: 'neutral' as BadgeVariant,
+      label: 'Checking the wiki…',
+      detail:
+        'Reading the ledger from the wiki. The build-time copy is showing meanwhile.',
+    },
+    live: {
+      variant: 'success' as BadgeVariant,
+      label: 'Live',
+      detail: updated
+        ? `Fetched from the wiki ledger just now; the ledger was last written ${updated}.`
+        : 'Fetched from the wiki ledger just now.',
+    },
+    snapshot: {
+      variant: 'warning' as BadgeVariant,
+      label: snapshotDate ? `Snapshot from ${snapshotDate}` : 'Snapshot',
+      detail:
+        'The wiki could not be reached, so this is the copy taken when the site was built. ' +
+        'Scores recorded since then are not on this page.',
+    },
+    none: {
+      variant: 'error' as BadgeVariant,
+      label: 'No ledger',
+      detail:
+        'Neither the live fetch nor a build-time snapshot resolved. Every component reads TBD — ' +
+        'that is this page failing, not 118 unaudited components.',
+    },
+  }[source];
+
+  return (
+    <HStack gap={2} vAlign="center" wrap="wrap">
+      <Badge variant={state.variant} label={state.label} />
+      <Text type="supporting" color="secondary">
+        {state.detail}
+      </Text>
+    </HStack>
+  );
+}
+
+// =============================================================================
+// Sticky header
+//
+// Table ships a sticky-COLUMNS plugin but has no sticky header, and this page
+// is 118 rows: scroll past the fold and every cell is an unlabelled em-dash.
+// This goes through Table's documented `transformHeaderCell` seam — the same
+// one useTableStickyColumns uses — rather than reaching around the component.
+// It wants to be a Table prop; see the PR description.
+// =============================================================================
+
+const stickyHeaderStyles = stylex.create({
+  cell: {
+    position: 'sticky',
+    insetBlockStart: 0,
+    zIndex: 1,
+    // Header cells are transparent by default, so a pinned header needs a
+    // surface of its own or the rows scroll visibly through it.
+    backgroundColor: colorVars['--color-background-body'],
+  },
+  scrollWrapper: {
+    // `position: sticky` resolves against the nearest scrollport, and Table's
+    // scroll wrapper already is one: `overflow-x: auto` forces the block axis
+    // to compute to `auto` as well. So the header can only pin if the wrapper
+    // is also what scrolls vertically. Measured, not assumed — with the sticky
+    // cell alone the header scrolled away with the page.
+    maxBlockSize: '70vh',
+    overflowY: 'auto',
+  },
+});
+
+const stickyHeader: TablePlugin<ScoreRow> = {
+  transformHeaderCell: props => ({
+    ...props,
+    xstyle: [...props.xstyle, stickyHeaderStyles.cell],
+  }),
+  transformScrollWrapper: props => ({
+    ...props,
+    xstyle: [...props.xstyle, stickyHeaderStyles.scrollWrapper],
+  }),
+};
+
+// =============================================================================
 // Page
 // =============================================================================
 
@@ -154,33 +252,47 @@ const FILTERS: Array<{value: Filter; label: string}> = [
   {value: 'blocks', label: 'With open BLOCKs'},
 ];
 
+/**
+ * Which copy of the ledger is on screen. `loading` matters: without it the page
+ * claims "snapshot" for the few hundred milliseconds before the fetch lands,
+ * which is the same lie in the other direction.
+ */
+type LedgerSource = 'loading' | 'live' | 'snapshot' | 'none';
+
 export default function ComponentScoresPage() {
   const [ledger, setLedger] = useState<Ledger | null>(snapshot);
-  const [source, setSource] = useState<'snapshot' | 'live' | 'none'>(
-    snapshot ? 'snapshot' : 'none',
-  );
+  const [source, setSource] = useState<LedgerSource>('loading');
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
 
   // The ledger is a wiki file served with `access-control-allow-origin: *`, so
   // this page reads current scores without a rebuild. The build-time snapshot
-  // above is only there so nothing is ever blank while this resolves — and so
-  // the page still works when the wiki is unreachable.
+  // is only there so nothing is ever blank while this resolves — and so the
+  // page still works when the wiki is unreachable.
+  //
+  // `no-store`: raw.githubusercontent serves the ledger with `max-age=300`, so
+  // the default cache would happily hand back a five-minute-old copy and the
+  // page would call it live. A page that says "live" has to have asked.
   useEffect(() => {
     let cancelled = false;
-    fetch(LEDGER_URL)
+    fetch(LEDGER_URL, {cache: 'no-store'})
       .then(res =>
         res.ok ? res.json() : Promise.reject(new Error(String(res.status))),
       )
       .then((data: Ledger) => {
-        if (cancelled || !Array.isArray(data.components)) {
+        if (cancelled) {
           return;
+        }
+        if (!Array.isArray(data.components)) {
+          throw new Error('not a ledger');
         }
         setLedger(data);
         setSource('live');
       })
       .catch(() => {
-        /* keep the snapshot; the banner says which one is showing */
+        if (!cancelled) {
+          setSource(snapshot ? 'snapshot' : 'none');
+        }
       });
     return () => {
       cancelled = true;
@@ -248,7 +360,7 @@ export default function ComponentScoresPage() {
     {
       key: 'grade',
       header: 'Grade',
-      width: pixel(96),
+      width: pixel(88),
       renderCell: (row: ScoreRow) =>
         row.grade ? (
           <Badge
@@ -326,7 +438,7 @@ export default function ComponentScoresPage() {
     {
       key: 'lastAudited',
       header: 'Last audited',
-      width: pixel(140),
+      width: pixel(136),
       renderCell: (row: ScoreRow) =>
         row.audited ? (
           <VStack gap={1}>
@@ -344,7 +456,9 @@ export default function ComponentScoresPage() {
     {
       key: 'action',
       header: 'Audit',
-      width: pixel(150),
+      // Wide enough for the button plus the cell's own padding: at pixel(150)
+      // the 162px control was clipped on every row.
+      width: pixel(190),
       renderCell: (row: ScoreRow) => (
         <CopyButton
           text={promptFor(row.component)}
@@ -355,90 +469,44 @@ export default function ComponentScoresPage() {
   ];
 
   return (
-    <VStack gap={6}>
-      <VStack gap={3}>
+    // AppShell renders sandbox pages with `contentPadding={0}`, so the page owns
+    // its own gutters — without them the content ran flush to both viewport
+    // edges and the last column's button was clipped off the right. `maxWidth`
+    // caps the measure: unconstrained, the table stretched to 2300px on a
+    // 2560px monitor, which puts a component's name and its grade a foot apart.
+    <VStack gap={5} padding={6} maxWidth={1600} width="100%">
+      <VStack gap={2} maxWidth="72ch">
         <Heading level={1}>Component scores</Heading>
         <Text>
           Every component in <Code>packages/core/src</Code> and{' '}
-          <Code>packages/lab/src</Code>, joined with the audit ledger. The list
-          of components is read from the packages, so anything added shows up
-          here as <strong>TBD</strong> with nobody maintaining a list. The
-          scores come from{' '}
-          <Link href={SCORES_WIKI_URL} isExternalLink>
-            the wiki ledger
+          <Code>packages/lab/src</Code>, joined with the audit ledger kept in{' '}
+          <Link href={LEDGER_WIKI_URL} isExternalLink>
+            the wiki
           </Link>
-          , fetched live — a score recorded five minutes ago is on this page
-          without a rebuild.
+          . <strong>TBD</strong> means nobody has audited it yet — not that the
+          component is bad.
         </Text>
-        <Text type="supporting" color="secondary">
-          Grades follow the{' '}
-          <Link href={RUBRIC_URL} isExternalLink>
-            Component Audit Rubric
-          </Link>
-          : A 90+ · B 80+ · C 70+ · D 60+ · F below 60, and any open BLOCK caps
-          the grade at C. The score measures distance from the bar, not craft —
-          read the BLOCK count before the letter. TBD means no evidence, not a
-          bad component.
-        </Text>
+        <Link href={RUBRIC_URL} isExternalLink>
+          How components are graded, and how to get one audited
+        </Link>
       </VStack>
 
-      <Card>
-        <VStack gap={3}>
-          <Heading level={2}>Coverage</Heading>
-          <HStack gap={6} wrap="wrap">
-            <Stat label="Audited" value={`${stats.audited} / ${stats.total}`} />
-            <Stat label="Coverage" value={`${stats.percent}%`} />
-            <Stat label="Open BLOCKs" value={String(stats.openBlocks)} />
-            <Stat
-              label="BLOCKs with an issue"
-              value={String(stats.filedIssues)}
-            />
-            <Stat
-              label="Grades"
-              value={`A ${stats.grades.A} · B ${stats.grades.B} · C ${stats.grades.C} · D ${stats.grades.D} · F ${stats.grades.F}`}
-            />
-          </HStack>
-          <Text type="supporting" color="secondary">
-            {source === 'live'
-              ? 'Live from the wiki ledger.'
-              : source === 'snapshot'
-                ? 'Showing the build-time snapshot — the live fetch has not resolved (or the wiki is unreachable).'
-                : 'No ledger available: neither the build-time snapshot nor the live fetch resolved. Every component reads TBD.'}
-          </Text>
-        </VStack>
-      </Card>
-
-      <Card>
-        <VStack gap={3}>
-          <Heading level={2}>Getting a component audited</Heading>
-          <Text>
-            You do not need to be an auditor and it does not need a pull
-            request. Paste this to an agent that has the repo checked out —
-            replace <Code>&lt;Component&gt;</Code>, or use the copy button on
-            any row to get it filled in. The nightly pass picks up the next five
-            unaudited components on its own, so this is for jumping the queue.
-          </Text>
-          <CodeBlock language="text" code={AUDIT_PROMPT} />
-          <HStack gap={3}>
-            <CopyButton text={AUDIT_PROMPT} label="Copy the prompt" size="md" />
-            <Link href={RUBRIC_URL} isExternalLink>
-              Read the rubric
-            </Link>
-          </HStack>
-          <Divider />
-          <Text type="supporting" color="secondary">
-            An audit writes its result with{' '}
-            <Code>
-              node scripts/score-ledger.mjs --record &lt;Component&gt; --from
-              &lt;scorecard.json&gt;
-            </Code>{' '}
-            against a clone of the wiki, files one <Code>hardening</Code> issue
-            per open BLOCK, and pushes. Only what was actually measured gets
-            recorded — an unverified section is <Code>not_measured</Code>, never
-            a guess and never a zero.
-          </Text>
-        </VStack>
-      </Card>
+      <VStack gap={2}>
+        <HStack gap={6} wrap="wrap" vAlign="center">
+          <Stat label="Audited" value={`${stats.audited} / ${stats.total}`} />
+          <Stat label="Coverage" value={`${stats.percent}%`} />
+          <Stat label="Open BLOCKs" value={String(stats.openBlocks)} />
+          <Stat
+            label="BLOCKs with an issue"
+            value={String(stats.filedIssues)}
+          />
+          <Stat
+            label="Grades"
+            value={`A ${stats.grades.A} · B ${stats.grades.B} · C ${stats.grades.C} · D ${stats.grades.D} · F ${stats.grades.F}`}
+          />
+        </HStack>
+        <FreshnessBadge source={source} updated={ledger?.updated ?? null} />
+      </VStack>
 
       <VStack gap={3}>
         <HStack gap={3} vAlign="end" wrap="wrap">
@@ -470,6 +538,7 @@ export default function ComponentScoresPage() {
           density="balanced"
           dividers="rows"
           hasHover
+          plugins={{stickyHeader}}
         />
       </VStack>
 
@@ -497,9 +566,9 @@ function Stat({label, value}: {label: string; value: string}) {
       <Text type="supporting" color="secondary">
         {label}
       </Text>
-      <span {...stylex.props(styles.statValue)}>
-        <Text type="large">{value}</Text>
-      </span>
+      <Text type="large" xstyle={styles.statValue}>
+        {value}
+      </Text>
     </VStack>
   );
 }

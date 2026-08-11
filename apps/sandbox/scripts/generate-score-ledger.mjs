@@ -15,11 +15,12 @@
  *   maintaining a list. The scores are the wiki: an auditor records one with a
  *   wiki push and no pull request.
  *
- *   The snapshot exists only so the page is never blank. The page re-fetches
- *   the same URL client-side at runtime, so a score recorded after this build
- *   shows up without a rebuild. If the fetch here fails — offline build, wiki
- *   down — the snapshot is null and the page falls back to the live fetch
- *   alone; it never fails the build.
+ *   The snapshot exists only so the page is never blank, and so the page still
+ *   works when the wiki is unreachable. The page re-fetches the same URL
+ *   client-side at runtime, so a score recorded after this build shows up
+ *   without a rebuild — and the page labels which of the two you are reading.
+ *   If the fetch here fails — offline build, wiki down — the snapshot is null
+ *   and the page relies on the live fetch alone; it never fails the build.
  *
  * SYNC: When the ledger schema changes, update scripts/score-ledger.mjs and the
  *   Component-Audit-Rubric wiki page too.
@@ -138,11 +139,14 @@ export const RUBRIC_URL = ${JSON.stringify(
   `https://github.com/${DEFAULT_REPO}/wiki/Component-Audit-Rubric`,
 )};
 
-export const SCORES_WIKI_URL = ${JSON.stringify(
-  `https://github.com/${DEFAULT_REPO}/wiki/Component-Scores`,
-)};
+/**
+ * The ledger file in the wiki. It is the ONLY stored form of the scores —
+ * there is no generated table page to link at, on purpose: a second copy goes
+ * stale the moment the JSON changes without a regeneration.
+ */
+export const LEDGER_WIKI_URL = ${JSON.stringify(DEFAULT_LEDGER_URL)};
 
-/** The paste-to-an-agent request for an audit. Shared with the wiki page. */
+/** The paste-to-an-agent request for an audit. Shared with the CLI. */
 export const AUDIT_PROMPT = ${JSON.stringify(AUDIT_PROMPT)};
 
 export const SECTION_TITLES: Record<string, string> = ${JSON.stringify(SECTION_TITLES, null, 2)};
@@ -152,9 +156,15 @@ export const SECTION_WEIGHTS: Record<string, number> = ${JSON.stringify(SECTION_
 /** Every component in packages/{core,lab}/src, by the canonical predicate. */
 export const roster: RosterEntry[] = ${JSON.stringify(roster, null, 2)};
 
-/** Build-time copy of the ledger; null when the build could not reach the wiki. */
+/**
+ * Build-time copy of the ledger, used ONLY until the runtime fetch resolves and
+ * as the fallback when it fails. Null when the build could not reach the wiki.
+ * The page says which of the two it is showing — a stale page that looks live
+ * is worse than one that admits it.
+ */
 export const snapshot: Ledger | null = ${JSON.stringify(snapshot, null, 2)};
 
+/** When the snapshot above was taken, so the fallback can date itself. */
 export const snapshotFetchedAt: string | null = ${JSON.stringify(snapshotFetchedAt)};
 `;
 
