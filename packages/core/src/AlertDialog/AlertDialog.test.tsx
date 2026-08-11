@@ -218,7 +218,9 @@ describe('AlertDialog', () => {
 });
 
 describe('useImperativeAlertDialog', () => {
-  function Harness({onAction = vi.fn()}: {onAction?: () => unknown}) {
+  const noop = () => {};
+
+  function Harness({onAction = noop}: {onAction?: () => unknown}) {
     const alert = useImperativeAlertDialog();
     return (
       <>
