@@ -13,7 +13,7 @@
  * - /packages/core/src/RadioList/RadioList.test.tsx
  * - /packages/core/src/RadioList/index.ts
  * - /apps/storybook/stories/RadioList.stories.tsx
- * - /packages/cli/templates/blocks/components/RadioList/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/RadioList/ (showcase blocks)
  */
 
 import React, {
@@ -146,8 +146,8 @@ export interface RadioListProps extends Omit<
   status?: InputStatus;
   /**
    * The size of the radio controls.
-   * - 'sm': Compact size (18px radio, 20px wrapper)
-   * - 'md': Default size (22px radio, 24px wrapper)
+   * - 'sm': Compact size (20px radio)
+   * - 'md': Default size (24px radio)
    * @default 'md'
    */
   size?: RadioListSize;

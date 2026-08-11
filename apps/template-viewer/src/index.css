@@ -1,0 +1,6 @@
+/* Copyright (c) Meta Platforms, Inc. and affiliates. */
+
+/* Placeholder to ensure Vite emits a CSS asset for StyleX aggregation. */
+:root {
+  --stylex-injection: 0;
+}

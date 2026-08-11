@@ -4,7 +4,7 @@
 
 /**
  * @file Slider.tsx
- * @input Uses React, useId, useRef, useCallback, Field, Tooltip, useTooltip
+ * @input Uses React, useId, useRef, useCallback, Field, Tooltip, useTooltip, VisuallyHidden
  * @output Exports Slider component, SliderProps, SliderSingleProps, SliderRangeProps, SliderBaseProps
  * @position Core implementation; consumed by index.ts, tested by Slider.test.tsx
  *
@@ -13,7 +13,7 @@
  * - /packages/core/src/Slider/Slider.test.tsx
  * - /packages/core/src/Slider/index.ts
  * - /apps/storybook/stories/Slider.stories.tsx
- * - /packages/cli/templates/blocks/components/Slider/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Slider/ (showcase blocks)
  */
 
 import {
@@ -38,8 +38,10 @@ import {
 import {Field} from '../Field/Field';
 import {Tooltip} from '../Tooltip/Tooltip';
 import {useTooltip} from '../Tooltip';
+import {VisuallyHidden} from '../VisuallyHidden';
 import type {InputStatus} from '../Field/types';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs, rtlStyles} from '../utils';
+import {isRtlElement} from '../hooks/isRtlElement';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
@@ -191,8 +193,8 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-full'],
   },
   trackHorizontal: {
-    left: 0,
-    right: 0,
+    insetInlineStart: 0,
+    insetInlineEnd: 0,
     height: TRACK_SIZE,
     top: '50%',
     transform: 'translateY(-50%)',
@@ -201,8 +203,6 @@ const styles = stylex.create({
     top: 0,
     bottom: 0,
     width: TRACK_SIZE,
-    left: '50%',
-    transform: 'translateX(-50%)',
   },
   filledTrack: {
     position: 'absolute',
@@ -216,8 +216,6 @@ const styles = stylex.create({
   },
   filledTrackVertical: {
     width: TRACK_SIZE,
-    left: '50%',
-    transform: 'translateX(-50%)',
   },
   thumb: {
     position: 'absolute',
@@ -238,10 +236,14 @@ const styles = stylex.create({
   },
   thumbHorizontal: {
     top: '50%',
-  },
-  thumbVertical: {
-    left: '50%',
-    transform: 'translate(-50%, 50%)',
+    // The thumb is positioned via logical `insetInlineStart`, which resolves
+    // from the right edge under RTL. The centering translate is a physical
+    // (screen-space) transform, so it must flip its X direction under RTL to
+    // keep the thumb centered on the value point.
+    transform: {
+      default: 'translate(-50%, -50%)',
+      ':is([dir="rtl"] *)': 'translate(50%, -50%)',
+    },
   },
   thumbHover: {
     backgroundColor: {
@@ -276,14 +278,14 @@ const styles = stylex.create({
     position: 'absolute',
   },
   marksContainerHorizontal: {
-    left: 0,
-    right: 0,
+    insetInlineStart: 0,
+    insetInlineEnd: 0,
     top: '50%',
   },
   marksContainerVertical: {
     top: 0,
     bottom: 0,
-    left: '50%',
+    insetInlineStart: '50%',
   },
   mark: {
     position: 'absolute',
@@ -293,7 +295,10 @@ const styles = stylex.create({
   markHorizontal: {
     width: 2,
     height: 8,
-    transform: 'translate(-50%, -50%)',
+    transform: {
+      default: 'translate(-50%, -50%)',
+      ':is([dir="rtl"] *)': 'translate(50%, -50%)',
+    },
   },
   markVertical: {
     height: 2,
@@ -308,12 +313,15 @@ const styles = stylex.create({
     whiteSpace: 'nowrap',
   },
   markLabelHorizontal: {
-    transform: 'translateX(-50%)',
+    transform: {
+      default: 'translateX(-50%)',
+      ':is([dir="rtl"] *)': 'translateX(50%)',
+    },
     top: THUMB_SIZE / 2 + 4,
   },
   markLabelVertical: {
     transform: 'translateY(50%)',
-    left: THUMB_SIZE / 2 + 4,
+    insetInlineStart: THUMB_SIZE / 2 + 4,
   },
 });
 
@@ -325,12 +333,39 @@ function clamp(val: number, min: number, max: number): number {
   return Math.min(Math.max(val, min), max);
 }
 
+/**
+ * Number of decimal places a value carries, including values in exponent
+ * notation (e.g. 1e-7 → 7). Used to round away binary floating-point error
+ * after step arithmetic.
+ */
+function getDecimalPrecision(num: number): number {
+  if (Math.abs(num) < 1) {
+    const parts = num.toExponential().split('e-');
+    if (parts.length === 2) {
+      const mantissaDecimals = parts[0].split('.')[1]?.length ?? 0;
+      return mantissaDecimals + parseInt(parts[1], 10);
+    }
+  }
+  const decimalPart = String(num).split('.')[1];
+  return decimalPart ? decimalPart.length : 0;
+}
+
 function snapToStep(val: number, min: number, step: number): number {
   if (step <= 0) {
     return val;
   }
   const steps = Math.round((val - min) / step);
-  return min + steps * step;
+  const snapped = min + steps * step;
+  // `min + steps * step` accumulates binary floating-point error with
+  // fractional steps (0 + 3 * 0.1 → 0.30000000000000004), which leaks into
+  // onChange/onChangeEnd payloads, aria-valuenow, and the value tooltip.
+  // Snapped values can never carry more decimals than min/step combined, so
+  // rounding to that precision removes only the error.
+  const precision = Math.min(
+    Math.max(getDecimalPrecision(min), getDecimalPrecision(step)),
+    20, // toFixed() throws past 20 digits
+  );
+  return Number(snapped.toFixed(precision));
 }
 
 function getPercent(val: number, min: number, max: number): number {
@@ -391,8 +426,10 @@ export function Slider({ref, ...props}: SliderProps) {
   const isHorizontal = orientation === 'horizontal';
 
   const id = useId();
+  const labelID = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
+  const requiredID = useId();
 
   const trackRef = useRef<HTMLDivElement>(null);
   const draggingThumbRef = useRef<number | null>(null);
@@ -412,6 +449,12 @@ export function Slider({ref, ...props}: SliderProps) {
     isEnabled: showsDisabledMessage,
   });
 
+  // Required state. `aria-required` is not a supported property of
+  // role="slider" in WAI-ARIA 1.2, so the thumb instead points its
+  // aria-describedby at a visually hidden "Required" span — mirroring the
+  // Field label's visible indicator (where isOptional takes precedence).
+  const conveysRequired = isRequired && !isOptional;
+
   // Build aria-describedby
   const describedByParts: string[] = [];
   if (description) {
@@ -419,6 +462,9 @@ export function Slider({ref, ...props}: SliderProps) {
   }
   if (status?.message) {
     describedByParts.push(statusMessageID);
+  }
+  if (conveysRequired) {
+    describedByParts.push(requiredID);
   }
   if (showsDisabledMessage) {
     describedByParts.push(disabledMessageTooltip.describedBy);
@@ -428,10 +474,12 @@ export function Slider({ref, ...props}: SliderProps) {
 
   // Value helpers — guard against undefined value (e.g. playground previews
   // that render the component without providing a value prop).
-  const values: number[] = useMemo(
-    () => (isRange ? value : [value != null ? value : min]),
-    [isRange, value, min],
-  );
+  const values: number[] = useMemo(() => {
+    const currentValues = Array.isArray(value)
+      ? value
+      : [value != null ? value : min];
+    return currentValues.map(currentValue => clamp(currentValue, min, max));
+  }, [value, min, max]);
 
   const valuesRef = useRef(values);
   valuesRef.current = values;
@@ -446,7 +494,12 @@ export function Slider({ref, ...props}: SliderProps) {
 
       let percent: number;
       if (isHorizontal) {
-        percent = (clientX - rect.left) / rect.width;
+        // In RTL the inline-start (value = min) is the right edge, so measure
+        // the pointer fraction from the right instead of the left. Detected
+        // from the track's computed direction (lazy, only on pointer move).
+        percent = isRtlElement(track)
+          ? (rect.right - clientX) / rect.width
+          : (clientX - rect.left) / rect.width;
       } else {
         // Vertical: bottom = min, top = max
         percent = 1 - (clientY - rect.top) / rect.height;
@@ -679,14 +732,28 @@ export function Slider({ref, ...props}: SliderProps) {
     const percent = getPercent(val, min, max);
 
     const positionStyle = isHorizontal
-      ? {left: `${percent}%`}
+      ? {insetInlineStart: `${percent}%`}
       : {bottom: `${percent}%`, left: '50%'};
 
+    // In range mode each thumb keeps a short individual name that composes
+    // with the group label (announced via the group's aria-labelledby), per
+    // the APG multi-thumb slider pattern. In single mode the thumb takes its
+    // name from the visible label element via aria-labelledby.
     const thumbLabel = isRange
       ? thumbIndex === 0
-        ? `${label}, minimum value`
-        : `${label}, maximum value`
-      : label;
+        ? 'Minimum value'
+        : 'Maximum value'
+      : undefined;
+
+    // ARIA bounds must agree with the movement clamping in updateValue: in
+    // range mode a thumb can't cross its sibling (minus the
+    // minStepsBetweenThumbs gap), and the result is always clamped to
+    // [min, max].
+    const minGap = minStepsBetweenThumbs * step;
+    const ariaValueMin =
+      isRange && thumbIndex === 1 ? clamp(values[0] + minGap, min, max) : min;
+    const ariaValueMax =
+      isRange && thumbIndex === 0 ? clamp(values[1] - minGap, min, max) : max;
 
     // Suppress the per-thumb value bubble while the disabled-message tooltip is
     // showing, so a disabled slider surfaces the *reason* on hover/focus rather
@@ -703,14 +770,15 @@ export function Slider({ref, ...props}: SliderProps) {
         // focus-discoverable; value changes stay blocked by the isDisabled
         // guards in the pointer/keyboard handlers.
         tabIndex={isDisabled && !showsDisabledMessage ? -1 : 0}
-        aria-valuemin={min}
-        aria-valuemax={max}
+        aria-valuemin={ariaValueMin}
+        aria-valuemax={ariaValueMax}
         aria-valuenow={val}
         aria-valuetext={formatValue ? formatValue(val) : undefined}
         aria-orientation={orientation}
         aria-disabled={isDisabled || undefined}
         aria-invalid={status?.type === 'error' ? true : undefined}
         aria-label={thumbLabel}
+        aria-labelledby={!isRange ? labelID : undefined}
         aria-describedby={ariaDescribedBy}
         onKeyDown={e => handleKeyDown(thumbIndex, e)}
         {...mergeProps(
@@ -720,7 +788,9 @@ export function Slider({ref, ...props}: SliderProps) {
           }),
           stylex.props(
             styles.thumb,
-            isHorizontal ? styles.thumbHorizontal : styles.thumbVertical,
+            isHorizontal
+              ? styles.thumbHorizontal
+              : rtlStyles.centerInline('50%'),
             !isDisabled && styles.thumbHover,
             !isDisabled && styles.thumbFocusVisible,
             isDisabled && styles.thumbDisabled,
@@ -755,13 +825,13 @@ export function Slider({ref, ...props}: SliderProps) {
       const p0 = getPercent(v0, min, max);
       const p1 = getPercent(v1, min, max);
       if (isHorizontal) {
-        return {left: `${p0}%`, width: `${p1 - p0}%`};
+        return {insetInlineStart: `${p0}%`, width: `${p1 - p0}%`};
       }
       return {bottom: `${p0}%`, height: `${p1 - p0}%`};
     }
     const p = getPercent(values[0], min, max);
     if (isHorizontal) {
-      return {left: '0%', width: `${p}%`};
+      return {insetInlineStart: '0%', width: `${p}%`};
     }
     return {bottom: '0%', height: `${p}%`};
   })();
@@ -783,6 +853,14 @@ export function Slider({ref, ...props}: SliderProps) {
       isLabelHidden={isLabelHidden}
       description={description}
       inputID={id}
+      labelID={labelID}
+      // The thumb is a div[role="slider"], which a <label htmlFor> can't
+      // name (only form-associated elements are labelable). Render the label
+      // as a group label and associate it via aria-labelledby instead: the
+      // single thumb references it directly, and in range mode the
+      // role="group" container references it while each thumb keeps its own
+      // "Minimum value"/"Maximum value" name.
+      isGroupLabel
       descriptionID={description ? descriptionID : undefined}
       isOptional={isOptional}
       isRequired={isRequired}
@@ -825,7 +903,9 @@ export function Slider({ref, ...props}: SliderProps) {
           ))}
         <div
           ref={mergeRefs(ref, trackRef, disabledMessageTooltip.ref)}
-          {...(isRange ? {role: 'group', 'aria-label': label} : undefined)}
+          {...(isRange
+            ? {role: 'group', 'aria-labelledby': labelID}
+            : undefined)}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
@@ -844,7 +924,9 @@ export function Slider({ref, ...props}: SliderProps) {
               themeProps('slider-track', {orientation}),
               stylex.props(
                 styles.track,
-                isHorizontal ? styles.trackHorizontal : styles.trackVertical,
+                isHorizontal
+                  ? styles.trackHorizontal
+                  : [styles.trackVertical, rtlStyles.centerInline('0px')],
               ),
             )}
           />
@@ -857,7 +939,7 @@ export function Slider({ref, ...props}: SliderProps) {
                 styles.filledTrack,
                 isHorizontal
                   ? styles.filledTrackHorizontal
-                  : styles.filledTrackVertical,
+                  : [styles.filledTrackVertical, rtlStyles.centerInline('0px')],
               ),
               {style: filledStyle},
             )}
@@ -876,7 +958,7 @@ export function Slider({ref, ...props}: SliderProps) {
               {marks.map(mark => {
                 const percent = getPercent(mark.value, min, max);
                 const markPos = isHorizontal
-                  ? {left: `${percent}%`}
+                  ? {insetInlineStart: `${percent}%`}
                   : {bottom: `${percent}%`};
                 return (
                   <div key={mark.value}>
@@ -921,6 +1003,9 @@ export function Slider({ref, ...props}: SliderProps) {
 
         {textDisplay}
       </div>
+      {conveysRequired && (
+        <VisuallyHidden id={requiredID}>Required</VisuallyHidden>
+      )}
       {showsDisabledMessage &&
         disabledMessageTooltip.renderTooltip(disabledMessage)}
     </Field>

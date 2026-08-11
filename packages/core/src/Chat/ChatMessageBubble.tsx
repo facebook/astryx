@@ -22,7 +22,7 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Chat/index.ts (exports)
  * - /apps/storybook/stories/Chat.stories.tsx
- * - /packages/cli/templates/blocks/components/ChatMessageBubble/ (block examples)
+ * - /packages/cli/assets/templates/blocks/components/ChatMessageBubble/ (block examples)
  */
 
 import type {ReactNode} from 'react';
@@ -160,27 +160,32 @@ const styles = stylex.create({
     backgroundColor: 'transparent',
     color: colorVars['--color-text-primary'],
   },
-  // Grouped bubble corners — assistant (left side tight)
+  // Grouped bubble corners — assistant (inline-start side tight).
+  // Logical radii so the tail follows reading direction: inline-start is the
+  // left edge under LTR and the right edge under RTL (assistant tucks toward
+  // the start of the line in both directions).
   groupFirstAssistant: {
-    borderBottomLeftRadius: radiusVars['--radius-inner'],
+    borderEndStartRadius: radiusVars['--radius-inner'],
   },
   groupMiddleAssistant: {
-    borderTopLeftRadius: radiusVars['--radius-inner'],
-    borderBottomLeftRadius: radiusVars['--radius-inner'],
+    borderStartStartRadius: radiusVars['--radius-inner'],
+    borderEndStartRadius: radiusVars['--radius-inner'],
   },
   groupLastAssistant: {
-    borderTopLeftRadius: radiusVars['--radius-inner'],
+    borderStartStartRadius: radiusVars['--radius-inner'],
   },
-  // Grouped bubble corners — user (right side tight)
+  // Grouped bubble corners — user (inline-end side tight).
+  // Logical radii: inline-end is the right edge under LTR and the left edge
+  // under RTL (user tucks toward the end of the line in both directions).
   groupFirstUser: {
-    borderBottomRightRadius: radiusVars['--radius-inner'],
+    borderEndEndRadius: radiusVars['--radius-inner'],
   },
   groupMiddleUser: {
-    borderTopRightRadius: radiusVars['--radius-inner'],
-    borderBottomRightRadius: radiusVars['--radius-inner'],
+    borderStartEndRadius: radiusVars['--radius-inner'],
+    borderEndEndRadius: radiusVars['--radius-inner'],
   },
   groupLastUser: {
-    borderTopRightRadius: radiusVars['--radius-inner'],
+    borderStartEndRadius: radiusVars['--radius-inner'],
   },
 });
 
@@ -216,6 +221,7 @@ export function ChatMessageBubble({
   style: styleProp,
   'data-testid': testId,
   ref,
+  ...rest
 }: ChatMessageBubbleProps) {
   const msgContext = useChatMessageContext();
   const sender = msgContext?.sender ?? 'assistant';
@@ -274,6 +280,7 @@ export function ChatMessageBubble({
         </div>
       )}
       <div
+        {...rest}
         ref={ref}
         data-testid={testId}
         {...mergeProps(

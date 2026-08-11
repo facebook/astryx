@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'Collapsible',
@@ -17,6 +17,8 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-collapsible', visualProps: ['density']},
+      {className: 'astryx-collapsible-trigger', visualProps: ['density']},
+      {className: 'astryx-collapsible-content', visualProps: ['density']},
       {className: 'astryx-collapsible-group', visualProps: ['density']},
     ],
   },
@@ -54,6 +56,12 @@ export const docs = {
       description: 'Controlled open state.',
     },
     {
+      name: 'isDisabled',
+      type: 'boolean',
+      description: "Disable the item so its trigger can't be toggled (dimmed, aria-disabled, and out of the tab order). Doesn't collapse an already-open item.",
+      default: 'false',
+    },
+    {
       name: 'onOpenChange',
       type: '(isOpen: boolean) => void',
       description: 'Callback invoked when the open state changes.',
@@ -70,7 +78,7 @@ export const docs = {
   usage: {
     description: 'Collapsible hides and reveals content behind a trigger button. Use it in settings panels, FAQ pages, or detail views to keep the page scannable while letting users drill into sections they care about. Wrap multiple collapsibles in CollapsibleGroup for accordion behavior. For custom collapsible components, use the `useCollapsible` hook directly (`astryx hook useCollapsible`).',
     bestPractices: [
-      { guidance: true, description: 'Use hasDividers on CollapsibleGroup for FAQ-style lists — built-in row hairlines with themed border tokens, no hand-rolled borders.' },
+      { guidance: true, description: 'Use hasDividers on CollapsibleGroup for FAQ-style lists: built-in row hairlines with themed border tokens, no hand-rolled borders.' },
       { guidance: true, description: 'Wrap each Collapsible in an Card for visual separation in accordion layouts, or use CollapsibleGroup\'s hasDividers for flat lists; don\'t combine both.' },
       { guidance: true, description: 'Use CollapsibleGroup with type="single" for settings or FAQ pages where only one section should be open at a time.' },
       { guidance: true, description: 'Use type="multiple" when users need to compare content across sections, like feature lists or pricing tiers.' },
@@ -87,12 +95,12 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsZh = {
   usage: {
     description: 'Collapsible hides and reveals content behind a trigger button. Use it in settings panels, FAQ pages, or detail views to keep the page scannable while letting users drill into sections they care about. Wrap multiple collapsibles in CollapsibleGroup for accordion behavior.',
     bestPractices: [
-      { guidance: true, description: 'Use hasDividers on CollapsibleGroup for FAQ-style lists — built-in row hairlines with themed border tokens, no hand-rolled borders.' },
+      { guidance: true, description: 'Use hasDividers on CollapsibleGroup for FAQ-style lists: built-in row hairlines with themed border tokens, no hand-rolled borders.' },
       { guidance: true, description: 'Wrap each Collapsible in an Card for visual separation in accordion layouts, or use CollapsibleGroup\'s hasDividers for flat lists; don\'t combine both.' },
       { guidance: true, description: 'Use CollapsibleGroup with type="single" for settings or FAQ pages where only one section should be open at a time.' },
       { guidance: true, description: 'Use type="multiple" when users need to compare content across sections, like feature lists or pricing tiers.' },
@@ -104,13 +112,13 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'hide/reveal content behind a trigger; group for accordion behavior',
   usage: {
     description: 'Collapsible hides and reveals content behind a trigger button. Use in settings, FAQs, or detail views. Wrap in CollapsibleGroup for accordion behavior.',
     bestPractices: [
-      { guidance: true, description: 'Use hasDividers on CollapsibleGroup for FAQ-style lists — built-in row hairlines, no hand-rolled borders.' },
+      { guidance: true, description: 'Use hasDividers on CollapsibleGroup for FAQ-style lists: built-in row hairlines, no hand-rolled borders.' },
       { guidance: true, description: 'Wrap each Collapsible in an Card for visual separation, or use CollapsibleGroup\'s hasDividers for flat lists; not both.' },
       { guidance: true, description: 'Use CollapsibleGroup with type="single" for settings or FAQ pages where only one section should be open at a time.' },
       { guidance: true, description: 'Use type="multiple" when users need to compare across sections.' },

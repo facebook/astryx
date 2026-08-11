@@ -60,10 +60,20 @@ export default defineConfig(
       // (see the dedicated CLI block lower down). Scoped to packages/cli on
       // purpose — other packages' .mjs stay unlinted (#2468).
       "**/*.mjs",
-      "!packages/cli/src/**/*.mjs",
-      "!packages/cli/bin/**/*.mjs",
+      "!packages/cli/api/**/*.mjs",
+      "!packages/cli/clients/cli/**/*.mjs",
+      "!packages/cli/assets/codemods/**/*.mjs",
+      "!packages/cli/authoring/**/*.mjs",
+      "!packages/cli/lib/**/*.mjs",
+      "!packages/cli/utils/**/*.mjs",
+      "!packages/cli/foundation/**/*.mjs",
+      "!packages/cli/clients/cli/bin/**/*.mjs",
       "**/*.test-violations.tsx",
       "apps/example-nextjs/*.js",
+      // Generated declaration files (e.g. the CLI's `./api` type surface emitted
+      // from JSDoc by `sync:api-types` at prepack). Like `**/*.d.ts`, these are
+      // build artifacts — not hand-authored source to lint.
+      "**/*.d.mts",
       "**/next-env.d.ts",
       "**/.next/**",
       "apps/example-nextjs-source/*.js",
@@ -174,6 +184,25 @@ export default defineConfig(
           'Carousel/Carousel',
         ],
       }],
+      // announce() live-region messages are user-facing text; the rule checks
+      // them as call arguments (callees defaults to ['announce']).
+      // TEMPORARY allowlist: these exact strings predate the check and are
+      // being replaced with t(...) in the scan #3 i18n sweep PRs
+      // (CodeBlock 'Copied'; MultiSelector 'Selection cleared' /
+      // 'All selected'). Remove each entry as its fix merges; delete
+      // allowedCalleeStrings entirely once the sweep lands.
+      '@astryx/no-hardcoded-i18n-string': [isStrictMode ? 'error' : 'warn', {
+        allowedCalleeStrings: ['Copied', 'Selection cleared', 'All selected'],
+      }],
+    },
+  },
+  // The i18n runtime itself defines the message strings the rest of the
+  // package resolves against; a "hardcoded string" check against it would be
+  // circular. Turn off @astryx/no-hardcoded-i18n-string just for this dir.
+  {
+    files: ["packages/core/src/i18n/**/*.{ts,tsx}"],
+    rules: {
+      '@astryx/no-hardcoded-i18n-string': 'off',
     },
   },
   // React bug-prevention rules - applies to core package
@@ -284,6 +313,9 @@ export default defineConfig(
       "@typescript-eslint/no-non-null-assertion": "off",
       "@typescript-eslint/consistent-type-assertions": "off",
       "react-compiler/react-compiler": "off",
+      // Test harnesses wrap components in sized/positioned <div>s to set up a
+      // scenario; that scaffolding is not shipped DOM.
+      "@astryx/no-style-only-wrapper": "off",
     },
   },
   // Non-production code — allow console.log for demos, tools, and examples
@@ -294,7 +326,7 @@ export default defineConfig(
       "apps/sandbox/**/*.{ts,tsx}",
       "apps/example-*/**/*.{ts,tsx}",
       "internal/**/*.{ts,tsx}",
-      "packages/cli/templates/**/*.{ts,tsx}",
+      "packages/cli/assets/templates/**/*.{ts,tsx}",
     ],
     rules: {
       "no-console": "off",
@@ -305,7 +337,16 @@ export default defineConfig(
   // .mjs sources a Node language environment and enforces the JSON-stdout
   // contract (#2467) at author time via @astryx/no-raw-console-cli.
   {
-    files: ["packages/cli/src/**/*.mjs", "packages/cli/bin/**/*.mjs"],
+    files: [
+      "packages/cli/api/**/*.mjs",
+      "packages/cli/clients/cli/**/*.mjs",
+      "packages/cli/assets/codemods/**/*.mjs",
+      "packages/cli/authoring/**/*.mjs",
+      "packages/cli/lib/**/*.mjs",
+      "packages/cli/utils/**/*.mjs",
+      "packages/cli/foundation/**/*.mjs",
+      "packages/cli/clients/cli/bin/**/*.mjs",
+    ],
     plugins: {
       '@astryx': astryxEslintPlugin,
     },
@@ -351,12 +392,112 @@ export default defineConfig(
   // Copyright header for CLI .mjs sources (the main copyright block only
   // covers .ts/.tsx).
   {
-    files: ["packages/cli/src/**/*.mjs", "packages/cli/bin/**/*.mjs"],
+    files: [
+      "packages/cli/api/**/*.mjs",
+      "packages/cli/clients/cli/**/*.mjs",
+      "packages/cli/assets/codemods/**/*.mjs",
+      "packages/cli/authoring/**/*.mjs",
+      "packages/cli/lib/**/*.mjs",
+      "packages/cli/utils/**/*.mjs",
+      "packages/cli/foundation/**/*.mjs",
+      "packages/cli/clients/cli/bin/**/*.mjs",
+    ],
     plugins: {
       '@astryx': astryxEslintPlugin,
     },
     rules: {
       '@astryx/copyright-header': 'error',
+    },
+  },
+  // ── CLI architecture invariants ────────────────────────────────────────
+  // Enforces the layering documented in CONTRIBUTING > "Working on the astryx
+  // CLI". Every rule below is already clean across packages/cli, so they are
+  // errors: they exist to prevent regressions, not to flag a backlog.
+  //
+  // NOTE: flat config *overrides* (does not merge) a same-named rule, so the
+  // `no-restricted-imports` blocks are kept disjoint — one per layer.
+
+  // authoring/ is pure data contracts + sealed parsers: it sits below every
+  // other layer and imports none of them.
+  {
+    files: ["packages/cli/authoring/**/*.mjs"],
+    rules: {
+      "no-restricted-imports": ["error", {
+        patterns: [{
+          group: ["**/api/**", "**/clients/**", "**/foundation/**"],
+          message:
+            "authoring/ is pure data contracts (types + sealed parsers) and must not import api/, clients/, or foundation/. Move shared behavior down into the contract, or invert the dependency.",
+        }],
+      }],
+    },
+  },
+  // api/ is the behavior source of truth — it must never reach up into the
+  // CLI presentation layer (that's what keeps `astryx --json` and the imported
+  // function returning identical data).
+  {
+    files: ["packages/cli/api/**/*.mjs"],
+    rules: {
+      "no-restricted-imports": ["error", {
+        patterns: [{
+          group: ["**/clients/**"],
+          message:
+            "api/ is the behavior source of truth and must not import clients/ (the CLI presentation layer). Return data in the { type, data } envelope and let the command handler render it.",
+        }],
+        paths: [{
+          name: "zod",
+          message:
+            "zod is sealed behind the authoring/ parsers. Validate at the load boundary (parseDoc/parseConfig/parseIntegration) and pass typed data inward.",
+        }],
+      }],
+    },
+  },
+  // Everything above the contracts consumes already-parsed, typed data.
+  {
+    files: ["packages/cli/clients/**/*.mjs"],
+    rules: {
+      "no-restricted-imports": ["error", {
+        paths: [{
+          name: "zod",
+          message:
+            "zod is sealed behind the authoring/ parsers. Validate at the load boundary (parseDoc/parseConfig/parseIntegration) and pass typed data inward.",
+        }],
+      }],
+    },
+  },
+  // foundation/ is the bottom layer: cross-cutting infra that the layers above
+  // build on. It must not reach back up into api/ or clients/. (It briefly did:
+  // Project pulled template discovery out of api/template, whose adapter then
+  // imported Project back — a cycle across the layer boundary. The adapter and
+  // the contribution validators now live in foundation, where their callers are.)
+  {
+    files: ["packages/cli/foundation/**/*.mjs"],
+    rules: {
+      "no-restricted-imports": ["error", {
+        patterns: [{
+          group: ["**/api/**", "**/clients/**"],
+          message:
+            "foundation/ is the bottom layer and must not import api/ or clients/. If foundation needs it, it belongs in foundation — move it down rather than reaching up.",
+        }],
+        paths: [{
+          name: "zod",
+          message:
+            "zod is sealed behind the authoring/ parsers. Validate at the load boundary (parseDoc/parseConfig/parseIntegration) and pass typed data inward.",
+        }],
+      }],
+    },
+  },
+  // A command's --help and its manifest entry are generated from its colocated
+  // CommandDoc via defineCommand. Registering straight onto Commander bypasses
+  // the doc, so the docs silently stop describing the real CLI.
+  {
+    files: ["packages/cli/clients/cli/commands/**/*.mjs"],
+    rules: {
+      "no-restricted-syntax": ["error", {
+        selector:
+          "CallExpression[callee.type='MemberExpression'][callee.property.name='command']",
+        message:
+          "Register commands with defineCommand(parent, doc, {fn, action}) so --help and the manifest come from the colocated CommandDoc. See CONTRIBUTING > Working on the astryx CLI.",
+      }],
     },
   },
   // CLI tests — relax author-ergonomics rules (test files emit freely and may
@@ -366,6 +507,9 @@ export default defineConfig(
     rules: {
       "@astryx/no-raw-console-cli": "off",
       "@typescript-eslint/no-unused-vars": "off",
+      // Tests build fixtures directly against zod and Commander.
+      "no-restricted-imports": "off",
+      "no-restricted-syntax": "off",
     },
   },
 );

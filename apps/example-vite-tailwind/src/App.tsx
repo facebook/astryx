@@ -109,7 +109,7 @@ export default function App() {
                 <Card>
                   <VStack gap={3}>
                     <HStack gap={2} vAlign="center">
-                      <Avatar name="Alice Chen" size="small" />
+                      <Avatar name="Alice Chen" size="md" />
                       <VStack gap={0}>
                         <Text type="label">Alice Chen</Text>
                         <Text type="supporting" color="secondary">
@@ -128,7 +128,7 @@ export default function App() {
                 <Card>
                   <VStack gap={3}>
                     <HStack gap={2} vAlign="center">
-                      <Avatar name="Bob Park" size="small" />
+                      <Avatar name="Bob Park" size="md" />
                       <VStack gap={0}>
                         <Text type="label">Bob Park</Text>
                         <Text type="supporting" color="secondary">

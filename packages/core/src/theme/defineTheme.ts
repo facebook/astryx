@@ -5,7 +5,7 @@
  *
  * Two distribution modes:
  * - Unbuilt: Theme generates CSS and injects a <style> tag at runtime
- * - Built: `npx astryx theme build` pre-compiles to a CSS file; Theme just
+ * - Built: `astryx theme build` pre-compiles to a CSS file; Theme just
  *   sets the data-astryx-theme attribute
  *
  * Token values can be:
@@ -45,7 +45,6 @@ import {
   shadowDefaults,
   durationDefaults,
   easeDefaults,
-  transitionDefaults,
   typographyDefaults,
   textSizeDefaults,
   fontWeightDefaults,
@@ -63,6 +62,7 @@ import {expandColorScale, type ColorScaleConfig} from './expandColorScale';
 import type {DomainTokenName} from './domainTokens';
 import {domainTokenDefaults} from './domainTokens';
 import type {SyntaxThemeDefinition} from './syntax';
+import {registerTheme} from './themeRegistry';
 
 // =============================================================================
 // Types
@@ -77,7 +77,6 @@ export type CoreTokenName =
   | keyof typeof shadowDefaults
   | keyof typeof durationDefaults
   | keyof typeof easeDefaults
-  | keyof typeof transitionDefaults
   | keyof typeof typographyDefaults
   | keyof typeof textSizeDefaults
   | keyof typeof fontWeightDefaults
@@ -239,9 +238,15 @@ export interface DefineThemeInput {
    * categorical hues, and fixed tokens (on-dark/on-light) use defaults.
    * Explicit `tokens` entries always take precedence.
    *
+   * `accent` is optional — omit it for a neutral-only theme, which keeps
+   * the default accent tokens and only themes the neutrals.
+   *
    * @example
    * ```tsx
    * color: { accent: '#0064E0', neutralStyle: 'cool', contrast: 'standard' }
+   *
+   * // Neutral-only — accent tokens stay at their defaults
+   * color: { neutralStyle: 'warm' }
    * ```
    */
   color?: ColorScaleConfig;
@@ -360,7 +365,6 @@ export const tokenDefaults: Record<string, string> = {
   ...shadowDefaults,
   ...durationDefaults,
   ...easeDefaults,
-  ...transitionDefaults,
   ...typographyDefaults,
   ...textSizeDefaults,
   ...fontWeightDefaults,
@@ -618,7 +622,7 @@ export function defineTheme(input: DefineThemeInput): DefinedTheme {
       ? {...base.icons, ...input.icons}
       : (input.icons ?? base?.icons);
 
-  return {
+  const theme: DefinedTheme = {
     name: input.name,
     tokens,
     components,
@@ -627,6 +631,9 @@ export function defineTheme(input: DefineThemeInput): DefinedTheme {
     __onDark,
     __onLight,
   };
+
+  registerTheme(theme);
+  return theme;
 }
 
 // =============================================================================
@@ -638,7 +645,6 @@ export {
   generateThemeRulesSplit,
   generateOnMediaCSS,
   generateThemeCSS,
-  generateThemeCSSFlat,
   type ThemeRulesSplit,
   type ThemeCSSOutput,
 } from './generateThemeRules';

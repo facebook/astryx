@@ -9,6 +9,7 @@
  * - boolean-prop-naming: Enforces is/has prefix on boolean props in *Props interfaces
  * - docblock-example-format: Enforces @example blocks use ``` fenced code on a separate line
  * - no-raw-paragraph: Disallows components from rendering a <p> by default (render <div> so any content composes)
+ * - no-style-only-wrapper: Disallows div/span wrappers that only style a single Astryx component (use xstyle)
  * - no-nullish-jsx-guard: Flags `!= null` JSX render guards for rendered values (use isRenderable so false/''/true slots don't leak an empty element)
  *
  * Philosophy: Strict for agents (CI), lenient for humans (local dev)
@@ -20,17 +21,22 @@ import booleanPropNamingRule from './boolean-prop-naming.js';
 import presentationalComponentRule from './presentational-component.js';
 import docblockExampleFormatRule from './docblock-example-format.js';
 import noStylexNullOverrideRule from './no-stylex-null-override.js';
+import noStyleOnlyWrapperRule from './no-style-only-wrapper.js';
+import noWrapperTransformRule from './no-wrapper-transform.js';
 import noReactIntrospectionRule from './no-react-introspection.js';
 import noClassnameClobberRule from './no-classname-clobber.js';
 import noHardcodedAnchorRule from './no-hardcoded-anchor.js';
 import noRawParagraphRule from './no-raw-paragraph.js';
 import noNullishJsxGuardRule from './no-nullish-jsx-guard.js';
 import noBorderShorthandRule from './no-border-shorthand.js';
+import noPhysicalPropertiesRule from './no-physical-properties.js';
 import noReactNamespaceHooksRule from './no-react-namespace-hooks.js';
 import copyrightHeaderRule from './copyright-header.js';
 import noRawConsoleCliRule from './no-raw-console-cli.js';
 import requireBasePropsRule from './require-base-props.js';
 import requireRefPropRule from './require-ref-prop.js';
+import noHardcodedI18nStringRule from './no-hardcoded-i18n-string.js';
+import i18nKeyFormatRule from './i18n-key-format.js';
 
 // =============================================================================
 // Rule: no-hardcoded-styles
@@ -235,17 +241,22 @@ const plugin = {
     'presentational-component': presentationalComponentRule,
     'docblock-example-format': docblockExampleFormatRule,
     'no-stylex-null-override': noStylexNullOverrideRule,
+    'no-style-only-wrapper': noStyleOnlyWrapperRule,
+    'no-wrapper-transform': noWrapperTransformRule,
     'no-react-introspection': noReactIntrospectionRule,
     'no-classname-clobber': noClassnameClobberRule,
     'no-hardcoded-anchor': noHardcodedAnchorRule,
     'no-raw-paragraph': noRawParagraphRule,
     'no-nullish-jsx-guard': noNullishJsxGuardRule,
     'no-border-shorthand': noBorderShorthandRule,
+    'no-physical-properties': noPhysicalPropertiesRule,
     'no-react-namespace-hooks': noReactNamespaceHooksRule,
     'require-base-props': requireBasePropsRule,
     'require-ref-prop': requireRefPropRule,
     'copyright-header': copyrightHeaderRule,
     'no-raw-console-cli': noRawConsoleCliRule,
+    'no-hardcoded-i18n-string': noHardcodedI18nStringRule,
+    'i18n-key-format': i18nKeyFormatRule,
   },
   configs: {},
 };
@@ -261,6 +272,13 @@ plugin.configs.strict = {
     '@astryx/presentational-component': 'error',
     '@astryx/docblock-example-format': 'error',
     '@astryx/no-stylex-null-override': 'error',
+    // Migration in progress: ~25 wrappers in packages/core predate this rule
+    // (Carousel, Lightbox, MobileNav, Pagination, PowerSearch, Switch, TopNav,
+    // Table/rowExpansion). Warn in both tiers until they move to xstyle, then
+    // flip to 'error' here to prevent regressions — the same path
+    // no-physical-properties took.
+    '@astryx/no-style-only-wrapper': 'warn',
+    '@astryx/no-wrapper-transform': 'error',
     '@astryx/no-react-introspection': 'error',
     '@astryx/no-classname-clobber': 'error',
     '@astryx/no-hardcoded-anchor': 'error',
@@ -271,10 +289,14 @@ plugin.configs.strict = {
     // the build; promote to 'error' once core is migrated (see issue #2538).
     '@astryx/no-nullish-jsx-guard': 'warn',
     '@astryx/no-border-shorthand': 'error',
+    // RTL physical→logical migration complete; errors to prevent regressions.
+    '@astryx/no-physical-properties': 'error',
     '@astryx/no-react-namespace-hooks': 'error',
     '@astryx/require-base-props': 'error',
     '@astryx/require-ref-prop': 'error',
     '@astryx/copyright-header': 'error',
+    '@astryx/no-hardcoded-i18n-string': 'error',
+    '@astryx/i18n-key-format': 'error',
   },
 };
 
@@ -289,16 +311,22 @@ plugin.configs.recommended = {
     '@astryx/presentational-component': 'error',
     '@astryx/docblock-example-format': 'warn',
     '@astryx/no-stylex-null-override': 'warn',
+    '@astryx/no-style-only-wrapper': 'warn',
+    '@astryx/no-wrapper-transform': 'error',
     '@astryx/no-react-introspection': 'error',
     '@astryx/no-classname-clobber': 'error',
     '@astryx/no-hardcoded-anchor': 'warn',
     '@astryx/no-raw-paragraph': 'warn',
     '@astryx/no-nullish-jsx-guard': 'warn',
     '@astryx/no-border-shorthand': 'warn',
+    // RTL physical→logical migration complete; errors to prevent regressions.
+    '@astryx/no-physical-properties': 'error',
     '@astryx/no-react-namespace-hooks': 'error',
     '@astryx/require-base-props': 'warn',
     '@astryx/require-ref-prop': 'warn',
     '@astryx/copyright-header': 'error',
+    '@astryx/no-hardcoded-i18n-string': 'warn',
+    '@astryx/i18n-key-format': 'warn',
   },
 };
 

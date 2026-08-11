@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'SelectorOption',
@@ -20,7 +20,7 @@ export const docs = {
       name: 'icon',
       type: 'IconType',
       description:
-        'Icon displayed before the label. See `npx astryx docs icons` for valid semantic names.',
+        'Icon displayed before the label. See `astryx docs icons` for valid semantic names.',
     },
     {
       name: 'description',

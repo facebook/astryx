@@ -17,13 +17,14 @@ import React from 'react';
  * - /packages/core/src/AppShell/index.ts
  * - /packages/core/src/AppShell/AppShell.test.tsx
  * - /apps/storybook/stories/AppShell.stories.tsx
- * - /packages/cli/templates/blocks/components/AppShell/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/AppShell/ (showcase blocks)
  */
 
 import {
   isValidElement,
   useCallback,
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -53,6 +54,8 @@ import {mergeProps, mergeRefs, isRenderable} from '../utils';
 import {useMediaQuery} from '../hooks/useMediaQuery';
 import {observeResize, unobserveResize} from '../utils/sharedResizeObserver';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
+import type {AppShellVariantMap} from './index';
 
 const HasActivity = typeof React.Activity !== 'undefined';
 const ActivityWrapper = HasActivity
@@ -99,25 +102,6 @@ export type AppShellBreakpoint = 'sm' | 'md' | 'lg' | 'none';
  * - `elevated`: Wash nav background with elevated surface content + border radius
  * @default 'elevated'
  */
-/**
- * Extensible variant map for AppShell.
- *
- * Theme packages can add custom variants via TypeScript module augmentation:
- * @example
- * ```
- * declare module '@astryxdesign/core/AppShell' {
- *   interface AppShellVariantMap {
- *     'glass': true;
- *   }
- * }
- * ```
- */
-export interface AppShellVariantMap {
-  wash: true;
-  surface: true;
-  section: true;
-  elevated: true;
-}
 
 /**
  * Navigation background style. Extensible via module augmentation of AppShellVariantMap.
@@ -357,6 +341,15 @@ const styles = stylex.create({
     fontWeight: fontWeightVars['--font-weight-semibold'],
     fontSize: typeScaleVars['--text-body-size'],
   },
+  // Programmatic focus target for the skip link. The main container is only
+  // focusable via tabIndex={-1} (never tabbable), so a focus ring around the
+  // entire content area would be noise rather than guidance — suppress it.
+  mainFocusTarget: {
+    outline: {
+      default: null,
+      ':focus': 'none',
+    },
+  },
 
   elevatedBackdrop: {
     position: 'absolute',
@@ -472,6 +465,7 @@ export function AppShell({
   ref,
   ...rest
 }: AppShellProps) {
+  const t = useTranslator();
   // =========================================================================
   // Parse mobileNav prop — normalize to config, custom element, or disabled
   // =========================================================================
@@ -527,6 +521,13 @@ export function AppShell({
     },
     [mobileNavIsControlled, mobileNavConfig],
   );
+
+  // Move focus to the main content container when the skip link is activated.
+  // Hash navigation alone doesn't reliably move focus in every browser, so
+  // focus the target explicitly (it's focusable via tabIndex={-1}).
+  const handleSkipLinkClick = useCallback(() => {
+    document.getElementById(MAIN_CONTENT_ID)?.focus();
+  }, []);
 
   const isFill = height === 'fill';
   const isAuto = height === 'auto';
@@ -598,10 +599,14 @@ export function AppShell({
   // =========================================================================
   // Mobile context — shared with MobileNavToggle and future TopNav mobile
   // =========================================================================
+  // Stable id shared by the drawer (applied as its `id`) and the toggle
+  // (referenced via `aria-controls`) so screen readers know what it controls.
+  const mobileNavId = useId();
   const mobileContextValue = useMemo<AppShellMobileContextValue>(
     () => ({
       isMobile: isBelowBreakpoint,
       isMobileNavOpen,
+      mobileNavId,
       toggleMobileNav: () =>
         mobileNavEnabled && setMobileNavOpen(!isMobileNavOpen),
       openMobileNav: () => mobileNavEnabled && setMobileNavOpen(true),
@@ -612,6 +617,7 @@ export function AppShell({
     [
       isBelowBreakpoint,
       isMobileNavOpen,
+      mobileNavId,
       setMobileNavOpen,
       mobileNavEnabled,
       mobileNavHasToggle,
@@ -667,6 +673,9 @@ export function AppShell({
     headerInner != null ? (
       <div
         ref={headerRef}
+        // Top-level banner landmark for the header region (topNav + banner).
+        // Safe here: the wrapper is never nested inside main/nav/other landmarks.
+        role="banner"
         {...mergeProps(
           themeProps('app-shell-header', {variant}),
           stylex.props(navAreaStyle, isAuto && styles.headerSticky),
@@ -715,8 +724,11 @@ export function AppShell({
       padding={contentPadding ?? 0}
       role="main"
       id={MAIN_CONTENT_ID}
+      // Focusable skip-link target (WCAG 2.4.1) — without tabIndex, several
+      // browsers won't move focus to the div when the skip link is activated.
+      tabIndex={-1}
       isScrollable={isFill}
-      xstyle={contentAreaStyle}>
+      xstyle={[contentAreaStyle, styles.mainFocusTarget]}>
       {children}
     </LayoutContent>
   );
@@ -756,7 +768,7 @@ export function AppShell({
           <div
             {...stylex.props(styles.autoMobileTopBar)}
             role="navigation"
-            aria-label="Mobile navigation">
+            aria-label={t('@astryx.appShell.mobileNavigation')}>
             <SideNavRenderContext value="topbar">
               {sideNav}
             </SideNavRenderContext>
@@ -792,9 +804,10 @@ export function AppShell({
         {/* Skip-to-content link */}
         <a
           href={`#${MAIN_CONTENT_ID}`}
+          onClick={handleSkipLinkClick}
           {...stylex.props(styles.skipLink)}
           data-testid="skip-to-content">
-          Skip to content
+          {t('@astryx.appShell.skipToContent')}
         </a>
 
         <Layout

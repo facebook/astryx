@@ -366,6 +366,19 @@ export function useTooltip(options: TooltipOptions = {}): TooltipReturn {
     scheduleHide();
   }, [scheduleHide]);
 
+  // Pressing the trigger hides its own tooltip: once the control is activated
+  // the hint has served its purpose, and a tooltip lingering over a
+  // just-pressed control reads as stale. Fires on pointerdown so it feels
+  // immediate. Uncontrolled tooltips only — a controlled tooltip's visibility
+  // is owned by the consumer. `layer.hide()` self-guards when already closed.
+  const handlePointerDown = useCallback(() => {
+    if (isOpen !== undefined) {
+      return;
+    }
+    clearTimeouts();
+    layer.hide();
+  }, [isOpen, clearTimeouts, layer]);
+
   // Interaction ref that handles event listeners only
   const interactionRef: RefCallback<HTMLElement> = useCallback(
     (el: HTMLElement | null) => {
@@ -375,12 +388,18 @@ export function useTooltip(options: TooltipOptions = {}): TooltipReturn {
         triggerRef.current.removeEventListener('mouseleave', handleMouseLeave);
         triggerRef.current.removeEventListener('focusin', handleFocusIn);
         triggerRef.current.removeEventListener('focusout', handleFocusOut);
+        triggerRef.current.removeEventListener(
+          'pointerdown',
+          handlePointerDown,
+        );
       }
 
       if (el) {
         // Attach hover listeners
         el.addEventListener('mouseenter', handleMouseEnter);
         el.addEventListener('mouseleave', handleMouseLeave);
+        // Press-to-dismiss: activating the trigger hides its own tooltip.
+        el.addEventListener('pointerdown', handlePointerDown);
 
         // Attach focus listeners based on focusTrigger option
         const shouldAttachFocus =
@@ -401,6 +420,7 @@ export function useTooltip(options: TooltipOptions = {}): TooltipReturn {
       handleMouseLeave,
       handleFocusIn,
       handleFocusOut,
+      handlePointerDown,
     ],
   );
 

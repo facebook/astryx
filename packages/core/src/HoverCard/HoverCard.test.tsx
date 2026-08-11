@@ -58,15 +58,34 @@ describe('HoverCard', () => {
     expect(screen.getByRole('button', {name: 'Trigger'})).toBeInTheDocument();
   });
 
-  it('gives the floating layer role="dialog"', () => {
+  it('exposes the floating layer as role="group" when no label is provided', () => {
     render(
       <HoverCard content={<span>Card content</span>}>
         <button type="button">Trigger</button>
       </HoverCard>,
     );
-    expect(screen.getByRole('dialog', {hidden: true})).toHaveTextContent(
+    // A group may validly be unnamed; an unnamed dialog may not. Without a
+    // label the layer must not claim the dialog role.
+    expect(screen.getByRole('group', {hidden: true})).toHaveTextContent(
       'Card content',
     );
+    expect(screen.queryByRole('dialog', {hidden: true})).toBeNull();
+  });
+
+  it('exposes the floating layer as a named dialog when label is provided', () => {
+    render(
+      <HoverCard content={<span>Card content</span>} label="Profile preview">
+        <button type="button">Trigger</button>
+      </HoverCard>,
+    );
+    // The layer is hidden while closed, so assert the accessible name via the
+    // aria-label attribute on the role-carrying element (same pattern as the
+    // Popover dialogLabel test) — accname computation returns '' for hidden
+    // elements.
+    const dialog = screen.getByRole('dialog', {hidden: true});
+    expect(dialog).toHaveAttribute('aria-label', 'Profile preview');
+    expect(dialog).toHaveTextContent('Card content');
+    expect(screen.queryByRole('group', {hidden: true})).toBeNull();
   });
 
   it('wraps element children in an inline-safe span', () => {

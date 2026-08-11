@@ -4,7 +4,8 @@
 
 /**
  * @file Selector.tsx
- * @input Uses React, StyleX, usePopover, useTooltip, Icon, InputGroupContext
+ * @input Uses React, StyleX, usePopover, useTooltip, Icon, InputGroupContext,
+ *   and Selector positioning hooks
  * @output Exports Selector component
  * @position Core implementation; consumed by index.ts
  *
@@ -13,7 +14,7 @@
  * - /packages/core/src/Selector/Selector.test.tsx
  * - /packages/core/src/Selector/index.ts
  * - /apps/storybook/stories/InputGroup.stories.tsx
- * - /packages/cli/templates/blocks/components/Selector/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Selector/ (showcase blocks)
  */
 
 import React, {
@@ -37,11 +38,14 @@ import {
   inputStatusBorderStyles,
   inputStatusHoverShadowStyles,
   inputWrapperStyles,
+  type FieldStatusVariant,
 } from '../Field';
 import {Divider} from '../Divider';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import type {LayerPlacement} from '../Layer/useLayer';
 import {Spinner} from '../Spinner';
+import {TextInput} from '../TextInput';
+import {useAnnounce} from '../hooks/useAnnounce';
 import {
   colorVars,
   sizeVars,
@@ -63,6 +67,7 @@ import {
   getSelectableOptions,
 } from './utils';
 import {useCombobox, useSelectedItemOffset} from './hooks';
+import {useTypeahead} from '../hooks/useTypeahead';
 import {SelectorOption} from './SelectorOption';
 import {getInputARIA, mergeProps} from '../utils';
 import {useSize} from '../SizeContext/SizeContext';
@@ -72,6 +77,7 @@ import {themeProps} from '../utils/themeProps';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
 import {VisuallyHidden} from '../VisuallyHidden';
+import {useTranslator} from '../i18n';
 
 const styles = stylex.create({
   // Trigger container — the enhanced click target wrapping the combobox button and clear button as siblings
@@ -130,25 +136,67 @@ const styles = stylex.create({
     whiteSpace: 'nowrap',
     textAlign: 'start',
   },
+  // Only what Icon does not already provide: `size="sm"` gives the 16px box
+  // and `color` the token, but the glyph still must not shrink inside the flex
+  // trigger.
   triggerIcon: {
     flexShrink: 0,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 16,
-    height: 16,
+  },
+  // Rotation lives on the chevron glyph itself (passed through `xstyle`), not
+  // on the layout wrapper above, so the icon's `selector-indicator-icon` theme
+  // target and the open/closed transform sit on one element — a theme can
+  // restyle the mark and its rotation through a single selector. The wrapper
+  // keeps only layout. The status branch renders a different icon, so it never
+  // picks these up and needs no transition opt-out.
+  triggerIconRotation: {
     transitionProperty: 'transform',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
     transformOrigin: 'center',
-    color: colorVars['--color-icon-secondary'],
   },
   triggerIconOpen: {
     transform: 'rotate(180deg)',
   },
-  triggerIconStatus: {
-    // Disable rotation transition for status icons
-    transition: 'none',
+  triggerGhost: {
+    width: 'auto',
+    borderWidth: 0,
+    backgroundColor: 'transparent',
+    backgroundImage: {
+      default: null,
+      ':hover': {
+        '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
+      },
+      ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
+    },
+    boxShadow: {
+      default: 'none',
+      ':hover:not(:focus-within)': {
+        '@media (hover: hover)': 'none',
+      },
+      ':focus-within': 'none',
+    },
+    fontWeight: fontWeightVars['--font-weight-medium'],
+    outline: {
+      default: 'none',
+      ':has(:focus-visible)': `2px solid ${colorVars['--color-accent']}`,
+    },
+    outlineOffset: {
+      default: '0',
+      ':has(:focus-visible)': '3px',
+    },
+    transitionProperty:
+      'background-image, background-color, color, opacity, transform',
+    transform: {
+      default: 'scale(1)',
+      ':active': 'scale(0.98)',
+    },
+  },
+  triggerGhostDisabled: {
+    backgroundImage: 'none',
+    transform: {
+      default: 'none',
+      ':active': 'none',
+    },
   },
 
   // Clear button
@@ -169,15 +217,39 @@ const styles = stylex.create({
     },
     outlineOffset: 1,
   },
+  statusButton: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 0,
+    margin: 0,
+    borderWidth: 0,
+    borderStyle: 'none',
+    backgroundColor: 'transparent',
+    color: 'inherit',
+    cursor: 'pointer',
+    borderRadius: radiusVars['--radius-element'],
+    outline: {
+      default: 'none',
+      ':focus-visible': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
+    },
+    outlineOffset: 1,
+  },
 
   // Dropdown container
   dropdown: {
     boxSizing: 'border-box',
     maxHeight: '300px',
     overflowY: 'auto',
-    padding: spacingVars['--spacing-1'],
+    paddingBlock: spacingVars['--spacing-1'],
+    paddingInline: spacingVars['--spacing-1'],
     opacity: 1,
     transition: `opacity ${durationVars['--duration-fast']}`,
+  },
+  dropdownInput: {
+    // The input trigger's text inset includes its border. Mirror that extra
+    // pixel in the menu; the borderless ghost variant needs no correction.
+    paddingInline: `calc(${spacingVars['--spacing-1']} + ${borderVars['--border-width']})`,
   },
   dropdownHidden: {
     opacity: 0,
@@ -188,32 +260,14 @@ const styles = stylex.create({
   popover: {
     minWidth: 'anchor-size(width)',
   },
-  // Search input
+  // Search field. The inner TextInput owns the border, focus ring, magnifier
+  // (startIcon), and clear button (hasClear); this wrapper only supplies the
+  // dropdown's inline/block padding around it.
   searchWrapper: {
+    display: 'flex',
+    alignItems: 'center',
     paddingInline: spacingVars['--spacing-2'],
     paddingBlock: spacingVars['--spacing-1'],
-  },
-  searchInput: {
-    boxSizing: 'border-box',
-    width: '100%',
-    paddingBlock: spacingVars['--spacing-1'],
-    paddingInline: spacingVars['--spacing-2'],
-    borderWidth: borderVars['--border-width'],
-    borderStyle: 'solid',
-    borderColor: colorVars['--color-border-emphasized'],
-    borderRadius: radiusVars['--radius-element'],
-    backgroundColor: colorVars['--color-background-surface'],
-    fontFamily: typographyVars['--font-family-body'],
-    fontSize: {
-      default: typeScaleVars['--text-label-size'],
-      '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-label-size']})`,
-    },
-    color: colorVars['--color-text-primary'],
-    outline: {
-      default: 'none',
-      ':focus': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: '0',
   },
 
   // Empty state
@@ -251,7 +305,7 @@ const styles = stylex.create({
     backgroundColor: 'transparent',
     border: 'none',
     cursor: 'pointer',
-    textAlign: 'left',
+    textAlign: 'start',
     outline: 'none',
   },
   itemContent: {
@@ -323,7 +377,15 @@ const STATUS_ICON_COLOR_MAP: Record<
   success: 'success',
 };
 
+const STATUS_BUTTON_LABEL_KEY: Record<SelectorStatusType, string> = {
+  warning: '@astryx.input.statusButton.warning',
+  error: '@astryx.input.statusButton.error',
+  success: '@astryx.input.statusButton.success',
+};
+
 export type SelectorSize = 'sm' | 'md' | 'lg';
+
+export type SelectorVariant = 'input' | 'ghost';
 
 export type SelectorStatusType = 'warning' | 'error' | 'success';
 
@@ -426,11 +488,27 @@ interface SelectorPropsBase<
   size?: SelectorSize;
 
   /**
+   * Visual style of the selector trigger.
+   * - 'input': bordered input-style trigger for forms
+   * - 'ghost': borderless trigger matching ghost buttons, for toolbars
+   * @default 'input'
+   */
+  variant?: SelectorVariant;
+
+  /**
    * Status indicator for the selector.
    * When set, displays a colored border and status icon.
    * If message is provided, displays a message box below the selector.
    */
   status?: SelectorStatus;
+  /**
+   * How the status message is placed relative to the input.
+   * - 'attached': message overlaps directly below the bordered input (input variant only)
+   * - 'detached': message floats below as a separate element with spacing
+   * - 'tooltip': message is exposed from the on-field status icon
+   * @default 'attached' for input selectors; 'detached' for ghost selectors
+   */
+  statusVariant?: FieldStatusVariant;
 
   /**
    * Width of the field. Numbers are treated as pixels, strings are used as-is
@@ -524,8 +602,7 @@ type SelectorPropsClearable<T extends SelectorOptionType = SelectorOptionType> =
   };
 
 export type SelectorProps<T extends SelectorOptionType = SelectorOptionType> =
-  | SelectorPropsNonClearable<T>
-  | SelectorPropsClearable<T>;
+  SelectorPropsNonClearable<T> | SelectorPropsClearable<T>;
 
 /**
  * Default option renderer
@@ -534,6 +611,35 @@ function DefaultOption({option}: {option: SelectorOptionData}) {
   return (
     <SelectorOption icon={option.icon} label={option.label ?? option.value} />
   );
+}
+
+// Case-insensitive substring match for a single option. The one predicate used
+// by both the flat filter (count + keyboard nav) and the grouped renderer, so
+// what is shown while searching stays in lockstep with the announced count.
+function optionMatchesQuery(
+  option: SelectorOptionData,
+  query: string,
+): boolean {
+  if (!query) {
+    return true;
+  }
+  return (option.label ?? option.value)
+    .toLowerCase()
+    .includes(query.toLowerCase());
+}
+
+// Case-insensitive substring filter over the selectable options. Shared by the
+// `filteredItems` memo (rendering) and the search-change handler, which needs
+// the count for the *next* query synchronously to announce it exactly once per
+// keystroke rather than reacting to state in an effect.
+function filterOptionsByQuery(
+  items: SelectorOptionData[],
+  query: string,
+): SelectorOptionData[] {
+  if (!query) {
+    return items;
+  }
+  return items.filter(item => optionMatchesQuery(item, query));
 }
 
 /**
@@ -553,6 +659,7 @@ function DefaultOption({option}: {option: SelectorOptionData}) {
 export function Selector<T extends SelectorOptionType>(
   props: SelectorProps<T>,
 ) {
+  const t = useTranslator();
   const {
     label,
     isLabelHidden = false,
@@ -566,15 +673,17 @@ export function Selector<T extends SelectorOptionType>(
     onChange,
     changeAction,
     isLoading = false,
-    placeholder = 'Select...',
+    placeholder: placeholderFromProps,
     size: sizeProp,
+    variant = 'input',
     status,
+    statusVariant = 'attached',
     labelTooltip,
     startIcon,
     htmlName,
     renderOption,
     hasSearch = false,
-    searchPlaceholder = 'Search...',
+    searchPlaceholder: searchPlaceholderFromProps,
     placement,
     isDefaultOpen = false,
     'data-testid': testId,
@@ -585,8 +694,15 @@ export function Selector<T extends SelectorOptionType>(
     hasClear: hasClearProp,
     ...rest
   } = props as SelectorPropsClearable<T>;
+  const placeholder = placeholderFromProps ?? t('@astryx.selector.placeholder');
+  const searchPlaceholder =
+    searchPlaceholderFromProps ?? t('@astryx.selector.searchPlaceholder');
   const hasClear = hasClearProp === true;
   const size = useSize(sizeProp, 'md');
+  const effectiveStatusVariant =
+    variant === 'ghost' && statusVariant === 'attached'
+      ? 'detached'
+      : statusVariant;
 
   // Normalize null to undefined for internal use (null is the clear sentinel)
   const normalizedValue = value === null ? undefined : value;
@@ -596,15 +712,22 @@ export function Selector<T extends SelectorOptionType>(
   const statusMessageId = useId();
   const inputLabelId = useId();
   const searchId = useId();
+  // Measure from the same outer control that usePopover anchors to; using the
+  // shorter inner button makes every size's selected row land too low.
+  const anchorRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const inputGroup = useInputGroup();
 
   const [searchQuery, setSearchQuery] = useState('');
+  // A typed query shows TextInput's built-in clear (✕) button, which becomes
+  // the next tab stop after the search input.
+  const hasQuery = searchQuery.length > 0;
 
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(normalizedValue);
   const isBusy = isLoading || optimisticValue !== normalizedValue;
+  const announce = useAnnounce();
 
   // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
   // tooltip listeners attach to the trigger container (which already exists)
@@ -619,12 +742,21 @@ export function Selector<T extends SelectorOptionType>(
     focusTrigger: 'always',
     isEnabled: showsDisabledMessage,
   });
+  const statusTooltip = useTooltip({
+    placement: 'above',
+    isEnabled: effectiveStatusVariant === 'tooltip' && !!status?.message,
+  });
 
   const {ariaLabelledBy, ariaDescribedBy} = getInputARIA(
     inputLabelId,
     [
       description ? descriptionId : null,
-      status?.message ? statusMessageId : null,
+      !inputGroup && effectiveStatusVariant !== 'tooltip' && status?.message
+        ? statusMessageId
+        : null,
+      effectiveStatusVariant === 'tooltip' && status?.message
+        ? statusTooltip.describedBy
+        : null,
       showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
     ],
     inputGroup,
@@ -637,15 +769,10 @@ export function Selector<T extends SelectorOptionType>(
   );
 
   // Filter items by search query
-  const filteredItems = useMemo(() => {
-    if (!searchQuery) {
-      return selectableItems;
-    }
-    const query = searchQuery.toLowerCase();
-    return selectableItems.filter(item =>
-      (item.label ?? item.value).toLowerCase().includes(query),
-    );
-  }, [selectableItems, searchQuery]);
+  const filteredItems = useMemo(
+    () => filterOptionsByQuery(selectableItems, searchQuery),
+    [selectableItems, searchQuery],
+  );
 
   // Find selected item and its index for positioning
   const selectedItemIndex = useMemo(() => {
@@ -661,11 +788,20 @@ export function Selector<T extends SelectorOptionType>(
   // Ref for listbox to measure selected item position
   const listboxRef = useRef<HTMLDivElement>(null);
 
+  // Typeahead is defined below (it needs the popover), but closing and clearing
+  // must drop its pending buffer — otherwise a stale prefix survives the reset
+  // window and poisons the next keystroke ("Dog" then "c" would search "dc").
+  const resetTypeaheadRef = useRef<() => void>(() => {});
+
   // Layer for dropdown positioning
   const handleLayerHide = useCallback(() => {
     setSearchQuery('');
+    resetTypeaheadRef.current();
+    // Clear any lingering result count when the popover closes so stale status
+    // text does not linger in the a11y tree.
+    announce('');
     triggerRef.current?.focus();
-  }, []);
+  }, [announce]);
 
   const popover = usePopover({
     onHide: handleLayerHide,
@@ -685,6 +821,28 @@ export function Selector<T extends SelectorOptionType>(
     // eslint-disable-next-line @eslint-react/exhaustive-deps -- mount-only: isDefaultOpen is not reactive
   }, []);
 
+  // Announce the filtered result count from the query-change handler (matching
+  // BaseTypeahead) rather than a reactive effect: computing the count for the
+  // next query here fires the announcement exactly once per keystroke and does
+  // not re-speak on unrelated re-renders.
+  const handleSearchChange = useCallback(
+    (nextQuery: string) => {
+      setSearchQuery(nextQuery);
+      if (nextQuery.length === 0) {
+        // Emptying the query clears the region rather than announcing a count.
+        announce('');
+        return;
+      }
+      const count = filterOptionsByQuery(selectableItems, nextQuery).length;
+      announce(
+        count === 0
+          ? 'No results found'
+          : `${count} result${count === 1 ? '' : 's'}`,
+      );
+    },
+    [announce, selectableItems],
+  );
+
   // Calculate offset to position selected item over trigger. Explicit
   // placement opts out of the selector-specific overlay behavior and uses the
   // standard layer positioning API instead.
@@ -695,7 +853,7 @@ export function Selector<T extends SelectorOptionType>(
       selectedItemIndex,
       listboxId,
       listboxRef,
-      triggerRef,
+      anchorRef,
     });
 
   const selectedItemOffset = shouldOverlaySelectedItem ? rawOffset : 0;
@@ -709,6 +867,7 @@ export function Selector<T extends SelectorOptionType>(
   // Clear the current value. Shared by the clear button and the keyboard
   // Delete/Backspace path so clearing is reachable without a mouse.
   const clearValue = useCallback(() => {
+    resetTypeaheadRef.current();
     onChange?.(null);
     if (changeAction) {
       startTransition(async () => {
@@ -718,10 +877,29 @@ export function Selector<T extends SelectorOptionType>(
     }
   }, [onChange, changeAction, startTransition, setOptimisticValue]);
 
-  // Selector behavior (keyboard nav, typeahead, selection)
+  // Type-to-find appends to the query rather than replacing it: characters
+  // typed before focus reaches the search input must not be dropped.
+  const appendSearchQuery = useCallback((char: string) => {
+    setSearchQuery(query => query + char);
+  }, []);
+
+  const commitValue = useCallback(
+    (newValue: string) => {
+      onChange?.(newValue);
+      if (changeAction) {
+        startTransition(async () => {
+          setOptimisticValue(newValue);
+          await changeAction(newValue);
+        });
+      }
+    },
+    [onChange, changeAction, startTransition, setOptimisticValue],
+  );
+
+  // Selector behavior (keyboard nav, selection)
   const {
     highlightedIndex,
-    setHighlightedIndex: _setHighlightedIndex,
+    setHighlightedIndex,
     getItemId,
     onTriggerClick,
     onKeyDown,
@@ -729,7 +907,11 @@ export function Selector<T extends SelectorOptionType>(
     onItemMouseEnter,
   } = useCombobox({
     selectableItems: filteredItems,
-    value: normalizedValue,
+    // The optimistic value, not the raw prop: with a pending changeAction the
+    // prop still holds the old selection, so the popup would open with the
+    // highlight on it and Delete/Backspace could clear a value the action has
+    // already replaced.
+    value: optimisticValue,
     isDisabled,
     isOpen: popover.isOpen,
     hasSearch,
@@ -737,26 +919,60 @@ export function Selector<T extends SelectorOptionType>(
       popover.show();
       if (hasSearch) {
         requestAnimationFrame(() => {
-          searchRef.current?.focus();
+          const input = searchRef.current;
+          if (input) {
+            input.focus();
+            // When typing seeded the query, place the caret after it so the
+            // user keeps typing where they left off.
+            input.setSelectionRange(input.value.length, input.value.length);
+          }
         });
       }
     }, [popover, hasSearch]),
     onClose: popover.hide,
-    onSelect: useCallback(
-      (newValue: string) => {
-        onChange?.(newValue);
-        if (changeAction) {
-          startTransition(async () => {
-            setOptimisticValue(newValue);
-            await changeAction(newValue);
-          });
-        }
-      },
-      [onChange, changeAction, startTransition, setOptimisticValue],
-    ),
+    onSelect: commitValue,
     onClear: hasClear ? clearValue : undefined,
+    onSearchSeed: appendSearchQuery,
     listboxId,
   });
+
+  // Type-to-select, shared with the other collections (menus, listboxes).
+  // Open, it walks the highlight — aria-activedescendant announces each match.
+  // Closed, it commits the match like a native select, which changes the value
+  // without opening the popup or moving focus, so nothing else would prompt
+  // assistive tech to re-read the trigger: announce it explicitly.
+  const typeahead = useTypeahead({
+    getItemLabels: () => selectableItems.map(item => item.label ?? item.value),
+    isDisabled: index => selectableItems[index]?.disabled === true,
+    // Cycle onward from the highlight when open, from the committed selection
+    // when closed — the optimistic one, so a pending changeAction cannot strand
+    // cycling on the first match. -1 means nothing is selected or highlighted,
+    // which the hook reads as "search from the top".
+    getCurrentIndex: () =>
+      popover.isOpen ? highlightedIndex : selectedItemIndex,
+    onMatch: index => {
+      const item = selectableItems[index];
+      if (popover.isOpen) {
+        setHighlightedIndex(index);
+      } else if (item.value !== optimisticValue) {
+        commitValue(item.value);
+        announce(item.label ?? item.value);
+      }
+    },
+  });
+  resetTypeaheadRef.current = typeahead.reset;
+
+  const handleTriggerKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      // With hasSearch the query input owns typing, so type-to-select is off.
+      if (!isDisabled && !hasSearch && typeahead.onKeyDown(e)) {
+        e.preventDefault();
+        return;
+      }
+      onKeyDown(e);
+    },
+    [isDisabled, hasSearch, typeahead, onKeyDown],
+  );
 
   // Keep the highlighted option visible during keyboard navigation. The
   // listbox is a fixed-height scroll container, so without this the virtual
@@ -786,14 +1002,42 @@ export function Selector<T extends SelectorOptionType>(
       return null;
     }
     return (
-      <div {...stylex.props(styles.searchWrapper)}>
-        <input
+      <div
+        {...stylex.props(styles.searchWrapper)}
+        onKeyDown={e => {
+          // The clear (✕) button lives inside the TextInput, after the input in
+          // DOM order. When it is focused and the user tabs forward there is
+          // nothing else in the popup, so dismiss it (Shift+Tab returns to the
+          // input natively). Key events originating on the input are handled on
+          // the input below; ignore them here so we don't double-dismiss.
+          if (e.target === searchRef.current) {
+            return;
+          }
+          if (e.key === 'Tab' && !e.shiftKey) {
+            onKeyDown(e);
+          }
+        }}>
+        <TextInput
           ref={searchRef}
           id={searchId}
+          // The search field IS a TextInput: the leading magnifier is its
+          // `startIcon` and the trailing clear (✕) is its built-in `hasClear`
+          // (which resets the value and refocuses the input). We add no bespoke
+          // affordance chrome — the field just looks and behaves like every
+          // other Astryx input.
+          label={t('@astryx.selector.searchOptions')}
+          isLabelHidden
+          startIcon="search"
+          hasClear
+          size="sm"
+          // Fill the dropdown's width (minus the wrapper's inline padding) so
+          // the field is flush end-to-end rather than sized to its content.
+          width="100%"
           // When hasSearch is set, focus moves into this input on open, so it —
           // not the trigger — must be the combobox that reports the highlighted
           // option via aria-activedescendant (comboboxes-4). A bare searchbox
-          // left the highlight silent to screen readers.
+          // left the highlight silent to screen readers. role + aria-* pass
+          // through to the underlying <input> via BaseProps.
           role="combobox"
           aria-expanded={popover.isOpen}
           aria-controls={listboxId}
@@ -803,25 +1047,32 @@ export function Selector<T extends SelectorOptionType>(
               ? getItemId(highlightedIndex)
               : undefined
           }
-          aria-label="Search options"
-          type="text"
           value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
+          onChange={handleSearchChange}
           onKeyDown={e => {
-            // Arrow keys navigate options; Enter selects; Escape/Tab close.
-            // Home/End are left to the input for caret movement.
+            // Arrow keys navigate options; Enter selects; Escape closes.
+            // Home/End are left to the input for caret movement (APG editable
+            // combobox); PageUp/PageDown are the sanctioned substitute for
+            // jumping to the first/last option.
             if (
               e.key === 'ArrowDown' ||
               e.key === 'ArrowUp' ||
+              e.key === 'PageUp' ||
+              e.key === 'PageDown' ||
               e.key === 'Enter' ||
-              e.key === 'Escape' ||
-              e.key === 'Tab'
+              e.key === 'Escape'
             ) {
+              onKeyDown(e);
+              return;
+            }
+            // Tab: when a query is showing the clear (✕) button, forward-tab
+            // moves focus to it (keeping the popup open) so the affordance is
+            // keyboard-reachable. Every other Tab dismisses the popup as usual.
+            if (e.key === 'Tab' && (e.shiftKey || !hasQuery)) {
               onKeyDown(e);
             }
           }}
           placeholder={searchPlaceholder}
-          {...stylex.props(styles.searchInput)}
         />
       </div>
     );
@@ -830,11 +1081,14 @@ export function Selector<T extends SelectorOptionType>(
     searchId,
     listboxId,
     searchQuery,
+    hasQuery,
     searchPlaceholder,
+    handleSearchChange,
     onKeyDown,
     popover.isOpen,
     highlightedIndex,
     getItemId,
+    t,
   ]);
 
   // Render an individual item
@@ -866,7 +1120,17 @@ export function Selector<T extends SelectorOptionType>(
               <DefaultOption option={item} />
             )}
           </span>
-          {isSelected && <Icon icon="check" size="sm" color="accent" />}
+          {isSelected && (
+            <Icon
+              icon="check"
+              size="sm"
+              color="accent"
+              // Stable theme target on the selected-row marker, so a theme can
+              // restyle or hide it (e.g. to compose its own selected indicator
+              // via renderOption) without a structural sibling selector.
+              {...themeProps('selector-check')}
+            />
+          )}
         </div>
       );
     },
@@ -883,16 +1147,25 @@ export function Selector<T extends SelectorOptionType>(
 
   // Render all options (handling sections/dividers)
   const renderOptions = useCallback(() => {
-    // When search is active, render filtered items flat (no sections/dividers)
-    if (hasSearch && searchQuery) {
-      if (filteredItems.length === 0) {
-        return [
-          <div key="empty" {...stylex.props(styles.emptyState)}>
-            No results found
-          </div>,
-        ];
-      }
-      return filteredItems.map((item, index) => renderItem(item, index));
+    const isSearching = hasSearch && Boolean(searchQuery);
+
+    // Nothing matched across every group/option: show the empty state.
+    if (isSearching && filteredItems.length === 0) {
+      // role="presentation" keeps the message out of the listbox's
+      // accessibility tree (role="listbox" only permits option/group
+      // children); the no-results outcome is announced via the
+      // result-count live region instead.
+      return [
+        <div
+          key="empty"
+          role="presentation"
+          {...mergeProps(
+            themeProps('selector-empty-state'),
+            stylex.props(styles.emptyState),
+          )}>
+          No results found
+        </div>,
+      ];
     }
 
     let flatIndex = 0;
@@ -902,12 +1175,26 @@ export function Selector<T extends SelectorOptionType>(
       const option = options[i];
 
       if (isDivider(option)) {
+        // While searching, a standalone divider between groups would orphan
+        // itself once its neighbors are filtered out, so skip it.
+        if (isSearching) {
+          continue;
+        }
         elements.push(<Divider key={`divider-${i}`} xstyle={styles.divider} />);
       } else if (isSection(option)) {
         const sectionItems: ReactNode[] = [];
         for (const opt of option.options) {
-          sectionItems.push(renderItem(normalizeOption(opt), flatIndex));
+          const normalized = normalizeOption(opt);
+          if (isSearching && !optionMatchesQuery(normalized, searchQuery)) {
+            continue;
+          }
+          sectionItems.push(renderItem(normalized, flatIndex));
           flatIndex++;
+        }
+        // Hide a group entirely (header + wrapper) when none of its items
+        // match the query, so no header is left standing over nothing.
+        if (sectionItems.length === 0) {
+          continue;
         }
         if (option.title) {
           elements.push(
@@ -924,7 +1211,11 @@ export function Selector<T extends SelectorOptionType>(
           </div>,
         );
       } else if (isOptionData(option)) {
-        elements.push(renderItem(normalizeOption(option), flatIndex));
+        const normalized = normalizeOption(option);
+        if (isSearching && !optionMatchesQuery(normalized, searchQuery)) {
+          continue;
+        }
+        elements.push(renderItem(normalized, flatIndex));
         flatIndex++;
       }
     }
@@ -932,10 +1223,18 @@ export function Selector<T extends SelectorOptionType>(
     return elements;
   }, [options, renderItem, hasSearch, searchQuery, filteredItems]);
 
+  // The detached message box renders its own leading status icon, so the
+  // on-field icon would duplicate it — keep the chevron indicator instead.
+  const showStatusIcon =
+    status != null && effectiveStatusVariant !== 'detached';
+  const showStatusTooltip =
+    status != null && effectiveStatusVariant === 'tooltip' && !!status.message;
+
   const selectorContent = (
     <>
       <div
         ref={el => {
+          anchorRef.current = el;
           popover.triggerRef(el);
           // Anchor + hover/focus listeners for the disabled-message tooltip.
           // Handlers are gated internally by isEnabled, and anchor names
@@ -945,16 +1244,28 @@ export function Selector<T extends SelectorOptionType>(
         onClick={onTriggerClick}
         data-testid={testId}
         {...mergeProps(
-          themeProps('selector', {size, status: status?.type ?? null}),
+          themeProps('selector', {
+            variant,
+            size,
+            status: status?.type ?? null,
+            disabled: isDisabled ? 'disabled' : null,
+          }),
           stylex.props(
             inputWrapperStyles.base,
             styles.triggerContainer,
             sizeStyles[size],
+            variant === 'ghost' && styles.triggerGhost,
             isDisabled && inputWrapperStyles.disabled,
+            variant === 'ghost' && isDisabled && styles.triggerGhostDisabled,
             !selectedItem && styles.triggerPlaceholder,
-            status && inputStatusBorderStyles[status.type],
-            status && inputStatusHoverShadowStyles[status.type],
-            inputGroup && groupStyles.inGroup,
+            variant !== 'ghost' &&
+              status &&
+              inputStatusBorderStyles[status.type],
+            variant !== 'ghost' &&
+              status &&
+              !isDisabled &&
+              inputStatusHoverShadowStyles[status.type],
+            variant !== 'ghost' && inputGroup && groupStyles.inGroup,
             xstyle,
           ),
           className,
@@ -992,7 +1303,7 @@ export function Selector<T extends SelectorOptionType>(
           // still blocked by the isDisabled guards in useCombobox.
           disabled={isDisabled && !showsDisabledMessage}
           aria-disabled={showsDisabledMessage ? 'true' : undefined}
-          onKeyDown={onKeyDown}
+          onKeyDown={handleTriggerKeyDown}
           tabIndex={isDisabled && !showsDisabledMessage ? -1 : 0}
           {...stylex.props(styles.trigger)}>
           <span {...stylex.props(styles.triggerLabel)}>
@@ -1014,27 +1325,74 @@ export function Selector<T extends SelectorOptionType>(
           <button
             type="button"
             onClick={handleClear}
-            aria-label={`Clear ${label}`}
+            aria-label={t('@astryx.selector.clearLabel', {label})}
             {...stylex.props(styles.clearButton)}>
-            <Icon icon="close" size="sm" color="secondary" />
+            <Icon
+              icon="close"
+              size="sm"
+              color="secondary"
+              // Stable theme target on the clear glyph itself, so a theme can
+              // restyle just this icon (color, size, hover) via `defineTheme`.
+              // Same-element rules in @layer astryx-theme win over the icon's
+              // own base color/size, which a button-level target could not
+              // reach.
+              {...themeProps('selector-clear-icon')}
+            />
           </button>
         )}
-        <span
-          {...stylex.props(
-            styles.triggerIcon,
-            !status && popover.isOpen && styles.triggerIconOpen,
-            status && styles.triggerIconStatus,
-          )}>
-          {status ? (
-            <Icon
-              icon={STATUS_ICON_MAP[status.type]}
-              size="sm"
-              color={STATUS_ICON_COLOR_MAP[status.type]}
-            />
+        {/*
+          No wrapper span: Icon's own span already provides the 16px box (`sm`)
+          and the icon color, so the status glyph and the chevron are each
+          directly targetable instead of sharing one untargetable parent — and
+          the two affordances stop sharing a node.
+        */}
+        {showStatusIcon ? (
+            showStatusTooltip ? (
+              <button
+                ref={statusTooltip.ref}
+                type="button"
+                aria-label={t(STATUS_BUTTON_LABEL_KEY[status.type])}
+                aria-describedby={statusTooltip.describedBy}
+                onClick={e => e.stopPropagation()}
+                {...stylex.props(styles.statusButton)}>
+                <Icon
+                  icon={STATUS_ICON_MAP[status.type]}
+                  size="sm"
+                  color={STATUS_ICON_COLOR_MAP[status.type]}
+                  xstyle={styles.triggerIcon}
+                />
+              </button>
+            ) : (
+              <Icon
+                icon={STATUS_ICON_MAP[status.type]}
+                size="sm"
+                color={STATUS_ICON_COLOR_MAP[status.type]}
+                xstyle={styles.triggerIcon}
+              />
+            )
           ) : (
-            <Icon icon="chevronDown" size="sm" color="inherit" />
-          )}
-        </span>
+            <Icon
+              icon="chevronDown"
+              size="sm"
+              color="secondary"
+              // The rotation rides on the glyph, alongside the box and color
+              // the wrapper used to provide, so one element carries the mark,
+              // its open/closed transform, and the theme target.
+              xstyle={[
+                styles.triggerIcon,
+                styles.triggerIconRotation,
+                popover.isOpen && styles.triggerIconOpen,
+              ]}
+              // Stable theme target on the chevron glyph itself, so a theme can
+              // restyle just this icon (color, size, hover) — and its
+              // open/closed state — via `defineTheme`. Same-element rules in
+              // @layer astryx-theme win over the icon's own base color/size,
+              // which a button-level target could not reach.
+              {...themeProps('selector-indicator-icon', {
+                state: popover.isOpen ? 'expanded' : 'collapsed',
+              })}
+          />
+        )}
       </div>
 
       {popover.render(
@@ -1046,7 +1404,10 @@ export function Selector<T extends SelectorOptionType>(
               id={listboxId}
               role="listbox"
               aria-labelledby={triggerId}
-              {...stylex.props(styles.dropdown)}>
+              {...stylex.props(
+                styles.dropdown,
+                variant !== 'ghost' && styles.dropdownInput,
+              )}>
               {renderOptions()}
             </div>
           </div>
@@ -1058,6 +1419,7 @@ export function Selector<T extends SelectorOptionType>(
             aria-labelledby={triggerId}
             {...stylex.props(
               styles.dropdown,
+              variant !== 'ghost' && styles.dropdownInput,
               !isPositioned && styles.dropdownHidden,
             )}>
             {renderOptions()}
@@ -1070,6 +1432,8 @@ export function Selector<T extends SelectorOptionType>(
           style: popoverOffsetStyle,
         },
       )}
+
+      {showStatusTooltip && statusTooltip.renderTooltip(status?.message ?? '')}
 
       {showsDisabledMessage &&
         disabledMessageTooltip.renderTooltip(disabledMessage)}
@@ -1099,6 +1463,7 @@ export function Selector<T extends SelectorOptionType>(
             }
           : undefined
       }
+      statusVariant={effectiveStatusVariant}
       labelTooltip={labelTooltip}
       width={width}>
       {selectorContent}

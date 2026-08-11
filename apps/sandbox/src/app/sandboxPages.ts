@@ -4,13 +4,13 @@
  * @file sandboxPages.ts
  * @position Central registry of all sandbox pages, grouped by category.
  *
- * The "Templates" category is auto-populated from packages/cli/templates/
+ * The "Templates" category is auto-populated from packages/cli/assets/templates/
  * via `node scripts/sync-templates.js`. Each template has a template.doc.mjs
  * that provides metadata. The sync script generates a registry file at
  * src/generated/templateRegistry.ts.
  *
  * To add a new template:
- *   1. Create packages/cli/templates/<name>/page.tsx + template.doc.mjs
+ *   1. Create packages/cli/assets/templates/<name>/page.tsx + template.doc.mjs
  *   2. Run `node scripts/sync-templates.js`
  *   3. It appears in the sandbox and CLI automatically
  *
@@ -43,6 +43,40 @@ export interface SandboxCategory {
   /** Pages in this category */
   pages: SandboxPage[];
 }
+
+/**
+ * Sidebar entries that sit ABOVE the `Projects` section, alongside Home —
+ * destinations in their own right rather than pages inside a category.
+ *
+ * These used to be written out in `SandboxNav`; they are data so the next one
+ * is an entry here rather than another branch in the nav component. `icon` is
+ * a key into that file's icon map for the same reason the categories use one:
+ * this module stays JSX-free.
+ */
+export interface SandboxTopLevelPage {
+  /** Label shown in the sidebar */
+  label: string;
+  /** Route path (with trailing slash) */
+  href: string;
+  /** Key into SandboxNav's icon map */
+  icon: string;
+  /**
+   * Match child routes too. Home must not (`/` prefixes everything); a section
+   * with sub-pages should.
+   */
+  matchesChildren?: boolean;
+}
+
+export const topLevelPages: SandboxTopLevelPage[] = [
+  {label: 'Home', href: '/', icon: 'home'},
+  {label: 'Official Templates', href: '/templates/', icon: 'templates'},
+  {
+    label: 'Component Scores',
+    href: '/pages/component-scores/',
+    icon: 'scores',
+    matchesChildren: true,
+  },
+];
 
 export const categories: SandboxCategory[] = [
   {

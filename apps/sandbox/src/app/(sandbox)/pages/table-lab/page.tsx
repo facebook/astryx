@@ -48,6 +48,8 @@ import {
   useTableRowExpansion,
   useTableRowExpansionState,
   useTableGroupedRows,
+  useTableRowIndex,
+  useTableRowStatus,
 } from '@astryxdesign/core/Table';
 import type {TablePlugin, TableSortState} from '@astryxdesign/core/Table';
 
@@ -70,7 +72,9 @@ type PluginId =
   | 'columnResize'
   | 'stickyColumns'
   | 'rowExpansion'
-  | 'groupedRows';
+  | 'groupedRows'
+  | 'rowIndex'
+  | 'rowStatus';
 
 interface PluginMeta {
   id: PluginId;
@@ -109,6 +113,16 @@ const PLUGIN_REGISTRY: PluginMeta[] = [
     id: 'groupedRows',
     label: 'Grouped Rows',
     description: 'Collapsible sections grouped by team',
+  },
+  {
+    id: 'rowIndex',
+    label: 'Row Index',
+    description: 'Prepend a monospaced row-number column',
+  },
+  {
+    id: 'rowStatus',
+    label: 'Row Status',
+    description: 'Status dot / icon (by member status)',
   },
 ];
 
@@ -231,10 +245,37 @@ function useLabPlugins({
     summary.push(`${collapsedGroups.size} groups collapsed`);
   }
 
+  // --- row index ---
+  const rowIndexPlugin = useTableRowIndex<LabRow>({
+    data: dataAfterPage,
+    getRowKey: item => item.id,
+  });
+
+  // --- row status ---
+  const rowStatusPlugin = useTableRowStatus<LabRow>({
+    getStatus: item => {
+      // Semantic color names map to theme tokens; an icon adds a shape
+      // differentiator so status isn't conveyed by color alone.
+      if (item.status === 'Active') {
+        return {color: 'success', icon: 'success', label: 'Active'};
+      }
+      if (item.status === 'Away') {
+        return {color: 'warning', icon: 'warning', label: 'Away'};
+      }
+      return null; // Offline: no indicator
+    },
+  });
+
   // Assemble enabled plugins in a stable order.
   const plugins: Record<string, TablePlugin<LabRow>> = {};
   if (enabled.groupedRows) {
     plugins.grouped = grouped.plugin;
+  }
+  if (enabled.rowIndex) {
+    plugins.rowIndex = rowIndexPlugin;
+  }
+  if (enabled.rowStatus) {
+    plugins.rowStatus = rowStatusPlugin;
   }
   if (enabled.sortable) {
     plugins.sort = sortPlugin;
@@ -414,6 +455,8 @@ export default function TableLabPage() {
     stickyColumns: false,
     rowExpansion: false,
     groupedRows: false,
+    rowIndex: false,
+    rowStatus: false,
   });
 
   const baseData = useMemo(() => generateRows(rowCount), [rowCount]);

@@ -19,7 +19,7 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Chat/index.ts (exports)
  * - /apps/storybook/stories/Chat.stories.tsx
- * - /packages/cli/templates/blocks/components/ChatMessageList/ (block examples)
+ * - /packages/cli/assets/templates/blocks/components/ChatMessageList/ (block examples)
  */
 
 import {type ReactNode, useEffect, useMemo, useRef, useTransition} from 'react';
@@ -210,6 +210,7 @@ export function ChatMessageList({
   style,
   'data-testid': testId,
   ref,
+  ...rest
 }: ChatMessageListProps) {
   const layoutContext = useChatLayoutContext();
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -264,6 +265,7 @@ export function ChatMessageList({
   return (
     <ChatListContext value={contextValue}>
       <div
+        {...rest}
         ref={ref}
         role="log"
         aria-live="polite"

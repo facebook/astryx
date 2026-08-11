@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'DropdownMenu',
@@ -8,10 +8,36 @@ export const docs = {
   group: 'DropdownMenu',
   category: 'Action',
   keywords: ["dropdown","menu","popover","select","actions","contextmenu","overflow","kebab","menubutton"],
+  playground: {
+    // `items` is required; without seeded entries the properties-tab preview
+    // renders an empty trigger button. Provide a few actions so the preview
+    // is meaningful.
+    defaults: {
+      button: {label: 'Actions'},
+      items: [
+        {label: 'Edit'},
+        {label: 'Duplicate'},
+        {label: 'Delete'},
+      ],
+    },
+  },
   theming: {
     targets: [
       {className: 'astryx-dropdown-menu'},
-      {className: 'astryx-dropdown-menu-item', visualProps: ['size']},
+      {className: 'astryx-dropdown-menu-item', visualProps: ['size', 'variant']},
+      {
+        className: 'astryx-dropdown-menu-radio',
+        visualProps: ['size'],
+        states: ['checked', 'disabled'],
+      },
+      {
+        className: 'astryx-dropdown-menu-radio-dot',
+        visualProps: ['size'],
+        states: ['checked', 'disabled'],
+      },
+      {className: 'astryx-dropdown-menu-section-heading'},
+      {className: 'astryx-dropdown-menu-divider'},
+      {className: 'astryx-dropdown-menu-indicator-icon'},
     ],
     vars: [
       {name: '--_dropdown-menu-radius', description: 'Border radius of the menu popup', default: 'var(--radius-element)', private: true},
@@ -33,7 +59,7 @@ export const docs = {
     {
       name: 'items',
       type: 'DropdownMenuOption[]',
-      description: 'Array of menu entries. Each entry is one of: an action item `{label, onClick?, icon?, isDisabled?}`, a divider `{type: "divider"}`, or a section `{type: "section", title?, items: [...action items]}`.',
+      description: 'Array of menu entries. Each entry is one of: an action item `{label, onClick?, icon?, isDisabled?, variant?}` (variant `"destructive"` renders it in the error color), a divider `{type: "divider"}`, or a section `{type: "section", title?, items: [...action items]}`.',
       required: true,
     },
     {
@@ -50,6 +76,18 @@ export const docs = {
       name: 'menuWidth',
       type: 'number | string',
       description: 'Custom menu width; defaults to matching the trigger button width.',
+    },
+    {
+      name: 'placement',
+      type: "'above' | 'below' | 'start' | 'end'",
+      description: "Position placement relative to the trigger. Logical: start/end resolve against the menu's own inherited direction (RTL mirrors).",
+      default: "'below'",
+    },
+    {
+      name: 'alignment',
+      type: "'start' | 'center' | 'end'",
+      description: "Alignment along the placement axis. Logical: start/end follow the menu's own inherited direction (RTL mirrors).",
+      default: "'start'",
     },
     {
       name: 'onClick',
@@ -81,7 +119,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsZh = {
   usage: {
     description: 'A dropdown menu that displays a list of actionable items in a popup triggered by a button. Use to present action options as a next step in a process, or to offer contextual actions without cluttering the interface.',
@@ -94,7 +132,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'dropdown menu for actionable items in popup',
   usage: {

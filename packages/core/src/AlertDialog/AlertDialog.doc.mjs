@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'AlertDialog',
@@ -30,7 +30,7 @@ export const docs = {
   },
   // Intentionally a contained isInline preview, not playground.overlay: the
   // component stays visible on load and knobs stay live, whereas a real
-  // showModal() overlay makes the page inert — see PlaygroundConfig.overlay
+  // showModal() overlay makes the page inert — see ComponentPlaygroundConfig.overlay
   // in docs-types.ts (#3657).
   playground: {
     defaults: {
@@ -113,9 +113,14 @@ export const docs = {
   components: [
     {name: 'useImperativeAlertDialog'},
   ],
+  theming: {
+    targets: [
+      {className: 'astryx-alert-dialog'},
+    ],
+  },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'Confirms destructive/irreversible action before it happens (delete, revoke access, discard unsaved changes).',
   usage: {

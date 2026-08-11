@@ -10,8 +10,9 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {useState} from 'react';
 import {DropdownMenu} from './DropdownMenu';
 import {DropdownMenuItem} from './DropdownMenuItem';
 import {Divider} from '../Divider';
@@ -109,6 +110,22 @@ describe('DropdownMenu', () => {
     );
   });
 
+  it('supports explicit menu alignment', () => {
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        alignment="end"
+        items={[{label: 'Item 1'}]}
+      />,
+    );
+    const popover = screen
+      .getByRole('menu', {hidden: true})
+      .closest('[popover]');
+    expect(popover?.getAttribute('style')).toContain(
+      'position-area: self-block-end span-self-inline-start',
+    );
+  });
+
   it('emits the direction-independent logical mapping under an RTL ancestor (#3389)', async () => {
     // The self-* position-area keywords resolve against the popover's own
     // inherited direction in the browser, so RTL emits the same string as
@@ -148,6 +165,76 @@ describe('DropdownMenu', () => {
     expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
   });
 
+  it('calls onOpenChange for uncontrolled native open and close transitions', async () => {
+    const user = userEvent.setup();
+    const handleOpenChange = vi.fn();
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        items={[{label: 'Item 1'}]}
+        onOpenChange={handleOpenChange}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    expect(handleOpenChange).toHaveBeenCalledWith(true);
+
+    handleOpenChange.mockClear();
+    const popoverEl = screen
+      .getByRole('menu', {hidden: true})
+      .closest('[popover]');
+    expect(popoverEl).not.toBeNull();
+    const toggleEvent = new Event('toggle');
+    Object.defineProperty(toggleEvent, 'newState', {value: 'closed'});
+    fireEvent(popoverEl as HTMLElement, toggleEvent);
+
+    expect(handleOpenChange).toHaveBeenCalledWith(false);
+    expect(screen.getByRole('button', {name: /Actions/})).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+  });
+
+  it('restores focus to the trigger after native light dismiss', async () => {
+    const raf = vi
+      .spyOn(window, 'requestAnimationFrame')
+      .mockImplementation(callback => {
+        callback(0);
+        return 0;
+      });
+
+    try {
+      const user = userEvent.setup();
+      render(
+        <DropdownMenu
+          button={{label: 'Actions'}}
+          items={[{label: 'Edit'}, {label: 'Delete'}]}
+        />,
+      );
+
+      const trigger = screen.getByRole('button', {name: /Actions/});
+      trigger.focus();
+      await user.click(trigger);
+      // Pointer opens focus the menu container, not the first item (#4477).
+      expect(screen.getByRole('menu', {hidden: true})).toHaveFocus();
+
+      const popoverEl = screen
+        .getByRole('menu', {hidden: true})
+        .closest('[popover]');
+      expect(popoverEl).not.toBeNull();
+      popoverEl?.addEventListener('toggle', () => {
+        trigger.blur();
+      });
+      const toggleEvent = new Event('toggle');
+      Object.defineProperty(toggleEvent, 'newState', {value: 'closed'});
+      fireEvent(popoverEl as HTMLElement, toggleEvent);
+
+      expect(trigger).toHaveFocus();
+    } finally {
+      raf.mockRestore();
+    }
+  });
+
   it('closes the menu when Tab is pressed inside it (APG menu-button)', async () => {
     const user = userEvent.setup();
     render(
@@ -175,6 +262,27 @@ describe('DropdownMenu', () => {
     fireEvent.keyDown(menu, {key: 'd'});
     expect(
       screen.getByRole('menuitem', {name: 'Delete', hidden: true}),
+    ).toHaveFocus();
+  });
+
+  it('typeahead advances past an item that already starts with the letter', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        items={[{label: 'Copy'}, {label: 'Copy link'}, {label: 'Delete'}]}
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    const menu = screen.getByRole('menu', {hidden: true});
+    screen.getByRole('menuitem', {name: 'Copy', hidden: true}).focus();
+
+    fireEvent.keyDown(menu, {key: 'c'});
+
+    // APG: a printable character moves focus to the NEXT item starting with
+    // it. Anchoring at the focused item instead makes the press a dead key.
+    expect(
+      screen.getByRole('menuitem', {name: 'Copy link', hidden: true}),
     ).toHaveFocus();
   });
 
@@ -415,6 +523,113 @@ describe('DropdownMenu dividers', () => {
   });
 });
 
+describe('DropdownMenu theming slots', () => {
+  it('exposes a themeable slot on the section heading', () => {
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        items={[
+          {
+            type: 'section',
+            title: 'File Actions',
+            items: [{label: 'New'}],
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByText('File Actions')).toHaveClass(
+      'astryx-dropdown-menu-section-heading',
+    );
+  });
+
+  it('exposes a themeable slot on the menu divider', () => {
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        items={[{label: 'Edit'}, {type: 'divider'}, {label: 'Delete'}]}
+      />,
+    );
+
+    const divider = screen.getByRole('separator', {hidden: true});
+    expect(divider).toHaveClass('astryx-dropdown-menu-divider');
+    // Still carries the base Divider slot so global divider theming applies too.
+    expect(divider).toHaveClass('astryx-divider');
+  });
+});
+
+describe('DropdownMenuItem destructive variant', () => {
+  it('marks a compound-mode item destructive via data-variant', () => {
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuItem
+          label="Delete"
+          variant="destructive"
+          onClick={() => {}}
+        />
+        <DropdownMenuItem label="Edit" onClick={() => {}} />
+      </DropdownMenu>,
+    );
+
+    const del = screen.getByRole('menuitem', {name: 'Delete', hidden: true});
+    const edit = screen.getByRole('menuitem', {name: 'Edit', hidden: true});
+    expect(del).toHaveAttribute('data-variant', 'destructive');
+    // Default items carry no variant attribute, so existing usage is unchanged.
+    expect(edit).not.toHaveAttribute('data-variant');
+  });
+
+  it('forwards variant from the data-driven items API', () => {
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        items={[
+          {label: 'Delete', variant: 'destructive', onClick: () => {}},
+          {label: 'Edit', onClick: () => {}},
+        ]}
+      />,
+    );
+
+    expect(
+      screen.getByRole('menuitem', {name: 'Delete', hidden: true}),
+    ).toHaveAttribute('data-variant', 'destructive');
+    expect(
+      screen.getByRole('menuitem', {name: 'Edit', hidden: true}),
+    ).not.toHaveAttribute('data-variant');
+  });
+
+  it('forwards variant to items nested inside a section', () => {
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        items={[
+          {
+            type: 'section',
+            title: 'Danger zone',
+            items: [
+              {label: 'Delete', variant: 'destructive', onClick: () => {}},
+            ],
+          },
+        ]}
+      />,
+    );
+
+    expect(
+      screen.getByRole('menuitem', {name: 'Delete', hidden: true}),
+    ).toHaveAttribute('data-variant', 'destructive');
+  });
+
+  it('defaults to no variant attribute', () => {
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuItem label="Edit" onClick={() => {}} />
+      </DropdownMenu>,
+    );
+    expect(
+      screen.getByRole('menuitem', {name: 'Edit', hidden: true}),
+    ).not.toHaveAttribute('data-variant');
+  });
+});
+
 describe('DropdownMenu button customization', () => {
   it('renders with different button variants', () => {
     const {rerender} = render(
@@ -611,5 +826,423 @@ describe('DropdownMenu compound mode', () => {
     expect(
       screen.getByRole('menuitem', {name: 'Conditional', hidden: true}),
     ).toBeInTheDocument();
+  });
+});
+
+describe('DropdownMenu keyboard access for menuitemradio/menuitemcheckbox (#3829)', () => {
+  it('arrow navigation reaches consumer-rendered menuitemradio and menuitemcheckbox items', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Sort'}}>
+        <DropdownMenuItem label="Edit" onClick={() => {}} />
+        <div role="menuitemradio" tabIndex={-1} aria-checked="false">
+          Newest
+        </div>
+        <div role="menuitemcheckbox" tabIndex={-1} aria-checked="false">
+          Archived
+        </div>
+      </DropdownMenu>,
+    );
+
+    await user.click(screen.getByRole('button', {name: /Sort/}));
+    const menu = screen.getByRole('menu', {hidden: true});
+    screen.getByRole('menuitem', {name: 'Edit', hidden: true}).focus();
+
+    fireEvent.keyDown(menu, {key: 'ArrowDown'});
+    expect(
+      screen.getByRole('menuitemradio', {name: 'Newest', hidden: true}),
+    ).toHaveFocus();
+
+    fireEvent.keyDown(menu, {key: 'ArrowDown'});
+    expect(
+      screen.getByRole('menuitemcheckbox', {name: 'Archived', hidden: true}),
+    ).toHaveFocus();
+  });
+
+  it('activates a focused menuitemradio with Enter and a menuitemcheckbox with Space', async () => {
+    const user = userEvent.setup();
+    const onSelect = vi.fn();
+    const onToggle = vi.fn();
+    render(
+      <DropdownMenu button={{label: 'Sort'}}>
+        <DropdownMenuItem label="Edit" onClick={() => {}} />
+        <div
+          role="menuitemradio"
+          tabIndex={-1}
+          aria-checked="false"
+          onClick={onSelect}>
+          Newest
+        </div>
+        <div
+          role="menuitemcheckbox"
+          tabIndex={-1}
+          aria-checked="false"
+          onClick={onToggle}>
+          Archived
+        </div>
+      </DropdownMenu>,
+    );
+
+    await user.click(screen.getByRole('button', {name: /Sort/}));
+    const menu = screen.getByRole('menu', {hidden: true});
+
+    screen.getByRole('menuitemradio', {name: 'Newest', hidden: true}).focus();
+    fireEvent.keyDown(menu, {key: 'Enter'});
+    expect(onSelect).toHaveBeenCalledTimes(1);
+
+    screen
+      .getByRole('menuitemcheckbox', {name: 'Archived', hidden: true})
+      .focus();
+    fireEvent.keyDown(menu, {key: ' '});
+    expect(onToggle).toHaveBeenCalledTimes(1);
+  });
+
+  it('typeahead matches a menuitemradio label', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Sort'}}>
+        <DropdownMenuItem label="Edit" onClick={() => {}} />
+        <div role="menuitemradio" tabIndex={-1} aria-checked="false">
+          Newest
+        </div>
+        <div role="menuitemcheckbox" tabIndex={-1} aria-checked="false">
+          Archived
+        </div>
+      </DropdownMenu>,
+    );
+
+    await user.click(screen.getByRole('button', {name: /Sort/}));
+    fireEvent.keyDown(screen.getByRole('menu', {hidden: true}), {key: 'n'});
+    expect(
+      screen.getByRole('menuitemradio', {name: 'Newest', hidden: true}),
+    ).toHaveFocus();
+  });
+
+  it('typeahead matches a menuitemcheckbox label', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Sort'}}>
+        <DropdownMenuItem label="Edit" onClick={() => {}} />
+        <div role="menuitemradio" tabIndex={-1} aria-checked="false">
+          Newest
+        </div>
+        <div role="menuitemcheckbox" tabIndex={-1} aria-checked="false">
+          Archived
+        </div>
+      </DropdownMenu>,
+    );
+
+    await user.click(screen.getByRole('button', {name: /Sort/}));
+    fireEvent.keyDown(screen.getByRole('menu', {hidden: true}), {key: 'a'});
+    expect(
+      screen.getByRole('menuitemcheckbox', {name: 'Archived', hidden: true}),
+    ).toHaveFocus();
+  });
+
+  it('typeahead skips an aria-disabled item and matches the next enabled label', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Sort'}}>
+        <DropdownMenuItem label="Edit" onClick={() => {}} />
+        <div role="menuitemradio" tabIndex={-1} aria-disabled="true">
+          Newest
+        </div>
+        <div role="menuitemcheckbox" tabIndex={-1} aria-checked="false">
+          Nightly
+        </div>
+      </DropdownMenu>,
+    );
+
+    await user.click(screen.getByRole('button', {name: /Sort/}));
+    // Anchor the search on 'Edit' so typeahead scans forward and meets the
+    // disabled 'Newest' (also an 'n' match) before the enabled 'Nightly'.
+    // This pins the `:not([aria-disabled="true"])` in MENU_ITEM_SELECTOR: the
+    // menus never pass useTypeahead's `isDisabled` option, so that clause is
+    // the only thing keeping disabled rows out of the typeahead list. An
+    // arrow-key test cannot cover it — useListFocus re-filters disabled items
+    // independently, so arrow navigation is guarded twice over.
+    // The disabled row keeps tabIndex={-1} on purpose: it stays focusable, so
+    // the selector clause is the sole reason focus skips it.
+    screen.getByRole('menuitem', {name: 'Edit', hidden: true}).focus();
+    fireEvent.keyDown(screen.getByRole('menu', {hidden: true}), {key: 'n'});
+    expect(
+      screen.getByRole('menuitemcheckbox', {name: 'Nightly', hidden: true}),
+    ).toHaveFocus();
+  });
+
+  it('skips aria-disabled menuitemradio and menuitemcheckbox items during arrow navigation', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Sort'}}>
+        <DropdownMenuItem label="Edit" onClick={() => {}} />
+        <div role="menuitemradio" tabIndex={-1} aria-disabled="true">
+          Newest
+        </div>
+        <div role="menuitemcheckbox" tabIndex={-1} aria-disabled="true">
+          Archived
+        </div>
+        <div role="menuitemradio" tabIndex={-1} aria-checked="false">
+          Oldest
+        </div>
+      </DropdownMenu>,
+    );
+
+    await user.click(screen.getByRole('button', {name: /Sort/}));
+    const menu = screen.getByRole('menu', {hidden: true});
+    screen.getByRole('menuitem', {name: 'Edit', hidden: true}).focus();
+
+    fireEvent.keyDown(menu, {key: 'ArrowDown'});
+    expect(
+      screen.getByRole('menuitemradio', {name: 'Oldest', hidden: true}),
+    ).toHaveFocus();
+  });
+
+  it('moves focus to the item the mouse hovers, keeping a single highlight', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuItem label="Edit" onClick={() => {}} />
+        <DropdownMenuItem label="Duplicate" onClick={() => {}} />
+        <DropdownMenuItem label="Delete" onClick={() => {}} />
+      </DropdownMenu>,
+    );
+
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    // Keyboard focus starts on the first item.
+    const edit = screen.getByRole('menuitem', {name: 'Edit', hidden: true});
+    const del = screen.getByRole('menuitem', {name: 'Delete', hidden: true});
+    edit.focus();
+    expect(edit).toHaveFocus();
+
+    // A mouse hover over another item moves focus to it, so the single
+    // focus-driven highlight follows the pointer instead of leaving two.
+    fireEvent.pointerMove(del, {pointerType: 'mouse'});
+    expect(del).toHaveFocus();
+    expect(edit).not.toHaveFocus();
+  });
+
+  it('does not move focus on hover for a disabled item', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuItem label="Edit" onClick={() => {}} />
+        <DropdownMenuItem label="Delete" isDisabled onClick={() => {}} />
+      </DropdownMenu>,
+    );
+
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    const edit = screen.getByRole('menuitem', {name: 'Edit', hidden: true});
+    const del = screen.getByRole('menuitem', {name: 'Delete', hidden: true});
+    edit.focus();
+
+    fireEvent.pointerMove(del, {pointerType: 'mouse'});
+    expect(edit).toHaveFocus();
+  });
+
+  it('does not move focus for a non-mouse (touch) pointer', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuItem label="Edit" onClick={() => {}} />
+        <DropdownMenuItem label="Delete" onClick={() => {}} />
+      </DropdownMenu>,
+    );
+
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    const edit = screen.getByRole('menuitem', {name: 'Edit', hidden: true});
+    const del = screen.getByRole('menuitem', {name: 'Delete', hidden: true});
+    edit.focus();
+
+    fireEvent.pointerMove(del, {pointerType: 'touch'});
+    expect(edit).toHaveFocus();
+  });
+});
+
+describe('DropdownMenu open focus follows input modality (#4477)', () => {
+  const items = [{label: 'Edit'}, {label: 'Duplicate'}, {label: 'Delete'}];
+
+  it('pointer open focuses the menu container, not the first item (items mode)', async () => {
+    const user = userEvent.setup();
+    render(<DropdownMenu button={{label: 'Actions'}} items={items} />);
+
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+
+    const menu = screen.getByRole('menu', {hidden: true});
+    await waitFor(() => expect(menu).toHaveFocus());
+    expect(
+      screen.getByRole('menuitem', {name: 'Edit', hidden: true}),
+    ).not.toHaveFocus();
+  });
+
+  it('pointer open focuses the menu container in compound mode', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuItem label="Edit" onClick={() => {}} />
+        <DropdownMenuItem label="Delete" onClick={() => {}} />
+      </DropdownMenu>,
+    );
+
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+
+    const menu = screen.getByRole('menu', {hidden: true});
+    await waitFor(() => expect(menu).toHaveFocus());
+    expect(
+      screen.getByRole('menuitem', {name: 'Edit', hidden: true}),
+    ).not.toHaveFocus();
+  });
+
+  it('first ArrowDown after a pointer open moves focus to the first enabled item', async () => {
+    const user = userEvent.setup();
+    render(<DropdownMenu button={{label: 'Actions'}} items={items} />);
+
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    const menu = screen.getByRole('menu', {hidden: true});
+    await waitFor(() => expect(menu).toHaveFocus());
+
+    fireEvent.keyDown(menu, {key: 'ArrowDown'});
+    expect(
+      screen.getByRole('menuitem', {name: 'Edit', hidden: true}),
+    ).toHaveFocus();
+  });
+
+  it('ArrowDown after a pointer open skips a disabled leading item', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        items={[{label: 'Edit', isDisabled: true}, {label: 'Delete'}]}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    const menu = screen.getByRole('menu', {hidden: true});
+    await waitFor(() => expect(menu).toHaveFocus());
+
+    fireEvent.keyDown(menu, {key: 'ArrowDown'});
+    expect(
+      screen.getByRole('menuitem', {name: 'Delete', hidden: true}),
+    ).toHaveFocus();
+  });
+
+  it('keyboard open via Enter focuses the first enabled item', async () => {
+    const user = userEvent.setup();
+    render(<DropdownMenu button={{label: 'Actions'}} items={items} />);
+
+    screen.getByRole('button', {name: /Actions/}).focus();
+    await user.keyboard('{Enter}');
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('menuitem', {name: 'Edit', hidden: true}),
+      ).toHaveFocus(),
+    );
+  });
+
+  it('keyboard open via ArrowDown skips a disabled leading item', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        items={[{label: 'Edit', isDisabled: true}, {label: 'Delete'}]}
+      />,
+    );
+
+    screen.getByRole('button', {name: /Actions/}).focus();
+    await user.keyboard('{ArrowDown}');
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('menuitem', {name: 'Delete', hidden: true}),
+      ).toHaveFocus(),
+    );
+  });
+
+  it('a synthesized click (detail 0, AT activation) still focuses the first item', async () => {
+    render(<DropdownMenu button={{label: 'Actions'}} items={items} />);
+
+    // fireEvent.click dispatches a MouseEvent with detail 0 (the shape of a
+    // screen reader / AT activation), so it must keep the keyboard behavior.
+    fireEvent.click(screen.getByRole('button', {name: /Actions/}));
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('menuitem', {name: 'Edit', hidden: true}),
+      ).toHaveFocus(),
+    );
+  });
+
+  it('controlled pointer open focuses the menu container', async () => {
+    function Controlled() {
+      const [isOpen, setIsOpen] = useState(false);
+      return (
+        <DropdownMenu
+          button={{label: 'Actions'}}
+          items={items}
+          isMenuOpen={isOpen}
+          onOpenChange={setIsOpen}
+        />
+      );
+    }
+    const user = userEvent.setup();
+    render(<Controlled />);
+
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+
+    const menu = screen.getByRole('menu', {hidden: true});
+    await waitFor(() => expect(menu).toHaveFocus());
+    expect(
+      screen.getByRole('menuitem', {name: 'Edit', hidden: true}),
+    ).not.toHaveFocus();
+  });
+
+  it('programmatic controlled open still focuses the first item', async () => {
+    const {rerender} = render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        items={items}
+        isMenuOpen={false}
+        onOpenChange={() => {}}
+      />,
+    );
+
+    rerender(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        items={items}
+        isMenuOpen={true}
+        onOpenChange={() => {}}
+      />,
+    );
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('menuitem', {name: 'Edit', hidden: true}),
+      ).toHaveFocus(),
+    );
+  });
+
+  it('Escape still closes the menu after a pointer open', async () => {
+    const user = userEvent.setup();
+    render(<DropdownMenu button={{label: 'Actions'}} items={items} />);
+
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    const menu = screen.getByRole('menu', {hidden: true});
+    await waitFor(() => expect(menu).toHaveFocus());
+
+    fireEvent.keyDown(menu, {key: 'Escape'});
+    expect(HTMLElement.prototype.hidePopover).toHaveBeenCalled();
+  });
+
+  it('Tab still closes the menu after a pointer open (APG menu-button)', async () => {
+    const user = userEvent.setup();
+    render(<DropdownMenu button={{label: 'Actions'}} items={items} />);
+
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    const menu = screen.getByRole('menu', {hidden: true});
+    await waitFor(() => expect(menu).toHaveFocus());
+
+    fireEvent.keyDown(menu, {key: 'Tab'});
+    expect(HTMLElement.prototype.hidePopover).toHaveBeenCalled();
   });
 });

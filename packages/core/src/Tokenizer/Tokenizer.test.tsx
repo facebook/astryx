@@ -9,11 +9,17 @@
  * SYNC: When Tokenizer.tsx changes, update tests to match
  */
 
-import {describe, it, expect, vi, beforeAll, afterAll} from 'vitest';
+import {describe, it, expect, vi, beforeAll, afterAll, afterEach} from 'vitest';
 import {render, screen, fireEvent, act, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Tokenizer} from './Tokenizer';
+import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import type {SearchSource, SearchableItem} from '../Typeahead/types';
+import {TestIcon} from '../__tests__/TestIcon';
+
+function politeRegion(): HTMLElement | null {
+  return document.querySelector('[data-astryx-live-region="polite"]');
+}
 
 // Store original matches to restore later
 const originalMatches = HTMLElement.prototype.matches;
@@ -58,6 +64,10 @@ beforeAll(() => {
 afterAll(() => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (HTMLElement.prototype as any).matches = originalMatches;
+});
+
+afterEach(() => {
+  __resetLiveRegionsForTest();
 });
 
 // Test data
@@ -818,6 +828,51 @@ describe('Tokenizer', () => {
     });
   });
 
+  describe('startIcon', () => {
+    it('does not render a start icon when omitted', () => {
+      render(
+        <Tokenizer
+          label="Members"
+          searchSource={userSource}
+          value={[]}
+          onChange={() => {}}
+        />,
+      );
+      expect(document.querySelector('svg')).not.toBeInTheDocument();
+    });
+
+    it('renders a ReactNode start icon before the tokens', () => {
+      render(
+        <Tokenizer
+          label="Members"
+          searchSource={userSource}
+          value={[{id: '1', label: 'Alice'}]}
+          onChange={() => {}}
+          startIcon={<TestIcon data-testid="start-icon" />}
+        />,
+      );
+      const icon = screen.getByTestId('start-icon');
+      const token = screen.getByText('Alice');
+      expect(icon).toBeInTheDocument();
+      expect(
+        icon.compareDocumentPosition(token) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    });
+
+    it('renders an IconType (SVG component) start icon', () => {
+      render(
+        <Tokenizer
+          label="Members"
+          searchSource={userSource}
+          value={[]}
+          onChange={() => {}}
+          startIcon={TestIcon}
+        />,
+      );
+      expect(document.querySelector('svg')).toBeInTheDocument();
+    });
+  });
+
   describe('disabledMessage', () => {
     const h = {hidden: true} as const;
     const isOpen = (el: Element) => el.matches(':popover-open');
@@ -921,6 +976,130 @@ describe('Tokenizer', () => {
       expect(screen.getByRole('combobox')).toBeDisabled();
     });
   });
+  describe('announcements', () => {
+    it('announces removal politely on Backspace with an empty input', async () => {
+      const onChange = vi.fn();
+      render(
+        <Tokenizer
+          label="Members"
+          searchSource={userSource}
+          value={[users[0], users[1]]}
+          onChange={onChange}
+        />,
+      );
+      const input = screen.getByRole('combobox');
+      fireEvent.keyDown(input, {key: 'Backspace'});
+      expect(onChange).toHaveBeenCalledWith([users[0]], {
+        item: users[1],
+        type: 'remove',
+      });
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('Removed Bob');
+      });
+    });
+
+    it("announces removal politely when clicking a token's remove button", async () => {
+      render(
+        <Tokenizer
+          label="Members"
+          searchSource={userSource}
+          value={[users[0], users[1]]}
+          onChange={() => {}}
+        />,
+      );
+      fireEvent.click(screen.getByRole('button', {name: 'Remove Alice'}));
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('Removed Alice');
+      });
+    });
+
+    it('announces addition politely when selecting a search result', async () => {
+      render(
+        <Tokenizer
+          label="Members"
+          searchSource={userSource}
+          value={[]}
+          onChange={() => {}}
+          hasEntriesOnFocus
+          debounceMs={0}
+        />,
+      );
+      const input = screen.getByRole('combobox');
+      fireEvent.focus(input);
+      await act(async () => {
+        await new Promise(r => setTimeout(r, 50));
+      });
+      fireEvent.click(screen.getByText('Alice'));
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('Added Alice');
+      });
+    });
+
+    it('announces addition politely when creating a token with hasCreate', async () => {
+      const emptySource: SearchSource = {
+        search: () => [],
+        bootstrap: () => [],
+      };
+      render(
+        <Tokenizer
+          label="Tags"
+          searchSource={emptySource}
+          value={[]}
+          onChange={() => {}}
+          hasCreate
+          debounceMs={0}
+        />,
+      );
+      const input = screen.getByRole('combobox');
+      await act(async () => {
+        fireEvent.change(input, {target: {value: 'new-tag'}});
+      });
+      await act(async () => {
+        await new Promise(r => setTimeout(r, 50));
+      });
+      fireEvent.click(screen.getByText('Create "new-tag"'));
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('Added new-tag');
+      });
+    });
+
+    it('does not announce on mount', () => {
+      render(
+        <Tokenizer
+          label="Members"
+          searchSource={userSource}
+          value={[users[0]]}
+          onChange={() => {}}
+        />,
+      );
+      // The live regions are created lazily on first announce, so a mount
+      // with pre-selected tokens must not create (or speak through) one.
+      expect(politeRegion()).toBeNull();
+    });
+
+    it('does not announce add/remove while typing', async () => {
+      render(
+        <Tokenizer
+          label="Members"
+          searchSource={userSource}
+          value={[]}
+          onChange={() => {}}
+          debounceMs={0}
+        />,
+      );
+      const input = screen.getByRole('combobox');
+      await act(async () => {
+        fireEvent.change(input, {target: {value: 'Ali'}});
+      });
+      await act(async () => {
+        await new Promise(r => setTimeout(r, 50));
+      });
+      // BaseTypeahead announces result counts while typing (existing
+      // behavior); typing alone must not produce add/remove announcements.
+      expect(politeRegion()?.textContent ?? '').not.toMatch(/Added|Removed/);
+    });
+  });
+
   describe('form participation', () => {
     it('submits one entry per token id under htmlName', () => {
       const {container} = render(
@@ -951,7 +1130,74 @@ describe('Tokenizer', () => {
           />
         </form>,
       );
-      expect([...new FormData(container.querySelector('form')!).keys()]).toEqual([]);
+      expect([
+        ...new FormData(container.querySelector('form')!).keys(),
+      ]).toEqual([]);
     });
+  });
+});
+
+describe('Tokenizer statusVariant forwarding', () => {
+  it('defaults to attached (status renders with data-variant="attached")', () => {
+    const {container} = render(
+      <Tokenizer
+        label="Members"
+        searchSource={userSource}
+        value={[]}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Required'}}
+      />,
+    );
+    expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+      'data-variant',
+      'attached',
+    );
+  });
+
+  it('forwards statusVariant="detached" to the underlying Field status', () => {
+    const {container} = render(
+      <Tokenizer
+        label="Members"
+        searchSource={userSource}
+        value={[]}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Required'}}
+        statusVariant="detached"
+      />,
+    );
+    expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+      'data-variant',
+      'detached',
+    );
+  });
+});
+
+describe('Tokenizer disabled theme state', () => {
+  it('reflects disabled on the root target so themes can gate paint on it', () => {
+    const {container} = render(
+      <Tokenizer
+        label="Members"
+        searchSource={userSource}
+        value={[]}
+        onChange={() => {}}
+        isDisabled
+      />,
+    );
+    const root = container.querySelector('.astryx-tokenizer');
+    expect(root).toHaveAttribute('data-disabled', 'disabled');
+    expect(root).toHaveClass('disabled');
+  });
+
+  it('omits data-disabled when enabled, like status does', () => {
+    const {container} = render(
+      <Tokenizer
+        label="Members"
+        searchSource={userSource}
+        value={[]}
+        onChange={() => {}}
+      />,
+    );
+    const root = container.querySelector('.astryx-tokenizer');
+    expect(root).not.toHaveAttribute('data-disabled');
   });
 });

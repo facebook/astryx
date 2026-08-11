@@ -3,14 +3,14 @@
 
 /**
  * @file AvatarGroupOverflow.tsx
- * @input Uses React, StyleX, AvatarGroupContext
+ * @input Uses React, StyleX, AvatarGroupContext, i18n (useTranslator)
  * @output Exports AvatarGroupOverflow for overflow indicator
  * @position Slot component used inside AvatarGroup
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/AvatarGroup/AvatarGroup.doc.mjs
  * - /packages/core/src/AvatarGroup/index.ts
- * - /packages/cli/templates/blocks/components/AvatarGroup/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/AvatarGroup/ (showcase blocks)
  */
 
 import React, {type ReactNode} from 'react';
@@ -20,11 +20,13 @@ import {
   typographyVars,
   fontWeightVars,
   radiusVars,
+  spacingVars,
 } from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
 import {useAvatarGroup} from './AvatarGroupContext';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 const BORDER_WIDTH = 2;
 const OVERFLOW_FONT_RATIO = 0.35;
@@ -67,13 +69,21 @@ const styles = stylex.create({
     borderWidth: BORDER_WIDTH,
     borderStyle: 'solid',
     borderColor: colorVars['--color-background-surface'],
-    boxSizing: 'content-box',
+    // border-box so the border and inline padding are included in the box
+    // size: a short "+N" stays a circle at exactly the avatar size, while
+    // longer content pushes past the min width and grows into a pill.
+    boxSizing: 'border-box',
+    // Horizontal breathing room so multi-digit "+N" counts don't crowd the
+    // edges once the indicator grows into a pill.
+    paddingInline: spacingVars['--spacing-2'],
     // Neutral tint layer (preserves opaque base underneath)
     backgroundImage: `linear-gradient(${colorVars['--color-neutral']}, ${colorVars['--color-neutral']})`,
   },
   button: {
     cursor: 'pointer',
-    padding: 0,
+    // Reset the UA button's block padding only; the inline padding from `base`
+    // provides the pill's breathing room and must be preserved.
+    paddingBlock: 0,
     // Interactive overlay states layered on top via backgroundImage
     backgroundImage: {
       default: `linear-gradient(${colorVars['--color-neutral']}, ${colorVars['--color-neutral']})`,
@@ -99,8 +109,15 @@ const styles = stylex.create({
 
 const dynamicStyles = stylex.create({
   size: (s: number) => ({
-    width: s,
-    height: s,
+    // Pin height to the avatar's rendered size and enforce the same value as a
+    // *minimum* width, so short counts (`+5`) render a perfect circle. With
+    // border-box, the inline padding lives inside this size; longer content
+    // (`+4912`) pushes past the min width and grows into a stadium/pill.
+    // The border is added to the declared size (like the avatars' ring, which
+    // uses content-box + a 2px border) to keep the indicator the same overall
+    // size as its sibling avatars.
+    minWidth: s + BORDER_WIDTH * 2,
+    height: s + BORDER_WIDTH * 2,
   }),
   fontSize: (s: number) => ({
     fontSize: s * OVERFLOW_FONT_RATIO,
@@ -116,7 +133,7 @@ const dynamicStyles = stylex.create({
  *
  * @example
  * ```
- * <AvatarGroup size="medium">
+ * <AvatarGroup size="lg">
  *   {users.slice(0, 3).map(u => (
  *     <Avatar key={u.id} src={u.src} name={u.name} />
  *   ))}
@@ -134,11 +151,12 @@ export function AvatarGroupOverflow({
   style,
   ...rest
 }: AvatarGroupOverflowProps): ReactNode {
+  const t = useTranslator();
   const group = useAvatarGroup();
   const numericSize = group?.numericSize ?? 36;
   const overlap = group?.overlap ?? 0;
 
-  const label = `${count} more`;
+  const label = t('@astryx.avatarGroup.overflow', {count});
   const content = children ?? `+${count}`;
 
   if (onClick) {
@@ -149,6 +167,7 @@ export function AvatarGroupOverflow({
         onClick={onClick}
         {...rest}
         aria-label={label}
+        data-avatar-item=""
         {...mergeProps(
           themeProps('avatar-group-overflow'),
           stylex.props(

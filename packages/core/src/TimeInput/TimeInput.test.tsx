@@ -9,12 +9,24 @@
  * SYNC: When TimeInput.tsx changes, update tests to match new behavior
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {TimeInput} from './TimeInput';
 import {InputGroup, InputGroupText} from '../InputGroup';
 import type {ISOTimeString} from '../utils';
+import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
+
+function politeRegion(): HTMLElement | null {
+  return document.querySelector('[data-astryx-live-region="polite"]');
+}
+function assertiveRegion(): HTMLElement | null {
+  return document.querySelector('[data-astryx-live-region="assertive"]');
+}
+
+afterEach(() => {
+  __resetLiveRegionsForTest();
+});
 
 describe('TimeInput', () => {
   it('renders with label', () => {
@@ -352,6 +364,69 @@ describe('TimeInput', () => {
       // duplicated.
       expect(container.querySelectorAll('svg')).toHaveLength(1);
     });
+
+    // The grouped status node exists only for aria-describedby; announcing
+    // happens through the persistent useAnnounce regions because a live
+    // region mounted together with its content is not reliably announced.
+    it('keeps the grouped status node role-free while announcing via the persistent region', async () => {
+      render(
+        <InputGroup label="Schedule">
+          <InputGroupText>Starts</InputGroupText>
+          <TimeInput
+            label="Start time"
+            isLabelHidden
+            value={'09:00' as ISOTimeString}
+            onChange={() => {}}
+            status={{type: 'error', message: 'Start time is required'}}
+          />
+        </InputGroup>,
+      );
+
+      const input = screen.getByRole('textbox', {
+        name: 'Schedule Start time',
+      });
+      const describedByIDs =
+        input.getAttribute('aria-describedby')?.split(' ') ?? [];
+      const statusNode = describedByIDs
+        .map(id => document.getElementById(id))
+        .find(el => el?.textContent === 'Start time is required');
+      expect(statusNode).toBeTruthy();
+      expect(statusNode).not.toHaveAttribute('role');
+      expect(statusNode).not.toHaveAttribute('aria-live');
+
+      await waitFor(() => {
+        expect(assertiveRegion()).toHaveTextContent('Start time is required');
+      });
+    });
+
+    // Regression: a grouped status message appearing after mount (the common
+    // validation flow) must land in the persistent announce region.
+    it('announces a grouped status message that appears after mount', async () => {
+      const grouped = (status?: {
+        type: 'error' | 'warning';
+        message: string;
+      }) => (
+        <InputGroup label="Schedule">
+          <InputGroupText>Starts</InputGroupText>
+          <TimeInput
+            label="Start time"
+            isLabelHidden
+            value={'09:00' as ISOTimeString}
+            onChange={() => {}}
+            status={status}
+          />
+        </InputGroup>
+      );
+      const {rerender} = render(grouped());
+      expect(politeRegion()).toBeNull();
+
+      rerender(grouped({type: 'warning', message: 'Schedule is unusual'}));
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('Schedule is unusual');
+      });
+      // Non-error statuses stay on the polite channel.
+      expect(assertiveRegion()).toHaveTextContent('');
+    });
   });
 
   describe('disabledMessage', () => {
@@ -494,5 +569,55 @@ describe('TimeInput', () => {
       fireEvent.focus(input);
       expect(input).toHaveAttribute('placeholder', 'Select a time');
     });
+  });
+});
+
+describe('TimeInput statusVariant forwarding', () => {
+  it('defaults to attached (status renders with data-variant="attached")', () => {
+    const {container} = render(
+      <TimeInput
+        label="Start"
+        value={undefined}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Required'}}
+      />,
+    );
+    expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+      'data-variant',
+      'attached',
+    );
+  });
+
+  it('forwards statusVariant="detached" to the underlying Field status', () => {
+    const {container} = render(
+      <TimeInput
+        label="Start"
+        value={undefined}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Required'}}
+        statusVariant="detached"
+      />,
+    );
+    expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+      'data-variant',
+      'detached',
+    );
+  });
+});
+
+describe('TimeInput disabled theme state', () => {
+  it('reflects disabled on the root target so themes can gate paint on it', () => {
+    const {container} = render(
+      <TimeInput label="Time" onChange={() => {}} isDisabled />,
+    );
+    const root = container.querySelector('.astryx-time-input');
+    expect(root).toHaveAttribute('data-disabled', 'disabled');
+    expect(root).toHaveClass('disabled');
+  });
+
+  it('omits data-disabled when enabled, like status does', () => {
+    const {container} = render(<TimeInput label="Time" onChange={() => {}} />);
+    const root = container.querySelector('.astryx-time-input');
+    expect(root).not.toHaveAttribute('data-disabled');
   });
 });

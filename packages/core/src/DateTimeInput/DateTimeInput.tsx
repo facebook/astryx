@@ -13,7 +13,7 @@
  * - /packages/core/src/DateTimeInput/DateTimeInput.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/DateTimeInput/index.ts (exports if types change)
  * - /apps/storybook/stories/DateTimeInput.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/DateTimeInput/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/DateTimeInput/ (showcase blocks)
  */
 
 import {
@@ -27,7 +27,6 @@ import {
   type KeyboardEvent,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {IconName} from '../Icon';
 import {
   colorVars,
   sizeVars,
@@ -40,7 +39,6 @@ import {
 import {
   Field,
   type InputStatus,
-  type InputStatusType,
   inputWrapperStyles,
   inputStatusBorderStyles,
   inputStatusHoverShadowStyles,
@@ -49,11 +47,18 @@ import {
 import {Icon} from '../Icon';
 import {VisuallyHidden} from '../VisuallyHidden';
 import {Spinner} from '../Spinner';
-import {Calendar, type ISODateString, type CalendarHandle} from '../Calendar';
+import {
+  Calendar,
+  type ISODateString,
+  type CalendarHandle,
+  type DayOfWeek,
+  type DayOfWeekName,
+} from '../Calendar';
 import {useCalendarConstraints} from '../Calendar/hooks';
 import {usePopover} from '../Popover';
 import {useTooltip} from '../Tooltip';
 import {useInputContainer} from '../hooks/useInputContainer';
+import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
 import {
   type ISOTimeString,
   parseDateInput,
@@ -77,6 +82,7 @@ import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {useSize} from '../SizeContext/SizeContext';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 export type ISODateTimeString = string & {
   readonly __brand: 'ISODateTimeString';
@@ -348,6 +354,14 @@ export interface DateTimeInputProps extends Omit<
    * @default 1
    */
   numberOfMonths?: 1 | 2;
+
+  /**
+   * First day of week in the calendar. Accepts a number
+   * (0 = Sunday … 6 = Saturday) or a three-letter day name ('sun'–'sat',
+   * case-insensitive).
+   * @default 0
+   */
+  weekStartsOn?: DayOfWeek | DayOfWeekName;
 }
 
 function splitDateTime(dt: ISODateTimeString | undefined): {
@@ -418,13 +432,14 @@ export function DateTimeInput({
   hourFormat = '12h',
   timeIncrement = 1,
   hasClear = false,
-  placeholder = 'Select a date',
-  timePlaceholder = 'Select a time',
+  placeholder: placeholderFromProps,
+  timePlaceholder: timePlaceholderFromProps,
   timeLabel,
   size: sizeProp,
   status,
   labelTooltip,
   numberOfMonths = 1,
+  weekStartsOn,
   width,
   xstyle,
   className,
@@ -432,6 +447,11 @@ export function DateTimeInput({
   ref,
   ...rest
 }: DateTimeInputProps) {
+  const t = useTranslator();
+  const placeholder =
+    placeholderFromProps ?? t('@astryx.dateTimeInput.placeholder');
+  const timePlaceholder =
+    timePlaceholderFromProps ?? t('@astryx.dateTimeInput.timePlaceholder');
   const size = useSize(sizeProp, 'md');
   const dateInputId = useId();
   const timeInputId = useId();
@@ -464,25 +484,21 @@ export function DateTimeInput({
     isEnabled: showsDisabledMessage,
   });
 
-  const statusIconMap: Record<InputStatusType, IconName> = {
-    warning: 'warning',
-    error: 'error',
-    success: 'success',
-  };
-
-  const statusIconColorMap: Record<
-    InputStatusType,
-    'warning' | 'error' | 'success'
-  > = {
-    warning: 'warning',
-    error: 'error',
-    success: 'success',
-  };
+  // DateTimeInput fixes its status presentation to the detached message box,
+  // so the shared helper suppresses the on-field icon (the message box carries
+  // its own leading glyph). Routed through the helper for consistency with the
+  // rest of the bordered input family.
+  const {statusIcon, describedBy: statusTooltipDescribedBy} =
+    useInputStatusIcon({
+      status,
+      statusVariant: 'detached',
+    });
 
   const ariaDescribedBy =
     [
       description ? descriptionID : null,
       status?.message ? statusMessageID : null,
+      statusTooltipDescribedBy,
       showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
     ]
       .filter(Boolean)
@@ -599,8 +615,8 @@ export function DateTimeInput({
 
   // --- Popover ---
   const popover = usePopover({
-    dialogLabel: 'Choose date',
-    closeButtonLabel: 'Close calendar',
+    dialogLabel: t('@astryx.dateTimeInput.dialogLabel'),
+    closeButtonLabel: t('@astryx.dateInput.closeCalendar'),
     onHide: () => dateInputRef.current?.focus(),
   });
 
@@ -713,12 +729,22 @@ export function DateTimeInput({
       if (e.key === 'Escape' && popover.isOpen) {
         e.preventDefault();
         popover.hide();
+      } else if (
+        (e.key === 'ArrowDown' || (e.altKey && e.key === 'ArrowDown')) &&
+        !popover.isOpen
+      ) {
+        // APG combobox: ArrowDown (and Alt+ArrowDown) opens the calendar
+        // popover from the keyboard, keeping focus in the input (forms-13).
+        e.preventDefault();
+        if (!isEffectivelyDisabled) {
+          popover.show({skipAutoFocus: true});
+        }
       } else if (e.key === 'Enter') {
         e.preventDefault();
         commitDatePendingInput();
       }
     },
-    [popover, commitDatePendingInput],
+    [popover, commitDatePendingInput, isEffectivelyDisabled],
   );
 
   // --- Time handlers ---
@@ -866,6 +892,7 @@ export function DateTimeInput({
           themeProps('date-time-input', {
             size,
             status: status?.type ?? null,
+            disabled: isDisabled ? 'disabled' : null,
           }),
           stylex.props(styles.row, xstyle),
           className,
@@ -874,20 +901,32 @@ export function DateTimeInput({
         {/* Date input */}
         <div
           ref={popover.triggerRef}
-          {...stylex.props(
-            inputWrapperStyles.base,
-            sizeStyles[size],
-            styles.dateWrapper,
-            isEffectivelyDisabled && inputWrapperStyles.disabled,
-            status && inputStatusBorderStyles[status.type],
-            status && inputStatusHoverShadowStyles[status.type],
-            status && inputStatusFocusWithinStyles[status.type],
+          {...mergeProps(
+            themeProps('date-time-input-date-segment', {
+              size,
+              status: status?.type ?? null,
+            }),
+            stylex.props(
+              inputWrapperStyles.base,
+              sizeStyles[size],
+              styles.dateWrapper,
+              isEffectivelyDisabled && inputWrapperStyles.disabled,
+              status && inputStatusBorderStyles[status.type],
+              status &&
+                !isEffectivelyDisabled &&
+                inputStatusHoverShadowStyles[status.type],
+              status && inputStatusFocusWithinStyles[status.type],
+            ),
           )}>
           <button
             type="button"
             onClick={handleCalendarToggle}
             disabled={isEffectivelyDisabled}
-            aria-label={popover.isOpen ? 'Close calendar' : 'Open calendar'}
+            aria-label={
+              popover.isOpen
+                ? t('@astryx.dateInput.toggleCalendarClose')
+                : t('@astryx.dateInput.openCalendar')
+            }
             {...stylex.props(
               styles.iconButton,
               isEffectivelyDisabled && styles.iconButtonDisabled,
@@ -942,19 +981,13 @@ export function DateTimeInput({
             <button
               type="button"
               onClick={handleClear}
-              aria-label={`Clear ${label}`}
+              aria-label={t('@astryx.dateInput.clear', {label})}
               {...stylex.props(styles.iconButton)}>
               <Icon icon="close" size="sm" color="secondary" />
             </button>
           )}
           {isBusy && <Spinner size="sm" />}
-          {status && (
-            <Icon
-              icon={statusIconMap[status.type]}
-              size="md"
-              color={statusIconColorMap[status.type]}
-            />
-          )}
+          {statusIcon}
         </div>
 
         {/* Time input */}
@@ -962,14 +995,22 @@ export function DateTimeInput({
           ref={timeContainerRef}
           onClick={handleTimeWrapperClick}
           onMouseUp={handleTimeWrapperMouseUp}
-          {...stylex.props(
-            inputWrapperStyles.base,
-            sizeStyles[size],
-            styles.timeWrapper,
-            isEffectivelyDisabled && inputWrapperStyles.disabled,
-            status && inputStatusBorderStyles[status.type],
-            status && inputStatusHoverShadowStyles[status.type],
-            status && inputStatusFocusWithinStyles[status.type],
+          {...mergeProps(
+            themeProps('date-time-input-time-segment', {
+              size,
+              status: status?.type ?? null,
+            }),
+            stylex.props(
+              inputWrapperStyles.base,
+              sizeStyles[size],
+              styles.timeWrapper,
+              isEffectivelyDisabled && inputWrapperStyles.disabled,
+              status && inputStatusBorderStyles[status.type],
+              status &&
+                !isEffectivelyDisabled &&
+                inputStatusHoverShadowStyles[status.type],
+              status && inputStatusFocusWithinStyles[status.type],
+            ),
           )}>
           <div {...stylex.props(styles.icon)}>
             <Icon icon="clock" size="sm" color="secondary" />
@@ -990,7 +1031,9 @@ export function DateTimeInput({
             disabled={isEffectivelyDisabled && !showsDisabledMessage}
             aria-disabled={showsDisabledMessage ? 'true' : undefined}
             readOnly={showsDisabledMessage || undefined}
-            aria-label={timeLabel ?? `${label} time`}
+            aria-label={
+              timeLabel ?? t('@astryx.dateTimeInput.timeSuffix', {label})
+            }
             aria-describedby={ariaDescribedBy}
             aria-required={isRequired === true ? 'true' : undefined}
             aria-invalid={
@@ -1023,6 +1066,7 @@ export function DateTimeInput({
           max={calendarMax}
           dateConstraints={dateConstraints}
           numberOfMonths={numberOfMonths}
+          weekStartsOn={weekStartsOn}
         />,
         {placement: 'below', alignment: 'start'},
       )}

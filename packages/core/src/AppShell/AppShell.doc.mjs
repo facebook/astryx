@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'AppShell',
@@ -45,9 +45,15 @@ export const docs = {
     },
     {
       name: 'mobileNav',
+      // Kept as the bare `ReactNode`, not widened to the true
+      // `false | MobileNavConfig | ReactNode`: the docsite playground hides a
+      // prop by exact-matching the type string against UNSUPPORTED_PROP_TYPES,
+      // and widening drops that match. This prop's slotElements happen to hide
+      // it a second way today, but the hide should not rest on that
+      // coincidence. The legal values live in the description instead (#1645).
       type: 'ReactNode',
       description:
-        'Mobile navigation configuration. Accepts false (disable), config object (tune auto behavior), or ReactNode (full custom drawer).',
+        "Mobile navigation configuration. Accepts false (disable), a config object (tune auto behavior), or ReactNode (full custom drawer). The config object is {hasToggle?: boolean, isOpen?: boolean, onOpenChange?: (isOpen: boolean) => void, content?: ReactNode, breakpoint?: 'sm' | 'md' | 'lg' | 'none', defaultIsMobile?: boolean}; breakpoint defaults to 'md'.",
       slotElements: [{__element: 'MobileNav', props: {}}],
     },
     {
@@ -114,7 +120,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docsZh = {
   name: 'AppShell',
   displayName: 'App Shell',
@@ -139,7 +145,7 @@ export const docsZh = {
     },
     {name: 'topNav', type: 'ReactNode', description: '顶部导航插槽，通常为 TopNav。'},
     {name: 'sideNav', type: 'ReactNode', description: '侧边导航插槽，通常为 SideNav。'},
-    {name: 'mobileNav', type: 'ReactNode', description: '移动端导航配置。接受 false（禁用）、配置对象（调整自动行为）或 ReactNode（完全自定义抽屉）。'},
+    {name: 'mobileNav', type: 'ReactNode', description: "移动端导航配置。接受 false（禁用）、配置对象（调整自动行为）或 ReactNode（完全自定义抽屉）。配置对象为 {hasToggle?, isOpen?, onOpenChange?, content?, breakpoint?: 'sm' | 'md' | 'lg' | 'none', defaultIsMobile?}；breakpoint 默认为 'md'。"},
     {name: 'banner', type: 'ReactNode', description: '横幅插槽，用于全局公告，放置在 topNav 上方。'},
     {
       name: 'height',
@@ -176,7 +182,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
     'app-level layout shell w/ header, side nav, main content; composes Layout internally, replaces Page+PageLayout',

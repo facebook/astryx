@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Stepper} from './Stepper';
 import {Step} from './Step';
@@ -95,7 +95,7 @@ describe('Stepper', () => {
       </Stepper>,
     );
     await user.click(
-      screen.getByRole('button', {name: 'Go to step 1: Step 1'}),
+      screen.getByRole('button', {name: 'Go to step 1: Step 1, completed'}),
     );
     expect(handleClick).toHaveBeenCalledWith(0);
   });
@@ -156,7 +156,7 @@ describe('Stepper', () => {
       </Stepper>,
     );
     expect(
-      screen.queryByRole('button', {name: 'Go to step 1: Step 1'}),
+      screen.queryByRole('button', {name: /Go to step 1: Step 1/}),
     ).not.toBeInTheDocument();
   });
 
@@ -214,6 +214,66 @@ describe('Stepper', () => {
       'data-status',
       'error',
     );
+  });
+
+  it('keeps the progress bar progress-colored regardless of status, recoloring only the indicator', () => {
+    // Baseline: a completed step with no status.
+    const baseline = render(
+      <Stepper activeStep={1}>
+        <Step step={0} label="A" data-testid="base" />
+      </Stepper>,
+    );
+    const baseStep = baseline.getByTestId('base');
+    const baseBar = baseStep.querySelector('.astryx-step-bar') as HTMLElement;
+    const baseIndicator = baseStep.querySelector('svg')
+      ?.parentElement as HTMLElement;
+
+    // Same completed step, now with a semantic status.
+    const themed = render(
+      <Stepper activeStep={1}>
+        <Step step={0} label="A" status="error" data-testid="themed" />
+      </Stepper>,
+    );
+    const themedStep = themed.getByTestId('themed');
+    const themedBar = themedStep.querySelector(
+      '.astryx-step-bar',
+    ) as HTMLElement;
+    const themedIndicator = themedStep.querySelector('svg')
+      ?.parentElement as HTMLElement;
+
+    // Bar coloring must be identical — status must NOT recolor the bar
+    // (always --color-accent when filled / --color-border when incomplete).
+    expect(themedBar.className).toBe(baseBar.className);
+
+    // The indicator, however, must pick up the status color.
+    expect(themedIndicator.className).not.toBe(baseIndicator.className);
+  });
+
+  it('keeps an incomplete step bar border-colored regardless of status', () => {
+    // Baseline: a not-started step with no status.
+    const baseline = render(
+      <Stepper activeStep={0}>
+        <Step step={0} label="A" data-testid="base-active" />
+        <Step step={1} label="B" data-testid="base" />
+      </Stepper>,
+    );
+    const baseBar = baseline
+      .getByTestId('base')
+      .querySelector('.astryx-step-bar') as HTMLElement;
+
+    // Same not-started step, now with a semantic status.
+    const themed = render(
+      <Stepper activeStep={0}>
+        <Step step={0} label="A" data-testid="themed-active" />
+        <Step step={1} label="B" status="warning" data-testid="themed" />
+      </Stepper>,
+    );
+    const themedBar = themed
+      .getByTestId('themed')
+      .querySelector('.astryx-step-bar') as HTMLElement;
+
+    // Incomplete bar stays border-colored — status must not recolor it.
+    expect(themedBar.className).toBe(baseBar.className);
   });
 
   it('does not set a status data attribute when status is unset', () => {
@@ -277,5 +337,160 @@ describe('Stepper', () => {
       </Stepper>,
     );
     expect(screen.getByTestId('pay-icon')).toBeInTheDocument();
+  });
+
+  it('renders a distinct indicator glyph per status on non-current steps', () => {
+    // All steps completed (activeStep past them) so none is the current step.
+    render(
+      <Stepper activeStep={4}>
+        <Step step={0} label="A" status="success" data-testid="s-success" />
+        <Step step={1} label="B" status="warning" data-testid="s-warning" />
+        <Step step={2} label="C" status="error" data-testid="s-error" />
+        <Step step={3} label="D" data-testid="s-plain" />
+      </Stepper>,
+    );
+
+    const indicatorClass = (testid: string) =>
+      (
+        screen.getByTestId(testid).querySelector('svg')
+          ?.parentElement as HTMLElement
+      ).className;
+
+    // Each status renders an svg indicator (no number badge)...
+    expect(screen.getByTestId('s-success').querySelector('svg')).toBeTruthy();
+    expect(screen.getByTestId('s-warning').querySelector('svg')).toBeTruthy();
+    expect(screen.getByTestId('s-error').querySelector('svg')).toBeTruthy();
+
+    // ...and each status tints the indicator differently from the others and
+    // from the plain completed (accent) step.
+    const classes = new Set([
+      indicatorClass('s-success'),
+      indicatorClass('s-warning'),
+      indicatorClass('s-error'),
+      indicatorClass('s-plain'),
+    ]);
+    expect(classes.size).toBe(4);
+  });
+
+  it('lets the current step keep its ring indicator regardless of status', () => {
+    // A current step with no status.
+    const plain = render(
+      <Stepper activeStep={0}>
+        <Step step={0} label="A" data-testid="plain" />
+      </Stepper>,
+    );
+    const plainIndicator = (
+      plain.getByTestId('plain').querySelector('svg')
+        ?.parentElement as HTMLElement
+    ).className;
+
+    // The same current step, now with status="success": the indicator must be
+    // unchanged (the current-step ring replaces any status glyph).
+    const themed = render(
+      <Stepper activeStep={0}>
+        <Step step={0} label="A" status="success" data-testid="themed" />
+      </Stepper>,
+    );
+    const themedIndicator = (
+      themed.getByTestId('themed').querySelector('svg')
+        ?.parentElement as HTMLElement
+    ).className;
+
+    expect(themedIndicator).toBe(plainIndicator);
+  });
+
+  it('replaces the number badge with a status glyph on not-started steps', () => {
+    render(
+      <Stepper activeStep={0}>
+        <Step step={0} label="A" data-testid="current" />
+        <Step step={1} label="B" status="error" data-testid="future" />
+      </Stepper>,
+    );
+    const future = screen.getByTestId('future');
+    // The not-started step would normally show its number ("2"); with a status
+    // glyph it shows an icon instead.
+    expect(future.textContent).not.toContain('2');
+    expect(future.querySelector('svg')).toBeTruthy();
+  });
+
+  it('exposes progress/status as visually hidden text (indicators are aria-hidden)', () => {
+    render(
+      <Stepper activeStep={2}>
+        <Step step={0} label="Account" data-testid="done" />
+        <Step step={1} label="Payment" status="error" data-testid="failed" />
+        <Step step={2} label="Review" data-testid="current" />
+        <Step step={3} label="Confirm" data-testid="upcoming" />
+      </Stepper>,
+    );
+    // Completed step announces "completed"; error status wins over completion.
+    expect(
+      within(screen.getByTestId('done')).getByText('completed'),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('failed')).getByText('error'),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('failed')).queryByText('completed'),
+    ).not.toBeInTheDocument();
+    // Current step is announced via aria-current, not hidden text; upcoming
+    // steps stay silent.
+    expect(
+      within(screen.getByTestId('current')).queryByText('completed'),
+    ).not.toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('upcoming')).queryByText(
+        /completed|error|warning/,
+      ),
+    ).not.toBeInTheDocument();
+  });
+
+  it('exposes warning and success statuses as visually hidden text', () => {
+    render(
+      <Stepper activeStep={2}>
+        <Step step={0} label="Build" status="warning" data-testid="warned" />
+        <Step step={1} label="Deploy" status="success" data-testid="passed" />
+      </Stepper>,
+    );
+    expect(
+      within(screen.getByTestId('warned')).getByText('warning'),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('passed')).getByText('completed'),
+    ).toBeInTheDocument();
+  });
+
+  it('composes status into the accessible name of clickable steps', () => {
+    render(
+      <Stepper activeStep={2} onStepClick={() => {}}>
+        <Step step={0} label="Account" />
+        <Step step={1} label="Payment" status="error" />
+        <Step step={2} label="Review" />
+      </Stepper>,
+    );
+    expect(
+      screen.getByRole('button', {name: 'Go to step 1: Account, completed'}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: 'Go to step 2: Payment, error'}),
+    ).toBeInTheDocument();
+    // The current step gets no status suffix (aria-current covers it).
+    expect(
+      screen.getByRole('button', {name: 'Go to step 3: Review'}),
+    ).toBeInTheDocument();
+  });
+
+  it('exposes hidden status text in the on-track layout too', () => {
+    render(
+      <Stepper activeStep={1} indicatorPosition="on-track">
+        <Step step={0} label="Account" data-testid="ot-done" />
+        <Step step={1} label="Payment" data-testid="ot-current" />
+      </Stepper>,
+    );
+    expect(
+      within(screen.getByTestId('ot-done')).getByText('completed'),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('ot-current')).queryByText('completed'),
+    ).not.toBeInTheDocument();
   });
 });

@@ -17,7 +17,7 @@ import type {CommandPaletteContextValue} from './CommandPaletteContext';
 describe('CommandPaletteInput', () => {
   it('renders with default placeholder', () => {
     render(<CommandPaletteInput />);
-    expect(screen.getByPlaceholderText('Search...')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Search…')).toBeInTheDocument();
   });
 
   it('renders with custom placeholder', () => {
@@ -30,6 +30,40 @@ describe('CommandPaletteInput', () => {
   it('has combobox role', () => {
     render(<CommandPaletteInput />);
     expect(screen.getByRole('combobox')).toBeInTheDocument();
+  });
+
+  it('has an accessible name by default', () => {
+    render(<CommandPaletteInput />);
+    expect(screen.getByRole('combobox')).toHaveAttribute(
+      'aria-label',
+      'Search…',
+    );
+  });
+
+  it('uses the label prop as the accessible name', () => {
+    render(<CommandPaletteInput label="Search commands" />);
+    const input = screen.getByRole('combobox');
+    expect(input).toHaveAttribute('aria-label', 'Search commands');
+    // The label prop does not affect the visible placeholder
+    expect(input).toHaveAttribute('placeholder', 'Search…');
+  });
+
+  it('falls back to a custom placeholder for the accessible name', () => {
+    render(<CommandPaletteInput placeholder="Type a command..." />);
+    expect(screen.getByRole('combobox')).toHaveAttribute(
+      'aria-label',
+      'Type a command...',
+    );
+  });
+
+  it('lets a consumer-passed aria-label override the default', () => {
+    render(
+      <CommandPaletteInput label="Search commands" aria-label="Custom name" />,
+    );
+    expect(screen.getByRole('combobox')).toHaveAttribute(
+      'aria-label',
+      'Custom name',
+    );
   });
 
   it('calls onValueChange when typing', () => {

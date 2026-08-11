@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'SideNavItem',
@@ -23,12 +23,12 @@ export const docs = {
     {
       name: 'icon',
       type: 'IconType',
-      description: 'Icon displayed in the outline (unselected) variant. See `npx astryx docs icons` for valid semantic names.',
+      description: 'Icon displayed in the outline (unselected) variant. See `astryx docs icons` for valid semantic names.',
     },
     {
       name: 'selectedIcon',
       type: 'IconType',
-      description: 'Icon displayed when the item is selected (filled variant). See `npx astryx docs icons` for valid semantic names.',
+      description: 'Icon displayed when the item is selected (filled variant). See `astryx docs icons` for valid semantic names.',
     },
     {
       name: 'isSelected',

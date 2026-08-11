@@ -4,10 +4,17 @@
 
 import type {ComponentProps} from 'react';
 import {Markdown} from '@astryxdesign/core/Markdown';
+import type {MarkdownComponents} from '@astryxdesign/core/Markdown';
 import {VStack} from '@astryxdesign/core/Layout';
 import {Text} from '@astryxdesign/core/Text';
+import {InlineCode} from './InlineCode';
 
 type TextProps = ComponentProps<typeof Text>;
+
+// Component-page prose (prop descriptions, dos and don'ts, theming notes)
+// cites doc topics the same way /docs prose does, e.g. "Icon name — see
+// `astryx docs icons`". Route those spans through the same linkifiers.
+const MARKDOWN_COMPONENTS: MarkdownComponents = {inlineCode: InlineCode};
 
 interface MarkdownTextProps {
   children: string;
@@ -39,7 +46,9 @@ export function MarkdownText({
         weight={weight}
         display="block"
         style={style}>
-        <Markdown display="inline">{paragraphs[0]}</Markdown>
+        <Markdown display="inline" components={MARKDOWN_COMPONENTS}>
+          {paragraphs[0]}
+        </Markdown>
       </Text>
     );
   }
@@ -54,7 +63,9 @@ export function MarkdownText({
           color={color}
           weight={weight}
           display="block">
-          <Markdown display="inline">{paragraph}</Markdown>
+          <Markdown display="inline" components={MARKDOWN_COMPONENTS}>
+            {paragraph}
+          </Markdown>
         </Text>
       ))}
     </VStack>

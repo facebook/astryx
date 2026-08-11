@@ -13,7 +13,7 @@
  * - /packages/core/src/AlertDialog/AlertDialog.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/AlertDialog/index.ts (exports if types change)
  * - /apps/storybook/stories/AlertDialog.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/AlertDialog/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/AlertDialog/ (showcase blocks)
  */
 
 import React, {useId, useCallback} from 'react';
@@ -28,6 +28,7 @@ import {Button, type ButtonVariant} from '../Button';
 import type {BaseProps} from '../BaseProps';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 export interface AlertDialogProps extends BaseProps<HTMLDialogElement> {
   ref?: React.Ref<HTMLDialogElement>;
@@ -122,7 +123,7 @@ export function AlertDialog({
   onOpenChange,
   title,
   description,
-  cancelLabel = 'Cancel',
+  cancelLabel: cancelLabelFromProps,
   actionLabel,
   actionVariant = 'destructive',
   isActionLoading,
@@ -134,6 +135,8 @@ export function AlertDialog({
   'data-testid': testId,
   ...rest
 }: AlertDialogProps) {
+  const t = useTranslator();
+  const cancelLabel = cancelLabelFromProps ?? t('@astryx.alertDialog.cancel');
   const titleId = useId();
   const descriptionId = useId();
 

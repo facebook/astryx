@@ -7,6 +7,10 @@
  *
  * Owns the radial coordinate space: center, radius, angle/radius scales.
  * Same Tier 1 guarantee as Chart — all children map through the same context.
+ *
+ * Accessibility: the svg is exposed as a named image (role="img" + aria-label,
+ * overridable via `label`), and small datasets are mirrored in a visually
+ * hidden data table (slices in pie mode, axis values in spider mode).
  */
 
 import {
@@ -16,6 +20,7 @@ import {
   useState,
   useLayoutEffect,
 } from 'react';
+import {VisuallyHidden} from '@astryxdesign/core/VisuallyHidden';
 import {RadialProvider} from './RadialContext';
 import type {RadialMode} from './types';
 
@@ -52,7 +57,30 @@ export interface RadialChartProps {
    * Enable touch interaction mode — blocks scroll on mobile.
    */
   interactive?: boolean;
+  /**
+   * Accessible name for the chart, announced by screen readers (the svg is
+   * exposed as `role="img"`). Defaults to an English description derived from
+   * the mode and keys (e.g. "Radar chart of speed, handling" or
+   * "Pie chart of revenue") — pass a localized string to override.
+   */
+  label?: string;
   children: ReactNode;
+}
+
+/**
+ * Maximum number of data points (rows × axes in spider mode, slices in pie
+ * mode) for which the visually hidden data-table fallback is rendered. Beyond
+ * this a table is more noise than signal, so larger charts are name-only.
+ */
+const MAX_TABLE_POINTS = 100;
+
+/**
+ * Row header for a spider-mode table row: the first string field in the row
+ * (the same heuristic RadialArea uses to match its `dataKey`), else the index.
+ */
+function spiderRowHeader(row: Record<string, unknown>, index: number): string {
+  const name = Object.values(row).find(v => typeof v === 'string');
+  return typeof name === 'string' ? name : `Series ${index + 1}`;
 }
 
 /**
@@ -61,19 +89,14 @@ export interface RadialChartProps {
  *
  * @example
  * ```
- * // Spider
  * <RadialChart data={data} axes={['speed', 'handling', 'comfort']} height={400}>
  *   <RadialGrid rings={5} />
  *   <RadialArea dataKey="modelA" color={colors[0]} />
  *   <RadialAxis />
  * </RadialChart>
- *
- * // Pie
  * <RadialChart data={data} valueKey="revenue" labelKey="region" height={400}>
  *   <RadialSlice />
  * </RadialChart>
- *
- * // Donut
  * <RadialChart data={data} valueKey="revenue" labelKey="region" innerRadius={0.6} height={400}>
  *   <RadialSlice />
  * </RadialChart>
@@ -87,6 +110,7 @@ export function RadialChart({
   labelKey,
   innerRadius: innerRadiusFraction = 0,
   padAngle = 0.02,
+  label,
   children,
 }: RadialChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -207,12 +231,84 @@ export function RadialChart({
     [cx, cy, outerRadius, innerRadiusPx, data, mode, spiderCtx, pieCtx],
   );
 
+  const accessibleLabel =
+    label ??
+    (mode === 'spider'
+      ? `Radar chart of ${(axes ?? []).join(', ')}`
+      : `Pie chart of ${valueKey ?? 'values'}`);
+
+  const slices = pieCtx.slices ?? [];
+  const showPieTable =
+    mode === 'pie' && slices.length > 0 && slices.length <= MAX_TABLE_POINTS;
+  const showSpiderTable =
+    mode === 'spider' &&
+    axes != null &&
+    axes.length > 0 &&
+    data.length > 0 &&
+    data.length * axes.length <= MAX_TABLE_POINTS;
+
   return (
     <div ref={containerRef} style={{width: '100%'}}>
       {containerWidth > 0 && (
-        <svg width={containerWidth} height={height}>
+        <svg
+          role="img"
+          aria-label={accessibleLabel}
+          width={containerWidth}
+          height={height}>
           <RadialProvider value={ctx}>{children}</RadialProvider>
         </svg>
+      )}
+      {showPieTable && (
+        <VisuallyHidden as="div">
+          <table>
+            <caption>{`${accessibleLabel} data`}</caption>
+            <thead>
+              <tr>
+                <th scope="col">{labelKey ?? 'Label'}</th>
+                <th scope="col">{valueKey}</th>
+                <th scope="col">Percentage</th>
+              </tr>
+            </thead>
+            <tbody>
+              {slices.map((slice, i) => (
+                <tr key={i}>
+                  <th scope="row">{slice.key}</th>
+                  <td>{String(slice.value)}</td>
+                  <td>{`${(slice.percentage * 100).toFixed(1)}%`}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </VisuallyHidden>
+      )}
+      {showSpiderTable && (
+        <VisuallyHidden as="div">
+          <table>
+            <caption>{`${accessibleLabel} data`}</caption>
+            <thead>
+              <tr>
+                <th scope="col">Series</th>
+                {axes.map(key => (
+                  <th key={key} scope="col">
+                    {key}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {data.map((row, i) => (
+                <tr key={i}>
+                  <th scope="row">{spiderRowHeader(row, i)}</th>
+                  {axes.map(key => (
+                    <td key={key}>
+                      {row[key] == null ? '' : String(row[key])}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </VisuallyHidden>
       )}
     </div>
   );

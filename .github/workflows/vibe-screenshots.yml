@@ -34,7 +34,7 @@ permissions: {}
 jobs:
   build-previews:
     name: Build Previews
-    runs-on: ubuntu-latest
+    runs-on: 2-core-ubuntu-arm
     permissions:
       contents: read
     steps:
@@ -68,7 +68,7 @@ jobs:
   screenshot:
     name: Capture Screenshots
     needs: build-previews
-    runs-on: ubuntu-latest
+    runs-on: 2-core-ubuntu-arm
     permissions:
       contents: read
     steps:
@@ -111,7 +111,7 @@ jobs:
     name: Deploy Screenshots to gh-pages
     needs: screenshot
     if: ${{ github.event.inputs.deploy_to_gh_pages != 'false' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     permissions:
       contents: write
     steps:

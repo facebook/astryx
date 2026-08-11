@@ -54,6 +54,50 @@ const styles = stylex.create({
 });
 ```
 
+### `@astryx/no-style-only-wrapper`
+
+Flags a `<div>`/`<span>` that exists only to style a single Astryx component.
+Every component extends `BaseProps`, so it takes `xstyle` — the wrapper adds a
+DOM node that takes the component out of its parent's flex/grid child
+relationship (this is what knocked the pagination carets off-center in #4752).
+
+**Bad:**
+
+```tsx
+<span {...stylex.props(rtlStyles.mirror)}>
+  <Icon icon="chevronsLeft" /> {/* ❌ wrapper exists only to carry a style */}
+</span>
+```
+
+**Good:**
+
+```tsx
+<Icon icon="chevronsLeft" xstyle={rtlStyles.mirror} /> {/* ✅ */}
+```
+
+The rule only fires when dropping the wrapper preserves behavior, so it stays
+quiet on wrappers that do real work:
+
+| Wrapper                                                               | Reported? |
+| --------------------------------------------------------------------- | --------- |
+| Only style attributes (`stylex.props`, `className`)                   | ✅ yes    |
+| `role`, `aria-*`, `data-*`, `ref`, a handler, `{...rest}`             | ❌ no     |
+| More than one child, or a non-Astryx / host child                     | ❌ no     |
+| Styles include `display`, flex/grid container props, `gap`, `padding` | ❌ no     |
+| Child renders no root element (`Tooltip`, providers)                  | ❌ no     |
+
+Style objects imported from another module are read from that module, so
+`import {rtlStyles} from '../utils'` is classified as accurately as a local
+`stylex.create()` (see `stylex-style-source.js`).
+
+**Options:** `wrapperElements`, `componentSources`, `allowComponents`,
+`allowFiles`.
+
+**Suggestion (not auto-fix):** for the unambiguous shape — a lone
+`{...stylex.props(…)}` over a child with no `xstyle` — the rule offers a
+rewrite that moves the styles onto the child. Removing a node can shift layout,
+so it is never applied by `--fix`.
+
 ### `@astryx/require-letter-spacing`
 
 Recommends adding `letterSpacing` when `fontSize` is defined (common design pattern for badges, labels).

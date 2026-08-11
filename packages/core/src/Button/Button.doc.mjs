@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'Button',
@@ -50,6 +50,13 @@ export const docs = {
       type: "'sm' | 'md' | 'lg'",
       description: 'Size variant.',
       default: "'md'",
+    },
+    {
+      name: 'elevation',
+      type: "'none' | 'low' | 'med' | 'high'",
+      description:
+        'Resting shadow depth for floating buttons (e.g. a FAB). `none` is the default flat button; `low`/`med`/`high` map to the shadow token scale. Ignored inside a ButtonGroup, where elevation is owned by the group.',
+      default: "'none'",
     },
     {
       name: 'type',
@@ -105,6 +112,12 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'width',
+      type: 'SizeValue',
+      description:
+        "Width of the button. Numbers are treated as pixels, strings are used as-is (e.g., '100%' for a full-width button). By default the button sizes to its content.",
+    },
+    {
       name: 'children',
       type: 'ReactNode',
       description:
@@ -150,8 +163,6 @@ export const docs = {
     ],
     vars: [
       {name: '--_button-radius', description: 'Border radius', default: 'var(--radius-element)', private: true},
-      {name: '--button-press-scale', description: 'Active press transform', default: 'scale(0.98)'},
-      {name: '--button-disabled-opacity', description: 'Opacity when disabled', default: '0.5'},
       {name: '--button-focus-offset', description: 'Focus ring outline offset', default: '3px'},
       {name: '--button-icon-only-aspect', description: 'Aspect ratio for icon-only buttons', default: '1 / 1'},
     ],
@@ -161,7 +172,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docsZh = {
   name: 'Button',
   displayName: 'Button',
@@ -193,6 +204,7 @@ export const docsZh = {
       default: "'secondary'",
     },
     {name: 'size', type: "'sm' | 'md' | 'lg'", description: '尺寸变体。', default: "'md'"},
+    {name: 'elevation', type: "'none' | 'low' | 'med' | 'high'", description: '浮动按钮（如 FAB）的静止阴影深度。`none` 为默认扁平按钮；在 ButtonGroup 内忽略。', default: "'none'"},
     {name: 'type', type: "'button' | 'submit' | 'reset'", description: 'HTML 按钮类型属性。', default: "'button'"},
     {name: 'name', type: 'string', description: '表单提交的 HTML name 属性。'},
     {name: 'value', type: 'string | number | readonly string[]', description: '表单提交的 HTML value 属性。'},
@@ -205,6 +217,7 @@ export const docsZh = {
       default: 'false',
     },
     {name: 'icon', type: 'ReactNode', description: '图标元素。仅提供 icon 而不提供 children 时，按钮渲染为正方形的纯图标按钮。'},
+    {name: 'width', type: 'SizeValue', description: "按钮宽度。数字按像素处理，字符串按原样使用（如 '100%' 表示全宽按钮）。默认按内容自适应宽度。"},
     {name: 'children', type: 'ReactNode', description: '可选的可见内容覆盖；label 仍然是必需的（用于无障碍名称）。大多数情况使用 <Button label="Save" />。'},
     {
       name: 'endContent',
@@ -232,8 +245,6 @@ export const docsZh = {
     ],
     vars: [
       {name: '--_button-radius', description: '圆角半径', default: 'var(--radius-element)', private: true},
-      {name: '--button-press-scale', description: '按下时的变换', default: 'scale(0.98)'},
-      {name: '--button-disabled-opacity', description: '禁用时的不透明度', default: '0.5'},
       {name: '--button-focus-offset', description: '焦点环轮廓偏移', default: '3px'},
       {name: '--button-icon-only-aspect', description: '纯图标按钮的宽高比', default: '1 / 1'},
     ],
@@ -243,7 +254,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'action trigger w/ 4 variants, 3 sizes, loading state',
   usage: {
@@ -264,6 +275,7 @@ export const docsDense = {
     label: 'accessible label; visible text by default, aria-label when isIconOnly',
     variant: 'visual style variant',
     size: 'size variant',
+    elevation: 'resting shadow depth for floating buttons/FABs: none|low|med|high; ignored inside ButtonGroup',
     type: 'HTML button type; defaults to "button"',
     name: 'HTML name for form submission',
     displayName: 'HTML name for form submission',
@@ -272,6 +284,7 @@ export const docsDense = {
     isLoading: 'shows spinner+disables interaction; announces via live region',
     icon: 'icon element rendered before label text',
     isIconOnly: 'when true, renders square icon-only button; label becomes aria-label',
+    width: "Width of button. Numbers=pixels, strings=as-is (e.g. '100%' for full-width).",
     children: 'optional visible override; label is still required for a11y. Prefer <Button label="Save" /> over using children',
     endContent: 'trailing icon/badge after label; ignored when isIconOnly; color inherited',
     tooltip: 'tooltip on hover',

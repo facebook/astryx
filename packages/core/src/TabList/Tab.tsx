@@ -13,7 +13,7 @@
  * - /packages/core/src/TabList/TabList.doc.mjs
  * - /packages/core/src/TabList/index.ts
  * - /packages/core/src/TabList/TabList.test.tsx
- * - /packages/cli/templates/blocks/components/TabList/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/TabList/ (showcase blocks)
  */
 
 import React, {useCallback, type ReactNode} from 'react';
@@ -138,9 +138,13 @@ const styles = stylex.create({
   },
   indicator: {
     position: 'absolute',
-    bottom: '-1px',
-    left: spacingVars['--spacing-3'],
-    right: spacingVars['--spacing-3'],
+    // Sits on the tab's bottom edge by default (-1px). When the tab strip
+    // reserves space for a divider rail — TabList `hasDivider` or a Toolbar
+    // with a bottom divider — that ancestor sets `--_tab-indicator-bottom`
+    // to drop the indicator onto the rail beneath the reserved gap.
+    bottom: 'var(--_tab-indicator-bottom, -1px)',
+    insetInlineStart: spacingVars['--spacing-3'],
+    insetInlineEnd: spacingVars['--spacing-3'],
     height: '2px',
     borderRadius: radiusVars['--radius-full'],
     pointerEvents: 'none',

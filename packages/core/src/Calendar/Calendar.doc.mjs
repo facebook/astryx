@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'Calendar',
@@ -111,12 +111,13 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-calendar', visualProps: ['mode']},
-      {className: 'astryx-calendar-day', states: ['selected', 'today', 'disabled', 'in-range']},
+      {className: 'astryx-calendar-nav', visualProps: ['nav'], states: ['disabled']},
+      {className: 'astryx-calendar-day', states: ['selected', 'today', 'disabled', 'in-range', 'marker']},
     ],
   },
 };
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docsZh = {
   name: 'Calendar',
   displayName: 'Calendar',
@@ -158,19 +159,29 @@ export const docsZh = {
         ],
       },
       {
+        className: 'astryx-calendar-nav',
+        visualProps: [
+          'nav',
+        ],
+        states: [
+          'disabled',
+        ],
+      },
+      {
         className: 'astryx-calendar-day',
         states: [
           'selected',
           'today',
           'disabled',
           'in-range',
+          'marker',
         ],
       },
     ],
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'month grid for picking a date or date range',
   usage: {

@@ -63,6 +63,12 @@ export default defineConfig({
         find: /^@astryxdesign\/core\/(.*)$/,
         replacement: path.join(coreSrc, '$1'),
       },
+      // Map the bare specifier to source too (charts package tests import
+      // runtime components like Text/VisuallyHidden from the package root).
+      {
+        find: /^@astryxdesign\/core$/,
+        replacement: path.join(coreSrc, 'index.ts'),
+      },
     ],
   },
   test: {
@@ -75,13 +81,14 @@ export default defineConfig({
       exclude: ['**/*.test.{ts,tsx}', '**/*.stories.{ts,tsx}', '**/index.ts'],
     },
     setupFiles: ['./internal/test-utils/src/setup.ts'],
+    globalSetup: ['./internal/test-utils/src/globalSetup.ts'],
     // Increase worker heap to prevent OOM crashes on memory-heavy test files
     // (e.g. Chat composer tests with contentEditable + popover portals in
     // jsdom). Vitest 4 removed `poolOptions`; per-worker argv is now top-level.
     execArgv: ['--max-old-space-size=4096'],
     // Test projects (migrated from vitest.workspace.ts). Partitioning rule
     // (nothing can fall through):
-    //   - `ui`   = packages/core + packages/lab — need jsdom, the StyleX babel
+    //   - `ui`   = packages/core + packages/lab + packages/charts — need jsdom, the StyleX babel
     //              transform, and the jest-dom setup; inherit all of that from
     //              the root config via `extends: true`.
     //   - `node` = everything else (CLI, build tooling, scripts, internal
@@ -99,6 +106,7 @@ export default defineConfig({
           include: [
             'packages/core/src/**/*.test.{ts,tsx,mjs}',
             'packages/lab/src/**/*.test.{ts,tsx,mjs}',
+            'packages/charts/src/**/*.test.{ts,tsx,mjs}',
           ],
         },
       },
@@ -109,6 +117,16 @@ export default defineConfig({
           name: 'node',
           globals: true,
           environment: 'node',
+          // Several CLI suites spawn a fresh `node bin/astryx.mjs` per assertion
+          // (real process boundary). Under the forks pool these cold-starts can
+          // run long on a busy box; the 5s default testTimeout then flakes
+          // non-deterministically (every failure was "timed out in 5000ms").
+          // Give spawn-backed tests + their fixture hooks a real budget so a
+          // slow-but-correct run never trips the timeout. (The other half of the
+          // fix was removing a full `pnpm build` that scripts/build-css.test ran
+          // in-suite, which hogged every core and starved these — see that file.)
+          testTimeout: 30_000,
+          hookTimeout: 30_000,
           // Build @astryxdesign/core once before workers fork. The build-theme
           // suites need a compiled core; doing it here (not per-suite in
           // parallel workers) avoids concurrent `rimraf dist && build`
@@ -116,13 +134,18 @@ export default defineConfig({
           globalSetup: ['./vitest.global-setup.node.mjs'],
           include: [
             'packages/**/src/**/*.test.{ts,tsx,mjs}',
+            // The CLI dissolved its src/ wrapper (pillars live at the package
+            // root), so collect its colocated tests wherever they now live.
+            'packages/cli/**/*.test.{ts,tsx,mjs}',
             'internal/**/*.test.{ts,tsx,mjs}',
             'scripts/**/*.test.{ts,tsx,mjs}',
+            '.github/scripts/**/*.test.{ts,tsx,mjs}',
           ],
           exclude: [
             ...configDefaults.exclude,
             'packages/core/**',
             'packages/lab/**',
+            'packages/charts/**',
           ],
         },
       },

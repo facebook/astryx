@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'TextInput',
@@ -106,13 +106,20 @@ export const docs = {
       name: 'startIcon',
       type: 'IconType',
       description:
-        'SVG icon component displayed at the start of the input. See `npx astryx docs icons` for valid semantic names.',
+        'SVG icon component displayed at the start of the input. See `astryx docs icons` for valid semantic names.',
     },
     {
       name: 'status',
       type: "{type: 'error' | 'warning' | 'success', message?: string}",
       description:
         'Validation status: applies a colored border and status icon. If message is provided, displays a floating message below the input. Error type also sets aria-invalid.',
+    },
+    {
+      name: 'statusVariant',
+      type: "'attached' | 'detached' | 'tooltip'",
+      description:
+        'How the status message is placed relative to the input. attached overlaps directly below the input (bordered treatment); detached floats below as a separate element with spacing; tooltip hides the message box and surfaces it in a tooltip on the status icon.',
+      default: "'attached'",
     },
     {
       name: 'hasClear',
@@ -133,10 +140,16 @@ export const docs = {
       description:
         'The HTML name attribute for the input, useful for form submissions.',
     },
+    {
+      name: 'width',
+      type: 'SizeValue',
+      description:
+        'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
+    },
   ],
   theming: {
     targets: [
-      {className: 'astryx-text-input', visualProps: ['size', 'status']},
+      {className: 'astryx-text-input', visualProps: ['size', 'status'], states: ['disabled']},
     ],
   },
   usage: {
@@ -164,7 +177,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docsZh = {
   name: 'TextInput',
   displayName: 'Text Input',
@@ -275,6 +288,13 @@ export const docsZh = {
         '验证状态：应用彩色边框和状态图标。如果提供了 message，在输入框下方显示浮动消息。错误类型还会设置 aria-invalid。',
     },
     {
+      name: 'statusVariant',
+      type: "'attached' | 'detached' | 'tooltip'",
+      description:
+        '状态消息相对于输入框的放置方式。attached 直接叠加在输入框下方（带边框处理）；detached 作为独立元素浮于下方并留有间距；tooltip 隐藏消息框，并在状态图标上以提示气泡形式显示。',
+      default: "'attached'",
+    },
+    {
       name: 'hasClear',
       type: 'boolean',
       description: '输入有值时显示清除 (×) 按鈕。点击后清空值并将焦点返回输入框。',
@@ -295,7 +315,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-text-input', visualProps: ['size', 'status']},
+      {className: 'astryx-text-input', visualProps: ['size', 'status'], states: ['disabled']},
     ],
   },
   usage: {
@@ -323,7 +343,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'Text input for collecting user text w/ label, description, validation status, optional/required indicators.',
   usage: {
@@ -368,6 +388,7 @@ export const docsDense = {
     labelTooltip: 'Tooltip in info icon at label end.',
     startIcon: 'SVG icon at input start (e.g. heroicons or lucide).',
     status: 'Validation status; colored border+icon. Message floats below. Error sets aria-invalid.',
+    statusVariant: 'How status message is placed: attached overlaps below input; detached floats below w/ spacing; tooltip hides the box and shows it on the status icon.',
     hasClear: 'Shows clear button when input has value. Clears value on click.',
     hasAutoFocus: 'Auto-focus input on mount.',
     htmlName: 'HTML name attr for form submissions.',

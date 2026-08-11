@@ -2,6 +2,7 @@
 
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
+import type {ReactNode} from 'react';
 import {Markdown} from './Markdown';
 import type {MarkdownInlinePlugin} from './Markdown';
 
@@ -32,6 +33,97 @@ describe('Markdown', () => {
     const para = screen.getByText('Hello world');
     expect(para.tagName).toBe('DIV');
     expect(para).toHaveAttribute('role', 'paragraph');
+  });
+
+  it('renders the astryx-markdown-paragraph theme target on each paragraph', () => {
+    render(<Markdown>{'First para\n\nSecond para'}</Markdown>);
+    const first = screen.getByText('First para');
+    const second = screen.getByText('Second para');
+    // Stable theme-target class lets a theme adjust the inter-paragraph gap
+    // (marginBlockStart/marginBlockEnd) via defineTheme without reaching for
+    // fragile descendant selectors or global spacing tokens.
+    expect(first.className).toContain('astryx-markdown-paragraph');
+    expect(second.className).toContain('astryx-markdown-paragraph');
+  });
+
+  describe('block spacing theme targets', () => {
+    // Every block type renders a stable astryx-markdown-<block> class so a
+    // theme can tune the gap around it (marginBlockStart/marginBlockEnd) via
+    // defineTheme — the whole prose rhythm is themeable, not just paragraphs.
+    it('renders a stable theme-target class on every block type', () => {
+      const {container} = render(
+        <Markdown>
+          {[
+            '# Heading',
+            'Paragraph text',
+            '- item one',
+            '```\ncode\n```',
+            '> quoted',
+            '| a | b |\n| - | - |\n| 1 | 2 |',
+            '---',
+            '![alt](https://example.com/x.png)',
+          ].join('\n\n')}
+        </Markdown>,
+      );
+      for (const cls of [
+        'astryx-markdown-heading',
+        'astryx-markdown-paragraph',
+        'astryx-markdown-list',
+        'astryx-markdown-codeblock',
+        'astryx-markdown-blockquote',
+        'astryx-markdown-table',
+        'astryx-markdown-hr',
+        'astryx-markdown-image',
+      ]) {
+        expect(
+          container.querySelector(`.${cls}`),
+          `expected a .${cls} element`,
+        ).not.toBeNull();
+      }
+    });
+
+    it('renders the theme target on task lists too', () => {
+      const {container} = render(<Markdown>{'- [ ] todo'}</Markdown>);
+      expect(container.querySelector('.astryx-markdown-list')).not.toBeNull();
+    });
+
+    it('reflects density on block targets as data-density', () => {
+      const {rerender} = render(<Markdown>{'Hello world'}</Markdown>);
+      // Default density is reflected so themes can tune spacing per density.
+      expect(screen.getByText('Hello world')).toHaveAttribute(
+        'data-density',
+        'default',
+      );
+      rerender(<Markdown density="compact">{'Hello world'}</Markdown>);
+      expect(screen.getByText('Hello world')).toHaveAttribute(
+        'data-density',
+        'compact',
+      );
+    });
+
+    it('reflects the heading level on the heading target as data-level', () => {
+      render(<Markdown>{'## Section'}</Markdown>);
+      const heading = screen.getByText('Section');
+      expect(heading.className).toContain('astryx-markdown-heading');
+      expect(heading).toHaveAttribute('data-level', '2');
+    });
+
+    it('does not apply the theme target when a custom block component is provided', () => {
+      const {container} = render(
+        <Markdown
+          components={{
+            heading: ({children}: {children: ReactNode}) => (
+              <h2 data-custom>{children}</h2>
+            ),
+          }}>
+          {'# Custom heading'}
+        </Markdown>,
+      );
+      // Custom components own their own styling — the default target is not
+      // imposed on them.
+      expect(container.querySelector('.astryx-markdown-heading')).toBeNull();
+      expect(container.querySelector('[data-custom]')).not.toBeNull();
+    });
   });
 
   it('renders inline display without block wrappers', () => {
@@ -234,6 +326,27 @@ describe('Markdown', () => {
     expect(img).toBeInTheDocument();
     expect(img!.getAttribute('alt')).toBe('alt text');
     expect(img!.getAttribute('src')).toBe('image.png');
+  });
+
+  it('uses the components.image override for a standalone (block) image', () => {
+    // A standalone image line parses as a block image; its render path must
+    // honor components.image just like the inline image path does.
+    render(
+      <Markdown
+        components={{
+          image: ({src, alt}) => (
+            <span data-testid="custom-image" data-src={src}>
+              {alt}
+            </span>
+          ),
+        }}>
+        {'![alt text](image.png)'}
+      </Markdown>,
+    );
+    expect(document.querySelector('img')).not.toBeInTheDocument();
+    const custom = screen.getByTestId('custom-image');
+    expect(custom).toHaveTextContent('alt text');
+    expect(custom.getAttribute('data-src')).toBe('image.png');
   });
 
   it('shifts heading levels with headingLevelStart', () => {

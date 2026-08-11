@@ -9,10 +9,16 @@
  * SYNC: When CheckboxInput.tsx changes, update tests to match new behavior
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {CheckboxInput} from './CheckboxInput';
+import {getForcedColorsRules} from '../__tests__/forcedColors';
+import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
+
+afterEach(() => {
+  __resetLiveRegionsForTest();
+});
 
 // Mock showPopover/hidePopover (not implemented in jsdom) so the tooltip layer
 // reflects its open state via a `popover-open` attribute the tests can assert.
@@ -138,6 +144,39 @@ describe('CheckboxInput', () => {
     expect(checkbox).toHaveAttribute('aria-describedby', description.id);
   });
 
+  it('toggles when clicking on the description', async () => {
+    const user = userEvent.setup();
+    const handleChange = vi.fn();
+    render(
+      <CheckboxInput
+        label="Subscribe"
+        description="Receive weekly updates"
+        value={false}
+        onChange={handleChange}
+      />,
+    );
+    await user.click(screen.getByText('Receive weekly updates'));
+    expect(handleChange).toHaveBeenCalledWith(true, expect.any(Object));
+  });
+
+  it('does not fold the description into the checkbox accessible name', () => {
+    // The description stays a sibling of the <label>, so it must NOT become
+    // part of the checkbox's accessible name (which is computed from the
+    // associated label). It belongs in the accessible DESCRIPTION only
+    // (via aria-describedby) — otherwise screen readers announce it twice.
+    render(
+      <CheckboxInput
+        label="Email notifications"
+        description="We'll send weekly digests"
+        value={false}
+        onChange={() => {}}
+      />,
+    );
+    const checkbox = screen.getByRole('checkbox');
+    expect(checkbox).toHaveAccessibleName('Email notifications');
+    expect(checkbox).toHaveAccessibleDescription("We'll send weekly digests");
+  });
+
   it('is disabled when isDisabled prop is true', () => {
     render(
       <CheckboxInput
@@ -248,6 +287,22 @@ describe('CheckboxInput', () => {
     expect(screen.getByLabelText('Select row')).toBeInTheDocument();
   });
 
+  it('keeps description linked via aria-describedby when isLabelHidden', () => {
+    render(
+      <CheckboxInput
+        label="Select row"
+        isLabelHidden
+        description="Selects this row for bulk actions"
+        value={false}
+        onChange={() => {}}
+      />,
+    );
+    const checkbox = screen.getByRole('checkbox');
+    const description = screen.getByText('Selects this row for bulk actions');
+    expect(description.id).not.toBe('');
+    expect(checkbox.getAttribute('aria-describedby')).toContain(description.id);
+  });
+
   it('shows label visually by default', () => {
     render(
       <CheckboxInput label="Accept terms" value={false} onChange={() => {}} />,
@@ -315,6 +370,32 @@ describe('CheckboxInput', () => {
       'aria-invalid',
       'true',
     );
+  });
+
+  // Regression: the status is conditionally mounted, so it must be announced
+  // through the persistent useAnnounce live region — a live region born
+  // together with its content is not reliably announced.
+  it('announces a status message that appears after mount', async () => {
+    const {rerender} = render(
+      <CheckboxInput label="Accept terms" value={false} onChange={() => {}} />,
+    );
+    expect(
+      document.querySelector('[data-astryx-live-region="assertive"]'),
+    ).toBeNull();
+
+    rerender(
+      <CheckboxInput
+        label="Accept terms"
+        value={false}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Required field'}}
+      />,
+    );
+    await waitFor(() => {
+      expect(
+        document.querySelector('[data-astryx-live-region="assertive"]'),
+      ).toHaveTextContent('Required field');
+    });
   });
 
   describe('disabledMessage', () => {
@@ -494,5 +575,27 @@ describe('CheckboxInput', () => {
         ...new FormData(container.querySelector('form')!).keys(),
       ]).toEqual([]);
     });
+  });
+});
+
+// jsdom cannot emulate forced-colors rendering, so this asserts that the
+// compiled output includes the forced-colors rule; visual behavior needs
+// manual verification under Windows High Contrast.
+describe('forced colors (WCAG 1.4.11)', () => {
+  it('compiles a forced-colors fill so the indeterminate mark survives Windows High Contrast', () => {
+    render(
+      <CheckboxInput label="All" value="indeterminate" onChange={() => {}} />,
+    );
+    // The painted indeterminate bar would be stripped to Canvas (invisible);
+    // CanvasText keeps it perceivable.
+    expect(getForcedColorsRules()).toContain('background-color: canvastext;');
+  });
+
+  it('compiles a forced-colors color so the checkmark survives Windows High Contrast', () => {
+    render(<CheckboxInput label="Accept" value={true} onChange={() => {}} />);
+    // The check strokes with currentColor; forced colors leaves it the same
+    // white as the flattened box, so it needs its own CanvasText color to stay
+    // perceivable on the Canvas box.
+    expect(getForcedColorsRules()).toContain('color: canvastext;');
   });
 });

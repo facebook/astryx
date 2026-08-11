@@ -116,15 +116,19 @@ describe('parseMarkdown performance', () => {
 
   // Full re-parse benchmarks
   for (const size of sizes) {
-    it(`full re-parse ${size.name} (${size.paragraphs} paragraphs) under ${size.maxMs}ms`, () => {
-      const text = generateAIResponse(size.paragraphs);
-      const {elapsed, result} = measureBest(3, () => parseMarkdown(text));
-      console.log(
-        `  ${size.name} full parse: ${elapsed.toFixed(2)}ms → ${result.length} blocks`,
-      );
-      expect(elapsed).toBeLessThan(size.maxMs);
-      expect(result.length).toBeGreaterThan(0);
-    });
+    it(
+      `full re-parse ${size.name} (${size.paragraphs} paragraphs) under ${size.maxMs}ms`,
+      () => {
+        const text = generateAIResponse(size.paragraphs);
+        const {elapsed, result} = measureBest(3, () => parseMarkdown(text));
+        console.log(
+          `  ${size.name} full parse: ${elapsed.toFixed(2)}ms → ${result.length} blocks`,
+        );
+        expect(elapsed).toBeLessThan(size.maxMs);
+        expect(result.length).toBeGreaterThan(0);
+      },
+      size.maxMs + 5000,
+    );
   }
 
   // Streaming with full re-parse
@@ -132,19 +136,23 @@ describe('parseMarkdown performance', () => {
     {name: 'Medium', paragraphs: 50, maxMs: 5000},
     {name: 'XL', paragraphs: 500, maxMs: 30000},
   ]) {
-    it(`streaming full re-parse ${size.name} under ${size.maxMs}ms`, () => {
-      const text = generateAIResponse(size.paragraphs);
-      const chunkSize = 50;
-      const iterations = Math.ceil(text.length / chunkSize);
-      const start = performance.now();
-      const result = simulateStreamingFullReparse(text, chunkSize);
-      const elapsed = performance.now() - start;
-      console.log(
-        `  ${size.name} streaming full re-parse: ${elapsed.toFixed(2)}ms (${iterations} iterations)`,
-      );
-      expect(elapsed).toBeLessThan(size.maxMs);
-      expect(result.length).toBeGreaterThan(0);
-    });
+    it(
+      `streaming full re-parse ${size.name} under ${size.maxMs}ms`,
+      () => {
+        const text = generateAIResponse(size.paragraphs);
+        const chunkSize = 50;
+        const iterations = Math.ceil(text.length / chunkSize);
+        const start = performance.now();
+        const result = simulateStreamingFullReparse(text, chunkSize);
+        const elapsed = performance.now() - start;
+        console.log(
+          `  ${size.name} streaming full re-parse: ${elapsed.toFixed(2)}ms (${iterations} iterations)`,
+        );
+        expect(elapsed).toBeLessThan(size.maxMs);
+        expect(result.length).toBeGreaterThan(0);
+      },
+      size.maxMs + 5000,
+    );
   }
 
   // Streaming with incremental parse
@@ -152,19 +160,23 @@ describe('parseMarkdown performance', () => {
     {name: 'Medium', paragraphs: 50, maxMs: 5000},
     {name: 'XL', paragraphs: 500, maxMs: 30000},
   ]) {
-    it(`streaming incremental ${size.name} under ${size.maxMs}ms`, () => {
-      const text = generateAIResponse(size.paragraphs);
-      const chunkSize = 50;
-      const iterations = Math.ceil(text.length / chunkSize);
-      const start = performance.now();
-      const result = simulateStreamingIncremental(text, chunkSize);
-      const elapsed = performance.now() - start;
-      console.log(
-        `  ${size.name} streaming incremental: ${elapsed.toFixed(2)}ms (${iterations} iterations)`,
-      );
-      expect(elapsed).toBeLessThan(size.maxMs);
-      expect(result.length).toBeGreaterThan(0);
-    });
+    it(
+      `streaming incremental ${size.name} under ${size.maxMs}ms`,
+      () => {
+        const text = generateAIResponse(size.paragraphs);
+        const chunkSize = 50;
+        const iterations = Math.ceil(text.length / chunkSize);
+        const start = performance.now();
+        const result = simulateStreamingIncremental(text, chunkSize);
+        const elapsed = performance.now() - start;
+        console.log(
+          `  ${size.name} streaming incremental: ${elapsed.toFixed(2)}ms (${iterations} iterations)`,
+        );
+        expect(elapsed).toBeLessThan(size.maxMs);
+        expect(result.length).toBeGreaterThan(0);
+      },
+      size.maxMs + 5000,
+    );
   }
 
   // --- Incremental vs Full speedup benchmark ---

@@ -14,7 +14,7 @@
  * - /packages/core/src/Popover/Popover.test.tsx
  * - /packages/core/src/Popover/index.ts
  * - /apps/storybook/stories/Popover.stories.tsx
- * - /packages/cli/templates/blocks/components/Popover/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Popover/ (showcase blocks)
  */
 
 import React, {
@@ -26,6 +26,7 @@ import React, {
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import * as stylex from '@stylexjs/stylex';
 import {mergeProps} from '../utils';
+import {devWarn} from '../utils/devWarning';
 import type {BaseProps} from '../BaseProps';
 import {usePopover} from './usePopover';
 import type {LayerAlignment, LayerPlacement} from '../Layer/useLayer';
@@ -162,9 +163,28 @@ export interface PopoverProps extends Pick<
 
   /**
    * Accessible label for the popover dialog.
-   * Recommended for accessibility (used as aria-label on the dialog).
+   * Recommended for accessibility when `role` is `'dialog'`.
    */
   label?: string;
+
+  /**
+   * ARIA role stamped on the popover content wrapper.
+   *
+   * Use `'dialog'` for dialog-style popovers. Use `'none'` when the popup
+   * content owns its own role, such as a child `role="menu"` or
+   * `role="listbox"`.
+   *
+   * @default 'dialog'
+   */
+  role?: 'dialog' | 'none';
+
+  /**
+   * Whether a dialog-style popover is modal (`aria-modal`). Only applies when
+   * `role` is `'dialog'`.
+   *
+   * @default true
+   */
+  isModal?: boolean;
 
   /**
    * Whether to include a hidden close button for accessibility.
@@ -292,6 +312,8 @@ export function Popover({
   isEnabled = true,
   width,
   label,
+  role = 'dialog',
+  isModal,
   hasCloseButton,
   closeButtonLabel,
   hasAutoFocus,
@@ -319,6 +341,8 @@ export function Popover({
 
   const popover = usePopover({
     dialogLabel: label,
+    role,
+    isModal,
     hasLightDismiss,
     hasEscapeDismiss,
     hasCloseButton,
@@ -410,8 +434,9 @@ export function Popover({
 
     const button = findTriggerButton(el);
     if (!button) {
-      console.warn(
-        'Popover: anchorRef must reference a <button> or [role="button"] element. ' +
+      devWarn(
+        'Popover',
+        'anchorRef must reference a <button> or [role="button"] element. ' +
           'The popover trigger implements the button + dialog ARIA pattern.',
       );
     }
@@ -453,8 +478,9 @@ export function Popover({
     // Find the button inside the wrapper
     const button = findTriggerButton(wrapper);
     if (!button) {
-      console.warn(
-        'Popover: children must contain a <button> or [role="button"] element. ' +
+      devWarn(
+        'Popover',
+        'children must contain a <button> or [role="button"] element. ' +
           'The popover trigger implements the button + dialog ARIA pattern.',
       );
     }

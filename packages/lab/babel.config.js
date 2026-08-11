@@ -23,7 +23,7 @@ const rootDir = path.resolve(__dirname, '../..');
 
 module.exports = {
   presets: [
-    ['@babel/preset-react', {runtime: 'automatic'}],
+    ['@babel/preset-react', {runtime: 'automatic', development: false}],
     ['@babel/preset-typescript', {isTSX: true, allExtensions: true}],
   ],
   plugins: [

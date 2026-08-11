@@ -101,6 +101,12 @@ export interface ContextRenderProps {
    */
   role?: string;
   /**
+   * Accessible name applied to the popover container via `aria-label`.
+   * Pair with `role` so layers with a named role (e.g. `'dialog'`) expose a
+   * proper name to assistive technology.
+   */
+  'aria-label'?: string;
+  /**
    * StyleX styles for the popover container.
    */
   xstyle?: StyleXStyles;
@@ -321,6 +327,36 @@ function getPositionArea(
 }
 
 /**
+ * Compute the `position-try-fallbacks` list for a placement/alignment pair.
+ *
+ * Flips alone cannot rescue a centered layer — flipping along the alignment
+ * axis maps center → center, so overflow on that axis renders clipped
+ * (#3671). Centered alignments therefore append span-based fallbacks letting
+ * the browser slide the layer along the alignment axis as a last resort
+ * (same-side spans first). Flips already resolve non-centered alignments.
+ */
+export function getPositionTryFallbacks(
+  placement: LayerPlacement = 'above',
+  alignment: LayerAlignment = 'center',
+): string {
+  const flips = 'flip-block, flip-inline, flip-block flip-inline';
+
+  if (alignment !== 'center') {
+    return flips;
+  }
+
+  if (placement === 'above' || placement === 'below') {
+    const [same, opposite] =
+      placement === 'above' ? ['top', 'bottom'] : ['bottom', 'top'];
+    return `${flips}, ${same} span-left, ${same} span-right, ${opposite} span-left, ${opposite} span-right`;
+  }
+
+  const [same, opposite] =
+    placement === 'start' ? ['left', 'right'] : ['right', 'left'];
+  return `${flips}, ${same} span-top, ${same} span-bottom, ${opposite} span-top, ${opposite} span-bottom`;
+}
+
+/**
  * Core layer hook that handles popover behavior and positioning.
  *
  * Supports two positioning modes with type-safe render props:
@@ -495,6 +531,7 @@ export function useLayer(
         alignment = 'center',
         positioning = 'anchor',
         role,
+        'aria-label': ariaLabel,
         xstyle,
         className: extraClassName,
         style: extraStyle,
@@ -512,8 +549,10 @@ export function useLayer(
           : {
               positionAnchor: anchorId,
               positionArea: getPositionArea(placement, alignment),
-              positionTryFallbacks:
-                'flip-block, flip-inline, flip-block flip-inline',
+              positionTryFallbacks: getPositionTryFallbacks(
+                placement,
+                alignment,
+              ),
             };
 
       const stylexResult = stylex.props(styles.base, xstyle);
@@ -529,6 +568,7 @@ export function useLayer(
           ref={popoverRefCallback}
           id={id}
           role={role}
+          aria-label={ariaLabel}
           popover={lightDismiss ? 'auto' : 'manual'}
           className={combinedClassName}
           style={{...stylexResult.style, ...anchorStyle, ...extraStyle}}

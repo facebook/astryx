@@ -10,7 +10,8 @@ import {DropdownMenu} from '@astryxdesign/core/DropdownMenu';
 import {Text} from '@astryxdesign/core/Text';
 import {useThemeControls, SANDBOX_THEMES} from './providers';
 import type {ThemeMode} from '@astryxdesign/core/theme';
-import {categories} from './sandboxPages';
+import type {IconName, IconType} from '@astryxdesign/core/Icon';
+import {categories, topLevelPages} from './sandboxPages';
 import {
   HomeIcon,
   WrenchIcon,
@@ -32,6 +33,24 @@ const categoryIcons: Record<
   blocks: BlocksIcon,
   themes: PaletteIcon,
   tools: WrenchIcon,
+};
+
+/**
+ * Icons for `topLevelPages`, kept here so that module stays JSX-free — the
+ * same split the categories already use.
+ *
+ * These are icon *types* and semantic *names*, never rendered elements.
+ * `SideNavItem` passes its icon through `renderIconSlot`, which applies the
+ * nav's `size: 'sm'` and its selected/disabled colour to a component type or a
+ * registry name — but hands a ReactNode straight to the DOM untouched. An
+ * `<Icon />` element here therefore renders unsized and uncoloured: a ~400px
+ * black glyph over the whole sidebar. `scores` is a registry name (T17), not a
+ * hand-written SVG.
+ */
+const topLevelIcons: Record<string, IconType | IconName> = {
+  home: HomeIcon,
+  templates: AppWindowIcon,
+  scores: 'checkDouble',
 };
 
 const styles = stylex.create({
@@ -126,20 +145,20 @@ export function SandboxNav() {
   return (
     <SideNav header={<SandboxHeader />}>
       <SideNavSection title="Home" isHeaderHidden>
-        <SideNavItem
-          label="Home"
-          href="/"
-          isSelected={pathname === '/'}
-          as={Link}
-          icon={HomeIcon}
-        />
-        <SideNavItem
-          label="Official Templates"
-          href="/templates/"
-          isSelected={pathname === '/templates/'}
-          as={Link}
-          icon={AppWindowIcon}
-        />
+        {topLevelPages.map(page => (
+          <SideNavItem
+            key={page.href}
+            label={page.label}
+            href={page.href}
+            isSelected={
+              page.matchesChildren
+                ? pathname.startsWith(page.href)
+                : pathname === page.href
+            }
+            as={Link}
+            icon={topLevelIcons[page.icon]}
+          />
+        ))}
       </SideNavSection>
       <SideNavSection title="Projects">
         {categories

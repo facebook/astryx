@@ -11,7 +11,7 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/PowerSearch/index.ts
- * - /packages/cli/templates/blocks/components/PowerSearch/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/PowerSearch/ (showcase blocks)
  */
 
 import React, {
@@ -37,7 +37,7 @@ import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import {Icon} from '../Icon';
 import type {IconType} from '../Icon';
 import type {IconName} from '../Icon/globalIconRegistry';
-import type {InputStatus} from '../Field';
+import type {InputStatus, FieldStatusVariant} from '../Field';
 import {usePopover} from '../Popover/usePopover';
 import {useAnnounce} from '../hooks/useAnnounce';
 import {
@@ -52,7 +52,9 @@ import {useInternalConfig} from './useInternalConfig';
 import {usePowerSearchSource} from './usePowerSearchSource';
 import {formatFilterValue} from './formatFilterValue';
 import {PowerSearchEditPopover} from './PowerSearchEditPopover';
+import {resolveOperatorLabel} from './resolveOperatorLabel';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 import type {
   PowerSearchConfig,
   PowerSearchFilter,
@@ -381,6 +383,13 @@ export interface PowerSearchProps extends Omit<
   onBlur?: (e: React.FocusEvent) => void;
   /** Validation status. */
   status?: InputStatus;
+  /**
+   * How the status message is placed relative to the input.
+   * - 'attached': message overlaps directly below the input (bordered treatment)
+   * - 'detached': message floats below as a separate element with spacing
+   * @default 'attached'
+   */
+  statusVariant?: FieldStatusVariant;
   /** Max width for dropdown menu. */
   menuWidth?: number;
   /** Max display length for filter token values. @default 40 */
@@ -513,9 +522,9 @@ export function PowerSearch({
   config: configProp,
   filters,
   onChange,
-  label = 'Search',
+  label: labelFromProps,
   isLabelHidden = true,
-  placeholder = 'Search...',
+  placeholder: placeholderFromProps,
   hasAutoFocus = false,
   hasClear = true,
   isReadOnly = false,
@@ -525,8 +534,9 @@ export function PowerSearch({
   onFocus,
   onBlur,
   status,
+  statusVariant = 'attached',
   maxTokenLength = 40,
-  popoverSaveButtonLabel = 'Apply',
+  popoverSaveButtonLabel: popoverSaveButtonLabelFromProps,
   timezoneID,
   tokenOverflowBehavior,
   endContent,
@@ -543,6 +553,12 @@ export function PowerSearch({
   const size = useSize(sizeProp, 'md');
   const config = useInternalConfig(configProp);
   const searchSource = usePowerSearchSource(config);
+  const t = useTranslator();
+  const label = labelFromProps ?? t('@astryx.powersearch.label');
+  const placeholder =
+    placeholderFromProps ?? t('@astryx.powersearch.placeholder');
+  const popoverSaveButtonLabel =
+    popoverSaveButtonLabelFromProps ?? t('@astryx.powersearch.editor.apply');
   const tokenizerRef = useRef<TokenizerHandle>(null);
 
   const [popoverState, setPopoverStateRaw] = useState<PopoverState>({
@@ -598,13 +614,15 @@ export function PowerSearch({
     return filters.map((filter, index) => {
       const field = config.getField(filter.field);
       const operator = config.getOperator(filter.field, filter.operator);
-      const operatorLabel = operator?.label ? `: ${operator.label}` : '';
+      const resolvedOp = operator ? resolveOperatorLabel(operator, t) : '';
+      const operatorLabel = resolvedOp ? `: ${resolvedOp}` : '';
       const valueStr = operator
         ? formatFilterValue(
             config,
             operator.value,
             filter.value,
             maxTokenLength,
+            t,
             timezoneID,
           )
         : '';
@@ -624,7 +642,7 @@ export function PowerSearch({
         },
       };
     });
-  }, [filters, config, maxTokenLength, timezoneID]);
+  }, [filters, config, maxTokenLength, timezoneID, t]);
 
   // Handle tokenizer onChange (field selected from typeahead)
   const handleTokenizerChange = useCallback(
@@ -787,7 +805,7 @@ export function PowerSearch({
 
       // Default token rendering
       const fieldLabel = field?.label ?? '';
-      const operatorLabel = operator?.label ?? '';
+      const operatorLabel = operator ? resolveOperatorLabel(operator, t) : '';
       const tokenLabel = `${fieldLabel}: ${operatorLabel}`.trim();
       const adjustedMaxLength = Math.max(
         maxTokenLength - fieldLabel.length - operatorLabel.length,
@@ -843,6 +861,7 @@ export function PowerSearch({
       isDisabled,
       handleTokenClick,
       componentOverrides,
+      t,
     ],
   );
 
@@ -948,17 +967,18 @@ export function PowerSearch({
   ]);
 
   // Plain-text form of the result count, shared by the visible label and the
-  // screen-reader announcement so the two never drift.
+  // screen-reader announcement so the two never drift. The ICU plural handles
+  // the number formatting + `result` vs `results` in one message so translators
+  // can match the locale's plural rules.
   const resultCountText = useMemo((): string | null => {
     if (resultCount == null) {
       return null;
     }
     if (typeof resultCount === 'number') {
-      const formatted = new Intl.NumberFormat().format(resultCount);
-      return `${formatted} ${resultCount === 1 ? 'result' : 'results'}`;
+      return t('@astryx.powersearch.resultCount', {count: resultCount});
     }
     return resultCount;
-  }, [resultCount]);
+  }, [resultCount, t]);
 
   // Announce result-count changes to screen readers through a polite live
   // region, mirroring the way Typeahead announces its dropdown result count.
@@ -1021,6 +1041,7 @@ export function PowerSearch({
           hasEntriesOnFocus
           debounceMs={0}
           status={status}
+          statusVariant={statusVariant}
           onFocus={onFocus}
           onBlur={onBlur}
           xstyle={xstyle}

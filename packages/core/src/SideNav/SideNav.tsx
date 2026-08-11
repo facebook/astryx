@@ -18,7 +18,7 @@
  * - /packages/core/src/SideNav/SideNav.test.tsx
  * - /packages/core/src/SideNav/index.ts
  * - /apps/storybook/stories/SideNav.stories.tsx
- * - /packages/cli/templates/blocks/components/SideNav/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/SideNav/ (showcase blocks)
  */
 
 import {
@@ -31,7 +31,7 @@ import {
 import type {BaseProps} from '../BaseProps';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
-import {borderVars, colorVars, spacingVars} from '../theme/tokens.stylex';
+import {spacingVars} from '../theme/tokens.stylex';
 import {mergeProps, mergeRefs} from '../utils';
 import {
   SideNavCollapseContext,
@@ -45,6 +45,7 @@ import {useResizable} from '../Resizable/useResizable';
 import type {ResizableConfig} from '../Resizable/useResizable';
 import {ResizeHandle} from '../Resizable/ResizeHandle';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 // =============================================================================
 // Constants
@@ -122,9 +123,6 @@ const styles = stylex.create({
     paddingInline: spacingVars['--spacing-2'],
     paddingBlockStart: spacingVars['--spacing-1'],
     paddingBlockEnd: spacingVars['--spacing-2'],
-    borderBlockStartWidth: borderVars['--border-width'],
-    borderBlockStartStyle: 'solid',
-    borderBlockStartColor: colorVars['--color-border'],
   },
   footerRow: {
     display: 'flex',
@@ -144,8 +142,8 @@ const styles = stylex.create({
     alignItems: 'center',
   },
   stickyBottomCollapsed: {
-    borderBlockStart: 'none',
     paddingBlockStart: 0,
+    alignItems: 'center',
   },
   // Drawer footer — pushed to bottom of the scrollable content area
   drawerFooter: {
@@ -154,9 +152,6 @@ const styles = stylex.create({
     marginBlockStart: 'auto',
     gap: spacingVars['--spacing-2'],
     paddingBlockStart: spacingVars['--spacing-2'],
-    borderBlockStartWidth: borderVars['--border-width'],
-    borderBlockStartStyle: 'solid',
-    borderBlockStartColor: colorVars['--color-border'],
   },
   drawerFooterIcons: {
     display: 'flex',
@@ -330,6 +325,7 @@ export function SideNav({
   handleRef,
   ...props
 }: SideNavProps) {
+  const t = useTranslator();
   // Parse collapsible prop
   const collapsibleConfig = typeof collapsible === 'object' ? collapsible : {};
   const isCollapsible = !!collapsible;
@@ -504,7 +500,7 @@ export function SideNav({
     <nav
       ref={mergeRefs(ref, navRef)}
       role="navigation"
-      aria-label="Side navigation"
+      aria-label={t('@astryx.sideNav.label')}
       data-testid={testId}
       {...mergeProps(
         themeProps('side-nav'),
@@ -569,7 +565,7 @@ export function SideNav({
         pillPlacement="end"
         isAlwaysVisible={false}
         resizable={resizableHook.props}
-        label="Resize sidebar"
+        label={t('@astryx.sideNav.resizeSidebar')}
       />
     </div>
   ) : (

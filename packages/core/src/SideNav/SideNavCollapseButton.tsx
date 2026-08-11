@@ -4,7 +4,7 @@
 
 /**
  * @file SideNavCollapseButton.tsx
- * @input Uses React, StyleX, SideNavCollapseContext, getIcon
+ * @input Uses React, StyleX, SideNavCollapseContext, Icon
  * @output Exports SideNavCollapseButton component
  * @position Composable toggle button for sidenav collapse
  *
@@ -14,22 +14,23 @@
  * SYNC: When modified, update:
  * - /packages/core/src/SideNav/SideNav.doc.mjs
  * - /packages/core/src/SideNav/index.ts
- * - /packages/cli/templates/blocks/components/SideNav/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/SideNav/ (showcase blocks)
  */
 
 import React, {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {durationVars, easeVars} from '../theme/tokens.stylex';
-import {getIcon} from '../Icon/globalIconRegistry';
+import {Icon} from '../Icon';
 import {Button} from '../Button';
 import type {BaseProps} from '../BaseProps';
-import {composeEventHandlers} from '../utils';
+import {composeEventHandlers, rtlStyles} from '../utils';
 import {
   useSideNavCollapse,
   type SideNavCollapseState,
   type SideNavImperativeCollapseHandle,
 } from './SideNavCollapseContext';
 import {useAppShellMobile} from '../AppShell/AppShellMobileContext';
+import {useTranslator} from '../i18n';
 
 // =============================================================================
 // Styles
@@ -105,6 +106,7 @@ export function SideNavCollapseButton({
   onClick: onClickProp,
   ...props
 }: SideNavCollapseButtonProps) {
+  const t = useTranslator();
   const {isCollapsed, toggle, isCollapsible} =
     useSideNavCollapseState(handleRef);
   const {isMobile} = useAppShellMobile();
@@ -118,18 +120,31 @@ export function SideNavCollapseButton({
   return (
     <Button
       ref={ref}
-      label={label ?? (isCollapsed ? 'Expand sidebar' : 'Collapse sidebar')}
+      label={
+        label ??
+        (isCollapsed
+          ? t('@astryx.sideNavCollapseButton.expandSidebar')
+          : t('@astryx.sideNavCollapseButton.collapseSidebar'))
+      }
       variant="ghost"
       {...props}
       onClick={composeEventHandlers(onClickProp, toggle)}
       icon={
         children ?? (
-          <span
-            {...stylex.props(
-              styles.chevron,
-              isCollapsed && styles.chevronCollapsed,
-            )}>
-            {getIcon('chevronLeft')}
+          // The RTL mirror stays on its own element, wrapping (not merged
+          // into) the state rotation: both are `transform`, so on a single
+          // element one would overwrite the other and the chevron would stop
+          // mirroring under RTL. See utils/rtlStyles.ts.
+          <span {...stylex.props(rtlStyles.mirror)}>
+            {/* `sm` (1rem) matches what this glyph already renders at: Button's
+                icon slot pins its wrapper to 16px, and the registry SVG is
+                1em, so the chevron is 16px today. */}
+            <Icon
+              icon="chevronLeft"
+              size="sm"
+              color="inherit"
+              xstyle={[styles.chevron, isCollapsed && styles.chevronCollapsed]}
+            />
           </span>
         )
       }
