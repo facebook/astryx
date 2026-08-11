@@ -1,5 +1,28 @@
 # @xds/build
 
+# 0.3.0
+
+---
+
+# 0.2.0
+
+---
+
+# 0.1.9
+
+#### Fixes
+
+- Scope the `source` resolve condition to @astryxdesign packages in withAstryx
+  `withAstryx` set webpack's `conditionNames` to `['source', …]` globally, which resolved _any_ dependency shipping a `source` export to its raw TypeScript — not just Astryx packages. Third-party deps that ship a `source` export (e.g. `lexical`, pulled in by the new RichTextEditor lab component) were then fed untranspiled `.ts` through Next's babel and failed on syntax like `declare` class fields.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @potatowagon
+
+---
+
 # 0.1.8
 
 ---

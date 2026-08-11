@@ -11,7 +11,7 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/TreeList/TreeList.doc.mjs
  * - /packages/core/src/TreeList/TreeList.tsx
- * - /packages/cli/templates/blocks/components/TreeList/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/TreeList/ (showcase blocks)
  */
 
 import {useId, useMemo, type ReactNode} from 'react';
@@ -24,11 +24,11 @@ import {
   easeVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
-import {getIcon} from '../Icon/globalIconRegistry';
+import {Icon} from '../Icon';
 import {mergeProps} from '../utils';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import {TreeListBranches} from './TreeListBranches';
-import type {TreeListDensity} from './TreeListTypes';
+import type {TreeListDensity, TreeListVariant} from './TreeListTypes';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
@@ -70,6 +70,17 @@ const styles = stylex.create({
   },
   rowWrapper: {
     position: 'relative',
+    // Inter-row gap. Half the public `--tree-list-row-gap` lever sits above and
+    // half below the row box; because this is PADDING (not margin) it cannot
+    // collapse, so adjacent rows end up a full gap apart — and it rides the
+    // `rowWrapper`, which carries no theme target, so the paintable
+    // `tree-list-item` stays a pure paint seam (layout lives off it). The <li>s
+    // stay contiguous — the gap is padding INSIDE each <li>, not space between
+    // them — so the per-<li> connector guide can still span it and read as a
+    // continuous line (see TreeListBranches). The lever's default is a subtle
+    // `--spacing-0-5` (2px, set on the tree-list root); a theme widens or closes
+    // it via the `tree-list` target.
+    paddingBlock: 'calc(var(--tree-list-row-gap, 0px) / 2)',
   },
   contentWrapper: {
     borderRadius: radiusVars['--radius-element'],
@@ -82,6 +93,12 @@ const styles = stylex.create({
     position: 'relative',
     boxSizing: 'border-box',
     textAlign: 'start',
+    // Per-level indent. Declared here (not inline) so it lives in
+    // `@layer astryx-base` and the theme layer can override it in normal
+    // cascade order — an inline longhand would outrank every layer. The row
+    // publishes only the computed distance as `--_tree-indent`; the per-level
+    // step is the public `--tree-list-indent` lever (see TreeList `root`).
+    marginInlineStart: 'var(--_tree-indent, 0px)',
   },
   interactive: {
     cursor: 'pointer',
@@ -201,15 +218,34 @@ const styles = stylex.create({
   },
   chevronSvg: {
     display: 'flex',
+    // The chevron column is sized in spacing tokens by the button/container
+    // around it (--spacing-4 = 16px), not on Icon's rem scale, so the glyph's
+    // box is pinned to that same token. Icon's `sm` (1rem) only coincides with
+    // 16px at a 16px root font-size; drifting off the token would knock the
+    // glyph out of its 16px column.
+    width: spacingVars['--spacing-4'],
+    height: spacingVars['--spacing-4'],
+    fontSize: spacingVars['--spacing-4'],
     transitionProperty: 'transform',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
   },
+  // The RTL mirror is folded into each state's transform rather than living on
+  // a parent span. Both are `transform`, so on one element the later value
+  // would win — spelling out `scaleX(-1) rotate(...)` per state composes them
+  // exactly as the nested elements did, while leaving a single element to
+  // carry the glyph's theme target.
   chevronExpanded: {
-    transform: 'rotate(90deg)',
+    transform: {
+      default: 'rotate(90deg)',
+      ':is([dir="rtl"] *)': 'scaleX(-1) rotate(90deg)',
+    },
   },
   chevronCollapsed: {
-    transform: 'rotate(0deg)',
+    transform: {
+      default: 'rotate(0deg)',
+      ':is([dir="rtl"] *)': 'scaleX(-1) rotate(0deg)',
+    },
   },
 });
 
@@ -246,6 +282,11 @@ const descriptionSizeStyles = stylex.create({
   },
 });
 
+// `CSSProperties` has no index signature for custom properties, so the row's
+// inline style — which publishes the computed indent distance as the private
+// `--_tree-indent` — needs this augmentation to typecheck.
+type IndentStyle = React.CSSProperties & Record<'--_tree-indent', string>;
+
 // =============================================================================
 // Types
 // =============================================================================
@@ -262,12 +303,28 @@ export interface TreeListItemInternalProps {
   isDisabled?: boolean;
   isSelected?: boolean;
   hasChildren: boolean;
+  /**
+   * Whether the tree contains at least one expandable item anywhere (i.e. a
+   * caret exists somewhere to align labels under). A leaf reserves the chevron
+   * column — the extra offset that lines its label up past an expandable
+   * ancestor/sibling's caret — whenever this is true, so it stays indented
+   * beyond its parent's label. Only a fully flat tree (no expandable items at
+   * all) has no caret to align under, so its rows sit flush (no chevron-column
+   * offset). Computed once for the whole tree by TreeList.
+   */
+  hasExpandableItems: boolean;
   nestedLevel: number;
   isLast: boolean;
   ancestorsIsLast: ReadonlyArray<boolean>;
   isExpanded: boolean;
   onToggle?: (id: string) => void;
   density: TreeListDensity;
+  /**
+   * Guide-line visual treatment. `noGuides` suppresses the connector lines;
+   * indentation is unaffected (it lives on the row's `marginLeft`, not the
+   * guide element).
+   */
+  variant: TreeListVariant;
   /** Pre-rendered children subtree (rendered by the parent recursion) */
   renderedChildren?: ReactNode;
   /** 1-based position of this item among its siblings (aria-posinset). */
@@ -298,12 +355,14 @@ export function TreeListItem({
   isDisabled = false,
   isSelected = false,
   hasChildren,
+  hasExpandableItems,
   nestedLevel,
   isLast,
   ancestorsIsLast,
   isExpanded,
   onToggle,
   density,
+  variant,
   renderedChildren,
   posInSet,
   setSize,
@@ -346,9 +405,22 @@ export function TreeListItem({
     return undefined;
   }, [onClick, hasChildren, onToggle, id, isDisabled]);
 
-  const computedMarginLeft = hasChildren
-    ? `calc(${nestedLevel} * ${spacingVars['--spacing-4']})`
-    : `calc(${nestedLevel} * ${spacingVars['--spacing-4']} + ${spacingVars['--spacing-4']} + ${spacingVars['--spacing-2']})`;
+  // Per-level indent distance. The per-level step is the public, themeable
+  // `--tree-list-indent` lever (default `--spacing-4`, set on the tree-list
+  // root). A leaf adds a fixed chevron-column offset (chevron width + gap) so
+  // its label lines up past an expandable ancestor/sibling's caret — but ONLY
+  // when the tree actually contains an expandable item somewhere. In a fully
+  // flat tree there is no caret to align under, so the offset is pointless and
+  // every row sits flush, like a parent at that level. That offset is tied to
+  // the chevron's own dimensions, not the indent step, so it does not scale
+  // with the lever. Published as the private `--_tree-indent` and consumed by
+  // `contentWrapper`'s stylesheet `margin-inline-start` (kept out of the inline
+  // style so the theme layer can override it — see #4308).
+  const reservesChevronColumn = !hasChildren && hasExpandableItems;
+  const indentDistance = reservesChevronColumn
+    ? `calc(${nestedLevel} * var(--tree-list-indent) + ${spacingVars['--spacing-4']} + ${spacingVars['--spacing-2']})`
+    : `calc(${nestedLevel} * var(--tree-list-indent))`;
+  const indentStyle: IndentStyle = {'--_tree-indent': indentDistance};
 
   const labelAndDescription = (
     <>
@@ -378,14 +450,24 @@ export function TreeListItem({
     </>
   );
 
+  // <Icon> renders the glyph's span itself — carrying the pre-existing
+  // astryx-icon target — so the rotation rides on that same element instead of
+  // an extra wrapper: a theme can still restyle the mark and its open/closed
+  // transform through one selector.
   const chevronIcon = (
-    <span
-      {...stylex.props(
+    <Icon
+      icon="chevronRight"
+      // Nearest size to the 16px chevron column; `chevronSvg` re-pins the exact
+      // box because the column is spacing-token-sized, not rem-sized.
+      size="sm"
+      // The button/container owns the chevron color (--color-icon-secondary);
+      // inheriting keeps that as the single source.
+      color="inherit"
+      xstyle={[
         styles.chevronSvg,
         isExpanded ? styles.chevronExpanded : styles.chevronCollapsed,
-      )}>
-      {getIcon('chevronRight')}
-    </span>
+      ]}
+    />
   );
 
   const chevron = hasChildren ? (
@@ -492,13 +574,15 @@ export function TreeListItem({
       data-tree-level={nestedLevel + 1}
       data-tree-disabled={isDisabled || undefined}
       {...stylex.props(styles.wrapper)}>
-      <div {...stylex.props(styles.treeBranches)}>
-        <TreeListBranches
-          ancestorsIsLast={ancestorsIsLast}
-          isLast={isLast}
-          nestedLevel={nestedLevel}
-        />
-      </div>
+      {variant !== 'noGuides' && (
+        <div {...stylex.props(styles.treeBranches)}>
+          <TreeListBranches
+            ancestorsIsLast={ancestorsIsLast}
+            isLast={isLast}
+            nestedLevel={nestedLevel}
+          />
+        </div>
+      )}
       <div {...stylex.props(styles.rowWrapper)}>
         <div
           {...mergeProps(
@@ -518,7 +602,7 @@ export function TreeListItem({
               isSelected && styles.selected,
             ),
           )}
-          style={{marginLeft: computedMarginLeft}}
+          style={indentStyle}
           onClick={handleClick}>
           {innerContent}
         </div>

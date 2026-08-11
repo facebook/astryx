@@ -20,7 +20,7 @@
  * SYNC: When modified, update:
  * - /packages/core/src/Chat/index.ts
  * - /apps/storybook/stories/ChatComposer.stories.tsx
- * - /packages/cli/templates/blocks/components/ChatComposerInput/ (block examples)
+ * - /packages/cli/assets/templates/blocks/components/ChatComposerInput/ (block examples)
  */
 
 import {
@@ -238,8 +238,8 @@ const styles = stylex.create({
   placeholder: {
     position: 'absolute',
     top: 0,
-    left: 0,
-    right: 0,
+    insetInlineStart: 0,
+    insetInlineEnd: 0,
     pointerEvents: 'none',
     color: colorVars['--color-text-secondary'],
     fontSize: {

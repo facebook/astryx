@@ -1,5 +1,37 @@
 # @xds/theme-neutral
 
+# 0.3.0
+
+#### Fixes
+
+- neutral theme: darken light-mode `--color-text-secondary` from neutral-500 (#737373) to neutral-600 (#525252). 500 only reached 4.19:1 on the T95 body background (#f1f1f1), just under WCAG AA 1.4.3 (4.5:1); 600 clears it. Dark mode is unchanged.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @humbertovirtudes
+
+---
+
+# 0.2.0
+
+#### Fixes
+
+- Neutral theme: express the light `--color-border` as `#00000014` (translucent black) instead of the opaque `#ebebeb`. Same rendered color over a white surface, but it now blends over any background — matching the translucent dark-mode value.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @kentonquatman
+
+---
+
+# 0.1.9
+
+---
+
 # 0.1.8
 
 ---

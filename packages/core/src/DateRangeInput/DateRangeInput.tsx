@@ -13,7 +13,7 @@
  * - /packages/core/src/DateRangeInput/DateRangeInput.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/DateRangeInput/index.ts (exports if types change)
  * - /apps/storybook/stories/DateRangeInput.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/DateRangeInput/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/DateRangeInput/ (showcase blocks)
  */
 
 import {useId, useCallback, useMemo, useOptimistic, useTransition} from 'react';
@@ -25,7 +25,6 @@ import {
   DATE_FORMAT_SHORT,
   DATE_FORMAT_SHORT_WITH_YEAR,
 } from '../utils/plainDate';
-import type {IconName} from '../Icon';
 import {
   colorVars,
   sizeVars,
@@ -38,21 +37,28 @@ import {
 import {
   Field,
   type InputStatus,
-  type InputStatusType,
   inputWrapperStyles,
   inputStatusBorderStyles,
   inputStatusHoverShadowStyles,
   inputStatusFocusWithinStyles,
+  type FieldStatusVariant,
 } from '../Field';
 import {Icon} from '../Icon';
 import {Spinner} from '../Spinner';
-import {Calendar, type ISODateString, type DateRange} from '../Calendar';
+import {
+  Calendar,
+  type ISODateString,
+  type DateRange,
+  type DayOfWeek,
+  type DayOfWeekName,
+} from '../Calendar';
 import {usePopover} from '../Popover';
 import {useTooltip} from '../Tooltip';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {useSize} from '../SizeContext/SizeContext';
+import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
@@ -127,9 +133,9 @@ const styles = stylex.create({
     flexDirection: 'column',
     gap: spacingVars['--spacing-1'],
     padding: spacingVars['--spacing-3'],
-    borderRightWidth: borderVars['--border-width'],
-    borderRightStyle: 'solid',
-    borderRightColor: colorVars['--color-border-emphasized'],
+    borderInlineEndWidth: borderVars['--border-width'],
+    borderInlineEndStyle: 'solid',
+    borderInlineEndColor: colorVars['--color-border-emphasized'],
     minWidth: 140,
   },
   presetButton: {
@@ -330,6 +336,14 @@ export interface DateRangeInputProps extends Omit<
    * Status indicator for the input.
    */
   status?: InputStatus;
+  /**
+   * How the status message is placed relative to the input.
+   * - 'attached': message overlaps directly below the input (bordered treatment)
+   * - 'detached': message floats below as a separate element with spacing
+   * - 'tooltip': no message box; the status icon becomes a focusable info-tip button that reveals the message on hover, keyboard focus, or tap
+   * @default 'attached'
+   */
+  statusVariant?: FieldStatusVariant;
 
   /**
    * Width of the field. Numbers are treated as pixels, strings are used as-is
@@ -347,6 +361,14 @@ export interface DateRangeInputProps extends Omit<
    * @default 2
    */
   numberOfMonths?: 1 | 2;
+
+  /**
+   * First day of week in the calendar. Accepts a number
+   * (0 = Sunday … 6 = Saturday) or a three-letter day name ('sun'–'sat',
+   * case-insensitive).
+   * @default 0
+   */
+  weekStartsOn?: DayOfWeek | DayOfWeekName;
 }
 
 /**
@@ -385,8 +407,10 @@ export function DateRangeInput({
   placeholder: placeholderFromProps,
   size: sizeProp,
   status,
+  statusVariant = 'attached',
   labelTooltip,
   numberOfMonths = 2,
+  weekStartsOn,
   width,
   xstyle,
   className,
@@ -422,25 +446,19 @@ export function DateRangeInput({
     isEnabled: showsDisabledMessage,
   });
 
-  const statusIconMap: Record<InputStatusType, IconName> = {
-    warning: 'warning',
-    error: 'error',
-    success: 'success',
-  };
-
-  const statusIconColorMap: Record<
-    InputStatusType,
-    'warning' | 'error' | 'success'
-  > = {
-    warning: 'warning',
-    error: 'error',
-    success: 'success',
-  };
+  const {statusIcon, describedBy: statusTooltipDescribedBy} =
+    useInputStatusIcon({
+      status,
+      statusVariant,
+    });
 
   const ariaDescribedBy =
     [
       description ? descriptionID : null,
-      status?.message ? statusMessageID : null,
+      statusVariant !== 'tooltip' && status?.message ? statusMessageID : null,
+      // The tooltip variant renders no message box; describe the input by the
+      // tooltip's content instead so the status is still announced.
+      statusTooltipDescribedBy,
       showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
     ]
       .filter(Boolean)
@@ -529,6 +547,7 @@ export function DateRangeInput({
             }
           : undefined
       }
+      statusVariant={statusVariant}
       labelTooltip={labelTooltip}
       width={width}>
       <div
@@ -544,13 +563,16 @@ export function DateRangeInput({
           themeProps('date-range-input', {
             size,
             status: status?.type ?? null,
+            disabled: isDisabled ? 'disabled' : null,
           }),
           stylex.props(
             inputWrapperStyles.base,
             sizeStyles[size],
             isEffectivelyDisabled && inputWrapperStyles.disabled,
             status && inputStatusBorderStyles[status.type],
-            status && inputStatusHoverShadowStyles[status.type],
+            status &&
+              !isEffectivelyDisabled &&
+              inputStatusHoverShadowStyles[status.type],
             status && inputStatusFocusWithinStyles[status.type],
             xstyle,
           ),
@@ -571,7 +593,14 @@ export function DateRangeInput({
             styles.iconButton,
             isEffectivelyDisabled && styles.iconButtonDisabled,
           )}>
-          <Icon icon="calendar" size="sm" color="secondary" />
+          <Icon
+            icon="calendar"
+            size="sm"
+            color="secondary"
+            {...themeProps('date-range-input-toggle-icon', {
+              state: popover.isOpen ? 'expanded' : 'collapsed',
+            })}
+          />
         </button>
         <button
           ref={ref}
@@ -604,17 +633,16 @@ export function DateRangeInput({
             onClick={handleClear}
             aria-label={t('@astryx.dateInput.clear', {label})}
             {...stylex.props(styles.iconButton)}>
-            <Icon icon="close" size="sm" color="secondary" />
+            <Icon
+              icon="close"
+              size="sm"
+              color="secondary"
+              {...themeProps('date-range-input-clear-icon')}
+            />
           </button>
         )}
         {isBusy && <Spinner size="sm" />}
-        {status && (
-          <Icon
-            icon={statusIconMap[status.type]}
-            size="md"
-            color={statusIconColorMap[status.type]}
-          />
-        )}
+        {statusIcon}
       </div>
       {popover.render(
         <div {...stylex.props(styles.popoverLayout)}>
@@ -655,6 +683,7 @@ export function DateRangeInput({
             max={max}
             dateConstraints={dateConstraints}
             numberOfMonths={numberOfMonths}
+            weekStartsOn={weekStartsOn}
           />
         </div>,
         {placement: 'below', alignment: 'start'},

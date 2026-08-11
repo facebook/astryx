@@ -13,7 +13,7 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Chat/index.ts (exports)
- * - /packages/cli/templates/blocks/components/ChatLayoutScrollButton/ (block examples)
+ * - /packages/cli/assets/templates/blocks/components/ChatLayoutScrollButton/ (block examples)
  */
 
 import React from 'react';
@@ -144,6 +144,7 @@ export function ChatLayoutScrollButton({
           icon={<Icon icon="chevronDown" size="md" />}
           variant="ghost"
           size="md"
+          isIconOnly={!label}
           onClick={onClick}
           xstyle={[styles.button, label ? styles.buttonWithLabel : null]}>
           {label ?? undefined}

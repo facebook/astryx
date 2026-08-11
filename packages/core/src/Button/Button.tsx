@@ -4,7 +4,7 @@
 
 /**
  * @file Button.tsx
- * @input Uses React, ButtonHTMLAttributes, ReactNode
+ * @input Uses React, ButtonHTMLAttributes, ReactNode, i18n (useTranslator)
  * @output Exports Button component, ButtonProps, ButtonVariant types
  * @position Core implementation; consumed by index.ts, tested by Button.test.tsx
  *
@@ -13,7 +13,7 @@
  * - /packages/core/src/Button/Button.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Button/index.ts (exports if types change)
  * - /apps/storybook/stories/Button.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Button/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Button/ (showcase blocks)
  *
  * Last synced props: label, variant, size, isDisabled, isLoading, isInterruptible, clickAction, icon, isIconOnly, width, children, tooltip, endContent, href, as, target, rel
  */
@@ -45,6 +45,8 @@ import {mergeProps, mergeRefs} from '../utils';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
+import type {ButtonVariantMap} from './index';
 
 /**
  * Base button styles
@@ -263,26 +265,6 @@ const variants = stylex.create({
 });
 
 /**
- * Extensible variant map for Button.
- *
- * Theme packages can add custom variants via TypeScript module augmentation:
- * @example
- * ```
- * declare module '@astryxdesign/core/Button' {
- *   interface ButtonVariantMap {
- *     'primary-muted': true;
- *   }
- * }
- * ```
- */
-export interface ButtonVariantMap {
-  primary: true;
-  secondary: true;
-  ghost: true;
-  destructive: true;
-}
-
-/**
  * Button variant type derived from ButtonVariantMap.
  * Extensible via module augmentation of ButtonVariantMap.
  */
@@ -449,8 +431,8 @@ const loadingStyles = stylex.create({
   spinnerOverlay: {
     position: 'absolute',
     top: 0,
-    left: 0,
-    right: 0,
+    insetInlineStart: 0,
+    insetInlineEnd: 0,
     bottom: 0,
     display: 'grid',
     placeItems: 'center',
@@ -611,6 +593,7 @@ export function Button({
   ref,
   ...props
 }: ButtonProps): ReactNode {
+  const t = useTranslator();
   const size = useSize(sizeProp, 'md');
   const buttonGroup = useButtonGroup();
 
@@ -760,7 +743,7 @@ export function Button({
       </span>
       {/* Live region for loading state announcements */}
       <VisuallyHidden role="status" aria-live="polite">
-        {isLoadingState ? 'Loading' : ''}
+        {isLoadingState ? t('@astryx.button.loading') : ''}
       </VisuallyHidden>
     </>
   );

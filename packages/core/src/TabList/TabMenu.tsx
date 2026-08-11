@@ -13,7 +13,7 @@
  * - /packages/core/src/TabList/TabList.doc.mjs
  * - /packages/core/src/TabList/index.ts
  * - /packages/core/src/TabList/TabList.test.tsx
- * - /packages/cli/templates/blocks/components/TabList/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/TabList/ (showcase blocks)
  */
 
 import React, {useCallback, useId, useRef, type ReactNode} from 'react';
@@ -31,6 +31,7 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import {usePopover} from '../Popover/usePopover';
+import {MENU_ITEM_SELECTOR} from '../DropdownMenu/menuItemRoles';
 import {useListFocus} from '../hooks/useListFocus';
 import {useTabListContext} from './TabListContext';
 import type {TabListSize} from './TabListContext';
@@ -126,8 +127,8 @@ const styles = stylex.create({
     // drops onto the divider rail when an ancestor (TabList `hasDivider` or a
     // Toolbar with a bottom divider) sets `--_tab-indicator-bottom`.
     bottom: 'var(--_tab-indicator-bottom, -1px)',
-    left: spacingVars['--spacing-3'],
-    right: spacingVars['--spacing-3'],
+    insetInlineStart: spacingVars['--spacing-3'],
+    insetInlineEnd: spacingVars['--spacing-3'],
     height: '2px',
     borderRadius: radiusVars['--radius-full'],
     pointerEvents: 'none',
@@ -160,6 +161,10 @@ const styles = stylex.create({
     width: spacingVars['--spacing-4'],
     height: spacingVars['--spacing-4'],
     flexShrink: 0,
+  },
+  // Applied to the chevron <Icon> (via `xstyle`) rather than its wrapper, so the
+  // element that rotates is the element a theme targets.
+  chevronIcon: {
     transitionProperty: 'transform',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
@@ -291,6 +296,9 @@ export function TabMenu({
     focusFirst,
   } = useListFocus<HTMLDivElement>({
     hasRovingTabIndex: true,
+    // Options render as menuitemradio (single-select menu), which the
+    // default '[role="menuitem"]' selector would not match.
+    itemSelector: MENU_ITEM_SELECTOR,
     onEscape: () => popover.hide(),
   });
 
@@ -372,13 +380,13 @@ export function TabMenu({
             {triggerLabel}
           </span>
         </span>
-        <span
-          aria-hidden="true"
-          {...stylex.props(
-            styles.chevron,
-            popover.isOpen && styles.chevronOpen,
-          )}>
-          <Icon icon="chevronDown" size="sm" color="inherit" />
+        <span aria-hidden="true" {...stylex.props(styles.chevron)}>
+          <Icon
+            icon="chevronDown"
+            size="sm"
+            color="inherit"
+            xstyle={[styles.chevronIcon, popover.isOpen && styles.chevronOpen]}
+          />
         </span>
         {hasSelectedOption && (
           <span
@@ -409,9 +417,13 @@ export function TabMenu({
             return (
               <div
                 key={option.value}
-                role="menuitem"
+                // The menu is single-select: exactly one option can be the
+                // active tab, so options are radio menu items with
+                // aria-checked (APG menu-button), not plain menuitems with
+                // aria-current.
+                role="menuitemradio"
                 tabIndex={-1}
-                aria-current={isSelected ? 'true' : undefined}
+                aria-checked={isSelected}
                 onClick={() => handleSelect(option.value)}
                 onKeyDown={e => {
                   if (e.key === 'Enter' || e.key === ' ') {

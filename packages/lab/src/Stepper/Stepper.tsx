@@ -13,7 +13,7 @@
  * - /packages/lab/src/Stepper/Stepper.test.tsx (tests for new/changed behavior)
  * - /packages/lab/src/Stepper/index.ts (exports if types change)
  * - /apps/storybook/stories/Stepper.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Stepper/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Stepper/ (showcase blocks)
  */
 
 import {Children, useMemo, type ReactNode} from 'react';
@@ -66,7 +66,7 @@ export interface StepperProps extends BaseProps<HTMLOListElement> {
    * - 'separated': indicator lives in the label row, distinct from the progress
    *   bar (the original Astryx layout).
    * - 'on-track': indicator is slotted into the connector line as a node on the
-   *   track (EPS-aligned design).
+   *   track (the on-track indicator design).
    * @default 'separated'
    */
   indicatorPosition?: StepperIndicatorPosition;

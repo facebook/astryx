@@ -1,16 +1,17 @@
 ---
-applyTo: "packages/cli/templates/**"
+applyTo: 'packages/cli/assets/templates/**'
 ---
 
 # Template review instructions
 
 These are Astryx **templates** — page templates (`templates/pages/<name>/page.tsx`
-+ `template.doc.mjs`) and block templates (`templates/blocks/.../[Name].tsx` +
-`[Name].doc.mjs`). They are copy-paste examples, so they carry design
-responsibility beyond any single component.
+
+- `template.doc.mjs`) and block templates (`templates/blocks/.../[Name].tsx` +
+  `[Name].doc.mjs`). They are copy-paste examples, so they carry design
+  responsibility beyond any single component.
 
 > **Scope note.** These files also match `packages.instructions.md`. For
-> template files, the component-authoring checklist there (forwardRef,
+> template files, the component-authoring checklist there (the `ref` prop,
 > sync-exports, colocated `.test.tsx`, etc.) does **not** apply — templates are
 > examples, not published components. Review them by the rubric below (and the
 > shared design and StyleX rules).
@@ -26,14 +27,14 @@ hard-block).
 
 Quick triage before grading. Two questions:
 
-- **New template vs. edit to an existing one?** A *new* template that lands
+- **New template vs. edit to an existing one?** A _new_ template that lands
   already-visible (its `.doc.mjs` isn't `hidden: true`) skipped hidden-staging —
   flag it (see Lifecycle note) and hold it to the full B+ bar. An edit to an
   existing template is scoped to what changed.
 - **Content-only vs. structural?** A copy/mock-data tweak is a fast grade
   (purity + metadata); a layout/root/`AppShell` change needs the full Layout &
   Structure pass. State it briefly, e.g. `Triage: edit to existing template,
-  layout change → full structure pass`.
+layout change → full structure pass`.
 
 ## Score the 7 categories (100 pts)
 
@@ -54,13 +55,13 @@ Quick triage before grading. Two questions:
    `className`/`stylex.props()` usage. Token-valued Astryx props do **not**
    count.
 4. **Layout & structure (15)** —
-   - *Page templates:* root is `Layout` or `Center`, never `AppShell` or a raw
+   - _Page templates:_ root is `Layout` or `Center`, never `AppShell` or a raw
      `<div>` — **exception:** `Shell -` category templates must root in
      `AppShell` with global `TopNav`/`SideNav`. No global app chrome otherwise
      (in-page nav → `LayoutPanel` start slot; page header → `LayoutHeader`).
      Responsive grids use `Grid` + `minChildWidth`; centering uses `Center`.
      Single page only — navigation links inert (`href="#"` / `onClick`).
-   - *Block templates:* not wrapped in `AppShell`, single-pattern focus,
+   - _Block templates:_ not wrapped in `AppShell`, single-pattern focus,
      ~20–100 lines.
 5. **Doc metadata (10)** — read the `.doc.mjs`. Pages need
    `type:'page'`, `name`, `description`, `isReady`. Blocks need `type:'block'`,
@@ -70,11 +71,18 @@ Quick triage before grading. Two questions:
    missing fields, a wrong `aspectRatio`, `componentsUsed` drift, and missing
    `scale` for tiny components (Badge/StatusDot/single Icon/Spinner → `2` or
    `3`).
-6. **Image handling (5)** — images only from the astryx CDN via the permanent
-   lookaside URL (`https://lookaside.facebook.com/assets/astryx/<asset>.png`)
-   with an asset-name comment. Flag external URLs (unsplash/placehold/picsum),
-   checked-in image files, data URIs, and expiring signed `scontent…fbcdn.net`
-   URLs.
+6. **Image handling (5)** — demo imagery is referenced by a root-relative path
+   under `/template-assets/<asset>.png`, self-hosted in the repo under
+   `apps/docsite/public/template-assets/` (mirrored into the sandbox preview at
+   generate time). To use an existing image, browse that directory and reference
+   it by name with an asset-name comment; to add a new one, drop the file into
+   that same directory and reference it the same way. On scaffold,
+   `stripTemplateAssetRefs` swaps these paths for an inline placeholder so a
+   generated project renders with zero setup. Flag external URLs
+   (unsplash/placehold/picsum), expiring signed `scontent…fbcdn.net` URLs, and
+   inline data URIs. Image-backed Thumbnail examples are the one exception: they
+   inline a same-origin, samplable `data:` URI (required by `useImageMode` — see
+   `scripts/check-demo-media.mjs`).
 7. **Code quality (10)** — `'use client';` first line; `export default`;
    self-contained imports (`@astryxdesign/core/*`, `@heroicons/react/*`, or
    local only); realistic mock data (real names/values, never
@@ -98,7 +106,7 @@ dark.
 Templates are authored **hidden** and revealed only after they clear this bar
 (`hidden: true` / a `hiddenComponents` entry in the `.doc.mjs` keeps a template
 out of `--list`). The thing to catch is a template that **skips hidden-staging**:
-**flag a diff that adds a *new* template/block whose `.doc.mjs` is not
+**flag a diff that adds a _new_ template/block whose `.doc.mjs` is not
 `hidden: true`** — it's publicly listed the moment it lands and may not be
 hardened yet. Ask the author to confirm it grades **B or above**, or to add
 `hidden: true` until it does. See

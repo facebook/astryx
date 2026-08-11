@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'NumberInput',
@@ -95,6 +95,13 @@ export const docs = {
       description: 'Validation status with optional message.',
     },
     {
+      name: 'statusVariant',
+      type: "'attached' | 'detached' | 'tooltip'",
+      description:
+        'How the status message is placed relative to the input. attached overlaps directly below the input (bordered treatment); detached floats below as a separate element with spacing; tooltip hides the message box and surfaces it in a tooltip on the status icon.',
+      default: "'attached'",
+    },
+    {
       name: 'min',
       type: 'number | null',
       description: 'Minimum value allowed.',
@@ -139,6 +146,12 @@ export const docs = {
       description: 'HTML autocomplete attribute.',
     },
     {
+      name: 'width',
+      type: 'SizeValue',
+      description:
+        'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
+    },
+    {
       name: 'hasAutoFocus',
       type: 'boolean',
       description: 'Whether to focus the input on mount.',
@@ -161,7 +174,7 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-number-input', visualProps: ['size', 'status']},
+      {className: 'astryx-number-input', visualProps: ['size', 'status'], states: ['disabled']},
     ],
   },
   usage: {
@@ -179,12 +192,11 @@ export const docs = {
       {name: 'Description', required: false, description: 'Additional description text below the label.'},
       {name: 'Icon', required: false, description: 'An optional icon within the input.'},
       {name: 'Placeholder', required: false, description: 'Placeholder text shown when the input is empty.'},
-      {name: 'Spinner', required: false, description: 'Increment and decrement controls for the value.'},
     ],
   },
 };
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docsZh = {
   name: 'NumberInput',
   displayName: 'Number Input',
@@ -276,6 +288,13 @@ export const docsZh = {
       description: '带可选消息的验证状态。',
     },
     {
+      name: 'statusVariant',
+      type: "'attached' | 'detached' | 'tooltip'",
+      description:
+        '状态消息相对于输入框的放置方式。attached 直接叠加在输入框下方（带边框处理）；detached 作为独立元素浮于下方并留有间距；tooltip 隐藏消息框，并在状态图标上以提示气泡形式显示。',
+      default: "'attached'",
+    },
+    {
       name: 'min',
       type: 'number | null',
       description: '允许的最小值。',
@@ -341,7 +360,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-number-input', visualProps: ['size', 'status']},
+      {className: 'astryx-number-input', visualProps: ['size', 'status'], states: ['disabled']},
     ],
   },
   usage: {
@@ -359,12 +378,11 @@ export const docsZh = {
       {name: 'Description', required: false, description: 'Additional description text below the label.'},
       {name: 'Icon', required: false, description: 'An optional icon within the input.'},
       {name: 'Placeholder', required: false, description: 'Placeholder text shown when the input is empty.'},
-      {name: 'Spinner', required: false, description: 'Increment and decrement controls for the value.'},
     ],
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'Number input component for collecting numeric user input w/ validation.',
   usage: {
@@ -382,7 +400,6 @@ export const docsDense = {
       {name: 'Description', required: false, description: 'Additional description text below the label.'},
       {name: 'Icon', required: false, description: 'An optional icon within the input.'},
       {name: 'Placeholder', required: false, description: 'Placeholder text shown when the input is empty.'},
-      {name: 'Spinner', required: false, description: 'Increment and decrement controls for the value.'},
     ],
   },
   propDescriptions: {
@@ -402,6 +419,7 @@ export const docsDense = {
     startIcon: 'Icon at input start.',
     labelIcon: 'Icon before label text.',
     status: 'Validation status w/ optional message.',
+    statusVariant: 'How status message is placed: attached overlaps below input; detached floats below w/ spacing; tooltip hides the box and shows it on the status icon.',
     min: 'Minimum value allowed.',
     max: 'Maximum value allowed.',
     step: 'Step increment.',

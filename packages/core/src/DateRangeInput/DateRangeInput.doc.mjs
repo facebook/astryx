@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'DateRangeInput',
@@ -128,6 +128,13 @@ export const docs = {
       description: 'Status indicator for error, warning, or success states.',
     },
     {
+      name: 'statusVariant',
+      type: "'attached' | 'detached' | 'tooltip'",
+      description:
+        'How the status message is placed relative to the input. attached overlaps directly below the input (bordered treatment); detached floats below as a separate element with spacing; tooltip hides the message box and surfaces it in a tooltip on the status icon.',
+      default: "'attached'",
+    },
+    {
       name: 'labelTooltip',
       type: 'string',
       description: 'Tooltip text via info icon at label end.',
@@ -139,6 +146,19 @@ export const docs = {
       default: '2',
     },
     {
+      name: 'weekStartsOn',
+      type: "0 | 1 | 2 | 3 | 4 | 5 | 6 | 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat'",
+      description:
+        'First day of week in the calendar. A number (0 = Sunday … 6 = Saturday) or a three-letter day name.',
+      default: '0',
+    },
+    {
+      name: 'width',
+      type: 'SizeValue',
+      description:
+        'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description: 'StyleX styles for layout customization.',
@@ -146,7 +166,9 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-date-range-input', visualProps: ['size', 'status']},
+      {className: 'astryx-date-range-input', visualProps: ['size', 'status'], states: ['disabled']},
+      {className: 'astryx-date-range-input-toggle-icon', states: ['state']},
+      {className: 'astryx-date-range-input-clear-icon'},
     ],
   },
   usage: {
@@ -232,7 +254,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
     'date range picker with dual-month calendar popover and preset ranges',
@@ -296,8 +318,10 @@ export const docsDense = {
     placeholder: 'placeholder when empty',
     size: 'trigger size',
     status: 'error/warning/success status',
+    statusVariant: 'How status message is placed: attached overlaps below input; detached floats below w/ spacing; tooltip hides the box and shows it on the status icon.',
     labelTooltip: 'tooltip via info icon at label end',
     numberOfMonths: 'months in calendar (default 2)',
+    weekStartsOn: 'first day of week in calendar (0=Sunday, or name e.g. "mon")',
     changeAction:
       'async action fired after onChange; drives optimistic UI updates via useTransition',
     isLoading: 'loading state; disables interaction + shows a spinner',

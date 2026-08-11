@@ -43,7 +43,12 @@ import * as stylex from '@stylexjs/stylex';
 import {colorVars, radiusVars, spacingVars} from '../../../theme/tokens.stylex';
 import {Icon} from '../../../Icon';
 import {mergeRefs} from '../../../utils';
-import type {TablePlugin, TableColumn, BodyRowRenderProps} from '../../types';
+import type {
+  TablePlugin,
+  TableColumn,
+  BodyRowRenderProps,
+  HeaderCellRenderProps,
+} from '../../types';
 import {useTranslator} from '../../../i18n';
 
 // =============================================================================
@@ -79,12 +84,39 @@ export interface UseTableTreeDataConfig<T extends Record<string, unknown>> {
    */
   hasExpandableRows: boolean;
   /**
+   * Aggregate expansion state across every expandable row. When provided
+   * together with `onExpandAll`/`onCollapseAll`, the tree column header shows
+   * an expand-all toggle. `useTableTreeState` supplies all three.
+   */
+  isAllExpanded?: boolean | 'indeterminate';
+  /** Expand every expandable row. Wired to the header expand-all control. */
+  onExpandAll?: () => void;
+  /** Collapse every row. Wired to the header expand-all control. */
+  onCollapseAll?: () => void;
+  /**
+   * Show the expand-all/collapse-all toggle in the tree column header. Needs
+   * `isAllExpanded` and `onExpandAll`/`onCollapseAll` to be present.
+   * @default false
+   */
+  hasExpandAllControl?: boolean;
+  /**
    * Indent step per level, as spacing tokens.
    * @default 'md'
    */
   indent?: 'sm' | 'md' | 'lg';
   /** Column that carries the indent + expander. @default the first column */
   treeColumnKey?: string;
+  /**
+   * When true, clicking anywhere on an expandable row toggles its expansion,
+   * in addition to the chevron. Leaf rows stay inert. No-op on flat data.
+   *
+   * This is a pointer-only convenience layered over the chevron: keyboard and
+   * assistive-tech users toggle via the chevron button (which stays the
+   * accessible control). Clicks originating from interactive cell content
+   * (buttons, links, form controls) or a text selection do not toggle.
+   * @default false (only the chevron toggles expansion).
+   */
+  hasRowClickExpansion?: boolean;
 }
 
 // =============================================================================
@@ -227,14 +259,26 @@ const treeStyles = stylex.create({
       color: colorVars['--color-icon-primary'],
     },
   },
-  chevron: {
-    display: 'inline-flex',
+  chevronIcon: {
     transitionProperty: 'transform',
     transitionDuration: '150ms',
-    transform: 'rotate(0deg)',
   },
-  chevronExpanded: {
-    transform: 'rotate(90deg)',
+  // The RTL mirror is folded into each state's transform rather than living on
+  // a parent span. Both are `transform`, so on one element the later value
+  // would win — spelling out `scaleX(-1) rotate(...)` per state composes them
+  // exactly as the nested elements did, while leaving a single element to
+  // carry the glyph's theme target.
+  chevronIconCollapsed: {
+    transform: {
+      default: 'rotate(0deg)',
+      ':is([dir="rtl"] *)': 'scaleX(-1) rotate(0deg)',
+    },
+  },
+  chevronIconExpanded: {
+    transform: {
+      default: 'rotate(90deg)',
+      ':is([dir="rtl"] *)': 'scaleX(-1) rotate(90deg)',
+    },
   },
   /** Keeps leaf content aligned with expandable siblings. */
   leafSpacer: {
@@ -242,6 +286,17 @@ const treeStyles = stylex.create({
     width: '24px',
     height: '24px',
     flexShrink: '0',
+  },
+  /** Header expand-all toggle: same affordance as a row expander. */
+  headerCell: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-1'],
+    minWidth: 0,
+  },
+  /** Whole-row-click expansion: signal the row is interactive. */
+  clickableRow: {
+    cursor: 'pointer',
   },
 });
 
@@ -271,13 +326,71 @@ function TreeExpander({
           : t('@astryx.tableTree.expandRow')
       }
       aria-expanded={isExpanded}>
-      <span
-        {...stylex.props(
-          treeStyles.chevron,
-          isExpanded && treeStyles.chevronExpanded,
-        )}>
-        <Icon icon="chevronRight" size="xsm" />
-      </span>
+      <Icon
+        icon="chevronRight"
+        size="xsm"
+        // The rotation rides on the glyph rather than a wrapper span so the
+        // theme target below reaches both the mark and its open/closed
+        // transform.
+        xstyle={[
+          treeStyles.chevronIcon,
+          isExpanded
+            ? treeStyles.chevronIconExpanded
+            : treeStyles.chevronIconCollapsed,
+        ]}
+      />
+    </button>
+  );
+}
+
+/**
+ * Header expand-all/collapse-all toggle. Rendered in the tree column header
+ * when `hasExpandAllControl` is set and the state hook supplies the aggregate
+ * `isAllExpanded` plus `onExpandAll`/`onCollapseAll`. Shares the chevron
+ * affordance with the per-row expander; the chevron points down (expanded)
+ * only when every expandable row is expanded, matching the row expander.
+ */
+function TreeExpandAllToggle({
+  isAllExpanded,
+  onExpandAll,
+  onCollapseAll,
+}: {
+  isAllExpanded: boolean | 'indeterminate';
+  onExpandAll: () => void;
+  onCollapseAll: () => void;
+}) {
+  const t = useTranslator();
+  const allExpanded = isAllExpanded === true;
+  return (
+    <button
+      type="button"
+      {...stylex.props(treeStyles.expanderButton)}
+      onClick={e => {
+        e.stopPropagation();
+        if (allExpanded) {
+          onCollapseAll();
+        } else {
+          onExpandAll();
+        }
+      }}
+      aria-label={
+        allExpanded
+          ? t('@astryx.tableTree.collapseAllRows')
+          : t('@astryx.tableTree.expandAllRows')
+      }
+      aria-expanded={allExpanded}>
+      <Icon
+        icon="chevronRight"
+        size="xsm"
+        // Same one-element treatment as the row expander: the glyph carries
+        // both the rotation and the theme target.
+        xstyle={[
+          treeStyles.chevronIcon,
+          allExpanded
+            ? treeStyles.chevronIconExpanded
+            : treeStyles.chevronIconCollapsed,
+        ]}
+      />
     </button>
   );
 }
@@ -380,6 +493,11 @@ export function useTableTreeData<T extends Record<string, unknown>>(
     output: TableColumn<T>[];
   } | null>(null);
 
+  // The resolved tree column key, written by transformColumns (pipeline step 1)
+  // and read by transformHeaderCell (step 4) to place the expand-all toggle on
+  // the same column that carries the row expanders.
+  const treeKeyRef = useRef<string | undefined>(undefined);
+
   // The plugin object is created once per store and never changes shape:
   // every transform reads the live config through the store, and
   // internally no-ops when hasExpandableRows is false. Swapping between
@@ -426,6 +544,7 @@ export function useTableTreeData<T extends Record<string, unknown>>(
           ? treeColumnKey
           : (columns.find(c => !c.key.startsWith('__'))?.key ??
             columns[0]?.key);
+        treeKeyRef.current = treeKey;
 
         // Migration guarantee: flat data renders identically to a Table
         // without the plugin.
@@ -459,6 +578,52 @@ export function useTableTreeData<T extends Record<string, unknown>>(
         return output;
       },
 
+      transformHeaderCell(
+        props: HeaderCellRenderProps,
+        column: TableColumn<T>,
+      ): HeaderCellRenderProps {
+        const {
+          hasExpandableRows,
+          hasExpandAllControl,
+          isAllExpanded,
+          onExpandAll,
+          onCollapseAll,
+        } = store.getConfig();
+
+        // Only the tree column carries the toggle, and only when the control
+        // is enabled, the data is actually hierarchical, and the state hook
+        // supplied the aggregate state plus both handlers. Otherwise this is a
+        // pass-through (flat data stays a no-op).
+        if (
+          !hasExpandAllControl ||
+          !hasExpandableRows ||
+          column.key !== treeKeyRef.current ||
+          isAllExpanded === undefined ||
+          !onExpandAll ||
+          !onCollapseAll
+        ) {
+          return props;
+        }
+
+        // Wrap the header label + the toggle in one inline-flex row so the
+        // chevron sits to the LEFT of the title on the same line. BaseTable
+        // only applies its own flex row for the `after` slot, so a bare
+        // `before` would stack above the label in the block-level <th>.
+        return {
+          ...props,
+          content: (
+            <span {...stylex.props(treeStyles.headerCell)}>
+              <TreeExpandAllToggle
+                isAllExpanded={isAllExpanded}
+                onExpandAll={onExpandAll}
+                onCollapseAll={onCollapseAll}
+              />
+              {props.content}
+            </span>
+          ),
+        };
+      },
+
       transformBodyRow(props: BodyRowRenderProps, item: T) {
         // Attach a ref that subscribes to the store for imperative row
         // ARIA. The ref returns a cleanup so React unsubscribes on
@@ -485,9 +650,47 @@ export function useTableTreeData<T extends Record<string, unknown>>(
           };
         };
 
-        return {
+        const withRef = {
           ...props,
           ref: props.ref ? mergeRefs(props.ref, treeRef) : treeRef,
+        };
+
+        // Whole-row-click expansion (opt-in). Only expandable rows are
+        // clickable; leaves and flat data stay inert. `hasExpandableRows` is
+        // the feature-level flag (short-circuits the whole feature when off);
+        // `hasChildren` is the per-row check — both are intentional.
+        const cfg = store.getConfig();
+        const rowClickExpandable =
+          cfg.hasRowClickExpansion === true &&
+          cfg.hasExpandableRows &&
+          cfg.getRowMeta(item)?.hasChildren === true;
+        if (!rowClickExpandable) {
+          return withRef;
+        }
+
+        return {
+          ...withRef,
+          htmlProps: {
+            ...withRef.htmlProps,
+            onClick: (event: React.MouseEvent<HTMLTableRowElement>) => {
+              // Don't hijack clicks on interactive cell content (the chevron
+              // already stops propagation, but a composed selection checkbox,
+              // link, or action button does not) or a text selection.
+              const target = event.target as HTMLElement;
+              if (
+                target.closest(
+                  'button, a, input, select, textarea, [role="button"], [role="checkbox"], [contenteditable="true"]',
+                )
+              ) {
+                return;
+              }
+              if ((window.getSelection()?.toString() ?? '') !== '') {
+                return;
+              }
+              cfg.onToggleItem(item);
+            },
+          },
+          xstyle: [...withRef.xstyle, treeStyles.clickableRow],
         };
       },
     };

@@ -17,6 +17,14 @@
  * is false only for the no-manifest local case, which is guidance (not an
  * error) so `validate-integration` can stay exit-0 in a non-integration dir.
  *
+ * The on-disk contribution validators themselves (roots + codemods/templates/
+ * components, behind `validateLoadedIntegration`) live in
+ * `foundation/integrations/validate-contributions.mjs`, because foundation also
+ * runs them: `Project` collects integration issues and `integration-warnings`
+ * nudges about them on ordinary commands. This file re-exports
+ * `validateLoadedIntegration` so existing importers are unaffected, and keeps
+ * the command-level entry points that resolve a manifest from disk.
+ *
  * Validators are intentionally small and independent so more checks can be
  * appended without reshaping the result. Issue `code`s are stable public
  * strings.
@@ -24,17 +32,23 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import {assertWithin} from '../../foundation/fs/path-safety.mjs';
 import {
   findManifestPaths,
   loadManifestObject,
   resolvePackageDir,
-} from '../../lib/integrations.mjs';
-import {discoverIntegrationCodemods} from '../../codemods/integration-discovery.mjs';
-import {discoverIntegrationTemplatesForOne} from '../template/template.mjs';
-import * as componentDiscovery from '../../lib/component-discovery.mjs';
+} from '../../foundation/integrations/integrations.mjs';
+// The on-disk contribution validators live in foundation: Project and
+// integration-warnings need them too, and foundation must not depend on api.
+import {
+  validateLoadedIntegration,
+  issueError as error,
+} from '../../foundation/integrations/validate-contributions.mjs';
+
+export {validateLoadedIntegration};
 
 /**
- * @typedef {import('../../types/integration').AstryxIntegrationIssue} Issue
+ * @typedef {import('../../foundation/integrations/issue').AstryxIntegrationIssue} Issue
  */
 
 /**
@@ -62,144 +76,6 @@ function findNearestPackageJson(cwd) {
   }
 }
 
-/** @param {string} code @param {string} message @returns {Issue} */
-function error(code, message) {
-  return {code, severity: 'error', message};
-}
-
-/**
- * Verify each declared contribution root exists on disk. A declared-but-missing
- * root is a `missing_root` error.
- * @param {{components?: string, templates?: string, codemods?: string}} resolved
- *   absolute resolved roots (undefined when not declared)
- * @param {Issue[]} issues
- */
-function checkRoots(resolved, issues) {
-  const kinds = /** @type {const} */ (['components', 'templates', 'codemods']);
-  for (const kind of kinds) {
-    const root = resolved[kind];
-    if (root == null) continue;
-    if (!fs.existsSync(root)) {
-      issues.push(
-        error(
-          'missing_root',
-          `Declared ${kind} root does not exist on disk: ${root}`,
-        ),
-      );
-    }
-  }
-}
-
-/**
- * Validate the integration's codemods via the landed discovery. Discovery is
- * strict (throws on bad export / duplicate id); we convert any throw into an
- * `invalid_codemod` error.
- * @param {import('../../lib/integrations.mjs').LoadedIntegration} integration loaded-integration-shaped object
- * @param {Issue[]} issues
- */
-async function checkCodemods(integration, issues) {
-  if (!integration.codemods || !fs.existsSync(integration.codemods)) return;
-  try {
-    await discoverIntegrationCodemods([integration]);
-  } catch (err) {
-    issues.push(error('invalid_codemod', /** @type {any} */ (err).message));
-  }
-}
-
-/**
- * Validate the integration's templates via the landed discovery. Per-template
- * problems are reported as `invalid_template` errors.
- * @param {import('../../lib/integrations.mjs').LoadedIntegration} integration loaded-integration-shaped object
- * @param {Issue[]} issues
- */
-async function checkTemplates(integration, issues) {
-  if (!integration.templates || !fs.existsSync(integration.templates)) return;
-  try {
-    const {errors} = await discoverIntegrationTemplatesForOne(integration);
-    for (const e of errors) {
-      issues.push(error('invalid_template', e.message));
-    }
-  } catch (err) {
-    issues.push(error('invalid_template', /** @type {any} */ (err).message));
-  }
-}
-
-/**
- * Validate the integration's components via the landed ownership discovery.
- * Feature-detected: if the component-ownership export isn't present in this
- * build (sibling PR not yet merged), component validation is skipped rather
- * than hard-failing.
- *
- * `discoverIntegrationComponents` returns ownership records and does not throw
- * on a missing same-stem source — it records `sourcePath: null`. We surface
- * each such record as an `invalid_component` error.
- * @param {import('../../lib/integrations.mjs').LoadedIntegration} integration loaded-integration-shaped object
- * @param {Issue[]} issues
- */
-async function checkComponents(integration, issues) {
-  if (!integration.components || !fs.existsSync(integration.components)) return;
-  const discover = componentDiscovery.discoverIntegrationComponents;
-  if (typeof discover !== 'function') return; // feature not present yet
-  try {
-    const records = (await discover(integration)) ?? [];
-    for (const record of records) {
-      if (record?.sourcePath == null) {
-        issues.push(
-          error(
-            'invalid_component',
-            `Component "${record?.name}" is missing its same-stem source file ${record?.name}.tsx.`,
-          ),
-        );
-      }
-    }
-  } catch (err) {
-    issues.push(error('invalid_component', /** @type {any} */ (err).message));
-  }
-}
-
-/**
- * Run every contribution validator against a loaded-integration-shaped object.
- * @param {import('../../lib/integrations.mjs').LoadedIntegration} integration
- * @param {Issue[]} issues
- */
-async function runContributionChecks(integration, issues) {
-  await checkCodemods(integration, issues);
-  await checkTemplates(integration, issues);
-  await checkComponents(integration, issues);
-}
-
-/**
- * Validate an already-LOADED integration (as produced by
- * `loadIntegrations` in lib/integrations.mjs — absolute contribution roots
- * plus identity) and return its issues. This is the reuse seam for everyday
- * commands that have already loaded the configured integrations and want the
- * SAME validators that `validate-integration` runs, without re-resolving the
- * manifest from disk.
- *
- * The manifest schema is intentionally NOT re-validated here: `loadIntegrations`
- * already validated it (and throws otherwise), so by the time a command holds a
- * loaded integration the manifest is known-good. We re-run the on-disk
- * contribution checks (roots + codemods/templates/components) because those can
- * regress independently of the manifest (a deleted directory, a broken template).
- *
- * @param {import('../../lib/integrations.mjs').LoadedIntegration} loaded loaded-integration-shaped object
- * @returns {Promise<Issue[]>}
- */
-export async function validateLoadedIntegration(loaded) {
-  /** @type {Issue[]} */
-  const issues = [];
-  if (!loaded || typeof loaded !== 'object') return issues;
-  checkRoots(
-    {
-      components: loaded.components,
-      templates: loaded.templates,
-      codemods: loaded.codemods,
-    },
-    issues,
-  );
-  await runContributionChecks(loaded, issues);
-  return issues;
-}
 
 /**
  * Validate a single integration given its package directory and identity.
@@ -261,8 +137,20 @@ async function validateAtPackageDir(packageDir, identity) {
   }
 
   /** @param {string | null | undefined} value */
-  const resolveRoot = value =>
-    value == null ? undefined : path.resolve(packageDir, value);
+  const resolveRoot = (value, kind = 'contribution root') => {
+    if (value == null) return undefined;
+    try {
+      return assertWithin(value, packageDir, {label: kind});
+    } catch {
+      // If the root escapes the package, report an issue instead of crashing.
+      result.issues.push({
+        code: 'root_outside_package',
+        severity: 'error',
+        message: `The ${kind} "${value}" resolves outside the integration package directory. Contribution roots must stay within the package.`,
+      });
+      return undefined;
+    }
+  };
 
   const loaded = {
     name: identity.name,
@@ -324,7 +212,22 @@ export async function validateLocalIntegration(cwd = process.cwd()) {
  * @returns {Promise<ValidateResult>}
  */
 export async function validateInstalledIntegration(spec, cwd = process.cwd()) {
-  const packageDir = resolvePackageDir(spec, cwd);
+  // resolvePackageDir throws (path-safety guard) on a spec with path segments,
+  // `..`, or an absolute path. Every other malformed input to this command
+  // degrades into a diagnostic — so catch it here and return an issue instead
+  // of letting the throw escape to a raw stack (human) / generic ERR_UNKNOWN
+  // (--json).
+  let packageDir;
+  try {
+    packageDir = resolvePackageDir(spec, cwd);
+  } catch (err) {
+    return {
+      found: true,
+      name: spec,
+      version: undefined,
+      issues: [error('invalid_package_spec', /** @type {any} */ (err).message)],
+    };
+  }
   const pkgJsonPath = path.join(packageDir, 'package.json');
 
   /** @type {{name?: string, version?: string}} */
@@ -362,7 +265,7 @@ export async function validateInstalledIntegration(spec, cwd = process.cwd()) {
  *
  * @param {string} [pkg] installed package name; omit to validate the cwd package
  * @param {{cwd?: string}} [options]
- * @returns {Promise<import('../../types/validate-integration').ValidateIntegrationResponse>}
+ * @returns {Promise<import('./validate-integration.type.mjs').ValidateIntegrationResponse>}
  */
 export async function validateIntegration(pkg, options = {}) {
   const {cwd = process.cwd()} = options;

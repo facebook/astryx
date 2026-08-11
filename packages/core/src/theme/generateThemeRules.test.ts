@@ -385,6 +385,48 @@ describe('derived var expansion', () => {
     expect(rule).toContain('--_button-radius: 8px');
   });
 
+  it('emits direct rules for avatar fallback background, color, and weight', () => {
+    const theme = defineTheme({
+      name: 'test-avatar-fallback',
+      components: {
+        'avatar-fallback': {
+          base: {
+            backgroundColor: 'var(--color-accent-muted)',
+            color: 'var(--color-text-secondary)',
+            fontWeight: 'var(--font-weight-normal)',
+          },
+        },
+      },
+    });
+    const rules = generateThemeRules(theme);
+    const rule = rules.find(r => r.includes('.astryx-avatar-fallback'));
+    expect(rule).toBeDefined();
+    expect(rule).toContain('background-color: var(--color-accent-muted)');
+    expect(rule).toContain('color: var(--color-text-secondary)');
+    expect(rule).toContain('font-weight: var(--font-weight-normal)');
+    // These are direct class targets now, not internal derived vars.
+    expect(rule).not.toContain('--_avatar-fallback-background');
+    expect(rule).not.toContain('--_avatar-fallback-color');
+    expect(rule).not.toContain('--_avatar-fallback-font-weight');
+  });
+
+  it('emits a direct per-size font-size rule for the avatar fallback target', () => {
+    const theme = defineTheme({
+      name: 'test-avatar-fallback-size',
+      components: {
+        'avatar-fallback': {
+          'size:sm': {fontSize: '9px'},
+        },
+      },
+    });
+    const rules = generateThemeRules(theme);
+    const rule = rules.find(r => r.includes('.astryx-avatar-fallback.sm'));
+    expect(rule).toBeDefined();
+    expect(rule).toContain('font-size: 9px');
+    // Direct class target now — no internal derived var.
+    expect(rule).not.toContain('--_avatar-fallback-font-size');
+  });
+
   it('does not emit derived vars for components without registry entries', () => {
     const theme = defineTheme({
       name: 'test-no-derived',
@@ -432,6 +474,27 @@ describe('derived var expansion', () => {
     expect(rule).toBeDefined();
     expect(rule).toContain('border-radius: 16px');
     expect(rule).toContain('--_card-radius: 16px');
+  });
+
+  it('replaces paddingInline with the var for textarea (no raw property)', () => {
+    const theme = defineTheme({
+      name: 'test-derived-textarea',
+      components: {
+        textarea: {
+          base: {paddingInline: 'var(--eps-input-padding-x)'},
+        },
+      },
+    });
+    const rules = generateThemeRules(theme);
+    const rule = rules.find(r => r.includes('.astryx-textarea'));
+    expect(rule).toBeDefined();
+    // Value flows to the inner <textarea> via the var…
+    expect(rule).toContain(
+      '--_textarea-inline-padding: var(--eps-input-padding-x)',
+    );
+    // …and must NOT land on the flush wrapper, which would re-inset the
+    // full-bleed textarea and push the native resize grip off the corner.
+    expect(rule).not.toContain('padding-inline: var(--eps-input-padding-x)');
   });
 });
 

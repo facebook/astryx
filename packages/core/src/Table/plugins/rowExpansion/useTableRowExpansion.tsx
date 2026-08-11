@@ -7,6 +7,9 @@
  * @input React, StyleX, Icon, Table types
  * @output Exports useTableRowExpansion hook + config/state types
  * @position Row-expansion plugin; consumed by Table via plugins prop
+ * @deprecated Superseded by the tree plugin (useTableTreeData +
+ *   useTableTreeState). Kept for back-compat; new tree tables should use the
+ *   tree plugin. See the migration guide on useTableRowExpansion.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Table/index.ts (exports)
@@ -16,6 +19,7 @@ import {useCallback, useMemo, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars, colorVars, radiusVars} from '../../../theme/tokens.stylex';
 import {Icon} from '../../../Icon';
+import {rtlStyles} from '../../../utils';
 import {resolveContextActions} from '../../tableContextMenu';
 import {useTranslator} from '../../../i18n';
 import type {
@@ -105,9 +109,14 @@ export interface UseTableRowExpansionStateResult<
 
 /**
  * Manages row-expansion state and derives the config for
- * {@link useTableRowExpansion}. This is the recommended entry point — it
- * removes the boilerplate of flattening the tree, tracking depth, and
- * computing the expand-all state.
+ * {@link useTableRowExpansion}.
+ *
+ * @deprecated Use `useTableTreeState` (with `useTableTreeData`) instead. The
+ * tree plugin covers the same affordances (expand-all header control,
+ * whole-row click) with a cycle guard and per-row fine-grained re-render. See
+ * the migration guide on `useTableRowExpansion` (`astryx component
+ * useTableRowExpansion --detail full`) for the before/after and config
+ * mapping.
  *
  * @example
  * ```
@@ -311,13 +320,26 @@ const expansionStyles = stylex.create({
       color: colorVars['--color-icon-primary'],
     },
   },
-  chevronExpanded: {
-    transform: 'rotate(90deg)',
-  },
   chevronIcon: {
-    display: 'inline-flex',
     transitionProperty: 'transform',
     transitionDuration: '150ms',
+  },
+  // The RTL mirror is folded into each state's transform rather than living on
+  // a parent span. Both are `transform`, so on one element the later value
+  // would win — spelling out `scaleX(-1) rotate(...)` per state composes them
+  // exactly as the nested elements did, while leaving a single element to
+  // carry the glyph's theme target.
+  chevronIconCollapsed: {
+    transform: {
+      default: 'rotate(0deg)',
+      ':is([dir="rtl"] *)': 'scaleX(-1) rotate(0deg)',
+    },
+  },
+  chevronIconExpanded: {
+    transform: {
+      default: 'rotate(90deg)',
+      ':is([dir="rtl"] *)': 'scaleX(-1) rotate(90deg)',
+    },
   },
   indentedCell: {
     display: 'flex',
@@ -361,13 +383,19 @@ function ExpansionChevron({
       }}
       aria-label={ariaLabel}
       aria-expanded={isExpanded}>
-      <span
-        {...stylex.props(
+      <Icon
+        icon="chevronRight"
+        size="xsm"
+        // The rotation rides on the glyph rather than a wrapper span so the
+        // theme target below reaches both the mark and its open/closed
+        // transform.
+        xstyle={[
           expansionStyles.chevronIcon,
-          isExpanded && expansionStyles.chevronExpanded,
-        )}>
-        <Icon icon="chevronRight" size="xsm" />
-      </span>
+          isExpanded
+            ? expansionStyles.chevronIconExpanded
+            : expansionStyles.chevronIconCollapsed,
+        ]}
+      />
     </button>
   );
 }
@@ -376,6 +404,16 @@ function ExpansionChevron({
 // Hook
 // =============================================================================
 
+/**
+ * Returns a TablePlugin implementing expandable rows with inherited columns.
+ *
+ * @deprecated Use `useTableTreeData` (with `useTableTreeState`) instead. The
+ * tree plugin covers the same affordances (expand-all header control,
+ * whole-row click) with a cycle guard and per-row fine-grained re-render. See
+ * the migration guide on this hook's docs (`astryx component
+ * useTableRowExpansion --detail full`) for the before/after and config
+ * mapping.
+ */
 export function useTableRowExpansion<T extends Record<string, unknown>>(
   config: UseTableRowExpansionConfig<T>,
 ): TablePlugin<T> {
@@ -533,13 +571,18 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
                     ? t('@astryx.tableRowExpansion.collapseAllRows')
                     : t('@astryx.tableRowExpansion.expandAllRows')
                 }>
-                <span
-                  {...stylex.props(
+                <Icon
+                  icon="chevronRight"
+                  size="xsm"
+                  // Same one-element treatment as the row chevron: the glyph
+                  // carries both the rotation and the theme target.
+                  xstyle={[
                     expansionStyles.chevronIcon,
-                    allExpanded && expansionStyles.chevronExpanded,
-                  )}>
-                  <Icon icon="chevronRight" size="xsm" />
-                </span>
+                    allExpanded
+                      ? expansionStyles.chevronIconExpanded
+                      : expansionStyles.chevronIconCollapsed,
+                  ]}
+                />
               </button>
             ),
           };
@@ -571,12 +614,15 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
             {
               id: 'row-expansion-toggle',
               group: 'row-expansion',
-              label: isExpanded ? 'Collapse row' : 'Expand row',
+              label: isExpanded
+                ? t('@astryx.tableRowExpansion.collapseRow')
+                : t('@astryx.tableRowExpansion.expandRow'),
               icon: (
                 <Icon
                   icon={isExpanded ? 'chevronDown' : 'chevronRight'}
                   size="xsm"
                   aria-hidden
+                  xstyle={rtlStyles.mirror}
                 />
               ),
               onSelect: () => onToggle(key),

@@ -13,7 +13,7 @@
  * - /packages/core/src/Field/Field.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Field/index.ts (exports if types change)
  * - /apps/storybook/stories/Field.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Field/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Field/ (showcase blocks)
  */
 
 import {type ReactNode, use} from 'react';
@@ -22,6 +22,7 @@ import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {FieldLabel} from './FieldLabel';
 import {FieldStatus} from '../FieldStatus/FieldStatus';
+import type {FieldStatusVariant} from '../FieldStatus/FieldStatus';
 import {spacingVars, borderVars} from '../theme/tokens.stylex';
 import type {IconType} from '../Icon';
 import {mergeProps} from '../utils';
@@ -156,9 +157,10 @@ export interface FieldProps extends Omit<
    * How the status message is rendered relative to the input.
    * - 'attached': Status sits directly below the input (default, for bordered inputs)
    * - 'detached': Status is a separate element below the field (for checkboxes, switches, sliders)
+   * - 'tooltip': No message box; the input surfaces status through a tooltip on its on-field icon
    * @default 'attached'
    */
-  statusVariant?: 'attached' | 'detached';
+  statusVariant?: FieldStatusVariant;
   /**
    * Width of the field. Numbers are treated as pixels, strings are used as-is
    * (e.g. `'100%'`). Sizes the whole field — label, control, and status — so
@@ -239,14 +241,17 @@ export function Field({
     />
   );
 
-  const statusNode = status?.message ? (
-    <FieldStatus
-      type={status.type}
-      message={status.message}
-      id={resolvedMessageID}
-      variant={statusVariant}
-    />
-  ) : null;
+  // The 'tooltip' variant surfaces status through the input's on-field icon
+  // tooltip, so Field renders no message box for it.
+  const statusNode =
+    status?.message && statusVariant !== 'tooltip' ? (
+      <FieldStatus
+        type={status.type}
+        message={status.message}
+        id={resolvedMessageID}
+        variant={statusVariant}
+      />
+    ) : null;
 
   // ─── Horizontal-labels mode ───────────────────────────────────────────
   // Use display:contents so the parent grid's `auto 1fr` columns place

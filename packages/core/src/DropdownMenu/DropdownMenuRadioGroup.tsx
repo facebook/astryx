@@ -49,16 +49,13 @@ export interface DropdownMenuRadioGroupProps extends Omit<
    */
   onChange: (value: string) => void;
   /**
-   * Accessible label for the group. Required (together with `aria-labelledby`,
-   * one of the two) so screen readers announce the radios as a named set,
-   * e.g. "Sort by".
+   * Accessible name for the group, announced by screen readers so the radios
+   * read as a named set (e.g. "Sort by"). Applied as the group's `aria-label`.
+   * Required -- an unnamed radio group is an accessibility defect. Pass
+   * `aria-labelledby` (via base props) instead if the name already exists as a
+   * visible element on the page.
    */
-  'aria-label'?: string;
-  /**
-   * The id of an element that labels the group, as an alternative to
-   * `aria-label`.
-   */
-  'aria-labelledby'?: string;
+  label: string;
   /**
    * Whether selecting a value closes the menu. Radio items default to closing
    * on selection (a single-choice commit), unlike checkbox items which stay
@@ -82,7 +79,7 @@ export interface DropdownMenuRadioGroupProps extends Omit<
  *   DropdownMenuRadioItem,
  * } from '@astryxdesign/core/DropdownMenu';
  * <DropdownMenu button={{label: 'Sort'}}>
- *   <DropdownMenuRadioGroup value={sort} onChange={setSort} aria-label="Sort by">
+ *   <DropdownMenuRadioGroup value={sort} onChange={setSort} label="Sort by">
  *     <DropdownMenuRadioItem value="newest" label="Newest" />
  *     <DropdownMenuRadioItem value="oldest" label="Oldest" />
  *   </DropdownMenuRadioGroup>
@@ -92,6 +89,7 @@ export interface DropdownMenuRadioGroupProps extends Omit<
 export function DropdownMenuRadioGroup({
   value,
   onChange,
+  label,
   hasCloseOnSelect = true,
   children,
   className,
@@ -107,6 +105,7 @@ export function DropdownMenuRadioGroup({
     <div
       {...rest}
       role="group"
+      aria-label={label}
       {...mergeProps(stylex.props(styles.group), {className, style})}>
       <DropdownMenuRadioGroupContext value={contextValue}>
         {children}

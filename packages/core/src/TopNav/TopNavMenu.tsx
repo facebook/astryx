@@ -13,7 +13,7 @@
  * - /packages/core/src/TopNav/TopNav.doc.mjs
  * - /packages/core/src/TopNav/TopNavMenu.test.tsx
  * - /packages/core/src/TopNav/index.ts
- * - /packages/cli/templates/blocks/components/TopNav/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/TopNav/ (showcase blocks)
  */
 
 import React, {
@@ -28,7 +28,7 @@ import {usePopover} from '../Popover/usePopover';
 import {useMenuHover} from '../hooks/useMenuHover';
 import {useListFocus} from '../hooks/useListFocus';
 import {useTypeahead} from '../hooks/useTypeahead';
-import {getIcon} from '../Icon/globalIconRegistry';
+import {Icon} from '../Icon';
 import {mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {navItemStyles} from '../NavItem/navItemStyles.stylex';
@@ -92,6 +92,14 @@ const styles = stylex.create({
   chevron: {
     display: 'inline-flex',
     alignItems: 'center',
+    // The registry chevron is a 1em SVG, so it has always rendered at the
+    // trigger's own font size (--text-label-size). Icon's size box would repin
+    // it to a fixed rem (the nearest, sm, is 1rem = 16px vs the 14px here), so
+    // hold it on the inherited em: same pixels, and still tracks the type
+    // scale when a theme changes the label size.
+    width: '1em',
+    height: '1em',
+    fontSize: 'inherit',
     transitionProperty: 'transform',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
@@ -179,6 +187,11 @@ const drawerStyles = stylex.create({
   },
   chevron: {
     display: 'inline-flex',
+    // Same em pin as styles.chevron above — the drawer header inherits
+    // --text-label-size from navItemStyles.item.
+    width: '1em',
+    height: '1em',
+    fontSize: 'inherit',
     transitionProperty: 'transform',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
@@ -440,13 +453,15 @@ export function TopNavMenu({
           aria-controls={`${menuId}-items`}
           {...stylex.props(navItemStyles.item, drawerStyles.header)}>
           {label}
-          <span
-            {...stylex.props(
+          <Icon
+            icon="chevronDown"
+            size="sm"
+            color="inherit"
+            xstyle={[
               drawerStyles.chevron,
               drawerExpanded && drawerStyles.chevronExpanded,
-            )}>
-            {getIcon('chevronDown')}
-          </span>
+            ]}
+          />
         </button>
         <div
           id={`${menuId}-items`}
@@ -498,13 +513,12 @@ export function TopNavMenu({
           stylex.props(styles.trigger, popover.isOpen && styles.triggerOpen),
         )}>
         {label}
-        <span
-          {...stylex.props(
-            styles.chevron,
-            popover.isOpen && styles.chevronOpen,
-          )}>
-          {getIcon('chevronDown')}
-        </span>
+        <Icon
+          icon="chevronDown"
+          size="sm"
+          color="inherit"
+          xstyle={[styles.chevron, popover.isOpen && styles.chevronOpen]}
+        />
       </button>
       {popover.render(
         <div

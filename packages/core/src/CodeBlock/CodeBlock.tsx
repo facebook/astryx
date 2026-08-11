@@ -88,6 +88,23 @@ const dynamicStyles = stylex.create({
   }),
 });
 
+// Light reveal so the leading chevron eases into view instead of popping in.
+// Growing the chevron's own footprint (width + inline margin) from zero slides
+// the title into place instead of snapping it over, and clipping keeps the
+// glyph from spilling while it's mid-reveal.
+const chevronReveal = stylex.keyframes({
+  from: {
+    width: 0,
+    marginInlineEnd: 0,
+    opacity: 0,
+  },
+  to: {
+    width: '14px',
+    marginInlineEnd: spacingVars['--spacing-1'],
+    opacity: 1,
+  },
+});
+
 const styles = stylex.create({
   root: {
     position: 'relative',
@@ -133,7 +150,6 @@ const styles = stylex.create({
   headerTitle: {
     display: 'flex',
     alignItems: 'center',
-    gap: spacingVars['--spacing-1'],
     fontSize: typeScaleVars['--text-supporting-size'],
     fontFamily: typographyVars['--font-family-code'],
     fontWeight: fontWeightVars['--font-weight-medium'],
@@ -173,13 +189,28 @@ const styles = stylex.create({
     flexShrink: 0,
     width: '14px',
     height: '14px',
+    marginInlineEnd: spacingVars['--spacing-1'],
+    overflow: 'hidden',
     color: 'var(--color-syntax-comment)',
+    animationName: {
+      default: chevronReveal,
+      '@media (prefers-reduced-motion: reduce)': 'none',
+    },
+    animationDuration: durationVars['--duration-medium'],
+    animationTimingFunction: easeVars['--ease-standard'],
+  },
+  // Applied to the chevron <Icon> (via `xstyle`): the glyph is the element that
+  // rotates and the element a theme targets, so one selector reaches both.
+  collapseChevronIcon: {
     transitionProperty: 'transform',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
   },
-  collapseChevronCollapsed: {
-    transform: 'rotate(180deg)',
+  collapseChevronExpanded: {
+    // Leading disclosure convention (matches TreeList/Table): the resting
+    // chevronRight points right (>) when collapsed; rotate it down (v) when
+    // expanded.
+    transform: 'rotate(90deg)',
   },
   headerCollapsible: {
     cursor: 'pointer',
@@ -296,7 +327,7 @@ const styles = stylex.create({
   copyButtonAbsolute: {
     position: 'absolute',
     top: spacingVars['--spacing-2'],
-    right: spacingVars['--spacing-2'],
+    insetInlineEnd: spacingVars['--spacing-2'],
   },
 });
 
@@ -759,7 +790,7 @@ export function CodeBlock({
       setCopied(true);
       // Swapping the button's aria-label alone isn't reliably announced by
       // screen readers, so confirm the copy via a polite live region.
-      announce('Copied');
+      announce(t('@astryx.codeBlock.copied'));
       onCopy?.();
       // Restart the reset timer on every copy — otherwise a rapid re-copy
       // is reverted early by the previous click's timer.
@@ -773,7 +804,7 @@ export function CodeBlock({
     } catch {
       // Clipboard failures leave the copied state unchanged.
     }
-  }, [code, onCopy, announce]);
+  }, [code, onCopy, announce, t]);
 
   const sizeStyle = size === 'sm' ? styles.sizeSm : styles.sizeMd;
   // Digits in the largest line number — sizes the gutter column width.
@@ -845,18 +876,22 @@ export function CodeBlock({
           canCollapse && styles.headerCollapsible,
         )}>
         <span {...stylex.props(styles.headerTitle)}>
+          {canCollapse && (
+            <span {...stylex.props(styles.collapseChevron)}>
+              <Icon
+                icon="chevronRight"
+                size="xsm"
+                color="inherit"
+                xstyle={[
+                  styles.collapseChevronIcon,
+                  !isCollapsed && styles.collapseChevronExpanded,
+                ]}
+              />
+            </span>
+          )}
           {title}
           {title && languageLabel ? ' — ' : ''}
           {languageLabel}
-          {canCollapse && (
-            <span
-              {...stylex.props(
-                styles.collapseChevron,
-                isCollapsed && styles.collapseChevronCollapsed,
-              )}>
-              <Icon icon="chevronDown" size="xsm" color="inherit" />
-            </span>
-          )}
         </span>
       </div>
       {copyButtonEl}

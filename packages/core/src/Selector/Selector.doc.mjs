@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'Selector',
@@ -21,8 +21,16 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-selector', visualProps: ['size', 'status']},
+      {
+        className: 'astryx-selector',
+        visualProps: ['variant', 'size', 'status'],
+        states: ['disabled'],
+      },
       {className: 'astryx-selector-option'},
+      {className: 'astryx-selector-empty-state'},
+      {className: 'astryx-selector-clear-icon'},
+      {className: 'astryx-selector-indicator-icon', states: ['state']},
+      {className: 'astryx-selector-check'},
     ],
   },
   description: 'Dropdown selector for choosing from a list of options.',
@@ -61,7 +69,7 @@ export const docs = {
       name: 'hasSearch',
       type: 'boolean',
       description:
-        'Whether to show a search input for filtering options. As the user types, the match count (or "No results found") is announced to screen readers via a polite live region.',
+        'Whether to show a search input for filtering options. As the user types, the match count (or "No results found") is announced to screen readers via a polite live region. The search field has built-in affordances: a leading magnifier icon and, once a query is typed, a trailing clear (✕) button that resets the query and returns focus to the input.',
       default: 'false',
     },
     {
@@ -81,6 +89,13 @@ export const docs = {
       type: "'sm' | 'md' | 'lg'",
       description: 'Size variant for the selector.',
       default: "'md'",
+    },
+    {
+      name: 'variant',
+      type: "'input' | 'ghost'",
+      description:
+        'Visual trigger style. input is the bordered input treatment for forms; ghost is borderless and matches ghost buttons for toolbar usage.',
+      default: "'input'",
     },
     {
       name: 'isDisabled',
@@ -129,10 +144,23 @@ export const docs = {
       description: 'Validation status with an optional message.',
     },
     {
+      name: 'statusVariant',
+      type: "'attached' | 'detached' | 'tooltip'",
+      description:
+        'How the status message is placed relative to the input. attached overlaps directly below the bordered input and is only valid for the input variant; ghost selectors detach attached status messages by default. Use tooltip for compact toolbar controls.',
+      default: "'attached' for input selectors; 'detached' for ghost selectors",
+    },
+    {
       name: 'renderOption',
       type: '(option: SelectorOptionData) => ReactNode',
       description:
         'Custom render function for each selectable option in the dropdown. Use this instead of JSX children; dividers and sections are rendered by the selector.',
+    },
+    {
+      name: 'width',
+      type: 'SizeValue',
+      description:
+        'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
     },
     {
       name: 'xstyle',
@@ -170,6 +198,11 @@ export const docs = {
         guidance: true,
         description:
           'Use inside InputGroup only when the selector needs a short prefix or suffix addon as part of one decorated input surface.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use variant="ghost" when a selector sits in a toolbar with ghost buttons. If validation status is needed there, prefer statusVariant="tooltip" so the toolbar height stays compact.',
       },
       {
         guidance: false,
@@ -237,7 +270,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsZh = {
   usage: {
     description:
@@ -329,7 +362,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   usage: {
     description:
@@ -359,6 +392,11 @@ export const docsDense = {
         guidance: true,
         description:
           'Use inside InputGroup only when the selector needs a short prefix or suffix addon.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use variant="ghost" in toolbars with ghost buttons; prefer statusVariant="tooltip" for compact validation status.',
       },
       {
         guidance: false,

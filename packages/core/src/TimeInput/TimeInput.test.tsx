@@ -571,3 +571,53 @@ describe('TimeInput', () => {
     });
   });
 });
+
+describe('TimeInput statusVariant forwarding', () => {
+  it('defaults to attached (status renders with data-variant="attached")', () => {
+    const {container} = render(
+      <TimeInput
+        label="Start"
+        value={undefined}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Required'}}
+      />,
+    );
+    expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+      'data-variant',
+      'attached',
+    );
+  });
+
+  it('forwards statusVariant="detached" to the underlying Field status', () => {
+    const {container} = render(
+      <TimeInput
+        label="Start"
+        value={undefined}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Required'}}
+        statusVariant="detached"
+      />,
+    );
+    expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+      'data-variant',
+      'detached',
+    );
+  });
+});
+
+describe('TimeInput disabled theme state', () => {
+  it('reflects disabled on the root target so themes can gate paint on it', () => {
+    const {container} = render(
+      <TimeInput label="Time" onChange={() => {}} isDisabled />,
+    );
+    const root = container.querySelector('.astryx-time-input');
+    expect(root).toHaveAttribute('data-disabled', 'disabled');
+    expect(root).toHaveClass('disabled');
+  });
+
+  it('omits data-disabled when enabled, like status does', () => {
+    const {container} = render(<TimeInput label="Time" onChange={() => {}} />);
+    const root = container.querySelector('.astryx-time-input');
+    expect(root).not.toHaveAttribute('data-disabled');
+  });
+});

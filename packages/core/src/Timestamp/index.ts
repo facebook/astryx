@@ -13,3 +13,7 @@
 
 export {Timestamp} from './Timestamp';
 export type {TimestampProps, TimestampFormat} from './Timestamp';
+export type {
+  TimestampTooltipEntry,
+  TimestampTooltipFormat,
+} from './tooltipEntries';

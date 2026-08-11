@@ -11,7 +11,7 @@
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
-import {Dialog} from './Dialog';
+import {Dialog, resolveDialogPositionOffsets} from './Dialog';
 import {DialogHeader} from './DialogHeader';
 
 // Mock showModal and close methods since they're not fully implemented in jsdom
@@ -190,7 +190,7 @@ describe('Dialog', () => {
         <Dialog
           isOpen={true}
           onOpenChange={() => {}}
-          position={{top: 100, right: 20}}>
+          position={{top: 100, end: 20}}>
           Content
         </Dialog>,
       );
@@ -202,11 +202,54 @@ describe('Dialog', () => {
         <Dialog
           isOpen={true}
           onOpenChange={() => {}}
-          position={{top: '10vh', left: '5vw'}}>
+          position={{top: '10vh', start: '5vw'}}>
           Content
         </Dialog>,
       );
       expect(screen.getByRole('dialog')).toBeInTheDocument();
+    });
+
+    it('accepts logical start/end position configuration', () => {
+      render(
+        <Dialog
+          isOpen={true}
+          onOpenChange={() => {}}
+          position={{top: 100, start: 20, end: 40}}>
+          Content
+        </Dialog>,
+      );
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+    });
+  });
+
+  // Physical-vs-logical mapping is verified against the pure resolver so we can
+  // assert the exact emitted CSS offsets without relying on StyleX class
+  // compilation or a browser. The public DialogPosition union forbids mixing
+  // logical and physical inline offsets (enforced at compile time, below), so
+  // the resolver has no precedence logic — it just maps what it's given.
+  describe('resolveDialogPositionOffsets (physical-vs-logical mapping)', () => {
+    it('maps logical start/end to inset-inline offsets (mirror under RTL)', () => {
+      // insetInlineStart/End are direction-relative: the browser resolves them
+      // to left/right per `dir`, so the same value mirrors under RTL.
+      const offsets = resolveDialogPositionOffsets({start: 20, end: 40});
+      expect(offsets.insetInlineStart).toBe('20px');
+      expect(offsets.insetInlineEnd).toBe('40px');
+      // No physical offsets requested → auto.
+    });
+
+    it('combines block-axis top/bottom with an inline pair', () => {
+      const offsets = resolveDialogPositionOffsets({top: 100, start: 12});
+      expect(offsets.top).toBe('100px');
+      expect(offsets.insetInlineStart).toBe('12px');
+      // Everything unset falls back to auto.
+      expect(offsets.bottom).toBe('auto');
+      expect(offsets.insetInlineEnd).toBe('auto');
+    });
+
+    it('passes through string offsets (vw/vh/etc.) for logical offsets', () => {
+      const logical = resolveDialogPositionOffsets({start: '5vw', end: '10%'});
+      expect(logical.insetInlineStart).toBe('5vw');
+      expect(logical.insetInlineEnd).toBe('10%');
     });
   });
 

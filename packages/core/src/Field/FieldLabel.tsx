@@ -1,18 +1,21 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+'use client';
+
 /**
  * @file FieldLabel.tsx
- * @input Uses React, Icon, IconType
+ * @input Uses React, Icon, IconType, useTranslator
  * @output Exports FieldLabel component, FieldLabelProps
  * @position Core label implementation; used by Field, CheckboxInput, Switch
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Field/Field.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/Field/index.ts (exports if types change)
- * - /packages/cli/templates/blocks/components/Field/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Field/ (showcase blocks)
+ * - /packages/core/locales/en.json (@astryx.field.required / @astryx.field.optional)
  */
 
-import type {ReactNode} from 'react';
+import {useMemo, useRef, type ReactNode, type RefObject} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
 import {mergeProps} from '../utils';
@@ -26,7 +29,9 @@ import {
 } from '../theme/tokens.stylex';
 import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {Tooltip} from '../Tooltip';
+import {useTranslator} from '../i18n';
 import {themeProps} from '../utils/themeProps';
+import {useInputContainer} from '../hooks';
 
 const styles = stylex.create({
   label: {
@@ -48,7 +53,7 @@ const styles = stylex.create({
     borderStyle: 'none',
     clip: 'rect(0, 0, 0, 0)',
     height: 1,
-    left: 0,
+    insetInlineStart: 0,
     margin: -1,
     overflow: 'hidden',
     padding: 0,
@@ -71,6 +76,11 @@ const styles = stylex.create({
     lineHeight: typeScaleVars['--text-supporting-leading'],
     fontWeight: fontWeightVars['--font-weight-normal'],
     color: colorVars['--color-text-secondary'],
+  },
+  // When the description forwards clicks to a click-activatable control
+  // (checkbox/switch), it reads as part of the same hit target as the label.
+  descriptionClickable: {
+    cursor: 'pointer',
   },
 });
 
@@ -177,13 +187,53 @@ export function FieldLabel({
   ref,
   ...rest
 }: FieldLabelProps) {
-  const statusText = isOptional ? 'Optional' : isRequired ? 'Required' : null;
+  const t = useTranslator();
+  const statusText = isOptional
+    ? t('@astryx.field.optional')
+    : isRequired
+      ? t('@astryx.field.required')
+      : null;
 
   // A group label (e.g. for a radiogroup) must not be a literal `<label>`
   // element: a `<label>` semantically names a single form control and can't be
   // associated with a group. Render it as a `<span>` instead, keeping all the
   // label styling and slots. The group references it via `aria-labelledby`.
   const LabelElement = isGroupLabel ? 'span' : 'label';
+
+  // Clicking the description forwards to the associated control, so the whole
+  // label area (label text + description) is one hit target — mirroring native
+  // `<label>` click behavior, which the description can't get from `htmlFor`
+  // because it stays a sibling `<span>` (nesting it in the `<label>` would fold
+  // it into the control's accessible name and double-announce it alongside
+  // `aria-describedby`). A group label names a group, not one control, so it
+  // has nothing to forward to.
+  const forwardsDescriptionClick = !isGroupLabel && inputID != null;
+
+  // Reuse `useInputContainer` — the same hook input wrappers use to forward
+  // clicks on non-interactive chrome to their control. It skips nested
+  // interactive content (a link/button inside a ReactNode description) and
+  // guards against forwarding during text selection, so the description needs
+  // no bespoke click logic. The "input" is resolved from `inputID` lazily via
+  // a ref-shaped object, since FieldLabel points at the control by id rather
+  // than holding a ref to it.
+  const descriptionRef = useRef<HTMLSpanElement>(null);
+  const controlRef = useMemo<RefObject<HTMLElement | null>>(
+    () => ({
+      get current() {
+        return inputID == null
+          ? null
+          : (descriptionRef.current?.ownerDocument.getElementById(inputID) ??
+              null);
+      },
+      set current(_value) {},
+    }),
+    [inputID],
+  );
+  const descriptionClickProps = useInputContainer({
+    containerRef: descriptionRef,
+    inputRef: controlRef,
+    disabled: !forwardsDescriptionClick,
+  });
 
   const labelContent = (
     <>
@@ -227,8 +277,14 @@ export function FieldLabel({
       </LabelElement>
       {description && (
         <span
+          ref={forwardsDescriptionClick ? descriptionRef : undefined}
           id={descriptionID}
-          {...stylex.props(styles.description, isLabelHidden && styles.srOnly)}>
+          {...(forwardsDescriptionClick ? descriptionClickProps : undefined)}
+          {...stylex.props(
+            styles.description,
+            forwardsDescriptionClick && styles.descriptionClickable,
+            isLabelHidden && styles.srOnly,
+          )}>
           {description}
         </span>
       )}

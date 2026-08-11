@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'PowerSearch',
@@ -91,6 +91,13 @@ export const docs = {
       slotElements: [{__element: 'Icon', props: {icon: 'search', size: 'sm'}}],
     },
     {
+      name: 'statusVariant',
+      type: "'attached' | 'detached'",
+      description:
+        'How the status message is placed relative to the input. attached overlaps directly below the input (bordered treatment); detached floats below as a separate element with spacing.',
+      default: "'attached'",
+    },
+    {
       name: 'maxTokenLength',
       type: 'number',
       description: 'Max character length for filter value display in tokens.',
@@ -165,7 +172,7 @@ export const docs = {
 // See .context/decisions/dense-compression-protocol.md
 // -------------------------------------------------------
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docsZh = {
   name: 'PowerSearch',
   displayName: 'Power Search',
@@ -249,6 +256,13 @@ export const docsZh = {
         '在输入框开头（筛选 token 之前）显示的图标，转发给内部的 Tokenizer。接受语义图标名称、SVG 图标组件或直接传入 ReactNode。',
     },
     {
+      name: 'statusVariant',
+      type: "'attached' | 'detached'",
+      description:
+        '状态消息相对于输入框的放置方式。attached 直接叠加在输入框下方（带边框处理）；detached 作为独立元素浮于下方并留有间距。',
+      default: "'attached'",
+    },
+    {
       name: 'maxTokenLength',
       type: 'number',
       description: '令牌中过滤器值显示的最大字符长度。',
@@ -305,7 +319,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
     'Structured filter bar where each token represents filter (field+operator+value). Users select fields from typeahead dropdown, configure operators+values in edit popover, manage filters as removable tokens.',
@@ -332,6 +346,7 @@ export const docsDense = {
     isDisabled: 'Disables entire component.',
     status: 'Validation status object w/ type + optional message.',
     startIcon: 'Icon at input start, before filter tokens. Forwarded to internal Tokenizer.',
+    statusVariant: 'How status message is placed: attached overlaps below input; detached floats below w/ spacing.',
     maxTokenLength: 'Max char length for filter value display in tokens.',
     popoverSaveButtonLabel: 'Label for save button in edit popover.',
     timezoneID: 'Timezone ID for date formatting (e.g. "America/New_York").',

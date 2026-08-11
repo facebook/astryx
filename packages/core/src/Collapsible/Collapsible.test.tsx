@@ -72,6 +72,13 @@ describe('Collapsible', () => {
       expect(screen.getByTestId('root')).toHaveClass('astryx-collapsible');
     });
 
+    it('renders the stable astryx-collapsible-trigger class on the trigger button', () => {
+      render(<Collapsible trigger="T">c</Collapsible>);
+      expect(screen.getByRole('button')).toHaveClass(
+        'astryx-collapsible-trigger',
+      );
+    });
+
     it('renders the stable astryx-collapsible-content class on the content area', () => {
       render(<Collapsible trigger="T">c</Collapsible>);
       const content = contentFor(screen.getByRole('button'));

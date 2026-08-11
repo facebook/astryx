@@ -25,6 +25,11 @@ const meta: Meta<typeof TreeList> = {
       options: ['compact', 'balanced', 'spacious'],
       description: 'Spacing density for tree list items',
     },
+    variant: {
+      control: 'select',
+      options: ['lineGuides', 'noGuides'],
+      description: 'Hierarchy guide-line treatment',
+    },
   },
 };
 
@@ -498,4 +503,35 @@ export const ThemedGuides: Story = {
       <TreeList items={guideItems} />
     </Theme>
   ),
+};
+
+/**
+ * The `variant` prop selects the base guide-line look, orthogonal to `density`
+ * (which owns spacing). `lineGuides` (default) draws the connector lines;
+ * `noGuides` hides them while keeping the indentation intact, so nesting is
+ * conveyed by indent alone. The guides remain themeable via the
+ * `astryx-tree-list-guide` target regardless of variant.
+ */
+export const Variants: Story = {
+  render: () => (
+    <div style={{display: 'flex', gap: 48, alignItems: 'flex-start'}}>
+      <div>
+        <div style={{marginBottom: 8, fontWeight: 600}}>
+          lineGuides (default)
+        </div>
+        <TreeList items={guideItems} variant="lineGuides" />
+      </div>
+      <div>
+        <div style={{marginBottom: 8, fontWeight: 600}}>noGuides</div>
+        <TreeList items={guideItems} variant="noGuides" />
+      </div>
+    </div>
+  ),
+};
+
+export const NoGuides: Story = {
+  args: {
+    items: guideItems,
+    variant: 'noGuides',
+  },
 };

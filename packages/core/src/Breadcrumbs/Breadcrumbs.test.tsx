@@ -519,7 +519,7 @@ describe('BreadcrumbItem menu', () => {
         <BreadcrumbItem
           menu={
             <BreadcrumbMenuRadioGroup
-              aria-label="Sort by"
+              label="Sort by"
               value="name"
               onChange={onChange}>
               <BreadcrumbMenuRadioItem value="name" label="Name" />
@@ -586,6 +586,57 @@ describe('BreadcrumbItem menu', () => {
     fireEvent.keyDown(menu, {key: 'ArrowDown'});
     expect(
       screen.getByRole('menuitem', {name: 'Engineering', hidden: true}),
+    ).toHaveFocus();
+  });
+
+  it('renders a submenu from a nested items array and keyboard-reaches an item after it', async () => {
+    // Breadcrumb menus reuse the DropdownMenu item pipeline, so a nested
+    // `items` array becomes a submenu. The inline flyout must not pollute the
+    // breadcrumb menu's roving order — an item after the submenu row stays
+    // keyboard-reachable.
+    const onDelete = vi.fn();
+    render(
+      <Breadcrumbs>
+        <BreadcrumbItem
+          menu={[
+            {label: 'Rename', onClick: vi.fn()},
+            {
+              label: 'Move to',
+              items: [
+                {label: 'Folder A', onClick: vi.fn()},
+                {label: 'Folder B', onClick: vi.fn()},
+              ],
+            },
+            {type: 'divider'},
+            {label: 'Delete', onClick: onDelete},
+          ]}>
+          Teams
+        </BreadcrumbItem>
+        <BreadcrumbItem isCurrent>Overview</BreadcrumbItem>
+      </Breadcrumbs>,
+    );
+    const trigger = screen.getByRole('button', {name: 'Teams'});
+    trigger.focus();
+    fireEvent.keyDown(trigger, {key: 'ArrowDown'});
+    // Two role="menu" exist (the breadcrumb menu + the inline submenu flyout);
+    // the breadcrumb menu is the first in DOM order.
+    const menu = screen.getAllByRole('menu', {hidden: true})[0];
+    const submenuTrigger = screen.getByRole('menuitem', {
+      name: /Move to/,
+      hidden: true,
+    });
+    expect(submenuTrigger).toHaveAttribute('aria-haspopup', 'menu');
+    await waitFor(() => {
+      expect(
+        screen.getByRole('menuitem', {name: 'Rename', hidden: true}),
+      ).toHaveFocus();
+    });
+    // Rename → Move to → Delete, one step per press.
+    fireEvent.keyDown(menu, {key: 'ArrowDown'});
+    expect(submenuTrigger).toHaveFocus();
+    fireEvent.keyDown(menu, {key: 'ArrowDown'});
+    expect(
+      screen.getByRole('menuitem', {name: 'Delete', hidden: true}),
     ).toHaveFocus();
   });
 

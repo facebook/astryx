@@ -4,6 +4,8 @@
 
 /**
  * @file hooks.ts
+ * @input Uses untransformed DOM layout geometry from the Selector's outer
+ *   anchor, listbox, and selected option
  * @output Hooks for Selector
  * @position Internal hooks; used by Selector.tsx
  */
@@ -12,6 +14,25 @@ import {useCallback, useState} from 'react';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import type {RefObject} from 'react';
 import type {SelectorOptionData} from './types';
+
+// The selected row renders one optical pixel below the closed trigger label at
+// the same mathematical center, so compensate before viewport clamping.
+const SELECTED_ITEM_OPTICAL_OFFSET = 1;
+
+/**
+ * Return an element's document-relative layout top without CSS transforms.
+ * getBoundingClientRect includes the popover's entry scale, which would make
+ * the measured error grow with each option's distance from the menu top.
+ */
+function getLayoutTop(element: HTMLElement): number {
+  let top = 0;
+  let current: HTMLElement | null = element;
+  while (current) {
+    top += current.offsetTop;
+    current = current.offsetParent as HTMLElement | null;
+  }
+  return top;
+}
 
 // =============================================================================
 // useSelectedItemOffset - Position dropdown to center selected item over trigger
@@ -22,7 +43,7 @@ interface UseSelectedItemOffsetOptions {
   selectedItemIndex: number;
   listboxId: string;
   listboxRef: RefObject<HTMLDivElement | null>;
-  triggerRef: RefObject<HTMLButtonElement | null>;
+  anchorRef: RefObject<HTMLElement | null>;
 }
 
 interface UseSelectedItemOffsetResult {
@@ -32,9 +53,9 @@ interface UseSelectedItemOffsetResult {
 
 /**
  * Calculates the offset needed to position the dropdown so that the selected
- * item appears centered over the trigger button (macOS-style selector).
+ * item appears centered over the outer selector control (macOS-style selector).
  *
- * The desired dropdown top is calculated directly from the trigger center and
+ * The desired dropdown top is calculated directly from the anchor center and
  * selected-item center, then clamped to the viewport. This preserves the
  * default "selected item over trigger" behavior while letting the menu slide
  * upward near the bottom edge or downward near the top edge instead of being
@@ -45,7 +66,7 @@ export function useSelectedItemOffset({
   selectedItemIndex,
   listboxId,
   listboxRef,
-  triggerRef,
+  anchorRef,
 }: UseSelectedItemOffsetOptions): UseSelectedItemOffsetResult {
   const [offset, setOffset] = useState(0);
   const [isPositioned, setIsPositioned] = useState(false);
@@ -67,7 +88,7 @@ export function useSelectedItemOffset({
       return;
     }
 
-    if (!listboxRef.current || !triggerRef.current) {
+    if (!listboxRef.current || !anchorRef.current) {
       commitPosition(0, true);
       return;
     }
@@ -83,34 +104,37 @@ export function useSelectedItemOffset({
       return;
     }
 
-    // Get positions. JSDOM returns zero rects by default, but browsers provide
-    // real dimensions before paint via layout effect.
-    const listboxRect = listboxRef.current.getBoundingClientRect();
-    const itemRect = targetItem.getBoundingClientRect();
-    const triggerRect = triggerRef.current.getBoundingClientRect();
+    const listbox = listboxRef.current;
+    const anchorRect = anchorRef.current.getBoundingClientRect();
 
-    const listboxHeight = listboxRect.height;
+    // offset* metrics intentionally exclude the popover's entry transform.
+    const listboxHeight = listbox.offsetHeight;
     if (listboxHeight <= 0) {
       commitPosition(0, true);
       return;
     }
 
     // Item center relative to listbox top. This remains stable even as the
-    // popover's top changes between measurements.
+    // popover animates between scale values. scrollTop keeps the calculation
+    // correct when a previously scrolled listbox is reopened.
     const itemCenterInListbox =
-      itemRect.top - listboxRect.top + itemRect.height / 2;
-    const triggerCenter = triggerRect.top + triggerRect.height / 2;
+      getLayoutTop(targetItem) -
+      getLayoutTop(listbox) -
+      listbox.scrollTop +
+      targetItem.offsetHeight / 2;
+    const anchorCenter = anchorRect.top + anchorRect.height / 2;
 
-    // Desired top aligns the selected item's center with trigger center.
-    const desiredTop = triggerCenter - itemCenterInListbox;
+    // Desired top aligns the selected item's center with the anchor center.
+    const desiredTop =
+      anchorCenter - itemCenterInListbox - SELECTED_ITEM_OPTICAL_OFFSET;
     const viewportHeight = window.innerHeight;
     const maxTop = Math.max(0, viewportHeight - listboxHeight);
     const clampedTop = Math.min(Math.max(desiredTop, 0), maxTop);
 
-    // useLayer positions the popover below the trigger. Apply a negative
+    // useLayer positions the popover below the outer anchor. Apply a negative
     // block-start margin to the layer container so the listbox top moves from
-    // triggerRect.bottom to clampedTop.
-    const clampedOffset = Math.max(0, triggerRect.bottom - clampedTop);
+    // anchorRect.bottom to clampedTop.
+    const clampedOffset = Math.max(0, anchorRect.bottom - clampedTop);
 
     commitPosition(clampedOffset, true);
   }, [
@@ -118,7 +142,7 @@ export function useSelectedItemOffset({
     selectedItemIndex,
     listboxId,
     listboxRef,
-    triggerRef,
+    anchorRef,
     commitPosition,
   ]);
 

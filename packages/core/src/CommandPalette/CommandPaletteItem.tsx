@@ -8,7 +8,7 @@
  * @position Sub-component; individual selectable item
  *
  * SYNC: When modified, update:
- * - /packages/cli/templates/blocks/components/CommandPalette/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/CommandPalette/ (showcase blocks)
  */
 
 import {useCallback, useEffect, useMemo, useRef, type ReactNode} from 'react';
@@ -43,7 +43,7 @@ const styles = stylex.create({
     backgroundColor: 'transparent',
     border: 'none',
     cursor: 'pointer',
-    textAlign: 'left' as const,
+    textAlign: 'start' as const,
     outline: 'none',
     userSelect: 'none',
   },

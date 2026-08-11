@@ -13,7 +13,7 @@
  * - /packages/core/src/NumberInput/NumberInput.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/NumberInput/index.ts (exports if types change)
  * - /apps/storybook/stories/NumberInput.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/NumberInput/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/NumberInput/ (showcase blocks)
  */
 
 import {
@@ -27,7 +27,6 @@ import {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {IconName} from '../Icon';
 import {
   colorVars,
   sizeVars,
@@ -39,11 +38,11 @@ import {
 import {
   Field,
   type InputStatus,
-  type InputStatusType,
   inputWrapperStyles,
   inputStatusBorderStyles,
   inputStatusHoverShadowStyles,
   inputStatusFocusWithinStyles,
+  type FieldStatusVariant,
 } from '../Field';
 import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {VisuallyHidden} from '../VisuallyHidden';
@@ -51,6 +50,7 @@ import {useTooltip} from '../Tooltip';
 import {getInputARIA} from '../utils';
 import {useSize} from '../SizeContext/SizeContext';
 import {useInputContainer} from '../hooks/useInputContainer';
+import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
 
 const styles = stylex.create({
@@ -81,6 +81,18 @@ const styles = stylex.create({
     borderWidth: 0,
     borderStyle: 'none',
     padding: 0,
+    // Hide the browser's native number spinners; the component provides its own
+    // affordances (keyboard entry, optional clear button) and the spinners
+    // clash with the input's visual treatment and sizing.
+    MozAppearance: 'textfield',
+    '::-webkit-inner-spin-button': {
+      WebkitAppearance: 'none',
+      margin: 0,
+    },
+    '::-webkit-outer-spin-button': {
+      WebkitAppearance: 'none',
+      margin: 0,
+    },
     fontFamily: typographyVars['--font-family-body'],
     fontSize: {
       default: typeScaleVars['--text-body-size'],
@@ -207,6 +219,14 @@ interface NumberInputPropsBase extends Omit<
    * If message is provided, displays a floating message box below the input.
    */
   status?: InputStatus;
+  /**
+   * How the status message is placed relative to the input.
+   * - 'attached': message overlaps directly below the input (bordered treatment)
+   * - 'detached': message floats below as a separate element with spacing
+   * - 'tooltip': no message box; the status icon becomes a focusable info-tip button that reveals the message on hover, keyboard focus, or tap
+   * @default 'attached'
+   */
+  statusVariant?: FieldStatusVariant;
   /**
    * The size of the input.
    * - 'sm': Compact size (28px height)
@@ -374,6 +394,7 @@ export function NumberInput({
   startIcon,
   labelIcon,
   status,
+  statusVariant = 'attached',
   size: sizeProp,
   onChange,
   value,
@@ -405,6 +426,7 @@ export function NumberInput({
   const inputLabelID = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
+  const unitsID = useId();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const inputGroup = useInputGroup();
@@ -426,26 +448,26 @@ export function NumberInput({
     isEnabled: showsDisabledMessage,
   });
 
-  const statusIconMap: Record<InputStatusType, IconName> = {
-    warning: 'warning',
-    error: 'error',
-    success: 'success',
-  };
-
-  const statusIconColorMap: Record<
-    InputStatusType,
-    'warning' | 'error' | 'success'
-  > = {
-    warning: 'warning',
-    error: 'error',
-    success: 'success',
-  };
+  const {statusIcon, describedBy: statusTooltipDescribedBy} =
+    useInputStatusIcon({
+      status,
+      statusVariant,
+      isInGroup: !!inputGroup,
+    });
 
   const {ariaLabelledBy, ariaDescribedBy} = getInputARIA(
     inputLabelID,
     [
       description ? descriptionID : null,
-      status?.message ? statusMessageID : null,
+      // The status message element is rendered by Field, which is skipped
+      // inside an InputGroup — only reference it when it actually exists.
+      !inputGroup && statusVariant !== 'tooltip' && status?.message
+        ? statusMessageID
+        : null,
+      // The tooltip variant renders no message box; describe the input by the
+      // tooltip's content instead so the status is still announced.
+      statusTooltipDescribedBy,
+      units ? unitsID : null,
       showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
     ],
     inputGroup,
@@ -569,6 +591,16 @@ export function NumberInput({
     ],
   );
 
+  // While focused, a wheel gesture steps the value — keep that gesture from
+  // also bubbling up and scrolling an ancestor container (page, Dialog,
+  // ScrollArea). When the input isn't focused the wheel isn't stepping the
+  // value, so normal scrolling is left alone.
+  const handleWheel = useCallback((e: React.WheelEvent<HTMLInputElement>) => {
+    if (document.activeElement === e.currentTarget) {
+      e.stopPropagation();
+    }
+  }, []);
+
   // Handle clear button click
   const handleClear = useCallback(() => {
     if (hasClear) {
@@ -598,14 +630,18 @@ export function NumberInput({
       onClick={handleWrapperClick}
       onMouseUp={handleWrapperMouseUp}
       {...mergeProps(
-        themeProps('number-input', {size, status: status?.type ?? null}),
+        themeProps('number-input', {
+          size,
+          status: status?.type ?? null,
+          disabled: isDisabled ? 'disabled' : null,
+        }),
         stylex.props(
           inputWrapperStyles.base,
           styles.wrapper,
           sizeStyles[size],
           isDisabled && inputWrapperStyles.disabled,
           status && inputStatusBorderStyles[status.type],
-          status && inputStatusHoverShadowStyles[status.type],
+          status && !isDisabled && inputStatusHoverShadowStyles[status.type],
           status && inputStatusFocusWithinStyles[status.type],
           inputGroup && groupStyles.inGroup,
           xstyle,
@@ -619,7 +655,7 @@ export function NumberInput({
         {...rest}
         ref={mergeRefs(ref, inputRef)}
         id={id}
-        name={htmlName}
+        name={isDisabled ? undefined : htmlName}
         type="number"
         autoComplete={autoComplete}
         value={displayValue}
@@ -627,6 +663,7 @@ export function NumberInput({
         onFocus={handleFocus}
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
+        onWheel={handleWheel}
         placeholder={placeholder}
         // With a disabledMessage the input keeps focusability via aria-disabled
         // so the reason is focus-discoverable; readOnly + the handler guards
@@ -651,7 +688,11 @@ export function NumberInput({
           !isInputValid && styles.inputInvalid,
         )}
       />
-      {units && <span {...stylex.props(styles.units)}>{units}</span>}
+      {units && (
+        <span id={unitsID} {...stylex.props(styles.units)}>
+          {units}
+        </span>
+      )}
       {/*
         Live region announcing invalid typed input to assistive technology.
         The value silently reverts on blur, so without this a screen-reader
@@ -669,13 +710,7 @@ export function NumberInput({
           <Icon icon="close" size="sm" color="secondary" />
         </button>
       )}
-      {status && !inputGroup && (
-        <Icon
-          icon={statusIconMap[status.type]}
-          size="md"
-          color={statusIconColorMap[status.type]}
-        />
-      )}
+      {statusIcon}
     </div>
   );
 
@@ -709,6 +744,7 @@ export function NumberInput({
             }
           : undefined
       }
+      statusVariant={statusVariant}
       labelTooltip={labelTooltip}
       width={width}>
       {inputWrapper}
