@@ -499,7 +499,13 @@ export function SideNavItem({
       displayIcon &&
       renderIconSlot(displayIcon, {
         size: 'sm',
-        color: isSelected ? 'primary' : isDisabled ? 'disabled' : 'secondary',
+        // `inherit`, not `primary`: on a selected row the icon has to track
+        // the row's own colour, which is HighlightText under
+        // `forced-colors: active` (see navItemStyles.selected). Outside
+        // forced colours the two resolve to the same value — the theme
+        // generator emits `--color-icon-primary` and `--color-text-primary`
+        // from one expression — so no pixel moves.
+        color: isSelected ? 'inherit' : isDisabled ? 'disabled' : 'secondary',
       });
 
     // Shared collapsed item styles — used by trigger, link, and button.
@@ -588,7 +594,10 @@ export function SideNavItem({
       {displayIcon &&
         renderIconSlot(displayIcon, {
           size: 'sm',
-          color: isSelected ? 'primary' : isDisabled ? 'disabled' : 'secondary',
+          // See the collapsed path above: `inherit` keeps a selected row's
+          // icon on the row's colour, which forced colours remap to
+          // HighlightText.
+          color: isSelected ? 'inherit' : isDisabled ? 'disabled' : 'secondary',
         })}
       {!isCollapsed && <span {...stylex.props(styles.label)}>{label}</span>}
       {!isCollapsed && endContent && (

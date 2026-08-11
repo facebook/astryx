@@ -16,6 +16,7 @@ import userEvent from '@testing-library/user-event';
 import {useRef, useState, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
+import {getForcedColorsRules} from '../__tests__/forcedColors';
 import {SideNav} from './SideNav';
 import {SideNavCollapseButton} from './SideNavCollapseButton';
 import {SideNavHeading} from './SideNavHeading';
@@ -1993,5 +1994,52 @@ describe('SideNav focus ring (A15)', () => {
   it('draws the shared ring on the heading menu trigger', () => {
     render(<SideNavHeading heading="My App" menu={<div>menu</div>} />);
     expectSharedFocusRing(screen.getByRole('button', {name: 'Open menu'}));
+  });
+});
+
+// jsdom cannot emulate forced-colors rendering, so these assert that the
+// compiled output carries the rules the selected row relies on. The rendered
+// behaviour was measured in Chromium under `forced-colors: active` — see the
+// evidence on #4880.
+describe('forced colors (WCAG 1.4.11)', () => {
+  it('compiles forced-colors overrides so the current page survives Windows High Contrast', () => {
+    render(
+      <SideNav>
+        <SideNavSection title="Main">
+          <SideNavItem label="Dashboard" href="/dashboard" isSelected />
+          <SideNavItem label="Projects" href="/projects" />
+        </SideNavSection>
+      </SideNav>,
+    );
+    const css = getForcedColorsRules();
+    // `--color-neutral` is a background: forced colors flatten it to Canvas
+    // and the selected row loses every trace of being selected. Highlight /
+    // HighlightText is the platform convention that survives.
+    expect(css).toContain('background-color: highlight;');
+    expect(css).toContain('color: highlighttext;');
+    // The hover fill has to hold the Highlight too, or hovering the current
+    // page repaints it with the ordinary hover overlay and erases the state.
+    // Nesting it inside the hover media query is what wins that fight: the
+    // rule compiles to a triple-class selector, which outranks `item`'s
+    // single-class hover overlay no matter the source order.
+    expect(css).toMatch(
+      /@media \(hover: hover\)[\s\S]*?forced-colors: active[\s\S]*?:hover[\s\S]*?background-color: highlight/,
+    );
+  });
+
+  it('does not opt nav rows out of UA colour remapping', () => {
+    render(
+      <SideNav>
+        <SideNavSection title="Main">
+          <SideNavItem label="Dashboard" href="/dashboard" isSelected />
+        </SideNavSection>
+      </SideNav>,
+    );
+    // A nav row is not a native form control — it resets `appearance` and
+    // paints its own background, so the system keywords land without
+    // `forced-color-adjust: none`. Setting it would inherit into
+    // `endContent`, keeping a Badge's authored fill instead of remapping it.
+    const row = screen.getByRole('link', {name: 'Dashboard'});
+    expect(getComputedStyle(row).forcedColorAdjust).not.toBe('none');
   });
 });
