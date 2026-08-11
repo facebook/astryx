@@ -143,7 +143,7 @@ export function RadioIndicator({
   style,
   xstyle,
   ...rest
-}: IndicatorProps) {
+}: IndicatorProps<'singleSelection'>) {
   // A radio has no partial state; anything other than unchecked reads as
   // selected.
   const isChecked = state !== 'unchecked';

@@ -180,7 +180,7 @@ export function CheckboxIndicator({
   style,
   xstyle,
   ...rest
-}: IndicatorProps) {
+}: IndicatorProps<'multiSelection'>) {
   const isChecked = state === 'checked';
   const isIndeterminate = state === 'indeterminate';
   const isCheckedOrIndeterminate = isChecked || isIndeterminate;

@@ -5,7 +5,7 @@
 export const docs = {
   name: 'Indicator',
   displayName: 'Indicator',
-  group: 'Checkbox',
+  group: 'Indicator',
   category: 'Data Input',
   isHiddenFromOverview: true,
   keywords: [
@@ -20,7 +20,7 @@ export const docs = {
     'swap',
   ],
   description:
-    'Decorative selection visuals — the box a checkbox draws and the circle a radio draws. Rendered by CheckboxInput, RadioList, and menu selection rows; themeable and replaceable.',
+    'Decorative control visuals — the mark on a chosen option, the box a checkbox draws, the circle a radio draws. Rendered by Selector, CheckboxInput, RadioList, and menu selection rows. Replace one by name through defineTheme({indicators}) and every component drawing it follows.',
   components: [
     {
       name: 'CheckboxIndicator',
@@ -57,6 +57,39 @@ export const docs = {
       ],
     },
     {
+      name: 'CheckIndicator',
+      displayName: 'Check Indicator',
+      description:
+        'The mark on a chosen option — a checkmark by default, and nothing at all when unchosen, so a listbox shows no empty box beside every row. This is the indicator to replace to change what "chosen" looks like: mapping it to RadioIndicator gives every single-selection mark radio visuals, including an empty circle on unchosen rows. Unlike the checkbox and radio visuals it renders no chrome of its own — it IS the glyph — so a host\'s theme target lands on the same element as astryx-icon.',
+      props: [
+        {
+          name: 'state',
+          type: "'unchecked' | 'checked'",
+          description:
+            'Which state to draw. The default renders nothing when unchecked; a replacement may draw in both states.',
+          required: true,
+        },
+        {
+          name: 'size',
+          type: "'sm' | 'md'",
+          description: 'Control size, matching the other indicators.',
+          default: "'md'",
+        },
+        {
+          name: 'isDisabled',
+          type: 'boolean',
+          description:
+            'Whether the owning row is disabled. Purely visual — the owner keeps the real disabled semantics.',
+          default: 'false',
+        },
+        {
+          name: 'children',
+          type: 'ReactNode',
+          description: 'Rendered INSTEAD of the mark.',
+        },
+      ],
+    },
+    {
       name: 'RadioIndicator',
       displayName: 'Radio Indicator',
       description:
@@ -64,9 +97,9 @@ export const docs = {
       props: [
         {
           name: 'state',
-          type: "'unchecked' | 'checked' | 'indeterminate'",
+          type: "'unchecked' | 'checked'",
           description:
-            'Which state to draw. A radio has no partial state; anything other than unchecked reads as selected.',
+            'Which state to draw. Radio belongs to the singleSelection family, which has no partial state.',
           required: true,
         },
         {
