@@ -309,6 +309,14 @@ const styles = stylex.create({
     width: '100%',
     borderRadius: radiusVars['--radius-element'],
     cursor: 'pointer',
+    // Row typography lives here, not on the label span, so a theme override on
+    // the row target reaches both the fallback label and renderOption output
+    // (a declaration on the span would win over the inherited row value).
+    // Matches Selector, whose option row owns its typography the same way.
+    fontFamily: typographyVars['--font-family-body'],
+    fontSize: typeScaleVars['--text-label-size'],
+    fontWeight: fontWeightVars['--font-weight-medium'],
+    color: colorVars['--color-text-primary'],
     backgroundColor: 'transparent',
     border: 'none',
     outline: 'none',
@@ -318,6 +326,7 @@ const styles = stylex.create({
   },
   itemDisabled: {
     opacity: 0.5,
+    color: colorVars['--color-text-disabled'],
     cursor: 'not-allowed',
   },
 
@@ -328,19 +337,14 @@ const styles = stylex.create({
     flexShrink: 0,
   },
 
-  // Label text for items (rendered outside checkbox for correct click behavior)
+  // Label text for items (rendered outside checkbox for correct click
+  // behavior). Typography is inherited from the row; this only handles
+  // truncation.
   itemLabel: {
-    fontFamily: typographyVars['--font-family-body'],
-    fontSize: typeScaleVars['--text-label-size'],
-    fontWeight: fontWeightVars['--font-weight-medium'],
-    color: colorVars['--color-text-primary'],
     minWidth: 0,
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
-  },
-  itemLabelDisabled: {
-    color: colorVars['--color-text-disabled'],
   },
 
   // Empty state
@@ -1267,16 +1271,16 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           }}
           onMouseEnter={() => onItemMouseEnter(item, flatIndex)}
           {...mergeProps(
-            // The Select All row is additionally targetable via
-            // `multi-selector-select-all` so a theme can restyle just that row
-            // (and its checkbox/label) without reaching for structural
-            // selectors. Every option row also carries `multi-selector-option`.
-            isSelectAll
-              ? mergeProps(
-                  themeProps('multi-selector-option'),
-                  themeProps('multi-selector-select-all'),
-                )
-              : themeProps('multi-selector-option'),
+            // One target for every dropdown row, carrying the row's size and
+            // runtime state so a theme can express "selected option at large"
+            // or restyle just the Select All row (`.select-all`) without
+            // reaching for structural selectors.
+            themeProps('multi-selector-option', {
+              size,
+              'select-all': isSelectAll ? 'select-all' : null,
+              selected: isSelected ? 'selected' : null,
+              disabled: item.disabled ? 'disabled' : null,
+            }),
             stylex.props(
               styles.item,
               isSelectAll ? selectAllSizeStyles[size] : itemSizeStyles[size],
@@ -1285,12 +1289,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
               item.disabled && styles.itemDisabled,
             ),
           )}>
-          <div
-            inert
-            {...mergeProps(
-              themeProps('multi-selector-option-checkbox'),
-              stylex.props(styles.checkboxDecorative),
-            )}>
+          <div inert {...stylex.props(styles.checkboxDecorative)}>
             <CheckboxInput
               label=""
               isLabelHidden
@@ -1303,11 +1302,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           {renderOption && !isSelectAll ? (
             renderOption(item)
           ) : (
-            <span
-              {...stylex.props(
-                styles.itemLabel,
-                item.disabled && styles.itemLabelDisabled,
-              )}>
+            <span {...stylex.props(styles.itemLabel)}>
               {item.label ?? item.value}
             </span>
           )}
@@ -1345,11 +1340,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     if (hasSelectAll && realItemCount > 0) {
       elements.push(renderItem(sortedItems[0], 0));
       elements.push(
-        <Divider
-          key="select-all-divider"
-          xstyle={styles.divider}
-          className={themeProps('multi-selector-select-all-divider').className}
-        />,
+        <Divider key="select-all-divider" xstyle={styles.divider} />,
       );
       cursor = 1;
     } else if (hasSelectAll) {
@@ -1571,50 +1562,50 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           the two affordances stop sharing a node.
         */}
         {showStatusIcon ? (
-            showStatusTooltip ? (
-              <button
-                ref={statusTooltip.ref}
-                type="button"
-                aria-label={t(STATUS_BUTTON_LABEL_KEY[status.type])}
-                aria-describedby={statusTooltip.describedBy}
-                onClick={e => e.stopPropagation()}
-                {...stylex.props(styles.statusButton)}>
-                <Icon
-                  icon={STATUS_ICON_MAP[status.type]}
-                  size="sm"
-                  color={STATUS_ICON_COLOR_MAP[status.type]}
-                  xstyle={styles.triggerIcon}
-                />
-              </button>
-            ) : (
+          showStatusTooltip ? (
+            <button
+              ref={statusTooltip.ref}
+              type="button"
+              aria-label={t(STATUS_BUTTON_LABEL_KEY[status.type])}
+              aria-describedby={statusTooltip.describedBy}
+              onClick={e => e.stopPropagation()}
+              {...stylex.props(styles.statusButton)}>
               <Icon
                 icon={STATUS_ICON_MAP[status.type]}
                 size="sm"
                 color={STATUS_ICON_COLOR_MAP[status.type]}
                 xstyle={styles.triggerIcon}
               />
-            )
+            </button>
           ) : (
             <Icon
-              icon="chevronDown"
+              icon={STATUS_ICON_MAP[status.type]}
               size="sm"
-              color="secondary"
-              // The rotation rides on the glyph, alongside the box and color
-              // the wrapper used to provide, so one element carries the mark,
-              // its open/closed transform, and the theme target.
-              xstyle={[
-                styles.triggerIcon,
-                styles.triggerIconRotation,
-                popover.isOpen && styles.triggerIconOpen,
-              ]}
-              // Stable theme target on the chevron glyph itself, so a theme can
-              // restyle just this icon (color, size, hover) — and its
-              // open/closed state — via `defineTheme`. Same-element rules in
-              // @layer astryx-theme win over the icon's own base color/size,
-              // which a button-level target could not reach.
-              {...themeProps('multi-selector-indicator-icon', {
-                state: popover.isOpen ? 'expanded' : 'collapsed',
-              })}
+              color={STATUS_ICON_COLOR_MAP[status.type]}
+              xstyle={styles.triggerIcon}
+            />
+          )
+        ) : (
+          <Icon
+            icon="chevronDown"
+            size="sm"
+            color="secondary"
+            // The rotation rides on the glyph, alongside the box and color
+            // the wrapper used to provide, so one element carries the mark,
+            // its open/closed transform, and the theme target.
+            xstyle={[
+              styles.triggerIcon,
+              styles.triggerIconRotation,
+              popover.isOpen && styles.triggerIconOpen,
+            ]}
+            // Stable theme target on the chevron glyph itself, so a theme can
+            // restyle just this icon (color, size, hover) — and its
+            // open/closed state — via `defineTheme`. Same-element rules in
+            // @layer astryx-theme win over the icon's own base color/size,
+            // which a button-level target could not reach.
+            {...themeProps('multi-selector-indicator-icon', {
+              state: popover.isOpen ? 'expanded' : 'collapsed',
+            })}
           />
         )}
       </div>

@@ -31,10 +31,11 @@ export const docs = {
         className: 'astryx-multi-selector-indicator-icon',
         states: ['state'],
       },
-      {className: 'astryx-multi-selector-option'},
-      {className: 'astryx-multi-selector-option-checkbox'},
-      {className: 'astryx-multi-selector-select-all'},
-      {className: 'astryx-multi-selector-select-all-divider'},
+      {
+        className: 'astryx-multi-selector-option',
+        visualProps: ['size'],
+        states: ['select-all', 'selected', 'disabled'],
+      },
     ],
   },
   components: [
