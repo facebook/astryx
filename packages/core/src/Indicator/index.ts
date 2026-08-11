@@ -22,7 +22,10 @@ export {RadioIndicator} from './RadioIndicator';
 
 // Registry (RSC-compatible, no 'use client')
 export {defaultIndicators, getIndicator} from './indicatorRegistry';
-export type {IndicatorRegistrySource} from './indicatorRegistry';
+export type {
+  CoreIndicatorName,
+  IndicatorRegistrySource,
+} from './indicatorRegistry';
 
 export {useIndicator} from './useIndicator';
 

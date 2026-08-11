@@ -14,6 +14,7 @@ import {
   colorVars,
   durationVars,
   easeVars,
+  radiusVars,
 } from '../theme/tokens.stylex';
 import {mergeProps, themeProps} from '../utils';
 import {indicatorScope} from './indicator.markers.stylex';
@@ -28,7 +29,11 @@ const styles = stylex.create({
     flexShrink: 0,
     borderWidth: borderVars['--border-width'],
     borderStyle: 'solid',
-    borderRadius: '50%',
+    // A circle, in tokens: --radius-full is the house "fully rounded" value
+    // (9999px) and renders pixel-identical to 50% on a square box, which the
+    // size styles below guarantee. Themeable through --radius-full, unlike a
+    // raw 50%.
+    borderRadius: radiusVars['--radius-full'],
     transitionProperty: 'background-color, border-color',
     transitionDuration: {
       default: durationVars['--duration-fast'],
@@ -82,7 +87,7 @@ const styles = stylex.create({
     },
   },
   dot: {
-    borderRadius: '50%',
+    borderRadius: radiusVars['--radius-full'],
     backgroundColor: {
       default: colorVars['--color-on-accent'],
       // Forced colors (Windows High Contrast) strips painted backgrounds,

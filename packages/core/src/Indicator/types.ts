@@ -118,7 +118,10 @@ export type IndicatorComponent<F extends IndicatorFamily = IndicatorFamily> =
  * through — so replacing `check` reaches every single-selection mark at once,
  * which is the point.
  *
- * Packages outside core can contribute their own through module augmentation:
+ * Packages outside core can contribute their own through module augmentation.
+ * Core ships no default for a name it does not know, so the package that adds
+ * the name owns its default — `getIndicator`/`useIndicator` return
+ * `| undefined` for it, and the call site supplies the fallback:
  *
  * ```ts
  * declare module '@astryxdesign/core/Indicator' {
@@ -126,6 +129,8 @@ export type IndicatorComponent<F extends IndicatorFamily = IndicatorFamily> =
  *     'brand-star': 'singleSelection';
  *   }
  * }
+ *
+ * const Star = useIndicator('brand-star') ?? BrandStar;
  * ```
  */
 export interface IndicatorMap {

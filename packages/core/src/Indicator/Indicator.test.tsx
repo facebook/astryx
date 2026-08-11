@@ -6,6 +6,7 @@ import type {PropsWithChildren, ReactNode} from 'react';
 import {Theme} from '../theme/Theme';
 import {defineTheme} from '../theme/defineTheme';
 import {CheckboxIndicator} from './CheckboxIndicator';
+import {CheckIndicator} from './CheckIndicator';
 import {RadioIndicator} from './RadioIndicator';
 import {getIndicator} from './indicatorRegistry';
 import {useIndicator} from './useIndicator';
@@ -63,6 +64,69 @@ describe('default indicators', () => {
       'data-disabled',
       'disabled',
     );
+  });
+});
+
+/**
+ * CheckIndicator is the one indicator that draws nothing in a state, which is
+ * what makes it the default selection mark — and what made its two escape
+ * hatches (props and children) easy to get wrong. Both are pinned here.
+ */
+describe('CheckIndicator', () => {
+  it('draws the mark when checked and nothing when not', () => {
+    const {container, rerender} = render(<CheckIndicator state="checked" />);
+
+    const mark = container.querySelector('.astryx-icon');
+    expect(mark).toBeInTheDocument();
+    expect(mark).toHaveAttribute('aria-hidden', 'true');
+
+    rerender(<CheckIndicator state="unchecked" />);
+    // No empty box beside an unchosen row — the reason a check is the default.
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it('renders children INSTEAD of the mark, in both states', () => {
+    // A host shows a pending Spinner through `children` in whatever state the
+    // row is in, and an unchosen row is the common one. The unchecked case
+    // used to render nothing at all.
+    for (const state of ['checked', 'unchecked'] as const) {
+      const {unmount} = render(
+        <CheckIndicator state={state}>
+          <span data-testid="busy" />
+        </CheckIndicator>,
+      );
+
+      expect(screen.getByTestId('busy'), `state=${state}`).toBeInTheDocument();
+      // The mark is replaced, not accompanied.
+      expect(document.querySelector('.astryx-icon')).not.toBeInTheDocument();
+      unmount();
+    }
+  });
+
+  it('forwards caller props and styling on both render paths', () => {
+    // Same contract whether or not children are present: a data-testid, an id
+    // and an xstyle-driven class must survive either branch.
+    const {container, rerender} = render(
+      <CheckIndicator state="checked" data-testid="mark" id="pinned" />,
+    );
+
+    expect(screen.getByTestId('mark')).toHaveAttribute('id', 'pinned');
+
+    rerender(
+      <CheckIndicator
+        state="checked"
+        data-testid="mark"
+        id="pinned"
+        className="host-target">
+        <span data-testid="busy" />
+      </CheckIndicator>,
+    );
+
+    const withChildren = screen.getByTestId('mark');
+    expect(withChildren).toHaveAttribute('id', 'pinned');
+    expect(withChildren).toHaveClass('host-target');
+    expect(withChildren).toHaveAttribute('aria-hidden', 'true');
+    expect(container.querySelector('[data-testid="busy"]')).toBeInTheDocument();
   });
 });
 

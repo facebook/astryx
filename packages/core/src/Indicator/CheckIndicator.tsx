@@ -29,8 +29,10 @@
  *     is an icon, and `astryx-icon` plus the host's target already reach it.
  */
 
+import * as stylex from '@stylexjs/stylex';
 import type {SVGProps} from 'react';
 import {Icon} from '../Icon/Icon';
+import {mergeProps} from '../utils';
 import type {IndicatorProps} from './types';
 
 /** The check glyph matches the control sizes the indicator families share. */
@@ -72,21 +74,30 @@ export function CheckIndicator({
 }: IndicatorProps<'singleSelection'>) {
   const isChecked = state === 'checked';
 
+  // `children` (a pending Spinner, say) replaces the mark but keeps the
+  // indicator's place, matching the other indicators' contract. It is checked
+  // BEFORE `state`: a host passes a busy visual through in whatever state the
+  // row happens to be in, and an unchecked listbox row is the common one.
+  //
+  // There is no glyph to hang the caller's props on in this branch, so they go
+  // on a span — every one of them, so a `data-testid`, an `id`, a handler or
+  // an `xstyle` behaves the same whether or not children are present.
+  if (children != null) {
+    return (
+      <span
+        ref={ref}
+        aria-hidden="true"
+        {...mergeProps(stylex.props(xstyle), className, style)}
+        {...rest}>
+        {children}
+      </span>
+    );
+  }
+
   // Nothing to draw, and no box to reserve: an unmarked row keeps the layout
   // it would have without this indicator.
   if (!isChecked) {
     return null;
-  }
-
-  // `children` (a pending Spinner, say) replaces the mark but keeps the
-  // indicator's place, matching the other indicators' contract. There is no
-  // glyph to put the host's props on in that case, so they go on a span.
-  if (children != null) {
-    return (
-      <span ref={ref} aria-hidden="true" className={className} style={style}>
-        {children}
-      </span>
-    );
   }
 
   return (

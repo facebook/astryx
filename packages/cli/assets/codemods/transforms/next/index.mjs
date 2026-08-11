@@ -7,4 +7,14 @@
  * this file into the resolved version folder.
  */
 
-export default [];
+import renameDropdownMenuRadioDotTarget, {
+  meta as renameDropdownMenuRadioDotTargetMeta,
+} from './rename-dropdown-menu-radio-dot-target.mjs';
+
+export default [
+  {
+    name: 'rename-dropdown-menu-radio-dot-target',
+    transform: renameDropdownMenuRadioDotTarget,
+    meta: renameDropdownMenuRadioDotTargetMeta,
+  },
+];

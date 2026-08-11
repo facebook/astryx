@@ -85,7 +85,8 @@ export const docs = {
         {
           name: 'children',
           type: 'ReactNode',
-          description: 'Rendered INSTEAD of the mark.',
+          description:
+            'Rendered INSTEAD of the mark, in every state — a host showing a pending Spinner passes it through whether or not the row is chosen.',
         },
       ],
     },
@@ -247,7 +248,7 @@ defineTheme({name: 'brand', indicators: {check: RadioIndicator}});`,
       {
         guidance: true,
         description:
-          'Spread `indicatorFocusRingProps()` on a replacement\'s root if its shape differs from the control\'s default. It carries the ring AND the marker that tells the owning control to stand down, as one spread, so you cannot suppress the owner\'s ring without drawing your own. Skip it and the owner draws a correctly-visible ring in the default shape — the failure mode is a slightly-wrong outline, never a missing one (WCAG 2.4.7). It keys off the owner scope marker because the native input is a visually hidden SIBLING that a plain :focus-visible could never see.',
+          'Render a single root ELEMENT, and let it keep the border-radius you want the focus ring to follow. A control whose real input is visually hidden cannot show focus on that input, so the owner paints the standard ring onto the indicator element itself at focus time (useIndicatorFocusRing) — `outline` then picks up that element\'s radius. A replacement needs no cooperation and can forget nothing: the ring is never missing (WCAG 2.4.7), it is only the wrong shape if the root has no radius of its own. Do not draw a focus ring yourself; the owner already did.',
       },
       {
         guidance: false,
@@ -257,7 +258,7 @@ defineTheme({name: 'brand', indicators: {check: RadioIndicator}});`,
       {
         guidance: false,
         description:
-          'Render only in the selected state. An indicator draws in every state — an unselected radio is an empty circle, and a mark that disappears leaves blank rows.',
+          'Assume you are only mounted when selected. The host renders its indicator unconditionally and passes `state`, in every state — that is what lets a replacement draw where the default draws nothing (a radio\'s empty circle on an unchosen row). Drawing nothing in a state is a decision the indicator makes, not one the host makes for it.',
       },
     ],
     anatomy: [
@@ -265,7 +266,7 @@ defineTheme({name: 'brand', indicators: {check: RadioIndicator}});`,
         name: 'Chrome',
         required: true,
         description:
-          'The persistent box or circle, present in every state. Carries the astryx-checkbox / astryx-radio theme target.',
+          'The persistent box or circle, present in every state. Carries the astryx-checkbox-indicator / astryx-radio-indicator theme target (the pre-indicator astryx-checkbox / astryx-radio names are still emitted on the same element).',
       },
       {
         name: 'State mark',
