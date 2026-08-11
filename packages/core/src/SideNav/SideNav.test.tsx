@@ -20,6 +20,8 @@ import {SideNavHeading} from './SideNavHeading';
 import {SideNavItem} from './SideNavItem';
 import {SideNavSection} from './SideNavSection';
 import {LinkProvider} from '../Link/LinkProvider';
+import {InternationalizationProvider} from '../i18n/InternationalizationProvider';
+import pseudoCatalog from '../../locales/pseudo.json';
 import {
   SideNavCollapseContext,
   type SideNavImperativeCollapseHandle,
@@ -1558,6 +1560,31 @@ describe('SideNav audit regressions', () => {
     expect(dialog).toHaveAttribute('aria-label', 'Settings submenu');
   });
 
+  it('translates the collapsed submenu dialog name', async () => {
+    const user = userEvent.setup();
+    render(
+      <InternationalizationProvider
+        locale="pseudo"
+        messages={{pseudo: pseudoCatalog}}>
+        <SideNavCollapseContext
+          value={{isCollapsed: true, toggle: () => {}, isCollapsible: true}}>
+          <SideNavItem label="Settings" icon={StubIcon} data-testid="parent">
+            <SideNavItem label="General" href="/settings/general" />
+          </SideNavItem>
+        </SideNavCollapseContext>
+      </InternationalizationProvider>,
+    );
+
+    await user.click(screen.getByTestId('parent'));
+    const label = document
+      .querySelector('[role="dialog"]')
+      ?.getAttribute('aria-label');
+
+    // A concatenated `${label} submenu` would stay plain English here.
+    expect(label).toContain('Settings');
+    expect(label).not.toBe('Settings submenu');
+  });
+
   it('forwards unrecognised props on SideNavItem through to the control', () => {
     render(
       <SideNavItem
@@ -1647,14 +1674,12 @@ describe('SideNav audit regressions', () => {
       );
 
       fireEvent.mouseEnter(screen.getByTestId('parent'));
+      expect(vi.getTimerCount()).toBeGreaterThan(0);
+
       unmount();
 
-      expect(() => {
-        act(() => {
-          vi.runOnlyPendingTimers();
-        });
-      }).not.toThrow();
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      // Every timer the item scheduled has to be cleared on unmount.
+      expect(vi.getTimerCount()).toBe(0);
     } finally {
       vi.useRealTimers();
     }
