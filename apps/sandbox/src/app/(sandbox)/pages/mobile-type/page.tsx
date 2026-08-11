@@ -572,13 +572,12 @@ export default function MobileTypePage() {
                   <HStack gap={1} vAlign="start">
                     <Icon icon="info" size="sm" color="secondary" />
                     <Text type="supporting" color="secondary">
-                      The 16px floor isn&apos;t arbitrary — Astryx inputs
-                      already bump to 16px under{' '}
+                      Astryx inputs already jump to 16px under{' '}
                       <code style={{fontFamily: 'monospace'}}>
                         @media (pointer: coarse)
                       </code>{' '}
-                      to stop mobile browsers auto-zooming on focus. Flooring
-                      body to match keeps text and inputs on the same scale.
+                      to block mobile zoom-on-focus. Flooring body to match
+                      keeps text and inputs on one scale.
                     </Text>
                   </HStack>
                 </>
