@@ -24,7 +24,6 @@
 import {
   useCallback,
   useImperativeHandle,
-  useLayoutEffect,
   useRef,
   useState,
   type ReactNode,
@@ -342,13 +341,6 @@ export function SideNav({
   const isControlled = controlledCollapsed !== undefined;
   const [uncontrolledCollapsed, setUncontrolledCollapsed] =
     useState(defaultIsCollapsed);
-  const collapsed = isControlled ? controlledCollapsed : uncontrolledCollapsed;
-  const navRef = useRef<HTMLElement>(null);
-  const collapseStateRef = useRef<SideNavCollapseState>({
-    isCollapsed: collapsed,
-    toggle: () => {},
-    isCollapsible,
-  });
 
   const setCollapsedState = useCallback(
     (value: boolean) => {
@@ -360,14 +352,13 @@ export function SideNav({
     [isControlled, onCollapsedChange],
   );
 
-  // Resize hook — ongoing collapse changes (drag past the threshold, or
-  // toggle() below) flow through onCollapseChange, keeping SideNav in sync
-  // without effects. The one exception is the *initial* mount: when
-  // autoSaveId restores a persisted width of 0, useResizable seeds its own
-  // isCollapsed as true, but SideNav's own uncontrolled `collapsed` state
-  // has no way to know that at useState-init time (it's a separate hook
-  // call). Left unreconciled, the nav renders in expanded layout mode with
-  // a 0px width instead of the compact icon rail — see the effect below.
+  // Resize hook. When resizable, its own isCollapsed is the source of truth
+  // for collapse state below (see `collapsed`) instead of a second,
+  // independently-initialized boolean — otherwise a persisted width of 0
+  // (autoSaveId) seeds this hook's isCollapsed as true on mount with no way
+  // for a separately-tracked uncontrolledCollapsed to know that, and the nav
+  // renders in expanded layout mode with a 0px width instead of the compact
+  // icon rail.
   const resizableHook = useResizable({
     defaultSize: resizableConfig.defaultWidth ?? 260,
     minSizePx: resizableConfig.minWidth ?? 180,
@@ -379,22 +370,21 @@ export function SideNav({
     onCollapseChange: isCollapsible ? setCollapsedState : undefined,
   });
 
-  // One-time reconciliation for the persisted-collapsed case above. Runs
-  // before paint so there's no visible flash of the broken expanded/0px
-  // state. Only applies to the uncontrolled case — a controlled
-  // `collapsible.isCollapsed` is the consumer's own source of truth.
-  useLayoutEffect(() => {
-    if (
-      isResizable &&
-      !isControlled &&
-      resizableHook.isCollapsed &&
-      !uncontrolledCollapsed
-    ) {
-      // eslint-disable-next-line @eslint-react/set-state-in-effect -- reconciles the two hooks' independently-initialized collapsed state; see comment above
-      setUncontrolledCollapsed(true);
-    }
-    // eslint-disable-next-line @eslint-react/exhaustive-deps -- mount-only: reconciles the hooks' initial state, not an ongoing sync (toggle()/onCollapseChange already handle that)
-  }, []);
+  // Uncontrolled + resizable: resizableHook.isCollapsed is the single source
+  // of truth (see above). Uncontrolled + non-resizable: uncontrolledCollapsed
+  // is the only state that exists to read.
+  const collapsed = isControlled
+    ? controlledCollapsed
+    : isResizable
+      ? resizableHook.isCollapsed
+      : uncontrolledCollapsed;
+
+  const navRef = useRef<HTMLElement>(null);
+  const collapseStateRef = useRef<SideNavCollapseState>({
+    isCollapsed: collapsed,
+    toggle: () => {},
+    isCollapsible,
+  });
 
   const toggle = useCallback(() => {
     const next = !collapsed;
