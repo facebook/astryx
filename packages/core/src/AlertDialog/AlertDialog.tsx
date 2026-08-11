@@ -100,9 +100,13 @@ export interface AlertDialogProps extends BaseProps<HTMLDialogElement> {
 /**
  * A confirmation dialog for destructive or irreversible actions.
  *
+ * Implements the WAI-ARIA APG Alert Dialog pattern:
+ * https://www.w3.org/WAI/ARIA/apg/patterns/alertdialog/
+ *
  * Uses `role="alertdialog"` and requires explicit user action to dismiss.
  * Cannot be dismissed by clicking outside. Escape key triggers cancel.
- * Initial focus goes to the cancel button (least destructive action).
+ * Initial focus goes to the cancel button (least destructive action), pinned
+ * with `data-autofocus` so it survives any change to the footer's order.
  *
  * @example
  * ```
@@ -177,6 +181,11 @@ export function AlertDialog({
                 variant="ghost"
                 label={cancelLabel}
                 onClick={handleCancel}
+                // Dialog focuses [data-autofocus] itself after showModal(),
+                // because React's autoFocus runs during commit while the
+                // dialog is still invisible. Cancel is the least destructive
+                // choice, so it is the one that should be preselected.
+                data-autofocus
               />
               <Button
                 variant={actionVariant}
