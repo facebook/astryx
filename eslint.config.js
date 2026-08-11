@@ -220,14 +220,7 @@ export default defineConfig(
       }],
       // announce() live-region messages are user-facing text; the rule checks
       // them as call arguments (callees defaults to ['announce']).
-      // TEMPORARY allowlist: these exact strings predate the check and are
-      // being replaced with t(...) in the scan #3 i18n sweep PRs
-      // (CodeBlock 'Copied'; MultiSelector 'Selection cleared' /
-      // 'All selected'). Remove each entry as its fix merges; delete
-      // allowedCalleeStrings entirely once the sweep lands.
-      '@astryx/no-hardcoded-i18n-string': [isStrictMode ? 'error' : 'warn', {
-        allowedCalleeStrings: ['Copied', 'Selection cleared', 'All selected'],
-      }],
+      '@astryx/no-hardcoded-i18n-string': isStrictMode ? 'error' : 'warn',
     },
   },
   // The i18n runtime itself defines the message strings the rest of the
