@@ -449,7 +449,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
           announce(
             shown.length === 0
               ? emptySearchResultsText
-              : `${shown.length} ${shown.length === 1 ? 'result' : 'results'}`,
+              : t('@astryx.typeahead.resultCount', {count: shown.length}),
           );
         }
       } catch {
@@ -464,7 +464,14 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         }
       }
     },
-    [searchSource, maxMenuItems, showLayer, announce, emptySearchResultsText],
+    [
+      searchSource,
+      maxMenuItems,
+      showLayer,
+      announce,
+      emptySearchResultsText,
+      t,
+    ],
   );
 
   // Perform bootstrap

@@ -1134,5 +1134,53 @@
   "@astryx.commandPalette.footer.close": {
     "defaultMessage": "Close",
     "description": "Keyboard hint in the CommandPalette footer, paired with the Escape key icon. Tells users Escape dismisses the palette."
+  },
+  "@astryx.multiSelector.selectionCleared": {
+    "defaultMessage": "Selection cleared",
+    "description": "Polite screen-reader announcement after the last selected option in a MultiSelector is deselected. Live-region text, never shown on screen; past participle (\"has been cleared\")."
+  },
+  "@astryx.multiSelector.allSelected": {
+    "defaultMessage": "All selected",
+    "description": "Polite screen-reader announcement after every option in a MultiSelector becomes selected. Live-region text, never shown on screen; \"all\" is a determiner (as in \"all the options\")."
+  },
+  "@astryx.multiSelector.selectionCount": {
+    "defaultMessage": "{count, number} of {total, number} selected",
+    "description": "Polite screen-reader announcement of how many MultiSelector options are selected out of the total, spoken after each toggle. Live-region text, never shown on screen; example: `3 of 12 selected`."
+  },
+  "@astryx.multiSelector.emptySearchResults": {
+    "defaultMessage": "No results found",
+    "description": "Polite screen-reader announcement when a MultiSelector search query matches no options. Live-region text, never shown on screen; neutral tone (not error-y)."
+  },
+  "@astryx.multiSelector.resultCount": {
+    "defaultMessage": "{count, number} {count, plural, one {result} other {results}}",
+    "description": "Polite screen-reader announcement of how many MultiSelector options match the search query, spoken as the user types. Live-region text, never shown on screen; example: `1 result`, `12 results`."
+  },
+  "@astryx.selector.emptySearchResults": {
+    "defaultMessage": "No results found",
+    "description": "Polite screen-reader announcement when a Selector search query matches no options. Live-region text, never shown on screen; neutral tone (not error-y)."
+  },
+  "@astryx.selector.resultCount": {
+    "defaultMessage": "{count, number} {count, plural, one {result} other {results}}",
+    "description": "Polite screen-reader announcement of how many Selector options match the search query, spoken as the user types. Live-region text, never shown on screen; example: `1 result`, `12 results`."
+  },
+  "@astryx.typeahead.resultCount": {
+    "defaultMessage": "{count, number} {count, plural, one {result} other {results}}",
+    "description": "Polite screen-reader announcement of how many suggestions a Typeahead search returned. Live-region text, never shown on screen; example: `1 result`, `12 results`."
+  },
+  "@astryx.tokenizer.tokenAdded": {
+    "defaultMessage": "Added {label}",
+    "description": "Polite screen-reader announcement after a token is added to a Tokenizer, either picked from the suggestions or newly created. Live-region text, never shown on screen; `{label}` is the token's visible text."
+  },
+  "@astryx.tokenizer.tokenRemoved": {
+    "defaultMessage": "Removed {label}",
+    "description": "Polite screen-reader announcement after a token is removed from a Tokenizer, by its × button or by Backspace. Live-region text, never shown on screen; `{label}` is the token's visible text."
+  },
+  "@astryx.lightbox.imagePosition": {
+    "defaultMessage": "Image {index, number} of {total, number}",
+    "description": "Polite screen-reader announcement when a Lightbox moves to a media item that has no alt text. Live-region text, never shown on screen; `{index}` is 1-based, example: `Image 3 of 12`."
+  },
+  "@astryx.lightbox.mediaPosition": {
+    "defaultMessage": "{alt}, {index, number} of {total, number}",
+    "description": "Polite screen-reader announcement when a Lightbox moves to a media item that has alt text, composing that alt with the item's position. Live-region text, never shown on screen; example: `Sunset over the bay, 3 of 12`."
   }
 }

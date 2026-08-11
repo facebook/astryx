@@ -792,14 +792,19 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       const selectableSet = new Set(selectableItems.map(item => item.value));
       const selectedCount = nextValue.filter(v => selectableSet.has(v)).length;
       if (selectedCount === 0) {
-        announce('Selection cleared');
+        announce(t('@astryx.multiSelector.selectionCleared'));
       } else if (total > 0 && selectedCount === total) {
-        announce('All selected');
+        announce(t('@astryx.multiSelector.allSelected'));
       } else {
-        announce(`${selectedCount} of ${total} selected`);
+        announce(
+          t('@astryx.multiSelector.selectionCount', {
+            count: selectedCount,
+            total,
+          }),
+        );
       }
     },
-    [announce, selectableItems],
+    [announce, selectableItems, t],
   );
 
   // Filter items by search query
@@ -903,11 +908,11 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       const count = filterOptionsByQuery(selectableItems, nextQuery).length;
       announce(
         count === 0
-          ? 'No results found'
-          : `${count} result${count === 1 ? '' : 's'}`,
+          ? t('@astryx.multiSelector.emptySearchResults')
+          : t('@astryx.multiSelector.resultCount', {count}),
       );
     },
-    [announce, selectableItems],
+    [announce, selectableItems, t],
   );
 
   // Handle toggle

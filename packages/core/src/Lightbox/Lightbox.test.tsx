@@ -2,8 +2,10 @@
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import IntlMessageFormat from 'intl-messageformat';
 import {Lightbox} from './Lightbox';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
+import en from '../../locales/en.json' with {type: 'json'};
 
 // Mock showModal/close for jsdom
 beforeEach(() => {
@@ -25,6 +27,15 @@ afterEach(() => {
 
 function politeRegion(): HTMLElement | null {
   return document.querySelector('[data-astryx-live-region="polite"]');
+}
+
+// Announcements are asserted against the shipped catalog, not a second copy of
+// their English, so a hardcoded string in the component fails here.
+const catalog: Record<string, {defaultMessage: string}> = en;
+function enMessage(key: string, values?: Record<string, unknown>): string {
+  return String(
+    new IntlMessageFormat(catalog[key].defaultMessage, 'en').format(values),
+  );
 }
 
 describe('Lightbox', () => {
@@ -329,7 +340,13 @@ describe('Lightbox', () => {
       );
       fireEvent.click(screen.getByLabelText('Next'));
       await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent('Image B, 2 of 3');
+        expect(politeRegion()).toHaveTextContent(
+          enMessage('@astryx.lightbox.mediaPosition', {
+            alt: 'Image B',
+            index: 2,
+            total: 3,
+          }),
+        );
       });
     });
 
@@ -345,7 +362,13 @@ describe('Lightbox', () => {
       const dialog = document.querySelector('dialog')!;
       fireEvent.keyDown(dialog, {key: 'ArrowRight'});
       await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent('Image C, 3 of 3');
+        expect(politeRegion()).toHaveTextContent(
+          enMessage('@astryx.lightbox.mediaPosition', {
+            alt: 'Image C',
+            index: 3,
+            total: 3,
+          }),
+        );
       });
     });
 
@@ -360,7 +383,13 @@ describe('Lightbox', () => {
       );
       fireEvent.click(screen.getByLabelText('Previous'));
       await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent('Image B, 2 of 3');
+        expect(politeRegion()).toHaveTextContent(
+          enMessage('@astryx.lightbox.mediaPosition', {
+            alt: 'Image B',
+            index: 2,
+            total: 3,
+          }),
+        );
       });
     });
 
@@ -379,7 +408,9 @@ describe('Lightbox', () => {
       );
       fireEvent.click(screen.getByLabelText('Next'));
       await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent('Image 2 of 2');
+        expect(politeRegion()).toHaveTextContent(
+          enMessage('@astryx.lightbox.imagePosition', {index: 2, total: 2}),
+        );
       });
     });
 

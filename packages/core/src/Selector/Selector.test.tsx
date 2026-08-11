@@ -18,6 +18,7 @@ import {
   within,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import IntlMessageFormat from 'intl-messageformat';
 import {useState} from 'react';
 import {Selector} from './Selector';
 import {SelectorOption} from './SelectorOption';
@@ -26,6 +27,7 @@ import {RadioIndicator} from '../Indicator';
 import {InputGroup, InputGroupText} from '../InputGroup';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {__resetInteractionModalityForTest} from '../utils/interactionModality';
+import en from '../../locales/en.json' with {type: 'json'};
 import {defineTheme} from '../theme/defineTheme';
 import {Theme} from '../theme/Theme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
@@ -79,6 +81,15 @@ const TYPEAHEAD_RESET_MS = 750;
 
 const politeRegion = () =>
   document.querySelector('[data-astryx-live-region="polite"]');
+
+// Announcements are asserted against the shipped catalog, not a second copy of
+// their English, so a hardcoded string in the component fails here.
+const catalog: Record<string, {defaultMessage: string}> = en;
+function enMessage(key: string, values?: Record<string, unknown>): string {
+  return String(
+    new IntlMessageFormat(catalog[key].defaultMessage, 'en').format(values),
+  );
+}
 
 /**
  * Type onto an element with no awaits between keystrokes. Typeahead only
@@ -1049,7 +1060,9 @@ describe('Selector', () => {
         // "a" matches Apple and Banana.
         await user.type(screen.getByRole('combobox', h), 'a');
         await waitFor(() => {
-          expect(politeRegion()).toHaveTextContent('2 results');
+          expect(politeRegion()).toHaveTextContent(
+            enMessage('@astryx.selector.resultCount', {count: 2}),
+          );
         });
       });
 
@@ -1068,11 +1081,15 @@ describe('Selector', () => {
         // "ban" matches only Banana. Anchored so it cannot pass on "1 results".
         await user.type(screen.getByRole('combobox', h), 'ban');
         await waitFor(() => {
-          expect(politeRegion()).toHaveTextContent(/^1 result$/);
+          expect(politeRegion()).toHaveTextContent(
+            new RegExp(
+              `^${enMessage('@astryx.selector.resultCount', {count: 1})}$`,
+            ),
+          );
         });
       });
 
-      it('announces "No results found" when nothing matches', async () => {
+      it('announces the empty-results message when nothing matches', async () => {
         const user = userEvent.setup();
         render(
           <Selector
@@ -1086,7 +1103,9 @@ describe('Selector', () => {
         await user.click(screen.getByRole('button', {name: 'Fruit'}));
         await user.type(screen.getByRole('combobox', h), 'xyz');
         await waitFor(() => {
-          expect(politeRegion()).toHaveTextContent('No results found');
+          expect(politeRegion()).toHaveTextContent(
+            enMessage('@astryx.selector.emptySearchResults'),
+          );
         });
       });
 

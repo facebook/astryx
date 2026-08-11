@@ -12,10 +12,21 @@
 import {describe, it, expect, vi, beforeAll, afterAll, afterEach} from 'vitest';
 import {render, screen, fireEvent, act, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import IntlMessageFormat from 'intl-messageformat';
 import {Tokenizer} from './Tokenizer';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import type {SearchSource, SearchableItem} from '../Typeahead/types';
 import {TestIcon} from '../__tests__/TestIcon';
+import en from '../../locales/en.json' with {type: 'json'};
+
+// Announcements are asserted against the shipped catalog, not a second copy of
+// their English, so a hardcoded string in the component fails here.
+const catalog: Record<string, {defaultMessage: string}> = en;
+function enMessage(key: string, values?: Record<string, unknown>): string {
+  return String(
+    new IntlMessageFormat(catalog[key].defaultMessage, 'en').format(values),
+  );
+}
 
 function politeRegion(): HTMLElement | null {
   return document.querySelector('[data-astryx-live-region="polite"]');
@@ -994,7 +1005,9 @@ describe('Tokenizer', () => {
         type: 'remove',
       });
       await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent('Removed Bob');
+        expect(politeRegion()).toHaveTextContent(
+          enMessage('@astryx.tokenizer.tokenRemoved', {label: 'Bob'}),
+        );
       });
     });
 
@@ -1009,7 +1022,9 @@ describe('Tokenizer', () => {
       );
       fireEvent.click(screen.getByRole('button', {name: 'Remove Alice'}));
       await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent('Removed Alice');
+        expect(politeRegion()).toHaveTextContent(
+          enMessage('@astryx.tokenizer.tokenRemoved', {label: 'Alice'}),
+        );
       });
     });
 
@@ -1031,7 +1046,9 @@ describe('Tokenizer', () => {
       });
       fireEvent.click(screen.getByText('Alice'));
       await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent('Added Alice');
+        expect(politeRegion()).toHaveTextContent(
+          enMessage('@astryx.tokenizer.tokenAdded', {label: 'Alice'}),
+        );
       });
     });
 
@@ -1059,7 +1076,9 @@ describe('Tokenizer', () => {
       });
       fireEvent.click(screen.getByText('Create "new-tag"'));
       await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent('Added new-tag');
+        expect(politeRegion()).toHaveTextContent(
+          enMessage('@astryx.tokenizer.tokenAdded', {label: 'new-tag'}),
+        );
       });
     });
 

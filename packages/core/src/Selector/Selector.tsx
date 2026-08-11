@@ -844,11 +844,11 @@ export function Selector<T extends SelectorOptionType>(
       const count = filterOptionsByQuery(selectableItems, nextQuery).length;
       announce(
         count === 0
-          ? 'No results found'
-          : `${count} result${count === 1 ? '' : 's'}`,
+          ? t('@astryx.selector.emptySearchResults')
+          : t('@astryx.selector.resultCount', {count}),
       );
     },
-    [announce, selectableItems],
+    [announce, selectableItems, t],
   );
 
   // Calculate offset to position selected item over trigger. Explicit

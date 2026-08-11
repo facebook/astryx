@@ -18,8 +18,28 @@ import {
   waitFor,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import IntlMessageFormat from 'intl-messageformat';
 import {FileInput} from './FileInput';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
+import {InternationalizationProvider} from '../i18n';
+import en from '../../locales/en.json' with {type: 'json'};
+import pseudoCatalog from '../../locales/pseudo.json' with {type: 'json'};
+
+// Announcements are asserted against the shipped catalog, not a second copy of
+// their English, so a hardcoded string in the component fails here.
+const catalog: Record<string, {defaultMessage: string}> = en;
+function enMessage(key: string, values?: Record<string, unknown>): string {
+  return String(
+    new IntlMessageFormat(catalog[key].defaultMessage, 'en').format(values),
+  );
+}
+
+const pseudo: Record<string, {defaultMessage: string}> = pseudoCatalog;
+function pseudoMessage(key: string, values?: Record<string, unknown>): string {
+  return String(
+    new IntlMessageFormat(pseudo[key].defaultMessage, 'en').format(values),
+  );
+}
 
 afterEach(() => {
   __resetLiveRegionsForTest();
@@ -329,7 +349,12 @@ describe('FileInput', () => {
         target: {files: [createFile('report.pdf', 100)]},
       });
       await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent('1 file selected: report.pdf');
+        expect(politeRegion()).toHaveTextContent(
+          enMessage('@astryx.fileInput.filesSelected', {
+            count: 1,
+            name: 'report.pdf',
+          }),
+        );
       });
     });
 
@@ -349,7 +374,33 @@ describe('FileInput', () => {
       ];
       fireEvent.change(fileInputEl(), {target: {files}});
       await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent('3 files selected');
+        expect(politeRegion()).toHaveTextContent(
+          enMessage('@astryx.fileInput.filesSelected', {
+            count: 3,
+            name: 'a.txt',
+          }),
+        );
+      });
+    });
+
+    it('speaks the selection from the provider catalog', async () => {
+      render(
+        <InternationalizationProvider
+          locale="pseudo"
+          messages={{pseudo: pseudoCatalog}}>
+          <FileInput label="Upload" value={null} onChange={() => {}} />
+        </InternationalizationProvider>,
+      );
+      fireEvent.change(fileInputEl(), {
+        target: {files: [createFile('report.pdf', 100)]},
+      });
+      await waitFor(() => {
+        expect(politeRegion()?.textContent).toBe(
+          pseudoMessage('@astryx.fileInput.filesSelected', {
+            count: 1,
+            name: 'report.pdf',
+          }),
+        );
       });
     });
 
