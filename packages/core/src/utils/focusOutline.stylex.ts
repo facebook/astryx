@@ -44,6 +44,41 @@ const focusOutlineLonghands = {
   outlineColor: FOCUS_OUTLINE_COLOR,
 } as const;
 
+/**
+ * The standard focus ring as plain CSS values, for the one case that has to
+ * apply it imperatively: a control whose focusable input is visually hidden and
+ * whose ring must land on a *themeable indicator* beside it (see
+ * `useIndicatorFocusRing`). Everything else should use the styles above.
+ *
+ * Longhands, not the `outline` shorthand, for the same reason the styles are:
+ * a shorthand resets every longhand it covers, so a caller could not re-color
+ * the ring without restating its width and style. Split, each part is
+ * independently overridable — and `--color-accent` stays a var, so a theme's
+ * accent still flows through.
+ *
+ * Keys are camelCase to match `HTMLElement.style`, so this spreads straight
+ * onto an element:
+ *
+ * ```ts
+ * Object.assign(el.style, FOCUS_OUTLINE_PARTS);        // draw
+ * Object.assign(el.style, FOCUS_OUTLINE_PARTS_NONE);   // clear
+ * ```
+ */
+export const FOCUS_OUTLINE_PARTS = {
+  outlineWidth: FOCUS_OUTLINE_WIDTH,
+  outlineStyle: 'solid',
+  outlineColor: FOCUS_OUTLINE_COLOR,
+  outlineOffset: FOCUS_OUTLINE_OFFSET,
+} as const;
+
+/** Clears {@link FOCUS_OUTLINE_PARTS}, one key per part so nothing lingers. */
+export const FOCUS_OUTLINE_PARTS_NONE = {
+  outlineWidth: '',
+  outlineStyle: '',
+  outlineColor: '',
+  outlineOffset: '',
+} as const;
+
 export const focusOutlineStyles = stylex.create({
   focusVisible: {
     outlineWidth: {

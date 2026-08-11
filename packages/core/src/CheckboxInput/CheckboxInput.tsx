@@ -21,6 +21,7 @@ import {
   useCallback,
   use,
   useOptimistic,
+  useRef,
   useTransition,
   type ChangeEvent,
   type FocusEvent,
@@ -44,10 +45,8 @@ import type {InputStatus} from '../Field/types';
 import {Spinner} from '../Spinner';
 import {useTooltip} from '../Tooltip';
 import {mergeProps, mergeRefs} from '../utils';
-import {
-  indicatorOwnerFocusRing,
-  indicatorScope,
-} from '../Indicator/indicator.markers.stylex';
+import {indicatorScope} from '../Indicator/indicator.markers.stylex';
+import {useIndicatorFocusRing} from '../hooks/useIndicatorFocusRing';
 import {useIndicator} from '../Indicator';
 import {themeProps} from '../utils/themeProps';
 import {CheckboxListContext} from '../CheckboxList/CheckboxListContext';
@@ -69,11 +68,11 @@ const styles = stylex.create({
     flexShrink: 0,
     isolation: 'isolate',
   },
-  // Fallback ring shape, used only when an indicator does NOT draw its own
-  // (the built-in checkbox does). A third-party replacement that forgets gets
-  // a visible ring in the default control shape rather than none.
-  ringRadiusFallback: {
-    borderRadius: radiusVars['--radius-inner'],
+  // Holds only the indicator, so the focus ring has one unambiguous target.
+  // `display: contents` adds no box of its own — the indicator keeps whatever
+  // layout relationship it already had with the wrapper.
+  indicatorSlot: {
+    display: 'contents',
   },
   input: {
     position: 'absolute',
@@ -313,6 +312,11 @@ export function CheckboxInput({
   // The checkbox visual is an indicator: a theme can restyle it through the
   // `checkbox` target or replace the component outright.
   const CheckboxControl = useIndicator('checkbox');
+  // The ring is drawn on the indicator itself: the native input is
+  // `opacity: 0`, and only the indicator's own element can shape the outline
+  // to match it. See useIndicatorFocusRing.
+  const indicatorRef = useRef<HTMLSpanElement>(null);
+  const {focusProps} = useIndicatorFocusRing(indicatorRef, isDisabled);
 
   const isIndeterminate = optimisticValue === 'indeterminate';
   const isChecked = optimisticValue === true;
@@ -373,16 +377,8 @@ export function CheckboxInput({
           !isDisabled && indicatorScope,
         )}>
         <div
-          {...stylex.props(
-            styles.checkboxWrapper,
-            wrapperSizeStyles[size],
-            // The ring lives on the element owning the hidden input, so a
-            // themed indicator cannot leave the control without one. Shape
-            // defaults to the built-in checkbox's; a theme redirects it with
-            // INDICATOR_RING_RADIUS_VAR.
-            !isDisabled && indicatorOwnerFocusRing,
-            !isDisabled && styles.ringRadiusFallback,
-          )}>
+          {...stylex.props(styles.checkboxWrapper, wrapperSizeStyles[size])}
+          {...focusProps}>
           <input
             {...rest}
             ref={mergeRefs(
@@ -429,26 +425,25 @@ export function CheckboxInput({
               isDisabled && styles.inputDisabled,
             )}
           />
-          <CheckboxControl
-            state={
-              isIndeterminate
-                ? 'indeterminate'
-                : isChecked
-                  ? 'checked'
-                  : 'unchecked'
-            }
-            size={size}
-            isDisabled={isDisabled}
-            // The ring is handed DOWN rather than left to the indicator.
-            // This control's native input is `opacity: 0`, so if a themed
-            // replacement forgot to draw one there would be no visible focus
-            // at all (WCAG 2.4.7) — and an indicator can forget, while a
-            // prop it must merge (BaseProps, lint-enforced) it cannot. The
-            // style is shape-agnostic: `outline` follows the indicator's own
-            // border-radius, so the indicator still decides what it traces.
-          >
-            {isBusy ? <Spinner size="sm" shade="inherit" /> : null}
-          </CheckboxControl>
+          {/*
+           * A container holding ONLY the indicator, so the focus ring has an
+           * unambiguous target whatever a theme renders. `display: contents`
+           * keeps it out of layout entirely.
+           */}
+          <span ref={indicatorRef} {...stylex.props(styles.indicatorSlot)}>
+            <CheckboxControl
+              state={
+                isIndeterminate
+                  ? 'indeterminate'
+                  : isChecked
+                    ? 'checked'
+                    : 'unchecked'
+              }
+              size={size}
+              isDisabled={isDisabled}>
+              {isBusy ? <Spinner size="sm" shade="inherit" /> : null}
+            </CheckboxControl>
+          </span>
         </div>
         <div {...stylex.props(styles.labelWrapper)}>
           <FieldLabel

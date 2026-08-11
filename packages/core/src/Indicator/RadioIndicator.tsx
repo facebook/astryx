@@ -16,10 +16,7 @@ import {
   easeVars,
 } from '../theme/tokens.stylex';
 import {mergeProps, themeProps} from '../utils';
-import {
-  indicatorFocusRingProps,
-  indicatorScope,
-} from './indicator.markers.stylex';
+import {indicatorScope} from './indicator.markers.stylex';
 import type {IndicatorProps} from './types';
 
 const styles = stylex.create({
@@ -156,21 +153,16 @@ export function RadioIndicator({
       ref={ref}
       aria-hidden="true"
       {...mergeProps(
-        // Nested so the ring's className merges rather than clobbering the
-        // theme target's — mergeProps only takes four positional arguments.
-        mergeProps(
-          indicatorFocusRingProps(),
-          themeProps(
-            'radio-indicator',
-            {
-              size,
-              checked: isChecked ? 'checked' : null,
-              disabled: isDisabled ? 'disabled' : null,
-            },
-            // `radio` was the target before indicators existed; themes styling
-            // it keep working until the next major.
-            {legacyNames: ['radio']},
-          ),
+        themeProps(
+          'radio-indicator',
+          {
+            size,
+            checked: isChecked ? 'checked' : null,
+            disabled: isDisabled ? 'disabled' : null,
+          },
+          // `radio` was the target before indicators existed; themes styling
+          // it keep working until the next major.
+          {legacyNames: ['radio']},
         ),
         stylex.props(
           styles.circle,

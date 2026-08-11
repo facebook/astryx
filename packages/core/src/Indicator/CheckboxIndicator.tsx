@@ -17,10 +17,7 @@ import {
   radiusVars,
 } from '../theme/tokens.stylex';
 import {mergeProps, themeProps} from '../utils';
-import {
-  indicatorFocusRingProps,
-  indicatorScope,
-} from './indicator.markers.stylex';
+import {indicatorScope} from './indicator.markers.stylex';
 import type {IndicatorProps} from './types';
 
 const styles = stylex.create({
@@ -193,25 +190,20 @@ export function CheckboxIndicator({
       ref={ref}
       aria-hidden="true"
       {...mergeProps(
-        // Nested so the ring's className merges rather than clobbering the
-        // theme target's — mergeProps only takes four positional arguments.
-        mergeProps(
-          indicatorFocusRingProps(),
-          themeProps(
-            'checkbox-indicator',
-            {
-              size,
-              checked: isChecked
-                ? 'checked'
-                : isIndeterminate
-                  ? 'indeterminate'
-                  : null,
-              disabled: isDisabled ? 'disabled' : null,
-            },
-            // `checkbox` was the target before indicators existed; themes
-            // styling it keep working until the next major.
-            {legacyNames: ['checkbox']},
-          ),
+        themeProps(
+          'checkbox-indicator',
+          {
+            size,
+            checked: isChecked
+              ? 'checked'
+              : isIndeterminate
+                ? 'indeterminate'
+                : null,
+            disabled: isDisabled ? 'disabled' : null,
+          },
+          // `checkbox` was the target before indicators existed; themes
+          // styling it keep working until the next major.
+          {legacyNames: ['checkbox']},
         ),
         stylex.props(
           styles.box,

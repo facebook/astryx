@@ -92,6 +92,7 @@ export {useLongPress} from './useLongPress';
 export type {UseLongPressOptions, UseLongPressHandlers} from './useLongPress';
 
 export {useDevWarning} from './useDevWarning';
+export {useIndicatorFocusRing} from './useIndicatorFocusRing';
 
 export {useContainerReveal} from './useContainerReveal';
 export type {
