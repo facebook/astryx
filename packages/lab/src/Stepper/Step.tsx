@@ -130,10 +130,26 @@ export interface StepProps extends BaseProps<HTMLLIElement> {
 // --- Default progress icons (16px) ---
 //
 // The `completed` progress state and the current-step ring are drawn as local
-// glyphs: `completed` is a filled circle-check (a distinct "progress done"
-// mark), deliberately different from the semantic `success` status — which
-// defers to the themed Icon registry (an outline check). `warning` / `error`
-// statuses also defer to the themed registry so they share one visual language.
+// <svg> glyphs rather than sourced from the Icon registry. This is a deliberate
+// exception to the "glyphs come from the registry" convention (audit rule T17),
+// for two reasons:
+//
+//  1. `CurrentIcon` (a dot inside a ring) has no registry equivalent — it is a
+//     progress affordance, not a general-purpose icon.
+//  2. `CheckCircleIcon` (a filled circle with a check) is intentionally NOT the
+//     registry `success` glyph, even though the two look similar. They mean
+//     different things and must stay independently restyleable: `completed`
+//     marks *progress through the sequence* (every step you've passed), while
+//     the semantic `success` status marks a step's *outcome*. A stepper can
+//     show a completed step that also carries a `warning`/`error` status, so
+//     collapsing the two glyphs would conflate progress with outcome. The
+//     semantic `success`/`warning`/`error` STATUS glyphs DO defer to the themed
+//     registry (see the status branch below), so those share one visual
+//     language; only the progress marks are local.
+//
+// Both glyphs paint via `currentColor`, so the indicator's color is still
+// controlled by tokens on the wrapper (never hardcoded), and the wrapper
+// carries the `astryx-step-indicator` theme target.
 
 /** Filled circle with a check — shown for a completed step in 'auto' mode. */
 function CheckCircleIcon() {
@@ -271,9 +287,9 @@ const styles = stylex.create({
     width: NUMBER_SIZE,
     height: NUMBER_SIZE,
     borderRadius: radiusVars['--radius-full'],
-    // 10px is below the smallest type token (--text-supporting-size, 12px);
-    // intentional micro-type for the compact 20px numeric badge.
-    fontSize: '10px',
+    // Smallest semantic type token — keeps the compact numeric badge legible
+    // (>=12px) and themeable rather than a raw literal.
+    fontSize: typeScaleVars['--text-supporting-size'],
     paddingBlockEnd: '1px',
     fontWeight: fontWeightVars['--font-weight-semibold'],
     lineHeight: 1,
@@ -760,7 +776,13 @@ export function Step({
       indicatorNode = (
         <div
           aria-hidden="true"
-          {...stylex.props(styles.numberBadge, numberColorStyle)}>
+          {...mergeProps(
+            themeProps('step-indicator', {
+              progress,
+              status: status ?? undefined,
+            }),
+            stylex.props(styles.numberBadge, numberColorStyle),
+          )}>
           {step + 1}
         </div>
       );
@@ -826,7 +848,15 @@ export function Step({
                     : styles.iconNotStarted;
 
       indicatorNode = (
-        <div aria-hidden="true" {...stylex.props(styles.icon, iconColorStyle)}>
+        <div
+          aria-hidden="true"
+          {...mergeProps(
+            themeProps('step-indicator', {
+              progress,
+              status: status ?? undefined,
+            }),
+            stylex.props(styles.icon, iconColorStyle),
+          )}>
           {iconContent}
         </div>
       );

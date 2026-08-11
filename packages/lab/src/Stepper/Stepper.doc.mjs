@@ -30,6 +30,7 @@ export const docs = {
     targets: [
       {className: 'astryx-stepper', visualProps: ['orientation', 'indicatorPosition']},
       {className: 'astryx-step', visualProps: ['progress', 'status']},
+      {className: 'astryx-step-indicator', visualProps: ['progress', 'status']},
       {className: 'astryx-step-bar'},
       {className: 'astryx-step-connector'},
     ],
@@ -233,6 +234,7 @@ export const docsZh = {
     targets: [
       {className: 'astryx-stepper', visualProps: ['orientation', 'indicatorPosition']},
       {className: 'astryx-step', visualProps: ['progress', 'status']},
+      {className: 'astryx-step-indicator', visualProps: ['progress', 'status']},
       {className: 'astryx-step-bar'},
       {className: 'astryx-step-connector'},
     ],
