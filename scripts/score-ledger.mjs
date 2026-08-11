@@ -3,65 +3,92 @@
 
 /**
  * @file score-ledger.mjs
- * @description The component score ledger — read, report, queue and ratchet the
+ * @description The component score ledger — read, record, queue and ratchet the
  *   per-component audit scores produced by the Component Audit Rubric.
  * @input Subcommand flags (see USAGE below) plus `--ledger <path|url>`.
- * @output Human-readable tables on stdout, a generated Markdown table with
- *   `--report`, an updated ledger JSON with `--record`, and a non-zero exit
- *   from `--check` when the ratchet trips.
+ * @output Human-readable summaries on stdout, an updated ledger JSON with
+ *   `--record` (pushed to the wiki with `--push`), and a non-zero exit from
+ *   `--check` when the ratchet trips.
  * @position Standalone CLI, and the module every other surface imports.
  *
  *   Two halves, deliberately separate:
  *     - the ROSTER (which components exist) is derived from the packages here,
  *       by the canonical predicate below — rubric decision #15;
- *     - the SCORES live in the wiki, in `component-scores.json` beside the
- *       generated Component-Scores page, because recording a score must not
- *       require a pull request.
+ *     - the SCORES live in the wiki, in `component-scores.json`, because
+ *       recording a score must not require a pull request.
  *   A component with no ledger entry is unaudited. Nothing has to maintain a
  *   list of unaudited components: the roster is the packages.
  *
- * SYNC: When the schema changes, update the preamble emitted by `--report`
- *   (renderTable), the Component-Audit-Rubric wiki page, and
- *   apps/sandbox/scripts/generate-score-ledger.mjs.
+ *   `component-scores.json` is the ONLY stored form of the ledger. There is no
+ *   generated Markdown table: a second copy of the same numbers goes stale the
+ *   moment the JSON changes without a regeneration, and a stale score that
+ *   looks current is worse than one you have to click through for. The single
+ *   view is the sandbox page, which fetches this JSON at runtime.
+ *
+ * SYNC: When the schema changes, update the Component-Audit-Rubric wiki page
+ *   and apps/sandbox/scripts/generate-score-ledger.mjs.
  */
 
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
+import {execFileSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
+/** The one stored form of the ledger, at the root of the wiki repo. */
+export const LEDGER_FILENAME = 'component-scores.json';
+
 /** Where the scores live when no `--ledger` is given. */
 export const DEFAULT_LEDGER_URL =
   'https://raw.githubusercontent.com/wiki/facebook/astryx/component-scores.json';
+
+/** The wiki repo the ledger lives in — what `--push` clones. */
+export const WIKI_REMOTE = 'https://github.com/facebook/astryx.wiki.git';
+
+/** The wiki's default branch. Not `main`. */
+export const WIKI_BRANCH = 'master';
+
+/**
+ * The one place the ledger is readable by a human: the sandbox page, which
+ * fetches the JSON at runtime. Deployed from `main` by .github/workflows/
+ * deploy.yml to the stable (unversioned) GitHub Pages path — /pr/<n>/ paths
+ * are PR previews and must never be linked from anything durable.
+ */
+export const SCORES_PAGE_URL =
+  'https://facebook.github.io/astryx/sandbox/pages/component-scores/';
 
 const USAGE = `
 Usage: node scripts/score-ledger.mjs <subcommand> [options]
 
 Subcommands
   --check                 Ratchet / standing report for the components a PR touches.
-  --report                Regenerate the Markdown table (Component-Scores.md).
   --queue                 The auditor's work queue: unaudited first, then
                           oldest-audited, then lowest-scoring.
-  --stats                 Distribution summary.
-  --record <Component>    Write one component's scorecard into the ledger and
-                          regenerate the table.
+  --stats                 Distribution summary on the terminal.
+  --record <Component>    Write one component's scorecard into the ledger.
   --file-issues <Component>
                           File one GitHub issue per open BLOCK that has none,
                           via gh, and write the numbers back into the ledger.
 
 Options
   --ledger <path|url>       Ledger source. Default: the wiki raw URL.
-                            --record needs a local path (it writes).
+                            --record needs a local path, or --push.
   --base-ledger <path|url>  Baseline ledger for --check; enables the ratchet.
   --components <a,b,c>      --check: components to check.
   --analysis <file>         --check: analysis.json from .github/scripts/analyze-pr.js.
   --limit <n>               --queue: how many rows (default 5).
-  --out <file>              --report/--record: where to write the table.
   --package <core|lab>      --record: package, if the predicate cannot resolve it.
   --from <file|->           --record: scorecard JSON ('-' reads stdin).
   --allow-regression <why>  --record: permit a score drop or a new BLOCK.
-  --dry-run                 --file-issues: print the issues, create nothing.
+  --push                    --record/--file-issues: clone the wiki, apply, commit
+                            and push. Without --ledger it uses a cached shallow
+                            clone; the commit message names the component, the
+                            grade and the rubric version.
+  --dry-run                 --record: print the diff and the commit message and
+                            push nothing. --file-issues: print the issues,
+                            create nothing.
   --repo <owner/name>       --file-issues: default facebook/astryx.
   --json                    Machine-readable output where it applies.
 `.trim();
@@ -629,10 +656,10 @@ export function buildStats(roster) {
 }
 
 // ---------------------------------------------------------------------------
-// --report — the generated wiki table
+// Small shared formatters
 // ---------------------------------------------------------------------------
 
-/** The lowest `scored` section, for the table's "weakest section" column. */
+/** The lowest `scored` section — the one an auditor should attack next. */
 export function weakestSection(entry) {
   let worst = null;
   for (const id of SECTION_IDS) {
@@ -647,217 +674,217 @@ function fmtScore(n) {
   return typeof n === 'number' ? n.toFixed(1) : '—';
 }
 
-export function renderTable(ledger, roster, stats) {
-  const g = stats.grades;
-  const out = [];
-
-  out.push('<!--');
-  out.push('  GENERATED FILE — DO NOT EDIT.');
-  out.push('  Regenerate: node scripts/score-ledger.mjs --report --ledger <path to this wiki>/component-scores.json');
-  out.push('  Source of truth for scores: component-scores.json in this wiki.');
-  out.push('  Source of truth for the component list: packages/{core,lab}/src in the repo.');
-  out.push('-->');
-  out.push('');
-  out.push('# Component Scores');
-  out.push('');
-  out.push(
-    '**This page is generated. Do not hand-edit it.** Scores live in `component-scores.json` ' +
-      'in this wiki; the component list is read from `packages/core/src` and `packages/lab/src`. ' +
-      "An audit writes both with `node scripts/score-ledger.mjs --record <Component> --from <scorecard.json>`.",
-  );
-  out.push('');
-  out.push(
-    `_Generated ${new Date().toISOString().slice(0, 10)} · ledger v${ledger.ledgerVersion} · ` +
-      `current rubric **v${ledger.rubricVersion}** · roster read from the packages at generation time._`,
-  );
-  out.push('');
-
-  out.push('## Summary');
-  out.push('');
-  out.push(
-    `**${stats.audited} of ${stats.total} components audited (${stats.percentAudited}%)** — ` +
-      `core ${stats.byPackage.core.audited}/${stats.byPackage.core.total}, ` +
-      `lab ${stats.byPackage.lab.audited}/${stats.byPackage.lab.total}. ` +
-      `Total open BLOCKs: **${stats.openBlocks}** across ${stats.componentsWithBlocks} components. ` +
-      `Mean score of audited components: **${fmtScore(stats.meanScore)}**. ` +
-      `Oldest audit: ${stats.oldestAudit || '—'}.`,
-  );
-  out.push('');
-  out.push('| Grade | A | B | C | D | F | unaudited |');
-  out.push('|---|---|---|---|---|---|---|');
-  out.push(
-    `| Components | ${g.A} | ${g.B} | ${g.C} | ${g.D} | ${g.F} | ${stats.unaudited} |`,
-  );
-  out.push('');
-
-  out.push('## How to read this');
-  out.push('');
-  out.push(
-    '- **Score** is the rubric total, 0–100: Σ (section score ÷ 5 × weight). It measures ' +
-      '**distance from the bar, not craft** — a mature, widely-composed component carrying four ' +
-      'narrow defects can land below an immature one with none.',
-  );
-  out.push(
-    '- **Grade** is the band (A 90+ · B 80+ · C 70+ · D 60+ · F <60). **Any open BLOCK caps the ' +
-      'grade at C** regardless of arithmetic.',
-  );
-  out.push(
-    '- **Open BLOCKs** is the number that matters. A BLOCK is a bright-line failure, not a large ' +
-      'deduction — read it before you read the letter. Each one is filed as a `hardening` issue ' +
-      'and linked here; the issue carries the rule id, the evidence and the fix. FIXes and NITs ' +
-      'are not issues — they live in the ledger row.',
-  );
-  out.push(
-    '- **TBD** means nobody has graded it. It does not mean "bad", and it does not mean "fine" — ' +
-      'it means no evidence. The ledger records nulls, never zeros, and holds no row at all for an ' +
-      'unaudited component.',
-  );
-  out.push(
-    '- **Weakest section** is the lowest section carrying a published per-section score. Rows ' +
-      'seeded from the calibration record published only their §5 split, so their weakest column ' +
-      'reads from §5 alone — see the caveats below.',
-  );
-  out.push('');
-  out.push('### Getting a component audited');
-  out.push('');
-  out.push(
-    'Anyone can ask for an audit — you do not need to be an auditor, and it does not need a PR. ' +
-      'Paste this to an agent that has the repo checked out:',
-  );
-  out.push('');
-  out.push('```');
-  out.push(AUDIT_PROMPT);
-  out.push('```');
-  out.push('');
-  out.push(
-    'Or wait for the nightly pass: it takes the next five from ' +
-      '`node scripts/score-ledger.mjs --queue --limit 5`, which puts never-audited components first.',
-  );
-  out.push('');
-  out.push('### How the ratchet works');
-  out.push('');
-  out.push(
-    'The ledger is a regression ratchet. `node scripts/score-ledger.mjs --check` compares a ' +
-      'proposed ledger against the current one:',
-  );
-  out.push('');
-  out.push('| Change | Verdict |');
-  out.push('|---|---|');
-  out.push('| Score decreased | **fail** |');
-  out.push('| A new BLOCK appears | **fail** — even if the total is flat or higher |');
-  out.push('| Score equal or improved, no new BLOCK | pass |');
-  out.push('| Component is unaudited | pass — no baseline; the first audit sets it |');
-  out.push(
-    '| `rubricVersion` differs | `incomparable` — the two numbers came off different scales; ' +
-      'not a failure, but the entry needs re-auditing under the new version |',
-  );
-  out.push('');
-  out.push(
-    'A component nobody has audited **never** blocks a pull request. That is deliberate: the ' +
-      'ledger exists to stop regressions against measured ground, not to tax work on unmeasured ' +
-      'components.',
-  );
-  out.push('');
-
-  out.push('## Scores');
-  out.push('');
-  out.push(
-    '| Component | Package | Grade | Score | Open BLOCKs | Weakest section | Last audited | Rubric |',
-  );
-  out.push('|---|---|---|---|---|---|---|---|');
-  for (const r of roster) {
-    const name = r.live ? r.component : `${r.component} ⚠️`;
-    if (!isAudited(r.entry)) {
-      out.push(`| ${name} | ${r.package} | TBD | — | — | — | never | — |`);
-      continue;
-    }
-    const e = r.entry;
-    const blocks = openBlockCount(e);
-    const links = issueLinks(e);
-    const unfiled = blockList(e).length - links.length;
-    const blockCell =
-      blocks === 0
-        ? '0'
-        : `**${blocks}**` +
-          (links.length ? ` — ${links.join(', ')}` : '') +
-          (unfiled > 0 ? ` · ${unfiled} not filed` : '') +
-          (blocks > blockList(e).length
-            ? ` · ${blocks - blockList(e).length} unattributed`
-            : '');
-    const weakest = weakestSection(e);
-    out.push(
-      `| ${name} | ${r.package} | **${e.grade}** | ${fmtScore(e.score)} | ${blockCell} | ` +
-        `${weakest ? `${SECTION_TITLES[weakest.id]} (${weakest.score}/5)` : '—'} | ` +
-        `${e.lastAudited || '—'} | v${e.rubricVersion || '—'} |`,
-    );
-  }
-  out.push('');
-  if (stats.orphanRows.length) {
-    out.push(
-      `⚠️ ${stats.orphanRows.join(', ')} — a ledger row with no matching component directory. ` +
-        'Renamed, moved, or deleted since the audit.',
-    );
-    out.push('');
-  }
-
-  const auditedRows = roster.filter(r => isAudited(r.entry));
-  if (auditedRows.length) {
-    out.push('## Open BLOCKs');
-    out.push('');
-    for (const r of auditedRows) {
-      const e = r.entry;
-      const named = blockList(e);
-      const sectionBlocks = SECTION_IDS.flatMap(id =>
-        readSection(e, id).blocks.map(b => ({...b, section: SECTION_TITLES[id]})),
-      );
-      if (!named.length && !sectionBlocks.length) continue;
-      out.push(`### ${e.component}`);
-      out.push('');
-      for (const b of named) out.push(`- ${blockLink(b)} — ${b.summary}`);
-      for (const b of sectionBlocks)
-        out.push(`- ${blockLink(b)} — ${b.summary} _(${b.section})_`);
-      const unnamed = openBlockCount(e) - named.length;
-      if (unnamed > 0)
-        out.push(
-          `- _${unnamed} further open BLOCK${unnamed === 1 ? '' : 's'} counted by the audit of ` +
-            'record without a published rule id._',
-        );
-      out.push('');
-    }
-  }
-
-  if (ledger.caveats && ledger.caveats.length) {
-    out.push('## Caveats on the recorded rows');
-    out.push('');
-    for (const c of ledger.caveats) out.push(`- ${c}`);
-    out.push('');
-  }
-
-  out.push('---');
-  out.push('');
-  out.push(
-    'Rubric: [[Component Audit Rubric]] · auditor: [[Night Watch Component Auditor]] · ' +
-      'tool: `scripts/score-ledger.mjs` in the repo · browsable view: the sandbox ' +
-      '**Component Scores** page.',
-  );
-  out.push('');
-  return out.join('\n');
-}
-
 /**
- * The paste-to-an-agent request for an audit. One string, used by the wiki page
- * and the sandbox page so the two never drift.
+ * The paste-to-an-agent request for an audit. One string, exported so the
+ * sandbox page and the CLI cannot drift.
  */
 export const AUDIT_PROMPT = `Audit the Astryx component <Component> against the Component Audit Rubric
 (https://github.com/facebook/astryx/wiki/Component-Audit-Rubric), mode O — the whole
 component, not a diff. Grade every section, cite the rule id for each finding, and
 capture the §5b screenshots; if you skip them, report design_rendered as not_measured
-rather than scoring it. Then record the result:
+rather than scoring it. Then record the result — one command, which clones the wiki,
+applies the scorecard, commits and pushes:
 
-  node scripts/score-ledger.mjs --record <Component> --from <scorecard.json>
+  node scripts/score-ledger.mjs --record <Component> --from scorecard.json --push
 
-against a local clone of https://github.com/facebook/astryx.wiki.git, and push the wiki.
-Only record what you measured.`;
+Only record what you measured. The recorded scores are readable at
+${SCORES_PAGE_URL}`;
+
+// ---------------------------------------------------------------------------
+// --push — the wiki write path
+//
+// CI cannot write this ledger: scoring is judgment, so the writer is always a
+// human or an agent running an audit. A write path that takes six steps gets
+// skipped, and the rubric says an audit that isn't recorded didn't happen — so
+// recording has to be ONE command.
+// ---------------------------------------------------------------------------
+
+/** The reused shallow clone. One per user, not one per run. */
+export const WIKI_CACHE_DIR = path.join(os.tmpdir(), 'astryx-score-ledger-wiki');
+
+function git(cwd, ...argv) {
+  return execFileSync('git', argv, {
+    cwd,
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  }).trim();
+}
+
+function tryGit(cwd, ...argv) {
+  try {
+    return {ok: true, out: git(cwd, ...argv)};
+  } catch (e) {
+    const out = `${e.stdout || ''}\n${e.stderr || ''}`.trim();
+    return {ok: false, out: out || e.message};
+  }
+}
+
+/**
+ * A shallow clone of the wiki, cached between runs so recording a score is not
+ * a fresh clone every time.
+ *
+ * It is hard-reset to the remote tip before it is handed back. A working copy
+ * left dirty by a crashed run must never ride along on the next agent's commit
+ * — the cache is an optimisation, never a state carrier.
+ */
+export function ensureWikiClone(dir = WIKI_CACHE_DIR, remote = WIKI_REMOTE) {
+  if (fs.existsSync(path.join(dir, '.git'))) {
+    git(dir, 'remote', 'set-url', 'origin', remote);
+    git(dir, 'fetch', '--depth', '1', 'origin', WIKI_BRANCH);
+  } else {
+    fs.rmSync(dir, {recursive: true, force: true});
+    git(os.tmpdir(), 'clone', '--depth', '1', '--branch', WIKI_BRANCH, remote, dir);
+  }
+  git(dir, 'checkout', '-B', WIKI_BRANCH, `origin/${WIKI_BRANCH}`);
+  git(dir, 'reset', '--hard', `origin/${WIKI_BRANCH}`);
+  git(dir, 'clean', '-fd');
+  return dir;
+}
+
+/** The repo a wiki remote belongs to, for building URLs. */
+export function repoFromWikiRemote(remote = WIKI_REMOTE) {
+  const m = /github\.com[/:]([^/]+)\/(.+?)\.wiki(\.git)?$/.exec(remote);
+  return m ? `${m[1]}/${m[2]}` : DEFAULT_REPO;
+}
+
+/** GitHub renders a single wiki commit at `/wiki/_compare/<sha>`. */
+export function wikiCommitUrl(sha, remote = WIKI_REMOTE) {
+  return `https://github.com/${repoFromWikiRemote(remote)}/wiki/_compare/${sha}`;
+}
+
+/**
+ * The commit message for a recorded score. Cindy's format, with the package
+ * added only when the bare name is ambiguous — `Chat` exists in core and lab,
+ * and a message that does not say which one is a message you cannot read back.
+ */
+export function commitMessage(entry, {regression = null, ambiguous = false} = {}) {
+  const name = ambiguous ? `${entry.package}/${entry.component}` : entry.component;
+  const subject =
+    `scores: ${name} ${entry.grade} (${fmtScore(entry.score)}), ` +
+    `rubric ${entry.rubricVersion}`;
+  if (!regression) return {subject, body: ''};
+  const body = [
+    `Regression allowed: ${regression.reason}`,
+    '',
+    `Score ${fmtScore(regression.from.score)} → ${fmtScore(entry.score)}, ` +
+      `open BLOCKs ${regression.from.blocks} → ${openBlockCount(entry)}.`,
+  ].join('\n');
+  return {subject, body};
+}
+
+/** A unified diff of two in-memory versions, so --dry-run touches no file. */
+function unifiedDiff(before, after, label) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'score-ledger-diff-'));
+  try {
+    const a = path.join(dir, 'a');
+    const b = path.join(dir, 'b');
+    fs.writeFileSync(a, before);
+    fs.writeFileSync(b, after);
+    try {
+      execFileSync('diff', ['-u', '--label', `a/${label}`, '--label', `b/${label}`, a, b], {
+        encoding: 'utf8',
+      });
+      return '';
+    } catch (e) {
+      // `diff` exits 1 when the files differ. That is the expected path.
+      if (e.status === 1) return String(e.stdout);
+      throw e;
+    }
+  } finally {
+    fs.rmSync(dir, {recursive: true, force: true});
+  }
+}
+
+/** Refuse to commit on behalf of nobody. A public repo keeps real authorship. */
+function requireGitIdentity(dir) {
+  const name = tryGit(dir, 'config', 'user.name');
+  const email = tryGit(dir, 'config', 'user.email');
+  if (!name.ok || !name.out || !email.ok || !email.out) {
+    throw new Error(
+      'no git identity configured — set user.name and user.email before --push. ' +
+        'The wiki is public and the commit is attributed to whoever pushes it.',
+    );
+  }
+}
+
+/**
+ * Commit the applied ledger and push it, re-applying rather than forcing when
+ * another agent got there first.
+ *
+ * Several agents can record concurrently. Rebasing one JSON edit onto another
+ * conflicts far more often than it merges, so a non-fast-forward is not fought:
+ * the local commit is thrown away, the tree is reset to the remote tip, and
+ * `apply` runs again against what the other agent actually recorded. That is
+ * the only correct answer — the second writer has to be ratcheted against the
+ * first writer's numbers, not against the ones they started from.
+ *
+ * `apply` re-reads the ledger from disk and returns the text to write, so the
+ * retry is a real re-evaluation and not a replay of a stale result.
+ */
+function commitAndPush(dir, file, apply, {attempts = 2} = {}) {
+  requireGitIdentity(dir);
+  const rel = path.relative(dir, file) || path.basename(file);
+  let lastFailure = null;
+
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    const applied = apply();
+    fs.writeFileSync(file, applied.text);
+
+    const status = git(dir, 'status', '--porcelain');
+    const dirtyOthers = status
+      .split('\n')
+      .filter(Boolean)
+      .map(l => l.slice(3))
+      .filter(p => p !== rel);
+    if (dirtyOthers.length) {
+      throw new Error(
+        `the wiki working copy has unrelated changes (${dirtyOthers.join(', ')}) — ` +
+          'refusing to push them. Clean the clone and re-run.',
+      );
+    }
+
+    git(dir, 'add', '--', rel);
+    const {subject, body} = applied.message;
+    const commitArgs = ['commit', '-m', subject];
+    if (body) commitArgs.push('-m', body);
+    const committed = tryGit(dir, ...commitArgs);
+    if (!committed.ok) {
+      throw new Error(`could not commit the ledger: ${committed.out}`);
+    }
+
+    const pulled = tryGit(dir, 'pull', '--rebase', 'origin', WIKI_BRANCH);
+    if (!pulled.ok) {
+      // A conflicted rebase means someone else edited the same rows. Abort and
+      // re-apply onto their version rather than resolving JSON by hand.
+      tryGit(dir, 'rebase', '--abort');
+      lastFailure = pulled.out;
+      if (attempt < attempts) {
+        console.log('score-ledger: the wiki moved under us — re-applying onto the new tip.');
+        git(dir, 'fetch', '--depth', '1', 'origin', WIKI_BRANCH);
+        git(dir, 'reset', '--hard', `origin/${WIKI_BRANCH}`);
+        continue;
+      }
+      break;
+    }
+
+    const pushed = tryGit(dir, 'push', 'origin', `HEAD:${WIKI_BRANCH}`);
+    if (pushed.ok) {
+      const sha = git(dir, 'rev-parse', 'HEAD');
+      return {sha, url: wikiCommitUrl(sha), applied};
+    }
+    lastFailure = pushed.out;
+    const raced = /non-fast-forward|fetch first|rejected|stale info/i.test(pushed.out);
+    if (!raced || attempt >= attempts) break;
+    console.log('score-ledger: push rejected as non-fast-forward — re-applying and retrying once.');
+    git(dir, 'fetch', '--depth', '1', 'origin', WIKI_BRANCH);
+    git(dir, 'reset', '--hard', `origin/${WIKI_BRANCH}`);
+  }
+
+  throw new Error(
+    `could not push the ledger after ${attempts} attempt(s): ${lastFailure}\n` +
+      'Nothing was published. If this is an auth failure, run `gh auth setup-git`.',
+  );
+}
 
 // ---------------------------------------------------------------------------
 // --record
@@ -1111,7 +1138,7 @@ async function cmdCheck(args) {
       lines.push(
         `${unaudited.length} other component${unaudited.length === 1 ? '' : 's'} in this diff ` +
           `${unaudited.length === 1 ? 'has' : 'have'} no audit on record — no baseline, judged on ` +
-          'merits. See [[Component Scores]] to request one.',
+          `merits. See [the component scores page](${SCORES_PAGE_URL}) to request one.`,
       );
     }
     lines.push('');
@@ -1133,27 +1160,6 @@ async function withLedger(args, fn) {
     return 1;
   }
   return fn(ledger, buildRoster(ledger));
-}
-
-async function cmdReport(args) {
-  return withLedger(args, (ledger, roster) => {
-    const table = renderTable(ledger, roster, buildStats(roster));
-    const out = flagValue(args.out) || defaultTablePath(args);
-    if (out) {
-      fs.writeFileSync(out, table);
-      console.log(`score-ledger: wrote ${out} (${roster.length} rows)`);
-    } else {
-      console.log(table);
-    }
-    return 0;
-  });
-}
-
-/** Next to the ledger file when it is local; stdout when the ledger is a URL. */
-function defaultTablePath(args) {
-  const source = flagValue(args.ledger);
-  if (!source || isUrl(source)) return null;
-  return path.join(path.dirname(source), 'Component-Scores.md');
 }
 
 async function cmdQueue(args) {
@@ -1221,36 +1227,42 @@ async function cmdStats(args) {
   });
 }
 
+/**
+ * Record one component's scorecard.
+ *
+ * The whole point of `--push` is that this is ONE command: resolve the
+ * component, clone or refresh the wiki, apply the scorecard under the ratchet,
+ * commit, rebase onto whatever landed meanwhile, push, and print where it went.
+ * Nothing is pushed unless the apply came out clean.
+ */
 async function cmdRecord(args) {
   const component = flagValue(args.record);
   if (!component) {
     console.error('score-ledger --record <Component>: the component name is required');
     return 1;
   }
-  const ledgerPath = flagValue(args.ledger);
-  if (!ledgerPath || isUrl(ledgerPath)) {
-    console.error(
-      'score-ledger --record: pass --ledger <path> pointing at component-scores.json in a ' +
-        'local clone of the wiki — recording writes the file, so a URL will not do.',
-    );
-    return 1;
-  }
-  const {ledger, error} = await loadLedger(ledgerPath);
-  if (!ledger) {
-    console.error(`score-ledger: ${error}`);
-    return 1;
-  }
+
+  // Read the scorecard exactly once: stdin cannot be read twice, and the push
+  // retry re-applies this same scorecard onto a newer ledger.
   const src = flagValue(args.from);
   if (!src) {
     console.error('score-ledger --record: --from <scorecard.json|-> is required');
     return 1;
   }
-  const scorecard = JSON.parse(
-    src === '-' ? fs.readFileSync(0, 'utf8') : fs.readFileSync(src, 'utf8'),
-  );
+  let scorecard;
+  try {
+    const text = src === '-' ? fs.readFileSync(0, 'utf8') : fs.readFileSync(src, 'utf8');
+    scorecard = JSON.parse(text);
+  } catch (e) {
+    console.error(
+      `score-ledger --record: could not read a scorecard from ${src === '-' ? 'stdin' : src} — ${e.message}`,
+    );
+    return 1;
+  }
 
   const matches = resolveName(component);
-  if (matches.length > 1 && !flagValue(args.package)) {
+  const ambiguous = matches.length > 1;
+  if (ambiguous && !flagValue(args.package)) {
     console.error(
       `score-ledger --record: ${component} exists in ${matches.map(m => m.package).join(' and ')} — ` +
         'pass --package to say which one.',
@@ -1264,7 +1276,6 @@ async function cmdRecord(args) {
         'packages/{core,lab}/src under the canonical predicate. Recording anyway.',
     );
   }
-
   const pkg = flagValue(args.package) || (live && live.package) || null;
   if (!pkg) {
     console.error(
@@ -1272,52 +1283,176 @@ async function cmdRecord(args) {
     );
     return 1;
   }
-  const before = indexLedger(ledger).byId.get(`${pkg}/${component}`) || null;
-  const after = applyScorecard(before, scorecard, {component, pkg});
 
-  // The wiki takes no pull request, so the ratchet has to bite here.
-  const verdict = compareEntry(component, before, after);
-  if (verdict.verdict === 'fail' && !args['allow-regression']) {
-    console.error(`score-ledger --record: refusing — ${verdict.reason}.`);
+  if (args['allow-regression'] === true) {
     console.error(
-      'If the regression is real and intended, re-run with --allow-regression "<why>" so the ' +
-        'reason is recorded in the ledger alongside it.',
+      'score-ledger --record: --allow-regression needs a reason — --allow-regression "<why>". ' +
+        'It is recorded on the row and in the commit message.',
     );
     return 1;
   }
-  if (verdict.verdict === 'fail') {
-    after.regression = {
-      reason: String(args['allow-regression']),
-      from: {score: verdict.baseScore, blocks: verdict.baseBlocks},
-      recordedAt: new Date().toISOString().slice(0, 10),
-    };
+
+  // Where the file is. --push (and --dry-run, which needs a baseline to diff
+  // against) will fetch the wiki for you; without either you point at your own
+  // clone, as before.
+  const push = Boolean(args.push);
+  const dryRun = Boolean(args['dry-run']);
+  let ledgerPath = flagValue(args.ledger);
+  let repoDir = null;
+  if (ledgerPath && isUrl(ledgerPath)) {
+    console.error(
+      'score-ledger --record: --ledger must be a local path — recording writes the file. ' +
+        'Drop it and pass --push to have the wiki cloned for you.',
+    );
+    return 1;
+  }
+  try {
+    if (!ledgerPath) {
+      if (!push && !dryRun) {
+        console.error(
+          'score-ledger --record: pass --push (clone the wiki, apply, commit and push) or ' +
+            '--ledger <path> pointing at component-scores.json in your own clone.',
+        );
+        return 1;
+      }
+      repoDir = ensureWikiClone();
+      ledgerPath = path.join(repoDir, LEDGER_FILENAME);
+      console.log(`score-ledger: wiki clone at ${repoDir} (${WIKI_REMOTE}, ${WIKI_BRANCH})`);
+    } else if (push) {
+      const top = tryGit(path.dirname(path.resolve(ledgerPath)), 'rev-parse', '--show-toplevel');
+      if (!top.ok) {
+        console.error(
+          `score-ledger --record: --push needs ${ledgerPath} to live in a git clone of the wiki ` +
+            `(${top.out}). Drop --ledger to use the cached clone instead.`,
+        );
+        return 1;
+      }
+      repoDir = top.out;
+    }
+  } catch (e) {
+    console.error(`score-ledger --record: could not prepare the wiki clone — ${e.message}`);
+    return 1;
   }
 
-  const idx = ledger.components.findIndex(e => entryId(e) === entryId(after));
-  if (idx === -1) ledger.components.push(after);
-  else ledger.components[idx] = after;
-  ledger.components.sort(
-    (a, b) =>
-      a.component.localeCompare(b.component) ||
-      String(a.package).localeCompare(String(b.package)),
-  );
-  ledger.updated = new Date().toISOString().slice(0, 10);
+  /**
+   * Apply the scorecard to whatever is on disk RIGHT NOW and return the text to
+   * write. Re-run on a push race so the ratchet judges this audit against the
+   * numbers the other writer just published, not the ones we started from.
+   */
+  const applyOnce = () => {
+    const raw = fs.readFileSync(ledgerPath, 'utf8');
+    const ledger = JSON.parse(raw);
+    if (!Array.isArray(ledger.components)) {
+      throw new Error(`${ledgerPath} is not a ledger — no components array`);
+    }
+    const before = indexLedger(ledger).byId.get(`${pkg}/${component}`) || null;
+    const after = applyScorecard(before, scorecard, {component, pkg});
 
-  fs.writeFileSync(ledgerPath, `${JSON.stringify(ledger, null, 2)}\n`);
-  console.log(
-    `score-ledger: recorded ${component} — ${after.grade} ${after.score} ` +
-      `(${verdict.reason || 'new entry'})`,
-  );
+    // The wiki takes no pull request, so the ratchet has to bite here.
+    const verdict = compareEntry(component, before, after);
+    let regression = null;
+    if (verdict.verdict === 'fail') {
+      if (!args['allow-regression']) {
+        throw new Error(
+          `refusing — ${verdict.reason}. If the regression is real and intended, re-run with ` +
+            '--allow-regression "<why>": the reason is recorded on the row and in the commit ' +
+            'message.',
+        );
+      }
+      regression = {
+        reason: String(args['allow-regression']),
+        from: {score: verdict.baseScore, blocks: verdict.baseBlocks},
+        recordedAt: new Date().toISOString().slice(0, 10),
+      };
+      after.regression = regression;
+    }
 
-  // Every BLOCK is supposed to carry the issue it was filed as; the ledger row
-  // is where the table's links come from.
+    const idx = ledger.components.findIndex(e => entryId(e) === entryId(after));
+    if (idx === -1) ledger.components.push(after);
+    else ledger.components[idx] = after;
+    ledger.components.sort(
+      (a, b) =>
+        a.component.localeCompare(b.component) ||
+        String(a.package).localeCompare(String(b.package)),
+    );
+    ledger.updated = new Date().toISOString().slice(0, 10);
+
+    return {
+      before,
+      after,
+      verdict,
+      regression,
+      raw,
+      text: `${JSON.stringify(ledger, null, 2)}\n`,
+      message: commitMessage(after, {regression, ambiguous}),
+    };
+  };
+
+  let applied;
+  try {
+    applied = applyOnce();
+  } catch (e) {
+    // Guard rail: an apply that did not come out clean never reaches git.
+    console.error(`score-ledger --record: ${e.message}`);
+    return 1;
+  }
+
+  if (dryRun) {
+    const diff = unifiedDiff(applied.raw, applied.text, LEDGER_FILENAME);
+    console.log(diff || `(${LEDGER_FILENAME} is already exactly this — no change)`);
+    console.log('--- commit message ---');
+    console.log(applied.message.subject);
+    if (applied.message.body) console.log(`\n${applied.message.body}`);
+    console.log('----------------------');
+    console.log('score-ledger: --dry-run — nothing written, nothing committed, nothing pushed.');
+    warnOnRecord(component, applied);
+    return 0;
+  }
+
+  if (push) {
+    let result;
+    try {
+      result = commitAndPush(repoDir, ledgerPath, applyOnce);
+    } catch (e) {
+      console.error(`score-ledger --record: ${e.message}`);
+      return 1;
+    }
+    applied = result.applied;
+    console.log(
+      `score-ledger: recorded ${component} — ${applied.after.grade} ${applied.after.score} ` +
+        `(${applied.verdict.reason || 'new entry'}) and pushed ${result.sha.slice(0, 10)}`,
+    );
+    console.log(`  commit: ${result.url}`);
+    console.log(`  live on: ${SCORES_PAGE_URL}`);
+  } else {
+    fs.writeFileSync(ledgerPath, applied.text);
+    console.log(
+      `score-ledger: recorded ${component} — ${applied.after.grade} ${applied.after.score} ` +
+        `(${applied.verdict.reason || 'new entry'}) in ${ledgerPath}`,
+    );
+    console.log(
+      'score-ledger: not published — commit and push the wiki yourself, or re-run with --push.',
+    );
+  }
+
+  warnOnRecord(component, applied);
+  return 0;
+}
+
+/**
+ * Everything worth saying about a row that was just written. Warnings, never
+ * failures: the score is recorded either way, and an auditor who is told what
+ * is missing fixes it far more often than one whose write was rejected.
+ */
+function warnOnRecord(component, {before, after}) {
+  // Every BLOCK is supposed to carry the issue it was filed as; that is where
+  // the page's links come from.
   const unfiled = blockList(after).filter(b => !b.issue);
   if (unfiled.length) {
     console.log(
       `::warning::score-ledger: ${unfiled.length} BLOCK(s) on ${component} have no issue ` +
         `(${unfiled.map(b => b.id).join(', ')}). File them — ` +
-        `node scripts/score-ledger.mjs --file-issues ${component} --from <scorecard.json> ` +
-        `--ledger ${ledgerPath}`,
+        `node scripts/score-ledger.mjs --file-issues ${component} --push`,
     );
   }
   const unattributed = openBlockCount(after) - blockList(after).length;
@@ -1343,13 +1478,6 @@ async function cmdRecord(args) {
         'fix or the audit is wrong. Re-check before you push.',
     );
   }
-
-  const roster = buildRoster(ledger);
-  const out = flagValue(args.out) || path.join(path.dirname(ledgerPath), 'Component-Scores.md');
-  fs.writeFileSync(out, renderTable(ledger, roster, buildStats(roster)));
-  console.log(`score-ledger: regenerated ${out}`);
-  console.log('score-ledger: commit and push the wiki to publish.');
-  return 0;
 }
 
 /**
@@ -1365,8 +1493,7 @@ export function issueBody(component, entry, block, repo = DEFAULT_REPO) {
     '',
     `- **Rule:** \`${block.id}\`${section} — see the [Component Audit Rubric]` +
       `(https://github.com/${repo}/wiki/Component-Audit-Rubric).`,
-    `- **Ledger row:** [${component} in Component Scores]` +
-      `(https://github.com/${repo}/wiki/Component-Scores) — recorded ` +
+    `- **Ledger row:** [${component} on the component scores page](${SCORES_PAGE_URL}) — recorded ` +
       `${entry.grade} ${entry.score} with ${openBlockCount(entry)} open BLOCK(s).`,
     `- **Finding:** ${block.summary}`,
     block.evidence ? `- **Evidence:** ${block.evidence}` : null,
@@ -1379,8 +1506,8 @@ export function issueBody(component, entry, block, repo = DEFAULT_REPO) {
     `1. Re-run the audit for ${component} (mode O) after the fix.`,
     '2. Put the visual results in the PR description — before/after screenshots of the ' +
       'affected states. That is also what §5b needs.',
-    '3. Update the Component Scores row with the new score and clear this BLOCK ' +
-      `(\`node scripts/score-ledger.mjs --record ${component} --from <scorecard.json>\`).`,
+    '3. Update the ledger with the new score and clear this BLOCK ' +
+      `(\`node scripts/score-ledger.mjs --record ${component} --from scorecard.json --push\`).`,
     '4. Close this issue linking that PR.',
     '',
     "If the recorded score doesn't move, either the fix or the audit is wrong.",
@@ -1394,6 +1521,9 @@ export function issueBody(component, entry, block, repo = DEFAULT_REPO) {
  * Idempotent: a BLOCK that already carries an issue number is left alone, and a
  * linked issue that was closed while the BLOCK persists is reopened rather than
  * re-filed.
+ *
+ * This mutates the ledger too, so it takes the same `--push` write path — the
+ * numbers are useless until they are on the row the page reads.
  */
 async function cmdFileIssues(args) {
   const component = flagValue(args['file-issues']);
@@ -1401,11 +1531,41 @@ async function cmdFileIssues(args) {
     console.error('score-ledger --file-issues <Component>: the component name is required');
     return 1;
   }
-  const ledgerPath = flagValue(args.ledger);
-  if (!ledgerPath || isUrl(ledgerPath)) {
-    console.error('score-ledger --file-issues: pass --ledger <local path> — it writes back.');
+  const push = Boolean(args.push);
+  let ledgerPath = flagValue(args.ledger);
+  let repoDir = null;
+  if (ledgerPath && isUrl(ledgerPath)) {
+    console.error('score-ledger --file-issues: --ledger must be a local path — it writes back.');
     return 1;
   }
+  try {
+    if (!ledgerPath) {
+      if (!push && !args['dry-run']) {
+        console.error(
+          'score-ledger --file-issues: pass --push (clone the wiki, file, commit and push) or ' +
+            '--ledger <path> pointing at component-scores.json in your own clone.',
+        );
+        return 1;
+      }
+      repoDir = ensureWikiClone();
+      ledgerPath = path.join(repoDir, LEDGER_FILENAME);
+      console.log(`score-ledger: wiki clone at ${repoDir} (${WIKI_REMOTE}, ${WIKI_BRANCH})`);
+    } else if (push) {
+      const top = tryGit(path.dirname(path.resolve(ledgerPath)), 'rev-parse', '--show-toplevel');
+      if (!top.ok) {
+        console.error(
+          `score-ledger --file-issues: --push needs ${ledgerPath} to live in a git clone of the ` +
+            `wiki (${top.out}).`,
+        );
+        return 1;
+      }
+      repoDir = top.out;
+    }
+  } catch (e) {
+    console.error(`score-ledger --file-issues: could not prepare the wiki clone — ${e.message}`);
+    return 1;
+  }
+
   const repo = flagValue(args.repo) || DEFAULT_REPO;
   const {ledger, error} = await loadLedger(ledgerPath);
   if (!ledger) {
@@ -1427,11 +1587,10 @@ async function cmdFileIssues(args) {
     return 1;
   }
 
-  const {execFileSync} = await import('node:child_process');
   const gh = (...argv) =>
     execFileSync('gh', argv, {encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe']}).trim();
 
-  let changed = false;
+  const filed = [];
   for (const block of blockList(entry)) {
     if (block.issue) {
       // Idempotent: never re-file. Reopen if the issue was closed while the
@@ -1467,17 +1626,61 @@ async function cmdFileIssues(args) {
       return 1;
     }
     block.issue = number;
-    changed = true;
+    filed.push({id: block.id, number});
     console.log(`  ${block.id}: filed #${number} — ${url}`);
   }
 
-  if (changed) {
-    ledger.updated = new Date().toISOString().slice(0, 10);
+  if (!filed.length) {
+    if (args['dry-run']) console.log('score-ledger: --dry-run — no issue was created.');
+    return 0;
+  }
+
+  ledger.updated = new Date().toISOString().slice(0, 10);
+  const subject =
+    `scores: ${component} — link ${filed.length} audit issue` +
+    `${filed.length === 1 ? '' : 's'} (${filed.map(f => `${f.id} #${f.number}`).join(', ')})`;
+
+  if (!push) {
     fs.writeFileSync(ledgerPath, `${JSON.stringify(ledger, null, 2)}\n`);
-    const roster = buildRoster(ledger);
-    const out = flagValue(args.out) || path.join(path.dirname(ledgerPath), 'Component-Scores.md');
-    fs.writeFileSync(out, renderTable(ledger, roster, buildStats(roster)));
-    console.log(`score-ledger: wrote ${ledgerPath} and ${out} — commit and push the wiki.`);
+    console.log(`score-ledger: wrote ${ledgerPath} — commit and push it, or re-run with --push.`);
+    return 0;
+  }
+
+  /**
+   * Re-read and re-stamp, rather than replaying the text we computed above: on
+   * a push race the tree is reset to someone else's newer ledger, and writing
+   * our pre-race copy over it would silently drop their record. Stamping issue
+   * numbers onto whatever is on disk merges cleanly by construction.
+   */
+  const applyIssueNumbers = () => {
+    const fresh = JSON.parse(fs.readFileSync(ledgerPath, 'utf8'));
+    const row = indexLedger(fresh).byId.get(`${pkg}/${component}`);
+    if (!isAudited(row)) {
+      throw new Error(
+        `${component} no longer has an audited row in the wiki ledger — not stamping issue ` +
+          'numbers onto a row that moved out from under us.',
+      );
+    }
+    const numbers = new Map(filed.map(f => [f.id, f.number]));
+    for (const block of blockList(row)) {
+      const n = numbers.get(block.id);
+      if (n && !block.issue) block.issue = n;
+    }
+    fresh.updated = new Date().toISOString().slice(0, 10);
+    return {text: `${JSON.stringify(fresh, null, 2)}\n`, message: {subject, body: ''}};
+  };
+
+  try {
+    const result = commitAndPush(repoDir, ledgerPath, applyIssueNumbers);
+    console.log(`score-ledger: pushed ${result.sha.slice(0, 10)}`);
+    console.log(`  commit: ${result.url}`);
+  } catch (e) {
+    console.error(`score-ledger --file-issues: ${e.message}`);
+    console.error(
+      `The issues were filed (${filed.map(f => `#${f.number}`).join(', ')}) but the ledger was ` +
+        'not pushed. Re-run with --push to link them — filing is idempotent.',
+    );
+    return 1;
   }
   return 0;
 }
@@ -1489,7 +1692,6 @@ async function main() {
     return 0;
   }
   if (args.check) return cmdCheck(args);
-  if (args.report) return cmdReport(args);
   if (args.queue) return cmdQueue(args);
   if (args.stats) return cmdStats(args);
   if (args.record) return cmdRecord(args);
