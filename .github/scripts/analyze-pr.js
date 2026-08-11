@@ -84,20 +84,39 @@ function componentIndexRef(pkg, componentName) {
     : `${pkgSrc(pkg)}/${componentName}/index.ts`;
 }
 
-// Get changed files between base and head
+// Get changed files between base and head.
+//
+// Prefers a three-dot diff (base...head), which only reports files changed on
+// the PR branch and excludes commits already merged to base. But a three-dot
+// diff needs a merge base, which a shallow clone (fetch-depth: 50) may not
+// have once the PR has been open long enough for base to advance past that
+// window — the diff then fails with "no merge base" and the whole job dies.
+//
+// In that case we fall back to a two-dot diff (base..head), which needs no
+// merge base and never hard-fails the CI. The two-dot diff may include files
+// merged to base since the branch point, which is acceptable for component
+// analysis: it can over-report files already on base, but never under-reports
+// the PR's own changes.
 function getChangedFiles() {
+  const threeDot = `${baseBranch}...${headRef}`;
   try {
-    const output = execSync(
-      `git diff --name-only ${baseBranch}...${headRef}`,
-      { encoding: 'utf8' }
-    );
+    const output = execSync(`git diff --name-only ${threeDot}`, { encoding: 'utf8' });
     return output.trim().split('\n').filter(Boolean);
   } catch (e) {
-    // A failed diff (e.g. no merge base on a too-shallow clone) is not the
+    console.warn(
+      `::warning::three-dot diff ${threeDot} failed (${e.message.split('\n')[0]}) - falling back to two-dot diff`
+    );
+  }
+  const twoDot = `${baseBranch}..${headRef}`;
+  try {
+    const output = execSync(`git diff --name-only ${twoDot}`, { encoding: 'utf8' });
+    return output.trim().split('\n').filter(Boolean);
+  } catch (e) {
+    // A failed diff (e.g. base ref missing on a too-shallow clone) is not the
     // same as "no changes" — fail loudly instead of publishing an empty
     // analysis report that looks legitimate.
-    console.error(`::error::git diff ${baseBranch}...${headRef} failed: ${e.message}`);
-    console.error('The clone is likely too shallow to contain the merge base (see fetch-depth in ci.yml).');
+    console.error(`::error::git diff ${twoDot} failed: ${e.message}`);
+    console.error('The clone is likely too shallow to contain the base ref (see fetch-depth in ci.yml).');
     process.exit(1);
   }
 }
