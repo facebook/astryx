@@ -26,8 +26,9 @@
 #                         most component styling here is an inline stylex.create
 #                         edit in a .tsx, which no path pattern can see.
 #
-# Either label DISABLES auto-merge so the PR can't merge unattended, and is
-# cleared when an entitled owner approves (code → CODEOWNER; design → DESIGNOWNER
+# The CODE label DISABLES auto-merge so the PR can't merge unattended (the
+# design label is advisory and does not). Both are cleared when an entitled
+# owner approves (code → CODEOWNER; design → DESIGNOWNER
 # or CODEOWNER). Code detection is path-based and deterministic; design adds a
 # content-based diff score (deterministic too — same diff, same score). The
 # Copilot reviewer reads these labels to focus its review (see
@@ -57,7 +58,7 @@ name: Review signal
 
 on:
   pull_request_target:
-    branches: ["main"]
+    branches: ['main']
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
   pull_request_review:
     types: [submitted]
@@ -69,7 +70,7 @@ on:
   workflow_dispatch:
     inputs:
       pr:
-        description: "PR number to re-flag (blank = all open PRs)"
+        description: 'PR number to re-flag (blank = all open PRs)'
         required: false
         type: string
 
@@ -82,9 +83,9 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  CODE_LABEL: "needs:code-review"
-  DESIGN_LABEL: "needs:design-review"
-  COMMUNITY_LABEL: "community"
+  CODE_LABEL: 'needs:code-review'
+  DESIGN_LABEL: 'needs:design-review'
+  COMMUNITY_LABEL: 'community'
 
 jobs:
   # ---------------------------------------------------------------------------
