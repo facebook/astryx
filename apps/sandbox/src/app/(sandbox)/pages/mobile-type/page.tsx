@@ -639,16 +639,18 @@ export default function MobileTypePage() {
                     <VStack gap={3}>
                       <VStack gap={0.5}>
                         <HStack gap={2} vAlign="center" justify="between">
-                          <Text type="label" weight="semibold">
-                            Mobile
-                          </Text>
+                          <HStack gap={2} vAlign="baseline">
+                            <Text type="label" weight="semibold">
+                              Mobile
+                            </Text>
+                            <Text type="supporting" color="secondary">
+                              {formula.floor}
+                            </Text>
+                          </HStack>
                           <span {...stylex.props(styles.formulaInline)}>
                             {formula.formula}
                           </span>
                         </HStack>
-                        <Text type="supporting" color="secondary">
-                          {formula.floor} · {formula.note}
-                        </Text>
                       </VStack>
                       <VStack gap={0.5}>
                         {ROLES.map(role => {
