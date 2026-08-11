@@ -740,6 +740,8 @@ export interface ThemingTarget {
   className: string;
   visualProps?: string[];
   states?: string[];
+  /** Old name of a renamed target; the class superseding it. */
+  deprecatedFor?: string;
 }
 
 export interface ComponentVar {
@@ -755,6 +757,8 @@ export interface DerivedVar {
   property: string;
   vars?: string[];
   expand?: 'container';
+  /** Emit only the vars, dropping the source property from the rule. */
+  replaces?: boolean;
 }
 
 export interface ThemingDoc {
