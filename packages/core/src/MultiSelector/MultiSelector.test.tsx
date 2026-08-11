@@ -1532,6 +1532,50 @@ describe('MultiSelector empty-state theme target', () => {
   });
 });
 
+describe('MultiSelector search-input theme target', () => {
+  const OPTIONS = ['Apple', 'Banana', 'Cherry'];
+
+  it('renders the astryx-multi-selector-search-input target on the search field', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={OPTIONS}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    // The target lands on the search TextInput's root (composed with its own
+    // `text-input` class via className passthrough), so a theme can restyle
+    // just this field's surface and placeholder via `defineTheme`.
+    const search = screen.getByRole('combobox', h);
+    const field = search.closest('.astryx-text-input');
+    expect(field).not.toBeNull();
+    expect(field).toHaveClass('astryx-multi-selector-search-input');
+    expect(field).toHaveClass('astryx-text-input');
+  });
+
+  it('exposes multi-selector-search-input so a theme reaches the field surface and placeholder', () => {
+    const theme = defineTheme({
+      name: 'multi-selector-search-input-test',
+      components: {
+        'multi-selector-search-input': {
+          base: {
+            border: 'none',
+            backgroundColor: 'transparent',
+            '::placeholder': {color: 'var(--color-text-tertiary)'},
+          },
+        },
+      },
+    });
+    const css = generateThemeTestCSS(theme);
+    expect(css).toContain('.astryx-multi-selector-search-input {');
+    expect(css).toContain('.astryx-multi-selector-search-input::placeholder {');
+  });
+});
+
 describe('MultiSelector clear icon theme target', () => {
   const ICON_OPTIONS = ['Apple', 'Banana', 'Orange'];
 

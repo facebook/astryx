@@ -1192,6 +1192,14 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
               : undefined
           }
           value={searchQuery}
+          // Stable theme target on the search field, so a theme can restyle
+          // just this TextInput's surface (border, background, radius, focus
+          // ring) and placeholder via `defineTheme` — e.g. to render the search
+          // borderless and flush in the popover — without a structural
+          // descendant selector. Spread (not just `.className`) so future
+          // states/variants reflect as data-* too; composes with the field's
+          // own `text-input` class via TextInput's prop passthrough.
+          {...themeProps('multi-selector-search-input')}
           onChange={handleSearchChange}
           onKeyDown={e => {
             // Arrow keys navigate options; Enter toggles; Escape closes.

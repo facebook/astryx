@@ -2081,6 +2081,50 @@ describe('Selector empty-state theme target', () => {
   });
 });
 
+describe('Selector search-input theme target', () => {
+  it('renders the astryx-selector-search-input target on the search field', async () => {
+    const user = userEvent.setup();
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    // The target lands on the search TextInput's root (composed with its own
+    // `text-input` class via className passthrough), so a theme can restyle
+    // just this field's surface and placeholder via `defineTheme`.
+    const search = screen.getByRole('combobox', h);
+    const field = search.closest('.astryx-text-input');
+    expect(field).not.toBeNull();
+    expect(field).toHaveClass('astryx-selector-search-input');
+    expect(field).toHaveClass('astryx-text-input');
+  });
+
+  it('exposes selector-search-input so a theme reaches the field surface and placeholder', () => {
+    // jsdom cannot resolve the @layer cascade, so the DOM-class assertion above
+    // plus this generation assertion together prove the seam: a same-element
+    // theme rule in @layer astryx-theme reaches the field the target sits on.
+    const theme = defineTheme({
+      name: 'selector-search-input-test',
+      components: {
+        'selector-search-input': {
+          base: {
+            border: 'none',
+            backgroundColor: 'transparent',
+            '::placeholder': {color: 'var(--color-text-tertiary)'},
+          },
+        },
+      },
+    });
+    const css = generateThemeTestCSS(theme);
+    expect(css).toContain('.astryx-selector-search-input {');
+    expect(css).toContain('.astryx-selector-search-input::placeholder {');
+  });
+});
+
 describe('Selector clear icon theme target', () => {
   // Resolve the clear glyph span (the astryx-icon element inside the clear
   // button), independent of the theme target class.
@@ -2504,7 +2548,12 @@ describe('Selector disabled state theme target', () => {
 
   it('reflects data-disabled="disabled" on the root when disabled', () => {
     const {container} = render(
-      <Selector label="Fruit" options={OPTIONS} onChange={() => {}} isDisabled />,
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        onChange={() => {}}
+        isDisabled
+      />,
     );
     expect(getSelectorRoot(container)).toHaveAttribute(
       'data-disabled',
@@ -2535,5 +2584,3 @@ describe('Selector disabled state theme target', () => {
     expect(css).toContain('opacity: 0.4');
   });
 });
-
-

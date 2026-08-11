@@ -31,6 +31,7 @@ export const docs = {
       {className: 'astryx-selector-clear-icon'},
       {className: 'astryx-selector-indicator-icon', states: ['state']},
       {className: 'astryx-selector-check'},
+      {className: 'astryx-selector-search-input'},
     ],
   },
   description: 'Dropdown selector for choosing from a list of options.',
