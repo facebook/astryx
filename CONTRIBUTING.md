@@ -312,21 +312,25 @@ export * from './MyComponent';
 Every new component — and any change to an interactive one — must clear the
 **[Accessibility Checklist](https://github.com/facebook/astryx/wiki/Accessibility-Checklist)**
 (wiki) before review. The checklist lives on the wiki so accessibility
-experts can refine it without a code PR; reviewers block on it (see
-[The bright lines](#the-bright-lines--these-block)), and it is a hard
-requirement for a lab → core promotion (see `packages/lab/README.md`).
+experts can refine it without a code PR; reviewers block on it (it is `A1`–`A16`
+on the [Component Audit Rubric](https://github.com/facebook/astryx/wiki/Component-Audit-Rubric)),
+and it is a hard requirement for a lab → core promotion (see
+`packages/lab/README.md`).
 
 Two repo-side rules worth restating here:
 
-- Compose the shared primitives rather than hand-rolling equivalents — see
-  [Code Style](#code-style) for the list. A bespoke reimplementation of one is a
-  review reject.
+- Compose the shared primitives — `VisuallyHidden`, `useAnnounce`,
+  `useFocusTrap`, and the focus hooks (`useListFocus`, `useGridFocus`,
+  `useTreeFocus`) — rather than hand-rolling equivalents. They implement the
+  WAI-ARIA APG patterns and are tested once; a bespoke reimplementation of
+  one is a review reject.
 - CI is the enforcement layer, not a replacement for the checklist: the
-  `pr-a11y` job runs an axe audit on every PR that touches components, a weekly
-  workflow scans the full component surface, and the `useAnnounce` lint rule
-  rejects hand-wired `aria-live` regions. axe only catches static, DOM-level
-  issues — keyboard behavior, focus management, and announcement timing are
-  exactly what the checklist and the component's unit tests cover.
+  `pr-a11y` job in `ci.yml` runs an axe audit on every PR that touches
+  components, a weekly workflow scans the full component surface, and the
+  `useAnnounce` lint rule rejects hand-wired `aria-live` regions. axe only
+  catches static, DOM-level issues — keyboard behavior, focus management, and
+  announcement timing are exactly what the checklist and the component's unit
+  tests cover.
 
 ## Working on the `astryx` CLI
 
@@ -542,121 +546,43 @@ yet" — open the PR as a draft and mark it ready for review when it's done.
 
 ## What's expected of a change
 
-This section is the **bar**: what every change has to carry, and what blocks.
-It is stated here once so you can clear it before you open the PR, and so
-reviewers have a single rule text to cite. `.github/copilot-instructions.md`
-covers how a review is written and posted, not what the bar is.
+The bar — what a change has to carry, and what blocks — lives on the
+**[Component Audit Rubric](https://github.com/facebook/astryx/wiki/Component-Audit-Rubric)**.
+It is stated there once, so it cannot drift between this file, the reviewer
+instructions, and the wiki. Read it before you open a PR: it is the same page
+the reviewer applies to your change, and every check carries an id
+(`A8`, `T1`, `P2`…) so a finding always points back to the rule behind it.
 
-**The bar does not move with the author.** The same checks, the same severity,
-and the same tone apply whether the PR comes from an eng owner, a design owner,
-or a first-time contributor. A hardcoded color is a blocker either way, and an
-owner's PR is not pre-vetted.
+What you will find there:
 
-### The bright lines — these block
-
-A finding's severity is set by **what breaks if it ships**, not by how likely
-the trigger is, who wrote it, or whether a linter already flagged it. A rare
-path to data loss is still a blocker; a lint-suppressed hardcode is still a
-blocker. Low probability, a documented `eslint-disable`, "the happy path
-works," and the author's seniority do not soften a bright-line violation into
-advisory. Score the failure first; likelihood only prioritizes the fix.
-
-Each of the following blocks on its own:
-
-- **Hardcoded colors.** Every color is either a token — `var(--color-*)` — or
-  **derived from tokens** via `color-mix()` / `light-dark()` / `calc()` whose
-  inputs are vars. **No raw hex/rgb/hsl anywhere**, including as an argument to
-  `light-dark()` or `color-mix()`, behind a `const`, or under an
-  `eslint-disable`. "No suitable token exists" is **not** an exception: prefer
-  an existing semantic token (e.g. `--color-overlay` for a scrim), derive from
-  one (the on-media absolutes `--color-on-dark` / `--color-on-light` for fixed
-  values over images), or add a token. Same rule for spacing, radius, and
-  shadow — token or derived-from-token, never a raw value.
-- **Removing a themeable surface.** Replacing a token, a `themeProps` target, or
-  a `MediaTheme`-flowed override with a fixed value so a theme can no longer
-  influence it. Ask _"is this still themeable?"_ before _"is this lint-clean?"_.
-  A value pinned on `xstyle` / `style` sits at the top of the cascade (see the
-  Cascade Model in [Theming Infrastructure](https://github.com/facebook/astryx/wiki/Theming-Infrastructure))
-  and takes that surface out of the theme system — blocking even when it renders
-  correctly.
-- **Raw CSS or hand-rolled JS style workarounds** for anything StyleX supports
-  (verify against `internal/stylex-capabilities/CAPABILITIES.md`, mirrored in
-  the `STYLEX-CAPS` block of `CLAUDE.md`), or raw HTML where an Astryx
-  primitive exists.
-- **A broken accessible path — any modality.** Mouse, keyboard, screen reader,
-  and touch must all keep the control operable. Touch is an operable modality:
-  hover-gated reveals break **hybrid devices** (touchscreen laptops report
-  `hover: hover` + `pointer: fine`), so a control that only appears on `:hover`
-  can leave an invisible-but-clickable element — especially destructive ones.
-  Prefer `@media (any-pointer: coarse)` ("the device _has_ touch", incl.
-  hybrids) over `hover: none` for "always show". Also blocking: focus lost on
-  state change, a focusable element removed from the DOM, or an interactive
-  target below the minimum size.
-- **Accessibility.** Beyond the broken-path rule above, each of these is a
-  bright line on its own:
-  - an interactive element without an accessible name;
-  - a state change not exposed to assistive tech (visual-only state);
-  - a keyboard trap, or an interaction that only works with a pointer;
-  - state signaled by color alone;
-  - focus not managed on open/close of an overlay (trap while open via
-    `useFocusTrap`, restore on close);
-  - a live announcement that bypasses `useAnnounce` (a hand-wired `aria-live`
-    node);
-  - hardcoded English in an AT-facing string (labels, announcements, hints —
-    same i18n rule as visible text);
-  - a new component that hasn't run the
-    [Accessibility Checklist](https://github.com/facebook/astryx/wiki/Accessibility-Checklist).
-
-  The `pr-a11y` axe job catches the static/DOM-level subset automatically; axe
-  cannot see keyboard, focus, or announcement _behavior_ — those are on the
-  reviewer.
-
-- **Hardcoded user-facing strings.** All UI text goes through `useTranslator()`
-  / the i18n key system (`@astryx/no-hardcoded-i18n-string`), and new keys must
-  match the required format (`@astryx/i18n-key-format`).
-- **Public API-convention violations** (see [API Conventions](https://github.com/facebook/astryx/wiki/API-Conventions)) —
-  booleans not `is`/`has`-prefixed, wrong callback shape (`onValueChange` for the
-  primary change instead of `onChange`; missing the `changeAction` async twin —
-  the shipped convention is `<verb>Action` (`changeAction`, `clickAction`), not
-  `on<Verb>Action`), inventing a name when a sibling convention exists (match
-  `showOn`, `endContent`, etc.), dropping `...rest` / passthrough, or
-  `xstyle`/`className`/`style` overwritten instead of merged via `mergeProps`.
-  Public API shape is hard to walk back — it is blocking, not a nit.
-- **A real bug or breaking change**, including _latent_ ones: a passthrough
-  silently dropped, a feature that breaks when composed with another, a
-  regression in an existing behavior. A deliberate breaking change needs a
-  `[breaking]` changeset and, for a removed/renamed/changed public API, a
-  codemod under `astryx upgrade`.
-- **Public-repo leak** — internal identifiers, infra names, internal usernames
-  or employer-domain emails, or tool/assistant fingerprints in any committed
-  text (code, comments, PR title/body, changeset).
-- **Missing changeset** for a consumer-visible change.
-
-Everything else is either **advisory** — design-taste calls, optional
-refactors, questions where the _fix_ is genuinely open — or clean. An advisory
-_remedy_ does not make a blocking _finding_ advisory: the block stands while
-the approach is discussed.
-
-### The bar, by change type
-
-How much a change has to carry depends on what kind of change it is. This
-mirrors "Reviewing a change" in the
-[Component Audit Rubric](https://github.com/facebook/astryx/wiki/Component-Audit-Rubric#reviewing-a-change),
-which is where reviewers get the same table:
-
-| Your change                                                               | What it has to carry                                                                                                                                                                                                                                               |
-| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Bug fix**                                                               | Evidence it was broken before and is fixed now — a test that was red and is now green, or a before/after screenshot for a visual bug. State that evidence in the PR description. A clean fix with real evidence is done.                                           |
-| **New feature** (new prop, variant, or behavior on an existing component) | Every automatable check, plus a judgment pass on the audit items the change actually touches. New API surface should be spec'd and vibe-tested rather than settled in the PR.                                                                                      |
-| **New component in `core`**                                               | A full audit — every section, with visual evidence. A component in `core` is a permanent public commitment.                                                                                                                                                        |
-| **New component in `lab`**                                                | Deliberately lax: the automatable checks and whatever the change touches. Lab is canary-only and promises no stability, so the rest is noted as _worth an audit before promotion_ rather than blocked. The full audit is the **promotion gate**, not an entry fee. |
-
-Everything that reaches `core` gets the full audit eventually — as a new
-component, or at promotion. Lab only moves _when_.
+- **[The bright lines that block](https://github.com/facebook/astryx/wiki/Component-Audit-Rubric#the-checks)** —
+  hardcoded colors (`T1`, `T3`) · removing a themeable surface (`T2`) · raw CSS
+  where StyleX suffices (`T8`) or raw HTML where a primitive exists (`T29`) · a
+  broken accessible path (`A8`) and the accessibility bright lines (`A1`, `A3`,
+  `A14`) · hardcoded user-facing strings (`I1`, `I2`, `A16`) · public
+  API-convention violations (`P1`–`P10`) · dropped passthroughs and breaking
+  changes (`P2`, `P11`, `P12`) · a public-repo leak (`L15`) · a missing
+  changeset (`X20`). Severity is set by **what breaks if it ships**, not by how
+  likely the trigger is — the rubric states each rule, its exceptions, and how
+  it is judged.
+- **[The bar for your kind of change](https://github.com/facebook/astryx/wiki/Component-Audit-Rubric#reviewing-a-change)** —
+  a bug fix owes evidence it was broken before and is fixed now; a new feature
+  runs the automatable checks plus whatever the diff touches; a new component in
+  `core` gets a full audit; a new component in `lab` is deliberately lax, with
+  the audit as the **promotion gate** rather than an entry fee.
+- **[Which checks your diff earns](https://github.com/facebook/astryx/wiki/Component-Audit-Rubric#reviewing-a-change)** —
+  a trigger table from what you touched to the checks that fire, so a two-line
+  fix is not reviewed like a new component.
+- **[Recorded component grades](https://github.com/facebook/astryx/wiki/Component-Audit-Rubric#recording-an-audit)** —
+  audited components have a score and an open-blocker count in the wiki's
+  `component-scores.json` ledger, which is useful context on what shape a
+  component is in before you change it. Most components are unaudited, which
+  means "no evidence", not "fine". **No PR is gated on a score**, and you are
+  never asked to fix problems you inherited by touching a file.
 
 ### Before you push
 
-These are mechanical and non-negotiable; a reviewer stops at a red one rather
+These are this repo's mechanical gates. A reviewer stops at a red one rather
 than spending judgment on a PR that doesn't build.
 
 ```bash
@@ -671,32 +597,7 @@ pnpm build
 green `lint:strict` also clears the changeset and `'use client'` gates.
 
 Also attach **before/after screenshots for any visual change**, and update the
-Storybook story for anything the change added or altered.
-
-### How deep a review goes
-
-Depth is set by the change, and the specific checks come from what the diff
-touches. The
-[Component Audit Rubric](https://github.com/facebook/astryx/wiki/Component-Audit-Rubric#reviewing-a-change)
-carries both: the change-type bar above, and a trigger table mapping what a
-diff touches (StyleX values, `themeProps`, ARIA, `*Props` interfaces,
-`useEffect`, strings, RTL-sensitive layout, `.doc.mjs`, rendered output,
-published exports) to the numbered checks it earns. Each check has an id you
-can look up when a reviewer cites it.
-
-Two things override that triage: a bright line above blocks on any path, no
-matter how shallow the review; and **you are never asked to fix problems you
-inherited** by touching a file. A pre-existing finding is filed separately, not
-attached to your PR.
-
-### Where component grades live
-
-Audited components carry a score and an open-blocker count on the
-[Component Scores](https://github.com/facebook/astryx/wiki/Component-Scores)
-page — useful context for what shape a component is in before you change it.
-Most components are unaudited, which means "no evidence", not "fine". **No pull
-request is gated on a score**, and a stale or low score can only ever help a
-contributor: the ratchet fails on regressions, never on inherited debt.
+Storybook story for anything you added or altered.
 
 ## Pull Request Guidelines
 
@@ -720,56 +621,22 @@ contributor: the ratchet fails on regressions, never on inherited debt.
 
 ## Code Style
 
-These are the repo-wide conventions. They apply to every package; the
-path-scoped reviewer notes under `.github/instructions/` point here rather than
-restating them.
+The design-system rules — StyleX usage, semantic tokens, theming, API
+conventions, accessibility — are on the wiki and indexed from the
+[Component Audit Rubric](https://github.com/facebook/astryx/wiki/Component-Audit-Rubric).
+What this repo enforces mechanically:
 
-- **TypeScript strict mode.**
-- **Functional components that declare `ref` as a prop** (React 19 — no
+- TypeScript strict mode
+- Functional components that declare `ref` as a prop (React 19 — no
   `forwardRef`; `@eslint-react/no-forward-ref` rejects it, and
   `@astryx/require-ref-prop` requires `ref?: React.Ref<T>` on a publicly
-  exported props interface). Export prop types alongside the component, and set
-  a `displayName`.
-- **Style with StyleX only.** No raw CSS and no hand-rolled JS workaround for a
-  CSS feature StyleX already supports — verify against the generated capability
-  reference in `internal/stylex-capabilities/CAPABILITIES.md` (mirrored in the
-  `STYLEX-CAPS` block of `CLAUDE.md`) rather than asserting. Guard `:hover` with
-  `@media (hover: hover)`, and use a component-scoped `stylex.defineMarker()`
-  for form controls — never `stylex.defaultMarker()`, which leaks
-  hover/focus-within from outer containers.
-- **Semantic tokens only.** No hardcoded color, spacing, radius, or shadow
-  values; components stay theme-agnostic.
-- **Style Astryx components directly — no styling-only wrappers.** Every
-  component extends `BaseProps`, so it takes `xstyle`. A `<div>`/`<span>` added
-  only to carry styles around a component is not a neutral extra node: it takes
-  the component out of its parent's flex/grid child relationship, which is how
-  the pagination carets lost their centering (#4752). Write
-  `<Icon icon="chevronsLeft" xstyle={rtlStyles.mirror} />`, not
-  `<span {...stylex.props(rtlStyles.mirror)}><Icon … /></span>`. A wrapper that
-  does something the child cannot — establishes a flex/grid _container_, pads
-  around the child's border box, carries semantics, behavior, or a `ref` — is
-  fine. `@astryx/no-style-only-wrapper` catches the mechanical cases, but it
-  runs as a warning while existing sites are migrated, so a new one is a review
-  finding rather than a lint failure. Reach for the behavior hook or prop the
-  system already exposes (`tooltip` / `useTooltip`, `useHoverCard`,
-  `useClickableContainer`, `useCollapsible`, `useFocusTrap`, …) before adding a
-  wrapper to host behavior.
-- **Compose the shared accessibility primitives, don't hand-roll them** —
-  `VisuallyHidden`, `useAnnounce`, `useFocusTrap`, `useTypeahead`,
-  `useInteractiveRole`, and the focus hooks (`useListFocus`, `useGridFocus`,
-  `useTreeFocus`). They implement the WAI-ARIA APG patterns and are tested once;
-  a bespoke reimplementation is a review reject.
-- **Navigation goes through `useLinkComponent()`**, never a hardcoded `<a>`
-  (`@astryx/no-hardcoded-anchor`).
-- **`'use client'` first.** A file importing a React client API from `react`
-  must have `'use client';` as its first statement — only comments and blank
-  lines may precede it. Enforced by `pnpm check:use-client`, part of
-  `pnpm check:repo`.
-- **JSDoc comments for AI-assisted development**, and keep code comments
-  minimal otherwise: comment _why_, not _what_. Narration comments,
-  commented-out code, and changelog-in-code are review findings.
-- **Changesets** for consumer-visible changes — see
-  [Adding a Changeset](#adding-a-changeset).
+  exported props interface)
+- `'use client';` as the first statement of any file importing a React client
+  API — only comments and blank lines may precede it (`pnpm check:use-client`,
+  part of `pnpm check:repo`)
+- JSDoc comments for AI-assisted development, with `@example` fences left
+  untagged (plain ` ``` `) or Storybook autodocs won't render them
+- Export types alongside components
 
 ## Troubleshooting
 

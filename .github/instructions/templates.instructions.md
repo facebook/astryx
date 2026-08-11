@@ -13,8 +13,8 @@ examples, so they carry design responsibility beyond any single component.
 > template files, the component-authoring checklist there (the `ref` prop,
 > sync-exports, colocated `.test.tsx`, etc.) does **not** apply — templates are
 > examples, not published components. Review them by the rubric below, plus the
-> shared design rules and
-> [CONTRIBUTING → Code Style](../../CONTRIBUTING.md#code-style).
+> shared design and StyleX rules on the
+> [Component Audit Rubric](https://github.com/facebook/astryx/wiki/Component-Audit-Rubric).
 
 ## The grading rubric
 

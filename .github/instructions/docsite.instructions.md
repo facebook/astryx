@@ -9,9 +9,9 @@ It ships app code, not published packages, so consumer-breaking API changes
 aren't the concern here — the data pipeline, idiomatic composition, and mobile
 behavior are.
 
-The repo-wide conventions apply, and are not restated here — see
-[CONTRIBUTING → Code Style](../../CONTRIBUTING.md#code-style) (StyleX-only,
-semantic tokens, no style-only wrappers, comment discipline) and
+The design-system rules are not restated here — see the
+[Component Audit Rubric](https://github.com/facebook/astryx/wiki/Component-Audit-Rubric)
+for the bar (StyleX usage, tokens, accessibility, and their check ids) and
 [`copilot-instructions.md`](../copilot-instructions.md) for severity and the
 review signal.
 

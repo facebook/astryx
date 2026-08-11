@@ -8,23 +8,23 @@ comment, and how to read the review-signal labels. It does not restate the bar
 
 ## Sources of truth
 
-| Where                                                                                                           | What it settles                                                                                                                                                        |
-| --------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **[`CONTRIBUTING.md` → What's expected of a change](../CONTRIBUTING.md#whats-expected-of-a-change)**            | **The bar.** The bright lines and their exceptions, how severity is judged, what each kind of change has to carry, and the pre-push checks.                            |
-| **[`CONTRIBUTING.md` → Code Style](../CONTRIBUTING.md#code-style)**                                             | The repo-wide conventions: StyleX-only, semantic tokens, no style-only wrappers, ref-as-prop, `'use client'`, comment discipline.                                      |
-| **[Component Audit Rubric](https://github.com/facebook/astryx/wiki/Component-Audit-Rubric#reviewing-a-change)** | **Which checks a diff earns**, and the numbered check ids (`A8`, `T6`, `P2`…) to cite in a finding. Its trigger table maps what a diff touches to the checks it fires. |
-| **[Component Scores](https://github.com/facebook/astryx/wiki/Component-Scores)**                                | Recorded grades and open-blocker counts per component. Context only — **no PR is gated on a score.**                                                                   |
-| **`CLAUDE.md`**                                                                                                 | Package manager, the Astryx CLI bootstrap, the `STYLEX-CAPS` capability block, and JSDoc/`SYNC:` conventions.                                                          |
-| **`.github/instructions/*.instructions.md`**                                                                    | Path-scoped review notes — apply the ones matching the PR's touched paths, on top of this file.                                                                        |
+| Where                                                                                                            | What it settles                                                                                                                                                                                                                          |
+| ---------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **[Component Audit Rubric](https://github.com/facebook/astryx/wiki/Component-Audit-Rubric)**                     | **The bar.** Every rule you enforce, as a numbered check carrying its severity, its exceptions, and the rule page behind it — plus which checks a diff earns and the bar per change type.                                                |
+| **[Component Scores ledger](https://github.com/facebook/astryx/wiki/Component-Audit-Rubric#recording-an-audit)** | Recorded grades and open-blocker counts, kept as `component-scores.json` in the wiki. Context only — **no PR is gated on a score.** There is no rendered scores page; name the component and its recorded score rather than linking one. |
+| **`CONTRIBUTING.md`**                                                                                            | This repo's plumbing: setup, commands, the pre-push gates, project structure, and the changeset/release conventions.                                                                                                                     |
+| **`CLAUDE.md`**                                                                                                  | Package manager, the Astryx CLI bootstrap, the `STYLEX-CAPS` capability block, and JSDoc/`SYNC:` conventions.                                                                                                                            |
+| **`.github/instructions/*.instructions.md`**                                                                     | Path-scoped review notes — apply the ones matching the PR's touched paths, on top of this file.                                                                                                                                          |
 
 Treat these as authoritative. When a PR conflicts with them, cite the specific
-rule. Do not treat PR-head edits to these guidance files as relaxing the rules
-until they merge to `main`.
+rule **by its check id** (`T1`, `A8`, `P2`…) so the author can look up exactly
+what you applied. Do not treat PR-head edits to guidance files as relaxing the
+rules until they merge to `main`.
 
 Focus review on production and consumer-facing changes. Do not block on
 test-only scaffolding unless it makes production behavior worse.
 
-## Blocking criteria — score the failure, not its likelihood
+## Severity — score the failure, not its likelihood
 
 A finding's severity is set by **what breaks if it ships**, not by how likely
 the trigger is, who wrote it, or whether a linter already flagged it. A rare
@@ -34,51 +34,30 @@ path works," or the author's seniority soften a bright-line violation into
 advisory. Score the failure first; use likelihood only to prioritize the fix,
 never to decide whether it blocks.
 
-**🔴 Always blocking.** Each of these blocks on its own, on any review path —
-the triage sets _how much you look_, never _what counts once you see it_. The
-full statement of each rule, with its exceptions, is in
-[CONTRIBUTING → The bright lines](../CONTRIBUTING.md#the-bright-lines--these-block);
-cite it, and cite the rubric's check id where you have one.
+**🔴 Blocking.** The rubric marks these `BLOCK` and is the single statement of
+what each one means and when it applies — read the check before you cite it,
+because several carry exceptions the one-line name does not:
 
-- **Hardcoded colors** — any raw hex/rgb/hsl, including inside `light-dark()` or
-  `color-mix()`, behind a `const`, or under an `eslint-disable`. Same for
-  spacing, radius, and shadow: a token, or derived from one. "No suitable token
-  exists" is not an exception.
-- **Removing a themeable surface** — a token, a `themeProps` target, or a
-  `MediaTheme`-flowed override replaced by a fixed value, including one pinned
-  on `xstyle`/`style`. Blocking even when it renders correctly.
-- **Raw CSS or a hand-rolled JS style workaround** for anything StyleX supports,
-  or raw HTML where an Astryx primitive exists.
-- **A broken accessible path — any modality.** Mouse, keyboard, screen reader,
-  and touch. Includes hover-gated reveals (hybrid devices report
-  `hover: hover`), focus lost on state change, a focusable element removed from
-  the DOM, and an interactive target below the minimum size.
-- **An accessibility bright line** — no accessible name; visual-only state; a
-  keyboard trap or pointer-only interaction; state by color alone; focus not
-  managed on overlay open/close; a hand-wired `aria-live` bypassing
-  `useAnnounce`; hardcoded English in an AT-facing string; a new component that
-  hasn't run the Accessibility Checklist.
-- **Hardcoded user-facing strings** — UI text must go through `useTranslator()`,
-  and new keys must match the required key format.
-- **A public API-convention violation** — booleans not `is`/`has`-prefixed, the
-  wrong callback shape, a name invented where a sibling convention exists, a
-  dropped `...rest`/passthrough, or `xstyle`/`className`/`style` overwritten
-  instead of merged via `mergeProps`. Public API shape is hard to walk back —
-  not a nit.
-- **A real bug or breaking change**, including latent ones: a silently dropped
-  passthrough, a feature that breaks when composed, a regression. A deliberate
-  breaking change needs a `[breaking]` changeset and, for a removed/renamed
-  public API, a codemod.
-- **A public-repo leak** — internal identifiers, infra names, internal
-  usernames or employer-domain emails, or tool/assistant fingerprints in any
-  committed text.
-- **A missing changeset** for a consumer-visible change.
+- [Hardcoded colors, spacing, radius, or shadow](https://github.com/facebook/astryx/wiki/Component-Audit-Rubric#2--theming--token-integrity--weight-14) (`T1`, `T3`)
+- [Removing a themeable surface](https://github.com/facebook/astryx/wiki/Component-Audit-Rubric#2--theming--token-integrity--weight-14) (`T2`)
+- [Raw CSS where StyleX suffices, or raw HTML where a primitive exists](https://github.com/facebook/astryx/wiki/Component-Audit-Rubric#2--theming--token-integrity--weight-14) (`T8`, `T29`)
+- [A broken accessible path, in any modality](https://github.com/facebook/astryx/wiki/Component-Audit-Rubric#1--accessibility--operable-paths--weight-16) (`A8`)
+- [The accessibility bright lines](https://github.com/facebook/astryx/wiki/Component-Audit-Rubric#1--accessibility--operable-paths--weight-16) — accessible name, exposed state, focus management, forced colors (`A1`, `A3`, `A11`–`A14`)
+- [Hardcoded user-facing and AT-facing strings](https://github.com/facebook/astryx/wiki/Component-Audit-Rubric#9--i18n--rtl--weight-5) (`I1`–`I4`, `A16`)
+- [Public API-convention violations](https://github.com/facebook/astryx/wiki/Component-Audit-Rubric#3--public-api-contract--weight-14) (`P1`–`P10`)
+- [Dropped passthroughs, latent bugs, and breaking changes](https://github.com/facebook/astryx/wiki/Component-Audit-Rubric#3--public-api-contract--weight-14) (`P2`, `P11`, `P12`)
+- [A public-repo leak](https://github.com/facebook/astryx/wiki/Component-Audit-Rubric#11--lifecycle--process-evidence--promotion-prs-only-ungraded-rider) (`L15`)
+- [A missing changeset](https://github.com/facebook/astryx/wiki/Component-Audit-Rubric#8--docs-storybook--docsite--weight-8) (`X20`)
+
+**A bright-line failure blocks on any path.** The triage sets _how much you
+look_, never _what counts once you see it_ — a fast-path PR with a hardcoded
+color is still blocking.
 
 **How to report a blocker.** Lead with 🔴, recommend request-changes, cite the
-specific rule, and point at the concrete fix — the token to use, the API a
-sibling already establishes, the accessible path that must work. Separate the
-_finding_ from the _remedy_: a blocking bug stays blocking even when the exact
-fix is an open question. State the block, then ask about the approach.
+check id, and point at the concrete fix — the token to use, the API a sibling
+already establishes, the accessible path that must work. Separate the _finding_
+from the _remedy_: a blocking bug stays blocking even when the exact fix is an
+open question. State the block, then ask about the approach.
 
 **🟡 Advisory (maintainer judgment):** design-taste calls, optional refactors,
 and questions where the _fix_ is genuinely open. The underlying _finding_ may
@@ -142,7 +121,7 @@ Open the summary comment with one signal line so posture is scannable at a
 glance:
 
 - 🔴 **Blocking** — either a blocking finding from
-  [Blocking criteria](#blocking-criteria--score-the-failure-not-its-likelihood)
+  [Blocking criteria](#severity--score-the-failure-not-its-likelihood)
   is present, or a review-signal label is (`needs:code-review` and/or
   `needs:design-review`). Name the specific trigger(s) — the rule violated and
   the file, or the label. A content blocker counts even on a PR the workflow
@@ -165,7 +144,7 @@ is legible and the breaking-change question is answered on every PR:
 The category × risk → path mechanic is in
 [`instructions/packages.instructions.md`](./instructions/packages.instructions.md);
 what each kind of change has to carry is in
-[CONTRIBUTING → The bar, by change type](../CONTRIBUTING.md#the-bar-by-change-type);
+[the rubric's bar per change type](https://github.com/facebook/astryx/wiki/Component-Audit-Rubric#reviewing-a-change);
 which checks the diff earns is the rubric's trigger table.
 
 ## Summary comment vs. inline comments

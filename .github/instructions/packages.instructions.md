@@ -9,16 +9,15 @@ Astryx's API guidance and component review protocol.
 
 **Read first, and don't restate here:**
 
-- [CONTRIBUTING → What's expected of a change](../../CONTRIBUTING.md#whats-expected-of-a-change)
-  — the bright lines, and what each kind of change has to carry.
-- [CONTRIBUTING → Code Style](../../CONTRIBUTING.md#code-style) — StyleX-only,
-  semantic tokens, no style-only wrappers, ref-as-prop, `'use client'`, the
-  shared a11y primitives.
+- [Component Audit Rubric](https://github.com/facebook/astryx/wiki/Component-Audit-Rubric)
+  — the bar: every rule as a numbered check with its severity and exceptions,
+  the bar per change type, and the trigger table mapping what a diff touches to
+  the checks it earns. Cite check ids in findings.
 - [`copilot-instructions.md`](../copilot-instructions.md) — severity, the review
   signal line, summary-vs-inline, the labels, same bar for every author.
-- [Component Audit Rubric → Reviewing a change](https://github.com/facebook/astryx/wiki/Component-Audit-Rubric#reviewing-a-change)
-  — the trigger table mapping what a diff touches to the numbered checks it
-  earns, and the check ids to cite.
+- [CONTRIBUTING → Code Style](../../CONTRIBUTING.md#code-style) — what this repo
+  enforces mechanically: TS strict, ref-as-prop, `'use client'`, JSDoc
+  `@example` fences.
 
 What follows is what is specific to **published package code** and lives
 nowhere else.
@@ -31,7 +30,7 @@ in what order, so effort lands where the risk is — and so the risk checks
 
 This is the triage the rubric points at; it is stated here and only here. The
 **bar** each change type has to clear is in
-[CONTRIBUTING → The bar, by change type](../../CONTRIBUTING.md#the-bar-by-change-type),
+[the rubric's bar per change type](https://github.com/facebook/astryx/wiki/Component-Audit-Rubric#reviewing-a-change),
 and the **specific checks** a diff earns come from the rubric's trigger table.
 Triage sets depth; those two set content.
 
@@ -113,7 +112,7 @@ everywhere it composites.
 
 Once triaged, weight the review by what the PR is trying to do. The evidence
 each type owes is in
-[CONTRIBUTING → The bar, by change type](../../CONTRIBUTING.md#the-bar-by-change-type);
+[the rubric's bar per change type](https://github.com/facebook/astryx/wiki/Component-Audit-Rubric#reviewing-a-change);
 these are the package-specific reading notes on top of it.
 
 - **Bug fixes** — the red→green evidence belongs **in the PR description**. Flag
@@ -345,9 +344,10 @@ Flag a diff that adds a _new_ template/block whose `.doc.mjs` is not
 
 ## Mechanical checklist
 
-The repo-wide conventions (StyleX-only, semantic tokens, no style-only wrappers,
-ref-as-prop + `displayName`, `'use client'` first, the shared a11y primitives,
-`useLinkComponent()`) are in
+The design-system rules (StyleX-only, semantic tokens, no style-only wrappers,
+the shared a11y primitives, `useLinkComponent()`) are numbered checks on the
+[Component Audit Rubric](https://github.com/facebook/astryx/wiki/Component-Audit-Rubric);
+what this repo enforces mechanically is in
 [CONTRIBUTING → Code Style](../../CONTRIBUTING.md#code-style). What is specific
 to a published package:
 
