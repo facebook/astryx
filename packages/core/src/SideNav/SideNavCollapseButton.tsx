@@ -31,12 +31,25 @@ import {
 } from './SideNavCollapseContext';
 import {useAppShellMobile} from '../AppShell/AppShellMobileContext';
 import {useTranslator} from '../i18n';
+import type {ElementSize} from '../SizeContext/SizeContext';
 
 // =============================================================================
 // Styles
 // =============================================================================
 
 const styles = stylex.create({
+  // The RTL mirror wrapper has to be a flex container, not the inline box it
+  // is by default. Button's icon slot is `display: flex` with `align-items:
+  // center`, so this span is a flex item and blockifies to `display: block` —
+  // which gives it a LINE box (22.86px at the slot's 16px font) and lands the
+  // inline-flex chevron inside it on the text baseline, 2.42px above the
+  // button's centre. Measured, not guessed. As a flex container the glyph is
+  // a flex item instead of a line-box participant and centres exactly.
+  chevronMirror: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   chevron: {
     display: 'inline-flex',
     alignItems: 'center',
@@ -69,6 +82,15 @@ export interface SideNavCollapseButtonProps extends BaseProps<HTMLButtonElement>
    * with the chevron icon. When omitted, renders as an icon-only button.
    */
   label?: string;
+
+  /**
+   * Button size. Defaults to whatever the surrounding container cascades
+   * through `SizeContext` — inside a SideNav footer that is `sm` — and to
+   * `md` with no container, matching `Button`. Set it explicitly when the
+   * button is placed outside a sized container and has to match neighbours
+   * of its own, e.g. in a `TopNav` beside other actions.
+   */
+  size?: ElementSize;
 
   /**
    * Custom button content. Overrides the default chevron icon and label.
@@ -105,6 +127,7 @@ export function SideNavCollapseButton({
   ref,
   handleRef,
   label,
+  size,
   children,
   onClick: onClickProp,
   ...props
@@ -130,6 +153,7 @@ export function SideNavCollapseButton({
           : t('@astryx.sideNavCollapseButton.collapseSidebar'))
       }
       variant="ghost"
+      size={size}
       {...props}
       onClick={composeEventHandlers(onClickProp, toggle)}
       icon={
@@ -138,7 +162,7 @@ export function SideNavCollapseButton({
           // into) the state rotation: both are `transform`, so on a single
           // element one would overwrite the other and the chevron would stop
           // mirroring under RTL. See utils/rtlStyles.ts.
-          <span {...stylex.props(rtlStyles.mirror)}>
+          <span {...stylex.props(styles.chevronMirror, rtlStyles.mirror)}>
             {/* `sm` (1rem) matches what this glyph already renders at: Button's
                 icon slot pins its wrapper to 16px, and the registry SVG is
                 1em, so the chevron is 16px today. */}

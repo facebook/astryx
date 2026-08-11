@@ -85,7 +85,7 @@ export const docs = {
     {
       name: 'footerIcons',
       type: 'ReactNode',
-      description: 'Footer icon bar.',
+      description: "Footer icon bar. The row cascades a 'sm' size to the interactive children it contains, so its icons and the built-in collapse button come out one height; pass an explicit size on a child to opt out.",
       slotElements: [
         {
           __element: 'Icon',

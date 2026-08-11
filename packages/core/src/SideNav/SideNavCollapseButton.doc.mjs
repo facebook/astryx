@@ -20,6 +20,11 @@ export const docs = {
       description: 'Custom button label. When provided, renders as a text button with chevron. When omitted, renders icon-only.',
     },
     {
+      name: 'size',
+      type: "'sm' | 'md' | 'lg'",
+      description: "Button size. Defaults to the size its container cascades — 'sm' inside a SideNav footer — and to 'md' with no container. Set it when the button sits outside a sized container and has to match its neighbours.",
+    },
+    {
       name: 'children',
       type: 'ReactNode',
       description: 'Custom button content. Overrides the default chevron icon and label.',
@@ -44,6 +49,11 @@ export const docsZh = {
       description: '自定义按钮标签。提供时渲染为带箭头的文本按钮。省略时渲染为仅图标按钮。',
     },
     {
+      name: 'size',
+      type: "'sm' | 'md' | 'lg'",
+      description: "按钮尺寸。默认使用容器级联的尺寸（SideNav 页脚内为 'sm'），无容器时为 'md'。当按钮位于已设定尺寸的容器之外且需要与相邻元素保持一致时显式设置。",
+    },
+    {
       name: 'children',
       type: 'ReactNode',
       description: '自定义按钮内容。覆盖默认的箭头图标和标签。',
@@ -59,6 +69,7 @@ export const docsDense = {
   propDescriptions: {
     handleRef: 'Imperative collapse handle from SideNav. Only needed when button rendered outside sidenav.',
     label: 'Custom label. Text button w/ chevron when provided, icon-only when omitted.',
+    size: "Button size. Inherits from the container ('sm' in a SideNav footer), else 'md'.",
     children: 'Custom content. Overrides default chevron icon + label.',
   },
 };

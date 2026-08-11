@@ -17,6 +17,7 @@ import {useRef, useState, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {getForcedColorsRules} from '../__tests__/forcedColors';
+import {Button} from '../Button';
 import {SideNav} from './SideNav';
 import {SideNavCollapseButton} from './SideNavCollapseButton';
 import {SideNavHeading} from './SideNavHeading';
@@ -2041,5 +2042,135 @@ describe('forced colors (WCAG 1.4.11)', () => {
     // `endContent`, keeping a Badge's authored fill instead of remapping it.
     const row = screen.getByRole('link', {name: 'Dashboard'});
     expect(getComputedStyle(row).forcedColorAdjust).not.toBe('none');
+  });
+});
+
+// =============================================================================
+// Footer icon row — one size for the whole row
+// =============================================================================
+
+describe('SideNav footer icon row sizing', () => {
+  /**
+   * The class(es) a `size="sm"` Button carries that a `size="md"` one does
+   * not — i.e. whatever StyleX compiled the sm height into. Comparing class
+   * sets keeps the assertion off the generated hashes.
+   */
+  function sizeOnlyClasses(size: 'sm' | 'lg'): string[] {
+    const {unmount} = render(
+      <>
+        <Button
+          label="sized reference"
+          size={size}
+          isIconOnly
+          icon={<span />}
+          data-testid="sized-ref"
+        />
+        <Button
+          label="md reference"
+          size="md"
+          isIconOnly
+          icon={<span />}
+          data-testid="md-ref"
+        />
+      </>,
+    );
+    const sized = new Set(screen.getByTestId('sized-ref').classList);
+    const md = new Set(screen.getByTestId('md-ref').classList);
+    const only = [...sized].filter(c => !md.has(c));
+    unmount();
+    // Guard against a vacuous pass: if the two sizes compiled to the same
+    // classes there is nothing to assert and every check would trivially hold.
+    expect(only.length).toBeGreaterThan(0);
+    return only;
+  }
+
+  it('renders the built-in collapse button at the row size, not the Button default', () => {
+    const smClasses = sizeOnlyClasses('sm');
+    render(
+      <SideNav collapsible>
+        <SideNavSection title="Main">
+          <SideNavItem label="Dashboard" href="/dashboard" />
+        </SideNavSection>
+      </SideNav>,
+    );
+    const collapseButton = screen.getByRole('button', {
+      name: /collapse sidebar/i,
+    });
+    for (const className of smClasses) {
+      expect(collapseButton).toHaveClass(className);
+    }
+  });
+
+  it('cascades the same size to footerIcons the consumer did not size', () => {
+    const smClasses = sizeOnlyClasses('sm');
+    render(
+      <SideNav
+        collapsible
+        footerIcons={
+          <Button label="Help" isIconOnly icon={<span />} data-testid="help" />
+        }>
+        <SideNavSection title="Main">
+          <SideNavItem label="Dashboard" href="/dashboard" />
+        </SideNavSection>
+      </SideNav>,
+    );
+    const help = screen.getByTestId('help');
+    for (const className of smClasses) {
+      expect(help).toHaveClass(className);
+    }
+  });
+
+  it('lets an explicit size on a footer icon win over the cascade', () => {
+    const lgClasses = sizeOnlyClasses('lg');
+    render(
+      <SideNav
+        collapsible
+        footerIcons={
+          <Button
+            label="Help"
+            size="lg"
+            isIconOnly
+            icon={<span />}
+            data-testid="help"
+          />
+        }>
+        <SideNavSection title="Main">
+          <SideNavItem label="Dashboard" href="/dashboard" />
+        </SideNavSection>
+      </SideNav>,
+    );
+    const help = screen.getByTestId('help');
+    for (const className of lgClasses) {
+      expect(help).toHaveClass(className);
+    }
+  });
+
+  it('honours an explicit size on SideNavCollapseButton outside the nav', () => {
+    const lgClasses = sizeOnlyClasses('lg');
+    render(
+      <SideNavCollapseContext
+        value={{isCollapsed: false, toggle: () => {}, isCollapsible: true}}>
+        <SideNavCollapseButton size="lg" data-testid="collapse" />
+      </SideNavCollapseContext>,
+    );
+    const collapse = screen.getByTestId('collapse');
+    for (const className of lgClasses) {
+      expect(collapse).toHaveClass(className);
+    }
+  });
+
+  it('centres the chevron instead of seating it on a text baseline', () => {
+    renderExpanded(<SideNavCollapseButton data-testid="collapse" />);
+    // Icon renders its own `astryx-icon` span around the svg; the RTL-mirror
+    // wrapper this component adds is that span's parent.
+    const iconSpan = screen
+      .getByTestId('collapse')
+      .querySelector('span.astryx-icon');
+    const mirror = iconSpan?.parentElement;
+    // The RTL-mirror wrapper is a flex item of Button's icon slot, so it
+    // blockifies; as a block it gets a line box and the glyph sits on the
+    // baseline, 2.42px above centre (measured in Chromium). A flex container
+    // has no line box.
+    expect(mirror && getComputedStyle(mirror).display).toBe('flex');
   });
 });

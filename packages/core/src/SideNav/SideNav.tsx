@@ -46,6 +46,7 @@ import {useResizable} from '../Resizable/useResizable';
 import type {ResizableConfig} from '../Resizable/useResizable';
 import {ResizeHandle} from '../Resizable/ResizeHandle';
 import {themeProps} from '../utils/themeProps';
+import {SizeProvider} from '../SizeContext/SizeContext';
 import {useTranslator} from '../i18n';
 
 // =============================================================================
@@ -185,6 +186,15 @@ const styles = stylex.create({
     marginInlineStart: 'auto',
   },
 });
+
+/**
+ * The icon rows — the footer bar, its collapsed rail form, the topbar strip
+ * and the drawer footer — cascade this to their children through
+ * `SizeContext`, so the built-in collapse button and whatever the consumer
+ * puts in `footerIcons` come out one height instead of two. They are compact
+ * icon rails, so `sm`; an explicit `size` on a child still wins.
+ */
+const FOOTER_ICON_SIZE = 'sm';
 
 // =============================================================================
 // Types
@@ -452,7 +462,9 @@ export function SideNav({
           style,
         )}>
         {header}
-        <div {...stylex.props(styles.topbarIcons)}>{footerIcons}</div>
+        <div {...stylex.props(styles.topbarIcons)}>
+          <SizeProvider value={FOOTER_ICON_SIZE}>{footerIcons}</SizeProvider>
+        </div>
       </div>
     );
   }
@@ -478,7 +490,9 @@ export function SideNav({
             {footer}
             {footerIcons && (
               <div {...stylex.props(styles.drawerFooterIcons)}>
-                {footerIcons}
+                <SizeProvider value={FOOTER_ICON_SIZE}>
+                  {footerIcons}
+                </SizeProvider>
               </div>
             )}
           </div>
@@ -501,7 +515,9 @@ export function SideNav({
             {footer}
             {footerIcons && (
               <div {...stylex.props(styles.drawerFooterIcons)}>
-                {footerIcons}
+                <SizeProvider value={FOOTER_ICON_SIZE}>
+                  {footerIcons}
+                </SizeProvider>
               </div>
             )}
           </div>
@@ -573,8 +589,10 @@ export function SideNav({
               styles.footerRow,
               collapsed && styles.footerRowCollapsed,
             )}>
-            {showCollapseButton && <SideNavCollapseButton />}
-            {footerIcons}
+            <SizeProvider value={FOOTER_ICON_SIZE}>
+              {showCollapseButton && <SideNavCollapseButton />}
+              {footerIcons}
+            </SizeProvider>
           </div>
         </div>
       )}
