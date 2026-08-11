@@ -40,6 +40,9 @@ import migrateLabCodeBlockImports, {
 import removeThemeTransitionTokenImports, {
   meta as removeThemeTransitionTokenImportsMeta,
 } from './remove-theme-transition-token-imports.mjs';
+import migrateTableRowExpansionToTree, {
+  meta as migrateTableRowExpansionToTreeMeta,
+} from './migrate-table-rowexpansion-to-tree.mjs';
 
 export default [
   {
@@ -86,5 +89,10 @@ export default [
     name: 'remove-theme-transition-token-imports',
     transform: removeThemeTransitionTokenImports,
     meta: removeThemeTransitionTokenImportsMeta,
+  },
+  {
+    name: 'migrate-table-rowexpansion-to-tree',
+    transform: migrateTableRowExpansionToTree,
+    meta: migrateTableRowExpansionToTreeMeta,
   },
 ];
