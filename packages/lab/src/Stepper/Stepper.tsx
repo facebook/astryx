@@ -79,7 +79,7 @@ export interface StepperProps extends BaseProps<HTMLOListElement> {
    * vertical orientation, where width is not the constraint.
    * @default false
    */
-  collapseLabelsWhenNarrow?: boolean;
+  hasCollapsibleLabels?: boolean;
 }
 
 const styles = stylex.create({
@@ -153,7 +153,7 @@ export function Stepper({
   label = 'Progress',
   density = 'balanced',
   indicatorPosition = 'separated',
-  collapseLabelsWhenNarrow = false,
+  hasCollapsibleLabels = false,
   xstyle,
   className,
   style,
@@ -168,7 +168,7 @@ export function Stepper({
       onStepClick: onStepClick ?? null,
       density,
       indicatorPosition,
-      collapseLabelsWhenNarrow,
+      hasCollapsibleLabels,
     }),
     [
       activeStep,
@@ -176,7 +176,7 @@ export function Stepper({
       onStepClick,
       density,
       indicatorPosition,
-      collapseLabelsWhenNarrow,
+      hasCollapsibleLabels,
     ],
   );
 
@@ -192,8 +192,7 @@ export function Stepper({
 
   // Label collapse is a width constraint, so it only applies to the horizontal
   // orientation; vertical steppers are never width-limited this way.
-  const isLabelCollapse =
-    collapseLabelsWhenNarrow && orientation === 'horizontal';
+  const isLabelCollapse = hasCollapsibleLabels && orientation === 'horizontal';
 
   return (
     <StepperContext value={ctxValue}>

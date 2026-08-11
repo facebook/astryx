@@ -583,7 +583,7 @@ describe('Stepper', () => {
     });
   });
 
-  describe('collapseLabelsWhenNarrow', () => {
+  describe('hasCollapsibleLabels', () => {
     // The collapse is a container query, so jsdom can't evaluate the media
     // condition — assert the opt-in wiring instead: the collapsible class is
     // applied to non-current horizontal step labels and withheld from the
@@ -595,10 +595,7 @@ describe('Stepper', () => {
 
     it('marks non-current horizontal step labels collapsible, but not the current one', () => {
       render(
-        <Stepper
-          activeStep={1}
-          orientation="horizontal"
-          collapseLabelsWhenNarrow>
+        <Stepper activeStep={1} orientation="horizontal" hasCollapsibleLabels>
           <Step step={0} label="A" data-testid="a" />
           <Step step={1} label="B" data-testid="b" />
           <Step step={2} label="C" data-testid="c" />
@@ -622,7 +619,7 @@ describe('Stepper', () => {
 
     it('does not collapse labels in the vertical orientation', () => {
       render(
-        <Stepper activeStep={1} orientation="vertical" collapseLabelsWhenNarrow>
+        <Stepper activeStep={1} orientation="vertical" hasCollapsibleLabels>
           <Step step={0} label="A" data-testid="a" />
           <Step step={1} label="B" data-testid="b" />
         </Stepper>,

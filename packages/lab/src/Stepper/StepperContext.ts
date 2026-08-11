@@ -40,7 +40,7 @@ export interface StepperContextValue {
    * container query once the stepper is too narrow to fit them all, so the
    * track can shrink. The current step keeps its label.
    */
-  collapseLabelsWhenNarrow: boolean;
+  hasCollapsibleLabels: boolean;
 }
 
 export const StepperContext = createContext<StepperContextValue | null>(null);

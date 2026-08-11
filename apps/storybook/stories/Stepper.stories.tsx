@@ -1003,7 +1003,7 @@ export const CollapseLabelsWhenNarrow: Story = {
             <Stepper
               activeStep={active}
               orientation="horizontal"
-              collapseLabelsWhenNarrow
+              hasCollapsibleLabels
               onStepClick={setActive}>
               <Step step={0} label="Cart" indicator="number" />
               <Step step={1} label="Shipping" indicator="number" />
@@ -1021,7 +1021,7 @@ export const CollapseLabelsWhenNarrow: Story = {
             <Stepper
               activeStep={active}
               orientation="horizontal"
-              collapseLabelsWhenNarrow
+              hasCollapsibleLabels
               onStepClick={setActive}>
               <Step step={0} label="Cart" indicator="number" />
               <Step step={1} label="Shipping" indicator="number" />
@@ -1038,7 +1038,7 @@ export const CollapseLabelsWhenNarrow: Story = {
               activeStep={active}
               orientation="horizontal"
               indicatorPosition="on-track"
-              collapseLabelsWhenNarrow
+              hasCollapsibleLabels
               onStepClick={setActive}>
               <Step step={0} label="Cart" indicator="number" />
               <Step step={1} label="Shipping" indicator="number" />

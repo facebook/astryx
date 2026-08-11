@@ -348,7 +348,7 @@ const styles = stylex.create({
     color: colorVars['--color-text-disabled'],
   },
   // Collapse a non-current step's label when the stepper container is narrow
-  // (opt-in via Stepper collapseLabelsWhenNarrow). Hidden from layout AND from
+  // (opt-in via Stepper hasCollapsibleLabels). Hidden from layout AND from
   // the accessibility tree's visible text — the step stays reachable via
   // aria-current and each control's accessible name, which are unaffected.
   // The current step never gets this style, so its label always shows.
@@ -692,7 +692,7 @@ export function Step({
     onStepClick,
     density: ctxDensity,
     indicatorPosition,
-    collapseLabelsWhenNarrow,
+    hasCollapsibleLabels,
   } = ctx;
 
   const density = densityProp ?? ctxDensity;
@@ -719,7 +719,7 @@ export function Step({
   // is horizontal (width-constrained), and this step is not the current one —
   // the current step always keeps its label. The actual hide is a container
   // query on the label element (styles.labelCollapsible).
-  const collapseLabel = collapseLabelsWhenNarrow && !isVertical && !isActive;
+  const collapseLabel = hasCollapsibleLabels && !isVertical && !isActive;
   // Any non-disabled step is navigable when an onStepClick handler is provided,
   // including not-started steps (free navigation across the flow).
   const isClickable = !isDisabled && onStepClick != null;
