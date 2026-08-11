@@ -165,6 +165,19 @@ describe('layoutExpand', () => {
     expectValidTsx(data.code);
   }, SLOW);
 
+  // Splicing runs block sources through stripTemplateAssetRefs, so the demo
+  // media swap that `template copy` performs happens on this path too. Without
+  // this, a video block could splice an image placeholder behind
+  // `type: 'video'` — issue #4780's bug — and the suite would stay green.
+  it('splices a video block with a video source, not the image placeholder', async () => {
+    const {data} = await layoutExpand('{lightbox-video}');
+    expectValidTsx(data.code);
+    expect(data.code).toContain("type: 'video'");
+    expect(data.code).not.toContain('/template-assets/');
+    expect(data.code).toContain('data:video/mp4;base64,');
+    expect(data.code).not.toContain('data:image/svg+xml');
+  }, SLOW);
+
   it('emits JSX-safe TSX for text payloads containing < and >', async () => {
     const result = await layoutExpand('Text"5 < 3 and 3 > 1"');
     expectValidTsx(result.data.code);

@@ -88,7 +88,7 @@ export function templateCopy(match, {targetPath, cwd, overwrite = false}) {
 
   fs.mkdirSync(outputDir, {recursive: true});
 
-  // Strip demo image references so the scaffolded file renders without a
+  // Strip demo media references so the scaffolded file renders without a
   // Meta-only network dependency.
   const source = fs.readFileSync(match.filePath, 'utf-8');
   const outputSource = stripTemplateAssetRefs(source);
