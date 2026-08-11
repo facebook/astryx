@@ -58,7 +58,7 @@ name: Review signal
 
 on:
   pull_request_target:
-    branches: ['main']
+    branches: ["main"]
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
   pull_request_review:
     types: [submitted]
@@ -70,7 +70,7 @@ on:
   workflow_dispatch:
     inputs:
       pr:
-        description: 'PR number to re-flag (blank = all open PRs)'
+        description: "PR number to re-flag (blank = all open PRs)"
         required: false
         type: string
 
@@ -83,9 +83,9 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  CODE_LABEL: 'needs:code-review'
-  DESIGN_LABEL: 'needs:design-review'
-  COMMUNITY_LABEL: 'community'
+  CODE_LABEL: "needs:code-review"
+  DESIGN_LABEL: "needs:design-review"
+  COMMUNITY_LABEL: "community"
 
 jobs:
   # ---------------------------------------------------------------------------
