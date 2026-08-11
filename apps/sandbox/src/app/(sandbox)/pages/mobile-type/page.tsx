@@ -180,12 +180,15 @@ function mobileFormula(
   mode: Mode,
   adapt: boolean,
   pinStep: number,
-): {title: string; formula: string; note: string} {
+): {title: string; formula: string; floor: string; note: string} {
   const bottom = Math.max(16, base);
+  const floor =
+    bottom !== base ? `Base floored ${base} → ${bottom}px` : `Base ${base}px`;
   if (!adapt) {
     return {
       title: 'No adaptation',
       formula: `size = round(${base} × ${ratio}^step)`,
+      floor: `Base ${base}px`,
       note: 'Mobile matches desktop exactly.',
     };
   }
@@ -193,7 +196,8 @@ function mobileFormula(
     return {
       title: 'Lift',
       formula: `size = round(${bottom} × ${ratio}^step)`,
-      note: `Base floored ${base} → ${bottom}px; full desktop ratio kept, so the whole ladder lifts together.`,
+      floor,
+      note: 'Full desktop ratio kept, so the whole ladder lifts together.',
     };
   }
   if (mode === 'pin') {
@@ -205,13 +209,15 @@ function mobileFormula(
       PIN_ANCHORS.find(a => a.value === String(pinStep))?.label ?? 'anchor';
     return {
       title: 'Pin',
-      formula: `ratioₚ = ${ratio} × (${base}/${bottom})^(1/${pinStep}) ≈ ${rp.toFixed(3)}\nsize = round(${bottom} × ratioₚ^step)`,
-      note: `Base floored to ${bottom}px; ratio re-derived so ${anchor} holds its desktop size. No ceiling — the top of the scale eases off via the tamer ratio.`,
+      formula: `size = round(${bottom} × ${rp.toFixed(3)}^step)`,
+      floor,
+      note: `Ratio re-derived (${ratio} → ${rp.toFixed(3)}) so ${anchor} holds its desktop size — the top of the scale eases off, no ceiling clamp.`,
     };
   }
   return {
     title: 'Custom',
-    formula: 'size = per-role override (seeded from Pin)',
+    formula: 'size = per-role override',
+    floor,
     note: 'Each role is set by hand.',
   };
 }
@@ -280,6 +286,7 @@ function ProductCard() {
           <Text type="supporting" color="secondary">
             {'ASTRYX · TYPOGRAPHY'}
           </Text>
+          <Text type="display-1">Scale</Text>
           <Text type="display-3">Type that scales</Text>
         </VStack>
 
@@ -630,20 +637,17 @@ export default function MobileTypePage() {
                   {/* Mobile card */}
                   <Card>
                     <VStack gap={3}>
-                      <VStack gap={1}>
+                      <VStack gap={0.5}>
                         <HStack gap={2} vAlign="center" justify="between">
                           <Text type="label" weight="semibold">
                             Mobile
                           </Text>
-                          <Text type="supporting" color="secondary">
-                            {formula.title}
-                          </Text>
+                          <span {...stylex.props(styles.formulaInline)}>
+                            {formula.formula}
+                          </span>
                         </HStack>
-                        <div {...stylex.props(styles.formulaBox)}>
-                          {formula.formula}
-                        </div>
                         <Text type="supporting" color="secondary">
-                          {formula.note}
+                          {formula.floor} · {formula.note}
                         </Text>
                       </VStack>
                       <VStack gap={0.5}>
@@ -771,16 +775,11 @@ const styles = stylex.create({
     minWidth: 0,
     paddingInlineStart: 48,
   },
-  formulaBox: {
+  formulaInline: {
     fontFamily: 'monospace',
     fontSize: 12,
-    lineHeight: 1.5,
-    whiteSpace: 'pre-line',
-    color: 'var(--color-text-primary)',
-    backgroundColor: 'var(--color-background-muted)',
-    borderRadius: 'var(--radius-element)',
-    paddingBlock: 6,
-    paddingInline: 10,
+    color: 'var(--color-text-secondary)',
+    whiteSpace: 'nowrap',
   },
   delta: {
     fontSize: 12,
