@@ -43,7 +43,9 @@ export interface ChatMessageProps extends BaseProps<HTMLElement> {
   /**
    * Message body — bubbles, tool calls, images, or any free-form content.
    * Custom (non-bubble) children render flush with the message edge; wrap
-   * them in ChatMessageContent to align them with the bubble's text column.
+   * them in a ghost bubble (`<ChatMessageBubble variant="ghost">`) to align
+   * them with the bubble's text column, and add `width="100%"` when they
+   * should span the full message column.
    */
   children: ReactNode;
   avatar?: ReactNode;

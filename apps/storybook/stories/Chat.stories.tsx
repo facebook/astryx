@@ -5,7 +5,6 @@ import {
   ChatMessageList,
   ChatMessage,
   ChatMessageBubble,
-  ChatMessageContent,
   ChatMessageMetadata,
   ChatSystemMessage,
 } from '@astryxdesign/core/Chat';
@@ -250,9 +249,20 @@ export const CustomContent: StoryObj = {
           <ChatMessageBubble name="Navi">
             Sure, here is the artifact from last quarter.
           </ChatMessageBubble>
-          {/* ChatMessageContent insets custom content to the bubble's text
-              column and spans the full message column (#2574). */}
-          <ChatMessageContent>
+          {/* A ghost bubble insets custom content to the bubble's text
+              column; width="100%" spans the full message column instead
+              of the default bubble width cap (#2574). */}
+          <ChatMessageBubble
+            variant="ghost"
+            width="100%"
+            metadata={
+              <ChatMessageMetadata
+                timestamp={
+                  <Timestamp value="2026-03-15T14:32:00" format="time" />
+                }
+                footer={<span>Claude Opus 4.6</span>}
+              />
+            }>
             <ClickableCard
               label="Open Q3 performance report"
               onClick={() => {}}>
@@ -263,15 +273,7 @@ export const CustomContent: StoryObj = {
                 12 pages · updated 2 days ago
               </Text>
             </ClickableCard>
-          </ChatMessageContent>
-          <ChatMessageContent>
-            <ChatMessageMetadata
-              timestamp={
-                <Timestamp value="2026-03-15T14:32:00" format="time" />
-              }
-              footer={<span>Claude Opus 4.6</span>}
-            />
-          </ChatMessageContent>
+          </ChatMessageBubble>
         </ChatMessage>
       </ChatMessageList>
     </div>

@@ -70,9 +70,6 @@ const chatLayout: CSSProperties = {
   flex: 1,
   minHeight: 0,
 };
-const artifactCard: CSSProperties = {
-  marginBlockStart: 'var(--spacing-2)',
-};
 const artifactScroll: CSSProperties = {
   flex: 1,
   overflowY: 'auto',
@@ -250,8 +247,7 @@ function ArtifactCard({onOpen}: {onOpen: () => void}) {
       onClick={onOpen}
       variant="muted"
       padding={3}
-      maxWidth={360}
-      style={artifactCard}>
+      maxWidth={360}>
       <HStack gap={3} vAlign="center" width="100%">
         <Icon icon={DocumentTextIcon} size="md" color="secondary" />
         <StackItem size="fill">
@@ -614,15 +610,24 @@ The fix is to catch \`TokenExpiredError\` specifically and attempt a refresh bef
                           {`I've drafted a design doc covering the problem, the fix, and the test matrix — pulling straight from the changes we just made.\n\nOpen the document below to review it. Want me to expand any section?`}
                         </Markdown>
                       </ChatMessageBubble>
-                      <ArtifactCard onOpen={openArtifact} />
-                      <ChatMessageMetadata
-                        timestamp={
-                          <Timestamp
-                            value="2026-04-29T10:18:40"
-                            format="time"
+                      {/* Ghost + width="100%" aligns the card with the
+                          bubble text column and spans the full message
+                          column; metadata rides the bubble slot. */}
+                      <ChatMessageBubble
+                        variant="ghost"
+                        width="100%"
+                        metadata={
+                          <ChatMessageMetadata
+                            timestamp={
+                              <Timestamp
+                                value="2026-04-29T10:18:40"
+                                format="time"
+                              />
+                            }
                           />
-                        }
-                      />
+                        }>
+                        <ArtifactCard onOpen={openArtifact} />
+                      </ChatMessageBubble>
                     </ChatMessage>
 
                     {/* User follow-up */}

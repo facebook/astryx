@@ -6,14 +6,13 @@ import {
   ChatMessageList,
   ChatMessage,
   ChatMessageBubble,
-  ChatMessageContent,
   ChatMessageMetadata,
 } from '@astryxdesign/core/Chat';
 import {ClickableCard} from '@astryxdesign/core/ClickableCard';
 import {Text} from '@astryxdesign/core/Text';
 import {Timestamp} from '@astryxdesign/core/Timestamp';
 
-export default function ChatMessageContentShowcase() {
+export default function ChatMessageBubbleCustomContent() {
   return (
     <ChatMessageList style={{maxWidth: 520}}>
       <ChatMessage sender="user">
@@ -23,7 +22,24 @@ export default function ChatMessageContentShowcase() {
         <ChatMessageBubble name="Navi">
           Sure, here is the artifact from last quarter.
         </ChatMessageBubble>
-        <ChatMessageContent>
+        {/* A ghost bubble aligns custom content with the bubble text column;
+            width="100%" spans the full message column instead of the default
+            bubble width cap. Metadata rides the bubble's metadata slot. */}
+        <ChatMessageBubble
+          variant="ghost"
+          width="100%"
+          metadata={
+            <ChatMessageMetadata
+              timestamp={
+                <Timestamp value="2026-04-28T09:45:00" format="time" />
+              }
+              footer={
+                <Text type="supporting" color="secondary">
+                  Claude Opus 4.6
+                </Text>
+              }
+            />
+          }>
           <ClickableCard label="Open Q3 performance report" onClick={() => {}}>
             <Text type="body" weight="semibold" display="block">
               Q3 Performance Report
@@ -32,17 +48,7 @@ export default function ChatMessageContentShowcase() {
               12 pages · updated 2 days ago
             </Text>
           </ClickableCard>
-        </ChatMessageContent>
-        <ChatMessageContent>
-          <ChatMessageMetadata
-            timestamp={<Timestamp value="2026-04-28T09:45:00" format="time" />}
-            footer={
-              <Text type="supporting" color="secondary">
-                Claude Opus 4.6
-              </Text>
-            }
-          />
-        </ChatMessageContent>
+        </ChatMessageBubble>
       </ChatMessage>
     </ChatMessageList>
   );
