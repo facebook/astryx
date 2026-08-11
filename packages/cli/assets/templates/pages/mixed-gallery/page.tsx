@@ -36,9 +36,11 @@ const clipStyle: CSSProperties = {
 // 3 columns on desktop, dropping straight to 1 column below 720px (no 2-col
 // middle state). minmax(0, 1fr) (not 1fr) so tracks split evenly and ignore the
 // images' intrinsic min-width. The hero spans 2 columns on desktop, then fills
-// the row once it's single-column — and switches from 3:1 to 3:2 via the
-// --astryx-aspect-ratio variable (AspectRatio's responsive override hook), so
-// every stacked tile is uniform without rendering the hero twice.
+// the row once it's single-column — and switches from 3:1 to 3:2 with a plain
+// aspect-ratio override. AspectRatio's ratio is a class-level declaration in
+// @layer astryx-base, and this <style> tag is unlayered, so the override wins
+// regardless of specificity — every stacked tile is uniform without rendering
+// the hero twice.
 const GALLERY_CSS = `
 .mixed-gallery-grid {
   display: grid;
@@ -54,7 +56,7 @@ const GALLERY_CSS = `
   }
   .mixed-gallery-hero {
     grid-column: 1 / -1;
-    --astryx-aspect-ratio: 3 / 2;
+    aspect-ratio: 3 / 2;
   }
 }
 `;
@@ -141,8 +143,9 @@ export default function MixedGalleryTemplate() {
                 the stacked tiles are uniform. */}
             <div className="mixed-gallery-grid">
               {/* Hero — spans 2 columns; 3:1 keeps it level with the sidebar.
-                  Stacked, --astryx-aspect-ratio switches it to 3:2 (see
-                  GALLERY_CSS) — one element, no duplicate hero markup. */}
+                  Stacked, the unlayered aspect-ratio override switches it to
+                  3:2 (see GALLERY_CSS) — one element, no duplicate hero
+                  markup. */}
               <GalleryCard
                 image={IMAGES[0]}
                 ratio={3 / 1}

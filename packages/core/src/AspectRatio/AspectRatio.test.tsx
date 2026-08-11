@@ -16,7 +16,7 @@ import {AspectRatio} from './AspectRatio';
 /**
  * The ratio compiles to a class-level `aspect-ratio: var(--x-aspectRatio)`
  * declaration with the value carried by a CSS variable (so xstyle/@media
- * and `--astryx-aspect-ratio` overrides can win). `--x-aspectRatio` is the
+ * and unlayered consumer CSS overrides can win). `--x-aspectRatio` is the
  * debug-mode variable name emitted for the `aspectRatio` property.
  */
 function ratioVar(el: HTMLElement): string {
@@ -24,7 +24,7 @@ function ratioVar(el: HTMLElement): string {
 }
 
 function ratioValue(ratio: number): string {
-  return `var(--astryx-aspect-ratio, ${String(ratio)})`;
+  return String(ratio);
 }
 
 describe('AspectRatio', () => {
@@ -200,22 +200,11 @@ describe('AspectRatio', () => {
       );
       const element = screen.getByTestId('aspect-ratio');
       // No inline aspect-ratio — the declaration lives in a class reading a
-      // CSS variable, so @media/@container rules (via xstyle or the
-      // --astryx-aspect-ratio custom property) can override it.
+      // CSS variable, so @media/@container rules (via xstyle, or via
+      // unlayered consumer CSS beating the astryx-base layer) can override
+      // it.
       expect(element.style.aspectRatio).toBe('');
       expect(ratioVar(element)).toBe(ratioValue(3 / 1));
-    });
-
-    it('reads the --astryx-aspect-ratio custom property before the prop fallback', () => {
-      render(
-        <AspectRatio ratio={3 / 1} data-testid="aspect-ratio">
-          <div>Hero</div>
-        </AspectRatio>,
-      );
-      const element = screen.getByTestId('aspect-ratio');
-      // The prop value is only the var() fallback; any rule setting
-      // --astryx-aspect-ratio on the element wins regardless of specificity.
-      expect(ratioVar(element)).toBe('var(--astryx-aspect-ratio, 3)');
     });
 
     it('lets a consumer inline style win over the class-level ratio', () => {

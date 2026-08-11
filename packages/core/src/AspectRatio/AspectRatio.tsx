@@ -46,13 +46,14 @@ export interface AspectRatioProps extends BaseProps<HTMLDivElement> {
   /**
    * The aspect ratio as width/height (e.g., 16/9 = 1.777..., 4/3 = 1.333..., 1 for square).
    *
-   * The ratio is emitted as a class-level `aspect-ratio: var(--astryx-aspect-ratio, <ratio>)`
-   * declaration — never an inline style — so it can be made responsive:
+   * The ratio is emitted as a class-level declaration — never an inline
+   * style — so it can be made responsive:
    * - StyleX consumers pass an `aspect-ratio` rule via `xstyle`, including
    *   under `@media`/`@container` conditions.
-   * - Plain-CSS/Tailwind consumers set the `--astryx-aspect-ratio` custom
-   *   property on the element from any rule; it wins over the prop fallback
-   *   regardless of specificity.
+   * - Plain-CSS/Tailwind consumers override `aspect-ratio` from their own
+   *   (unlayered) rules: the compiled component styles live in the
+   *   `astryx-base` cascade layer, and unlayered CSS wins over layered
+   *   rules regardless of specificity.
    *
    * @example
    * ```
@@ -60,7 +61,7 @@ export interface AspectRatioProps extends BaseProps<HTMLDivElement> {
    * <AspectRatio ratio={3 / 1} className="gallery-hero">…</AspectRatio>
    *
    * // CSS: @container gallery (max-width: 720px) {
-   * //   .gallery-hero { --astryx-aspect-ratio: 3 / 2; }
+   * //   .gallery-hero { aspect-ratio: 3 / 2; }
    * // }
    * ```
    */
@@ -152,14 +153,13 @@ const styles = stylex.create({
 // (aspect-ratio: var(--x)) instead of a raw inline style, so consumer
 // overrides — `xstyle` rules, including ones inside @media/@container
 // queries — can still win. A raw inline `aspect-ratio` would beat any class
-// (same rationale as Grid's dynamic track values).
-// The `--astryx-aspect-ratio` custom property (namespace: naming.ts cssVar)
-// is the override hook for non-StyleX consumers: setting it on the element
-// from any rule — e.g. inside a @container query — wins over the `ratio`
-// prop fallback regardless of specificity or cascade layer.
+// (same rationale as Grid's dynamic track values). Non-StyleX consumers
+// don't need a dedicated hook: the compiled declaration sits in the
+// `astryx-base` cascade layer, so any unlayered consumer rule wins
+// regardless of specificity.
 const dynamicStyles = stylex.create({
   ratio: (ratio: number) => ({
-    aspectRatio: `var(--astryx-aspect-ratio, ${ratio})`,
+    aspectRatio: ratio,
   }),
 });
 
@@ -179,9 +179,9 @@ const dynamicStyles = stylex.create({
  * `ratio`.
  *
  * The ratio is a class-level declaration (not an inline style), so it can be
- * overridden responsively — via `xstyle` for StyleX consumers, or by setting
- * the `--astryx-aspect-ratio` custom property under a `@media`/`@container`
- * rule for plain-CSS consumers.
+ * overridden responsively — via `xstyle` for StyleX consumers, or with a
+ * plain unlayered `aspect-ratio` rule for plain-CSS consumers (component
+ * styles live in the `astryx-base` cascade layer, which unlayered CSS beats).
  *
  * @example
  * ```
