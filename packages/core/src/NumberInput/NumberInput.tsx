@@ -4,7 +4,7 @@
 
 /**
  * @file NumberInput.tsx
- * @input Uses React, useId, useState, useMemo, useCallback, Field, Icon, InputGroupContext
+ * @input Uses React, useId, useState, useMemo, useCallback, useOptimistic, useTransition, Field, Icon, Spinner, InputGroupContext
  * @output Exports NumberInput component, NumberInputProps
  * @position Core implementation; consumed by index.ts, tested by NumberInput.test.tsx
  *
@@ -21,7 +21,9 @@ import {
   useState,
   useMemo,
   useCallback,
+  useOptimistic,
   useRef,
+  useTransition,
   type FocusEvent,
   type KeyboardEvent,
   type ReactNode,
@@ -45,6 +47,7 @@ import {
   type FieldStatusVariant,
 } from '../Field';
 import {Icon, renderIconSlot, type IconType} from '../Icon';
+import {Spinner} from '../Spinner';
 import {VisuallyHidden} from '../VisuallyHidden';
 import {useTooltip} from '../Tooltip';
 import {getInputARIA} from '../utils';
@@ -237,6 +240,11 @@ interface NumberInputPropsBase extends Omit<
   size?: NumberInputSize;
   // onChange and hasClear defined in discriminated union below
   /**
+   * Whether the input is in a loading state.
+   * @default false
+   */
+  isLoading?: boolean;
+  /**
    * The current value of the input.
    * Use null or undefined to represent an empty/unset value.
    */
@@ -316,6 +324,8 @@ interface NumberInputPropsBase extends Omit<
 type NumberInputPropsNonClearable = NumberInputPropsBase & {
   hasClear?: false;
   onChange: (value: number) => void;
+  /** Async action on change. Fires after onChange. */
+  changeAction?: (value: number) => void | Promise<void>;
 };
 
 type NumberInputPropsClearable = NumberInputPropsBase & {
@@ -328,6 +338,8 @@ type NumberInputPropsClearable = NumberInputPropsBase & {
    */
   hasClear: true;
   onChange: (value: number | null) => void;
+  /** Async action on change. Fires after onChange. */
+  changeAction?: (value: number | null) => void | Promise<void>;
 };
 
 export type NumberInputProps =
@@ -397,6 +409,8 @@ export function NumberInput({
   statusVariant = 'attached',
   size: sizeProp,
   onChange,
+  changeAction,
+  isLoading = false,
   value,
   placeholder,
   labelTooltip,
@@ -430,6 +444,56 @@ export function NumberInput({
   const inputRef = useRef<HTMLInputElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const inputGroup = useInputGroup();
+
+  // Optimistic value so a controlled parent that applies the new number
+  // asynchronously does not make the field snap back mid-flight, matching
+  // TextInput/TimeInput/Pagination.
+  const [optimisticValue, setOptimisticValue] = useOptimistic(value);
+  const [, startTransition] = useTransition();
+  // The in-flight async action is a visible state, not just a value swap:
+  // the optimistic number sitting ahead of the committed `value` is the
+  // family's busy signal (TextInput, TimeInput, Selector, TextArea, the Date
+  // inputs, CheckboxInput). Busy announces, it does not lock — like TimeInput
+  // and TextInput, the field stays editable while the action settles.
+  //
+  // Object.is rather than !==, because this is the one member of that family
+  // whose value is a raw number: NaN is a legal `number` and is not equal to
+  // itself, so !== would pin an idle field to "busy" forever with nothing able
+  // to clear it. The siblings compare strings and dates and cannot hit it.
+  const isBusy = isLoading || !Object.is(optimisticValue, value);
+
+  // Every commit path below guards on `optimisticValue`, not the `value` prop.
+  // While an async `changeAction` is in flight the prop is stale: the parent
+  // has not applied the new number yet. Comparing against it re-dispatches a
+  // number that is already on its way (blur alone does it — one edit, two
+  // server actions), and silently drops an edit that happens to match the
+  // stale prop (type 7, then type the original 1 back: the user's real intent
+  // never reaches either channel). `optimisticValue` is what this input has
+  // actually committed, and equals `value` whenever nothing is pending.
+
+  /**
+   * Fire `changeAction` for a value already committed through `onChange`.
+   *
+   * Kept separate from the `onChange` call sites on purpose: `onChange` is
+   * discriminated on `hasClear`, and TypeScript only narrows it inside the
+   * `hasClear` branches — routing both through one helper would erase that
+   * narrowing. The cast here is the same widening those branches already
+   * prove: `null` is only ever passed under `hasClear`.
+   */
+  const runChangeAction = useCallback(
+    (next: number | null) => {
+      if (!changeAction) {
+        return;
+      }
+      startTransition(async () => {
+        setOptimisticValue(next);
+        await (changeAction as (v: number | null) => void | Promise<void>)(
+          next,
+        );
+      });
+    },
+    [changeAction, setOptimisticValue, startTransition],
+  );
 
   // Pending input while user is typing (null = show formatted value)
   const [pendingInput, setPendingInput] = useState<string | null>(null);
@@ -479,11 +543,11 @@ export function NumberInput({
     if (pendingInput !== null) {
       return pendingInput;
     }
-    if (value == null) {
+    if (optimisticValue == null) {
       return '';
     }
-    return String(value);
-  }, [pendingInput, value]);
+    return String(optimisticValue);
+  }, [pendingInput, optimisticValue]);
 
   // Check if current pending input is valid (for styling purposes)
   const isInputValid = useMemo(() => {
@@ -507,11 +571,20 @@ export function NumberInput({
 
       // If the input is valid, update immediately
       const parsed = parseNumberInput(newValue, {min, max, isIntegerOnly});
-      if (parsed !== null && parsed !== value) {
+      if (parsed !== null && parsed !== optimisticValue) {
         onChange(parsed);
+        runChangeAction(parsed);
       }
     },
-    [value, onChange, min, max, isIntegerOnly, isDisabled],
+    [
+      optimisticValue,
+      onChange,
+      runChangeAction,
+      min,
+      max,
+      isIntegerOnly,
+      isDisabled,
+    ],
   );
 
   // Handle focus
@@ -529,8 +602,9 @@ export function NumberInput({
         if (hasClear && pendingInput.trim() === '') {
           // Keyboard clearing honors the clearable contract: an emptied
           // input commits null instead of silently reverting on blur.
-          if (value != null) {
+          if (optimisticValue != null) {
             onChange(null);
+            runChangeAction(null);
           }
         } else {
           const parsed = parseNumberInput(pendingInput, {
@@ -538,8 +612,9 @@ export function NumberInput({
             max,
             isIntegerOnly,
           });
-          if (parsed !== null && parsed !== value) {
+          if (parsed !== null && parsed !== optimisticValue) {
             onChange(parsed);
+            runChangeAction(parsed);
           }
         }
       }
@@ -548,7 +623,17 @@ export function NumberInput({
       setPendingInput(null);
       onBlur?.(e);
     },
-    [pendingInput, value, onChange, min, max, isIntegerOnly, onBlur, hasClear],
+    [
+      pendingInput,
+      optimisticValue,
+      onChange,
+      runChangeAction,
+      min,
+      max,
+      isIntegerOnly,
+      onBlur,
+      hasClear,
+    ],
   );
 
   // Handle keyboard events
@@ -560,8 +645,9 @@ export function NumberInput({
           if (hasClear && pendingInput.trim() === '') {
             // Same clearable contract as blur: Enter on an emptied input
             // commits null instead of reverting.
-            if (value != null) {
+            if (optimisticValue != null) {
               onChange(null);
+              runChangeAction(null);
             }
           } else {
             const parsed = parseNumberInput(pendingInput, {
@@ -569,8 +655,9 @@ export function NumberInput({
               max,
               isIntegerOnly,
             });
-            if (parsed !== null && parsed !== value) {
+            if (parsed !== null && parsed !== optimisticValue) {
               onChange(parsed);
+              runChangeAction(parsed);
             }
           }
         }
@@ -580,8 +667,9 @@ export function NumberInput({
     },
     [
       pendingInput,
-      value,
+      optimisticValue,
       onChange,
+      runChangeAction,
       min,
       max,
       isIntegerOnly,
@@ -603,12 +691,17 @@ export function NumberInput({
 
   // Handle clear button click
   const handleClear = useCallback(() => {
-    if (hasClear) {
+    // The button stays mounted off the `value` prop (as in TextInput and
+    // TimeInput), so during an in-flight clear it is still clickable over an
+    // already-empty field. Guarding on optimisticValue keeps that a no-op
+    // instead of a second null dispatch.
+    if (hasClear && optimisticValue != null) {
       onChange(null);
+      runChangeAction(null);
     }
     setPendingInput(null);
     inputRef.current?.focus();
-  }, [hasClear, onChange]);
+  }, [hasClear, optimisticValue, onChange, runChangeAction]);
 
   // Focus input when clicking anywhere on the wrapper (icons, padding, etc.)
   const {onClick: handleWrapperClick, onMouseUp: handleWrapperMouseUp} =
@@ -681,6 +774,7 @@ export function NumberInput({
         aria-invalid={
           status?.type === 'error' || !isInputValid ? 'true' : undefined
         }
+        aria-busy={isBusy || undefined}
         aria-labelledby={ariaLabelledBy}
         {...stylex.props(
           styles.input,
@@ -701,6 +795,7 @@ export function NumberInput({
       <VisuallyHidden as="div" role="alert" aria-live="assertive">
         {!isInputValid ? 'Invalid number' : ''}
       </VisuallyHidden>
+      {isBusy && <Spinner size="sm" />}
       {hasClear && value != null && !isDisabled && (
         <button
           type="button"
