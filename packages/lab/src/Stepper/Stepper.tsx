@@ -16,7 +16,7 @@
  * - /packages/cli/assets/templates/blocks/components/Stepper/ (showcase blocks)
  */
 
-import {Children, useMemo, type ReactNode} from 'react';
+import {useMemo, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 
 import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
@@ -107,9 +107,10 @@ const styles = stylex.create({
  * with visual indicators for completed, active, and upcoming states.
  *
  * Each Step child must provide a `step` prop (zero-based index) so it
- * can derive its state from the parent's activeStep. The parent supplies
- * the total `stepCount` via context so the on-track layout can hide the
- * trailing connector on the final step.
+ * can derive its state from the parent's activeStep. The on-track layout
+ * hides the leading connector on the first step and the trailing connector
+ * on the last step structurally, from each step's own `<li>` position, so
+ * it works regardless of how the steps are grouped.
  *
  * Rendered as an ordered list (`<ol>`/`<li>`) rather than a `nav`
  * landmark: a stepper communicates *progress through a sequence*, not a
@@ -141,7 +142,6 @@ export function Stepper({
   ref,
   ...rest
 }: StepperProps) {
-  const stepCount = Children.count(children);
   const ctxValue = useMemo<StepperContextValue>(
     () => ({
       activeStep,
@@ -150,16 +150,8 @@ export function Stepper({
       onStepClick: onStepClick ?? null,
       density,
       indicatorPosition,
-      stepCount,
     }),
-    [
-      activeStep,
-      orientation,
-      onStepClick,
-      density,
-      indicatorPosition,
-      stepCount,
-    ],
+    [activeStep, orientation, onStepClick, density, indicatorPosition],
   );
 
   const isOnTrack = indicatorPosition === 'on-track';

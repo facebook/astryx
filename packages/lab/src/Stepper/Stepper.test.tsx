@@ -493,4 +493,77 @@ describe('Stepper', () => {
       within(screen.getByTestId('ot-current')).queryByText('completed'),
     ).not.toBeInTheDocument();
   });
+
+  describe('keyboard interaction', () => {
+    it('activates a step with Enter', async () => {
+      const user = userEvent.setup();
+      const handleClick = vi.fn();
+      render(
+        <Stepper activeStep={2} onStepClick={handleClick}>
+          <Step step={0} label="Step 1" />
+          <Step step={1} label="Step 2" />
+          <Step step={2} label="Step 3" />
+        </Stepper>,
+      );
+      await user.tab();
+      expect(
+        screen.getByRole('button', {name: 'Go to step 1: Step 1, completed'}),
+      ).toHaveFocus();
+      await user.keyboard('{Enter}');
+      expect(handleClick).toHaveBeenCalledWith(0);
+    });
+
+    it('activates a step with Space', async () => {
+      const user = userEvent.setup();
+      const handleClick = vi.fn();
+      render(
+        <Stepper activeStep={2} onStepClick={handleClick}>
+          <Step step={0} label="Step 1" />
+          <Step step={1} label="Step 2" />
+          <Step step={2} label="Step 3" />
+        </Stepper>,
+      );
+      await user.tab();
+      await user.keyboard(' ');
+      expect(handleClick).toHaveBeenCalledWith(0);
+    });
+
+    it('tabs through steps in document order, skipping disabled ones', async () => {
+      const user = userEvent.setup();
+      render(
+        <Stepper activeStep={3} onStepClick={() => {}}>
+          <Step step={0} label="One" />
+          <Step step={1} label="Two" isDisabled />
+          <Step step={2} label="Three" />
+        </Stepper>,
+      );
+      await user.tab();
+      expect(
+        screen.getByRole('button', {name: 'Go to step 1: One, completed'}),
+      ).toHaveFocus();
+      // The disabled step renders no button, so Tab lands on step 3 next.
+      await user.tab();
+      expect(
+        screen.getByRole('button', {name: 'Go to step 3: Three, completed'}),
+      ).toHaveFocus();
+    });
+
+    it('supports keyboard activation in the on-track layout', async () => {
+      const user = userEvent.setup();
+      const handleClick = vi.fn();
+      render(
+        <Stepper
+          activeStep={2}
+          indicatorPosition="on-track"
+          onStepClick={handleClick}>
+          <Step step={0} label="Cart" />
+          <Step step={1} label="Shipping" />
+          <Step step={2} label="Payment" />
+        </Stepper>,
+      );
+      await user.tab();
+      await user.keyboard('{Enter}');
+      expect(handleClick).toHaveBeenCalledWith(0);
+    });
+  });
 });

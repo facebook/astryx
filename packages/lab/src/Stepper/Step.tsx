@@ -35,6 +35,7 @@ import {VisuallyHidden} from '@astryxdesign/core/VisuallyHidden';
 import {useTranslator} from '@astryxdesign/core/i18n';
 import {useStepperContext} from './StepperContext';
 import {themeProps} from '@astryxdesign/core/utils';
+import {stepMarker} from './stepper.stylex';
 import type {StepStatus} from './StepStatus';
 
 /**
@@ -398,7 +399,10 @@ const styles = stylex.create({
     cursor: 'pointer',
     borderRadius: radiusVars['--radius-element'],
     transitionProperty: 'background-color',
-    transitionDuration: durationVars['--duration-fast-min'],
+    transitionDuration: {
+      default: durationVars['--duration-fast-min'],
+      '@media (prefers-reduced-motion: reduce)': '0s',
+    },
     transitionTimingFunction: easeVars['--ease-standard'],
     backgroundColor: {
       default: 'transparent',
@@ -450,7 +454,10 @@ const styles = stylex.create({
     cursor: 'pointer',
     borderRadius: radiusVars['--radius-element'],
     transitionProperty: 'background-color',
-    transitionDuration: durationVars['--duration-fast-min'],
+    transitionDuration: {
+      default: durationVars['--duration-fast-min'],
+      '@media (prefers-reduced-motion: reduce)': '0s',
+    },
     transitionTimingFunction: easeVars['--ease-standard'],
     backgroundColor: {
       default: 'transparent',
@@ -517,8 +524,21 @@ const styles = stylex.create({
     borderRadius: 0,
   },
 
-  otSegHidden: {
-    visibility: 'hidden',
+  otSegHiddenIfFirst: {
+    // Structural first/last hiding keyed off the step's own <li> position via
+    // stepMarker, so it never depends on the parent counting children (which
+    // breaks when steps are grouped in a fragment). Scoped to stepMarker so only
+    // the parent <li> is checked, not the outer <ol> (also a :first/:last-child).
+    visibility: {
+      default: 'visible',
+      [stylex.when.ancestor(':first-child', stepMarker)]: 'hidden',
+    },
+  },
+  otSegHiddenIfLast: {
+    visibility: {
+      default: 'visible',
+      [stylex.when.ancestor(':last-child', stepMarker)]: 'hidden',
+    },
   },
 
   // Connector fill colors (progress-derived; status recolors when set).
@@ -645,7 +665,6 @@ export function Step({
     onStepClick,
     density: ctxDensity,
     indicatorPosition,
-    stepCount,
   } = ctx;
 
   const density = densityProp ?? ctxDensity;
@@ -924,9 +943,9 @@ export function Step({
       ? styles.lineFilled
       : styles.lineUnfilled;
     const afterSegStyle = afterFilled ? styles.lineFilled : styles.lineUnfilled;
-    const isFirst = step === 0;
-    // The last step has no next node, so its trailing segment is hidden.
-    const isLast = step === stepCount - 1;
+    // First/last connector visibility is decided structurally from the step's
+    // own <li> position (see otSegHiddenIfFirst/Last), not by counting children
+    // in the parent — so grouping steps in a fragment can't break it.
 
     const densitySpace =
       density === 'compact'
@@ -983,7 +1002,7 @@ export function Step({
                   styles.otSegBaseV,
                   styles.otSegLeadV(densitySpace),
                   beforeSegStyle,
-                  isFirst && styles.otSegHidden,
+                  styles.otSegHiddenIfFirst,
                 ),
               )}
             />
@@ -996,7 +1015,7 @@ export function Step({
                   styles.otSegBaseV,
                   styles.otSegFlexV,
                   afterSegStyle,
-                  isLast && styles.otSegHidden,
+                  styles.otSegHiddenIfLast,
                 ),
               )}
             />
@@ -1013,7 +1032,7 @@ export function Step({
           ref={ref}
           {...mergeProps(
             stepThemeProps,
-            stylex.props(styles.otVerticalRoot, xstyle),
+            stylex.props(stepMarker, styles.otVerticalRoot, xstyle),
             className,
             style,
           )}
@@ -1058,7 +1077,7 @@ export function Step({
               stylex.props(
                 styles.otSegH,
                 beforeSegStyle,
-                isFirst && styles.otSegHidden,
+                styles.otSegHiddenIfFirst,
               ),
             )}
           />
@@ -1070,7 +1089,7 @@ export function Step({
               stylex.props(
                 styles.otSegH,
                 afterSegStyle,
-                isLast && styles.otSegHidden,
+                styles.otSegHiddenIfLast,
               ),
             )}
           />
@@ -1091,7 +1110,7 @@ export function Step({
         ref={ref}
         {...mergeProps(
           stepThemeProps,
-          stylex.props(styles.otHorizontalRoot, xstyle),
+          stylex.props(stepMarker, styles.otHorizontalRoot, xstyle),
           className,
           style,
         )}
@@ -1132,7 +1151,7 @@ export function Step({
         ref={ref}
         {...mergeProps(
           stepThemeProps,
-          stylex.props(styles.verticalRoot, xstyle),
+          stylex.props(stepMarker, styles.verticalRoot, xstyle),
           className,
           style,
         )}
@@ -1190,7 +1209,7 @@ export function Step({
       ref={ref}
       {...mergeProps(
         stepThemeProps,
-        stylex.props(styles.horizontalStep, xstyle),
+        stylex.props(stepMarker, styles.horizontalStep, xstyle),
         className,
         style,
       )}

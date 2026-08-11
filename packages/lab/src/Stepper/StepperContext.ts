@@ -34,12 +34,6 @@ export interface StepperContextValue {
   isNonLinear: boolean;
   onStepClick: ((index: number) => void) | null;
   density: StepperDensity;
-  /**
-   * Total number of Step children. Used by the on-track layout to hide the
-   * trailing connector segment on the last step (which otherwise has no next
-   * node to reach toward).
-   */
-  stepCount: number;
   indicatorPosition: StepperIndicatorPosition;
 }
 
