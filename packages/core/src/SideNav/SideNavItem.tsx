@@ -52,6 +52,7 @@ import {mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {Tooltip} from '../Tooltip';
 import {navItemStyles, type NavItemSize} from '../NavItem/navItemStyles.stylex';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {
   useSideNavCollapse,
   SideNavCollapseContext,
@@ -488,14 +489,15 @@ export function SideNavItem({
         color: isSelected ? 'primary' : isDisabled ? 'disabled' : 'secondary',
       });
 
-    // Shared collapsed item styles — used by trigger, link, and button
+    // Shared collapsed item styles — used by trigger, link, and button.
+    // All three render a focusable element, so each draws the shared ring.
     const collapsedItemStyles = mergeProps(
       themeProps('side-nav-item', {
         size,
         selected: isSelected ? 'selected' : null,
         disabled: isDisabled ? 'disabled' : null,
       }),
-      stylex.props(
+      focusOutlineProps.focusVisible(
         navItemStyles.item,
         navItemStyles[size],
         styles.itemCollapsed,
@@ -593,18 +595,28 @@ export function SideNavItem({
     </>
   );
 
-  const navItemStyleProps = mergeProps(
-    themeProps('side-nav-item', {
-      size,
-      selected: isSelected ? 'selected' : null,
-      disabled: isDisabled ? 'disabled' : null,
-    }),
-    stylex.props(
-      navItemStyles.item,
-      navItemStyles[size],
-      isSelected && navItemStyles.selected,
-      isDisabled && navItemStyles.disabled,
-    ),
+  const itemThemeProps = themeProps('side-nav-item', {
+    size,
+    selected: isSelected ? 'selected' : null,
+    disabled: isDisabled ? 'disabled' : null,
+  });
+
+  const itemStyleArgs = [
+    navItemStyles.item,
+    navItemStyles[size],
+    isSelected && navItemStyles.selected,
+    isDisabled && navItemStyles.disabled,
+  ] as const;
+
+  // Two shapes of the same row appearance:
+  // - `rowProps` for the split-action path, where the row is a plain <div>
+  //   container and its children take focus (so the ring belongs on them);
+  // - `focusableRowProps` for every other path, where the row element is
+  //   itself the focusable control.
+  const rowProps = mergeProps(itemThemeProps, stylex.props(...itemStyleArgs));
+  const focusableRowProps = mergeProps(
+    itemThemeProps,
+    focusOutlineProps.focusVisible(...itemStyleArgs),
   );
 
   // ── Split-action path: <div> row with <a> + <button> as siblings ──
@@ -624,7 +636,7 @@ export function SideNavItem({
 
   if (hasIndependentToggle) {
     itemElement = (
-      <div data-testid={testId} {...navItemStyleProps}>
+      <div data-testid={testId} {...rowProps}>
         <NavItemElement
           ref={ref}
           href={href}
@@ -633,7 +645,7 @@ export function SideNavItem({
           onClick={handleClick}
           {...rest}
           aria-current={isSelected ? ('page' as const) : undefined}
-          {...stylex.props(styles.splitAction)}>
+          {...focusOutlineProps.focusVisible(styles.splitAction)}>
           {itemContent}
         </NavItemElement>
         <button
@@ -646,7 +658,7 @@ export function SideNavItem({
           }
           aria-expanded={!isItemCollapsed}
           aria-controls={`${id}-children`}
-          {...stylex.props(styles.expandToggle)}>
+          {...focusOutlineProps.focusVisible(styles.expandToggle)}>
           <Icon
             icon="chevronDown"
             size="lg"
@@ -677,7 +689,7 @@ export function SideNavItem({
         onClick={handleClick}
         {...rest}
         {...ariaProps}
-        {...navItemStyleProps}>
+        {...focusableRowProps}>
         {itemContent}
       </NavItemElement>
     );

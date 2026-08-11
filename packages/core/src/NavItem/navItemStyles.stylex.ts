@@ -11,8 +11,23 @@
  * disabled state) so all nav-like components stay in sync — especially important
  * when TopNav items render inside MobileNav drawers alongside SideNav items.
  *
- * Individual components layer their own overrides (e.g. collapsed mode, indentation,
- * focus outlines) via stylex.props composition.
+ * Individual components layer their own overrides (e.g. collapsed mode,
+ * indentation) via stylex.props composition.
+ *
+ * **The focus ring is deliberately not defined here.** It is one shared
+ * definition for the whole library, in `utils/focusOutline.stylex.ts` (#4654),
+ * and a nav item consumes it the way every other component does — by composing
+ * it at the call site:
+ *
+ * ```
+ * <a {...focusOutlineProps.focusVisible(navItemStyles.item, navItemStyles[size])}>
+ * ```
+ *
+ * Writing the ring into `item` instead would mean restating the outline
+ * longhands in this file, which is the sixth duplicate #4654 exists to remove;
+ * it would also put a ring on the split-action *row*, which is a container
+ * whose children hold the focus. Compose the helper on whichever element
+ * actually takes focus.
  */
 
 export type NavItemSize = 'sm' | 'md' | 'lg';
