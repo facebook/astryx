@@ -169,6 +169,53 @@ function computeLiftedSizes(
   return sizes;
 }
 
+/**
+ * Human-readable formula describing how the mobile scale is derived, with the
+ * current numbers substituted in. Shown under the Mobile column so the math is
+ * self-explanatory.
+ */
+function mobileFormula(
+  base: number,
+  ratio: number,
+  mode: Mode,
+  adapt: boolean,
+  pinStep: number,
+): {title: string; formula: string; note: string} {
+  const bottom = Math.max(16, base);
+  if (!adapt) {
+    return {
+      title: 'No adaptation',
+      formula: `size = round(${base} × ${ratio}^step)`,
+      note: 'Mobile matches desktop exactly.',
+    };
+  }
+  if (mode === 'lift') {
+    return {
+      title: 'Lift',
+      formula: `size = round(${bottom} × ${ratio}^step)`,
+      note: `Base floored ${base} → ${bottom}px; full desktop ratio kept, so the whole ladder lifts together.`,
+    };
+  }
+  if (mode === 'pin') {
+    const rp =
+      bottom !== base && pinStep > 0
+        ? ratio * Math.pow(base / bottom, 1 / pinStep)
+        : ratio;
+    const anchor =
+      PIN_ANCHORS.find(a => a.value === String(pinStep))?.label ?? 'anchor';
+    return {
+      title: 'Pin',
+      formula: `ratioₚ = ${ratio} × (${base}/${bottom})^(1/${pinStep}) ≈ ${rp.toFixed(3)}\nsize = round(${bottom} × ratioₚ^step)`,
+      note: `Base floored to ${bottom}px; ratio re-derived so ${anchor} holds its desktop size. No ceiling — the top of the scale eases off via the tamer ratio.`,
+    };
+  }
+  return {
+    title: 'Custom',
+    formula: 'size = per-role override (seeded from Pin)',
+    note: 'Each role is set by hand.',
+  };
+}
+
 function readableName(role: string): string {
   return role
     .split('-')
@@ -337,6 +384,11 @@ export default function MobileTypePage() {
   >({});
 
   const ratioNum = Number(ratio);
+
+  const formula = useMemo(
+    () => mobileFormula(base, ratioNum, mode, adapt, pinStep),
+    [base, ratioNum, mode, adapt, pinStep],
+  );
 
   const desktopSizes = useMemo(
     () => computeDesktopSizes(base, ratioNum),
@@ -579,11 +631,22 @@ export default function MobileTypePage() {
                   {/* Mobile card */}
                   <Card>
                     <VStack gap={3}>
-                      <HStack gap={2} vAlign="center">
-                        <Text type="label" weight="semibold">
-                          Mobile
+                      <VStack gap={1}>
+                        <HStack gap={2} vAlign="center" justify="between">
+                          <Text type="label" weight="semibold">
+                            Mobile
+                          </Text>
+                          <Text type="supporting" color="secondary">
+                            {formula.title}
+                          </Text>
+                        </HStack>
+                        <div {...stylex.props(styles.formulaBox)}>
+                          {formula.formula}
+                        </div>
+                        <Text type="supporting" color="secondary">
+                          {formula.note}
                         </Text>
-                      </HStack>
+                      </VStack>
                       <VStack gap={0.5}>
                         {ROLES.map(role => {
                           const mPx = mobileSizes[role.name];
@@ -708,6 +771,17 @@ const styles = stylex.create({
     lineHeight: 1.2,
     minWidth: 0,
     paddingInlineStart: 48,
+  },
+  formulaBox: {
+    fontFamily: 'monospace',
+    fontSize: 12,
+    lineHeight: 1.5,
+    whiteSpace: 'pre-line',
+    color: 'var(--color-text-primary)',
+    backgroundColor: 'var(--color-background-muted)',
+    borderRadius: 'var(--radius-element)',
+    paddingBlock: 6,
+    paddingInline: 10,
   },
   delta: {
     fontSize: 12,
