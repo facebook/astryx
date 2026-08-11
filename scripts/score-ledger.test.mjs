@@ -690,6 +690,45 @@ describe('--record', () => {
     expect(row.regression.from).toEqual({score: 90, blocks: 0});
   });
 
+  /**
+   * `rubricVersion` is the one field the writer controls, and `compareEntry`
+   * calls a version change `incomparable` rather than `fail`. Without this the
+   * guard is bypassed by editing that string: a real 74.2 was overwritten with
+   * a 30 and pushed, in exactly this way, while testing.
+   */
+  it('still demands a reason when the rubric version changed and the numbers fell', () => {
+    const wiki = makeWiki(ledgerWith(entry({score: 74.2, grade: 'C', rubricVersion: '1.1'})));
+    const before = fs.readFileSync(wiki.ledger, 'utf8');
+    const r = cli(['--record', 'Button', '--from', '-', '--ledger', wiki.ledger], {
+      input: JSON.stringify(scorecard({score: 30, rubricVersion: '1.2'})),
+    });
+    expect(r.code).toBe(1);
+    expect(r.out).toContain('refusing');
+    expect(r.out).toContain('the numbers went down');
+    expect(fs.readFileSync(wiki.ledger, 'utf8')).toBe(before);
+  });
+
+  it('lets a rubric-version RE-SCORE through when the reason is given', () => {
+    const wiki = makeWiki(ledgerWith(entry({score: 74.2, grade: 'C', rubricVersion: '1.1'})));
+    const r = cli([
+      '--record', 'Button', '--from', '-', '--ledger', wiki.ledger,
+      '--allow-regression', 're-audited under v1.2, which splits §5',
+    ], {input: JSON.stringify(scorecard({score: 30, rubricVersion: '1.2'}))});
+    expect(r.code).toBe(0);
+    const row = readLedger(wiki.ledger).components.find(c => c.component === 'Button');
+    expect(row.regression.from).toEqual({score: 74.2, blocks: 0});
+  });
+
+  it('does not demand a reason when a version change IMPROVES the numbers', () => {
+    const wiki = makeWiki(ledgerWith(entry({score: 60, grade: 'D', rubricVersion: '1.1'})));
+    const r = cli(['--record', 'Button', '--from', '-', '--ledger', wiki.ledger], {
+      input: JSON.stringify(scorecard({score: 81, rubricVersion: '1.2'})),
+    });
+    expect(r.code).toBe(0);
+    const row = readLedger(wiki.ledger).components.find(c => c.component === 'Button');
+    expect(row.regression).toBeUndefined();
+  });
+
   it('rejects a bare --allow-regression — the reason is the point', () => {
     const wiki = makeWiki(ledgerWith(entry({score: 90, grade: 'A'})));
     const r = cli([

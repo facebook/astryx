@@ -1361,19 +1361,45 @@ async function cmdRecord(args) {
     const after = applyScorecard(before, scorecard, {component, pkg});
 
     // The wiki takes no pull request, so the ratchet has to bite here.
+    //
+    // `incomparable` (the rubric version changed) is the right verdict for a
+    // PR-time check — an author must not be failed for a rubric change they had
+    // nothing to do with. At RECORD time it is not: it would let any score be
+    // written over any other simply by bumping `rubricVersion`, which is the
+    // one field the writer controls. So a record that moves the numbers the
+    // wrong way needs its reason stated whether or not the scales match; the
+    // verdict just changes what the reason has to explain.
     const verdict = compareEntry(component, before, after);
+    const movedBackwards =
+      before != null &&
+      isAudited(before) &&
+      (openBlockCount(after) > openBlockCount(before) ||
+        (typeof before.score === 'number' &&
+          typeof after.score === 'number' &&
+          after.score < before.score));
+    const needsReason = verdict.verdict === 'fail' || movedBackwards;
+
     let regression = null;
-    if (verdict.verdict === 'fail') {
+    if (needsReason) {
       if (!args['allow-regression']) {
+        const why =
+          verdict.verdict === 'fail'
+            ? verdict.reason
+            : `${verdict.reason}, and the numbers went down ` +
+              `(${fmtScore(before.score)} → ${fmtScore(after.score)}, open BLOCKs ` +
+              `${openBlockCount(before)} → ${openBlockCount(after)})`;
         throw new Error(
-          `refusing — ${verdict.reason}. If the regression is real and intended, re-run with ` +
+          `refusing — ${why}. If the regression is real and intended, re-run with ` +
             '--allow-regression "<why>": the reason is recorded on the row and in the commit ' +
             'message.',
         );
       }
       regression = {
         reason: String(args['allow-regression']),
-        from: {score: verdict.baseScore, blocks: verdict.baseBlocks},
+        from: {
+          score: before.score,
+          blocks: openBlockCount(before),
+        },
         recordedAt: new Date().toISOString().slice(0, 10),
       };
       after.regression = regression;
