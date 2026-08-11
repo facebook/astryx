@@ -85,10 +85,13 @@ export function CheckIndicator({
   if (children != null) {
     return (
       <span
+        // Spread first, as on the glyph path below, so the indicator's own
+        // contract (aria-hidden, and the styling it composes) outranks any
+        // same-named attribute a caller passed through.
+        {...rest}
         ref={ref}
         aria-hidden="true"
-        {...mergeProps(stylex.props(xstyle), className, style)}
-        {...rest}>
+        {...mergeProps(stylex.props(xstyle), className, style)}>
         {children}
       </span>
     );

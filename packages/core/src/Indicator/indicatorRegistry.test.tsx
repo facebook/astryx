@@ -36,10 +36,17 @@ function BrandStar({state}: IndicatorProps<'singleSelection'>) {
 
 describe('defaultIndicators', () => {
   it('covers exactly the core indicator names', () => {
-    const coreNames: CoreIndicatorName[] = ['check', 'checkbox', 'radio'];
+    // A Record over the union, not an array: adding a name to
+    // CoreIndicatorName without shipping a default fails to compile here
+    // before it can fail at runtime anywhere else.
+    const coreNames: Record<CoreIndicatorName, true> = {
+      check: true,
+      checkbox: true,
+      radio: true,
+    };
 
     expect(Object.keys(defaultIndicators).sort()).toEqual(
-      [...coreNames].sort(),
+      Object.keys(coreNames).sort(),
     );
     expect(defaultIndicators.check).toBe(CheckIndicator);
     expect(defaultIndicators.checkbox).toBe(CheckboxIndicator);
