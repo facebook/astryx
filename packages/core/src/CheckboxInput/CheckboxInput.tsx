@@ -69,9 +69,10 @@ const styles = stylex.create({
     flexShrink: 0,
     isolation: 'isolate',
   },
-  // The ring traces the built-in checkbox's rounded square. A themed
-  // replacement of another shape still gets a visible ring, just this shape.
-  ringRadiusSquare: {
+  // Fallback ring shape, used only when an indicator does NOT draw its own
+  // (the built-in checkbox does). A third-party replacement that forgets gets
+  // a visible ring in the default control shape rather than none.
+  ringRadiusFallback: {
     borderRadius: radiusVars['--radius-inner'],
   },
   input: {
@@ -380,7 +381,7 @@ export function CheckboxInput({
             // defaults to the built-in checkbox's; a theme redirects it with
             // INDICATOR_RING_RADIUS_VAR.
             !isDisabled && indicatorOwnerFocusRing,
-            !isDisabled && styles.ringRadiusSquare,
+            !isDisabled && styles.ringRadiusFallback,
           )}>
           <input
             {...rest}

@@ -247,7 +247,7 @@ defineTheme({name: 'brand', indicators: {check: RadioIndicator}});`,
       {
         guidance: true,
         description:
-          'Spread the exported `indicatorFocusRing` style onto a replacement\'s root. It is the same style every built-in indicator uses and carries no shape of its own — `outline` follows your border-radius — so you never write focus rules by hand. It has to live on the indicator (not the owning control) because only the indicator knows its shape, and it keys off the owner scope marker because the native input is a visually hidden SIBLING that a plain :focus-visible could never see. Omit it and the control has no visible focus (WCAG 2.4.7).',
+          'Spread `indicatorFocusRingProps()` on a replacement\'s root if its shape differs from the control\'s default. It carries the ring AND the marker that tells the owning control to stand down, as one spread, so you cannot suppress the owner\'s ring without drawing your own. Skip it and the owner draws a correctly-visible ring in the default shape — the failure mode is a slightly-wrong outline, never a missing one (WCAG 2.4.7). It keys off the owner scope marker because the native input is a visually hidden SIBLING that a plain :focus-visible could never see.',
       },
       {
         guidance: false,

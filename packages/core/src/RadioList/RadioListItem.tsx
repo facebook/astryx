@@ -57,9 +57,10 @@ const styles = stylex.create({
   inputDisabled: {
     cursor: 'not-allowed',
   },
-  // The ring traces the built-in radio's circle. A themed replacement of
-  // another shape still gets a visible ring, just this shape.
-  ringRadiusCircle: {
+  // Fallback ring shape, used only when an indicator does NOT draw its own
+  // (the built-in radio does). A third-party replacement that forgets gets a
+  // visible ring in the default control shape rather than none.
+  ringRadiusFallback: {
     borderRadius: '50%',
   },
   labelDisabled: {
@@ -172,7 +173,7 @@ export function RadioListItem({
         // See CheckboxInput: the owner draws the ring so a themed indicator
         // cannot drop it. Default shape is the built-in radio's circle.
         !isDisabled && indicatorOwnerFocusRing,
-        !isDisabled && styles.ringRadiusCircle,
+        !isDisabled && styles.ringRadiusFallback,
       )}>
       <input
         id={id}
