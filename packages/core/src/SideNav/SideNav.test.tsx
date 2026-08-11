@@ -1393,3 +1393,270 @@ describe('SideNavItem — mobile drawer close-on-activate', () => {
     expect(closeMobileNav).not.toHaveBeenCalled();
   });
 });
+
+// =============================================================================
+// Keyboard operation (audit §6 V6)
+// =============================================================================
+
+describe('SideNav keyboard operation', () => {
+  it('reaches every nav item with Tab, in document order', async () => {
+    const user = userEvent.setup();
+    render(
+      <SideNav>
+        <SideNavSection title="Main">
+          <SideNavItem label="Dashboard" href="/dashboard" />
+          <SideNavItem label="Projects" href="/projects" />
+          <SideNavItem label="Settings" onClick={() => {}} />
+        </SideNavSection>
+      </SideNav>,
+    );
+
+    await user.tab();
+    expect(screen.getByRole('link', {name: 'Dashboard'})).toHaveFocus();
+    await user.tab();
+    expect(screen.getByRole('link', {name: 'Projects'})).toHaveFocus();
+    await user.tab();
+    expect(screen.getByRole('button', {name: 'Settings'})).toHaveFocus();
+  });
+
+  it('skips a disabled item in the tab order', async () => {
+    const user = userEvent.setup();
+    render(
+      <SideNav>
+        <SideNavItem label="Dashboard" onClick={() => {}} />
+        <SideNavItem label="Archived" onClick={() => {}} isDisabled />
+        <SideNavItem label="Settings" onClick={() => {}} />
+      </SideNav>,
+    );
+
+    await user.tab();
+    expect(screen.getByRole('button', {name: 'Dashboard'})).toHaveFocus();
+    await user.tab();
+    expect(screen.getByRole('button', {name: 'Settings'})).toHaveFocus();
+  });
+
+  it('toggles a collapsible group with Enter and with Space', async () => {
+    const user = userEvent.setup();
+    render(
+      <SideNavItem label="Settings" onClick={() => {}} collapsible>
+        <SideNavItem label="General" href="/settings/general" />
+      </SideNavItem>,
+    );
+
+    const toggle = screen.getByRole('button', {name: 'Collapse Settings'});
+    toggle.focus();
+
+    await user.keyboard('{Enter}');
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+
+    await user.keyboard(' ');
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('activates a button item with Enter', async () => {
+    const user = userEvent.setup();
+    const onClick = vi.fn();
+    render(<SideNavItem label="Log out" onClick={onClick} />);
+
+    await user.tab();
+    await user.keyboard('{Enter}');
+    expect(onClick).toHaveBeenCalledTimes(1);
+  });
+
+  it('opens the collapsed submenu from the keyboard and closes it with Escape', async () => {
+    const user = userEvent.setup();
+    renderCollapsed(
+      <SideNavItem label="Settings" icon={StubIcon} data-testid="parent">
+        <SideNavItem label="General" href="/settings/general" />
+      </SideNavItem>,
+    );
+
+    const trigger = screen.getByTestId('parent');
+    trigger.focus();
+    await user.keyboard('{Enter}');
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    await user.keyboard('{Escape}');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+});
+
+// =============================================================================
+// Focus management (audit §6 V7)
+// =============================================================================
+
+describe('SideNav focus management', () => {
+  it('keeps focus on the toggle when a group collapses', async () => {
+    const user = userEvent.setup();
+    render(
+      <SideNavItem label="Settings" href="/settings" collapsible>
+        <SideNavItem label="General" href="/settings/general" />
+      </SideNavItem>,
+    );
+
+    const toggle = screen.getByRole('button', {name: 'Collapse Settings'});
+    await user.click(toggle);
+
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(toggle).toHaveFocus();
+  });
+
+  it('does not leave focus on a child that the group just hid', async () => {
+    const user = userEvent.setup();
+    render(
+      <SideNavItem label="Settings" href="/settings" collapsible>
+        <SideNavItem label="General" href="/settings/general" />
+      </SideNavItem>,
+    );
+
+    const child = screen.getByRole('link', {name: 'General'});
+    child.focus();
+
+    const toggle = screen.getByRole('button', {name: 'Collapse Settings'});
+    await user.click(toggle);
+
+    // The collapsed group is `inert`, so focus must not be left inside it —
+    // and it must not be dropped to <body> either.
+    expect(document.activeElement).not.toBe(child);
+    expect(document.activeElement).not.toBe(document.body);
+    expect(toggle).toHaveFocus();
+  });
+
+  it('returns focus to the trigger when the collapsed submenu closes', async () => {
+    const user = userEvent.setup();
+    renderCollapsed(
+      <SideNavItem label="Settings" icon={StubIcon} data-testid="parent">
+        <SideNavItem label="General" href="/settings/general" />
+      </SideNavItem>,
+    );
+
+    const trigger = screen.getByTestId('parent');
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    await user.keyboard('{Escape}');
+    expect(trigger).toHaveFocus();
+  });
+});
+
+// =============================================================================
+// Audit regressions — the defects this pass fixed
+// =============================================================================
+
+describe('SideNav audit regressions', () => {
+  it('names the collapsed submenu dialog from the catalog, not a concatenation', async () => {
+    const user = userEvent.setup();
+    renderCollapsed(
+      <SideNavItem label="Settings" icon={StubIcon} data-testid="parent">
+        <SideNavItem label="General" href="/settings/general" />
+      </SideNavItem>,
+    );
+
+    await user.click(screen.getByTestId('parent'));
+    const dialog = document.querySelector('[role="dialog"]');
+    expect(dialog).not.toBeNull();
+    expect(dialog).toHaveAttribute('aria-label', 'Settings submenu');
+  });
+
+  it('forwards unrecognised props on SideNavItem through to the control', () => {
+    render(
+      <SideNavItem
+        label="Dashboard"
+        href="/dashboard"
+        data-analytics="nav-dashboard"
+        aria-describedby="hint"
+      />,
+    );
+
+    const link = screen.getByRole('link', {name: 'Dashboard'});
+    expect(link).toHaveAttribute('data-analytics', 'nav-dashboard');
+    expect(link).toHaveAttribute('aria-describedby', 'hint');
+  });
+
+  it('forwards unrecognised props on a collapsed SideNavItem', () => {
+    renderCollapsed(
+      <SideNavItem
+        label="Dashboard"
+        icon={StubIcon}
+        href="/dashboard"
+        data-analytics="nav-dashboard"
+      />,
+    );
+
+    expect(screen.getByRole('link')).toHaveAttribute(
+      'data-analytics',
+      'nav-dashboard',
+    );
+  });
+
+  it('exposes a disabled item as a theming state', () => {
+    render(<SideNavItem label="Archived" onClick={() => {}} isDisabled />);
+
+    expect(screen.getByRole('button', {name: 'Archived'})).toHaveAttribute(
+      'data-disabled',
+      'disabled',
+    );
+  });
+
+  it('keeps a hidden section header readable by assistive technology', () => {
+    render(
+      <SideNavSection title="Main" isHeaderHidden>
+        <SideNavItem label="Dashboard" href="/dashboard" />
+      </SideNavSection>,
+    );
+
+    expect(screen.getByRole('group')).toHaveAccessibleName('Main');
+    expect(screen.getByText('Main')).toBeInTheDocument();
+  });
+
+  it('keeps a SideNavCollapseButton outside the sidenav in step with it', async () => {
+    const user = userEvent.setup();
+
+    function App() {
+      const handleRef = useRef<SideNavImperativeCollapseHandle | null>(null);
+      return (
+        <>
+          <SideNavCollapseButton handleRef={handleRef} />
+          <SideNav collapsible={{hasButton: false}} handleRef={handleRef}>
+            <SideNavItem label="Dashboard" href="/dashboard" />
+          </SideNav>
+        </>
+      );
+    }
+
+    render(<App />);
+
+    const external = screen.getByRole('button', {name: 'Collapse sidebar'});
+    await user.click(external);
+
+    expect(
+      await screen.findByRole('button', {name: 'Expand sidebar'}),
+    ).toBeInTheDocument();
+  });
+
+  it('does not open the hover popover after the item unmounts', async () => {
+    vi.useFakeTimers();
+    try {
+      const {unmount} = render(
+        <SideNavCollapseContext
+          value={{isCollapsed: true, toggle: () => {}, isCollapsible: true}}>
+          <SideNavItem label="Settings" icon={StubIcon} data-testid="parent">
+            <SideNavItem label="General" href="/settings/general" />
+          </SideNavItem>
+        </SideNavCollapseContext>,
+      );
+
+      fireEvent.mouseEnter(screen.getByTestId('parent'));
+      unmount();
+
+      expect(() => {
+        act(() => {
+          vi.runOnlyPendingTimers();
+        });
+      }).not.toThrow();
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});

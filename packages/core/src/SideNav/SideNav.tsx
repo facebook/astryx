@@ -23,6 +23,7 @@
 
 import {
   useCallback,
+  useEffect,
   useImperativeHandle,
   useRef,
   useState,
@@ -349,6 +350,7 @@ export function SideNav({
     toggle: () => {},
     isCollapsible,
   });
+  const collapseListenersRef = useRef<Set<() => void>>(new Set());
 
   const setCollapsedState = useCallback(
     (value: boolean) => {
@@ -375,11 +377,6 @@ export function SideNav({
   const toggle = useCallback(() => {
     const next = !collapsed;
 
-    collapseStateRef.current = {
-      ...collapseStateRef.current,
-      isCollapsed: next,
-    };
-
     setCollapsedState(next);
     if (isResizable) {
       if (next) {
@@ -392,11 +389,30 @@ export function SideNav({
 
   const showResizeHandle = isResizable && !collapsed;
 
-  collapseStateRef.current = {
-    isCollapsed: collapsed,
-    toggle,
-    isCollapsible,
-  };
+  // Replace the snapshot only when a value actually changes, so the object
+  // identity is stable between notifications — `useSyncExternalStore` in
+  // SideNavCollapseButton compares snapshots by reference and would loop
+  // forever on a fresh object every render.
+  if (
+    collapseStateRef.current.isCollapsed !== collapsed ||
+    collapseStateRef.current.isCollapsible !== isCollapsible ||
+    collapseStateRef.current.toggle !== toggle
+  ) {
+    collapseStateRef.current = {
+      isCollapsed: collapsed,
+      toggle,
+      isCollapsible,
+    };
+  }
+
+  // A SideNavCollapseButton placed outside this tree (via `handleRef`) is not
+  // reachable by context, so it subscribes instead. Notify it after commit —
+  // this is the one direction React cannot propagate on its own.
+  useEffect(() => {
+    for (const listener of collapseListenersRef.current) {
+      listener();
+    }
+  }, [collapsed, isCollapsible, toggle]);
 
   const collapseContext = {
     isCollapsed: collapsed,
@@ -408,6 +424,13 @@ export function SideNav({
     handleRef,
     () => ({
       getCollapseState: () => collapseStateRef.current,
+      subscribe: (listener: () => void) => {
+        const listeners = collapseListenersRef.current;
+        listeners.add(listener);
+        return () => {
+          listeners.delete(listener);
+        };
+      },
     }),
     [],
   );
@@ -441,7 +464,13 @@ export function SideNav({
 
   if (renderMode === 'drawer') {
     return (
-      <MobileNav header={header} data-testid={testId}>
+      <MobileNav
+        header={header}
+        data-testid={testId}
+        xstyle={xstyle}
+        className={className}
+        style={style}
+        {...props}>
         {topContent}
         {children}
         {hasDrawerFooter && (

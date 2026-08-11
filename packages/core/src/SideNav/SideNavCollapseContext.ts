@@ -25,18 +25,25 @@ export interface SideNavCollapseState {
   isCollapsible: boolean;
 }
 
-
 export interface SideNavImperativeCollapseHandle {
   getCollapseState: () => SideNavCollapseState | null;
+  /**
+   * Subscribe to collapse-state changes. Returns an unsubscribe function.
+   *
+   * A collapse button rendered outside the SideNav tree cannot receive the
+   * state through context, and reading it from the ref during render makes it
+   * stale. Subscribers are notified whenever the snapshot returned by
+   * `getCollapseState()` changes, so `useSyncExternalStore` can drive the
+   * out-of-tree button.
+   */
+  subscribe?: (listener: () => void) => () => void;
 }
 
-export const SideNavCollapseContext = createContext<SideNavCollapseState>(
-  {
-    isCollapsed: false,
-    toggle: () => {},
-    isCollapsible: false,
-  },
-);
+export const SideNavCollapseContext = createContext<SideNavCollapseState>({
+  isCollapsed: false,
+  toggle: () => {},
+  isCollapsible: false,
+});
 SideNavCollapseContext.displayName = 'SideNavCollapseContext';
 
 /**

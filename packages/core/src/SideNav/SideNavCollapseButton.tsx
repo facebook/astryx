@@ -17,7 +17,7 @@
  * - /packages/cli/assets/templates/blocks/components/SideNav/ (showcase blocks)
  */
 
-import React, {type ReactNode} from 'react';
+import React, {useCallback, useSyncExternalStore, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {durationVars, easeVars} from '../theme/tokens.stylex';
 import {Icon} from '../Icon';
@@ -164,17 +164,39 @@ function useSideNavCollapseState(
 ): SideNavCollapseState {
   const contextCollapseState = useSideNavCollapse();
 
+  // Out-of-tree mode: the state lives in a SideNav this component is not a
+  // descendant of, so it is an external store. Subscribing (rather than
+  // reading `handleRef.current` during render) is what keeps the chevron and
+  // the label in step with the sidenav after a toggle.
+  const subscribe = useCallback(
+    (listener: () => void) =>
+      handleRef?.current?.subscribe?.(listener) ?? (() => {}),
+    [handleRef],
+  );
+
+  const getSnapshot = useCallback(
+    () => handleRef?.current?.getCollapseState() ?? null,
+    [handleRef],
+  );
+
+  const externalCollapseState = useSyncExternalStore(
+    subscribe,
+    getSnapshot,
+    // The handle is null on the server — there is no SideNav to read from.
+    () => null,
+  );
+
+  const toggle = useCallback(() => {
+    handleRef?.current?.getCollapseState()?.toggle();
+  }, [handleRef]);
+
   if (handleRef == null) {
     return contextCollapseState;
   }
 
-  const externalCollapseState = handleRef.current?.getCollapseState() ?? null;
-
   return {
     isCollapsed: externalCollapseState?.isCollapsed ?? false,
-    toggle: () => {
-      handleRef.current?.getCollapseState()?.toggle();
-    },
+    toggle,
     isCollapsible: externalCollapseState?.isCollapsible ?? true,
   };
 }
