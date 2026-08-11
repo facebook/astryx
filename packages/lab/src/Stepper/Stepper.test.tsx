@@ -582,4 +582,52 @@ describe('Stepper', () => {
       expect(handleClick).toHaveBeenCalledWith(0);
     });
   });
+
+  describe('collapseLabelsWhenNarrow', () => {
+    // The collapse is a container query, so jsdom can't evaluate the media
+    // condition — assert the opt-in wiring instead: the collapsible class is
+    // applied to non-current horizontal step labels and withheld from the
+    // current step and from every step when the prop is off / vertical.
+    const labelEl = (testid: string) =>
+      screen
+        .getByTestId(testid)
+        .querySelector('span[class*="label"]') as HTMLElement;
+
+    it('marks non-current horizontal step labels collapsible, but not the current one', () => {
+      render(
+        <Stepper
+          activeStep={1}
+          orientation="horizontal"
+          collapseLabelsWhenNarrow>
+          <Step step={0} label="A" data-testid="a" />
+          <Step step={1} label="B" data-testid="b" />
+          <Step step={2} label="C" data-testid="c" />
+        </Stepper>,
+      );
+      expect(labelEl('a').className).toContain('labelCollapsible');
+      expect(labelEl('c').className).toContain('labelCollapsible');
+      // The current step keeps its label unconditionally.
+      expect(labelEl('b').className).not.toContain('labelCollapsible');
+    });
+
+    it('does not collapse labels when the prop is off', () => {
+      render(
+        <Stepper activeStep={1} orientation="horizontal">
+          <Step step={0} label="A" data-testid="a" />
+          <Step step={1} label="B" data-testid="b" />
+        </Stepper>,
+      );
+      expect(labelEl('a').className).not.toContain('labelCollapsible');
+    });
+
+    it('does not collapse labels in the vertical orientation', () => {
+      render(
+        <Stepper activeStep={1} orientation="vertical" collapseLabelsWhenNarrow>
+          <Step step={0} label="A" data-testid="a" />
+          <Step step={1} label="B" data-testid="b" />
+        </Stepper>,
+      );
+      expect(labelEl('a').className).not.toContain('labelCollapsible');
+    });
+  });
 });

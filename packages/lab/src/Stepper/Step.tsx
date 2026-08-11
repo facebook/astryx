@@ -347,6 +347,17 @@ const styles = stylex.create({
   labelDisabled: {
     color: colorVars['--color-text-disabled'],
   },
+  // Collapse a non-current step's label when the stepper container is narrow
+  // (opt-in via Stepper collapseLabelsWhenNarrow). Hidden from layout AND from
+  // the accessibility tree's visible text — the step stays reachable via
+  // aria-current and each control's accessible name, which are unaffected.
+  // The current step never gets this style, so its label always shows.
+  labelCollapsible: {
+    display: {
+      default: 'block',
+      '@container astryx-stepper (max-width: 480px)': 'none',
+    },
+  },
 
   // Optional tag
   optionalDot: {
@@ -681,6 +692,7 @@ export function Step({
     onStepClick,
     density: ctxDensity,
     indicatorPosition,
+    collapseLabelsWhenNarrow,
   } = ctx;
 
   const density = densityProp ?? ctxDensity;
@@ -703,6 +715,11 @@ export function Step({
 
   const isVertical = orientation === 'vertical';
   const isActive = progress === 'in-progress';
+  // Non-current step labels collapse only when the stepper opted in, the layout
+  // is horizontal (width-constrained), and this step is not the current one —
+  // the current step always keeps its label. The actual hide is a container
+  // query on the label element (styles.labelCollapsible).
+  const collapseLabel = collapseLabelsWhenNarrow && !isVertical && !isActive;
   // Any non-disabled step is navigable when an onStepClick handler is provided,
   // including not-started steps (free navigation across the flow).
   const isClickable = !isDisabled && onStepClick != null;
@@ -913,7 +930,14 @@ export function Step({
   const iconLabelNode = (
     <div {...stylex.props(styles.iconLabelRow)}>
       {indicatorNode}
-      <span {...stylex.props(styles.label, labelColorStyle)}>{label}</span>
+      <span
+        {...stylex.props(
+          styles.label,
+          labelColorStyle,
+          collapseLabel && styles.labelCollapsible,
+        )}>
+        {label}
+      </span>
       {statusTextNode}
       {isOptional && (
         <>
@@ -989,7 +1013,14 @@ export function Step({
         {...stylex.props(
           isVertical ? styles.otLabelRowStart : styles.otLabelRowCenter,
         )}>
-        <span {...stylex.props(styles.label, labelColorStyle)}>{label}</span>
+        <span
+          {...stylex.props(
+            styles.label,
+            labelColorStyle,
+            collapseLabel && styles.labelCollapsible,
+          )}>
+          {label}
+        </span>
         {statusTextNode}
         {isOptional && (
           <>

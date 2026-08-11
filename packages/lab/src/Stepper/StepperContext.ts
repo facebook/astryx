@@ -35,6 +35,12 @@ export interface StepperContextValue {
   onStepClick: ((index: number) => void) | null;
   density: StepperDensity;
   indicatorPosition: StepperIndicatorPosition;
+  /**
+   * Horizontal only. When true, non-current step labels collapse via a
+   * container query once the stepper is too narrow to fit them all, so the
+   * track can shrink. The current step keeps its label.
+   */
+  collapseLabelsWhenNarrow: boolean;
 }
 
 export const StepperContext = createContext<StepperContextValue | null>(null);

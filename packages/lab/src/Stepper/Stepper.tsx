@@ -70,6 +70,16 @@ export interface StepperProps extends BaseProps<HTMLOListElement> {
    * @default 'separated'
    */
   indicatorPosition?: StepperIndicatorPosition;
+  /**
+   * Horizontal only. When the stepper gets too narrow to fit every label,
+   * collapse the labels of non-current steps so the track can shrink — only
+   * the current step keeps its visible label (the rest stay reachable via
+   * `aria-current` and the accessible names). Uses a container query, so it
+   * responds to the stepper's own width, not the viewport. No effect in the
+   * vertical orientation, where width is not the constraint.
+   * @default false
+   */
+  collapseLabelsWhenNarrow?: boolean;
 }
 
 const styles = stylex.create({
@@ -99,6 +109,13 @@ const styles = stylex.create({
   verticalOnTrack: {
     flexDirection: 'column',
     gap: 0,
+  },
+  // Establishes the stepper as an inline-size container so each step's label
+  // can collapse via a container query when the stepper (not the viewport) is
+  // too narrow. Named so the child @container rules target this element only.
+  labelCollapseContainer: {
+    containerType: 'inline-size',
+    containerName: 'astryx-stepper',
   },
 });
 
@@ -136,6 +153,7 @@ export function Stepper({
   label = 'Progress',
   density = 'balanced',
   indicatorPosition = 'separated',
+  collapseLabelsWhenNarrow = false,
   xstyle,
   className,
   style,
@@ -150,8 +168,16 @@ export function Stepper({
       onStepClick: onStepClick ?? null,
       density,
       indicatorPosition,
+      collapseLabelsWhenNarrow,
     }),
-    [activeStep, orientation, onStepClick, density, indicatorPosition],
+    [
+      activeStep,
+      orientation,
+      onStepClick,
+      density,
+      indicatorPosition,
+      collapseLabelsWhenNarrow,
+    ],
   );
 
   const isOnTrack = indicatorPosition === 'on-track';
@@ -164,6 +190,11 @@ export function Stepper({
         ? styles.verticalOnTrack
         : styles.vertical;
 
+  // Label collapse is a width constraint, so it only applies to the horizontal
+  // orientation; vertical steppers are never width-limited this way.
+  const isLabelCollapse =
+    collapseLabelsWhenNarrow && orientation === 'horizontal';
+
   return (
     <StepperContext value={ctxValue}>
       <ol
@@ -172,7 +203,12 @@ export function Stepper({
         {...rest}
         {...mergeProps(
           themeProps('stepper', {orientation, indicatorPosition}),
-          stylex.props(styles.root, orientationStyle, xstyle),
+          stylex.props(
+            styles.root,
+            orientationStyle,
+            isLabelCollapse && styles.labelCollapseContainer,
+            xstyle,
+          ),
           className,
           style,
         )}>

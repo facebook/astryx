@@ -84,6 +84,12 @@ export const docs = {
           default: "'separated'",
         },
         {
+          name: 'collapseLabelsWhenNarrow',
+          type: 'boolean',
+          description: 'Horizontal only. When the stepper is too narrow to fit every label, collapse the labels of non-current steps (via a container query) so the track can shrink; the current step keeps its label. Steps stay reachable via aria-current and their accessible names.',
+          default: 'false',
+        },
+        {
           name: 'xstyle',
           type: 'StyleXStyles',
           description: 'StyleX styles for layout customization. Must be a stylex.create() value.',

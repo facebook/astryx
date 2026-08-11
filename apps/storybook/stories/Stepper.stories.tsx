@@ -990,3 +990,65 @@ export const CustomXStyle: Story = {
     );
   },
 };
+
+export const CollapseLabelsWhenNarrow: Story = {
+  name: 'Responsive — Collapse Labels When Narrow',
+  render: () => {
+    const [active, setActive] = useState(2);
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: 32}}>
+        <div>
+          <Text type="label">Wide (labels shown)</Text>
+          <div style={{width: 640}}>
+            <Stepper
+              activeStep={active}
+              orientation="horizontal"
+              collapseLabelsWhenNarrow
+              onStepClick={setActive}>
+              <Step step={0} label="Cart" indicator="number" />
+              <Step step={1} label="Shipping" indicator="number" />
+              <Step step={2} label="Payment" indicator="number" />
+              <Step step={3} label="Review" indicator="number" />
+              <Step step={4} label="Confirm" indicator="number" />
+            </Stepper>
+          </div>
+        </div>
+        <div>
+          <Text type="label">
+            Narrow (only the current step keeps its label)
+          </Text>
+          <div style={{width: 360}}>
+            <Stepper
+              activeStep={active}
+              orientation="horizontal"
+              collapseLabelsWhenNarrow
+              onStepClick={setActive}>
+              <Step step={0} label="Cart" indicator="number" />
+              <Step step={1} label="Shipping" indicator="number" />
+              <Step step={2} label="Payment" indicator="number" />
+              <Step step={3} label="Review" indicator="number" />
+              <Step step={4} label="Confirm" indicator="number" />
+            </Stepper>
+          </div>
+        </div>
+        <div>
+          <Text type="label">Narrow, on-track</Text>
+          <div style={{width: 320}}>
+            <Stepper
+              activeStep={active}
+              orientation="horizontal"
+              indicatorPosition="on-track"
+              collapseLabelsWhenNarrow
+              onStepClick={setActive}>
+              <Step step={0} label="Cart" indicator="number" />
+              <Step step={1} label="Shipping" indicator="number" />
+              <Step step={2} label="Payment" indicator="number" />
+              <Step step={3} label="Review" indicator="number" />
+              <Step step={4} label="Confirm" indicator="number" />
+            </Stepper>
+          </div>
+        </div>
+      </div>
+    );
+  },
+};
