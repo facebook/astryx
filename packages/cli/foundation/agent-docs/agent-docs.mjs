@@ -273,6 +273,9 @@ export function detectStylingSystem(targetDir) {
  */
 export function generateCompressedIndex(version, {coreDir, invocation = getCliInvocation(), stylingSystem = 'css', topics} = {}) {
   const run = invocation;
+  // Annotated because MARKER_START is now an imported const: its literal type
+  // survives the module boundary, so the array would infer as that one literal.
+  /** @type {string[]} */
   const lines = [MARKER_START];
 
   // Component count from live discovery
