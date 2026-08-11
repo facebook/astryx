@@ -419,12 +419,14 @@ function DefaultMegaMenu({
     onHide: handlePopoverHide,
   });
 
-  // Set the CSS anchor to the parent <nav> element (the TopNav).
+  // Set the CSS anchor to the parent <nav> element (the TopNav). Without a
+  // <nav> ancestor (e.g. the menu rendered standalone in a docs preview), fall
+  // back to the trigger button itself — if no element carries the anchor name,
+  // the panel's position-area computes to `none` and the top-layer popover
+  // pins to the viewport corner (#4905).
   useEffect(() => {
-    const nav = triggerButtonRef.current?.closest('nav');
-    if (nav) {
-      popover.triggerRef(nav);
-    }
+    const trigger = triggerButtonRef.current;
+    popover.triggerRef(trigger?.closest('nav') ?? trigger ?? null);
     return () => {
       popover.triggerRef(null);
     };
