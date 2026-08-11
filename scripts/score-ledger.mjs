@@ -822,19 +822,27 @@ function requireGitIdentity(dir) {
  * retry is a real re-evaluation and not a replay of a stale result.
  */
 function commitAndPush(dir, file, apply, {attempts = 2} = {}) {
-  requireGitIdentity(dir);
-  const rel = path.relative(dir, file) || path.basename(file);
+  // Resolve both sides: on macOS the temp dir is a symlink, so the path git
+  // reports for the work tree and the path we were handed disagree, and the
+  // ledger looks like a file outside the repo.
+  const root = fs.realpathSync(dir);
+  const target = fs.realpathSync(file);
+  requireGitIdentity(root);
+  const rel = path.relative(root, target) || path.basename(target);
   let lastFailure = null;
 
   for (let attempt = 1; attempt <= attempts; attempt++) {
     const applied = apply();
-    fs.writeFileSync(file, applied.text);
+    fs.writeFileSync(target, applied.text);
 
-    const status = git(dir, 'status', '--porcelain');
-    const dirtyOthers = status
-      .split('\n')
+    // `git status --porcelain` is not safe to parse here: the leading status
+    // column is whitespace for an unstaged edit, and trimming it shifts the
+    // path. Ask for paths directly instead.
+    const dirtyOthers = [
+      ...git(root, 'diff', '--name-only', 'HEAD').split('\n'),
+      ...git(root, 'ls-files', '--others', '--exclude-standard').split('\n'),
+    ]
       .filter(Boolean)
-      .map(l => l.slice(3))
       .filter(p => p !== rel);
     if (dirtyOthers.length) {
       throw new Error(
@@ -843,41 +851,41 @@ function commitAndPush(dir, file, apply, {attempts = 2} = {}) {
       );
     }
 
-    git(dir, 'add', '--', rel);
+    git(root, 'add', '--', rel);
     const {subject, body} = applied.message;
     const commitArgs = ['commit', '-m', subject];
     if (body) commitArgs.push('-m', body);
-    const committed = tryGit(dir, ...commitArgs);
+    const committed = tryGit(root, ...commitArgs);
     if (!committed.ok) {
       throw new Error(`could not commit the ledger: ${committed.out}`);
     }
 
-    const pulled = tryGit(dir, 'pull', '--rebase', 'origin', WIKI_BRANCH);
+    const pulled = tryGit(root, 'pull', '--rebase', 'origin', WIKI_BRANCH);
     if (!pulled.ok) {
       // A conflicted rebase means someone else edited the same rows. Abort and
       // re-apply onto their version rather than resolving JSON by hand.
-      tryGit(dir, 'rebase', '--abort');
+      tryGit(root, 'rebase', '--abort');
       lastFailure = pulled.out;
       if (attempt < attempts) {
         console.log('score-ledger: the wiki moved under us — re-applying onto the new tip.');
-        git(dir, 'fetch', '--depth', '1', 'origin', WIKI_BRANCH);
-        git(dir, 'reset', '--hard', `origin/${WIKI_BRANCH}`);
+        git(root, 'fetch', '--depth', '1', 'origin', WIKI_BRANCH);
+        git(root, 'reset', '--hard', `origin/${WIKI_BRANCH}`);
         continue;
       }
       break;
     }
 
-    const pushed = tryGit(dir, 'push', 'origin', `HEAD:${WIKI_BRANCH}`);
+    const pushed = tryGit(root, 'push', 'origin', `HEAD:${WIKI_BRANCH}`);
     if (pushed.ok) {
-      const sha = git(dir, 'rev-parse', 'HEAD');
+      const sha = git(root, 'rev-parse', 'HEAD');
       return {sha, url: wikiCommitUrl(sha), applied};
     }
     lastFailure = pushed.out;
     const raced = /non-fast-forward|fetch first|rejected|stale info/i.test(pushed.out);
     if (!raced || attempt >= attempts) break;
     console.log('score-ledger: push rejected as non-fast-forward — re-applying and retrying once.');
-    git(dir, 'fetch', '--depth', '1', 'origin', WIKI_BRANCH);
-    git(dir, 'reset', '--hard', `origin/${WIKI_BRANCH}`);
+    git(root, 'fetch', '--depth', '1', 'origin', WIKI_BRANCH);
+    git(root, 'reset', '--hard', `origin/${WIKI_BRANCH}`);
   }
 
   throw new Error(
@@ -947,6 +955,10 @@ export function applyScorecard(existing, scorecard, {component, pkg}) {
     throw new Error(`${component}: an audited entry needs a numeric score`);
   }
   const expected = gradeFor(next.score, openBlockCount(next));
+  // `grade` is derived from `score`, so it must never be inherited across a
+  // re-record: a scorecard that lowers the score without restating the grade
+  // would otherwise carry the old letter forward and fail as a contradiction.
+  if (!('grade' in scorecard)) next.grade = null;
   if (!next.grade) next.grade = expected;
   if (next.grade !== expected) {
     throw new Error(

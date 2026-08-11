@@ -16,9 +16,12 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import {execFileSync} from 'node:child_process';
+
 import {describe, it, expect} from 'vitest';
 
 import {
+  SCORES_PAGE_URL,
   SECTION_WEIGHTS,
   SECTION_IDS,
   applyScorecard,
@@ -26,15 +29,18 @@ import {
   buildQueue,
   buildRoster,
   buildStats,
+  commitMessage,
   compareEntry,
   gradeFor,
   isComponentDirectory,
   issueBody,
   listComponents,
   loadLedger,
+  repoFromWikiRemote,
   resolveName,
   runRatchet,
   weakestSection,
+  wikiCommitUrl,
 } from './score-ledger.mjs';
 
 const REPO_ROOT = path.resolve(import.meta.dirname, '..');
@@ -510,9 +516,333 @@ describe('issue plumbing', () => {
     expect(body).toContain('§2 Theming & token integrity');
     expect(body).toContain('rubric **v1.2**');
     expect(body).toContain('Component-Audit-Rubric');
-    expect(body).toContain('Component-Scores');
+    // The row is readable on the sandbox page, never on a generated wiki table.
+    expect(body).toContain(SCORES_PAGE_URL);
+    expect(body).not.toContain('wiki/Component-Scores');
     expect(body).toContain('Button.tsx');
     expect(body).toContain('Closing protocol');
     expect(body).toContain("If the recorded score doesn't move");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The write path: --record, --dry-run and --push
+//
+// These drive the real CLI against a real git remote in a temp dir. The push
+// path is the whole point of the tool — an audit that isn't recorded didn't
+// happen — so it is tested end to end rather than mocked, including the case
+// two agents race to record at the same moment.
+// ---------------------------------------------------------------------------
+
+const SCRIPT = path.join(REPO_ROOT, 'scripts', 'score-ledger.mjs');
+
+const git = (cwd, ...argv) =>
+  execFileSync('git', argv, {cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe']}).trim();
+
+/** Run the CLI and capture everything, exit code included. */
+function cli(argv, {cwd = REPO_ROOT, input, env} = {}) {
+  try {
+    const out = execFileSync(process.execPath, [SCRIPT, ...argv], {
+      cwd,
+      input,
+      encoding: 'utf8',
+      env: {...process.env, ...env},
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+    return {code: 0, out};
+  } catch (e) {
+    return {code: e.status ?? 1, out: `${e.stdout || ''}${e.stderr || ''}`};
+  }
+}
+
+const ledgerWith = (...components) => ({
+  ledgerVersion: 1,
+  rubricVersion: '1.2',
+  updated: '2026-08-01',
+  components,
+});
+
+/** A scorecard the validator accepts. */
+const scorecard = (over = {}) => ({
+  status: 'audited',
+  score: 81,
+  sections: {a11y: {score: 4, state: 'scored'}},
+  blocks: {count: 0, open: []},
+  distinct_defects: 2,
+  lastAudited: '2026-08-11',
+  rubricVersion: '1.2',
+  mode: 'O',
+  commit: 'abc1234567',
+  ...over,
+});
+
+/**
+ * A bare repo standing in for the wiki, plus a working clone of it. The clone
+ * is shallow and pushes over file://, exactly as `ensureWikiClone` produces.
+ */
+function makeWiki(seedLedger) {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'score-ledger-wiki-'));
+  const bare = path.join(root, 'wiki.git');
+  const seed = path.join(root, 'seed');
+  const clone = path.join(root, 'clone');
+
+  git(root, 'init', '--bare', '--initial-branch=master', bare);
+  git(root, 'clone', bare, seed);
+  identify(seed);
+  fs.writeFileSync(
+    path.join(seed, 'component-scores.json'),
+    `${JSON.stringify(seedLedger, null, 2)}\n`,
+  );
+  git(seed, 'add', '-A');
+  git(seed, 'commit', '-m', 'seed');
+  git(seed, 'push', 'origin', 'master');
+
+  git(root, 'clone', '--depth', '1', `file://${bare}`, clone);
+  identify(clone);
+  return {root, bare, clone, ledger: path.join(clone, 'component-scores.json')};
+}
+
+function identify(dir) {
+  git(dir, 'config', 'user.name', 'Ledger Test');
+  git(dir, 'config', 'user.email', 'ledger-test@example.com');
+}
+
+const readLedger = file => JSON.parse(fs.readFileSync(file, 'utf8'));
+
+/** What the remote actually holds, which is the only thing that counts. */
+const remoteLedger = bare =>
+  JSON.parse(git(bare, 'show', 'master:component-scores.json'));
+
+describe('the commit message', () => {
+  it('names the component, the grade, the score and the rubric version', () => {
+    expect(commitMessage(entry({score: 62.6, grade: 'D'})).subject).toBe(
+      'scores: Button D (62.6), rubric 1.2',
+    );
+  });
+
+  it('qualifies an ambiguous name with its package — Chat is two components', () => {
+    const {subject} = commitMessage(
+      entry({component: 'Chat', package: 'lab', score: 70, grade: 'C'}),
+      {ambiguous: true},
+    );
+    expect(subject).toBe('scores: lab/Chat C (70.0), rubric 1.2');
+  });
+
+  it('puts the regression reason in the body, with the numbers it moved from', () => {
+    const {subject, body} = commitMessage(entry({score: 55, grade: 'F'}), {
+      regression: {reason: 'rescored under a stricter reading of A8', from: {score: 70, blocks: 1}},
+    });
+    expect(subject).toBe('scores: Button F (55.0), rubric 1.2');
+    expect(body).toContain('Regression allowed: rescored under a stricter reading of A8');
+    expect(body).toContain('Score 70.0 → 55.0');
+  });
+});
+
+describe('wiki URLs', () => {
+  it('reads the repo out of a wiki remote, https or ssh', () => {
+    expect(repoFromWikiRemote('https://github.com/facebook/astryx.wiki.git')).toBe(
+      'facebook/astryx',
+    );
+    expect(repoFromWikiRemote('git@github.com:facebook/astryx.wiki.git')).toBe('facebook/astryx');
+  });
+
+  it('builds a commit URL GitHub actually serves', () => {
+    expect(wikiCommitUrl('deadbeef')).toBe(
+      'https://github.com/facebook/astryx/wiki/_compare/deadbeef',
+    );
+  });
+});
+
+describe('--record', () => {
+  it('reads the scorecard from stdin with --from -, so an agent needs no temp file', () => {
+    const wiki = makeWiki(ledgerWith());
+    const r = cli(['--record', 'Button', '--from', '-', '--ledger', wiki.ledger], {
+      input: JSON.stringify(scorecard()),
+    });
+    expect(r.code).toBe(0);
+    const row = readLedger(wiki.ledger).components.find(c => c.component === 'Button');
+    expect(row).toMatchObject({package: 'core', grade: 'B', score: 81});
+  });
+
+  it('refuses a regression, and writes nothing at all', () => {
+    const seeded = ledgerWith(entry({score: 90, grade: 'A'}));
+    const wiki = makeWiki(seeded);
+    const before = fs.readFileSync(wiki.ledger, 'utf8');
+    const r = cli(['--record', 'Button', '--from', '-', '--ledger', wiki.ledger], {
+      input: JSON.stringify(scorecard({score: 70})),
+    });
+    expect(r.code).toBe(1);
+    expect(r.out).toContain('refusing');
+    expect(fs.readFileSync(wiki.ledger, 'utf8')).toBe(before);
+  });
+
+  it('records the reason on the row when a regression is allowed', () => {
+    const wiki = makeWiki(ledgerWith(entry({score: 90, grade: 'A'})));
+    const r = cli([
+      '--record', 'Button',
+      '--from', '-',
+      '--ledger', wiki.ledger,
+      '--allow-regression', 'rescored under v1.2 §5 split',
+    ], {input: JSON.stringify(scorecard({score: 70}))});
+    expect(r.code).toBe(0);
+    const row = readLedger(wiki.ledger).components.find(c => c.component === 'Button');
+    expect(row.regression.reason).toBe('rescored under v1.2 §5 split');
+    expect(row.regression.from).toEqual({score: 90, blocks: 0});
+  });
+
+  it('rejects a bare --allow-regression — the reason is the point', () => {
+    const wiki = makeWiki(ledgerWith(entry({score: 90, grade: 'A'})));
+    const r = cli([
+      '--record', 'Button', '--from', '-', '--ledger', wiki.ledger, '--allow-regression',
+    ], {input: JSON.stringify(scorecard({score: 70}))});
+    expect(r.code).toBe(1);
+    expect(r.out).toContain('needs a reason');
+  });
+
+  it('--dry-run prints the diff and the commit message and changes nothing', () => {
+    const wiki = makeWiki(ledgerWith());
+    const before = fs.readFileSync(wiki.ledger, 'utf8');
+    const r = cli(['--record', 'Button', '--from', '-', '--ledger', wiki.ledger, '--dry-run'], {
+      input: JSON.stringify(scorecard()),
+    });
+    expect(r.code).toBe(0);
+    expect(r.out).toContain('--- a/component-scores.json');
+    expect(r.out).toContain('+      "component": "Button"');
+    expect(r.out).toContain('scores: Button B (81.0), rubric 1.2');
+    expect(r.out).toContain('nothing written');
+    expect(fs.readFileSync(wiki.ledger, 'utf8')).toBe(before);
+  });
+
+  it('without --push or --ledger it says how to write, rather than guessing', () => {
+    const r = cli(['--record', 'Button', '--from', '-'], {input: JSON.stringify(scorecard())});
+    expect(r.code).toBe(1);
+    expect(r.out).toContain('--push');
+  });
+});
+
+describe('--record --push', () => {
+  it('commits and pushes in one command, and prints the commit URL', () => {
+    const wiki = makeWiki(ledgerWith());
+    const r = cli(['--record', 'Button', '--from', '-', '--ledger', wiki.ledger, '--push'], {
+      input: JSON.stringify(scorecard()),
+    });
+    expect(r.code).toBe(0);
+    expect(r.out).toContain('/wiki/_compare/');
+    expect(remoteLedger(wiki.bare).components.map(c => c.component)).toEqual(['Button']);
+    expect(git(wiki.clone, 'log', '-1', '--format=%s')).toBe(
+      'scores: Button B (81.0), rubric 1.2',
+    );
+  });
+
+  it('pushes nothing when the apply is not clean', () => {
+    const wiki = makeWiki(ledgerWith(entry({score: 90, grade: 'A'})));
+    const head = git(wiki.bare, 'rev-parse', 'master');
+    const r = cli(['--record', 'Button', '--from', '-', '--ledger', wiki.ledger, '--push'], {
+      input: JSON.stringify(scorecard({score: 70})),
+    });
+    expect(r.code).toBe(1);
+    expect(git(wiki.bare, 'rev-parse', 'master')).toBe(head);
+  });
+
+  it('carries the regression reason into the commit message', () => {
+    const wiki = makeWiki(ledgerWith(entry({score: 90, grade: 'A'})));
+    const r = cli([
+      '--record', 'Button', '--from', '-', '--ledger', wiki.ledger, '--push',
+      '--allow-regression', 'A8 was scored too kindly in the calibration pass',
+    ], {input: JSON.stringify(scorecard({score: 70}))});
+    expect(r.code).toBe(0);
+    const message = git(wiki.clone, 'log', '-1', '--format=%B');
+    expect(message).toContain('scores: Button C (70.0), rubric 1.2');
+    expect(message).toContain('A8 was scored too kindly in the calibration pass');
+  });
+
+  it('refuses to commit with no git identity', () => {
+    const wiki = makeWiki(ledgerWith());
+    git(wiki.clone, 'config', '--unset', 'user.name');
+    git(wiki.clone, 'config', '--unset', 'user.email');
+    const r = cli(['--record', 'Button', '--from', '-', '--ledger', wiki.ledger, '--push'], {
+      input: JSON.stringify(scorecard()),
+      env: {GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_SYSTEM: '/dev/null'},
+    });
+    expect(r.code).toBe(1);
+    expect(r.out).toContain('no git identity');
+  });
+
+  it('refuses to sweep unrelated wiki edits into the commit', () => {
+    const wiki = makeWiki(ledgerWith());
+    fs.writeFileSync(path.join(wiki.clone, 'Home.md'), 'half-finished edit\n');
+    const r = cli(['--record', 'Button', '--from', '-', '--ledger', wiki.ledger, '--push'], {
+      input: JSON.stringify(scorecard()),
+    });
+    expect(r.code).toBe(1);
+    expect(r.out).toContain('unrelated changes');
+  });
+
+  /**
+   * The concurrency case, for real. An `update` hook on the remote lands a
+   * competing record and rejects the first push; the tool must re-apply onto
+   * what the other agent wrote instead of overwriting it. Both rows survive.
+   */
+  it('re-applies onto the winner and keeps both records when two agents race', () => {
+    const wiki = makeWiki(ledgerWith());
+    const competing = ledgerWith(
+      entry({component: 'Badge', score: 74.2, grade: 'C', lastAudited: '2026-08-09'}),
+    );
+    const competingFile = path.join(wiki.root, 'competing.json');
+    fs.writeFileSync(competingFile, `${JSON.stringify(competing, null, 2)}\n`);
+
+    const hook = path.join(wiki.bare, 'hooks', 'update');
+    fs.writeFileSync(
+      hook,
+      [
+        '#!/bin/sh',
+        'set -e',
+        'marker="$(git rev-parse --git-dir)/raced"',
+        '[ -f "$marker" ] && exit 0',
+        'touch "$marker"',
+        'export GIT_AUTHOR_NAME="Other Agent" GIT_AUTHOR_EMAIL="other@example.com"',
+        'export GIT_COMMITTER_NAME="Other Agent" GIT_COMMITTER_EMAIL="other@example.com"',
+        'GIT_INDEX_FILE="$(mktemp)"; export GIT_INDEX_FILE',
+        'git read-tree master',
+        `blob=$(git hash-object -w -- ${JSON.stringify(competingFile).slice(1, -1)})`,
+        'git update-index --add --cacheinfo 100644,$blob,component-scores.json',
+        'tree=$(git write-tree)',
+        'commit=$(git commit-tree $tree -p master -m "scores: Badge C (74.2), rubric 1.2")',
+        'git update-ref refs/heads/master $commit',
+        'echo "rejected: non-fast-forward (simulated race)" >&2',
+        'exit 1',
+      ].join('\n'),
+    );
+    fs.chmodSync(hook, 0o755);
+
+    const r = cli(['--record', 'Button', '--from', '-', '--ledger', wiki.ledger, '--push'], {
+      input: JSON.stringify(scorecard()),
+    });
+    expect(r.code).toBe(0);
+    expect(r.out).toContain('retrying once');
+    expect(remoteLedger(wiki.bare).components.map(c => c.component).sort()).toEqual([
+      'Badge',
+      'Button',
+    ]);
+  });
+});
+
+describe('the generated table is gone', () => {
+  it('--report is not a subcommand any more', () => {
+    const r = cli(['--report']);
+    expect(r.code).toBe(1);
+    expect(r.out).toContain('Usage:');
+    expect(r.out).not.toContain('--report');
+  });
+
+  it('recording writes the JSON and nothing beside it', () => {
+    const wiki = makeWiki(ledgerWith());
+    const r = cli(['--record', 'Button', '--from', '-', '--ledger', wiki.ledger], {
+      input: JSON.stringify(scorecard()),
+    });
+    expect(r.code).toBe(0);
+    expect(fs.readdirSync(wiki.clone).filter(f => f !== '.git')).toEqual([
+      'component-scores.json',
+    ]);
   });
 });
