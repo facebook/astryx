@@ -1,7 +1,7 @@
 ---
 title: 'Astryx now speaks multiple languages!'
 description: "How internationalization and RTL came to Astryx: surveying the modern i18n landscape and using automation to catch RTL bugs a linter can't see."
-date: '2026-08-06'
+date: '2026-08-11'
 type: 'engineering'
 draft: false
 authors:
@@ -25,17 +25,17 @@ I'd spent a good chunk of my career on localization before this, so when the wor
 
 ## Why we didn't just adopt an i18n framework
 
-The obvious move was to wire in an established runtime such as `react-intl`, Lingui, or i18next. This would have been cheapest to build, but it means that now Astryx carries even more dependency baggage. A hard dependency on one runtime would add bundle weight and collide with teams that already standardized on something else, leaving them to run two systems side by side or replace their own. Ideally we don't want to "force" users to use our same frameworks.
+The obvious move was to wire in an established runtime such as `react-intl`, Lingui, or i18next. This would have been cheapest to build, but it means that now Astryx carries even more dependency baggage. A hard dependency on one runtime would add bundle weight and collide with teams that already standardized on something else, leaving them to run two systems side by side or replace their own.
 
-So we separated format from framework. We adopted ICU MessageFormat – the string format every serious i18n runtime already speaks – with `intl-messageformat` as the default formatter behind a small adapter, so a consumer already running `react-intl` or a compatible stack can hand Astryx theirs instead. That kept the surface tiny: one provider carrying a locale, one hook to read translations, and English defaults baked in so components render with no setup at all, and adoption stays incremental.
+So we separated format from framework. We adopted ICU MessageFormat – the modern string format for i18n – with `intl-messageformat` as the formatter (behind a small adapter). A consumer already running `react-intl` or a compatible stack can hand Astryx their strings instead. That kept the surface tiny: one provider carrying a locale, one hook to read translations, and English defaults baked in. Components render with no setup at all, and adoption stays incremental.
 
-We wrote it up as [an RFC](https://github.com/facebook/astryx/issues/3641) first and fixed the constraints before any code: work in server components, stay framework-agnostic (Vite, Next, Remix, static builds — no hard-coded router), support switching language at runtime, and keep translations inside core rather than as a matrix of per-locale packages to version and keep in lockstep. One early question — whether to code-split the locale data so an app ships only the languages it uses — we settled by measuring rather than guessing: a full locale pack is roughly 2 KB gzipped, about the size of our icon set, so splitting would have added machinery to save almost nothing.
+We started [an RFC](https://github.com/facebook/astryx/issues/3641) with some initial constraints and distilled them down as we iterated.  For example: we considered shipping each locale as a separate package, or even having per component string sets to allow code splitting.  After analysis we found that the amount of strings to ship ( approx. 2KB compressed ) didn't warrant the complexity and settled on a single en.json in core.  Other initial "requirements" were also removed or simplified as we found we just didn't need them.
 
 ## Plurals are now a solved problem
 
-Plurals are deceptively easy to get wrong, because English lets you cheat. How many UIs have you seen with a label like `1 item(s)`, or code that tacks on an "s" whenever a count isn't 1? It reads fine enough in English to ship — and then falls apart the moment you translate, because "how many plural forms a language has" isn't universal. Arabic has six. Russian and Polish have four. Japanese has one. The `one`/`other` assumption is baked in so deeply you don't notice it until someone asks which of six Arabic forms you meant.
+Plurals are deceptively easy to get wrong, because English lets you cheat. Often apps will use a label like `1 item(s)`, or code that tacks on an "s" whenever count is other than 1. It works well enough until it comes time to translate, because english plural forms aren't universal. Arabic has six. Russian and Polish have four. Japanese has one. The `one`/`other` assumption simply doesn't scale.
 
-The good news — and this genuinely wasn't true a few years ago — is that the platform handles this now. ICU MessageFormat lets a string declare its plural cases, and `Intl.PluralRules`, a widely-supported browser API backed by CLDR data, knows which form each number takes in each locale. So instead of hand-rolling pluralization and getting it wrong, a string just names its cases and lets the runtime pick:
+The good news (and this wasn't true not long ago) is that the platform handles this now. ICU MessageFormat lets a string declare its plural cases, and `Intl.PluralRules` (a widely-supported browser API backed by CLDR data) knows which form each number takes in each locale. So instead of hand-rolling pluralization and getting it wrong, a string just names its cases and lets the runtime pick:
 
 ```text
 Go back {step, number} {step, plural, one {page} other {pages}}
@@ -82,6 +82,6 @@ The result was all 29 languages seeded and rendering today. To be clear, we stil
 
 ## What's still open
 
-Astryx is not "finished" with i18n. A few problems are still real. PowerSearch still assembles some phrases from consumer-supplied pieces, which limits how grammatical those phrases can be in every language. Our pseudo-locale does not yet inflate string length aggressively enough to flush out all narrow-layout failures. And on the platform side, server-rendered translation and the adapter for reusing a consumer's existing runtime are both still active design work. Those are tractable problems, but they are still problems.
+Astryx is not "finished" with i18n. A few problems are still real. PowerSearch still assembles some phrases from consumer-supplied pieces, which limits how grammatical those phrases can be in every language. Our pseudo-locale does not yet inflate string length aggressively enough to flush out all narrow-layout failures. And on the platform side, server-rendered translation and the adapter for reusing a consumer's existing runtime are both still active design work. We also are hunting down a new class of errors with truncation and IME incompatibility.  A big thanks to our community which is helping us find and track down these issues.
 
-Astryx now speaks 29 languages and reads in both directions, with nothing forked to get there. Set your locale, set your `dir`, and it works. If you speak one of those languages and see a translation that could be better, [the Crowdin project](https://crowdin.com/project/astryx) is open.
+Astryx now speaks 29 languages and reads in both directions. Set your locale, set your `dir`, and it works (see our [internationalization guide](https://astryx.atmeta.com/docs/internationalization) for more info). If you speak one of those languages and see a translation that could be better, [the Crowdin project](https://crowdin.com/project/astryx) is open.
