@@ -435,6 +435,7 @@ export default function MobileTypePage() {
     <div style={{position: 'fixed', inset: 0, display: 'flex'}}>
       <Layout
         height="fill"
+        xstyle={styles.layoutFill}
         start={
           <LayoutPanel width={340} hasDivider padding={4}>
             <VStack gap={5}>
@@ -743,6 +744,11 @@ export default function MobileTypePage() {
 // =============================================================================
 
 const styles = stylex.create({
+  layoutFill: {
+    flex: 1,
+    minWidth: 0,
+    width: '100%',
+  },
   fullWidth: {
     width: '100%',
   },
