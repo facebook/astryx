@@ -197,6 +197,11 @@ export const categories: SandboxCategory[] = [
         description:
           'Test voice dictation, tune sound effects, and explore animation',
       },
+      {
+        name: 'Mobile Type',
+        href: '/pages/mobile-type/',
+        description: 'How the type scale adapts on touch devices',
+      },
     ],
   },
 ];
