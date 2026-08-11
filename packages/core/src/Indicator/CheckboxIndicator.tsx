@@ -166,7 +166,7 @@ const indeterminateSizeStyles = stylex.create({
  * the `checkbox` theme target like any other component.
  *
  * @example
- * ```tsx
+ * ```
  * <CheckboxIndicator state="indeterminate" size="sm" />
  * ```
  */

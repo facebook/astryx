@@ -21,7 +21,7 @@ import type {IndicatorComponent, IndicatorMap, IndicatorName} from './types';
  * `| undefined` — see {@link getIndicator}.
  *
  * @example
- * ```tsx
+ * ```
  * const Checkbox = useIndicator('checkbox');
  * return <Checkbox state={isChecked ? 'checked' : 'unchecked'} size={size} />;
  * ```

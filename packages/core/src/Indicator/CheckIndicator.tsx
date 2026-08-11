@@ -48,14 +48,14 @@ const iconSizeForIndicator = {
  * state, or focus behavior; the option or row that hosts it keeps all of that.
  *
  * @example
- * ```tsx
+ * ```
  * <CheckIndicator state={isSelected ? 'checked' : 'unchecked'} size="sm" />
  * ```
  *
  * Swap every single-selection mark for a radio:
  *
  * @example
- * ```tsx
+ * ```
  * import {RadioIndicator} from '@astryxdesign/core/Indicator';
  *
  * defineTheme({name: 'brand', indicators: {check: RadioIndicator}});

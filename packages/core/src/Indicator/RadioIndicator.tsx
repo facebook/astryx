@@ -134,7 +134,7 @@ const dotSizeStyles = stylex.create({
  * components whose default is "a checkmark when selected, nothing otherwise".
  *
  * @example
- * ```tsx
+ * ```
  * <RadioIndicator state="checked" size="md" />
  * ```
  */

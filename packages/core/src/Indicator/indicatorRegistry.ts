@@ -85,7 +85,7 @@ function getThemeIndicators(
  * the {@link useIndicator} hook, which resolves against the nearest `<Theme>`.
  *
  * @example
- * ```tsx
+ * ```
  * const Radio = getIndicator('radio', themeName);
  * <Radio state="checked" />
  * ```
@@ -95,7 +95,7 @@ function getThemeIndicators(
  * added the name owns its default:
  *
  * @example
- * ```tsx
+ * ```
  * const Star = getIndicator('brand-star', themeName) ?? BrandStar;
  * ```
  */
