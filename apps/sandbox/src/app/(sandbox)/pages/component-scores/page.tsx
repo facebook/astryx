@@ -64,10 +64,12 @@ const GRADE_VARIANT: Record<string, BadgeVariant> = {
 function weakestSection(entry: LedgerEntry): string | null {
   let worst: {id: string; score: number} | null = null;
   for (const [id, section] of Object.entries(entry.sections || {})) {
-    if (section.state !== 'scored' || typeof section.score !== 'number')
-      {continue;}
-    if (!worst || section.score < worst.score)
-      {worst = {id, score: section.score};}
+    if (section.state !== 'scored' || typeof section.score !== 'number') {
+      continue;
+    }
+    if (!worst || section.score < worst.score) {
+      worst = {id, score: section.score};
+    }
   }
   return worst
     ? `${SECTION_TITLES[worst.id] ?? worst.id} (${worst.score}/5)`
@@ -75,15 +77,17 @@ function weakestSection(entry: LedgerEntry): string | null {
 }
 
 function buildRows(ledger: Ledger | null): ScoreRow[] {
-  const byName = new Map<string, LedgerEntry>();
-  for (const entry of ledger?.components ?? [])
-    {byName.set(entry.component, entry);}
+  const byId = new Map<string, LedgerEntry>();
+  for (const entry of ledger?.components ?? []) {
+    byId.set(`${entry.package}/${entry.component}`, entry);
+  }
 
   return roster
     .map(item => {
-      const entry = byName.get(item.component) ?? null;
+      const entry = byId.get(`${item.package}/${item.component}`) ?? null;
       return {
-        id: item.component,
+        // `Chat` exists in both core and lab, so the row key is the pair.
+        id: `${item.package}/${item.component}`,
         component: item.component,
         package: item.package,
         audited: entry != null,
@@ -97,7 +101,11 @@ function buildRows(ledger: Ledger | null): ScoreRow[] {
         entry,
       };
     })
-    .sort((a, b) => a.component.localeCompare(b.component));
+    .sort(
+      (a, b) =>
+        a.component.localeCompare(b.component) ||
+        a.package.localeCompare(b.package),
+    );
 }
 
 // =============================================================================
@@ -139,6 +147,13 @@ const promptFor = (component: string) =>
 
 type Filter = 'all' | 'audited' | 'tbd' | 'blocks';
 
+const FILTERS: Array<{value: Filter; label: string}> = [
+  {value: 'all', label: 'All'},
+  {value: 'audited', label: 'Audited'},
+  {value: 'tbd', label: 'TBD'},
+  {value: 'blocks', label: 'With open BLOCKs'},
+];
+
 export default function ComponentScoresPage() {
   const [ledger, setLedger] = useState<Ledger | null>(snapshot);
   const [source, setSource] = useState<'snapshot' | 'live' | 'none'>(
@@ -158,7 +173,9 @@ export default function ComponentScoresPage() {
         res.ok ? res.json() : Promise.reject(new Error(String(res.status))),
       )
       .then((data: Ledger) => {
-        if (cancelled || !Array.isArray(data.components)) {return;}
+        if (cancelled || !Array.isArray(data.components)) {
+          return;
+        }
         setLedger(data);
         setSource('live');
       })
@@ -174,9 +191,12 @@ export default function ComponentScoresPage() {
 
   const stats = useMemo(() => {
     const audited = rows.filter(r => r.audited);
-    const grades = {A: 0, B: 0, C: 0, D: 0, F: 0} as Record<string, number>;
-    for (const r of audited)
-      {if (r.grade && r.grade in grades) {grades[r.grade] += 1;}}
+    const grades: Record<string, number> = {A: 0, B: 0, C: 0, D: 0, F: 0};
+    for (const r of audited) {
+      if (r.grade && r.grade in grades) {
+        grades[r.grade] += 1;
+      }
+    }
     return {
       total: rows.length,
       audited: audited.length,
@@ -195,10 +215,18 @@ export default function ComponentScoresPage() {
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
     return rows.filter(r => {
-      if (q && !r.component.toLowerCase().includes(q)) {return false;}
-      if (filter === 'audited') {return r.audited;}
-      if (filter === 'tbd') {return !r.audited;}
-      if (filter === 'blocks') {return r.blocks > 0;}
+      if (q && !r.component.toLowerCase().includes(q)) {
+        return false;
+      }
+      if (filter === 'audited') {
+        return r.audited;
+      }
+      if (filter === 'tbd') {
+        return !r.audited;
+      }
+      if (filter === 'blocks') {
+        return r.blocks > 0;
+      }
       return true;
     });
   }, [rows, query, filter]);
@@ -246,8 +274,12 @@ export default function ComponentScoresPage() {
       header: 'Open BLOCKs',
       width: proportional(2),
       renderCell: (row: ScoreRow) => {
-        if (!row.audited) {return <Text color="secondary">—</Text>;}
-        if (row.blocks === 0) {return <Text>0</Text>;}
+        if (!row.audited) {
+          return <Text color="secondary">—</Text>;
+        }
+        if (row.blocks === 0) {
+          return <Text>0</Text>;
+        }
         const filed = row.blockList.filter(b => b.issue);
         const unattributed = row.blocks - row.blockList.length;
         return (
@@ -255,7 +287,7 @@ export default function ComponentScoresPage() {
             <Badge variant="error" label={String(row.blocks)} />
             {filed.map(block => (
               <Link
-                key={block.id}
+                key={`${row.id}-${block.id}`}
                 href={`https://github.com/${REPO}/issues/${block.issue}`}
                 isExternalLink
                 type="supporting">
@@ -265,7 +297,10 @@ export default function ComponentScoresPage() {
             {row.blockList
               .filter(b => !b.issue)
               .map(block => (
-                <Text key={block.id} type="supporting" color="secondary">
+                <Text
+                  key={`${row.id}-${block.id}`}
+                  type="supporting"
+                  color="secondary">
                   {block.id} (no issue)
                 </Text>
               ))}
@@ -414,14 +449,7 @@ export default function ComponentScoresPage() {
             value={query}
             onChange={setQuery}
           />
-          {(
-            [
-              ['all', 'All'],
-              ['audited', 'Audited'],
-              ['tbd', 'TBD'],
-              ['blocks', 'With open BLOCKs'],
-            ] as Array<[Filter, string]>
-          ).map(([value, label]) => (
+          {FILTERS.map(({value, label}) => (
             <Button
               key={value}
               size="sm"

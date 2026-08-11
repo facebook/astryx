@@ -32,6 +32,7 @@ import {
   issueBody,
   listComponents,
   loadLedger,
+  resolveName,
   runRatchet,
   weakestSection,
 } from './score-ledger.mjs';
@@ -181,6 +182,42 @@ describe('the ratchet', () => {
     const {failed, results} = runRatchet(['Toast'], {components: []}, {components: []});
     expect(failed).toBe(false);
     expect(results[0].verdict).toBe('pass');
+  });
+});
+
+describe('a component is a package AND a name', () => {
+  // `Chat` ships in both core and lab. A name-keyed ledger would ratchet one
+  // against the other, which is worse than not measuring either.
+  it('resolves a name that exists in two packages to both components', () => {
+    const matches = resolveName('Chat', listComponents(REPO_ROOT));
+    expect(matches.map(m => m.package).sort()).toEqual(['core', 'lab']);
+  });
+
+  it('keeps the two apart in the ratchet — a lab score cannot fail a core PR', () => {
+    const base = {
+      components: [
+        entry({component: 'Chat', package: 'core', score: 80, grade: 'B'}),
+        entry({component: 'Chat', package: 'lab', score: 80, grade: 'B'}),
+      ],
+    };
+    const head = {
+      components: [
+        entry({component: 'Chat', package: 'core', score: 80, grade: 'B'}),
+        entry({component: 'Chat', package: 'lab', score: 40, grade: 'F'}),
+      ],
+    };
+    const {results} = runRatchet(['Chat'], base, head);
+    expect(results.map(r => r.component).sort()).toEqual(['core/Chat', 'lab/Chat']);
+    expect(results.find(r => r.component === 'core/Chat').verdict).toBe('pass');
+    expect(results.find(r => r.component === 'lab/Chat').verdict).toBe('fail');
+  });
+
+  it('gives each roster row a package-qualified id', () => {
+    const roster = buildRoster({components: []}, [
+      {component: 'Chat', package: 'core'},
+      {component: 'Chat', package: 'lab'},
+    ]);
+    expect(roster.map(r => r.id)).toEqual(['core/Chat', 'lab/Chat']);
   });
 });
 

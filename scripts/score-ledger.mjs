@@ -261,11 +261,37 @@ export async function loadLedger(source) {
   }
 }
 
-/** Index a ledger's entries by component name. */
+/**
+ * A component's identity is its package AND its name: `Chat` exists in both
+ * `core` and `lab`, so a name-keyed ledger silently conflates two different
+ * components — and would ratchet one against the other.
+ */
+export const entryId = e => `${e.package || 'unknown'}/${e.component}`;
+
+/**
+ * Index a ledger by `package/Component`, with a secondary multimap by bare
+ * name for callers (analyze-pr.js, `--record <Component>`) that only have one.
+ * @returns {{byId: Map<string, object>, byName: Map<string, object[]>}}
+ */
 export function indexLedger(ledger) {
+  const byId = new Map();
   const byName = new Map();
-  for (const entry of ledger.components) byName.set(entry.component, entry);
-  return byName;
+  for (const entry of ledger.components) {
+    byId.set(entryId(entry), entry);
+    const list = byName.get(entry.component) || [];
+    list.push(entry);
+    byName.set(entry.component, list);
+  }
+  return {byId, byName};
+}
+
+/**
+ * Resolve a bare component name against the live roster. A name that exists in
+ * two packages resolves to two components — the caller must handle both, not
+ * pick one.
+ */
+export function resolveName(name, components = listComponents()) {
+  return components.filter(c => c.component === name);
 }
 
 /**
@@ -275,24 +301,28 @@ export function indexLedger(ledger) {
  * than silently dropped — that is how a rename or deletion shows up.
  */
 export function buildRoster(ledger, components = listComponents()) {
-  const byName = indexLedger(ledger);
+  const {byId} = indexLedger(ledger);
   const roster = components.map(c => ({
+    id: `${c.package}/${c.component}`,
     component: c.component,
     package: c.package,
     live: true,
-    entry: byName.get(c.component) || null,
+    entry: byId.get(`${c.package}/${c.component}`) || null,
   }));
-  const liveNames = new Set(components.map(c => c.component));
+  const liveIds = new Set(roster.map(r => r.id));
   for (const entry of ledger.components) {
-    if (liveNames.has(entry.component)) continue;
+    if (liveIds.has(entryId(entry))) continue;
     roster.push({
+      id: entryId(entry),
       component: entry.component,
       package: entry.package || 'unknown',
       live: false,
       entry,
     });
   }
-  return roster.sort((a, b) => a.component.localeCompare(b.component));
+  return roster.sort(
+    (a, b) => a.component.localeCompare(b.component) || a.package.localeCompare(b.package),
+  );
 }
 
 /** Normalize one section entry, filling the rubric weight and defaults. */
@@ -422,13 +452,45 @@ export function compareEntry(component, baseEntry, headEntry) {
   return result;
 }
 
-/** Run the ratchet over a set of components. */
-export function runRatchet(components, baseLedger, headLedger) {
-  const base = baseLedger ? indexLedger(baseLedger) : new Map();
+/**
+ * Run the ratchet over a set of components, given as bare names or as
+ * `{component, package}` pairs. A bare name that exists in two packages yields
+ * one result per package rather than an arbitrary pick.
+ */
+export function runRatchet(components, baseLedger, headLedger, roster = null) {
+  const base = baseLedger ? indexLedger(baseLedger) : {byId: new Map(), byName: new Map()};
   const head = indexLedger(headLedger);
-  const results = components.map(name =>
-    compareEntry(name, base.get(name) || null, head.get(name) || null),
-  );
+  const live = roster || listComponents();
+
+  const targets = [];
+  for (const item of components) {
+    if (typeof item === 'object') {
+      targets.push(item);
+      continue;
+    }
+    const matches = resolveName(item, live);
+    if (matches.length > 0) {
+      targets.push(...matches);
+      continue;
+    }
+    // Not a live component. It may still have a ledger row (a rename, say);
+    // otherwise check it as an unknown, which passes.
+    const rows = head.byName.get(item) || [];
+    if (rows.length > 0) targets.push(...rows.map(e => ({component: item, package: e.package})));
+    else targets.push({component: item, package: null});
+  }
+
+  const seen = new Set();
+  const results = [];
+  for (const t of targets) {
+    const id = `${t.package || 'unknown'}/${t.component}`;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    const label = resolveName(t.component, live).length > 1 ? id : t.component;
+    results.push(
+      compareEntry(label, base.byId.get(id) || null, head.byId.get(id) || null),
+    );
+  }
   return {results, failed: results.some(r => r.verdict === 'fail')};
 }
 
@@ -1012,8 +1074,16 @@ async function cmdCheck(args) {
     // request cannot change it. Mode R judges the diff, not the component, so
     // this branch reports and never fails — and it stays quiet about debt the
     // contributor inherited.
-    const index = indexLedger(ledger);
-    const standings = components.map(n => standingFor(n, index.get(n) || null));
+    const {byId} = indexLedger(ledger);
+    const live = listComponents();
+    const standings = components.flatMap(name => {
+      const matches = resolveName(name, live);
+      const targets = matches.length ? matches : [{component: name, package: null}];
+      return targets.map(t => {
+        const label = matches.length > 1 ? `${t.package}/${t.component}` : t.component;
+        return standingFor(label, byId.get(`${t.package}/${t.component}`) || null);
+      });
+    });
     const audited = standings.filter(s => s.status === 'audited');
     if (audited.length === 0) {
       console.log(
@@ -1179,7 +1249,15 @@ async function cmdRecord(args) {
     src === '-' ? fs.readFileSync(0, 'utf8') : fs.readFileSync(src, 'utf8'),
   );
 
-  const live = listComponents().find(c => c.component === component);
+  const matches = resolveName(component);
+  if (matches.length > 1 && !flagValue(args.package)) {
+    console.error(
+      `score-ledger --record: ${component} exists in ${matches.map(m => m.package).join(' and ')} — ` +
+        'pass --package to say which one.',
+    );
+    return 1;
+  }
+  const live = matches[0];
   if (!live) {
     console.log(
       `score-ledger: warning — ${component} is not a component directory in ` +
@@ -1187,11 +1265,15 @@ async function cmdRecord(args) {
     );
   }
 
-  const before = indexLedger(ledger).get(component) || null;
-  const after = applyScorecard(before, scorecard, {
-    component,
-    pkg: flagValue(args.package) || (live && live.package) || null,
-  });
+  const pkg = flagValue(args.package) || (live && live.package) || null;
+  if (!pkg) {
+    console.error(
+      `score-ledger --record: cannot resolve a package for ${component} — pass --package <core|lab>.`,
+    );
+    return 1;
+  }
+  const before = indexLedger(ledger).byId.get(`${pkg}/${component}`) || null;
+  const after = applyScorecard(before, scorecard, {component, pkg});
 
   // The wiki takes no pull request, so the ratchet has to bite here.
   const verdict = compareEntry(component, before, after);
@@ -1211,10 +1293,14 @@ async function cmdRecord(args) {
     };
   }
 
-  const idx = ledger.components.findIndex(e => e.component === component);
+  const idx = ledger.components.findIndex(e => entryId(e) === entryId(after));
   if (idx === -1) ledger.components.push(after);
   else ledger.components[idx] = after;
-  ledger.components.sort((a, b) => a.component.localeCompare(b.component));
+  ledger.components.sort(
+    (a, b) =>
+      a.component.localeCompare(b.component) ||
+      String(a.package).localeCompare(String(b.package)),
+  );
   ledger.updated = new Date().toISOString().slice(0, 10);
 
   fs.writeFileSync(ledgerPath, `${JSON.stringify(ledger, null, 2)}\n`);
@@ -1326,7 +1412,16 @@ async function cmdFileIssues(args) {
     console.error(`score-ledger: ${error}`);
     return 1;
   }
-  const entry = indexLedger(ledger).get(component);
+  const matches = resolveName(component);
+  const pkg = flagValue(args.package) || (matches.length === 1 ? matches[0].package : null);
+  if (!pkg) {
+    console.error(
+      `score-ledger --file-issues: pass --package for ${component} (it resolves to ` +
+        `${matches.length} components).`,
+    );
+    return 1;
+  }
+  const entry = indexLedger(ledger).byId.get(`${pkg}/${component}`);
   if (!isAudited(entry)) {
     console.error(`score-ledger: ${component} has no audited row — record it first.`);
     return 1;
