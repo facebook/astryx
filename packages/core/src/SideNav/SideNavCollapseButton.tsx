@@ -41,7 +41,10 @@ const styles = stylex.create({
     display: 'inline-flex',
     alignItems: 'center',
     transitionProperty: 'transform',
-    transitionDuration: durationVars['--duration-fast'],
+    transitionDuration: {
+      default: durationVars['--duration-fast'],
+      '@media (prefers-reduced-motion: reduce)': '0s',
+    },
     transitionTimingFunction: easeVars['--ease-standard'],
   },
   chevronCollapsed: {

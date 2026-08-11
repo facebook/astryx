@@ -20,6 +20,7 @@
 
 import {
   useCallback,
+  useEffect,
   useId,
   useMemo,
   useRef,
@@ -91,7 +92,10 @@ const styles = stylex.create({
     display: 'grid',
     gridTemplateRows: '1fr',
     transitionProperty: 'grid-template-rows',
-    transitionDuration: durationVars['--duration-medium'],
+    transitionDuration: {
+      default: durationVars['--duration-medium'],
+      '@media (prefers-reduced-motion: reduce)': '0s',
+    },
     transitionTimingFunction: easeVars['--ease-standard'],
   },
   childrenCollapsed: {
@@ -114,7 +118,10 @@ const styles = stylex.create({
     // target, not the glyph size, so keep the glyph on the inherited size.
     fontSize: 'inherit',
     transitionProperty: 'transform',
-    transitionDuration: durationVars['--duration-fast'],
+    transitionDuration: {
+      default: durationVars['--duration-fast'],
+      '@media (prefers-reduced-motion: reduce)': '0s',
+    },
     transitionTimingFunction: easeVars['--ease-standard'],
     flexShrink: 0,
   },
@@ -361,6 +368,7 @@ export function SideNavItem({
   'data-testid': testId,
   ref,
   xstyle,
+  ...rest
 }: SideNavItemProps) {
   const t = useTranslator();
   const {isCollapsed} = useSideNavCollapse();
@@ -376,7 +384,7 @@ export function SideNavItem({
     hasLightDismiss: true,
     hasAutoFocus: true,
     hasCloseButton: false,
-    dialogLabel: `${label} submenu`,
+    dialogLabel: t('@astryx.sideNavItem.submenuLabel', {label}),
   });
 
   // Collapse state for items with children
@@ -471,6 +479,11 @@ export function SideNavItem({
     schedulePopoverHide();
   }, [schedulePopoverHide]);
 
+  // The hover-intent timers above outlive the component if it unmounts while
+  // one is pending (a route change on click, or the sidenav expanding out of
+  // collapsed mode), which fires `popover.show()` on a dead tree.
+  useEffect(() => clearPopoverTimeouts, [clearPopoverTimeouts]);
+
   // In collapsed mode: hide items without icons
   if (isCollapsed && !icon) {
     return null;
@@ -492,6 +505,7 @@ export function SideNavItem({
       themeProps('side-nav-item', {
         size,
         selected: isSelected ? 'selected' : null,
+        disabled: isDisabled ? 'disabled' : null,
       }),
       stylex.props(
         navItemStyles.item,
@@ -511,6 +525,7 @@ export function SideNavItem({
           <button
             ref={mergeRefs(ref, popover.triggerRef)}
             type="button"
+            {...rest}
             onClick={popover.toggle}
             onMouseEnter={handlePopoverMouseEnter}
             onMouseLeave={handlePopoverMouseLeave}
@@ -552,6 +567,7 @@ export function SideNavItem({
         as={as}
         isDisabled={isDisabled}
         onClick={handleClick}
+        {...rest}
         {...collapsedAriaProps}
         {...collapsedItemStyles}>
         {collapsedIcon}
@@ -595,6 +611,7 @@ export function SideNavItem({
     themeProps('side-nav-item', {
       size,
       selected: isSelected ? 'selected' : null,
+      disabled: isDisabled ? 'disabled' : null,
     }),
     stylex.props(
       navItemStyles.item,
@@ -628,6 +645,7 @@ export function SideNavItem({
           as={as}
           isDisabled={isDisabled}
           onClick={handleClick}
+          {...rest}
           aria-current={isSelected ? ('page' as const) : undefined}
           {...stylex.props(styles.splitAction)}>
           {itemContent}
@@ -671,6 +689,7 @@ export function SideNavItem({
         as={as}
         isDisabled={isDisabled}
         onClick={handleClick}
+        {...rest}
         {...ariaProps}
         {...navItemStyleProps}>
         {itemContent}
