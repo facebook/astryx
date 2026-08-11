@@ -130,6 +130,81 @@ describe('CheckIndicator', () => {
   });
 });
 
+/**
+ * The busy idiom a host actually writes is `children={isBusy && <Spinner/>}`,
+ * which passes `false` when it is not busy. `false` is non-null and is not
+ * caught by `??`, so both a `!= null` guard and a `children ?? mark` fallback
+ * take the children path, render nothing in it, and delete the state mark
+ * (#4893). Every indicator gets the same case, because all three had the bug.
+ */
+describe('falsy children never suppress the state mark (#4893)', () => {
+  const cases = [
+    {
+      name: 'CheckIndicator',
+      render: (children: ReactNode) =>
+        render(<CheckIndicator state="checked">{children}</CheckIndicator>),
+      markSelector: '.astryx-icon',
+    },
+    {
+      name: 'CheckboxIndicator',
+      render: (children: ReactNode) =>
+        render(
+          <CheckboxIndicator state="checked">{children}</CheckboxIndicator>,
+        ),
+      markSelector: 'svg',
+    },
+    {
+      name: 'RadioIndicator',
+      render: (children: ReactNode) =>
+        render(<RadioIndicator state="checked">{children}</RadioIndicator>),
+      markSelector: '.astryx-radio-indicator-dot',
+    },
+  ] as const;
+
+  // Everything React renders as nothing. `0` is deliberately absent: it
+  // renders the visible text "0", so it IS content and must replace the mark.
+  const emptyValues = [
+    ['false — the `isBusy && …` idiom', false],
+    ['null', null],
+    ['undefined', undefined],
+    ['empty string', ''],
+  ] as const;
+
+  for (const {name, render: renderCase, markSelector} of cases) {
+    for (const [label, child] of emptyValues) {
+      it(`${name} keeps its mark when children is ${label}`, () => {
+        const {container} = renderCase(child);
+
+        expect(
+          container.querySelector(markSelector),
+          `${name} lost its mark to a falsy child`,
+        ).toBeInTheDocument();
+      });
+    }
+
+    it(`${name} still lets real children replace the mark`, () => {
+      // The negative control: without this, "always render the mark" would
+      // pass every case above and break the busy state instead.
+      const {container} = renderCase(<span data-testid="busy" />);
+
+      expect(
+        container.querySelector('[data-testid="busy"]'),
+      ).toBeInTheDocument();
+      expect(container.querySelector(markSelector)).not.toBeInTheDocument();
+    });
+  }
+
+  it('treats 0 as content, not as empty', () => {
+    // isRenderable's documented edge: 0 renders the character "0".
+    const {container} = render(
+      <CheckIndicator state="checked">{0}</CheckIndicator>,
+    );
+
+    expect(container.textContent).toBe('0');
+    expect(container.querySelector('.astryx-icon')).not.toBeInTheDocument();
+  });
+});
+
 describe('useIndicator', () => {
   it('returns the built-in indicator without a theme override', () => {
     const {result} = renderHook(() => useIndicator('checkbox'));

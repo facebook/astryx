@@ -16,7 +16,7 @@ import {
   easeVars,
   radiusVars,
 } from '../theme/tokens.stylex';
-import {mergeProps, themeProps} from '../utils';
+import {isRenderable, mergeProps, themeProps} from '../utils';
 import {indicatorScope} from './indicator.markers.stylex';
 import type {IndicatorProps} from './types';
 
@@ -181,19 +181,20 @@ export function RadioIndicator({
         style,
       )}
       {...rest}>
-      {children ??
-        (isChecked && (
-          <span
-            {...mergeProps(
-              themeProps(
-                'radio-indicator-dot',
-                {size},
-                {legacyNames: ['radio-dot']},
-              ),
-              stylex.props(styles.dot, dotSizeStyles[size]),
-            )}
-          />
-        ))}
+      {isRenderable(children)
+        ? children
+        : isChecked && (
+            <span
+              {...mergeProps(
+                themeProps(
+                  'radio-indicator-dot',
+                  {size},
+                  {legacyNames: ['radio-dot']},
+                ),
+                stylex.props(styles.dot, dotSizeStyles[size]),
+              )}
+            />
+          )}
     </span>
   );
 }

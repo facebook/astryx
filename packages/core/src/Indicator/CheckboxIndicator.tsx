@@ -16,7 +16,7 @@ import {
   easeVars,
   radiusVars,
 } from '../theme/tokens.stylex';
-import {mergeProps, themeProps} from '../utils';
+import {isRenderable, mergeProps, themeProps} from '../utils';
 import {indicatorScope} from './indicator.markers.stylex';
 import type {IndicatorProps} from './types';
 
@@ -217,7 +217,9 @@ export function CheckboxIndicator({
         style,
       )}
       {...rest}>
-      {children ?? (
+      {isRenderable(children) ? (
+        children
+      ) : (
         <>
           <svg
             viewBox="0 0 10 10"
