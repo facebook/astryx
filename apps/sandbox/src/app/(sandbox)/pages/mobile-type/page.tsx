@@ -19,7 +19,7 @@ import {Badge} from '@astryxdesign/core/Badge';
 import {Avatar} from '@astryxdesign/core/Avatar';
 import {TextInput} from '@astryxdesign/core/TextInput';
 import {Divider} from '@astryxdesign/core/Divider';
-import {Selector} from '@astryxdesign/core/Selector';
+import {Selector, SelectorOption} from '@astryxdesign/core/Selector';
 import {NumberInput} from '@astryxdesign/core/NumberInput';
 import {Switch} from '@astryxdesign/core/Switch';
 import {Tooltip} from '@astryxdesign/core/Tooltip';
@@ -56,6 +56,25 @@ const PIN_ANCHORS = [
   {value: '2', label: 'Heading 2'},
   {value: '1', label: 'Heading 3'},
 ];
+
+/**
+ * Recommended pin anchor for a given desktop ratio. Gentler scales can afford
+ * to pin high (the whole ladder is close together, so pinning Display 1 barely
+ * tames anything); more dramatic scales need a lower anchor so the display tier
+ * doesn't tower over 16px body text on a phone.
+ * - up to Major Third (≤ 1.25): pin Display 1
+ * - Perfect Fourth (1.333):     pin Heading 2
+ * - Aug Fourth → Golden (≥ 1.414): pin Heading 3
+ */
+function recommendedPinStep(ratio: number): number {
+  if (ratio <= 1.25) {
+    return 6; // Display 1
+  }
+  if (ratio < 1.414) {
+    return 2; // Heading 2 (Perfect Fourth range)
+  }
+  return 1; // Heading 3 (Aug Fourth and above)
+}
 
 const ROLES: ReadonlyArray<{name: string; step: number}> = [
   {name: 'display-1', step: 6},
@@ -399,6 +418,8 @@ export default function MobileTypePage() {
     [base, ratioNum, mode, adapt, pinStep],
   );
 
+  const recommendedStep = recommendedPinStep(ratioNum);
+
   const desktopSizes = useMemo(
     () => computeDesktopSizes(base, ratioNum),
     [base, ratioNum],
@@ -525,7 +546,33 @@ export default function MobileTypePage() {
                     options={PIN_ANCHORS}
                     value={String(pinStep)}
                     onChange={(v: string) => setPinStep(Number(v))}
+                    renderOption={option => (
+                      <SelectorOption
+                        label={option.label ?? option.value}
+                        endContent={
+                          option.value === String(recommendedStep) ? (
+                            <Badge variant="blue" label="Recommended" />
+                          ) : undefined
+                        }
+                      />
+                    )}
                   />
+                  {pinStep !== recommendedStep && (
+                    <HStack gap={1} vAlign="center">
+                      <Text type="supporting" color="secondary">
+                        Recommended for this scale:{' '}
+                        {PIN_ANCHORS.find(
+                          a => a.value === String(recommendedStep),
+                        )?.label ?? ''}
+                      </Text>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        label="Use"
+                        onClick={() => setPinStep(recommendedStep)}
+                      />
+                    </HStack>
+                  )}
                 </VStack>
               )}
 
