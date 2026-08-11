@@ -1,11 +1,11 @@
 ---
-'@astryxdesign/core': minor
+'@astryxdesign/core': patch
 ---
 
-[breaking] Consolidate general interactive focus outlines so every component shares one 2px accent ring at 2px offset.
+[fix] Consolidate general interactive focus outlines onto one definition — 2px `--color-accent` at 3px offset, matching Design Conventions.
 
-Removes `--button-focus-offset`. Button was the only component exposing its focus offset as a themeable var, and the only one offsetting by 3px rather than 2px — both look incidental rather than intended. A theme setting it should drop the override; buttons now match every other control.
+Most general controls had drifted to a 2px offset; Button, Calendar, Dialog and Pagination were the ones still on spec. Their value wins, so a focus ring on the drifted components (Link, TabList, Token, TreeList, SegmentedControl, TopNav items) now sits 1px further from its control.
 
-Destructive buttons keep their error-colored ring. Form and input focus treatments are unchanged.
+Destructive buttons keep their error-colored ring, and `--button-focus-offset` is unchanged. Form and input focus treatments are out of scope.
 
 @cixzhang

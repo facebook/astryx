@@ -56,6 +56,15 @@ import type {ButtonVariantMap} from './index';
  */
 const styles = stylex.create({
   base: {
+    // Kept as a public themeable var (documented in Button.doc.mjs) even though
+    // its default now matches the shared outline: removing it would break any
+    // theme setting it, for no gain. It overrides the shared offset, so a theme
+    // can still tune the ring distance on buttons specifically.
+    '--button-focus-offset': '3px',
+    outlineOffset: {
+      default: '0',
+      ':focus-visible': 'var(--button-focus-offset)',
+    },
     position: 'relative',
     display: 'inline-flex',
     alignItems: 'center',
@@ -220,9 +229,8 @@ const variants = stylex.create({
     backgroundColor: colorVars['--color-error'],
     color: colorVars['--color-on-error'],
     // The ring matches the variant it rings: an accent-colored outline on a
-    // red button reads as a different control's focus. Applied after the
-    // shared outline (which sets width/style/offset) so only the color
-    // differs from every other focus ring in the library.
+    // red button reads as another control's focus. Only the color differs —
+    // width, style and offset come from the shared outline.
     outlineColor: {default: null, ':focus-visible': colorVars['--color-error']},
     backgroundImage: {
       default: null,

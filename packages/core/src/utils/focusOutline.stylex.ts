@@ -23,7 +23,11 @@ import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
 
 const FOCUS_OUTLINE_WIDTH = '2px';
-const FOCUS_OUTLINE_OFFSET = '2px';
+// 3px, per Design Conventions §User Interaction States: "2px --color-accent
+// outline at 3px offset". Most components had drifted to 2px; Button, Calendar,
+// Dialog and Pagination were the ones matching the spec, so the consolidation
+// takes their value rather than the majority's.
+const FOCUS_OUTLINE_OFFSET = '3px';
 const FOCUS_OUTLINE_COLOR = colorVars['--color-accent'];
 
 /**
