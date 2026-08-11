@@ -11,7 +11,7 @@
 
 import React from 'react';
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen, act, fireEvent} from '@testing-library/react';
+import {render, screen, act, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {useRef, useState, type ReactNode} from 'react';
 import {SideNav} from './SideNav';
@@ -1537,7 +1537,8 @@ describe('SideNav focus management', () => {
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
 
     await user.keyboard('{Escape}');
-    expect(trigger).toHaveFocus();
+    // The layer restores focus asynchronously after it closes.
+    await waitFor(() => expect(trigger).toHaveFocus());
   });
 });
 
