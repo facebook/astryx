@@ -113,7 +113,6 @@ describe('theme build emits a live TextInput selector (#4109)', () => {
         `    'side-nav-item': { base: { borderRadius: '12px' } },\n` +
         `    'chat-composer': { base: { padding: '10px' } },\n` +
         `    'chat-message-bubble': { 'variant:ghost': { borderRadius: '18px' } },\n` +
-        `    'focus-outline': { base: { outlineOffset: '4px' } },\n` +
         `  },\n` +
         `};\n`,
     );
@@ -126,7 +125,6 @@ describe('theme build emits a live TextInput selector (#4109)', () => {
     expect(css).toContain('.astryx-side-nav-item');
     expect(css).toContain('.astryx-chat-composer');
     expect(css).toContain('.astryx-chat-message-bubble.ghost');
-    expect(css).toContain('.astryx-focus-outline');
   });
 
   it('emits .astryx-text-input (the rendered class), not the dead .astryx-textinput', async () => {

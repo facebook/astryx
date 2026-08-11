@@ -64,16 +64,6 @@ export const docs = {
     ],
   },
 
-  theming: {
-    targets: [
-      {
-        className: 'astryx-focus-outline',
-        description:
-          'Global focus-ring target applied to general interactive controls. Use this to theme the shared keyboard focus outline; form/input focus treatments remain component-specific.',
-        states: [':focus-visible', ':has(:focus-visible)'],
-      },
-    ],
-  },
   props: [
     {
       name: 'theme',

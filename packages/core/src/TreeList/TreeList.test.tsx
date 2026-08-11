@@ -299,16 +299,16 @@ describe('TreeList', () => {
     expect(root).toHaveFocus();
 
     expect(
-      getComputedStyle(root).getPropertyValue('--_tree-focus-outline'),
+      getComputedStyle(root).getPropertyValue('--_focus-outline'),
     ).toContain('solid');
     // Mid and Leaf are DOM descendants of Root's <li> (nested <ul role="group">
     // subtrees) — their own outline var must stay unset, not inherit Root's.
-    expect(
-      getComputedStyle(mid).getPropertyValue('--_tree-focus-outline'),
-    ).toBe('none');
-    expect(
-      getComputedStyle(leaf).getPropertyValue('--_tree-focus-outline'),
-    ).toBe('none');
+    expect(getComputedStyle(mid).getPropertyValue('--_focus-outline')).toBe(
+      'none',
+    );
+    expect(getComputedStyle(leaf).getPropertyValue('--_focus-outline')).toBe(
+      'none',
+    );
   });
 
   // ===========================================================================
