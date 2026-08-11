@@ -597,135 +597,139 @@ export default function MobileTypePage() {
         content={
           <LayoutContent padding={0}>
             <div {...stylex.props(styles.previewPane)}>
-              <VStack gap={5}>
-                {/* Device columns */}
-                <Grid columns={2} gap={4}>
-                  {/* Desktop card */}
-                  <Card>
-                    <VStack gap={3}>
-                      <Text type="label" weight="semibold">
-                        Desktop
-                      </Text>
-                      <VStack gap={0.5}>
-                        {ROLES.map(role => {
-                          const px = desktopSizes[role.name];
-                          return (
-                            <div
-                              key={role.name}
-                              {...stylex.props(styles.roleRow)}>
-                              <span {...stylex.props(styles.roleLabel)}>
-                                {readableName(role.name)}
-                              </span>
-                              <span {...stylex.props(styles.pxCell)}>{px}</span>
+              <div {...stylex.props(styles.previewInner)}>
+                <VStack gap={5}>
+                  {/* Device columns */}
+                  <Grid columns={2} gap={4}>
+                    {/* Desktop card */}
+                    <Card>
+                      <VStack gap={3}>
+                        <Text type="label" weight="semibold">
+                          Desktop
+                        </Text>
+                        <VStack gap={0.5}>
+                          {ROLES.map(role => {
+                            const px = desktopSizes[role.name];
+                            return (
                               <div
-                                {...stylex.props(styles.sampleText)}
-                                style={{
-                                  fontSize: px,
-                                  fontWeight: roleWeight(role.name),
-                                  fontFamily:
-                                    role.name === 'code'
-                                      ? 'monospace'
-                                      : undefined,
-                                }}>
-                                {getSampleText(role.name)}
+                                key={role.name}
+                                {...stylex.props(styles.roleRow)}>
+                                <span {...stylex.props(styles.roleLabel)}>
+                                  {readableName(role.name)}
+                                </span>
+                                <span {...stylex.props(styles.pxCell)}>
+                                  {px}
+                                </span>
+                                <div
+                                  {...stylex.props(styles.sampleText)}
+                                  style={{
+                                    fontSize: px,
+                                    fontWeight: roleWeight(role.name),
+                                    fontFamily:
+                                      role.name === 'code'
+                                        ? 'monospace'
+                                        : undefined,
+                                  }}>
+                                  {getSampleText(role.name)}
+                                </div>
                               </div>
-                            </div>
-                          );
-                        })}
+                            );
+                          })}
+                        </VStack>
                       </VStack>
-                    </VStack>
-                  </Card>
+                    </Card>
 
-                  {/* Mobile card */}
-                  <Card>
-                    <VStack gap={3}>
-                      <VStack gap={0.5}>
-                        <HStack gap={2} vAlign="center" justify="between">
-                          <HStack gap={2} vAlign="center">
-                            <Text type="label" weight="semibold">
-                              Mobile
-                            </Text>
-                            <Text type="supporting" color="secondary">
-                              {formula.floor}
-                            </Text>
+                    {/* Mobile card */}
+                    <Card>
+                      <VStack gap={3}>
+                        <VStack gap={0.5}>
+                          <HStack gap={2} vAlign="center" justify="between">
+                            <HStack gap={2} vAlign="center">
+                              <Text type="label" weight="semibold">
+                                Mobile
+                              </Text>
+                              <Text type="supporting" color="secondary">
+                                {formula.floor}
+                              </Text>
+                            </HStack>
+                            <span {...stylex.props(styles.formulaInline)}>
+                              {formula.formula}
+                            </span>
                           </HStack>
-                          <span {...stylex.props(styles.formulaInline)}>
-                            {formula.formula}
-                          </span>
-                        </HStack>
-                      </VStack>
-                      <VStack gap={0.5}>
-                        {ROLES.map(role => {
-                          const mPx = mobileSizes[role.name];
-                          const dPx = desktopSizes[role.name];
-                          const delta = mPx - dPx;
-                          const changed = delta !== 0;
-                          return (
-                            <div
-                              key={role.name}
-                              {...stylex.props(styles.roleRow)}>
-                              <span {...stylex.props(styles.roleLabel)}>
-                                {readableName(role.name)}
-                              </span>
-                              <span {...stylex.props(styles.pxCell)}>
-                                {mPx}
-                                {changed && (
-                                  <span {...stylex.props(styles.delta)}>
-                                    {delta > 0
-                                      ? ` +${delta}`
-                                      : ` −${Math.abs(delta)}`}
-                                  </span>
-                                )}
-                              </span>
+                        </VStack>
+                        <VStack gap={0.5}>
+                          {ROLES.map(role => {
+                            const mPx = mobileSizes[role.name];
+                            const dPx = desktopSizes[role.name];
+                            const delta = mPx - dPx;
+                            const changed = delta !== 0;
+                            return (
                               <div
-                                {...stylex.props(styles.sampleText)}
-                                style={{
-                                  fontSize: mPx,
-                                  fontWeight: roleWeight(role.name),
-                                  fontFamily:
-                                    role.name === 'code'
-                                      ? 'monospace'
-                                      : undefined,
-                                }}>
-                                {getSampleText(role.name)}
+                                key={role.name}
+                                {...stylex.props(styles.roleRow)}>
+                                <span {...stylex.props(styles.roleLabel)}>
+                                  {readableName(role.name)}
+                                </span>
+                                <span {...stylex.props(styles.pxCell)}>
+                                  {mPx}
+                                  {changed && (
+                                    <span {...stylex.props(styles.delta)}>
+                                      {delta > 0
+                                        ? ` +${delta}`
+                                        : ` −${Math.abs(delta)}`}
+                                    </span>
+                                  )}
+                                </span>
+                                <div
+                                  {...stylex.props(styles.sampleText)}
+                                  style={{
+                                    fontSize: mPx,
+                                    fontWeight: roleWeight(role.name),
+                                    fontFamily:
+                                      role.name === 'code'
+                                        ? 'monospace'
+                                        : undefined,
+                                  }}>
+                                  {getSampleText(role.name)}
+                                </div>
                               </div>
-                            </div>
-                          );
-                        })}
+                            );
+                          })}
+                        </VStack>
                       </VStack>
-                    </VStack>
-                  </Card>
-                </Grid>
+                    </Card>
+                  </Grid>
 
-                {/* Real content — real components at the two scales */}
-                <VStack gap={2}>
-                  <Text type="label" color="secondary">
-                    Real components
-                  </Text>
-                  <div {...stylex.props(styles.realGrid)}>
-                    {/* Desktop — components at the desktop scale */}
-                    <VStack gap={2}>
-                      <Text type="label" weight="semibold">
-                        Desktop
-                      </Text>
-                      <div style={semanticVars(desktopSizes)}>
-                        <ProductCard />
-                      </div>
-                    </VStack>
+                  {/* Real content — real components at the two scales */}
+                  <VStack gap={2}>
+                    <Text type="label" color="secondary">
+                      Real components
+                    </Text>
+                    <div {...stylex.props(styles.realGrid)}>
+                      {/* Desktop — components at the desktop scale */}
+                      <VStack gap={2}>
+                        <Text type="label" weight="semibold">
+                          Desktop
+                        </Text>
+                        <div style={semanticVars(desktopSizes)}>
+                          <ProductCard />
+                        </div>
+                      </VStack>
 
-                    {/* Mobile — same components inside a phone frame at the
+                      {/* Mobile — same components inside a phone frame at the
                       adapted scale */}
-                    <VStack gap={2} hAlign="center">
-                      <Text type="label" weight="semibold">
-                        Mobile
-                      </Text>
-                      <PhoneFrame style={semanticVars(mobileSizes)}>
-                        <ProductCard />
-                      </PhoneFrame>
-                    </VStack>
-                  </div>
+                      <VStack gap={2} hAlign="center">
+                        <Text type="label" weight="semibold">
+                          Mobile
+                        </Text>
+                        <PhoneFrame style={semanticVars(mobileSizes)}>
+                          <ProductCard />
+                        </PhoneFrame>
+                      </VStack>
+                    </div>
+                  </VStack>
                 </VStack>
-              </VStack>
+              </div>
             </div>
           </LayoutContent>
         }
@@ -748,7 +752,13 @@ const styles = stylex.create({
   previewPane: {
     padding: 'var(--spacing-6)',
     backgroundColor: 'var(--color-background-muted)',
-    minHeight: '100%',
+    height: '100%',
+    overflowY: 'auto',
+  },
+  previewInner: {
+    width: '100%',
+    maxWidth: 1100,
+    marginInline: 'auto',
   },
   roleRow: {
     display: 'grid',
