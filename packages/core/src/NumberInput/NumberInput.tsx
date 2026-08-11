@@ -30,6 +30,7 @@ import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
   sizeVars,
+  spacingVars,
   radiusVars,
   typographyVars,
   typeScaleVars,
@@ -57,6 +58,9 @@ const styles = stylex.create({
   wrapper: {
     zIndex: 1,
   },
+  wrapperWithNumberSteppers: {
+    paddingInlineEnd: 0,
+  },
   clearButton: {
     display: 'flex',
     alignItems: 'center',
@@ -81,18 +85,6 @@ const styles = stylex.create({
     borderWidth: 0,
     borderStyle: 'none',
     padding: 0,
-    // Hide the browser's native number spinners; the component provides its own
-    // affordances (keyboard entry, optional clear button) and the spinners
-    // clash with the input's visual treatment and sizing.
-    MozAppearance: 'textfield',
-    '::-webkit-inner-spin-button': {
-      WebkitAppearance: 'none',
-      margin: 0,
-    },
-    '::-webkit-outer-spin-button': {
-      WebkitAppearance: 'none',
-      margin: 0,
-    },
     fontFamily: typographyVars['--font-family-body'],
     fontSize: {
       default: typeScaleVars['--text-body-size'],
@@ -118,6 +110,56 @@ const styles = stylex.create({
     lineHeight: typeScaleVars['--text-body-leading'],
     color: colorVars['--color-text-secondary'],
     flexShrink: 0,
+  },
+  numberSteppers: {
+    alignSelf: 'stretch',
+    display: 'flex',
+    flexDirection: 'column',
+    flexShrink: 0,
+    width: spacingVars['--spacing-4'],
+    marginBlock: `calc(-1 * ${spacingVars['--spacing-1']})`,
+    borderInlineStartWidth: borderVars['--border-width'],
+    borderInlineStartStyle: 'solid',
+    borderInlineStartColor: colorVars['--color-border-emphasized'],
+    overflow: 'hidden',
+    borderStartEndRadius: radiusVars['--radius-element'],
+    borderEndEndRadius: radiusVars['--radius-element'],
+  },
+  numberStepperButton: {
+    boxSizing: 'border-box',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+    minHeight: 0,
+    padding: 0,
+    margin: 0,
+    borderWidth: 0,
+    borderStyle: 'none',
+    color: colorVars['--color-icon-secondary'],
+    backgroundColor: colorVars['--color-background-surface'],
+    backgroundImage: {
+      default: null,
+      ':hover': {
+        '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
+      },
+      ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
+    },
+    cursor: 'pointer',
+    outline: 'none',
+  },
+  numberStepperButtonDisabled: {
+    color: colorVars['--color-icon-disabled'],
+    cursor: 'not-allowed',
+    backgroundImage: 'none',
+  },
+  decrementButton: {
+    borderBlockStartWidth: borderVars['--border-width'],
+    borderBlockStartStyle: 'solid',
+    borderBlockStartColor: colorVars['--color-border-emphasized'],
+  },
+  incrementIcon: {
+    transform: 'rotate(180deg)',
   },
 });
 
@@ -283,6 +325,21 @@ interface NumberInputPropsBase extends Omit<
    */
   step?: number | null;
   /**
+   * Formats the committed value while the input is not being edited.
+   * The raw numeric value is shown on focus so it remains editable.
+   */
+  formatValue?: (value: number) => string;
+  /**
+   * Whether scrolling the wheel over a focused input steps the value.
+   * @default true
+   */
+  isWheelEnabled?: boolean;
+  /**
+   * Whether to show increment and decrement buttons at the end of the input.
+   * @default false
+   */
+  hasNumberSteppers?: boolean;
+  /**
    * Units text to display at the end of the input (e.g., "%" or "GB").
    */
   units?: string | null;
@@ -373,6 +430,88 @@ function parseNumberInput(
   return num;
 }
 
+type StepDirection = -1 | 1;
+
+function getDecimalPlaces(value: number): number {
+  const [coefficient, exponentText] = String(value).toLowerCase().split('e');
+  const fractionLength = coefficient.split('.')[1]?.length ?? 0;
+  const exponent = exponentText == null ? 0 : Number(exponentText);
+  return Math.max(0, fractionLength - exponent);
+}
+
+function getEffectiveStep(
+  step: number | null | undefined,
+  isIntegerOnly: boolean,
+): number {
+  if (
+    step == null ||
+    !Number.isFinite(step) ||
+    step <= 0 ||
+    (isIntegerOnly && !Number.isInteger(step))
+  ) {
+    return 1;
+  }
+  return step;
+}
+
+function getSteppedValue({
+  currentValue,
+  direction,
+  min,
+  max,
+  step,
+  isIntegerOnly,
+}: {
+  currentValue: number | null;
+  direction: StepDirection;
+  min?: number | null;
+  max?: number | null;
+  step?: number | null;
+  isIntegerOnly: boolean;
+}): number | null {
+  const effectiveStep = getEffectiveStep(step, isIntegerOnly);
+  const stepBase =
+    min != null && (!isIntegerOnly || Number.isInteger(min)) ? min : 0;
+
+  let nextValue: number;
+  if (currentValue == null) {
+    nextValue = direction === 1 ? (min ?? 0) : (max ?? 0);
+    if (isIntegerOnly) {
+      nextValue =
+        direction === 1 ? Math.ceil(nextValue) : Math.floor(nextValue);
+    }
+  } else {
+    const stepPosition = (currentValue - stepBase) / effectiveStep;
+    const tolerance = Number.EPSILON * Math.max(1, Math.abs(stepPosition)) * 4;
+    const nextStepPosition =
+      direction === 1
+        ? Math.floor(stepPosition + tolerance) + 1
+        : Math.ceil(stepPosition - tolerance) - 1;
+    nextValue = stepBase + nextStepPosition * effectiveStep;
+  }
+
+  if (min != null) {
+    nextValue = Math.max(min, nextValue);
+  }
+  if (max != null) {
+    nextValue = Math.min(max, nextValue);
+  }
+
+  if (!Number.isFinite(nextValue)) {
+    return currentValue;
+  }
+
+  const precision = Math.min(
+    12,
+    Math.max(getDecimalPlaces(effectiveStep), getDecimalPlaces(stepBase)),
+  );
+  const roundedValue = Number(nextValue.toFixed(precision));
+  if (isIntegerOnly && !Number.isInteger(roundedValue)) {
+    return currentValue;
+  }
+  return Object.is(roundedValue, -0) ? 0 : roundedValue;
+}
+
 /**
  * A number input component for collecting numeric user input.
  * Only calls onChange when the entered value passes validation.
@@ -406,6 +545,9 @@ export function NumberInput({
   min,
   max,
   step,
+  formatValue,
+  isWheelEnabled = true,
+  hasNumberSteppers = false,
   units,
   isIntegerOnly = false,
   onFocus,
@@ -433,6 +575,7 @@ export function NumberInput({
 
   // Pending input while user is typing (null = show formatted value)
   const [pendingInput, setPendingInput] = useState<string | null>(null);
+  const [isFocused, setIsFocused] = useState(false);
 
   // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
   // tooltip listeners attach to the input container (which already exists) and
@@ -473,8 +616,15 @@ export function NumberInput({
     inputGroup,
   );
 
-  // Display value: pending input if typing, otherwise the raw value
-  // Note: With type="number", we can't use formatted display values
+  const formattedValue = useMemo(() => {
+    if (value == null) {
+      return '';
+    }
+    return formatValue?.(value) ?? String(value);
+  }, [formatValue, value]);
+
+  // Preserve pending text while editing. Otherwise show the formatted value
+  // at rest and the raw numeric value while focused so it remains editable.
   const displayValue = useMemo(() => {
     if (pendingInput !== null) {
       return pendingInput;
@@ -482,8 +632,8 @@ export function NumberInput({
     if (value == null) {
       return '';
     }
-    return String(value);
-  }, [pendingInput, value]);
+    return isFocused ? String(value) : formattedValue;
+  }, [formattedValue, isFocused, pendingInput, value]);
 
   // Check if current pending input is valid (for styling purposes)
   const isInputValid = useMemo(() => {
@@ -517,6 +667,7 @@ export function NumberInput({
   // Handle focus
   const handleFocus = useCallback(
     (e: FocusEvent<HTMLInputElement>) => {
+      setIsFocused(true);
       onFocus?.(e);
     },
     [onFocus],
@@ -546,14 +697,67 @@ export function NumberInput({
 
       // Clear pending input - display will revert to formatted value
       setPendingInput(null);
+      setIsFocused(false);
       onBlur?.(e);
     },
     [pendingInput, value, onChange, min, max, isIntegerOnly, onBlur, hasClear],
   );
 
+  const valueForStepping = useMemo(() => {
+    if (pendingInput === null) {
+      return value ?? null;
+    }
+    if (pendingInput.trim() === '') {
+      return null;
+    }
+    return (
+      parseNumberInput(pendingInput, {min, max, isIntegerOnly}) ?? value ?? null
+    );
+  }, [isIntegerOnly, max, min, pendingInput, value]);
+
+  const getNextValue = useCallback(
+    (direction: StepDirection) =>
+      getSteppedValue({
+        currentValue: valueForStepping,
+        direction,
+        min,
+        max,
+        step,
+        isIntegerOnly,
+      }),
+    [isIntegerOnly, max, min, step, valueForStepping],
+  );
+
+  const stepValue = useCallback(
+    (direction: StepDirection) => {
+      if (isDisabled) {
+        return;
+      }
+      const nextValue = getNextValue(direction);
+      if (nextValue == null) {
+        return;
+      }
+      setPendingInput(null);
+      if (nextValue !== value) {
+        onChange(nextValue);
+      }
+    },
+    [getNextValue, isDisabled, onChange, value],
+  );
+
   // Handle keyboard events
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLInputElement>) => {
+      const hasModifier = e.altKey || e.ctrlKey || e.metaKey || e.shiftKey;
+      if (!hasModifier && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+        onKeyDown?.(e);
+        if (e.defaultPrevented) {
+          return;
+        }
+        e.preventDefault();
+        stepValue(e.key === 'ArrowUp' ? 1 : -1);
+        return;
+      }
       if (e.key === 'Enter') {
         // Validate and commit on Enter
         if (pendingInput !== null) {
@@ -588,18 +792,49 @@ export function NumberInput({
       onEnter,
       onKeyDown,
       hasClear,
+      stepValue,
     ],
   );
 
-  // While focused, a wheel gesture steps the value — keep that gesture from
-  // also bubbling up and scrolling an ancestor container (page, Dialog,
-  // ScrollArea). When the input isn't focused the wheel isn't stepping the
-  // value, so normal scrolling is left alone.
-  const handleWheel = useCallback((e: React.WheelEvent<HTMLInputElement>) => {
-    if (document.activeElement === e.currentTarget) {
-      e.stopPropagation();
-    }
-  }, []);
+  // React's delegated wheel listener can be passive, so use a native,
+  // explicitly non-passive listener to prevent page scrolling only when this
+  // focused input is intentionally consuming the gesture to step its value.
+  const wheelListenerRef = useCallback(
+    (input: HTMLInputElement | null) => {
+      if (input == null || !isWheelEnabled) {
+        return;
+      }
+
+      const handleWheel = (event: WheelEvent) => {
+        if (
+          document.activeElement !== input ||
+          isDisabled ||
+          event.deltaY === 0 ||
+          event.altKey ||
+          event.ctrlKey ||
+          event.metaKey ||
+          event.shiftKey
+        ) {
+          return;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+        stepValue(event.deltaY < 0 ? 1 : -1);
+      };
+
+      input.addEventListener('wheel', handleWheel, {passive: false});
+      return () => input.removeEventListener('wheel', handleWheel);
+    },
+    [isDisabled, isWheelEnabled, stepValue],
+  );
+
+  const mergedInputRef = useMemo(
+    () => mergeRefs(ref, inputRef, wheelListenerRef),
+    [ref, wheelListenerRef],
+  );
+
+  const canIncrement = getNextValue(1) !== valueForStepping;
+  const canDecrement = getNextValue(-1) !== valueForStepping;
 
   // Handle clear button click
   const handleClear = useCallback(() => {
@@ -638,6 +873,7 @@ export function NumberInput({
         stylex.props(
           inputWrapperStyles.base,
           styles.wrapper,
+          hasNumberSteppers && styles.wrapperWithNumberSteppers,
           sizeStyles[size],
           isDisabled && inputWrapperStyles.disabled,
           status && inputStatusBorderStyles[status.type],
@@ -653,17 +889,18 @@ export function NumberInput({
       {inputGroup && <VisuallyHidden id={inputLabelID}>{label}</VisuallyHidden>}
       <input
         {...rest}
-        ref={mergeRefs(ref, inputRef)}
+        ref={mergedInputRef}
         id={id}
-        name={isDisabled ? undefined : htmlName}
-        type="number"
+        name={isDisabled || formatValue ? undefined : htmlName}
+        type="text"
+        inputMode={isIntegerOnly ? 'numeric' : 'decimal'}
+        role="spinbutton"
         autoComplete={autoComplete}
         value={displayValue}
         onChange={handleInputChange}
         onFocus={handleFocus}
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
-        onWheel={handleWheel}
         placeholder={placeholder}
         // With a disabledMessage the input keeps focusability via aria-disabled
         // so the reason is focus-discoverable; readOnly + the handler guards
@@ -673,9 +910,12 @@ export function NumberInput({
         readOnly={showsDisabledMessage || undefined}
         autoFocus={hasAutoFocus}
         data-autofocus={hasAutoFocus || undefined}
-        min={min ?? undefined}
-        max={max ?? undefined}
-        step={step ?? undefined}
+        aria-valuemin={min ?? undefined}
+        aria-valuemax={max ?? undefined}
+        aria-valuenow={value ?? undefined}
+        aria-valuetext={
+          value == null || !formatValue ? undefined : formattedValue
+        }
         aria-describedby={ariaDescribedBy}
         aria-required={isRequired === true ? 'true' : undefined}
         aria-invalid={
@@ -688,6 +928,13 @@ export function NumberInput({
           !isInputValid && styles.inputInvalid,
         )}
       />
+      {formatValue && htmlName && !isDisabled && (
+        <input
+          type="hidden"
+          name={htmlName}
+          value={value == null ? '' : String(value)}
+        />
+      )}
       {units && (
         <span id={unitsID} {...stylex.props(styles.units)}>
           {units}
@@ -711,6 +958,50 @@ export function NumberInput({
         </button>
       )}
       {statusIcon}
+      {hasNumberSteppers && (
+        <div {...stylex.props(styles.numberSteppers)}>
+          <button
+            type="button"
+            tabIndex={-1}
+            disabled={isDisabled || !canIncrement}
+            aria-label={t('@astryx.numberInput.incrementLabel', {label})}
+            onPointerDown={event => event.preventDefault()}
+            onClick={() => {
+              inputRef.current?.focus();
+              stepValue(1);
+            }}
+            {...stylex.props(
+              styles.numberStepperButton,
+              (isDisabled || !canIncrement) &&
+                styles.numberStepperButtonDisabled,
+            )}>
+            <Icon
+              icon="chevronDown"
+              size="xsm"
+              color="inherit"
+              xstyle={styles.incrementIcon}
+            />
+          </button>
+          <button
+            type="button"
+            tabIndex={-1}
+            disabled={isDisabled || !canDecrement}
+            aria-label={t('@astryx.numberInput.decrementLabel', {label})}
+            onPointerDown={event => event.preventDefault()}
+            onClick={() => {
+              inputRef.current?.focus();
+              stepValue(-1);
+            }}
+            {...stylex.props(
+              styles.numberStepperButton,
+              styles.decrementButton,
+              (isDisabled || !canDecrement) &&
+                styles.numberStepperButtonDisabled,
+            )}>
+            <Icon icon="chevronDown" size="xsm" color="inherit" />
+          </button>
+        </div>
+      )}
     </div>
   );
 
