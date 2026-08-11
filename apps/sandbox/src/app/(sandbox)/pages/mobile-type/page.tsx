@@ -49,6 +49,8 @@ const RATIO_OPTIONS = [
 type Mode = 'lift' | 'pin' | 'custom';
 
 const PIN_ANCHORS = [
+  {value: '6', label: 'Display 1'},
+  {value: '5', label: 'Display 2'},
   {value: '4', label: 'Display 3'},
   {value: '3', label: 'Heading 1'},
   {value: '2', label: 'Heading 2'},
@@ -639,7 +641,7 @@ export default function MobileTypePage() {
                     <VStack gap={3}>
                       <VStack gap={0.5}>
                         <HStack gap={2} vAlign="center" justify="between">
-                          <HStack gap={2} vAlign="baseline">
+                          <HStack gap={2} vAlign="center">
                             <Text type="label" weight="semibold">
                               Mobile
                             </Text>
