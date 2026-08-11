@@ -127,16 +127,35 @@ export const docs = {
   theming: {
     targets: [
       {
+        className: 'astryx-checkbox-indicator',
+        visualProps: ['size'],
+        states: ['checked', 'disabled'],
+      },
+      {
+        className: 'astryx-radio-indicator',
+        visualProps: ['size'],
+        states: ['checked', 'disabled'],
+      },
+      {className: 'astryx-radio-indicator-dot', visualProps: ['size']},
+      // Still emitted beside the names above, so themes written against them
+      // keep working. Drop in the next major.
+      {
         className: 'astryx-checkbox',
         visualProps: ['size'],
         states: ['checked', 'disabled'],
+        deprecatedFor: 'checkbox-indicator',
       },
       {
         className: 'astryx-radio',
         visualProps: ['size'],
         states: ['checked', 'disabled'],
+        deprecatedFor: 'radio-indicator',
       },
-      {className: 'astryx-radio-dot', visualProps: ['size']},
+      {
+        className: 'astryx-radio-dot',
+        visualProps: ['size'],
+        deprecatedFor: 'radio-indicator-dot',
+      },
     ],
   },
   examples: [
@@ -148,16 +167,16 @@ export const docs = {
 defineTheme({
   name: 'brand',
   components: {
-    checkbox: {
+    'checkbox-indicator': {
       base: {borderRadius: 'var(--radius-full)', borderWidth: '2px'},
       checked: {
-        backgroundColor: 'var(--color-positive)',
-        borderColor: 'var(--color-positive)',
+        backgroundColor: 'var(--color-accent)',
+        borderColor: 'var(--color-accent)',
       },
-      'checked+disabled': {backgroundColor: 'var(--color-muted)'},
+      'checked+disabled': {backgroundColor: 'var(--color-background-muted)'},
     },
-    radio: {base: {borderWidth: '2px'}},
-    'radio-dot': {base: {borderRadius: '2px'}},
+    'radio-indicator': {base: {borderWidth: '2px'}},
+    'radio-indicator-dot': {base: {borderRadius: '2px'}},
   },
 });`,
     },

@@ -24,7 +24,10 @@ import type {BaseProps} from '../BaseProps';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
 import {RadioListContext} from './RadioList';
 import {mergeProps} from '../utils';
-import {indicatorScope} from '../Indicator/indicator.markers.stylex';
+import {
+  indicatorOwnerFocusRing,
+  indicatorScope,
+} from '../Indicator/indicator.markers.stylex';
 import {useIndicator} from '../Indicator';
 import {Item} from '../Item';
 import {themeProps} from '../utils/themeProps';
@@ -53,6 +56,11 @@ const styles = stylex.create({
   },
   inputDisabled: {
     cursor: 'not-allowed',
+  },
+  // The ring traces the built-in radio's circle. A themed replacement of
+  // another shape still gets a visible ring, just this shape.
+  ringRadiusCircle: {
+    borderRadius: '50%',
   },
   labelDisabled: {
     color: colorVars['--color-text-disabled'],
@@ -157,7 +165,15 @@ export function RadioListItem({
   const RadioControl = useIndicator('radio');
 
   const radioCircle = (
-    <div {...stylex.props(styles.radioWrapper, wrapperSizeStyles[size])}>
+    <div
+      {...stylex.props(
+        styles.radioWrapper,
+        wrapperSizeStyles[size],
+        // See CheckboxInput: the owner draws the ring so a themed indicator
+        // cannot drop it. Default shape is the built-in radio's circle.
+        !isDisabled && indicatorOwnerFocusRing,
+        !isDisabled && styles.ringRadiusCircle,
+      )}>
       <input
         id={id}
         type="radio"

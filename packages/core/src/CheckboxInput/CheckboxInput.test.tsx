@@ -13,6 +13,8 @@ import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {CheckboxInput} from './CheckboxInput';
+import {Theme} from '../theme/Theme';
+import {defineTheme} from '../theme/defineTheme';
 import {getForcedColorsRules} from '../__tests__/forcedColors';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 
@@ -601,52 +603,68 @@ describe('forced colors (WCAG 1.4.11)', () => {
 });
 
 // The checkbox visual is a themeable indicator, and the native input inside
-// the control is `opacity: 0` — so whoever draws the focus ring has to be the
-// visible box, or the control has no visible focus at all (WCAG 2.4.7).
+// the control is `opacity: 0`. So if the focus ring were the indicator's job,
+// a theme could ship a control with NO visible focus simply by not drawing one
+// — which is what happened: a replacement destructuring {state, size,
+// isDisabled} drops everything else, including any style passed down.
 //
-// The indicator draws it, because only the indicator knows its own shape: the
-// ring on a square checkbox and the ring on a round radio are different
-// outlines, and a host drawing the ring would have to hardcode a guess about
-// the indicator it hosts (RadioListItem used to hardcode `border-radius: 50%`
-// for exactly this reason).
-//
-// Focus reaches it the same way hover does — the owner's `indicatorScope`
-// marker — because the input is a visually hidden SIBLING of the indicator,
-// not a descendant. That makes drawing the ring part of the replacement
-// contract, stated as a rule in Indicator.doc.mjs.
+// The ring therefore lives on the owner, where a replacement cannot reach it,
+// and the one thing the owner cannot know — the indicator's shape — is handed
+// back through a CSS variable that defaults to the built-in's shape. The
+// failure mode is a correctly-visible ring of the wrong shape, never a missing
+// one.
 describe('focus ring ownership (WCAG 2.4.7)', () => {
-  it('draws the ring on the indicator, keyed off the owner scope', () => {
+  /** What a theme author plausibly writes: state in, picture out. */
+  const BareIndicator = ({state}: {state: string}) => (
+    <span aria-hidden="true" data-testid="bare-indicator">
+      {state === 'checked' ? 'x' : ''}
+    </span>
+  );
+
+  const bareTheme = defineTheme({
+    name: 'bare-indicator-theme',
+    indicators: {checkbox: BareIndicator},
+  });
+
+  const ringOn = (el: Element | null | undefined) =>
+    [...(el?.classList ?? [])].some(c => c.includes('indicator__ring'));
+
+  it('draws the ring on the element that owns the hidden input', () => {
     const {container} = render(
       <CheckboxInput label="Accept" value={false} onChange={() => {}} />,
     );
-
-    const indicator = container.querySelector('.astryx-checkbox');
-    expect(indicator).toBeInTheDocument();
-    const ringClass = [...(indicator?.classList ?? [])].find(c =>
-      c.includes('focusRing'),
-    );
-    expect(ringClass).toBeDefined();
-
-    // Why the ring needs the ancestor marker rather than a plain
-    // `:focus-visible`: the input is a SIBLING of the indicator, not inside
-    // it, so the indicator can only see focus through a shared ancestor.
     const input = container.querySelector('input[type="checkbox"]');
-    expect(input).toBeInTheDocument();
-    expect(indicator?.contains(input)).toBe(false);
-    expect(input?.parentElement?.contains(indicator)).toBe(true);
+    expect(ringOn(input?.parentElement)).toBe(true);
   });
 
-  it('no longer hardcodes the ring on the host wrapper', () => {
-    // Regression guard for the shape problem: if a host reintroduces its own
-    // ring, a replaced indicator gets two rings, or one of the wrong shape.
+  it('survives a replacement that ignores every style prop', () => {
+    const {container} = render(
+      <Theme theme={bareTheme}>
+        <CheckboxInput label="Accept" value={false} onChange={() => {}} />
+      </Theme>,
+    );
+
+    // The replacement really took effect...
+    expect(screen.getByTestId('bare-indicator')).toBeInTheDocument();
+    // ...and it renders nothing but a span: no ring of its own, no xstyle.
+    const replaced = screen.getByTestId('bare-indicator');
+    expect(replaced.className).toBe('');
+    // ...yet the control still has one, because the owner holds it.
+    const input = container.querySelector('input[type="checkbox"]');
+    expect(ringOn(input?.parentElement)).toBe(true);
+  });
+
+  it('lets a theme redirect the ring shape without drawing it', () => {
+    // The escape hatch for a replacement whose shape differs: set the
+    // variable, keep the guarantee.
     const {container} = render(
       <CheckboxInput label="Accept" value={false} onChange={() => {}} />,
     );
     const input = container.querySelector('input[type="checkbox"]');
     const wrapper = input?.parentElement;
-    const ringClass = [...(wrapper?.classList ?? [])].find(c =>
-      c.includes('WrapperFocus'),
-    );
-    expect(ringClass).toBeUndefined();
+    // The owner supplies its own default shape alongside the ring.
+    expect(
+      [...(wrapper?.classList ?? [])].some(c => c.includes('ringRadiusSquare')),
+    ).toBe(true);
   });
 });

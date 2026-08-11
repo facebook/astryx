@@ -91,3 +91,55 @@ describe('useIndicator', () => {
     expect(getIndicator('radio', theme)).toBe(RadioIndicator);
   });
 });
+
+/**
+ * A theme target is public API. Renaming one to follow the
+ * `<component>-kebab` convention (`checkbox` → `checkbox-indicator`) would
+ * silently break every theme styling the old name — the CSS still compiles, it
+ * just stops matching. So both names are emitted for a deprecation window, and
+ * these tests pin that promise from both ends: the new name exists, and the
+ * old one has not quietly disappeared.
+ */
+describe('renamed theme targets stay non-breaking', () => {
+  const cases = [
+    {
+      name: 'CheckboxIndicator',
+      render: () => <CheckboxIndicator state="checked" />,
+      current: 'astryx-checkbox-indicator',
+      legacy: 'astryx-checkbox',
+    },
+    {
+      name: 'RadioIndicator',
+      render: () => <RadioIndicator state="checked" />,
+      current: 'astryx-radio-indicator',
+      legacy: 'astryx-radio',
+    },
+  ] as const;
+
+  for (const {name, render: renderCase, current, legacy} of cases) {
+    it(`${name} emits both the current and the legacy target`, () => {
+      const {container} = render(renderCase());
+      const el = container.querySelector(`.${current}`);
+      expect(el, `${name} should render ${current}`).toBeInTheDocument();
+      expect(el, `${name} must keep emitting ${legacy}`).toHaveClass(legacy);
+    });
+  }
+
+  it('keeps the legacy dot target on the radio mark', () => {
+    const {container} = render(<RadioIndicator state="checked" />);
+    const dot = container.querySelector('.astryx-radio-indicator-dot');
+    expect(dot).toBeInTheDocument();
+    expect(dot).toHaveClass('astryx-radio-dot');
+  });
+
+  it('puts both names on ONE element, so either selector wins equally', () => {
+    // If the legacy class were moved to a wrapper instead, an old theme's
+    // rules would land on a different box than a new theme's — same-element
+    // is what makes the two names interchangeable.
+    const {container} = render(<CheckboxIndicator state="unchecked" />);
+    expect(container.querySelectorAll('.astryx-checkbox')).toHaveLength(1);
+    expect(container.querySelector('.astryx-checkbox')).toBe(
+      container.querySelector('.astryx-checkbox-indicator'),
+    );
+  });
+});

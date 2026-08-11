@@ -16,7 +16,7 @@ import {
   easeVars,
 } from '../theme/tokens.stylex';
 import {mergeProps, themeProps} from '../utils';
-import {indicatorFocusRing, indicatorScope} from './indicator.markers.stylex';
+import {indicatorScope} from './indicator.markers.stylex';
 import type {IndicatorProps} from './types';
 
 const styles = stylex.create({
@@ -153,14 +153,19 @@ export function RadioIndicator({
       ref={ref}
       aria-hidden="true"
       {...mergeProps(
-        themeProps('radio', {
-          size,
-          checked: isChecked ? 'checked' : null,
-          disabled: isDisabled ? 'disabled' : null,
-        }),
+        themeProps(
+          'radio-indicator',
+          {
+            size,
+            checked: isChecked ? 'checked' : null,
+            disabled: isDisabled ? 'disabled' : null,
+          },
+          // `radio` was the target before indicators existed; themes styling
+          // it keep working until the next major.
+          {legacyNames: ['radio']},
+        ),
         stylex.props(
           styles.circle,
-          indicatorFocusRing,
           circleSizeStyles[size],
           isChecked ? styles.checked : styles.unchecked,
           isDisabled && styles.disabled,
@@ -175,7 +180,11 @@ export function RadioIndicator({
         (isChecked && (
           <span
             {...mergeProps(
-              themeProps('radio-dot', {size}),
+              themeProps(
+                'radio-indicator-dot',
+                {size},
+                {legacyNames: ['radio-dot']},
+              ),
               stylex.props(styles.dot, dotSizeStyles[size]),
             )}
           />

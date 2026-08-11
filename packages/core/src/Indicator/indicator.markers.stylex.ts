@@ -1,6 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import * as stylex from '@stylexjs/stylex';
+import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
 
 /**
@@ -20,39 +21,34 @@ export const indicatorScope: ReturnType<typeof stylex.defineMarker> =
   stylex.defineMarker();
 
 /**
- * The focus ring for a control indicator. Apply it to the indicator's root.
+ * The focus ring for a control whose indicator is themeable. Apply it to the
+ * element that owns the (visually hidden) native input, together with a
+ * `borderRadius` matching the indicator's shape.
  *
- * Every indicator uses this same style, and so should every replacement —
- * there is nothing per-indicator in it. `outline` follows the element's own
- * `border-radius`, so one shape-agnostic rule draws a rounded-square ring on a
- * checkbox and a circular one on a radio, with no indicator having to describe
- * its own shape.
+ * **The owner draws this, not the indicator.** That reads backwards — only the
+ * indicator knows its own shape — but the alternative fails worse. An
+ * indicator supplied by a theme is third-party code: if drawing the ring were
+ * its job, a replacement that simply doesn't ships a control with *no visible
+ * focus at all* (WCAG 2.4.7), because the real input is `opacity: 0`. Passing
+ * the style down as a prop is no better — a replacement that destructures
+ * `{state, size, isDisabled}` drops it just as easily, which is exactly what
+ * the sample replacement in our own Storybook does.
  *
- * It keys off {@link indicatorScope} rather than a plain `:focus-visible`
- * because the control's native input is a visually hidden *sibling* of the
- * indicator, not a descendant — nothing inside the indicator ever receives
- * focus, so only an ancestor selector can see it.
- *
- * This is why the ring belongs on the indicator at all: on the owner's wrapper
- * it would have to hardcode the shape of whatever indicator it happens to
- * host, which is exactly what broke when a replacement changed that shape.
- *
- * ```tsx
- * <span {...stylex.props(indicatorFocusRing, myStyles.box)} aria-hidden="true" />
- * ```
+ * So the guarantee lives where a replacement cannot reach. The cost is that a
+ * replacement whose shape differs from the built-in gets a ring of the built-in
+ * shape — visibly correct, geometrically approximate. That is the right way
+ * round: a slightly-wrong ring is a cosmetic bug, a missing one is an
+ * accessibility failure.
  */
-const focusRingStyles = stylex.create({
+export const indicatorOwnerFocusRing: StyleXStyles = stylex.create({
   ring: {
     outline: {
       default: 'none',
-      [stylex.when.ancestor(':has(:focus-visible)', indicatorScope)]:
-        `2px solid ${colorVars['--color-accent']}`,
+      ':has(:focus-visible)': `2px solid ${colorVars['--color-accent']}`,
     },
     outlineOffset: {
-      default: null,
-      [stylex.when.ancestor(':has(:focus-visible)', indicatorScope)]: '2px',
+      default: '0',
+      ':has(:focus-visible)': '2px',
     },
   },
-});
-
-export const indicatorFocusRing = focusRingStyles.ring;
+}).ring;

@@ -30,6 +30,7 @@ import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
   spacingVars,
+  radiusVars,
   typographyVars,
   typeScaleVars,
   fontWeightVars,
@@ -43,7 +44,10 @@ import type {InputStatus} from '../Field/types';
 import {Spinner} from '../Spinner';
 import {useTooltip} from '../Tooltip';
 import {mergeProps, mergeRefs} from '../utils';
-import {indicatorScope} from '../Indicator/indicator.markers.stylex';
+import {
+  indicatorOwnerFocusRing,
+  indicatorScope,
+} from '../Indicator/indicator.markers.stylex';
 import {useIndicator} from '../Indicator';
 import {themeProps} from '../utils/themeProps';
 import {CheckboxListContext} from '../CheckboxList/CheckboxListContext';
@@ -64,6 +68,11 @@ const styles = stylex.create({
     justifyContent: 'center',
     flexShrink: 0,
     isolation: 'isolate',
+  },
+  // The ring traces the built-in checkbox's rounded square. A themed
+  // replacement of another shape still gets a visible ring, just this shape.
+  ringRadiusSquare: {
+    borderRadius: radiusVars['--radius-inner'],
   },
   input: {
     position: 'absolute',
@@ -362,7 +371,17 @@ export function CheckboxInput({
           // marker rather than props, so the whole row drives it.
           !isDisabled && indicatorScope,
         )}>
-        <div {...stylex.props(styles.checkboxWrapper, wrapperSizeStyles[size])}>
+        <div
+          {...stylex.props(
+            styles.checkboxWrapper,
+            wrapperSizeStyles[size],
+            // The ring lives on the element owning the hidden input, so a
+            // themed indicator cannot leave the control without one. Shape
+            // defaults to the built-in checkbox's; a theme redirects it with
+            // INDICATOR_RING_RADIUS_VAR.
+            !isDisabled && indicatorOwnerFocusRing,
+            !isDisabled && styles.ringRadiusSquare,
+          )}>
           <input
             {...rest}
             ref={mergeRefs(
@@ -418,7 +437,15 @@ export function CheckboxInput({
                   : 'unchecked'
             }
             size={size}
-            isDisabled={isDisabled}>
+            isDisabled={isDisabled}
+            // The ring is handed DOWN rather than left to the indicator.
+            // This control's native input is `opacity: 0`, so if a themed
+            // replacement forgot to draw one there would be no visible focus
+            // at all (WCAG 2.4.7) — and an indicator can forget, while a
+            // prop it must merge (BaseProps, lint-enforced) it cannot. The
+            // style is shape-agnostic: `outline` follows the indicator's own
+            // border-radius, so the indicator still decides what it traces.
+          >
             {isBusy ? <Spinner size="sm" shade="inherit" /> : null}
           </CheckboxControl>
         </div>
