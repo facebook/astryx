@@ -78,39 +78,39 @@ const DEFAULT_MODE: Mode = 'lift';
 const DEFAULT_PIN_STEP = 3;
 
 /**
- * Step → raw font-size token. Mirrors STEP_TO_SIZE_TOKEN in
- * @astryxdesign/core's expandTypeScale. Overriding these raw tokens on a
- * wrapper element cascades into every real component, because the semantic
- * tokens (--text-heading-1-size, etc.) are var() references to these — which
- * is exactly the mechanism the mobile-type proposal would ship.
+ * Tiered target line-height and 4px-grid snap, mirroring expandTypeScale's
+ * computeLeading so the preview's leading matches what a shipped scale emits.
  */
-const STEP_TO_TOKEN: Record<number, string> = {
-  [-2]: '--font-size-xs',
-  [-1]: '--font-size-sm',
-  [0]: '--font-size-base',
-  [1]: '--font-size-lg',
-  [2]: '--font-size-xl',
-  [3]: '--font-size-2xl',
-  [4]: '--font-size-3xl',
-  [5]: '--font-size-4xl',
-  [6]: '--font-size-5xl',
-};
+function computeLeading(fontSize: number): number {
+  const target = fontSize < 20 ? 1.5 : fontSize < 32 ? 1.4 : 1.25;
+  const snapped = Math.max(
+    Math.round((fontSize * target) / 4) * 4,
+    Math.ceil((fontSize + 4) / 4) * 4,
+  );
+  return Math.round((snapped / fontSize) * 10000) / 10000;
+}
 
 /**
- * Build a CSS-variable override object from a role→px size map. Applied as
- * inline style on a wrapper, this re-points the raw font-size tokens so real
- * Astryx components render at the given scale.
+ * Build an inline style object that pins the SEMANTIC type-scale tokens to the
+ * given role→px size map, so real Astryx components inside render at that scale.
+ *
+ * Components read the semantic tokens (--text-body-size, --text-display-3-size,
+ * …). In the base theme those are `var(--font-size-*)` refs declared on :root,
+ * so the browser resolves them at :root — overriding the RAW --font-size-*
+ * tokens lower in the tree does nothing (the semantic token already captured
+ * root's computed value). Declaring the semantic tokens directly, as literal
+ * rem values, is what actually re-sizes the components. This is the token layer
+ * a shipped `@media (pointer: coarse)` implementation would target.
  */
-function scaleVars(sizes: Record<string, number>): Record<string, string> {
+function semanticVars(sizes: Record<string, number>): React.CSSProperties {
   const vars: Record<string, string> = {};
   for (const role of ROLES) {
-    const token = STEP_TO_TOKEN[role.step];
-    if (token) {
-      // 16px root → rem, matching expandTypeScale's pxToRem.
-      vars[token] = `${sizes[role.name] / 16}rem`;
-    }
+    const px = sizes[role.name];
+    // 16px root → rem, matching expandTypeScale's pxToRem.
+    vars[`--text-${role.name}-size`] = `${px / 16}rem`;
+    vars[`--text-${role.name}-leading`] = `${computeLeading(px)}`;
   }
-  return vars;
+  return vars as React.CSSProperties;
 }
 
 // =============================================================================
@@ -302,23 +302,20 @@ function ProductCard() {
 }
 
 /**
- * A phone-shaped frame. The mobile scale's font-size token overrides are
- * applied to this wrapper via the `vars` prop, so any real component inside
- * renders at the adapted mobile scale — a live preview of the token mechanism.
+ * A phone-shaped frame. The caller applies the mobile scale via semanticVars on
+ * the screen wrapper, so real components inside render at that scale.
  */
 function PhoneFrame({
-  vars,
+  style,
   children,
 }: {
-  vars: Record<string, string>;
+  style?: React.CSSProperties;
   children: React.ReactNode;
 }) {
   return (
     <div {...stylex.props(styles.phoneOuter)}>
       <div {...stylex.props(styles.phoneNotch)} />
-      <div
-        {...stylex.props(styles.phoneScreen)}
-        style={vars as React.CSSProperties}>
+      <div {...stylex.props(styles.phoneScreen)} style={style}>
         {children}
       </div>
     </div>
@@ -641,8 +638,7 @@ export default function MobileTypePage() {
                       <Text type="label" weight="semibold">
                         Desktop
                       </Text>
-                      <div
-                        style={scaleVars(desktopSizes) as React.CSSProperties}>
+                      <div style={semanticVars(desktopSizes)}>
                         <ProductCard />
                       </div>
                     </VStack>
@@ -653,7 +649,7 @@ export default function MobileTypePage() {
                       <Text type="label" weight="semibold">
                         Mobile
                       </Text>
-                      <PhoneFrame vars={scaleVars(mobileSizes)}>
+                      <PhoneFrame style={semanticVars(mobileSizes)}>
                         <ProductCard />
                       </PhoneFrame>
                     </VStack>
