@@ -14,6 +14,8 @@ import {describe, it, expect, vi, afterEach} from 'vitest';
 import {render, screen, act, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {useRef, useState, type ReactNode} from 'react';
+import * as stylex from '@stylexjs/stylex';
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {SideNav} from './SideNav';
 import {SideNavCollapseButton} from './SideNavCollapseButton';
 import {SideNavHeading} from './SideNavHeading';
@@ -1894,5 +1896,102 @@ describe('SideNav audit regressions', () => {
     expect(
       await screen.findByRole('button', {name: 'Expand sidebar'}),
     ).toBeInTheDocument();
+  });
+});
+
+// =============================================================================
+// A15 — the shared focus ring
+//
+// jsdom does not derive `:focus-visible` from a `.focus()` or from
+// `user-event`'s Tab on an <a>/<button>, so the painted ring cannot be read
+// back here (the rendered geometry is measured in a real browser instead, and
+// #4654's own review is the cautionary tale for trusting a unit test on this).
+// What these tests pin is the composition: the element that takes focus
+// carries the classes `focusOutlineStyles.focusVisible` compiles to. Comparing
+// against the classes StyleX generates — rather than a hardcoded hash — keeps
+// the assertion honest if the utility's declarations ever change.
+// =============================================================================
+
+const sharedFocusRingClasses = stylex
+  .props(focusOutlineStyles.focusVisible)
+  .className!.split(' ');
+
+function expectSharedFocusRing(el: Element) {
+  const classes = el.className.split(' ');
+  for (const c of sharedFocusRingClasses) {
+    expect(classes).toContain(c);
+  }
+}
+
+function expectNoSharedFocusRing(el: Element) {
+  const classes = el.className.split(' ');
+  for (const c of sharedFocusRingClasses) {
+    expect(classes).not.toContain(c);
+  }
+}
+
+describe('SideNav focus ring (A15)', () => {
+  it('draws the shared ring on a link item', () => {
+    render(<SideNavItem label="Dashboard" href="/dashboard" />);
+    expectSharedFocusRing(screen.getByRole('link', {name: 'Dashboard'}));
+  });
+
+  it('draws the shared ring on a button item', () => {
+    render(<SideNavItem label="Dashboard" onClick={() => {}} />);
+    expectSharedFocusRing(screen.getByRole('button', {name: 'Dashboard'}));
+  });
+
+  it('draws the shared ring on a collapsed icon-only item', () => {
+    renderCollapsed(
+      <SideNavItem label="Dashboard" icon={StubIcon} href="/dashboard" />,
+    );
+    expectSharedFocusRing(screen.getByRole('link', {name: 'Dashboard'}));
+  });
+
+  it('draws the shared ring on a collapsed submenu trigger', () => {
+    renderCollapsed(
+      <SideNavItem label="Settings" icon={StubIcon}>
+        <SideNavItem label="General" href="/settings/general" />
+      </SideNavItem>,
+    );
+    expectSharedFocusRing(screen.getByRole('button', {name: 'Settings'}));
+  });
+
+  it('rings each focusable of a split-action row, and not the row itself', () => {
+    render(
+      <SideNavItem label="Settings" href="/settings" collapsible>
+        <SideNavItem label="General" href="/settings/general" />
+      </SideNavItem>,
+    );
+
+    const link = screen.getByRole('link', {name: 'Settings'});
+    const toggle = screen.getByRole('button', {name: 'Collapse Settings'});
+    expectSharedFocusRing(link);
+    expectSharedFocusRing(toggle);
+
+    // The row is a presentational <div> holding two independent tab stops.
+    // Ringing it as well (`focusWithin`) would paint a second outline around
+    // the whole row whenever either child is focused.
+    const row = link.parentElement!;
+    expect(row.tagName).toBe('DIV');
+    expect(row).toContainElement(toggle);
+    expectNoSharedFocusRing(row);
+  });
+
+  it('draws the shared ring on a heading rendered as one link', () => {
+    render(<SideNavHeading heading="My App" headingHref="/" />);
+    expectSharedFocusRing(screen.getByRole('link', {name: /My App/}));
+  });
+
+  it('draws the shared ring on a collapsed heading link', () => {
+    renderCollapsed(
+      <SideNavHeading heading="My App" headingHref="/" icon={<span>i</span>} />,
+    );
+    expectSharedFocusRing(screen.getByRole('link', {name: 'My App'}));
+  });
+
+  it('draws the shared ring on the heading menu trigger', () => {
+    render(<SideNavHeading heading="My App" menu={<div>menu</div>} />);
+    expectSharedFocusRing(screen.getByRole('button', {name: 'Open menu'}));
   });
 });
