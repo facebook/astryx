@@ -186,6 +186,12 @@ export const categories: SandboxCategory[] = [
           'Token reference docs with live theme previews — color, spacing, typography, and more',
       },
       {
+        name: 'Component Scores',
+        href: '/pages/component-scores/',
+        description:
+          'Every component joined with its audit grade, open BLOCKs and last-audited date — live from the wiki ledger',
+      },
+      {
         name: 'Media Mode',
         href: '/pages/media-mode/',
         description:

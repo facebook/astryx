@@ -443,6 +443,50 @@ jobs:
           path: a11y-report.json
           retention-days: 1
 
+  # Component score ledger. Reads the audit ledger for the components this PR
+  # touches and reports where they stand, from
+  # https://raw.githubusercontent.com/wiki/facebook/astryx/component-scores.json
+  # (the ledger lives in the wiki so recording a score needs no PR).
+  #
+  # It reuses the `pr-analysis` artifact rather than recomputing which
+  # components changed, and it needs nothing else — score-ledger.mjs has no
+  # dependencies, so no install and no Storybook build.
+  #
+  # SOFT / NON-BLOCKING (continue-on-error), matching the precedent set by
+  # pr-rtl: the ledger currently covers five of 118 components, so hardening it
+  # now would mean a required check that is silent for 96% of PRs and load-bearing
+  # for the rest. It hardens once coverage is real. Two things are true today
+  # and both are deliberate:
+  #   - a component with no audit NEVER blocks — no baseline, judged on merits;
+  #   - a ledger that cannot be fetched NEVER blocks — that is infrastructure,
+  #     not a regression.
+  # And because a pull request cannot change a wiki-hosted ledger, there is no
+  # head-versus-base delta to ratchet here: the enforcing comparison runs at
+  # `--record` time, where an auditor writes the score. This job reports.
+  pr-score-ledger:
+    needs: [build-storybook, check-components]
+    if: github.event_name == 'pull_request' && needs.check-components.outputs.has_components == 'true'
+    runs-on: ubuntu-slim
+    continue-on-error: true
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup
+        with:
+          install: 'false'
+
+      - name: Download analysis artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: pr-analysis
+
+      - name: Report component scores
+        run: node scripts/score-ledger.mjs --check --analysis analysis.json
+
   # RTL semantic audit. Sibling to pr-a11y: same build-storybook artifact, same
   # analysis.json scoping, so a PR only pays for the components it touched.
   # Unscoped this swept ~1400 stories and took ~26 min. The full sweep that
