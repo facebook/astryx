@@ -678,17 +678,23 @@ function fmtScore(n) {
  * The paste-to-an-agent request for an audit. One string, exported so the
  * sandbox page and the CLI cannot drift.
  */
-export const AUDIT_PROMPT = `Audit the Astryx component <Component> against the Component Audit Rubric
-(https://github.com/facebook/astryx/wiki/Component-Audit-Rubric), mode O — the whole
-component, not a diff. Grade every section, cite the rule id for each finding, and
-capture the §5b screenshots; if you skip them, report design_rendered as not_measured
-rather than scoring it. Then record the result — one command, which clones the wiki,
-applies the scorecard, commits and pushes:
+export const AUDIT_PROMPT = `Audit the Astryx component <Component> against the Component Audit Rubric:
+https://github.com/facebook/astryx/wiki/Component-Audit-Rubric
 
-  node scripts/score-ledger.mjs --record <Component> --from scorecard.json --push
+Grade the whole component, not a diff — follow the rubric's "Grading a whole
+component" section. Work every section, cite the rule id for each finding
+(A8, T6, P2 …), and capture screenshots of every state in light and dark by
+driving a real browser against Storybook. If you skip the screenshots, report
+the rendered-design section as not_measured rather than scoring it — never
+guess, and never score it zero.
 
-Only record what you measured. The recorded scores are readable at
-${SCORES_PAGE_URL}`;
+Then record the result, per the rubric's "Recording an audit" section. One
+command: it clones the wiki, applies the ratchet, commits and pushes.
+
+  <your scorecard JSON> | node scripts/score-ledger.mjs --record <Component> \\
+    --from - --push
+
+Only record what you actually measured.`;
 
 // ---------------------------------------------------------------------------
 // --push — the wiki write path
@@ -1541,11 +1547,12 @@ export function issueBody(component, entry, block, repo = DEFAULT_REPO) {
     '',
     'Resolving this requires:',
     '',
-    `1. Re-run the audit for ${component} (mode O) after the fix.`,
+    `1. Re-run the audit for ${component} after the fix — the whole component, ` +
+      "not the diff (the rubric's \"Grading a whole component\" section).",
     '2. Put the visual results in the PR description — before/after screenshots of the ' +
-      'affected states. That is also what §5b needs.',
+      'affected states. The rendered-design section is graded from those.',
     '3. Update the ledger with the new score and clear this BLOCK ' +
-      `(\`node scripts/score-ledger.mjs --record ${component} --from scorecard.json --push\`).`,
+      `(\`<scorecard> | node scripts/score-ledger.mjs --record ${component} --from - --push\`).`,
     '4. Close this issue linking that PR.',
     '',
     "If the recorded score doesn't move, either the fix or the audit is wrong.",
