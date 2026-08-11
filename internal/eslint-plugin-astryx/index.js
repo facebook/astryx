@@ -11,6 +11,7 @@
  * - no-raw-paragraph: Disallows components from rendering a <p> by default (render <div> so any content composes)
  * - no-style-only-wrapper: Disallows div/span wrappers that only style a single Astryx component (use xstyle)
  * - no-nullish-jsx-guard: Flags `!= null` JSX render guards for rendered values (use isRenderable so false/''/true slots don't leak an empty element)
+ * - no-unguarded-ime-keydown: Flags an onKeyDown on an editable surface that branches on command keys without an IME composition guard (isImeKeyEvent/isComposing)
  *
  * Philosophy: Strict for agents (CI), lenient for humans (local dev)
  * - "strict" config: All rules as errors - use in CI/agent environments
@@ -28,6 +29,7 @@ import noClassnameClobberRule from './no-classname-clobber.js';
 import noHardcodedAnchorRule from './no-hardcoded-anchor.js';
 import noRawParagraphRule from './no-raw-paragraph.js';
 import noNullishJsxGuardRule from './no-nullish-jsx-guard.js';
+import noUnguardedImeKeydownRule from './no-unguarded-ime-keydown.js';
 import noBorderShorthandRule from './no-border-shorthand.js';
 import noPhysicalPropertiesRule from './no-physical-properties.js';
 import focusOutlineKeyboardOnlyRule from './focus-outline-keyboard-only.js';
@@ -250,6 +252,7 @@ const plugin = {
     'no-hardcoded-anchor': noHardcodedAnchorRule,
     'no-raw-paragraph': noRawParagraphRule,
     'no-nullish-jsx-guard': noNullishJsxGuardRule,
+    'no-unguarded-ime-keydown': noUnguardedImeKeydownRule,
     'no-border-shorthand': noBorderShorthandRule,
     'no-physical-properties': noPhysicalPropertiesRule,
     'focus-outline-keyboard-only': focusOutlineKeyboardOnlyRule,
@@ -292,6 +295,11 @@ plugin.configs.strict = {
     // Kept as 'warn' so it surfaces everywhere (including CI) without failing
     // the build; promote to 'error' once core is migrated (see issue #2538).
     '@astryx/no-nullish-jsx-guard': 'warn',
+    // All editable command-key handlers in core now guard IME composition
+    // (Selector, MultiSelector, DateInput, DateTimeInput, TimeInput, and
+    // Typeahead's edit-mode Escape were fixed alongside this rule); error to
+    // prevent regressions (see issue #4892).
+    '@astryx/no-unguarded-ime-keydown': 'error',
     '@astryx/no-border-shorthand': 'error',
     // RTL physical→logical migration complete; errors to prevent regressions.
     '@astryx/no-physical-properties': 'error',
@@ -328,6 +336,9 @@ plugin.configs.recommended = {
     '@astryx/no-hardcoded-anchor': 'warn',
     '@astryx/no-raw-paragraph': 'warn',
     '@astryx/no-nullish-jsx-guard': 'warn',
+    // IME composition migration complete; error to prevent regressions
+    // (see strict config above and issue #4892).
+    '@astryx/no-unguarded-ime-keydown': 'error',
     '@astryx/no-border-shorthand': 'warn',
     // RTL physical→logical migration complete; errors to prevent regressions.
     '@astryx/no-physical-properties': 'error',
