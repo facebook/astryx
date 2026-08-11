@@ -72,7 +72,7 @@ import {
 import {useCombobox, useSelectedItemOffset} from './hooks';
 import {useTypeahead} from '../hooks/useTypeahead';
 import {SelectorOption} from './SelectorOption';
-import {getInputARIA, mergeProps} from '../utils';
+import {getInputARIA, isImeKeyEvent, mergeProps} from '../utils';
 import {useSize} from '../SizeContext/SizeContext';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
@@ -1055,6 +1055,15 @@ export function Selector<T extends SelectorOptionType>(
           }
         }}
         onKeyDown={e => {
+          // An in-progress IME composition uses these same keys (Enter to
+          // commit the candidate, Escape/Arrows to navigate the candidate
+          // window); the composing keydown fires before compositionend, so
+          // without this guard a Korean/Japanese/Chinese user committing a
+          // syllable with Enter would instead select the highlighted option.
+          // See utils/ime.ts.
+          if (isImeKeyEvent(e.nativeEvent)) {
+            return;
+          }
           // Arrow keys navigate options; Enter selects; Escape closes.
           // Home/End are left to the input for caret movement (APG editable
           // combobox); PageUp/PageDown are the sanctioned substitute for

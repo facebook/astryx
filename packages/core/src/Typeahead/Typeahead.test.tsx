@@ -796,6 +796,41 @@ describe('Typeahead edit mode', () => {
     // onChange should not have been called — value restored
     expect(onChange).not.toHaveBeenCalled();
   });
+
+  it('does not exit edit mode on a composing Escape (IME)', async () => {
+    const onChange = vi.fn();
+    render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={fruits[0]}
+        onChange={onChange}
+      />,
+    );
+
+    // Enter edit mode by clicking the token; the input uncollapses and
+    // rejoins the Tab order (tabindex is cleared).
+    const tokenText = screen.getByText(fruits[0].label);
+    fireEvent.click(tokenText.closest('div')!);
+    await act(async () => {
+      await new Promise(r => requestAnimationFrame(r));
+    });
+    const input = screen.getByRole('combobox');
+    expect(input).not.toHaveAttribute('tabindex', '-1');
+
+    // BaseTypeahead invokes this external handler before its own IME guard, so
+    // a composing Escape (isComposing / legacy keyCode 229) — which an IME uses
+    // to cancel the pending candidate — must not exit edit mode here.
+    fireEvent.keyDown(input, {key: 'Escape', isComposing: true});
+    expect(screen.getByRole('combobox')).not.toHaveAttribute('tabindex', '-1');
+    fireEvent.keyDown(input, {key: 'Escape', keyCode: 229});
+    expect(screen.getByRole('combobox')).not.toHaveAttribute('tabindex', '-1');
+
+    // A real, non-composing Escape still exits edit mode: the token is
+    // restored and the collapsed input drops back out of the Tab order.
+    fireEvent.keyDown(input, {key: 'Escape'});
+    expect(screen.getByRole('combobox')).toHaveAttribute('tabindex', '-1');
+  });
 });
 
 describe('Typeahead collapsed input tab order', () => {

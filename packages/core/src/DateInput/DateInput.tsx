@@ -60,7 +60,7 @@ import {useCalendarConstraints} from '../Calendar/hooks';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
 import {usePopover} from '../Popover';
 import {useTooltip} from '../Tooltip';
-import {getInputARIA, parseDateInput} from '../utils';
+import {getInputARIA, isImeKeyEvent, parseDateInput} from '../utils';
 import {
   plainDateFromISO,
   plainDateToISO,
@@ -627,6 +627,14 @@ export function DateInput({
   // Handle keyboard events on input
   const handleInputKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
+      // An in-progress IME composition uses Enter to commit the candidate and
+      // Escape to cancel it; that composing keydown fires before
+      // compositionend, so without this guard a Korean/Japanese/Chinese user
+      // committing a syllable with Enter would instead commit the pending date
+      // (or Escape would close the calendar mid-composition). See utils/ime.ts.
+      if (isImeKeyEvent(e.nativeEvent)) {
+        return;
+      }
       if (e.key === 'Escape' && popover.isOpen) {
         e.preventDefault();
         popover.hide();

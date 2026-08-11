@@ -1000,6 +1000,39 @@ describe('Selector', () => {
       ).toBeInTheDocument();
     });
 
+    it('does not select the highlighted option on a composing Enter (IME)', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          onChange={onChange}
+          hasSearch
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      const search = screen.getByRole('combobox', h);
+      // Filter to Banana and highlight it so an unguarded Enter would commit a
+      // selection.
+      await user.type(search, 'ban');
+      await user.keyboard('{ArrowDown}');
+      expect(search).toHaveAttribute('aria-activedescendant');
+
+      // The browser fires this composing keydown for the Enter that commits an
+      // IME candidate (isComposing: true, or the legacy keyCode 229) before
+      // compositionend writes the syllable. It must NOT be read as "select the
+      // highlighted option".
+      fireEvent.keyDown(search, {key: 'Enter', isComposing: true});
+      expect(onChange).not.toHaveBeenCalled();
+      fireEvent.keyDown(search, {key: 'Enter', keyCode: 229});
+      expect(onChange).not.toHaveBeenCalled();
+
+      // A real, non-composing Enter still selects the highlighted option.
+      fireEvent.keyDown(search, {key: 'Enter'});
+      expect(onChange).toHaveBeenCalledWith('Banana');
+    });
+
     describe('result announcements', () => {
       it('announces the match count politely while searching', async () => {
         const user = userEvent.setup();

@@ -415,6 +415,37 @@ describe('MultiSelector', () => {
     expect(onChange).toHaveBeenCalledWith(['Apple']);
   });
 
+  it('does not toggle the highlighted option on a composing Enter (IME)', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={[]}
+        onChange={onChange}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    const search = screen.getByRole('combobox', h);
+    // Filter to Banana and highlight it so an unguarded Enter would toggle it.
+    await user.type(search, 'ban');
+    await user.keyboard('{ArrowDown}');
+    expect(search).toHaveAttribute('aria-activedescendant');
+
+    // The composing keydown (isComposing / legacy keyCode 229) that commits an
+    // IME candidate must not be read as "toggle the highlighted option".
+    fireEvent.keyDown(search, {key: 'Enter', isComposing: true});
+    expect(onChange).not.toHaveBeenCalled();
+    fireEvent.keyDown(search, {key: 'Enter', keyCode: 229});
+    expect(onChange).not.toHaveBeenCalled();
+
+    // A real, non-composing Enter still toggles the highlighted option.
+    fireEvent.keyDown(search, {key: 'Enter'});
+    expect(onChange).toHaveBeenCalledWith(['Banana']);
+  });
+
   it('toggles the correct item when selected items are sorted to top', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();

@@ -97,6 +97,48 @@ describe('DateTimeInput', () => {
     expect(screen.getByLabelText('Meeting time')).toBeInTheDocument();
   });
 
+  it('does not commit the date on a composing Enter (IME)', () => {
+    const onChange = vi.fn();
+    render(<DateTimeInput label="Meeting" onChange={onChange} />);
+    const dateInput = screen.getByRole('combobox');
+    fireEvent.change(dateInput, {target: {value: '03/15/2026'}});
+    onChange.mockClear();
+
+    // The composing keydown (isComposing / legacy keyCode 229) that commits an
+    // IME candidate must not be read as "commit the typed date".
+    fireEvent.keyDown(dateInput, {key: 'Enter', isComposing: true});
+    expect(onChange).not.toHaveBeenCalled();
+    fireEvent.keyDown(dateInput, {key: 'Enter', keyCode: 229});
+    expect(onChange).not.toHaveBeenCalled();
+
+    // A real, non-composing Enter still commits.
+    fireEvent.keyDown(dateInput, {key: 'Enter'});
+    expect(onChange).toHaveBeenCalled();
+  });
+
+  it('does not step the time on a composing ArrowUp (IME)', () => {
+    const onChange = vi.fn();
+    render(
+      <DateTimeInput
+        label="Meeting"
+        value={'2026-03-15T14:30' as ISODateTimeString}
+        onChange={onChange}
+      />,
+    );
+    const timeInput = screen.getByLabelText('Meeting time');
+
+    // An IME candidate window navigates with the arrows; a composing ArrowUp
+    // must not step the time value.
+    fireEvent.keyDown(timeInput, {key: 'ArrowUp', isComposing: true});
+    expect(onChange).not.toHaveBeenCalled();
+    fireEvent.keyDown(timeInput, {key: 'ArrowUp', keyCode: 229});
+    expect(onChange).not.toHaveBeenCalled();
+
+    // A real, non-composing ArrowUp still steps the time by one minute.
+    fireEvent.keyDown(timeInput, {key: 'ArrowUp'});
+    expect(onChange).toHaveBeenCalledWith('2026-03-15T14:31');
+  });
+
   it('displays formatted date in date input when value is provided', () => {
     render(
       <DateTimeInput

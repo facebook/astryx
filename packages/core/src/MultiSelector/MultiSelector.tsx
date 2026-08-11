@@ -71,7 +71,7 @@ import {
   getSelectableOptions,
 } from '../Selector/utils';
 import {useMultiCombobox} from './hooks';
-import {getInputARIA, mergeProps} from '../utils';
+import {getInputARIA, isImeKeyEvent, mergeProps} from '../utils';
 import {useAnnounce} from '../hooks/useAnnounce';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
@@ -1182,6 +1182,15 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           }
         }}
         onKeyDown={e => {
+          // An in-progress IME composition uses these same keys (Enter to
+          // commit the candidate, Escape/Arrows to navigate the candidate
+          // window); the composing keydown fires before compositionend, so
+          // without this guard a Korean/Japanese/Chinese user committing a
+          // syllable with Enter would instead toggle the highlighted option.
+          // See utils/ime.ts.
+          if (isImeKeyEvent(e.nativeEvent)) {
+            return;
+          }
           // Arrow keys navigate options; Enter toggles; Escape closes.
           // Space and Home/End are left to the input (type a space / move
           // the caret) per the APG editable combobox; PageUp/PageDown are

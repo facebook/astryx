@@ -536,6 +536,27 @@ describe('DateInput', () => {
     expect(onChange).toHaveBeenCalledWith('2026-03-15');
   });
 
+  it('does not commit on a composing Enter (IME)', () => {
+    const onChange = vi.fn();
+    render(<DateInput label="Date" onChange={onChange} />);
+
+    const input = screen.getByRole('combobox');
+    fireEvent.change(input, {target: {value: '03/15/2026'}});
+    onChange.mockClear();
+
+    // The composing keydown (isComposing / legacy keyCode 229) that commits an
+    // IME candidate fires before compositionend; it must not be read as
+    // "commit the typed date".
+    fireEvent.keyDown(input, {key: 'Enter', isComposing: true});
+    expect(onChange).not.toHaveBeenCalled();
+    fireEvent.keyDown(input, {key: 'Enter', keyCode: 229});
+    expect(onChange).not.toHaveBeenCalled();
+
+    // A real, non-composing Enter still commits.
+    fireEvent.keyDown(input, {key: 'Enter'});
+    expect(onChange).toHaveBeenCalledWith('2026-03-15');
+  });
+
   // --- Arrow-down opens calendar popover ---
 
   // Note: Tests involving popover rendering (show/hide with calendar)
