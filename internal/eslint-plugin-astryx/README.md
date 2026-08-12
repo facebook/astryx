@@ -261,3 +261,39 @@ import {isRenderable} from '@astryxdesign/core/utils';
 Ships as a **warning in both tiers** while core migrates its existing call sites; promote to `error` in strict mode once migrated. Provides an ESLint suggestion that rewrites the comparison to `isRenderable(value)` (add the import manually).
 
 See: https://github.com/facebook/astryx/issues/2538
+
+### `@astryx/focus-outline-keyboard-only`
+
+Flags a focus outline written against `:focus` or `:focus-within` inside `stylex.create()`. A focus outline is a **keyboard** affordance; both of those selectors also match a plain mouse click, so the ring gets shown to pointer users too — most easily missed on the paths where focus is restored programmatically (an overlay that returns focus to its trigger after a click-to-dismiss puts the ring back up with no keyboard involved).
+
+Use `:focus-visible`, or `:has(:focus-visible)` when the ring is drawn on a wrapper around the focusable element. A text input still matches `:focus-visible` when clicked, so nothing is lost.
+
+**Bad:**
+
+```ts
+const styles = stylex.create({
+  base: {
+    outline: {
+      default: 'none',
+      ':focus': `2px solid ${colorVars['--color-accent']}`,
+    },
+  },
+  wrapper: {
+    ':focus-within': {outline: `2px solid ${colorVars['--color-accent']}`},
+  },
+});
+```
+
+**Good:**
+
+```ts
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
+
+// Preferred — the shared ring: .focusVisible on the focusable element,
+// .focusWithin (`:has(:focus-visible)`) on a wrapper around it.
+stylex.props(focusOutlineStyles.focusVisible);
+```
+
+**Scope:** `outline` and its longhands only, and only where the ring is drawn — suppressing one on a broader selector (`outline: {':focus': 'none'}`) is legitimate and is not flagged. A field's `:focus-within` border and inset box-shadow (`Field/inputStyles.stylex.ts`) are a different treatment — "you are typing here" — and are deliberately not policed by this rule.
+
+Ships as an **error in both tiers**: core is clean, and this keeps it that way.
