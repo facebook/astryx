@@ -121,14 +121,6 @@ const styles = stylex.create({
   },
   popover: {
     minWidth: 'anchor-size(width)',
-    // Both edges, not just the start: this popup can open either direction
-    // (`placement="below"` or `"above"`), and only marginBlockStart having a
-    // value meant the clearance vanished when it opened upward, since that's
-    // the edge nearest the trigger in that orientation. Popover (built on
-    // the same usePopover/useLayer pair) sets both edges for the same
-    // reason — see its `gap` style.
-    marginBlockStart: spacingVars['--spacing-1'],
-    marginBlockEnd: spacingVars['--spacing-1'],
   },
   content: {
     boxSizing: 'border-box',
@@ -408,6 +400,7 @@ export function ComplexSelector<Value>({
       {popover.render(content, {
         placement,
         alignment: 'start',
+        offset: spacingVars['--spacing-1'],
         xstyle: [styles.popover, layerAnimations[placement]],
       })}
     </>

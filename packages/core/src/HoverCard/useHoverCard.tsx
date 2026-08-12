@@ -45,18 +45,6 @@ const styles = stylex.create({
     boxShadow: shadowVars['--shadow-med'],
   },
   // Position-based margin styles
-  marginBlock: {
-    marginBlockStart: spacingVars['--spacing-1'],
-    marginBlockEnd: spacingVars['--spacing-1'],
-    marginInlineStart: 0,
-    marginInlineEnd: 0,
-  },
-  marginInline: {
-    marginBlockStart: 0,
-    marginBlockEnd: 0,
-    marginInlineStart: spacingVars['--spacing-1'],
-    marginInlineEnd: spacingVars['--spacing-1'],
-  },
   // Content wrapper for padding and mouse events.
   // `display: block` keeps the wrapper a block box even though it renders as a
   // `span` (the layer uses inline-safe phrasing markup so it is valid inside a
@@ -265,22 +253,13 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
     onHide,
   } = options;
 
-  // Select margin style based on placement axis
-  const marginStyle =
-    placement === 'above' || placement === 'below'
-      ? styles.marginBlock
-      : styles.marginInline;
-
   const layer = useLayer({
     mode: 'context',
     onShow,
     onHide,
   });
 
-  const popoverXstyle = useMemo(
-    () => [styles.container, marginStyle],
-    [marginStyle],
-  );
+  const popoverXstyle = styles.container;
 
   const showTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -472,6 +451,7 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
       const renderProps = {
         placement: renderPlacement,
         alignment: props?.alignment ?? alignment,
+        offset: spacingVars['--spacing-1'],
         // A named dialog when a label is provided; otherwise a group. A group
         // may validly be unnamed, an unnamed dialog may not — and hover cards
         // are non-modal, so group is honest semantics without a name.

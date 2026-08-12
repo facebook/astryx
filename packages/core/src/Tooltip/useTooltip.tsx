@@ -57,18 +57,6 @@ const styles = stylex.create({
     lineHeight: typeScaleVars['--text-body-leading'],
   },
   // Position-based margin styles
-  marginBlock: {
-    marginBlockStart: spacingVars['--spacing-1'],
-    marginBlockEnd: spacingVars['--spacing-1'],
-    marginInlineStart: 0,
-    marginInlineEnd: 0,
-  },
-  marginInline: {
-    marginBlockStart: 0,
-    marginBlockEnd: 0,
-    marginInlineStart: spacingVars['--spacing-1'],
-    marginInlineEnd: spacingVars['--spacing-1'],
-  },
   // Content wrapper for padding
   content: {
     paddingBlockStart: spacingVars['--spacing-1'],
@@ -261,22 +249,13 @@ export function useTooltip(options: TooltipOptions = {}): TooltipReturn {
     onHide,
   } = options;
 
-  // Select margin style based on placement axis
-  const marginStyle =
-    placement === 'above' || placement === 'below'
-      ? styles.marginBlock
-      : styles.marginInline;
-
   const layer = useLayer({
     mode: 'context',
     onShow,
     onHide,
   });
 
-  const popoverXstyle = useMemo(
-    () => [styles.container, marginStyle],
-    [marginStyle],
-  );
+  const popoverXstyle = styles.container;
 
   const showTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -498,6 +477,7 @@ export function useTooltip(options: TooltipOptions = {}): TooltipReturn {
       const renderProps = {
         placement: renderPlacement,
         alignment: props?.alignment ?? alignment,
+        offset: spacingVars['--spacing-1'],
         role: 'tooltip',
         xstyle: [popoverXstyle, layerAnimations[renderPlacement]],
         className: themeProps('tooltip').className,

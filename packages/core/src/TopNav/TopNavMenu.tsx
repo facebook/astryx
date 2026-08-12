@@ -107,9 +107,6 @@ const styles = stylex.create({
     minWidth: 280,
     padding: spacingVars['--spacing-1'],
   },
-  menuOffset: {
-    marginBlockStart: spacingVars['--spacing-1'],
-  },
   menuItem: {
     display: 'flex',
     alignItems: 'center',
@@ -550,7 +547,7 @@ export function TopNavMenu({
         {
           placement: 'below',
           alignment: slot,
-          xstyle: styles.menuOffset,
+          offset: spacingVars['--spacing-1'],
         },
       )}
     </>

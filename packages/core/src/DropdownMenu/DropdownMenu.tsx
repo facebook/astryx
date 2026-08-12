@@ -87,14 +87,6 @@ const styles = stylex.create({
   popover: {
     minWidth: 'anchor-size(width)',
   },
-  popoverBlockGap: {
-    marginBlockStart: spacingVars['--spacing-1'],
-    marginBlockEnd: spacingVars['--spacing-1'],
-  },
-  popoverInlineGap: {
-    marginInlineStart: spacingVars['--spacing-1'],
-    marginInlineEnd: spacingVars['--spacing-1'],
-  },
   popoverCustomWidth: (width: string | number) => ({
     minWidth: typeof width === 'number' ? `${width}px` : width,
   }),
@@ -472,11 +464,6 @@ export function DropdownMenu({
   const popoverXstyle = menuWidth
     ? styles.popoverCustomWidth(menuWidth)
     : styles.popover;
-  const popoverGapStyle =
-    placement === 'above' || placement === 'below'
-      ? styles.popoverBlockGap
-      : styles.popoverInlineGap;
-
   // Context for compound items
   const contextValue = useMemo<DropdownMenuContextValue>(
     () => ({closeMenu, menuSize}),
@@ -542,7 +529,8 @@ export function DropdownMenu({
         {
           placement,
           alignment,
-          xstyle: [popoverXstyle, popoverGapStyle, layerAnimations[placement]],
+          offset: spacingVars['--spacing-1'],
+          xstyle: [popoverXstyle, layerAnimations[placement]],
         },
       )}
     </>
