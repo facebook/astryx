@@ -92,6 +92,18 @@ export function CheckIndicator({
   className,
   style,
   xstyle,
+  // Pulled out of `rest` and dropped, on BOTH paths. An indicator is
+  // decorative by contract, and the owner supplies the role and accessible
+  // name — un-hiding it gets the control announced twice (#4918).
+  //
+  // The sibling indicators enforce this by ordering (`{...rest}` first, own
+  // `aria-hidden` after), which cannot work here: the glyph path renders
+  // `Icon`, and Icon deliberately lets a caller override its a11y defaults
+  // (Icon.tsx:317-322) as a documented escape hatch. Forwarding these would
+  // hand that hatch to a consumer of an element that must never take it.
+  'aria-hidden': _ariaHidden,
+  role: _role,
+  'aria-label': _ariaLabel,
   ...rest
 }: IndicatorProps<'singleSelection'>) {
   const isChecked = state === 'checked';

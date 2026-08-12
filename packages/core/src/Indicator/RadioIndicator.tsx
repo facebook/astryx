@@ -147,6 +147,13 @@ export function RadioIndicator({
   className,
   style,
   xstyle,
+  // Dropped, not forwarded — same contract as CheckIndicator. `aria-hidden`
+  // is settled by the spread order below; `role` and `aria-label` are not
+  // emitted here at all, so ordering cannot stop them, and a caller's copy
+  // would ride through onto a decorative element (#4918).
+  'aria-hidden': _ariaHidden,
+  role: _role,
+  'aria-label': _ariaLabel,
   ...rest
 }: IndicatorProps<'singleSelection'>) {
   // A radio has no partial state; anything other than unchecked reads as
@@ -155,6 +162,13 @@ export function RadioIndicator({
 
   return (
     <span
+      // Spread first, so the indicator's own contract below outranks anything
+      // a caller passed through. `aria-hidden` in particular is NOT an escape
+      // hatch: an indicator that a consumer un-hides gets announced alongside
+      // the control that owns the accessible name (#4918). This matches
+      // CheckIndicator's children path and rubric P3 ("owned aria-* set after
+      // {...rest}").
+      {...rest}
       ref={ref}
       aria-hidden="true"
       {...mergeProps(
@@ -179,8 +193,7 @@ export function RadioIndicator({
         ),
         className,
         style,
-      )}
-      {...rest}>
+      )}>
       {isRenderable(children)
         ? children
         : isChecked && (

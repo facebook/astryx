@@ -191,6 +191,8 @@ defineTheme({
 // --color-border-emphasized, --color-background-surface,
 // --color-background-muted. Radius: --radius-inner, --radius-full.
 // Border width: --border-width.
+import {isRenderable} from '@astryxdesign/core/utils';
+
 function BrandCheckbox({state, size = 'md', isDisabled, children}) {
   return (
     <span
@@ -203,8 +205,14 @@ function BrandCheckbox({state, size = 'md', isDisabled, children}) {
         color: 'var(--color-accent)',
         opacity: isDisabled ? 0.5 : 1,
       }}>
-      {/* children first: the owner passes a loading Spinner through it */}
-      {children ?? (state === 'checked' ? <StarGlyph /> : null)}
+      {/* children first: the owner passes a loading Spinner through it.
+          isRenderable, NOT \`children ??\` — a host writes
+          children={isBusy && <Spinner/>}, and \`false\` is neither null nor
+          caught by ??, so a nullish check takes the children branch, renders
+          nothing in it, and deletes your mark on every chosen row. */}
+      {isRenderable(children)
+        ? children
+        : state === 'checked' && <StarGlyph />}
     </span>
   );
 }
@@ -233,7 +241,7 @@ defineTheme({name: 'brand', indicators: {check: RadioIndicator}});`,
       {
         guidance: true,
         description:
-          'A replacement must render `children` when present — the owning control passes its loading Spinner through it, and dropping it loses the busy visual while aria-busy still fires.',
+          'A replacement must render `children` when they will actually draw something — use `isRenderable(children)`, not `children != null` or `children ?? mark`. The owning control passes its loading Spinner through as `children={isBusy && <Spinner/>}`, so the value is `false` whenever it is not busy: a nullish check takes the children branch, renders nothing, and deletes your state mark on every chosen row (#4893).',
       },
       {
         guidance: true,

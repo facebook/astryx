@@ -205,6 +205,82 @@ describe('falsy children never suppress the state mark (#4893)', () => {
   });
 });
 
+/**
+ * An indicator is decorative BY CONTRACT: the owning control supplies the role
+ * and the accessible name, so an indicator that a caller un-hides gets the
+ * control announced twice (Indicator.doc.mjs). `aria-hidden` is therefore not
+ * an escape hatch, and rubric P3 puts owned aria-* after `{...rest}` (#4918).
+ *
+ * The two siblings enforce it by spread order. CheckIndicator cannot: its glyph
+ * path renders `Icon`, which deliberately lets a caller override its own a11y
+ * defaults — so it strips the props instead.
+ */
+describe('the decorative contract cannot be switched off (#4918)', () => {
+  const cases = [
+    {
+      name: 'CheckIndicator (glyph path)',
+      render: (props: Record<string, unknown>) => (
+        <CheckIndicator state="checked" {...props} />
+      ),
+    },
+    {
+      name: 'CheckIndicator (children path)',
+      render: (props: Record<string, unknown>) => (
+        <CheckIndicator state="checked" {...props}>
+          <b />
+        </CheckIndicator>
+      ),
+    },
+    {
+      name: 'CheckboxIndicator',
+      render: (props: Record<string, unknown>) => (
+        <CheckboxIndicator state="checked" {...props} />
+      ),
+    },
+    {
+      name: 'RadioIndicator',
+      render: (props: Record<string, unknown>) => (
+        <RadioIndicator state="checked" {...props} />
+      ),
+    },
+  ] as const;
+
+  for (const {name, render: renderCase} of cases) {
+    it(`${name} keeps aria-hidden="true" when a caller passes false`, () => {
+      const {container} = render(renderCase({'aria-hidden': 'false'}));
+
+      expect(container.firstElementChild).toHaveAttribute(
+        'aria-hidden',
+        'true',
+      );
+    });
+
+    it(`${name} takes no role or accessible name from a caller`, () => {
+      const {container} = render(
+        renderCase({role: 'checkbox', 'aria-label': 'Pick me'}),
+      );
+      const el = container.firstElementChild;
+
+      expect(el).not.toHaveAttribute('role');
+      expect(el).not.toHaveAttribute('aria-label');
+      // Still decorative, and still the element the owner rings.
+      expect(el).toHaveAttribute('aria-hidden', 'true');
+    });
+
+    it(`${name} still forwards ordinary props`, () => {
+      // The negative control: stripping a11y must not become "strip
+      // everything" — data-testid, id and handlers still have to arrive.
+      const {container} = render(
+        renderCase({'data-testid': 'ind', id: 'pinned'}),
+      );
+      const el = container.firstElementChild;
+
+      expect(el).toHaveAttribute('data-testid', 'ind');
+      expect(el).toHaveAttribute('id', 'pinned');
+    });
+  }
+});
+
 describe('useIndicator', () => {
   it('returns the built-in indicator without a theme override', () => {
     const {result} = renderHook(() => useIndicator('checkbox'));
