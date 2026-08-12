@@ -612,6 +612,51 @@ describe('RichTextEditor', () => {
   });
 });
 
+describe('RichTextEditor theme target', () => {
+  // The input wrapper spread `themeProps('rich-text-editor', {size, status})`
+  // first and then `{...stylex.props(...)} className={className}`. Both later
+  // props carry `className`, so React kept only the last one: the theme class
+  // AND every StyleX class on the wrapper were dropped, leaving
+  // `className={undefined}` when no consumer className was passed.
+  const wrapper = (): HTMLElement => {
+    const el = document.querySelector('[data-size]');
+    if (el == null) {
+      throw new Error('input wrapper not found');
+    }
+    return el as HTMLElement;
+  };
+
+  it('renders the stable theme class and its data attributes', () => {
+    render(<RichTextEditor label="Notes" />);
+    const el = wrapper();
+    expect(el).toHaveClass('astryx-rich-text-editor');
+    expect(el).toHaveAttribute('data-size', 'md');
+  });
+
+  it('keeps the theme class when a consumer className is passed', () => {
+    render(<RichTextEditor label="Notes" className="consumer" />);
+    const el = wrapper();
+    expect(el).toHaveClass('astryx-rich-text-editor');
+    expect(el).toHaveClass('consumer');
+  });
+
+  it('keeps the wrapper StyleX classes alongside the theme class', () => {
+    // The wrapper's border, padding and status styling all live in the
+    // StyleX classes this element lost.
+    render(<RichTextEditor label="Notes" />);
+    const classes = wrapper().className.split(' ');
+    expect(classes).toContain('astryx-rich-text-editor');
+    expect(classes.length).toBeGreaterThan(1);
+  });
+
+  it('reflects status as a data attribute', () => {
+    render(
+      <RichTextEditor label="Notes" status={{type: 'error', message: 'Bad'}} />,
+    );
+    expect(wrapper()).toHaveAttribute('data-status', 'error');
+  });
+});
+
 describe('RichTextEditor Tab keyboard trap escape (WCAG 2.1.2)', () => {
   const DEFAULT_HINT = 'Press Escape then Tab to move focus out of the editor.';
 
