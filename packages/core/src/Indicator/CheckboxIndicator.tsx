@@ -17,6 +17,7 @@ import {
   radiusVars,
 } from '../theme/tokens.stylex';
 import {isRenderable, mergeProps, themeProps} from '../utils';
+import {stripSmuggledProps} from './stripSmuggledProps';
 import {indicatorScope} from './indicator.markers.stylex';
 import type {IndicatorProps} from './types';
 
@@ -191,7 +192,7 @@ export function CheckboxIndicator({
       // hyphenated JSX attribute (see IndicatorProps), so attribute order is
       // what actually keeps a caller from un-hiding a decorative element —
       // rubric P3, "owned aria-* set after {...rest}".
-      {...rest}
+      {...stripSmuggledProps(rest)}
       ref={ref}
       aria-hidden="true"
       {...mergeProps(

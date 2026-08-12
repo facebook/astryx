@@ -34,6 +34,7 @@ import type {SVGProps} from 'react';
 import {Icon} from '../Icon/Icon';
 import {colorVars} from '../theme/tokens.stylex';
 import {isRenderable, mergeProps} from '../utils';
+import {stripSmuggledProps} from './stripSmuggledProps';
 import type {IndicatorProps} from './types';
 
 /** The check glyph matches the control sizes the indicator families share. */
@@ -117,7 +118,7 @@ export function CheckIndicator({
         // same-named attribute a caller passed through. The type omits the
         // a11y props, but TypeScript cannot reject a hyphenated JSX attribute,
         // so order is the part that actually holds.
-        {...rest}
+        {...stripSmuggledProps(rest)}
         ref={ref}
         aria-hidden="true"
         {...mergeProps(
@@ -150,7 +151,9 @@ export function CheckIndicator({
       // registry icon the element that actually receives these IS a span
       // (IconFromRegistry renders one), so forwarding them is correct at
       // runtime; the cast only reconciles the two declarations.
-      {...(rest as Omit<SVGProps<SVGSVGElement>, 'color' | 'ref'>)}
+      {...stripSmuggledProps(
+        rest as Omit<SVGProps<SVGSVGElement>, 'color' | 'ref'>,
+      )}
       // After the spread, deliberately. Icon puts its own a11y defaults BEFORE
       // `{...props}` as a documented escape hatch (Icon.tsx), which is right
       // for an icon and wrong for an indicator — this one is decorative by
