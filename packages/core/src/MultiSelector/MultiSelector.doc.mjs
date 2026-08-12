@@ -31,6 +31,11 @@ export const docs = {
         className: 'astryx-multi-selector-indicator-icon',
         states: ['state'],
       },
+      {
+        className: 'astryx-multi-selector-option',
+        visualProps: ['size'],
+        states: ['select-all', 'selected', 'disabled'],
+      },
     ],
   },
   components: [

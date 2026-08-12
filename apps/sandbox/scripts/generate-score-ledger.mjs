@@ -47,6 +47,50 @@ const OUT_FILE = path.join(OUT_DIR, 'componentScores.ts');
 
 const roster = listComponents(REPO_ROOT);
 
+/**
+ * The fields `LedgerEntry` below declares. The ledger is wiki-authored — an
+ * auditor records a score with a wiki push and no pull request — so a new key
+ * can appear in it at any time, with no review and no commit in this repo.
+ * Inlining such a key verbatim emits a literal TypeScript rejects, which reds
+ * every build in the repo until someone edits the wiki back (a `regression`
+ * key did exactly that on 2026-08-11).
+ *
+ * So the snapshot carries only known fields. The page's runtime fetch reads
+ * the raw ledger and is unaffected; the snapshot is a fallback, and a fallback
+ * missing a field the wiki added an hour ago is a far smaller problem than a
+ * repo that cannot build. Add the key here and to `LedgerEntry` to adopt it.
+ */
+const KNOWN_ENTRY_KEYS = new Set([
+  'component',
+  'package',
+  'status',
+  'score',
+  'grade',
+  'sections',
+  'blocks',
+  'distinct_defects',
+  'fixes',
+  'nits',
+  'lastAudited',
+  'rubricVersion',
+  'mode',
+  'commit',
+  'evidence',
+  'notes',
+  'regression',
+]);
+
+/** Drop keys `LedgerEntry` doesn't declare, warning once per key. */
+const droppedKeys = new Set();
+function pruneEntry(entry) {
+  const kept = {};
+  for (const [k, v] of Object.entries(entry)) {
+    if (KNOWN_ENTRY_KEYS.has(k)) kept[k] = v;
+    else droppedKeys.add(k);
+  }
+  return kept;
+}
+
 let snapshot = null;
 let snapshotFetchedAt = null;
 try {
@@ -63,7 +107,7 @@ try {
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const parsed = JSON.parse(await res.text());
   if (!Array.isArray(parsed.components)) throw new Error('missing a components array');
-  snapshot = parsed;
+  snapshot = {...parsed, components: parsed.components.map(pruneEntry)};
   snapshotFetchedAt = new Date().toISOString();
   console.log(
     `componentScores: snapshot of ${parsed.components.length} audited component(s) from the wiki`,
@@ -74,6 +118,14 @@ try {
   const why = e.name === 'TimeoutError' ? 'no response within 5000ms' : e.message;
   console.warn(
     `componentScores: could not snapshot the ledger (${why}) — the page will rely on its runtime fetch.`,
+  );
+}
+
+if (droppedKeys.size > 0) {
+  console.warn(
+    `componentScores: the wiki ledger carries ${droppedKeys.size} field(s) LedgerEntry does not declare ` +
+      `(${[...droppedKeys].sort().join(', ')}) — dropped from the snapshot. ` +
+      `Add them to LedgerEntry and KNOWN_ENTRY_KEYS to surface them.`,
   );
 }
 
@@ -125,6 +177,9 @@ export interface LedgerEntry {
   commit: string | null;
   evidence?: Array<{label: string; path?: string; note?: string}>;
   notes?: string;
+  /** Set when a re-audit scored lower than the row it replaced, or when it
+   *  records a BLOCK the previous passes missed — why the drop is not a new
+   *  defect, and what it was before. */
   regression?: {
     reason: string;
     from: {score: number | null; blocks: number};
