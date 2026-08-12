@@ -1080,6 +1080,11 @@ const REGION_OPTIONS = [
   {value: 'ap-southeast-1', label: 'ap-southeast-1'},
 ];
 
+// A vertical Divider is `height: 100%`, so in a center-aligned row it collapses
+// to zero. Give it an explicit height to read as a toolbar separator rather than
+// stretching it to the tallest item in the header.
+const controlDividerStyle: CSSProperties = {height: '24px'};
+
 // ============= MAIN =============
 
 export default function ServiceHealthMonitorPage() {
@@ -1116,11 +1121,11 @@ export default function ServiceHealthMonitorPage() {
     <Layout
       height="fill"
       header={
-        <LayoutHeader hasDivider>
-          <HStack gap={3} vAlign="center" wrap="wrap">
-            <StackItem size="fill">
+        <LayoutHeader padding={6} hasDivider>
+          <HStack gap={3} vAlign="center" hAlign="between" wrap="wrap">
+            <VStack gap={1} vAlign="center">
+              <Heading level={1}>Service Health Monitor</Heading>
               <HStack gap={2} vAlign="center">
-                <Heading level={1}>Service health</Heading>
                 <StatusDot
                   variant={autoRefresh ? 'success' : 'neutral'}
                   label={autoRefresh ? 'Live' : 'Paused'}
@@ -1131,59 +1136,50 @@ export default function ServiceHealthMonitorPage() {
                       : 'Auto-refresh paused'
                   }
                 />
-                <HStack gap={1} vAlign="center">
-                  <Text type="supporting" color="secondary">
-                    Updated
-                  </Text>
+                <Text type="supporting" color="secondary">
+                  Updated{' '}
                   <Timestamp
                     value="2026-06-30T21:15:00Z"
                     format="relative"
-                    color="secondary"
+                    type="inherit"
+                    color="inherit"
                   />
-                </HStack>
+                </Text>
               </HStack>
-            </StackItem>
-            <SegmentedControl
-              label="Time window"
-              value={timeWindow}
-              onChange={value => setTimeWindow(value as TimeWindow)}
-              size="sm">
-              <SegmentedControlItem label="1h" value="1h" />
-              <SegmentedControlItem label="1d" value="1d" />
-              <SegmentedControlItem label="7d" value="7d" />
-            </SegmentedControl>
-            <Selector
-              label="Environment"
-              isLabelHidden
-              options={ENV_OPTIONS}
-              value={environment}
-              onChange={value => setEnvironment(value as Environment)}
-            />
-            <Selector
-              label="Region"
-              isLabelHidden
-              options={REGION_OPTIONS}
-              value={region}
-              onChange={setRegion}
-            />
-            <Switch
-              label="Auto-refresh"
-              labelPosition="start"
-              value={autoRefresh}
-              onChange={setAutoRefresh}
-            />
-            <IconButton
-              label="Refresh now"
-              icon={<Icon icon={ArrowPathIcon} size="sm" />}
-              variant="ghost"
-              isDisabled={autoRefresh}
-            />
+            </VStack>
+            <HStack gap={3} vAlign="center">
+              <SegmentedControl
+                label="Time window"
+                value={timeWindow}
+                onChange={value => setTimeWindow(value as TimeWindow)}
+                size="lg">
+                <SegmentedControlItem label="1h" value="1h" />
+                <SegmentedControlItem label="1d" value="1d" />
+                <SegmentedControlItem label="7d" value="7d" />
+              </SegmentedControl>
+              <Selector
+                label="Environment"
+                isLabelHidden
+                size="lg"
+                options={ENV_OPTIONS}
+                value={environment}
+                onChange={value => setEnvironment(value as Environment)}
+              />
+              <Selector
+                label="Region"
+                isLabelHidden
+                size="lg"
+                options={REGION_OPTIONS}
+                value={region}
+                onChange={setRegion}
+              />
+            </HStack>
           </HStack>
         </LayoutHeader>
       }
       content={
         <LayoutContent padding={6}>
-          <VStack gap={6}>
+          <VStack gap={10}>
             {/* Traffic-light KPI tiles */}
             <Grid columns={{minWidth: 240, repeat: 'fit'}} gap={4}>
               {kpis.map(kpi => (
@@ -1196,8 +1192,10 @@ export default function ServiceHealthMonitorPage() {
             </Grid>
 
             {/* Time-series charts */}
-            <LatencyChart series={series} latencyFactor={latencyFactor} />
-            <TrafficChart series={series} factor={factor} />
+            <Grid columns={{minWidth: 320, repeat: 'fit'}} gap={4}>
+              <LatencyChart series={series} latencyFactor={latencyFactor} />
+              <TrafficChart series={series} factor={factor} />
+            </Grid>
 
             {/* On narrow screens the rail collapses in here. */}
             {isNarrow && (
@@ -1206,12 +1204,10 @@ export default function ServiceHealthMonitorPage() {
               </Card>
             )}
 
-            <Divider />
-
             {/* Drill-down table with inline status coloring */}
-            <VStack gap={4}>
+            <VStack gap={6}>
               <HStack hAlign="between" vAlign="center" wrap="wrap">
-                <Heading level={3}>Service breakdown</Heading>
+                <Heading level={2}>Service breakdown</Heading>
                 <Text type="supporting" color="secondary">
                   {rows.length} {rows.length === 1 ? 'service' : 'services'} ·{' '}
                   {ENV_OPTIONS.find(e => e.value === environment)?.label} ·{' '}
@@ -1225,14 +1221,16 @@ export default function ServiceHealthMonitorPage() {
                   icon={<Icon icon={BellAlertIcon} size="lg" />}
                 />
               ) : (
-                <Table<HostRow>
-                  data={rows}
-                  columns={columns}
-                  idKey="id"
-                  density="balanced"
-                  dividers="rows"
-                  hasHover
-                />
+                <Card>
+                  <Table<HostRow>
+                    data={rows}
+                    columns={columns}
+                    idKey="id"
+                    density="balanced"
+                    dividers="rows"
+                    hasHover
+                  />
+                </Card>
               )}
             </VStack>
           </VStack>
