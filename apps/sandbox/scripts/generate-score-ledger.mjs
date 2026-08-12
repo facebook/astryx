@@ -125,6 +125,11 @@ export interface LedgerEntry {
   commit: string | null;
   evidence?: Array<{label: string; path?: string; note?: string}>;
   notes?: string;
+  regression?: {
+    reason: string;
+    from: {score: number | null; blocks: number};
+    recordedAt: string;
+  };
 }
 
 export interface Ledger {
