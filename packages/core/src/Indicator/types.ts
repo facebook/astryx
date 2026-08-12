@@ -75,6 +75,19 @@ export type IndicatorSize = 'sm' | 'md';
  * (CheckboxInput, RadioListItem, a listbox option) keeps all of that. An
  * indicator's only job is to turn `state` into a picture.
  *
+ * The a11y props are omitted from this interface rather than left to
+ * convention: un-hiding an indicator has it announced next to the control that
+ * owns the accessible name — the same thing said twice (#4918). A replacement
+ * that genuinely needs announcing is not an indicator; name the owning control.
+ *
+ * The omission is only half enforceable, and it is worth knowing which half.
+ * TypeScript exempts JSX attribute names that are not valid JS identifiers from
+ * excess-property checking, so `role` (an identifier) is a compile error while
+ * `aria-hidden` and `aria-label` (hyphenated) are not — measured, not assumed.
+ * The components therefore emit their own `aria-hidden` AFTER `{...rest}`, so a
+ * forwarded one cannot win. Nothing is stripped: a forwarded `aria-label` still
+ * reaches the DOM, where it is inert inside an `aria-hidden` subtree.
+ *
  * Interaction state is deliberately *not* a prop. Hover and focus reach an
  * indicator through the CSS ancestor marker ({@link indicatorScope}) applied
  * by its owner, so a row hover tints the control without anyone threading a
@@ -83,7 +96,10 @@ export type IndicatorSize = 'sm' | 'md';
  */
 export interface IndicatorProps<
   F extends IndicatorFamily = IndicatorFamily,
-> extends BaseProps<HTMLSpanElement> {
+> extends Omit<
+  BaseProps<HTMLSpanElement>,
+  'aria-hidden' | 'role' | 'aria-label' | 'aria-labelledby'
+> {
   /** Ref forwarded to the indicator's root element. */
   ref?: Ref<HTMLSpanElement>;
   /** Which state to draw. The state space is fixed by the family. */

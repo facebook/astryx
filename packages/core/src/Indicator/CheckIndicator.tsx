@@ -92,18 +92,6 @@ export function CheckIndicator({
   className,
   style,
   xstyle,
-  // Pulled out of `rest` and dropped, on BOTH paths. An indicator is
-  // decorative by contract, and the owner supplies the role and accessible
-  // name — un-hiding it gets the control announced twice (#4918).
-  //
-  // The sibling indicators enforce this by ordering (`{...rest}` first, own
-  // `aria-hidden` after), which cannot work here: the glyph path renders
-  // `Icon`, and Icon deliberately lets a caller override its a11y defaults
-  // (Icon.tsx:317-322) as a documented escape hatch. Forwarding these would
-  // hand that hatch to a consumer of an element that must never take it.
-  'aria-hidden': _ariaHidden,
-  role: _role,
-  'aria-label': _ariaLabel,
   ...rest
 }: IndicatorProps<'singleSelection'>) {
   const isChecked = state === 'checked';
@@ -126,7 +114,9 @@ export function CheckIndicator({
       <span
         // Spread first, as on the glyph path below, so the indicator's own
         // contract (aria-hidden, and the styling it composes) outranks any
-        // same-named attribute a caller passed through.
+        // same-named attribute a caller passed through. The type omits the
+        // a11y props, but TypeScript cannot reject a hyphenated JSX attribute,
+        // so order is the part that actually holds.
         {...rest}
         ref={ref}
         aria-hidden="true"
@@ -161,6 +151,11 @@ export function CheckIndicator({
       // (IconFromRegistry renders one), so forwarding them is correct at
       // runtime; the cast only reconciles the two declarations.
       {...(rest as Omit<SVGProps<SVGSVGElement>, 'color' | 'ref'>)}
+      // After the spread, deliberately. Icon puts its own a11y defaults BEFORE
+      // `{...props}` as a documented escape hatch (Icon.tsx), which is right
+      // for an icon and wrong for an indicator — this one is decorative by
+      // contract, so it re-asserts it here rather than inheriting the hatch.
+      aria-hidden="true"
       icon="check"
       size={iconSizeForIndicator[size]}
       color={isDisabled ? 'disabled' : 'accent'}

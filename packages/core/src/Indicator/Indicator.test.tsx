@@ -207,46 +207,68 @@ describe('falsy children never suppress the state mark (#4893)', () => {
 
 /**
  * An indicator is decorative BY CONTRACT: the owning control supplies the role
- * and the accessible name, so an indicator that a caller un-hides gets the
- * control announced twice (Indicator.doc.mjs). `aria-hidden` is therefore not
- * an escape hatch, and rubric P3 puts owned aria-* after `{...rest}` (#4918).
+ * and the accessible name, so an indicator that is also announced says the same
+ * thing twice (#4918).
  *
- * The two siblings enforce it by spread order. CheckIndicator cannot: its glyph
- * path renders `Icon`, which deliberately lets a caller override its own a11y
- * defaults — so it strips the props instead.
+ * The contract is held in two places, because neither covers the whole thing:
+ *
+ *   - `IndicatorProps` omits the a11y props, which makes `role` a compile
+ *     error. It does NOT make `aria-hidden` one: TypeScript exempts JSX
+ *     attribute names that are not valid JS identifiers from excess-property
+ *     checking, so anything hyphenated slips through. That is a language rule,
+ *     not a gap in our types — the second test below is the proof, and it will
+ *     start failing the day TS changes its mind, which is when we can drop the
+ *     ordering.
+ *   - So each component emits its own `aria-hidden` AFTER `{...rest}`, which is
+ *     what actually keeps a caller from un-hiding it. Nothing is stripped.
  */
-describe('the decorative contract cannot be switched off (#4918)', () => {
+describe('the decorative contract (#4918)', () => {
+  it('rejects `role` at compile time', () => {
+    // @ts-expect-error — the owning control holds the role.
+    const rejected = <CheckIndicator state="checked" role="checkbox" />;
+
+    expect(rejected).toBeTruthy();
+  });
+
+  it('cannot reject a hyphenated a11y attribute — TS exempts those', () => {
+    // NO @ts-expect-error here, deliberately: this compiles, and the comment
+    // above explains why. Runtime order is what makes it harmless.
+    const accepted = <CheckIndicator state="checked" aria-label="inert" />;
+
+    expect(accepted).toBeTruthy();
+  });
+
   const cases = [
     {
       name: 'CheckIndicator (glyph path)',
-      render: (props: Record<string, unknown>) => (
-        <CheckIndicator state="checked" {...props} />
+      render: (p: Record<string, unknown>) => (
+        <CheckIndicator state="checked" {...p} />
       ),
     },
     {
       name: 'CheckIndicator (children path)',
-      render: (props: Record<string, unknown>) => (
-        <CheckIndicator state="checked" {...props}>
+      render: (p: Record<string, unknown>) => (
+        <CheckIndicator state="checked" {...p}>
           <b />
         </CheckIndicator>
       ),
     },
     {
       name: 'CheckboxIndicator',
-      render: (props: Record<string, unknown>) => (
-        <CheckboxIndicator state="checked" {...props} />
+      render: (p: Record<string, unknown>) => (
+        <CheckboxIndicator state="checked" {...p} />
       ),
     },
     {
       name: 'RadioIndicator',
-      render: (props: Record<string, unknown>) => (
-        <RadioIndicator state="checked" {...props} />
+      render: (p: Record<string, unknown>) => (
+        <RadioIndicator state="checked" {...p} />
       ),
     },
   ] as const;
 
   for (const {name, render: renderCase} of cases) {
-    it(`${name} keeps aria-hidden="true" when a caller passes false`, () => {
+    it(`${name} stays aria-hidden even when a caller passes false`, () => {
       const {container} = render(renderCase({'aria-hidden': 'false'}));
 
       expect(container.firstElementChild).toHaveAttribute(
@@ -255,21 +277,8 @@ describe('the decorative contract cannot be switched off (#4918)', () => {
       );
     });
 
-    it(`${name} takes no role or accessible name from a caller`, () => {
-      const {container} = render(
-        renderCase({role: 'checkbox', 'aria-label': 'Pick me'}),
-      );
-      const el = container.firstElementChild;
-
-      expect(el).not.toHaveAttribute('role');
-      expect(el).not.toHaveAttribute('aria-label');
-      // Still decorative, and still the element the owner rings.
-      expect(el).toHaveAttribute('aria-hidden', 'true');
-    });
-
     it(`${name} still forwards ordinary props`, () => {
-      // The negative control: stripping a11y must not become "strip
-      // everything" — data-testid, id and handlers still have to arrive.
+      // The negative control: order must not turn into "drop everything".
       const {container} = render(
         renderCase({'data-testid': 'ind', id: 'pinned'}),
       );
