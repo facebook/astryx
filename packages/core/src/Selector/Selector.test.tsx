@@ -2387,6 +2387,47 @@ describe('Selector indicator (chevron) icon theme target', () => {
 });
 
 describe('Selector search affordances', () => {
+  it('renders the search row seamlessly — no nested input box, a divider under it', async () => {
+    const user = userEvent.setup();
+    const {container} = render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value="Apple"
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+
+    const search = screen.getByRole('combobox', {hidden: true});
+    const row = search.parentElement;
+    if (!row) {
+      throw new Error('search row not found');
+    }
+    // The panel is already a bordered surface: the field inside it must not be
+    // a second bordered box (this used to render a TextInput).
+    expect(row).not.toHaveClass('astryx-text-input');
+    expect(search.closest('.astryx-text-input')).toBeNull();
+    // The row is the documented theme target for the search header.
+    expect(row).toHaveClass('astryx-selector-search');
+    // ...and a divider separates it from the options.
+    const separator =
+      container.ownerDocument.querySelector('[role="separator"]');
+    if (!separator) {
+      throw new Error('divider not found');
+    }
+    // Order: row, then divider, then the listbox.
+    expect(
+      row.compareDocumentPosition(separator) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    const listbox = screen.getByRole('listbox', {hidden: true});
+    expect(
+      separator.compareDocumentPosition(listbox) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
   it('renders a decorative (aria-hidden) magnifier icon whenever hasSearch is on', async () => {
     const user = userEvent.setup();
     render(
@@ -2400,8 +2441,7 @@ describe('Selector search affordances', () => {
     );
     await user.click(screen.getByRole('button', {name: 'Fruit'}));
     const search = screen.getByRole('combobox', {hidden: true});
-    // The search field is a TextInput; the magnifier is its startIcon, so it
-    // sits inside the input container as a sibling of the <input>.
+    // The magnifier leads the search row, as a sibling of the <input>.
     const container = search.parentElement;
     const magnifier = container?.querySelector('.astryx-icon');
     expect(magnifier).toBeTruthy();
