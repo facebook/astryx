@@ -3,8 +3,10 @@
 /**
  * @file Template score-ledger schema, historical seed, and audit prompt.
  * @input Recoverable merge-commit score claims plus the wiki template rubric.
- * @output Versioned template ledger consumed by the Templates audit page.
+ * @output Versioned template ledger and executable audit-recording prompt.
  * @position Local seed and schema for the proposed wiki template ledger.
+ *
+ * SYNC: Keep this schema aligned with scripts/template-score-ledger.mjs.
  *
  * The page checks the expected wiki copy at runtime and falls back to this
  * bundled seed, matching the component page's live-ledger behavior without
@@ -621,6 +623,7 @@ export function isTemplateAuditLedger(
 }
 
 export interface TemplateAuditPromptInput {
+  id: string;
   name: string;
   type: 'Page' | 'Block';
   codePath: string;
@@ -628,6 +631,7 @@ export interface TemplateAuditPromptInput {
 }
 
 export function templateAuditPrompt({
+  id,
   name,
   type,
   codePath,
@@ -643,5 +647,7 @@ Metadata: ${docPath}
 
 Work all seven rubric categories and use the rubric's grading output format. Inspect the rendered template in a real browser, capture the relevant states in light and dark, and include responsive viewport coverage for page templates. Cite exact file locations for every deduction. Do not infer unpublished evidence or award points for anything you did not measure.
 
-Return the complete scorecard, detailed findings, screenshot-test evidence, and the top three fixes. Format the record for the central template-scores.json ledger, using the identity "${type.toLowerCase()}/<slug>".`;
+Return the complete scorecard, detailed findings, screenshot-test evidence, and the top three fixes. Save the raw scorecard JSON to a file without the ledger-managed id or status fields. Then record and publish it with:
+
+node scripts/template-score-ledger.mjs --record ${id} --from <scorecard.json> --push`;
 }
