@@ -28,6 +28,7 @@ export const docs = {
       },
       {className: 'astryx-selector-option'},
       {className: 'astryx-selector-search'},
+      {className: 'astryx-selector-section-heading'},
       {className: 'astryx-selector-empty-state'},
       {className: 'astryx-selector-clear-icon', deprecatedFor: 'input-clear-icon'},
       {className: 'astryx-selector-indicator-icon', states: ['state']},
