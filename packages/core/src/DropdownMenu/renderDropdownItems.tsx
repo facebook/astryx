@@ -39,8 +39,8 @@ const styles = stylex.create({
   },
 });
 
-function getItemKey(item: DropdownMenuItemData): string {
-  return `item-${item.label}`;
+function getItemKey(index: number): string {
+  return `item-${index}`;
 }
 
 function getSectionKey(section: DropdownMenuSection, index: number): string {
@@ -50,15 +50,22 @@ function getSectionKey(section: DropdownMenuSection, index: number): string {
 /**
  * Renders one leaf row as a `DropdownMenuItem`.
  *
+ * Keyed by position rather than by label: an item that reports its own result
+ * (a copy row swapping to "Copied") would otherwise change key mid-interaction,
+ * remounting the row and dropping keyboard focus.
+ *
  * `items` is stripped because it selects the submenu shape rather than being an
  * item prop; every other field of `DropdownMenuItemData` is a
  * `DropdownMenuItem` prop by construction (the type is `Pick`ed from
  * `DropdownMenuItemProps`), so the data path forwards them wholesale and can't
  * silently drop a field the data API advertises.
  */
-function renderLeafItem(item: DropdownMenuItemData): ReactElement {
+function renderLeafItem(
+  item: DropdownMenuItemData,
+  index: number,
+): ReactElement {
   const {items: _submenuItems, ...itemProps} = item;
-  return <DropdownMenuItem key={getItemKey(item)} {...itemProps} />;
+  return <DropdownMenuItem key={getItemKey(index)} {...itemProps} />;
 }
 
 /**
@@ -107,7 +114,7 @@ export function renderDropdownItems(items: DropdownMenuOption[]): ReactNode {
       if (option.items && option.items.length > 0) {
         elements.push(
           <DropdownMenuSubMenu
-            key={getItemKey(option)}
+            key={getItemKey(i)}
             icon={option.icon}
             label={option.label}
             isDisabled={option.isDisabled}>
@@ -115,7 +122,7 @@ export function renderDropdownItems(items: DropdownMenuOption[]): ReactNode {
           </DropdownMenuSubMenu>,
         );
       } else {
-        elements.push(renderLeafItem(option));
+        elements.push(renderLeafItem(option, i));
       }
     }
   }

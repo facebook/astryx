@@ -414,7 +414,10 @@ describe('DropdownMenu items', () => {
   it('closes the menu after an item is activated', async () => {
     const user = userEvent.setup();
     render(
-      <DropdownMenu button={{label: 'Actions'}} items={[{label: 'Edit', onClick: () => {}}]} />,
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        items={[{label: 'Edit', onClick: () => {}}]}
+      />,
     );
 
     await user.click(screen.getByRole('button', {name: /Actions/}));
@@ -470,6 +473,53 @@ describe('DropdownMenu items', () => {
     expect(
       screen.getByRole('menuitem', {name: 'Copy ID', hidden: true}),
     ).toHaveFocus();
+  });
+
+  it('closes the menu on activation even when the item carries no handler', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Actions'}} items={[{label: 'Edit'}]} />,
+    );
+
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    await user.click(
+      screen.getByRole('menuitem', {name: 'Edit', hidden: true}),
+    );
+    expect(HTMLElement.prototype.hidePopover).toHaveBeenCalled();
+  });
+
+  it('keeps a row mounted when its label changes, so focus survives (data mode keys by position)', async () => {
+    const user = userEvent.setup();
+
+    function CopyMenu() {
+      const [copied, setCopied] = useState(false);
+      return (
+        <DropdownMenu
+          button={{label: 'Actions'}}
+          items={[
+            {
+              label: copied ? 'Copied' : 'Copy ID',
+              hasCloseOnSelect: false,
+              onClick: () => setCopied(true),
+            },
+            {label: 'Rename'},
+          ]}
+        />
+      );
+    }
+
+    render(<CopyMenu />);
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    const item = screen.getByRole('menuitem', {name: 'Copy ID', hidden: true});
+    item.focus();
+    await user.click(item);
+
+    const renamed = screen.getByRole('menuitem', {
+      name: 'Copied',
+      hidden: true,
+    });
+    expect(renamed).toBe(item);
+    expect(renamed).toHaveFocus();
   });
 
   it('does not call onClick when disabled', async () => {

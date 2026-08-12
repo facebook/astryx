@@ -146,10 +146,10 @@ export function DropdownMenuItem({
   const menuSize = ctx?.menuSize ?? 'md';
 
   const handleClick = useCallback(() => {
-    if (isDisabled || !onClick) {
+    if (isDisabled) {
       return;
     }
-    onClick();
+    onClick?.();
     if (hasCloseOnSelect) {
       ctx?.closeMenu();
     }

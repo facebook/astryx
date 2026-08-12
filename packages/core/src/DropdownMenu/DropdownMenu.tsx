@@ -116,10 +116,7 @@ export interface DropdownMenuItemData extends Pick<
   DropdownMenuItemProps,
   'icon' | 'onClick' | 'isDisabled' | 'variant' | 'hasCloseOnSelect'
 > {
-  /**
-   * Primary label text. Narrowed to `string` from the item's `ReactNode`:
-   * data mode derives each row's React key from the label.
-   */
+  /** Primary label text. */
   label: string;
   /**
    * Nested submenu entries. When present, this row becomes a submenu (a
