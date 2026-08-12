@@ -183,26 +183,19 @@ const styles = stylex.create({
     textAlign: 'start',
     cursor: 'pointer',
   },
-  // Content of the flyout for collapsed items with children.
-  //
-  // No border and no background: `usePopover` already paints the panel
-  // (background, `--radius-container`, shadow) on the element this div is
-  // rendered into, which is what every other popover consumer in core relies
-  // on. This div drew a second 1px `--color-border` rectangle at radius 0
-  // inside that rounded panel, so the flyout showed square grey corners inside
-  // rounded ones. The radius here matches the surface's so a theme that
-  // changes `--radius-container` keeps the two in step.
+  // No border and no background: `usePopover` paints the panel this renders
+  // into. Drawing a second surface here put square corners inside its rounded
+  // ones. The radius matches so a theme retargeting `--radius-container`
+  // keeps the two in step.
   popoverSurface: {
     borderRadius: radiusVars['--radius-container'],
     paddingBlock: spacingVars['--spacing-1'],
     paddingInline: spacingVars['--spacing-1'],
     minWidth: 180,
   },
-  // Gap between the collapsed rail and the flyout, on the positioned layer —
-  // the same place `DropdownMenu` puts it. As `marginInlineStart` on the
-  // content div it only inset the content inside the panel, leaving the panel
-  // flush against the rail and an unbalanced 4px strip down the flyout's
-  // inside edge.
+  // The gap from the rail belongs on the positioned layer, where
+  // `DropdownMenu` keeps it. On the content div it insets the content instead,
+  // leaving the panel flush against the rail.
   popoverGap: {
     marginInlineStart: spacingVars['--spacing-1'],
     marginInlineEnd: spacingVars['--spacing-1'],
@@ -465,19 +458,10 @@ export function SideNavItem({
     toggleItemCollapse();
   };
 
-  // Hover intent for the collapsed submenu flyout — the shared hook, not a
-  // hand-rolled pair of timers. It gates hover on `(hover: hover)` (so a touch
-  // tap never schedules a hover open), only lets `mouseleave` close what hover
-  // opened, and swallows the `mouseenter` that immediately follows a
-  // click-to-close while the pointer is still on the trigger.
-  //
-  // Only the pointer half is wired: the hook's `contentProps.onKeyDown` /
-  // `menuRef` drive a `useListFocus` over `[role="menuitem"]`, and this flyout
-  // is a focus-trapped `role="dialog"` of links and buttons — no menu items —
-  // so attaching them would swallow arrow keys instead of navigating with them.
-  // `DropdownMenuSubMenu` adopts the same pointer-only half for the same
-  // reason. Escape, Tab containment, and focus restore stay with `usePopover`'s
-  // focus trap, unchanged.
+  // Pointer half only. The hook's `onKeyDown`/`menuRef` drive a `useListFocus`
+  // over `[role="menuitem"]`, and this flyout is a focus-trapped dialog of
+  // links — wiring them would swallow arrow keys rather than navigate with
+  // them. Keyboard stays with `usePopover`'s trap, as in DropdownMenuSubMenu.
   const {triggerProps: hoverTriggerProps, contentProps: hoverContentProps} =
     useMenuHover({
       show: popover.show,
@@ -499,12 +483,9 @@ export function SideNavItem({
       displayIcon &&
       renderIconSlot(displayIcon, {
         size: 'sm',
-        // `inherit`, not `primary`: on a selected row the icon has to track
-        // the row's own colour, which is HighlightText under
-        // `forced-colors: active` (see navItemStyles.selected). Outside
-        // forced colours the two resolve to the same value — the theme
-        // generator emits `--color-icon-primary` and `--color-text-primary`
-        // from one expression — so no pixel moves.
+        // `inherit` so a selected row's icon follows the row to HighlightText
+        // under forced colors. Identical to `primary` otherwise: both token
+        // families are emitted from one expression.
         color: isSelected ? 'inherit' : isDisabled ? 'disabled' : 'secondary',
       });
 
@@ -594,9 +575,7 @@ export function SideNavItem({
       {displayIcon &&
         renderIconSlot(displayIcon, {
           size: 'sm',
-          // See the collapsed path above: `inherit` keeps a selected row's
-          // icon on the row's colour, which forced colours remap to
-          // HighlightText.
+          // `inherit` — see the collapsed path above.
           color: isSelected ? 'inherit' : isDisabled ? 'disabled' : 'secondary',
         })}
       {!isCollapsed && <span {...stylex.props(styles.label)}>{label}</span>}
@@ -641,19 +620,9 @@ export function SideNavItem({
     focusOutlineProps.focusVisible(...itemStyleArgs),
   );
 
-  // ── Split-action path: <div> row with <a> + <button> as siblings ──
-  //
-  // When both collapsible and href are set, we can't nest a <button>
-  // inside an <a>. Instead we use a <div> as the flex row container,
-  // an <a display:contents> for the link (with ::before covering the row),
-  // and a <button> sibling lifted above the overlay via z-index.
-
-  // ── Split-action path: primary element + toggle button as siblings ──
-  //
-  // When collapsible and a primary action (href or onClick) are both set,
-  // we render a <div> row with the primary element and chevron toggle as
-  // siblings. This avoids nesting interactive elements (<button> inside <a>).
-
+  // Split-action path: collapsible plus a primary action renders the primary
+  // element and the chevron toggle as siblings in a <div> row, since a
+  // <button> cannot nest inside an <a>.
   let itemElement;
 
   if (hasIndependentToggle) {

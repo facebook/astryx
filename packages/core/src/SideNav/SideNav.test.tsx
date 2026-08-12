@@ -1185,10 +1185,8 @@ describe('SideNavItem (collapsed)', () => {
 // =============================================================================
 
 /**
- * Pin the ambient pointer modality. The global test setup polyfills
- * `matchMedia` with a stub that never matches, which reads as a coarse
- * pointer — correct as a default, but it means every hover assertion has to
- * opt into `(hover: hover)` explicitly.
+ * Pin the ambient pointer modality: the global `matchMedia` stub never
+ * matches, which reads as a coarse pointer, so hover assertions must opt in.
  */
 function stubPointerModality(modality: 'fine' | 'coarse') {
   vi.stubGlobal('matchMedia', (query: string) => ({
@@ -1264,8 +1262,7 @@ describe('SideNavItem — collapsed submenu hover intent', () => {
     fireEvent.click(trigger);
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
 
-    // Clicking is a commitment: the flyout outlives the pointer, so a user
-    // can travel to it diagonally, or move away and come back.
+    // Clicking is a commitment: the flyout outlives the pointer.
     fireEvent.mouseLeave(trigger);
     advance(HIDE_DELAY * 2);
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
@@ -1280,9 +1277,8 @@ describe('SideNavItem — collapsed submenu hover intent', () => {
     advance(SHOW_DELAY);
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
 
-    // Click to dismiss. The pointer never left, so the browser fires a fresh
-    // mouseenter as the flyout unmounts from under it — which used to reopen
-    // what the user just closed.
+    // The pointer never left, so dismissing fires a fresh mouseenter as the
+    // flyout unmounts — which used to reopen what the user just closed.
     fireEvent.click(trigger);
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
 
@@ -1332,8 +1328,7 @@ describe('SideNavItem — collapsed submenu hover intent', () => {
 
     unmount();
 
-    // Every timer the item scheduled has to be cleared on unmount — the hook
-    // owns that cleanup now, and it still has to hold.
+    // The hook owns the timer cleanup now; it still has to hold.
     expect(vi.getTimerCount()).toBe(0);
   });
 
@@ -1356,11 +1351,9 @@ describe('SideNavItem — collapsed submenu hover intent', () => {
     const first = screen.getByRole('link', {name: 'General', hidden: true});
     first.focus();
 
-    // The flyout is a focus-trapped `role="dialog"` of links, not a
-    // `role="menu"` of menuitems. `useMenuHover`'s list-focus half is
-    // deliberately not wired: attached, it would `preventDefault()` every
-    // arrow key and then find no `[role="menuitem"]` to move to — a keyboard
-    // regression traded for a hover fix.
+    // A dialog of links, not a menu of menuitems: wiring the hook's
+    // list-focus half would preventDefault every arrow key and find no
+    // `[role="menuitem"]` to move to.
     const notPrevented = fireEvent.keyDown(first, {key: 'ArrowDown'});
     expect(notPrevented).toBe(true);
     expect(first).toHaveFocus();
@@ -1382,8 +1375,7 @@ describe('SideNavItem — collapsed submenu hover intent', () => {
     await user.keyboard('{Enter}');
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
 
-    // Keyboard opens are not hover opens: focus goes into the flyout, where
-    // hover opens deliberately leave it on the trigger (`skipAutoFocus`).
+    // Keyboard opens move focus in; hover opens leave it on the trigger.
     await waitFor(() =>
       expect(
         screen.getByRole('link', {name: 'General', hidden: true}),
@@ -1407,8 +1399,7 @@ describe('SideNavItem — collapsed submenu hover intent', () => {
       vi.advanceTimersToNextFrame();
     });
 
-    // `skipAutoFocus` on the hover path: a pointer user who is mid-hover must
-    // not have the caret yanked out of whatever they were doing.
+    // `skipAutoFocus`: a mid-hover pointer user keeps their caret.
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
     expect(trigger).toHaveFocus();
   });
@@ -1755,8 +1746,8 @@ describe('SideNav focus management', () => {
     const toggle = screen.getByRole('button', {name: 'Collapse Settings'});
     await user.click(toggle);
 
-    // The collapsed group is `inert`, so focus must not be left inside it —
-    // and it must not be dropped to <body> either.
+    // The collapsed group is `inert`: focus may land neither inside it nor
+    // on <body>.
     expect(document.activeElement).not.toBe(child);
     expect(document.activeElement).not.toBe(document.body);
     expect(toggle).toHaveFocus();
@@ -1904,14 +1895,10 @@ describe('SideNav audit regressions', () => {
 // =============================================================================
 // A15 — the shared focus ring
 //
-// jsdom does not derive `:focus-visible` from a `.focus()` or from
-// `user-event`'s Tab on an <a>/<button>, so the painted ring cannot be read
-// back here (the rendered geometry is measured in a real browser instead, and
-// #4654's own review is the cautionary tale for trusting a unit test on this).
-// What these tests pin is the composition: the element that takes focus
-// carries the classes `focusOutlineStyles.focusVisible` compiles to. Comparing
-// against the classes StyleX generates — rather than a hardcoded hash — keeps
-// the assertion honest if the utility's declarations ever change.
+// jsdom does not derive `:focus-visible` from `.focus()` or from Tab, so the
+// painted ring cannot be read back here; the geometry is measured in a real
+// browser instead. These pin the composition — that the focusable element
+// carries the classes `focusOutlineStyles.focusVisible` compiles to.
 // =============================================================================
 
 const sharedFocusRingClasses = stylex
@@ -1971,9 +1958,8 @@ describe('SideNav focus ring (A15)', () => {
     expectSharedFocusRing(link);
     expectSharedFocusRing(toggle);
 
-    // The row is a presentational <div> holding two independent tab stops.
-    // Ringing it as well (`focusWithin`) would paint a second outline around
-    // the whole row whenever either child is focused.
+    // A presentational <div> holding two independent tab stops; ringing it
+    // too would paint a second outline around the whole row.
     const row = link.parentElement!;
     expect(row.tagName).toBe('DIV');
     expect(row).toContainElement(toggle);

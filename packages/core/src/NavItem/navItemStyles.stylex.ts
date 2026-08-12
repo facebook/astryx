@@ -14,20 +14,10 @@
  * Individual components layer their own overrides (e.g. collapsed mode,
  * indentation) via stylex.props composition.
  *
- * **The focus ring is deliberately not defined here.** It is one shared
- * definition for the whole library, in `utils/focusOutline.stylex.ts` (#4654),
- * and a nav item consumes it the way every other component does — by composing
- * it at the call site:
- *
- * ```
- * <a {...focusOutlineProps.focusVisible(navItemStyles.item, navItemStyles[size])}>
- * ```
- *
- * Writing the ring into `item` instead would mean restating the outline
- * longhands in this file, which is the sixth duplicate #4654 exists to remove;
- * it would also put a ring on the split-action *row*, which is a container
- * whose children hold the focus. Compose the helper on whichever element
- * actually takes focus.
+ * The focus ring is not defined here. Compose
+ * `focusOutlineProps.focusVisible` (utils/focusOutline.stylex.ts) at the call
+ * site, on whichever element actually takes focus — in a split-action row that
+ * is the link and the toggle, not the row that contains them.
  */
 
 export type NavItemSize = 'sm' | 'md' | 'lg';
@@ -94,21 +84,11 @@ export const navItemStyles = stylex.create({
 
   /** Selected/active page indicator — deemphasized background, medium weight */
   selected: {
-    // `--color-neutral` is a background, and under `forced-colors: active` the
-    // OS flattens backgrounds to Canvas — the selected row resolved to a 6%
-    // alpha of the canvas colour over the canvas itself, i.e. nothing. With no
-    // fill, and a weight difference the OS palette cannot express, the current
-    // page was indistinguishable from every other row (A14).
-    //
-    // Highlight/HighlightText is the platform convention for a selected item,
-    // the same pair ToggleButton and SegmentedControlItem use. Unlike those
-    // two this does NOT need `forced-color-adjust: none`: they are native
-    // form controls whose UA colours outrank the authored fill, while a nav
-    // row resets `appearance` and paints its own background, so the system
-    // keywords land — measured on both the `<a>` and the `<button>` render
-    // path. Leaving the adjust alone matters, because it inherits: with it
-    // set, a Badge in `endContent` would keep its authored fill instead of
-    // being remapped to the user's palette.
+    // Forced colors flatten `--color-neutral` away, leaving the current page
+    // unmarked; Highlight/HighlightText is the platform convention, as in
+    // ToggleButton and SegmentedControlItem. No `forced-color-adjust: none`
+    // here — a nav row is not a native control, so the keywords land without
+    // it, and it would inherit into `endContent` and pin a Badge's own fill.
     backgroundColor: {
       default: colorVars['--color-neutral'],
       '@media (forced-colors: active)': 'Highlight',
@@ -122,11 +102,9 @@ export const navItemStyles = stylex.create({
       '@media (hover: hover)': {
         backgroundColor: {
           default: colorVars['--color-neutral'],
-          // Nested inside the hover media query rather than written as a
-          // sibling `(hover: hover) and (forced-colors: active)` block: as
-          // siblings the two are separate atomic rules of equal specificity
-          // and `item`'s own hover overlay won on source order, so hovering
-          // the current page erased its Highlight fill.
+          // Nested, not a sibling `(hover: hover) and (forced-colors:
+          // active)` block: as siblings `item`'s hover overlay ties on
+          // specificity and wins on source order, erasing the fill.
           '@media (forced-colors: active)': 'Highlight',
         },
       },

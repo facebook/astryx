@@ -188,11 +188,9 @@ const styles = stylex.create({
 });
 
 /**
- * The icon rows — the footer bar, its collapsed rail form, the topbar strip
- * and the drawer footer — cascade this to their children through
- * `SizeContext`, so the built-in collapse button and whatever the consumer
- * puts in `footerIcons` come out one height instead of two. They are compact
- * icon rails, so `sm`; an explicit `size` on a child still wins.
+ * Cascaded to the icon rows through `SizeContext` so the built-in collapse
+ * button and the consumer's `footerIcons` come out one height. An explicit
+ * `size` on a child still wins.
  */
 const FOOTER_ICON_SIZE = 'sm';
 
@@ -415,9 +413,8 @@ export function SideNav({
     };
   }
 
-  // A SideNavCollapseButton placed outside this tree (via `handleRef`) is not
-  // reachable by context, so it subscribes instead. Notify it after commit —
-  // this is the one direction React cannot propagate on its own.
+  // A SideNavCollapseButton outside this tree (via `handleRef`) is not
+  // reachable by context, so it subscribes instead.
   useEffect(() => {
     for (const listener of collapseListenersRef.current) {
       listener();

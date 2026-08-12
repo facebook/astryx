@@ -38,13 +38,9 @@ import type {ElementSize} from '../SizeContext/SizeContext';
 // =============================================================================
 
 const styles = stylex.create({
-  // The RTL mirror wrapper has to be a flex container, not the inline box it
-  // is by default. Button's icon slot is `display: flex` with `align-items:
-  // center`, so this span is a flex item and blockifies to `display: block` —
-  // which gives it a LINE box (22.86px at the slot's 16px font) and lands the
-  // inline-flex chevron inside it on the text baseline, 2.42px above the
-  // button's centre. Measured, not guessed. As a flex container the glyph is
-  // a flex item instead of a line-box participant and centres exactly.
+  // A flex container, so the glyph is a flex item. Left to blockify as a flex
+  // item of Button's icon slot, this span gets a line box and seats the
+  // chevron on its text baseline — 2.42px above the button's centre.
   chevronMirror: {
     display: 'flex',
     alignItems: 'center',
@@ -84,11 +80,9 @@ export interface SideNavCollapseButtonProps extends BaseProps<HTMLButtonElement>
   label?: string;
 
   /**
-   * Button size. Defaults to whatever the surrounding container cascades
-   * through `SizeContext` — inside a SideNav footer that is `sm` — and to
-   * `md` with no container, matching `Button`. Set it explicitly when the
-   * button is placed outside a sized container and has to match neighbours
-   * of its own, e.g. in a `TopNav` beside other actions.
+   * Button size. Defaults to the size its container cascades — `sm` in a
+   * SideNav footer — or `md` outside one. Set it for placements with no row
+   * to inherit from, e.g. a `handleRef` button in a `TopNav`.
    */
   size?: ElementSize;
 
@@ -189,9 +183,8 @@ function useSideNavCollapseState(
   const contextCollapseState = useSideNavCollapse();
 
   // Out-of-tree mode: the state lives in a SideNav this component is not a
-  // descendant of, so it is an external store. Subscribing (rather than
-  // reading `handleRef.current` during render) is what keeps the chevron and
-  // the label in step with the sidenav after a toggle.
+  // descendant of, so it is an external store. Reading `handleRef.current`
+  // during render instead would leave the chevron stale after a toggle.
   const subscribe = useCallback(
     (listener: () => void) =>
       handleRef?.current?.subscribe?.(listener) ?? (() => {}),
