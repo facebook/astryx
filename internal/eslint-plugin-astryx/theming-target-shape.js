@@ -324,11 +324,11 @@ const rule = {
         return;
       }
 
-      const {all, conditional} = scanner.styleArguments(opening);
+      const {all, conditional, implicit} = scanner.styleArguments(opening);
 
       // Resolve every style the element applies. One unknown and the element
       // is out of scope — see the file header.
-      const properties = [];
+      const properties = [...implicit];
       for (const argument of all) {
         const resolved = scanner.resolveStyleProperties(argument);
         if (resolved == null) {

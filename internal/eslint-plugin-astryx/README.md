@@ -144,26 +144,29 @@ an element (spread, through `mergeProps`, through a local `const`, or via
 declare **paint** (color, background, border, font, radius, shadow), **layout**
 (display, position, flex/grid, margin/padding, width/height, transform), or
 neither (opacity, transition, cursor). Style objects imported from another
-module are read from that module via `stylex-style-source.js`.
+module are read from that module via `stylex-style-source.js`, and
+`focusOutlineProps.focusVisible(…)` reads as `stylex.props(…)` plus the ring's
+own outline paint — the helper forwards its arguments, so a focusable element
+styled through it is not an unstyled one.
 
 #### `@astryx/theming-target-shape`
 
 | Check (messageId)                                                 | Principle                                                 | What it flags                                                                                                                                             | On `packages/` | Proposed tier                                      |
 | ----------------------------------------------------------------- | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- | -------------------------------------------------- |
-| `layoutOnlyTarget`                                                | P1 — target the element that carries the styling          | A sub-element target on an element whose styles declare no paint property                                                                                 | 5              | `warn`                                             |
+| `layoutOnlyTarget`                                                | P1 — target the element that carries the styling          | A sub-element target on an element whose styles declare no paint property                                                                                 | 6              | `warn`                                             |
 | `wrapperTarget`                                                   | P1 + attach to the component                              | A target on a paint-free `div`/`span` whose only child is an Astryx component — it belongs on that component                                              | 4              | `warn` (→ `error` once fixed)                      |
 | `unstyledTarget`                                                  | P1 — "if nothing at that spot paints, there is no target" | A target on an element with no styles at all and nothing wrapped                                                                                          | 0              | `error`                                            |
-| `layoutOnlyRootTarget` (opt-in: `checkRootTargets`)               | P1                                                        | A component's OWN root target, when the root paints nothing                                                                                               | 55             | off — layout primitives legitimately trip it       |
+| `layoutOnlyRootTarget` (opt-in: `checkRootTargets`)               | P1                                                        | A component's OWN root target, when the root paints nothing                                                                                               | 59             | off — layout primitives legitimately trip it       |
 | `stateVariesOnlyLayout` (opt-in: `checkStateSurface`)             | P1 refinement — the _state seam_ only moves layout        | The target declares runtime state, but that state only moves layout (a `transform`)                                                                       | 0              | `warn` — worth turning on                          |
-| `underDeclaredState` (opt-in: `checkStateSurface`)                | P2 — state and size are data on the target                | The element's styles vary with a state the target does not pass to `themeProps`                                                                           | 16             | off — a real backlog, each item needs a human call |
+| `underDeclaredState` (opt-in: `checkStateSurface`)                | P2 — state and size are data on the target                | The element's styles vary with a state the target does not pass to `themeProps`                                                                           | 17             | off — a real backlog, each item needs a human call |
 | `targetOnRenderPropFallback`                                      | P4 — prefer inheritance over child targets                | A target on a fallback element that a `render*` callback renders in place of, so it misses all custom-rendered content — principle 4's named anti-pattern | 0              | `warn`                                             |
 | `inheritableOnRenderPropFallback`                                 | P4                                                        | Inheritable typography/color on such a fallback, where hoisting it to the row target would cover both render paths                                        | 0              | `warn`                                             |
-| `inheritablePropertyOnChild` (opt-in: `checkInheritableHoisting`) | P4, broadly                                               | Any inheritable property on an untargeted descendant of a target-carrying element                                                                         | 111            | off — see below                                    |
+| `inheritablePropertyOnChild` (opt-in: `checkInheritableHoisting`) | P4, broadly                                               | Any inheritable property on an untargeted descendant of a target-carrying element                                                                         | 108            | off — see below                                    |
 
 **On hoisting inheritable properties (P4).** The broad form of this check —
 flag `font*` / `color` / `lineHeight` / `letterSpacing` / `textAlign` /
 `textTransform` on any untargeted descendant of a target — is implementable and
-measures **111 hits**, but most of them are correct code: a Banner's title and
+measures **108 hits**, but most of them are correct code: a Banner's title and
 description (`packages/core/src/Banner/Banner.tsx:461,463`) declare different
 typography _because they should differ_, and nothing in the AST distinguishes
 that from a declaration begging to be hoisted. It ships off by default, as an
@@ -203,7 +206,7 @@ component's declared surface.
 
 | Check (messageId)           | Principle                                | What it flags                                                                                                                        | On `packages/` | Proposed tier |
 | --------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | -------------- | ------------- |
-| `appearanceInComponentSlot` | P3 — one vocabulary per concept          | Target attached to a leaf Astryx component whose last segment names an appearance (`-check` on an `<Icon>`) instead of the component | 3              | `warn`        |
+| `appearanceInComponentSlot` | P3 — one vocabulary per concept          | Target attached to a leaf Astryx component whose last segment names an appearance (`-check` on an `<Icon>`) instead of the component | 2              | `warn`        |
 | `missingPosition`           | Name by position                         | `{parent}-{component}` with no position segment, on a composed component                                                             | 0              | `warn`        |
 | `stateSubTarget`            | P2 — never mint a `-selected` sub-target | A target name ending in `-disabled` / `-selected` / `-checked` / …                                                                   | 0              | `error`       |
 
@@ -214,6 +217,11 @@ skips the component's own root target. Both narrowings are deliberate: principle
 list-like component, so holding a row primitive to
 `{parent}-{position}-{component}` would argue with the principle the rule
 exists to serve. Position words are an open vocabulary and are not checked.
+
+`stateSubTarget` reads `-state` as a state segment, but not after `empty`,
+`loading`, or `error`: `selector-empty-state` names the placeholder region
+itself — an element that exists only in that condition, so its target has
+nowhere else to live — rather than a state of a target that exists either way.
 
 **Bad → good:**
 
@@ -235,7 +243,7 @@ judgment calls.
 | Check (messageId)        | What it flags                                                                                                    | On `packages/` | Proposed tier |
 | ------------------------ | ---------------------------------------------------------------------------------------------------------------- | -------------- | ------------- |
 | `droppedStateReflection` | `className={themeProps('x', {size}).className}` — the `data-*` attributes never render                           | 0              | `error`       |
-| `clobberedByLaterProp`   | `{...themeProps('x')} className={className}` — the later prop overwrites the target, so it never reaches the DOM | 2              | `error`       |
+| `clobberedByLaterProp`   | `{...themeProps('x')} className={className}` — the later prop overwrites the target, so it never reaches the DOM | 1              | `error`       |
 | `bypassedThemeProps`     | `stableClassName('x')` used to build a theme class by hand, so state can never ride along                        | 2              | `error`       |
 | `classNameOnly`          | `.className` on a call with no visual props — drops nothing today, becomes the bug tomorrow                      | 3              | `warn`        |
 | `handAuthoredState`      | `data-state`/`data-selected`/… hand-written on an element that already carries a target                          | 0              | `error`       |
