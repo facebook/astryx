@@ -387,16 +387,13 @@ const normalToastTheme = defineTheme({
   extends: neutralTheme,
   surfaces: {toast: 'normal'},
   // Opting out drops the inversion and lands the toast on the ordinary
-  // popover surface, which pairs with the ambient text color. Component
-  // overrides then restyle it from there, like any other component.
+  // popover surface, which pairs with the ambient text color. The theme
+  // restyles it from there — `backgroundColor` here reaches the toast's own
+  // surface variable (see the component's theming.derived).
   components: {
     toast: {
-      base: {
-        borderWidth: '1px',
-        borderStyle: 'solid',
-        borderColor: 'var(--color-border-emphasized)',
-      },
-      'type:error': {borderColor: 'var(--color-error)'},
+      base: {backgroundColor: 'var(--color-background-popover)'},
+      'type:error': {backgroundColor: 'var(--color-error-muted)'},
     },
   },
 });

@@ -130,4 +130,17 @@ describe('generateMediaSurfaceCSS', () => {
       '.astryx-toast:not([data-type="error"]) .astryx-toast-content',
     );
   });
+
+  it("routes a theme's own surface override to the surface variable", () => {
+    const theme = defineTheme({
+      name: 'surface-override',
+      surfaces: {toast: 'normal'},
+      components: {toast: {base: {backgroundColor: 'papayawhip'}}},
+    });
+    const {component} = generateThemeCSS(theme);
+    // A plain background-color rule would lose to the component's StyleX
+    // layer, so the override has to land on the variable instead.
+    expect(component).toContain('--_toast-surface: papayawhip');
+    expect(component).not.toContain('background-color: papayawhip');
+  });
 });

@@ -738,18 +738,20 @@ export function generateMediaSurfaceCSS(theme: DefinedTheme): string {
 
     // Opt-out: no inversion (including the always-dark error variant). The
     // component's background falls back from its inverted token to the
-    // ordinary surface, which pairs with the ambient text color; the theme can
-    // restyle it further through `components.<name>`. Re-pointing the private
-    // surface variable — rather than emitting a `background-color` — is what
-    // makes this hold: the component sets that background through StyleX,
-    // whose layer outranks `astryx-theme` in a production build.
+    // ordinary surface, which pairs with the ambient text color. Re-pointing
+    // the private surface variable — rather than emitting a
+    // `background-color` — is what makes this hold: the component sets that
+    // background through StyleX, whose layer outranks `astryx-theme` in a
+    // production build. `:where()` keeps the fallback at zero specificity so
+    // the theme's own `components.<name>` background (which resolves to the
+    // same variable, via derivedVarRegistry) still wins.
     if (surfaces[component] === 'normal') {
       normalSurfaceRules.push(
-        `  ${cls(component)} {\n    ${entry.surfaceVar}: ${entry.normalSurface};\n  }`,
+        `  :where(${cls(component)}) {\n    ${entry.surfaceVar}: ${entry.normalSurface};\n  }`,
       );
       if (entry.alwaysDarkVariant && entry.normalVariantSurface) {
         normalSurfaceRules.push(
-          `  ${cls(component)}[data-type="${entry.alwaysDarkVariant}"] {\n    ${entry.surfaceVar}: ${entry.normalVariantSurface};\n  }`,
+          `  :where(${cls(component)}[data-type="${entry.alwaysDarkVariant}"]) {\n    ${entry.surfaceVar}: ${entry.normalVariantSurface};\n  }`,
         );
       }
       continue;

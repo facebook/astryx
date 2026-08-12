@@ -96,6 +96,12 @@ export const docs = {
     targets: [
       {className: 'astryx-tooltip'},
     ],
+    vars: [
+      {name: '--_tooltip-surface', description: 'Background of the tooltip panel', default: 'var(--color-background-inverted)', private: true},
+    ],
+    derived: [
+      {property: 'backgroundColor', vars: ['--_tooltip-surface'], replaces: true},
+    ],
   },
   usage: {
     description:
@@ -194,6 +200,12 @@ export const docsZh = {
   theming: {
     targets: [
       {className: 'astryx-tooltip'},
+    ],
+    vars: [
+      {name: '--_tooltip-surface', description: 'Background of the tooltip panel', default: 'var(--color-background-inverted)', private: true},
+    ],
+    derived: [
+      {property: 'backgroundColor', vars: ['--_tooltip-surface'], replaces: true},
     ],
   },
   usage: {

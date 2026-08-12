@@ -198,6 +198,8 @@ const DIR_TO_REGISTRY_KEY: Record<string, string> = {
   Section: 'section',
   SegmentedControl: 'segmented-control',
   TextArea: 'textarea',
+  Toast: 'toast',
+  Tooltip: 'tooltip',
 };
 
 /**

@@ -10,4 +10,6 @@ Non-breaking for stock themes and for unbuilt themes (the `<Theme>` runtime rege
 Also note: Tooltip now derives its inverted colors from `--color-background-inverted` / `--color-on-*` (matching Toast) instead of `--color-text-primary` / `--color-background-surface`, so a theme that set those to unusually divergent values may see a slightly different tooltip.
 
 [fix] Accent text and icons on an inverted surface now collapse to the on-color like `--color-accent` already did (`--color-text-accent` / `--color-icon-accent` chain through it). A link in an error toast was rendering at its page accent color — 3.9:1 against the dark error surface. A theme that recolors `onDark.tokens['--color-accent']` now recolors accent text with it.
+
+Toast and Tooltip paint their surface through `--_toast-surface` / `--_tooltip-surface`, and a theme's `components.toast.base.backgroundColor` is routed to that variable (`theming.derived`). A plain `background-color` rule sat in a layer the component's own StyleX outranks, so theme backgrounds for these two never applied in a production build.
 @cixzhang

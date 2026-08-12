@@ -218,11 +218,15 @@ const normalTooltipTheme = defineTheme({
   extends: neutralTheme,
   surfaces: {tooltip: 'normal'},
   // Opting out drops the inversion and lands the tooltip on the ordinary
-  // popover surface, which pairs with the ambient text color. The border is
-  // the theme's own addition on top of that.
+  // popover surface, which pairs with the ambient text color. The theme
+  // restyles it from there — `backgroundColor` here reaches the tooltip's own
+  // surface variable (see the component's theming.derived).
   components: {
     tooltip: {
-      base: {border: '1px solid var(--color-border-emphasized)'},
+      base: {
+        backgroundColor: 'var(--color-background-popover)',
+        border: '1px solid var(--color-border)',
+      },
     },
   },
 });

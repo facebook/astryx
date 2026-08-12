@@ -64,6 +64,12 @@ export const docs = {
     targets: [
       {className: 'astryx-toast', visualProps: ['type']},
     ],
+    vars: [
+      {name: '--_toast-surface', description: 'Background of the toast panel', default: 'var(--color-background-inverted), or var(--color-background-error-inverted) for the error type', private: true},
+    ],
+    derived: [
+      {property: 'backgroundColor', vars: ['--_toast-surface'], replaces: true},
+    ],
   },
 
   usage: {

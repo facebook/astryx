@@ -76,6 +76,24 @@ export const derivedVarRegistry: Record<string, DerivedVarEntry[]> = {
       replaces: true,
     },
   ],
+  // Surface, not background-color: the component paints its own surface
+  // through this var, so a theme override has to reach it there — a
+  // `background-color` rule would sit in a layer StyleX outranks.
+  // <!-- SYNC: packages/core/src/theme/mediaSurfaceRegistry.ts -->
+  toast: [
+    {
+      property: 'backgroundColor',
+      vars: ['--_toast-surface'],
+      replaces: true,
+    },
+  ],
+  tooltip: [
+    {
+      property: 'backgroundColor',
+      vars: ['--_tooltip-surface'],
+      replaces: true,
+    },
+  ],
 };
 
 /**
