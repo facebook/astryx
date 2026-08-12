@@ -3,22 +3,56 @@
 /**
  * @file browserHarness.ts
  * @input Uses the Vitest Browser Mode page context (@vitest/browser/context) which
- *   exposes a Playwright-backed `page` and `userEvent` running in real Chromium
+ *   exposes a Playwright-backed `page` and `userEvent` running in real Chromium,
+ *   plus the `ariaSnapshot` browser command registered in vitest.config.browser.ts
  * @output createBrowserHarness — Tier 2 AriaHarness with the REAL accessibility
- *   tree (toMatchAriaSnapshot), real focus/keyboard, and CSS-engine state
- * @position Tier 2 runtime adapter. The same pattern contracts run here for the
- *   fidelity-critical expectations jsdom cannot fake (aria tree, inert, top layer,
- *   focus-visible). Requires `@vitest/browser` + `playwright install chromium`.
+ *   tree (Playwright's aria snapshot), real focus/keyboard, and CSS-engine state
+ * @position Tier 2 runtime adapter, published as @astryxdesign/aria-spec/browser.
+ *   The same pattern contracts run here for the fidelity-critical expectations
+ *   jsdom cannot fake (aria tree, inert, top layer, focus-visible). Requires
+ *   `@vitest/browser` + `playwright install chromium`.
  *
  * SYNC: Keep the method surface identical to jsdomHarness.ts (both implement
  *   AriaHarness in ../types.ts). If one gains a capability, add it to the other.
+ * SYNC: The `ariaSnapshot` command is defined in vitest.config.browser.ts; the
+ *   augmentation below and that definition must agree.
  */
 
 // These imports resolve only when @vitest/browser is installed and the `browser`
-// vitest project is active. The jsdom tier never imports this file.
-// @ts-expect-error — optional Tier 2 dependency, present only in the browser project
-import {page, userEvent} from '@vitest/browser/context';
+// vitest project is active. The jsdom tier never imports this file — it is a
+// separate package entry point (`@astryxdesign/aria-spec/browser`) precisely so
+// importing the contracts never drags Browser Mode into the jsdom run.
+import {commands, page, userEvent} from '@vitest/browser/context';
 import type {AriaElement, AriaHarness, KeyName} from '../types';
+
+/**
+ * The accessibility tree is computed by Playwright in the Node process, so the
+ * in-browser harness reaches it through a Vitest browser command rather than a
+ * locator method (Vitest's own `Locator` exposes the tree only through the
+ * `toMatchAriaSnapshot` matcher, which asserts instead of returning the tree).
+ */
+declare module 'vitest/internal/browser' {
+  interface BrowserCommands {
+    ariaSnapshot: (selector: string) => Promise<string>;
+  }
+}
+
+/** Attribute used to hand the snapshot target to the Playwright-side command. */
+const SNAPSHOT_TARGET_ATTR = 'data-aria-spec-snapshot-target';
+
+/**
+ * Serialize the real accessibility tree rooted at `target`. Playwright runs in
+ * the Node process, so the element is marked in the DOM and addressed by
+ * selector across the bridge.
+ */
+async function ariaSnapshotOf(target: HTMLElement): Promise<string> {
+  target.setAttribute(SNAPSHOT_TARGET_ATTR, '');
+  try {
+    return await commands.ariaSnapshot(`[${SNAPSHOT_TARGET_ATTR}]`);
+  } finally {
+    target.removeAttribute(SNAPSHOT_TARGET_ATTR);
+  }
+}
 
 const KEY_TO_PLAYWRIGHT: Record<KeyName, string> = {
   Space: ' ',
@@ -40,9 +74,12 @@ type Locator = any; // @vitest/browser Locator, typed loosely to avoid the dep a
 function wrap(locator: Locator): AriaElement {
   const el = locator.element() as HTMLElement;
   const wrapped: AriaElement = {
-    // Real browser accessible-name computation via the exposed element.
-    accessibleName: async () =>
-      (el.getAttribute('aria-label') ?? el.textContent ?? '').trim(),
+    // The accessible name comes from the real accessibility tree rather than a
+    // DOM approximation: an element's aria snapshot renders as `- switch "Name"`.
+    accessibleName: async () => {
+      const snapshot = await ariaSnapshotOf(el);
+      return /^\s*-\s+[^"\n]*"([^"]*)"/.exec(snapshot)?.[1]?.trim() ?? '';
+    },
     getAttribute: name => el.getAttribute(name),
     hasAttribute: name => el.hasAttribute(name),
     tagName: () => el.tagName,
@@ -85,11 +122,10 @@ export function createBrowserHarness(): AriaHarness {
     },
     // The payoff of the browser tier: Playwright's real accessibility-tree
     // snapshot (a stable YAML of roles + names), impossible to produce in jsdom.
-    ariaSnapshot: async el => {
-      const target = el ? elementOf(el) : document.body;
-      // Vitest Browser exposes the Playwright locator ariaSnapshot under the hood.
-      return page.elementLocator(target).ariaSnapshot();
-    },
+    // Playwright runs in the Node process, so the target element is marked in the
+    // DOM and handed over by selector through the `ariaSnapshot` browser command.
+    ariaSnapshot: async el =>
+      await ariaSnapshotOf(el ? elementOf(el) : document.body),
   };
 }
 

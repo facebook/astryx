@@ -8,11 +8,10 @@
  *   separate from vitest.config.ts so the optional @vitest/browser + Playwright
  *   deps are only needed when running the browser tier, and so `pnpm test` (the
  *   hot path) never boots Chromium.
- * @position Config for `pnpm test:aria-browser`. Wired into CI as a gated,
- *   component-changed-only job (see .github/workflows/ci.yml aria-spec-browser).
+ * @position Config for `pnpm test:aria-browser`. NOT wired into CI yet — the
+ *   Tier 2 suite is run on demand while the prototype is under review.
  *
- * Setup to run locally:
- *   pnpm add -Dw @vitest/browser @vitest/browser-playwright vitest-browser-react
+ * Setup to run locally (the deps are already root devDependencies):
  *   pnpm exec playwright install --with-deps chromium
  *   pnpm test:aria-browser
  *
@@ -22,13 +21,28 @@
 import path from 'node:path';
 import {defineConfig} from 'vitest/config';
 import react from '@vitejs/plugin-react';
-// Vitest 4 takes a provider factory, not a string. Imported lazily so the
-// default `pnpm test` path never requires this optional dependency.
-// @ts-expect-error — optional Tier 2 dependency, present only when running browser tests
-import {playwright} from '@vitest/browser-playwright';
+// Vitest 4 takes a provider factory, not a string.
+import {defineBrowserCommand, playwright} from '@vitest/browser-playwright';
 
 const rootDir = path.resolve(__dirname, '.');
 const coreSrc = path.resolve(__dirname, 'packages/core/src');
+
+/**
+ * Serialize the REAL accessibility tree of a selector-addressed element.
+ *
+ * Playwright's `Locator.ariaSnapshot()` lives in the Node process, and Vitest's
+ * in-browser `Locator` only exposes the tree through the `toMatchAriaSnapshot`
+ * matcher (which asserts rather than returning it). A browser command is the
+ * supported bridge, and it is what `createBrowserHarness()` calls.
+ *
+ * SYNC: The augmentation of `BrowserCommands` in
+ *   internal/aria-spec/src/harness/browserHarness.ts must match this signature.
+ */
+const ariaSnapshot = defineBrowserCommand<[selector: string]>(
+  // Tests render inside the tester iframe, so the locator must be scoped to it —
+  // `page.locator()` would search the orchestrator page and never resolve.
+  async ({iframe}, selector) => await iframe.locator(selector).ariaSnapshot(),
+);
 
 export default defineConfig({
   plugins: [
@@ -59,10 +73,21 @@ export default defineConfig({
         find: /^@astryxdesign\/core\/(.*)$/,
         replacement: path.join(coreSrc, '$1'),
       },
-      {
-        find: '@astryxdesign/aria-spec',
-        replacement: path.resolve(rootDir, 'internal/aria-spec/src/index.ts'),
-      },
+    ],
+    // Core's source and the browser test runner must share ONE React instance.
+    dedupe: ['react', 'react-dom'],
+  },
+  optimizeDeps: {
+    // Pre-bundle React (and the browser render helper) up front. Discovering
+    // them mid-run re-optimizes the graph while the page is live and leaves two
+    // React copies behind — the classic "Cannot read properties of null
+    // (reading 'useId')" from a hook called on the second copy.
+    include: [
+      'react',
+      'react/jsx-dev-runtime',
+      'react-dom',
+      'react-dom/client',
+      'vitest-browser-react',
     ],
   },
   test: {
@@ -72,6 +97,7 @@ export default defineConfig({
     browser: {
       enabled: true,
       provider: playwright(),
+      commands: {ariaSnapshot},
       // Chromium only per-PR: the accessibility tree + keyboard are
       // engine-consistent enough that one browser catches ~all APG issues.
       // Cross-browser is a nightly concern, not a per-PR gate.

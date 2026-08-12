@@ -16,8 +16,7 @@
 
 import {useState} from 'react';
 import {describe, it, expect} from 'vitest';
-// @ts-expect-error — @vitest/browser is a Tier 2 optional dependency
-import {render} from 'vitest-browser-react';
+import {render, cleanup} from 'vitest-browser-react';
 import {
   switchContract,
   runContract,
@@ -36,10 +35,15 @@ describe('Switch — APG switch pattern conformance (Tier 2: real browser)', () 
     const result = await runContract({
       contract: switchContract,
       component: 'Switch',
-      setup: () => {
-        void render(<ControlledSwitch />);
+      setup: async () => {
+        // `render` is async in vitest-browser-react (it awaits act), so the
+        // mount has to be awaited before an expectation queries the DOM.
+        await render(<ControlledSwitch />);
         return createBrowserHarness();
       },
+      // Each expectation renders fresh (as in the jsdom tier); without this the
+      // mounts pile up and every role query hits a strict-mode violation.
+      teardown: cleanup,
       // In the browser tier, switch-aria-snapshot is REAL and should pass, so it
       // is NOT an expected-failure here (unlike the jsdom tier). Only the
       // description gap remains for this binding.
