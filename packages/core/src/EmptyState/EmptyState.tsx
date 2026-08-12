@@ -173,7 +173,12 @@ export function EmptyState({
       <div {...stylex.props(styles.textGroup)}>
         {createElement(
           HeadingTag,
-          stylex.props(styles.title, isCompact && styles.titleCompact),
+          mergeProps(
+            themeProps('empty-state-title', {
+              variant: isCompact ? 'compact' : null,
+            }),
+            stylex.props(styles.title, isCompact && styles.titleCompact),
+          ),
           title,
         )}
         {description != null && (
@@ -182,9 +187,14 @@ export function EmptyState({
           // mismatches. The StyleX style sets margin: 0, so appearance is
           // unchanged.
           <div
-            {...stylex.props(
-              styles.description,
-              isCompact && styles.descriptionCompact,
+            {...mergeProps(
+              themeProps('empty-state-description', {
+                variant: isCompact ? 'compact' : null,
+              }),
+              stylex.props(
+                styles.description,
+                isCompact && styles.descriptionCompact,
+              ),
             )}>
             {description}
           </div>

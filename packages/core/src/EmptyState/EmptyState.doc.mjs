@@ -66,6 +66,8 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-empty-state', visualProps: ['variant']},
+      {className: 'astryx-empty-state-title', visualProps: ['variant']},
+      {className: 'astryx-empty-state-description', visualProps: ['variant']},
     ],
   },
   usage: {
@@ -141,6 +143,8 @@ export const docsZh = {
   theming: {
     targets: [
       {className: 'astryx-empty-state', visualProps: ['variant']},
+      {className: 'astryx-empty-state-title', visualProps: ['variant']},
+      {className: 'astryx-empty-state-description', visualProps: ['variant']},
     ],
   },
   usage: {
