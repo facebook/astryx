@@ -261,22 +261,24 @@ const styles = stylex.create({
   },
   // A mark is a vertical tick centered on the track, a child of the
   // `role="progressbar"` element (unchanged DOM). The track no longer clips, so
-  // its height — 8px by default, directly overridable via the `progressbar-mark`
-  // theme target — may exceed the bar and overhang; the centering translate
-  // keeps any overhang symmetric. Positioned horizontally via `insetInlineStart`;
-  // the translate mirrors under RTL.
+  // a mark taller than the bar may exceed it and overhang; the centering
+  // translate keeps any overhang symmetric. Positioned horizontally via
+  // `insetInlineStart`; the translate mirrors under RTL.
+  //
+  // Size is read from `--_progressbar-mark-width`/`-height` (2px x 8px default)
+  // so a theme re-points a var rather than racing this atomic rule: a bare
+  // `.astryx-progressbar-mark { height }` only ties StyleX's specificity, so it
+  // loses to the atom whenever the app's StyleX is unlayered or ordered after
+  // `astryx-theme`. Re-pointing the var wins regardless of layer/order.
   //
   // The tick's color is not set here: it depends on what the mark sits on, so
   // it comes from `markOnFillStyles[variant]` (mark inside the filled area) or
-  // `markOnTrackStyles.track` (mark out on the bare track). Both remain
-  // directly overridable via the `progressbar-mark` theme target — a theme can
-  // set `backgroundColor`, `width`, and `height` (e.g. a taller "flag" tick
-  // that overhangs the bar) with `defineTheme`; no dedicated CSS vars needed.
+  // `markOnTrackStyles.track` (mark out on the bare track).
   mark: {
     position: 'absolute',
     top: '50%',
-    width: 2,
-    height: 8,
+    width: 'var(--_progressbar-mark-width, 2px)',
+    height: 'var(--_progressbar-mark-height, 8px)',
     outline: {
       default: 'none',
       ':focus-visible': `2px solid ${colorVars['--color-accent']}`,

@@ -195,6 +195,7 @@ const DIR_TO_REGISTRY_KEY: Record<string, string> = {
   Field: 'field',
   HoverCard: 'hovercard',
   Popover: 'popover',
+  ProgressBar: 'progressbar-mark',
   Section: 'section',
   SegmentedControl: 'segmented-control',
   TextArea: 'textarea',

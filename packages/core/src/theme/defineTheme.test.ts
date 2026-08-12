@@ -245,6 +245,22 @@ describe('generateThemeCSS with components', () => {
     expect(css).not.toContain('fontFamily');
   });
 
+  it('expands progressbar-mark width/height into internal vars', () => {
+    // The mark reads its size from --_progressbar-mark-{width,height}, so a
+    // theme's standard `height`/`width` must also emit the var — otherwise the
+    // override only ties the built-in atomic rule and loses on layer order.
+    const theme = defineTheme({
+      name: 'test',
+      components: {
+        'progressbar-mark': {base: {width: '2px', height: '12px'}},
+      },
+    });
+    const css = generateThemeTestCSS(theme);
+    expect(css).toContain('.astryx-progressbar-mark {');
+    expect(css).toContain('--_progressbar-mark-width: 2px');
+    expect(css).toContain('--_progressbar-mark-height: 12px');
+  });
+
   it('combines tokens and components', () => {
     const theme = defineTheme({
       name: 'combo',

@@ -85,6 +85,14 @@ export const docs = {
         visualProps: ['variant', 'placement'],
       },
     ],
+    vars: [
+      {name: '--_progressbar-mark-width', description: 'Mark tick width', default: '2px', private: true},
+      {name: '--_progressbar-mark-height', description: 'Mark tick height', default: '8px', private: true},
+    ],
+    derived: [
+      {property: 'width', vars: ['--_progressbar-mark-width']},
+      {property: 'height', vars: ['--_progressbar-mark-height']},
+    ],
   },
   usage: {
     description:
@@ -181,6 +189,14 @@ export const docsZh = {
         className: 'astryx-progressbar-mark',
         visualProps: ['variant', 'placement'],
       },
+    ],
+    vars: [
+      {name: '--_progressbar-mark-width', description: '标记刻度宽度', default: '2px', private: true},
+      {name: '--_progressbar-mark-height', description: '标记刻度高度', default: '8px', private: true},
+    ],
+    derived: [
+      {property: 'width', vars: ['--_progressbar-mark-width']},
+      {property: 'height', vars: ['--_progressbar-mark-height']},
     ],
   },
   usage: {
