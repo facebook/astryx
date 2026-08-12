@@ -79,7 +79,6 @@ const styles = stylex.create({
  * @example
  * ```
  * import {RadioIndicator} from '@astryxdesign/core/Indicator';
- *
  * defineTheme({name: 'brand', indicators: {check: RadioIndicator}});
  * ```
  */

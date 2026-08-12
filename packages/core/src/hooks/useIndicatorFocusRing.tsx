@@ -71,13 +71,12 @@ export interface UseIndicatorFocusRingReturn {
  * @param isDisabled - Skip the ring; a disabled control is not focusable.
  *
  * @example
- * ```tsx
+ * ```
  * const indicatorRef = useRef<HTMLSpanElement>(null);
  * const {focusProps} = useIndicatorFocusRing(indicatorRef, isDisabled);
- *
  * <div {...focusProps}>
  *   <input type="checkbox" />
- *   <span ref={indicatorRef}><Indicator state={…} /></span>
+ *   <span ref={indicatorRef}><Indicator state="checked" /></span>
  * </div>
  * ```
  */
