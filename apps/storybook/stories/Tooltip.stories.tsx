@@ -217,16 +217,12 @@ const normalTooltipTheme = defineTheme({
   name: 'tooltip-normal-surface',
   extends: neutralTheme,
   surfaces: {tooltip: 'normal'},
-  // Opting out disables the inversion; the theme owns the tooltip surface via
-  // ordinary component overrides. The content already reads
-  // `--color-text-primary`, correct on a non-inverted surface, so only the
-  // background/border need setting.
+  // Opting out drops the inversion and lands the tooltip on the ordinary
+  // popover surface, which pairs with the ambient text color. The border is
+  // the theme's own addition on top of that.
   components: {
     tooltip: {
-      base: {
-        backgroundColor: 'var(--color-background-popover)',
-        border: '1px solid var(--color-border)',
-      },
+      base: {border: '1px solid var(--color-border-emphasized)'},
     },
   },
 });

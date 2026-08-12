@@ -47,7 +47,9 @@ const styles = stylex.create({
     },
   },
   variantDefault: {
-    backgroundColor: colorVars['--color-background-inverted'],
+    // --_toast-surface (mediaSurfaceRegistry) lets a theme's opt-out re-point
+    // the surface; unset, the toast keeps its inverted panel.
+    backgroundColor: `var(--_toast-surface, ${colorVars['--color-background-inverted']})`,
   },
   inner: {
     display: 'flex',
@@ -61,7 +63,7 @@ const styles = stylex.create({
     color: colorVars['--color-text-primary'],
   },
   variantError: {
-    backgroundColor: colorVars['--color-background-error-inverted'],
+    backgroundColor: `var(--_toast-surface, ${colorVars['--color-background-error-inverted']})`,
   },
   content: {
     flex: 1,

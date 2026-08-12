@@ -20,7 +20,8 @@
  * The inverted token values themselves are NOT stored here — they come from
  * the theme's resolved `onDark` / `onLight` sets (onMediaTokens.ts), so a
  * theme that customizes its media tokens gets a 1:1 reflection on its
- * toast/tooltip.
+ * toast/tooltip. What is stored here is the non-inverted fallback each
+ * component lands on when a theme opts it out.
  */
 
 /**
@@ -28,8 +29,9 @@
  * - `inverted` — content renders on an inverted surface (the default): its
  *   `color-scheme` flips opposite to the ambient mode and the theme's on-dark
  *   / on-light tokens apply.
- * - `normal` — the inversion is disabled; the theme owns the component's
- *   surface through the ordinary `components.<name>` overrides. This is the
+ * - `normal` — the inversion is disabled; the component falls back to the
+ *   ordinary surface token below, which pairs with the ambient text color, and
+ *   the theme can restyle it further through `components.<name>`. This is the
  *   consolidation opt-out.
  */
 export type MediaSurface = 'inverted' | 'normal';
@@ -47,11 +49,25 @@ export interface MediaSurfaceEntry {
    */
   contentClass: string;
   /**
+   * Private custom property the component's own background reads, with its
+   * inverted token as the CSS fallback. Opting out re-points this property to
+   * `normalSurface`; a custom property is the only lever that works in every
+   * layer order, since the component's background is set by StyleX.
+   *
+   * <!-- SYNC: the component that reads `var(<surfaceVar>, …)` (e.g. Toast.tsx,
+   * useTooltip.tsx) -->
+   */
+  surfaceVar: string;
+  /** Surface the component falls back to when a theme opts it out. */
+  normalSurface: string;
+  /**
    * When set, the named variant always renders its content on a dark surface
    * regardless of ambient mode (e.g. Toast `error`), unless the component is
    * opted out. Encoded via a `data-type` selector on the root.
    */
   alwaysDarkVariant?: string;
+  /** Surface that variant falls back to when a theme opts the component out. */
+  normalVariantSurface?: string;
 }
 
 /**
@@ -63,10 +79,15 @@ export interface MediaSurfaceEntry {
 export const mediaSurfaceRegistry: Record<string, MediaSurfaceEntry> = {
   toast: {
     contentClass: 'astryx-toast-content',
+    surfaceVar: '--_toast-surface',
+    normalSurface: 'var(--color-background-popover)',
     alwaysDarkVariant: 'error',
+    normalVariantSurface: 'var(--color-error-muted)',
   },
   tooltip: {
     contentClass: 'astryx-tooltip-content',
+    surfaceVar: '--_tooltip-surface',
+    normalSurface: 'var(--color-background-popover)',
   },
 };
 

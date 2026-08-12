@@ -707,12 +707,12 @@ export function generateOnMediaCSS(theme: DefinedTheme): string {
  * the inversion direction for content rendered directly under it.
  *
  * A theme opts a component out with `surfaces: { toast: 'normal' }`: no
- * inverted (or error-always-dark) block is emitted for it at all. The theme
- * then owns that component's surface through the ordinary `components.<name>`
- * overrides (e.g. `components: { toast: { base: { backgroundColor: ... } } }`),
- * which the generator never competes with. When inverted (the default),
- * Toast's error variant always stays on a dark surface regardless of ambient
- * mode.
+ * inverted (or error-always-dark) block is emitted for it. Instead the
+ * component's private surface variable is re-pointed at the registry's
+ * non-inverted fallback, so the component lands on the ordinary surface —
+ * which pairs with the ambient text color — and the theme can restyle it from
+ * there through `components.<name>`. When inverted (the default), Toast's
+ * error variant always stays on a dark surface regardless of ambient mode.
  *
  * <!-- SYNC: packages/core/src/theme/mediaSurfaceRegistry.ts -->
  */
@@ -728,6 +728,7 @@ export function generateMediaSurfaceCSS(theme: DefinedTheme): string {
 
   const invertedContentSelectors: string[] = [];
   const errorAlwaysDark: string[] = [];
+  const normalSurfaceRules: string[] = [];
 
   for (const component of mediaSurfaceComponents()) {
     const entry = getMediaSurface(component);
@@ -735,12 +736,22 @@ export function generateMediaSurfaceCSS(theme: DefinedTheme): string {
       continue;
     }
 
-    // Opt-out: skip the inversion entirely (including the always-dark error
-    // variant). The component keeps its base surface until the theme sets its
-    // own via a `components.<name>` override — opting out is a deliberate,
-    // two-part theme decision, so the generator emits nothing here and never
-    // competes with that override.
+    // Opt-out: no inversion (including the always-dark error variant). The
+    // component's background falls back from its inverted token to the
+    // ordinary surface, which pairs with the ambient text color; the theme can
+    // restyle it further through `components.<name>`. Re-pointing the private
+    // surface variable — rather than emitting a `background-color` — is what
+    // makes this hold: the component sets that background through StyleX,
+    // whose layer outranks `astryx-theme` in a production build.
     if (surfaces[component] === 'normal') {
+      normalSurfaceRules.push(
+        `  ${cls(component)} {\n    ${entry.surfaceVar}: ${entry.normalSurface};\n  }`,
+      );
+      if (entry.alwaysDarkVariant && entry.normalVariantSurface) {
+        normalSurfaceRules.push(
+          `  ${cls(component)}[data-type="${entry.alwaysDarkVariant}"] {\n    ${entry.surfaceVar}: ${entry.normalVariantSurface};\n  }`,
+        );
+      }
       continue;
     }
 
@@ -804,6 +815,10 @@ export function generateMediaSurfaceCSS(theme: DefinedTheme): string {
   if (errorAlwaysDark.length > 0) {
     const list = errorAlwaysDark.join(',\n  ');
     blocks.push(scoped(`  :is(\n  ${list}\n  ) {\n${decls(onDark)}\n  }`));
+  }
+
+  if (normalSurfaceRules.length > 0) {
+    blocks.push(scoped(normalSurfaceRules.join('\n\n')));
   }
 
   return blocks.join('\n\n');

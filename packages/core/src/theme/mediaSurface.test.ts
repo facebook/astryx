@@ -90,22 +90,29 @@ describe('generateMediaSurfaceCSS', () => {
     expect(css).toContain('--color-accent: #01579B');
   });
 
-  it('opts a component out: emits nothing for it (theme owns the surface)', () => {
+  it('opts a component out: falls back to the normal surface', () => {
     const theme = defineTheme({name: 'optout', surfaces: {toast: 'normal'}});
     const css = generateMediaSurfaceCSS(theme);
-    // No toast rules at all — not the info flip, not the error-always-dark
-    // block, not a background. The theme controls the toast surface via its
-    // own components.toast override, which the generator must not compete with.
-    expect(css).not.toContain('.astryx-toast');
-    // Tooltip (still inverted) keeps its content flip.
+    // No inversion for toast — neither the info flip nor the error block.
+    expect(css).not.toContain('.astryx-toast-content');
+    // Instead the private surface variable is re-pointed, per variant, so the
+    // toast lands on a surface that pairs with the ambient text color.
+    expect(css).toContain('--_toast-surface: var(--color-background-popover)');
+    expect(css).toContain('--_toast-surface: var(--color-error-muted)');
+    expect(css).toContain('.astryx-toast[data-type="error"]');
+    // Tooltip (still inverted) keeps its content flip and no fallback.
     expect(css).toContain('.astryx-tooltip .astryx-tooltip-content');
+    expect(css).not.toContain('--_tooltip-surface');
     expect(css).toContain('@scope ([data-astryx-theme="optout"])');
   });
 
-  it('opts tooltip out: emits nothing for tooltip, toast still inverts', () => {
+  it('opts tooltip out: tooltip falls back, toast still inverts', () => {
     const theme = defineTheme({name: 'ttopt', surfaces: {tooltip: 'normal'}});
     const css = generateMediaSurfaceCSS(theme);
-    expect(css).not.toContain('.astryx-tooltip');
+    expect(css).not.toContain('.astryx-tooltip-content');
+    expect(css).toContain(
+      '--_tooltip-surface: var(--color-background-popover)',
+    );
     // Toast (still inverted) keeps its content flip + error block.
     expect(css).toContain(
       '.astryx-toast:not([data-type="error"]) .astryx-toast-content',
@@ -113,6 +120,7 @@ describe('generateMediaSurfaceCSS', () => {
     expect(css).toContain(
       '.astryx-toast[data-type="error"] .astryx-toast-content',
     );
+    expect(css).not.toContain('--_toast-surface');
   });
 
   it('is included in the full theme CSS output', () => {

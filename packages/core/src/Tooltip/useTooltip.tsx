@@ -52,7 +52,9 @@ const styles = stylex.create({
   // generated media-surface CSS, keeping this unified with Toast. A theme can
   // opt out via `defineTheme({ surfaces: { tooltip: 'normal' } })`.
   container: {
-    backgroundColor: colorVars['--color-background-inverted'],
+    // --_tooltip-surface (mediaSurfaceRegistry) lets a theme's opt-out
+    // re-point the surface; unset, the tooltip keeps its inverted panel.
+    backgroundColor: `var(--_tooltip-surface, ${colorVars['--color-background-inverted']})`,
     borderRadius: radiusVars['--radius-container'],
     // Typography
     fontFamily: typographyVars['--font-family-body'],

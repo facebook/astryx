@@ -58,8 +58,13 @@ export const defaultOnDarkTokens: Record<string, string> = {
   '--color-text-primary': 'var(--color-on-dark)',
   '--color-icon-primary': 'var(--color-on-dark)',
 
-  // Accent collapses to on-color in inverted context
+  // Accent collapses to on-color in inverted context. The text/icon flavors
+  // chain through it so a theme that recolors onDark's accent recolors accent
+  // text with it — an accent text color left at its page value fails contrast
+  // on an inverted surface (notably the always-dark error toast).
   '--color-accent': 'var(--color-on-dark)',
+  '--color-text-accent': 'var(--color-accent)',
+  '--color-icon-accent': 'var(--color-accent)',
 };
 
 /**
@@ -74,6 +79,8 @@ export const defaultOnLightTokens: Record<string, string> = {
 
   // Accent collapses to on-color
   '--color-accent': 'var(--color-on-light)',
+  '--color-text-accent': 'var(--color-accent)',
+  '--color-icon-accent': 'var(--color-accent)',
 };
 
 /**
