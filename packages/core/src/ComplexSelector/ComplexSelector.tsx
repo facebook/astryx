@@ -43,6 +43,7 @@ import {
 } from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
 import {composeEventHandlers} from '../utils/composeEventHandlers';
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 
@@ -146,12 +147,6 @@ const styles = stylex.create({
   },
   disabled: {
     cursor: 'not-allowed',
-  },
-  focusRing: {
-    ':focus-within': {
-      outline: `2px solid ${colorVars['--color-accent']}`,
-      outlineOffset: '2px',
-    },
   },
 });
 
@@ -356,7 +351,11 @@ export function ComplexSelector<Value>({
             inputWrapperStyles.base,
             styles.triggerContainer,
             styles[size],
-            styles.focusRing,
+            // The ring belongs to the wrapper (the focusable `<button>` sits
+            // inside it), but it must still be a KEYBOARD ring: `:focus-within`
+            // matched a mouse click on the trigger and drew the outline for
+            // pointer users too. `focusWithin` here is `:has(:focus-visible)`.
+            focusOutlineStyles.focusWithin,
             isDisabled && inputWrapperStyles.disabled,
             isDisabled && styles.disabled,
             triggerLabel == null && styles.placeholder,
