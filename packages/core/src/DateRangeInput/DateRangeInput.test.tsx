@@ -623,10 +623,10 @@ describe('DateRangeInput icon theme targets', () => {
 
   it('routes the clear glyph through the shared clear button (default look unchanged)', () => {
     // Default-look guard for the clear affordance. It now composes the shared
-    // InputClearButton (a ghost Button whose glyph inherits the button's
-    // color), so aside from its target classes the glyph matches a standalone
-    // `inherit`/`sm` close icon — the default clear look is defined once, in
-    // InputClearButton. (The calendar-toggle glyph is covered separately.)
+    // InputClearButton (a ghost Button with a secondary/sm glyph), so aside
+    // from its target classes the glyph matches a standalone `secondary`/`sm`
+    // close icon — the default clear look is defined once, in InputClearButton.
+    // (The calendar-toggle glyph is covered separately.)
     render(
       <DateRangeInput
         label="Range"
@@ -638,7 +638,7 @@ describe('DateRangeInput icon theme targets', () => {
     const clearIcon = iconIn(getButton('Clear Range'));
 
     const {container: clearRefContainer} = render(
-      <Icon icon="close" size="sm" color="inherit" />,
+      <Icon icon="close" size="sm" color="secondary" />,
     );
     const clearRefIcon = clearRefContainer.querySelector(
       '.astryx-icon',

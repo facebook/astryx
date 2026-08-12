@@ -1087,11 +1087,11 @@ describe('DateInput clear icon theme target', () => {
 
   it('routes the clear glyph through the shared clear button, keeping the legacy target', () => {
     // The clear affordance now composes the shared InputClearButton (a ghost
-    // Button whose glyph inherits the button's color), so the icon carries the
-    // canonical `astryx-input-clear-icon` target and — for a deprecation
-    // window — the original `astryx-date-input-clear-icon`. Aside from those
-    // target classes it matches the shared button's own `close`/`sm`/`inherit`
-    // glyph exactly, so the default look is defined in one place.
+    // Button with a secondary/sm glyph), so the icon carries the canonical
+    // `astryx-input-clear-icon` target and — for a deprecation window — the
+    // original `astryx-date-input-clear-icon`. Aside from those target classes
+    // it matches the shared button's own `close`/`sm`/`secondary` glyph
+    // exactly, so the default look is defined in one place.
     render(
       <DateInput
         label="Date"
@@ -1105,7 +1105,7 @@ describe('DateInput clear icon theme target', () => {
     expect(icon).toHaveClass('astryx-date-input-clear-icon');
 
     const {container: refContainer} = render(
-      <Icon icon="close" size="sm" color="inherit" />,
+      <Icon icon="close" size="sm" color="secondary" />,
     );
     const refIcon = refContainer.querySelector('.astryx-icon') as HTMLElement;
 

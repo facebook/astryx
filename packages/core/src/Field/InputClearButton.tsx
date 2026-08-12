@@ -57,7 +57,7 @@ export function InputClearButton({
         <Icon
           icon="close"
           size="sm"
-          color="inherit"
+          color="secondary"
           className={
             iconClassName != null
               ? `${iconTargetClassName} ${iconClassName}`

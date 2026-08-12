@@ -56,13 +56,16 @@ describe('InputClearButton', () => {
   });
 
   it('matches a standalone inherit/sm close icon aside from the target class', () => {
-    // The glyph inherits the ghost button's color; aside from the target class
-    // it is exactly a close/sm/inherit Icon, so the default look is defined
-    // once here rather than per input.
+    // The glyph is a secondary/sm close icon (matching the other field
+    // affordances — chevrons, calendar toggles, status icons); aside from the
+    // target class it is exactly that standalone Icon, so the default look is
+    // defined once here rather than per input.
     render(<InputClearButton label="Clear" onClick={() => {}} />);
     const glyph = getGlyph();
 
-    const {container} = render(<Icon icon="close" size="sm" color="inherit" />);
+    const {container} = render(
+      <Icon icon="close" size="sm" color="secondary" />,
+    );
     const refIcon = container.querySelector('.astryx-icon') as HTMLElement;
 
     const styleClasses = (el: HTMLElement) =>
