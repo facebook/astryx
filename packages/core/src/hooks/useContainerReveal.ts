@@ -35,7 +35,7 @@
  * - containerReveal.stylex.ts (if the style blocks change)
  */
 
-import type {CSSProperties} from 'react';
+import {useMemo, type CSSProperties} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {styles} from './containerReveal.stylex';
 
@@ -100,26 +100,27 @@ export function useContainerReveal(
 ): UseContainerRevealReturn {
   const {isEnabled = true} = options;
 
-  if (!isEnabled) {
+  return useMemo(() => {
+    if (!isEnabled) {
+      return {
+        getContainerProps: () => EMPTY,
+        getContentRevealProps: () => EMPTY,
+      };
+    }
     return {
-      getContainerProps: () => EMPTY,
-      getContentRevealProps: () => EMPTY,
+      getContainerProps: () => stylex.props(styles.container),
+      getContentRevealProps: (contentOptions: ContentRevealOptions = {}) => {
+        const {isRevealInverted = false, isLayoutPreserved = false} =
+          contentOptions;
+        const style = isRevealInverted
+          ? isLayoutPreserved
+            ? styles.concealLayoutPreserved
+            : styles.conceal
+          : isLayoutPreserved
+            ? styles.revealLayoutPreserved
+            : styles.reveal;
+        return stylex.props(style);
+      },
     };
-  }
-
-  return {
-    getContainerProps: () => stylex.props(styles.container),
-    getContentRevealProps: (contentOptions: ContentRevealOptions = {}) => {
-      const {isRevealInverted = false, isLayoutPreserved = false} =
-        contentOptions;
-      const style = isRevealInverted
-        ? isLayoutPreserved
-          ? styles.concealLayoutPreserved
-          : styles.conceal
-        : isLayoutPreserved
-          ? styles.revealLayoutPreserved
-          : styles.reveal;
-      return stylex.props(style);
-    },
-  };
+  }, [isEnabled]);
 }
