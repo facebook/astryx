@@ -309,6 +309,15 @@ describe('componentRegistry', () => {
     });
   });
 
+  it('TopNavMegaMenu declares a TopNav wrapper for its positioning anchor (#4905)', () => {
+    const core = components['@astryxdesign/core'];
+    const topNavMegaMenu = core.find(c => c.name === 'TopNavMegaMenu');
+    expect(topNavMegaMenu).toBeDefined();
+    expect(topNavMegaMenu!.playground?.wrapper).toMatchObject({
+      component: 'TopNav',
+    });
+  });
+
   it('Lightbox declares an overlay playground with a closed initial state (#3657)', () => {
     const core = components['@astryxdesign/core'];
     const lightbox = core.find(c => c.name === 'Lightbox');
