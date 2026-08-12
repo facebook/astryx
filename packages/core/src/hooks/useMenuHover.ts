@@ -18,7 +18,7 @@
  *    - mouseenter activates "hover mode" and opens after delay
  *    - While in hover mode, mouseleave closes after delay
  *    - Any close (click, Escape, outside-click) resets hover mode
- *    - Click-to-close additionally skips the next mouseenter
+ *    - A close briefly suppresses reopening on hover — see REOPEN_SUPPRESS_MS
  *
  * Only uses mouseenter/mouseleave (not mouseover).
  *
@@ -82,6 +82,21 @@ import {useMediaQuery} from './useMediaQuery';
  * rather than dismissing it.
  */
 const DEFAULT_CLICK_GUARD_MS = 500;
+
+/**
+ * How long after a close a mouseenter on the trigger is ignored.
+ *
+ * A menu panel is often positioned over its own trigger (the nav headings do
+ * this). Closing it puts the trigger back under a pointer that never moved, and
+ * the browser fires a fresh mouseenter for that — which, with a short show
+ * delay, reopens the menu the user just dismissed. Escape and the in-panel
+ * close affordance both looked inert because of it.
+ *
+ * Time-bounded rather than a one-shot flag: the enter caused by the panel
+ * vanishing arrives within a frame or two, while a deliberate re-hover seconds
+ * later is a real intent to reopen and must still work.
+ */
+const REOPEN_SUPPRESS_MS = 300;
 
 export interface UseMenuHoverOptions {
   show: (options?: {skipAutoFocus?: boolean}) => void;
@@ -178,16 +193,19 @@ export function useMenuHover<T extends HTMLElement = HTMLElement>(
   const triggerElRef = useRef<HTMLElement | null>(null);
   // Whether the menu was opened/interacted via hover (enables mouseleave-to-close)
   const hoverModeRef = useRef(false);
-  // One-shot: skip the next mouseenter after click-to-close
-  const skipNextEnterRef = useRef(false);
+  // When the menu last closed, for suppressing the reopen described above.
+  const closedAtRef = useRef(0);
   // When the current open began as a hover-open; 0 once confirmed or closed.
   const hoverOpenedAtRef = useRef(0);
   const prevIsOpenRef = useRef(isOpen);
 
-  // When popover closes (any reason), reset hover mode
+  // When the menu closes for ANY reason — click, Escape, the in-panel close
+  // affordance, native light dismiss, an item being chosen — reset hover mode
+  // and start the reopen-suppression window.
   if (prevIsOpenRef.current && !isOpen) {
     hoverModeRef.current = false;
     hoverOpenedAtRef.current = 0;
+    closedAtRef.current = Date.now();
   }
   prevIsOpenRef.current = isOpen;
 
@@ -291,7 +309,7 @@ export function useMenuHover<T extends HTMLElement = HTMLElement>(
       // would make the menu unreachable by keyboard from that state.
       const isKeyboardActivation = event != null && event.detail === 0;
       if (isKeyboardActivation) {
-        skipNextEnterRef.current = false;
+        closedAtRef.current = 0;
         hoverModeRef.current = false;
         hoverOpenedAtRef.current = 0;
         if (isOpen) {
@@ -303,7 +321,7 @@ export function useMenuHover<T extends HTMLElement = HTMLElement>(
       }
 
       if (!isOpen) {
-        skipNextEnterRef.current = false;
+        closedAtRef.current = 0;
         hoverModeRef.current = false;
         hoverOpenedAtRef.current = 0;
         openAndFocus();
@@ -317,7 +335,6 @@ export function useMenuHover<T extends HTMLElement = HTMLElement>(
         return;
       }
 
-      skipNextEnterRef.current = true;
       hideAndRestoreFocus();
     },
     [
@@ -336,8 +353,12 @@ export function useMenuHover<T extends HTMLElement = HTMLElement>(
     if (!hasHover) {
       return;
     }
-    if (skipNextEnterRef.current) {
-      skipNextEnterRef.current = false;
+    // See REOPEN_SUPPRESS_MS: ignore the mouseenter that the panel's own
+    // disappearance produces, so closing the menu actually closes it.
+    if (
+      closedAtRef.current > 0 &&
+      Date.now() - closedAtRef.current < REOPEN_SUPPRESS_MS
+    ) {
       return;
     }
     // Only an enter that *opens* the menu arms hover mode. Re-entering the

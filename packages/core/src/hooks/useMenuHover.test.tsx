@@ -176,6 +176,49 @@ describe('useMenuHover — hover/click guard', () => {
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
 
+  it('stays closed when the panel vanishing puts the trigger back under the pointer', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+    const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
+    const trigger = renderMenu();
+
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    // Close it, then let the mouseenter the browser fires when the panel stops
+    // covering the trigger arrive. Without suppression this reopens the menu
+    // the user just dismissed — which is how Escape and the nav headings'
+    // in-panel close affordance came to look inert.
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await user.hover(trigger);
+    act(() => {
+      vi.advanceTimersByTime(200);
+    });
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('reopens on a deliberate re-hover once the suppression window passes', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+    const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
+    const trigger = renderMenu();
+
+    await user.click(trigger);
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+    // Suppression is time-bounded, not a permanent one-shot: coming back to
+    // the trigger later is a real intent to reopen.
+    await user.unhover(trigger);
+    act(() => {
+      vi.advanceTimersByTime(600);
+    });
+    await user.hover(trigger);
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
   it('toggles cleanly for click-only interaction', async () => {
     const user = userEvent.setup();
     const trigger = renderMenu();
