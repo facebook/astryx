@@ -25,6 +25,22 @@ const styles = stylex.create({
   button: {
     height: '20px',
     flexShrink: 0,
+    // Expand the tap target to >=24px ONLY on touch (WCAG 2.5.8 is a touch
+    // requirement). On a fine pointer the 20px glyph is precise enough, and an
+    // unconditional overlay could overlap neighboring controls in dense
+    // layouts. The inset is 0 by default (hit area == visual glyph) and grows
+    // to -4px (=> 28x28) under a coarse pointer. Driven through a custom
+    // property because StyleX only allows plain values inside a pseudo-element;
+    // the conditional lives on this top-level property instead.
+    '--clear-hit-inset': {
+      default: '0px',
+      '@media (pointer: coarse)': '-4px',
+    },
+    '::after': {
+      content: '""',
+      position: 'absolute',
+      inset: 'var(--clear-hit-inset)',
+    },
   },
 });
 
