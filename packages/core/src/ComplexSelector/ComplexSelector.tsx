@@ -4,7 +4,7 @@
 
 /**
  * @file ComplexSelector.tsx
- * @input Uses React, StyleX, Field, usePopover
+ * @input Uses React, StyleX, Field, usePopover, focusOutline
  * @output Exports ComplexSelector component for custom selector surfaces
  * @position Core implementation; consumed by index.ts
  *
@@ -42,6 +42,7 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 
@@ -145,12 +146,6 @@ const styles = stylex.create({
   },
   disabled: {
     cursor: 'not-allowed',
-  },
-  focusRing: {
-    ':focus-within': {
-      outline: `2px solid ${colorVars['--color-accent']}`,
-      outlineOffset: '2px',
-    },
   },
 });
 
@@ -350,11 +345,14 @@ export function ComplexSelector<Value>({
             size,
             status: status?.type ?? null,
           }),
-          stylex.props(
+          // Keyboard-only ring (`:has(:focus-visible)`), like every other
+          // control: `onHide` restores focus to the trigger, so a
+          // `:focus-within` ring re-lit itself after a mouse close and stayed
+          // (#4922).
+          focusOutlineProps.focusWithin(
             inputWrapperStyles.base,
             styles.triggerContainer,
             styles[size],
-            styles.focusRing,
             isDisabled && inputWrapperStyles.disabled,
             isDisabled && styles.disabled,
             triggerLabel == null && styles.placeholder,
