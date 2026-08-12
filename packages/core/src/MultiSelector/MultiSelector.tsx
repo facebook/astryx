@@ -253,9 +253,19 @@ const styles = stylex.create({
     cursor: 'pointer',
   },
 
-  // Section divider with label
-  sectionDivider: {
-    marginBlock: spacingVars['--spacing-1'],
+  // Section heading. Plain secondary text, no rules — the same treatment
+  // DropdownMenu and CommandPaletteGroup already use for a group heading in a
+  // panel list. A labeled Divider (line–text–line) reads as a separator, and
+  // next to the search row's own divider it stacked two rules a few pixels
+  // apart.
+  sectionHeading: {
+    paddingBlock: spacingVars['--spacing-1'],
+    paddingInline: spacingVars['--spacing-2'],
+    fontFamily: typographyVars['--font-family-body'],
+    fontSize: typeScaleVars['--text-supporting-size'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
+    color: colorVars['--color-text-secondary'],
+    userSelect: 'none',
   },
 
   // Divider
@@ -1324,12 +1334,11 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       ? sortedItems.length - 1
       : sortedItems.length;
 
-    // Show select-all only when there are real items to select
+    // Show select-all only when there are real items to select. It reads as
+    // the first row of the list, not a section of its own — no divider under
+    // it (the checkbox column already lines it up with the options below).
     if (hasSelectAll && realItemCount > 0) {
       elements.push(renderItem(sortedItems[0], 0));
-      elements.push(
-        <Divider key="select-all-divider" xstyle={styles.divider} />,
-      );
       cursor = 1;
     } else if (hasSelectAll) {
       // Skip the select-all sentinel when there are no real items
@@ -1398,17 +1407,23 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           sectionItems.push(renderItem(sortedItems[cursor], cursor));
           cursor++;
         }
-        if (option.title) {
-          elements.push(
-            <Divider
-              key={`section-divider-${i}`}
-              label={option.title}
-              xstyle={styles.sectionDivider}
-            />,
-          );
-        }
+        // The heading lives INSIDE the group and is aria-hidden: the group
+        // already carries the title as its accessible name, so exposing the
+        // text again would announce it twice. This also keeps role="listbox"'s
+        // children to option/group only — the old labeled Divider sat in the
+        // listbox as a stray role="separator".
         elements.push(
           <div key={`section-${i}`} role="group" aria-label={option.title}>
+            {option.title && (
+              <div
+                aria-hidden="true"
+                {...mergeProps(
+                  themeProps('multi-selector-section-heading'),
+                  stylex.props(styles.sectionHeading),
+                )}>
+                {option.title}
+              </div>
+            )}
             {sectionItems}
           </div>,
         );
