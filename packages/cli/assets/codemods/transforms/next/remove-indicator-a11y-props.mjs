@@ -54,7 +54,7 @@ const IMPORT_SOURCES = new Set([
   '@xds/core/Indicator',
 ]);
 
-const TODO = (names) =>
+const TODO = (/** @type {string} */ names) =>
   ` TODO(astryx upgrade): removed ${names} — an indicator is decorative, so the` +
   ` control that renders it owns the role, the accessible name and the focus.` +
   ` Confirm that control actually carries them; if this indicator was the only` +
@@ -124,6 +124,7 @@ export default function transformer(file, api) {
       return;
     }
 
+    /** @type {string[]} */
     const removed = [];
     path.node.attributes = (path.node.attributes ?? []).filter(
       (/** @type {any} */ attr) => {
