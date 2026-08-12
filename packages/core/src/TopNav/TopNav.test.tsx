@@ -661,16 +661,9 @@ describe('TopNavItem', () => {
   });
 });
 
-// =============================================================================
-// Hover → click guard (shared with useMenuHover) — issue #3121
-//
-// The heading menu opens on hover with no delay, so the click that naturally
-// follows lands on a menu that is already open. It must confirm, not dismiss.
-// =============================================================================
-
 describe('TopNavHeading hover/click guard', () => {
-  // Real menu items carry tabIndex={-1} (roving tabindex): a bare div with a
-  // menuitem role is not focusable, so focus assertions need the real shape.
+  // tabIndex={-1} matches real menu items; a bare role=menuitem div is not
+  // focusable.
   const menuItems = (
     <>
       <div role="menuitem" tabIndex={-1}>

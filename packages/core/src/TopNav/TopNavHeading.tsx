@@ -349,14 +349,11 @@ export function TopNavHeading({
     showDelay: 0,
   });
 
-  // Menu items close the popup through the hook so focus returns to the
-  // trigger instead of dropping to <body> with the hidden menu.
   const closeMenuCtx = useMemo(() => ({closeMenu}), [closeMenu]);
 
-  // setTriggerEl goes on the chevron BUTTON, not this root: it is what the
-  // hook focuses when a menu closes, and the root is a <div> that cannot take
-  // focus. popover.triggerRef stays here — the panel anchors to the whole
-  // heading, which is a positioning concern, not a focus one.
+  // setTriggerEl belongs on the chevron button, not this root: it is the
+  // focus-restore target and a <div> cannot take focus. triggerRef stays here
+  // because the panel anchors to the whole heading.
   const setRef = mergeRefs<HTMLElement>(
     rootRef,
     ref,
@@ -433,9 +430,7 @@ export function TopNavHeading({
     <button
       type="button"
       {...stylex.props(styles.popoverHeading)}
-      // A close affordance inside the popup, not the trigger: it always
-      // dismisses (and restores focus), and never toggles or re-focuses the
-      // menu the way trigger activation does.
+      // A close affordance, not the trigger: dismiss only.
       onClick={closeMenu}>
       {logo && <span {...stylex.props(styles.logo)}>{logo}</span>}
       {renderTextContent(

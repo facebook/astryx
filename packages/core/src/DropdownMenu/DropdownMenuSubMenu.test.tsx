@@ -709,13 +709,6 @@ describe('DropdownMenuSubMenu theming slots', () => {
   });
 });
 
-// =============================================================================
-// Hover → click guard (shared with useMenuHover) — issue #3121
-//
-// The flyout opens on hover, so the click that naturally follows must confirm
-// it, not dismiss the thing that just appeared under the cursor.
-// =============================================================================
-
 describe('DropdownMenuSubMenu hover/click guard', () => {
   it('keeps the flyout open when a hover-open is immediately clicked', async () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
@@ -736,7 +729,6 @@ describe('DropdownMenuSubMenu hover/click guard', () => {
 
     await user.click(trigger);
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
-    // Confirming moves focus into the flyout, as a click-open does.
     expect(
       screen.getByRole('menuitem', {name: 'Folder A', hidden: true}),
     ).toHaveFocus();
@@ -781,8 +773,7 @@ describe('DropdownMenuSubMenu hover/click guard', () => {
 
     await user.click(trigger);
 
-    // No waitFor: the flyout is shown during the click, so focus has already
-    // landed. A deferred (rAF) focus would fail here.
+    // No waitFor: a deferred (rAF) focus would fail here.
     expect(
       screen.getByRole('menuitem', {name: 'Folder A', hidden: true}),
     ).toHaveFocus();

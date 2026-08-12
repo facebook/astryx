@@ -371,10 +371,7 @@ TopNavMegaMenu.displayName = 'TopNavMegaMenu';
 // DefaultMegaMenu — desktop popover mode
 // =============================================================================
 
-/**
- * The panel is a browsing grid of links, not a menu of `role="menuitem"` rows,
- * so the shared hover hook is pointed at the panel's focusable descendants.
- */
+/** The panel is a grid of links, not `role="menuitem"` rows. */
 const PANEL_ITEM_SELECTOR =
   'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
@@ -430,9 +427,6 @@ function DefaultMegaMenu({
     };
   }, [popover]);
 
-  // Hover intent, the hover→click guard, pinned-vs-transient opens and
-  // focus-on-open all live in the shared hook — the same machine the nav menus
-  // and dropdown submenus run on (see useMenuHover).
   const {
     triggerProps: hoverTriggerProps,
     contentProps,
@@ -446,9 +440,8 @@ function DefaultMegaMenu({
     showDelay: delay,
     hideDelay,
     itemSelector: PANEL_ITEM_SELECTOR,
-    // The trigger sits outside the panel, so without the native invoker
-    // relationship the browser light-dismisses this auto popover during the
-    // trigger's own pointer interaction — before the guard can see the click.
+    // Trigger sits outside an auto popover; the invoker relationship exempts it
+    // from light dismiss.
     popoverId: popover.id,
   });
 
@@ -458,9 +451,6 @@ function DefaultMegaMenu({
         ref={mergeRefs(triggerButtonRef, setTriggerEl, ref)}
         type="button"
         {...popover.triggerProps}
-        // popoverTarget (the native invoker relationship, which exempts the
-        // trigger from light dismiss) and the click/hover handlers all come
-        // from the hook.
         {...hoverTriggerProps}
         {...mergeProps(
           themeProps('top-nav-mega-menu'),

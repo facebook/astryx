@@ -384,14 +384,11 @@ export function SideNavHeading({
     showDelay: 0,
   });
 
-  // Menu items close the popup through the hook so focus returns to the
-  // trigger instead of dropping to <body> with the hidden menu.
   const closeMenuCtx = useMemo(() => ({closeMenu}), [closeMenu]);
 
-  // setTriggerEl goes on the chevron BUTTON (and, when collapsed, on the
-  // icon-only trigger button), not this root: it is what the hook focuses when
-  // a menu closes, and the root is a <div> that cannot take focus.
-  // popover.triggerRef stays here — panel positioning, not focus.
+  // setTriggerEl belongs on the chevron button, not this root: it is the
+  // focus-restore target and a <div> cannot take focus. triggerRef stays here
+  // because the panel anchors to the whole heading.
   const setRef = mergeRefs<HTMLDivElement>(
     rootRef,
     ref,
@@ -408,8 +405,7 @@ export function SideNavHeading({
     const collapsedSetRef = mergeRefs<HTMLElement>(
       collapsedItemRef,
       ref,
-      // Collapsed, the icon-only button IS the trigger, so it takes both the
-      // anchor and the hook's focus-restore target.
+      // Collapsed, this button is the trigger, so it takes both roles.
       menu ? popover.triggerRef : undefined,
       menu ? setTriggerEl : undefined,
     );
@@ -463,9 +459,7 @@ export function SideNavHeading({
               <button
                 type="button"
                 {...stylex.props(styles.popoverHeading)}
-                // A close affordance inside the popup, not the trigger: it
-                // always dismisses (and restores focus), and never toggles or
-                // re-focuses the menu the way trigger activation does.
+                // A close affordance, not the trigger: dismiss only.
                 onClick={closeMenu}>
                 {icon && <span {...stylex.props(styles.icon)}>{icon}</span>}
                 <span {...stylex.props(styles.textContainer)}>
@@ -600,9 +594,7 @@ export function SideNavHeading({
     <button
       type="button"
       {...stylex.props(styles.popoverHeading)}
-      // A close affordance inside the popup, not the trigger: it always
-      // dismisses (and restores focus), and never toggles or re-focuses the
-      // menu the way trigger activation does.
+      // A close affordance, not the trigger: dismiss only.
       onClick={closeMenu}>
       {icon && <span {...stylex.props(styles.icon)}>{icon}</span>}
       {renderTextContent(

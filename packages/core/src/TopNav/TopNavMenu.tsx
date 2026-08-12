@@ -350,10 +350,8 @@ export function TopNavMenu({
       isEnabled: true,
       showDelay: delay,
       hideDelay,
-      // The trigger button sits outside the panel, which the browser treats as
-      // an outside interaction for a popover="auto": registering it as the
-      // panel's native invoker exempts it from light dismiss, so a click on a
-      // hover-opened menu reaches the hook instead of being dismissed first.
+      // Trigger sits outside an auto popover; the invoker relationship exempts
+      // it from light dismiss.
       popoverId: popover.id,
     });
 
@@ -373,8 +371,7 @@ export function TopNavMenu({
     useListFocus<HTMLDivElement>({
       itemSelector: '[role="menuitem"]',
       hasRovingTabIndex: true,
-      // Close through the hook, not popover.hide: Escape must return focus to
-      // the trigger rather than leave it on the menu being hidden.
+      // Not popover.hide: Escape must also restore focus to the trigger.
       onEscape: close,
     });
 

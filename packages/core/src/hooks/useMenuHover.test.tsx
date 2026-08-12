@@ -3,22 +3,12 @@
 /**
  * @file useMenuHover.test.tsx
  * @input Uses vitest, @testing-library/react, TopNavMenu (a real consumer)
- * @output Unit tests for the shared hover-menu interaction contract
- * @position Testing; validates useMenuHover behavior for every menu that
- *           opens on hover — issue #3121
- *
- * The hook is exercised through TopNavMenu rather than a synthetic harness:
- * the contract that matters is what a consumer wires up (popover + trigger +
- * panel), and a harness would let the hook drift from real usage. The
- * per-component suites cover the same ground for the other consumers.
- *
- * Accessibility is the point of most of these: who holds focus after each way
- * of opening and closing, whether keyboard activation can reach an open menu,
- * and whether a pointer-less device can open one at all.
+ * @output Unit tests for the shared hover-menu interaction contract (#3121)
+ * @position Testing; exercised through TopNavMenu rather than a synthetic
+ *           harness, so the hook cannot drift from how consumers wire it
  *
  * SYNC: When useMenuHover changes, update tests to match new behavior
  */
-
 import {describe, it, expect, vi, afterEach} from 'vitest';
 import {render, screen, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -29,10 +19,7 @@ const items = [
   {title: 'Messaging', description: 'Real-time comms', href: '/messaging'},
 ];
 
-/**
- * Report a device with no hover-capable pointer (a touchscreen), overriding the
- * shared setup's desktop default.
- */
+/** A touchscreen: no hover-capable pointer. */
 function mockPointerlessDevice() {
   vi.spyOn(window, 'matchMedia').mockImplementation(
     (query: string) =>
@@ -63,14 +50,6 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-// =============================================================================
-// Hover → click guard — issue #3121
-//
-// A menu that opens on hover is already open under the cursor by the time the
-// pointer arrives, so the click that naturally follows must confirm it rather
-// than toggle it shut.
-// =============================================================================
-
 describe('useMenuHover — hover/click guard', () => {
   it('opens on hover after the show delay', async () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
@@ -97,7 +76,6 @@ describe('useMenuHover — hover/click guard', () => {
     });
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
 
-    // The click that naturally follows the hover must NOT dismiss it.
     await user.click(trigger);
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
   });
@@ -129,7 +107,7 @@ describe('useMenuHover — hover/click guard', () => {
     act(() => {
       vi.advanceTimersByTime(300);
     });
-    // Past the 500ms guard: this is a deliberate dismissal, not a follow-on.
+    // Past the guard: a deliberate dismissal, not a follow-on.
     act(() => {
       vi.advanceTimersByTime(1200);
     });
@@ -163,8 +141,7 @@ describe('useMenuHover — hover/click guard', () => {
     await user.click(trigger);
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
 
-    // Leaving and re-entering must not make it transient again, nor make the
-    // next click "confirm" — otherwise the menu becomes undismissable.
+    // Re-entering must not un-pin it, nor make the next click a "confirm".
     await user.unhover(trigger);
     await user.hover(trigger);
     act(() => {
@@ -184,10 +161,8 @@ describe('useMenuHover — hover/click guard', () => {
     await user.click(trigger);
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
 
-    // Close it, then let the mouseenter the browser fires when the panel stops
-    // covering the trigger arrive. Without suppression this reopens the menu
-    // the user just dismissed — which is how Escape and the nav headings'
-    // in-panel close affordance came to look inert.
+    // Without suppression, the mouseenter fired when the panel stops covering
+    // the trigger reopens the menu — which made Escape look inert.
     await user.click(trigger);
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
     await user.hover(trigger);
@@ -206,8 +181,6 @@ describe('useMenuHover — hover/click guard', () => {
     await user.click(trigger);
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
 
-    // Suppression is time-bounded, not a permanent one-shot: coming back to
-    // the trigger later is a real intent to reopen.
     await user.unhover(trigger);
     act(() => {
       vi.advanceTimersByTime(600);
@@ -230,10 +203,6 @@ describe('useMenuHover — hover/click guard', () => {
   });
 });
 
-// =============================================================================
-// Focus — who holds it after each way of opening and closing
-// =============================================================================
-
 describe('useMenuHover — focus management', () => {
   it('leaves focus on the trigger for a hover-open', async () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
@@ -245,7 +214,6 @@ describe('useMenuHover — focus management', () => {
       vi.advanceTimersByTime(300);
     });
 
-    // The pointer is driving; stealing focus would be hostile.
     expect(firstMenuItem()).not.toHaveFocus();
   });
 
@@ -255,10 +223,8 @@ describe('useMenuHover — focus management', () => {
 
     await user.click(trigger);
 
-    // No waitFor, no timer flush, no animation frame: the layer calls
-    // showPopover() during the click and the items are already mounted, so
-    // focus has landed by the time the click returns. A deferred focus would
-    // fail this assertion — which is the point.
+    // No waitFor and no timer flush: a deferred (rAF) focus fails here, which
+    // is the point of the assertion.
     expect(firstMenuItem()).toHaveFocus();
   });
 
@@ -273,8 +239,6 @@ describe('useMenuHover — focus management', () => {
     });
     expect(firstMenuItem()).not.toHaveFocus();
 
-    // Confirming is a deliberate activation, so the confirmed menu is
-    // indistinguishable from a click-opened one — including who holds focus.
     await user.click(trigger);
     expect(firstMenuItem()).toHaveFocus();
   });
@@ -287,7 +251,6 @@ describe('useMenuHover — focus management', () => {
     expect(firstMenuItem()).toHaveFocus();
 
     await user.click(trigger);
-    // Focus must not be left on the hidden menu, nor dropped to <body>.
     expect(trigger).toHaveFocus();
   });
 
@@ -303,10 +266,6 @@ describe('useMenuHover — focus management', () => {
     expect(trigger).toHaveFocus();
   });
 });
-
-// =============================================================================
-// Keyboard activation
-// =============================================================================
 
 describe('useMenuHover — keyboard activation', () => {
   it('opens on Enter and moves focus into the menu', async () => {
@@ -335,10 +294,8 @@ describe('useMenuHover — keyboard activation', () => {
     const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
     const trigger = renderMenu();
 
-    // A hover-open leaves focus on the trigger, which is the only state in
-    // which a keyboard user can activate the trigger of an open menu. Closing
-    // on Enter there would strand them: the menu they can see would be
-    // unreachable by keyboard.
+    // A hover-open is the only state where a keyboard user can activate the
+    // trigger of an open menu; closing on Enter would strand them.
     await user.hover(trigger);
     act(() => {
       vi.advanceTimersByTime(300);
@@ -365,10 +322,6 @@ describe('useMenuHover — keyboard activation', () => {
   });
 });
 
-// =============================================================================
-// Pointer capability
-// =============================================================================
-
 describe('useMenuHover — devices without hover', () => {
   it('does not open on a synthetic mouseenter from a tap', async () => {
     mockPointerlessDevice();
@@ -376,8 +329,8 @@ describe('useMenuHover — devices without hover', () => {
     const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
     const trigger = renderMenu();
 
-    // Touch taps emit a compatibility mouseenter. Opening on it would leave a
-    // menu hanging open behind the tap that just activated the trigger.
+    // Taps emit a compatibility mouseenter; opening on it leaves a menu
+    // hanging open behind the tap.
     await user.hover(trigger);
     act(() => {
       vi.advanceTimersByTime(500);
@@ -397,19 +350,12 @@ describe('useMenuHover — devices without hover', () => {
   });
 });
 
-// =============================================================================
-// Native light dismiss / invoker wiring
-// =============================================================================
-
 describe('useMenuHover — native invoker wiring', () => {
   it('registers the trigger as the panel it controls', () => {
     const trigger = renderMenu();
 
-    // popoverTarget makes the trigger the panel's native invoker, which exempts
-    // its own pointer interaction from the auto-popover light dismiss that
-    // would otherwise close the menu before the click guard sees it. jsdom
-    // implements neither, so this asserts the wiring, not the effect — the
-    // behavior itself is browser-verified.
+    // jsdom implements neither light dismiss nor invokers, so this asserts the
+    // wiring; the behavior itself is browser-verified.
     expect(trigger).toHaveAttribute(
       'popovertarget',
       trigger.getAttribute('aria-controls'),

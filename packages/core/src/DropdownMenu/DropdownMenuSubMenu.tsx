@@ -299,10 +299,9 @@ export function DropdownMenuSubMenu(
 
   // Hover-intent: entering the trigger opens after a short delay; leaving
   // either surface closes after a delay. Hover-open does not steal focus.
-  // Hover intent only: this level owns its own click handling, roving focus and
-  // typeahead (see useListFocus above), so the hook contributes the open/close
-  // intent and the shared hover→click guard, not the keyboard model. The flyout
-  // is popover="manual" (lightDismiss: false), so no invoker wiring is needed.
+  // Hover intent and the shared hover→click guard only: this level owns its own
+  // click handling, roving focus and typeahead. popover="manual", so the
+  // invoker wiring other consumers need does not apply.
   const {triggerProps, contentProps, confirmHoverOpen} =
     useMenuHover<HTMLDivElement>({
       show: showLayer,
@@ -318,17 +317,9 @@ export function DropdownMenuSubMenu(
       }
       layer.show();
       if (options?.focusFirst) {
-        // Focus synchronously: layer.show() calls showPopover() in this same
-        // tick and the flyout's children are always mounted, so the items are
-        // focusable now. A deferred focus (rAF) lands after paint and races
-        // anything else that moves focus in between.
-        //
-        // When the flyout has no focusable items yet (e.g. an async submenu
-        // showing only a disabled "Loading…" row via hasSpinner), focusFirst()
-        // finds nothing — fall back to focusing the flyout container itself so
-        // keyboard ownership still transfers off the parent list. Otherwise the
-        // parent would keep focus, letting arrow keys rove the parent while the
-        // empty flyout stays open.
+        // Synchronous by design — see the focus note in useMenuHover. A
+        // still-loading flyout has no focusable item, so fall back to the
+        // container: keyboard ownership must leave the parent list either way.
         if (!focusFirst()) {
           menuRef.current?.focus();
         }
@@ -361,10 +352,7 @@ export function DropdownMenuSubMenu(
     if (isDisabled) {
       return;
     }
-    // Click toggles the flyout, moving focus into it on open — except for the
-    // click that naturally follows a hover-open, which confirms the flyout
-    // (pinning it past mouseleave) and moves focus in, rather than dismissing
-    // the thing that just appeared under the cursor.
+    // Toggles, except for the click that follows a hover-open (#3121).
     if (isOpen) {
       if (confirmHoverOpen()) {
         if (!focusFirst()) {
