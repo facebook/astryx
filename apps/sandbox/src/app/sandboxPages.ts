@@ -134,6 +134,12 @@ export const categories: SandboxCategory[] = [
         href: '/pages/example/',
         description: 'General component composition examples',
       },
+      {
+        name: 'Tap Targets (AA)',
+        href: '/pages/tap-targets/',
+        description:
+          'WCAG 2.5.8 AA touch-target sizes visualized on real components',
+      },
     ],
   },
   {
