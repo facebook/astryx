@@ -117,14 +117,14 @@ describe('ComplexSelector', () => {
     await user.click(screen.getByRole('button', {name: 'Fruit blend'}));
     const popup = document.querySelector('[popover]') as HTMLElement;
     expect(popup).not.toBeNull();
-    const style = getComputedStyle(popup);
     // Both edges, not just the leading one: the trailing edge is what faces
     // the trigger when the same popup opens upward (placement="above") or is
-    // flipped by position-try-fallbacks. jsdom doesn't resolve the logical
-    // marginBlockStart/End properties here (both return '' regardless), so
-    // assert the equivalent physical ones.
-    expect(style.marginTop).not.toBe('');
-    expect(style.marginBottom).toBe(style.marginTop);
+    // flipped by position-try-fallbacks. useLayer's `offset` sets both from
+    // the resolved placement; jsdom resolves neither the var indirection nor
+    // logical margins, so read the debug-mode declarations it emits.
+    const blockStart = popup.style.getPropertyValue('--x-marginBlockStart');
+    expect(blockStart).not.toBe('');
+    expect(popup.style.getPropertyValue('--x-marginBlockEnd')).toBe(blockStart);
   });
 
   it('runs changeAction through the provided onChange helper', async () => {
