@@ -4,9 +4,10 @@
 
 /**
  * @file useMenuHover.ts
- * @input Uses React hooks, useListFocus
+ * @input Uses React hooks, useListFocus, useMediaQuery
  * @output Exports useMenuHover hook
- * @position Internal hook; used by nav heading components and TopNavMenu
+ * @position Internal hook; used by nav heading components, TopNavMenu,
+ *           TopNavMegaMenu and DropdownMenuSubMenu
  *
  * Hover as a progressive enhancement on top of standard popover behavior:
  *
@@ -20,26 +21,104 @@
  *    - Click-to-close additionally skips the next mouseenter
  *
  * Only uses mouseenter/mouseleave (not mouseover).
+ *
+ * ## Hover → click guard (issue #3121)
+ *
+ * A menu that opens on hover is, by the time the pointer arrives, already open
+ * under the cursor — so the click the user naturally makes next would toggle it
+ * straight back shut. Within `clickGuardMs` of a hover-open, a click therefore
+ * *confirms* the menu instead of closing it: the menu pins (mouseleave no
+ * longer closes it) and behaves exactly like a click-open from then on. A
+ * deliberate click outside that window still closes.
+ *
+ * ## Focus
+ *
+ * Opening a menu moves focus into it — except on hover, where the pointer, not
+ * the keyboard, is driving and stealing focus would be hostile. So:
+ *
+ * - hover-open  → `show({skipAutoFocus: true})`, focus stays on the trigger
+ * - click-open  → focus moves to the first item
+ * - click-confirm (the guard above) → focus moves to the first item, so a
+ *   confirmed menu is indistinguishable from a click-opened one
+ * - click-close → focus returns to the trigger
+ *
+ * Focus is moved *synchronously* inside the event handler. `useLayer.show()`
+ * calls `showPopover()` synchronously and the layer's children are always
+ * mounted (the element is a `[popover]`, hidden rather than unmounted), so the
+ * items are focusable the moment `show()` returns. Do NOT reintroduce a
+ * `requestAnimationFrame` here: a deferred focus lands after paint, is visible
+ * to the user as a jump, and races anything else that moves focus in between.
+ *
+ * The hook always calls `show({skipAutoFocus: true})` and owns focus itself,
+ * because the popover's own auto-focus targets the first *tabbable* node in the
+ * focus trap, while a menu wants its first item — and menu items carry
+ * `tabindex="-1"` under roving tabindex, so the two disagree. Letting both run
+ * means two different elements get focused a frame apart.
+ *
+ * ## Native light dismiss
+ *
+ * When the popup is a native `popover="auto"` (the `hasLightDismiss` default of
+ * `usePopover`/`useLayer`) the browser light-dismisses it on any pointer
+ * interaction outside the panel — and a trigger that sits outside the panel
+ * counts as outside. The dismissal is dispatched before React's click handler
+ * runs, so a hover-opened menu can close from under the click before the guard
+ * above ever sees it.
+ *
+ * Pass `popoverId` to fix that: the hook stamps `popoverTarget` on the trigger,
+ * which makes it the panel's native *invoker* and exempts it from light
+ * dismiss, and cancels the invoker's default toggle with `preventDefault()` so
+ * this hook stays the single source of truth for what a click means. Consumers
+ * whose trigger lives outside the panel and who keep light dismiss on should
+ * pass it. (jsdom implements neither light dismiss nor invokers, so this wiring
+ * can only be verified in a real browser.)
  */
 
 import {useCallback, useEffect, useRef} from 'react';
 import {useListFocus} from './useListFocus';
 import {useMediaQuery} from './useMediaQuery';
 
-interface UseMenuHoverOptions {
+/**
+ * How long after a hover-open a click still counts as confirming the menu
+ * rather than dismissing it.
+ */
+const DEFAULT_CLICK_GUARD_MS = 500;
+
+export interface UseMenuHoverOptions {
   show: (options?: {skipAutoFocus?: boolean}) => void;
   hide: () => void;
   isOpen: boolean;
   isEnabled: boolean;
+  /** Delay before a hover opens the menu (ms). @default 150 */
   showDelay?: number;
+  /** Delay before leaving the trigger or menu closes it (ms). @default 200 */
   hideDelay?: number;
+  /**
+   * Window after a hover-open in which a click confirms the menu instead of
+   * closing it. Set to 0 to opt out and have every click toggle. @default 500
+   */
+  clickGuardMs?: number;
+  /**
+   * Selector for the menu's focusable items, forwarded to `useListFocus`.
+   * Menus of `role="menuitem"` rows need no override; a panel of links (a mega
+   * menu) does. @default '[role="menuitem"]'
+   */
+  itemSelector?: string;
+  /**
+   * The popup's DOM id (`usePopover().id` / `useLayer().id`). Supply it when
+   * the popup is a native `popover="auto"` and the trigger sits outside it —
+   * see "Native light dismiss" above. Omit it for `popover="manual"` popups and
+   * for triggers rendered inside the panel.
+   */
+  popoverId?: string;
 }
 
-interface UseMenuHoverReturn<T extends HTMLElement = HTMLElement> {
+export interface UseMenuHoverReturn<T extends HTMLElement = HTMLElement> {
   triggerProps: {
-    onClick: () => void;
+    onClick: (event?: React.MouseEvent) => void;
     onMouseEnter: () => void;
     onMouseLeave: () => void;
+    /** Present only when `popoverId` is supplied. */
+    popoverTarget?: string;
   };
   contentProps: {
     onMouseEnter: () => void;
@@ -47,7 +126,13 @@ interface UseMenuHoverReturn<T extends HTMLElement = HTMLElement> {
     onKeyDown: (e: React.KeyboardEvent) => void;
   };
   menuRef: React.RefObject<T | null>;
-  focusFirst: () => void;
+  /** Focus the first enabled item. Returns false when there was none. */
+  focusFirst: () => boolean;
+  /**
+   * Focus the first enabled item, falling back to the menu container when the
+   * menu is empty or still loading.
+   */
+  focusMenu: () => void;
   setTriggerEl: (el: HTMLElement | null) => void;
 }
 
@@ -61,6 +146,9 @@ export function useMenuHover<T extends HTMLElement = HTMLElement>(
     isEnabled,
     showDelay = 150,
     hideDelay = 200,
+    clickGuardMs = DEFAULT_CLICK_GUARD_MS,
+    itemSelector,
+    popoverId,
   } = options;
 
   const hasHover = useMediaQuery('(hover: hover)');
@@ -72,11 +160,14 @@ export function useMenuHover<T extends HTMLElement = HTMLElement>(
   const hoverModeRef = useRef(false);
   // One-shot: skip the next mouseenter after click-to-close
   const skipNextEnterRef = useRef(false);
+  // When the current open began as a hover-open; 0 once confirmed or closed.
+  const hoverOpenedAtRef = useRef(0);
   const prevIsOpenRef = useRef(isOpen);
 
   // When popover closes (any reason), reset hover mode
   if (prevIsOpenRef.current && !isOpen) {
     hoverModeRef.current = false;
+    hoverOpenedAtRef.current = 0;
   }
   prevIsOpenRef.current = isOpen;
 
@@ -91,33 +182,107 @@ export function useMenuHover<T extends HTMLElement = HTMLElement>(
     }
   }, []);
 
+  // Escape is handled by useListFocus, which is declared below but needs the
+  // hide-and-restore behavior defined after it (it reads the list ref). The
+  // indirection keeps both honest without a use-before-declare.
+  const escapeHandlerRef = useRef<() => void>(() => {});
+
   const {
     listRef: menuRef,
     handleKeyDown: handleListKeyDown,
     focusFirst,
   } = useListFocus<T>({
-    onEscape: () => {
-      clearTimeouts();
-      hide();
-    },
+    itemSelector,
+    onEscape: () => escapeHandlerRef.current(),
   });
+
+  // Hide, and keep focus with the trigger instead of letting it drop to
+  // <body> when the element holding focus is the menu being hidden. Read the
+  // active element *before* hiding: closing the layer moves focus itself.
+  const hideAndRestoreFocus = useCallback(() => {
+    const menuHadFocus =
+      menuRef.current?.contains(document.activeElement) ?? false;
+    hide();
+    if (menuHadFocus) {
+      triggerElRef.current?.focus();
+    }
+  }, [hide, menuRef]);
+
+  useEffect(() => {
+    escapeHandlerRef.current = () => {
+      clearTimeouts();
+      hideAndRestoreFocus();
+    };
+  }, [clearTimeouts, hideAndRestoreFocus]);
 
   useEffect(() => {
     return () => clearTimeouts();
   }, [clearTimeouts]);
 
-  // Click: always toggle
-  const handleClick = useCallback(() => {
-    clearTimeouts();
-    if (isOpen) {
-      skipNextEnterRef.current = true;
-      hide();
-    } else {
-      skipNextEnterRef.current = false;
-      show();
-      requestAnimationFrame(() => focusFirst());
+  // Open by pointer/keyboard activation: the layer is visible synchronously, so
+  // focus moves in the same tick. See the "Focus" note in the file header.
+  const focusMenu = useCallback(() => {
+    // An empty or still-loading menu (e.g. a submenu showing only a disabled
+    // "Loading…" row) has no focusable item. Fall back to the menu container
+    // so keyboard ownership still transfers off the trigger's list — otherwise
+    // arrow keys keep roving the parent while this menu sits open.
+    if (!focusFirst()) {
+      menuRef.current?.focus();
     }
-  }, [isOpen, clearTimeouts, show, hide, focusFirst]);
+  }, [focusFirst, menuRef]);
+
+  const openAndFocus = useCallback(() => {
+    show({skipAutoFocus: true});
+    focusMenu();
+  }, [show, focusMenu]);
+
+  // Click: toggles, except that a click confirming a fresh hover-open pins the
+  // menu instead of dismissing it.
+  const handleClick = useCallback(
+    (event?: React.MouseEvent) => {
+      // Cancel the native invoker's default toggle so this handler remains the
+      // single source of truth; popoverTarget still exempts the trigger from
+      // native light dismiss.
+      if (popoverId) {
+        event?.preventDefault();
+      }
+      clearTimeouts();
+
+      if (!isOpen) {
+        skipNextEnterRef.current = false;
+        hoverModeRef.current = false;
+        hoverOpenedAtRef.current = 0;
+        openAndFocus();
+        return;
+      }
+
+      const isConfirmingHoverOpen =
+        clickGuardMs > 0 &&
+        hoverOpenedAtRef.current > 0 &&
+        Date.now() - hoverOpenedAtRef.current < clickGuardMs;
+
+      if (isConfirmingHoverOpen) {
+        // Pin the menu: from here it behaves like any click-open, including
+        // surviving mouseleave and owning focus.
+        hoverModeRef.current = false;
+        hoverOpenedAtRef.current = 0;
+        focusMenu();
+        return;
+      }
+
+      skipNextEnterRef.current = true;
+      hideAndRestoreFocus();
+    },
+    [
+      popoverId,
+      clearTimeouts,
+      isOpen,
+      clickGuardMs,
+      openAndFocus,
+      focusMenu,
+      hideAndRestoreFocus,
+    ],
+  );
 
   // Hover: mouseenter activates hover mode and opens
   const handleMouseEnter = useCallback(() => {
@@ -130,12 +295,14 @@ export function useMenuHover<T extends HTMLElement = HTMLElement>(
     }
     hoverModeRef.current = true;
     clearTimeouts();
-    if (showDelay > 0) {
-      showTimerRef.current = setTimeout(() => {
-        show({skipAutoFocus: true});
-      }, showDelay);
-    } else {
+    const openByHover = () => {
+      hoverOpenedAtRef.current = Date.now();
       show({skipAutoFocus: true});
+    };
+    if (showDelay > 0) {
+      showTimerRef.current = setTimeout(openByHover, showDelay);
+    } else {
+      openByHover();
     }
   }, [hasHover, clearTimeouts, show, showDelay]);
 
@@ -173,6 +340,7 @@ export function useMenuHover<T extends HTMLElement = HTMLElement>(
       },
       menuRef,
       focusFirst,
+      focusMenu,
       setTriggerEl: noopRef,
     };
   }
@@ -182,6 +350,7 @@ export function useMenuHover<T extends HTMLElement = HTMLElement>(
       onClick: handleClick,
       onMouseEnter: handleMouseEnter,
       onMouseLeave: handleMouseLeave,
+      ...(popoverId ? {popoverTarget: popoverId} : null),
     },
     contentProps: {
       onMouseEnter: handleContentMouseEnter,
@@ -190,6 +359,7 @@ export function useMenuHover<T extends HTMLElement = HTMLElement>(
     },
     menuRef,
     focusFirst,
+    focusMenu,
     setTriggerEl: setTriggerRef,
   };
 }

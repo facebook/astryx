@@ -350,6 +350,11 @@ export function TopNavMenu({
       isEnabled: true,
       showDelay: delay,
       hideDelay,
+      // The trigger button sits outside the panel, which the browser treats as
+      // an outside interaction for a popover="auto": registering it as the
+      // panel's native invoker exempts it from light dismiss, so a click on a
+      // hover-opened menu reaches the hook instead of being dismissed first.
+      popoverId: popover.id,
     });
 
   const setTriggerRef = mergeRefs<HTMLButtonElement>(
