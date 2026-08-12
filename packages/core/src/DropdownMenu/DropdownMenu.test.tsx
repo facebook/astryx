@@ -411,6 +411,67 @@ describe('DropdownMenu items', () => {
     expect(handleClick).toHaveBeenCalledTimes(1);
   });
 
+  it('closes the menu after an item is activated', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Actions'}} items={[{label: 'Edit', onClick: () => {}}]} />,
+    );
+
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    await user.click(
+      screen.getByRole('menuitem', {name: 'Edit', hidden: true}),
+    );
+    expect(HTMLElement.prototype.hidePopover).toHaveBeenCalled();
+  });
+
+  it('keeps the menu open when the item opts out of closing', async () => {
+    const user = userEvent.setup();
+    const handleClick = vi.fn();
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        items={[
+          {label: 'Copy ID', onClick: handleClick, hasCloseOnSelect: false},
+        ]}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    const item = screen.getByRole('menuitem', {name: 'Copy ID', hidden: true});
+    await user.click(item);
+    expect(handleClick).toHaveBeenCalledTimes(1);
+    expect(HTMLElement.prototype.hidePopover).not.toHaveBeenCalled();
+
+    // Second activation still works, and focus never left the item.
+    await user.click(item);
+    expect(handleClick).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps the menu open on keyboard activation too', async () => {
+    const user = userEvent.setup();
+    const handleClick = vi.fn();
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        items={[
+          {label: 'Copy ID', onClick: handleClick, hasCloseOnSelect: false},
+        ]}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    const menu = screen.getByRole('menu', {hidden: true});
+    await waitFor(() => expect(menu).toHaveFocus());
+    fireEvent.keyDown(menu, {key: 'ArrowDown'});
+    fireEvent.keyDown(menu, {key: 'Enter'});
+
+    expect(handleClick).toHaveBeenCalledTimes(1);
+    expect(HTMLElement.prototype.hidePopover).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole('menuitem', {name: 'Copy ID', hidden: true}),
+    ).toHaveFocus();
+  });
+
   it('does not call onClick when disabled', async () => {
     const user = userEvent.setup();
     const handleClick = vi.fn();

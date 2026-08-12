@@ -114,7 +114,7 @@ const styles = stylex.create({
  */
 export interface DropdownMenuItemData extends Pick<
   DropdownMenuItemProps,
-  'icon' | 'onClick' | 'isDisabled' | 'variant'
+  'icon' | 'onClick' | 'isDisabled' | 'variant' | 'hasCloseOnSelect'
 > {
   /**
    * Primary label text. Narrowed to `string` from the item's `ReactNode`:

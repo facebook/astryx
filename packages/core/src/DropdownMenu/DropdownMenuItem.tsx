@@ -101,6 +101,14 @@ export interface DropdownMenuItemProps extends Pick<
   /** Additional content to render after the label/description. */
   endContent?: ReactNode;
   /**
+   * Whether activating the item closes the menu. Set `false` for an action
+   * that reports its result on the item itself (a copy row swapping to
+   * "Copied"), matching the checkbox and radio items, which already decide
+   * this for themselves.
+   * @default true
+   */
+  hasCloseOnSelect?: boolean;
+  /**
    * Visual variant. `'destructive'` renders the label, description, and icon in
    * the error color for dangerous actions (e.g. Delete). @default 'default'
    */
@@ -128,6 +136,7 @@ export function DropdownMenuItem({
   onClick,
   isDisabled = false,
   endContent,
+  hasCloseOnSelect = true,
   variant = 'default',
   xstyle,
   className,
@@ -141,8 +150,10 @@ export function DropdownMenuItem({
       return;
     }
     onClick();
-    ctx?.closeMenu();
-  }, [isDisabled, onClick, ctx]);
+    if (hasCloseOnSelect) {
+      ctx?.closeMenu();
+    }
+  }, [isDisabled, onClick, hasCloseOnSelect, ctx]);
 
   const handlePointerMove = useCallback(
     (e: PointerEvent<HTMLElement>) => focusMenuItemOnHover(e, isDisabled),
