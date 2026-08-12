@@ -106,7 +106,13 @@ const styles = stylex.create({
  */
 export interface DropdownMenuItemData extends Pick<
   DropdownMenuItemProps,
-  'icon' | 'onClick' | 'isDisabled' | 'variant' | 'hasCloseOnSelect'
+  | 'icon'
+  | 'onClick'
+  | 'isDisabled'
+  | 'variant'
+  | 'description'
+  | 'endContent'
+  | 'hasCloseOnSelect'
 > {
   /**
    * Stable identity for the row, used as its React key (as on
@@ -116,8 +122,8 @@ export interface DropdownMenuItemData extends Pick<
    * changes around it.
    */
   id?: string;
-  /** Primary label text. */
-  label: string;
+  /** Primary label content. */
+  label: ReactNode;
   /**
    * Nested submenu entries. When present, this row becomes a submenu (a
    * flyout revealing `items`) instead of a leaf action — no separate item
@@ -126,7 +132,11 @@ export interface DropdownMenuItemData extends Pick<
   items?: DropdownMenuOption[];
 }
 
-export interface DropdownMenuDivider {
+/**
+ * Data-mode shape for a divider row. The compound-mode peer is the
+ * `DropdownMenuDivider` component, which both modes render.
+ */
+export interface DropdownMenuDividerData {
   type: 'divider';
 }
 
@@ -139,7 +149,7 @@ export interface DropdownMenuSection {
 }
 
 export type DropdownMenuOption =
-  DropdownMenuItemData | DropdownMenuDivider | DropdownMenuSection;
+  DropdownMenuItemData | DropdownMenuDividerData | DropdownMenuSection;
 
 // =============================================================================
 // Props

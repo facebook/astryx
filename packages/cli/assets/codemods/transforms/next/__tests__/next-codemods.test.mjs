@@ -90,3 +90,65 @@ const nested = '.astryx-dropdown-menu-radio .astryx-dropdown-menu-radio-dot';`;
     expect(await apply(TRANSFORM, once)).toBe(once);
   });
 });
+
+describe('rename-menu-divider-data-types', () => {
+  const T = 'rename-menu-divider-data-types';
+
+  it('renames a type-only import and its type references', async () => {
+    const input = `import type {DropdownMenuOption, DropdownMenuDivider} from '@astryxdesign/core/DropdownMenu';
+
+const rule: DropdownMenuDivider = {type: 'divider'};
+const options: DropdownMenuOption[] = [rule];`;
+    const output = await apply(T, input);
+    expect(output).toContain('DropdownMenuDividerData');
+    expect(output).not.toMatch(/DropdownMenuDivider\b(?!Data)/);
+  });
+
+  it('renames the ContextMenu and Breadcrumbs aliases too', async () => {
+    const input = `import type {ContextMenuDivider} from '@astryxdesign/core/ContextMenu';
+import type {BreadcrumbMenuDivider} from '@astryxdesign/core/Breadcrumbs';
+const a: ContextMenuDivider = {type: 'divider'};
+const b: BreadcrumbMenuDivider = {type: 'divider'};`;
+    const output = await apply(T, input);
+    expect(output).toContain('ContextMenuDividerData');
+    expect(output).toContain('BreadcrumbMenuDividerData');
+  });
+
+  it('leaves the new component alone', async () => {
+    const input = `import {DropdownMenu, DropdownMenuItem, DropdownMenuDivider} from '@astryxdesign/core/DropdownMenu';
+
+export const Menu = () => (
+  <DropdownMenu button={{label: 'Actions'}}>
+    <DropdownMenuItem label="Edit" />
+    <DropdownMenuDivider />
+  </DropdownMenu>
+);`;
+    const output = await apply(T, input);
+    expect(output).not.toContain('DropdownMenuDividerData');
+  });
+
+  it('renames an inline type specifier without touching a sibling value import', async () => {
+    const input = `import {DropdownMenu, type DropdownMenuDivider} from '@astryxdesign/core/DropdownMenu';
+const d: DropdownMenuDivider = {type: 'divider'};
+export const M = () => <DropdownMenu button={{label: 'A'}} items={[d]} />;`;
+    const output = await apply(T, input);
+    expect(output).toContain('type DropdownMenuDividerData');
+    expect(output).toContain('const d: DropdownMenuDividerData');
+    expect(output).toContain('DropdownMenu,');
+  });
+
+  it('preserves an alias', async () => {
+    const input = `import type {DropdownMenuDivider as MenuRule} from '@astryxdesign/core/DropdownMenu';
+const d: MenuRule = {type: 'divider'};`;
+    const output = await apply(T, input);
+    expect(output).toContain('DropdownMenuDividerData as MenuRule');
+    expect(output).toContain('const d: MenuRule');
+  });
+
+  it('ignores a same-named type from another package', async () => {
+    const input = `import type {DropdownMenuDivider} from 'some-other-ui';
+const d: DropdownMenuDivider = {type: 'divider'};`;
+    const output = await apply(T, input);
+    expect(output).not.toContain('DropdownMenuDividerData');
+  });
+});

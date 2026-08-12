@@ -15,6 +15,7 @@ import userEvent from '@testing-library/user-event';
 import {useState} from 'react';
 import {DropdownMenu} from './DropdownMenu';
 import {DropdownMenuItem} from './DropdownMenuItem';
+import {DropdownMenuDivider} from './DropdownMenuDivider';
 import {Divider} from '../Divider';
 
 // Mock showPopover and hidePopover methods since they're not implemented in jsdom
@@ -1407,5 +1408,75 @@ describe('DropdownMenu open focus follows input modality (#4477)', () => {
 
     fireEvent.keyDown(menu, {key: 'Tab'});
     expect(HTMLElement.prototype.hidePopover).toHaveBeenCalled();
+  });
+});
+
+describe('DropdownMenu data/compound parity', () => {
+  it('renders an identical divider from either mode', () => {
+    const {unmount} = render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        items={[{label: 'Edit'}, {type: 'divider'}, {label: 'Delete'}]}
+      />,
+    );
+    const fromData = screen.getByRole('separator', {hidden: true}).outerHTML;
+    unmount();
+
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuItem label="Edit" />
+        <DropdownMenuDivider />
+        <DropdownMenuItem label="Delete" />
+      </DropdownMenu>,
+    );
+    const fromCompound = screen.getByRole('separator', {hidden: true});
+
+    expect(fromCompound.outerHTML).toBe(fromData);
+    expect(fromCompound).toHaveClass('astryx-dropdown-menu-divider');
+  });
+
+  it('skips a compound divider in the arrow-key order', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuItem label="Edit" />
+        <DropdownMenuDivider />
+        <DropdownMenuItem label="Delete" />
+      </DropdownMenu>,
+    );
+
+    await user.tab();
+    await user.keyboard('{ArrowDown}');
+    const menu = screen.getByRole('menu', {hidden: true});
+    await waitFor(() =>
+      expect(
+        screen.getByRole('menuitem', {name: 'Edit', hidden: true}),
+      ).toHaveFocus(),
+    );
+
+    fireEvent.keyDown(menu, {key: 'ArrowDown'});
+    expect(
+      screen.getByRole('menuitem', {name: 'Delete', hidden: true}),
+    ).toHaveFocus();
+    expect(screen.getByRole('separator', {hidden: true})).not.toHaveFocus();
+  });
+
+  it('carries endContent and description through the items data API', () => {
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        items={[
+          {
+            label: 'Search',
+            description: 'Find anything',
+            endContent: <span data-testid="shortcut">⌘K</span>,
+          },
+        ]}
+      />,
+    );
+
+    const item = screen.getByRole('menuitem', {hidden: true});
+    expect(item).toHaveTextContent('Find anything');
+    expect(item).toContainElement(screen.getByTestId('shortcut'));
   });
 });

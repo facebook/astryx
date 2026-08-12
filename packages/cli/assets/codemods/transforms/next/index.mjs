@@ -13,6 +13,9 @@ import renameDropdownMenuRadioDotTarget, {
 import migrateTableRowExpansionToTree, {
   meta as migrateTableRowExpansionToTreeMeta,
 } from './migrate-table-rowexpansion-to-tree.mjs';
+import renameMenuDividerDataTypes, {
+  meta as renameMenuDividerDataTypesMeta,
+} from './rename-menu-divider-data-types.mjs';
 
 export default [
   {
@@ -24,5 +27,10 @@ export default [
     name: 'migrate-table-rowexpansion-to-tree',
     transform: migrateTableRowExpansionToTree,
     meta: migrateTableRowExpansionToTreeMeta,
+  },
+  {
+    name: 'rename-menu-divider-data-types',
+    transform: renameMenuDividerDataTypes,
+    meta: renameMenuDividerDataTypesMeta,
   },
 ];
