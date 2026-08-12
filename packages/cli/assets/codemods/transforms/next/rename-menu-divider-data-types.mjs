@@ -30,6 +30,7 @@ export const meta = {
     'compound divider components. Imports used as values are left untouched.',
 };
 
+/** @type {Record<string, string>} */
 const RENAMES = {
   DropdownMenuDivider: 'DropdownMenuDividerData',
   ContextMenuDivider: 'ContextMenuDividerData',
