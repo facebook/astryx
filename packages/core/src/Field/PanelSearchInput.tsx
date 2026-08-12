@@ -32,6 +32,9 @@ import {InputClearButton} from './InputClearButton';
 import {mergeProps} from '../utils';
 import {
   colorVars,
+  durationVars,
+  easeVars,
+  radiusVars,
   spacingVars,
   typeScaleVars,
   typographyVars,
@@ -45,6 +48,30 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-3'],
     paddingBlock: spacingVars['--spacing-2'],
+    // The row sits flush at the top of the panel, so its focus ring has to
+    // follow the panel's own top corners — a square ring would poke outside
+    // them (the popover does not clip its children).
+    borderStartStartRadius: radiusVars['--radius-container'],
+    borderStartEndRadius: radiusVars['--radius-container'],
+    // Focus is drawn on the ROW, not the bare <input>: the magnifier and the
+    // clear button are part of the field as far as the eye is concerned, and a
+    // ring around only the text would cut them out. Inset, because an outline
+    // on a full-bleed row would trace the panel's own edge.
+    //
+    // `:has(input:focus-visible)` rather than `:focus-within` so tabbing to the
+    // clear button does not re-ring the whole row. Text inputs match
+    // `:focus-visible` on pointer focus too, so this also covers click-to-type
+    // and the programmatic focus the panel does on open.
+    boxShadow: {
+      default: 'none',
+      ':has(input:focus-visible)': `inset 0 0 0 2px ${colorVars['--color-accent']}`,
+    },
+    transitionProperty: 'box-shadow',
+    transitionDuration: {
+      default: durationVars['--duration-fast'],
+      '@media (prefers-reduced-motion: reduce)': '0s',
+    },
+    transitionTimingFunction: easeVars['--ease-standard'],
   },
   // The icon span needs explicit flex centering to avoid a line-height offset.
   icon: {
@@ -70,10 +97,8 @@ const styles = stylex.create({
       '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-label-size']})`,
     },
     lineHeight: typeScaleVars['--text-label-leading'],
-    // The panel is the focus indicator here: the field fills the top of an
-    // already-elevated surface and takes focus on open, so a ring around it
-    // would outline the panel's own edge. The caret marks the focus, as it
-    // does in CommandPaletteInput.
+    // The row draws the focus ring (see `wrapper`), so the bare input must not
+    // draw a second one inside it.
     outline: 'none',
     '::placeholder': {
       color: colorVars['--color-text-secondary'],
