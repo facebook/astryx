@@ -12,8 +12,13 @@ export const docs = {
       name: 'items',
       type: 'DropdownMenuOption[]',
       description:
-        'Menu items: data array of actions, dividers, and sections. Same type as DropdownMenu items prop.',
-      required: true,
+        'Menu items: data array of actions, dividers, and sections. Same type as DropdownMenu items prop. Mutually exclusive with children.',
+    },
+    {
+      name: 'children',
+      type: 'ReactNode',
+      description:
+        'Compound DropdownMenu item components for dynamic or stateful menus. Mutually exclusive with items.',
     },
     {
       name: 'label',
@@ -86,8 +91,13 @@ export const docsZh = {
       name: 'items',
       type: 'DropdownMenuOption[]',
       description:
-        '菜单项，由操作、分割线和分组组成的数据数组。类型与 DropdownMenu 的 items 属性相同。',
-      required: true,
+        '菜单项，由操作、分割线和分组组成的数据数组。类型与 DropdownMenu 的 items 属性相同，与 children 互斥。',
+    },
+    {
+      name: 'children',
+      type: 'ReactNode',
+      description:
+        '用于动态或有状态菜单的 DropdownMenu 组合式菜单项组件，与 items 互斥。',
     },
     {
       name: 'label',
@@ -156,7 +166,9 @@ export const docsDense = {
     ],
   },
   propDescriptions: {
-    items: 'Menu items (actions, dividers, sections). Same type as DropdownMenu items.',
+    items: 'Menu items (actions, dividers, sections). Mutually exclusive with children.',
+    children:
+      'Compound DropdownMenu item components for dynamic or stateful menus. Mutually exclusive with items.',
     label: 'Accessible label (aria-label) + tooltip text.',
     variant: 'Trigger button visual style variant.',
     size: 'Trigger button size.',

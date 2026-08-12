@@ -3,7 +3,7 @@
 /**
  * @file MoreMenu.test.tsx
  * @input Uses vitest, @testing-library/react, MoreMenu component
- * @output Unit tests for MoreMenu component behavior
+ * @output Unit tests for MoreMenu data and compound-child behavior
  * @position Testing; validates MoreMenu.tsx implementation
  *
  * SYNC: When MoreMenu.tsx changes, update tests to match new behavior
@@ -13,6 +13,7 @@ import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {MoreMenu} from './MoreMenu';
+import {DropdownMenuCheckboxItem} from '../DropdownMenu';
 
 // Mock showPopover and hidePopover methods since they're not implemented in jsdom
 beforeEach(() => {
@@ -74,6 +75,31 @@ describe('MoreMenu', () => {
     expect(
       screen.getByRole('menuitem', {name: 'Delete', hidden: true}),
     ).toBeInTheDocument();
+  });
+
+  it('supports compound menu items', async () => {
+    const handleChange = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <MoreMenu>
+        <DropdownMenuCheckboxItem
+          label="Bold"
+          value={false}
+          onChange={handleChange}
+        />
+      </MoreMenu>,
+    );
+
+    const item = screen.getByRole('menuitemcheckbox', {
+      name: 'Bold',
+      hidden: true,
+    });
+    expect(item).toHaveAttribute('aria-checked', 'false');
+
+    await user.click(screen.getByRole('button', {name: 'More options'}));
+    await user.click(item);
+
+    expect(handleChange).toHaveBeenCalledWith(true);
   });
 
   it('opens menu when button is clicked', async () => {

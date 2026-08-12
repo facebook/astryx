@@ -3,8 +3,8 @@
 /**
  * @file useListFocus.test.tsx
  * @input Uses vitest, @testing-library/react, useListFocus hook
- * @output Unit tests for useListFocus disabled-item skipping, navigation, and
- *   RTL auto-detection
+ * @output Unit tests for useListFocus disabled-item skipping, navigation,
+ *   roving-focus ownership, and RTL auto-detection
  * @position Testing; validates useListFocus.ts keyboard navigation
  *
  * SYNC: When useListFocus.ts changes, update tests to match new behavior
@@ -170,6 +170,19 @@ describe('useListFocus roving tabindex (hasRovingTabIndex)', () => {
     expect(screen.getByTestId('B')).toHaveFocus();
     expect(screen.getByTestId('B')).toHaveAttribute('tabindex', '0');
     expect(screen.getByTestId('A')).toHaveAttribute('tabindex', '-1');
+  });
+
+  it('promotes the item that receives focus outside arrow navigation', () => {
+    render(<RovingToolbar />);
+    const first = screen.getByTestId('A');
+    const second = screen.getByTestId('B');
+
+    expect(first).toHaveAttribute('tabindex', '0');
+    second.focus();
+
+    expect(second).toHaveFocus();
+    expect(second).toHaveAttribute('tabindex', '0');
+    expect(first).toHaveAttribute('tabindex', '-1');
   });
 
   it('ArrowRight skips a disabled item', () => {

@@ -3,16 +3,38 @@
 /**
  * @file Toolbar.test.tsx
  * @input Uses vitest, @testing-library/react, Toolbar
- * @output Unit tests for Toolbar component
+ * @output Unit tests for Toolbar component and focus ownership across
+ *   overflow measurements and nested composites
  * @position Testing; validates Toolbar implementation
  *
  * SYNC: When Toolbar component changes, update tests to match new behavior
  */
 
-import {describe, it, expect, vi} from 'vitest';
+import {describe, it, expect, vi, beforeAll, afterAll} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {OverflowList} from '../OverflowList/OverflowList';
 import {Toolbar} from './Toolbar';
+
+const originalResizeObserver = (
+  globalThis as unknown as {ResizeObserver?: unknown}
+).ResizeObserver;
+
+class StubResizeObserver {
+  observe(): void {}
+  unobserve(): void {}
+  disconnect(): void {}
+}
+
+beforeAll(() => {
+  (globalThis as unknown as {ResizeObserver: unknown}).ResizeObserver =
+    StubResizeObserver;
+});
+
+afterAll(() => {
+  (globalThis as unknown as {ResizeObserver?: unknown}).ResizeObserver =
+    originalResizeObserver;
+});
 
 describe('Toolbar', () => {
   it('renders with toolbar role', () => {
@@ -286,6 +308,114 @@ describe('Toolbar', () => {
     expect(buttons[0]).toHaveAttribute('tabindex', '0');
     expect(buttons[1]).toHaveAttribute('tabindex', '-1');
     expect(buttons[2]).toHaveAttribute('tabindex', '-1');
+  });
+
+  it('ignores controls in inert OverflowList measurement trees', async () => {
+    const user = userEvent.setup();
+    render(
+      <Toolbar
+        label="Actions"
+        startContent={
+          <OverflowList minVisibleItems={2} maxVisibleItems={2}>
+            <button key="cut" type="button" data-testid="overflow-cut">
+              Cut
+            </button>
+            <button key="copy" type="button" data-testid="overflow-copy">
+              Copy
+            </button>
+            <button key="paste" type="button">
+              Paste
+            </button>
+          </OverflowList>
+        }
+      />,
+    );
+
+    const measuredCut = screen
+      .getAllByTestId('overflow-cut')
+      .find(item => item.closest('[inert]') != null);
+    const measuredCopy = screen
+      .getAllByTestId('overflow-copy')
+      .find(item => item.closest('[inert]') != null);
+    const visibleCut = screen
+      .getAllByTestId('overflow-cut')
+      .find(item => item.closest('[inert]') == null);
+    const visibleCopy = screen
+      .getAllByTestId('overflow-copy')
+      .find(item => item.closest('[inert]') == null);
+
+    expect(measuredCut).toBeDefined();
+    expect(measuredCopy).toBeDefined();
+    expect(visibleCut).toBeDefined();
+    expect(visibleCopy).toBeDefined();
+    expect(measuredCut).not.toHaveAttribute('tabindex');
+    expect(measuredCopy).not.toHaveAttribute('tabindex');
+    expect(visibleCut).toHaveAttribute('tabindex', '0');
+    expect(visibleCopy).toHaveAttribute('tabindex', '-1');
+
+    visibleCut?.focus();
+    await user.keyboard('{ArrowRight}');
+    expect(visibleCopy).toHaveFocus();
+  });
+
+  it('does not include popover or nested composite controls in its roving order', async () => {
+    const user = userEvent.setup();
+    render(
+      <Toolbar
+        label="Actions"
+        startContent={
+          <>
+            <button type="button">Undo</button>
+            <button type="button">More</button>
+            <div popover="auto">
+              <div role="menu">
+                <button type="button">Hidden menu action</button>
+              </div>
+            </div>
+            <div role="toolbar" aria-label="Nested tools">
+              <button type="button">Nested action</button>
+            </div>
+            <button type="button">Redo</button>
+          </>
+        }
+      />,
+    );
+
+    const more = screen.getByRole('button', {name: 'More'});
+    const redo = screen.getByRole('button', {name: 'Redo'});
+    const hiddenMenuAction = screen.getByRole('button', {
+      name: 'Hidden menu action',
+      hidden: true,
+    });
+    const nestedAction = screen.getByRole('button', {name: 'Nested action'});
+
+    expect(hiddenMenuAction).not.toHaveAttribute('tabindex');
+    expect(nestedAction).not.toHaveAttribute('tabindex');
+
+    more.focus();
+    await user.keyboard('{ArrowRight}');
+    expect(redo).toHaveFocus();
+  });
+
+  it('promotes the owned control that receives focus to the toolbar tab stop', () => {
+    render(
+      <Toolbar
+        label="Actions"
+        startContent={
+          <>
+            <button type="button">Cut</button>
+            <button type="button">Copy</button>
+          </>
+        }
+      />,
+    );
+
+    const cut = screen.getByRole('button', {name: 'Cut'});
+    const copy = screen.getByRole('button', {name: 'Copy'});
+    copy.focus();
+
+    expect(copy).toHaveAttribute('tabindex', '0');
+    expect(cut).toHaveAttribute('tabindex', '-1');
   });
 
   it('does not steal caret keys from a text input mid-line (navigation-4)', async () => {

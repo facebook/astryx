@@ -6,7 +6,7 @@
  * @file useListFocus.ts
  * @input Uses React useCallback, useRef, useIsomorphicLayoutEffect,
  *   isRtlElement
- * @output Exports useListFocus hook for linear list keyboard navigation
+ * @output Exports useListFocus hook for scoped linear navigation and roving focus ownership
  * @position Core hook; used by TabMenu for dropdown menu navigation, Toolbar
  *   for roving tabindex, ButtonGroup, ContextMenu, NavHeadingMenu, and more.
  *   Auto-detects RTL from the container's computed direction so horizontal
@@ -39,8 +39,10 @@ export interface UseListFocusOptions {
   itemSelector?: string;
 
   /**
-   * Selector identifying a list boundary — used to scope a list that contains
-   * *nested* lists of the same kind (e.g. a menu with submenu flyouts).
+   * Selector identifying focus-ownership boundaries — used to scope a list
+   * that contains *nested* lists or non-owned subtrees (e.g. submenu flyouts,
+   * inline popovers, or inert measurement copies). The current list's root
+   * must match this selector so its directly owned items remain included.
    *
    * Overlays like submenu flyouts render inline (native popover, not a
    * portal), so a nested list's items are DOM descendants of the parent list.
@@ -534,11 +536,34 @@ export function useListFocus<T extends HTMLElement = HTMLElement>(
    * or programmatic focus) so the next Tab behaves correctly. No-op unless
    * roving tabindex is enabled.
    */
-  const handleFocus = useCallback(() => {
-    if (hasRovingTabIndex) {
+  const handleFocus = useCallback(
+    (e: React.FocusEvent) => {
+      if (!hasRovingTabIndex) {
+        return;
+      }
+
+      const items = getItems();
+      const target = e.target;
+      const focusedItem = items.find(
+        item => item === target || item.contains(target),
+      );
+
+      // A click or an external focus restore can land on an owned item whose
+      // previous roving value was -1. Promote the item that actually received
+      // focus instead of preserving a stale tabindex=0 elsewhere in the list.
+      if (focusedItem && !isItemDisabled(focusedItem)) {
+        for (const item of items) {
+          setTabIndex(item, item === focusedItem ? 0 : -1);
+        }
+        return;
+      }
+
+      // Focus from an excluded/nested list can still bubble through the outer
+      // container. In that case, leave this level's current stop intact.
       syncTabStops();
-    }
-  }, [hasRovingTabIndex, syncTabStops]);
+    },
+    [getItems, hasRovingTabIndex, isItemDisabled, setTabIndex, syncTabStops],
+  );
 
   /**
    * Handle keyboard navigation.

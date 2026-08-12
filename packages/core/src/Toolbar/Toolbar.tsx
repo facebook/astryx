@@ -5,7 +5,7 @@
 /**
  * @file Toolbar.tsx
  * @input Uses Section, SizeContext, useListFocus, useKeyboardHint, StyleX, spacingVars, sizeVars
- * @output Exports Toolbar component and ToolbarProps
+ * @output Exports Toolbar component and ToolbarProps with focus-scoped roving navigation
  * @position Core implementation; consumed by index.ts
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -70,6 +70,10 @@ const styles = stylex.create({
   startSlot: {
     display: 'flex',
     alignItems: 'center',
+    // Flex items default to min-width:auto, which keeps wide action rows from
+    // shrinking and prevents nested OverflowList containers from ever seeing
+    // a constrained width.
+    minWidth: 0,
   },
   centerSlot: {
     display: 'flex',
@@ -82,6 +86,7 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'flex-end',
+    minWidth: 0,
   },
   // When only startContent is present, let it fill
   startOnly: {
@@ -125,6 +130,27 @@ const blockPaddingVarForSize: Record<ElementSize, string> = {
   md: spacingVars['--spacing-2'],
   lg: spacingVars['--spacing-2'],
 };
+
+/**
+ * Boundaries whose descendants own their own focus behavior or are not part
+ * of the rendered toolbar at all. `useListFocus` keeps an item only when its
+ * nearest matching boundary is the outer toolbar itself, which excludes
+ * OverflowList's inert measurement copy, inline popover surfaces, and nested
+ * composite widgets without excluding their visible trigger controls.
+ */
+const TOOLBAR_FOCUS_BOUNDARY_SELECTOR = [
+  '[role="toolbar"]',
+  '[inert]',
+  '[popover]',
+  '[role="menu"]',
+  '[role="menubar"]',
+  '[role="listbox"]',
+  '[role="tablist"]',
+  '[role="tree"]',
+  '[role="treegrid"]',
+  '[role="grid"]',
+  '[role="radiogroup"]',
+].join(',');
 
 /**
  * Edge compensation inset amount per toolbar size.
@@ -245,6 +271,7 @@ export function Toolbar({
 
   const {listRef, handleKeyDown, handleFocus} = useListFocus<HTMLDivElement>({
     itemSelector: 'button, input, [tabindex]',
+    boundarySelector: TOOLBAR_FOCUS_BOUNDARY_SELECTOR,
     orientation,
     hasRovingTabIndex: true,
     hasCaretGuard: true,

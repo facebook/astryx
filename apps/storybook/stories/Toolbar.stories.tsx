@@ -15,6 +15,9 @@ import {Layout} from '@astryxdesign/core/Layout';
 import {LayoutHeader} from '@astryxdesign/core/Layout';
 import {LayoutContent} from '@astryxdesign/core/Layout';
 import {MoreMenu} from '@astryxdesign/core/MoreMenu';
+import {OverflowList} from '@astryxdesign/core/OverflowList';
+import {ToggleButton} from '@astryxdesign/core/ToggleButton';
+import {DropdownMenuCheckboxItem} from '@astryxdesign/core/DropdownMenu';
 import {Heading} from '@astryxdesign/core/Text';
 import {
   Cog6ToothIcon,
@@ -45,6 +48,88 @@ const meta: Meta<typeof Toolbar> = {
 
 export default meta;
 type Story = StoryObj<typeof Toolbar>;
+
+const formattingActions = [
+  {id: 'bold', label: 'Bold'},
+  {id: 'italic', label: 'Italic'},
+  {id: 'underline', label: 'Underline'},
+  {id: 'code', label: 'Code'},
+  {id: 'link', label: 'Link'},
+] as const;
+
+function ResponsiveOverflowToolbar() {
+  const [width, setWidth] = useState(360);
+  const [activeActions, setActiveActions] = useState<Set<string>>(
+    () => new Set(['bold']),
+  );
+
+  const updateAction = (id: string, isActive: boolean) => {
+    setActiveActions(current => {
+      const next = new Set(current);
+      if (isActive) {
+        next.add(id);
+      } else {
+        next.delete(id);
+      }
+      return next;
+    });
+  };
+
+  return (
+    <div style={{display: 'grid', gap: 16}}>
+      <label style={{display: 'grid', gap: 8, maxWidth: 420}}>
+        Toolbar width: {width}px
+        <input
+          aria-label="Toolbar width"
+          type="range"
+          min={180}
+          max={620}
+          value={width}
+          onChange={event => setWidth(Number(event.currentTarget.value))}
+        />
+      </label>
+      <div style={{width, maxWidth: '100%'}}>
+        <Toolbar
+          label="Formatting actions"
+          size="sm"
+          dividers={['top', 'bottom']}
+          startContent={
+            <OverflowList
+              gap={1}
+              minVisibleItems={1}
+              overflowRenderer={overflowItems => (
+                <MoreMenu label="More formatting options">
+                  {overflowItems.map(({index}) => {
+                    const action = formattingActions[index];
+                    return (
+                      <DropdownMenuCheckboxItem
+                        key={action.id}
+                        label={action.label}
+                        value={activeActions.has(action.id)}
+                        onChange={isActive => updateAction(action.id, isActive)}
+                      />
+                    );
+                  })}
+                </MoreMenu>
+              )}>
+              {formattingActions.map(action => (
+                <ToggleButton
+                  key={action.id}
+                  label={action.label}
+                  size="sm"
+                  isPressed={activeActions.has(action.id)}
+                  onPressedChange={isActive =>
+                    updateAction(action.id, isActive)
+                  }
+                />
+              ))}
+            </OverflowList>
+          }
+        />
+      </div>
+    </div>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Basic slot patterns
@@ -142,6 +227,12 @@ export const Compact: Story = {
       />
     ),
   },
+};
+
+/** Resize the container to stress-test responsive actions and their stateful overflow menu. */
+export const ResponsiveOverflow: Story = {
+  name: 'Composition: Responsive Overflow',
+  render: () => <ResponsiveOverflowToolbar />,
 };
 
 export const WashVariant: Story = {

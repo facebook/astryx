@@ -4,7 +4,7 @@
 
 /**
  * @file MoreMenu.tsx
- * @input Uses DropdownMenu, getIcon
+ * @input Uses DropdownMenu data or compound children, useIcon
  * @output Exports MoreMenu component and MoreMenuProps type
  * @position Core implementation; consumed by index.ts
  *
@@ -28,18 +28,12 @@ import type {BaseProps} from '../BaseProps';
 import {stableClassName} from '../naming';
 import {useTranslator} from '../i18n';
 
-export interface MoreMenuProps extends Pick<
+interface MoreMenuBaseProps extends Pick<
   BaseProps,
   'xstyle' | 'className' | 'style'
 > {
   /** Ref forwarded to the trigger button */
   ref?: React.Ref<HTMLButtonElement>;
-
-  /**
-   * Menu items \u2014 data array of actions, dividers, and sections.
-   * Same type as DropdownMenu's `items` prop.
-   */
-  items: DropdownMenuOption[];
 
   /**
    * Accessible label for the trigger button.
@@ -86,10 +80,32 @@ export interface MoreMenuProps extends Pick<
   'data-testid'?: string;
 }
 
+interface MoreMenuDataProps extends MoreMenuBaseProps {
+  /**
+   * Menu items \u2014 data array of actions, dividers, and sections.
+   * Same type as DropdownMenu's `items` prop. Mutually exclusive with
+   * `children`.
+   */
+  items: DropdownMenuOption[];
+  children?: undefined;
+}
+
+interface MoreMenuCompoundProps extends MoreMenuBaseProps {
+  /**
+   * Compound DropdownMenu item components for dynamic or stateful menus.
+   * Mutually exclusive with `items`.
+   */
+  children: ReactNode;
+  items?: undefined;
+}
+
+export type MoreMenuProps = MoreMenuDataProps | MoreMenuCompoundProps;
+
 /**
  * Overflow menu with a three-dot icon trigger.
  *
  * A convenience wrapper around DropdownMenu with icon-only button defaults.
+ * Supports the same data-driven `items` and compound `children` modes.
  *
  * @example
  * ```
@@ -103,6 +119,7 @@ export interface MoreMenuProps extends Pick<
  */
 export function MoreMenu({
   items,
+  children,
   label: labelFromProps,
   variant = 'ghost',
   size: sizeProp,
@@ -142,9 +159,9 @@ export function MoreMenu({
         isIconOnly: true,
         ref,
       }}
-      items={items}
       hasChevron={false}
       data-testid={testId}
+      {...(items !== undefined ? {items} : {children})}
     />
   );
 }
