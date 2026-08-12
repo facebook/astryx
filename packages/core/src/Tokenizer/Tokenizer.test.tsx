@@ -12,21 +12,20 @@
 import {describe, it, expect, vi, beforeAll, afterAll, afterEach} from 'vitest';
 import {render, screen, fireEvent, act, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import IntlMessageFormat from 'intl-messageformat';
 import {Tokenizer} from './Tokenizer';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import type {SearchSource, SearchableItem} from '../Typeahead/types';
 import {TestIcon} from '../__tests__/TestIcon';
-import en from '../../locales/en.json' with {type: 'json'};
+import {InternationalizationProvider} from '../i18n';
 
-// Announcements are asserted against the shipped catalog, not a second copy of
-// their English, so a hardcoded string in the component fails here.
-const catalog: Record<string, {defaultMessage: string}> = en;
-function enMessage(key: string, values?: Record<string, unknown>): string {
-  return String(
-    new IntlMessageFormat(catalog[key].defaultMessage, 'en').format(values),
-  );
-}
+// Test-supplied announcement strings: the assertions below depend on no
+// catalog, and no hardcoded English in the component can satisfy them.
+const TOKEN_MESSAGES = {
+  fr: {
+    '@astryx.tokenizer.tokenAdded': 'Ajouté : {label}',
+    '@astryx.tokenizer.tokenRemoved': 'Retiré : {label}',
+  },
+};
 
 function politeRegion(): HTMLElement | null {
   return document.querySelector('[data-astryx-live-region="polite"]');
@@ -991,12 +990,14 @@ describe('Tokenizer', () => {
     it('announces removal politely on Backspace with an empty input', async () => {
       const onChange = vi.fn();
       render(
-        <Tokenizer
-          label="Members"
-          searchSource={userSource}
-          value={[users[0], users[1]]}
-          onChange={onChange}
-        />,
+        <InternationalizationProvider locale="fr" overrides={TOKEN_MESSAGES}>
+          <Tokenizer
+            label="Members"
+            searchSource={userSource}
+            value={[users[0], users[1]]}
+            onChange={onChange}
+          />
+        </InternationalizationProvider>,
       );
       const input = screen.getByRole('combobox');
       fireEvent.keyDown(input, {key: 'Backspace'});
@@ -1005,39 +1006,39 @@ describe('Tokenizer', () => {
         type: 'remove',
       });
       await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent(
-          enMessage('@astryx.tokenizer.tokenRemoved', {label: 'Bob'}),
-        );
+        expect(politeRegion()?.textContent).toBe('Retiré : Bob');
       });
     });
 
     it("announces removal politely when clicking a token's remove button", async () => {
       render(
-        <Tokenizer
-          label="Members"
-          searchSource={userSource}
-          value={[users[0], users[1]]}
-          onChange={() => {}}
-        />,
+        <InternationalizationProvider locale="fr" overrides={TOKEN_MESSAGES}>
+          <Tokenizer
+            label="Members"
+            searchSource={userSource}
+            value={[users[0], users[1]]}
+            onChange={() => {}}
+          />
+        </InternationalizationProvider>,
       );
       fireEvent.click(screen.getByRole('button', {name: 'Remove Alice'}));
       await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent(
-          enMessage('@astryx.tokenizer.tokenRemoved', {label: 'Alice'}),
-        );
+        expect(politeRegion()?.textContent).toBe('Retiré : Alice');
       });
     });
 
     it('announces addition politely when selecting a search result', async () => {
       render(
-        <Tokenizer
-          label="Members"
-          searchSource={userSource}
-          value={[]}
-          onChange={() => {}}
-          hasEntriesOnFocus
-          debounceMs={0}
-        />,
+        <InternationalizationProvider locale="fr" overrides={TOKEN_MESSAGES}>
+          <Tokenizer
+            label="Members"
+            searchSource={userSource}
+            value={[]}
+            onChange={() => {}}
+            hasEntriesOnFocus
+            debounceMs={0}
+          />
+        </InternationalizationProvider>,
       );
       const input = screen.getByRole('combobox');
       fireEvent.focus(input);
@@ -1046,9 +1047,7 @@ describe('Tokenizer', () => {
       });
       fireEvent.click(screen.getByText('Alice'));
       await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent(
-          enMessage('@astryx.tokenizer.tokenAdded', {label: 'Alice'}),
-        );
+        expect(politeRegion()?.textContent).toBe('Ajouté : Alice');
       });
     });
 
@@ -1058,14 +1057,16 @@ describe('Tokenizer', () => {
         bootstrap: () => [],
       };
       render(
-        <Tokenizer
-          label="Tags"
-          searchSource={emptySource}
-          value={[]}
-          onChange={() => {}}
-          hasCreate
-          debounceMs={0}
-        />,
+        <InternationalizationProvider locale="fr" overrides={TOKEN_MESSAGES}>
+          <Tokenizer
+            label="Tags"
+            searchSource={emptySource}
+            value={[]}
+            onChange={() => {}}
+            hasCreate
+            debounceMs={0}
+          />
+        </InternationalizationProvider>,
       );
       const input = screen.getByRole('combobox');
       await act(async () => {
@@ -1076,9 +1077,7 @@ describe('Tokenizer', () => {
       });
       fireEvent.click(screen.getByText('Create "new-tag"'));
       await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent(
-          enMessage('@astryx.tokenizer.tokenAdded', {label: 'new-tag'}),
-        );
+        expect(politeRegion()?.textContent).toBe('Ajouté : new-tag');
       });
     });
 

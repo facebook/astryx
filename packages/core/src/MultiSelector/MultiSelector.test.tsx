@@ -18,13 +18,10 @@ import {
   within,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import IntlMessageFormat from 'intl-messageformat';
 import {MultiSelector} from './MultiSelector';
 import {Icon} from '../Icon';
 import {InternationalizationProvider} from '../i18n';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
-import en from '../../locales/en.json' with {type: 'json'};
-import pseudoCatalog from '../../locales/pseudo.json' with {type: 'json'};
 import {defineTheme} from '../theme/defineTheme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
 
@@ -38,22 +35,6 @@ const EMPTY_VALUE: string[] = [];
 
 function politeRegion(): HTMLElement | null {
   return document.querySelector('[data-astryx-live-region="polite"]');
-}
-
-// Announcements are asserted against the shipped catalog, not a second copy of
-// their English, so a hardcoded string in the component fails here.
-const catalog: Record<string, {defaultMessage: string}> = en;
-function enMessage(key: string, values?: Record<string, unknown>): string {
-  return String(
-    new IntlMessageFormat(catalog[key].defaultMessage, 'en').format(values),
-  );
-}
-
-const pseudo: Record<string, {defaultMessage: string}> = pseudoCatalog;
-function pseudoMessage(key: string, values?: Record<string, unknown>): string {
-  return String(
-    new IntlMessageFormat(pseudo[key].defaultMessage, 'en').format(values),
-  );
 }
 
 // Mock showPopover and hidePopover methods since they're not implemented in jsdom
@@ -849,73 +830,14 @@ describe('MultiSelector', () => {
     it('announces the match count politely while searching', async () => {
       const user = userEvent.setup();
       render(
-        <MultiSelector
-          label="Fruit"
-          options={defaultOptions}
-          value={EMPTY_VALUE}
-          onChange={() => {}}
-          hasSearch
-        />,
-      );
-      await user.click(screen.getByRole('button', {name: 'Fruit'}));
-      // "an" matches Banana and Orange.
-      await user.type(screen.getByRole('combobox', h), 'an');
-      await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent(
-          enMessage('@astryx.multiSelector.resultCount', {count: 2}),
-        );
-      });
-    });
-
-    it('announces the singular form when one option matches', async () => {
-      const user = userEvent.setup();
-      render(
-        <MultiSelector
-          label="Fruit"
-          options={defaultOptions}
-          value={EMPTY_VALUE}
-          onChange={() => {}}
-          hasSearch
-        />,
-      );
-      await user.click(screen.getByRole('button', {name: 'Fruit'}));
-      // "app" matches only Apple. Anchored so it cannot pass on "1 results".
-      await user.type(screen.getByRole('combobox', h), 'app');
-      await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent(
-          new RegExp(
-            `^${enMessage('@astryx.multiSelector.resultCount', {count: 1})}$`,
-          ),
-        );
-      });
-    });
-
-    it('announces the empty-results message when nothing matches', async () => {
-      const user = userEvent.setup();
-      render(
-        <MultiSelector
-          label="Fruit"
-          options={defaultOptions}
-          value={EMPTY_VALUE}
-          onChange={() => {}}
-          hasSearch
-        />,
-      );
-      await user.click(screen.getByRole('button', {name: 'Fruit'}));
-      await user.type(screen.getByRole('combobox', h), 'xyz');
-      await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent(
-          enMessage('@astryx.multiSelector.emptySearchResults'),
-        );
-      });
-    });
-
-    it('speaks the result count from the provider catalog (plural)', async () => {
-      const user = userEvent.setup();
-      render(
         <InternationalizationProvider
-          locale="pseudo"
-          messages={{pseudo: pseudoCatalog}}>
+          locale="fr"
+          overrides={{
+            fr: {
+              '@astryx.multiSelector.resultCount':
+                '{count, number} {count, plural, one {résultat} other {résultats}}',
+            },
+          }}>
           <MultiSelector
             label="Fruit"
             options={defaultOptions}
@@ -929,9 +851,91 @@ describe('MultiSelector', () => {
       // "an" matches Banana and Orange.
       await user.type(screen.getByRole('combobox', h), 'an');
       await waitFor(() => {
-        expect(politeRegion()?.textContent).toBe(
-          pseudoMessage('@astryx.multiSelector.resultCount', {count: 2}),
-        );
+        // The plural branch of a message no catalog supplies.
+        expect(politeRegion()?.textContent).toBe('2 résultats');
+      });
+    });
+
+    it('announces the singular form when one option matches', async () => {
+      const user = userEvent.setup();
+      render(
+        <InternationalizationProvider
+          locale="fr"
+          overrides={{
+            fr: {
+              '@astryx.multiSelector.resultCount':
+                '{count, number} {count, plural, one {résultat} other {résultats}}',
+            },
+          }}>
+          <MultiSelector
+            label="Fruit"
+            options={defaultOptions}
+            value={EMPTY_VALUE}
+            onChange={() => {}}
+            hasSearch
+          />
+        </InternationalizationProvider>,
+      );
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      // "app" matches only Apple. Exact match, so "1 résultats" would fail.
+      await user.type(screen.getByRole('combobox', h), 'app');
+      await waitFor(() => {
+        expect(politeRegion()?.textContent).toBe('1 résultat');
+      });
+    });
+
+    it('announces the empty-results message when nothing matches', async () => {
+      const user = userEvent.setup();
+      render(
+        <InternationalizationProvider
+          locale="fr"
+          overrides={{
+            fr: {'@astryx.multiSelector.emptySearchResults': 'Aucun résultat'},
+          }}>
+          <MultiSelector
+            label="Fruit"
+            options={defaultOptions}
+            value={EMPTY_VALUE}
+            onChange={() => {}}
+            hasSearch
+          />
+        </InternationalizationProvider>,
+      );
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      await user.type(screen.getByRole('combobox', h), 'xyz');
+      await waitFor(() => {
+        expect(politeRegion()?.textContent).toBe('Aucun résultat');
+      });
+    });
+
+    it('speaks the result count from a provider catalog (plural)', async () => {
+      const user = userEvent.setup();
+      render(
+        <InternationalizationProvider
+          locale="fr"
+          messages={{
+            fr: {
+              '@astryx.multiSelector.resultCount': {
+                defaultMessage:
+                  '{count, number} {count, plural, one {résultat} other {résultats}}',
+              },
+            },
+          }}>
+          <MultiSelector
+            label="Fruit"
+            options={defaultOptions}
+            value={EMPTY_VALUE}
+            onChange={() => {}}
+            hasSearch
+          />
+        </InternationalizationProvider>,
+      );
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      // "an" matches Banana and Orange.
+      await user.type(screen.getByRole('combobox', h), 'an');
+      await waitFor(() => {
+        // Same key through the catalog path rather than `overrides`.
+        expect(politeRegion()?.textContent).toBe('2 résultats');
       });
     });
 
@@ -1243,71 +1247,14 @@ describe('MultiSelector', () => {
     it('announces the selection count politely when toggling an option', async () => {
       const user = userEvent.setup();
       render(
-        <MultiSelector
-          label="Fruit"
-          options={[...ANNOUNCE_OPTIONS]}
-          value={EMPTY_VALUE}
-          onChange={() => {}}
-        />,
-      );
-      await user.click(screen.getByRole('combobox'));
-      const options = screen.getAllByRole('option', {hidden: true});
-      await user.click(options[0]);
-      await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent(
-          enMessage('@astryx.multiSelector.selectionCount', {
-            count: 1,
-            total: 3,
-          }),
-        );
-      });
-    });
-
-    it('announces the all-selected message when select-all selects everything', async () => {
-      const user = userEvent.setup();
-      render(
-        <MultiSelector
-          label="Fruit"
-          options={[...ANNOUNCE_OPTIONS]}
-          value={EMPTY_VALUE}
-          onChange={() => {}}
-          hasSelectAll
-        />,
-      );
-      await user.click(screen.getByRole('combobox'));
-      await user.click(screen.getByText('Select all'));
-      await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent(
-          enMessage('@astryx.multiSelector.allSelected'),
-        );
-      });
-    });
-
-    it('announces the selection-cleared message when clearing', async () => {
-      const user = userEvent.setup();
-      render(
-        <MultiSelector
-          label="Fruit"
-          options={[...ANNOUNCE_OPTIONS]}
-          value={['Apple', 'Banana']}
-          onChange={() => {}}
-          hasClear
-        />,
-      );
-      await user.click(screen.getByRole('button', {name: 'Clear all Fruit'}));
-      await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent(
-          enMessage('@astryx.multiSelector.selectionCleared'),
-        );
-      });
-    });
-
-    it('speaks the selection count from the provider catalog', async () => {
-      const user = userEvent.setup();
-      render(
         <InternationalizationProvider
-          locale="pseudo"
-          messages={{pseudo: pseudoCatalog}}>
+          locale="fr"
+          overrides={{
+            fr: {
+              '@astryx.multiSelector.selectionCount':
+                '{count, number} sur {total, number} sélectionnés',
+            },
+          }}>
           <MultiSelector
             label="Fruit"
             options={[...ANNOUNCE_OPTIONS]}
@@ -1320,12 +1267,89 @@ describe('MultiSelector', () => {
       const options = screen.getAllByRole('option', {hidden: true});
       await user.click(options[0]);
       await waitFor(() => {
-        expect(politeRegion()?.textContent).toBe(
-          pseudoMessage('@astryx.multiSelector.selectionCount', {
-            count: 1,
-            total: 3,
-          }),
-        );
+        // Both arguments land, in the order the message asks for them.
+        expect(politeRegion()?.textContent).toBe('1 sur 3 sélectionnés');
+      });
+    });
+
+    it('announces the all-selected message when select-all selects everything', async () => {
+      const user = userEvent.setup();
+      render(
+        <InternationalizationProvider
+          locale="fr"
+          overrides={{
+            fr: {'@astryx.multiSelector.allSelected': 'Tout est là'},
+          }}>
+          <MultiSelector
+            label="Fruit"
+            options={[...ANNOUNCE_OPTIONS]}
+            value={EMPTY_VALUE}
+            onChange={() => {}}
+            hasSelectAll
+          />
+        </InternationalizationProvider>,
+      );
+      await user.click(screen.getByRole('combobox'));
+      await user.click(screen.getByText('Select all'));
+      await waitFor(() => {
+        expect(politeRegion()?.textContent).toBe('Tout est là');
+      });
+    });
+
+    it('announces the selection-cleared message when clearing', async () => {
+      const user = userEvent.setup();
+      render(
+        <InternationalizationProvider
+          locale="fr"
+          overrides={{
+            fr: {'@astryx.multiSelector.selectionCleared': 'Plus rien'},
+          }}>
+          <MultiSelector
+            label="Fruit"
+            options={[...ANNOUNCE_OPTIONS]}
+            value={['Apple', 'Banana']}
+            onChange={() => {}}
+            hasClear
+          />
+        </InternationalizationProvider>,
+      );
+      await user.click(screen.getByRole('button', {name: 'Clear all Fruit'}));
+      await waitFor(() => {
+        expect(politeRegion()?.textContent).toBe('Plus rien');
+      });
+    });
+
+    it('prefers a provider override over the provider catalog', async () => {
+      const user = userEvent.setup();
+      render(
+        <InternationalizationProvider
+          locale="fr"
+          messages={{
+            fr: {
+              '@astryx.multiSelector.selectionCount': {
+                defaultMessage: '{count, number} du catalogue',
+              },
+            },
+          }}
+          overrides={{
+            fr: {
+              '@astryx.multiSelector.selectionCount':
+                '{count, number} remplacé',
+            },
+          }}>
+          <MultiSelector
+            label="Fruit"
+            options={[...ANNOUNCE_OPTIONS]}
+            value={EMPTY_VALUE}
+            onChange={() => {}}
+          />
+        </InternationalizationProvider>,
+      );
+      await user.click(screen.getByRole('combobox'));
+      const options = screen.getAllByRole('option', {hidden: true});
+      await user.click(options[0]);
+      await waitFor(() => {
+        expect(politeRegion()?.textContent).toBe('1 remplacé');
       });
     });
   });

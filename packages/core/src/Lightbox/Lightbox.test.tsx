@@ -2,10 +2,9 @@
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
-import IntlMessageFormat from 'intl-messageformat';
 import {Lightbox} from './Lightbox';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
-import en from '../../locales/en.json' with {type: 'json'};
+import {InternationalizationProvider} from '../i18n';
 
 // Mock showModal/close for jsdom
 beforeEach(() => {
@@ -29,14 +28,16 @@ function politeRegion(): HTMLElement | null {
   return document.querySelector('[data-astryx-live-region="polite"]');
 }
 
-// Announcements are asserted against the shipped catalog, not a second copy of
-// their English, so a hardcoded string in the component fails here.
-const catalog: Record<string, {defaultMessage: string}> = en;
-function enMessage(key: string, values?: Record<string, unknown>): string {
-  return String(
-    new IntlMessageFormat(catalog[key].defaultMessage, 'en').format(values),
-  );
-}
+// Both position messages, supplied by the test. Overriding the pair means an
+// assertion also proves which of the two keys the component reached for.
+const POSITION_MESSAGES = {
+  fr: {
+    '@astryx.lightbox.mediaPosition':
+      '{alt}, vue {index, number} sur {total, number}',
+    '@astryx.lightbox.imagePosition':
+      'Photo {index, number} sur {total, number}',
+  },
+};
 
 describe('Lightbox', () => {
   it('renders as a dialog element', () => {
@@ -331,65 +332,53 @@ describe('Lightbox', () => {
 
     it('announces the new image and position when navigating next via button', async () => {
       render(
-        <Lightbox
-          isOpen={true}
-          onOpenChange={() => {}}
-          media={media}
-          defaultIndex={0}
-        />,
+        <InternationalizationProvider locale="fr" overrides={POSITION_MESSAGES}>
+          <Lightbox
+            isOpen={true}
+            onOpenChange={() => {}}
+            media={media}
+            defaultIndex={0}
+          />
+        </InternationalizationProvider>,
       );
       fireEvent.click(screen.getByLabelText('Next'));
       await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent(
-          enMessage('@astryx.lightbox.mediaPosition', {
-            alt: 'Image B',
-            index: 2,
-            total: 3,
-          }),
-        );
+        expect(politeRegion()?.textContent).toBe('Image B, vue 2 sur 3');
       });
     });
 
     it('announces the new image and position when navigating via arrow keys', async () => {
       render(
-        <Lightbox
-          isOpen={true}
-          onOpenChange={() => {}}
-          media={media}
-          defaultIndex={1}
-        />,
+        <InternationalizationProvider locale="fr" overrides={POSITION_MESSAGES}>
+          <Lightbox
+            isOpen={true}
+            onOpenChange={() => {}}
+            media={media}
+            defaultIndex={1}
+          />
+        </InternationalizationProvider>,
       );
       const dialog = document.querySelector('dialog')!;
       fireEvent.keyDown(dialog, {key: 'ArrowRight'});
       await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent(
-          enMessage('@astryx.lightbox.mediaPosition', {
-            alt: 'Image C',
-            index: 3,
-            total: 3,
-          }),
-        );
+        expect(politeRegion()?.textContent).toBe('Image C, vue 3 sur 3');
       });
     });
 
     it('announces the new image and position when navigating prev', async () => {
       render(
-        <Lightbox
-          isOpen={true}
-          onOpenChange={() => {}}
-          media={media}
-          defaultIndex={2}
-        />,
+        <InternationalizationProvider locale="fr" overrides={POSITION_MESSAGES}>
+          <Lightbox
+            isOpen={true}
+            onOpenChange={() => {}}
+            media={media}
+            defaultIndex={2}
+          />
+        </InternationalizationProvider>,
       );
       fireEvent.click(screen.getByLabelText('Previous'));
       await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent(
-          enMessage('@astryx.lightbox.mediaPosition', {
-            alt: 'Image B',
-            index: 2,
-            total: 3,
-          }),
-        );
+        expect(politeRegion()?.textContent).toBe('Image B, vue 2 sur 3');
       });
     });
 
@@ -399,18 +388,19 @@ describe('Lightbox', () => {
         {src: '/b.jpg', alt: ''},
       ];
       render(
-        <Lightbox
-          isOpen={true}
-          onOpenChange={() => {}}
-          media={unlabeled}
-          defaultIndex={0}
-        />,
+        <InternationalizationProvider locale="fr" overrides={POSITION_MESSAGES}>
+          <Lightbox
+            isOpen={true}
+            onOpenChange={() => {}}
+            media={unlabeled}
+            defaultIndex={0}
+          />
+        </InternationalizationProvider>,
       );
       fireEvent.click(screen.getByLabelText('Next'));
       await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent(
-          enMessage('@astryx.lightbox.imagePosition', {index: 2, total: 2}),
-        );
+        // imagePosition, not a mediaPosition with an empty {alt}.
+        expect(politeRegion()?.textContent).toBe('Photo 2 sur 2');
       });
     });
 

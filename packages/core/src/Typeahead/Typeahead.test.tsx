@@ -20,29 +20,10 @@ import {
 } from 'vitest';
 import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import IntlMessageFormat from 'intl-messageformat';
 import {Typeahead} from './Typeahead';
 import {BaseTypeahead} from './BaseTypeahead';
 import type {SearchSource, SearchableItem} from './types';
 import {InternationalizationProvider} from '../i18n';
-import en from '../../locales/en.json' with {type: 'json'};
-import pseudoCatalog from '../../locales/pseudo.json' with {type: 'json'};
-
-// Announcements are asserted against the shipped catalog, not a second copy of
-// their English, so a hardcoded string in the component fails here.
-const catalog: Record<string, {defaultMessage: string}> = en;
-function enMessage(key: string, values?: Record<string, unknown>): string {
-  return String(
-    new IntlMessageFormat(catalog[key].defaultMessage, 'en').format(values),
-  );
-}
-
-const pseudo: Record<string, {defaultMessage: string}> = pseudoCatalog;
-function pseudoMessage(key: string, values?: Record<string, unknown>): string {
-  return String(
-    new IntlMessageFormat(pseudo[key].defaultMessage, 'en').format(values),
-  );
-}
 
 // Store original matches to restore later
 const originalMatches = HTMLElement.prototype.matches;
@@ -152,12 +133,21 @@ describe('BaseTypeahead', () => {
 
   it('announces the result count to a live region (comboboxes-6)', async () => {
     render(
-      <BaseTypeahead
-        searchSource={fruitSource}
-        value={null}
-        onChange={() => {}}
-        debounceMs={0}
-      />,
+      <InternationalizationProvider
+        locale="fr"
+        overrides={{
+          fr: {
+            '@astryx.typeahead.resultCount':
+              '{count, number} {count, plural, one {résultat} other {résultats}}',
+          },
+        }}>
+        <BaseTypeahead
+          searchSource={fruitSource}
+          value={null}
+          onChange={() => {}}
+          debounceMs={0}
+        />
+      </InternationalizationProvider>,
     );
     const input = screen.getByRole('combobox');
     // "Ap" matches Apple only — the singular ICU branch.
@@ -167,20 +157,28 @@ describe('BaseTypeahead', () => {
       const region = document.querySelector(
         '[data-astryx-live-region="polite"]',
       );
-      expect(region?.textContent).toBe(
-        enMessage('@astryx.typeahead.resultCount', {count: 1}),
-      );
+      // Exact, so the plural branch ("1 résultats") would fail.
+      expect(region?.textContent).toBe('1 résultat');
     });
   });
 
-  it('announces the plural result count from the catalog', async () => {
+  it('announces the plural result count', async () => {
     render(
-      <BaseTypeahead
-        searchSource={fruitSource}
-        value={null}
-        onChange={() => {}}
-        debounceMs={0}
-      />,
+      <InternationalizationProvider
+        locale="fr"
+        overrides={{
+          fr: {
+            '@astryx.typeahead.resultCount':
+              '{count, number} {count, plural, one {résultat} other {résultats}}',
+          },
+        }}>
+        <BaseTypeahead
+          searchSource={fruitSource}
+          value={null}
+          onChange={() => {}}
+          debounceMs={0}
+        />
+      </InternationalizationProvider>,
     );
     const input = screen.getByRole('combobox');
     // "err" matches Cherry and Elderberry.
@@ -190,17 +188,22 @@ describe('BaseTypeahead', () => {
       const region = document.querySelector(
         '[data-astryx-live-region="polite"]',
       );
-      expect(region?.textContent).toBe(
-        enMessage('@astryx.typeahead.resultCount', {count: 2}),
-      );
+      expect(region?.textContent).toBe('2 résultats');
     });
   });
 
-  it('speaks the result count from the provider catalog', async () => {
+  it('speaks the result count from a provider catalog', async () => {
     render(
       <InternationalizationProvider
-        locale="pseudo"
-        messages={{pseudo: pseudoCatalog}}>
+        locale="fr"
+        messages={{
+          fr: {
+            '@astryx.typeahead.resultCount': {
+              defaultMessage:
+                '{count, number} {count, plural, one {résultat} other {résultats}}',
+            },
+          },
+        }}>
         <BaseTypeahead
           searchSource={fruitSource}
           value={null}
@@ -216,9 +219,8 @@ describe('BaseTypeahead', () => {
       const region = document.querySelector(
         '[data-astryx-live-region="polite"]',
       );
-      expect(region?.textContent).toBe(
-        pseudoMessage('@astryx.typeahead.resultCount', {count: 2}),
-      );
+      // Same key through the catalog path rather than `overrides`.
+      expect(region?.textContent).toBe('2 résultats');
     });
   });
 
