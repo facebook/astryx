@@ -2438,16 +2438,20 @@ describe('Selector search affordances', () => {
     await user.click(screen.getByRole('button', {name: 'Fruit'}));
 
     const search = screen.getByRole('combobox', {hidden: true});
-    const row = search.parentElement;
-    if (!row) {
+    // The row is the outer gutter; the input sits inside the rounded field.
+    const row = search.closest('.astryx-selector-search');
+    const field = search.parentElement;
+    if (!row || !field) {
       throw new Error('search row not found');
     }
     // The panel is already a bordered surface: the field inside it must not be
     // a second bordered box (this used to render a TextInput).
     expect(row).not.toHaveClass('astryx-text-input');
     expect(search.closest('.astryx-text-input')).toBeNull();
-    // The row is the documented theme target for the search header.
-    expect(row).toHaveClass('astryx-selector-search');
+    // The field is a rounded box inset from the panel edge, shaped like the
+    // option rows under it — not a full-bleed header strip.
+    expect(field).not.toBe(row);
+    expect(getComputedStyle(field).borderRadius).not.toBe('');
     // ...and a divider separates it from the options.
     const separator =
       container.ownerDocument.querySelector('[role="separator"]');

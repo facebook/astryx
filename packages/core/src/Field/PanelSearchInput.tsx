@@ -13,8 +13,21 @@
  * TextInput inside it draws a second box within that box, so the field reads as
  * a control dropped into the menu rather than part of it. This row is the
  * seamless alternative — magnifier, borderless input, clear button — separated
- * from the options by a divider the panel owns. It is the same shape
- * CommandPaletteInput renders inside the command palette dialog.
+ * from the options by a divider the panel owns.
+ *
+ * The field is shaped like the option rows under it rather than like a form
+ * input: same inset from the panel edge, same `--radius-element` corners, same
+ * height. The focus ring is drawn on that rounded box, so focus reads as "this
+ * row of the panel" — the same visual language as an item's highlight — instead
+ * of ringing the whole panel header.
+ *
+ *   ┌─ panel ──────────────────┐
+ *   │ ┌──────────────────────┐ │  ← field: rounded, inset, item-sized
+ *   │ │ ⌕  Search…         ✕ │ │
+ *   │ └──────────────────────┘ │
+ *   ├──────────────────────────┤  ← divider (full-bleed)
+ *   │ ┌──────────────────────┐ │
+ *   │ │ Apple                │ │  ← option row: same box
  *
  * The clear button is the shared `InputClearButton`, so the affordance and its
  * ghost-button behavior match every other input's clear. It renders AFTER the
@@ -42,24 +55,29 @@ import {
 import type {BaseProps} from '../BaseProps';
 
 const styles = stylex.create({
+  // Gutter only. Matches the option list's own padding so the field below
+  // lines up with the option rows rather than with the panel edge.
   wrapper: {
+    paddingBlock: spacingVars['--spacing-1'],
+    paddingInline: spacingVars['--spacing-1'],
+  },
+  // The field proper — the same box an option row draws: `--radius-element`
+  // corners and, at md, a 6/8 padding pair that lands it on the option row's
+  // 32px height. Focus rings THIS, not the full-width row.
+  field: {
+    boxSizing: 'border-box',
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
-    paddingInline: spacingVars['--spacing-3'],
-    paddingBlock: spacingVars['--spacing-2'],
-    // The row sits flush at the top of the panel, so its focus ring has to
-    // follow the panel's own top corners — a square ring would poke outside
-    // them (the popover does not clip its children).
-    borderStartStartRadius: radiusVars['--radius-container'],
-    borderStartEndRadius: radiusVars['--radius-container'],
-    // Focus is drawn on the ROW, not the bare <input>: the magnifier and the
-    // clear button are part of the field as far as the eye is concerned, and a
-    // ring around only the text would cut them out. Inset, because an outline
-    // on a full-bleed row would trace the panel's own edge.
+    width: '100%',
+    paddingBlock: spacingVars['--spacing-1-5'],
+    paddingInline: spacingVars['--spacing-2'],
+    borderRadius: radiusVars['--radius-element'],
+    // Inset so the ring sits inside the rounded box instead of bleeding over
+    // the divider and the panel's edge.
     //
     // `:has(input:focus-visible)` rather than `:focus-within` so tabbing to the
-    // clear button does not re-ring the whole row. Text inputs match
+    // clear button does not re-ring the field. Text inputs match
     // `:focus-visible` on pointer focus too, so this also covers click-to-type
     // and the programmatic focus the panel does on open.
     boxShadow: {
@@ -97,7 +115,7 @@ const styles = stylex.create({
       '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-label-size']})`,
     },
     lineHeight: typeScaleVars['--text-label-leading'],
-    // The row draws the focus ring (see `wrapper`), so the bare input must not
+    // The field draws the focus ring (see `field`), so the bare input must not
     // draw a second one inside it.
     outline: 'none',
     '::placeholder': {
@@ -144,11 +162,12 @@ export interface PanelSearchInputProps extends Omit<
 
 /**
  * Search row for the top of a dropdown panel: magnifier, borderless input, and
- * a clear button once a query is typed.
+ * a clear button once a query is typed, in a rounded box shaped like the
+ * option rows beneath it.
  *
- * `className`/`style`/`xstyle` apply to the row; every other prop (`role`,
- * `aria-*`, `id`, …) passes through to the `<input>`, so the caller owns the
- * combobox wiring.
+ * `className`/`style`/`xstyle` apply to the outer row (use them to match the
+ * option list's inline padding); every other prop (`role`, `aria-*`, `id`, …)
+ * passes through to the `<input>`, so the caller owns the combobox wiring.
  */
 export function PanelSearchInput({
   ref,
@@ -177,21 +196,23 @@ export function PanelSearchInput({
     <div
       onKeyDown={onContainerKeyDown}
       {...mergeProps(stylex.props(styles.wrapper, xstyle), className, style)}>
-      <Icon icon="search" size="sm" color="secondary" xstyle={styles.icon} />
-      <input
-        ref={ref}
-        type="text"
-        aria-label={label}
-        placeholder={placeholder}
-        value={value}
-        onChange={e => onValueChange(e.target.value)}
-        onKeyDown={onKeyDown}
-        {...stylex.props(styles.input)}
-        {...props}
-      />
-      {value !== '' && (
-        <InputClearButton label={clearLabel} onClick={handleClear} />
-      )}
+      <div {...stylex.props(styles.field)}>
+        <Icon icon="search" size="sm" color="secondary" xstyle={styles.icon} />
+        <input
+          ref={ref}
+          type="text"
+          aria-label={label}
+          placeholder={placeholder}
+          value={value}
+          onChange={e => onValueChange(e.target.value)}
+          onKeyDown={onKeyDown}
+          {...stylex.props(styles.input)}
+          {...props}
+        />
+        {value !== '' && (
+          <InputClearButton label={clearLabel} onClick={handleClear} />
+        )}
+      </div>
     </div>
   );
 }

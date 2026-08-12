@@ -226,6 +226,11 @@ const styles = stylex.create({
     // pixel in the menu; the borderless ghost variant needs no correction.
     paddingInline: `calc(${spacingVars['--spacing-1']} + ${borderVars['--border-width']})`,
   },
+  // Same correction for the search row's gutter, so the search field and the
+  // option rows share one left edge.
+  searchRowInput: {
+    paddingInline: `calc(${spacingVars['--spacing-1']} + ${borderVars['--border-width']})`,
+  },
   dropdownHidden: {
     opacity: 0,
     transition: 'none',
@@ -1020,6 +1025,7 @@ export function Selector<T extends SelectorOptionType>(
           label: t('@astryx.selector.searchOptions'),
         })}
         {...themeProps('selector-search')}
+        xstyle={variant !== 'ghost' && styles.searchRowInput}
         // When hasSearch is set, focus moves into this input on open, so it —
         // not the trigger — must be the combobox that reports the highlighted
         // option via aria-activedescendant (comboboxes-4). A bare searchbox
@@ -1086,6 +1092,7 @@ export function Selector<T extends SelectorOptionType>(
     popover.isOpen,
     highlightedIndex,
     getItemId,
+    variant,
     t,
   ]);
 
