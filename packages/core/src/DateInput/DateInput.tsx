@@ -35,6 +35,7 @@ import {
 } from '../theme/tokens.stylex';
 import {
   Field,
+  InputClearButton,
   type InputStatus,
   inputWrapperStyles,
   inputStatusBorderStyles,
@@ -162,6 +163,7 @@ import {mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
+import {stableClassName} from '../naming';
 import {useTranslator} from '../i18n';
 
 export interface DateInputProps extends Omit<
@@ -744,22 +746,11 @@ export function DateInput({
         {!isInputValid ? 'Invalid date' : ''}
       </VisuallyHidden>
       {hasClear && value !== undefined && !isEffectivelyDisabled && (
-        <button
-          type="button"
+        <InputClearButton
+          label={t('@astryx.dateInput.clear', {label})}
           onClick={handleClear}
-          aria-label={t('@astryx.dateInput.clear', {label})}
-          {...stylex.props(styles.iconButton)}>
-          <Icon
-            icon="close"
-            size="sm"
-            color="secondary"
-            // Stable theme target on the clear glyph itself, so a theme can
-            // restyle just this icon (color, size, hover) via `defineTheme`.
-            // Same-element rules in @layer astryx-theme win over the icon's own
-            // base color/size, which a button-level target could not reach.
-            {...themeProps('date-input-clear-icon')}
-          />
-        </button>
+          iconClassName={stableClassName('date-input-clear-icon')}
+        />
       )}
       {isBusy && <Spinner size="sm" />}
       {statusIcon}

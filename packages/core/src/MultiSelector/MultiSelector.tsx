@@ -34,6 +34,7 @@ import {Icon, renderIconSlot, type IconType} from '../Icon';
 import type {IconName} from '../Icon';
 import {
   Field,
+  InputClearButton,
   inputStatusBorderStyles,
   inputStatusHoverShadowStyles,
   inputWrapperStyles,
@@ -75,6 +76,7 @@ import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {useSize} from '../SizeContext/SizeContext';
 import {themeProps} from '../utils/themeProps';
+import {stableClassName} from '../naming';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
 import {VisuallyHidden} from '../VisuallyHidden';
@@ -222,23 +224,6 @@ const styles = stylex.create({
   },
 
   // Clear button
-  clearButton: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 0,
-    margin: 0,
-    borderWidth: 0,
-    borderStyle: 'none',
-    backgroundColor: 'transparent',
-    cursor: 'pointer',
-    borderRadius: radiusVars['--radius-element'],
-    outline: {
-      default: 'none',
-      ':focus-visible': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: 1,
-  },
   statusButton: {
     display: 'flex',
     alignItems: 'center',
@@ -1537,23 +1522,11 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           ))}
         {isBusy && <Spinner size="sm" />}
         {hasClear && value.length > 0 && !isDisabled && (
-          <button
-            type="button"
+          <InputClearButton
+            label={t('@astryx.multiSelector.clearAll', {label})}
             onClick={handleClear}
-            aria-label={t('@astryx.multiSelector.clearAll', {label})}
-            {...stylex.props(styles.clearButton)}>
-            <Icon
-              icon="close"
-              size="sm"
-              color="secondary"
-              // Stable theme target on the clear glyph itself, so a theme can
-              // restyle just this icon (color, size, hover) via `defineTheme`.
-              // Same-element rules in @layer astryx-theme win over the icon's
-              // own base color/size, which a button-level target could not
-              // reach.
-              {...themeProps('multi-selector-clear-icon')}
-            />
-          </button>
+            iconClassName={stableClassName('multi-selector-clear-icon')}
+          />
         )}
         {/*
           No wrapper span: Icon's own span already provides the 16px box (`sm`)

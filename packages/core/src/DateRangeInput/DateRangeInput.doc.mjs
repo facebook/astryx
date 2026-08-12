@@ -168,7 +168,7 @@ export const docs = {
     targets: [
       {className: 'astryx-date-range-input', visualProps: ['size', 'status'], states: ['disabled']},
       {className: 'astryx-date-range-input-toggle-icon', states: ['state']},
-      {className: 'astryx-date-range-input-clear-icon'},
+      {className: 'astryx-date-range-input-clear-icon', deprecatedFor: 'input-clear-icon'},
     ],
   },
   usage: {

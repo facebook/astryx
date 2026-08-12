@@ -25,7 +25,7 @@ export const docs = {
         visualProps: ['variant', 'size', 'status'],
         states: ['disabled'],
       },
-      {className: 'astryx-multi-selector-clear-icon'},
+      {className: 'astryx-multi-selector-clear-icon', deprecatedFor: 'input-clear-icon'},
       {className: 'astryx-multi-selector-empty-state'},
       {
         className: 'astryx-multi-selector-indicator-icon',
