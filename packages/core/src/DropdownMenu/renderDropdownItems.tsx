@@ -39,23 +39,26 @@ const styles = stylex.create({
   },
 });
 
-function getItemKey(index: number): string {
-  return `item-${index}`;
+function getItemKey(item: DropdownMenuItemData, index: number): string {
+  return `item-${item.id ?? index}`;
 }
 
 function getSectionKey(section: DropdownMenuSection, index: number): string {
-  return `section-${section.title ?? index}`;
+  return `section-${section.id ?? index}`;
 }
 
 /**
  * Renders one leaf row as a `DropdownMenuItem`.
  *
- * Keyed by position rather than by label: an item that reports its own result
- * (a copy row swapping to "Copied") would otherwise change key mid-interaction,
- * remounting the row and dropping keyboard focus.
+ * Keyed by `item.id` when the caller supplies one, else by position. NOT by
+ * label: an item that reports its own result (a copy row swapping to "Copied")
+ * would change key mid-interaction, remounting the row and dropping keyboard
+ * focus. Position is the safe default because a menu's rows are usually fixed;
+ * a menu whose items reorder or filter needs `id` for the same reason.
  *
- * `items` is stripped because it selects the submenu shape rather than being an
- * item prop; every other field of `DropdownMenuItemData` is a
+ * `items` selects the submenu shape rather than being an item prop, and `id` is
+ * identity for React rather than something `DropdownMenuItem` renders, so both
+ * are stripped. Every remaining field of `DropdownMenuItemData` is a
  * `DropdownMenuItem` prop by construction (the type is `Pick`ed from
  * `DropdownMenuItemProps`), so the data path forwards them wholesale and can't
  * silently drop a field the data API advertises.
@@ -64,8 +67,8 @@ function renderLeafItem(
   item: DropdownMenuItemData,
   index: number,
 ): ReactElement {
-  const {items: _submenuItems, ...itemProps} = item;
-  return <DropdownMenuItem key={getItemKey(index)} {...itemProps} />;
+  const {items: _submenuItems, id: _id, ...itemProps} = item;
+  return <DropdownMenuItem key={getItemKey(item, index)} {...itemProps} />;
 }
 
 /**
@@ -114,7 +117,7 @@ export function renderDropdownItems(items: DropdownMenuOption[]): ReactNode {
       if (option.items && option.items.length > 0) {
         elements.push(
           <DropdownMenuSubMenu
-            key={getItemKey(i)}
+            key={getItemKey(option, i)}
             icon={option.icon}
             label={option.label}
             isDisabled={option.isDisabled}>

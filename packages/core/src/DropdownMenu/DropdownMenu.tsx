@@ -116,6 +116,14 @@ export interface DropdownMenuItemData extends Pick<
   DropdownMenuItemProps,
   'icon' | 'onClick' | 'isDisabled' | 'variant' | 'hasCloseOnSelect'
 > {
+  /**
+   * Stable identity for the row, used as its React key (as on
+   * `TreeListItemData`). Omit it and the row is keyed by position, which is
+   * correct for a fixed menu; set it when `items` can reorder, filter, or grow,
+   * so a row keeps its DOM node — and therefore keyboard focus — as the array
+   * changes around it.
+   */
+  id?: string;
   /** Primary label text. */
   label: string;
   /**
@@ -132,6 +140,8 @@ export interface DropdownMenuDivider {
 
 export interface DropdownMenuSection {
   type: 'section';
+  /** Stable identity for the group; see {@link DropdownMenuItemData.id}. */
+  id?: string;
   title?: string;
   items: DropdownMenuItemData[];
 }

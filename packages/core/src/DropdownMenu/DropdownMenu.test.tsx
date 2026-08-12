@@ -522,6 +522,58 @@ describe('DropdownMenu items', () => {
     expect(renamed).toHaveFocus();
   });
 
+  it('follows the item, not the slot, when ids are supplied and the list changes', async () => {
+    const user = userEvent.setup();
+
+    // A menu whose rows are filtered by a control outside it: the focused row
+    // survives at a new index. Position keys cannot express this — the DOM node
+    // at index 0 would be reused for whatever item lands there.
+    function FilterableMenu({hideFirst}: {hideFirst: boolean}) {
+      const items = [
+        {id: 'edit', label: 'Edit'},
+        {id: 'duplicate', label: 'Duplicate'},
+        {id: 'archive', label: 'Archive'},
+      ].filter(item => !hideFirst || item.id !== 'edit');
+      return <DropdownMenu button={{label: 'Actions'}} items={items} />;
+    }
+
+    const {rerender} = render(<FilterableMenu hideFirst={false} />);
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+
+    const duplicate = screen.getByRole('menuitem', {
+      name: 'Duplicate',
+      hidden: true,
+    });
+    duplicate.focus();
+
+    rerender(<FilterableMenu hideFirst={true} />);
+
+    // Same node, still focused, even though it moved from index 1 to index 0.
+    expect(
+      screen.getByRole('menuitem', {name: 'Duplicate', hidden: true}),
+    ).toBe(duplicate);
+    expect(duplicate).toHaveFocus();
+    expect(
+      screen.queryByRole('menuitem', {name: 'Edit', hidden: true}),
+    ).not.toBeInTheDocument();
+  });
+
+  it('does not put id on the rendered row', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        items={[{id: 'edit', label: 'Edit'}]}
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+
+    // `id` is identity for React, not a DOM attribute the caller is setting.
+    expect(
+      screen.getByRole('menuitem', {name: 'Edit', hidden: true}),
+    ).not.toHaveAttribute('id', 'edit');
+  });
+
   it('does not call onClick when disabled', async () => {
     const user = userEvent.setup();
     const handleClick = vi.fn();
