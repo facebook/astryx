@@ -989,6 +989,62 @@ describe('TextArea statusVariant forwarding', () => {
       'detached',
     );
   });
+
+  it('reserves trailing space for the on-field icon with the default (attached) status', () => {
+    // Attached renders the on-field status icon, so the textarea must inset its
+    // trailing edge to clear it.
+    render(
+      <TextArea
+        label="Bio"
+        value=""
+        onChange={() => {}}
+        status={{type: 'error', message: 'Required'}}
+      />,
+    );
+    // The on-field status glyph renders (in the end slot).
+    expect(document.querySelector('.astryx-input-status-icon')).not.toBeNull();
+  });
+
+  it('does not render an on-field icon for statusVariant="detached", and does not reserve trailing space for it', () => {
+    // The detached variant suppresses the on-field icon (its glyph lives in the
+    // message box below), so the textarea must NOT inset its trailing edge —
+    // otherwise the text is pushed in for an icon that never appears.
+    const attached = render(
+      <TextArea
+        label="Bio"
+        value=""
+        onChange={() => {}}
+        status={{type: 'error', message: 'Required'}}
+        statusVariant="attached"
+      />,
+    );
+    const attachedTextarea = attached.getByRole('textbox');
+    const attachedClasses = new Set(attachedTextarea.className.split(/\s+/));
+    attached.unmount();
+
+    const detached = render(
+      <TextArea
+        label="Bio"
+        value=""
+        onChange={() => {}}
+        status={{type: 'error', message: 'Required'}}
+        statusVariant="detached"
+      />,
+    );
+    // No on-field icon is rendered for detached.
+    expect(document.querySelector('.astryx-input-status-icon')).toBeNull();
+
+    const detachedTextarea = detached.getByRole('textbox');
+    const detachedClasses = new Set(detachedTextarea.className.split(/\s+/));
+
+    // The attached textarea carries exactly one extra StyleX class over the
+    // detached one: the trailing-reserve style. Detached must not carry it, so
+    // its class set is a strict subset of attached's.
+    for (const cls of detachedClasses) {
+      expect(attachedClasses.has(cls)).toBe(true);
+    }
+    expect(detachedClasses.size).toBeLessThan(attachedClasses.size);
+  });
 });
 
 describe('TextArea disabled theme state', () => {

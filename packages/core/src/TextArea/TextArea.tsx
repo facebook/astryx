@@ -593,8 +593,13 @@ export function TextArea({
             textareaSizeStyles[size],
             isDisabled && styles.textareaDisabled,
             Boolean(startIcon) && styles.textareaWithStartIcon,
-            (status || isBusy) && styles.textareaWithStatus,
-            isBusy && !!statusIcon && styles.textareaWithBusyStatus,
+            // Reserve trailing space only when the end slot actually renders
+            // something (spinner or on-field status icon). The `detached`
+            // status variant suppresses the on-field icon — its glyph lives in
+            // the message box below — so reserving here would inset the text
+            // for an icon that never appears.
+            (isBusy || statusIcon != null) && styles.textareaWithStatus,
+            isBusy && statusIcon != null && styles.textareaWithBusyStatus,
             maxLength != null && styles.textareaWithCounter,
           )}
         />
