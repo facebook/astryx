@@ -19,7 +19,8 @@
  * input: same inset from the panel edge, same `--radius-element` corners, same
  * height. The focus ring is drawn on that rounded box, so focus reads as "this
  * row of the panel" — the same visual language as an item's highlight — instead
- * of ringing the whole panel header.
+ * of ringing the whole panel header. It appears for keyboard focus only; see
+ * `fieldKeyboardFocus` for why `:focus-visible` alone does not mean that.
  *
  *   ┌─ panel ──────────────────┐
  *   │ ┌──────────────────────┐ │  ← field: rounded, inset, item-sized
@@ -38,11 +39,15 @@
  * that use it, not public API.
  */
 
-import {useCallback, type Ref} from 'react';
+import {useCallback, useEffect, useState, type Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Icon} from '../Icon';
 import {InputClearButton} from './InputClearButton';
 import {mergeProps} from '../utils';
+import {
+  getInteractionModality,
+  trackInteractionModality,
+} from '../utils/interactionModality';
 import {
   colorVars,
   durationVars,
@@ -73,23 +78,28 @@ const styles = stylex.create({
     paddingBlock: spacingVars['--spacing-1-5'],
     paddingInline: spacingVars['--spacing-2'],
     borderRadius: radiusVars['--radius-element'],
-    // Inset so the ring sits inside the rounded box instead of bleeding over
-    // the divider and the panel's edge.
-    //
-    // `:has(input:focus-visible)` rather than `:focus-within` so tabbing to the
-    // clear button does not re-ring the field. Text inputs match
-    // `:focus-visible` on pointer focus too, so this also covers click-to-type
-    // and the programmatic focus the panel does on open.
-    boxShadow: {
-      default: 'none',
-      ':has(input:focus-visible)': `inset 0 0 0 2px ${colorVars['--color-accent']}`,
-    },
     transitionProperty: 'box-shadow',
     transitionDuration: {
       default: durationVars['--duration-fast'],
       '@media (prefers-reduced-motion: reduce)': '0s',
     },
     transitionTimingFunction: easeVars['--ease-standard'],
+  },
+  // The focus ring, applied only while focus was taken by keyboard (see
+  // `isKeyboardFocus`). `:has(input:focus-visible)` stays the CSS condition —
+  // the browser's heuristic still decides, this only narrows it — and rings
+  // the field rather than the bare <input> so the magnifier and the clear
+  // button sit inside it, and so tabbing ONTO the clear button does not
+  // re-ring the field.
+  //
+  // Inset, not the shared 3px-offset outline: the field is inset 4-5px from
+  // the panel edge, so an outline at that offset would land on the panel's own
+  // border and the divider. Measured, not guessed.
+  fieldKeyboardFocus: {
+    boxShadow: {
+      default: 'none',
+      ':has(input:focus-visible)': `inset 0 0 0 2px ${colorVars['--color-accent']}`,
+    },
   },
   // The icon span needs explicit flex centering to avoid a line-height offset.
   icon: {
@@ -152,6 +162,12 @@ export interface PanelSearchInputProps extends Omit<
   /** Key handler for the input itself. */
   onKeyDown?: React.KeyboardEventHandler<HTMLInputElement>;
 
+  /** Focus handler for the input; runs after the ring's own bookkeeping. */
+  onFocus?: React.FocusEventHandler<HTMLInputElement>;
+
+  /** Blur handler for the input; runs after the ring's own bookkeeping. */
+  onBlur?: React.FocusEventHandler<HTMLInputElement>;
+
   /**
    * Key handler for the row. Events from the input are handled by `onKeyDown`;
    * this one exists for keys pressed on the clear button, which has no other
@@ -177,12 +193,40 @@ export function PanelSearchInput({
   value,
   onValueChange,
   onKeyDown,
+  onFocus,
+  onBlur,
   onContainerKeyDown,
   xstyle,
   className,
   style,
   ...props
 }: PanelSearchInputProps) {
+  // `:focus-visible` matches a text input focused by POINTER as well (CSS
+  // Selectors 4, verified in Chromium), so it cannot express "keyboard focus"
+  // by itself. Gate it on how the user last interacted; the CSS condition
+  // stays `:focus-visible`, this only narrows it.
+  const [isKeyboardFocus, setIsKeyboardFocus] = useState(false);
+
+  useEffect(() => {
+    trackInteractionModality();
+  }, []);
+
+  const handleFocus = useCallback(
+    (e: React.FocusEvent<HTMLInputElement>) => {
+      setIsKeyboardFocus(getInteractionModality() === 'keyboard');
+      onFocus?.(e);
+    },
+    [onFocus],
+  );
+
+  const handleBlur = useCallback(
+    (e: React.FocusEvent<HTMLInputElement>) => {
+      setIsKeyboardFocus(false);
+      onBlur?.(e);
+    },
+    [onBlur],
+  );
+
   const handleClear = useCallback(() => {
     onValueChange('');
     // Clearing puts the caret back where the user was typing, matching
@@ -196,7 +240,12 @@ export function PanelSearchInput({
     <div
       onKeyDown={onContainerKeyDown}
       {...mergeProps(stylex.props(styles.wrapper, xstyle), className, style)}>
-      <div {...stylex.props(styles.field)}>
+      <div
+        data-keyboard-focus={isKeyboardFocus ? 'true' : undefined}
+        {...stylex.props(
+          styles.field,
+          isKeyboardFocus && styles.fieldKeyboardFocus,
+        )}>
         <Icon icon="search" size="sm" color="secondary" xstyle={styles.icon} />
         <input
           ref={ref}
@@ -206,6 +255,8 @@ export function PanelSearchInput({
           value={value}
           onChange={e => onValueChange(e.target.value)}
           onKeyDown={onKeyDown}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
           {...stylex.props(styles.input)}
           {...props}
         />

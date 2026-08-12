@@ -25,6 +25,7 @@ import {Icon} from '../Icon';
 import {RadioIndicator} from '../Indicator';
 import {InputGroup, InputGroupText} from '../InputGroup';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
+import {__resetInteractionModalityForTest} from '../utils/interactionModality';
 import {defineTheme} from '../theme/defineTheme';
 import {Theme} from '../theme/Theme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
@@ -2420,6 +2421,73 @@ describe('Selector section headings', () => {
     // The group already carries the title as its accessible name, so the
     // visible heading must not announce it a second time.
     expect(heading).toHaveAttribute('aria-hidden', 'true');
+  });
+});
+
+describe('Selector search focus ring', () => {
+  // The ring is for keyboard focus only. `:focus-visible` cannot express that
+  // on its own: per CSS Selectors 4 a pointer-focused text input matches it
+  // too (verified in Chromium), which is why a modality gate sits alongside
+  // it. jsdom does not implement `:focus-visible`, so these assert the gate;
+  // the painted ring is verified in real Chromium.
+  beforeEach(() => {
+    __resetInteractionModalityForTest();
+  });
+
+  const field = () =>
+    screen.getByRole('combobox', {hidden: true}).parentElement;
+
+  it('does not ring when the panel is opened by mouse', async () => {
+    const user = userEvent.setup();
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value={undefined}
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    expect(field()).not.toHaveAttribute('data-keyboard-focus');
+  });
+
+  it('does not ring when the query is typed after a mouse open', async () => {
+    const user = userEvent.setup();
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value={undefined}
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    await user.keyboard('an');
+    // Typing does not retroactively make a pointer focus a keyboard one; the
+    // caret already shows where the text is going.
+    expect(field()).not.toHaveAttribute('data-keyboard-focus');
+  });
+
+  it('rings when the panel is opened from the keyboard', async () => {
+    const user = userEvent.setup();
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value={undefined}
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.tab();
+    await user.keyboard('{Enter}');
+    // Focus moves into the search input on the next frame.
+    await waitFor(() =>
+      expect(screen.getByRole('combobox', {hidden: true})).toHaveFocus(),
+    );
+    expect(field()).toHaveAttribute('data-keyboard-focus', 'true');
   });
 });
 
