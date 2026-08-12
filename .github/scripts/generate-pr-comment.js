@@ -172,10 +172,19 @@ if (sandboxUrl) footerLinks.push(extLink('Sandbox', sandboxUrl));
 if (runUrl) footerLinks.push(extLink('View full report', runUrl));
 const footerLinksStr = footerLinks.length > 0 ? ` | ${footerLinks.join(' | ')}` : '';
 
+// A one-line caveat shown when the analysis fell back to the approximate
+// two-dot diff. The file list may include base-only churn and, worse, may
+// miss a component the PR actually changed (if that change also exists on
+// base), so consumers should not treat the component list as exact.
+const diffModeCaveat =
+  analysis.diffMode === 'two-dot'
+    ? '> ⚠️ **Approximate analysis** - the diff could not be resolved to a merge base, so a two-dot fallback was used. The component list may include base-only changes or miss a component whose change also landed on base.\n\n'
+    : '';
+
 // Build the full comment
 const body = `## PR Analysis Report
 
-${storybookSection}${sandboxSection}${componentSection || '_No new or modified components detected._\n\n'}
+${diffModeCaveat}${storybookSection}${sandboxSection}${componentSection || '_No new or modified components detected._\n\n'}
 ${bundleSection}
 ${a11ySection}
 ---

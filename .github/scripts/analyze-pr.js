@@ -92,25 +92,64 @@ function componentIndexRef(pkg, componentName) {
 // have once the PR has been open long enough for base to advance past that
 // window — the diff then fails with "no merge base" and the whole job dies.
 //
-// In that case we fall back to a two-dot diff (base..head), which needs no
-// merge base and never hard-fails the CI. The two-dot diff may include files
-// merged to base since the branch point, which is acceptable for component
-// analysis: it can over-report files already on base, but never under-reports
-// the PR's own changes.
+// On that failure we first try to deepen the shallow clone and retry the
+// three-dot diff — the real fix for "base advanced past the fetch window" is
+// to fetch more history, not to degrade. Only if that still cannot find a
+// merge base do we fall back to a two-dot diff (base..head), which needs no
+// merge base and never hard-fails the CI.
+//
+// The two-dot fallback is inherently lossy: it compares two trees, so a file
+// whose change also exists on base (a cherry-picked/duplicated fix, or the
+// same codegen output landing from another PR) vanishes from the diff
+// entirely. That means two-dot can UNDER-report a PR's own changes, not just
+// over-report base churn. Because downstream gates (pr-a11y) derive their
+// component list from this file list, under-reporting silently skips the
+// audit for a component the PR did change. The caller records the diff mode
+// in the analysis output so consumers know when the file list is approximate.
+// Returns { files, diffMode: 'three-dot' | 'two-dot' }.
 function getChangedFiles() {
   const threeDot = `${baseBranch}...${headRef}`;
-  try {
+  const tryThreeDot = () => {
     const output = execSync(`git diff --name-only ${threeDot}`, { encoding: 'utf8' });
     return output.trim().split('\n').filter(Boolean);
+  };
+  try {
+    return { files: tryThreeDot(), diffMode: 'three-dot' };
   } catch (e) {
     console.warn(
-      `::warning::three-dot diff ${threeDot} failed (${e.message.split('\n')[0]}) - falling back to two-dot diff`
+      `::warning::three-dot diff ${threeDot} failed - attempting to deepen the clone and retry`
+    );
+    console.warn(diffErrorDetail(e));
+  }
+
+  // The three-dot diff failed, almost certainly because the shallow clone is
+  // too shallow to contain the merge base. Deepen before giving up on the
+  // accurate path; a deepened clone makes three-dot correct again. The base
+  // arg arrives as "origin/main" (see ci.yml) but the fetch refspec needs the
+  // bare branch name and must update the origin/<base> ref explicitly —
+  // `--deepen` alone only updates FETCH_HEAD, which the three-dot ref
+  // (origin/main...HEAD) needs to actually exist.
+  try {
+    const baseName = baseBranch.replace(/^origin\//, '');
+    execSync(
+      `git fetch --deepen=200 origin ${baseName}:refs/remotes/origin/${baseName}`,
+      { encoding: 'utf8', stdio: 'pipe' },
+    );
+    return { files: tryThreeDot(), diffMode: 'three-dot' };
+  } catch (e) {
+    console.warn(
+      `::warning::deepen failed (${diffErrorDetail(e)}) - falling back to two-dot diff`
     );
   }
+
+  // Last resort: a two-dot diff needs no merge base. Its file list is
+  // approximate (may over-report base churn and, worse, under-report the PR's
+  // own changes when they also exist on base), so the caller marks the output
+  // with diffMode: 'two-dot' for any consumer to caveat.
   const twoDot = `${baseBranch}..${headRef}`;
   try {
     const output = execSync(`git diff --name-only ${twoDot}`, { encoding: 'utf8' });
-    return output.trim().split('\n').filter(Boolean);
+    return { files: output.trim().split('\n').filter(Boolean), diffMode: 'two-dot' };
   } catch (e) {
     // A failed diff (e.g. base ref missing on a too-shallow clone) is not the
     // same as "no changes" — fail loudly instead of publishing an empty
@@ -119,6 +158,13 @@ function getChangedFiles() {
     console.error('The clone is likely too shallow to contain the base ref (see fetch-depth in ci.yml).');
     process.exit(1);
   }
+}
+
+// Human-readable reason for a failed diff/deepen, preferring the fatal stderr
+// line (e.g. "fatal: origin/main...HEAD: no merge base") over execSync's
+// boilerplate "Command failed: ..." first line.
+function diffErrorDetail(e) {
+  return (e.stderr && e.stderr.toString().trim()) || e.message.split('\n')[0];
 }
 
 // Check if a component exists in the base branch.
@@ -469,8 +515,13 @@ function getPackageBundleStats(pkg) {
 // Main analysis
 function analyze() {
   console.log(`Analyzing changes from ${baseBranch} to ${headRef}...`);
-  const changedFiles = getChangedFiles();
-  console.log(`Found ${changedFiles.length} changed files`);
+  const { files: changedFiles, diffMode } = getChangedFiles();
+  console.log(`Found ${changedFiles.length} changed files (diff mode: ${diffMode})`);
+  if (diffMode === 'two-dot') {
+    console.warn(
+      '::warning::using approximate two-dot diff - the file list may include base-only churn and may miss the PR\'s own changes when they also exist on base'
+    );
+  }
 
   const newComponents = [];
   const modifiedComponents = [];
@@ -536,6 +587,10 @@ function analyze() {
     newExports,
     componentStats,
     changedPackages: [...changedPackages],
+    // Records whether the file list is exact (three-dot) or approximate
+    // (two-dot fallback). Consumers that gate on the component list (pr-a11y)
+    // or render it in the report should caveat when this is 'two-dot'.
+    diffMode,
     bundlePackages,
     // Back-compat: keep totalBundle pointed at core when core changed, so any
     // older consumer of this field still resolves.
