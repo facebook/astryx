@@ -20,6 +20,7 @@ import {VStack} from '@astryxdesign/core/Layout';
 import {Section} from '@astryxdesign/core/Section';
 import {Table, pixel} from '@astryxdesign/core/Table';
 import {Banner} from '@astryxdesign/core/Banner';
+import {Card} from '@astryxdesign/core/Card';
 import {useMediaQuery} from '@astryxdesign/core/hooks';
 import {Divider} from '@astryxdesign/core';
 import {CodeExampleBlock} from '../CodeExampleBlock';
@@ -49,41 +50,43 @@ function TargetsTable({targets, props}: TargetsTableProps) {
 
   if (isMobile) {
     return (
-      <VStack gap={0}>
-        {targets.map(target => {
-          const dataAttrs = targetDataAttributes(target);
-          const propValues = targetPropValues(target, props);
-          const states = target.states ?? [];
-          return (
-            <Fragment key={target.className}>
-              <Divider />
-              <VStack gap={1} style={{paddingBlock: 8}}>
-                <Text type="code" weight="bold">
-                  {configKey(target)}
-                </Text>
-                <Text type="code" color="secondary">
-                  .{target.className}
-                </Text>
-                {dataAttrs.length > 0 && (
-                  <Text type="supporting" color="secondary">
-                    Data attrs: {dataAttrs.map(a => `[${a}]`).join(', ')}
+      <Card>
+        <VStack gap={0}>
+          {targets.map(target => {
+            const dataAttrs = targetDataAttributes(target);
+            const propValues = targetPropValues(target, props);
+            const states = target.states ?? [];
+            return (
+              <Fragment key={target.className}>
+                <Divider />
+                <VStack gap={1} style={{paddingBlock: 8}}>
+                  <Text type="code" weight="bold">
+                    {configKey(target)}
                   </Text>
-                )}
-                {propValues.length > 0 && (
-                  <Text type="supporting" color="secondary">
-                    Props: {propValues.join(', ')}
+                  <Text type="code" color="secondary">
+                    .{target.className}
                   </Text>
-                )}
-                {states.length > 0 && (
-                  <Text type="supporting" color="secondary">
-                    States: {states.join(', ')}
-                  </Text>
-                )}
-              </VStack>
-            </Fragment>
-          );
-        })}
-      </VStack>
+                  {dataAttrs.length > 0 && (
+                    <Text type="supporting" color="secondary">
+                      Data attrs: {dataAttrs.map(a => `[${a}]`).join(', ')}
+                    </Text>
+                  )}
+                  {propValues.length > 0 && (
+                    <Text type="supporting" color="secondary">
+                      Props: {propValues.join(', ')}
+                    </Text>
+                  )}
+                  {states.length > 0 && (
+                    <Text type="supporting" color="secondary">
+                      States: {states.join(', ')}
+                    </Text>
+                  )}
+                </VStack>
+              </Fragment>
+            );
+          })}
+        </VStack>
+      </Card>
     );
   }
 
@@ -96,76 +99,81 @@ function TargetsTable({targets, props}: TargetsTableProps) {
   })) as Record<string, unknown>[];
 
   return (
-    <Table
-      data={data}
-      columns={[
-        {
-          key: 'key',
-          header: 'Config key',
-          width: pixel(180),
-          renderCell: (item: Record<string, unknown>) => (
-            <Text type="code" weight="bold" style={{whiteSpace: 'nowrap'}}>
-              {item.key as string}
-            </Text>
-          ),
-        },
-        {
-          key: 'className',
-          header: 'Class',
-          width: pixel(200),
-          renderCell: (item: Record<string, unknown>) => (
-            <Text type="code" color="secondary" style={{whiteSpace: 'nowrap'}}>
-              .{item.className as string}
-            </Text>
-          ),
-        },
-        {
-          key: 'dataAttrs',
-          header: 'Data attributes',
-          width: pixel(220),
-          renderCell: (item: Record<string, unknown>) => {
-            const attrs = item.dataAttrs as string[];
-            return attrs.length > 0 ? (
-              <Text type="code" color="secondary">
-                {attrs.map(a => `[${a}]`).join(', ')}
+    <Card>
+      <Table
+        data={data}
+        columns={[
+          {
+            key: 'key',
+            header: 'Config key',
+            width: pixel(180),
+            renderCell: (item: Record<string, unknown>) => (
+              <Text type="code" weight="bold" style={{whiteSpace: 'nowrap'}}>
+                {item.key as string}
               </Text>
-            ) : (
-              <Text color="secondary">—</Text>
-            );
+            ),
           },
-        },
-        {
-          key: 'props',
-          header: 'Props',
-          renderCell: (item: Record<string, unknown>) => {
-            const values = item.props as string[];
-            return values.length > 0 ? (
-              <Text type="code" color="secondary">
-                {values.join(', ')}
+          {
+            key: 'className',
+            header: 'Class',
+            width: pixel(200),
+            renderCell: (item: Record<string, unknown>) => (
+              <Text
+                type="code"
+                color="secondary"
+                style={{whiteSpace: 'nowrap'}}>
+                .{item.className as string}
               </Text>
-            ) : (
-              <Text color="secondary">—</Text>
-            );
+            ),
           },
-        },
-        {
-          key: 'states',
-          header: 'States',
-          renderCell: (item: Record<string, unknown>) => {
-            const values = item.states as string[];
-            return values.length > 0 ? (
-              <Text type="code" color="secondary">
-                {values.join(', ')}
-              </Text>
-            ) : (
-              <Text color="secondary">—</Text>
-            );
+          {
+            key: 'dataAttrs',
+            header: 'Data attributes',
+            width: pixel(220),
+            renderCell: (item: Record<string, unknown>) => {
+              const attrs = item.dataAttrs as string[];
+              return attrs.length > 0 ? (
+                <Text type="code" color="secondary">
+                  {attrs.map(a => `[${a}]`).join(', ')}
+                </Text>
+              ) : (
+                <Text color="secondary">—</Text>
+              );
+            },
           },
-        },
-      ]}
-      density="spacious"
-      dividers="rows"
-    />
+          {
+            key: 'props',
+            header: 'Props',
+            renderCell: (item: Record<string, unknown>) => {
+              const values = item.props as string[];
+              return values.length > 0 ? (
+                <Text type="code" color="secondary">
+                  {values.join(', ')}
+                </Text>
+              ) : (
+                <Text color="secondary">—</Text>
+              );
+            },
+          },
+          {
+            key: 'states',
+            header: 'States',
+            renderCell: (item: Record<string, unknown>) => {
+              const values = item.states as string[];
+              return values.length > 0 ? (
+                <Text type="code" color="secondary">
+                  {values.join(', ')}
+                </Text>
+              ) : (
+                <Text color="secondary">—</Text>
+              );
+            },
+          },
+        ]}
+        density="spacious"
+        dividers="rows"
+      />
+    </Card>
   );
 }
 
@@ -178,26 +186,28 @@ function CssVarsTable({vars}: CssVarsTableProps) {
 
   if (isMobile) {
     return (
-      <VStack gap={0}>
-        {vars.map(v => (
-          <Fragment key={v.name}>
-            <Divider />
-            <VStack gap={1} style={{paddingBlock: 8}}>
-              <Text type="code" weight="bold">
-                {v.name}
-              </Text>
-              <Text type="code" color="secondary">
-                {v.default}
-              </Text>
-              {v.description && (
-                <MarkdownText type="body" color="secondary">
-                  {v.description}
-                </MarkdownText>
-              )}
-            </VStack>
-          </Fragment>
-        ))}
-      </VStack>
+      <Card>
+        <VStack gap={0}>
+          {vars.map(v => (
+            <Fragment key={v.name}>
+              <Divider />
+              <VStack gap={1} style={{paddingBlock: 8}}>
+                <Text type="code" weight="bold">
+                  {v.name}
+                </Text>
+                <Text type="code" color="secondary">
+                  {v.default}
+                </Text>
+                {v.description && (
+                  <MarkdownText type="body" color="secondary">
+                    {v.description}
+                  </MarkdownText>
+                )}
+              </VStack>
+            </Fragment>
+          ))}
+        </VStack>
+      </Card>
     );
   }
 
@@ -208,42 +218,44 @@ function CssVarsTable({vars}: CssVarsTableProps) {
   })) as Record<string, unknown>[];
 
   return (
-    <Table
-      data={data}
-      columns={[
-        {
-          key: 'name',
-          header: 'CSS variable',
-          width: pixel(240),
-          renderCell: (item: Record<string, unknown>) => (
-            <Text type="code" weight="bold" style={{whiteSpace: 'nowrap'}}>
-              {item.name as string}
-            </Text>
-          ),
-        },
-        {
-          key: 'default',
-          header: 'Default',
-          width: pixel(220),
-          renderCell: (item: Record<string, unknown>) => (
-            <Text type="code" color="secondary">
-              {item.default as string}
-            </Text>
-          ),
-        },
-        {
-          key: 'description',
-          header: 'Description',
-          renderCell: (item: Record<string, unknown>) => (
-            <MarkdownText type="body">
-              {item.description as string}
-            </MarkdownText>
-          ),
-        },
-      ]}
-      density="spacious"
-      dividers="rows"
-    />
+    <Card>
+      <Table
+        data={data}
+        columns={[
+          {
+            key: 'name',
+            header: 'CSS variable',
+            width: pixel(240),
+            renderCell: (item: Record<string, unknown>) => (
+              <Text type="code" weight="bold" style={{whiteSpace: 'nowrap'}}>
+                {item.name as string}
+              </Text>
+            ),
+          },
+          {
+            key: 'default',
+            header: 'Default',
+            width: pixel(220),
+            renderCell: (item: Record<string, unknown>) => (
+              <Text type="code" color="secondary">
+                {item.default as string}
+              </Text>
+            ),
+          },
+          {
+            key: 'description',
+            header: 'Description',
+            renderCell: (item: Record<string, unknown>) => (
+              <MarkdownText type="body">
+                {item.description as string}
+              </MarkdownText>
+            ),
+          },
+        ]}
+        density="spacious"
+        dividers="rows"
+      />
+    </Card>
   );
 }
 
