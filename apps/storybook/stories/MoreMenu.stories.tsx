@@ -41,6 +41,16 @@ const meta: Meta<typeof MoreMenu> = {
       control: 'boolean',
       description: 'Whether the menu trigger is disabled',
     },
+    placement: {
+      control: 'select',
+      options: ['above', 'below', 'start', 'end'],
+      description: 'Position of the menu relative to the trigger',
+    },
+    alignment: {
+      control: 'select',
+      options: ['start', 'center', 'end'],
+      description: 'Alignment of the menu along the placement axis',
+    },
     'data-testid': {
       control: 'text',
       description: 'Test ID for testing frameworks',
@@ -287,6 +297,42 @@ export const WithDisabledItems: Story = {
         },
       ]}
     />
+  ),
+};
+
+// Alignment along the placement axis — the default start-aligned menu and an
+// end-aligned one. Both triggers sit mid-viewport with room on either side, so
+// the difference is the `alignment` prop, not a collision flip.
+export const Alignment: Story = {
+  parameters: {layout: 'padded'},
+  render: () => (
+    <div
+      style={{
+        display: 'flex',
+        gap: 240,
+        justifyContent: 'center',
+        paddingBlock: 120,
+      }}>
+      <MoreMenu
+        label="Start aligned"
+        items={[
+          {label: 'Edit', icon: PencilIcon, onClick: () => {}},
+          {label: 'Duplicate', icon: DocumentDuplicateIcon, onClick: () => {}},
+          {type: 'divider'},
+          {label: 'Delete', icon: TrashIcon, onClick: () => {}},
+        ]}
+      />
+      <MoreMenu
+        label="End aligned"
+        alignment="end"
+        items={[
+          {label: 'Edit', icon: PencilIcon, onClick: () => {}},
+          {label: 'Duplicate', icon: DocumentDuplicateIcon, onClick: () => {}},
+          {type: 'divider'},
+          {label: 'Delete', icon: TrashIcon, onClick: () => {}},
+        ]}
+      />
+    </div>
   ),
 };
 

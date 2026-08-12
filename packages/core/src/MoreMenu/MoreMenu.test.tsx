@@ -13,6 +13,7 @@ import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {MoreMenu} from './MoreMenu';
+import {DropdownMenu} from '../DropdownMenu/DropdownMenu';
 
 // Mock showPopover and hidePopover methods since they're not implemented in jsdom
 beforeEach(() => {
@@ -223,5 +224,44 @@ describe('MoreMenu', () => {
     expect(
       screen.getByRole('menuitem', {name: 'Edit', hidden: true}),
     ).toHaveFocus();
+  });
+
+  describe('placement and alignment', () => {
+    const positionAreaOf = (menu: HTMLElement) =>
+      menu
+        .closest('[popover]')
+        ?.getAttribute('style')
+        ?.match(/position-area:[^;]*/)?.[0];
+
+    it('resolves the same default position as DropdownMenu', () => {
+      render(
+        <>
+          <MoreMenu items={defaultItems} />
+          <DropdownMenu button={{label: 'Actions'}} items={defaultItems} />
+        </>,
+      );
+      const [moreMenu, dropdownMenu] = screen.getAllByRole('menu', {
+        hidden: true,
+      });
+
+      expect(positionAreaOf(moreMenu)).toBe(positionAreaOf(dropdownMenu));
+      expect(positionAreaOf(moreMenu)).toBe(
+        'position-area: self-block-end span-self-inline-end',
+      );
+    });
+
+    it('forwards alignment to the menu layer', () => {
+      render(<MoreMenu items={defaultItems} alignment="end" />);
+      expect(positionAreaOf(screen.getByRole('menu', {hidden: true}))).toBe(
+        'position-area: self-block-end span-self-inline-start',
+      );
+    });
+
+    it('forwards placement to the menu layer', () => {
+      render(<MoreMenu items={defaultItems} placement="above" />);
+      expect(positionAreaOf(screen.getByRole('menu', {hidden: true}))).toBe(
+        'position-area: self-block-start span-self-inline-end',
+      );
+    });
   });
 });
