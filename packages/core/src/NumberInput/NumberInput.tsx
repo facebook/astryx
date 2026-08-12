@@ -30,13 +30,12 @@ import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
   sizeVars,
-  radiusVars,
   typographyVars,
   typeScaleVars,
-  borderVars,
 } from '../theme/tokens.stylex';
 import {
   Field,
+  InputClearButton,
   type InputStatus,
   inputWrapperStyles,
   inputStatusBorderStyles,
@@ -44,7 +43,7 @@ import {
   inputStatusFocusWithinStyles,
   type FieldStatusVariant,
 } from '../Field';
-import {Icon, renderIconSlot, type IconType} from '../Icon';
+import {renderIconSlot, type IconType} from '../Icon';
 import {VisuallyHidden} from '../VisuallyHidden';
 import {useTooltip} from '../Tooltip';
 import {getInputARIA} from '../utils';
@@ -56,23 +55,6 @@ import {useInputGroup} from '../InputGroup/InputGroupContext';
 const styles = stylex.create({
   wrapper: {
     zIndex: 1,
-  },
-  clearButton: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 0,
-    margin: 0,
-    borderWidth: 0,
-    borderStyle: 'none',
-    backgroundColor: 'transparent',
-    cursor: 'pointer',
-    borderRadius: radiusVars['--radius-element'],
-    outline: {
-      default: 'none',
-      ':focus-visible': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: 1,
   },
   input: {
     display: 'block',
@@ -713,13 +695,10 @@ export function NumberInput({
         {!isInputValid ? 'Invalid number' : ''}
       </VisuallyHidden>
       {hasClear && value != null && !isDisabled && !isReadOnly && (
-        <button
-          type="button"
+        <InputClearButton
+          label={t('@astryx.numberInput.clearLabel', {label})}
           onClick={handleClear}
-          aria-label={t('@astryx.numberInput.clearLabel', {label})}
-          {...stylex.props(styles.clearButton)}>
-          <Icon icon="close" size="sm" color="secondary" />
-        </button>
+        />
       )}
       {statusIcon}
     </div>
