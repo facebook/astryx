@@ -198,7 +198,7 @@ describe('props table trigger', () => {
 
   it('renders the type name itself as the definition trigger', () => {
     expect(source).toContain('splitTypeRefSegments');
-    expect(source).toMatch(/<button type="button"[^>]*>\s*\{def\.name\}/);
+    expect(source).toMatch(/<button\s+type="button"[^>]*>\s*\{def\.name\}/);
   });
 
   it('no longer renders a separate "View {Type}" button', () => {

@@ -41,11 +41,13 @@ import type {
 } from '../../generated/componentRegistry';
 import {CodeExampleBlock} from '../CodeExampleBlock';
 import {MarkdownText} from '../MarkdownText';
+import {proseLinkStyles} from '../proseLink';
 
 const styles = stylex.create({
-  // Inline link treatment for type-name definition triggers, mirroring the
-  // authored-docs link pattern (docs/inlineMarkdown.tsx) on a button element
-  // so the trigger stays keyboard-focusable with a visible focus ring.
+  // Strips the native button chrome from type-name definition triggers; the
+  // link treatment itself comes from proseLink.ts, shared with the rest of
+  // the docs prose. A button rather than an anchor so the trigger stays
+  // keyboard-focusable without pretending to navigate.
   typeRefTrigger: {
     backgroundColor: 'transparent',
     borderStyle: 'none',
@@ -54,22 +56,6 @@ const styles = stylex.create({
     fontSize: 'inherit',
     lineHeight: 'inherit',
     cursor: 'pointer',
-    color: 'var(--color-text-accent)',
-    textDecorationLine: 'underline',
-    textDecorationThickness: '1px',
-    textUnderlineOffset: '0.16em',
-    transition: 'color 120ms ease, text-decoration-color 120ms ease',
-    ':hover': {
-      '@media (hover: hover)': {
-        color: 'var(--color-accent)',
-        textDecorationThickness: '2px',
-      },
-    },
-    ':focus-visible': {
-      borderRadius: 'var(--radius-sm)',
-      outline: '2px solid var(--color-accent)',
-      outlineOffset: 2,
-    },
   },
 });
 
@@ -133,7 +119,14 @@ function TypeDefinitionTrigger({def}: {def: TypeDefinition}) {
           </Card>
         </VStack>
       }>
-      <button type="button" {...stylex.props(styles.typeRefTrigger)}>
+      <button
+        type="button"
+        {...stylex.props(
+          styles.typeRefTrigger,
+          proseLinkStyles.underline,
+          proseLinkStyles.color,
+          proseLinkStyles.focusRing,
+        )}>
         {def.name}
       </button>
     </Popover>
