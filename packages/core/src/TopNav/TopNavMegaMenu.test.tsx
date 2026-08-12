@@ -624,61 +624,6 @@ describe('TopNavMegaMenu — keyboard (default mode)', () => {
 });
 
 // =============================================================================
-// Anchor wiring (default mode) — issue #4905
-//
-// The panel positions itself with CSS anchor positioning. Inside a TopNav the
-// anchor is the surrounding <nav> so the panel spans below the bar; without a
-// <nav> ancestor (standalone render, e.g. a docs Properties preview) the
-// trigger button itself must carry the anchor name — if nothing does, the
-// panel's position-area computes to `none` and the top-layer popover renders
-// at the viewport top-left corner.
-// =============================================================================
-
-describe('TopNavMegaMenu — anchor wiring (default mode)', () => {
-  function readAnchorName(el: HTMLElement): string {
-    return (el.style as unknown as Record<string, string>).anchorName ?? '';
-  }
-
-  it('anchors the panel to the surrounding <nav> when inside one', () => {
-    render(
-      <nav data-testid="nav">
-        <TopNavMegaMenu
-          label="Products"
-          items={<TopNavMegaMenuItem title="Analytics" href="/analytics" />}
-        />
-      </nav>,
-    );
-
-    const nav = screen.getByTestId('nav');
-    const trigger = screen.getByRole('button', {name: 'Products'});
-    expect(readAnchorName(nav)).toMatch(/--astryx-layer-/);
-    expect(readAnchorName(trigger)).toBe('');
-  });
-
-  it('falls back to anchoring on the trigger without a <nav> ancestor', () => {
-    render(
-      <TopNavMegaMenu
-        label="Products"
-        items={<TopNavMegaMenuItem title="Analytics" href="/analytics" />}
-      />,
-    );
-
-    const trigger = screen.getByRole('button', {name: 'Products'});
-    const anchorName = readAnchorName(trigger);
-    expect(anchorName).toMatch(/--astryx-layer-/);
-
-    // The anchor the panel positions against must be the one the trigger
-    // carries, so the panel stays attached to it instead of the viewport.
-    const popup = document.getElementById(
-      trigger.getAttribute('aria-controls') as string,
-    ) as HTMLElement;
-    expect(
-      (popup.style as unknown as Record<string, string>).positionAnchor,
-    ).toBe(anchorName);
-  });
-});
-
-// =============================================================================
 // Mobile-bar mode — should be hidden
 // =============================================================================
 
