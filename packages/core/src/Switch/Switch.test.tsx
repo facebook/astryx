@@ -636,6 +636,38 @@ describe('Switch', () => {
       expect(data.get('notify')).toBe('on');
     });
 
+    it('does not block form submission when required and disabled with a disabledMessage', () => {
+      const {container} = render(
+        <form>
+          <Switch
+            label="Notify"
+            htmlName="notify"
+            value={false}
+            onChange={() => {}}
+            isRequired
+            isDisabled
+            disabledMessage="Notifications are turned off org-wide"
+          />
+        </form>,
+      );
+      expect(container.querySelector('form')!.checkValidity()).toBe(true);
+    });
+
+    it('still blocks submission when required and off but enabled', () => {
+      const {container} = render(
+        <form>
+          <Switch
+            label="Notify"
+            htmlName="notify"
+            value={false}
+            onChange={() => {}}
+            isRequired
+          />
+        </form>,
+      );
+      expect(container.querySelector('form')!.checkValidity()).toBe(false);
+    });
+
     it('is excluded from form data when disabled, even with a disabledMessage', () => {
       const {container} = render(
         <form>

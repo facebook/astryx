@@ -523,6 +523,7 @@ export function Switch({
         // isDisabled guard in onChange below.
         disabled={isDisabled && !showsDisabledMessage}
         aria-disabled={showsDisabledMessage ? 'true' : undefined}
+        form={showsDisabledMessage ? '' : undefined}
         required={isRequired}
         onChange={e => {
           if (isDisabled || isBusy) {

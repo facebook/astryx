@@ -1,7 +1,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file sandboxPages.ts
+ * @file Central registry of sandbox categories and persistent navigation.
+ * @input Authored sandbox metadata and the generated template registry.
+ * @output Typed category, home, and audit navigation entries.
  * @position Central registry of all sandbox pages, grouped by category.
  *
  * The "Templates" category is auto-populated from packages/cli/assets/templates/
@@ -45,15 +47,10 @@ export interface SandboxCategory {
 }
 
 /**
- * Sidebar entries that sit ABOVE the `Projects` section, alongside Home —
- * destinations in their own right rather than pages inside a category.
- *
- * These used to be written out in `SandboxNav`; they are data so the next one
- * is an entry here rather than another branch in the nav component. `icon` is
- * a key into that file's icon map for the same reason the categories use one:
- * this module stays JSX-free.
+ * Persistent sidebar destinations that are not generated category pages.
+ * `icon` is a key into SandboxNav's icon map so this module stays JSX-free.
  */
-export interface SandboxTopLevelPage {
+export interface SandboxNavPage {
   /** Label shown in the sidebar */
   label: string;
   /** Route path (with trailing slash) */
@@ -67,11 +64,16 @@ export interface SandboxTopLevelPage {
   matchesChildren?: boolean;
 }
 
-export const topLevelPages: SandboxTopLevelPage[] = [
-  {label: 'Home', href: '/', icon: 'home'},
-  {label: 'Official Templates', href: '/templates/', icon: 'templates'},
+export const homePage: SandboxNavPage = {
+  label: 'Home',
+  href: '/',
+  icon: 'home',
+};
+
+export const auditPages: SandboxNavPage[] = [
+  {label: 'Template Audits', href: '/templates/', icon: 'templates'},
   {
-    label: 'Component Scores',
+    label: 'Component Audits',
     href: '/pages/component-scores/',
     icon: 'scores',
     matchesChildren: true,

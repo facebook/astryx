@@ -48,6 +48,7 @@ import {
 } from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
 import {composeEventHandlers} from '../utils/composeEventHandlers';
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 
@@ -186,12 +187,6 @@ const styles = stylex.create({
   },
   disabled: {
     cursor: 'not-allowed',
-  },
-  focusRing: {
-    ':focus-within': {
-      outline: `2px solid ${colorVars['--color-accent']}`,
-      outlineOffset: '2px',
-    },
   },
 });
 
@@ -481,7 +476,7 @@ export function ComplexSelector<Value>({
             inputWrapperStyles.base,
             styles.triggerContainer,
             styles[size],
-            variant === 'input' && styles.focusRing,
+            variant === 'input' && focusOutlineStyles.focusWithin,
             variant === 'ghost' && styles.triggerGhost,
             isDisabled && inputWrapperStyles.disabled,
             variant === 'ghost' && isDisabled && styles.triggerGhostDisabled,
