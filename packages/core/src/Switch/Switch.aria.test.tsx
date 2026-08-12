@@ -53,7 +53,7 @@ const EXPECTED_FAILURES = [
 ];
 
 async function runSwitch() {
-  return await runContract({
+  return runContract({
     contract: switchContract,
     component: 'Switch',
     setup: () => {

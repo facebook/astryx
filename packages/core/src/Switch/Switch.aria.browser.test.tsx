@@ -23,7 +23,7 @@ import {
   runContract,
   contractHasBlockingFailure,
 } from '@astryxdesign/aria-spec';
-import {createBrowserHarness} from '../../../../internal/aria-spec/src/harness/browserHarness';
+import {createBrowserHarness} from '@astryxdesign/aria-spec/browser';
 import {Switch} from './Switch';
 
 function ControlledSwitch() {

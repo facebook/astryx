@@ -669,6 +669,7 @@
     "react-dom": ">=19.0.0"
   },
   "devDependencies": {
+    "@astryxdesign/aria-spec": "workspace:*",
     "@astryxdesign/cli": "workspace:*",
     "@babel/cli": "^8.0.4",
     "@babel/core": "^7.29.7",

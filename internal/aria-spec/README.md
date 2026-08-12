@@ -40,6 +40,26 @@ greppable, reviewable line — not a missing test. A gap that later _passes_ is
 surfaced as `unexpected-pass` so stale entries get cleaned up. Burning down
 `expectedFailures` is the hardening backlog.
 
+## Consuming it
+
+It is a workspace package, so a consumer declares it (`"@astryxdesign/aria-spec":
+"workspace:*"`) and imports it by name — never by a relative path into `src/`,
+which would drag these files into the consumer's `rootDir`:
+
+```ts
+import {
+  switchContract,
+  runContract,
+  createJsdomHarness,
+} from '@astryxdesign/aria-spec';
+// Tier 2 only — a separate entry point, so the jsdom tier never loads Browser Mode:
+import {createBrowserHarness} from '@astryxdesign/aria-spec/browser';
+```
+
+Runtime resolves to `src/` (no build step for tests); types resolve to `dist/`,
+emitted by `pnpm -F @astryxdesign/aria-spec build` (declarations only, run as
+part of the root `pnpm build`).
+
 ## Writing a binding (Tier 1)
 
 ```tsx
@@ -60,9 +80,9 @@ expect(contractHasBlockingFailure(result)).toBe(false);
 ## Running
 
 - **Tier 1 (jsdom):** part of `pnpm test`. Nothing extra to install.
-- **Tier 2 (browser):**
+- **Tier 2 (browser):** not part of `pnpm test` — run on demand. The deps are
+  already root devDependencies; only the browser binary is extra:
   ```bash
-  pnpm add -Dw @vitest/browser @vitest/browser-playwright vitest-browser-react
   pnpm exec playwright install --with-deps chromium
   pnpm test:aria-browser
   ```
