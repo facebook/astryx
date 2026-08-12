@@ -1479,4 +1479,18 @@ describe('DropdownMenu data/compound parity', () => {
     expect(item).toHaveTextContent('Find anything');
     expect(item).toContainElement(screen.getByTestId('shortcut'));
   });
+
+  it('takes a ReactNode label through the items data API', () => {
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        items={[{label: <em data-testid="rich">Rename</em>}]}
+      />,
+    );
+
+    const item = screen.getByRole('menuitem', {hidden: true});
+    expect(item).toContainElement(screen.getByTestId('rich'));
+    // Still typeahead- and screen-reader-addressable: both read text content.
+    expect(item).toHaveAccessibleName('Rename');
+  });
 });
