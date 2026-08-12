@@ -607,8 +607,9 @@ pnpm build
 
 `pnpm lint:strict` runs `pnpm check:repo` first, which covers `check:sync`,
 `check:package-boundaries`, `check:changesets`, `check:demo-media`,
-`check:executable-bits`, `check:cli-structure`, and `check:use-client` — so a
-green `lint:strict` also clears the changeset and `'use client'` gates.
+`check:executable-bits`, `check:cli-structure`, `check:use-client`, and
+`check:i18n-catalog` — so a green `lint:strict` also clears the changeset and
+`'use client'` gates.
 
 Also attach **before/after screenshots for any visual change**, and update the
 Storybook story for anything you added or altered.
