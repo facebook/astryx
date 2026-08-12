@@ -8,7 +8,7 @@
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {useState} from 'react';
-import {render, screen, waitFor, fireEvent} from '@testing-library/react';
+import {render, screen, waitFor, fireEvent, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {DropdownMenu} from './DropdownMenu';
 import {DropdownMenuItem} from './DropdownMenuItem';
@@ -706,5 +706,85 @@ describe('DropdownMenuSubMenu theming slots', () => {
     expect(
       trigger.querySelector('.astryx-dropdown-menu-indicator-icon'),
     ).toBeInTheDocument();
+  });
+});
+
+// =============================================================================
+// Hover → click guard (shared with useMenuHover) — issue #3121
+//
+// The flyout opens on hover, so the click that naturally follows must confirm
+// it, not dismiss the thing that just appeared under the cursor.
+// =============================================================================
+
+describe('DropdownMenuSubMenu hover/click guard', () => {
+  it('keeps the flyout open when a hover-open is immediately clicked', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+    const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
+    render(<MoveMenu />);
+
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    const trigger = screen.getByRole('menuitem', {
+      name: /Move to/,
+      hidden: true,
+    });
+
+    await user.hover(trigger);
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    // Confirming moves focus into the flyout, as a click-open does.
+    expect(
+      screen.getByRole('menuitem', {name: 'Folder A', hidden: true}),
+    ).toHaveFocus();
+
+    vi.useRealTimers();
+  });
+
+  it('closes on a click that lands well after the hover-open', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+    const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
+    render(<MoveMenu />);
+
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    const trigger = screen.getByRole('menuitem', {
+      name: /Move to/,
+      hidden: true,
+    });
+
+    await user.hover(trigger);
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+    act(() => {
+      vi.advanceTimersByTime(1200);
+    });
+
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+    vi.useRealTimers();
+  });
+
+  it('moves focus into the flyout synchronously on a click-open', async () => {
+    const user = userEvent.setup();
+    render(<MoveMenu />);
+
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    const trigger = screen.getByRole('menuitem', {
+      name: /Move to/,
+      hidden: true,
+    });
+
+    await user.click(trigger);
+
+    // No waitFor: the flyout is shown during the click, so focus has already
+    // landed. A deferred (rAF) focus would fail here.
+    expect(
+      screen.getByRole('menuitem', {name: 'Folder A', hidden: true}),
+    ).toHaveFocus();
   });
 });

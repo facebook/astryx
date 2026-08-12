@@ -353,9 +353,12 @@ export function TopNavHeading({
   // trigger instead of dropping to <body> with the hidden menu.
   const closeMenuCtx = useMemo(() => ({closeMenu}), [closeMenu]);
 
+  // setTriggerEl goes on the chevron BUTTON, not this root: it is what the
+  // hook focuses when a menu closes, and the root is a <div> that cannot take
+  // focus. popover.triggerRef stays here — the panel anchors to the whole
+  // heading, which is a positioning concern, not a focus one.
   const setRef = mergeRefs<HTMLElement>(
     rootRef,
-    setTriggerEl,
     ref,
     menu ? popover.triggerRef : undefined,
   );
@@ -512,6 +515,7 @@ export function TopNavHeading({
             // Stays a <button>: this box is the popover trigger, so it carries
             // the accessible name and handlers — only the glyph moves to Icon.
             <button
+              ref={setTriggerEl}
               type="button"
               aria-label={t('@astryx.topNav.heading.openMenu')}
               onClick={e => {
@@ -589,6 +593,7 @@ export function TopNavHeading({
               // carries the accessible name and handlers — only the glyph
               // moves to Icon.
               <button
+                ref={setTriggerEl}
                 type="button"
                 aria-label={t('@astryx.topNav.heading.openMenu')}
                 onClick={e => {

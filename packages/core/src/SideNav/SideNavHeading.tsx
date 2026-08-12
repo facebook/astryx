@@ -388,9 +388,12 @@ export function SideNavHeading({
   // trigger instead of dropping to <body> with the hidden menu.
   const closeMenuCtx = useMemo(() => ({closeMenu}), [closeMenu]);
 
+  // setTriggerEl goes on the chevron BUTTON (and, when collapsed, on the
+  // icon-only trigger button), not this root: it is what the hook focuses when
+  // a menu closes, and the root is a <div> that cannot take focus.
+  // popover.triggerRef stays here — panel positioning, not focus.
   const setRef = mergeRefs<HTMLDivElement>(
     rootRef,
-    setTriggerEl,
     ref,
     menu ? popover.triggerRef : undefined,
   );
@@ -405,7 +408,10 @@ export function SideNavHeading({
     const collapsedSetRef = mergeRefs<HTMLElement>(
       collapsedItemRef,
       ref,
+      // Collapsed, the icon-only button IS the trigger, so it takes both the
+      // anchor and the hook's focus-restore target.
       menu ? popover.triggerRef : undefined,
+      menu ? setTriggerEl : undefined,
     );
 
     let collapsedElement: ReactNode;
@@ -649,6 +655,7 @@ export function SideNavHeading({
           {icon && <span {...stylex.props(styles.icon)}>{icon}</span>}
           {renderTextContent(
             <button
+              ref={setTriggerEl}
               type="button"
               aria-label={t('@astryx.sideNav.heading.openMenu')}
               onClick={e => {
@@ -720,6 +727,7 @@ export function SideNavHeading({
           {renderTextContent(
             showChevron ? (
               <button
+                ref={setTriggerEl}
                 type="button"
                 aria-label={t('@astryx.sideNav.heading.openMenu')}
                 onClick={e => {

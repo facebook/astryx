@@ -342,7 +342,7 @@ export function TopNavMenu({
     role: 'none',
   });
 
-  const {triggerProps, contentProps, menuRef, setTriggerEl} =
+  const {triggerProps, contentProps, menuRef, setTriggerEl, close} =
     useMenuHover<HTMLDivElement>({
       show: popover.show,
       hide: popover.hide,
@@ -373,7 +373,9 @@ export function TopNavMenu({
     useListFocus<HTMLDivElement>({
       itemSelector: '[role="menuitem"]',
       hasRovingTabIndex: true,
-      onEscape: popover.hide,
+      // Close through the hook, not popover.hide: Escape must return focus to
+      // the trigger rather than leave it on the menu being hidden.
+      onEscape: close,
     });
 
   // First-character typeahead over the menu items (menus-11).

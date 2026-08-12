@@ -1393,3 +1393,95 @@ describe('SideNavItem — mobile drawer close-on-activate', () => {
     expect(closeMobileNav).not.toHaveBeenCalled();
   });
 });
+
+// =============================================================================
+// Hover → click guard (shared with useMenuHover) — issue #3121
+//
+// The heading menu opens on hover with no delay, so the click that naturally
+// follows lands on a menu that is already open. It must confirm, not dismiss.
+// =============================================================================
+
+describe('SideNavHeading hover/click guard', () => {
+  // Real menu items carry tabIndex={-1} (roving tabindex): a bare div with a
+  // menuitem role is not focusable, so focus assertions need the real shape.
+  const menuItems = (
+    <>
+      <div role="menuitem" tabIndex={-1}>
+        Alpha
+      </div>
+      <div role="menuitem" tabIndex={-1}>
+        Beta
+      </div>
+    </>
+  );
+
+  it('keeps the menu open when a hover-open is immediately clicked', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+    const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
+    render(<SideNavHeading heading="My App" menu={menuItems} />);
+    const trigger = screen.getByRole('button', {name: 'Open menu'});
+
+    await user.hover(trigger);
+    act(() => {
+      vi.advanceTimersByTime(50);
+    });
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    vi.useRealTimers();
+  });
+
+  it('closes on a click that lands well after the hover-open', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+    const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
+    render(<SideNavHeading heading="My App" menu={menuItems} />);
+    const trigger = screen.getByRole('button', {name: 'Open menu'});
+
+    await user.hover(trigger);
+    act(() => {
+      vi.advanceTimersByTime(50);
+    });
+    act(() => {
+      vi.advanceTimersByTime(1200);
+    });
+
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+    vi.useRealTimers();
+  });
+
+  it('leaves focus on the trigger for a hover-open, and moves it in on click', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+    const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
+    render(<SideNavHeading heading="My App" menu={menuItems} />);
+    const trigger = screen.getByRole('button', {name: 'Open menu'});
+
+    await user.hover(trigger);
+    act(() => {
+      vi.advanceTimersByTime(50);
+    });
+    const firstItem = screen.getAllByRole('menuitem', {hidden: true})[0];
+    expect(firstItem).not.toHaveFocus();
+
+    await user.click(trigger);
+    expect(firstItem).toHaveFocus();
+
+    vi.useRealTimers();
+  });
+
+  it('returns focus to the trigger on Escape', async () => {
+    const user = userEvent.setup();
+    render(<SideNavHeading heading="My App" menu={menuItems} />);
+    const trigger = screen.getByRole('button', {name: 'Open menu'});
+
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    await user.keyboard('{Escape}');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(trigger).toHaveFocus();
+  });
+});
