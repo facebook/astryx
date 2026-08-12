@@ -133,6 +133,26 @@ export interface UseMenuHoverReturn<T extends HTMLElement = HTMLElement> {
    * menu is empty or still loading.
    */
   focusMenu: () => void;
+  /**
+   * For consumers that own their own click handler (a menu whose trigger is a
+   * row in a parent menu, say, with its own focus and keyboard model): call
+   * this at the top of the open branch of that handler. When the click is the
+   * one that naturally follows a hover-open, it pins the menu and returns
+   * `true` — meaning the click has been consumed and must NOT close the menu.
+   * Returns `false` for an ordinary click, which the consumer handles as usual.
+   *
+   * This keeps the guard policy — the window, and what pinning means — in one
+   * place instead of copied into each caller.
+   */
+  confirmHoverOpen: () => boolean;
+  /**
+   * Close the menu and return focus to the trigger when the menu was holding
+   * it. For dismiss affordances rendered *inside* the popup (e.g. the heading
+   * replica in the nav headings): those are close buttons, not the trigger, so
+   * routing them through `triggerProps.onClick` would give them toggle — and
+   * keyboard-activation — semantics they should not have.
+   */
+  close: () => void;
   setTriggerEl: (el: HTMLElement | null) => void;
 }
 
@@ -236,6 +256,22 @@ export function useMenuHover<T extends HTMLElement = HTMLElement>(
     focusMenu();
   }, [show, focusMenu]);
 
+  // Is a click landing right now the one that naturally follows a hover-open?
+  // If so, consume it: pin the menu (mouseleave no longer closes it) and report
+  // that the caller must not treat this click as a dismissal.
+  const confirmHoverOpen = useCallback((): boolean => {
+    const isConfirming =
+      clickGuardMs > 0 &&
+      hoverOpenedAtRef.current > 0 &&
+      Date.now() - hoverOpenedAtRef.current < clickGuardMs;
+    if (!isConfirming) {
+      return false;
+    }
+    hoverModeRef.current = false;
+    hoverOpenedAtRef.current = 0;
+    return true;
+  }, [clickGuardMs]);
+
   // Click: toggles, except that a click confirming a fresh hover-open pins the
   // menu instead of dismissing it.
   const handleClick = useCallback(
@@ -248,6 +284,24 @@ export function useMenuHover<T extends HTMLElement = HTMLElement>(
       }
       clearTimeouts();
 
+      // Keyboard activation (Enter/Space arrive as a click with detail 0)
+      // always OPENS and moves focus into the menu — it never toggles the menu
+      // shut. A keyboard user can only reach the trigger while the menu is open
+      // because a hover-open deliberately left focus behind; closing on Enter
+      // would make the menu unreachable by keyboard from that state.
+      const isKeyboardActivation = event != null && event.detail === 0;
+      if (isKeyboardActivation) {
+        skipNextEnterRef.current = false;
+        hoverModeRef.current = false;
+        hoverOpenedAtRef.current = 0;
+        if (isOpen) {
+          focusMenu();
+        } else {
+          openAndFocus();
+        }
+        return;
+      }
+
       if (!isOpen) {
         skipNextEnterRef.current = false;
         hoverModeRef.current = false;
@@ -256,16 +310,9 @@ export function useMenuHover<T extends HTMLElement = HTMLElement>(
         return;
       }
 
-      const isConfirmingHoverOpen =
-        clickGuardMs > 0 &&
-        hoverOpenedAtRef.current > 0 &&
-        Date.now() - hoverOpenedAtRef.current < clickGuardMs;
-
-      if (isConfirmingHoverOpen) {
-        // Pin the menu: from here it behaves like any click-open, including
+      if (confirmHoverOpen()) {
+        // Pinned: from here it behaves like any click-open, including
         // surviving mouseleave and owning focus.
-        hoverModeRef.current = false;
-        hoverOpenedAtRef.current = 0;
         focusMenu();
         return;
       }
@@ -277,7 +324,7 @@ export function useMenuHover<T extends HTMLElement = HTMLElement>(
       popoverId,
       clearTimeouts,
       isOpen,
-      clickGuardMs,
+      confirmHoverOpen,
       openAndFocus,
       focusMenu,
       hideAndRestoreFocus,
@@ -293,6 +340,15 @@ export function useMenuHover<T extends HTMLElement = HTMLElement>(
       skipNextEnterRef.current = false;
       return;
     }
+    // Only an enter that *opens* the menu arms hover mode. Re-entering the
+    // trigger of a menu that is already open must not convert a pinned menu
+    // (click-opened, or a confirmed hover-open) back into one that closes on
+    // mouseleave — nor re-arm the click guard, which would turn the user's next
+    // deliberate click into another "confirm" and make the menu undismissable.
+    if (isOpen) {
+      clearTimeouts();
+      return;
+    }
     hoverModeRef.current = true;
     clearTimeouts();
     const openByHover = () => {
@@ -304,7 +360,7 @@ export function useMenuHover<T extends HTMLElement = HTMLElement>(
     } else {
       openByHover();
     }
-  }, [hasHover, clearTimeouts, show, showDelay]);
+  }, [hasHover, isOpen, clearTimeouts, show, showDelay]);
 
   // Hover: mouseleave only closes if in hover mode
   const handleMouseLeave = useCallback(() => {
@@ -341,6 +397,8 @@ export function useMenuHover<T extends HTMLElement = HTMLElement>(
       menuRef,
       focusFirst,
       focusMenu,
+      confirmHoverOpen,
+      close: hideAndRestoreFocus,
       setTriggerEl: noopRef,
     };
   }
@@ -360,6 +418,8 @@ export function useMenuHover<T extends HTMLElement = HTMLElement>(
     menuRef,
     focusFirst,
     focusMenu,
+    confirmHoverOpen,
+    close: hideAndRestoreFocus,
     setTriggerEl: setTriggerRef,
   };
 }

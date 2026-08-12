@@ -299,12 +299,17 @@ export function DropdownMenuSubMenu(
 
   // Hover-intent: entering the trigger opens after a short delay; leaving
   // either surface closes after a delay. Hover-open does not steal focus.
-  const {triggerProps, contentProps} = useMenuHover<HTMLDivElement>({
-    show: showLayer,
-    hide: hideLayer,
-    isOpen,
-    isEnabled: canOpen,
-  });
+  // Hover intent only: this level owns its own click handling, roving focus and
+  // typeahead (see useListFocus above), so the hook contributes the open/close
+  // intent and the shared hover→click guard, not the keyboard model. The flyout
+  // is popover="manual" (lightDismiss: false), so no invoker wiring is needed.
+  const {triggerProps, contentProps, confirmHoverOpen} =
+    useMenuHover<HTMLDivElement>({
+      show: showLayer,
+      hide: hideLayer,
+      isOpen,
+      isEnabled: canOpen,
+    });
 
   const open = useCallback(
     (options?: {focusFirst?: boolean}) => {
@@ -313,18 +318,20 @@ export function DropdownMenuSubMenu(
       }
       layer.show();
       if (options?.focusFirst) {
-        requestAnimationFrame(() => {
-          // Move focus into the flyout. When it has no focusable items yet
-          // (e.g. an async submenu showing only a disabled "Loading…" row via
-          // hasSpinner), focusFirst() finds nothing — fall back to focusing the
-          // flyout container itself so keyboard ownership still transfers off
-          // the parent list. Otherwise the parent would keep focus, letting
-          // arrow keys rove the parent while the empty flyout stays open.
-          const focusedItem = focusFirst();
-          if (!focusedItem) {
-            menuRef.current?.focus();
-          }
-        });
+        // Focus synchronously: layer.show() calls showPopover() in this same
+        // tick and the flyout's children are always mounted, so the items are
+        // focusable now. A deferred focus (rAF) lands after paint and races
+        // anything else that moves focus in between.
+        //
+        // When the flyout has no focusable items yet (e.g. an async submenu
+        // showing only a disabled "Loading…" row via hasSpinner), focusFirst()
+        // finds nothing — fall back to focusing the flyout container itself so
+        // keyboard ownership still transfers off the parent list. Otherwise the
+        // parent would keep focus, letting arrow keys rove the parent while the
+        // empty flyout stays open.
+        if (!focusFirst()) {
+          menuRef.current?.focus();
+        }
       }
     },
     [canOpen, layer, focusFirst, menuRef],
@@ -354,13 +361,22 @@ export function DropdownMenuSubMenu(
     if (isDisabled) {
       return;
     }
-    // Click toggles the flyout, moving focus into it on open.
+    // Click toggles the flyout, moving focus into it on open — except for the
+    // click that naturally follows a hover-open, which confirms the flyout
+    // (pinning it past mouseleave) and moves focus in, rather than dismissing
+    // the thing that just appeared under the cursor.
     if (isOpen) {
+      if (confirmHoverOpen()) {
+        if (!focusFirst()) {
+          menuRef.current?.focus();
+        }
+        return;
+      }
       close({focusTrigger: true});
     } else {
       open({focusFirst: true});
     }
-  }, [isDisabled, isOpen, open, close]);
+  }, [isDisabled, isOpen, open, close, confirmHoverOpen, focusFirst, menuRef]);
 
   const handleTriggerKeyDown = useCallback(
     (e: React.KeyboardEvent) => {

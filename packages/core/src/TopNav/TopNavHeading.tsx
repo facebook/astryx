@@ -335,19 +335,23 @@ export function TopNavHeading({
     hasCloseButton: false,
   });
 
-  const closeMenuCtx = useMemo(
-    () => ({closeMenu: popover.hide}),
-    [popover.hide],
-  );
+  const {
+    triggerProps,
+    contentProps,
+    menuRef,
+    setTriggerEl,
+    close: closeMenu,
+  } = useMenuHover<HTMLDivElement>({
+    show: popover.show,
+    hide: popover.hide,
+    isOpen: popover.isOpen,
+    isEnabled: !!menu,
+    showDelay: 0,
+  });
 
-  const {triggerProps, contentProps, menuRef, setTriggerEl} =
-    useMenuHover<HTMLDivElement>({
-      show: popover.show,
-      hide: popover.hide,
-      isOpen: popover.isOpen,
-      isEnabled: !!menu,
-      showDelay: 0,
-    });
+  // Menu items close the popup through the hook so focus returns to the
+  // trigger instead of dropping to <body> with the hidden menu.
+  const closeMenuCtx = useMemo(() => ({closeMenu}), [closeMenu]);
 
   const setRef = mergeRefs<HTMLElement>(
     rootRef,
@@ -426,7 +430,10 @@ export function TopNavHeading({
     <button
       type="button"
       {...stylex.props(styles.popoverHeading)}
-      onClick={triggerProps.onClick}>
+      // A close affordance inside the popup, not the trigger: it always
+      // dismisses (and restores focus), and never toggles or re-focuses the
+      // menu the way trigger activation does.
+      onClick={closeMenu}>
       {logo && <span {...stylex.props(styles.logo)}>{logo}</span>}
       {renderTextContent(
         <Icon
