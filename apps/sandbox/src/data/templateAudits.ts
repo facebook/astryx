@@ -647,7 +647,13 @@ Metadata: ${docPath}
 
 Work all seven rubric categories and use the rubric's grading output format. Inspect the rendered template in a real browser, capture the relevant states in light and dark, and include responsive viewport coverage for page templates. Cite exact file locations for every deduction. Do not infer unpublished evidence or award points for anything you did not measure.
 
-Return the complete scorecard, detailed findings, screenshot-test evidence, and the top three fixes. Save the raw scorecard JSON to a file without the ledger-managed id or status fields. Then record and publish it with:
+The audit is not complete until the score is published to the ledger. After you finish measuring, you MUST run these steps from the Astryx repository root — do not stop at presenting the scorecard:
 
-node scripts/template-score-ledger.mjs --record ${id} --from <scorecard.json> --push`;
+1. Save the raw scorecard JSON to a file (for example /tmp/${id.replace('/', '-')}-scorecard.json). Include score, lastAudited, commit (the audited HEAD SHA), rubricVersion, categories, findings, topFixes, evidence, and notes. Do NOT include id or status — the tool owns those.
+2. Validate and preview the exact ledger diff:
+   node scripts/template-score-ledger.mjs --record ${id} --from <scorecard.json> --dry-run
+3. Publish it (this is the only step that writes to the wiki ledger and makes the score appear on the Template Audits page):
+   node scripts/template-score-ledger.mjs --record ${id} --from <scorecard.json> --push
+
+Then confirm the push succeeded by reporting the wiki commit URL the tool prints. If --push fails on auth, run \`gh auth setup-git\` and retry — do not report the audit as done until the ledger row is live.`;
 }
