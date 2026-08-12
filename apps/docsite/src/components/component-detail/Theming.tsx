@@ -5,11 +5,12 @@
 /**
  * @file Theming.tsx
  * @input A component's `theming` doc (targets, vars, derived) + its props.
- * @output Renders the component detail page's "Theming" section: a table of
+ * @output Renders the component detail page's "Theming" tab: a table of
  *   theme targets shown as the keys they take in a `defineTheme` `components`
  *   config, a copyable `defineTheme` example, and a table of themeable CSS
  *   variables.
- * @position Component detail Overview; sibling to PropsTable / BestPractices.
+ * @position Component detail "Theming" tab body. Mirrors the Overview tab's
+ *   layout — a bare VStack of display-3 sections, no wrapping Section.
  *
  * Data shaping lives in ./themingHelpers (unit-tested); this file is the view.
  */
@@ -17,7 +18,6 @@
 import {Fragment} from 'react';
 import {Heading, Text} from '@astryxdesign/core/Text';
 import {VStack} from '@astryxdesign/core/Layout';
-import {Section} from '@astryxdesign/core/Section';
 import {Table, pixel} from '@astryxdesign/core/Table';
 import {Banner} from '@astryxdesign/core/Banner';
 import {Card} from '@astryxdesign/core/Card';
@@ -282,58 +282,57 @@ export function Theming({theming, props}: ThemingProps) {
   const example = hasTargets ? buildDefineThemeExample(theming) : '';
 
   return (
-    <Section>
+    <VStack gap={8}>
       <VStack gap={4}>
-        <VStack gap={2}>
-          <Heading level={2} type="display-3">
-            Theming
-          </Heading>
-          <Banner
-            container="card"
-            status="warning"
-            title="Experimental"
-            description="The theming API is experimental and not yet guaranteed — targets, keys, and CSS variables may change while we harden the theme system."
-          />
-          <Text type="large" weight="normal">
-            Restyle this component with a <Text type="code">defineTheme</Text>{' '}
-            config. Target the component through the keys below, or override the
-            CSS variables it exposes.
-          </Text>
-        </VStack>
-
-        {hasTargets && (
-          <VStack gap={3}>
-            <Heading level={3}>Theme targets</Heading>
-            <Text color="secondary">
-              Each target is a key in the <Text type="code">components</Text>{' '}
-              map of <Text type="code">defineTheme</Text>. Scope styles to a
-              prop or state with a <Text type="code">prop:value</Text> or state
-              key; use <Text type="code">base</Text> for all instances.
-            </Text>
-            <TargetsTable targets={theming.targets} props={props} />
-            {example && (
-              <CodeExampleBlock
-                code={example}
-                language="ts"
-                width="100%"
-                hasCopyButton
-              />
-            )}
-          </VStack>
-        )}
-
-        {hasVars && (
-          <VStack gap={3}>
-            <Heading level={3}>Themeable CSS variables</Heading>
-            <Text color="secondary">
-              Additional custom properties this component reads. Override them
-              in a <Text type="code">base</Text> block of the component's{' '}
-              <Text type="code">defineTheme</Text> config.
-            </Text>
-            <CssVarsTable vars={vars} />
-          </VStack>
-        )}
+        <Banner
+          container="card"
+          status="warning"
+          title="Experimental"
+          description="The theming API is experimental and not yet guaranteed — targets, keys, and CSS variables may change while we harden the theme system."
+        />
+        <Text type="large" weight="normal">
+          Restyle this component with a <Text type="code">defineTheme</Text>{' '}
+          config. Target the component through the keys below, or override the
+          CSS variables it exposes.
+        </Text>
       </VStack>
-    </Section>
+
+      {hasTargets && (
+        <VStack gap={4}>
+          <Heading level={2} type="display-3">
+            Theme targets
+          </Heading>
+          <Text color="secondary">
+            Each target is a key in the <Text type="code">components</Text> map
+            of <Text type="code">defineTheme</Text>. Scope styles to a prop or
+            state with a <Text type="code">prop:value</Text> or state key; use{' '}
+            <Text type="code">base</Text> for all instances.
+          </Text>
+          <TargetsTable targets={theming.targets} props={props} />
+          {example && (
+            <CodeExampleBlock
+              code={example}
+              language="ts"
+              width="100%"
+              hasCopyButton
+            />
+          )}
+        </VStack>
+      )}
+
+      {hasVars && (
+        <VStack gap={4}>
+          <Heading level={2} type="display-3">
+            Themeable CSS variables
+          </Heading>
+          <Text color="secondary">
+            Additional custom properties this component reads. Override them in
+            a <Text type="code">base</Text> block of the component's{' '}
+            <Text type="code">defineTheme</Text> config.
+          </Text>
+          <CssVarsTable vars={vars} />
+        </VStack>
+      )}
+    </VStack>
   );
 }
