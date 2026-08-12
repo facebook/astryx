@@ -90,3 +90,54 @@ const nested = '.astryx-dropdown-menu-radio .astryx-dropdown-menu-radio-dot';`;
     expect(await apply(TRANSFORM, once)).toBe(once);
   });
 });
+
+describe('remove-indicator-a11y-props', () => {
+  const T = 'remove-indicator-a11y-props';
+
+  it('strips the five props from a direct indicator call site', async () => {
+    const input = `import {CheckIndicator} from '@astryxdesign/core/Indicator';
+const x = <CheckIndicator state="checked" aria-hidden="false" role="checkbox" data-testid="keep" />;`;
+    const out = await apply(T, input);
+    expect(out).not.toMatch(/aria-hidden="/);
+    expect(out).not.toMatch(/\srole="/);
+    // Everything else survives — removal must not become a purge.
+    expect(out).toContain('data-testid="keep"');
+    expect(out).toContain('state="checked"');
+    expect(out).toContain('TODO(astryx upgrade)');
+  });
+
+  it('reaches an indicator resolved through useIndicator', async () => {
+    // The documented way a host renders a themeable indicator: no indicator
+    // name appears in the JSX at all, so a name-matching codemod would miss it.
+    const input = `import {useIndicator} from '@astryxdesign/core/Indicator';
+function Row() {
+  const Mark = useIndicator('check');
+  return <Mark state="checked" tabIndex={0} aria-label="chosen" />;
+}`;
+    const out = await apply(T, input);
+    // Assert on the ATTRIBUTE form: the TODO comment names the props it
+    // removed, so a bare substring check matches its own explanation.
+    expect(out).not.toMatch(/tabIndex=\{/);
+    expect(out).not.toMatch(/aria-label="/);
+    expect(out).toContain('state="checked"');
+    expect(out).toContain('TODO(astryx upgrade)');
+  });
+
+  it('leaves other components alone', async () => {
+    const input = `import {Button} from '@astryxdesign/core/Button';
+const x = <Button label="Go" role="link" tabIndex={0} />;`;
+    expect(await apply(T, input)).toBe(input);
+  });
+
+  it('is a no-op on files with no indicator', async () => {
+    const input = `const x = <div role="button" tabIndex={0} />;`;
+    expect(await apply(T, input)).toBe(input);
+  });
+
+  it('is idempotent', async () => {
+    const input = `import {RadioIndicator} from '@astryxdesign/core/Indicator';
+const x = <RadioIndicator state="unchecked" role="radio" />;`;
+    const once = await apply(T, input);
+    expect(await apply(T, once)).toBe(once);
+  });
+});

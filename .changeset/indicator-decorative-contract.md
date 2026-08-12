@@ -1,11 +1,13 @@
 ---
-'@astryxdesign/core': patch
+'@astryxdesign/core': minor
 ---
 
-[fix] Indicator: a caller can no longer un-hide a decorative indicator. `IndicatorProps` now omits `aria-hidden`, `role`, `aria-label` and `aria-labelledby` — passing `role` is a compile error — and each indicator emits its own `aria-hidden` after `{...rest}`, so a forwarded one cannot win. Un-hiding an indicator had it announced next to the control that owns the accessible name, saying the same thing twice.
+[breaking] Indicator: `IndicatorProps` no longer accepts `aria-hidden`, `role`, `aria-label`, `aria-labelledby` or `tabIndex`. An indicator is decorative — the control that renders one owns the role, the accessible name and the focus — so un-hiding one had it announced next to that control, saying the same thing twice, and making one focusable put a tab stop inside an `aria-hidden` subtree.
 
-Nothing is stripped: every other prop, including a forwarded `aria-label`, still reaches the DOM, where it is inert inside an `aria-hidden` subtree. Note that TypeScript exempts hyphenated JSX attributes from excess-property checking, so the type alone cannot reject `aria-*`; the attribute order is what enforces it.
+Passing any of them as a literal JSX attribute is now a compile error. Passing one through a spread still compiles (TypeScript exempts hyphenated JSX attribute names from excess-property checking, and a spread bypasses the check for the rest), so the components also emit their own `aria-hidden` after `{...rest}` and drop a forwarded `tabIndex` — that ordering, not the type, is what actually enforces the contract.
 
-Fixes #4918.
+Nothing else is stripped: `data-*`, `id`, handlers, `dir`, `className`, `style` and `xstyle` all still forward. `astryx upgrade` removes the five props from indicator call sites.
+
+Fixes #4918, #4937.
 
 @cixzhang

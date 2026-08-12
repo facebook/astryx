@@ -238,6 +238,17 @@ describe('the decorative contract (#4918)', () => {
     expect(accepted).toBeTruthy();
   });
 
+  it('cannot reject a SPREAD either — which is the ordinary host idiom', () => {
+    // Also no @ts-expect-error, also deliberate. A spread bypasses
+    // excess-property checking for every member, so even `role` — the one the
+    // type does catch as a literal — gets through this way. It is the reason
+    // the changeset promises a codemod rather than "the compiler will tell you".
+    const hostile = {role: 'checkbox', tabIndex: 0};
+    const accepted = <CheckIndicator state="checked" {...hostile} />;
+
+    expect(accepted).toBeTruthy();
+  });
+
   const cases = [
     {
       name: 'CheckIndicator (glyph path)',
@@ -277,15 +288,27 @@ describe('the decorative contract (#4918)', () => {
       );
     });
 
+    it(`${name} refuses a tab stop inside its hidden subtree`, () => {
+      // aria-hidden is unconditional, so a forwarded tabIndex would put a
+      // focusable node inside a hidden subtree — axe's aria-hidden-focus.
+      // The type omits it; this pins the spread route the type cannot see.
+      const {container} = render(renderCase({tabIndex: 0}));
+      const el = container.firstElementChild;
+
+      expect(el).not.toHaveAttribute('tabindex');
+      expect(el).toHaveAttribute('aria-hidden', 'true');
+    });
+
     it(`${name} still forwards ordinary props`, () => {
       // The negative control: order must not turn into "drop everything".
       const {container} = render(
-        renderCase({'data-testid': 'ind', id: 'pinned'}),
+        renderCase({'data-testid': 'ind', id: 'pinned', dir: 'rtl'}),
       );
       const el = container.firstElementChild;
 
       expect(el).toHaveAttribute('data-testid', 'ind');
       expect(el).toHaveAttribute('id', 'pinned');
+      expect(el).toHaveAttribute('dir', 'rtl');
     });
   }
 });

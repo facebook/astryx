@@ -179,6 +179,12 @@ export function CheckboxIndicator({
   className,
   style,
   xstyle,
+  // Dropped, not forwarded. Everything else on this element is decorative and
+  // `aria-hidden`, so a tab stop here is a focusable node inside a hidden
+  // subtree — axe reports `aria-hidden-focus` (measured 0 -> 1 violation the
+  // moment it is forwarded). The type omits it, but a spread bypasses that,
+  // and this is the one prop with no "own value" that could win by ordering.
+  tabIndex: _tabIndex,
   ...rest
 }: IndicatorProps<'multiSelection'>) {
   const isChecked = state === 'checked';
