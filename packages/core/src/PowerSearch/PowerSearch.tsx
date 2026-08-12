@@ -104,7 +104,6 @@ const popoverLayerStyles = stylex.create({
   layer: {
     width: 'anchor-size(width)',
     minWidth: 400,
-    marginTop: spacingVars['--spacing-1'],
   },
 });
 
@@ -1053,6 +1052,7 @@ export function PowerSearch({
       {popover.render(popoverContent, {
         placement: 'below',
         alignment: 'start',
+        offset: spacingVars['--spacing-1'],
         xstyle: [popoverLayerStyles.layer, layerAnimations.below],
       })}
     </>

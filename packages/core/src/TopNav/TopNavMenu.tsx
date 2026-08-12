@@ -107,9 +107,6 @@ const styles = stylex.create({
     minWidth: 280,
     padding: spacingVars['--spacing-1'],
   },
-  menuOffset: {
-    marginBlockStart: spacingVars['--spacing-1'],
-  },
   menuItem: {
     display: 'flex',
     alignItems: 'center',
@@ -343,7 +340,6 @@ export function TopNavMenu({
     // wrapper would announce an unnamed dialog around the menu and make the
     // trigger claim aria-haspopup="dialog" for menu content (see TabMenu).
     role: 'none',
-    xstyle: styles.menuOffset,
   });
 
   const {triggerProps, contentProps, menuRef, setTriggerEl} =
@@ -550,7 +546,7 @@ export function TopNavMenu({
         {
           placement: 'below',
           alignment: slot,
-          xstyle: styles.menuOffset,
+          offset: spacingVars['--spacing-1'],
         },
       )}
     </>

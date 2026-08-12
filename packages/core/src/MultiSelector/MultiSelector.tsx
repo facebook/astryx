@@ -269,7 +269,6 @@ const styles = stylex.create({
   // Popover container (for anchor positioning)
   popover: {
     minWidth: 'anchor-size(width)',
-    marginBlockStart: spacingVars['--spacing-1'],
   },
 
   // Search field. The inner TextInput owns the border, focus ring, magnifier
@@ -1624,6 +1623,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         {
           placement: 'below',
           alignment: 'start',
+          offset: spacingVars['--spacing-1'],
           xstyle: styles.popover,
         },
       )}

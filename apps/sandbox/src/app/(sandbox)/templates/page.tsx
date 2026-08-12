@@ -3,7 +3,7 @@
 /**
  * @file Filterable template audit roster with live summary metrics and details.
  * @input Generated page/block registries and the sandbox template audit data.
- * @output Page-prefiltered audit table with filter-aware stats and a drawer.
+ * @output Filter-aware audit table, drawer, and identity-bound audit prompts.
  * @position Sandbox template catalog at /templates/.
  */
 
@@ -271,6 +271,7 @@ function CopyButton({text, label}: {text: string; label: string}) {
 
 function promptFor(row: TemplateRow): string {
   return templateAuditPrompt({
+    id: row.id,
     name: row.name,
     type: row.type,
     codePath: row.codePath,

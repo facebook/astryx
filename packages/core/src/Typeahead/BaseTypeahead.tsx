@@ -226,10 +226,6 @@ const styles = stylex.create({
   popover: {
     minWidth: 'anchor-size(width)',
   },
-  popoverGap: {
-    marginBlockStart: spacingVars['--spacing-1'],
-    marginBlockEnd: spacingVars['--spacing-1'],
-  },
   item: {
     boxSizing: 'border-box',
     display: 'flex',
@@ -865,7 +861,8 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         {
           placement: 'below',
           alignment: 'start',
-          xstyle: [styles.popover, styles.popoverGap],
+          offset: spacingVars['--spacing-1'],
+          xstyle: styles.popover,
         },
       )}
     </>

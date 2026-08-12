@@ -167,8 +167,6 @@ const styles = stylex.create({
   },
   popover: {
     minWidth: 'anchor-size(width)',
-    marginBlockStart: spacingVars['--spacing-1'],
-    marginBlockEnd: spacingVars['--spacing-1'],
   },
   content: {
     boxSizing: 'border-box',
@@ -534,6 +532,7 @@ export function ComplexSelector<Value>({
       {popover.render(content, {
         placement,
         alignment,
+        offset: spacingVars['--spacing-1'],
         xstyle: [styles.popover, layerAnimations[placement]],
       })}
     </>

@@ -88,6 +88,18 @@ export const categories: SandboxCategory[] = [
       'Component demos, composition patterns, and interactive examples.',
     pages: [
       {
+        name: 'Mobile Prototypes',
+        href: '/pages/mobile-prototypes/',
+        description:
+          'Interactive mobile interaction prototypes (bottom sheets, action sheets, drawers) for the component migration table',
+      },
+      {
+        name: 'TextArea Counter',
+        href: '/pages/textarea-counter/',
+        description:
+          'Explore where the character counter sits on the TextArea — below, inline with the label, or overlaid inside the field',
+      },
+      {
         name: 'Card Examples',
         href: '/pages/example-cards/',
         description:
@@ -133,6 +145,12 @@ export const categories: SandboxCategory[] = [
         name: 'Component Overview',
         href: '/pages/example/',
         description: 'General component composition examples',
+      },
+      {
+        name: 'Tap Targets (AA)',
+        href: '/pages/tap-targets/',
+        description:
+          'WCAG 2.5.8 AA touch-target sizes visualized on real components',
       },
     ],
   },
@@ -232,6 +250,11 @@ export const categories: SandboxCategory[] = [
         href: '/pages/dictation-lab/',
         description:
           'Test voice dictation, tune sound effects, and explore animation',
+      },
+      {
+        name: 'Mobile Type',
+        href: '/pages/mobile-type/',
+        description: 'How the type scale adapts on touch devices',
       },
     ],
   },
