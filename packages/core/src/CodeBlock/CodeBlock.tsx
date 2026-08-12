@@ -813,9 +813,12 @@ export function CodeBlock({
 
   const headerEl = showHeader ? (
     <div
-      {...stylex.props(
-        styles.headerRow,
-        hasLineNumbers ? styles.headerWithDivider : styles.headerCompact,
+      {...mergeProps(
+        themeProps('codeblock-header', {size, language, container}),
+        stylex.props(
+          styles.headerRow,
+          hasLineNumbers ? styles.headerWithDivider : styles.headerCompact,
+        ),
       )}>
       <div
         role={canCollapse ? 'button' : undefined}
@@ -837,7 +840,11 @@ export function CodeBlock({
           styles.header,
           canCollapse && styles.headerCollapsible,
         )}>
-        <span {...stylex.props(styles.headerTitle)}>
+        <span
+          {...mergeProps(
+            themeProps('codeblock-title', {size, language}),
+            stylex.props(styles.headerTitle),
+          )}>
           {canCollapse && (
             <span {...stylex.props(styles.collapseChevron)}>
               <Icon
