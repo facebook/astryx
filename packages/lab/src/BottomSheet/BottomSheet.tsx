@@ -297,9 +297,10 @@ export interface BottomSheetProps extends BaseProps<HTMLDialogElement> {
    * - `true` (default) — `showModal()`: renders in the top layer with a focus
    *   trap, a `::backdrop` scrim, body scroll lock, and tap-scrim-to-dismiss.
    *   The background is inert. Use for focused tasks (filters, forms).
-   * - `false` — `show()`: a non-modal sheet with **no scrim**. The page behind
+   * - `false`: `show()` renders a viewport-anchored overlay with **no scrim**. It is
+   *   still layered above the page, not rendered inline, but the page behind
    *   stays interactive and scrollable (like Material's *standard* bottom
-   *   sheet, or an iOS undimmed detent). Escape still closes while focus is
+   *   sheet or an iOS undimmed detent). Escape still closes while focus is
    *   inside the sheet, and drag/flick-to-dismiss still work. Use for a peek
    *   surface that coexists with the page (e.g. a panel over a live map).
    * @default true
