@@ -340,7 +340,6 @@ export function TopNavMenu({
     // wrapper would announce an unnamed dialog around the menu and make the
     // trigger claim aria-haspopup="dialog" for menu content (see TabMenu).
     role: 'none',
-    xstyle: styles.menuOffset,
   });
 
   const {triggerProps, contentProps, menuRef, setTriggerEl} =
