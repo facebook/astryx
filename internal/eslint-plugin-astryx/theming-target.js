@@ -374,6 +374,38 @@ export function isStylexPropsCall(node) {
   );
 }
 
+/**
+ * `focusOutlineProps.focusVisible(...)` and its siblings. The helper forwards
+ * its arguments to `stylex.props()` after the shared focus-ring style
+ * (`packages/core/src/utils/focusOutline.stylex.ts`), so an element styled
+ * through it is styled exactly as if it had called `stylex.props()` itself.
+ * Reading only `stylex.props` made every target on a focusable element look
+ * unstyled.
+ */
+export function isFocusOutlinePropsCall(node) {
+  return (
+    node?.type === 'CallExpression' &&
+    node.callee?.type === 'MemberExpression' &&
+    node.callee.object?.name === 'focusOutlineProps'
+  );
+}
+
+/** Either way of applying StyleX styles to an element. */
+export function isStylePropsCall(node) {
+  return isStylexPropsCall(node) || isFocusOutlinePropsCall(node);
+}
+
+/**
+ * What a focus-ring helper declares on its own, before its arguments: the
+ * outline longhands the ring is written as.
+ */
+export const FOCUS_RING_PROPERTIES = [
+  'outlineWidth',
+  'outlineStyle',
+  'outlineColor',
+  'outlineOffset',
+];
+
 /** `themeProps(...)` — matched by callee name, as themingTargets.test.ts does. */
 export function isThemePropsCall(node) {
   return (
@@ -629,14 +661,17 @@ export function createFileScanner(context) {
     },
 
     /**
-     * Arguments of every `stylex.props()` call on an opening element, split
-     * into all arguments and the STATE-SELECTED ones: `cond && styles.x`,
-     * `cond ? a : b`, and table lookups (`sizeStyles[size]`). All three are
-     * how a component varies its styles with a prop or runtime state.
+     * Arguments of every `stylex.props()` (or `focusOutlineProps.*()`) call on
+     * an opening element, split into all arguments and the STATE-SELECTED
+     * ones: `cond && styles.x`, `cond ? a : b`, and table lookups
+     * (`sizeStyles[size]`). All three are how a component varies its styles
+     * with a prop or runtime state. `implicit` carries the properties a helper
+     * declares on its own — the focus ring's outline longhands.
      */
     styleArguments(opening) {
       const all = [];
       const conditional = [];
+      const implicit = [];
       for (const attribute of opening.attributes) {
         const subtree =
           attribute.type === 'JSXSpreadAttribute'
@@ -644,7 +679,10 @@ export function createFileScanner(context) {
             : attribute.value;
         if (subtree == null) continue;
         walk(subtree, (node) => {
-          if (!isStylexPropsCall(node)) return;
+          if (!isStylePropsCall(node)) return;
+          if (isFocusOutlinePropsCall(node)) {
+            implicit.push(...FOCUS_RING_PROPERTIES);
+          }
           for (const argument of node.arguments) {
             all.push(argument);
             if (
@@ -657,7 +695,7 @@ export function createFileScanner(context) {
           }
         });
       }
-      return {all, conditional};
+      return {all, conditional, implicit};
     },
 
     /**

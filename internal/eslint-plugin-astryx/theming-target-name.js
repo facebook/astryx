@@ -51,7 +51,8 @@ import {
 
 /**
  * State words that must not be the last segment of a target name. `state`
- * itself is included: `-state` as a name segment is the same mistake.
+ * itself is included: `-state` as a name segment is the same mistake, except
+ * after a placeholder qualifier (see `PLACEHOLDER_QUALIFIERS`).
  */
 const STATE_SUFFIXES = new Set([
   'disabled',
@@ -70,6 +71,15 @@ const STATE_SUFFIXES = new Set([
   'highlighted',
   'state',
 ]);
+
+/**
+ * Qualifiers that make `-state` one noun naming a placeholder region rather
+ * than a state modifier: `selector-empty-state` is the "no results" element
+ * itself, which exists only in that condition and has nowhere else to hang its
+ * target — unlike `selector-option-selected`, which is a state of an element
+ * that exists either way.
+ */
+const PLACEHOLDER_QUALIFIERS = new Set(['empty', 'loading', 'error']);
 
 /**
  * Composed components for which the component slot is unambiguous: leaf,
@@ -246,8 +256,13 @@ const rule = {
         }
         const segments = target.name.split('-');
         const last = segments[segments.length - 1];
+        const previous = segments[segments.length - 2];
 
-        if (STATE_SUFFIXES.has(last) && segments.length > 1) {
+        if (
+          STATE_SUFFIXES.has(last) &&
+          segments.length > 1 &&
+          !(last === 'state' && PLACEHOLDER_QUALIFIERS.has(previous))
+        ) {
           context.report({
             node: target.node,
             messageId: 'stateSubTarget',

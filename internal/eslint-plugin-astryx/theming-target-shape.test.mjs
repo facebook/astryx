@@ -28,6 +28,7 @@ import * as stylex from '@stylexjs/stylex';
 import {Icon} from '../Icon';
 import {CheckboxInput} from '../CheckboxInput';
 import {themeProps, mergeProps} from '../utils';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 const styles = stylex.create({
   painted: {backgroundColor: 'red', borderRadius: 4},
   label: {fontWeight: '600', color: 'blue', overflow: 'hidden'},
@@ -57,6 +58,15 @@ ruleTester.run('theming-target-shape', rule, {
     // Paint reached only through a pseudo-selector still counts.
     {
       code: `${setup} const a = <div {...mergeProps(themeProps('card'), stylex.props(styles.hovered))} />;`,
+    },
+    // focusOutlineProps.* forwards its arguments to stylex.props(), so the
+    // styles it carries are the element's styles.
+    {
+      code: `${setup} const a = <button {...mergeProps(themeProps('card'), focusOutlineProps.focusVisible(styles.painted))} />;`,
+    },
+    // …and the ring it adds is itself paint, so a bare call is not "unstyled".
+    {
+      code: `${setup} const a = <button {...mergeProps(themeProps('card'), focusOutlineProps.focusWithin())} />;`,
     },
     // A target spread onto an Astryx component: the paint lives in the
     // component, which this file cannot see.

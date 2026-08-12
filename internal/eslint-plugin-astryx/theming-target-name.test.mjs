@@ -52,6 +52,16 @@ ruleTester.run('theming-target-name', rule, {
       code: `${setup} const a = <span {...themeProps('selector-check')} />;`,
       filename,
     },
+    // `empty state` is one noun naming a placeholder region, not a state of
+    // another target — the element exists only when there is nothing to show.
+    {
+      code: `${setup} const a = <div {...themeProps('selector-empty-state')} />;`,
+      filename,
+    },
+    {
+      code: `${setup} const a = <div {...themeProps('selector-loading-state')} />;`,
+      filename,
+    },
     // Row/container primitives are out of the slot vocabulary on purpose:
     // principle 3 makes `{component}-option` the right name everywhere.
     {
@@ -129,6 +139,13 @@ ruleTester.run('theming-target-name', rule, {
     },
     {
       code: `${setup} const a = <span {...themeProps('selector-trigger-disabled')} />;`,
+      filename,
+      errors: [{messageId: 'stateSubTarget'}],
+    },
+    // A bare `-state` suffix is still the mistake: it is a state of the row,
+    // not a region of its own.
+    {
+      code: `${setup} const a = <span {...themeProps('selector-option-state')} />;`,
       filename,
       errors: [{messageId: 'stateSubTarget'}],
     },
