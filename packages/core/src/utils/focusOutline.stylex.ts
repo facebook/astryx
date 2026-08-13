@@ -7,11 +7,18 @@
  * @position Internal utility for consistent keyboard focus outlines across core components
  *
  * Centralizes the standard Astryx focus outline, shown only for keyboard focus.
- * Every focusable surface drew the same 2px accent ring at 2px offset already;
- * writing it per component meant five identical definitions to keep in step.
+ * Every focusable surface drew the same 2px accent ring already; writing it per
+ * component meant dozens of identical definitions to keep in step, and they did
+ * not stay in step — offsets drifted and one ring was a border-width thick.
+ *
+ * Every ring in core and lab is drawn from here, with one exception recorded in
+ * Switch: its condition is a component-scoped ancestor marker, which cannot be
+ * shared without leaking focus state between components. A component may still
+ * override the OFFSET (a ring that must sit inset, or clear of a field border);
+ * width, style and color are not restated anywhere.
  *
  * Every value comes from the `--focus-outline-*` tokens, which is how a theme
- * restyles the ring: one override reaches all 26 components at once. The
+ * restyles the ring: one override reaches every component at once. The
  * `:focus-visible` condition is not themeable and stays here, so a theme can
  * change what the ring looks like but cannot show it to pointer users.
  */
@@ -22,7 +29,20 @@ import {focusVars} from '../theme/tokens.stylex';
 const FOCUS_OUTLINE_WIDTH = focusVars['--focus-outline-width'];
 const FOCUS_OUTLINE_STYLE = focusVars['--focus-outline-style'];
 const FOCUS_OUTLINE_COLOR = focusVars['--focus-outline-color'];
+
 const FOCUS_OUTLINE_OFFSET = focusVars['--focus-outline-offset'];
+
+/**
+ * The ring as a single `outline` value, for reading it at runtime — an
+ * assertion, or an element styled imperatively.
+ *
+ * NOT usable inside another file's `stylex.create`: StyleX resolves imported
+ * `defineVars` and nothing else, so a component whose condition
+ * {@link focusOutlineStyles} cannot express (Switch, whose ring keys off a
+ * component-scoped ancestor marker) has to compose the `focusVars` tokens
+ * itself.
+ */
+export const FOCUS_OUTLINE = `${FOCUS_OUTLINE_WIDTH} ${FOCUS_OUTLINE_STYLE} ${FOCUS_OUTLINE_COLOR}`;
 
 /**
  * Written as longhands rather than the `outline` shorthand.
@@ -107,7 +127,7 @@ export const focusOutlineStyles = stylex.create({
   publishFocusVisibleVars: {
     '--_focus-outline': {
       default: 'none',
-      ':focus-visible': `${FOCUS_OUTLINE_WIDTH} ${FOCUS_OUTLINE_STYLE} ${FOCUS_OUTLINE_COLOR}`,
+      ':focus-visible': FOCUS_OUTLINE,
     },
     '--_focus-outline-offset': {
       default: '0',
@@ -117,7 +137,7 @@ export const focusOutlineStyles = stylex.create({
   focusWithinOrPublished: {
     outline: {
       default: 'var(--_focus-outline, none)',
-      ':has(:focus-visible)': `${FOCUS_OUTLINE_WIDTH} ${FOCUS_OUTLINE_STYLE} ${FOCUS_OUTLINE_COLOR}`,
+      ':has(:focus-visible)': FOCUS_OUTLINE,
     },
     outlineOffset: {
       default: 'var(--_focus-outline-offset, 0)',

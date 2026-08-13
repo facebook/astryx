@@ -297,3 +297,32 @@ stylex.props(focusOutlineStyles.focusVisible);
 **Scope:** `outline` and its longhands only, and only where the ring is drawn — suppressing one on a broader selector (`outline: {':focus': 'none'}`) is legitimate and is not flagged. A field's `:focus-within` border and inset box-shadow (`Field/inputStyles.stylex.ts`) are a different treatment — "you are typing here" — and are deliberately not policed by this rule.
 
 Ships as an **error in both tiers**: core is clean, and this keeps it that way.
+
+### `@astryx/focus-outline-shared`
+
+Flags a focus ring written out inside `stylex.create()` instead of taken from the shared utility. There is one ring in the system and it is themeable through the `--focus-outline-*` tokens; a component that spells out its own gets those values by accident and drifts the moment either side moves — which is what happened before this rule existed (offsets wandered between 1px, 2px and 3px, and one ring was a border-width thick).
+
+**Bad:**
+
+```ts
+const styles = stylex.create({
+  base: {
+    outline: {
+      default: 'none',
+      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
+    },
+  },
+});
+```
+
+**Good:**
+
+```ts
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
+
+stylex.props(focusOutlineStyles.focusVisible, styles.base);
+```
+
+**Scope:** only what the ring LOOKS like — the `outline` shorthand, `outlineWidth`, `outlineStyle` — under a literal `:focus-visible` condition. Not flagged: `outlineOffset` (where the ring sits is a local constraint — inset into a tight grid, or held clear of a field border — and such a component still follows the theme's width, style and color), `outlineColor` (re-coloring per variant is the documented override), and a computed condition key such as `stylex.when.ancestor(':has(:focus-visible)', scope)`, which a shared style cannot express because a scope marker cannot be shared between components.
+
+Ships as an **error in both tiers**: core and lab are clean, and this keeps them that way.

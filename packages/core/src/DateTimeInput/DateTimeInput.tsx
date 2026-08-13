@@ -84,6 +84,7 @@ import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {useSize} from '../SizeContext/SizeContext';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {useTranslator} from '../i18n';
 
 export type ISODateTimeString = string & {
@@ -118,11 +119,6 @@ const styles = stylex.create({
     backgroundColor: 'transparent',
     cursor: 'pointer',
     borderRadius: radiusVars['--radius-element'],
-    outline: {
-      default: 'none',
-      ':focus-visible': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: 1,
   },
   iconButtonDisabled: {
     cursor: 'not-allowed',
@@ -941,6 +937,7 @@ export function DateTimeInput({
                 : t('@astryx.dateInput.openCalendar')
             }
             {...stylex.props(
+              focusOutlineStyles.focusVisible,
               styles.iconButton,
               isEffectivelyDisabled && styles.iconButtonDisabled,
             )}>

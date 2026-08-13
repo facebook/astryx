@@ -80,11 +80,6 @@ const styles = stylex.create({
     backgroundColor: 'transparent',
     cursor: 'pointer',
     borderRadius: radiusVars['--radius-element'],
-    outline: {
-      default: 'none',
-      ':focus-visible': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: 1,
   },
   iconButtonDisabled: {
     cursor: 'not-allowed',
@@ -163,6 +158,7 @@ import {mergeProps, mergeRefs, isFocusDetached} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {stableClassName} from '../naming';
 import {useTranslator} from '../i18n';
 
@@ -694,6 +690,7 @@ export function DateInput({
             : t('@astryx.dateInput.openCalendar')
         }
         {...stylex.props(
+          focusOutlineStyles.focusVisible,
           styles.iconButton,
           isEffectivelyDisabled && styles.iconButtonDisabled,
         )}>

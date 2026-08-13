@@ -190,6 +190,12 @@ const styles = stylex.create({
       '@media (forced-colors: active)': 'CanvasText',
     },
   },
+  // The one ring in the system not drawn by focusOutlineStyles. The focusable
+  // input is a sibling of the track, so the condition has to reach the shared
+  // scope marker — and a marker cannot be shared across components without
+  // leaking focus state from an outer one, so it cannot live in the utility.
+  // StyleX also cannot inline a constant imported from another module, so the
+  // values are read from the tokens the utility reads.
   trackFocus: {
     outline: {
       default: 'none',

@@ -43,9 +43,13 @@ import {
   colorVars,
   spacingVars,
   typeScaleVars,
-  focusVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
-import {mergeProps, mergeRefs, themeProps} from '@astryxdesign/core/utils';
+import {
+  focusOutlineStyles,
+  mergeProps,
+  mergeRefs,
+  themeProps,
+} from '@astryxdesign/core/utils';
 import {reorderStyles} from '../reorderStyles';
 import {transferListVars} from './tokens.stylex';
 
@@ -235,11 +239,9 @@ const styles = stylex.create({
     flexDirection: 'column',
     minWidth: 0,
     overflow: 'hidden',
-    outline: {
-      default: 'none',
-      ':focus-visible': `${focusVars['--focus-outline-width']} ${focusVars['--focus-outline-style']} ${focusVars['--focus-outline-color']}`,
-    },
-    outlineOffset: -2,
+    // Inset, not the shared offset: the panel's own edge is the container
+    // boundary, so an outset ring would fall outside the component.
+    outlineOffset: {default: '0', ':focus-visible': -2},
   },
   panelDivider: {
     borderInlineStartWidth: {
@@ -1181,7 +1183,7 @@ export function TransferList<T extends string = string>({
           tabIndex={-1}
           {...mergeProps(
             themeProps('transfer-list-panel', {side: 'selected'}),
-            stylex.props(styles.panel),
+            stylex.props(focusOutlineStyles.focusVisible, styles.panel),
           )}>
           <div {...stylex.props(styles.panelHeader)}>
             <Text id={selectedHeadingId} type="label" color="secondary">
@@ -1234,7 +1236,11 @@ export function TransferList<T extends string = string>({
           tabIndex={-1}
           {...mergeProps(
             themeProps('transfer-list-panel', {side: 'available'}),
-            stylex.props(styles.panel, styles.panelDivider),
+            stylex.props(
+              focusOutlineStyles.focusVisible,
+              styles.panel,
+              styles.panelDivider,
+            ),
           )}>
           <div {...stylex.props(styles.panelHeader)}>
             <Text id={availableHeadingId} type="label" color="secondary">

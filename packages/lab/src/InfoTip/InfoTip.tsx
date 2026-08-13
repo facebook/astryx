@@ -25,8 +25,8 @@ import {
   easeVars,
   radiusVars,
   spacingVars,
-  focusVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
+import {focusOutlineStyles} from '@astryxdesign/core/utils';
 
 /**
  * Size of the info icon. Maps 1:1 to Icon sizes
@@ -70,14 +70,6 @@ const styles = stylex.create({
         default: null,
         '@media (hover: hover)': colorVars['--color-icon-primary'],
       },
-    },
-    outline: {
-      default: null,
-      ':focus-visible': `${focusVars['--focus-outline-width']} ${focusVars['--focus-outline-style']} ${focusVars['--focus-outline-color']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': focusVars['--focus-outline-offset'],
     },
     transitionProperty: 'color',
     transitionDuration: durationVars['--duration-fast'],
@@ -146,7 +138,7 @@ export function InfoTip({
         onKeyDown={handleKeyDown}
         onBlur={handleReset}
         onMouseLeave={handleReset}
-        {...stylex.props(styles.trigger)}>
+        {...stylex.props(focusOutlineStyles.focusVisible, styles.trigger)}>
         <Icon icon="info" size={size} />
       </button>
     </Tooltip>

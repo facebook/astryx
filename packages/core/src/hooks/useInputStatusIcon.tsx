@@ -40,8 +40,9 @@ import type {FieldStatusVariant} from '../FieldStatus/FieldStatus';
 import type {InputStatus, InputStatusType} from '../Field/types';
 import {useTooltip} from '../Tooltip';
 import {useTranslator} from '../i18n';
-import {radiusVars, focusVars} from '../theme/tokens.stylex';
+import {radiusVars} from '../theme/tokens.stylex';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 
 /**
  * Maps each status type to its glyph. Shared so every input shows the same icon
@@ -82,18 +83,6 @@ const styles = stylex.create({
     color: 'inherit',
     cursor: 'pointer',
     borderRadius: radiusVars['--radius-full'],
-    outlineWidth: {
-      default: null,
-      ':focus-visible': focusVars['--focus-outline-width'],
-    },
-    outlineStyle: {
-      default: null,
-      ':focus-visible': focusVars['--focus-outline-style'],
-    },
-    outlineColor: {
-      default: null,
-      ':focus-visible': focusVars['--focus-outline-color'],
-    },
     // Not the shared offset: this button sits inside the field, and measured at
     // the standard 3px its ring crosses the field border.
     outlineOffset: {default: null, ':focus-visible': '2px'},
@@ -232,7 +221,10 @@ export function useInputStatusIcon({
           aria-describedby={tooltip.describedBy}
           onClick={handleButtonClick}
           onBlur={handleButtonBlur}
-          {...stylex.props(styles.statusButton)}>
+          {...stylex.props(
+            focusOutlineStyles.focusVisible,
+            styles.statusButton,
+          )}>
           {icon}
         </button>
         {tooltip.renderTooltip(status.message)}

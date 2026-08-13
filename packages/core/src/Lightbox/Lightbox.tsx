@@ -26,12 +26,7 @@ import {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {
-  colorVars,
-  spacingVars,
-  typeScaleVars,
-  focusVars,
-} from '../theme/tokens.stylex';
+import {colorVars, spacingVars, typeScaleVars} from '../theme/tokens.stylex';
 import {Icon} from '../Icon';
 import {IconButton} from '../IconButton';
 import {useAnnounce} from '../hooks/useAnnounce';
@@ -40,6 +35,7 @@ import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {mergeProps, mergeRefs, rtlStyles} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {useTranslator} from '../i18n';
 
 /**
@@ -161,16 +157,6 @@ const styles = stylex.create({
     cursor: {
       default: 'zoom-in',
       '@media (hover: hover)': 'zoom-in',
-    },
-  },
-  zoomTarget: {
-    outline: {
-      default: 'none',
-      ':focus-visible': `${focusVars['--focus-outline-width']} ${focusVars['--focus-outline-style']} ${focusVars['--focus-outline-color']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': focusVars['--focus-outline-offset'],
     },
   },
   imageWrapperZoomed: {
@@ -646,7 +632,7 @@ export function Lightbox({
             aria-label={isZoomTarget ? t('@astryx.lightbox.zoom') : undefined}
             {...stylex.props(
               styles.imageWrapper,
-              isZoomTarget && styles.zoomTarget,
+              isZoomTarget && focusOutlineStyles.focusVisible,
               !isVideo && hasZoom && !isZoomed && styles.imageWrapperZoomable,
               !isVideo && isZoomed && styles.imageWrapperZoomed,
               !isVideo && isDragging && styles.imageWrapperDragging,

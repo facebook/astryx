@@ -34,7 +34,6 @@ import {
   easeVars,
   typographyVars,
   typeScaleVars,
-  focusVars,
 } from '../theme/tokens.stylex';
 import {Field} from '../Field/Field';
 import {Tooltip} from '../Tooltip/Tooltip';
@@ -42,6 +41,7 @@ import {useTooltip} from '../Tooltip';
 import {VisuallyHidden} from '../VisuallyHidden';
 import type {InputStatus} from '../Field/types';
 import {mergeProps, mergeRefs, rtlStyles} from '../utils';
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {isRtlElement} from '../hooks/isRtlElement';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
@@ -252,16 +252,6 @@ const styles = stylex.create({
       ':hover': {
         '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-tint-hover']} 15%)`,
       },
-    },
-  },
-  thumbFocusVisible: {
-    outline: {
-      default: 'none',
-      ':focus-visible': `${focusVars['--focus-outline-width']} ${focusVars['--focus-outline-style']} ${focusVars['--focus-outline-color']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': focusVars['--focus-outline-offset'],
     },
   },
   thumbDisabled: {
@@ -793,7 +783,7 @@ export function Slider({ref, ...props}: SliderProps) {
               ? styles.thumbHorizontal
               : rtlStyles.centerInline('50%'),
             !isDisabled && styles.thumbHover,
-            !isDisabled && styles.thumbFocusVisible,
+            !isDisabled && focusOutlineStyles.focusVisible,
             isDisabled && styles.thumbDisabled,
           ),
           undefined,

@@ -28,9 +28,9 @@ import {
   durationVars,
   easeVars,
   typeScaleVars,
-  focusVars,
 } from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {VisuallyHidden} from '../VisuallyHidden';
@@ -283,14 +283,6 @@ const styles = stylex.create({
     top: '50%',
     width: 'var(--_progressbar-mark-width, 2px)',
     height: 'var(--_progressbar-mark-height, 8px)',
-    outline: {
-      default: 'none',
-      ':focus-visible': `${focusVars['--focus-outline-width']} ${focusVars['--focus-outline-style']} ${focusVars['--focus-outline-color']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': focusVars['--focus-outline-offset'],
-    },
     transform: {
       default: 'translate(-50%, -50%)',
       ':is([dir="rtl"] *)': 'translate(50%, -50%)',
@@ -582,6 +574,7 @@ export function ProgressBar({
                   placement: mark.isOnFill ? 'fill' : 'track',
                 }),
                 stylex.props(
+                  focusOutlineStyles.focusVisible,
                   styles.mark,
                   mark.isOnFill
                     ? markOnFillStyles[fillVariant]
