@@ -170,8 +170,8 @@ export function validateOutput(result, source, j, {parse = true} = {}) {
  * via the unified `(file, api)`/jscodeshift contract; a code codemod runs
  * against discovered source files. Any future core config codemod (e.g. a
  * v0.1.3 one) must set `meta.codemodType = 'config'` and author its transform
- * with the same `(file, api) => string | null | undefined` contract used by
- * `createConfigCodemod`.
+ * with the same `(file, api) => string | null | undefined` contract used by a
+ * `type: 'config'` codemod.
  *
  * @param {{name: string, transform: import('../../authoring/codemod/type').CodemodTransform, meta: {title: string, description?: string, fileExtensions?: string[], codemodType?: string}, optional?: boolean}} transformEntry
  * @param {string} version

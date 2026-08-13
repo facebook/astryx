@@ -34,6 +34,7 @@ import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {useAppShellMobile} from '../AppShell/AppShellMobileContext';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 
 // =============================================================================
 // Styles
@@ -61,14 +62,6 @@ const styles = stylex.create({
       ':active': colorVars['--color-overlay-pressed'],
     },
     border: 'none',
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': '2px',
-    },
     color: 'inherit',
     fontFamily: 'inherit',
     textAlign: 'start',
@@ -249,7 +242,7 @@ export function TopNavMegaMenuItem({
       tabIndex={tabIndex}
       {...mergeProps(
         themeProps('top-nav-mega-menu-item'),
-        stylex.props(styles.desktop),
+        focusOutlineProps.focusVisible(styles.desktop),
       )}>
       {icon && <div {...stylex.props(styles.desktopIcon)}>{icon}</div>}
       <div {...stylex.props(styles.desktopContent)}>

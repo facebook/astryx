@@ -6,6 +6,6 @@ export default defineConfig({
   entry: ['src/source.ts', 'src/icons.tsx'],
   format: ['cjs', 'esm'],
   dts: false,
-  clean: true, // tsup runs first — theme build adds its outputs to dist/ after
+  clean: false,
   external: ['@astryxdesign/core', 'react', 'lucide-react'],
 });

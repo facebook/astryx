@@ -38,6 +38,7 @@ import {
 } from '../theme/tokens.stylex';
 import {
   Field,
+  InputClearButton,
   type InputStatus,
   inputWrapperStyles,
   inputStatusBorderStyles,
@@ -47,7 +48,13 @@ import {
 import {Icon} from '../Icon';
 import {VisuallyHidden} from '../VisuallyHidden';
 import {Spinner} from '../Spinner';
-import {Calendar, type ISODateString, type CalendarHandle} from '../Calendar';
+import {
+  Calendar,
+  type ISODateString,
+  type CalendarHandle,
+  type DayOfWeek,
+  type DayOfWeekName,
+} from '../Calendar';
 import {useCalendarConstraints} from '../Calendar/hooks';
 import {usePopover} from '../Popover';
 import {useTooltip} from '../Tooltip';
@@ -64,6 +71,7 @@ import {
   adjustTime,
   mergeProps,
   mergeRefs,
+  isFocusDetached,
 } from '../utils';
 import {
   plainDateFromISO,
@@ -348,6 +356,14 @@ export interface DateTimeInputProps extends Omit<
    * @default 1
    */
   numberOfMonths?: 1 | 2;
+
+  /**
+   * First day of week in the calendar. Accepts a number
+   * (0 = Sunday … 6 = Saturday) or a three-letter day name ('sun'–'sat',
+   * case-insensitive).
+   * @default 0
+   */
+  weekStartsOn?: DayOfWeek | DayOfWeekName;
 }
 
 function splitDateTime(dt: ISODateTimeString | undefined): {
@@ -425,6 +441,7 @@ export function DateTimeInput({
   status,
   labelTooltip,
   numberOfMonths = 1,
+  weekStartsOn,
   width,
   xstyle,
   className,
@@ -602,7 +619,18 @@ export function DateTimeInput({
   const popover = usePopover({
     dialogLabel: t('@astryx.dateTimeInput.dialogLabel'),
     closeButtonLabel: t('@astryx.dateInput.closeCalendar'),
-    onHide: () => dateInputRef.current?.focus(),
+    // Return focus to the date input when the calendar closes — but only when
+    // the dismiss left focus detached (Escape, or a click on non-focusable
+    // empty space), which the focus trap can't restore on its own. A native
+    // popover="auto" light-dismiss fires synchronously with the pointer event
+    // that moved focus, so if the user clicked another control — the time
+    // input, the clear button, another field, anywhere — focus has already
+    // landed there; reclaiming it would fight their click.
+    onHide: () => {
+      if (isFocusDetached()) {
+        dateInputRef.current?.focus();
+      }
+    },
   });
 
   const handleCalendarToggle = useCallback(() => {
@@ -877,6 +905,7 @@ export function DateTimeInput({
           themeProps('date-time-input', {
             size,
             status: status?.type ?? null,
+            disabled: isDisabled ? 'disabled' : null,
           }),
           stylex.props(styles.row, xstyle),
           className,
@@ -962,13 +991,10 @@ export function DateTimeInput({
             {!isDateInputValid ? 'Invalid date' : ''}
           </VisuallyHidden>
           {hasClear && value !== undefined && !isEffectivelyDisabled && (
-            <button
-              type="button"
+            <InputClearButton
+              label={t('@astryx.dateInput.clear', {label})}
               onClick={handleClear}
-              aria-label={t('@astryx.dateInput.clear', {label})}
-              {...stylex.props(styles.iconButton)}>
-              <Icon icon="close" size="sm" color="secondary" />
-            </button>
+            />
           )}
           {isBusy && <Spinner size="sm" />}
           {statusIcon}
@@ -1050,6 +1076,7 @@ export function DateTimeInput({
           max={calendarMax}
           dateConstraints={dateConstraints}
           numberOfMonths={numberOfMonths}
+          weekStartsOn={weekStartsOn}
         />,
         {placement: 'below', alignment: 'start'},
       )}

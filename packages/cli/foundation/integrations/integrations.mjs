@@ -12,6 +12,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import {assertWithin} from '../fs/path-safety.mjs';
 import {parseIntegration} from '../../authoring/integration/parse.mjs';
 import {loadModuleWithParser, findPresentFiles} from '../fs/module-loader.mjs';
 
@@ -170,8 +171,15 @@ export async function loadIntegrations(specs = [], {cwd = process.cwd()} = {}) {
     }
 
     /** @param {string | null | undefined} value */
-    const resolveRoot = value =>
-      value == null ? undefined : path.resolve(packageDir, value);
+    const resolveRoot = value => {
+      if (value == null) return undefined;
+      try {
+        return assertWithin(value, packageDir, {label: 'contribution root'});
+      } catch {
+        // Root escapes the package — skip silently (logged by validate-integration).
+        return undefined;
+      }
+    };
 
     integrations.push({
       name: pkg.name ?? spec,

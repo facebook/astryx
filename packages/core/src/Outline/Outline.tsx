@@ -42,6 +42,7 @@ import type {BaseProps} from '../BaseProps';
 import {useScrollSpy} from './useScrollSpy';
 import type {OutlineItem} from './types';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {useTranslator} from '../i18n';
 
 export type {OutlineItem} from './types';
@@ -210,10 +211,6 @@ const styles = stylex.create({
     },
     ':active': {
       backgroundColor: colorVars['--color-overlay-pressed'],
-    },
-    ':focus-visible': {
-      outline: `2px solid ${colorVars['--color-accent']}`,
-      outlineOffset: 2,
     },
   },
   activeLink: {
@@ -473,7 +470,7 @@ export function Outline({
                     active: isActive ? 'active' : null,
                     level: item.level,
                   }),
-                  stylex.props(
+                  focusOutlineProps.focusVisible(
                     styles.link,
                     densityStyles[density],
                     getIndentStyle(item.level),

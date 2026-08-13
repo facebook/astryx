@@ -271,8 +271,9 @@ const styles = stylex.create({
     borderEndStartRadius: radiusVars['--radius-container'],
     borderEndEndRadius: radiusVars['--radius-container'],
   },
+  // Applied to the chevron <Icon> itself (via `xstyle`) rather than a wrapper,
+  // so the element that rotates is the element a theme targets.
   chevron: {
-    display: 'inline-flex',
     transitionProperty: 'transform',
     transitionDuration: {
       default: durationVars['--duration-fast'],
@@ -484,13 +485,15 @@ export function Banner({
                     : t('@astryx.banner.expand')
                 }
                 icon={
-                  <span
-                    {...stylex.props(
+                  <Icon
+                    icon="chevronDown"
+                    size="sm"
+                    color="inherit"
+                    xstyle={[
                       styles.chevron,
                       isExpanded && styles.chevronExpanded,
-                    )}>
-                    <Icon icon="chevronDown" size="sm" color="inherit" />
-                  </span>
+                    ]}
+                  />
                 }
                 onClick={handleToggleExpand}
                 aria-expanded={isExpanded}

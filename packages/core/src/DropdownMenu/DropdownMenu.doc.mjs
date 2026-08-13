@@ -24,14 +24,9 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-dropdown-menu'},
-      {className: 'astryx-dropdown-menu-item', visualProps: ['size']},
+      {className: 'astryx-dropdown-menu-item', visualProps: ['size', 'variant']},
       {
         className: 'astryx-dropdown-menu-radio',
-        visualProps: ['size'],
-        states: ['checked', 'disabled'],
-      },
-      {
-        className: 'astryx-dropdown-menu-radio-dot',
         visualProps: ['size'],
         states: ['checked', 'disabled'],
       },
@@ -59,7 +54,7 @@ export const docs = {
     {
       name: 'items',
       type: 'DropdownMenuOption[]',
-      description: 'Array of menu entries. Each entry is one of: an action item `{label, onClick?, icon?, isDisabled?}`, a divider `{type: "divider"}`, or a section `{type: "section", title?, items: [...action items]}`.',
+      description: 'Array of menu entries. Each entry is one of: an action item `{label, onClick?, icon?, isDisabled?, variant?, hasCloseOnSelect?, id?}` (variant `"destructive"` renders it in the error color; `id` is the row\'s stable React key, needed only when the array reorders or filters), a divider `{type: "divider"}`, or a section `{type: "section", title?, id?, items: [...action items]}`.',
       required: true,
     },
     {

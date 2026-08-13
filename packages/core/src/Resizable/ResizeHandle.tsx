@@ -17,6 +17,10 @@
  * Pill placement uses a single stylex dynamic style that accepts a direction
  * multiplier (-1 or 1). The pill element has its own themeProps
  * ('resize-handle-pill') so themes can target size/shape directly.
+ *
+ * While the panel is collapsed, aria-valuenow is clamped to aria-valuemin
+ * (a value below the minimum is invalid per WCAG 4.1.2) and a localized
+ * "Collapsed" aria-valuetext announces the real state.
  */
 
 import {useCallback, useEffect, useRef, useState} from 'react';
@@ -30,6 +34,7 @@ import {
   radiusVars,
   spacingVars,
 } from '../theme/tokens.stylex';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {mergeProps, mergeRefs, rtlStyles} from '../utils';
 import type {ResizableProps} from './useResizable';
 import {themeProps} from '../utils/themeProps';
@@ -90,14 +95,6 @@ const styles = stylex.create({
     transitionProperty: 'background-color',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
-    outline: {
-      default: 'none',
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: null,
-      ':focus-visible': spacingVars['--spacing-0-5'],
-    },
   },
   // Overlay mode — absolutely positioned inside the parent panel
   // instead of being a sibling in flex flow. Used when the handle
@@ -514,12 +511,23 @@ export function ResizeHandle({
   }, []);
 
   // --- ARIA ---
-  const ariaValueNow = resizable ? resizable._size : undefined;
+  // When collapsed the panel's real size (0) sits below aria-valuemin, which
+  // is invalid per WCAG 4.1.2. Clamp aria-valuenow to the minimum and announce
+  // the true state via aria-valuetext instead; the valuetext is removed as
+  // soon as the panel expands so the numeric value reads again.
+  const isCollapsed = resizable?._isCollapsed ?? false;
+  const ariaValueNow = resizable
+    ? isCollapsed
+      ? Math.max(resizable._size, resizable._minSizePx)
+      : resizable._size
+    : undefined;
   const ariaValueMin = resizable ? resizable._minSizePx : undefined;
   const ariaValueMax =
     resizable && resizable._maxSizePx !== Infinity
       ? resizable._maxSizePx
       : undefined;
+  const ariaValueText =
+    resizable && isCollapsed ? t('@astryx.resizable.collapsed') : undefined;
 
   return (
     <div
@@ -529,6 +537,7 @@ export function ResizeHandle({
       aria-valuenow={ariaValueNow}
       aria-valuemin={ariaValueMin}
       aria-valuemax={ariaValueMax}
+      aria-valuetext={ariaValueText}
       aria-label={label}
       aria-disabled={isDisabled || undefined}
       tabIndex={isDisabled ? -1 : 0}
@@ -538,7 +547,7 @@ export function ResizeHandle({
       data-resizing={isDragging || undefined}
       {...mergeProps(
         themeProps('resize-handle'),
-        stylex.props(
+        focusOutlineProps.focusVisible(
           styles.handle,
           isOverlay && styles.overlay,
           isOverlay &&

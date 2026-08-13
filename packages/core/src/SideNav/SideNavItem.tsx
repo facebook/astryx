@@ -38,7 +38,7 @@ import {
   borderVars,
   radiusVars,
 } from '../theme/tokens.stylex';
-import {renderIconSlot, useIcon, type IconType} from '../Icon';
+import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
 import {usePopover} from '../Popover/usePopover';
@@ -108,6 +108,11 @@ const styles = stylex.create({
     justifyContent: 'center',
     width: spacingVars['--spacing-6'],
     height: spacingVars['--spacing-6'],
+    // Icon's `lg` would also set font-size: 1.5rem, and the registry chevron
+    // is a 1em SVG — that would blow the glyph up from the 14px it inherits
+    // from the row to the full 24px box. The 24px box is the touch/alignment
+    // target, not the glyph size, so keep the glyph on the inherited size.
+    fontSize: 'inherit',
     transitionProperty: 'transform',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
@@ -358,7 +363,6 @@ export function SideNavItem({
   xstyle,
 }: SideNavItemProps) {
   const t = useTranslator();
-  const chevronDownIcon = useIcon('chevronDown');
   const {isCollapsed} = useSideNavCollapse();
   const renderMode = useSideNavRenderMode();
   const {closeMobileNav} = useAppShellMobile();
@@ -574,13 +578,15 @@ export function SideNavItem({
         <span {...stylex.props(styles.endContent)}>{endContent}</span>
       )}
       {!isCollapsed && isItemCollapsible && !hasIndependentToggle && (
-        <span
-          {...stylex.props(
+        <Icon
+          icon="chevronDown"
+          size="lg"
+          color="inherit"
+          xstyle={[
             styles.expandChevron,
             !isItemCollapsed && styles.expandChevronExpanded,
-          )}>
-          {chevronDownIcon}
-        </span>
+          ]}
+        />
       )}
     </>
   );
@@ -637,13 +643,15 @@ export function SideNavItem({
           aria-expanded={!isItemCollapsed}
           aria-controls={`${id}-children`}
           {...stylex.props(styles.expandToggle)}>
-          <span
-            {...stylex.props(
+          <Icon
+            icon="chevronDown"
+            size="lg"
+            color="inherit"
+            xstyle={[
               styles.expandChevron,
               !isItemCollapsed && styles.expandChevronExpanded,
-            )}>
-            {chevronDownIcon}
-          </span>
+            ]}
+          />
         </button>
       </div>
     );

@@ -12,6 +12,11 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+
+function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
+  const {prose, component} = generateThemeCSS(theme);
+  return [prose, component].filter(Boolean).join('\n\n');
+}
 // getButton/queryButton instead of getByRole('button', {name}): the closed
 // popover keeps a two-month Calendar (~85 role=button nodes) mounted, which
 // made every role+name query compute ~85 accessible names through jsdom's
@@ -21,7 +26,7 @@ import {DateRangeInput} from './DateRangeInput';
 import type {DateRange} from './DateRangeInput';
 import {Icon} from '../Icon';
 import {defineTheme} from '../theme/defineTheme';
-import {generateThemeCSSFlat} from '../theme/generateThemeRules';
+import {generateThemeCSS} from '../theme/generateThemeRules';
 
 describe('DateRangeInput', () => {
   it('renders with label', () => {
@@ -506,6 +511,72 @@ describe('DateRangeInput statusVariant forwarding', () => {
       'detached',
     );
   });
+
+  describe('weekStartsOn', () => {
+    // The calendar popover renders in the top layer; jsdom keeps the content in
+    // the DOM but role queries skip it, so read the columnheaders directly.
+    const openAndReadWeekdays = (container: HTMLElement): (string | null)[] => {
+      fireEvent.click(getButton('Open calendar'));
+      return Array.from(container.querySelectorAll('[role="columnheader"]'))
+        .slice(0, 7)
+        .map(h => h.textContent);
+    };
+
+    it('defaults to a Sunday-first week', () => {
+      const {container} = render(
+        <DateRangeInput label="Range" value={null} onChange={() => {}} />,
+      );
+      expect(openAndReadWeekdays(container)).toEqual([
+        'Su',
+        'Mo',
+        'Tu',
+        'We',
+        'Th',
+        'Fr',
+        'Sa',
+      ]);
+    });
+
+    it('forwards a numeric weekStartsOn to the calendar', () => {
+      const {container} = render(
+        <DateRangeInput
+          label="Range"
+          value={null}
+          onChange={() => {}}
+          weekStartsOn={1}
+        />,
+      );
+      expect(openAndReadWeekdays(container)).toEqual([
+        'Mo',
+        'Tu',
+        'We',
+        'Th',
+        'Fr',
+        'Sa',
+        'Su',
+      ]);
+    });
+
+    it('accepts a three-letter day name', () => {
+      const {container} = render(
+        <DateRangeInput
+          label="Range"
+          value={null}
+          onChange={() => {}}
+          weekStartsOn="mon"
+        />,
+      );
+      expect(openAndReadWeekdays(container)).toEqual([
+        'Mo',
+        'Tu',
+        'We',
+        'Th',
+        'Fr',
+        'Sa',
+        'Su',
+      ]);
+    });
+  });
 });
 
 describe('DateRangeInput icon theme targets', () => {
@@ -521,7 +592,7 @@ describe('DateRangeInput icon theme targets', () => {
     return icon as HTMLElement;
   };
 
-  it('renders astryx-date-range-input-clear-icon on the clear glyph', () => {
+  it('renders astryx-input-clear-icon (plus the legacy alias) on the clear glyph', () => {
     render(
       <DateRangeInput
         label="Range"
@@ -530,10 +601,13 @@ describe('DateRangeInput icon theme targets', () => {
         hasClear
       />,
     );
-    // The stable target lands on the icon element itself (not the button), so a
-    // theme can restyle just this glyph (color, size, hover) via defineTheme —
-    // a button-level target could not reach the icon's own color/size.
+    // The canonical target lands on the icon element itself (not the button),
+    // so a theme can restyle just this glyph (color, size, hover) via
+    // defineTheme — a button-level target could not reach the icon's own
+    // color/size. The original per-component name rides along for a
+    // deprecation window.
     const icon = iconIn(getButton('Clear Range'));
+    expect(icon).toHaveClass('astryx-input-clear-icon');
     expect(icon).toHaveClass('astryx-date-range-input-clear-icon');
     expect(icon).toHaveClass('astryx-icon');
   });
@@ -547,11 +621,12 @@ describe('DateRangeInput icon theme targets', () => {
     expect(icon).toHaveAttribute('data-state', 'collapsed');
   });
 
-  it('renders the default icons (secondary color, sm size) byte-identically', () => {
-    // Pixel-identical default guard: the glyphs must carry the exact same
-    // StyleX color/size classes as a standalone secondary/sm icon. The added
-    // target class is purely additive — it changes nothing until a theme
-    // targets it.
+  it('routes the clear glyph through the shared clear button (default look unchanged)', () => {
+    // Default-look guard for the clear affordance. It now composes the shared
+    // InputClearButton (a ghost Button with a secondary/sm glyph), so aside
+    // from its target classes the glyph matches a standalone `secondary`/`sm`
+    // close icon — the default clear look is defined once, in InputClearButton.
+    // (The calendar-toggle glyph is covered separately.)
     render(
       <DateRangeInput
         label="Range"
@@ -562,22 +637,24 @@ describe('DateRangeInput icon theme targets', () => {
     );
     const clearIcon = iconIn(getButton('Clear Range'));
 
-    const {container: refContainer} = render(
+    const {container: clearRefContainer} = render(
       <Icon icon="close" size="sm" color="secondary" />,
     );
-    const refIcon = refContainer.querySelector('.astryx-icon') as HTMLElement;
+    const clearRefIcon = clearRefContainer.querySelector(
+      '.astryx-icon',
+    ) as HTMLElement;
 
     const styleClasses = (el: HTMLElement) =>
       el.className
         .split(' ')
         .filter(
           c =>
-            c !== 'astryx-date-range-input-clear-icon' &&
-            c !== 'astryx-date-range-input-toggle-icon',
+            c !== 'astryx-input-clear-icon' &&
+            c !== 'astryx-date-range-input-clear-icon',
         )
         .sort();
 
-    expect(styleClasses(clearIcon)).toEqual(styleClasses(refIcon));
+    expect(styleClasses(clearIcon)).toEqual(styleClasses(clearRefIcon));
   });
 
   it('exposes the icon targets so a theme reaches icon color, size, and hover', () => {
@@ -603,11 +680,35 @@ describe('DateRangeInput icon theme targets', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('.astryx-date-range-input-clear-icon');
     expect(css).toContain('.astryx-date-range-input-toggle-icon');
     expect(css).toContain(':hover');
     expect(css).toContain('12px');
     expect(css).toContain('14px');
+  });
+});
+
+describe('DateRangeInput disabled theme state', () => {
+  it('reflects disabled on the root target so themes can gate paint on it', () => {
+    const {container} = render(
+      <DateRangeInput
+        label="Range"
+        value={null}
+        onChange={() => {}}
+        isDisabled
+      />,
+    );
+    const root = container.querySelector('.astryx-date-range-input');
+    expect(root).toHaveAttribute('data-disabled', 'disabled');
+    expect(root).toHaveClass('disabled');
+  });
+
+  it('omits data-disabled when enabled, like status does', () => {
+    const {container} = render(
+      <DateRangeInput label="Range" value={null} onChange={() => {}} />,
+    );
+    const root = container.querySelector('.astryx-date-range-input');
+    expect(root).not.toHaveAttribute('data-disabled');
   });
 });

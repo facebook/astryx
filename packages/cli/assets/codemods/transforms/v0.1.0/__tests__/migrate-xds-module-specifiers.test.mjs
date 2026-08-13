@@ -17,7 +17,7 @@ describe('migrate-xds-module-specifiers', () => {
   it('renames import and export source paths including subpaths', async () => {
     const input = [
       "import {Button} from '@xds/core/Button';",
-      "import '@xds/theme-default/theme.css';",
+      "import '@xds/theme-daily/theme.css';",
       "export {LabThing} from '@xds/lab/Thing';",
       "export * from '@xds/core/theme';",
     ].join('\n');
@@ -49,18 +49,6 @@ describe('migrate-xds-module-specifiers', () => {
     expect(output).toBe(input);
   });
 
-  it('remaps defaultTheme -> neutralTheme when collapsing theme-default', async () => {
-    const output = await applyTransform(
-      `import {defaultTheme} from '@xds/theme-default';`,
-      'test.ts',
-    );
-    // Package collapses to theme-neutral; binding aliased so local usage works.
-    expect(output).toContain('neutralTheme as defaultTheme');
-    expect(output).toContain('@astryxdesign/theme-neutral');
-    expect(output).not.toContain('@xds/');
-    expect(output).not.toContain('theme-default');
-  });
-
   it('remaps defaultTheme -> neutralTheme for theme-daily and /built subpath', async () => {
     const output = await applyTransform(
       `import {defaultTheme} from '@xds/theme-daily/built';`,
@@ -72,7 +60,7 @@ describe('migrate-xds-module-specifiers', () => {
 
   it('preserves an existing alias when remapping defaultTheme', async () => {
     const output = await applyTransform(
-      `import {defaultTheme as dt} from '@xds/theme-default';`,
+      `import {defaultTheme as dt} from '@xds/theme-daily';`,
       'test.ts',
     );
     expect(output).toContain('neutralTheme as dt');

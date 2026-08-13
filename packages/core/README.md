@@ -80,7 +80,7 @@ Astryx requires **React 19** or later (`react` and `react-dom` >= 19.0.0 are pee
 Install Astryx and a theme:
 
 ```bash
-npm install @astryxdesign/core @astryxdesign/theme-neutral
+npm install @astryxdesign/core @astryxdesign/theme-neutral @stylexjs/stylex
 ```
 
 Then pick your setup below based on your framework and styling approach.
@@ -228,7 +228,7 @@ export default function Page() {
 Use the pre-built dist alongside StyleX for your own styles.
 
 ```bash
-npm install @astryxdesign/core @astryxdesign/theme-neutral
+npm install @astryxdesign/core @astryxdesign/theme-neutral @stylexjs/stylex
 ```
 
 **`src/app/globals.css`**
@@ -244,7 +244,7 @@ Providers and layout are the same as the Tailwind example (use `@astryxdesign/th
 ### Vite
 
 ```bash
-npm install @astryxdesign/core @astryxdesign/theme-neutral
+npm install @astryxdesign/core @astryxdesign/theme-neutral @stylexjs/stylex
 ```
 
 Same CSS imports and providers as above. No build plugins needed; Astryx ships pre-built.

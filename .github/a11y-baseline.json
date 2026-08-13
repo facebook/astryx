@@ -4,51 +4,6 @@
   "generatedAt": "2026-07-31T09:21:12.717Z",
   "entries": [
     {
-      "key": "AppShell::Auto Height::color-contrast",
-      "impact": "serious",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
-    },
-    {
-      "key": "AppShell::Controlled Collapse::color-contrast",
-      "impact": "serious",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
-    },
-    {
-      "key": "AppShell::Full Featured::color-contrast",
-      "impact": "serious",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
-    },
-    {
-      "key": "AppShell::Playground::color-contrast",
-      "impact": "serious",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
-    },
-    {
-      "key": "AppShell::Side Nav Only::color-contrast",
-      "impact": "serious",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
-    },
-    {
-      "key": "AppShell::Top Nav Only::color-contrast",
-      "impact": "serious",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
-    },
-    {
-      "key": "AppShell::Top Nav With Side Nav::color-contrast",
-      "impact": "serious",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
-    },
-    {
-      "key": "AppShell::With Banner::color-contrast",
-      "impact": "serious",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
-    },
-    {
-      "key": "AppShell::With Mobile Nav::color-contrast",
-      "impact": "serious",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
-    },
-    {
       "key": "Avatar::Default::color-contrast",
       "impact": "serious",
       "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
@@ -785,6 +740,11 @@
     },
     {
       "key": "ProgressBar::Disabled::color-contrast",
+      "impact": "serious",
+      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
+    },
+    {
+      "key": "ProgressBar::Marks Across Variants::color-contrast",
       "impact": "serious",
       "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
     },

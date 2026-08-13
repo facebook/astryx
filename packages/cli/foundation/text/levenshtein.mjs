@@ -20,6 +20,12 @@
  */
 export function levenshteinDistance(a, b) {
   const m = a.length, n = b.length;
+  // Early exit: the distance is always ≥ |m − n|, so once the length gap
+  // exceeds the loosest fuzzy-match threshold any caller uses (the hook
+  // suggester keeps distance ≤ 5) the pair can never match — skip the O(m·n)
+  // DP entirely. Closes the DoS surface where a long query (>3k chars) caused
+  // multi-second CPU spins (8,860 calls × O(n²) per search).
+  if (Math.abs(m - n) > 5) return 999;
   /** @type {number[][]} */
   const dp = Array.from({length: m + 1}, () => Array(n + 1).fill(0));
   for (let i = 0; i <= m; i++) dp[i][0] = i;

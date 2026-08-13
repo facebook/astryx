@@ -51,6 +51,7 @@ import {
   REMOVE_LIST_COMMAND,
 } from '@lexical/list';
 import {$getNearestNodeOfType, mergeRegister} from '@lexical/utils';
+import {TOGGLE_LINK_COMMAND, $isLinkNode, $createLinkNode} from '@lexical/link';
 import {Toolbar} from '@astryxdesign/core/Toolbar';
 import {ToggleButton} from '@astryxdesign/core/ToggleButton';
 import {Divider} from '@astryxdesign/core/Divider';
@@ -62,11 +63,17 @@ import {
   CAN_UNDO_COMMAND,
   CAN_REDO_COMMAND,
   SELECTION_CHANGE_COMMAND,
+  KEY_DOWN_COMMAND,
   COMMAND_PRIORITY_CRITICAL,
+  COMMAND_PRIORITY_NORMAL,
+  IS_APPLE,
+  isExactShortcutMatch,
   $getSelection,
   $isRangeSelection,
   $createParagraphNode,
+  $createTextNode,
 } from 'lexical';
+import {sanitizeUrl} from './linkUtils';
 
 /** Block types the toolbar can toggle. */
 type BlockType =
@@ -77,6 +84,23 @@ const HEADING_LABELS: Record<'h1' | 'h2' | 'h3', string> = {
   h2: 'Heading 2',
   h3: 'Heading 3',
 };
+
+/**
+ * The platform-primary modifier for shortcuts: Cmd on Apple, Ctrl elsewhere.
+ * Mirrors the Lexical playground's `CONTROL_OR_META`
+ * (packages/lexical-playground/src/plugins/ShortcutsPlugin/shortcuts.ts).
+ */
+const CONTROL_OR_META = {ctrlKey: !IS_APPLE, metaKey: IS_APPLE};
+
+/**
+ * Whether `event` is the insert-link shortcut (Cmd/Ctrl+K). Uses Lexical's
+ * `isExactShortcutMatch`, which — unlike a loose `metaKey || ctrlKey` check —
+ * requires exactly the primary modifier and rejects the combo when other
+ * modifiers (Shift/Alt) are also held. Matches the playground's `isInsertLink`.
+ */
+function isInsertLink(event: KeyboardEvent): boolean {
+  return isExactShortcutMatch(event, 'k', CONTROL_OR_META);
+}
 
 /**
  * Stable icon-registry keys for the toolbar's controls. Themes can override any
@@ -90,6 +114,7 @@ export const RICHTEXT_ICON_KEYS = {
   underline: 'richtext:underline',
   strikethrough: 'richtext:strikethrough',
   code: 'richtext:code',
+  link: 'richtext:link',
   h1: 'richtext:h1',
   h2: 'richtext:h2',
   h3: 'richtext:h3',
@@ -175,6 +200,22 @@ const defaultToolbarIcons: Record<string, ReactNode> = {
       aria-hidden="true">
       <path
         d="M9 8l-4 4 4 4M15 8l4 4-4 4"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  ),
+  link: (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true">
+      <path
+        d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1.5-1.5"
         stroke="currentColor"
         strokeWidth="2"
         strokeLinecap="round"
@@ -313,6 +354,34 @@ export interface RichTextEditorToolbarProps {
   /** Toolbar size, forwarded to the Astryx Toolbar. @default 'sm' */
   size?: 'sm' | 'md' | 'lg';
   /**
+   * Whether to show the insert/edit-link button. When enabled, pressing it on a
+   * collapsed or non-link selection prompts for a URL (via `promptForUrl`,
+   * `window.prompt` by default) and wraps the selection in a link; pressing it
+   * while a link is selected removes the link.
+   *
+   * Requires `LinkNode` to be registered (it is, by default) — no extra setup.
+   * The entered URL is sanitized (see `sanitizeUrl`) so only
+   * http/https/mailto/tel links are written.
+   * @default true
+   */
+  hasLink?: boolean;
+  /**
+   * Called to obtain a URL when the link button is pressed on a non-link
+   * selection. Return the URL string to link, or `null`/`''` to cancel.
+   * Receives the currently selected text as a hint. Defaults to
+   * `window.prompt`. Override to plug in a custom (e.g. Astryx Dialog) prompt.
+   */
+  promptForUrl?: (selectedText: string) => string | null | undefined;
+  /**
+   * Whether links created via the toolbar open in a new tab. When `true`
+   * (default), the created link carries `target="_blank"` and
+   * `rel="noopener noreferrer"` — written into the link node's data (so it
+   * serializes and round-trips), not patched onto the DOM. Set `false` to
+   * create same-tab links.
+   * @default true
+   */
+  linkOpensInNewTab?: boolean;
+  /**
    * Extra items rendered at the end of the toolbar (after a divider). Use this
    * to compose product-specific controls (e.g. mentions, AI) alongside the
    * default formatting buttons.
@@ -344,11 +413,15 @@ export function RichTextEditorToolbar({
   label = 'Text formatting',
   headingLevels = ['h1', 'h2', 'h3'],
   size = 'sm',
+  hasLink = true,
+  promptForUrl,
+  linkOpensInNewTab = true,
   endContent,
 }: RichTextEditorToolbarProps) {
   const [editor] = useLexicalComposerContext();
   const [activeFormats, setActiveFormats] = useState<Set<string>>(new Set());
   const [blockType, setBlockType] = useState<BlockType>('paragraph');
+  const [isLink, setIsLink] = useState(false);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
   const [isEditable, setIsEditable] = useState(() => editor.isEditable());
@@ -372,6 +445,13 @@ export function RichTextEditorToolbar({
     }
     setActiveFormats(formats);
 
+    // Link active state — a link is "active" when the caret/selection anchor
+    // sits inside a LinkNode (or its immediate parent is one). Mirrors the EPS
+    // eps-lexical toolbar (`$isLinkNode(parent) || $isLinkNode(node)`), which is
+    // the implementation astryx aims to be swappable with.
+    const node = selection.anchor.getNode();
+    setIsLink($isLinkNode(node.getParent()) || $isLinkNode(node));
+
     const anchorNode = selection.anchor.getNode();
     const element =
       anchorNode.getKey() === 'root'
@@ -391,6 +471,91 @@ export function RichTextEditorToolbar({
       setBlockType('paragraph');
     }
   }, []);
+
+  /**
+   * Toggle a link on the current selection.
+   *
+   * - On an existing (non-auto) link: removes it (`TOGGLE_LINK_COMMAND` with
+   *   `null`).
+   * - Otherwise: reads the currently selected text, asks `promptForUrl`
+   *   (default `window.prompt`) for a URL, sanitizes it, then either wraps the
+   *   selection in a link or — for a collapsed caret with no selected text —
+   *   inserts a new link whose text and href are both the URL.
+   *
+   * Semantics deliberately mirror EPS eps-lexical's `LinkPopoverPlugin.
+   * handleSubmit`: both dispatch the OSS `TOGGLE_LINK_COMMAND` and fall back to
+   * `$createLinkNode` for a collapsed selection. astryx keeps the *command +
+   * node contract* identical so EPS can later replace astryx's default prompt
+   * with its own floating popover without changing behaviour.
+   */
+  const toggleLink = useCallback(() => {
+    if (!editor.isEditable()) {
+      return;
+    }
+
+    // Removing an existing (manually-created) link doesn't need a URL.
+    if (isLink) {
+      editor.dispatchCommand(TOGGLE_LINK_COMMAND, null);
+      return;
+    }
+
+    // Read the selected text (as a prompt hint) inside a read context.
+    let selectedText = '';
+    editor.getEditorState().read(() => {
+      const selection = $getSelection();
+      if ($isRangeSelection(selection)) {
+        selectedText = selection.getTextContent();
+      }
+    });
+
+    const ask =
+      promptForUrl ??
+      ((hint: string) =>
+        typeof window !== 'undefined'
+          ? window.prompt(
+              'Enter a URL',
+              hint.startsWith('http') ? hint : 'https://',
+            )
+          : null);
+    const entered = ask(selectedText);
+    if (entered == null || entered.trim() === '') {
+      return;
+    }
+    const url = sanitizeUrl(entered);
+    if (url === 'about:blank') {
+      // Sanitizer rejected the input (empty / unsafe scheme) — do nothing
+      // rather than write a dead link.
+      return;
+    }
+
+    // New-tab attributes are baked into the LINK NODE DATA (not patched onto
+    // the DOM): TOGGLE_LINK_COMMAND accepts `{url, target, rel}` and stores
+    // them on the node, so they serialize and round-trip. rel="noopener
+    // noreferrer" is required whenever target="_blank" (reverse-tabnabbing).
+    const linkAttributes = linkOpensInNewTab
+      ? {target: '_blank', rel: 'noopener noreferrer'}
+      : {};
+
+    // Dispatch TOGGLE_LINK_COMMAND so any DecoratorNode handlers can intercept
+    // first (parity with eps-lexical). If nothing consumes it, the built-in
+    // @lexical/link handler wraps the selection. `dispatchCommand` returns
+    // whether a handler ran; on a collapsed caret the built-in handler is a
+    // no-op, so we insert an explicit link node as a fallback.
+    const handled = editor.dispatchCommand(TOGGLE_LINK_COMMAND, {
+      url,
+      ...linkAttributes,
+    });
+    if (!handled) {
+      editor.update(() => {
+        const selection = $getSelection();
+        if ($isRangeSelection(selection) && selection.isCollapsed()) {
+          const linkNode = $createLinkNode(url, linkAttributes);
+          linkNode.append($createTextNode(entered.trim()));
+          selection.insertNodes([linkNode]);
+        }
+      });
+    }
+  }, [editor, isLink, promptForUrl, linkOpensInNewTab]);
 
   useEffect(() => {
     return mergeRegister(
@@ -424,8 +589,28 @@ export function RichTextEditorToolbar({
       editor.registerEditableListener(editable => {
         setIsEditable(editable);
       }),
+      // Cmd/Ctrl+K opens link insertion. Detection mirrors the Lexical
+      // playground's ShortcutsPlugin (isInsertLink → isExactShortcutMatch with
+      // CONTROL_OR_META), so it fires only on the exact primary-modifier combo
+      // and ignores Cmd+Shift+K etc. Only registered when the link button is
+      // enabled. Returns true to consume the event so the browser's own
+      // shortcut doesn't also fire.
+      hasLink
+        ? editor.registerCommand(
+            KEY_DOWN_COMMAND,
+            (event: KeyboardEvent) => {
+              if (isInsertLink(event)) {
+                event.preventDefault();
+                toggleLink();
+                return true;
+              }
+              return false;
+            },
+            COMMAND_PRIORITY_NORMAL,
+          )
+        : () => {},
     );
-  }, [editor, $syncToolbar]);
+  }, [editor, $syncToolbar, hasLink, toggleLink]);
 
   const toggleInlineFormat = (format: string) => {
     // FORMAT_TEXT_COMMAND payload is a TextFormatType; the values we pass are
@@ -542,6 +727,16 @@ export function RichTextEditorToolbar({
             isDisabled={!isEditable}
             onPressedChange={() => toggleInlineFormat('code')}
           />
+          {hasLink && (
+            <ToggleButton
+              label="Link"
+              icon={resolveIcon('link')}
+              isIconOnly
+              isPressed={isLink}
+              isDisabled={!isEditable}
+              onPressedChange={toggleLink}
+            />
+          )}
           <Divider orientation="vertical" />
           {headingLevels.map(level => (
             <ToggleButton

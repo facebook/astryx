@@ -64,15 +64,6 @@ export interface GridProps extends BaseProps<HTMLDivElement> {
   columns?: GridColumns;
 
   /**
-   * Minimum width of each grid item in pixels.
-   * Enables responsive auto-fit behavior.
-   *
-   * @deprecated Use `columns={{minWidth: 280}}` instead.
-   * @default 0 (disabled)
-   */
-  minChildWidth?: number;
-
-  /**
    * Width of the grid container.
    * Numbers are treated as pixels, strings are used as-is (e.g., '100%').
    */
@@ -384,7 +375,6 @@ function buildCappedTemplate(
  */
 export function Grid({
   columns,
-  minChildWidth = 0,
   rowHeight,
   width,
   height,
@@ -420,20 +410,6 @@ export function Grid({
       );
     } else {
       gridTemplateColumns = `repeat(${repeatMode}, minmax(${columns.minWidth}px, 1fr))`;
-    }
-  } else if (minChildWidth > 0) {
-    // Deprecated path: minChildWidth uses auto-fit for backward compat
-    const numColumns = typeof columns === 'number' ? columns : 0;
-    if (numColumns > 0) {
-      gridTemplateColumns = buildCappedTemplate(
-        minChildWidth,
-        numColumns,
-        'auto-fit',
-        gap,
-        columnGap,
-      );
-    } else {
-      gridTemplateColumns = `repeat(auto-fit, minmax(${minChildWidth}px, 1fr))`;
     }
   } else if (typeof columns === 'number' && columns > 0) {
     // Fixed columns mode

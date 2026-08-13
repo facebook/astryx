@@ -619,31 +619,6 @@ describe('Switch', () => {
       expect(getField(explicit)).not.toHaveAttribute('data-label-spacing');
       expect(getField(explicit).className).toBe(getField(implicit).className);
     });
-
-    it("treats the deprecated 'default' value as an alias for hug", () => {
-      const {container: hug} = render(
-        <Switch
-          label="Notify"
-          value={false}
-          onChange={() => {}}
-          labelSpacing="hug"
-        />,
-      );
-      const {container: deprecated} = render(
-        <Switch
-          label="Notify"
-          value={false}
-          onChange={() => {}}
-          labelSpacing="default"
-        />,
-      );
-      expect(getField(deprecated)).not.toHaveAttribute('data-label-spacing');
-      expect(getField(deprecated).className).toBe(getField(hug).className);
-      // The switch row keeps the hug layout, not the spread justification.
-      expect(getField(deprecated).firstElementChild?.className).toBe(
-        getField(hug).firstElementChild?.className,
-      );
-    });
   });
   describe('form participation', () => {
     it('submits under htmlName when on', () => {
@@ -659,6 +634,38 @@ describe('Switch', () => {
       );
       const data = new FormData(container.querySelector('form')!);
       expect(data.get('notify')).toBe('on');
+    });
+
+    it('does not block form submission when required and disabled with a disabledMessage', () => {
+      const {container} = render(
+        <form>
+          <Switch
+            label="Notify"
+            htmlName="notify"
+            value={false}
+            onChange={() => {}}
+            isRequired
+            isDisabled
+            disabledMessage="Notifications are turned off org-wide"
+          />
+        </form>,
+      );
+      expect(container.querySelector('form')!.checkValidity()).toBe(true);
+    });
+
+    it('still blocks submission when required and off but enabled', () => {
+      const {container} = render(
+        <form>
+          <Switch
+            label="Notify"
+            htmlName="notify"
+            value={false}
+            onChange={() => {}}
+            isRequired
+          />
+        </form>,
+      );
+      expect(container.querySelector('form')!.checkValidity()).toBe(false);
     });
 
     it('is excluded from form data when disabled, even with a disabledMessage', () => {

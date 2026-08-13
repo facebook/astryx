@@ -44,15 +44,17 @@ export function getNextSteps(invocation) {
   return [
     '',
     '  Next steps:',
-    "    1. Import base styles: import '@astryxdesign/core/reset.css'",
+    '    1. Ensure the @stylexjs/stylex peer dependency is met',
+    `       (run \`${invocation} doctor\` to verify)`,
+    "    2. Import base styles: import '@astryxdesign/core/reset.css'",
     "       and import '@astryxdesign/core/astryx.css'",
-    "    2. Import components: import { Button } from '@astryxdesign/core'",
-    '    3. Optionally add a theme (use the pre-built path for performance):',
+    "    3. Import components: import { Button } from '@astryxdesign/core'",
+    '    4. Optionally add a theme (use the pre-built path for performance):',
     "       import { neutralTheme } from '@astryxdesign/theme-neutral/built'",
     "       import '@astryxdesign/theme-neutral/theme.css'",
     '       <Theme theme={neutralTheme}>...</Theme>',
     `       For custom themes, run \`${invocation} theme build <file>\` to generate the built artifacts.`,
-    `    4. ${invocation} --help for all commands`,
+    `    5. ${invocation} --help for all commands`,
     '',
   ];
 }

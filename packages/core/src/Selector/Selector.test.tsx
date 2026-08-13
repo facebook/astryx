@@ -3,7 +3,7 @@
 /**
  * @file Selector.test.tsx
  * @input Uses vitest, @testing-library/react, @testing-library/user-event
- * @output Unit tests for Selector
+ * @output Unit tests for Selector behavior and selected-item geometry
  * @position Tests; validates Selector behavior
  *
  * SYNC: When Selector.tsx API changes, update these tests.
@@ -18,20 +18,26 @@ import {
   within,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {useState} from 'react';
 import {Selector} from './Selector';
 import {SelectorOption} from './SelectorOption';
 import {Icon} from '../Icon';
+import {RadioIndicator} from '../Indicator';
 import {InputGroup, InputGroupText} from '../InputGroup';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {defineTheme} from '../theme/defineTheme';
-import {generateThemeCSSFlat} from '../theme/generateThemeRules';
+import {Theme} from '../theme/Theme';
+import {generateThemeCSS} from '../theme/generateThemeRules';
 
-function politeRegion(): HTMLElement | null {
-  return document.querySelector('[data-astryx-live-region="polite"]');
+function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
+  const {prose, component} = generateThemeCSS(theme);
+  return [prose, component].filter(Boolean).join('\n\n');
 }
 
 // Mock showPopover and hidePopover methods since they're not implemented in jsdom
 beforeEach(() => {
+  // The live regions are a document-level singleton; start each test clean.
+  __resetLiveRegionsForTest();
   HTMLElement.prototype.showPopover = vi.fn(function (this: HTMLElement) {
     this.setAttribute('popover-open', '');
     const event = new Event('toggle', {bubbles: false});
@@ -66,6 +72,23 @@ const h = {hidden: true} as const;
 
 const OPTIONS = ['Apple', 'Banana', 'Cherry'];
 
+// Mirrors useTypeahead's default resetMs — how long the typed buffer survives.
+const TYPEAHEAD_RESET_MS = 750;
+
+const politeRegion = () =>
+  document.querySelector('[data-astryx-live-region="polite"]');
+
+/**
+ * Type onto an element with no awaits between keystrokes. Typeahead only
+ * accumulates while keys land inside the reset window, so an awaited
+ * `user.keyboard` per character would put CI stalls on the critical path.
+ */
+function type(text: string, element: HTMLElement) {
+  for (const key of text) {
+    fireEvent.keyDown(element, {key});
+  }
+}
+
 function rect({
   top,
   bottom,
@@ -94,36 +117,103 @@ function rect({
   };
 }
 
-function mockSelectorRects() {
+function mockSelectorRects({
+  anchor = rect({top: 160, bottom: 190, height: 30}),
+  trigger = rect({top: 160, bottom: 190, height: 30}),
+  listbox = rect({top: 190, bottom: 310, height: 120}),
+  selectedItem = rect({top: 220, bottom: 250, height: 30}),
+  listboxLayoutHeight = listbox.height,
+  selectedItemLayoutTop = selectedItem.top - listbox.top,
+  selectedItemLayoutHeight = selectedItem.height,
+  viewportHeight = 200,
+}: {
+  anchor?: DOMRect;
+  trigger?: DOMRect;
+  listbox?: DOMRect;
+  selectedItem?: DOMRect;
+  listboxLayoutHeight?: number;
+  selectedItemLayoutTop?: number;
+  selectedItemLayoutHeight?: number;
+  viewportHeight?: number;
+} = {}) {
   const originalGetBoundingClientRect =
     HTMLElement.prototype.getBoundingClientRect;
   const originalInnerHeight = Object.getOwnPropertyDescriptor(
     window,
     'innerHeight',
   );
+  const originalOffsetTop = Object.getOwnPropertyDescriptor(
+    HTMLElement.prototype,
+    'offsetTop',
+  );
+  const originalOffsetHeight = Object.getOwnPropertyDescriptor(
+    HTMLElement.prototype,
+    'offsetHeight',
+  );
   HTMLElement.prototype.getBoundingClientRect = function () {
+    if (this.classList.contains('astryx-selector')) {
+      return anchor;
+    }
     // The trigger is role="combobox" by default, or a plain button with
     // aria-haspopup="listbox" in hasSearch mode — match either.
     if (
       this.getAttribute('role') === 'combobox' ||
       this.getAttribute('aria-haspopup') === 'listbox'
     ) {
-      return rect({top: 160, bottom: 190, height: 30});
+      return trigger;
     }
     if (this.getAttribute('role') === 'listbox') {
-      return rect({top: 190, bottom: 310, height: 120});
+      return listbox;
     }
     if (this.id.endsWith('-item-1')) {
-      return rect({top: 220, bottom: 250, height: 30});
+      return selectedItem;
     }
     return originalGetBoundingClientRect.call(this);
   };
+  Object.defineProperty(HTMLElement.prototype, 'offsetTop', {
+    configurable: true,
+    get() {
+      if (this.getAttribute('role') === 'listbox') {
+        return 0;
+      }
+      if (this.id.endsWith('-item-1')) {
+        return selectedItemLayoutTop;
+      }
+      return 0;
+    },
+  });
+  Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
+    configurable: true,
+    get() {
+      if (this.getAttribute('role') === 'listbox') {
+        return listboxLayoutHeight;
+      }
+      if (this.id.endsWith('-item-1')) {
+        return selectedItemLayoutHeight;
+      }
+      return 0;
+    },
+  });
   Object.defineProperty(window, 'innerHeight', {
-    value: 200,
+    value: viewportHeight,
     configurable: true,
   });
   return () => {
     HTMLElement.prototype.getBoundingClientRect = originalGetBoundingClientRect;
+    if (originalOffsetTop) {
+      Object.defineProperty(
+        HTMLElement.prototype,
+        'offsetTop',
+        originalOffsetTop,
+      );
+    }
+    if (originalOffsetHeight) {
+      Object.defineProperty(
+        HTMLElement.prototype,
+        'offsetHeight',
+        originalOffsetHeight,
+      );
+    }
     if (originalInnerHeight) {
       Object.defineProperty(window, 'innerHeight', originalInnerHeight);
     }
@@ -146,6 +236,60 @@ describe('Selector', () => {
       />,
     );
     expect(screen.getByRole('combobox')).toHaveTextContent('Banana');
+  });
+
+  it('draws the selected mark through the check indicator', () => {
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value="Banana"
+        onChange={() => {}}
+      />,
+    );
+
+    const selected = screen.getByRole('option', {name: /Banana/, hidden: true});
+    // The default check indicator IS the glyph — no wrapper element, so the
+    // host's theme target sits on the same node as astryx-icon.
+    const mark = selected.querySelector('.astryx-selector-check');
+    expect(mark).not.toBeNull();
+    expect(mark).toHaveClass('astryx-icon');
+  });
+
+  it('lets a theme replace the mark with a radio, which draws when unselected too', () => {
+    // The point of the indicator layer: one theme entry, and every
+    // single-selection mark becomes a radio — including the empty circle on
+    // rows that are NOT selected, which a check-only mark never drew.
+    const theme = defineTheme({
+      name: 'selector-radio-mark-test',
+      indicators: {check: RadioIndicator},
+    });
+
+    render(
+      <Theme theme={theme}>
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Banana"
+          onChange={() => {}}
+        />
+      </Theme>,
+    );
+
+    const options = screen.getAllByRole('option', {hidden: true});
+    expect(options.length).toBeGreaterThan(1);
+
+    // Every row has a radio, selected or not.
+    for (const option of options) {
+      expect(option.querySelector('.astryx-radio')).not.toBeNull();
+    }
+
+    // And exactly the selected one is filled.
+    const filled = options.filter(
+      o => o.querySelector('.astryx-radio-dot') != null,
+    );
+    expect(filled).toHaveLength(1);
+    expect(filled[0]).toHaveTextContent('Banana');
   });
 
   it('renders custom option endContent', async () => {
@@ -259,6 +403,81 @@ describe('Selector', () => {
     } finally {
       restoreRects();
     }
+  });
+
+  it('aligns the selected item using untransformed layout geometry', async () => {
+    const restoreRects = mockSelectorRects({
+      anchor: rect({top: 160, bottom: 192, height: 32}),
+      trigger: rect({top: 166, bottom: 186, height: 20}),
+      // Simulate the 0.95 entry scale in visual rects while retaining the
+      // untransformed 120px list / 36px item offset used for positioning.
+      listbox: rect({top: 190, bottom: 304, height: 114}),
+      selectedItem: rect({
+        top: 224.2,
+        bottom: 254.6,
+        height: 30.4,
+      }),
+      listboxLayoutHeight: 120,
+      selectedItemLayoutTop: 36,
+      selectedItemLayoutHeight: 32,
+      viewportHeight: 900,
+    });
+    const user = userEvent.setup();
+    try {
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Banana"
+          onChange={() => {}}
+        />,
+      );
+
+      await user.click(screen.getByRole('combobox'));
+      const popover = screen
+        .getByRole('listbox', {hidden: true})
+        .closest('[popover]');
+      await waitFor(() => {
+        // 68px geometric alignment plus the 1px optical correction.
+        expect(popover?.getAttribute('style')).toContain(
+          'margin-block-start: -69px',
+        );
+      });
+    } finally {
+      restoreRects();
+    }
+  });
+
+  it('adds the border inset only to input-variant dropdowns', async () => {
+    const user = userEvent.setup();
+    const {unmount} = render(
+      <Selector
+        label="Input fruit"
+        options={OPTIONS}
+        value="Banana"
+        onChange={() => {}}
+      />,
+    );
+
+    await user.click(screen.getByRole('combobox'));
+    const inputDropdownClass = screen.getByRole('listbox', h).className;
+    unmount();
+
+    render(
+      <Selector
+        label="Ghost fruit"
+        options={OPTIONS}
+        value="Banana"
+        variant="ghost"
+        onChange={() => {}}
+      />,
+    );
+    await user.click(screen.getByRole('combobox'));
+    const ghostDropdownClass = screen.getByRole('listbox', h).className;
+
+    // The bordered input gets one extra StyleX rule for its border-width
+    // correction; the borderless ghost keeps the base menu inset.
+    expect(inputDropdownClass).not.toBe(ghostDropdownClass);
   });
 
   it('does not apply selected-item overlay offset when placement is explicit', async () => {
@@ -984,6 +1203,532 @@ describe('Selector', () => {
     });
   });
 
+  describe('typeahead', () => {
+    it('selects the matching option by typing on the closed trigger', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(<Selector label="Fruit" options={OPTIONS} onChange={onChange} />);
+
+      await user.tab();
+      await user.keyboard('c');
+
+      expect(onChange).toHaveBeenCalledWith('Cherry');
+      // Native select parity: the value changes without opening the menu.
+      expect(screen.getByRole('combobox')).toHaveAttribute(
+        'aria-expanded',
+        'false',
+      );
+    });
+
+    it('cycles through options sharing a first letter on repeated presses', async () => {
+      const user = userEvent.setup();
+      function Harness() {
+        const [value, setValue] = useState<string | undefined>(undefined);
+        return (
+          <Selector
+            label="City"
+            options={['Austin', 'Chicago', 'Cleveland', 'Columbus']}
+            value={value}
+            onChange={setValue}
+          />
+        );
+      }
+      render(<Harness />);
+
+      await user.tab();
+      await user.keyboard('c');
+      expect(screen.getByRole('combobox')).toHaveTextContent('Chicago');
+      await user.keyboard('c');
+      expect(screen.getByRole('combobox')).toHaveTextContent('Cleveland');
+      await user.keyboard('c');
+      expect(screen.getByRole('combobox')).toHaveTextContent('Columbus');
+      // Wraps back around past non-matching options.
+      await user.keyboard('c');
+      expect(screen.getByRole('combobox')).toHaveTextContent('Chicago');
+    });
+
+    it('advances past the current selection on a fresh single-letter press', async () => {
+      const user = userEvent.setup();
+      function Harness() {
+        const [value, setValue] = useState<string | undefined>('Chicago');
+        return (
+          <Selector
+            label="City"
+            options={['Austin', 'Chicago', 'Cleveland', 'Columbus']}
+            value={value}
+            onChange={setValue}
+          />
+        );
+      }
+      render(<Harness />);
+
+      const trigger = screen.getByRole('combobox');
+      await user.tab();
+      // Native select parity: the selected option's own initial moves on to
+      // the next match. Anchoring the search AT the selection instead of after
+      // it re-matches the current value, and the duplicate-select guard then
+      // swallows the keystroke entirely.
+      type('c', trigger);
+
+      expect(trigger).toHaveTextContent('Cleveland');
+    });
+
+    it('advances the highlight past the current one with the menu open', async () => {
+      const user = userEvent.setup();
+      render(
+        <Selector
+          label="City"
+          options={['Austin', 'Chicago', 'Cleveland', 'Columbus']}
+          value="Chicago"
+          onChange={() => {}}
+        />,
+      );
+
+      const trigger = screen.getByRole('combobox');
+      await user.tab();
+      await user.keyboard('{Enter}'); // opens with the highlight on Chicago
+      type('c', trigger);
+
+      const activeId = trigger.getAttribute('aria-activedescendant');
+      expect(document.getElementById(activeId ?? '')).toHaveTextContent(
+        'Cleveland',
+      );
+    });
+
+    it('treats a space mid-buffer as part of the match, not as open', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <Selector
+          label="State"
+          options={['New Jersey', 'New York']}
+          onChange={onChange}
+        />,
+      );
+
+      const trigger = screen.getByRole('combobox');
+      await user.tab();
+      // Synchronous keydowns: the buffer only accumulates while keystrokes
+      // land inside the TYPEAHEAD_RESET_MS window, and awaiting between them
+      // would put a CI stall on the critical path.
+      type('new y', trigger);
+
+      expect(onChange).toHaveBeenLastCalledWith('New York');
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    });
+
+    it('opens and seeds the search input when typing on a closed hasSearch trigger', async () => {
+      const user = userEvent.setup();
+      render(<Selector label="Fruit" options={OPTIONS} hasSearch />);
+
+      await user.tab();
+      await user.keyboard('c');
+
+      const search = screen.getByPlaceholderText('Search…');
+      expect(search).toHaveValue('c');
+      await waitFor(() => expect(search).toHaveFocus());
+    });
+
+    it('accumulates a multi-character prefix and resets it after the timeout', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      // Controlled: the committed value has to feed back in, or the match
+      // anchor stays -1 for the whole test and never gets exercised.
+      function Harness() {
+        const [value, setValue] = useState<string | undefined>(undefined);
+        return (
+          <Selector
+            label="Fruit"
+            options={['Apple', 'Banana', 'Blueberry']}
+            value={value}
+            onChange={next => {
+              setValue(next);
+              onChange(next);
+            }}
+          />
+        );
+      }
+      render(<Harness />);
+
+      const trigger = screen.getByRole('combobox');
+      await user.tab();
+      type('b', trigger);
+      expect(trigger).toHaveTextContent('Banana');
+      // Within the window the buffer accumulates: "bl" → Blueberry. A
+      // multi-character buffer refines, so it may keep the current match.
+      type('l', trigger);
+      expect(trigger).toHaveTextContent('Blueberry');
+
+      // Past the window the buffer starts fresh: "a" → Apple. A surviving
+      // buffer would search "bla" and match nothing, so only a real reset
+      // gets here — worth the one real wait in the suite.
+      await new Promise(resolve =>
+        setTimeout(resolve, TYPEAHEAD_RESET_MS + 100),
+      );
+      type('a', trigger);
+      expect(trigger).toHaveTextContent('Apple');
+    });
+
+    it('skips disabled options when matching', async () => {
+      const user = userEvent.setup();
+      function Harness() {
+        const [value, setValue] = useState<string | undefined>(undefined);
+        return (
+          <Selector
+            label="Fruit"
+            options={[{value: 'Cherry', disabled: true}, 'Coconut']}
+            value={value}
+            onChange={setValue}
+          />
+        );
+      }
+      render(<Harness />);
+
+      const trigger = screen.getByRole('combobox');
+      await user.tab();
+      type('c', trigger);
+      expect(trigger).toHaveTextContent('Coconut');
+
+      // The skip has to survive cycling too: with Coconut current, the next
+      // press wraps onto the disabled Cherry and must pass over it.
+      type('c', trigger);
+      expect(trigger).toHaveTextContent('Coconut');
+      expect(trigger).not.toHaveTextContent('Cherry');
+    });
+
+    it('moves the highlight without committing when typing with the menu open', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <Selector
+          label="City"
+          options={['Austin', 'Chicago', 'Cleveland']}
+          onChange={onChange}
+        />,
+      );
+
+      await user.tab();
+      await user.keyboard('{Enter}'); // open
+      const trigger = screen.getByRole('combobox');
+
+      await user.keyboard('c');
+      let activeId = trigger.getAttribute('aria-activedescendant');
+      expect(document.getElementById(activeId ?? '')).toHaveTextContent(
+        'Chicago',
+      );
+
+      // Repeated press cycles the highlight, still without committing.
+      await user.keyboard('c');
+      activeId = trigger.getAttribute('aria-activedescendant');
+      expect(document.getElementById(activeId ?? '')).toHaveTextContent(
+        'Cleveland',
+      );
+      expect(onChange).not.toHaveBeenCalled();
+      // aria-activedescendant already announces each match, so announcing
+      // again here would make a screen reader say every match twice.
+      // useAnnounce writes its text in a rAF callback, so let a frame pass —
+      // asserting before it runs would pass no matter what the code does.
+      await new Promise(resolve => requestAnimationFrame(() => resolve(null)));
+      expect(politeRegion()?.textContent ?? '').toBe('');
+
+      await user.keyboard('{Enter}');
+      expect(onChange).toHaveBeenCalledWith('Cleveland');
+    });
+
+    it('does not fire onChange when the only match is already selected', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Cherry"
+          onChange={onChange}
+        />,
+      );
+
+      await user.tab();
+      await user.keyboard('c');
+
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('ignores printable keys pressed with ctrl or meta modifiers', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(<Selector label="Fruit" options={OPTIONS} onChange={onChange} />);
+
+      await user.tab();
+      await user.keyboard('{Control>}c{/Control}{Meta>}b{/Meta}');
+
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('announces the committed option to screen readers', async () => {
+      const user = userEvent.setup();
+      render(<Selector label="Fruit" options={OPTIONS} onChange={() => {}} />);
+
+      await user.tab();
+      await user.keyboard('c');
+
+      // The trigger keeps focus and the menu never opens, so nothing else
+      // prompts a re-read. The polite live region carries the new value.
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('Cherry');
+      });
+    });
+
+    it('does not select while focusable-disabled', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          onChange={onChange}
+          isDisabled
+          disabledMessage="Ask an admin"
+        />,
+      );
+
+      // aria-disabled keeps the trigger focusable, so keydowns still arrive.
+      screen.getByRole('combobox').focus();
+      await user.keyboard('c');
+
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('cycles without duplicating changeAction while an action is pending', async () => {
+      const user = userEvent.setup();
+      const calls: string[] = [];
+      render(
+        <Selector
+          label="City"
+          options={['Chicago', 'Cleveland', 'Columbus']}
+          value={undefined}
+          changeAction={async value => {
+            calls.push(value);
+            // Never settles, so the value prop never catches up to what the
+            // trigger already shows.
+            await new Promise<void>(() => {});
+          }}
+        />,
+      );
+
+      const trigger = screen.getByRole('combobox');
+      await user.tab();
+      type('ccc', trigger);
+
+      // The anchor must come from the optimistic value, not the stale prop.
+      // Three options make that observable: with a stale anchor every press
+      // re-matches Chicago, which the duplicate guard then swallows.
+      expect(calls).toEqual(['Chicago', 'Cleveland', 'Columbus']);
+    });
+
+    it('starts a fresh buffer after selecting from the open menu', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <Selector
+          label="Animal"
+          options={['Cat', 'Dog']}
+          onChange={onChange}
+        />,
+      );
+
+      await user.tab();
+      await user.keyboard('{Enter}'); // open
+      await user.keyboard('d'); // highlight Dog
+      await user.keyboard('{Enter}'); // commit Dog, closes
+      onChange.mockClear();
+
+      // The stale 'd' must not linger: 'c' is a fresh buffer, not "dc".
+      await user.keyboard('c');
+      expect(onChange).toHaveBeenCalledWith('Cat');
+    });
+
+    it('starts a fresh buffer after the value is cleared', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      function Harness() {
+        const [value, setValue] = useState<string | null>('Dog');
+        return (
+          <Selector
+            label="Animal"
+            options={['Cat', 'Dog']}
+            hasClear
+            value={value}
+            onChange={next => {
+              setValue(next);
+              onChange(next);
+            }}
+          />
+        );
+      }
+      render(<Harness />);
+
+      const trigger = screen.getByRole('combobox');
+      await user.tab();
+      // Fills the buffer with 'd' without committing — Dog is already current.
+      type('d', trigger);
+      fireEvent.keyDown(trigger, {key: 'Delete'});
+      expect(onChange).toHaveBeenLastCalledWith(null);
+
+      // The stale 'd' must not survive the clear: 'c' is a fresh buffer, not
+      // "dc", which would match nothing and leave the value cleared.
+      type('c', trigger);
+      expect(onChange).toHaveBeenLastCalledWith('Cat');
+    });
+
+    it('matches on the label and commits the value', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      // Values deliberately crossed against labels: a native select matches
+      // the rendered text and reports the value.
+      function Harness() {
+        const [value, setValue] = useState<string | undefined>(undefined);
+        return (
+          <Selector
+            label="Fruit"
+            options={[
+              {value: 'zzz', label: 'Apple'},
+              {value: 'apple', label: 'Zebra'},
+            ]}
+            value={value}
+            onChange={next => {
+              setValue(next);
+              onChange(next);
+            }}
+          />
+        );
+      }
+      render(<Harness />);
+
+      const trigger = screen.getByRole('combobox');
+      await user.tab();
+      type('a', trigger);
+
+      expect(onChange).toHaveBeenCalledWith('zzz');
+      expect(trigger).toHaveTextContent('Apple');
+
+      // No other label starts with "a" — the option whose *value* is 'apple'
+      // is labelled Zebra — so a second press stays put and commits nothing.
+      type('a', trigger);
+      expect(onChange).toHaveBeenCalledTimes(1);
+    });
+
+    it('matches across sections, ignoring dividers and group titles', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <Selector
+          label="Fruit"
+          options={[
+            'Almond',
+            {type: 'divider'},
+            {
+              type: 'section',
+              title: 'Tropical',
+              options: [
+                {value: 'mango', label: 'Mango'},
+                {value: 'papaya', label: 'Papaya'},
+              ],
+            },
+          ]}
+          onChange={onChange}
+        />,
+      );
+
+      const trigger = screen.getByRole('combobox');
+      await user.tab();
+      type('p', trigger);
+      expect(onChange).toHaveBeenCalledWith('papaya');
+
+      // The section title "Tropical" is decoration, not an option.
+      onChange.mockClear();
+      type('t', trigger);
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('keeps aria-activedescendant on the matched option across a section', async () => {
+      const user = userEvent.setup();
+      render(
+        <Selector
+          label="Fruit"
+          options={[
+            'Almond',
+            {type: 'divider'},
+            {
+              type: 'section',
+              title: 'Berries',
+              options: [{value: 'blueberry', label: 'Blueberry'}],
+            },
+          ]}
+          value="Almond"
+          onChange={() => {}}
+        />,
+      );
+
+      const trigger = screen.getByRole('combobox');
+      await user.tab();
+      await user.keyboard('{Enter}'); // opens on Almond
+      type('b', trigger);
+
+      const activeId = trigger.getAttribute('aria-activedescendant');
+      expect(document.getElementById(activeId ?? '')).toHaveTextContent(
+        'Blueberry',
+      );
+    });
+
+    it('anchors at the top when the value matches no option', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <Selector
+          label="Fruit"
+          options={['Apple', 'Apricot']}
+          value="Durian"
+          onChange={onChange}
+        />,
+      );
+
+      const trigger = screen.getByRole('combobox');
+      await user.tab();
+      type('a', trigger);
+
+      // Nothing is really selected, so the first match must stay reachable.
+      expect(onChange).toHaveBeenCalledWith('Apple');
+    });
+
+    it('lets Space open the menu after an abandoned typeahead', async () => {
+      const user = userEvent.setup();
+      render(<Selector label="Fruit" options={OPTIONS} />);
+
+      const trigger = screen.getByRole('combobox');
+      await user.tab();
+      await user.keyboard('{Enter}'); // open
+      await user.keyboard('z'); // no match; buffer holds "z"
+      await user.keyboard('{Escape}'); // close, abandoning the buffer
+
+      // A live "z" buffer would swallow Space as a match character.
+      await user.keyboard(' ');
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    it('seeds every character typed before the search input takes focus', async () => {
+      const user = userEvent.setup();
+      render(<Selector label="Fruit" options={OPTIONS} hasSearch />);
+
+      await user.tab();
+      // The popup opens on the first key, but focus only moves to the search
+      // input on the next frame — the second key still lands on the trigger.
+      await user.keyboard('ch');
+
+      const search = screen.getByPlaceholderText('Search…');
+      await waitFor(() => expect(search).toHaveValue('ch'));
+    });
+  });
+
   describe('InputGroup integration', () => {
     it('uses the group Field chrome and composes group and selector labels', () => {
       render(
@@ -1271,6 +2016,69 @@ describe('Selector statusVariant forwarding', () => {
       container.querySelector('.astryx-selector-indicator-icon'),
     ).not.toBeNull();
   });
+
+  it('detaches attached status by default for the ghost variant', () => {
+    const {container} = render(
+      <Selector
+        label="Fruit"
+        options={['Apple', 'Banana']}
+        variant="ghost"
+        status={{type: 'error', message: 'Required'}}
+      />,
+    );
+    expect(container.querySelector('.astryx-selector')).toHaveAttribute(
+      'data-variant',
+      'ghost',
+    );
+    expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+      'data-variant',
+      'detached',
+    );
+  });
+
+  it('uses a status tooltip for ghost selectors when requested', () => {
+    const {container} = render(
+      <Selector
+        label="Fruit"
+        options={['Apple', 'Banana']}
+        variant="ghost"
+        status={{type: 'warning', message: 'Visible to all users'}}
+        statusVariant="tooltip"
+      />,
+    );
+    expect(container.querySelector('.astryx-field-status')).toBeNull();
+    const statusButton = screen.getByRole('button', {
+      name: /warning details/i,
+    });
+    const tooltip = screen.getByRole('tooltip', h);
+    expect(tooltip).toHaveTextContent('Visible to all users');
+    expect(statusButton.getAttribute('aria-describedby')).toContain(tooltip.id);
+    expect(
+      screen.getByRole('combobox').getAttribute('aria-describedby'),
+    ).toContain(tooltip.id);
+  });
+});
+
+describe('Selector empty-state theme target', () => {
+  const OPTIONS = ['Apple', 'Banana', 'Cherry'];
+
+  it('renders the astryx-selector-empty-state target on the "No results found" element', async () => {
+    const user = userEvent.setup();
+    const {container} = render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    await user.type(screen.getByRole('combobox', h), 'xyz');
+
+    const empty = container.querySelector('.astryx-selector-empty-state');
+    expect(empty).not.toBeNull();
+    expect(empty).toHaveTextContent('No results found');
+  });
 });
 
 describe('Selector clear icon theme target', () => {
@@ -1285,7 +2093,7 @@ describe('Selector clear icon theme target', () => {
     return icon as HTMLElement;
   };
 
-  it('renders the astryx-selector-clear-icon target on the clear glyph', () => {
+  it('renders the astryx-input-clear-icon target (plus the legacy alias) on the clear glyph', () => {
     render(
       <Selector
         label="Fruit"
@@ -1295,11 +2103,13 @@ describe('Selector clear icon theme target', () => {
         hasClear
       />,
     );
-    // The stable theme target lands on the icon element itself (not the
-    // button), so a theme can restyle just this glyph (color, size, hover)
-    // via `defineTheme` — a button-level target could not reach the icon's
-    // own color/size.
+    // The canonical target lands on the icon element itself (not the button),
+    // so a theme can restyle just this glyph (color, size, hover) via
+    // `defineTheme` — a button-level target could not reach the icon's own
+    // color/size. The original per-component name rides along for a
+    // deprecation window.
     const icon = getClearIcon();
+    expect(icon).toHaveClass('astryx-input-clear-icon');
     expect(icon).toHaveClass('astryx-selector-clear-icon');
     expect(icon).toHaveClass('astryx-icon');
   });
@@ -1321,11 +2131,13 @@ describe('Selector clear icon theme target', () => {
     expect(onChange).toHaveBeenCalledWith(null);
   });
 
-  it('renders the default icon (secondary color, sm size) byte-identically', () => {
-    // Pixel-identical default guard: the clear glyph must carry the exact same
-    // StyleX color/size classes as a standalone secondary/sm icon. The added
-    // target class is purely additive — it changes nothing until a theme
-    // targets it.
+  it('routes the clear glyph through the shared clear button, keeping the legacy target', () => {
+    // The clear affordance now composes the shared InputClearButton (a ghost
+    // Button with a secondary/sm glyph), so the icon carries the canonical
+    // `astryx-input-clear-icon` target and — for a deprecation window — the
+    // original `astryx-selector-clear-icon`. Aside from those target classes
+    // it matches the shared button's own `close`/`sm`/`secondary` glyph
+    // exactly, so the default look is defined in one place.
     render(
       <Selector
         label="Fruit"
@@ -1336,6 +2148,8 @@ describe('Selector clear icon theme target', () => {
       />,
     );
     const icon = getClearIcon();
+    expect(icon).toHaveClass('astryx-input-clear-icon');
+    expect(icon).toHaveClass('astryx-selector-clear-icon');
 
     const {container: refContainer} = render(
       <Icon icon="close" size="sm" color="secondary" />,
@@ -1345,7 +2159,11 @@ describe('Selector clear icon theme target', () => {
     const styleClasses = (el: HTMLElement) =>
       el.className
         .split(' ')
-        .filter(c => c !== 'astryx-selector-clear-icon')
+        .filter(
+          c =>
+            c !== 'astryx-input-clear-icon' &&
+            c !== 'astryx-selector-clear-icon',
+        )
         .sort();
 
     expect(styleClasses(icon)).toEqual(styleClasses(refIcon));
@@ -1371,7 +2189,7 @@ describe('Selector clear icon theme target', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('.astryx-selector-clear-icon {');
     expect(css).toContain('width: 12px');
     expect(css).toContain('height: 12px');
@@ -1419,9 +2237,12 @@ describe('Selector indicator (chevron) icon theme target', () => {
     });
   });
 
-  it('renders the default icon (inherit color, sm size) byte-identically', () => {
+  it('renders the default icon (secondary color, sm size) byte-identically', () => {
     // Pixel-identical default guard: the chevron glyph must carry the exact
-    // same StyleX color/size classes as a standalone inherit/sm icon. The added
+    // same StyleX color/size classes as a standalone secondary/sm icon. The
+    // glyph now sets --color-icon-secondary itself rather than inheriting it
+    // from a wrapper span that set the same token, so the rendered color is
+    // unchanged. The added
     // target class + data-state are purely additive — they change nothing until
     // a theme targets them.
     const {container} = render(
@@ -1430,12 +2251,12 @@ describe('Selector indicator (chevron) icon theme target', () => {
     const icon = getIndicatorIcon(container);
 
     const {container: refContainer} = render(
-      <Icon icon="chevronDown" size="sm" color="inherit" />,
+      <Icon icon="chevronDown" size="sm" color="secondary" />,
     );
     const refIcon = refContainer.querySelector('.astryx-icon') as HTMLElement;
 
     // Exclude the additive theme-target classes (the stable target + its
-    // reflected state class) so only the StyleX color/size classes remain.
+    // reflected state class) so only StyleX classes remain.
     const themeTargetClasses = new Set([
       'astryx-selector-indicator-icon',
       'collapsed',
@@ -1447,7 +2268,14 @@ describe('Selector indicator (chevron) icon theme target', () => {
         .filter(c => !themeTargetClasses.has(c))
         .sort();
 
-    expect(styleClasses(icon)).toEqual(styleClasses(refIcon));
+    // A superset, not an exact match: the chevron additionally carries the
+    // rotation styles, which live on the glyph precisely so a theme can reach
+    // the transform through the same selector as the color. The guard that
+    // matters is that every color/size class of a standalone icon is still
+    // present — i.e. the default look has not drifted.
+    expect(styleClasses(icon)).toEqual(
+      expect.arrayContaining(styleClasses(refIcon)),
+    );
   });
 
   it('exposes selector-indicator-icon so a theme reaches the icon size and per-state color', () => {
@@ -1465,11 +2293,260 @@ describe('Selector indicator (chevron) icon theme target', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('.astryx-selector-indicator-icon {');
     expect(css).toContain('width: 14px');
     expect(css).toContain('height: 14px');
     expect(css).toContain('.astryx-selector-indicator-icon.expanded');
     expect(css).toContain('color: var(--color-icon-primary)');
+  });
+});
+
+describe('Selector search affordances', () => {
+  it('renders a decorative (aria-hidden) magnifier icon whenever hasSearch is on', async () => {
+    const user = userEvent.setup();
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value="Apple"
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    const search = screen.getByRole('combobox', {hidden: true});
+    // The search field is a TextInput; the magnifier is its startIcon, so it
+    // sits inside the input container as a sibling of the <input>.
+    const container = search.parentElement;
+    const magnifier = container?.querySelector('.astryx-icon');
+    expect(magnifier).toBeTruthy();
+    // Decorative: the icon is hidden from assistive tech and carries no name.
+    expect(magnifier?.getAttribute('aria-hidden')).toBe('true');
+    expect(magnifier?.getAttribute('aria-label')).toBeNull();
+  });
+
+  it('renders the clear button once a query is typed and clears + refocuses on click', async () => {
+    const user = userEvent.setup();
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value="Apple"
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    const search = screen.getByRole('combobox', {hidden: true});
+    await user.type(search, 'ap');
+    expect(search).toHaveValue('ap');
+
+    // The clear button is TextInput's built-in hasClear affordance; its name is
+    // derived from the field label ("Search options").
+    const clear = screen.getByRole('button', {
+      name: 'Clear Search options',
+      hidden: true,
+    });
+
+    await user.click(clear);
+    expect(search).toHaveValue('');
+    expect(search).toHaveFocus();
+  });
+
+  it('does not render the clear button when the query is empty', async () => {
+    const user = userEvent.setup();
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value="Apple"
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    expect(
+      screen.queryByRole('button', {
+        name: 'Clear Search options',
+        hidden: true,
+      }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('keeps the combobox contract on the input, not the affordances', async () => {
+    const user = userEvent.setup();
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value="Apple"
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    // Exactly one combobox — the input. The magnifier and clear button are not
+    // part of the combobox contract.
+    const comboboxes = screen.getAllByRole('combobox', {hidden: true});
+    expect(comboboxes).toHaveLength(1);
+    expect(comboboxes[0].tagName).toBe('INPUT');
+    expect(comboboxes[0]).toHaveAttribute('aria-autocomplete', 'list');
+  });
+
+  it('tabs from the search input to the clear button (keeping the popup open) when a query is showing it', async () => {
+    const user = userEvent.setup();
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value="Apple"
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    const trigger = screen.getByRole('button', {name: 'Fruit'});
+    const search = screen.getByRole('combobox', {hidden: true});
+    await user.type(search, 'ap');
+    expect(search).toHaveFocus();
+
+    // Forward-tab lands on the clear (✕) button and the popup stays open, so
+    // the affordance is keyboard-reachable rather than being skipped when the
+    // input's Tab dismisses the popup.
+    await user.tab();
+    const clear = screen.getByRole('button', {
+      name: 'Clear Search options',
+      hidden: true,
+    });
+    expect(clear).toHaveFocus();
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+});
+
+describe('Selector selected-marker theme target (selector-check)', () => {
+  const openOptions = (): HTMLElement[] => screen.getAllByRole('option', h);
+
+  it('renders the astryx-selector-check target on the selected row only', () => {
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value="Banana"
+        onChange={() => {}}
+        isDefaultOpen
+      />,
+    );
+    const options = openOptions();
+    const selected = options.find(
+      o => o.getAttribute('aria-selected') === 'true',
+    )!;
+    const check = selected.querySelector('.astryx-selector-check');
+    expect(check).toBeInTheDocument();
+    // The target lands on the checkmark glyph itself, so a theme can restyle or
+    // hide it (e.g. to compose its own selected indicator via renderOption).
+    expect(check).toHaveClass('astryx-icon');
+
+    const unselected = options.filter(
+      o => o.getAttribute('aria-selected') !== 'true',
+    );
+    for (const row of unselected) {
+      expect(
+        row.querySelector('.astryx-selector-check'),
+      ).not.toBeInTheDocument();
+    }
+  });
+
+  it('renders the default checkmark byte-identically aside from the target class', () => {
+    // The added target class is purely additive — it changes nothing about the
+    // glyph's own color/size until a theme targets it.
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value="Banana"
+        onChange={() => {}}
+        isDefaultOpen
+      />,
+    );
+    const selected = screen
+      .getAllByRole('option', h)
+      .find(o => o.getAttribute('aria-selected') === 'true')!;
+    const check = selected.querySelector(
+      '.astryx-selector-check',
+    ) as HTMLElement;
+
+    const {container: refContainer} = render(
+      <Icon icon="check" size="sm" color="accent" />,
+    );
+    const refIcon = refContainer.querySelector('.astryx-icon') as HTMLElement;
+    const styleClasses = (el: HTMLElement) =>
+      el.className
+        .split(' ')
+        .filter(c => c !== 'astryx-selector-check')
+        .sort();
+    expect(styleClasses(check)).toEqual(styleClasses(refIcon));
+  });
+
+  it('exposes selector-check so a theme can hide or restyle the marker', () => {
+    const theme = defineTheme({
+      name: 'selector-check-test',
+      components: {
+        'selector-check': {
+          base: {display: 'none'},
+        },
+      },
+    });
+    const css = generateThemeTestCSS(theme);
+    expect(css).toContain('.astryx-selector-check {');
+    expect(css).toContain('display: none');
+  });
+});
+
+describe('Selector disabled state theme target', () => {
+  const getSelectorRoot = (container: HTMLElement): HTMLElement => {
+    const root = container.querySelector('.astryx-selector');
+    if (root == null) {
+      throw new Error('selector root not found');
+    }
+    return root as HTMLElement;
+  };
+
+  it('reflects data-disabled="disabled" on the root when disabled', () => {
+    const {container} = render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        onChange={() => {}}
+        isDisabled
+      />,
+    );
+    expect(getSelectorRoot(container)).toHaveAttribute(
+      'data-disabled',
+      'disabled',
+    );
+  });
+
+  it('omits the disabled class/attribute when enabled', () => {
+    const {container} = render(
+      <Selector label="Fruit" options={OPTIONS} onChange={() => {}} />,
+    );
+    const root = getSelectorRoot(container);
+    expect(root).not.toHaveAttribute('data-disabled');
+    expect(root).not.toHaveClass('disabled');
+  });
+
+  it('exposes the disabled state so a theme can key on it', () => {
+    const theme = defineTheme({
+      name: 'selector-disabled-state-test',
+      components: {
+        selector: {
+          'disabled:disabled': {opacity: '0.4'},
+        },
+      },
+    });
+    const css = generateThemeTestCSS(theme);
+    expect(css).toContain('.astryx-selector.disabled');
+    expect(css).toContain('opacity: 0.4');
   });
 });

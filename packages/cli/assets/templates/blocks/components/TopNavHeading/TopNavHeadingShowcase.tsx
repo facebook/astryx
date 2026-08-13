@@ -39,7 +39,11 @@ export default function TopNavHeadingShowcase() {
       <TopNav
         label="Linked heading example"
         heading={
-          <TopNavHeading heading="Acme Platform" logo={<AppIcon />} href="/" />
+          <TopNavHeading
+            heading="Acme Platform"
+            logo={<AppIcon />}
+            headingHref="/"
+          />
         }
       />
     </VStack>

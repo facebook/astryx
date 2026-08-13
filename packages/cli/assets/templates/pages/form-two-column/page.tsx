@@ -19,7 +19,7 @@ import {Card} from '@astryxdesign/core/Card';
 import {Selector} from '@astryxdesign/core/Selector';
 
 const ILLUSTRATION_URL =
-  'https://lookaside.facebook.com/assets/astryx/light-working-vertical-2.png';
+  '/template-assets/light-working-vertical-2.png';
 
 const INQUIRY_REASONS = [
   'New business',

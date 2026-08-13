@@ -348,6 +348,27 @@ describe('ContextMenu items', () => {
   });
 });
 
+describe('ContextMenu destructive variant', () => {
+  it('forwards a destructive item variant to the shared menu item', () => {
+    render(
+      <ContextMenu
+        items={[
+          {label: 'Delete', variant: 'destructive', onClick: () => {}},
+          {label: 'Rename', onClick: () => {}},
+        ]}>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+
+    expect(
+      screen.getByRole('menuitem', {name: 'Delete', hidden: true}),
+    ).toHaveAttribute('data-variant', 'destructive');
+    expect(
+      screen.getByRole('menuitem', {name: 'Rename', hidden: true}),
+    ).not.toHaveAttribute('data-variant');
+  });
+});
+
 describe('ContextMenu sections', () => {
   it('renders section with title', () => {
     render(

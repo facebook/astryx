@@ -57,6 +57,12 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'marks',
+      type: 'ReadonlyArray<{value: number; label: string}>',
+      description:
+        'Fixed target marks drawn on the track at values in the same 0..max scale as value (e.g. a goal line). They stay visible whether progress is below or past them, and take their color from what they sit on: a mark inside the filled area uses the fill variant\'s on-color (on-accent, on-warning, on-error, and so on), a mark still out on the bare track uses the primary text color (the secondary one on a disabled bar, which dims everything it draws). Each mark requires a label: it is the mark\'s accessible name and the text revealed via a tooltip on hover/focus. Ignored when indeterminate.',
+    },
+    {
       name: 'isDisabled',
       type: 'boolean',
       description: 'Visually disabled state: grays out the fill and text. Use for canceled or inactive operations.',
@@ -74,6 +80,18 @@ export const docs = {
       {className: 'astryx-progressbar', visualProps: ['variant']},
       {className: 'astryx-progressbar-fill', visualProps: ['variant']},
       {className: 'astryx-progressbar-track'},
+      {
+        className: 'astryx-progressbar-mark',
+        visualProps: ['variant', 'placement'],
+      },
+    ],
+    vars: [
+      {name: '--_progressbar-mark-width', description: 'Target mark tick width', default: '2px', private: true},
+      {name: '--_progressbar-mark-height', description: 'Target mark tick height', default: '8px', private: true},
+    ],
+    derived: [
+      {property: 'width', vars: ['--_progressbar-mark-width'], replaces: true},
+      {property: 'height', vars: ['--_progressbar-mark-height'], replaces: true},
     ],
   },
   usage: {
@@ -144,6 +162,12 @@ export const docsZh = {
       default: 'false',
     },
     {
+      name: 'marks',
+      type: 'ReadonlyArray<{value: number; label: string}>',
+      description:
+        '在轨道上按与 value 相同的 0..max 刻度绘制的固定目标标记（例如目标线）。无论进度低于还是超过它们都保持可见，并根据所处位置取色：位于已填充区域内的标记使用与填充变体配对的前景色（on-accent、on-warning、on-error 等），仍位于空轨道上的标记使用主文本颜色（禁用状态下会降为次要文本颜色，与其整体弱化的呈现保持一致）。每个标记都必须提供 label——它既是标记的无障碍名称，也是悬停/聚焦时通过工具提示显示的文本。不确定模式下忽略。',
+    },
+    {
       name: 'isDisabled',
       type: 'boolean',
       description: '视觉禁用状态——使填充条和文本变灰。用于已取消或不活跃的操作。',
@@ -161,6 +185,18 @@ export const docsZh = {
       {className: 'astryx-progressbar', visualProps: ['variant']},
       {className: 'astryx-progressbar-fill', visualProps: ['variant']},
       {className: 'astryx-progressbar-track'},
+      {
+        className: 'astryx-progressbar-mark',
+        visualProps: ['variant', 'placement'],
+      },
+    ],
+    vars: [
+      {name: '--_progressbar-mark-width', description: '目标标记刻度宽度', default: '2px', private: true},
+      {name: '--_progressbar-mark-height', description: '目标标记刻度高度', default: '8px', private: true},
+    ],
+    derived: [
+      {property: 'width', vars: ['--_progressbar-mark-width'], replaces: true},
+      {property: 'height', vars: ['--_progressbar-mark-height'], replaces: true},
     ],
   },
   usage: {
@@ -202,6 +238,7 @@ export const docsDense = {
     formatValueLabel: 'Custom value label formatter; defaults to percentage string.',
     variant: 'Semantic color variant.',
     isIndeterminate: 'Animated loading indicator for unknown progress.',
+    marks: 'Fixed target marks ({value, label?}) drawn on the track in the 0..max scale; stay visible past the fill. Marks inside the fill take the variant on-color; marks on the bare track take the primary text color (secondary when disabled). A label reveals a tooltip on hover/focus. Ignored when indeterminate.',
     isDisabled: 'Visually disabled: grays out fill and text.',
     xstyle: 'StyleX styles for layout customization. Must be stylex.create() value.',
   },

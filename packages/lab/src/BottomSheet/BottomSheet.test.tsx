@@ -147,6 +147,99 @@ describe('BottomSheet', () => {
     expect(onOpenChange).not.toHaveBeenCalled();
   });
 
+  describe('hasScrim={false} (non-modal)', () => {
+    it('opens non-modally: show() instead of showModal(), no aria-modal', () => {
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={() => {}}
+          label="Filters"
+          hasScrim={false}>
+          Content
+        </BottomSheet>,
+      );
+      expect(HTMLDialogElement.prototype.show).toHaveBeenCalled();
+      expect(HTMLDialogElement.prototype.showModal).not.toHaveBeenCalled();
+      expect(screen.getByRole('dialog')).not.toHaveAttribute('aria-modal');
+    });
+
+    it('does not dismiss when the shell (dialog element itself) is clicked', () => {
+      // No scrim: a tap on the transparent shell must pass through to the page,
+      // not dismiss the sheet.
+      const onOpenChange = vi.fn();
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={onOpenChange}
+          label="Filters"
+          hasScrim={false}>
+          Content
+        </BottomSheet>,
+      );
+      fireEvent.click(screen.getByRole('dialog'));
+      expect(onOpenChange).not.toHaveBeenCalled();
+    });
+
+    it('still closes on Escape while focus is inside', () => {
+      const onOpenChange = vi.fn();
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={onOpenChange}
+          label="Filters"
+          hasScrim={false}>
+          Content
+        </BottomSheet>,
+      );
+      fireEvent.keyDown(screen.getByRole('dialog'), {key: 'Escape'});
+      expect(onOpenChange).toHaveBeenCalledWith(false);
+    });
+
+    it('still dismisses on a downward swipe past the threshold', () => {
+      const onOpenChange = vi.fn();
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={onOpenChange}
+          label="Filters"
+          hasScrim={false}>
+          Content
+        </BottomSheet>,
+      );
+      drag(getHandle(), [{y: 0}, {y: 40}, {y: 120}]);
+      expect(onOpenChange).toHaveBeenCalledWith(false);
+    });
+
+    it('does not steal focus onto the panel on open', () => {
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={() => {}}
+          label="Filters"
+          hasScrim={false}>
+          <button type="button">First action</button>
+        </BottomSheet>,
+      );
+      // The background stays interactive, so the sheet must not grab focus.
+      expect(document.activeElement).not.toBe(getSheet());
+    });
+
+    it('still honors a descendant with data-autofocus', () => {
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={() => {}}
+          label="Filters"
+          hasScrim={false}>
+          <input data-autofocus aria-label="Search" />
+        </BottomSheet>,
+      );
+      expect(document.activeElement).toBe(
+        screen.getByRole('textbox', {name: 'Search'}),
+      );
+    });
+  });
+
   describe('grab handle', () => {
     it('renders a decorative handle hidden from assistive tech', () => {
       render(

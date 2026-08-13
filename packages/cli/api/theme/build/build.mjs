@@ -24,10 +24,6 @@
  * the CI guard for committed, generated theme CSS: the source of truth is
  * `<theme>.ts`, and `theme build --check` fails when the committed
  * `<theme>.css`/`.js`/`.d.ts` no longer match it.
- *
- * The icon-registry import in the JS module is verified against the out dir
- * at emit time: rewritten onto the compiled companion (preferring `.mjs`), or
- * failing the build when nothing satisfies it (#4620, #4621).
  */
 
 import * as fs from 'node:fs';
@@ -37,6 +33,7 @@ import {createJiti} from 'jiti';
 import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
 import {CLI_ROOT, findCoreDir} from '../../../foundation/fs/paths.mjs';
 import {
+  assertWithin,
   sanitizeName,
   PathSafetyError,
 } from '../../../foundation/fs/path-safety.mjs';
@@ -726,94 +723,33 @@ function extractIconInfo(filePath) {
 }
 
 /**
- * Resolve the icon-registry specifier for the generated module (#4620, #4621).
- *
- * `extractIconInfo` scrapes the specifier from the theme source, where jiti
- * resolves an extensionless `./icons` onto `icons.tsx`. The generated module
- * lives in `outDir` and is loaded by Node ESM, where a relative specifier
- * must carry an extension and point at a real file — the raw capture cannot
- * be emitted verbatim. Rewrites the specifier onto the compiled companion in
- * `outDir`, preferring `.mjs`: with a dual tsup build, `.js` is the CJS twin
- * and would hand consumers a second, distinct registry instance. A
- * source-only sibling stays as-written with a warning (in-place builds are
- * consumed through bundlers, which resolve it; Node cannot). When nothing in
- * `outDir` can satisfy the import, throws: a specifier that resolves nowhere
- * should fail the build, not the consumer (#4621).
- *
- * @param {{exportName: string, importPath: string}} iconInfo
- * @param {string} outDir - Absolute directory the generated module is written to
- * @param {string} relOutDir - The same directory, cwd-relative (for messages)
- * @returns {{importPath: string, warning: string | null}}
- */
-function resolveIconImportPath(iconInfo, outDir, relOutDir) {
-  const spec = iconInfo.importPath;
-  // Bare package specifiers resolve through the consumer's node_modules —
-  // never rewritten, never checked here.
-  if (!spec.startsWith('./') && !spec.startsWith('../')) {
-    return {importPath: spec, warning: null};
-  }
-
-  const target = path.resolve(outDir, spec);
-  const isFile = (/** @type {string} */ p) => {
-    try {
-      if (!fs.statSync(p).isFile()) return false;
-      // A case-insensitive filesystem (macOS default) matches `icons.mjs`
-      // onto `ICONS.mjs` — and the emitted specifier would then fail on the
-      // case-sensitive systems the artifact ships to. Only the exact
-      // on-disk name satisfies the import, on every platform.
-      return fs.readdirSync(path.dirname(p)).includes(path.basename(p));
-    } catch {
-      return false;
-    }
-  };
-
-  // Already fully specified and real — respect the author's spelling.
-  if (/\.(?:mjs|cjs|js)$/.test(spec) && isFile(target)) {
-    return {importPath: spec, warning: null};
-  }
-
-  for (const ext of ['.mjs', '.js', '.cjs']) {
-    if (isFile(target + ext)) {
-      return {importPath: spec + ext, warning: null};
-    }
-  }
-
-  for (const ext of ['.ts', '.tsx']) {
-    if (isFile(target + ext)) {
-      return {
-        importPath: spec,
-        warning:
-          `The built module imports '${spec}', which only exists as a ` +
-          `TypeScript source (${spec}${ext}) in ${relOutDir}/. Bundlers ` +
-          `resolve that; Node ESM cannot. For Node/SSR consumption, compile ` +
-          `the icon registry to ${spec}.mjs beside the generated module.`,
-      };
-    }
-  }
-
-  throw new AstryxError(
-    `The generated theme module imports '${spec}', but no module satisfies ` +
-      `it in ${relOutDir}/. The import is copied from the theme source into ` +
-      `the built output, so a compiled companion (e.g. ${spec}.mjs) must ` +
-      `exist there — compile the icon registry into ${relOutDir}/ (tsup, ` +
-      `esbuild, tsc) before running \`theme build\`, or remove the theme's ` +
-      `\`icons\` field.`,
-    undefined,
-    ERROR_CODES.ERR_THEME_ICON_UNRESOLVED,
-  );
-}
-
-/**
  * Generate a minimal JS module for a built theme.
  * Includes the theme name, marker, and re-exports the icon registry.
  * All styling is in the CSS file.
+ *
+ * The icon registry is imported rather than inlined because it holds React
+ * elements, which cannot be serialized. `extractIconInfo` lifts the specifier
+ * out of the TypeScript source, where an extensionless `./icons` is resolved by
+ * the TypeScript resolver — but the artifact here is ESM JavaScript, which
+ * requires a fully specified path. Only the caller knows what its own build
+ * will emit and under what name, so `iconsSpecifier` lets it say. When it is
+ * not given, the scraped specifier is emitted unchanged.
+ *
  * @param {any} themeDef
  * @param {{exportName: string, importPath: string} | null} iconInfo
+ * @param {string} [iconsSpecifier] - Overrides the scraped icon import specifier.
  * @returns {string}
  */
-function generateBuiltModule(themeDef, iconInfo) {
+function generateBuiltModule(themeDef, iconInfo, iconsSpecifier) {
+  // Preserve the historical generated bytes when no override is supplied.
+  // User-provided specifiers need string-literal encoding so quotes and
+  // backslashes cannot produce invalid JavaScript.
+  const renderedSpecifier =
+    iconsSpecifier === undefined
+      ? `'${iconInfo?.importPath}'`
+      : JSON.stringify(iconsSpecifier);
   const iconImport = iconInfo
-    ? `import { ${iconInfo.exportName} } from '${iconInfo.importPath}';\n`
+    ? `import { ${iconInfo.exportName} } from ${renderedSpecifier};\n`
     : '';
   const iconsField = iconInfo ? `  icons: ${iconInfo.exportName},` : '';
   const iconReExport = iconInfo ? `\nexport { ${iconInfo.exportName} };\n` : '';
@@ -1051,7 +987,11 @@ function validatePrivateVars(themeDef) {
  * `logger` (silent by default).
  *
  * @param {string} file - Theme file path, resolved against `cwd`.
- * @param {{out?: string, check?: boolean}} [options] - `out` overrides the output CSS path; `check` compares against on-disk outputs instead of writing.
+ * @param {{out?: string, check?: boolean, iconsSpecifier?: string}} [options] -
+ *   `out` overrides the output CSS path; `check` compares against on-disk outputs
+ *   instead of writing. `iconsSpecifier` overrides the icon registry import
+ *   specifier in the generated module (e.g. `./icons.mjs`); when omitted, the
+ *   specifier scraped from the theme source is emitted unchanged.
  * @param {{cwd?: string}} [ctx]
  * @returns {Promise<import('../theme.type.mjs').ThemeBuildResponse | import('../theme.type.mjs').ThemeBuildCheckResponse | null>}
  */
@@ -1212,9 +1152,17 @@ export async function themeBuild(
   // Derive the default CSS name from the theme name so .css/.js/.d.ts
   // share one scheme; an explicit --out still wins.
   const baseName = themeDef.name;
-  const outPath = options.out
-    ? path.resolve(cwd, options.out)
-    : path.join(path.dirname(filePath), `${baseName}.css`);
+  let outPath;
+  if (options.out) {
+    outPath = path.resolve(cwd, options.out);
+    // Guard: relative paths must not escape cwd via `../`. Absolute paths are
+    // trusted (the user explicitly controls where output goes, like gcc -o).
+    if (!path.isAbsolute(options.out)) {
+      assertWithin(options.out, cwd, {label: 'output path'});
+    }
+  } else {
+    outPath = path.join(path.dirname(filePath), `${baseName}.css`);
+  }
 
   const displayTheme = resolvedTheme || themeDef;
   const tokenCount = displayTheme.tokens
@@ -1234,18 +1182,7 @@ export async function themeBuild(
   const jsPath = path.join(outDir, `${baseName}.js`);
   const dtsPath = path.join(outDir, `${baseName}.d.ts`);
 
-  let iconInfo = extractIconInfo(filePath);
-  if (iconInfo) {
-    // Verify the emitted specifier against the out dir BEFORE any writes —
-    // a broken import fails the build here, not in the consumer (#4620/#4621).
-    const relOutDirForIcons = path.relative(cwd, outDir) || '.';
-    const resolvedIcon = resolveIconImportPath(iconInfo, outDir, relOutDirForIcons);
-    if (resolvedIcon.warning) {
-      warningMessages.push(resolvedIcon.warning);
-      logger.warn(`  ⚠ ${resolvedIcon.warning}`);
-    }
-    iconInfo = {...iconInfo, importPath: resolvedIcon.importPath};
-  }
+  const iconInfo = extractIconInfo(filePath);
 
   // Type augmentation .d.ts if theme has custom prop values. Computed
   // before the main .d.ts so the latter can reference it (see below).
@@ -1269,7 +1206,11 @@ export async function themeBuild(
     generatedHeader(sourceRelative, 'css', buildCommand, versions) + css;
   const jsContent =
     generatedHeader(sourceRelative, 'js', buildCommand, versions) +
-    generateBuiltModule(resolvedTheme || themeDef, iconInfo);
+    generateBuiltModule(
+      resolvedTheme || themeDef,
+      iconInfo,
+      options.iconsSpecifier,
+    );
   const dtsContent =
     generatedHeader(sourceRelative, 'ts', buildCommand, versions) +
     generateBuiltTypes(themeDef, iconInfo, variantsFileName);

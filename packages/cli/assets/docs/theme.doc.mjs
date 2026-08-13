@@ -106,7 +106,7 @@ function App() {
             [
               'Y2K',
               "import {y2kTheme} from '@astryxdesign/theme-y2k'",
-              'Playful Y2K pop; periwinkle body, holographic accents, Poppins + Crimson Text.',
+              'Playful Y2K pop; periwinkle body, holographic accents, Poppins + `Crimson Text`.',
             ],
           ],
         },
@@ -510,7 +510,7 @@ import './themes/ocean.css';
       content: [
         {
           type: 'prose',
-          text: 'Wrap different sections in separate <Theme> providers.',
+          text: 'Wrap different sections in separate [`<Theme>`](/components/Theme) providers.',
         },
         {
           type: 'code',
@@ -606,7 +606,7 @@ function ChartConfig() {
         },
         {
           type: 'prose',
-          text: 'Prefer CSS variables, StyleX token imports, xstyle, or className for ordinary styling. To change the theme or mode, manage state at the app level and pass it to <Theme>.',
+          text: 'Prefer CSS variables, StyleX token imports, xstyle, or className for ordinary styling. To change the theme or mode, manage state at the app level and pass it to `<Theme>`.',
         },
         {
           type: 'prose',

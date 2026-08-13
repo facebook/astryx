@@ -4,7 +4,7 @@
 
 /**
  * @file SideNavCollapseButton.tsx
- * @input Uses React, StyleX, SideNavCollapseContext, getIcon
+ * @input Uses React, StyleX, SideNavCollapseContext, Icon
  * @output Exports SideNavCollapseButton component
  * @position Composable toggle button for sidenav collapse
  *
@@ -20,7 +20,7 @@
 import React, {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {durationVars, easeVars} from '../theme/tokens.stylex';
-import {useIcon} from '../Icon';
+import {Icon} from '../Icon';
 import {Button} from '../Button';
 import type {BaseProps} from '../BaseProps';
 import {composeEventHandlers, rtlStyles} from '../utils';
@@ -107,7 +107,6 @@ export function SideNavCollapseButton({
   ...props
 }: SideNavCollapseButtonProps) {
   const t = useTranslator();
-  const chevronLeftIcon = useIcon('chevronLeft');
   const {isCollapsed, toggle, isCollapsible} =
     useSideNavCollapseState(handleRef);
   const {isMobile} = useAppShellMobile();
@@ -132,14 +131,20 @@ export function SideNavCollapseButton({
       onClick={composeEventHandlers(onClickProp, toggle)}
       icon={
         children ?? (
+          // The RTL mirror stays on its own element, wrapping (not merged
+          // into) the state rotation: both are `transform`, so on a single
+          // element one would overwrite the other and the chevron would stop
+          // mirroring under RTL. See utils/rtlStyles.ts.
           <span {...stylex.props(rtlStyles.mirror)}>
-            <span
-              {...stylex.props(
-                styles.chevron,
-                isCollapsed && styles.chevronCollapsed,
-              )}>
-              {chevronLeftIcon}
-            </span>
+            {/* `sm` (1rem) matches what this glyph already renders at: Button's
+                icon slot pins its wrapper to 16px, and the registry SVG is
+                1em, so the chevron is 16px today. */}
+            <Icon
+              icon="chevronLeft"
+              size="sm"
+              color="inherit"
+              xstyle={[styles.chevron, isCollapsed && styles.chevronCollapsed]}
+            />
           </span>
         )
       }

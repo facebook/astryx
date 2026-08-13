@@ -20,7 +20,7 @@
  *   comma-separated `\@layer a, b;` statement lists and nested blocks.
  * - `\@import '\@xds/...'` package stylesheet imports: scope rewrite, plus the
  *   `\@xds/core/xds.css` -> `\@astryxdesign/core/astryx.css` file rename and the
- *   `theme-default` / `theme-daily` -> `theme-neutral` collapse.
+ *   `theme-daily` -> `theme-neutral` collapse.
  *
  * It deliberately does NOT blindly replace every `xds` substring: a bare
  * `xds` in a comment, a custom-property value, or an unrelated identifier is
@@ -36,7 +36,7 @@ export const meta = {
     '`[data-xds-theme-prose]` / `[data-xds-media]` attribute selectors, ' +
     '`@layer xds-theme` / `@layer xds-base` cascade-layer names, and ' +
     '`@import` of @xds/* package stylesheets (scope rewrite, xds.css->astryx.css, ' +
-    'theme-default/theme-daily->theme-neutral) all become their Astryx forms.',
+    'theme-daily->theme-neutral) all become their Astryx forms.',
   pr: '#3092',
   fileExtensions: ['.css', '.scss'],
 };
@@ -60,15 +60,15 @@ function rewriteLayerPrelude(/** @type {any} */ prelude) {
 // from an @xds/* path to its @astryxdesign/* equivalent. Handles the two
 // non-mechanical cases beyond the scope swap:
 //   @xds/core/xds.css            -> @astryxdesign/core/astryx.css   (file rename)
-//   @xds/theme-default/*         -> @astryxdesign/theme-neutral/*   (collapse)
 //   @xds/theme-daily/*           -> @astryxdesign/theme-neutral/*   (collapse)
 // Returns the original value unchanged if it is not an @xds/* specifier.
 function rewriteImportSpecifier(/** @type {any} */ spec) {
   if (!spec.startsWith('@xds/')) return spec;
-  // Theme package collapse (default/daily -> neutral).
-  let next = spec
-    .replace(/^@xds\/theme-default(\/|$)/, '@astryxdesign/theme-neutral$1')
-    .replace(/^@xds\/theme-daily(\/|$)/, '@astryxdesign/theme-neutral$1');
+  // Theme package collapse (daily -> neutral).
+  let next = spec.replace(
+    /^@xds\/theme-daily(\/|$)/,
+    '@astryxdesign/theme-neutral$1',
+  );
   if (next === spec) {
     // Not a collapsed theme — plain scope swap.
     next = spec.replace(/^@xds\//, '@astryxdesign/');

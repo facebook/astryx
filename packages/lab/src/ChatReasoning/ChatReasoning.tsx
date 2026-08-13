@@ -15,7 +15,7 @@
  * Expandable on click.
  */
 
-import {useState, useCallback, type ReactNode} from 'react';
+import {useCallback, useId, useState, type ReactNode} from 'react';
 import type {BaseProps} from '@astryxdesign/core';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -245,6 +245,7 @@ export function ChatReasoning(props: ChatReasoningProps) {
   const [internalExpanded, setInternalExpanded] = useState(defaultIsExpanded);
   const isControlled = controlledExpanded !== undefined;
   const isExpanded = isControlled ? controlledExpanded : internalExpanded;
+  const contentId = useId();
 
   const toggle = useCallback(() => {
     const next = !isExpanded;
@@ -272,6 +273,7 @@ export function ChatReasoning(props: ChatReasoningProps) {
         role="button"
         tabIndex={0}
         aria-expanded={isExpanded}
+        aria-controls={contentId}
         onClick={toggle}
         onKeyDown={e => {
           if (e.key === 'Enter' || e.key === ' ') {
@@ -310,6 +312,12 @@ export function ChatReasoning(props: ChatReasoningProps) {
       </div>
 
       <div
+        id={contentId}
+        // Collapsed content is only clipped visually (0fr grid row + overflow
+        // hidden), which leaves it in the accessibility tree. `inert` removes
+        // it from AT and the tab order while keeping the element rendered, so
+        // the grid-template-rows expand/collapse transition still runs.
+        inert={!isExpanded}
         {...stylex.props(styles.content, isExpanded && styles.contentExpanded)}>
         <div {...stylex.props(styles.contentInner)}>
           <div {...stylex.props(styles.contentPadding)}>{children}</div>

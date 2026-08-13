@@ -31,8 +31,11 @@ import {
 import {mergeProps} from '@astryxdesign/core/utils';
 import type {BaseProps} from '@astryxdesign/core';
 import {Icon} from '@astryxdesign/core/Icon';
+import {VisuallyHidden} from '@astryxdesign/core/VisuallyHidden';
+import {useTranslator} from '@astryxdesign/core/i18n';
 import {useStepperContext} from './StepperContext';
 import {themeProps} from '@astryxdesign/core/utils';
+import {stepMarker} from './stepper.stylex';
 import type {StepStatus} from './StepStatus';
 
 /**
@@ -81,6 +84,11 @@ export interface StepProps extends BaseProps<HTMLLIElement> {
    * `accent` is color-only. The current (in-progress) step always keeps its
    * current-step indicator regardless of `status`. Never recolors the
    * connector/track.
+   *
+   * Because the indicator glyphs are decorative (aria-hidden), the status also
+   * reaches assistive technology as text: visually hidden "completed" /
+   * "warning" / "error" next to the label, and composed into the accessible
+   * name of clickable steps.
    */
   status?: StepStatus;
   /**
@@ -122,10 +130,26 @@ export interface StepProps extends BaseProps<HTMLLIElement> {
 // --- Default progress icons (16px) ---
 //
 // The `completed` progress state and the current-step ring are drawn as local
-// glyphs: `completed` is a filled circle-check (a distinct "progress done"
-// mark), deliberately different from the semantic `success` status — which
-// defers to the themed Icon registry (an outline check). `warning` / `error`
-// statuses also defer to the themed registry so they share one visual language.
+// <svg> glyphs rather than sourced from the Icon registry. This is a deliberate
+// exception to the "glyphs come from the registry" convention (audit rule T17),
+// for two reasons:
+//
+//  1. `CurrentIcon` (a dot inside a ring) has no registry equivalent — it is a
+//     progress affordance, not a general-purpose icon.
+//  2. `CheckCircleIcon` (a filled circle with a check) is intentionally NOT the
+//     registry `success` glyph, even though the two look similar. They mean
+//     different things and must stay independently restyleable: `completed`
+//     marks *progress through the sequence* (every step you've passed), while
+//     the semantic `success` status marks a step's *outcome*. A stepper can
+//     show a completed step that also carries a `warning`/`error` status, so
+//     collapsing the two glyphs would conflate progress with outcome. The
+//     semantic `success`/`warning`/`error` STATUS glyphs DO defer to the themed
+//     registry (see the status branch below), so those share one visual
+//     language; only the progress marks are local.
+//
+// Both glyphs paint via `currentColor`, so the indicator's color is still
+// controlled by tokens on the wrapper (never hardcoded), and the wrapper
+// carries the `astryx-step-indicator` theme target.
 
 /** Filled circle with a check — shown for a completed step in 'auto' mode. */
 function CheckCircleIcon() {
@@ -155,7 +179,7 @@ function CurrentIcon() {
 
 // --- Styles ---
 
-const BAR_WIDTH = '4px';
+const BAR_WIDTH = spacingVars['--spacing-1'];
 const ICON_SIZE = spacingVars['--spacing-4'];
 const NUMBER_SIZE = spacingVars['--spacing-5'];
 
@@ -263,9 +287,9 @@ const styles = stylex.create({
     width: NUMBER_SIZE,
     height: NUMBER_SIZE,
     borderRadius: radiusVars['--radius-full'],
-    // 10px is below the smallest type token (--text-supporting-size, 12px);
-    // intentional micro-type for the compact 20px numeric badge.
-    fontSize: '10px',
+    // Smallest semantic type token — keeps the compact numeric badge legible
+    // (>=12px) and themeable rather than a raw literal.
+    fontSize: typeScaleVars['--text-supporting-size'],
     paddingBlockEnd: '1px',
     fontWeight: fontWeightVars['--font-weight-semibold'],
     lineHeight: 1,
@@ -322,6 +346,17 @@ const styles = stylex.create({
   },
   labelDisabled: {
     color: colorVars['--color-text-disabled'],
+  },
+  // Collapse a non-current step's label when the stepper container is narrow
+  // (opt-in via Stepper hasCollapsibleLabels). Hidden from layout AND from
+  // the accessibility tree's visible text — the step stays reachable via
+  // aria-current and each control's accessible name, which are unaffected.
+  // The current step never gets this style, so its label always shows.
+  labelCollapsible: {
+    display: {
+      default: 'block',
+      '@container astryx-stepper (max-width: 480px)': 'none',
+    },
   },
 
   // Optional tag
@@ -391,7 +426,10 @@ const styles = stylex.create({
     cursor: 'pointer',
     borderRadius: radiusVars['--radius-element'],
     transitionProperty: 'background-color',
-    transitionDuration: durationVars['--duration-fast-min'],
+    transitionDuration: {
+      default: durationVars['--duration-fast-min'],
+      '@media (prefers-reduced-motion: reduce)': '0s',
+    },
     transitionTimingFunction: easeVars['--ease-standard'],
     backgroundColor: {
       default: 'transparent',
@@ -443,7 +481,10 @@ const styles = stylex.create({
     cursor: 'pointer',
     borderRadius: radiusVars['--radius-element'],
     transitionProperty: 'background-color',
-    transitionDuration: durationVars['--duration-fast-min'],
+    transitionDuration: {
+      default: durationVars['--duration-fast-min'],
+      '@media (prefers-reduced-motion: reduce)': '0s',
+    },
     transitionTimingFunction: easeVars['--ease-standard'],
     backgroundColor: {
       default: 'transparent',
@@ -510,8 +551,21 @@ const styles = stylex.create({
     borderRadius: 0,
   },
 
-  otSegHidden: {
-    visibility: 'hidden',
+  otSegHiddenIfFirst: {
+    // Structural first/last hiding keyed off the step's own <li> position via
+    // stepMarker, so it never depends on the parent counting children (which
+    // breaks when steps are grouped in a fragment). Scoped to stepMarker so only
+    // the parent <li> is checked, not the outer <ol> (also a :first/:last-child).
+    visibility: {
+      default: 'visible',
+      [stylex.when.ancestor(':first-child', stepMarker)]: 'hidden',
+    },
+  },
+  otSegHiddenIfLast: {
+    visibility: {
+      default: 'visible',
+      [stylex.when.ancestor(':last-child', stepMarker)]: 'hidden',
+    },
   },
 
   // Connector fill colors (progress-derived; status recolors when set).
@@ -630,6 +684,7 @@ export function Step({
   'data-testid': dataTestId,
   ...rest
 }: StepProps) {
+  const t = useTranslator();
   const ctx = useStepperContext();
   const {
     activeStep,
@@ -637,7 +692,7 @@ export function Step({
     onStepClick,
     density: ctxDensity,
     indicatorPosition,
-    stepCount,
+    hasCollapsibleLabels,
   } = ctx;
 
   const density = densityProp ?? ctxDensity;
@@ -660,6 +715,11 @@ export function Step({
 
   const isVertical = orientation === 'vertical';
   const isActive = progress === 'in-progress';
+  // Non-current step labels collapse only when the stepper opted in, the layout
+  // is horizontal (width-constrained), and this step is not the current one —
+  // the current step always keeps its label. The actual hide is a container
+  // query on the label element (styles.labelCollapsible).
+  const collapseLabel = hasCollapsibleLabels && !isVertical && !isActive;
   // Any non-disabled step is navigable when an onStepClick handler is provided,
   // including not-started steps (free navigation across the flow).
   const isClickable = !isDisabled && onStepClick != null;
@@ -733,7 +793,13 @@ export function Step({
       indicatorNode = (
         <div
           aria-hidden="true"
-          {...stylex.props(styles.numberBadge, numberColorStyle)}>
+          {...mergeProps(
+            themeProps('step-indicator', {
+              progress,
+              status: status ?? undefined,
+            }),
+            stylex.props(styles.numberBadge, numberColorStyle),
+          )}>
           {step + 1}
         </div>
       );
@@ -799,12 +865,50 @@ export function Step({
                     : styles.iconNotStarted;
 
       indicatorNode = (
-        <div aria-hidden="true" {...stylex.props(styles.icon, iconColorStyle)}>
+        <div
+          aria-hidden="true"
+          {...mergeProps(
+            themeProps('step-indicator', {
+              progress,
+              status: status ?? undefined,
+            }),
+            stylex.props(styles.icon, iconColorStyle),
+          )}>
           {iconContent}
         </div>
       );
     }
   }
+
+  // Every indicator glyph above is aria-hidden (pure decoration), so the
+  // step's progress/status must also reach assistive tech as text
+  // (WCAG 1.4.1 / 1.3.1). `error`/`warning` announce the semantic status;
+  // `success` and a completed step both announce "completed". The current
+  // step is announced via aria-current="step" instead, and not-started steps
+  // stay silent (the default state needs no qualifier).
+  const statusText: string | null =
+    status === 'error'
+      ? t('@astryx.step.status.error')
+      : status === 'warning'
+        ? t('@astryx.step.status.warning')
+        : status === 'success' || progress === 'completed'
+          ? t('@astryx.step.status.completed')
+          : null;
+
+  // Rendered next to the label: hidden text for static steps, and composed
+  // into the button's accessible name for clickable ones (an aria-label on
+  // the button would otherwise override the hidden text). Two separate keys
+  // rather than string concatenation so translations control the joiner.
+  const statusTextNode =
+    statusText != null ? <VisuallyHidden>{statusText}</VisuallyHidden> : null;
+  const stepAriaLabel =
+    statusText != null
+      ? t('@astryx.step.goToStepWithStatus', {
+          stepNumber: step + 1,
+          label,
+          status: statusText,
+        })
+      : t('@astryx.step.goToStep', {stepNumber: step + 1, label});
 
   const hasIndicator = indicator !== 'none';
   const isNumber =
@@ -826,11 +930,21 @@ export function Step({
   const iconLabelNode = (
     <div {...stylex.props(styles.iconLabelRow)}>
       {indicatorNode}
-      <span {...stylex.props(styles.label, labelColorStyle)}>{label}</span>
+      <span
+        {...stylex.props(
+          styles.label,
+          labelColorStyle,
+          collapseLabel && styles.labelCollapsible,
+        )}>
+        {label}
+      </span>
+      {statusTextNode}
       {isOptional && (
         <>
           <span {...stylex.props(styles.optionalDot)}>•</span>
-          <span {...stylex.props(styles.optionalText)}>Optional</span>
+          <span {...stylex.props(styles.optionalText)}>
+            {t('@astryx.step.optional')}
+          </span>
         </>
       )}
       {endContent}
@@ -883,9 +997,9 @@ export function Step({
       ? styles.lineFilled
       : styles.lineUnfilled;
     const afterSegStyle = afterFilled ? styles.lineFilled : styles.lineUnfilled;
-    const isFirst = step === 0;
-    // The last step has no next node, so its trailing segment is hidden.
-    const isLast = step === stepCount - 1;
+    // First/last connector visibility is decided structurally from the step's
+    // own <li> position (see otSegHiddenIfFirst/Last), not by counting children
+    // in the parent — so grouping steps in a fragment can't break it.
 
     const densitySpace =
       density === 'compact'
@@ -899,11 +1013,21 @@ export function Step({
         {...stylex.props(
           isVertical ? styles.otLabelRowStart : styles.otLabelRowCenter,
         )}>
-        <span {...stylex.props(styles.label, labelColorStyle)}>{label}</span>
+        <span
+          {...stylex.props(
+            styles.label,
+            labelColorStyle,
+            collapseLabel && styles.labelCollapsible,
+          )}>
+          {label}
+        </span>
+        {statusTextNode}
         {isOptional && (
           <>
             <span {...stylex.props(styles.optionalDot)}>•</span>
-            <span {...stylex.props(styles.optionalText)}>Optional</span>
+            <span {...stylex.props(styles.optionalText)}>
+              {t('@astryx.step.optional')}
+            </span>
           </>
         )}
         {endContent}
@@ -939,7 +1063,7 @@ export function Step({
                   styles.otSegBaseV,
                   styles.otSegLeadV(densitySpace),
                   beforeSegStyle,
-                  isFirst && styles.otSegHidden,
+                  styles.otSegHiddenIfFirst,
                 ),
               )}
             />
@@ -952,7 +1076,7 @@ export function Step({
                   styles.otSegBaseV,
                   styles.otSegFlexV,
                   afterSegStyle,
-                  isLast && styles.otSegHidden,
+                  styles.otSegHiddenIfLast,
                 ),
               )}
             />
@@ -969,7 +1093,7 @@ export function Step({
           ref={ref}
           {...mergeProps(
             stepThemeProps,
-            stylex.props(styles.otVerticalRoot, xstyle),
+            stylex.props(stepMarker, styles.otVerticalRoot, xstyle),
             className,
             style,
           )}
@@ -980,7 +1104,7 @@ export function Step({
             <button
               type="button"
               onClick={handleClick}
-              aria-label={`Go to step ${step + 1}: ${label}`}
+              aria-label={stepAriaLabel}
               {...stylex.props(
                 styles.otInteractive,
                 styles.otRowWrap,
@@ -1014,7 +1138,7 @@ export function Step({
               stylex.props(
                 styles.otSegH,
                 beforeSegStyle,
-                isFirst && styles.otSegHidden,
+                styles.otSegHiddenIfFirst,
               ),
             )}
           />
@@ -1026,7 +1150,7 @@ export function Step({
               stylex.props(
                 styles.otSegH,
                 afterSegStyle,
-                isLast && styles.otSegHidden,
+                styles.otSegHiddenIfLast,
               ),
             )}
           />
@@ -1047,7 +1171,7 @@ export function Step({
         ref={ref}
         {...mergeProps(
           stepThemeProps,
-          stylex.props(styles.otHorizontalRoot, xstyle),
+          stylex.props(stepMarker, styles.otHorizontalRoot, xstyle),
           className,
           style,
         )}
@@ -1058,7 +1182,7 @@ export function Step({
           <button
             type="button"
             onClick={handleClick}
-            aria-label={`Go to step ${step + 1}: ${label}`}
+            aria-label={stepAriaLabel}
             {...stylex.props(
               styles.otInteractive,
               styles.otColWrap,
@@ -1088,7 +1212,7 @@ export function Step({
         ref={ref}
         {...mergeProps(
           stepThemeProps,
-          stylex.props(styles.verticalRoot, xstyle),
+          stylex.props(stepMarker, styles.verticalRoot, xstyle),
           className,
           style,
         )}
@@ -1112,7 +1236,7 @@ export function Step({
             <button
               type="button"
               onClick={handleClick}
-              aria-label={`Go to step ${step + 1}: ${label}`}
+              aria-label={stepAriaLabel}
               {...stylex.props(
                 styles.buttonReset,
                 styles.focusRing,
@@ -1146,7 +1270,7 @@ export function Step({
       ref={ref}
       {...mergeProps(
         stepThemeProps,
-        stylex.props(styles.horizontalStep, xstyle),
+        stylex.props(stepMarker, styles.horizontalStep, xstyle),
         className,
         style,
       )}
@@ -1168,7 +1292,7 @@ export function Step({
         <button
           type="button"
           onClick={handleClick}
-          aria-label={`Go to step ${step + 1}: ${label}`}
+          aria-label={stepAriaLabel}
           {...stylex.props(
             styles.buttonReset,
             styles.focusRing,

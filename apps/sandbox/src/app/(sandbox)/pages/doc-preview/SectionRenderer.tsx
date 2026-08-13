@@ -6,7 +6,10 @@ import {useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {VStack} from '@astryxdesign/core/Layout';
 import {Heading} from '@astryxdesign/core/Text';
-import type {ReferenceSection, ReferenceContentBlock} from '@astryxdesign/core';
+import type {
+  ReferenceSection,
+  ReferenceContentBlock,
+} from '@astryxdesign/cli/authoring';
 import {ContentBlockRenderer} from './content-blocks';
 
 const styles = stylex.create({

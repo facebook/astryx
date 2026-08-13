@@ -60,7 +60,10 @@ function renderedClassLiterals() {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
         walk(full);
-      } else if (entry.name.endsWith('.tsx') && !entry.name.endsWith('.test.tsx')) {
+      } else if (
+        (entry.name.endsWith('.tsx') || entry.name.endsWith('.ts')) &&
+        !entry.name.includes('.test.')
+      ) {
         const text = fs.readFileSync(full, 'utf8');
         for (const re of [
           /themeProps\(\s*'([^']+)'/g,
@@ -69,6 +72,16 @@ function renderedClassLiterals() {
           let m;
           while ((m = re.exec(text)) !== null) {
             classes.add(m[1]);
+          }
+        }
+        // Renamed targets emit their old name too, via themeProps'
+        // `legacyNames`. Those classes are just as rendered as the primary
+        // one, so a doc entry for the old name is still backed by real output.
+        const legacyRe = /legacyNames:\s*\[([^\]]*)\]/g;
+        let lm;
+        while ((lm = legacyRe.exec(text)) !== null) {
+          for (const nm of lm[1].matchAll(/'([^']+)'/g)) {
+            classes.add(nm[1]);
           }
         }
       }

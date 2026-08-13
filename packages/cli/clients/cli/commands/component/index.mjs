@@ -19,13 +19,17 @@ import {
 } from '../../lib/component-format.mjs';
 import {resolveTheme} from '../../lib/resolve-theme.mjs';
 import {getCliInvocation} from '../../../../foundation/env/package-manager.mjs';
-import {jsonOut, humanLog} from '../../../../foundation/response/json.mjs';
+import {jsonOut} from '../../../../foundation/response/json.mjs';
+import {emit, section, text, list, record, records, code} from '../../formatters/index.mjs';
 import {cliError} from '../../lib/cli-error.mjs';
+import {defineCommand} from '../../lib/define-command.mjs';
 import {ERROR_CODES} from '../../../../foundation/response/error-codes.mjs';
 import {component as componentApi} from '../../../../api/component/component.mjs';
 import {findRelatedBlocks} from '../../../../api/template/template.mjs';
 import {Project} from '../../../../foundation/config/project.mjs';
 import {warnOnIntegrationIssues} from '../../../../foundation/integrations/integration-warnings.mjs';
+import {doc as componentCommand} from '../component.doc.mjs';
+import {doc as componentFn} from '../../../../api/component/component.doc.mjs';
 
 /**
  * The api layer's component() widens its return to `{type: string, data: unknown}`,
@@ -46,17 +50,9 @@ import {warnOnIntegrationIssues} from '../../../../foundation/integrations/integ
  * @param {import('commander').Command} program
  */
 export function registerComponent(program) {
-  program
-    .command('component [name]')
-    .description('List components or print component docs')
-    .option('--list', 'List all components grouped by category')
-    .option('--category <category>', 'List components in a specific category')
-    .option('--props', 'Print only the props table')
-    .option('--source', 'Print component source code')
-    .option('--showcase', 'Print showcase source code')
-    .option('--blocks', 'List example blocks: showcase, examples, and related')
-    .option('--package <name>', 'Scope lookup to an external package (e.g. @acme/xds-widgets)')
-    .action(async (/** @type {string | undefined} */ name, /** @type {{list?: boolean, category?: string, props?: boolean, source?: boolean, showcase?: boolean, blocks?: boolean, package?: string}} */ options) => {
+  defineCommand(program, componentCommand, {
+    fn: componentFn,
+    action: async (/** @type {string | undefined} */ name, /** @type {{list?: boolean, category?: string, props?: boolean, source?: boolean, showcase?: boolean, blocks?: boolean, package?: string}} */ options) => {
       const run = getCliInvocation();
       const zh = program.opts().zh || false;
       const dense = program.opts().dense || false;
@@ -114,47 +110,51 @@ export function registerComponent(program) {
       const coreDir = /** @type {string} */ (findCoreDir(process.cwd()));
       const themeData = resolveTheme(process.cwd());
 
+      // Footer shared by the compact + names list views (prose → text()).
+      const listFooter = text(
+        [
+          `Import from the path shown (e.g. import {Button} from '@astryxdesign/core/Button')`,
+          `Usage: ${run} component <name>`,
+        ].join('\n'),
+      );
+
       switch (result.type) {
         case 'component.list': {
           // One list type across all three detail levels; the depth is carried
           // in result.data.detail and the grouped map in result.data.components.
           if (result.data.detail === 'full') {
-            // --detail full — dense per-component docs (signature, props, theming, examples).
-            humanLog(await formatBriefAll(coreDir, {zh, lang, themeData}));
+            // --detail full — dense per-component docs (signature, props, theming,
+            // examples). Verbatim doc block from the shared formatter.
+            emit(code(await formatBriefAll(coreDir, {zh, lang, themeData})));
             break;
           }
 
           if (result.data.detail === 'compact') {
-            // --detail compact — name + 1-line description per entry.
+            // --detail compact — one record per entry (name + import + 1-line
+            // description), grouped by category. Fields mirror the JSON keys.
             const groups = result.data.components;
-            humanLog('');
             const entries = Object.entries(groups);
+            /** @type {import('../../formatters/index.mjs').Block[]} */
+            const out = [];
             for (const [cat, items] of entries) {
               // Skip the synthetic group header when there's only one ungrouped category
               const isUngrouped =
                 entries.length === 1 && items.length === 1 && items[0]?.name === cat;
-              if (!isUngrouped) humanLog(`${cat} (group)`);
-              for (const item of items) {
-                const importHint = item.import ? `  ← ${item.import}` : '';
-                const desc = item.description ? ` — ${item.description}` : '';
-                humanLog(`  XDS${item.name}${importHint}${desc}`);
-              }
-              humanLog('');
+              if (!isUngrouped) out.push(section(cat));
+              out.push(records(items, {fields: ['name', 'import', 'description']}));
             }
-            humanLog(`Import from the path shown (e.g. import {Button} from '@astryxdesign/core/Button')`);
-            humanLog(`Usage: ${run} component <name>`);
-            humanLog('');
+            out.push(listFooter);
+            emit(...out);
             break;
           }
 
-          // --detail names (default for list views). The API now returns
-          // package-qualified entries ({name, package}); the human view omits
-          // the core package label for readability but ALWAYS shows the package
-          // for integration components (and whenever names collide).
+          // --detail names (default for list views): one record per component
+          // (name + import), sorted A-Z. The import field already conveys
+          // families, so we skip the choppy per-family grouping that interleaved
+          // headerless singletons with "(group)" sections. External or
+          // name-colliding entries stay package-qualified.
           const groups = result.data.components;
           const CORE_PKG = '@astryxdesign/core';
-          // Names that appear under more than one package across the whole
-          // listing — these must always be package-qualified to disambiguate.
           /** @type {Map<string, Set<string>>} */
           const nameCounts = new Map();
           for (const items of Object.values(groups)) {
@@ -164,123 +164,103 @@ export function registerComponent(program) {
               nameCounts.set(item.name, set);
             }
           }
-          /** @param {string} n */
-          const isCollision = n => (nameCounts.get(n)?.size ?? 0) > 1;
           /** @param {import('../../../../api/component/component.type.mjs').ComponentListEntry} item */
-          const pkgSuffix = item => {
-            if (item.package !== CORE_PKG) return `  [${item.package}]`;
-            if (isCollision(item.name)) return `  [${item.package}]`;
-            return '';
+          const importCell = item => {
+            const importPath = resolveImportPath(coreDir, item.name);
+            const qualify =
+              item.package !== CORE_PKG || (nameCounts.get(item.name)?.size ?? 0) > 1;
+            return qualify ? `${importPath}  [${item.package}]` : importPath;
           };
 
-          if (options.category) {
-            const [cat, comps] = Object.entries(groups)[0];
-            humanLog(`\n${cat}:`);
-            for (const item of comps) {
-              const importPath = resolveImportPath(coreDir, item.name);
-              humanLog(`  ${item.name}  ← ${importPath}${pkgSuffix(item)}`);
-            }
-            humanLog('');
-          } else {
-            humanLog('');
-            for (const [key, comps] of Object.entries(groups)) {
-              const isUngrouped = comps.length === 1 && comps[0]?.name === key;
-              if (isUngrouped) {
-                const item = comps[0];
-                const importPath = resolveImportPath(coreDir, item.name);
-                humanLog(`${item.name}  ← ${importPath}${pkgSuffix(item)}`);
-              } else {
-                humanLog(`${key} (group)`);
-                for (const item of comps) {
-                  const importPath = resolveImportPath(coreDir, item.name);
-                  humanLog(`  ${item.name}  ← ${importPath}${pkgSuffix(item)}`);
-                }
-              }
-            }
-            humanLog('');
-            humanLog(`Import from the path shown (e.g. import {Button} from '@astryxdesign/core/Button')`);
-            humanLog(`Usage: ${run} component <name>`);
-            humanLog('');
-          }
+          const firstGroup = Object.entries(groups)[0];
+          const entries =
+            options.category && firstGroup ? firstGroup[1] : Object.values(groups).flat();
+          const sorted = [...entries].sort((a, b) => a.name.localeCompare(b.name));
+
+          emit(
+            options.category && firstGroup
+              ? section(firstGroup[0])
+              : section(`Components (${sorted.length})`),
+            records(
+              sorted.map(item => ({name: item.name, import: importCell(item)})),
+              {fields: ['name', 'import']},
+            ),
+            listFooter,
+          );
           break;
         }
 
         case 'component.detail': {
-          if (detail === 'brief') {
-            const resolvedName = (name || '').replace(/^XDS/, '');
-            const importHint = resolveImportPath(coreDir, resolvedName);
-            humanLog(formatBrief(result.data, resolvedName, importHint, {themeData}));
-          } else if (detail === 'compact') {
-            const resolvedName = (name || '').replace(/^XDS/, '');
-            const importHint = resolveImportPath(coreDir, resolvedName);
-            humanLog(formatCompact(result.data, resolvedName, importHint));
-          } else {
-            const resolvedName = (name || '').replace(/^XDS/, '');
-            const importHint = resolveImportPath(coreDir, resolvedName);
-            humanLog(formatFull(result.data, {themeData, importHint}));
-          }
-          const compName = (name || '').replace(/^XDS/, '');
-          const related = await findRelatedBlocks(compName);
-          if (related.length > 0) {
-            humanLog('\nRelated block templates:\n');
-            for (const b of related) {
-              humanLog(`  ${b.dirName}`);
-              if (b.description) humanLog(`    ${b.description}`);
-            }
-            humanLog('');
-          }
+          const resolvedName = (name || '').replace(/^XDS/, '');
+          const importHint = resolveImportPath(coreDir, resolvedName);
+          const doc =
+            detail === 'brief'
+              ? code(formatBrief(result.data, resolvedName, importHint, {themeData}))
+              : detail === 'compact'
+                ? code(formatCompact(result.data, resolvedName, importHint))
+                : code(formatFull(result.data, {themeData, importHint}));
+          const related = await findRelatedBlocks(resolvedName);
+          emit(
+            doc,
+            related.length > 0 && section('Related block templates'),
+            related.length > 0 && records(related, {fields: ['dirName', 'description']}),
+          );
           break;
         }
 
         case 'component.detail.props': {
           const resolvedName = (name || '').replace(/^XDS/, '');
-          humanLog(formatProps({props: result.data}, resolvedName));
+          emit(code(formatProps({props: result.data}, resolvedName)));
           break;
         }
 
         case 'component.detail.source': {
-          humanLog(result.data.source);
+          emit(code(result.data.source));
           break;
         }
 
         case 'component.detail.showcase': {
-          humanLog(result.data.source);
+          emit(code(result.data.source));
           break;
         }
 
         case 'component.detail.blocks': {
           const {showcase, examples, related} = result.data;
+          /** @type {import('../../formatters/index.mjs').Block[]} */
+          const out = [];
           if (showcase) {
-            humanLog(`\nShowcase: ${showcase.displayName}`);
-            if (showcase.description) humanLog(`  ${showcase.description}`);
+            out.push(
+              section('Showcase'),
+              record(showcase, {fields: ['displayName', 'description']}),
+            );
           }
           if (examples.length > 0) {
-            humanLog('\nExamples:\n');
-            for (const b of examples) {
-              humanLog(`  ${b.name}`);
-              if (b.description) humanLog(`    ${b.description}`);
-            }
+            out.push(
+              section('Examples'),
+              records(examples, {fields: ['name', 'description']}),
+            );
           }
           if (related.length > 0) {
-            humanLog(`\nRelated: ${related.length} blocks that use ${result.data.component}\n`);
-            for (const b of related) {
-              humanLog(`  ${b.name}`);
-            }
+            out.push(
+              section(`Related: ${related.length} blocks that use ${result.data.component}`),
+              list(related.map(b => b.name)),
+            );
           }
           if (!showcase && examples.length === 0 && related.length === 0) {
-            humanLog(`\nNo blocks found for ${result.data.component}`);
+            out.push(text(`No blocks found for ${result.data.component}`));
           }
-          humanLog('');
+          emit(...out);
           break;
         }
       }
-    });
+    },
+  });
 }
 
 
 // Re-export lib functions for backward compatibility
 // (agent-docs.mjs, tests, and generate-skill-doc.sh import from here)
-export {discoverComponents, discoverExternalComponents, discoverExternalComponentsGrouped, findComponentReadme, findComponentSource, findExternalComponentDoc, resolveImportPath} from '../../../../foundation/discovery/component-discovery.mjs';
+export {discoverComponents, discoverExternalComponentsGrouped, findComponentReadme, findComponentSource, findExternalComponentDoc, resolveImportPath} from '../../../../foundation/discovery/component-discovery.mjs';
 export {discoverExternalPackages} from '../../../../foundation/fs/paths.mjs';
 export {loadDocs} from '../../../../foundation/discovery/component-loader.mjs';
 export {formatFull, formatCompact, formatBrief, formatProps, formatBriefAll} from '../../lib/component-format.mjs';

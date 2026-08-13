@@ -180,6 +180,30 @@ export const WithDisabledItems: Story = {
   ),
 };
 
+export const DestructiveItem: Story = {
+  name: 'Destructive item',
+  render: () => (
+    <DropdownMenu
+      button={{label: 'Actions'}}
+      items={[
+        {label: 'Edit', onClick: () => console.log('Edit')},
+        {
+          label: 'Duplicate',
+          icon: 'copy',
+          onClick: () => console.log('Duplicate'),
+        },
+        {type: 'divider'},
+        {
+          label: 'Delete',
+          icon: 'close',
+          variant: 'destructive',
+          onClick: () => console.log('Delete'),
+        },
+      ]}
+    />
+  ),
+};
+
 // Controlled mode
 export const Controlled: Story = {
   render: () => {
@@ -294,6 +318,32 @@ export const WithOnClick: Story = {
           ]}
         />
       </div>
+    );
+  },
+};
+
+export const StaysOpenOnSelect: Story = {
+  render: () => {
+    const [copied, setCopied] = useState(false);
+    return (
+      <DropdownMenu
+        button={{label: 'Session'}}
+        items={[
+          {
+            label: copied ? 'Copied' : 'Copy session ID',
+            icon: <DocumentDuplicateIcon style={{width: 16, height: 16}} />,
+            hasCloseOnSelect: false,
+            onClick: () => setCopied(true),
+          },
+          {label: 'Rename'},
+          {label: 'Delete', variant: 'destructive'},
+        ]}
+        onOpenChange={isOpen => {
+          if (!isOpen) {
+            setCopied(false);
+          }
+        }}
+      />
     );
   },
 };

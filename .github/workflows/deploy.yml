@@ -22,9 +22,25 @@
 #   /index.html    — landing page
 #   /latest        — short hash of latest deploy
 #
-# Uses keep_files:false + force_orphan:true — each deploy is a clean slate.
-# PR previews and reports are preserved by copying them from gh-pages before
-# deploying, but old generated artifact history is not retained.
+# Publish model — cheap clean-slate via git plumbing (see "Publish" step):
+# Every deploy replaces ONLY the regenerated stable paths (storybook/, sandbox/,
+# assets/, index.html, latest, .nojekyll) and carries /pr/ and /reports/ forward
+# untouched, then pushes the result as a single ORPHAN commit (no history). This
+# keeps three properties at once:
+#   A. Deploy time is O(1) in preview count. Earlier this job did
+#      `git clone` of all of gh-pages + `cp -r` the whole /pr/ tree forward on
+#      every push; once previews grew to ~1GB / tens of thousands of files that
+#      copy blew the 15-min job timeout and EVERY main deploy was cancelled
+#      (see #4716). We now fetch NO preview blobs — a --filter=blob:none +
+#      sparse checkout materializes only the stable paths; /pr/ stays in the
+#      index and is reused by SHA.
+#   B. No stale-asset accumulation. The stable paths are removed and rewritten
+#      each deploy, so superseded content-hashed assets don't pile up (the bug
+#      that `keep_files:false` originally fixed in #916).
+#   C. No gh-pages history bloat. The single-orphan-commit push is exactly what
+#      `force_orphan:true` gave us (#2239 / #2238) — it just no longer requires
+#      a full local copy of the tree to produce it. compact-gh-pages.yml remains
+#      the weekly backstop.
 name: Deploy
 
 on:
@@ -42,7 +58,7 @@ jobs:
   # Verify package.json exports match the source tree.
   # Fails if exports are stale — run `node scripts/sync-exports.js` locally to fix.
   sync-exports:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     permissions:
       contents: read
     steps:
@@ -53,7 +69,7 @@ jobs:
 
 
   test:
-    runs-on: ubuntu-latest
+    runs-on: 2-core-ubuntu-arm
     permissions:
       contents: read
     steps:
@@ -103,7 +119,7 @@ jobs:
   # handed to `deploy` as artifacts, so a broken test run never publishes —
   # test still gates the push, it just no longer serializes the build.
   build:
-    runs-on: ubuntu-latest
+    runs-on: 2-core-ubuntu-arm
     permissions:
       contents: read
     steps:
@@ -188,7 +204,7 @@ jobs:
   deploy:
     needs: [test, build]
     if: always() && !cancelled() && needs.test.result == 'success' && needs.build.result == 'success'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     permissions:
       contents: write
     steps:
@@ -210,61 +226,26 @@ jobs:
           name: deploy-assets
           path: site-assets
 
-      - name: Preserve PR previews and reports from gh-pages
-        run: |
-          # Clone current gh-pages to rescue PR previews and reports
-          # before the clean deploy wipes everything.
-          git clone --depth=1 --single-branch --branch gh-pages \
-            "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" \
-            /tmp/gh-pages 2>/dev/null || true
-
-          if [ -d "/tmp/gh-pages" ]; then
-            # Preserve PR preview directories
-            if [ -d "/tmp/gh-pages/pr" ]; then
-              echo "Preserving PR previews"
-              cp -r /tmp/gh-pages/pr /tmp/preserved-pr
-            fi
-
-            # Preserve vibe test reports
-            if [ -d "/tmp/gh-pages/reports" ]; then
-              echo "Preserving reports"
-              cp -r /tmp/gh-pages/reports /tmp/preserved-reports
-            fi
-
-            rm -rf /tmp/gh-pages
-          fi
-
-      - name: Prepare deployment
+      - name: Prepare stable site content
         run: |
           SHORT_HASH="${GITHUB_SHA:0:7}"
 
-          # Stable storybook
-          mkdir -p deploy/storybook
-          cp -r storybook-dist/* deploy/storybook/
-
-          # Stable sandbox (built with basePath=/<repo>/sandbox)
+          # Assemble the regenerated stable paths into ./staged — everything the
+          # deploy owns EXCEPT /pr/ and /reports/, which live on gh-pages and are
+          # carried forward untouched by the Publish step below.
+          rm -rf staged
+          mkdir -p staged/storybook staged/sandbox staged/assets
+          cp -r storybook-dist/* staged/storybook/
           if [ -d "sandbox-dist" ]; then
-            mkdir -p deploy/sandbox
-            cp -r sandbox-dist/* deploy/sandbox/
-          fi
-
-          # Restore preserved PR previews and reports
-          if [ -d "/tmp/preserved-pr" ]; then
-            cp -r /tmp/preserved-pr deploy/pr
-            echo "Restored $(ls deploy/pr/ | wc -l) PR preview(s)"
-          fi
-          if [ -d "/tmp/preserved-reports" ]; then
-            cp -r /tmp/preserved-reports deploy/reports
-            echo "Restored reports"
+            cp -r sandbox-dist/* staged/sandbox/
           fi
 
           # Astryx CSS for the landing page, staged by the build job
-          mkdir -p deploy/assets
-          cp site-assets/astryx.css deploy/assets/astryx.css
-          cp site-assets/reset.css deploy/assets/reset.css
-          cp site-assets/theme.css deploy/assets/theme.css
+          cp site-assets/astryx.css staged/assets/astryx.css
+          cp site-assets/reset.css staged/assets/reset.css
+          cp site-assets/theme.css staged/assets/theme.css
 
-          cat > deploy/index.html << 'LANDING_EOF'
+          cat > staged/index.html << 'LANDING_EOF'
           <!DOCTYPE html>
           <html lang="en" data-astryx-theme="neutral">
           <head>
@@ -343,18 +324,83 @@ jobs:
           LANDING_EOF
 
           # Inject the short hash into the landing page
-          sed -i "s|DEPLOY_HASH_PLACEHOLDER|${SHORT_HASH}|" deploy/index.html
+          sed -i "s|DEPLOY_HASH_PLACEHOLDER|${SHORT_HASH}|" staged/index.html
 
           # Write the latest deployed hash (used by PR comment links, etc.)
-          echo -n "${SHORT_HASH}" > deploy/latest
+          echo -n "${SHORT_HASH}" > staged/latest
 
-          touch deploy/.nojekyll
+      - name: Publish to gh-pages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Carry /pr/ and /reports/ forward WITHOUT downloading or copying them
+          # (>1GB / tens of thousands of files). See the header comment for the
+          # full rationale:
+          #   --filter=blob:none  → clone fetches trees but NO file contents
+          #   sparse-checkout     → only the stable paths are materialized;
+          #                         /pr/ & /reports/ stay in the index as
+          #                         skip-worktree entries (never written out)
+          #   git write-tree      → rebuilds the full tree from the index, so
+          #                         /pr/ & /reports/ are reused by SHA
+          #   commit-tree (no -p) → one ORPHAN commit == force_orphan, produced
+          #                         without a full local copy of gh-pages
+          REPO_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git"
+          WORK_DIR="$PWD"
+          MAX_ATTEMPTS=5
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./deploy
-          keep_files: false
-          force_orphan: true
-          destination_dir: .
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          for attempt in $(seq 1 $MAX_ATTEMPTS); do
+            echo "::group::Publish attempt $attempt of $MAX_ATTEMPTS"
+            cd "$WORK_DIR"
+            rm -rf /tmp/ghp
+
+            # Partial + no-checkout clone: fetches commits and trees, but no blobs.
+            git clone --filter=blob:none --no-checkout --depth=1 \
+              --single-branch --branch gh-pages "$REPO_URL" /tmp/ghp
+            cd /tmp/ghp
+            OLD_HEAD="$(git rev-parse HEAD)"
+
+            # Materialize ONLY the stable paths (cone mode also keeps root files
+            # like index.html/latest/.nojekyll). /pr/ & /reports/ are left as
+            # skip-worktree index entries — never fetched, never written.
+            git sparse-checkout init --cone
+            git sparse-checkout set storybook sandbox assets
+            git checkout gh-pages
+
+            # Clean-replace the stable paths so superseded content-hashed assets
+            # don't accumulate (the bug keep_files:false originally fixed).
+            rm -rf storybook sandbox assets index.html latest
+            cp -r "$WORK_DIR"/staged/. ./
+            touch .nojekyll
+
+            # git add -A respects skip-worktree, so /pr/ & /reports/ are NOT
+            # staged for deletion — they stay in the index and are carried
+            # forward by write-tree.
+            git add -A
+            if git diff --cached --quiet; then
+              echo "Nothing to publish"; echo "::endgroup::"; exit 0
+            fi
+
+            TREE="$(git write-tree)"
+            COMMIT="$(git commit-tree "$TREE" -m "Deploy ${GITHUB_SHA:0:7} to GitHub Pages")"
+
+            # force-with-lease guards against a concurrent gh-pages writer
+            # (another main deploy or a PR-preview push); on a lost race we
+            # re-clone the fresh tip and replay, so no update is clobbered.
+            if git push origin \
+                 "--force-with-lease=refs/heads/gh-pages:${OLD_HEAD}" \
+                 "${COMMIT}:refs/heads/gh-pages"; then
+              echo "Published on attempt $attempt (orphan ${COMMIT:0:7})"
+              echo "::endgroup::"
+              exit 0
+            fi
+
+            echo "Push rejected (concurrent gh-pages update) — retrying in $((attempt * 2))s"
+            echo "::endgroup::"
+            sleep $((attempt * 2))
+          done
+
+          echo "::error::Failed to publish to gh-pages after ${MAX_ATTEMPTS} attempts"
+          exit 1

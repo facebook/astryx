@@ -34,11 +34,6 @@ export const docs = {
       description: 'Column configuration. Use a number for fixed columns (e.g. `columns={3}`). Use an object for responsive columns: `minWidth` sets the minimum column width in px, `repeat` controls track behavior (`"fill"` preserves empty tracks for consistent widths, `"fit"` collapses empty tracks so items stretch; defaults to `"fill"`), and `max` caps the maximum number of columns.',
     },
     {
-      name: 'minChildWidth',
-      type: 'number',
-      description: 'Deprecated: use `columns={{minWidth: 280}}` instead. Minimum item width in px; enables responsive auto-fit.',
-    },
-    {
       name: 'width',
       type: 'SizeValue',
       description: 'Container width. Numbers are treated as pixels, strings are used as-is.',

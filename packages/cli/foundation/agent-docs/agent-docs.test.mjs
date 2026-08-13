@@ -46,6 +46,14 @@ describe('generateCompressedIndex', () => {
     expect(result).toMatch(/never override --color-/);
   });
 
+  it('sends frame choice to the layout doc rather than naming a shell', () => {
+    const result = generateCompressedIndex('1.0.0');
+    const frameRule = result.split('\n').find(l => l.includes('Frame first'));
+    expect(frameRule).toContain('astryx docs layout');
+    expect(result).not.toMatch(/AppShell/);
+    expect(frameRule).not.toMatch(/https?:/);
+  });
+
   it('includes the post-generation self-check rule', () => {
     const result = generateCompressedIndex('1.0.0');
     expect(result).toContain('SELF-CHECK before you finish');

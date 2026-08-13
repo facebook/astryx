@@ -250,10 +250,6 @@ const styles = stylex.create({
     paddingInlineStart: spacingVars['--spacing-3'],
     paddingInlineEnd: spacingVars['--spacing-3'],
   },
-  gap: {
-    marginBlockStart: spacingVars['--spacing-1'],
-    marginBlockEnd: spacingVars['--spacing-1'],
-  },
   customWidth: (width: string | number) => ({
     width: typeof width === 'number' ? `${width}px` : width,
   }),
@@ -529,7 +525,8 @@ export function Popover({
           {
             placement,
             alignment,
-            xstyle: [popoverXstyle, styles.gap, layerAnimations[placement]],
+            offset: spacingVars['--spacing-1'],
+            xstyle: [popoverXstyle, layerAnimations[placement]],
           },
         )}
       </>
@@ -565,7 +562,8 @@ export function Popover({
           {
             placement,
             alignment,
-            xstyle: [popoverXstyle, styles.gap, layerAnimations[placement]],
+            offset: spacingVars['--spacing-1'],
+            xstyle: [popoverXstyle, layerAnimations[placement]],
           },
         )}
       </>
@@ -594,7 +592,8 @@ export function Popover({
         {
           placement,
           alignment,
-          xstyle: [popoverXstyle, styles.gap, layerAnimations[placement]],
+          offset: spacingVars['--spacing-1'],
+          xstyle: [popoverXstyle, layerAnimations[placement]],
         },
       )}
     </>

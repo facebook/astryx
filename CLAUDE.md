@@ -70,7 +70,9 @@ Documentation lives in two places:
 
 ## Quick Reference
 
-- **Package manager**: pnpm 11 (via corepack — see CONTRIBUTING.md)
+- **Package manager**: pnpm 11, pinned by the `packageManager` field (see
+  CONTRIBUTING.md for install options — Corepack is one of several, and Node
+  25+ no longer bundles it)
 - **Testing**: Vitest (colocated tests)
 - **Components**: `packages/core/`
 - **Storybook**: `apps/storybook/`

@@ -72,12 +72,26 @@ export interface TimestampTooltipEntry {
    * Supplied already translated; Timestamp never invents or localizes labels.
    */
   label?: string;
+  /**
+   * Whether this row shows a copy-to-clipboard button, rendered in a dedicated
+   * trailing action column so the buttons line up across rows regardless of
+   * each value's width. The action column is only reserved when at least one
+   * row is copyable, so a fully read-only card has no trailing gutter.
+   *
+   * Defaults to `false` — rows are read-only unless opted in. Set `true` for a
+   * row whose value is worth pasting elsewhere, such as a machine-readable
+   * `system_date_time` value shown beside human-readable zones that only need
+   * to be read.
+   * @default false
+   */
+  isCopyable?: boolean;
 }
 
 /** A rendered tooltip line. */
 export interface TimestampTooltipLine {
   label?: string;
   value: string;
+  isCopyable: boolean;
 }
 
 // =============================================================================
@@ -198,6 +212,7 @@ export function formatTooltipLines(
 
     return {
       ...(entry.label === undefined ? {} : {label: entry.label}),
+      isCopyable: entry.isCopyable ?? false,
       value: formatInstant(date, format, {
         timeZone,
         isTimezoneShown: shouldShowZoneName(
