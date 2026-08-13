@@ -18,6 +18,7 @@
  */
 
 import {useMemo, useState, type CSSProperties} from 'react';
+import * as stylex from '@stylexjs/stylex';
 import {
   VStack,
   HStack,
@@ -27,6 +28,7 @@ import {
   LayoutHeader,
 } from '@astryxdesign/core/Layout';
 import {Grid} from '@astryxdesign/core/Grid';
+import {AspectRatio} from '@astryxdesign/core/AspectRatio';
 import {Text, Heading} from '@astryxdesign/core/Text';
 import {Card} from '@astryxdesign/core/Card';
 import {Button} from '@astryxdesign/core/Button';
@@ -101,15 +103,30 @@ const AXIS_TICK = {
   fill: 'var(--color-text-secondary, #4E606F)',
 };
 
-// ============= DETERMINISTIC SPARKLINES =============
+// ============= DETERMINISTIC SERIES =============
 
-// Build a smooth, stable sparkline series from a seed so previews never shift.
+const SPARK_POINTS = 64;
+
+// Hash-based noise in [0, 1) — deterministic, so previews never shift.
+// Shared by the metric sparklines and the active-users trend below.
+function noise(i: number, seed: number): number {
+  const x = Math.sin(i * 127.1 + seed * 311.7) * 43758.5453;
+  return x - Math.floor(x);
+}
+
+// Build a stable but spiky sparkline series: a trend line, a weekly rhythm, a
+// mean-reverting drift, per-point jitter, and the occasional outlier burst.
 function spark(seed: number, trend: number): number[] {
   const out: number[] = [];
-  for (let i = 0; i < 24; i++) {
-    const base = 50 + trend * i;
-    const wobble = Math.sin(i * 0.9 + seed) * 8 + Math.sin(i * 0.37 + seed) * 4;
-    out.push(Math.round(base + wobble));
+  let drift = 0;
+  for (let i = 0; i < SPARK_POINTS; i++) {
+    const base = 50 + (trend * i * 24) / SPARK_POINTS;
+    const weekly = Math.sin((i * Math.PI * 2) / 7 + seed) * 2.5;
+    drift = drift * 0.72 + (noise(i, seed) - 0.5) * 7;
+    const jitter = (noise(i, seed + 17) - 0.5) * 8;
+    const burst =
+      noise(i, seed + 91) > 0.9 ? (noise(i, seed + 43) - 0.4) * 20 : 0;
+    out.push(Math.round(base + weekly + drift + jitter + burst));
   }
   return out;
 }
@@ -181,9 +198,46 @@ const OVERVIEW_METRICS: Metric[] = [
     deltas: {dd: -0.1, ww: 0.9, mm: 2.6, yy: 11.2},
     spark: spark(8, 0.6),
   },
+  {
+    key: 'activation',
+    label: 'Activation rate',
+    value: '61.4%',
+    higherIsBetter: true,
+    deltas: {dd: 0.2, ww: 1.3, mm: 4.1, yy: 12.7},
+    spark: spark(9, 0.8),
+  },
+  {
+    // Matches the Day 30 point on RETENTION_CURVE so the two views agree.
+    key: 'retention-30',
+    label: '30-day retention',
+    value: '27.4%',
+    higherIsBetter: true,
+    deltas: {dd: 0.1, ww: -0.4, mm: 1.8, yy: 5.3},
+    spark: spark(10, -0.3),
+  },
+  {
+    key: 'churn',
+    label: 'Churn rate',
+    value: '4.7%',
+    higherIsBetter: false,
+    deltas: {dd: -0.1, ww: -0.5, mm: -1.3, yy: -3.9},
+    spark: spark(11, -0.6),
+  },
+  {
+    key: 'load-time',
+    label: 'Avg. load time',
+    value: '1.4s',
+    higherIsBetter: false,
+    deltas: {dd: 0.2, ww: 0.6, mm: -2.2, yy: -8.1},
+    spark: spark(12, 0.35),
+  },
 ];
 
-// Active-users trend: 30 days of desktop/mobile/tablet split.
+// Active-users trend: a full quarter of desktop/mobile/tablet split. Weekends
+// swing traffic from desktop to mobile, and each day carries its own jitter
+// plus the occasional traffic spike, so the series reads like real telemetry.
+const TREND_DAYS = 90;
+
 const ACTIVE_TREND = (() => {
   const out: {
     t: number;
@@ -192,20 +246,36 @@ const ACTIVE_TREND = (() => {
     mobile: number;
     tablet: number;
   }[] = [];
-  for (let i = 0; i < 30; i++) {
-    const phase = (i / 30) * Math.PI * 2;
+  for (let i = 0; i < TREND_DAYS; i++) {
+    const weekend = i % 7 === 5 || i % 7 === 6;
+    const spike = noise(i, 61) > 0.88 ? 1 : 0;
+    // Slopes are expressed as total drift across the window, so the shape
+    // holds if TREND_DAYS changes.
     out.push({
       t: i,
       label: `Day ${i + 1}`,
-      desktop: Math.round(520 + 90 * Math.sin(phase) + i * 3),
-      mobile: Math.round(680 + 120 * Math.sin(phase + 1.4) + i * 5),
-      tablet: Math.round(140 + 30 * Math.sin(phase + 2.6)),
+      desktop: Math.round(
+        520 +
+          (i * 90) / TREND_DAYS +
+          (weekend ? -110 : 20) +
+          (noise(i, 11) - 0.5) * 80,
+      ),
+      mobile: Math.round(
+        680 +
+          (i * 150) / TREND_DAYS +
+          (weekend ? 85 : -15) +
+          (noise(i, 23) - 0.5) * 125 +
+          spike * 130,
+      ),
+      tablet: Math.round(
+        140 + (weekend ? 24 : -5) + (noise(i, 37) - 0.5) * 40 + spike * 18,
+      ),
     });
   }
   return out;
 })();
 
-const ACTIVE_TICKS = [0, 9, 19, 29];
+const ACTIVE_TICKS = [0, 29, 59, TREND_DAYS - 1];
 
 // ============= DEMOGRAPHICS =============
 
@@ -387,15 +457,12 @@ function DeltaValue({
   const variant = flat ? 'neutral' : favorable ? 'green' : 'red';
   const sign = value > 0 ? '+' : '';
   return (
-    <VStack gap={1} hAlign="center">
-      <Text type="supporting" color="secondary">
+    <Text type="body" weight="bold" color="primary">
+      {flat ? '—' : `${sign}${value.toFixed(1)}%`}{' '}
+      <Text type="inherit" weight="normal" color="secondary">
         {label}
       </Text>
-      <Badge
-        variant={variant}
-        label={flat ? '—' : `${sign}${value.toFixed(1)}%`}
-      />
-    </VStack>
+    </Text>
   );
 }
 
@@ -407,10 +474,12 @@ function MiniSparkline({data, color}: {data: number[]; color: string}) {
         data={chartData}
         margin={{top: 4, right: 0, left: 0, bottom: 0}}>
         <Line
-          type="monotone"
+          type="linear"
           dataKey="v"
           stroke={color}
-          strokeWidth={1.5}
+          strokeWidth={1.25}
+          strokeLinecap="butt"
+          strokeLinejoin="miter"
           dot={false}
           isAnimationActive={false}
         />
@@ -424,27 +493,23 @@ function MetricCard({metric}: {metric: Metric}) {
   const favorable = metric.higherIsBetter ? trendUp : !trendUp;
   const sparkColor = favorable ? COLORS.green : COLORS.orange;
   return (
-    <Card>
-      <VStack gap={2}>
-        <HStack hAlign="between" vAlign="center">
+    <Card padding={4}>
+      <VStack gap={4}>
+        <VStack gap={1}>
           <Text type="label" color="secondary">
             {metric.label}
           </Text>
-          <Icon
-            icon={trendUp ? ArrowUpIcon : ArrowDownIcon}
-            size="xsm"
-            color={favorable ? 'success' : 'error'}
-          />
-        </HStack>
-        <Heading level={3}>{metric.value}</Heading>
+          <HStack gap={2} vAlign="center">
+            <Heading level={1}>{metric.value}</Heading>
+            <Icon
+              icon={trendUp ? ArrowUpIcon : ArrowDownIcon}
+              size="sm"
+              color={favorable ? 'success' : 'error'}
+            />
+          </HStack>
+        </VStack>
         <MiniSparkline data={metric.spark} color={sparkColor} />
-        <Divider />
-        <HStack hAlign="between">
-          <DeltaValue
-            label="d/d"
-            value={metric.deltas.dd}
-            higherIsBetter={metric.higherIsBetter}
-          />
+        <HStack gap={4}>
           <DeltaValue
             label="w/w"
             value={metric.deltas.ww}
@@ -455,16 +520,26 @@ function MetricCard({metric}: {metric: Metric}) {
             value={metric.deltas.mm}
             higherIsBetter={metric.higherIsBetter}
           />
-          <DeltaValue
-            label="y/y"
-            value={metric.deltas.yy}
-            higherIsBetter={metric.higherIsBetter}
-          />
         </HStack>
       </VStack>
     </Card>
   );
 }
+
+// Grid's `columns` prop carries a single minWidth, so the roomier track floor
+// for wide viewports rides in as an xstyle override: Grid routes its track
+// template through a CSS var and applies `xstyle` last, so this wins. Below
+// the breakpoint the value is left unset and the `columns` prop stands.
+const METRICS_WIDE = '@media (min-width: 900px)';
+
+const metricsGridStyles = stylex.create({
+  grid: {
+    gridTemplateColumns: {
+      default: null,
+      [METRICS_WIDE]: 'repeat(auto-fit, minmax(320px, 1fr))',
+    },
+  },
+});
 
 // ============= ACTIVE USERS TREND =============
 
@@ -527,7 +602,7 @@ function ActiveUsersTrend() {
           <XAxis
             dataKey="t"
             type="number"
-            domain={[0, 29]}
+            domain={[0, TREND_DAYS - 1]}
             ticks={ACTIVE_TICKS}
             tickFormatter={(v: number) => ACTIVE_TREND[v]?.label ?? ''}
             tick={AXIS_TICK}
@@ -546,31 +621,34 @@ function ActiveUsersTrend() {
             cursor={{stroke: GRID_STROKE}}
           />
           <Area
-            type="monotone"
+            type="linear"
             dataKey="mobile"
             name="Mobile"
             stroke={COLORS.blue}
-            strokeWidth={2}
+            strokeWidth={1.5}
+            strokeLinejoin="miter"
             fill="url(#au-mobile)"
             dot={false}
             isAnimationActive={false}
           />
           <Area
-            type="monotone"
+            type="linear"
             dataKey="desktop"
             name="Desktop"
             stroke={COLORS.teal}
-            strokeWidth={2}
+            strokeWidth={1.5}
+            strokeLinejoin="miter"
             fill="url(#au-desktop)"
             dot={false}
             isAnimationActive={false}
           />
           <Area
-            type="monotone"
+            type="linear"
             dataKey="tablet"
             name="Tablet"
             stroke={COLORS.orange}
-            strokeWidth={2}
+            strokeWidth={1.5}
+            strokeLinejoin="miter"
             fill="none"
             dot={false}
             isAnimationActive={false}
@@ -909,6 +987,17 @@ function RetentionChart() {
 
 // ============= SECTION HEADING =============
 
+// AspectRatio takes its width from the container, and as a flex child its own
+// `width: 100%` would resolve against the whole header row. Pinning a width
+// here gives it the definite box it needs and makes the tile a 32px square.
+const sectionIconStyles = stylex.create({
+  tile: {
+    width: 'var(--spacing-8)',
+    backgroundColor: 'var(--color-background-muted)',
+    borderRadius: 'var(--radius-element)',
+  },
+});
+
 function SectionHeading({
   title,
   hint,
@@ -920,9 +1009,13 @@ function SectionHeading({
 }) {
   return (
     <HStack hAlign="between" vAlign="center" gap={3}>
-      <HStack gap={2} vAlign="center">
-        {icon ? <Icon icon={icon} size="sm" color="secondary" /> : null}
-        <Heading level={3}>{title}</Heading>
+      <HStack gap={3} vAlign="center">
+        {icon ? (
+          <AspectRatio ratio={1} fit="center" xstyle={sectionIconStyles.tile}>
+            <Icon icon={icon} size="sm" color="secondary" />
+          </AspectRatio>
+        ) : null}
+        <Heading level={2}>{title}</Heading>
       </HStack>
       {hint ? (
         <Text type="supporting" color="secondary">
@@ -937,7 +1030,8 @@ function SectionHeading({
 
 export default function DataDashboardPage() {
   const [activeTab, setActiveTab] = useState('Overview');
-  const [range, setRange] = useState<DateRange>('30d');
+  // Matches TREND_DAYS — the fixtures render a full quarter.
+  const [range, setRange] = useState<DateRange>('90d');
   const [segment, setSegment] = useState<Segment>('all');
   const [device, setDevice] = useState('all');
 
@@ -1005,56 +1099,64 @@ export default function DataDashboardPage() {
       content={
         <LayoutContent padding={6}>
           {activeTab === 'Overview' && (
-            <VStack gap={6}>
-              <SectionHeading
-                title="Key metrics"
-                hint={summary}
-                icon={UsersIcon}
-              />
-              <Grid columns={{minWidth: 260, repeat: 'fit'}} gap={4}>
-                {OVERVIEW_METRICS.map(metric => (
-                  <MetricCard key={metric.key} metric={metric} />
-                ))}
-              </Grid>
-              <Divider />
-              <SectionHeading
-                title="Active users by device"
-                hint="Daily active users (thousands)"
-                icon={CursorArrowRaysIcon}
-              />
-              <Card>
-                <ActiveUsersTrend />
-              </Card>
-            </VStack>
-          )}
-
-          {activeTab === 'Demographics' && (
-            <VStack gap={6}>
-              <SectionHeading
-                title="Audience demographics"
-                hint={summary}
-                icon={UsersIcon}
-              />
-              <Grid columns={{minWidth: 320, repeat: 'fit'}} gap={4}>
-                <BreakdownCard title="Age" data={AGE_DATA} />
-                <BreakdownCard title="Gender" data={GENDER_DATA} />
-                <BreakdownCard title="Device" data={DEVICE_DATA} />
-              </Grid>
-              <Divider />
-              <SectionHeading
-                title="Acquisition channels"
-                hint="How users find the product"
-              />
-              <Card>
-                <Table<AcqRow>
-                  data={ACQUISITION}
-                  columns={acquisitionColumns}
-                  idKey="id"
-                  density="balanced"
-                  dividers="rows"
-                  hasHover
+            <VStack gap={10}>
+              <VStack gap={6}>
+                <SectionHeading
+                  title="Key Metrics"
+                  hint={summary}
+                  icon={UsersIcon}
                 />
-              </Card>
+                <Grid
+                  columns={{minWidth: 240, repeat: 'fit'}}
+                  gap={4}
+                  xstyle={metricsGridStyles.grid}>
+                  {OVERVIEW_METRICS.map(metric => (
+                    <MetricCard key={metric.key} metric={metric} />
+                  ))}
+                </Grid>
+              </VStack>
+              <VStack gap={6}>
+                <SectionHeading
+                  title="Devices"
+                  hint="Daily active users (thousands)"
+                  icon={CursorArrowRaysIcon}
+                />
+                <Card padding={6}>
+                  <VStack gap={6}>
+                    <Text type="label">Daily active users by device type</Text>
+                    <ActiveUsersTrend />
+                  </VStack>
+                </Card>
+              </VStack>
+              <Divider />
+              <VStack gap={6}>
+                <SectionHeading
+                  title="Audience demographics"
+                  hint={summary}
+                  icon={UsersIcon}
+                />
+                <Grid columns={{minWidth: 320, repeat: 'fit'}} gap={4}>
+                  <BreakdownCard title="Age" data={AGE_DATA} />
+                  <BreakdownCard title="Gender" data={GENDER_DATA} />
+                  <BreakdownCard title="Device" data={DEVICE_DATA} />
+                </Grid>
+              </VStack>
+              <VStack gap={6}>
+                <SectionHeading
+                  title="Acquisition channels"
+                  hint="How users find the product"
+                />
+                <Card>
+                  <Table<AcqRow>
+                    data={ACQUISITION}
+                    columns={acquisitionColumns}
+                    idKey="id"
+                    density="balanced"
+                    dividers="rows"
+                    hasHover
+                  />
+                </Card>
+              </VStack>
             </VStack>
           )}
 
