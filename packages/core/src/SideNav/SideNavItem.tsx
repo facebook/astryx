@@ -91,12 +91,16 @@ const styles = stylex.create({
     alignItems: 'center',
   },
   // Row-level secondary controls (actions slot) — siblings of the primary
-  // element at the trailing edge of the row.
+  // element at the trailing edge of the row. pointerEvents opts back in when
+  // a disabled row's navItemStyles.disabled sets pointer-events: none on the
+  // wrapper: the slot is passthrough, so each control owns its own disabled
+  // state (keyboard focus already reaches it either way).
   actions: {
     flexShrink: 0,
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-1'],
+    pointerEvents: 'auto',
   },
   children: {
     paddingInlineStart: spacingVars['--spacing-6'],

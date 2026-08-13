@@ -1754,6 +1754,91 @@ describe('SideNavItem — actions slot', () => {
     expect(screen.getByLabelText('Project')).toBeInTheDocument();
     expect(screen.queryByTestId('row-action')).toBeNull();
   });
+
+  it('keeps actions clickable on a disabled item', async () => {
+    const user = userEvent.setup();
+    const onActionClick = vi.fn();
+    render(
+      <SideNavItem
+        label="Project"
+        href="/project"
+        isDisabled
+        actions={rowAction(onActionClick)}
+      />,
+    );
+    // The row's disabled styling must not swallow the sibling action:
+    // the action control owns its own disabled state.
+    await user.click(screen.getByTestId('row-action'));
+    expect(onActionClick).toHaveBeenCalledTimes(1);
+  });
+
+  it('places actions after the toggle when endContent is also present', () => {
+    render(
+      <SideNavItem
+        label="Project"
+        href="/project"
+        collapsible
+        endContent={<span data-testid="badge">3</span>}
+        actions={rowAction()}>
+        <SideNavItem label="Session" href="/project/session" />
+      </SideNavItem>,
+    );
+    const link = screen.getByRole('link', {name: /Project/});
+    const toggle = screen.getByRole('button', {name: /collapse project/i});
+    const action = screen.getByTestId('row-action');
+    expect(within(link).getByTestId('badge')).toBeInTheDocument();
+    expect(
+      link.compareDocumentPosition(toggle) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      toggle.compareDocumentPosition(action) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('reaches the action after the whole-row toggle and before nested items', async () => {
+    const user = userEvent.setup();
+    render(
+      <SideNavItem label="Project" collapsible actions={rowAction()}>
+        <SideNavItem label="Session" href="/project/session" />
+      </SideNavItem>,
+    );
+    await user.tab();
+    expect(screen.getByRole('button', {name: 'Project'})).toHaveFocus();
+    await user.tab();
+    expect(screen.getByTestId('row-action')).toHaveFocus();
+    await user.tab();
+    expect(screen.getByRole('link', {name: 'Session'})).toHaveFocus();
+  });
+
+  it('renders the custom link component inside the row wrapper', () => {
+    render(
+      <LinkProvider component={CustomLink}>
+        <SideNavItem label="Project" href="/project" actions={rowAction()} />
+      </LinkProvider>,
+    );
+    const link = screen.getByRole('link', {name: 'Project'});
+    expect(link).toHaveAttribute('data-custom-link');
+    expect(link.parentElement).toHaveClass('astryx-side-nav-item');
+  });
+
+  it('controlled collapse reports toggle intent without flipping until the prop changes', async () => {
+    const user = userEvent.setup();
+    const onCollapsedChange = vi.fn();
+    render(
+      <SideNavItem
+        label="Project"
+        href="/project"
+        collapsible={{isCollapsed: false, onCollapsedChange}}
+        actions={rowAction()}>
+        <SideNavItem label="Session" href="/project/session" />
+      </SideNavItem>,
+    );
+    const toggle = screen.getByRole('button', {name: /collapse project/i});
+    await user.click(toggle);
+    expect(onCollapsedChange).toHaveBeenCalledWith(true);
+    // Controlled mode: stays expanded until the consumer flips the prop.
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  });
 });
 
 import {SideNavRenderContext} from './SideNavRenderContext';
@@ -1833,6 +1918,28 @@ describe('SideNavItem — mobile drawer close-on-activate', () => {
       </AppShellMobileContext>,
     );
     await user.click(screen.getByTestId('item'));
+    expect(closeMobileNav).not.toHaveBeenCalled();
+  });
+
+  it('does not close the mobile nav when a row action is clicked', async () => {
+    const user = userEvent.setup();
+    const onActionClick = vi.fn();
+    const {closeMobileNav} = renderInDrawer(
+      <SideNavItem
+        label="Home"
+        href="/"
+        actions={
+          <button
+            type="button"
+            data-testid="drawer-row-action"
+            onClick={onActionClick}>
+            ⋯
+          </button>
+        }
+      />,
+    );
+    await user.click(screen.getByTestId('drawer-row-action'));
+    expect(onActionClick).toHaveBeenCalledTimes(1);
     expect(closeMobileNav).not.toHaveBeenCalled();
   });
 });
