@@ -40,7 +40,7 @@ import type {FieldStatusVariant} from '../FieldStatus/FieldStatus';
 import type {InputStatus, InputStatusType} from '../Field/types';
 import {useTooltip} from '../Tooltip';
 import {useTranslator} from '../i18n';
-import {colorVars, radiusVars, focusVars} from '../theme/tokens.stylex';
+import {radiusVars, focusVars} from '../theme/tokens.stylex';
 import {themeProps} from '../utils/themeProps';
 
 /**
@@ -94,10 +94,9 @@ const styles = stylex.create({
       default: null,
       ':focus-visible': focusVars['--focus-outline-color'],
     },
-    outlineOffset: {
-      default: null,
-      ':focus-visible': focusVars['--focus-outline-offset'],
-    },
+    // Not the shared offset: this button sits inside the field, and measured at
+    // the standard 3px its ring crosses the field border.
+    outlineOffset: {default: null, ':focus-visible': '2px'},
   },
 });
 
