@@ -86,12 +86,15 @@ const styles = stylex.create({
 
 /**
  * An inline info-icon help affordance: a small "i" button that reveals a
- * tooltip on hover and keyboard focus. Use it next to labels, values, and
- * metrics for permission notes, metric definitions, and field help.
+ * tooltip on hover, keyboard focus, and tap. Use it next to labels, values,
+ * and metrics for permission notes, metric definitions, and field help.
  *
  * The value over hand-composing Icon inside Tooltip is the pre-wired
  * accessible trigger: a real button with an aria-label, Tab-reachable,
- * tooltip on hover AND focus, and Escape dismissal.
+ * tooltip on hover AND focus, tap-to-toggle for touch, and Escape dismissal.
+ *
+ * Tapping (or clicking) pins the tooltip open so it survives the pointer
+ * leaving; tapping again, Escape, or moving focus away closes it.
  *
  * Composed entirely from core primitives (Tooltip + Icon); the info icon
  * resolves from the global icon registry, so themes can override it.
@@ -102,20 +105,39 @@ const styles = stylex.create({
  * <InfoTip content="30-day rolling average." label="About this metric" />
  * ```
  */
+/**
+ * Visibility channel into Tooltip's controlled `isOpen`:
+ * - `auto` — `isOpen` undefined: Tooltip's own hover/focus triggers decide.
+ * - `pinned` — `isOpen` true: force-shown by a tap/click; outlives pointer-leave.
+ * - `dismissed` — `isOpen` false: force-hidden by Escape or a second tap.
+ *
+ * `dismissed` (not `auto`) is the only way to close: `auto` merely stops
+ * overriding Tooltip, and Tooltip's controlled effect no-ops on `undefined`,
+ * so returning to `auto` while open would leave the layer stuck open.
+ */
+type InfoTipVisibility = 'auto' | 'pinned' | 'dismissed';
+
 export function InfoTip({
   content,
   label = 'More information',
   size = 'sm',
 }: InfoTipProps): ReactNode {
-  // Escape dismissal: `true` force-hides the tooltip (Tooltip isOpen={false});
-  // `false` returns control to Tooltip's own hover/focus triggers (isOpen
-  // undefined). Reset when the pointer or focus leaves the trigger so the
-  // tooltip can re-open on the next hover/focus.
-  const [isDismissed, setIsDismissed] = useState(false);
+  const [visibility, setVisibility] = useState<InfoTipVisibility>('auto');
   const isOpenRef = useRef(false);
 
   const handleOpenChange = useCallback((isOpen: boolean) => {
     isOpenRef.current = isOpen;
+  }, []);
+
+  // Tap/click toggles the tooltip. Hover-only help is invisible on touch:
+  // core suppresses hover-open under `(hover: none)` and only opens on focus
+  // when the trigger is `:focus-visible`, so without this a touch user has no
+  // way to open the tooltip at all. Pinning is unconditional rather than
+  // toggling on current visibility, so the same tap means the same thing for
+  // pointer users — whose hover may or may not have opened it already,
+  // depending on whether Tooltip's show delay had elapsed.
+  const handleClick = useCallback(() => {
+    setVisibility(current => (current === 'pinned' ? 'dismissed' : 'pinned'));
   }, []);
 
   const handleKeyDown = useCallback(
@@ -124,27 +146,36 @@ export function InfoTip({
         // Only swallow Escape when it actually dismissed the tooltip, so an
         // enclosing dialog still closes on the next press.
         event.stopPropagation();
-        setIsDismissed(true);
+        setVisibility('dismissed');
       }
     },
     [],
   );
 
-  const handleReset = useCallback(() => {
-    setIsDismissed(false);
+  // Focus leaving closes a pinned tooltip, and otherwise returns control to
+  // Tooltip so it can re-open on the next hover/focus.
+  const handleBlur = useCallback(() => {
+    setVisibility(current => (current === 'pinned' ? 'dismissed' : 'auto'));
+  }, []);
+
+  // The pointer leaving must not unpin — surviving pointer-leave is the point
+  // of pinning — but it does clear a dismissal so the next hover re-opens.
+  const handleMouseLeave = useCallback(() => {
+    setVisibility(current => (current === 'dismissed' ? 'auto' : current));
   }, []);
 
   return (
     <Tooltip
       content={content}
-      isOpen={isDismissed ? false : undefined}
+      isOpen={visibility === 'auto' ? undefined : visibility === 'pinned'}
       onOpenChange={handleOpenChange}>
       <button
         type="button"
         aria-label={label}
+        onClick={handleClick}
         onKeyDown={handleKeyDown}
-        onBlur={handleReset}
-        onMouseLeave={handleReset}
+        onBlur={handleBlur}
+        onMouseLeave={handleMouseLeave}
         {...stylex.props(styles.trigger)}>
         <Icon icon="info" size={size} />
       </button>
