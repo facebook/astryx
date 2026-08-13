@@ -1546,7 +1546,7 @@ describe('MultiSelector clear icon theme target', () => {
     return icon as HTMLElement;
   };
 
-  it('renders the astryx-multi-selector-clear-icon target on the clear glyph', () => {
+  it('renders the astryx-input-clear-icon target (plus the legacy alias) on the clear glyph', () => {
     render(
       <MultiSelector
         label="Fruit"
@@ -1556,11 +1556,13 @@ describe('MultiSelector clear icon theme target', () => {
         hasClear
       />,
     );
-    // The stable theme target lands on the icon element itself (not the
-    // button), so a theme can restyle just this glyph (color, size, hover)
-    // via `defineTheme` — a button-level target could not reach the icon's
-    // own color/size.
+    // The canonical target lands on the icon element itself (not the button),
+    // so a theme can restyle just this glyph (color, size, hover) via
+    // `defineTheme` — a button-level target could not reach the icon's own
+    // color/size. The original per-component name rides along for a
+    // deprecation window.
     const icon = getClearIcon();
+    expect(icon).toHaveClass('astryx-input-clear-icon');
     expect(icon).toHaveClass('astryx-multi-selector-clear-icon');
     expect(icon).toHaveClass('astryx-icon');
   });
@@ -1582,11 +1584,13 @@ describe('MultiSelector clear icon theme target', () => {
     expect(onChange).toHaveBeenCalledWith([]);
   });
 
-  it('renders the default icon (secondary color, sm size) byte-identically', () => {
-    // Pixel-identical default guard: the clear glyph must carry the exact same
-    // StyleX color/size classes as a standalone secondary/sm icon. The added
-    // target class is purely additive — it changes nothing until a theme
-    // targets it.
+  it('routes the clear glyph through the shared clear button, keeping the legacy target', () => {
+    // The clear affordance now composes the shared InputClearButton (a ghost
+    // Button with a secondary/sm glyph), so the icon carries the canonical
+    // `astryx-input-clear-icon` target and — for a deprecation window — the
+    // original `astryx-multi-selector-clear-icon`. Aside from those target
+    // classes it matches the shared button's own `close`/`sm`/`secondary`
+    // glyph exactly, so the default look is defined in one place.
     render(
       <MultiSelector
         label="Fruit"
@@ -1597,6 +1601,8 @@ describe('MultiSelector clear icon theme target', () => {
       />,
     );
     const icon = getClearIcon();
+    expect(icon).toHaveClass('astryx-input-clear-icon');
+    expect(icon).toHaveClass('astryx-multi-selector-clear-icon');
 
     const {container: refContainer} = render(
       <Icon icon="close" size="sm" color="secondary" />,
@@ -1606,7 +1612,11 @@ describe('MultiSelector clear icon theme target', () => {
     const styleClasses = (el: HTMLElement) =>
       el.className
         .split(' ')
-        .filter(c => c !== 'astryx-multi-selector-clear-icon')
+        .filter(
+          c =>
+            c !== 'astryx-input-clear-icon' &&
+            c !== 'astryx-multi-selector-clear-icon',
+        )
         .sort();
 
     expect(styleClasses(icon)).toEqual(styleClasses(refIcon));
@@ -2074,5 +2084,29 @@ describe('MultiSelector dropdown option theme target', () => {
     expect(css).toContain('.astryx-multi-selector-option.selected');
     expect(css).toContain('.astryx-multi-selector-option.select-all');
     expect(css).toContain('.astryx-multi-selector-option.lg');
+  });
+});
+
+describe('MultiSelector popup theme target', () => {
+  it('puts astryx-multi-selector-popup on the dropdown box inside the layer', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={['Apple', 'Banana']}
+        value={[]}
+        onChange={() => {}}
+      />,
+    );
+    await user.click(screen.getByRole('combobox', {name: /Fruit/}));
+
+    const layer = document.querySelector('[popover]') as HTMLElement;
+    const popup = document.querySelector(
+      '.astryx-multi-selector-popup',
+    ) as HTMLElement;
+    expect(popup).not.toBeNull();
+    expect(popup).not.toBe(layer);
+    expect(layer.contains(popup)).toBe(true);
+    expect(popup.querySelector('[role="listbox"]')).not.toBeNull();
   });
 });

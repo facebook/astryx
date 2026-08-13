@@ -2,7 +2,7 @@
 '@astryxdesign/core': patch
 ---
 
-[feat] MultiSelector: dropdown option rows are themeable through a single
+[feat] MultiSelector: dropdown option rows are themeable through a single (#4628)
 `multi-selector-option` target, carrying the row's `size` and its `select-all`,
 `selected` and `disabled` states — so a theme can express "selected option at
 large" or restyle just the Select All row. Row typography moved from the label

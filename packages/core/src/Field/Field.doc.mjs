@@ -34,6 +34,7 @@ export const docs = {
         className: 'astryx-input-status-icon',
         visualProps: ['size', 'status'],
       },
+      {className: 'astryx-input-clear-icon'},
     ],
     vars: [
       {name: '--_field-radius', description: 'Border radius of input fields', default: 'var(--radius-element)', private: true},

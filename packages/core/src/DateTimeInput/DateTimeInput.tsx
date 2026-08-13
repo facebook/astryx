@@ -38,6 +38,7 @@ import {
 } from '../theme/tokens.stylex';
 import {
   Field,
+  InputClearButton,
   type InputStatus,
   inputWrapperStyles,
   inputStatusBorderStyles,
@@ -990,13 +991,10 @@ export function DateTimeInput({
             {!isDateInputValid ? 'Invalid date' : ''}
           </VisuallyHidden>
           {hasClear && value !== undefined && !isEffectivelyDisabled && (
-            <button
-              type="button"
+            <InputClearButton
+              label={t('@astryx.dateInput.clear', {label})}
               onClick={handleClear}
-              aria-label={t('@astryx.dateInput.clear', {label})}
-              {...stylex.props(styles.iconButton)}>
-              <Icon icon="close" size="sm" color="secondary" />
-            </button>
+            />
           )}
           {isBusy && <Spinner size="sm" />}
           {statusIcon}
