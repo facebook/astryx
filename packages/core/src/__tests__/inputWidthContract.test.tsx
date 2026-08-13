@@ -43,7 +43,14 @@ const inputDocsSuite = [
 describe('Input Family width Prop Contract (#4163)', () => {
   inputDocsSuite.forEach(({name, docs}) => {
     it(`documents the width prop for ${name}`, () => {
-      const propsList = (docs.props || docs.components?.[0]?.props) as {
+      // `docs` is the ComponentDoc union (single vs multi component); narrow it
+      // for structural access to either the top-level props or the first
+      // sub-component's props.
+      const doc = docs as {
+        props?: {name: string; type: string}[];
+        components?: {props?: {name: string; type: string}[]}[];
+      };
+      const propsList = (doc.props || doc.components?.[0]?.props) as {
         name: string;
         type: string;
       }[];

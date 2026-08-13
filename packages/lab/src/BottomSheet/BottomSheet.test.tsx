@@ -51,10 +51,17 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+function getSheet(): HTMLElement {
+  const sheet = document.querySelector<HTMLElement>('.astryx-bottom-sheet');
+  if (!sheet) {
+    throw new Error('sheet panel not found');
+  }
+  return sheet;
+}
+
+// The grab handle is the panel's first child (decorative, aria-hidden).
 function getHandle(): HTMLElement {
-  const handle = document.querySelector<HTMLElement>(
-    '[data-astryx-sheet-handle]',
-  );
+  const handle = getSheet().querySelector<HTMLElement>('[aria-hidden="true"]');
   if (!handle) {
     throw new Error('grab handle not found');
   }
@@ -127,6 +134,112 @@ describe('BottomSheet', () => {
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
+  it('does not dismiss when the sheet surface itself is clicked', () => {
+    const onOpenChange = vi.fn();
+    render(
+      <BottomSheet isOpen onOpenChange={onOpenChange} label="Filters">
+        Content
+      </BottomSheet>,
+    );
+    // Only a click that lands on the dialog (the transparent area) dismisses;
+    // clicks bubbling up from the sheet must not.
+    fireEvent.click(screen.getByText('Content'));
+    expect(onOpenChange).not.toHaveBeenCalled();
+  });
+
+  describe('hasScrim={false} (non-modal)', () => {
+    it('opens non-modally: show() instead of showModal(), no aria-modal', () => {
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={() => {}}
+          label="Filters"
+          hasScrim={false}>
+          Content
+        </BottomSheet>,
+      );
+      expect(HTMLDialogElement.prototype.show).toHaveBeenCalled();
+      expect(HTMLDialogElement.prototype.showModal).not.toHaveBeenCalled();
+      expect(screen.getByRole('dialog')).not.toHaveAttribute('aria-modal');
+    });
+
+    it('does not dismiss when the shell (dialog element itself) is clicked', () => {
+      // No scrim: a tap on the transparent shell must pass through to the page,
+      // not dismiss the sheet.
+      const onOpenChange = vi.fn();
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={onOpenChange}
+          label="Filters"
+          hasScrim={false}>
+          Content
+        </BottomSheet>,
+      );
+      fireEvent.click(screen.getByRole('dialog'));
+      expect(onOpenChange).not.toHaveBeenCalled();
+    });
+
+    it('still closes on Escape while focus is inside', () => {
+      const onOpenChange = vi.fn();
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={onOpenChange}
+          label="Filters"
+          hasScrim={false}>
+          Content
+        </BottomSheet>,
+      );
+      fireEvent.keyDown(screen.getByRole('dialog'), {key: 'Escape'});
+      expect(onOpenChange).toHaveBeenCalledWith(false);
+    });
+
+    it('still dismisses on a downward swipe past the threshold', () => {
+      const onOpenChange = vi.fn();
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={onOpenChange}
+          label="Filters"
+          hasScrim={false}>
+          Content
+        </BottomSheet>,
+      );
+      drag(getHandle(), [{y: 0}, {y: 40}, {y: 120}]);
+      expect(onOpenChange).toHaveBeenCalledWith(false);
+    });
+
+    it('does not steal focus onto the panel on open', () => {
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={() => {}}
+          label="Filters"
+          hasScrim={false}>
+          <button type="button">First action</button>
+        </BottomSheet>,
+      );
+      // The background stays interactive, so the sheet must not grab focus.
+      expect(document.activeElement).not.toBe(getSheet());
+    });
+
+    it('still honors a descendant with data-autofocus', () => {
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={() => {}}
+          label="Filters"
+          hasScrim={false}>
+          <input data-autofocus aria-label="Search" />
+        </BottomSheet>,
+      );
+      expect(document.activeElement).toBe(
+        screen.getByRole('textbox', {name: 'Search'}),
+      );
+    });
+  });
+
   describe('grab handle', () => {
     it('renders a decorative handle hidden from assistive tech', () => {
       render(
@@ -156,7 +269,23 @@ describe('BottomSheet', () => {
 
   describe('height', () => {
     it('renders for each named height without error', () => {
-      for (const height of ['short', 'medium', 'tall', 'auto'] as const) {
+      for (const height of ['hug', 'capped', 'tall'] as const) {
+        const {unmount} = render(
+          <BottomSheet
+            isOpen
+            onOpenChange={() => {}}
+            label="Filters"
+            height={height}>
+            Content
+          </BottomSheet>,
+        );
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+        unmount();
+      }
+    });
+
+    it('accepts a freeform height (number or CSS length)', () => {
+      for (const height of [480, '70dvh'] as const) {
         const {unmount} = render(
           <BottomSheet
             isOpen
@@ -204,6 +333,47 @@ describe('BottomSheet', () => {
       } finally {
         vi.useRealTimers();
       }
+    });
+  });
+
+  describe('initial focus', () => {
+    it('focuses the sheet panel on open, not the first control', () => {
+      render(
+        <BottomSheet isOpen onOpenChange={() => {}} label="Filters">
+          <button type="button">First action</button>
+        </BottomSheet>,
+      );
+      const panel = getSheet();
+      expect(document.activeElement).toBe(panel);
+      expect(document.activeElement).not.toBe(
+        screen.getByRole('button', {name: 'First action'}),
+      );
+    });
+
+    it('honors a descendant with data-autofocus', () => {
+      render(
+        <BottomSheet isOpen onOpenChange={() => {}} label="Filters">
+          <input data-autofocus aria-label="Search" />
+        </BottomSheet>,
+      );
+      expect(document.activeElement).toBe(
+        screen.getByRole('textbox', {name: 'Search'}),
+      );
+    });
+  });
+
+  describe('accessible name', () => {
+    it('warns in development when label is empty', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      render(
+        <BottomSheet isOpen onOpenChange={() => {}} label="">
+          Content
+        </BottomSheet>,
+      );
+      expect(
+        warn.mock.calls.some(args => String(args[0]).includes('BottomSheet')),
+      ).toBe(true);
+      warn.mockRestore();
     });
   });
 

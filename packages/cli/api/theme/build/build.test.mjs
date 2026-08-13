@@ -78,9 +78,9 @@ describe('themeBuild() — receipt', () => {
       result?.data.outputs.js,
       result?.data.outputs.dts,
     ]) {
-      expect(fs.existsSync(path.join(tmpDir, /** @type {string} */ (rel)))).toBe(
-        true,
-      );
+      expect(
+        fs.existsSync(path.join(tmpDir, /** @type {string} */ (rel))),
+      ).toBe(true);
     }
   });
 
@@ -132,5 +132,93 @@ describe('themeBuild() — nothing to build', () => {
     expect(result).toBeNull();
     // Nothing written — the tmp dir still holds only the source fixture.
     expect(fs.readdirSync(tmpDir)).toEqual(['empty.mjs']);
+  });
+});
+
+describe('themeBuild() — check mode', () => {
+  it('reports upToDate with no stale files and writes nothing when outputs match the source', async () => {
+    const themeFile = path.join(tmpDir, 'chk.mjs');
+    fs.writeFileSync(
+      themeFile,
+      `export default { name: 'chk', tokens: { '--color-bg': '#0a0a0a' } };\n`,
+    );
+
+    // Build once for real to produce the committed outputs.
+    await themeBuild('chk.mjs', {}, {cwd: tmpDir});
+    const before = fs.readFileSync(path.join(tmpDir, 'chk.css'), 'utf8');
+
+    const result = await themeBuild('chk.mjs', {check: true}, {cwd: tmpDir});
+
+    expect(result?.type).toBe('theme.build.check');
+    expect(result?.data.upToDate).toBe(true);
+    expect(result?.data.stale).toEqual([]);
+    expect(result?.data.checked).toContain('chk.css');
+    // Check mode must not rewrite the file.
+    expect(fs.readFileSync(path.join(tmpDir, 'chk.css'), 'utf8')).toBe(before);
+  });
+
+  it('flags a stale output when the committed CSS content drifts from the source', async () => {
+    const themeFile = path.join(tmpDir, 'drift.mjs');
+    fs.writeFileSync(
+      themeFile,
+      `export default { name: 'drift', tokens: { '--color-bg': '#0a0a0a' } };\n`,
+    );
+    await themeBuild('drift.mjs', {}, {cwd: tmpDir});
+
+    // Tamper with the committed CSS (real content change, not just the header).
+    const cssPath = path.join(tmpDir, 'drift.css');
+    fs.writeFileSync(
+      cssPath,
+      fs.readFileSync(cssPath, 'utf8') + '\n.injected{}\n',
+    );
+
+    const result = await themeBuild('drift.mjs', {check: true}, {cwd: tmpDir});
+
+    expect(result?.data.upToDate).toBe(false);
+    expect(
+      result?.data.stale.some(
+        s => s.path === 'drift.css' && s.reason === 'outdated',
+      ),
+    ).toBe(true);
+  });
+
+  it('flags a missing output', async () => {
+    const themeFile = path.join(tmpDir, 'gone.mjs');
+    fs.writeFileSync(
+      themeFile,
+      `export default { name: 'gone', tokens: { '--color-bg': '#0a0a0a' } };\n`,
+    );
+    await themeBuild('gone.mjs', {}, {cwd: tmpDir});
+    fs.rmSync(path.join(tmpDir, 'gone.css'));
+
+    const result = await themeBuild('gone.mjs', {check: true}, {cwd: tmpDir});
+
+    expect(result?.data.upToDate).toBe(false);
+    expect(
+      result?.data.stale.some(
+        s => s.path === 'gone.css' && s.reason === 'missing',
+      ),
+    ).toBe(true);
+  });
+
+  it('ignores volatile @generated header lines (a differing timestamp is NOT stale)', async () => {
+    const themeFile = path.join(tmpDir, 'stamp.mjs');
+    fs.writeFileSync(
+      themeFile,
+      `export default { name: 'stamp', tokens: { '--color-bg': '#0a0a0a' } };\n`,
+    );
+    await themeBuild('stamp.mjs', {}, {cwd: tmpDir});
+
+    // Rewrite ONLY the Generated: timestamp line in the committed CSS.
+    const cssPath = path.join(tmpDir, 'stamp.css');
+    const tampered = fs
+      .readFileSync(cssPath, 'utf8')
+      .replace(/Generated: .*/, 'Generated: 1999-01-01T00:00:00.000Z');
+    fs.writeFileSync(cssPath, tampered);
+
+    const result = await themeBuild('stamp.mjs', {check: true}, {cwd: tmpDir});
+
+    expect(result?.data.upToDate).toBe(true);
+    expect(result?.data.stale).toEqual([]);
   });
 });

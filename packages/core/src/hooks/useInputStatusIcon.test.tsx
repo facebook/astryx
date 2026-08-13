@@ -160,3 +160,62 @@ describe('useInputStatusIcon — no dangling aria-describedby (WCAG 1.3.1)', () 
     expectNoDanglingDescribedBy(container);
   });
 });
+
+describe('useInputStatusIcon — input-status-icon theme target', () => {
+  // The stable theme target lands on the on-field status glyph itself, so a
+  // theme can restyle (e.g. resize) just this icon via `defineTheme`. It is
+  // rendered by the attached and tooltip variants; detached suppresses the
+  // on-field icon in favour of the detached message box's leading glyph.
+  const getStatusIcon = (root: HTMLElement): HTMLElement => {
+    const icon = root.querySelector('.astryx-input-status-icon');
+    if (icon == null) {
+      throw new Error('status icon not found');
+    }
+    return icon as HTMLElement;
+  };
+
+  for (const variant of ['attached', 'tooltip'] as const) {
+    it(`renders the target on the on-field icon (statusVariant="${variant}")`, () => {
+      const {container} = render(
+        <TextInput
+          label="Field"
+          value=""
+          onChange={() => {}}
+          status={{type: 'warning', message: 'Message'}}
+          statusVariant={variant}
+        />,
+      );
+      const icon = getStatusIcon(container);
+      expect(icon).toHaveClass('astryx-input-status-icon');
+      expect(icon).toHaveClass('astryx-icon');
+      expect(icon).toHaveAttribute('data-size', 'md');
+      expect(icon).toHaveAttribute('data-status', 'warning');
+    });
+  }
+
+  it('reflects the status type per status', () => {
+    const {container} = render(
+      <TextInput
+        label="Field"
+        value=""
+        onChange={() => {}}
+        status={{type: 'success', message: 'Message'}}
+        statusVariant="attached"
+      />,
+    );
+    expect(getStatusIcon(container)).toHaveAttribute('data-status', 'success');
+  });
+
+  it('does not render the on-field target for the detached variant', () => {
+    const {container} = render(
+      <TextInput
+        label="Field"
+        value=""
+        onChange={() => {}}
+        status={{type: 'error', message: 'Message'}}
+        statusVariant="detached"
+      />,
+    );
+    expect(container.querySelector('.astryx-input-status-icon')).toBeNull();
+  });
+});

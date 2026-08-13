@@ -21,7 +21,7 @@
  * - /packages/core/src/AvatarGroup/AvatarGroup.doc.mjs (props table, features)
  * - /packages/core/src/AvatarGroup/index.ts (exports if types change)
  * - /apps/storybook/stories/AvatarGroup.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/AvatarGroup/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/AvatarGroup/ (showcase blocks)
  */
 
 import {useId, useMemo, useState, type ReactNode} from 'react';
@@ -108,11 +108,9 @@ export function AvatarGroup({
   );
 
   // The keyboard hint and roving tab stop only make sense once the group has
-  // interactive children. Detect their presence (and the writing direction for
-  // RTL-correct arrow navigation) from the rendered DOM after commit, matching
-  // how the codebase reads direction elsewhere (`getComputedStyle(el).direction`).
+  // interactive children. Detect their presence from the rendered DOM after
+  // commit. (Arrow-key direction is auto-detected inside useListFocus.)
   const [hasInteractiveItems, setHasInteractiveItems] = useState(false);
-  const [isRtl, setIsRtl] = useState(false);
 
   // Single tab stop + roving arrow focus over the group's interactive items.
   // `itemSelector` targets the shared `[data-avatar-item]` marker stamped on
@@ -123,7 +121,6 @@ export function AvatarGroup({
     itemSelector: '[data-avatar-item]',
     orientation: 'horizontal',
     hasRovingTabIndex: true,
-    isRtl,
   });
 
   useIsomorphicLayoutEffect(() => {
@@ -132,7 +129,6 @@ export function AvatarGroup({
       return;
     }
     setHasInteractiveItems(root.querySelector('[data-avatar-item]') != null);
-    setIsRtl(getComputedStyle(root).direction === 'rtl');
   });
 
   const hintId = useId();

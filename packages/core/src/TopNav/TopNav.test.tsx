@@ -281,8 +281,8 @@ describe('TopNavHeading', () => {
     });
   });
 
-  it('renders as anchor when href is provided', () => {
-    render(<TopNavHeading heading="Home" href="/" />);
+  it('renders as anchor when headingHref is provided', () => {
+    render(<TopNavHeading heading="Home" headingHref="/" />);
     const link = screen.getByRole('link');
     expect(link).toHaveAttribute('href', '/');
   });

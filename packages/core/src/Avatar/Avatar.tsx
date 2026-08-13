@@ -13,7 +13,7 @@
  * - /packages/core/src/Avatar/Avatar.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/Avatar/index.ts (exports if types change)
  * - /apps/storybook/stories/Avatar.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Avatar/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Avatar/ (showcase blocks)
  *
  * Last synced props: alt, fallbackSrc, name, size, src, status, href, as, target, rel, onClick
  */
@@ -31,6 +31,7 @@ import {AvatarSizeContext} from './AvatarSizeContext';
 import {useAvatarGroup} from '../AvatarGroup/AvatarGroupContext';
 import {mergeProps, mergeRefs} from '../utils';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {useTooltip} from '../Tooltip/useTooltip';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
@@ -112,9 +113,9 @@ const styles = stylex.create({
     display: 'inline-flex',
     flexShrink: 0,
     // The wrapper is not clipped (so the status dot can overflow), so it must be
-    // rounded itself: a themed fallback background lands on `.astryx-avatar` (the
-    // class-bearing wrapper) as well as the internal var, and an unrounded
-    // wrapper would show that fill as square corners behind the circular content.
+    // rounded itself: a theme can set a background on the `.astryx-avatar`
+    // wrapper, and an unrounded wrapper would show that fill as square corners
+    // behind the circular content.
     borderRadius: radiusVars['--radius-full'],
   },
   content: {
@@ -136,14 +137,15 @@ const styles = stylex.create({
     justifyContent: 'center',
     width: '100%',
     height: '100%',
-    // Fallback surface (initials + default icon). Each property reads an
-    // Avatar-scoped internal var so a theme can re-scope the fallback wash and
-    // initials weight/color without forking; the defaults reproduce today's
-    // exact output. See derivedVarRegistry (avatar) + Avatar.doc.mjs theming.
-    backgroundColor: `var(--_avatar-fallback-background, ${colorVars['--color-neutral']})`,
-    color: `var(--_avatar-fallback-color, ${colorVars['--color-text-secondary']})`,
+    // Fallback surface (initials + default icon). Background, text color,
+    // weight, and per-size font size are all themed directly via the stable
+    // `.astryx-avatar-fallback` class target (font size through its size
+    // variant, `.astryx-avatar-fallback.<size>`), so the defaults here are
+    // plain values with no internal-var seam. See Avatar.doc.mjs theming.
+    backgroundColor: colorVars['--color-neutral'],
+    color: colorVars['--color-text-secondary'],
     fontFamily: typographyVars['--font-family-body'],
-    fontWeight: `var(--_avatar-fallback-font-weight, ${fontWeightVars['--font-weight-medium']})`,
+    fontWeight: fontWeightVars['--font-weight-medium'],
     textTransform: 'uppercase',
   },
   status: {
@@ -152,16 +154,6 @@ const styles = stylex.create({
   // Visible focus ring for the name-tooltip tab stop, matching the repo-wide
   // focus-visible outline treatment (see Timestamp, Token, Thumbnail). Only
   // applied when a tooltip is active so keyboard users can reveal it.
-  focusable: {
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': '2px',
-    },
-  },
   // Reset the intrinsic styling of the interactive element (<a>/<button>) so it
   // is a transparent, correctly-sized wrapper around the avatar visuals. The
   // element carries the focus-visible accent ring for keyboard users.
@@ -178,22 +170,6 @@ const styles = stylex.create({
     cursor: 'pointer',
     // Match the avatar's circular shape so the focus ring hugs it.
     borderRadius: radiusVars['--radius-full'],
-    outlineWidth: {
-      default: 0,
-      ':focus-visible': 2,
-    },
-    outlineStyle: {
-      default: 'none',
-      ':focus-visible': 'solid',
-    },
-    outlineColor: {
-      default: null,
-      ':focus-visible': colorVars['--color-accent'],
-    },
-    outlineOffset: {
-      default: 0,
-      ':focus-visible': 2,
-    },
   },
 });
 
@@ -205,18 +181,22 @@ const dynamicStyles = stylex.create({
     width: size,
     height: size,
   }),
-  // Initials font size defaults to the proportional `size × ratio` scale but is
-  // reachable via the `--_avatar-fallback-font-size` derived var, so a theme can
-  // set a per-size type scale (e.g. `components.avatar['size:sm']`).
+  // Initials font size defaults to the proportional `size × ratio` scale. It's
+  // a StyleX dynamic style, so the value lands via a class (not an inline
+  // property) — a theme's `.astryx-avatar-fallback.<size>` rule in the theme
+  // layer overrides it per size tier, no internal var needed.
   fontSize: (size: number) => ({
-    fontSize: `var(--_avatar-fallback-font-size, ${
-      size * INITIALS_FONT_SIZE_RATIO
-    }px)`,
+    fontSize: `${size * INITIALS_FONT_SIZE_RATIO}px`,
   }),
   statusPosition: (size: number) => ({
     bottom: size * CIRCLE_EDGE_OFFSET_RATIO,
-    right: size * CIRCLE_EDGE_OFFSET_RATIO,
-    transform: 'translate(50%, 50%)',
+    insetInlineEnd: size * CIRCLE_EDGE_OFFSET_RATIO,
+    // `insetInlineEnd` anchors to the right edge in LTR / left in RTL, so the
+    // outward push must mirror too: +X in LTR, −X in RTL (Y is unaffected).
+    transform: {
+      default: 'translate(50%, 50%)',
+      ':is([dir="rtl"] *)': 'translate(-50%, 50%)',
+    },
   }),
 });
 
@@ -333,6 +313,25 @@ export interface AvatarProps extends BaseProps<HTMLDivElement> {
 }
 
 /**
+ * Reuse a single segmenter when the runtime supports Intl.Segmenter.
+ */
+const graphemeSegmenter =
+  typeof Intl.Segmenter === 'function'
+    ? new Intl.Segmenter(undefined, {granularity: 'grapheme'})
+    : null;
+
+/**
+ * Return the first user-perceived character, with a code-point fallback.
+ */
+function firstGrapheme(word: string): string {
+  if (graphemeSegmenter) {
+    return [...graphemeSegmenter.segment(word)][0]?.segment ?? '';
+  }
+
+  return [...word][0] ?? '';
+}
+
+/**
  * Generates initials from a name string.
  * Takes the first letter of the first two words.
  * @example
@@ -347,9 +346,11 @@ function getInitials(name: string): string {
     return '';
   }
   if (words.length === 1) {
-    return words[0].charAt(0).toUpperCase();
+    return firstGrapheme(words[0]).toUpperCase();
   }
-  return (words[0].charAt(0) + words[words.length - 1].charAt(0)).toUpperCase();
+  return (
+    firstGrapheme(words[0]) + firstGrapheme(words[words.length - 1])
+  ).toUpperCase();
 }
 
 /**
@@ -544,15 +545,22 @@ export function Avatar({
         )}
         {showInitials && (
           <div
-            {...stylex.props(
-              styles.fallback,
-              dynamicStyles.fontSize(numericSize),
+            {...mergeProps(
+              themeProps('avatar-fallback', {size: resolvedSize}),
+              stylex.props(
+                styles.fallback,
+                dynamicStyles.fontSize(numericSize),
+              ),
             )}>
             {getInitials(name)}
           </div>
         )}
         {showIcon && (
-          <div {...stylex.props(styles.fallback)}>
+          <div
+            {...mergeProps(
+              themeProps('avatar-fallback', {size: resolvedSize}),
+              stylex.props(styles.fallback),
+            )}>
             <DefaultIcon size={numericSize} />
           </div>
         )}
@@ -575,10 +583,9 @@ export function Avatar({
   // `<a>`/`<button>` and the static `<div>` carry the exact same box.
   const rootStylexProps = mergeProps(
     themeProps('avatar', {size: resolvedSize}),
-    stylex.props(
+    focusOutlineProps.focusVisible(
       styles.wrapper,
       isInteractive && styles.interactive,
-      !isInteractive && showTooltip && !avatarGroup && styles.focusable,
       avatarGroup && groupStyles.ring,
       avatarGroup && groupStyles.overlap,
       avatarGroup && groupDynamicStyles.overlap(-avatarGroup.overlap),

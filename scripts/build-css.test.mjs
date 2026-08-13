@@ -12,7 +12,7 @@ import {describe, it, expect, beforeAll} from 'vitest';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {ensureCoreBuilt} from '../packages/cli/cli/commands/ensure-core-built.mjs';
+import {ensureCoreBuilt} from '../packages/cli/clients/cli/commands/ensure-core-built.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');

@@ -12,7 +12,7 @@
  * - /packages/core/src/Avatar/Avatar.doc.mjs (features, files table)
  * - /packages/core/src/Avatar/index.ts (exports)
  * - /apps/storybook/stories/Avatar.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Avatar/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Avatar/ (showcase blocks)
  */
 
 import React, {use, type ReactNode} from 'react';
@@ -22,6 +22,7 @@ import {colorVars, radiusVars} from '../theme/tokens.stylex';
 import {AvatarSizeContext} from './AvatarSizeContext';
 import {isRenderable, mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
+import type {AvatarStatusDotVariantMap} from './index';
 
 /**
  * Discrete size tier of the status dot, derived from the avatar size.
@@ -63,32 +64,6 @@ function resolveStatusDotSize(avatarSize: number): {
     return {dotSize: 20, borderWidth: 2, iconSize: 12, tier: 'medium'};
   }
   return {dotSize: 32, borderWidth: 4, iconSize: 18, tier: 'large'};
-}
-
-/**
- * Extensible variant map for AvatarStatusDot.
- *
- * Theme packages can add custom variants via TypeScript module augmentation:
- * @example
- * ```
- * declare module '@astryxdesign/core/Avatar' {
- *   interface AvatarStatusDotVariantMap {
- *     'away': true;
- *   }
- * }
- * ```
- *
- * Custom variants render no background fill, no ink colour, and no built-in
- * shape glyph — the theme must supply the fill and, if it passes an `icon`,
- * a `color` for it to paint with. It should also supply a non-colour mark
- * so the status is not distinguishable by colour alone (a WCAG 1.4.1
- * failure): pass `icon`, or theme a glyph onto the dot via
- * `.astryx-avatar-status-dot[data-variant="..."]` (e.g. a `::before` mark).
- */
-export interface AvatarStatusDotVariantMap {
-  success: true;
-  neutral: true;
-  error: true;
 }
 
 /**

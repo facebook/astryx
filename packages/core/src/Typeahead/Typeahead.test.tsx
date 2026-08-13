@@ -171,6 +171,28 @@ describe('BaseTypeahead', () => {
     });
   });
 
+  it('exposes the empty state as a themeable target', async () => {
+    const {container} = render(
+      <BaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        debounceMs={0}
+        emptySearchResultsText="No results found"
+      />,
+    );
+    const input = screen.getByRole('combobox');
+    fireEvent.change(input, {target: {value: 'zzzzz'}});
+
+    await waitFor(() => {
+      const emptyState = container.querySelector(
+        '.astryx-typeahead-empty-state',
+      );
+      expect(emptyState).not.toBeNull();
+      expect(emptyState).toHaveTextContent('No results found');
+    });
+  });
+
   describe('empty results active descendant (#4059)', () => {
     it('does not set aria-activedescendant when search has 0 results', async () => {
       render(
@@ -195,6 +217,45 @@ describe('BaseTypeahead', () => {
       // Press Home — should NOT set aria-activedescendant
       fireEvent.keyDown(input, {key: 'Home'});
       expect(input).not.toHaveAttribute('aria-activedescendant');
+    });
+  });
+
+  describe('IME composition guard (#4828)', () => {
+    it('does not select the highlighted result on a composing Enter', async () => {
+      const onChange = vi.fn();
+      render(
+        <BaseTypeahead
+          searchSource={fruitSource}
+          value={null}
+          onChange={onChange}
+          debounceMs={0}
+        />,
+      );
+      const input = screen.getByRole('combobox');
+      fireEvent.change(input, {target: {value: 'App'}});
+      await waitFor(() => {
+        expect(input).toHaveAttribute('aria-expanded', 'true');
+      });
+
+      // The browser fires this composing keydown for the Enter that commits
+      // an IME candidate (isComposing: true, or legacy keyCode 229) before
+      // compositionend writes the pending syllable into the input. Without
+      // the guard this both selects the highlighted result AND clears the
+      // input via handleSelect, so the syllable that compositionend then
+      // writes lands in an emptied field instead of being part of the word.
+      fireEvent.keyDown(input, {key: 'Enter', isComposing: true});
+      expect(onChange).not.toHaveBeenCalled();
+      expect(input).toHaveValue('App');
+
+      fireEvent.keyDown(input, {key: 'Enter', keyCode: 229});
+      expect(onChange).not.toHaveBeenCalled();
+      expect(input).toHaveValue('App');
+
+      // A real, non-composing Enter still selects normally.
+      fireEvent.keyDown(input, {key: 'Enter'});
+      expect(onChange).toHaveBeenCalledWith(
+        expect.objectContaining({label: 'Apple'}),
+      );
     });
   });
 
@@ -737,6 +798,68 @@ describe('Typeahead edit mode', () => {
   });
 });
 
+describe('Typeahead collapsed input tab order', () => {
+  it('removes the invisible input from the Tab order while a token is shown', () => {
+    render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={fruits[0]}
+        onChange={() => {}}
+      />,
+    );
+    // While the token is shown the input is collapsed (width 0 / opacity 0);
+    // it must stay programmatically focusable for token interactions but must
+    // not be an invisible Tab stop (WCAG 2.4.3 / 2.4.7).
+    expect(screen.getByRole('combobox')).toHaveAttribute('tabindex', '-1');
+  });
+
+  it('Tab from the token skips the invisible input', async () => {
+    const user = userEvent.setup();
+    render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={fruits[0]}
+        onChange={() => {}}
+      />,
+    );
+    // Focus the token's internal button, then Tab away — focus must not land
+    // on the visually hidden combobox input.
+    const tokenButton = screen.getByRole('button', {name: fruits[0].label});
+    tokenButton.focus();
+    await user.tab();
+    expect(screen.getByRole('combobox')).not.toHaveFocus();
+  });
+
+  it('keeps the input in the Tab order when no token is shown', () => {
+    render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+      />,
+    );
+    expect(screen.getByRole('combobox')).not.toHaveAttribute('tabindex');
+  });
+
+  it('restores the input to the Tab order in edit mode', () => {
+    render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={fruits[0]}
+        onChange={() => {}}
+      />,
+    );
+    // Entering edit mode removes the token and uncollapses the input
+    const tokenText = screen.getByText(fruits[0].label);
+    fireEvent.click(tokenText.closest('div')!);
+    expect(screen.getByRole('combobox')).not.toHaveAttribute('tabindex');
+  });
+});
+
 describe('BaseTypeahead paste behavior', () => {
   it('pasting text triggers search results like typing', async () => {
     const user = userEvent.setup();
@@ -976,11 +1099,16 @@ describe('Typeahead disabledMessage', () => {
   });
 });
 
-
 describe('Typeahead statusVariant forwarding', () => {
   it('defaults to attached (status renders with data-variant="attached")', () => {
     const {container} = render(
-      <Typeahead label="Fruit" searchSource={fruitSource} value={null} onChange={() => {}} status={{type: 'error', message: 'Required'}} />,
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Required'}}
+      />,
     );
     expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
       'data-variant',
@@ -990,7 +1118,14 @@ describe('Typeahead statusVariant forwarding', () => {
 
   it('forwards statusVariant="detached" to the underlying Field status', () => {
     const {container} = render(
-      <Typeahead label="Fruit" searchSource={fruitSource} value={null} onChange={() => {}} status={{type: 'error', message: 'Required'}} statusVariant="detached" />,
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Required'}}
+        statusVariant="detached"
+      />,
     );
     expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
       'data-variant',

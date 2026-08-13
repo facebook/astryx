@@ -52,6 +52,11 @@ const meta: Meta<typeof DropdownMenu> = {
       options: ['above', 'below', 'start', 'end'],
       description: 'Menu placement relative to trigger',
     },
+    alignment: {
+      control: 'select',
+      options: ['start', 'center', 'end'],
+      description: 'Menu alignment along the placement axis',
+    },
     'data-testid': {
       control: 'text',
       description: 'Test ID for testing frameworks',
@@ -175,6 +180,30 @@ export const WithDisabledItems: Story = {
   ),
 };
 
+export const DestructiveItem: Story = {
+  name: 'Destructive item',
+  render: () => (
+    <DropdownMenu
+      button={{label: 'Actions'}}
+      items={[
+        {label: 'Edit', onClick: () => console.log('Edit')},
+        {
+          label: 'Duplicate',
+          icon: 'copy',
+          onClick: () => console.log('Duplicate'),
+        },
+        {type: 'divider'},
+        {
+          label: 'Delete',
+          icon: 'close',
+          variant: 'destructive',
+          onClick: () => console.log('Delete'),
+        },
+      ]}
+    />
+  ),
+};
+
 // Controlled mode
 export const Controlled: Story = {
   render: () => {
@@ -289,6 +318,32 @@ export const WithOnClick: Story = {
           ]}
         />
       </div>
+    );
+  },
+};
+
+export const StaysOpenOnSelect: Story = {
+  render: () => {
+    const [copied, setCopied] = useState(false);
+    return (
+      <DropdownMenu
+        button={{label: 'Session'}}
+        items={[
+          {
+            label: copied ? 'Copied' : 'Copy session ID',
+            icon: <DocumentDuplicateIcon style={{width: 16, height: 16}} />,
+            hasCloseOnSelect: false,
+            onClick: () => setCopied(true),
+          },
+          {label: 'Rename'},
+          {label: 'Delete', variant: 'destructive'},
+        ]}
+        onOpenChange={isOpen => {
+          if (!isOpen) {
+            setCopied(false);
+          }
+        }}
+      />
     );
   },
 };
@@ -523,6 +578,29 @@ export const PlacementAbove: Story = {
   ),
 };
 
+export const AlignmentEnd: Story = {
+  render: () => (
+    <DropdownMenu
+      button={{label: 'Row actions'}}
+      alignment="end"
+      menuWidth={220}
+      items={[
+        {label: 'Edit', onClick: () => console.log('Edit')},
+        {label: 'Duplicate', onClick: () => console.log('Duplicate')},
+        {label: 'Delete', onClick: () => console.log('Delete')},
+      ]}
+    />
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Use alignment="end" when a menu should extend back over the trigger, such as a row action menu near the inline-end edge.',
+      },
+    },
+  },
+};
+
 export const RTL: Story = {
   render: () => (
     <div style={{direction: 'rtl', display: 'flex', gap: '16px'}}>
@@ -597,10 +675,7 @@ export const LabRadioGroup: Story = {
     const [sort, setSort] = useState('newest');
     return (
       <DropdownMenu button={{label: 'Sort'}}>
-        <DropdownMenuRadioGroup
-          value={sort}
-          onChange={setSort}
-          aria-label="Sort by">
+        <DropdownMenuRadioGroup value={sort} onChange={setSort} label="Sort by">
           <DropdownMenuRadioItem value="newest" label="Newest" />
           <DropdownMenuRadioItem value="oldest" label="Oldest" />
           <DropdownMenuRadioItem
@@ -629,19 +704,13 @@ export const LabSelectableSizes: Story = {
     return (
       <div style={{display: 'flex', gap: 24}}>
         <DropdownMenu button={{label: 'Small menu', size: 'sm'}}>
-          <DropdownMenuRadioGroup
-            value={sm}
-            onChange={setSm}
-            aria-label="Small">
+          <DropdownMenuRadioGroup value={sm} onChange={setSm} label="Small">
             <DropdownMenuRadioItem value="a" label="Option A" />
             <DropdownMenuRadioItem value="b" label="Option B" />
           </DropdownMenuRadioGroup>
         </DropdownMenu>
         <DropdownMenu button={{label: 'Large menu', size: 'lg'}}>
-          <DropdownMenuRadioGroup
-            value={lg}
-            onChange={setLg}
-            aria-label="Large">
+          <DropdownMenuRadioGroup value={lg} onChange={setLg} label="Large">
             <DropdownMenuRadioItem value="a" label="Option A" />
             <DropdownMenuRadioItem value="b" label="Option B" />
           </DropdownMenuRadioGroup>

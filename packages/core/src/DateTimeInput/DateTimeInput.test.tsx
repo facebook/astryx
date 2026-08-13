@@ -16,8 +16,12 @@ import {getButton, queryButton} from '../__tests__/fastRoleQueries';
 import {DateTimeInput} from './DateTimeInput';
 import type {ISODateTimeString} from './DateTimeInput';
 import {defineTheme} from '../theme/defineTheme';
-import {generateThemeCSSFlat} from '../theme/generateThemeRules';
+import {generateThemeCSS} from '../theme/generateThemeRules';
 
+function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
+  const {prose, component} = generateThemeCSS(theme);
+  return [prose, component].filter(Boolean).join('\n\n');
+}
 describe('DateTimeInput', () => {
   it('renders with label', () => {
     render(<DateTimeInput label="Meeting time" onChange={() => {}} />);
@@ -816,6 +820,62 @@ describe('DateTimeInput', () => {
       expect(onChange.mock.calls[0][0]).toContain('14:31');
     });
   });
+
+  describe('weekStartsOn', () => {
+    // The calendar popover renders in the top layer; jsdom keeps the content in
+    // the DOM but role queries skip it, so read the columnheaders directly.
+    const openAndReadWeekdays = (container: HTMLElement): (string | null)[] => {
+      fireEvent.keyDown(screen.getAllByRole('combobox')[0], {key: 'ArrowDown'});
+      return Array.from(container.querySelectorAll('[role="columnheader"]'))
+        .slice(0, 7)
+        .map(h => h.textContent);
+    };
+
+    it('defaults to a Sunday-first week', () => {
+      const {container} = render(
+        <DateTimeInput label="When" onChange={() => {}} />,
+      );
+      expect(openAndReadWeekdays(container)).toEqual([
+        'Su',
+        'Mo',
+        'Tu',
+        'We',
+        'Th',
+        'Fr',
+        'Sa',
+      ]);
+    });
+
+    it('forwards a numeric weekStartsOn to the calendar', () => {
+      const {container} = render(
+        <DateTimeInput label="When" onChange={() => {}} weekStartsOn={1} />,
+      );
+      expect(openAndReadWeekdays(container)).toEqual([
+        'Mo',
+        'Tu',
+        'We',
+        'Th',
+        'Fr',
+        'Sa',
+        'Su',
+      ]);
+    });
+
+    it('accepts a three-letter day name', () => {
+      const {container} = render(
+        <DateTimeInput label="When" onChange={() => {}} weekStartsOn="mon" />,
+      );
+      expect(openAndReadWeekdays(container)).toEqual([
+        'Mo',
+        'Tu',
+        'We',
+        'Th',
+        'Fr',
+        'Sa',
+        'Su',
+      ]);
+    });
+  });
   // ===========================================================================
   // Segment theme targets (#4075)
   // ===========================================================================
@@ -917,7 +977,7 @@ describe('DateTimeInput', () => {
           },
         },
       });
-      const css = generateThemeCSSFlat(theme);
+      const css = generateThemeTestCSS(theme);
 
       expect(css).toContain('.astryx-date-time-input-date-segment {');
       expect(css).toContain('.astryx-date-time-input-date-segment.lg');
@@ -925,5 +985,24 @@ describe('DateTimeInput', () => {
       expect(css).toContain('block-size: var(--size-element-lg)');
       expect(css).toContain('padding-inline: var(--spacing-4)');
     });
+  });
+});
+
+describe('DateTimeInput disabled theme state', () => {
+  it('reflects disabled on the root target so themes can gate paint on it', () => {
+    const {container} = render(
+      <DateTimeInput label="Meeting" onChange={() => {}} isDisabled />,
+    );
+    const root = container.querySelector('.astryx-date-time-input');
+    expect(root).toHaveAttribute('data-disabled', 'disabled');
+    expect(root).toHaveClass('disabled');
+  });
+
+  it('omits data-disabled when enabled, like status does', () => {
+    const {container} = render(
+      <DateTimeInput label="Meeting" onChange={() => {}} />,
+    );
+    const root = container.querySelector('.astryx-date-time-input');
+    expect(root).not.toHaveAttribute('data-disabled');
   });
 });

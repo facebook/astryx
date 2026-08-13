@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'Tokenizer',
@@ -210,7 +210,7 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-tokenizer', visualProps: ['size', 'status']},
+      {className: 'astryx-tokenizer', visualProps: ['size', 'status'], states: ['disabled']},
     ],
   },
   usage: {
@@ -237,7 +237,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docsZh = {
   name: 'Tokenizer',
   displayName: 'Tokenizer',
@@ -424,7 +424,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-tokenizer', visualProps: ['size', 'status']},
+      {className: 'astryx-tokenizer', visualProps: ['size', 'status'], states: ['disabled']},
     ],
   },
   usage: {
@@ -451,7 +451,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'Multi-select typeahead w/ token chips for selected items. Composes BaseTypeahead for search+Token for chips.',
   usage: {

@@ -13,7 +13,7 @@
  * - /packages/core/src/NumberInput/NumberInput.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/NumberInput/index.ts (exports if types change)
  * - /apps/storybook/stories/NumberInput.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/NumberInput/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/NumberInput/ (showcase blocks)
  */
 
 import {
@@ -30,13 +30,12 @@ import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
   sizeVars,
-  radiusVars,
   typographyVars,
   typeScaleVars,
-  borderVars,
 } from '../theme/tokens.stylex';
 import {
   Field,
+  InputClearButton,
   type InputStatus,
   inputWrapperStyles,
   inputStatusBorderStyles,
@@ -44,7 +43,7 @@ import {
   inputStatusFocusWithinStyles,
   type FieldStatusVariant,
 } from '../Field';
-import {Icon, renderIconSlot, type IconType} from '../Icon';
+import {renderIconSlot, type IconType} from '../Icon';
 import {VisuallyHidden} from '../VisuallyHidden';
 import {useTooltip} from '../Tooltip';
 import {getInputARIA} from '../utils';
@@ -57,23 +56,6 @@ const styles = stylex.create({
   wrapper: {
     zIndex: 1,
   },
-  clearButton: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 0,
-    margin: 0,
-    borderWidth: 0,
-    borderStyle: 'none',
-    backgroundColor: 'transparent',
-    cursor: 'pointer',
-    borderRadius: radiusVars['--radius-element'],
-    outline: {
-      default: 'none',
-      ':focus-visible': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: 1,
-  },
   input: {
     display: 'block',
     flex: 1,
@@ -81,6 +63,18 @@ const styles = stylex.create({
     borderWidth: 0,
     borderStyle: 'none',
     padding: 0,
+    // Hide the browser's native number spinners; the component provides its own
+    // affordances (keyboard entry, optional clear button) and the spinners
+    // clash with the input's visual treatment and sizing.
+    MozAppearance: 'textfield',
+    '::-webkit-inner-spin-button': {
+      WebkitAppearance: 'none',
+      margin: 0,
+    },
+    '::-webkit-outer-spin-button': {
+      WebkitAppearance: 'none',
+      margin: 0,
+    },
     fontFamily: typographyVars['--font-family-body'],
     fontSize: {
       default: typeScaleVars['--text-body-size'],
@@ -171,6 +165,15 @@ interface NumberInputPropsBase extends Omit<
    * @default false
    */
   isDisabled?: boolean;
+  /**
+   * Whether the input is read-only.
+   * The value is shown at full opacity and still submits with the form, but
+   * cannot be edited. Unlike `isDisabled`, a read-only input is not dimmed and
+   * stays in the tab order — use it for a value the user should see and send
+   * but not change. `isDisabled` takes precedence when both are set.
+   * @default false
+   */
+  isReadOnly?: boolean;
   /**
    * Explains why the input is disabled. When set together with `isDisabled`,
    * the input shows a tooltip with this text on hover and keyboard focus, and
@@ -378,6 +381,7 @@ export function NumberInput({
   isOptional = false,
   isRequired = false,
   isDisabled = false,
+  isReadOnly = false,
   disabledMessage,
   startIcon,
   labelIcon,
@@ -487,7 +491,7 @@ export function NumberInput({
       // Value can't change while showing a disabled message (the field is
       // read-only and non-native-disabled), but guard the handler too so the
       // pending value and onChange never fire.
-      if (isDisabled) {
+      if (isDisabled || isReadOnly) {
         return;
       }
       const newValue = e.target.value;
@@ -499,7 +503,7 @@ export function NumberInput({
         onChange(parsed);
       }
     },
-    [value, onChange, min, max, isIntegerOnly, isDisabled],
+    [value, onChange, min, max, isIntegerOnly, isDisabled, isReadOnly],
   );
 
   // Handle focus
@@ -579,6 +583,16 @@ export function NumberInput({
     ],
   );
 
+  // While focused, a wheel gesture steps the value — keep that gesture from
+  // also bubbling up and scrolling an ancestor container (page, Dialog,
+  // ScrollArea). When the input isn't focused the wheel isn't stepping the
+  // value, so normal scrolling is left alone.
+  const handleWheel = useCallback((e: React.WheelEvent<HTMLInputElement>) => {
+    if (document.activeElement === e.currentTarget) {
+      e.stopPropagation();
+    }
+  }, []);
+
   // Handle clear button click
   const handleClear = useCallback(() => {
     if (hasClear) {
@@ -608,7 +622,12 @@ export function NumberInput({
       onClick={handleWrapperClick}
       onMouseUp={handleWrapperMouseUp}
       {...mergeProps(
-        themeProps('number-input', {size, status: status?.type ?? null}),
+        themeProps('number-input', {
+          size,
+          status: status?.type ?? null,
+          disabled: isDisabled ? 'disabled' : null,
+          readonly: isReadOnly ? 'readonly' : null,
+        }),
         stylex.props(
           inputWrapperStyles.base,
           styles.wrapper,
@@ -629,7 +648,7 @@ export function NumberInput({
         {...rest}
         ref={mergeRefs(ref, inputRef)}
         id={id}
-        name={htmlName}
+        name={isDisabled ? undefined : htmlName}
         type="number"
         autoComplete={autoComplete}
         value={displayValue}
@@ -637,13 +656,14 @@ export function NumberInput({
         onFocus={handleFocus}
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
+        onWheel={handleWheel}
         placeholder={placeholder}
         // With a disabledMessage the input keeps focusability via aria-disabled
         // so the reason is focus-discoverable; readOnly + the handler guards
         // keep the value from changing.
         disabled={isDisabled && !showsDisabledMessage}
         aria-disabled={showsDisabledMessage ? 'true' : undefined}
-        readOnly={showsDisabledMessage || undefined}
+        readOnly={isReadOnly || showsDisabledMessage || undefined}
         autoFocus={hasAutoFocus}
         data-autofocus={hasAutoFocus || undefined}
         min={min ?? undefined}
@@ -674,14 +694,11 @@ export function NumberInput({
       <VisuallyHidden as="div" role="alert" aria-live="assertive">
         {!isInputValid ? 'Invalid number' : ''}
       </VisuallyHidden>
-      {hasClear && value != null && !isDisabled && (
-        <button
-          type="button"
+      {hasClear && value != null && !isDisabled && !isReadOnly && (
+        <InputClearButton
+          label={t('@astryx.numberInput.clearLabel', {label})}
           onClick={handleClear}
-          aria-label={t('@astryx.numberInput.clearLabel', {label})}
-          {...stylex.props(styles.clearButton)}>
-          <Icon icon="close" size="sm" color="secondary" />
-        </button>
+        />
       )}
       {statusIcon}
     </div>

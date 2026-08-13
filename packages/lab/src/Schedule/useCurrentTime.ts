@@ -30,6 +30,8 @@ function getServerSnapshot(): Instant {
 function subscribe(listener: () => void): () => void {
   listeners.add(listener);
   if (interval == null) {
+    // The module may have loaded long before Schedule mounted.
+    currentTime = Date.now() as Instant;
     interval = setInterval(() => {
       currentTime = Date.now() as Instant;
       listeners.forEach(activeListener => activeListener());

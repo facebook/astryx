@@ -11,7 +11,7 @@
 /**
  * The page-building playbook signal (emitted when `build` runs with no query).
  *
- * @returns {import('../../../types/build').BuildHelpResponse}
+ * @returns {import('../build.type.mjs').BuildHelpResponse}
  */
 export function buildHelp() {
   return {type: 'build.help', data: {playbook: true}};

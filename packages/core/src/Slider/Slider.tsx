@@ -13,7 +13,7 @@
  * - /packages/core/src/Slider/Slider.test.tsx
  * - /packages/core/src/Slider/index.ts
  * - /apps/storybook/stories/Slider.stories.tsx
- * - /packages/cli/templates/blocks/components/Slider/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Slider/ (showcase blocks)
  */
 
 import {
@@ -40,7 +40,7 @@ import {Tooltip} from '../Tooltip/Tooltip';
 import {useTooltip} from '../Tooltip';
 import {VisuallyHidden} from '../VisuallyHidden';
 import type {InputStatus} from '../Field/types';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs, rtlStyles} from '../utils';
 import {isRtlElement} from '../hooks/isRtlElement';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
@@ -203,8 +203,6 @@ const styles = stylex.create({
     top: 0,
     bottom: 0,
     width: TRACK_SIZE,
-    insetInlineStart: '50%',
-    transform: 'translateX(-50%)',
   },
   filledTrack: {
     position: 'absolute',
@@ -218,8 +216,6 @@ const styles = stylex.create({
   },
   filledTrackVertical: {
     width: TRACK_SIZE,
-    insetInlineStart: '50%',
-    transform: 'translateX(-50%)',
   },
   thumb: {
     position: 'absolute',
@@ -248,10 +244,6 @@ const styles = stylex.create({
       default: 'translate(-50%, -50%)',
       ':is([dir="rtl"] *)': 'translate(50%, -50%)',
     },
-  },
-  thumbVertical: {
-    insetInlineStart: '50%',
-    transform: 'translate(-50%, 50%)',
   },
   thumbHover: {
     backgroundColor: {
@@ -796,7 +788,9 @@ export function Slider({ref, ...props}: SliderProps) {
           }),
           stylex.props(
             styles.thumb,
-            isHorizontal ? styles.thumbHorizontal : styles.thumbVertical,
+            isHorizontal
+              ? styles.thumbHorizontal
+              : rtlStyles.centerInline('50%'),
             !isDisabled && styles.thumbHover,
             !isDisabled && styles.thumbFocusVisible,
             isDisabled && styles.thumbDisabled,
@@ -930,7 +924,9 @@ export function Slider({ref, ...props}: SliderProps) {
               themeProps('slider-track', {orientation}),
               stylex.props(
                 styles.track,
-                isHorizontal ? styles.trackHorizontal : styles.trackVertical,
+                isHorizontal
+                  ? styles.trackHorizontal
+                  : [styles.trackVertical, rtlStyles.centerInline('0px')],
               ),
             )}
           />
@@ -943,7 +939,7 @@ export function Slider({ref, ...props}: SliderProps) {
                 styles.filledTrack,
                 isHorizontal
                   ? styles.filledTrackHorizontal
-                  : styles.filledTrackVertical,
+                  : [styles.filledTrackVertical, rtlStyles.centerInline('0px')],
               ),
               {style: filledStyle},
             )}

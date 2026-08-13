@@ -10,8 +10,9 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {useState} from 'react';
 import {DropdownMenu} from './DropdownMenu';
 import {DropdownMenuItem} from './DropdownMenuItem';
 import {Divider} from '../Divider';
@@ -109,6 +110,22 @@ describe('DropdownMenu', () => {
     );
   });
 
+  it('supports explicit menu alignment', () => {
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        alignment="end"
+        items={[{label: 'Item 1'}]}
+      />,
+    );
+    const popover = screen
+      .getByRole('menu', {hidden: true})
+      .closest('[popover]');
+    expect(popover?.getAttribute('style')).toContain(
+      'position-area: self-block-end span-self-inline-start',
+    );
+  });
+
   it('emits the direction-independent logical mapping under an RTL ancestor (#3389)', async () => {
     // The self-* position-area keywords resolve against the popover's own
     // inherited direction in the browser, so RTL emits the same string as
@@ -148,6 +165,76 @@ describe('DropdownMenu', () => {
     expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
   });
 
+  it('calls onOpenChange for uncontrolled native open and close transitions', async () => {
+    const user = userEvent.setup();
+    const handleOpenChange = vi.fn();
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        items={[{label: 'Item 1'}]}
+        onOpenChange={handleOpenChange}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    expect(handleOpenChange).toHaveBeenCalledWith(true);
+
+    handleOpenChange.mockClear();
+    const popoverEl = screen
+      .getByRole('menu', {hidden: true})
+      .closest('[popover]');
+    expect(popoverEl).not.toBeNull();
+    const toggleEvent = new Event('toggle');
+    Object.defineProperty(toggleEvent, 'newState', {value: 'closed'});
+    fireEvent(popoverEl as HTMLElement, toggleEvent);
+
+    expect(handleOpenChange).toHaveBeenCalledWith(false);
+    expect(screen.getByRole('button', {name: /Actions/})).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+  });
+
+  it('restores focus to the trigger after native light dismiss', async () => {
+    const raf = vi
+      .spyOn(window, 'requestAnimationFrame')
+      .mockImplementation(callback => {
+        callback(0);
+        return 0;
+      });
+
+    try {
+      const user = userEvent.setup();
+      render(
+        <DropdownMenu
+          button={{label: 'Actions'}}
+          items={[{label: 'Edit'}, {label: 'Delete'}]}
+        />,
+      );
+
+      const trigger = screen.getByRole('button', {name: /Actions/});
+      trigger.focus();
+      await user.click(trigger);
+      // Pointer opens focus the menu container, not the first item (#4477).
+      expect(screen.getByRole('menu', {hidden: true})).toHaveFocus();
+
+      const popoverEl = screen
+        .getByRole('menu', {hidden: true})
+        .closest('[popover]');
+      expect(popoverEl).not.toBeNull();
+      popoverEl?.addEventListener('toggle', () => {
+        trigger.blur();
+      });
+      const toggleEvent = new Event('toggle');
+      Object.defineProperty(toggleEvent, 'newState', {value: 'closed'});
+      fireEvent(popoverEl as HTMLElement, toggleEvent);
+
+      expect(trigger).toHaveFocus();
+    } finally {
+      raf.mockRestore();
+    }
+  });
+
   it('closes the menu when Tab is pressed inside it (APG menu-button)', async () => {
     const user = userEvent.setup();
     render(
@@ -175,6 +262,27 @@ describe('DropdownMenu', () => {
     fireEvent.keyDown(menu, {key: 'd'});
     expect(
       screen.getByRole('menuitem', {name: 'Delete', hidden: true}),
+    ).toHaveFocus();
+  });
+
+  it('typeahead advances past an item that already starts with the letter', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        items={[{label: 'Copy'}, {label: 'Copy link'}, {label: 'Delete'}]}
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    const menu = screen.getByRole('menu', {hidden: true});
+    screen.getByRole('menuitem', {name: 'Copy', hidden: true}).focus();
+
+    fireEvent.keyDown(menu, {key: 'c'});
+
+    // APG: a printable character moves focus to the NEXT item starting with
+    // it. Anchoring at the focused item instead makes the press a dead key.
+    expect(
+      screen.getByRole('menuitem', {name: 'Copy link', hidden: true}),
     ).toHaveFocus();
   });
 
@@ -303,6 +411,169 @@ describe('DropdownMenu items', () => {
     expect(handleClick).toHaveBeenCalledTimes(1);
   });
 
+  it('closes the menu after an item is activated', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        items={[{label: 'Edit', onClick: () => {}}]}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    await user.click(
+      screen.getByRole('menuitem', {name: 'Edit', hidden: true}),
+    );
+    expect(HTMLElement.prototype.hidePopover).toHaveBeenCalled();
+  });
+
+  it('keeps the menu open when the item opts out of closing', async () => {
+    const user = userEvent.setup();
+    const handleClick = vi.fn();
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        items={[
+          {label: 'Copy ID', onClick: handleClick, hasCloseOnSelect: false},
+        ]}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    const item = screen.getByRole('menuitem', {name: 'Copy ID', hidden: true});
+    await user.click(item);
+    expect(handleClick).toHaveBeenCalledTimes(1);
+    expect(HTMLElement.prototype.hidePopover).not.toHaveBeenCalled();
+
+    // Second activation still works, and focus never left the item.
+    await user.click(item);
+    expect(handleClick).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps the menu open on keyboard activation too', async () => {
+    const user = userEvent.setup();
+    const handleClick = vi.fn();
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        items={[
+          {label: 'Copy ID', onClick: handleClick, hasCloseOnSelect: false},
+        ]}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    const menu = screen.getByRole('menu', {hidden: true});
+    await waitFor(() => expect(menu).toHaveFocus());
+    fireEvent.keyDown(menu, {key: 'ArrowDown'});
+    fireEvent.keyDown(menu, {key: 'Enter'});
+
+    expect(handleClick).toHaveBeenCalledTimes(1);
+    expect(HTMLElement.prototype.hidePopover).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole('menuitem', {name: 'Copy ID', hidden: true}),
+    ).toHaveFocus();
+  });
+
+  it('closes the menu on activation even when the item carries no handler', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Actions'}} items={[{label: 'Edit'}]} />,
+    );
+
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    await user.click(
+      screen.getByRole('menuitem', {name: 'Edit', hidden: true}),
+    );
+    expect(HTMLElement.prototype.hidePopover).toHaveBeenCalled();
+  });
+
+  it('keeps a row mounted when its label changes, so focus survives (data mode keys by position)', async () => {
+    const user = userEvent.setup();
+
+    function CopyMenu() {
+      const [copied, setCopied] = useState(false);
+      return (
+        <DropdownMenu
+          button={{label: 'Actions'}}
+          items={[
+            {
+              label: copied ? 'Copied' : 'Copy ID',
+              hasCloseOnSelect: false,
+              onClick: () => setCopied(true),
+            },
+            {label: 'Rename'},
+          ]}
+        />
+      );
+    }
+
+    render(<CopyMenu />);
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    const item = screen.getByRole('menuitem', {name: 'Copy ID', hidden: true});
+    item.focus();
+    await user.click(item);
+
+    const renamed = screen.getByRole('menuitem', {
+      name: 'Copied',
+      hidden: true,
+    });
+    expect(renamed).toBe(item);
+    expect(renamed).toHaveFocus();
+  });
+
+  it('follows the item, not the slot, when ids are supplied and the list changes', async () => {
+    const user = userEvent.setup();
+
+    // A menu whose rows are filtered by a control outside it: the focused row
+    // survives at a new index. Position keys cannot express this — the DOM node
+    // at index 0 would be reused for whatever item lands there.
+    function FilterableMenu({hideFirst}: {hideFirst: boolean}) {
+      const items = [
+        {id: 'edit', label: 'Edit'},
+        {id: 'duplicate', label: 'Duplicate'},
+        {id: 'archive', label: 'Archive'},
+      ].filter(item => !hideFirst || item.id !== 'edit');
+      return <DropdownMenu button={{label: 'Actions'}} items={items} />;
+    }
+
+    const {rerender} = render(<FilterableMenu hideFirst={false} />);
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+
+    const duplicate = screen.getByRole('menuitem', {
+      name: 'Duplicate',
+      hidden: true,
+    });
+    duplicate.focus();
+
+    rerender(<FilterableMenu hideFirst={true} />);
+
+    // Same node, still focused, even though it moved from index 1 to index 0.
+    expect(
+      screen.getByRole('menuitem', {name: 'Duplicate', hidden: true}),
+    ).toBe(duplicate);
+    expect(duplicate).toHaveFocus();
+    expect(
+      screen.queryByRole('menuitem', {name: 'Edit', hidden: true}),
+    ).not.toBeInTheDocument();
+  });
+
+  it('does not put id on the rendered row', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        items={[{id: 'edit', label: 'Edit'}]}
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+
+    // `id` is identity for React, not a DOM attribute the caller is setting.
+    expect(
+      screen.getByRole('menuitem', {name: 'Edit', hidden: true}),
+    ).not.toHaveAttribute('id', 'edit');
+  });
+
   it('does not call onClick when disabled', async () => {
     const user = userEvent.setup();
     const handleClick = vi.fn();
@@ -412,6 +683,113 @@ describe('DropdownMenu dividers', () => {
       screen.getByRole('menuitem', {name: 'Delete', hidden: true}),
     ).toBeInTheDocument();
     expect(screen.getByRole('separator', {hidden: true})).toBeInTheDocument();
+  });
+});
+
+describe('DropdownMenu theming slots', () => {
+  it('exposes a themeable slot on the section heading', () => {
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        items={[
+          {
+            type: 'section',
+            title: 'File Actions',
+            items: [{label: 'New'}],
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByText('File Actions')).toHaveClass(
+      'astryx-dropdown-menu-section-heading',
+    );
+  });
+
+  it('exposes a themeable slot on the menu divider', () => {
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        items={[{label: 'Edit'}, {type: 'divider'}, {label: 'Delete'}]}
+      />,
+    );
+
+    const divider = screen.getByRole('separator', {hidden: true});
+    expect(divider).toHaveClass('astryx-dropdown-menu-divider');
+    // Still carries the base Divider slot so global divider theming applies too.
+    expect(divider).toHaveClass('astryx-divider');
+  });
+});
+
+describe('DropdownMenuItem destructive variant', () => {
+  it('marks a compound-mode item destructive via data-variant', () => {
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuItem
+          label="Delete"
+          variant="destructive"
+          onClick={() => {}}
+        />
+        <DropdownMenuItem label="Edit" onClick={() => {}} />
+      </DropdownMenu>,
+    );
+
+    const del = screen.getByRole('menuitem', {name: 'Delete', hidden: true});
+    const edit = screen.getByRole('menuitem', {name: 'Edit', hidden: true});
+    expect(del).toHaveAttribute('data-variant', 'destructive');
+    // Default items carry no variant attribute, so existing usage is unchanged.
+    expect(edit).not.toHaveAttribute('data-variant');
+  });
+
+  it('forwards variant from the data-driven items API', () => {
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        items={[
+          {label: 'Delete', variant: 'destructive', onClick: () => {}},
+          {label: 'Edit', onClick: () => {}},
+        ]}
+      />,
+    );
+
+    expect(
+      screen.getByRole('menuitem', {name: 'Delete', hidden: true}),
+    ).toHaveAttribute('data-variant', 'destructive');
+    expect(
+      screen.getByRole('menuitem', {name: 'Edit', hidden: true}),
+    ).not.toHaveAttribute('data-variant');
+  });
+
+  it('forwards variant to items nested inside a section', () => {
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        items={[
+          {
+            type: 'section',
+            title: 'Danger zone',
+            items: [
+              {label: 'Delete', variant: 'destructive', onClick: () => {}},
+            ],
+          },
+        ]}
+      />,
+    );
+
+    expect(
+      screen.getByRole('menuitem', {name: 'Delete', hidden: true}),
+    ).toHaveAttribute('data-variant', 'destructive');
+  });
+
+  it('defaults to no variant attribute', () => {
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuItem label="Edit" onClick={() => {}} />
+      </DropdownMenu>,
+    );
+    expect(
+      screen.getByRole('menuitem', {name: 'Edit', hidden: true}),
+    ).not.toHaveAttribute('data-variant');
   });
 });
 
@@ -840,5 +1218,194 @@ describe('DropdownMenu keyboard access for menuitemradio/menuitemcheckbox (#3829
 
     fireEvent.pointerMove(del, {pointerType: 'touch'});
     expect(edit).toHaveFocus();
+  });
+});
+
+describe('DropdownMenu open focus follows input modality (#4477)', () => {
+  const items = [{label: 'Edit'}, {label: 'Duplicate'}, {label: 'Delete'}];
+
+  it('pointer open focuses the menu container, not the first item (items mode)', async () => {
+    const user = userEvent.setup();
+    render(<DropdownMenu button={{label: 'Actions'}} items={items} />);
+
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+
+    const menu = screen.getByRole('menu', {hidden: true});
+    await waitFor(() => expect(menu).toHaveFocus());
+    expect(
+      screen.getByRole('menuitem', {name: 'Edit', hidden: true}),
+    ).not.toHaveFocus();
+  });
+
+  it('pointer open focuses the menu container in compound mode', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuItem label="Edit" onClick={() => {}} />
+        <DropdownMenuItem label="Delete" onClick={() => {}} />
+      </DropdownMenu>,
+    );
+
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+
+    const menu = screen.getByRole('menu', {hidden: true});
+    await waitFor(() => expect(menu).toHaveFocus());
+    expect(
+      screen.getByRole('menuitem', {name: 'Edit', hidden: true}),
+    ).not.toHaveFocus();
+  });
+
+  it('first ArrowDown after a pointer open moves focus to the first enabled item', async () => {
+    const user = userEvent.setup();
+    render(<DropdownMenu button={{label: 'Actions'}} items={items} />);
+
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    const menu = screen.getByRole('menu', {hidden: true});
+    await waitFor(() => expect(menu).toHaveFocus());
+
+    fireEvent.keyDown(menu, {key: 'ArrowDown'});
+    expect(
+      screen.getByRole('menuitem', {name: 'Edit', hidden: true}),
+    ).toHaveFocus();
+  });
+
+  it('ArrowDown after a pointer open skips a disabled leading item', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        items={[{label: 'Edit', isDisabled: true}, {label: 'Delete'}]}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    const menu = screen.getByRole('menu', {hidden: true});
+    await waitFor(() => expect(menu).toHaveFocus());
+
+    fireEvent.keyDown(menu, {key: 'ArrowDown'});
+    expect(
+      screen.getByRole('menuitem', {name: 'Delete', hidden: true}),
+    ).toHaveFocus();
+  });
+
+  it('keyboard open via Enter focuses the first enabled item', async () => {
+    const user = userEvent.setup();
+    render(<DropdownMenu button={{label: 'Actions'}} items={items} />);
+
+    screen.getByRole('button', {name: /Actions/}).focus();
+    await user.keyboard('{Enter}');
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('menuitem', {name: 'Edit', hidden: true}),
+      ).toHaveFocus(),
+    );
+  });
+
+  it('keyboard open via ArrowDown skips a disabled leading item', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        items={[{label: 'Edit', isDisabled: true}, {label: 'Delete'}]}
+      />,
+    );
+
+    screen.getByRole('button', {name: /Actions/}).focus();
+    await user.keyboard('{ArrowDown}');
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('menuitem', {name: 'Delete', hidden: true}),
+      ).toHaveFocus(),
+    );
+  });
+
+  it('a synthesized click (detail 0, AT activation) still focuses the first item', async () => {
+    render(<DropdownMenu button={{label: 'Actions'}} items={items} />);
+
+    // fireEvent.click dispatches a MouseEvent with detail 0 (the shape of a
+    // screen reader / AT activation), so it must keep the keyboard behavior.
+    fireEvent.click(screen.getByRole('button', {name: /Actions/}));
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('menuitem', {name: 'Edit', hidden: true}),
+      ).toHaveFocus(),
+    );
+  });
+
+  it('controlled pointer open focuses the menu container', async () => {
+    function Controlled() {
+      const [isOpen, setIsOpen] = useState(false);
+      return (
+        <DropdownMenu
+          button={{label: 'Actions'}}
+          items={items}
+          isMenuOpen={isOpen}
+          onOpenChange={setIsOpen}
+        />
+      );
+    }
+    const user = userEvent.setup();
+    render(<Controlled />);
+
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+
+    const menu = screen.getByRole('menu', {hidden: true});
+    await waitFor(() => expect(menu).toHaveFocus());
+    expect(
+      screen.getByRole('menuitem', {name: 'Edit', hidden: true}),
+    ).not.toHaveFocus();
+  });
+
+  it('programmatic controlled open still focuses the first item', async () => {
+    const {rerender} = render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        items={items}
+        isMenuOpen={false}
+        onOpenChange={() => {}}
+      />,
+    );
+
+    rerender(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        items={items}
+        isMenuOpen={true}
+        onOpenChange={() => {}}
+      />,
+    );
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('menuitem', {name: 'Edit', hidden: true}),
+      ).toHaveFocus(),
+    );
+  });
+
+  it('Escape still closes the menu after a pointer open', async () => {
+    const user = userEvent.setup();
+    render(<DropdownMenu button={{label: 'Actions'}} items={items} />);
+
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    const menu = screen.getByRole('menu', {hidden: true});
+    await waitFor(() => expect(menu).toHaveFocus());
+
+    fireEvent.keyDown(menu, {key: 'Escape'});
+    expect(HTMLElement.prototype.hidePopover).toHaveBeenCalled();
+  });
+
+  it('Tab still closes the menu after a pointer open (APG menu-button)', async () => {
+    const user = userEvent.setup();
+    render(<DropdownMenu button={{label: 'Actions'}} items={items} />);
+
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    const menu = screen.getByRole('menu', {hidden: true});
+    await waitFor(() => expect(menu).toHaveFocus());
+
+    fireEvent.keyDown(menu, {key: 'Tab'});
+    expect(HTMLElement.prototype.hidePopover).toHaveBeenCalled();
   });
 });

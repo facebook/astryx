@@ -1,12 +1,32 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
+# Cleanup Preview Deployments — removes stale /pr/<number>/ previews and other
+# leftovers from gh-pages.
+#
+# Runs on workflow_run after CI completes, NOT on pull_request. That matters:
+# a pull_request workflow triggered by a fork gets a READ-ONLY token and can't
+# push to gh-pages, so the cleanup push failed with a 403 for EVERY fork PR
+# (see #4672). workflow_run runs from the base repo with the repo's own write
+# token, so cleanup works for fork PRs too — one code path for every PR, no
+# drift between a fork path and a same-repo path (mirrors deploy-preview.yml).
+#
+# The cleanup does not actually need the "closed" event: it reconciles the
+# on-disk pr/ dirs against the live open-PR list (`gh pr list`) every run, so
+# firing on any PR's CI completion (plus the daily cron) is sufficient to
+# garbage-collect closed/merged previews.
+#
+# Safety: this NEVER checks out or runs PR-controlled code. It only checks out
+# gh-pages and deletes stale paths. Do not add checkout of the PR head or
+# execution of PR code here.
+
 name: Cleanup Preview Deployments
 
 on:
   schedule:
     - cron: '0 6 * * *' # Daily 6am UTC
-  pull_request:
-    types: [closed]
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
   workflow_dispatch:
     inputs:
       dry_run:
@@ -17,18 +37,24 @@ on:
 
 permissions: {}
 
-# Serialize cleanup runs against each other so simultaneous PR closes don't
-# race their gh-pages pushes. Deliberately NOT the "pages-deploy" group:
-# joining it could cancel a PENDING main deploy (GitHub keeps only the newest
-# pending run per group), leaving the site stale. Races against deploy.yml
-# are handled by the push retry below instead.
+# Serialize cleanup runs against each other so simultaneous runs don't race
+# their gh-pages pushes. Deliberately NOT the "pages-deploy" group: joining it
+# could cancel a PENDING main deploy (GitHub keeps only the newest pending run
+# per group), leaving the site stale. Races against deploy.yml are handled by
+# the push retry below instead.
 concurrency:
   group: "cleanup-previews"
   cancel-in-progress: false
 
 jobs:
   cleanup:
-    runs-on: ubuntu-latest
+    # Only react to CI runs triggered by a pull request (matches
+    # deploy-preview.yml); scheduled and manual runs have no workflow_run
+    # payload and always proceed.
+    if: >-
+      github.event_name != 'workflow_run' ||
+      github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-slim
     permissions:
       contents: write
       pull-requests: read
@@ -216,9 +242,19 @@ jobs:
             fi
 
             git commit -m "chore: cleanup ${DELETED} stale deployments"
-            if git push origin gh-pages; then
+            PUSH_OUT=$(git push origin gh-pages 2>&1) && {
               echo "Pushed cleanup commit"
               exit 0
+            }
+            echo "$PUSH_OUT"
+
+            # A 403/permission denial is not a race — retrying can never fix it
+            # (this is exactly what broke fork PRs before the workflow_run
+            # migration). Fail fast with the real cause instead of burning all
+            # attempts behind a misleading "concurrent update" message.
+            if echo "$PUSH_OUT" | grep -qiE 'denied|403|permission|not authorized'; then
+              echo "::error::Push to gh-pages denied (403/permissions) — not a race, aborting. Ensure this job runs with the base-repo write token (workflow_run), not a fork's read-only token."
+              exit 1
             fi
           done
 

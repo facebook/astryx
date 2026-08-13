@@ -215,9 +215,9 @@ export const dayCellStyles = stylex.create({
       content: '""',
       position: 'absolute',
       top: '-2px',
-      right: '-2px',
+      insetInlineEnd: '-2px',
       bottom: '-2px',
-      left: '-2px',
+      insetInlineStart: '-2px',
     },
   },
 
@@ -257,14 +257,6 @@ export const dayCellTheme = stylex.create({
       ':hover': {
         '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
       },
-    },
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': '2px',
     },
   },
 

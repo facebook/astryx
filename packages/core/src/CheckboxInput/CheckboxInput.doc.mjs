@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'CheckboxInput',
@@ -131,7 +131,8 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-checkbox-input', visualProps: ['size']},
-      {className: 'astryx-checkbox', visualProps: ['size'], states: ['checked', 'disabled']},
+      {className: 'astryx-checkbox-indicator', visualProps: ['size'], states: ['checked', 'disabled']},
+      {className: 'astryx-checkbox', visualProps: ['size'], states: ['checked', 'disabled'], deprecatedFor: 'checkbox-indicator'},
     ],
   },
   usage: {
@@ -153,7 +154,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docsZh = {
   name: 'CheckboxInput',
   displayName: 'Checkbox Input',
@@ -206,12 +207,13 @@ export const docsZh = {
           'size',
         ],
       },
-      {className: 'astryx-checkbox', visualProps: ['size'], states: ['checked', 'disabled']},
+      {className: 'astryx-checkbox-indicator', visualProps: ['size'], states: ['checked', 'disabled']},
+      {className: 'astryx-checkbox', visualProps: ['size'], states: ['checked', 'disabled'], deprecatedFor: 'checkbox-indicator'},
     ],
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'single on/off toggle for settings, terms, and opt-in choices',
   usage: {

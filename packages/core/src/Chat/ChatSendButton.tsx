@@ -20,10 +20,11 @@
 import React, {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Button} from '../Button';
-import {getIcon} from '../Icon/globalIconRegistry';
+import {useIcon} from '../Icon';
 import {useChatComposerContext} from './ChatContext';
 
 import type {BaseProps} from '../BaseProps';
+import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
@@ -95,6 +96,8 @@ export function ChatSendButton(props: ChatSendButtonProps): ReactNode {
   } = props;
 
   const handleSend = onSend ?? (() => context?.onSubmit(''));
+  const defaultStopIcon = useIcon('stop');
+  const defaultSendIcon = useIcon('arrowUp');
 
   return (
     <Button
@@ -108,16 +111,14 @@ export function ChatSendButton(props: ChatSendButtonProps): ReactNode {
       size={size}
       icon={
         isStopShown
-          ? (stopIcon ?? getIcon('stop'))
-          : (sendIcon ?? getIcon('arrowUp'))
+          ? (stopIcon ?? defaultStopIcon)
+          : (sendIcon ?? defaultSendIcon)
       }
       isIconOnly
       isDisabled={!isStopShown && isDisabled}
       onClick={isStopShown ? onStop : handleSend}
       {...rest}
-      {...themeProps('chat-send-button')}
-      className={className}
-      style={style}
+      {...mergeProps(themeProps('chat-send-button'), {className}, style)}
       xstyle={[styles.root, xstyle]}
     />
   );

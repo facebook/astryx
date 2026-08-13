@@ -18,7 +18,7 @@
  * - /packages/core/src/SideNav/SideNav.test.tsx
  * - /packages/core/src/SideNav/index.ts
  * - /apps/storybook/stories/SideNav.stories.tsx
- * - /packages/cli/templates/blocks/components/SideNav/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/SideNav/ (showcase blocks)
  */
 
 import {
@@ -143,6 +143,7 @@ const styles = stylex.create({
   },
   stickyBottomCollapsed: {
     paddingBlockStart: 0,
+    alignItems: 'center',
   },
   // Drawer footer — pushed to bottom of the scrollable content area
   drawerFooter: {

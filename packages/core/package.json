@@ -1,6 +1,6 @@
 {
   "name": "@astryxdesign/core",
-  "version": "0.1.9",
+  "version": "0.3.0",
   "displayName": "Astryx Core",
   "description": "The component library. Accessible, themeable React components with built-in spacing, dark mode, and StyleX styling.",
   "author": "Meta Open Source",
@@ -63,16 +63,6 @@
       "source": "./src/naming.ts",
       "types": "./dist/naming.d.ts",
       "default": "./dist/naming.js"
-    },
-    "./config": {
-      "source": "./src/config.ts",
-      "types": "./dist/config.d.ts",
-      "default": "./dist/config.js"
-    },
-    "./authoring": {
-      "source": "./src/authoring/index.ts",
-      "types": "./dist/authoring/index.d.ts",
-      "default": "./dist/authoring/index.js"
     },
     "./theme/tokens": {
       "source": "./src/theme/tokens.ts",
@@ -212,6 +202,11 @@
       "types": "./dist/CommandPalette/index.d.ts",
       "default": "./dist/CommandPalette/index.js"
     },
+    "./ComplexSelector": {
+      "source": "./src/ComplexSelector/index.ts",
+      "types": "./dist/ComplexSelector/index.d.ts",
+      "default": "./dist/ComplexSelector/index.js"
+    },
     "./ContextMenu": {
       "source": "./src/ContextMenu/index.ts",
       "types": "./dist/ContextMenu/index.d.ts",
@@ -301,6 +296,11 @@
       "source": "./src/IconButton/index.ts",
       "types": "./dist/IconButton/index.d.ts",
       "default": "./dist/IconButton/index.js"
+    },
+    "./Indicator": {
+      "source": "./src/Indicator/index.ts",
+      "types": "./dist/Indicator/index.d.ts",
+      "default": "./dist/Indicator/index.js"
     },
     "./InputGroup": {
       "source": "./src/InputGroup/index.ts",
@@ -651,7 +651,7 @@
   "scripts": {
     "prepack": "pnpm build",
     "postinstall": "node scripts/postinstall.mjs",
-    "build": "rimraf dist && pnpm build:i18n && pnpm build:esm && tsc --project tsconfig.build.json && pnpm build:css && pnpm build:umd && node ../../scripts/check-no-dev-jsx.mjs",
+    "build": "rimraf dist && pnpm build:i18n && pnpm build:esm && tsc --project tsconfig.build.json && pnpm build:css && pnpm build:umd && node ../../scripts/check-no-dev-jsx.mjs && node ../../scripts/check-fully-specified.mjs",
     "build:i18n": "node scripts/build-pseudo-locale.mjs",
     "build:esm": "babel src --out-dir dist --extensions .ts,.tsx --out-file-extension .js --ignore \"**/*.test.ts,**/*.test.tsx,**/__tests__/**,**/*.perf.test.*,**/*.doc.mjs,**/*.d.ts,**/*.css,**/*.css.d.ts\" --config-file ./babel.config.json",
     "build:css": "node ../../scripts/build-css.mjs",
@@ -669,7 +669,8 @@
     "react-dom": ">=19.0.0"
   },
   "devDependencies": {
-    "@babel/cli": "^7.29.7",
+    "@astryxdesign/cli": "workspace:*",
+    "@babel/cli": "^8.0.4",
     "@babel/core": "^7.29.7",
     "@babel/preset-react": "^8.0.1",
     "@babel/preset-typescript": "^7.29.7",

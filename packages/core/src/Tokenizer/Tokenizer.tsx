@@ -12,7 +12,7 @@
  * SYNC: When modified, update:
  * - /packages/core/src/Tokenizer/index.ts
  * - /apps/storybook/stories/Tokenizer.stories.tsx
- * - /packages/cli/templates/blocks/components/Tokenizer/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Tokenizer/ (showcase blocks)
  */
 
 import React, {
@@ -730,7 +730,11 @@ export function Tokenizer<T extends SearchableItem>({
       onBlurCapture={handleBlurCapture}
       data-testid={testId}
       {...mergeProps(
-        themeProps('tokenizer', {size, status: status?.type}),
+        themeProps('tokenizer', {
+          size,
+          status: status?.type,
+          disabled: isDisabled ? 'disabled' : null,
+        }),
         stylex.props(
           inputWrapperStyles.base,
           styles.wrapper,
@@ -828,7 +832,11 @@ export function Tokenizer<T extends SearchableItem>({
           ref={placeholderRef}
           onClick={handleWrapperClick}
           {...mergeProps(
-            themeProps('tokenizer', {size, status: status?.type}),
+            themeProps('tokenizer', {
+              size,
+              status: status?.type,
+              disabled: isDisabled ? 'disabled' : null,
+            }),
             stylex.props(
               inputWrapperStyles.base,
               styles.wrapper,

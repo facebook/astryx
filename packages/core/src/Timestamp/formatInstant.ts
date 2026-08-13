@@ -41,12 +41,11 @@ import type {TimestampFormat} from './Timestamp';
  * style ("February 19, 2026 at 5:00:00 PM UTC") that backs a relative
  * timestamp's accessible name and the tooltip's default line.
  *
- * `'relative'` and `'auto'` are excluded: a relative phrase names no instant,
- * so a zone could not change what it says.
+ * `'relative'`, `'relative_short'`, and `'auto'` are excluded: a relative
+ * phrase names no instant, so a zone could not change what it says.
  */
 export type InstantFormat =
-  | Exclude<TimestampFormat, 'relative' | 'auto'>
-  | 'full';
+  Exclude<TimestampFormat, 'relative' | 'relative_short' | 'auto'> | 'full';
 
 export interface FormatInstantOptions {
   /**
@@ -214,5 +213,11 @@ export function formatInstant(
       const w = getWallClock(date, timeZone);
       return `${pad(w.hour)}:${pad(w.minute)}:${pad(w.second)}`;
     }
+
+    case 'unix_seconds':
+      // Unix time in whole seconds since the epoch. The epoch is an absolute
+      // instant, so this is zone-independent — `timeZone` is intentionally
+      // ignored (a wall-clock zone can't change how many seconds have elapsed).
+      return String(Math.floor(date.getTime() / 1000));
   }
 }

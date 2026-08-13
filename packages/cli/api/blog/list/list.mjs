@@ -16,7 +16,7 @@ import {loadFeed} from '../_adapter.mjs';
 
 /**
  * List posts from the feed.
- * @returns {Promise<import('../../../types/blog').BlogListResponse>}
+ * @returns {Promise<import('../blog.type.mjs').BlogListResponse>}
  */
 export async function list() {
   const data = await loadFeed();

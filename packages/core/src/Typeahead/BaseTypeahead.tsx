@@ -14,7 +14,7 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Typeahead/index.ts
- * - /packages/cli/templates/blocks/components/Typeahead/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Typeahead/ (showcase blocks)
  */
 
 import React, {
@@ -30,6 +30,7 @@ import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {usePopover} from '../Popover/usePopover';
 import {useAnnounce} from '../hooks/useAnnounce';
+import {isImeKeyEvent} from '../hooks/useFocusTrap';
 import {TypeaheadItem} from './TypeaheadItem';
 import {Icon} from '../Icon';
 import {
@@ -158,6 +159,16 @@ export interface BaseTypeaheadProps<T extends SearchableItem> extends Omit<
   inputXStyle?: StyleXStyles;
 
   /**
+   * Tab-order override for the input element. Typeahead passes `-1` while
+   * its selected-value token is shown: the input is visually collapsed
+   * (width 0 / opacity 0) but must stay programmatically focusable for
+   * token edit/clear interactions, so removing it from the Tab order is
+   * what prevents an invisible tab stop (WCAG 2.4.3 / 2.4.7). The input
+   * remains focusable via `.focus()` regardless of this value.
+   */
+  inputTabIndex?: number;
+
+  /**
    * Ref to the anchor element for dropdown positioning.
    * The dropdown will be positioned relative to this element.
    * If not provided, the input itself is used as the anchor.
@@ -214,10 +225,6 @@ const styles = stylex.create({
   },
   popover: {
     minWidth: 'anchor-size(width)',
-  },
-  popoverGap: {
-    marginBlockStart: spacingVars['--spacing-1'],
-    marginBlockEnd: spacingVars['--spacing-1'],
   },
   item: {
     boxSizing: 'border-box',
@@ -316,6 +323,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   ariaDescribedBy,
   ariaLabelledBy,
   inputXStyle,
+  inputTabIndex,
   anchorRef,
   onKeyDown: externalOnKeyDown,
   debounceMs = 150,
@@ -622,6 +630,17 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         return;
       }
 
+      // An IME candidate window uses Enter to commit the composition and
+      // Escape/ArrowUp/ArrowDown/Home/End to navigate its own candidates.
+      // Without this guard, a composing Enter both fires handleSelect AND
+      // clears the input via handleSelect's setQuery(''), so the IME's
+      // subsequent compositionend then writes the still-pending syllable
+      // into the freshly-cleared field -- producing a second, spurious
+      // selection on the next real Enter.
+      if (isImeKeyEvent(e.nativeEvent)) {
+        return;
+      }
+
       if (!popover.isOpen) {
         if (e.key === 'ArrowDown' && (hasEntriesOnFocus || query.length > 0)) {
           e.preventDefault();
@@ -748,6 +767,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         aria-describedby={ariaDescribedBy}
         aria-labelledby={ariaLabelledBy}
         aria-disabled={isFocusableDisabled ? 'true' : undefined}
+        tabIndex={inputTabIndex}
         value={query}
         onChange={handleInputChange}
         onPointerDown={() => {
@@ -797,7 +817,11 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
             stylex.props(styles.dropdown),
           )}>
           {results.length === 0 && hasSearched ? (
-            <div {...stylex.props(styles.emptyState)}>
+            <div
+              {...mergeProps(
+                themeProps('typeahead-empty-state'),
+                stylex.props(styles.emptyState),
+              )}>
               {emptySearchResultsText}
             </div>
           ) : (
@@ -837,7 +861,8 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         {
           placement: 'below',
           alignment: 'start',
-          xstyle: [styles.popover, styles.popoverGap],
+          offset: spacingVars['--spacing-1'],
+          xstyle: styles.popover,
         },
       )}
     </>

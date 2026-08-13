@@ -6,6 +6,6 @@ import {astryxStylex} from '@astryxdesign/build/vite';
 
 export default defineConfig({
   plugins: [...astryxStylex(), react()],
-  // Templates live outside this app's root (packages/cli/templates).
+  // Templates live outside this app's root (packages/cli/assets/templates).
   server: {fs: {allow: ['../..']}},
 });

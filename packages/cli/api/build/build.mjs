@@ -24,8 +24,8 @@ export {buildHelp, buildKit};
  * grouped composition kit.
  *
  * @param {string} [query] what you're building (e.g. "analytics dashboard")
- * @param {{cwd?: string, type?: import('../../types/search').SearchDomain, limit?: number}} [options]
- * @returns {Promise<import('../../types/build').BuildHelpResponse | import('../../types/build').BuildKitResponse>}
+ * @param {{cwd?: string, type?: import('../search/search.type.mjs').SearchDomain, limit?: number}} [options]
+ * @returns {Promise<import('./build.type.mjs').BuildHelpResponse | import('./build.type.mjs').BuildKitResponse>}
  */
 export async function build(query, options = {}) {
   if (!query || !String(query).trim()) {

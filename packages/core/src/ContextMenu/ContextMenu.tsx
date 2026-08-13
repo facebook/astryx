@@ -27,7 +27,7 @@
  * - /packages/core/src/ContextMenu/ContextMenu.test.tsx
  * - /packages/core/src/ContextMenu/index.ts
  * - /apps/storybook/stories/ContextMenu.stories.tsx
- * - /packages/cli/templates/blocks/components/ContextMenu/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/ContextMenu/ (showcase blocks)
  */
 
 import React, {
@@ -220,12 +220,23 @@ export function ContextMenu({
   xstyle,
   triggerXstyle,
   'data-testid': testId,
-  ...props
+  ...rest
 }: ContextMenuProps) {
   const t = useTranslator();
   const label = labelFromProps ?? t('@astryx.contextMenu.label');
-  const items = ('items' in props ? props.items : undefined) ?? [];
-  const menuContent = 'menuContent' in props ? props.menuContent : undefined;
+  // Separate content props (union discriminant) from DOM pass-through attrs.
+  // The union means exactly one of items/menuContent exists in rest; destructure
+  // both so triggerProps contains only DOM-safe attributes.
+  const {
+    items: itemsProp,
+    menuContent: menuContentProp,
+    ...triggerProps
+  } = rest as {items?: ContextMenuOption[]; menuContent?: ReactNode} & Omit<
+    typeof rest,
+    'items' | 'menuContent'
+  >;
+  const items = itemsProp ?? [];
+  const menuContent = menuContentProp;
 
   const menuId = useId();
   // Cursor point in the trigger's local coordinate space (offset from the
@@ -353,13 +364,22 @@ export function ContextMenu({
         }
         return;
       }
+      // APG menu pattern: Tab closes the menu. Menu items are tabIndex={-1}
+      // so Tab would otherwise leak focus into the page while the menu stayed
+      // open (menus-5). Do NOT preventDefault — closing restores focus to the
+      // previously focused element, and the browser's default Tab then
+      // continues from there to the next element.
+      if (e.key === 'Tab') {
+        closeMenu();
+        return;
+      }
       if (typeahead.onKeyDown(e)) {
         e.preventDefault();
         return;
       }
       listNavKeyDown(e);
     },
-    [listNavKeyDown, typeahead, ownsEvent],
+    [listNavKeyDown, closeMenu, typeahead, ownsEvent],
   );
 
   // Place the zero-size cursor anchor at a point in the trigger's local
@@ -440,12 +460,13 @@ export function ContextMenu({
   );
 
   const resolvedMenuContent =
-    props.items !== undefined ? renderDropdownItems(items) : menuContent;
+    itemsProp !== undefined ? renderDropdownItems(items) : menuContent;
 
   return (
     <>
       <div
         ref={mergeRefs(ref, triggerRef)}
+        {...triggerProps}
         onContextMenu={handleContextMenu}
         {...longPressHandlers}
         data-testid={testId}

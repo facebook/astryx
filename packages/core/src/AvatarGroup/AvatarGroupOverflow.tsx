@@ -3,14 +3,14 @@
 
 /**
  * @file AvatarGroupOverflow.tsx
- * @input Uses React, StyleX, AvatarGroupContext
+ * @input Uses React, StyleX, AvatarGroupContext, i18n (useTranslator)
  * @output Exports AvatarGroupOverflow for overflow indicator
  * @position Slot component used inside AvatarGroup
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/AvatarGroup/AvatarGroup.doc.mjs
  * - /packages/core/src/AvatarGroup/index.ts
- * - /packages/cli/templates/blocks/components/AvatarGroup/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/AvatarGroup/ (showcase blocks)
  */
 
 import React, {type ReactNode} from 'react';
@@ -26,6 +26,8 @@ import {mergeProps} from '../utils';
 import {useAvatarGroup} from './AvatarGroupContext';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {useTranslator} from '../i18n';
 
 const BORDER_WIDTH = 2;
 const OVERFLOW_FONT_RATIO = 0.35;
@@ -92,14 +94,6 @@ const styles = stylex.create({
       ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']}), linear-gradient(${colorVars['--color-neutral']}, ${colorVars['--color-neutral']})`,
     },
     // Focus ring via focus-visible
-    outline: {
-      default: 'none',
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: null,
-      ':focus-visible': '2px',
-    },
   },
   overlap: {
     marginInlineStart: 'var(--_avatar-group-overlap)',
@@ -150,11 +144,12 @@ export function AvatarGroupOverflow({
   style,
   ...rest
 }: AvatarGroupOverflowProps): ReactNode {
+  const t = useTranslator();
   const group = useAvatarGroup();
   const numericSize = group?.numericSize ?? 36;
   const overlap = group?.overlap ?? 0;
 
-  const label = `${count} more`;
+  const label = t('@astryx.avatarGroup.overflow', {count});
   const content = children ?? `+${count}`;
 
   if (onClick) {
@@ -168,7 +163,7 @@ export function AvatarGroupOverflow({
         data-avatar-item=""
         {...mergeProps(
           themeProps('avatar-group-overflow'),
-          stylex.props(
+          focusOutlineProps.focusVisible(
             styles.base,
             styles.button,
             styles.overlap,

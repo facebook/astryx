@@ -13,7 +13,7 @@
  * - /packages/core/src/TabList/TabList.doc.mjs
  * - /packages/core/src/TabList/index.ts
  * - /packages/core/src/TabList/TabList.test.tsx
- * - /packages/cli/templates/blocks/components/TabList/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/TabList/ (showcase blocks)
  */
 
 import React, {useCallback, useId, useRef, type ReactNode} from 'react';
@@ -30,7 +30,9 @@ import {
   fontWeightVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {usePopover} from '../Popover/usePopover';
+import {MENU_ITEM_SELECTOR} from '../DropdownMenu/menuItemRoles';
 import {useListFocus} from '../hooks/useListFocus';
 import {useTabListContext} from './TabListContext';
 import type {TabListSize} from './TabListContext';
@@ -90,14 +92,6 @@ const styles = stylex.create({
     transitionProperty: 'color',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': '2px',
-    },
   },
   triggerSelected: {
     color: colorVars['--color-text-primary'],
@@ -160,6 +154,10 @@ const styles = stylex.create({
     width: spacingVars['--spacing-4'],
     height: spacingVars['--spacing-4'],
     flexShrink: 0,
+  },
+  // Applied to the chevron <Icon> (via `xstyle`) rather than its wrapper, so the
+  // element that rotates is the element a theme targets.
+  chevronIcon: {
     transitionProperty: 'transform',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
@@ -196,10 +194,6 @@ const styles = stylex.create({
       ':hover': {
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
-    },
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
     },
   },
   menuItemSelected: {
@@ -291,6 +285,9 @@ export function TabMenu({
     focusFirst,
   } = useListFocus<HTMLDivElement>({
     hasRovingTabIndex: true,
+    // Options render as menuitemradio (single-select menu), which the
+    // default '[role="menuitem"]' selector would not match.
+    itemSelector: MENU_ITEM_SELECTOR,
     onEscape: () => popover.hide(),
   });
 
@@ -352,7 +349,7 @@ export function TabMenu({
         onClick={handleToggle}
         {...mergeProps(
           themeProps('tab-menu'),
-          stylex.props(
+          focusOutlineProps.focusVisible(
             styles.trigger,
             sizeStyles[size],
             hasSelectedOption && styles.triggerSelected,
@@ -372,13 +369,13 @@ export function TabMenu({
             {triggerLabel}
           </span>
         </span>
-        <span
-          aria-hidden="true"
-          {...stylex.props(
-            styles.chevron,
-            popover.isOpen && styles.chevronOpen,
-          )}>
-          <Icon icon="chevronDown" size="sm" color="inherit" />
+        <span aria-hidden="true" {...stylex.props(styles.chevron)}>
+          <Icon
+            icon="chevronDown"
+            size="sm"
+            color="inherit"
+            xstyle={[styles.chevronIcon, popover.isOpen && styles.chevronOpen]}
+          />
         </span>
         {hasSelectedOption && (
           <span
@@ -409,9 +406,13 @@ export function TabMenu({
             return (
               <div
                 key={option.value}
-                role="menuitem"
+                // The menu is single-select: exactly one option can be the
+                // active tab, so options are radio menu items with
+                // aria-checked (APG menu-button), not plain menuitems with
+                // aria-current.
+                role="menuitemradio"
                 tabIndex={-1}
-                aria-current={isSelected ? 'true' : undefined}
+                aria-checked={isSelected}
                 onClick={() => handleSelect(option.value)}
                 onKeyDown={e => {
                   if (e.key === 'Enter' || e.key === ' ') {
@@ -421,7 +422,7 @@ export function TabMenu({
                 }}
                 {...mergeProps(
                   themeProps('tab-menu-item'),
-                  stylex.props(
+                  focusOutlineProps.focusVisible(
                     styles.menuItem,
                     isSelected && styles.menuItemSelected,
                   ),

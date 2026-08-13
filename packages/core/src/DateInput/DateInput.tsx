@@ -13,7 +13,7 @@
  * - /packages/core/src/DateInput/DateInput.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/DateInput/index.ts (exports if types change)
  * - /apps/storybook/stories/DateInput.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/DateInput/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/DateInput/ (showcase blocks)
  */
 
 import {
@@ -35,6 +35,7 @@ import {
 } from '../theme/tokens.stylex';
 import {
   Field,
+  InputClearButton,
   type InputStatus,
   inputWrapperStyles,
   inputStatusBorderStyles,
@@ -48,7 +49,13 @@ import {useInputGroup} from '../InputGroup/InputGroupContext';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {useSize} from '../SizeContext/SizeContext';
 import {Spinner} from '../Spinner';
-import {Calendar, type ISODateString, type CalendarHandle} from '../Calendar';
+import {
+  Calendar,
+  type ISODateString,
+  type CalendarHandle,
+  type DayOfWeek,
+  type DayOfWeekName,
+} from '../Calendar';
 import {useCalendarConstraints} from '../Calendar/hooks';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
 import {usePopover} from '../Popover';
@@ -152,10 +159,11 @@ export type {
   InputStatus as DateInputStatus,
   InputStatusType as DateInputStatusType,
 } from '../Field';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs, isFocusDetached} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
+import {stableClassName} from '../naming';
 import {useTranslator} from '../i18n';
 
 export interface DateInputProps extends Omit<
@@ -312,6 +320,14 @@ export interface DateInputProps extends Omit<
   numberOfMonths?: 1 | 2;
 
   /**
+   * First day of week in the calendar popover. Accepts a number
+   * (0 = Sunday … 6 = Saturday) or a three-letter day name ('sun'–'sat',
+   * case-insensitive).
+   * @default 0
+   */
+  weekStartsOn?: DayOfWeek | DayOfWeekName;
+
+  /**
    * How the committed date value is displayed in the text field. Accepts a
    * named format reused from `Timestamp`'s `format` vocabulary (so the same
    * literal renders the same date shape in both components) or a function that
@@ -377,6 +393,7 @@ export function DateInput({
   labelTooltip,
   hasClear = false,
   numberOfMonths = 1,
+  weekStartsOn,
   format = 'date_long',
   width,
   xstyle,
@@ -489,7 +506,18 @@ export function DateInput({
   const popover = usePopover({
     dialogLabel: t('@astryx.dateInput.dialogLabel'),
     closeButtonLabel: t('@astryx.dateInput.closeCalendar'),
-    onHide: () => inputRef.current?.focus(),
+    // Return focus to the input when the calendar closes — but only when the
+    // dismiss left focus detached (Escape, or a click on non-focusable empty
+    // space), which the focus trap can't restore on its own. A native
+    // popover="auto" light-dismiss fires synchronously with the pointer event
+    // that moved focus, so if the user clicked another control — the clear
+    // button, another field, anywhere — focus has already landed there;
+    // reclaiming it would fight their click.
+    onHide: () => {
+      if (isFocusDetached()) {
+        inputRef.current?.focus();
+      }
+    },
   });
 
   // Handle toggling the popover from button click (focus calendar)
@@ -635,7 +663,11 @@ export function DateInput({
       }}
       {...rest}
       {...mergeProps(
-        themeProps('date-input', {size, status: status?.type ?? null}),
+        themeProps('date-input', {
+          size,
+          status: status?.type ?? null,
+          disabled: isDisabled ? 'disabled' : null,
+        }),
         stylex.props(
           inputWrapperStyles.base,
           sizeStyles[size],
@@ -725,22 +757,11 @@ export function DateInput({
         {!isInputValid ? 'Invalid date' : ''}
       </VisuallyHidden>
       {hasClear && value !== undefined && !isEffectivelyDisabled && (
-        <button
-          type="button"
+        <InputClearButton
+          label={t('@astryx.dateInput.clear', {label})}
           onClick={handleClear}
-          aria-label={t('@astryx.dateInput.clear', {label})}
-          {...stylex.props(styles.iconButton)}>
-          <Icon
-            icon="close"
-            size="sm"
-            color="secondary"
-            // Stable theme target on the clear glyph itself, so a theme can
-            // restyle just this icon (color, size, hover) via `defineTheme`.
-            // Same-element rules in @layer astryx-theme win over the icon's own
-            // base color/size, which a button-level target could not reach.
-            {...themeProps('date-input-clear-icon')}
-          />
-        </button>
+          iconClassName={stableClassName('date-input-clear-icon')}
+        />
       )}
       {isBusy && <Spinner size="sm" />}
       {statusIcon}
@@ -754,6 +775,7 @@ export function DateInput({
           max={max}
           dateConstraints={dateConstraints}
           numberOfMonths={numberOfMonths}
+          weekStartsOn={weekStartsOn}
         />,
         {placement: 'below', alignment: 'start'},
       )}

@@ -8,13 +8,14 @@
  * @position Sub-component; individual selectable item
  *
  * SYNC: When modified, update:
- * - /packages/cli/templates/blocks/components/CommandPalette/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/CommandPalette/ (showcase blocks)
  */
 
 import {useCallback, useEffect, useMemo, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
 import {mergeProps, mergeRefs} from '../utils';
+import {composeEventHandlers} from '../utils/composeEventHandlers';
 import {
   colorVars,
   spacingVars,
@@ -127,6 +128,8 @@ export function CommandPaletteItem({
   xstyle,
   className,
   style,
+  onClick: onClickProp,
+  onMouseEnter: onMouseEnterProp,
   ...props
 }: CommandPaletteItemProps) {
   const ctx = useCommandPaletteContext();
@@ -186,13 +189,14 @@ export function CommandPaletteItem({
   return (
     <div
       ref={mergeRefs(ref, itemRef)}
+      {...props}
       id={ctx && itemIndex >= 0 ? ctx.getItemId(itemIndex) : undefined}
       role="option"
       aria-selected={isSelected}
       aria-disabled={isDisabled || undefined}
       data-value={value}
-      onClick={handleClick}
-      onMouseEnter={handleMouseEnter}
+      onClick={composeEventHandlers(onClickProp, handleClick)}
+      onMouseEnter={composeEventHandlers(onMouseEnterProp, handleMouseEnter)}
       {...mergeProps(
         themeProps('command-palette-item'),
         stylex.props(
@@ -205,8 +209,7 @@ export function CommandPaletteItem({
         ),
         className,
         style,
-      )}
-      {...props}>
+      )}>
       {children}
     </div>
   );

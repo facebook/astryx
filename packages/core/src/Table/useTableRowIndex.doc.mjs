@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'useTableRowIndex',
@@ -37,7 +37,7 @@ export const docs = {
   ],
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
     'Returns a TablePlugin that prepends a right-aligned monospaced row-number column. Numbering follows the rendered data order (current sort/filter/page view), 1-based by default. Pass the rendered data array; renderCell only receives the item so the plugin derives ordinals from it.',

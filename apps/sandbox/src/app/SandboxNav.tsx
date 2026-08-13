@@ -1,16 +1,28 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/**
+ * @file Shared resizable and collapsible sandbox navigation.
+ * @input Current route, sandbox navigation registry, and theme controls.
+ * @output Grouped SideNav for the AppShell's Sandbox and Audits sections.
+ * @position Persistent navigation for the sandbox route group.
+ */
+
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
 import {usePathname} from 'next/navigation';
 import Link from 'next/link';
-import {SideNav, SideNavItem, SideNavSection} from '@astryxdesign/core/SideNav';
+import {
+  SideNav,
+  SideNavHeading,
+  SideNavItem,
+  SideNavSection,
+} from '@astryxdesign/core/SideNav';
 import {DropdownMenu} from '@astryxdesign/core/DropdownMenu';
-import {Text} from '@astryxdesign/core/Text';
 import {useThemeControls, SANDBOX_THEMES} from './providers';
 import type {ThemeMode} from '@astryxdesign/core/theme';
-import {categories} from './sandboxPages';
+import type {IconName, IconType} from '@astryxdesign/core/Icon';
+import {auditPages, categories, homePage} from './sandboxPages';
 import {
   HomeIcon,
   WrenchIcon,
@@ -21,7 +33,6 @@ import {
   AppWindowIcon,
   BlocksIcon,
 } from './icons';
-import {spacingVars, colorVars} from '@astryxdesign/core/theme/tokens.stylex';
 
 const categoryIcons: Record<
   string,
@@ -34,17 +45,25 @@ const categoryIcons: Record<
   tools: WrenchIcon,
 };
 
+/**
+ * Icons for persistent nav pages, kept here so sandboxPages stays JSX-free —
+ * the same split the categories already use.
+ *
+ * These are icon *types* and semantic *names*, never rendered elements.
+ * `SideNavItem` passes its icon through `renderIconSlot`, which applies the
+ * nav's `size: 'sm'` and its selected/disabled colour to a component type or a
+ * registry name — but hands a ReactNode straight to the DOM untouched. An
+ * `<Icon />` element here therefore renders unsized and uncoloured: a ~400px
+ * black glyph over the whole sidebar. `scores` is a registry name (T17), not a
+ * hand-written SVG.
+ */
+const navPageIcons: Record<string, IconType | IconName> = {
+  home: HomeIcon,
+  templates: AppWindowIcon,
+  scores: 'checkDouble',
+};
+
 const styles = stylex.create({
-  header: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingInline: spacingVars['--spacing-4'],
-    paddingBlock: spacingVars['--spacing-3'],
-    borderBottomWidth: 1,
-    borderBottomStyle: 'solid',
-    borderBottomColor: colorVars['--color-border'],
-  },
   controls: {
     display: 'flex',
     gap: 2,
@@ -65,58 +84,55 @@ function SandboxHeader() {
   ];
 
   return (
-    <div {...stylex.props(styles.header)}>
-      <Text type="body" weight="bold">
-        Sandbox
-      </Text>
-      <div {...stylex.props(styles.controls)}>
-        <DropdownMenu
-          button={{
-            label: 'Theme',
-
-            icon: (
-              <PaletteIcon
-                width={16}
-                height={16}
-                style={{color: 'var(--color-icon-secondary)'}}
-              />
-            ),
-
-            variant: 'ghost',
-            size: 'sm',
-            isIconOnly: true,
-          }}
-          menuWidth={160}
-          items={themeItems}
-        />
-        <DropdownMenu
-          button={{
-            label: mode === 'dark' ? 'Dark mode' : 'Light mode',
-
-            icon:
-              mode === 'dark' ? (
-                <MoonIcon
-                  width={16}
-                  height={16}
-                  style={{color: 'var(--color-icon-secondary)'}}
-                />
-              ) : (
-                <SunIcon
+    <SideNavHeading
+      heading="Sandbox"
+      icon={<BoxIcon width={20} height={20} />}
+      headerEndContent={
+        <div {...stylex.props(styles.controls)}>
+          <DropdownMenu
+            button={{
+              label: 'Theme',
+              icon: (
+                <PaletteIcon
                   width={16}
                   height={16}
                   style={{color: 'var(--color-icon-secondary)'}}
                 />
               ),
-
-            variant: 'ghost',
-            size: 'sm',
-            isIconOnly: true,
-          }}
-          menuWidth={160}
-          items={modeItems}
-        />
-      </div>
-    </div>
+              variant: 'ghost',
+              size: 'sm',
+              isIconOnly: true,
+            }}
+            menuWidth={160}
+            items={themeItems}
+          />
+          <DropdownMenu
+            button={{
+              label: mode === 'dark' ? 'Dark mode' : 'Light mode',
+              icon:
+                mode === 'dark' ? (
+                  <MoonIcon
+                    width={16}
+                    height={16}
+                    style={{color: 'var(--color-icon-secondary)'}}
+                  />
+                ) : (
+                  <SunIcon
+                    width={16}
+                    height={16}
+                    style={{color: 'var(--color-icon-secondary)'}}
+                  />
+                ),
+              variant: 'ghost',
+              size: 'sm',
+              isIconOnly: true,
+            }}
+            menuWidth={160}
+            items={modeItems}
+          />
+        </div>
+      }
+    />
   );
 }
 
@@ -124,40 +140,55 @@ export function SandboxNav() {
   const pathname = usePathname();
 
   return (
-    <SideNav header={<SandboxHeader />}>
-      <SideNavSection title="Home" isHeaderHidden>
+    <SideNav
+      header={<SandboxHeader />}
+      collapsible
+      resizable={{
+        defaultWidth: 300,
+        minWidth: 220,
+        maxWidth: 420,
+        autoSaveId: 'sandbox-side-nav',
+      }}>
+      <SideNavSection title="Sandbox">
         <SideNavItem
-          label="Home"
-          href="/"
-          isSelected={pathname === '/'}
+          label={homePage.label}
+          href={homePage.href}
+          isSelected={pathname === homePage.href}
           as={Link}
-          icon={HomeIcon}
+          icon={navPageIcons[homePage.icon]}
         />
-        <SideNavItem
-          label="Official Templates"
-          href="/templates/"
-          isSelected={pathname === '/templates/'}
-          as={Link}
-          icon={AppWindowIcon}
-        />
-      </SideNavSection>
-      <SideNavSection title="Projects">
         {categories
           .filter(c => c.slug !== 'templates')
           .map(category => {
-            const isActive = pathname === `/${category.slug}/`;
+            const href = '/' + category.slug + '/';
             const IconComponent = categoryIcons[category.slug];
             return (
               <SideNavItem
                 key={category.slug}
                 label={category.label}
-                href={`/${category.slug}/`}
-                isSelected={isActive}
+                href={href}
+                isSelected={pathname === href}
                 as={Link}
                 icon={IconComponent}
               />
             );
           })}
+      </SideNavSection>
+      <SideNavSection title="Audits">
+        {auditPages.map(page => (
+          <SideNavItem
+            key={page.href}
+            label={page.label}
+            href={page.href}
+            isSelected={
+              page.matchesChildren
+                ? pathname.startsWith(page.href)
+                : pathname === page.href
+            }
+            as={Link}
+            icon={navPageIcons[page.icon]}
+          />
+        ))}
       </SideNavSection>
     </SideNav>
   );

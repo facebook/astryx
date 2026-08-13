@@ -9,9 +9,9 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {assertWithin, PathSafetyError} from '../../../utils/path-safety.mjs';
+import {assertWithin, PathSafetyError} from '../../../foundation/fs/path-safety.mjs';
 import {AstryxError} from '../../error.mjs';
-import {ERROR_CODES} from '../../../lib/error-codes.mjs';
+import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {THEMES_DIR, listThemes, findTheme} from '../_adapter.mjs';
 
 // Stripped from scaffolded files so the consumer's copy doesn't carry our
@@ -44,7 +44,7 @@ function defaultTargetDir(slug) {
  *
  * @param {string} slug
  * @param {{targetPath?: string, overwrite?: boolean, cwd?: string}} [options]
- * @returns {Promise<import('../../../types/theme').ThemeAddResponse>}
+ * @returns {Promise<import('../theme.type.mjs').ThemeAddResponse>}
  */
 export async function themeAdd(slug, options = {}) {
   const {targetPath, overwrite = false, cwd = process.cwd()} = options;
@@ -110,10 +110,12 @@ export async function themeAdd(slug, options = {}) {
   }
 
   // Stage to temp files then rename, rolling back partials on failure so a
-  // failed write never leaves a half-written theme.
-  fs.mkdirSync(resolvedDir, {recursive: true});
+  // failed write never leaves a half-written theme. mkdir is inside the try so
+  // a failure (e.g. an ancestor is a file → EEXIST/ENOTDIR) surfaces as a
+  // stable ERR_WRITE_FAILED rather than leaking a raw fs errno + absolute path.
   const staged = [];
   try {
+    fs.mkdirSync(resolvedDir, {recursive: true});
     for (const w of writes) {
       const tmp = `${w.dest}.${process.pid}.tmp`;
       const contents = stripCopyrightHeader(fs.readFileSync(w.src, 'utf-8'));

@@ -23,6 +23,7 @@ import {POST_TYPE_LABELS} from '../../lib/blog/schema';
 import {MarkdownText} from '../MarkdownText';
 import {AuthorByline} from './AuthorByline';
 import {ReleaseCoverArt} from './ReleaseCoverArt';
+import {MarkdownImage} from './ThemedImage';
 import {parseReleaseVersion} from '../../lib/blog/release';
 import {layout} from '../../layout.stylex';
 
@@ -107,7 +108,10 @@ export function BlogArticle({post}: BlogArticleProps) {
           </AspectRatio>
         ) : null}
 
-        <Markdown headingLevelStart={2} contentWidth="100%">
+        <Markdown
+          headingLevelStart={2}
+          contentWidth="100%"
+          components={{image: MarkdownImage}}>
           {post.body}
         </Markdown>
 

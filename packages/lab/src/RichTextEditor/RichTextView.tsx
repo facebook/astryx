@@ -16,7 +16,7 @@
  * - /apps/storybook/stories/RichTextEditor.stories.tsx
  */
 
-import {useRef, useState, type ReactNode} from 'react';
+import {useEffect, useRef, useState, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {sharedEditorTheme} from './editorTheme';
 import type {BaseProps} from '@astryxdesign/core';
@@ -25,6 +25,7 @@ import {
   LexicalComposer,
   type InitialConfigType,
 } from '@lexical/react/LexicalComposer';
+import {useLexicalComposerContext} from '@lexical/react/LexicalComposerContext';
 import {RichTextPlugin} from '@lexical/react/LexicalRichTextPlugin';
 import {ContentEditable} from '@lexical/react/LexicalContentEditable';
 import {LexicalErrorBoundary} from '@lexical/react/LexicalErrorBoundary';
@@ -84,6 +85,47 @@ export interface RichTextViewProps extends BaseProps {
    * @default null
    */
   errorFallback?: ReactNode;
+}
+
+/**
+ * Keeps the rendered content in sync with the `value` prop after mount.
+ *
+ * `LexicalComposer`'s `initialConfig.editorState` is only read once on mount, so
+ * a plain `<RichTextView value={changingValue} />` would freeze at its first
+ * value — the content would never update when `value` changed. This plugin runs
+ * inside the composer context and re-applies `value` whenever it changes, so the
+ * read-only view stays reactive (e.g. previewing content edited elsewhere).
+ *
+ * The initial `value` is already applied via `initialConfig.editorState`, so we
+ * skip the first run to avoid a redundant re-parse on mount.
+ *
+ * This mirrors the canonical Lexical pattern for applying externally-sourced
+ * serialized state after mount: the Lexical Playground's ActionsPlugin does the
+ * same `editor.setEditorState(editor.parseEditorState(...))` from inside a
+ * plugin (see facebook/lexical
+ * packages/lexical-playground/src/plugins/ActionsPlugin/index.tsx). It is
+ * necessary because `LexicalComposer` builds the editor in a `useMemo(..., [])`
+ * and reads `initialConfig.editorState` exactly once on init
+ * (packages/lexical-react/src/LexicalComposer.tsx), so a changed prop cannot
+ * re-seed the editor on its own. A read-only view has no history, so we skip the
+ * Playground's accompanying CLEAR_HISTORY_COMMAND.
+ *
+ * `parseEditorState` / `setEditorState` are methods on the editor instance, so
+ * this avoids a top-level `lexical` *value* import (which would force the
+ * sandbox's Next build to transpile lexical's raw `src/*.ts` and fail — see the
+ * matching note in RichTextEditor.tsx).
+ */
+function SyncValuePlugin({value}: {value: string}): null {
+  const [editor] = useLexicalComposerContext();
+  const isFirstRun = useRef(true);
+  useEffect(() => {
+    if (isFirstRun.current) {
+      isFirstRun.current = false;
+      return;
+    }
+    editor.setEditorState(editor.parseEditorState(value));
+  }, [editor, value]);
+  return null;
 }
 
 /**
@@ -170,6 +212,7 @@ export function RichTextView({
       style={style}
       {...rest}>
       <LexicalComposer initialConfig={initialConfig}>
+        <SyncValuePlugin value={value} />
         <RichTextPlugin
           contentEditable={<ContentEditable />}
           placeholder={null}

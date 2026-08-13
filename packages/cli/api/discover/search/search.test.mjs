@@ -102,3 +102,17 @@ describe('discover.search leaf', () => {
     expect(err.suggestions).toBeUndefined();
   });
 });
+
+describe('discover.search leaf — empty query (parity with api/search)', () => {
+  it('throws ERR_INVALID_ARGUMENT for an empty query (does not match everything)', async () => {
+    await expect(search(packages, '', {})).rejects.toMatchObject({
+      code: 'ERR_INVALID_ARGUMENT',
+    });
+  });
+
+  it('throws ERR_INVALID_ARGUMENT for a whitespace-only query', async () => {
+    await expect(search(packages, '   ', {})).rejects.toMatchObject({
+      code: 'ERR_INVALID_ARGUMENT',
+    });
+  });
+});

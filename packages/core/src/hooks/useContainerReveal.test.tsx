@@ -1,0 +1,96 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+/**
+ * @file useContainerReveal.test.tsx
+ * @input Uses vitest, @testing-library/react, useContainerReveal
+ * @output Unit tests for the enabled/disabled contract, the dynamic isEnabled
+ *   prop, the content-option → style-block mapping, and the promise that a
+ *   large flat list mounts without dev warnings.
+ * @position Testing; validates useContainerReveal.ts.
+ *
+ * Nesting isolation is a cascade behavior jsdom does not implement, so it is
+ * verified in a real browser (Storybook's NestedIsolation story) rather than
+ * asserted here.
+ *
+ * SYNC: When useContainerReveal.ts changes, update these tests.
+ */
+
+import {describe, it, expect, vi, afterEach} from 'vitest';
+import {renderHook, render} from '@testing-library/react';
+import {useContainerReveal} from './useContainerReveal';
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+describe('useContainerReveal', () => {
+  it('returns spreadable getter props for container and content', () => {
+    const {result} = renderHook(() => useContainerReveal());
+    const container = result.current.getContainerProps();
+    const content = result.current.getContentRevealProps();
+    expect(typeof container.className).toBe('string');
+    expect(typeof content.className).toBe('string');
+  });
+
+  it('is inert when disabled: no container class, empty content props', () => {
+    const {result} = renderHook(() => useContainerReveal({isEnabled: false}));
+    expect(result.current.getContainerProps()).toEqual({});
+    expect(result.current.getContentRevealProps()).toEqual({});
+  });
+
+  it('follows isEnabled after mount, in both directions', () => {
+    const {result, rerender} = renderHook(
+      ({isEnabled}) => useContainerReveal({isEnabled}),
+      {initialProps: {isEnabled: true}},
+    );
+    expect(result.current.getContentRevealProps().className).toBeTruthy();
+
+    rerender({isEnabled: false});
+    expect(result.current.getContainerProps()).toEqual({});
+    expect(result.current.getContentRevealProps()).toEqual({});
+
+    rerender({isEnabled: true});
+    expect(result.current.getContainerProps().className).toBeTruthy();
+    expect(result.current.getContentRevealProps().className).toBeTruthy();
+  });
+
+  it('reveal and conceal map to different style blocks', () => {
+    const {result} = renderHook(() => useContainerReveal());
+    const reveal = result.current.getContentRevealProps().className;
+    const conceal = result.current.getContentRevealProps({
+      isRevealInverted: true,
+    }).className;
+    expect(reveal).toBeTruthy();
+    expect(conceal).toBeTruthy();
+    expect(reveal).not.toBe(conceal);
+  });
+
+  it('layout-preserved reveal differs from clipped reveal', () => {
+    const {result} = renderHook(() => useContainerReveal());
+    const clipped = result.current.getContentRevealProps().className;
+    const preserved = result.current.getContentRevealProps({
+      isLayoutPreserved: true,
+    }).className;
+    expect(clipped).not.toBe(preserved);
+  });
+
+  it('mounts a large flat list without a dev warning', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    function Row() {
+      const {getContainerProps, getContentRevealProps} = useContainerReveal();
+      return (
+        <div {...getContainerProps()}>
+          <span {...getContentRevealProps()}>actions</span>
+        </div>
+      );
+    }
+    render(
+      <>
+        {Array.from({length: 500}, (_, i) => (
+          <Row key={i} />
+        ))}
+      </>,
+    );
+    expect(warn).not.toHaveBeenCalled();
+  });
+});

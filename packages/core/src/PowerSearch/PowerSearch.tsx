@@ -11,7 +11,7 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/PowerSearch/index.ts
- * - /packages/cli/templates/blocks/components/PowerSearch/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/PowerSearch/ (showcase blocks)
  */
 
 import React, {
@@ -104,7 +104,6 @@ const popoverLayerStyles = stylex.create({
   layer: {
     width: 'anchor-size(width)',
     minWidth: 400,
-    marginTop: spacingVars['--spacing-1'],
   },
 });
 
@@ -1053,6 +1052,7 @@ export function PowerSearch({
       {popover.render(popoverContent, {
         placement: 'below',
         alignment: 'start',
+        offset: spacingVars['--spacing-1'],
         xstyle: [popoverLayerStyles.layer, layerAnimations.below],
       })}
     </>
