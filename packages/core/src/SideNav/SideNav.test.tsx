@@ -11,7 +11,7 @@
 
 import React from 'react';
 import {describe, it, expect, vi, afterEach} from 'vitest';
-import {render, screen, act, fireEvent, waitFor} from '@testing-library/react';
+import {render, screen, act, fireEvent, waitFor, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {useRef, useState, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
@@ -1543,6 +1543,216 @@ describe('SideNavItem — collapsible + href', () => {
       button.getAttribute('aria-controls')!,
     );
     expect(childrenContainer).toHaveAttribute('inert');
+  });
+});
+
+// =============================================================================
+// SideNavItem — actions slot (row-level secondary controls, #4988)
+// =============================================================================
+
+describe('SideNavItem — actions slot', () => {
+  const rowAction = (onClick?: (e: React.MouseEvent) => void) => (
+    <button type="button" data-testid="row-action" onClick={onClick}>
+      ⋯
+    </button>
+  );
+
+  it('renders actions outside the primary interactive element', () => {
+    render(
+      <SideNavItem label="Project" href="/project" actions={rowAction()} />,
+    );
+    const action = screen.getByTestId('row-action');
+    const link = screen.getByRole('link', {name: 'Project'});
+    // Sibling, not nested: the action's closest interactive element is itself.
+    expect(within(link).queryByTestId('row-action')).toBeNull();
+    expect(action.closest('a, button')).toBe(action);
+  });
+
+  it('places actions after the primary element and before nested children', () => {
+    render(
+      <SideNavItem
+        label="Project"
+        href="/project"
+        collapsible
+        actions={rowAction()}>
+        <SideNavItem label="Session" href="/project/session" />
+      </SideNavItem>,
+    );
+    const primary = screen.getByRole('link', {name: 'Project'});
+    const action = screen.getByTestId('row-action');
+    const group = screen.getByRole('group');
+    // Compare real node positions, not serialized markup.
+    expect(
+      primary.compareDocumentPosition(action) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      action.compareDocumentPosition(group) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('reaches every row-level control before nested items when tabbing', async () => {
+    const user = userEvent.setup();
+    render(
+      <SideNavItem
+        label="Project"
+        href="/project"
+        collapsible
+        actions={rowAction()}>
+        <SideNavItem label="Session" href="/project/session" />
+      </SideNavItem>,
+    );
+    await user.tab();
+    expect(screen.getByRole('link', {name: 'Project'})).toHaveFocus();
+    await user.tab();
+    expect(
+      screen.getByRole('button', {name: /collapse project/i}),
+    ).toHaveFocus();
+    await user.tab();
+    expect(screen.getByTestId('row-action')).toHaveFocus();
+    await user.tab();
+    expect(screen.getByRole('link', {name: 'Session'})).toHaveFocus();
+  });
+
+  it('clicking an action does not activate the item', async () => {
+    const user = userEvent.setup();
+    const onItemClick = vi.fn();
+    const onActionClick = vi.fn();
+    render(
+      <SideNavItem
+        label="Project"
+        onClick={onItemClick}
+        actions={rowAction(onActionClick)}
+      />,
+    );
+    await user.click(screen.getByTestId('row-action'));
+    expect(onActionClick).toHaveBeenCalledTimes(1);
+    expect(onItemClick).not.toHaveBeenCalled();
+  });
+
+  it('clicking an action does not toggle collapse of a whole-row toggle item', async () => {
+    const user = userEvent.setup();
+    render(
+      <SideNavItem label="Project" collapsible actions={rowAction()}>
+        <SideNavItem label="Session" />
+      </SideNavItem>,
+    );
+    const rowToggle = screen.getByRole('button', {name: 'Project'});
+    expect(rowToggle).toHaveAttribute('aria-expanded', 'true');
+    await user.click(screen.getByTestId('row-action'));
+    expect(rowToggle).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('whole-row toggle still collapses when actions are present', async () => {
+    const user = userEvent.setup();
+    render(
+      <SideNavItem label="Project" collapsible actions={rowAction()}>
+        <SideNavItem label="Session" />
+      </SideNavItem>,
+    );
+    expect(screen.getByTestId('row-action')).toBeInTheDocument();
+    const rowToggle = screen.getByRole('button', {name: 'Project'});
+    await user.click(rowToggle);
+    expect(rowToggle).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('adds a row wrapper only when actions are present', () => {
+    const {unmount} = render(<SideNavItem label="Project" href="/project" />);
+    // Without actions, the link itself is the styled row element.
+    expect(screen.getByRole('link', {name: 'Project'})).toHaveClass(
+      'astryx-side-nav-item',
+    );
+    unmount();
+
+    render(
+      <SideNavItem
+        label="Project"
+        href="/project"
+        data-testid="row"
+        actions={rowAction()}
+      />,
+    );
+    // With actions, a wrapper div is the styled row; the link sits inside it.
+    const link = screen.getByRole('link', {name: 'Project'});
+    expect(link).not.toHaveClass('astryx-side-nav-item');
+    const row = screen.getByTestId('row');
+    expect(row).toHaveClass('astryx-side-nav-item');
+    expect(row).toContainElement(link);
+    expect(row).toContainElement(screen.getByTestId('row-action'));
+  });
+
+  it('keeps aria wiring on the toggle when actions are present', () => {
+    render(
+      <SideNavItem
+        label="Project"
+        href="/project"
+        collapsible
+        actions={rowAction()}>
+        <SideNavItem label="Session" />
+      </SideNavItem>,
+    );
+    expect(screen.getByTestId('row-action')).toBeInTheDocument();
+    const toggle = screen.getByRole('button', {name: /collapse project/i});
+    const group = screen.getByRole('group');
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    expect(toggle).toHaveAttribute('aria-controls', group.id);
+    expect(screen.getByRole('link', {name: 'Project'})).not.toHaveAttribute(
+      'aria-expanded',
+    );
+  });
+
+  it('keeps endContent inside the primary element when actions are present', () => {
+    render(
+      <SideNavItem
+        label="Project"
+        href="/project"
+        endContent={<span data-testid="badge">3</span>}
+        actions={rowAction()}
+      />,
+    );
+    const link = screen.getByRole('link', {name: /Project/});
+    expect(within(link).getByTestId('badge')).toBeInTheDocument();
+    expect(within(link).queryByTestId('row-action')).toBeNull();
+    expect(screen.getByTestId('row-action')).toBeInTheDocument();
+  });
+
+  it('keeps collapsed children inert while the action stays in the row', () => {
+    render(
+      <SideNavItem
+        label="Project"
+        collapsible={{defaultIsCollapsed: true}}
+        actions={rowAction()}>
+        <SideNavItem label="Session" href="/project/session" />
+      </SideNavItem>,
+    );
+    const rowToggle = screen.getByRole('button', {name: 'Project'});
+    const group = document.getElementById(
+      rowToggle.getAttribute('aria-controls')!,
+    );
+    expect(group).toHaveAttribute('inert');
+    expect(screen.getByTestId('row-action')).toBeInTheDocument();
+  });
+
+  it('does not render actions in the collapsed rail', () => {
+    const {unmount} = renderCollapsed(
+      <SideNavItem
+        label="Project"
+        icon={StubIcon}
+        href="/project"
+        actions={rowAction()}
+      />,
+    );
+    expect(screen.getByLabelText('Project')).toBeInTheDocument();
+    expect(screen.queryByTestId('row-action')).toBeNull();
+    unmount();
+
+    renderCollapsed(
+      <SideNavItem label="Project" icon={StubIcon} actions={rowAction()}>
+        <SideNavItem label="Session" href="/project/session" />
+      </SideNavItem>,
+    );
+    expect(screen.getByLabelText('Project')).toBeInTheDocument();
+    expect(screen.queryByTestId('row-action')).toBeNull();
   });
 });
 

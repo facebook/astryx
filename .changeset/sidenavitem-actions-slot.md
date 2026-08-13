@@ -1,0 +1,7 @@
+---
+'@astryxdesign/core': patch
+---
+
+[feat] SideNavItem: new `actions` slot for row-level secondary controls (icon buttons, menus). Content renders as a sibling of the primary link/button — after the expand/collapse toggle, before nested children in DOM and focus order — so interactive controls never nest inside the primary element and every row control is reachable before focus enters the subtree. Passive content (badges, counts) stays in `endContent`; `actions` is hidden while the rail is collapsed. (#4988)
+
+@AKnassa

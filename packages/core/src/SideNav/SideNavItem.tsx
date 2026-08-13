@@ -8,7 +8,7 @@
  * @output Exports SideNavItem component and SideNavItemProps
  * @position Core implementation; used inside SideNav children
  *
- * Navigation item with icon, selected state, and nesting.
+ * Navigation item with icon, selected state, row-level actions, and nesting.
  *
  * Collapsed items with children open their submenu flyout through
  * `useMenuHover`, the shared hover-intent hook (same one `SideNavHeading` and
@@ -89,6 +89,14 @@ const styles = stylex.create({
     flexShrink: 0,
     display: 'flex',
     alignItems: 'center',
+  },
+  // Row-level secondary controls (actions slot) — siblings of the primary
+  // element at the trailing edge of the row.
+  actions: {
+    flexShrink: 0,
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-1'],
   },
   children: {
     paddingInlineStart: spacingVars['--spacing-6'],
@@ -316,6 +324,15 @@ export interface SideNavItemProps extends BaseProps<HTMLElement> {
    */
   endContent?: ReactNode;
   /**
+   * Row-level secondary controls (icon buttons, menus) rendered as siblings
+   * of the primary element at the trailing edge of the row — after the
+   * expand/collapse toggle, and before any nested children in DOM and focus
+   * order. Content is passthrough: each control owns its accessible name,
+   * keyboard behavior, and disabled state. Hidden while the SideNav rail is
+   * collapsed.
+   */
+  actions?: ReactNode;
+  /**
    * Sub-items for nesting.
    */
   children?: ReactNode;
@@ -351,7 +368,10 @@ export interface SideNavItemProps extends BaseProps<HTMLElement> {
 /**
  * Navigation item for SideNav.
  *
- * Supports icons, selected state, nesting, and end content like badges or counts.
+ * Supports icons, selected state, nesting, and end content like badges or
+ * counts. Interactive row-level controls (menus, icon buttons) go in
+ * `actions`, which renders them as siblings of the primary element — never
+ * nested inside it — before any nested children in DOM and focus order.
  *
  * @example
  * ```
@@ -366,6 +386,13 @@ export interface SideNavItemProps extends BaseProps<HTMLElement> {
  *   <SideNavItem label="General" href="/settings/general" />
  *   <SideNavItem label="Security" href="/settings/security" />
  * </SideNavItem>
+ * <SideNavItem
+ *   label="Projects"
+ *   href="/projects"
+ *   collapsible
+ *   actions={<MoreMenu size="sm" label="Project actions" items={items} />}>
+ *   <SideNavItem label="Alpha" href="/projects/alpha" />
+ * </SideNavItem>
  * ```
  */
 export function SideNavItem({
@@ -378,6 +405,7 @@ export function SideNavItem({
   href,
   onClick,
   endContent,
+  actions,
   children,
   collapsible: itemCollapsible,
   size = 'md',
@@ -434,6 +462,7 @@ export function SideNavItem({
   const hasPrimaryAction = !!href || !!onClick;
   const hasIndependentToggle =
     isItemCollapsible && hasPrimaryAction && !isCollapsed;
+  const hasActions = !!actions;
 
   const handleClick = (e: React.MouseEvent) => {
     if (isDisabled) {
@@ -625,12 +654,30 @@ export function SideNavItem({
     focusOutlineProps.focusVisible(...itemStyleArgs),
   );
 
-  // Split-action path: collapsible plus a primary action renders the primary
-  // element and the chevron toggle as siblings in a <div> row, since a
-  // <button> cannot nest inside an <a>.
+  // Row-wrapper path: primary element + row controls as siblings.
+  //
+  // Used when the row carries more than one control: an independent
+  // expand/collapse toggle (collapsible + href/onClick), consumer-supplied
+  // actions, or both. A <div> is the styled flex row; the primary link or
+  // button, the chevron toggle, and the actions slot render as siblings so
+  // no interactive element nests inside another, and every row-level
+  // control precedes the nested children group in DOM and focus order.
+  const hasRowWrapper = hasIndependentToggle || hasActions;
+
   let itemElement;
 
-  if (hasIndependentToggle) {
+  if (hasRowWrapper) {
+    // aria-expanded/-controls stay on the primary element only when the
+    // whole row is the collapse toggle (no independent chevron button).
+    const rowPrimaryAriaProps = hasIndependentToggle
+      ? {'aria-current': isSelected ? ('page' as const) : undefined}
+      : {
+          'aria-current': isSelected ? ('page' as const) : undefined,
+          'aria-disabled': isDisabled || undefined,
+          'aria-expanded': isItemCollapsible ? !isItemCollapsed : undefined,
+          'aria-controls': isItemCollapsible ? `${id}-children` : undefined,
+        };
+
     itemElement = (
       <div data-testid={testId} {...rowProps}>
         <NavItemElement
@@ -640,31 +687,34 @@ export function SideNavItem({
           isDisabled={isDisabled}
           onClick={handleClick}
           {...rest}
-          aria-current={isSelected ? ('page' as const) : undefined}
+          {...rowPrimaryAriaProps}
           {...focusOutlineProps.focusVisible(styles.splitAction)}>
           {itemContent}
         </NavItemElement>
-        <button
-          type="button"
-          onClick={handleToggleClick}
-          aria-label={
-            isItemCollapsed
-              ? t('@astryx.sideNavItem.expand', {label})
-              : t('@astryx.sideNavItem.collapse', {label})
-          }
-          aria-expanded={!isItemCollapsed}
-          aria-controls={`${id}-children`}
-          {...focusOutlineProps.focusVisible(styles.expandToggle)}>
-          <Icon
-            icon="chevronDown"
-            size="lg"
-            color="inherit"
-            xstyle={[
-              styles.expandChevron,
-              !isItemCollapsed && styles.expandChevronExpanded,
-            ]}
-          />
-        </button>
+        {hasIndependentToggle && (
+          <button
+            type="button"
+            onClick={handleToggleClick}
+            aria-label={
+              isItemCollapsed
+                ? t('@astryx.sideNavItem.expand', {label})
+                : t('@astryx.sideNavItem.collapse', {label})
+            }
+            aria-expanded={!isItemCollapsed}
+            aria-controls={`${id}-children`}
+            {...focusOutlineProps.focusVisible(styles.expandToggle)}>
+            <Icon
+              icon="chevronDown"
+              size="lg"
+              color="inherit"
+              xstyle={[
+                styles.expandChevron,
+                !isItemCollapsed && styles.expandChevronExpanded,
+              ]}
+            />
+          </button>
+        )}
+        {hasActions && <span {...stylex.props(styles.actions)}>{actions}</span>}
       </div>
     );
   } else {

@@ -73,6 +73,18 @@ export const docs = {
       ],
     },
     {
+      name: 'actions',
+      type: 'ReactNode',
+      description:
+        'Row-level secondary controls (icon buttons, menus) rendered as siblings of the primary element at the trailing edge of the row — after the expand/collapse toggle, before any nested children in DOM and focus order. Each control owns its accessible name and behavior. Hidden while the SideNav rail is collapsed. Use endContent for passive content (badges, counts); use actions for anything interactive.',
+      slotElements: [
+        {
+          __element: 'Button',
+          props: {label: 'Rename', variant: 'ghost', size: 'sm'},
+        },
+      ],
+    },
+    {
       name: 'children',
       type: 'ReactNode',
       description: 'Sub-items for nesting.',
@@ -155,6 +167,12 @@ export const docsZh = {
       description: '右侧内容，如徽章或计数。',
     },
     {
+      name: 'actions',
+      type: 'ReactNode',
+      description:
+        '行级次要控件（图标按钮、菜单），作为主元素的同级节点渲染在行尾——位于展开/折叠切换按钮之后、任何嵌套子项之前（DOM 与焦点顺序一致）。每个控件自行负责其无障碍名称与行为。侧边栏折叠为图标栏时隐藏。被动内容（徽章、计数）请使用 endContent；交互内容请使用 actions。',
+    },
+    {
       name: 'children',
       type: 'ReactNode',
       description: '用于嵌套的子项。',
@@ -189,6 +207,8 @@ export const docsDense = {
     href: 'Navigation URL.',
     onClick: 'Click handler.',
     endContent: 'Right-side content such as badges or counts.',
+    actions:
+      'Row-level secondary controls (icon buttons, menus) rendered as siblings of the primary element, after the expand/collapse toggle and before nested children in DOM/focus order. Hidden when rail collapsed. Passive content goes in endContent; interactive content goes here.',
     children: 'Sub-items for nesting.',
     collapsible: 'Enables collapse for items w/ children. true=uncontrolled, object=controlled mode.',
     size: "Row size variant: 'sm' | 'md' | 'lg'.",
