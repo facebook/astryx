@@ -28,6 +28,7 @@ import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {defineTheme} from '../theme/defineTheme';
 import {Theme} from '../theme/Theme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
+import {spacingVars} from '../theme/tokens.stylex';
 
 function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
   const {prose, component} = generateThemeCSS(theme);
@@ -378,7 +379,7 @@ describe('Selector', () => {
     );
   });
 
-  it('clamps the default selected-item overlay to the viewport', async () => {
+  it('clamps the selected-item overlay to the viewport (hasSelectedItemOverlay)', async () => {
     const restoreRects = mockSelectorRects();
     const user = userEvent.setup();
     try {
@@ -388,18 +389,24 @@ describe('Selector', () => {
           options={OPTIONS}
           value="Banana"
           onChange={() => {}}
+          hasSelectedItemOverlay
         />,
       );
 
       await user.click(screen.getByRole('combobox'));
       const popover = screen
         .getByRole('listbox', {hidden: true})
-        .closest('[popover]');
+        .closest('[popover]') as HTMLElement;
       await waitFor(() => {
         expect(popover?.getAttribute('style')).toContain(
           'margin-block-start: -110px',
         );
       });
+      // Overlay mode owns its geometry through the measured margin; the
+      // standard layer clearance must stay off or it would offset the
+      // opposite block edge asymmetrically.
+      expect(popover.style.getPropertyValue('--x-marginBlockStart')).toBe('');
+      expect(popover.style.getPropertyValue('--x-marginBlockEnd')).toBe('');
     } finally {
       restoreRects();
     }
@@ -430,6 +437,7 @@ describe('Selector', () => {
           options={OPTIONS}
           value="Banana"
           onChange={() => {}}
+          hasSelectedItemOverlay
         />,
       );
 
@@ -480,10 +488,79 @@ describe('Selector', () => {
     expect(inputDropdownClass).not.toBe(ghostDropdownClass);
   });
 
-  it('does not apply selected-item overlay offset when placement is explicit', async () => {
+  it('explicit placement wins over hasSelectedItemOverlay', async () => {
     const restoreRects = mockSelectorRects();
     const user = userEvent.setup();
     try {
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Banana"
+          onChange={() => {}}
+          placement="above"
+          hasSelectedItemOverlay
+        />,
+      );
+
+      await user.click(screen.getByRole('combobox'));
+      const popover = screen
+        .getByRole('listbox', {hidden: true})
+        .closest('[popover]');
+      await waitFor(() => {
+        expect(popover?.getAttribute('style')).not.toContain(
+          'margin-block-start: -',
+        );
+      });
+    } finally {
+      restoreRects();
+    }
+  });
+
+  describe('default placement (#4227)', () => {
+    it('opens below the trigger with the standard menu clearance by default', async () => {
+      const restoreRects = mockSelectorRects();
+      const user = userEvent.setup();
+      try {
+        render(
+          <Selector
+            label="Fruit"
+            options={OPTIONS}
+            value="Banana"
+            onChange={() => {}}
+          />,
+        );
+
+        await user.click(screen.getByRole('combobox'));
+        const popover = screen
+          .getByRole('listbox', {hidden: true})
+          .closest('[popover]') as HTMLElement;
+        // DropdownMenu's clearance on both block edges, so the gap survives
+        // a position-try-fallbacks flip to above (#4803).
+        await waitFor(() => {
+          expect(popover.style.getPropertyValue('--x-marginBlockStart')).toBe(
+            spacingVars['--spacing-1'],
+          );
+        });
+        expect(popover.style.getPropertyValue('--x-marginBlockEnd')).toBe(
+          spacingVars['--spacing-1'],
+        );
+        // Standard below positioning, same recipe as DropdownMenu,
+        // MultiSelector, and ComplexSelector.
+        expect(popover.getAttribute('style')).toContain(
+          'position-area: self-block-end span-self-inline-end',
+        );
+        // No selected-item overlay pulling the menu up over the trigger.
+        expect(popover.getAttribute('style')).not.toContain(
+          'margin-block-start: -',
+        );
+      } finally {
+        restoreRects();
+      }
+    });
+
+    it('applies the standard clearance to explicit placements', async () => {
+      const user = userEvent.setup();
       render(
         <Selector
           label="Fruit"
@@ -497,15 +574,44 @@ describe('Selector', () => {
       await user.click(screen.getByRole('combobox'));
       const popover = screen
         .getByRole('listbox', {hidden: true})
-        .closest('[popover]');
+        .closest('[popover]') as HTMLElement;
       await waitFor(() => {
-        expect(popover?.getAttribute('style')).not.toContain(
-          'margin-block-start',
+        expect(popover.style.getPropertyValue('--x-marginBlockStart')).toBe(
+          spacingVars['--spacing-1'],
         );
       });
-    } finally {
-      restoreRects();
-    }
+      expect(popover.style.getPropertyValue('--x-marginBlockEnd')).toBe(
+        spacingVars['--spacing-1'],
+      );
+    });
+
+    it('search mode gets the clearance and never overlays, even with hasSelectedItemOverlay', async () => {
+      const user = userEvent.setup();
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Banana"
+          onChange={() => {}}
+          hasSearch
+          hasSelectedItemOverlay
+        />,
+      );
+
+      // In hasSearch mode the trigger is a plain button, not a combobox.
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      const popover = screen
+        .getByRole('listbox', {hidden: true})
+        .closest('[popover]') as HTMLElement;
+      await waitFor(() => {
+        expect(popover.style.getPropertyValue('--x-marginBlockStart')).toBe(
+          spacingVars['--spacing-1'],
+        );
+      });
+      expect(popover.getAttribute('style')).not.toContain(
+        'margin-block-start: -',
+      );
+    });
   });
 
   describe('hasClear', () => {

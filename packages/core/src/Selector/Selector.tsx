@@ -531,14 +531,21 @@ interface SelectorPropsBase<
   searchPlaceholder?: string;
 
   /**
-   * Position placement relative to the trigger.
-   *
-   * Omit to use the selector's default selected-item overlay behavior: the
-   * selected item is positioned over the trigger and clamped to the viewport.
-   * Set a placement to opt into explicit layer positioning (for example,
+   * Position placement relative to the trigger (for example,
    * `placement="above"` for bottom-fixed toolbars).
+   * @default 'below'
    */
   placement?: LayerPlacement;
+
+  /**
+   * Whether to overlay the open menu on the trigger so the selected option
+   * sits directly over it, like a native macOS select. The menu is pulled up
+   * by a measured offset and clamped to the viewport. Only applies with
+   * placement below (the default); an explicit non-below placement or
+   * hasSearch uses standard layer positioning instead.
+   * @default false
+   */
+  hasSelectedItemOverlay?: boolean;
 
   /**
    * Whether the dropdown starts open on mount.
@@ -671,6 +678,7 @@ export function Selector<T extends SelectorOptionType>(
     hasSearch = false,
     searchPlaceholder: searchPlaceholderFromProps,
     placement,
+    hasSelectedItemOverlay = false,
     isDefaultOpen = false,
     'data-testid': testId,
     width,
@@ -829,10 +837,14 @@ export function Selector<T extends SelectorOptionType>(
     [announce, selectableItems],
   );
 
-  // Calculate offset to position selected item over trigger. Explicit
-  // placement opts out of the selector-specific overlay behavior and uses the
-  // standard layer positioning API instead.
-  const shouldOverlaySelectedItem = placement == null && !hasSearch;
+  // Calculate offset to position selected item over trigger. The overlay is
+  // opt-in (hasSelectedItemOverlay) and rides on below placement — an
+  // explicit non-below placement or search mode uses the standard layer
+  // positioning API instead.
+  const shouldOverlaySelectedItem =
+    hasSelectedItemOverlay &&
+    !hasSearch &&
+    (placement == null || placement === 'below');
   const {offset: rawOffset, isPositioned: rawIsPositioned} =
     useSelectedItemOffset({
       isOpen: popover.isOpen && shouldOverlaySelectedItem,
@@ -1412,6 +1424,12 @@ export function Selector<T extends SelectorOptionType>(
         {
           placement: popoverPlacement,
           alignment: 'start',
+          // Standard menu clearance (the DropdownMenu/MultiSelector recipe),
+          // except in overlay mode: there the measured negative margin owns
+          // the block geometry and must stay flush against the anchor.
+          offset: shouldOverlaySelectedItem
+            ? undefined
+            : spacingVars['--spacing-1'],
           xstyle: [styles.popover, layerAnimations[popoverPlacement]],
           style: popoverOffsetStyle,
         },

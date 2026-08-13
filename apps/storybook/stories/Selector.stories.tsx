@@ -62,7 +62,12 @@ const meta: Meta<typeof Selector> = {
       control: 'select',
       options: ['above', 'below', 'start', 'end'],
       description:
-        'Explicit menu placement. Leave unset for selected-item overlay behavior.',
+        'Menu placement relative to the trigger. Defaults to below with the standard clearance.',
+    },
+    hasSelectedItemOverlay: {
+      control: 'boolean',
+      description:
+        'Native-select-style overlay: the open menu is pulled up so the selected option sits over the trigger. Only applies with placement below (the default).',
     },
     isDisabled: {
       control: 'boolean',
@@ -741,6 +746,29 @@ export const PlacementAbove: Story = {
         value={value}
         onChange={v => setValue(v)}
         placement="above"
+      />
+    );
+  },
+};
+
+export const SelectedItemOverlay: Story = {
+  render: args => {
+    const {
+      value: argsValue,
+      onChange: _onChange,
+      changeAction: _changeAction,
+      hasClear: _hc,
+      ...rest
+    } = args;
+    const [value, setValue] = useState(argsValue ?? 'Banana');
+    return (
+      <Selector
+        {...rest}
+        label="Native-select overlay"
+        options={['Apple', 'Banana', 'Cherry', 'Date']}
+        value={value}
+        onChange={v => setValue(v)}
+        hasSelectedItemOverlay
       />
     );
   },

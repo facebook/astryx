@@ -57,9 +57,9 @@ interface UseSelectedItemOffsetResult {
  *
  * The desired dropdown top is calculated directly from the anchor center and
  * selected-item center, then clamped to the viewport. This preserves the
- * default "selected item over trigger" behavior while letting the menu slide
- * upward near the bottom edge or downward near the top edge instead of being
- * clipped off-screen.
+ * opt-in "selected item over trigger" behavior (hasSelectedItemOverlay) while
+ * letting the menu slide upward near the bottom edge or downward near the top
+ * edge instead of being clipped off-screen.
  */
 export function useSelectedItemOffset({
   isOpen,

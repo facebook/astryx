@@ -28,7 +28,10 @@ export const docs = {
       },
       {className: 'astryx-selector-option'},
       {className: 'astryx-selector-empty-state'},
-      {className: 'astryx-selector-clear-icon', deprecatedFor: 'input-clear-icon'},
+      {
+        className: 'astryx-selector-clear-icon',
+        deprecatedFor: 'input-clear-icon',
+      },
       {className: 'astryx-selector-indicator-icon', states: ['state']},
       {className: 'astryx-selector-check'},
     ],
@@ -77,6 +80,20 @@ export const docs = {
       type: 'string',
       description: 'Placeholder text for the search input.',
       default: "'Search...'",
+    },
+    {
+      name: 'placement',
+      type: "'above' | 'below' | 'start' | 'end'",
+      description:
+        'Menu placement relative to the trigger (e.g. above for bottom-fixed toolbars). The menu opens below with the standard clearance by default, like DropdownMenu.',
+      default: "'below'",
+    },
+    {
+      name: 'hasSelectedItemOverlay',
+      type: 'boolean',
+      description:
+        'Overlays the open menu on the trigger so the selected option sits directly over it, like a native macOS select; the menu is pulled up by a measured offset and clamped to the viewport. Only applies with placement below (the default); an explicit non-below placement or hasSearch uses standard layer positioning instead.',
+      default: 'false',
     },
     {
       name: 'placeholder',
