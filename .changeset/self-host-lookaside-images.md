@@ -2,7 +2,7 @@
 '@astryxdesign/cli': patch
 ---
 
-[chore] Self-host template demo imagery in the repo instead of streaming it
+[chore] Self-host template demo imagery in the repo instead of streaming it (#3973)
 from the internal `lookaside.facebook.com` CDN.
 
 - Template demo images are now committed under

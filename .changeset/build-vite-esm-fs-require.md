@@ -2,7 +2,7 @@
 '@astryxdesign/build': patch
 ---
 
-[fix] build: import `node:fs` statically so the Vite plugin's package discovery survives the ESM build
+[fix] build: import `node:fs` statically so the Vite plugin's package discovery survives the ESM build (#4972)
 
 `astryxStylex()`'s config plugin discovered installed `@astryxdesign/*` packages with `require('node:fs')`. The `./vite` export ships only an ESM bundle (`dist/vite.mjs`, esbuild `format: 'esm'`), where esbuild lowers `require` to a shim that throws `Dynamic require of "node:fs" is not supported` — always, since native `require` never exists under ESM. The surrounding `try/catch` swallowed the throw, so `optimizeDeps.exclude` silently fell back to `['@astryxdesign/core']` and every other installed Astryx package stayed eligible for Vite pre-bundling, which strips `stylex.create`/`defineVars` calls and causes runtime errors.
 
