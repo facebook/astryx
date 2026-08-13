@@ -34,6 +34,7 @@ import {
   easeVars,
   typographyVars,
   typeScaleVars,
+  focusVars,
 } from '../theme/tokens.stylex';
 import {Field} from '../Field/Field';
 import {Tooltip} from '../Tooltip/Tooltip';
@@ -256,11 +257,11 @@ const styles = stylex.create({
   thumbFocusVisible: {
     outline: {
       default: 'none',
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
+      ':focus-visible': `${focusVars['--focus-outline-width']} ${focusVars['--focus-outline-style']} ${focusVars['--focus-outline-color']}`,
     },
     outlineOffset: {
       default: '0',
-      ':focus-visible': '2px',
+      ':focus-visible': focusVars['--focus-outline-offset'],
     },
   },
   thumbDisabled: {

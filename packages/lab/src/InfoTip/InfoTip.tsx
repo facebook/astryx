@@ -25,6 +25,7 @@ import {
   easeVars,
   radiusVars,
   spacingVars,
+  focusVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
 
 /**
@@ -72,11 +73,11 @@ const styles = stylex.create({
     },
     outline: {
       default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
+      ':focus-visible': `${focusVars['--focus-outline-width']} ${focusVars['--focus-outline-style']} ${focusVars['--focus-outline-color']}`,
     },
     outlineOffset: {
       default: '0',
-      ':focus-visible': '2px',
+      ':focus-visible': focusVars['--focus-outline-offset'],
     },
     transitionProperty: 'color',
     transitionDuration: durationVars['--duration-fast'],

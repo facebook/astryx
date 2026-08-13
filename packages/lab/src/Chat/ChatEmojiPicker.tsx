@@ -32,6 +32,7 @@ import {
   easeVars,
   typographyVars,
   typeScaleVars,
+  focusVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
 import type {BaseProps} from '@astryxdesign/core';
 import {mergeProps} from '@astryxdesign/core/utils';
@@ -150,7 +151,7 @@ const styles = stylex.create({
     lineHeight: typeScaleVars['--text-body-leading'],
     outline: {
       default: 'none',
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
+      ':focus-visible': `${focusVars['--focus-outline-width']} ${focusVars['--focus-outline-style']} ${focusVars['--focus-outline-color']}`,
     },
     outlineOffset: -2,
     transitionProperty: 'background-color',

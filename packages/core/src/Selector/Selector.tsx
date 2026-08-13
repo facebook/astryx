@@ -59,6 +59,7 @@ import {
   fontWeightVars,
   typeScaleVars,
   borderVars,
+  focusVars,
 } from '../theme/tokens.stylex';
 import type {SelectorOptionType, SelectorOptionData} from './types';
 import {
@@ -181,11 +182,11 @@ const styles = stylex.create({
     fontWeight: fontWeightVars['--font-weight-medium'],
     outline: {
       default: 'none',
-      ':has(:focus-visible)': `2px solid ${colorVars['--color-accent']}`,
+      ':has(:focus-visible)': `${focusVars['--focus-outline-width']} ${focusVars['--focus-outline-style']} ${focusVars['--focus-outline-color']}`,
     },
     outlineOffset: {
       default: '0',
-      ':has(:focus-visible)': '3px',
+      ':has(:focus-visible)': focusVars['--focus-outline-offset'],
     },
     transitionProperty:
       'background-image, background-color, color, opacity, transform',

@@ -33,6 +33,7 @@ import {
   easeVars,
   typographyVars,
   typeScaleVars,
+  focusVars,
 } from '../theme/tokens.stylex';
 import {FieldLabel} from '../Field/FieldLabel';
 import {FieldStatus} from '../FieldStatus/FieldStatus';
@@ -193,11 +194,12 @@ const styles = stylex.create({
     outline: {
       default: 'none',
       [stylex.when.ancestor(':has(:focus-visible)', switchScope)]:
-        `2px solid ${colorVars['--color-accent']}`,
+        `${focusVars['--focus-outline-width']} ${focusVars['--focus-outline-style']} ${focusVars['--focus-outline-color']}`,
     },
     outlineOffset: {
       default: null,
-      [stylex.when.ancestor(':has(:focus-visible)', switchScope)]: '2px',
+      [stylex.when.ancestor(':has(:focus-visible)', switchScope)]:
+        focusVars['--focus-outline-offset'],
     },
   },
   // State-dependent colors with ancestor hover behavior

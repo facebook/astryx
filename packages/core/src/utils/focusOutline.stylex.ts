@@ -10,25 +10,19 @@
  * Every focusable surface drew the same 2px accent ring at 2px offset already;
  * writing it per component meant five identical definitions to keep in step.
  *
- * These are utility styles, deliberately NOT a theme target. A shared
- * `astryx-focus-outline` class was tried and pulled: a theme can only override
- * the ring unconditionally through it (`generateThemeRules` mangles
- * `:focus-visible` into `.focus-visible` and truncates `:has(:focus-visible)`
- * at the paren), so the one thing such a target exists for — restyling a
- * STATE — is exactly what it cannot express. Making focus outlines themeable
- * is worth doing on top of this consolidation, once that is fixed.
+ * Every value comes from the `--focus-outline-*` tokens, which is how a theme
+ * restyles the ring: one override reaches all 26 components at once. The
+ * `:focus-visible` condition is not themeable and stays here, so a theme can
+ * change what the ring looks like but cannot show it to pointer users.
  */
 
 import * as stylex from '@stylexjs/stylex';
-import {colorVars} from '../theme/tokens.stylex';
+import {focusVars} from '../theme/tokens.stylex';
 
-const FOCUS_OUTLINE_WIDTH = '2px';
-// 3px, per Design Conventions §User Interaction States: "2px --color-accent
-// outline at 3px offset". Most components had drifted to 2px; Button, Calendar,
-// Dialog and Pagination were the ones matching the spec, so the consolidation
-// takes their value rather than the majority's.
-const FOCUS_OUTLINE_OFFSET = '3px';
-const FOCUS_OUTLINE_COLOR = colorVars['--color-accent'];
+const FOCUS_OUTLINE_WIDTH = focusVars['--focus-outline-width'];
+const FOCUS_OUTLINE_STYLE = focusVars['--focus-outline-style'];
+const FOCUS_OUTLINE_COLOR = focusVars['--focus-outline-color'];
+const FOCUS_OUTLINE_OFFSET = focusVars['--focus-outline-offset'];
 
 /**
  * Written as longhands rather than the `outline` shorthand.
@@ -40,7 +34,7 @@ const FOCUS_OUTLINE_COLOR = colorVars['--color-accent'];
  */
 const focusOutlineLonghands = {
   outlineWidth: FOCUS_OUTLINE_WIDTH,
-  outlineStyle: 'solid',
+  outlineStyle: FOCUS_OUTLINE_STYLE,
   outlineColor: FOCUS_OUTLINE_COLOR,
 } as const;
 
@@ -53,8 +47,8 @@ const focusOutlineLonghands = {
  * Longhands, not the `outline` shorthand, for the same reason the styles are:
  * a shorthand resets every longhand it covers, so a caller could not re-color
  * the ring without restating its width and style. Split, each part is
- * independently overridable — and `--color-accent` stays a var, so a theme's
- * accent still flows through.
+ * independently overridable — and every part stays a var, so a theme's
+ * `--focus-outline-*` overrides still flow through.
  *
  * Keys are camelCase to match `HTMLElement.style`, so this spreads straight
  * onto an element:
@@ -66,7 +60,7 @@ const focusOutlineLonghands = {
  */
 export const FOCUS_OUTLINE_PARTS = {
   outlineWidth: FOCUS_OUTLINE_WIDTH,
-  outlineStyle: 'solid',
+  outlineStyle: FOCUS_OUTLINE_STYLE,
   outlineColor: FOCUS_OUTLINE_COLOR,
   outlineOffset: FOCUS_OUTLINE_OFFSET,
 } as const;
@@ -113,7 +107,7 @@ export const focusOutlineStyles = stylex.create({
   publishFocusVisibleVars: {
     '--_focus-outline': {
       default: 'none',
-      ':focus-visible': `${FOCUS_OUTLINE_WIDTH} solid ${FOCUS_OUTLINE_COLOR}`,
+      ':focus-visible': `${FOCUS_OUTLINE_WIDTH} ${FOCUS_OUTLINE_STYLE} ${FOCUS_OUTLINE_COLOR}`,
     },
     '--_focus-outline-offset': {
       default: '0',
@@ -123,7 +117,7 @@ export const focusOutlineStyles = stylex.create({
   focusWithinOrPublished: {
     outline: {
       default: 'var(--_focus-outline, none)',
-      ':has(:focus-visible)': `${FOCUS_OUTLINE_WIDTH} solid ${FOCUS_OUTLINE_COLOR}`,
+      ':has(:focus-visible)': `${FOCUS_OUTLINE_WIDTH} ${FOCUS_OUTLINE_STYLE} ${FOCUS_OUTLINE_COLOR}`,
     },
     outlineOffset: {
       default: 'var(--_focus-outline-offset, 0)',

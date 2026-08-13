@@ -43,6 +43,7 @@ import {
   colorVars,
   spacingVars,
   typeScaleVars,
+  focusVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
 import {mergeProps, mergeRefs, themeProps} from '@astryxdesign/core/utils';
 import {reorderStyles} from '../reorderStyles';
@@ -236,7 +237,7 @@ const styles = stylex.create({
     overflow: 'hidden',
     outline: {
       default: 'none',
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
+      ':focus-visible': `${focusVars['--focus-outline-width']} ${focusVars['--focus-outline-style']} ${focusVars['--focus-outline-color']}`,
     },
     outlineOffset: -2,
   },

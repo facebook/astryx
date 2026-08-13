@@ -40,7 +40,7 @@ import type {FieldStatusVariant} from '../FieldStatus/FieldStatus';
 import type {InputStatus, InputStatusType} from '../Field/types';
 import {useTooltip} from '../Tooltip';
 import {useTranslator} from '../i18n';
-import {colorVars, radiusVars} from '../theme/tokens.stylex';
+import {colorVars, radiusVars, focusVars} from '../theme/tokens.stylex';
 import {themeProps} from '../utils/themeProps';
 
 /**
@@ -82,13 +82,22 @@ const styles = stylex.create({
     color: 'inherit',
     cursor: 'pointer',
     borderRadius: radiusVars['--radius-full'],
-    outlineWidth: {default: null, ':focus-visible': '2px'},
-    outlineStyle: {default: null, ':focus-visible': 'solid'},
+    outlineWidth: {
+      default: null,
+      ':focus-visible': focusVars['--focus-outline-width'],
+    },
+    outlineStyle: {
+      default: null,
+      ':focus-visible': focusVars['--focus-outline-style'],
+    },
     outlineColor: {
       default: null,
-      ':focus-visible': colorVars['--color-accent'],
+      ':focus-visible': focusVars['--focus-outline-color'],
     },
-    outlineOffset: {default: null, ':focus-visible': '2px'},
+    outlineOffset: {
+      default: null,
+      ':focus-visible': focusVars['--focus-outline-offset'],
+    },
   },
 });
 

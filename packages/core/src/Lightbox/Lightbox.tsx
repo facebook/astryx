@@ -26,7 +26,12 @@ import {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {colorVars, spacingVars, typeScaleVars} from '../theme/tokens.stylex';
+import {
+  colorVars,
+  spacingVars,
+  typeScaleVars,
+  focusVars,
+} from '../theme/tokens.stylex';
 import {Icon} from '../Icon';
 import {IconButton} from '../IconButton';
 import {useAnnounce} from '../hooks/useAnnounce';
@@ -161,11 +166,11 @@ const styles = stylex.create({
   zoomTarget: {
     outline: {
       default: 'none',
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
+      ':focus-visible': `${focusVars['--focus-outline-width']} ${focusVars['--focus-outline-style']} ${focusVars['--focus-outline-color']}`,
     },
     outlineOffset: {
       default: '0',
-      ':focus-visible': '2px',
+      ':focus-visible': focusVars['--focus-outline-offset'],
     },
   },
   imageWrapperZoomed: {

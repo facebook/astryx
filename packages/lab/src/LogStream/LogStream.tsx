@@ -45,6 +45,7 @@ import {
   spacingVars,
   textSizeVars,
   typographyVars,
+  focusVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
 
 /** Severity of one log entry. */
@@ -290,9 +291,9 @@ const styles = stylex.create({
     boxShadow: shadowVars['--shadow-med'],
     outline: {
       default: 'none',
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
+      ':focus-visible': `${focusVars['--focus-outline-width']} ${focusVars['--focus-outline-style']} ${focusVars['--focus-outline-color']}`,
     },
-    outlineOffset: 2,
+    outlineOffset: focusVars['--focus-outline-offset'],
   },
   jumpToLatestTerminal: {
     borderColor: TERM.border,
