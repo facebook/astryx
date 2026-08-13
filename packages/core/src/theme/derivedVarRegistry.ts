@@ -53,6 +53,30 @@ export const derivedVarRegistry: Record<string, DerivedVarEntry[]> = {
     {property: 'borderRadius', vars: ['--_chat-composer-radius']},
     {property: 'padding', vars: ['--_chat-composer-padding']},
   ],
+  'codeblock-header': [
+    {
+      property: 'paddingInline',
+      vars: ['--_codeblock-header-padding-inline'],
+      replaces: true,
+    },
+    {
+      property: 'paddingBlock',
+      vars: ['--_codeblock-header-padding-block'],
+      replaces: true,
+    },
+  ],
+  'codeblock-title': [
+    {
+      property: 'fontSize',
+      vars: ['--_codeblock-title-font-size'],
+      replaces: true,
+    },
+    {
+      property: 'lineHeight',
+      vars: ['--_codeblock-title-line-height'],
+      replaces: true,
+    },
+  ],
   dialog: [
     {property: 'borderRadius', vars: ['--_dialog-radius']},
     {property: 'padding', expand: 'container'},

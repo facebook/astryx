@@ -146,6 +146,18 @@ export const docs = {
       {className: 'astryx-codeblock-title', visualProps: ['size', 'language']},
       {className: 'astryx-codeblock-copy-button'},
     ],
+    vars: [
+      {name: '--_codeblock-header-padding-inline', description: 'Header row inline padding', default: 'var(--spacing-4)', private: true},
+      {name: '--_codeblock-header-padding-block', description: 'Header row block padding', default: 'var(--spacing-2)', private: true},
+      {name: '--_codeblock-title-font-size', description: 'Header title/language-label font size', default: 'var(--text-supporting-size)', private: true},
+      {name: '--_codeblock-title-line-height', description: 'Header title/language-label line height', default: 'var(--text-supporting-leading)', private: true},
+    ],
+    derived: [
+      {property: 'paddingInline', vars: ['--_codeblock-header-padding-inline'], replaces: true},
+      {property: 'paddingBlock', vars: ['--_codeblock-header-padding-block'], replaces: true},
+      {property: 'fontSize', vars: ['--_codeblock-title-font-size'], replaces: true},
+      {property: 'lineHeight', vars: ['--_codeblock-title-line-height'], replaces: true},
+    ],
   },
   usage: {
     description: 'CodeBlock renders syntax-highlighted code with line numbers, a copy button, and optional collapsible sections. Use CodeBlock for multi-line snippets like source files, terminal commands, and configuration examples. Use Code for inline references to function names, variables, or CLI flags within body text.',

@@ -394,5 +394,46 @@ describe('CodeBlock', () => {
       expect(css).toContain('.astryx-codeblock-header');
       expect(css).toContain('.astryx-codeblock-title');
     });
+
+    it('emits header padding and title type through derived vars, not competing properties', () => {
+      // The header padding and title font-size/line-height are read through
+      // `--_codeblock-*` derived vars (replaces: true), so a theme sets those
+      // vars instead of a raw `padding`/`font-size` declaration that would
+      // compete with the component's own StyleX atomic and lose the cascade
+      // depending on how the consumer compiles.
+      const theme = defineTheme({
+        name: 'codeblock-derived-test',
+        components: {
+          'codeblock-header': {
+            base: {
+              paddingInline: '12px',
+              paddingBlock: '6px',
+            },
+          },
+          'codeblock-title': {
+            base: {
+              fontSize: 'var(--text-body-size)',
+              lineHeight: 'var(--text-body-leading)',
+            },
+          },
+        },
+      });
+      const css = generateThemeTestCSS(theme);
+      // The derived vars are set …
+      expect(css).toContain('--_codeblock-header-padding-inline: 12px');
+      expect(css).toContain('--_codeblock-header-padding-block: 6px');
+      expect(css).toContain(
+        '--_codeblock-title-font-size: var(--text-body-size)',
+      );
+      expect(css).toContain(
+        '--_codeblock-title-line-height: var(--text-body-leading)',
+      );
+      // … and the raw competing declarations are NOT emitted for these props
+      // on the header/title targets (replaces: true drops them).
+      expect(css).not.toMatch(
+        /\.astryx-codeblock-header\b[^}]*[^-]padding-inline:/,
+      );
+      expect(css).not.toMatch(/\.astryx-codeblock-title\b[^}]*[^-]font-size:/);
+    });
   });
 });

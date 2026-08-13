@@ -121,7 +121,11 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingInline: spacingVars['--spacing-4'],
+    // Read through a derived var (default = --spacing-4) so the
+    // `codeblock-header` theme target can set the inline padding without its
+    // value competing with this atomic in the cascade — see the theming.derived
+    // entry in CodeBlock.doc.mjs.
+    paddingInline: `var(--_codeblock-header-padding-inline, ${spacingVars['--spacing-4']})`,
     backgroundColor: 'var(--color-syntax-background)',
     position: 'sticky',
     top: 0,
@@ -141,23 +145,23 @@ const styles = stylex.create({
     textAlign: 'start',
   },
   headerWithDivider: {
-    paddingBlock: spacingVars['--spacing-2'],
+    paddingBlock: `var(--_codeblock-header-padding-block, ${spacingVars['--spacing-2']})`,
     borderBottomWidth: borderVars['--border-width'],
     borderBottomStyle: 'solid',
     borderBottomColor: colorVars['--color-border'],
   },
   headerCompact: {
-    paddingBlock: spacingVars['--spacing-2'],
+    paddingBlock: `var(--_codeblock-header-padding-block, ${spacingVars['--spacing-2']})`,
   },
   headerTitle: {
     display: 'flex',
     alignItems: 'center',
-    fontSize: typeScaleVars['--text-supporting-size'],
+    fontSize: `var(--_codeblock-title-font-size, ${typeScaleVars['--text-supporting-size']})`,
     fontFamily: typographyVars['--font-family-code'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     color: 'var(--color-syntax-comment)',
     margin: 0,
-    lineHeight: typeScaleVars['--text-supporting-leading'],
+    lineHeight: `var(--_codeblock-title-line-height, ${typeScaleVars['--text-supporting-leading']})`,
   },
   scrollContainer: {
     overflowX: 'auto',
