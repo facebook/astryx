@@ -50,6 +50,7 @@ import {devWarn} from '../utils/devWarning';
 import {DialogContext} from './DialogContext';
 import {themeProps} from '../utils/themeProps';
 import type {DialogVariantMap} from './index';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 
 /**
  * Calculate a directional translate offset for dialog entry animation.
@@ -137,14 +138,6 @@ const styles = stylex.create({
     animationDuration: durationVars['--duration-medium-max'],
     animationTimingFunction: easeVars['--ease-standard'],
     animationFillMode: 'backwards' as const,
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': '2px',
-    },
   },
   // Applied via isOpen prop — avoids :where([open]) attribute selectors
   // which have zero specificity and can lose to default styles depending
@@ -640,7 +633,7 @@ export function Dialog({
       {...safeProps}
       {...mergeProps(
         themeProps('dialog', {variant}),
-        stylex.props(
+        focusOutlineProps.focusVisible(
           styles.dialog,
           isOpen && styles.open,
           styles.backdrop,

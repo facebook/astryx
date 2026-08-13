@@ -26,8 +26,9 @@
 #                         most component styling here is an inline stylex.create
 #                         edit in a .tsx, which no path pattern can see.
 #
-# Either label DISABLES auto-merge so the PR can't merge unattended, and is
-# cleared when an entitled owner approves (code → CODEOWNER; design → DESIGNOWNER
+# The CODE label DISABLES auto-merge so the PR can't merge unattended (the
+# design label is advisory and does not). Both are cleared when an entitled
+# owner approves (code → CODEOWNER; design → DESIGNOWNER
 # or CODEOWNER). Code detection is path-based and deterministic; design adds a
 # content-based diff score (deterministic too — same diff, same score). The
 # Copilot reviewer reads these labels to focus its review (see

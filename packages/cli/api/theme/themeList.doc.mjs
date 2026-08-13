@@ -15,7 +15,7 @@ export const doc = {
   displayName: 'themeList()',
   summary: 'List the themes bundled with this CLI build.',
   description:
-    'Projects the bundled-theme manifest into the theme.list envelope — the themes that themeAdd ' +
+    'Projects the bundled-theme manifest into the theme.list envelope: the themes that themeAdd ' +
     'can scaffold. A pure projection of the manifest read by listThemes(); no I/O beyond that read, ' +
     'and it returns synchronously.',
   importPath: '@astryxdesign/cli/api',
@@ -26,7 +26,7 @@ export const doc = {
     {
       type: 'theme.list',
       description:
-        'Every bundled theme as a ThemeListEntry[] — each entry has slug, displayName, description, and a maintained flag.',
+        'Every bundled theme as a ThemeListEntry[]: each entry has slug, displayName, description, and a maintained flag.',
     },
   ],
   throws: [

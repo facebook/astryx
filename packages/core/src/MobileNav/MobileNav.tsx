@@ -453,9 +453,9 @@ export function MobileNav({
         {/* Header — content + close button */}
         <div {...stylex.props(styles.header, !header && styles.headerNoTitle)}>
           {typeof header === 'string' ? (
-            <span {...stylex.props(styles.headerText)}>
-              <Heading level={2}>{header}</Heading>
-            </span>
+            <Heading level={2} xstyle={styles.headerText}>
+              {header}
+            </Heading>
           ) : (
             (header ?? null)
           )}

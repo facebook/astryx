@@ -143,6 +143,13 @@ export const docs = {
       default: '1',
     },
     {
+      name: 'weekStartsOn',
+      type: "0 | 1 | 2 | 3 | 4 | 5 | 6 | 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat'",
+      description:
+        'First day of week in the calendar popover. A number (0 = Sunday to 6 = Saturday) or a three-letter day name.',
+      default: '0',
+    },
+    {
       name: 'format',
       type: "'date' | 'date_long' | 'date_weekday' | 'system_date' | ((value: ISODateString) => string)",
       description:
@@ -164,9 +171,9 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-date-input', visualProps: ['size', 'status']},
+      {className: 'astryx-date-input', visualProps: ['size', 'status'], states: ['disabled']},
       {className: 'astryx-date-input-toggle-icon', states: ['state']},
-      {className: 'astryx-date-input-clear-icon'},
+      {className: 'astryx-date-input-clear-icon', deprecatedFor: 'input-clear-icon'},
     ],
   },
   usage: {
@@ -418,6 +425,12 @@ export const docsZh = {
       default: '1',
     },
     {
+      name: 'weekStartsOn',
+      type: "0 | 1 | 2 | 3 | 4 | 5 | 6 | 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat'",
+      description: '日历弹出层中每周的起始日。可为数字（0=周日……6=周六）或三字母星期缩写。',
+      default: '0',
+    },
+    {
       name: 'format',
       type: "'date' | 'date_long' | 'date_weekday' | 'system_date' | ((value: ISODateString) => string)",
       description:
@@ -436,9 +449,10 @@ export const docsZh = {
       {
         className: 'astryx-date-input',
         visualProps: ['size', 'status'],
+        states: ['disabled'],
       },
       {className: 'astryx-date-input-toggle-icon', states: ['state']},
-      {className: 'astryx-date-input-clear-icon'},
+      {className: 'astryx-date-input-clear-icon', deprecatedFor: 'input-clear-icon'},
     ],
   },
 };
@@ -520,6 +534,7 @@ export const docsDense = {
     labelTooltip: 'tooltip text via info icon at label end',
     hasClear: 'Shows clear button when date is set. Clears value on click.',
     numberOfMonths: 'months shown simultaneously in calendar popover',
+    weekStartsOn: 'first day of week in calendar (0=Sunday, or name e.g. "mon")',
     format:
       "committed-value display: 'date_long' (default, March 21, 2026), 'date' (Mar 21, 2026), 'date_weekday' (Wed, Mar 21, 2026), 'system_date' (2026-03-21), or (iso)=>string; reuses Timestamp vocabulary. Committed value only, not while typing.",
     xstyle: 'StyleX styles for layout; must be stylex.create() value',

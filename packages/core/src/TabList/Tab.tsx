@@ -37,6 +37,7 @@ import type {LinkComponentType} from '../Link/types';
 import {mergeProps} from '../utils';
 import {EDGE_COMP_ATTR} from '../Layout/edgeCompensation.stylex';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 
 export interface TabProps extends BaseProps<HTMLButtonElement> {
   /**
@@ -106,14 +107,6 @@ const styles = stylex.create({
     transitionProperty: 'color',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': '2px',
-    },
   },
   hoverBg: {
     position: 'absolute',
@@ -274,7 +267,7 @@ export function Tab({
       themeProps('tab', {
         selected: isSelected ? 'selected' : null,
       }),
-      stylex.props(
+      focusOutlineProps.focusVisible(
         styles.base,
         sizeStyles[size],
         isSelected && styles.selected,

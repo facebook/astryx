@@ -16,7 +16,7 @@
  * - /packages/cli/assets/templates/blocks/components/Stepper/ (showcase blocks)
  */
 
-import {Children, useMemo, type ReactNode} from 'react';
+import {useMemo, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 
 import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
@@ -70,6 +70,16 @@ export interface StepperProps extends BaseProps<HTMLOListElement> {
    * @default 'separated'
    */
   indicatorPosition?: StepperIndicatorPosition;
+  /**
+   * Horizontal only. When the stepper gets too narrow to fit every label,
+   * collapse the labels of non-current steps so the track can shrink — only
+   * the current step keeps its visible label (the rest stay reachable via
+   * `aria-current` and the accessible names). Uses a container query, so it
+   * responds to the stepper's own width, not the viewport. No effect in the
+   * vertical orientation, where width is not the constraint.
+   * @default false
+   */
+  hasCollapsibleLabels?: boolean;
 }
 
 const styles = stylex.create({
@@ -100,6 +110,13 @@ const styles = stylex.create({
     flexDirection: 'column',
     gap: 0,
   },
+  // Establishes the stepper as an inline-size container so each step's label
+  // can collapse via a container query when the stepper (not the viewport) is
+  // too narrow. Named so the child @container rules target this element only.
+  labelCollapseContainer: {
+    containerType: 'inline-size',
+    containerName: 'astryx-stepper',
+  },
 });
 
 /**
@@ -107,9 +124,10 @@ const styles = stylex.create({
  * with visual indicators for completed, active, and upcoming states.
  *
  * Each Step child must provide a `step` prop (zero-based index) so it
- * can derive its state from the parent's activeStep. The parent supplies
- * the total `stepCount` via context so the on-track layout can hide the
- * trailing connector on the final step.
+ * can derive its state from the parent's activeStep. The on-track layout
+ * hides the leading connector on the first step and the trailing connector
+ * on the last step structurally, from each step's own `<li>` position, so
+ * it works regardless of how the steps are grouped.
  *
  * Rendered as an ordered list (`<ol>`/`<li>`) rather than a `nav`
  * landmark: a stepper communicates *progress through a sequence*, not a
@@ -135,13 +153,13 @@ export function Stepper({
   label = 'Progress',
   density = 'balanced',
   indicatorPosition = 'separated',
+  hasCollapsibleLabels = false,
   xstyle,
   className,
   style,
   ref,
   ...rest
 }: StepperProps) {
-  const stepCount = Children.count(children);
   const ctxValue = useMemo<StepperContextValue>(
     () => ({
       activeStep,
@@ -150,7 +168,7 @@ export function Stepper({
       onStepClick: onStepClick ?? null,
       density,
       indicatorPosition,
-      stepCount,
+      hasCollapsibleLabels,
     }),
     [
       activeStep,
@@ -158,7 +176,7 @@ export function Stepper({
       onStepClick,
       density,
       indicatorPosition,
-      stepCount,
+      hasCollapsibleLabels,
     ],
   );
 
@@ -172,6 +190,10 @@ export function Stepper({
         ? styles.verticalOnTrack
         : styles.vertical;
 
+  // Label collapse is a width constraint, so it only applies to the horizontal
+  // orientation; vertical steppers are never width-limited this way.
+  const isLabelCollapse = hasCollapsibleLabels && orientation === 'horizontal';
+
   return (
     <StepperContext value={ctxValue}>
       <ol
@@ -180,7 +202,12 @@ export function Stepper({
         {...rest}
         {...mergeProps(
           themeProps('stepper', {orientation, indicatorPosition}),
-          stylex.props(styles.root, orientationStyle, xstyle),
+          stylex.props(
+            styles.root,
+            orientationStyle,
+            isLabelCollapse && styles.labelCollapseContainer,
+            xstyle,
+          ),
           className,
           style,
         )}>

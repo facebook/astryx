@@ -1,6 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import { defineConfig } from "eslint/config";
+import { includeIgnoreFile } from "@eslint/compat";
+import path from "node:path";
 import js from "@eslint/js";
 import tseslint from "typescript-eslint";
 import eslintReact from "@eslint-react/eslint-plugin";
@@ -33,6 +35,38 @@ const astryxEslintPlugin = /** @type {import('eslint').ESLint.Plugin} */ (
   /** @type {unknown} */ (astryxPlugin)
 );
 
+/**
+ * Reuse a `.gitignore` as lint ignores, so generated and vendored files are
+ * never linted. Without this, anything git ignores but that exists on disk
+ * gets linted the moment you generate it — e.g. `apps/docsite/public/monaco`
+ * (25MB of minified Monaco + the TS compiler, copied in by
+ * `scripts/copy-vendor.mjs`) produced ~23.5k errors for anyone who had run
+ * the docsite. CI never saw it: it lints a fresh checkout, where the
+ * generated files don't exist yet.
+ *
+ * Patterns in a nested `.gitignore` are relative to that file, so each one
+ * needs its directory as `basePath`.
+ */
+const gitignoreDirs = [
+  "apps/docsite",
+  "apps/sandbox",
+  "apps/template-viewer",
+  "internal/vibe-tests",
+  "packages/build",
+  "packages/cli",
+];
+
+const gitignores = [
+  includeIgnoreFile(path.join(import.meta.dirname, ".gitignore"), "root .gitignore"),
+  ...gitignoreDirs.map((dir) => ({
+    basePath: dir,
+    ...includeIgnoreFile(
+      path.join(import.meta.dirname, dir, ".gitignore"),
+      `${dir}/.gitignore`,
+    ),
+  })),
+];
+
 // typescript-eslint ≥8.62 types its presets with loose cross-version
 // "compatibility" shapes (`CompatibleConfig` = `{name?, rules?: object}`);
 // normalize back to ESLint's own config type for `defineConfig`.
@@ -43,10 +77,10 @@ const tseslintRecommended = /** @type {import('eslint').Linter.Config[]} */ (
 export default defineConfig(
   js.configs.recommended,
   tseslintRecommended,
+  ...gitignores,
   {
     ignores: [
-      "**/dist/**",
-      "**/node_modules/**",
+      // dist/** and node_modules/** come from the .gitignore imports above.
       ".claude/**",
       "**/internal/eslint-plugin-astryx/**",
       ".github/scripts/**",
@@ -313,6 +347,9 @@ export default defineConfig(
       "@typescript-eslint/no-non-null-assertion": "off",
       "@typescript-eslint/consistent-type-assertions": "off",
       "react-compiler/react-compiler": "off",
+      // Test harnesses wrap components in sized/positioned <div>s to set up a
+      // scenario; that scaffolding is not shipped DOM.
+      "@astryx/no-style-only-wrapper": "off",
     },
   },
   // Non-production code — allow console.log for demos, tools, and examples

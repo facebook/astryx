@@ -58,6 +58,7 @@ import {
   DATE_FORMAT_MONTH_YEAR,
 } from '../utils/plainDate';
 import {mergeProps, composeEventHandlers, rtlStyles} from '../utils';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {
   computeDayCellState,
   computeRangeRounding,
@@ -1102,7 +1103,7 @@ function DayCell({
             // the default rendering.
             marker: markerState,
           }),
-          stylex.props(
+          focusOutlineProps.focusVisible(
             dayCellStyles.day,
             dayCellTheme.day,
             isOutside && dayCellStyles.dayOutside,

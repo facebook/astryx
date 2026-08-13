@@ -31,6 +31,7 @@ import {AvatarSizeContext} from './AvatarSizeContext';
 import {useAvatarGroup} from '../AvatarGroup/AvatarGroupContext';
 import {mergeProps, mergeRefs} from '../utils';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {useTooltip} from '../Tooltip/useTooltip';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
@@ -153,16 +154,6 @@ const styles = stylex.create({
   // Visible focus ring for the name-tooltip tab stop, matching the repo-wide
   // focus-visible outline treatment (see Timestamp, Token, Thumbnail). Only
   // applied when a tooltip is active so keyboard users can reveal it.
-  focusable: {
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': '2px',
-    },
-  },
   // Reset the intrinsic styling of the interactive element (<a>/<button>) so it
   // is a transparent, correctly-sized wrapper around the avatar visuals. The
   // element carries the focus-visible accent ring for keyboard users.
@@ -179,22 +170,6 @@ const styles = stylex.create({
     cursor: 'pointer',
     // Match the avatar's circular shape so the focus ring hugs it.
     borderRadius: radiusVars['--radius-full'],
-    outlineWidth: {
-      default: 0,
-      ':focus-visible': 2,
-    },
-    outlineStyle: {
-      default: 'none',
-      ':focus-visible': 'solid',
-    },
-    outlineColor: {
-      default: null,
-      ':focus-visible': colorVars['--color-accent'],
-    },
-    outlineOffset: {
-      default: 0,
-      ':focus-visible': 2,
-    },
   },
 });
 
@@ -608,10 +583,9 @@ export function Avatar({
   // `<a>`/`<button>` and the static `<div>` carry the exact same box.
   const rootStylexProps = mergeProps(
     themeProps('avatar', {size: resolvedSize}),
-    stylex.props(
+    focusOutlineProps.focusVisible(
       styles.wrapper,
       isInteractive && styles.interactive,
-      !isInteractive && showTooltip && !avatarGroup && styles.focusable,
       avatarGroup && groupStyles.ring,
       avatarGroup && groupStyles.overlap,
       avatarGroup && groupDynamicStyles.overlap(-avatarGroup.overlap),

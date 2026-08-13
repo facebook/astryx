@@ -66,23 +66,23 @@ interface GalleryImage {
 // All landscape photos so the uniform 3:2 / 3:1 tiles crop cleanly.
 const IMAGES: GalleryImage[] = [
   {
-    src: 'https://lookaside.facebook.com/assets/astryx/illustrative-horizontal-1.png',
+    src: '/template-assets/illustrative-horizontal-1.png',
     title: 'Going places',
   },
   {
-    src: 'https://lookaside.facebook.com/assets/astryx/light-home-horizontal-1.png',
+    src: '/template-assets/light-home-horizontal-1.png',
     title: 'Making memories',
   },
   {
-    src: 'https://lookaside.facebook.com/assets/astryx/light-lifestyle-horizontal-1.png',
+    src: '/template-assets/light-lifestyle-horizontal-1.png',
     title: 'Being free',
   },
   {
-    src: 'https://lookaside.facebook.com/assets/astryx/light-working-horizontal-2.png',
+    src: '/template-assets/light-working-horizontal-2.png',
     title: 'Getting it done',
   },
   {
-    src: 'https://lookaside.facebook.com/assets/astryx/light-scene-horizontal-1.png',
+    src: '/template-assets/light-scene-horizontal-1.png',
     title: 'Finding calm',
   },
 ];

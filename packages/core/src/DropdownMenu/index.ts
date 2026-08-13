@@ -22,12 +22,19 @@ export {
   type DropdownMenuProps,
   type DropdownMenuButtonProps,
   type DropdownMenuItemData,
-  type DropdownMenuDivider,
+  type DropdownMenuDividerData,
   type DropdownMenuSection,
   type DropdownMenuOption,
 } from './DropdownMenu';
 
 export {DropdownMenuItem, type DropdownMenuItemProps} from './DropdownMenuItem';
+
+// Divider — the compound peer of the data API's `{type: 'divider'}`. Both
+// modes render this component, so they cannot drift.
+export {
+  DropdownMenuDivider,
+  type DropdownMenuDividerProps,
+} from './DropdownMenuDivider';
 
 // Selectable items — checkbox (independent) and radio (single-select group).
 export {

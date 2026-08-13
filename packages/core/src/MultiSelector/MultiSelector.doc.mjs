@@ -23,12 +23,20 @@ export const docs = {
       {
         className: 'astryx-multi-selector',
         visualProps: ['variant', 'size', 'status'],
+        states: ['disabled'],
       },
-      {className: 'astryx-multi-selector-clear-icon'},
+      {className: 'astryx-multi-selector-clear-icon', deprecatedFor: 'input-clear-icon'},
+      {className: 'astryx-multi-selector-empty-state'},
       {
         className: 'astryx-multi-selector-indicator-icon',
         states: ['state'],
       },
+      {
+        className: 'astryx-multi-selector-option',
+        visualProps: ['size'],
+        states: ['select-all', 'selected', 'disabled'],
+      },
+      {className: 'astryx-multi-selector-popup'},
     ],
   },
   components: [

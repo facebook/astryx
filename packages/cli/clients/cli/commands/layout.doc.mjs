@@ -16,7 +16,7 @@ export const doc = {
   summary: 'Generate XDS layouts from compressed expressions (XLE/XLO)',
   description:
     'The layout command group. Running astryx layout with no subcommand prints the ' +
-    'subcommand list; the work happens in the subcommands — expand an expression into ' +
+    'subcommand list; the work happens in the subcommands: expand an expression into ' +
     'TSX (expand), validate one (check), or print the grammar cheatsheet (grammar).',
   subcommands: ['expand', 'check', 'grammar'],
   examples: [

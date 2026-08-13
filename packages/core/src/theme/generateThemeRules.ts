@@ -350,9 +350,11 @@ function generateComponentRules(
       // Entries are processed in order (priority).
       // - `vars`: emit internal CSS custom property declarations
       // - `expand: 'container'`: expand padding to container layout tokens
+      // - `replaces: true`: emit only the var, dropping the source property
       let finalProps = props;
       const derivedProps: [string, string][] = [];
       let containerExpanded = false;
+      const replacedProps = new Set<string>();
 
       for (const [prop, value] of props) {
         const derived = getDerivedVars(component, prop);
@@ -365,6 +367,9 @@ function generateComponentRules(
         for (const entry of [...derived, ...paddingDerived]) {
           if (entry.expand === 'container' && PADDING_PROPS.has(prop)) {
             containerExpanded = true;
+          }
+          if (entry.replaces) {
+            replacedProps.add(prop);
           }
           if (entry.vars) {
             for (const varName of entry.vars) {
@@ -382,6 +387,12 @@ function generateComponentRules(
         const parsed = parsePadding(paddingProps);
         const containerTokens = expandContainerPadding(component, parsed);
         finalProps = [...nonPaddingProps, ...containerTokens];
+      }
+
+      // Drop properties whose derived entry set `replaces` — their value is
+      // carried by the emitted var and must not land on the class element.
+      if (replacedProps.size > 0) {
+        finalProps = finalProps.filter(([p]) => !replacedProps.has(p));
       }
 
       if (derivedProps.length > 0) {

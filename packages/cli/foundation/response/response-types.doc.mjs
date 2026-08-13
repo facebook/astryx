@@ -21,7 +21,7 @@ export const doc = {
     {
       value: 'component.list',
       description:
-        'The component catalog grouped by category: `detail` (the level — names | compact | full) and `components`, the grouped map of names+package, brief entries, or a full ComponentDoc per entry.',
+        'The component catalog grouped by category: `detail` (the level: names | compact | full) and `components`, the grouped map of names+package, brief entries, or a full ComponentDoc per entry.',
     },
     {
       value: 'component.detail',
@@ -61,14 +61,14 @@ export const doc = {
     {
       value: 'docs.detail.section',
       description:
-        'A single ReferenceSection of a topic — the first whose title contains the section query.',
+        'A single ReferenceSection of a topic: the first whose title contains the section query.',
     },
 
     // blog (read from the published RSS feed)
     {
       value: 'blog.list',
       description:
-        'The feed URL plus every post parsed from the RSS feed — each with slug, title, description, date, type, authors, link, and plaintext URL.',
+        'The feed URL plus every post parsed from the RSS feed, each with slug, title, description, date, type, authors, link, and plaintext URL.',
     },
     {
       value: 'blog.detail',
@@ -89,7 +89,7 @@ export const doc = {
     {
       value: 'discover.detail.doc',
       description:
-        'The validated ComponentDoc for one external component — an @scope/name/Component query, or a free-text term resolving to exactly one component.',
+        'The validated ComponentDoc for one external component: an @scope/name/Component query, or a free-text term resolving to exactly one component.',
     },
     {
       value: 'discover.search',
@@ -154,7 +154,7 @@ export const doc = {
     {
       value: 'hook.list',
       description:
-        'The hook catalog grouped by category: `detail` (the level — names | compact | full) and `components`, the grouped map of hook names, brief entries, or a full HookDoc per entry.',
+        'The hook catalog grouped by category: `detail` (the level: names | compact | full) and `components`, the grouped map of hook names, brief entries, or a full HookDoc per entry.',
     },
     {value: 'hook.detail', description: "One hook's full authored HookDoc."},
     {
@@ -176,7 +176,7 @@ export const doc = {
     {
       value: 'theme.list',
       description:
-        'Every bundled theme as a ThemeListEntry[] — each with slug, displayName, description, and a maintained flag.',
+        'Every bundled theme as a ThemeListEntry[]: each with slug, displayName, description, and a maintained flag.',
     },
     {
       value: 'theme.add',
@@ -193,7 +193,7 @@ export const doc = {
     {
       value: 'upgrade.status',
       description:
-        'A short-circuit outcome with no codemods run — up_to_date, no_codemods, or config_fixable — each carrying the agent-docs summary.',
+        'A short-circuit outcome with no codemods run (up_to_date, no_codemods, or config_fixable), each carrying the agent-docs summary.',
     },
     {
       value: 'upgrade.run',

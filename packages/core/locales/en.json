@@ -875,6 +875,14 @@
     "defaultMessage": "Clear {label}",
     "description": "Screen-reader-only label on the X that clears the value from a NumberInput. Example: `Clear Age`, `Clear Quantity`."
   },
+  "@astryx.numberInput.decrementLabel": {
+    "defaultMessage": "Decrement {label}",
+    "description": "Accessible label for the NumberInput button that decreases the value by one configured step. Example: `Decrement Quantity`."
+  },
+  "@astryx.numberInput.incrementLabel": {
+    "defaultMessage": "Increment {label}",
+    "description": "Accessible label for the NumberInput button that increases the value by one configured step. Example: `Increment Quantity`."
+  },
   "@astryx.selector.clearLabel": {
     "defaultMessage": "Clear {label}",
     "description": "Screen-reader-only label on the X that clears the selected value from a Selector. `{label}` is the selector's visible label — example: `Clear Country`."
@@ -930,6 +938,10 @@
   "@astryx.step.goToStepWithStatus": {
     "defaultMessage": "Go to step {stepNumber, number}: {label}, {status}",
     "description": "Accessible name for a clickable lab Stepper step that also carries a status. {status} is one of the translated `step.status.*` words (completed/warning/error). Keep the pattern parallel to `step.goToStep`."
+  },
+  "@astryx.step.optional": {
+    "defaultMessage": "Optional",
+    "description": "Visible indicator appended after a lab Stepper step's label when the step is optional (isOptional). Very short; appears inline after the label text."
   },
   "@astryx.step.status.completed": {
     "defaultMessage": "completed",

@@ -373,30 +373,46 @@ describe('Stepper', () => {
   });
 
   it('lets the current step keep its ring indicator regardless of status', () => {
-    // A current step with no status.
+    // The current-step ring's painted color is driven by the StyleX
+    // `iconInProgress` class (accent), never a status color — the ring replaces
+    // any status glyph. The `astryx-step-indicator` theme target reflects
+    // `status` as a data attribute so a theme can still reach it, which is
+    // orthogonal to the painted color, so assert the StyleX color class here.
+    const stylexColorClasses = (el: HTMLElement) =>
+      el.className
+        .split(/\s+/)
+        // Keep StyleX classes (debug `Step__styles.*` names + `x*` atomic
+        // hashes); drop the themeProps data reflections (`in-progress`,
+        // `success`, `astryx-*`) which are orthogonal to the painted color.
+        .filter(c => c.startsWith('Step__styles.') || /^x[a-z0-9]+$/.test(c))
+        .sort()
+        .join(' ');
+
     const plain = render(
       <Stepper activeStep={0}>
         <Step step={0} label="A" data-testid="plain" />
       </Stepper>,
     );
-    const plainIndicator = (
+    const plainIndicator = stylexColorClasses(
       plain.getByTestId('plain').querySelector('svg')
-        ?.parentElement as HTMLElement
-    ).className;
+        ?.parentElement as HTMLElement,
+    );
 
-    // The same current step, now with status="success": the indicator must be
-    // unchanged (the current-step ring replaces any status glyph).
+    // The same current step, now with status="success": the painted ring must
+    // be unchanged (the current-step ring replaces any status glyph).
     const themed = render(
       <Stepper activeStep={0}>
         <Step step={0} label="A" status="success" data-testid="themed" />
       </Stepper>,
     );
-    const themedIndicator = (
+    const themedIndicator = stylexColorClasses(
       themed.getByTestId('themed').querySelector('svg')
-        ?.parentElement as HTMLElement
-    ).className;
+        ?.parentElement as HTMLElement,
+    );
 
     expect(themedIndicator).toBe(plainIndicator);
+    // And it is the in-progress (accent) color, not a status color.
+    expect(plainIndicator).toContain('Step__styles.iconInProgress');
   });
 
   it('replaces the number badge with a status glyph on not-started steps', () => {
@@ -492,5 +508,123 @@ describe('Stepper', () => {
     expect(
       within(screen.getByTestId('ot-current')).queryByText('completed'),
     ).not.toBeInTheDocument();
+  });
+
+  describe('keyboard interaction', () => {
+    it('activates a step with Enter', async () => {
+      const user = userEvent.setup();
+      const handleClick = vi.fn();
+      render(
+        <Stepper activeStep={2} onStepClick={handleClick}>
+          <Step step={0} label="Step 1" />
+          <Step step={1} label="Step 2" />
+          <Step step={2} label="Step 3" />
+        </Stepper>,
+      );
+      await user.tab();
+      expect(
+        screen.getByRole('button', {name: 'Go to step 1: Step 1, completed'}),
+      ).toHaveFocus();
+      await user.keyboard('{Enter}');
+      expect(handleClick).toHaveBeenCalledWith(0);
+    });
+
+    it('activates a step with Space', async () => {
+      const user = userEvent.setup();
+      const handleClick = vi.fn();
+      render(
+        <Stepper activeStep={2} onStepClick={handleClick}>
+          <Step step={0} label="Step 1" />
+          <Step step={1} label="Step 2" />
+          <Step step={2} label="Step 3" />
+        </Stepper>,
+      );
+      await user.tab();
+      await user.keyboard(' ');
+      expect(handleClick).toHaveBeenCalledWith(0);
+    });
+
+    it('tabs through steps in document order, skipping disabled ones', async () => {
+      const user = userEvent.setup();
+      render(
+        <Stepper activeStep={3} onStepClick={() => {}}>
+          <Step step={0} label="One" />
+          <Step step={1} label="Two" isDisabled />
+          <Step step={2} label="Three" />
+        </Stepper>,
+      );
+      await user.tab();
+      expect(
+        screen.getByRole('button', {name: 'Go to step 1: One, completed'}),
+      ).toHaveFocus();
+      // The disabled step renders no button, so Tab lands on step 3 next.
+      await user.tab();
+      expect(
+        screen.getByRole('button', {name: 'Go to step 3: Three, completed'}),
+      ).toHaveFocus();
+    });
+
+    it('supports keyboard activation in the on-track layout', async () => {
+      const user = userEvent.setup();
+      const handleClick = vi.fn();
+      render(
+        <Stepper
+          activeStep={2}
+          indicatorPosition="on-track"
+          onStepClick={handleClick}>
+          <Step step={0} label="Cart" />
+          <Step step={1} label="Shipping" />
+          <Step step={2} label="Payment" />
+        </Stepper>,
+      );
+      await user.tab();
+      await user.keyboard('{Enter}');
+      expect(handleClick).toHaveBeenCalledWith(0);
+    });
+  });
+
+  describe('hasCollapsibleLabels', () => {
+    // The collapse is a container query, so jsdom can't evaluate the media
+    // condition — assert the opt-in wiring instead: the collapsible class is
+    // applied to non-current horizontal step labels and withheld from the
+    // current step and from every step when the prop is off / vertical.
+    const labelEl = (testid: string) =>
+      screen
+        .getByTestId(testid)
+        .querySelector('span[class*="label"]') as HTMLElement;
+
+    it('marks non-current horizontal step labels collapsible, but not the current one', () => {
+      render(
+        <Stepper activeStep={1} orientation="horizontal" hasCollapsibleLabels>
+          <Step step={0} label="A" data-testid="a" />
+          <Step step={1} label="B" data-testid="b" />
+          <Step step={2} label="C" data-testid="c" />
+        </Stepper>,
+      );
+      expect(labelEl('a').className).toContain('labelCollapsible');
+      expect(labelEl('c').className).toContain('labelCollapsible');
+      // The current step keeps its label unconditionally.
+      expect(labelEl('b').className).not.toContain('labelCollapsible');
+    });
+
+    it('does not collapse labels when the prop is off', () => {
+      render(
+        <Stepper activeStep={1} orientation="horizontal">
+          <Step step={0} label="A" data-testid="a" />
+          <Step step={1} label="B" data-testid="b" />
+        </Stepper>,
+      );
+      expect(labelEl('a').className).not.toContain('labelCollapsible');
+    });
+
+    it('does not collapse labels in the vertical orientation', () => {
+      render(
+        <Stepper activeStep={1} orientation="vertical" hasCollapsibleLabels>
+          <Step step={0} label="A" data-testid="a" />
+          <Step step={1} label="B" data-testid="b" />
+        </Stepper>,
+      );
+      expect(labelEl('a').className).not.toContain('labelCollapsible');
+    });
   });
 });

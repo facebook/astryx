@@ -319,7 +319,7 @@ describe('componentRegistry', () => {
     expect(lightbox!.playground?.defaults).toMatchObject({
       isOpen: false,
       media: {
-        src: expect.stringContaining('https://'),
+        src: expect.stringContaining('/template-assets/'),
         alt: expect.any(String),
       },
     });

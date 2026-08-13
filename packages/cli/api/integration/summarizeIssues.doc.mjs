@@ -17,7 +17,7 @@ export const doc = {
     'Tally integration issues by severity into error and warning counts.',
   description:
     'A synchronous helper that reduces an AstryxIntegrationIssue[] (as returned ' +
-    'by validateIntegration) to counts of errors and warnings — the seam a ' +
+    'by validateIntegration) to counts of errors and warnings: the seam a ' +
     'caller uses to decide an exit code or print a summary line. Issues of any ' +
     'other severity are ignored.',
   importPath: '@astryxdesign/cli/api',

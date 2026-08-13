@@ -290,6 +290,12 @@ export interface BodyRowRenderProps {
   children: ReactNode;
   /** Ref for the `<tr>` element. Plugins can set this to access the row DOM node. */
   ref?: Ref<HTMLTableRowElement>;
+  /**
+   * Extra content rendered as a sibling immediately after this row's `<tr>`.
+   * Plugins use it to append a full-width detail-panel `<tr>` (e.g. row
+   * expansion). Multiple plugins compose by wrapping the previous `afterRow`.
+   */
+  afterRow?: ReactNode;
 }
 
 /** Props passed through the plugin pipeline for each body `<td>` */
@@ -379,6 +385,11 @@ export interface TableContextAction {
   group?: string;
   /** When true, the item renders as checked (e.g. the active sort direction). */
   checked?: boolean;
+  /**
+   * Visual variant. `'destructive'` renders the action in the error color for
+   * dangerous operations (e.g. Delete row). @default 'default'
+   */
+  variant?: 'default' | 'destructive';
 }
 
 /**

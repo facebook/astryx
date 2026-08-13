@@ -47,7 +47,7 @@ export const doc = {
           name: 'data',
           type: 'unknown',
           description:
-            "The command's payload. Structural by design — narrowed by the " +
+            "The command's payload. Structural by design, narrowed by the " +
             'per-command return type, not by a map in the serializer.',
           required: true,
         },
@@ -63,7 +63,7 @@ export const doc = {
       name: 'Error envelope',
       type: '{ apiVersion: number; error: string; code: ErrorCode; suggestions?: Suggestion[] }',
       description:
-        'Emitted for every failure in --json mode — including uncaught throws ' +
+        'Emitted for every failure in --json mode, including uncaught throws ' +
         'and Commander parse errors, which are converted to this shape.',
       fields: [
         {
@@ -86,7 +86,7 @@ export const doc = {
           name: 'code',
           type: 'ErrorCode',
           description:
-            'Stable, machine-readable identifier — always present, append-only, ' +
+            'Stable, machine-readable identifier; always present, append-only, ' +
             'and never changes meaning. Branch on this.',
           required: true,
           example: "'ERR_UNKNOWN_COMPONENT'",
@@ -95,7 +95,7 @@ export const doc = {
           name: 'suggestions',
           type: 'Suggestion[]',
           description:
-            'Optional "did you mean…" hints, present only when candidates exist.',
+            'Optional "did you mean..." hints, present only when candidates exist.',
           fields: [
             {
               name: 'suggestions[].name',
@@ -146,7 +146,7 @@ export const doc = {
     {
       type: 'prose',
       text:
-        '`code` is the stable contract — see the error-codes enum (ErrorCode) ' +
+        '`code` is the stable contract; see the error-codes enum (ErrorCode) ' +
         'for the full append-only list. Branch on `code`, never on the `error` ' +
         'prose, which can be reworded or localized at any time.',
     },

@@ -24,6 +24,17 @@ export {
 // InfoTip — accessible info-icon help affordance (RFC facebook/astryx#3349)
 export {InfoTip, type InfoTipProps, type InfoTipSize} from './InfoTip';
 
+// TransferList — controlled dual-panel collection input
+export {
+  TransferList,
+  TransferListSelector,
+  transferListVars,
+  type TransferListOption,
+  type TransferListProps,
+  type TransferListSelectorCommitBehavior,
+  type TransferListSelectorProps,
+} from './TransferList';
+
 // Chat — experimental reasoning display
 export {
   ChatReasoning,
@@ -234,6 +245,9 @@ export {
 // It is no longer re-exported from @astryxdesign/lab.
 export * from './Stepper';
 export * from './CircularProgress';
+
+// ListInput — compact editor for short collections of simple records
+export * from './ListInput';
 
 // LogStream — experimental streaming log viewer
 export {

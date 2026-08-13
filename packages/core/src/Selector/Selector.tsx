@@ -4,7 +4,8 @@
 
 /**
  * @file Selector.tsx
- * @input Uses React, StyleX, usePopover, useTooltip, Icon, InputGroupContext
+ * @input Uses React, StyleX, usePopover, useTooltip, Icon, InputGroupContext,
+ *   and Selector positioning hooks
  * @output Exports Selector component
  * @position Core implementation; consumed by index.ts
  *
@@ -31,9 +32,11 @@ import * as stylex from '@stylexjs/stylex';
 import {usePopover} from '../Popover/usePopover';
 import {useTooltip} from '../Tooltip';
 import {Icon, renderIconSlot, type IconType} from '../Icon';
+import {useIndicator} from '../Indicator';
 import type {IconName} from '../Icon';
 import {
   Field,
+  InputClearButton,
   inputStatusBorderStyles,
   inputStatusHoverShadowStyles,
   inputWrapperStyles,
@@ -66,12 +69,14 @@ import {
   getSelectableOptions,
 } from './utils';
 import {useCombobox, useSelectedItemOffset} from './hooks';
+import {useTypeahead} from '../hooks/useTypeahead';
 import {SelectorOption} from './SelectorOption';
 import {getInputARIA, mergeProps} from '../utils';
 import {useSize} from '../SizeContext/SizeContext';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
+import {stableClassName} from '../naming';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
 import {VisuallyHidden} from '../VisuallyHidden';
@@ -134,25 +139,26 @@ const styles = stylex.create({
     whiteSpace: 'nowrap',
     textAlign: 'start',
   },
+  // Only what Icon does not already provide: `size="sm"` gives the 16px box
+  // and `color` the token, but the glyph still must not shrink inside the flex
+  // trigger.
   triggerIcon: {
     flexShrink: 0,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 16,
-    height: 16,
+  },
+  // Rotation lives on the chevron glyph itself (passed through `xstyle`), not
+  // on the layout wrapper above, so the icon's `selector-indicator-icon` theme
+  // target and the open/closed transform sit on one element — a theme can
+  // restyle the mark and its rotation through a single selector. The wrapper
+  // keeps only layout. The status branch renders a different icon, so it never
+  // picks these up and needs no transition opt-out.
+  triggerIconRotation: {
     transitionProperty: 'transform',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
     transformOrigin: 'center',
-    color: colorVars['--color-icon-secondary'],
   },
   triggerIconOpen: {
     transform: 'rotate(180deg)',
-  },
-  triggerIconStatus: {
-    // Disable rotation transition for status icons
-    transition: 'none',
   },
   triggerGhost: {
     width: 'auto',
@@ -197,23 +203,6 @@ const styles = stylex.create({
   },
 
   // Clear button
-  clearButton: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 0,
-    margin: 0,
-    borderWidth: 0,
-    borderStyle: 'none',
-    backgroundColor: 'transparent',
-    cursor: 'pointer',
-    borderRadius: radiusVars['--radius-element'],
-    outline: {
-      default: 'none',
-      ':focus-visible': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: 1,
-  },
   statusButton: {
     display: 'flex',
     alignItems: 'center',
@@ -238,9 +227,15 @@ const styles = stylex.create({
     boxSizing: 'border-box',
     maxHeight: '300px',
     overflowY: 'auto',
-    padding: spacingVars['--spacing-1'],
+    paddingBlock: spacingVars['--spacing-1'],
+    paddingInline: spacingVars['--spacing-1'],
     opacity: 1,
     transition: `opacity ${durationVars['--duration-fast']}`,
+  },
+  dropdownInput: {
+    // The input trigger's text inset includes its border. Mirror that extra
+    // pixel in the menu; the borderless ghost variant needs no correction.
+    paddingInline: `calc(${spacingVars['--spacing-1']} + ${borderVars['--border-width']})`,
   },
   dropdownHidden: {
     opacity: 0,
@@ -703,6 +698,9 @@ export function Selector<T extends SelectorOptionType>(
   const statusMessageId = useId();
   const inputLabelId = useId();
   const searchId = useId();
+  // Measure from the same outer control that usePopover anchors to; using the
+  // shorter inner button makes every size's selected row land too low.
+  const anchorRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const inputGroup = useInputGroup();
@@ -715,6 +713,7 @@ export function Selector<T extends SelectorOptionType>(
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(normalizedValue);
   const isBusy = isLoading || optimisticValue !== normalizedValue;
+  const announce = useAnnounce();
 
   // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
   // tooltip listeners attach to the trigger container (which already exists)
@@ -775,15 +774,15 @@ export function Selector<T extends SelectorOptionType>(
   // Ref for listbox to measure selected item position
   const listboxRef = useRef<HTMLDivElement>(null);
 
-  // Announce match counts / "No results found" politely as the user types, so
-  // screen-reader users hear how many options remain. Filtering was previously
-  // silent (comboboxes-7). Mirrors BaseTypeahead, which announces from its
-  // query-change callback (not a reactive effect) via the same useAnnounce hook.
-  const announce = useAnnounce();
+  // Typeahead is defined below (it needs the popover), but closing and clearing
+  // must drop its pending buffer — otherwise a stale prefix survives the reset
+  // window and poisons the next keystroke ("Dog" then "c" would search "dc").
+  const resetTypeaheadRef = useRef<() => void>(() => {});
 
   // Layer for dropdown positioning
   const handleLayerHide = useCallback(() => {
     setSearchQuery('');
+    resetTypeaheadRef.current();
     // Clear any lingering result count when the popover closes so stale status
     // text does not linger in the a11y tree.
     announce('');
@@ -840,7 +839,7 @@ export function Selector<T extends SelectorOptionType>(
       selectedItemIndex,
       listboxId,
       listboxRef,
-      triggerRef,
+      anchorRef,
     });
 
   const selectedItemOffset = shouldOverlaySelectedItem ? rawOffset : 0;
@@ -854,6 +853,7 @@ export function Selector<T extends SelectorOptionType>(
   // Clear the current value. Shared by the clear button and the keyboard
   // Delete/Backspace path so clearing is reachable without a mouse.
   const clearValue = useCallback(() => {
+    resetTypeaheadRef.current();
     onChange?.(null);
     if (changeAction) {
       startTransition(async () => {
@@ -863,10 +863,29 @@ export function Selector<T extends SelectorOptionType>(
     }
   }, [onChange, changeAction, startTransition, setOptimisticValue]);
 
-  // Selector behavior (keyboard nav, typeahead, selection)
+  // Type-to-find appends to the query rather than replacing it: characters
+  // typed before focus reaches the search input must not be dropped.
+  const appendSearchQuery = useCallback((char: string) => {
+    setSearchQuery(query => query + char);
+  }, []);
+
+  const commitValue = useCallback(
+    (newValue: string) => {
+      onChange?.(newValue);
+      if (changeAction) {
+        startTransition(async () => {
+          setOptimisticValue(newValue);
+          await changeAction(newValue);
+        });
+      }
+    },
+    [onChange, changeAction, startTransition, setOptimisticValue],
+  );
+
+  // Selector behavior (keyboard nav, selection)
   const {
     highlightedIndex,
-    setHighlightedIndex: _setHighlightedIndex,
+    setHighlightedIndex,
     getItemId,
     onTriggerClick,
     onKeyDown,
@@ -874,7 +893,11 @@ export function Selector<T extends SelectorOptionType>(
     onItemMouseEnter,
   } = useCombobox({
     selectableItems: filteredItems,
-    value: normalizedValue,
+    // The optimistic value, not the raw prop: with a pending changeAction the
+    // prop still holds the old selection, so the popup would open with the
+    // highlight on it and Delete/Backspace could clear a value the action has
+    // already replaced.
+    value: optimisticValue,
     isDisabled,
     isOpen: popover.isOpen,
     hasSearch,
@@ -882,26 +905,60 @@ export function Selector<T extends SelectorOptionType>(
       popover.show();
       if (hasSearch) {
         requestAnimationFrame(() => {
-          searchRef.current?.focus();
+          const input = searchRef.current;
+          if (input) {
+            input.focus();
+            // When typing seeded the query, place the caret after it so the
+            // user keeps typing where they left off.
+            input.setSelectionRange(input.value.length, input.value.length);
+          }
         });
       }
     }, [popover, hasSearch]),
     onClose: popover.hide,
-    onSelect: useCallback(
-      (newValue: string) => {
-        onChange?.(newValue);
-        if (changeAction) {
-          startTransition(async () => {
-            setOptimisticValue(newValue);
-            await changeAction(newValue);
-          });
-        }
-      },
-      [onChange, changeAction, startTransition, setOptimisticValue],
-    ),
+    onSelect: commitValue,
     onClear: hasClear ? clearValue : undefined,
+    onSearchSeed: appendSearchQuery,
     listboxId,
   });
+
+  // Type-to-select, shared with the other collections (menus, listboxes).
+  // Open, it walks the highlight — aria-activedescendant announces each match.
+  // Closed, it commits the match like a native select, which changes the value
+  // without opening the popup or moving focus, so nothing else would prompt
+  // assistive tech to re-read the trigger: announce it explicitly.
+  const typeahead = useTypeahead({
+    getItemLabels: () => selectableItems.map(item => item.label ?? item.value),
+    isDisabled: index => selectableItems[index]?.disabled === true,
+    // Cycle onward from the highlight when open, from the committed selection
+    // when closed — the optimistic one, so a pending changeAction cannot strand
+    // cycling on the first match. -1 means nothing is selected or highlighted,
+    // which the hook reads as "search from the top".
+    getCurrentIndex: () =>
+      popover.isOpen ? highlightedIndex : selectedItemIndex,
+    onMatch: index => {
+      const item = selectableItems[index];
+      if (popover.isOpen) {
+        setHighlightedIndex(index);
+      } else if (item.value !== optimisticValue) {
+        commitValue(item.value);
+        announce(item.label ?? item.value);
+      }
+    },
+  });
+  resetTypeaheadRef.current = typeahead.reset;
+
+  const handleTriggerKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      // With hasSearch the query input owns typing, so type-to-select is off.
+      if (!isDisabled && !hasSearch && typeahead.onKeyDown(e)) {
+        e.preventDefault();
+        return;
+      }
+      onKeyDown(e);
+    },
+    [isDisabled, hasSearch, typeahead, onKeyDown],
+  );
 
   // Keep the highlighted option visible during keyboard navigation. The
   // listbox is a fixed-height scroll container, so without this the virtual
@@ -1020,6 +1077,11 @@ export function Selector<T extends SelectorOptionType>(
     t,
   ]);
 
+  // The single-selection mark, resolved from the theme once per render. A
+  // theme that maps `check` to another indicator (a radio, say) changes every
+  // selected-option mark in the app through this one lookup.
+  const SelectionMark = useIndicator('check');
+
   // Render an individual item
   const renderItem = useCallback(
     (item: SelectorOptionData, flatIndex: number) => {
@@ -1049,7 +1111,21 @@ export function Selector<T extends SelectorOptionType>(
               <DefaultOption option={item} />
             )}
           </span>
-          {isSelected && <Icon icon="check" size="sm" color="accent" />}
+          {/*
+           * Rendered UNCONDITIONALLY, with the state passed down: the default
+           * check draws nothing when unchecked, but a theme that replaces the
+           * `check` indicator with a radio needs the unselected state to draw
+           * its empty circle. `{isSelected && …}` would make that impossible.
+           *
+           * `selector-check` stays the stable target for the mark's position
+           * in the row; the indicator owns what the mark looks like.
+           */}
+          <SelectionMark
+            state={isSelected ? 'checked' : 'unchecked'}
+            size="sm"
+            isDisabled={item.disabled ?? false}
+            {...themeProps('selector-check')}
+          />
         </div>
       );
     },
@@ -1061,6 +1137,7 @@ export function Selector<T extends SelectorOptionType>(
       getItemId,
       onItemSelect,
       onItemMouseEnter,
+      SelectionMark,
     ],
   );
 
@@ -1078,7 +1155,10 @@ export function Selector<T extends SelectorOptionType>(
         <div
           key="empty"
           role="presentation"
-          {...stylex.props(styles.emptyState)}>
+          {...mergeProps(
+            themeProps('selector-empty-state'),
+            stylex.props(styles.emptyState),
+          )}>
           No results found
         </div>,
       ];
@@ -1150,6 +1230,7 @@ export function Selector<T extends SelectorOptionType>(
     <>
       <div
         ref={el => {
+          anchorRef.current = el;
           popover.triggerRef(el);
           // Anchor + hover/focus listeners for the disabled-message tooltip.
           // Handlers are gated internally by isEnabled, and anchor names
@@ -1163,6 +1244,7 @@ export function Selector<T extends SelectorOptionType>(
             variant,
             size,
             status: status?.type ?? null,
+            disabled: isDisabled ? 'disabled' : null,
           }),
           stylex.props(
             inputWrapperStyles.base,
@@ -1217,7 +1299,7 @@ export function Selector<T extends SelectorOptionType>(
           // still blocked by the isDisabled guards in useCombobox.
           disabled={isDisabled && !showsDisabledMessage}
           aria-disabled={showsDisabledMessage ? 'true' : undefined}
-          onKeyDown={onKeyDown}
+          onKeyDown={handleTriggerKeyDown}
           tabIndex={isDisabled && !showsDisabledMessage ? -1 : 0}
           {...stylex.props(styles.trigger)}>
           <span {...stylex.props(styles.triggerLabel)}>
@@ -1236,68 +1318,65 @@ export function Selector<T extends SelectorOptionType>(
         )}
         {isBusy && <Spinner size="sm" />}
         {hasClear && value != null && !isDisabled && (
-          <button
-            type="button"
+          <InputClearButton
+            label={t('@astryx.selector.clearLabel', {label})}
             onClick={handleClear}
-            aria-label={t('@astryx.selector.clearLabel', {label})}
-            {...stylex.props(styles.clearButton)}>
-            <Icon
-              icon="close"
-              size="sm"
-              color="secondary"
-              // Stable theme target on the clear glyph itself, so a theme can
-              // restyle just this icon (color, size, hover) via `defineTheme`.
-              // Same-element rules in @layer astryx-theme win over the icon's
-              // own base color/size, which a button-level target could not
-              // reach.
-              {...themeProps('selector-clear-icon')}
-            />
-          </button>
+            iconClassName={stableClassName('selector-clear-icon')}
+          />
         )}
-        <span
-          {...stylex.props(
-            styles.triggerIcon,
-            !showStatusIcon && popover.isOpen && styles.triggerIconOpen,
-            showStatusIcon && styles.triggerIconStatus,
-          )}>
-          {showStatusIcon ? (
-            showStatusTooltip ? (
-              <button
-                ref={statusTooltip.ref}
-                type="button"
-                aria-label={t(STATUS_BUTTON_LABEL_KEY[status.type])}
-                aria-describedby={statusTooltip.describedBy}
-                onClick={e => e.stopPropagation()}
-                {...stylex.props(styles.statusButton)}>
-                <Icon
-                  icon={STATUS_ICON_MAP[status.type]}
-                  size="sm"
-                  color={STATUS_ICON_COLOR_MAP[status.type]}
-                />
-              </button>
-            ) : (
+        {/*
+          No wrapper span: Icon's own span already provides the 16px box (`sm`)
+          and the icon color, so the status glyph and the chevron are each
+          directly targetable instead of sharing one untargetable parent — and
+          the two affordances stop sharing a node.
+        */}
+        {showStatusIcon ? (
+          showStatusTooltip ? (
+            <button
+              ref={statusTooltip.ref}
+              type="button"
+              aria-label={t(STATUS_BUTTON_LABEL_KEY[status.type])}
+              aria-describedby={statusTooltip.describedBy}
+              onClick={e => e.stopPropagation()}
+              {...stylex.props(styles.statusButton)}>
               <Icon
                 icon={STATUS_ICON_MAP[status.type]}
                 size="sm"
                 color={STATUS_ICON_COLOR_MAP[status.type]}
+                xstyle={styles.triggerIcon}
               />
-            )
+            </button>
           ) : (
             <Icon
-              icon="chevronDown"
+              icon={STATUS_ICON_MAP[status.type]}
               size="sm"
-              color="inherit"
-              // Stable theme target on the chevron glyph itself, so a theme can
-              // restyle just this icon (color, size, hover) — and its
-              // open/closed state — via `defineTheme`. Same-element rules in
-              // @layer astryx-theme win over the icon's own base color/size,
-              // which a button-level target could not reach.
-              {...themeProps('selector-indicator-icon', {
-                state: popover.isOpen ? 'expanded' : 'collapsed',
-              })}
+              color={STATUS_ICON_COLOR_MAP[status.type]}
+              xstyle={styles.triggerIcon}
             />
-          )}
-        </span>
+          )
+        ) : (
+          <Icon
+            icon="chevronDown"
+            size="sm"
+            color="secondary"
+            // The rotation rides on the glyph, alongside the box and color
+            // the wrapper used to provide, so one element carries the mark,
+            // its open/closed transform, and the theme target.
+            xstyle={[
+              styles.triggerIcon,
+              styles.triggerIconRotation,
+              popover.isOpen && styles.triggerIconOpen,
+            ]}
+            // Stable theme target on the chevron glyph itself, so a theme can
+            // restyle just this icon (color, size, hover) — and its
+            // open/closed state — via `defineTheme`. Same-element rules in
+            // @layer astryx-theme win over the icon's own base color/size,
+            // which a button-level target could not reach.
+            {...themeProps('selector-indicator-icon', {
+              state: popover.isOpen ? 'expanded' : 'collapsed',
+            })}
+          />
+        )}
       </div>
 
       {popover.render(
@@ -1309,7 +1388,10 @@ export function Selector<T extends SelectorOptionType>(
               id={listboxId}
               role="listbox"
               aria-labelledby={triggerId}
-              {...stylex.props(styles.dropdown)}>
+              {...stylex.props(
+                styles.dropdown,
+                variant !== 'ghost' && styles.dropdownInput,
+              )}>
               {renderOptions()}
             </div>
           </div>
@@ -1321,6 +1403,7 @@ export function Selector<T extends SelectorOptionType>(
             aria-labelledby={triggerId}
             {...stylex.props(
               styles.dropdown,
+              variant !== 'ghost' && styles.dropdownInput,
               !isPositioned && styles.dropdownHidden,
             )}>
             {renderOptions()}

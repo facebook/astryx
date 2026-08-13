@@ -66,7 +66,14 @@ const styles = stylex.create({
   wrapper: {
     zIndex: 1,
     display: 'block',
-    padding: 0,
+    // Zero the shared wrapper inset with matching longhands, not the `padding`
+    // shorthand: StyleX ranks longhands above shorthands regardless of merge
+    // order, so a `padding: 0` shorthand loses to the base's
+    // paddingBlock/paddingInline. The wrapper would keep a duplicate inset that
+    // the <textarea>'s own padding then doubles — insetting the text and
+    // pushing the native resize grip in from the corner.
+    paddingBlock: 0,
+    paddingInline: 0,
     // Internal inline padding for the textarea's text. Defined on the wrapper
     // so the counter (a sibling overlay) inherits the same value and stays
     // aligned with the text edge. Kept as an internal var so it can later be
@@ -237,6 +244,15 @@ export interface TextAreaProps extends Omit<
    */
   isDisabled?: boolean;
   /**
+   * Whether the textarea is read-only.
+   * The value is shown at full opacity and still submits with the form, but
+   * cannot be edited. Unlike `isDisabled`, a read-only textarea is not dimmed
+   * and stays in the tab order — use it for a value the user should see and
+   * send but not change. `isDisabled` takes precedence when both are set.
+   * @default false
+   */
+  isReadOnly?: boolean;
+  /**
    * Explains why the textarea is disabled. When set together with
    * `isDisabled`, the textarea shows a tooltip with this text on hover and
    * keyboard focus, and stays focusable (via `aria-disabled`) so the reason is
@@ -350,6 +366,7 @@ export function TextArea({
   placeholder,
   rows = 3,
   isDisabled = false,
+  isReadOnly = false,
   disabledMessage,
   status,
   statusVariant = 'attached',
@@ -461,7 +478,7 @@ export function TextArea({
     // Value can't change while showing a disabled message (the field is
     // read-only and non-native-disabled), but guard the handler too so the
     // optimistic value and callbacks never fire.
-    if (isDisabled) {
+    if (isDisabled || isReadOnly) {
       return;
     }
     const newValue = e.target.value;
@@ -518,7 +535,12 @@ export function TextArea({
         onClick={handleWrapperClick}
         onMouseUp={handleWrapperMouseUp}
         {...mergeProps(
-          themeProps('textarea', {size, status: status?.type ?? null}),
+          themeProps('textarea', {
+            size,
+            status: status?.type ?? null,
+            disabled: isDisabled ? 'disabled' : null,
+            readonly: isReadOnly ? 'readonly' : null,
+          }),
           stylex.props(
             inputWrapperStyles.base,
             styles.wrapper,
@@ -540,7 +562,7 @@ export function TextArea({
           {...rest}
           ref={mergeRefs(ref, textareaRef)}
           id={id}
-          name={htmlName}
+          name={isDisabled ? undefined : htmlName}
           value={optimisticValue}
           onChange={handleChange}
           onPaste={onPaste}
@@ -553,7 +575,7 @@ export function TextArea({
           // handleChange guard keep the value from changing.
           disabled={isDisabled && !showsDisabledMessage}
           aria-disabled={showsDisabledMessage ? 'true' : undefined}
-          readOnly={showsDisabledMessage || undefined}
+          readOnly={isReadOnly || showsDisabledMessage || undefined}
           spellCheck={hasSpellCheck}
           autoFocus={hasAutoFocus}
           data-autofocus={hasAutoFocus || undefined}
@@ -571,8 +593,13 @@ export function TextArea({
             textareaSizeStyles[size],
             isDisabled && styles.textareaDisabled,
             Boolean(startIcon) && styles.textareaWithStartIcon,
-            (status || isBusy) && styles.textareaWithStatus,
-            isBusy && !!statusIcon && styles.textareaWithBusyStatus,
+            // Reserve trailing space only when the end slot actually renders
+            // something (spinner or on-field status icon). The `detached`
+            // status variant suppresses the on-field icon — its glyph lives in
+            // the message box below — so reserving here would inset the text
+            // for an icon that never appears.
+            (isBusy || statusIcon != null) && styles.textareaWithStatus,
+            isBusy && statusIcon != null && styles.textareaWithBusyStatus,
             maxLength != null && styles.textareaWithCounter,
           )}
         />

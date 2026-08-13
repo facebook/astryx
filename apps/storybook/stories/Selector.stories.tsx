@@ -5,6 +5,7 @@ import {useState} from 'react';
 import {Button} from '@astryxdesign/core/Button';
 import {Selector, SelectorOption} from '@astryxdesign/core/Selector';
 import {Theme, defineTheme} from '@astryxdesign/core/theme';
+import {RadioIndicator} from '@astryxdesign/core/Indicator';
 import {UserIcon, CogIcon, BellIcon} from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof Selector> = {
@@ -834,6 +835,58 @@ export const ThemedIcons: Story = {
           hasClear
         />
       </Theme>
+    );
+  },
+};
+
+/**
+ * Swap the single-selection indicator for a radio.
+ *
+ * `check` is the indicator every single-selection mark draws, so replacing it
+ * once in the theme reaches this Selector — and any other component that marks
+ * "this one is chosen" — without touching a call site.
+ *
+ * Note what the default check could never do: an unselected row draws an
+ * **empty circle**. The mark is rendered in every state and told which state to
+ * draw, so an indicator that has an unselected form can show it.
+ */
+const radioSelectionTheme = defineTheme({
+  name: 'radio-selection-demo',
+  indicators: {check: RadioIndicator},
+});
+
+export const RadioSelectionIndicator: Story = {
+  render: () => {
+    const [value, setValue] = useState<string | undefined>('Banana');
+    return (
+      <Theme theme={radioSelectionTheme} mode="light">
+        <Selector
+          label="Single selection drawn as a radio"
+          options={['Apple', 'Banana', 'Cherry']}
+          value={value}
+          onChange={setValue}
+          isDefaultOpen
+        />
+      </Theme>
+    );
+  },
+};
+
+/**
+ * The same Selector with no theme, for comparison: a checkmark on the selected
+ * row, and nothing at all on the others.
+ */
+export const DefaultSelectionIndicator: Story = {
+  render: () => {
+    const [value, setValue] = useState<string | undefined>('Banana');
+    return (
+      <Selector
+        label="Single selection drawn as a check (default)"
+        options={['Apple', 'Banana', 'Cherry']}
+        value={value}
+        onChange={setValue}
+        isDefaultOpen
+      />
     );
   },
 };

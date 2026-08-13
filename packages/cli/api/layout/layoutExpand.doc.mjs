@@ -16,7 +16,7 @@ export const doc = {
   summary: 'Expand a validated layout expression into XDS TSX.',
   description:
     'The generator behind `astryx layout expand`. Parses and validates a compressed XLE/XLO ' +
-    'expression, then expands it into ready-to-use XDS TSX — auto-routing structural children ' +
+    'expression, then expands it into ready-to-use XDS TSX, auto-routing structural children ' +
     'into the right slots, scaffolding typed useState for interactive controls, and splicing or ' +
     'importing any referenced template blocks. Returns the code (and metadata) in a layout.expand ' +
     'envelope, optionally writing it to a path within cwd.',

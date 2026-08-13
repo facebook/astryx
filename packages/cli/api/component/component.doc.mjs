@@ -108,7 +108,7 @@ export const doc = {
     {
       type: 'component.list',
       description:
-        "The catalog grouped by category. data.detail is the level ('names' | 'compact' | 'full') and data.components is the grouped map — names+package, brief entries, or full ComponentDoc per entry.",
+        "The catalog grouped by category. data.detail is the level ('names' | 'compact' | 'full') and data.components is the grouped map: names+package, brief entries, or full ComponentDoc per entry.",
     },
     {
       type: 'component.detail',

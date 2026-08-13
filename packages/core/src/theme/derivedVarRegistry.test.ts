@@ -195,8 +195,10 @@ const DIR_TO_REGISTRY_KEY: Record<string, string> = {
   Field: 'field',
   HoverCard: 'hovercard',
   Popover: 'popover',
+  ProgressBar: 'progressbar-mark',
   Section: 'section',
   SegmentedControl: 'segmented-control',
+  TextArea: 'textarea',
 };
 
 /**
@@ -338,5 +340,24 @@ describe('getDerivedVars', () => {
 
   it('returns empty for unregistered property', () => {
     expect(getDerivedVars('card', 'color')).toEqual([]);
+  });
+
+  it('marks textarea paddingInline as replacing the source property', () => {
+    const result = getDerivedVars('textarea', 'paddingInline');
+    expect(result).toHaveLength(1);
+    expect(result[0].vars).toEqual(['--_textarea-inline-padding']);
+    expect(result[0].replaces).toBe(true);
+  });
+
+  it('marks progressbar-mark width and height as replacing the source property', () => {
+    for (const [property, varName] of [
+      ['width', '--_progressbar-mark-width'],
+      ['height', '--_progressbar-mark-height'],
+    ]) {
+      const result = getDerivedVars('progressbar-mark', property);
+      expect(result).toHaveLength(1);
+      expect(result[0].vars).toEqual([varName]);
+      expect(result[0].replaces).toBe(true);
+    }
   });
 });

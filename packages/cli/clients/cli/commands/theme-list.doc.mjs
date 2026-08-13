@@ -16,7 +16,7 @@ export const doc = {
   namespace: 'cli',
   summary: 'List themes available to add',
   description:
-    'Lists the themes bundled with this CLI build — the ones theme add can scaffold — ' +
+    'Lists the themes bundled with this CLI build (the ones theme add can scaffold), ' +
     'each with its slug, display name, description, and maintained flag.',
   fn: 'themeList',
   examples: [{label: 'List bundled themes', cli: 'astryx theme list --json'}],

@@ -16,7 +16,7 @@ export default function LightboxVideo() {
         isOpen={isOpen}
         onOpenChange={setIsOpen}
         media={{
-          src: 'https://lookaside.facebook.com/assets/?set=astryx&name=Nature-1&density=1',
+          src: '/template-assets/Nature-1.mp4',
           alt: 'Flower blooming in time-lapse',
           type: 'video',
           caption: 'A flower blooming in time-lapse',

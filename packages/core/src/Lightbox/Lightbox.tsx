@@ -215,7 +215,12 @@ const styles = stylex.create({
   navButton: {
     position: 'absolute',
     top: '50%',
-    transform: 'translateY(-50%)',
+    // The individual `translate` property, not `transform`: this style now
+    // lands on the Button root, and a `transform` here replaces the Button's
+    // own transform rules — measured: the `scale(0.98)` press feedback stops
+    // firing. `translate` composes with them, reproducing exactly what the
+    // removed wrapper element did (wrapper translated, button scaled).
+    translate: '0 -50%',
     zIndex: 1,
   },
   navPrev: {
@@ -595,34 +600,33 @@ export function Lightbox({
       {...props}>
       <div ref={containerRef} {...stylex.props(styles.container)}>
         {/* Close button */}
-        <div {...stylex.props(styles.closeButton)}>
-          <IconButton
-            icon={<Icon icon="close" size="sm" color="inherit" />}
-            label={t('@astryx.lightbox.close')}
-            variant="ghost"
-            onClick={handleClose}
-            xstyle={styles.controlButton}
-          />
-        </div>
+        <IconButton
+          icon={<Icon icon="close" size="sm" color="inherit" />}
+          label={t('@astryx.lightbox.close')}
+          variant="ghost"
+          onClick={handleClose}
+          xstyle={[styles.closeButton, styles.controlButton]}
+        />
 
         {/* Gallery nav: prev — stays mounted and is disabled at the start of
             the range so pressing/arrowing to the boundary doesn't unmount the
             focused control and drop focus to <body>. */}
         {isGallery && (
-          <div {...stylex.props(styles.navButton, styles.navPrev)}>
-            <IconButton
-              icon={
-                <span {...stylex.props(rtlStyles.mirror)}>
-                  <Icon icon="chevronLeft" size="sm" color="inherit" />
-                </span>
-              }
-              label={t('@astryx.lightbox.previous')}
-              variant="ghost"
-              isDisabled={!canPrev}
-              onClick={goToPrev}
-              xstyle={styles.controlButton}
-            />
-          </div>
+          <IconButton
+            icon={
+              <Icon
+                icon="chevronLeft"
+                size="sm"
+                color="inherit"
+                xstyle={rtlStyles.mirror}
+              />
+            }
+            label={t('@astryx.lightbox.previous')}
+            variant="ghost"
+            isDisabled={!canPrev}
+            onClick={goToPrev}
+            xstyle={[styles.navButton, styles.navPrev, styles.controlButton]}
+          />
         )}
 
         {/* Media + caption group (centered together) */}
@@ -676,20 +680,21 @@ export function Lightbox({
         {/* Gallery nav: next — see "prev" above; stays mounted and disabled at
             the end of the range instead of unmounting. */}
         {isGallery && (
-          <div {...stylex.props(styles.navButton, styles.navNext)}>
-            <IconButton
-              icon={
-                <span {...stylex.props(rtlStyles.mirror)}>
-                  <Icon icon="chevronRight" size="sm" color="inherit" />
-                </span>
-              }
-              label={t('@astryx.lightbox.next')}
-              variant="ghost"
-              isDisabled={!canNext}
-              onClick={goToNext}
-              xstyle={styles.controlButton}
-            />
-          </div>
+          <IconButton
+            icon={
+              <Icon
+                icon="chevronRight"
+                size="sm"
+                color="inherit"
+                xstyle={rtlStyles.mirror}
+              />
+            }
+            label={t('@astryx.lightbox.next')}
+            variant="ghost"
+            isDisabled={!canNext}
+            onClick={goToNext}
+            xstyle={[styles.navButton, styles.navNext, styles.controlButton]}
+          />
         )}
 
         {/* Gallery counter */}
