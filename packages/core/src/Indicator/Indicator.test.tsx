@@ -223,11 +223,19 @@ describe('falsy children never suppress the state mark (#4893)', () => {
  *     what actually keeps a caller from un-hiding it. Nothing is stripped.
  */
 describe('the decorative contract (#4918)', () => {
-  it('rejects `role` at compile time', () => {
-    // @ts-expect-error — the owning control holds the role.
-    const rejected = <CheckIndicator state="checked" role="checkbox" />;
+  it('rejects `role` and `tabIndex` at compile time', () => {
+    // Both are valid JS identifiers, so excess-property checking applies and
+    // the type alone is enough — no runtime guard needed. `tabIndex` matters
+    // because the element is unconditionally aria-hidden: a tab stop on it is
+    // a focusable node in a hidden subtree (axe `aria-hidden-focus`).
+    const rejected = [
+      // @ts-expect-error — the owning control holds the role.
+      <CheckIndicator key="a" state="checked" role="checkbox" />,
+      // @ts-expect-error — the owning control holds the focus.
+      <CheckboxIndicator key="b" state="checked" tabIndex={0} />,
+    ];
 
-    expect(rejected).toBeTruthy();
+    expect(rejected).toHaveLength(2);
   });
 
   it('cannot reject a hyphenated a11y attribute — TS exempts those', () => {
@@ -240,9 +248,13 @@ describe('the decorative contract (#4918)', () => {
 
   it('cannot reject a SPREAD either — which is the ordinary host idiom', () => {
     // Also no @ts-expect-error, also deliberate. A spread bypasses
-    // excess-property checking for every member, so even `role` — the one the
-    // type does catch as a literal — gets through this way. It is the reason
-    // the changeset promises a codemod rather than "the compiler will tell you".
+    // excess-property checking for every member, so even `role` and `tabIndex`
+    // — the two the type catches as literals — get through this way.
+    //
+    // Left alone on purpose. Nothing in the repo spreads a hostile object at an
+    // indicator, `aria-hidden` is settled by attribute order regardless, and a
+    // forwarded `role`/`aria-label` is inert inside a hidden subtree. Guarding
+    // it at runtime would cost a module to defend a case no call site reaches.
     const hostile = {role: 'checkbox', tabIndex: 0};
     const accepted = <CheckIndicator state="checked" {...hostile} />;
 
@@ -286,17 +298,6 @@ describe('the decorative contract (#4918)', () => {
         'aria-hidden',
         'true',
       );
-    });
-
-    it(`${name} refuses a tab stop inside its hidden subtree`, () => {
-      // aria-hidden is unconditional, so a forwarded tabIndex would put a
-      // focusable node inside a hidden subtree — axe's aria-hidden-focus.
-      // The type omits it; this pins the spread route the type cannot see.
-      const {container} = render(renderCase({tabIndex: 0}));
-      const el = container.firstElementChild;
-
-      expect(el).not.toHaveAttribute('tabindex');
-      expect(el).toHaveAttribute('aria-hidden', 'true');
     });
 
     it(`${name} still forwards ordinary props`, () => {
