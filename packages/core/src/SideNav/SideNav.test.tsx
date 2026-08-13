@@ -476,6 +476,27 @@ describe('SideNavHeading collapsed', () => {
     );
     expect(screen.getByTestId('nav-header')).toBeInTheDocument();
   });
+
+  it('anchors popover triggerRef to icon button when collapsed with menu', () => {
+    render(
+      <CollapsedWrapper>
+        <SideNavHeading
+          heading="Alex Morgan"
+          subheading="alex.morgan@acme.com"
+          icon={<span data-testid="avatar">AM</span>}
+          menu={
+            <div>
+              <span data-testid="menu-item">Profile</span>
+            </div>
+          }
+        />
+      </CollapsedWrapper>,
+    );
+    const button = screen.getByRole('button', {name: 'Alex Morgan'});
+    expect(button).toBeInTheDocument();
+    expect(button).toHaveAttribute('aria-haspopup', 'dialog');
+    expect(button).toHaveAttribute('aria-expanded', 'false');
+  });
 });
 
 // =============================================================================
