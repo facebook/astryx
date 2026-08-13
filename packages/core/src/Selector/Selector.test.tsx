@@ -2593,10 +2593,12 @@ describe('Selector indicatorPosition', () => {
     ).toBeTruthy();
   });
 
-  it('reserves the start column on unchosen rows, and only there', () => {
-    // The default check draws nothing when unchecked, so a leading mark needs a
-    // column of its own or the chosen row would be the only indented one. At
-    // the end there is nothing to align against and no column is reserved.
+  it('reserves the mark column on every row, at either position', () => {
+    // The default check draws nothing when unchecked, so without a reserved
+    // column the chosen row would be laid out differently from the rest —
+    // indented at the start, truncating earlier at the end. Every row is two
+    // children wide either way, so a row's geometry does not depend on whether
+    // it happens to be the chosen one.
     const {unmount} = render(
       <Selector
         label="Fruit"
@@ -2622,8 +2624,7 @@ describe('Selector indicatorPosition', () => {
       />,
     );
     for (const row of openRows()) {
-      const isSelected = row.getAttribute('aria-selected') === 'true';
-      expect(row.children).toHaveLength(isSelected ? 2 : 1);
+      expect(row.children).toHaveLength(2);
     }
   });
 

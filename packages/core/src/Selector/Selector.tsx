@@ -302,10 +302,12 @@ const styles = stylex.create({
     flex: 1,
     minWidth: 0,
   },
-  // A reserved column for a start-positioned mark, so every label in the list
-  // starts on the same line whether or not its row is the chosen one. `minWidth`
-  // rather than `width`: a theme can replace `check` with a larger indicator (a
-  // radio is 20px at `sm`), and the column has to grow with it.
+  // The mark's column, reserved on every row and at either position, so a row
+  // occupies the same geometry whether or not it is the chosen one — the
+  // default check draws nothing when unchecked, and without the column a list
+  // would indent (or truncate) its chosen row differently from the rest.
+  // `minWidth` rather than `width`: a theme can replace `check` with a larger
+  // indicator (a radio is 20px at `sm`), and the column has to grow with it.
   itemMarkColumn: {
     display: 'inline-flex',
     alignItems: 'center',
@@ -1121,12 +1123,14 @@ export function Selector<T extends SelectorOptionType>(
        * in the row; the indicator owns what the mark looks like.
        */
       const mark = (
-        <SelectionMark
-          state={isSelected ? 'checked' : 'unchecked'}
-          size="sm"
-          isDisabled={item.disabled ?? false}
-          {...themeProps('selector-check')}
-        />
+        <span {...stylex.props(styles.itemMarkColumn)}>
+          <SelectionMark
+            state={isSelected ? 'checked' : 'unchecked'}
+            size="sm"
+            isDisabled={item.disabled ?? false}
+            {...themeProps('selector-check')}
+          />
+        </span>
       );
 
       const optionContent = (
@@ -1135,14 +1139,10 @@ export function Selector<T extends SelectorOptionType>(
         </span>
       );
 
-      // At the start the mark needs a column of its own, because the default
-      // check draws nothing on an unchosen row — without one, only the chosen
-      // row's label would be indented. At the end there is nothing to line up
-      // against, so that path stays exactly the markup it has always been.
       const content =
         indicatorPosition === 'start' ? (
           <>
-            <span {...stylex.props(styles.itemMarkColumn)}>{mark}</span>
+            {mark}
             {optionContent}
           </>
         ) : (
