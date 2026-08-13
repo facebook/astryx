@@ -2430,12 +2430,22 @@ describe('Selector search focus ring', () => {
   // too (verified in Chromium), which is why a modality gate sits alongside
   // it. jsdom does not implement `:focus-visible`, so these assert the gate;
   // the painted ring is verified in real Chromium.
+  //
+  // Focus moves into the search input on the frame after the panel opens, and
+  // the gate is read at that moment: every case must wait for the focus to
+  // land before asserting or typing, or a slow frame reads the modality of
+  // whatever the test did next.
   beforeEach(() => {
     __resetInteractionModalityForTest();
   });
 
   const field = () =>
     screen.getByRole('combobox', {hidden: true}).parentElement;
+
+  const waitForSearchFocus = async () =>
+    waitFor(() =>
+      expect(screen.getByRole('combobox', {hidden: true})).toHaveFocus(),
+    );
 
   it('does not ring when the panel is opened by mouse', async () => {
     const user = userEvent.setup();
@@ -2449,6 +2459,7 @@ describe('Selector search focus ring', () => {
       />,
     );
     await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    await waitForSearchFocus();
     expect(field()).not.toHaveAttribute('data-keyboard-focus');
   });
 
@@ -2464,6 +2475,7 @@ describe('Selector search focus ring', () => {
       />,
     );
     await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    await waitForSearchFocus();
     await user.keyboard('an');
     // Typing does not retroactively make a pointer focus a keyboard one; the
     // caret already shows where the text is going.
@@ -2483,10 +2495,7 @@ describe('Selector search focus ring', () => {
     );
     await user.tab();
     await user.keyboard('{Enter}');
-    // Focus moves into the search input on the next frame.
-    await waitFor(() =>
-      expect(screen.getByRole('combobox', {hidden: true})).toHaveFocus(),
-    );
+    await waitForSearchFocus();
     expect(field()).toHaveAttribute('data-keyboard-focus', 'true');
   });
 });
