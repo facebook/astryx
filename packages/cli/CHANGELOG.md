@@ -1,5 +1,74 @@
 # @xds/cli
 
+# 0.4.0
+
+#### Breaking Changes
+
+- DropdownMenu's two item modes are peers again. Compound mode gains a `DropdownMenuDivider` component (aliased as `ContextMenuDivider` and `BreadcrumbMenuDivider`), which the data path also renders, so `{type: 'divider'}` and `<DropdownMenuDivider />` produce identical DOM, spacing, and theme target. Data mode gains `endContent` and `description`, so an `items` row can carry a shortcut hint or secondary text without dropping to compound mode. Its `label` widens from `string` to `ReactNode`, matching compound mode: the narrowing existed only because rows were keyed by label, and they no longer are (#4953).
+  The bare names now belong to those components, so the data-mode option types take the `Data` suffix their sibling `DropdownMenuItemData` already carries: `DropdownMenuDivider` → `DropdownMenuDividerData`, `ContextMenuDivider` → `ContextMenuDividerData`, `BreadcrumbMenuDivider` → `BreadcrumbMenuDividerData`. TypeScript cannot re-export a value and a type under one name from a single barrel, so the rename is what makes the components exportable at all. Run `astryx upgrade --apply` to rewrite the type imports; a missed one fails at compile time rather than silently.
+
+#### New Features
+
+- Add the `migrate-table-rowexpansion-to-tree` codemod (runs on `astryx upgrade`): rewrites the removed `useTableRowExpansionState` tree pattern to `useTableTreeState` + `useTableTreeData`. Detail-panel usage (`renderExpanded`) is left untouched. (#4884)
+- Add a self-documenting layer to the CLI: typed, colocated `.doc.mjs` for every command, every `@astryxdesign/cli/api` function, and every authored schema (config, integration, codemod, the response envelope, and the doc-types themselves). Adds the `FunctionDoc`, `SchemaDoc`, `CommandDoc`, and `EnumDoc` authoring types with sealed parsers. (#4714)
+  Every command's `--help` and its `astryx manifest` entry are now built from that command's colocated `CommandDoc` via a `defineCommand` converter, so the docs and the CLI can no longer describe different things. The migration is behavior-preserving: help text, command output, error paths, and exit codes are byte-identical.
+
+  The CLI README's command, error-code, and response-type tables are now generated from the manifest and the `EnumDoc`s, correcting real drift — the error-code table listed two codes that do not exist and omitted several that do, and the command table was missing `blog`, `build`, `layout`, and `validate-integration`.
+
+  Kept honest by a drift harness (docs vs the live CLI), `check:cli-structure` (each doc-type and `api/` leaf ships its full file set), and lint rules for the CLI's layering.
+
+- Add themeable indicators — the componentized check, checkbox, and radio visuals. `defineTheme({indicators: {check: RadioIndicator}})` replaces one by name, and every component drawing it follows. (#4712)
+  Theme targets now follow the component-name convention: `checkbox-indicator`, `radio-indicator`, `radio-indicator-dot`. The old names (`checkbox`, `radio`, `radio-dot`) are still emitted on the same element, so existing themes keep working — migrate at your convenience; they go away in the next major.
+
+  Migration: menu radios use those shared targets now. `dropdown-menu-radio-dot` is removed — target `radio-indicator-dot`; `astryx upgrade` rewrites it for you.
+
+#### Fixes
+
+- The generated agent cheat sheet hardcoded a shell recommendation ("Full page → AppShell; sidebar nav → SideNav", "pick the shell (AppShell / Layout+LayoutPanel)"), which answers a question that depends on the app archetype and duplicates guidance `astryx docs layout` already maintains. The two layout rules now send agents to that doc instead, so shell choice, region budgets, and the responsive contract have one source of truth. (#4772)
+  The rule cites the command rather than the docsite URL, in the block's established `astryx <cmd>` form that the header maps to the project's real invocation (`pnpm exec astryx`, `npx @astryxdesign/cli`, …). `astryx docs` reads the docs shipped inside the installed version, so an agent can't be shown an API that release doesn't have.
+- The `migrate-grid-minchildwidth-to-columns` codemod bailed without changes when a `<Grid>` had both `columns` and `minChildWidth`, leaving the now-invalid `minChildWidth` prop in place and failing type-checking on 0.3.0. (#4792)
+  When `columns` is a numeric literal, it now migrates losslessly to the 0.3.0 object form. This mirrors the old (0.2.0) Grid runtime, where `minChildWidth` dominated and the numeric `columns` capped the column count under `auto-fit`: `<Grid columns={3} minChildWidth={280}>` becomes `<Grid columns={{minWidth: 280, max: 3, repeat: 'fit'}}>`. Object or dynamic `columns` values remain a deliberate bail.
+- The documented `hook` example referenced `useToggle`, which is not a hook in the design system — running it failed with `ERR_UNKNOWN_HOOK`. It now uses `useFocusTrap`. (#4742)
+  This shipped in two places a consumer sees: `astryx manifest --json`, which agents read to learn the CLI, and the `hook` CommandDoc that feeds `--help`. Replaced in both.
+- CLI internals: a true `foundation/` bottom layer, and generated `./authoring` types (#4736).
+  `foundation/` no longer imports `api/`, and ESLint now enforces that direction alongside the existing `authoring/` and `api/` rules. Two things were reaching upward: `Project` pulled template discovery out of `api/template`, whose adapter imported `Project` straight back, and both `Project` and `integration-warnings` imported `validateLoadedIntegration` from the `validate-integration` command. Neither was misplaced logic, just misplaced files — the adapter now lives at `foundation/discovery/template-adapter.mjs` and the validators at `foundation/integrations/validate-contributions.mjs`. To be precise: `Project` and the template adapter still import each other, so that module cycle remains, contained within foundation instead of spanning two layers. Behavior-preserving — the CLI's observable surface is byte-identical across 84 invocations.
+
+  The published `./authoring` type declarations are now generated from their JSDoc instead of hand-written, the same way `./api` already works. The 13 hand-maintained `.d.mts` files are gone; `scripts/sync-api-types.mjs` emits both trees at `prepack`, stamped `@generated`. A hand-written declaration shadows the JSDoc in its `.mjs`, so it could disagree with the implementation and still compile — and both failure modes had shipped: a missing declaration made a strict consumer resolve that parser as `any`, and a stale `parseDoc` return union silently dropped `SchemaDoc`, `CommandDoc` and `EnumDoc`. Also fixes `parseFunction`, a bare re-export of `parseHook` that published `HookDoc` instead of the general `FunctionDoc`.
+
+- Scaffolding a template that references demo video (e.g. `LightboxVideo`) no longer replaces the video source with the image placeholder data URI, which the generated `<video>` element couldn't play. `stripTemplateAssetRefs()` treated every demo-media reference as an image regardless of extension; video extensions (`.mp4`, `.webm`, `.mov`, `.ogv`) are now stripped to an empty `src` instead — there's no equivalent self-contained inline placeholder for video, so the scaffolded example is honest about needing the builder to supply their own file rather than pointing at something that can't play. (#4863)
+- Stepper templates: the scaffolded Stepper blocks gain the a11y, theming and responsive-label hardening from the component audit, and their doc blocks match what they render (#4917).
+- cli: add `theme build --icons-specifier` so the generated module's icon import can be fully specified (#4620)
+  The generated theme module imports the icon registry rather than inlining it, because the registry holds React elements. `astryx theme build` scraped that specifier out of the TypeScript source and emitted it verbatim, so `./icons` — valid TypeScript, invalid ESM — reached the generated `.js`. Every published theme's `/built` entry therefore failed to load in Node, including under Vite SSR and Next.js Pages Router, while bundlers papered over it by guessing the extension.
+
+  No single extension is correct: the same source compiled by tsup lands at `icons.mjs` in a package with no `"type"` field and at `icons.js` in one with `"type": "module"`, and the generator runs before the compile step that produces either. The caller knows; now it can say so. Without the flag the specifier is emitted unchanged, so the default no-`--out` flow — where the neighbour is an uncompiled `icons.tsx` that only a bundler can resolve — is unaffected.
+
+  The seven theme packages now declare `--icons-specifier ./icons.mjs` in their build scripts.
+
+#### Other Changes
+
+- The scaffolded login pages use `Center`'s `padding` prop instead of a hand-written `var(--spacing-6)` style object (#4764).
+- Self-host template demo imagery in the repo instead of streaming it (#3973)
+  from the internal `lookaside.facebook.com` CDN.
+- Template demo images are now committed under
+  `apps/docsite/public/template-assets/` and referenced by root-relative `/template-assets/*` paths (previously Meta-internal CDN URLs invisible to external contributors).
+- `stripTemplateAssetRefs` still swaps these paths for the inline `data:` URI
+  placeholder on scaffold, so generated projects render with zero setup and no network dependency — no image is ever copied into a scaffolded project.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @cixzhang
+- @ejhammond
+- @ernestt
+- @HelloOjasMutreja
+- @humbertovirtudes
+- @imdreamrunner
+- @jiunshinn
+- @josephfarina
+
+---
+
 # 0.3.0
 
 #### Breaking Changes

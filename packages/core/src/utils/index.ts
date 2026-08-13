@@ -72,6 +72,7 @@ export {getKey, type Key, type KeyFallback} from './getKey';
 
 export {mergeProps} from './mergeProps';
 export {mergeRefs} from './mergeRefs';
+export {isFocusDetached} from './focusReturn';
 export {composeEventHandlers} from './composeEventHandlers';
 export {themeProps, themeDataAttributes} from './themeProps';
 export type {

@@ -36,6 +36,7 @@ export const docs = {
         className: 'astryx-complex-selector-indicator-icon',
         states: ['state'],
       },
+      {className: 'astryx-complex-selector-popup'},
     ],
   },
   components: [

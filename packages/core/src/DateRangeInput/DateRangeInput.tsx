@@ -36,6 +36,7 @@ import {
 } from '../theme/tokens.stylex';
 import {
   Field,
+  InputClearButton,
   type InputStatus,
   inputWrapperStyles,
   inputStatusBorderStyles,
@@ -60,6 +61,7 @@ import type {SizeValue} from '../utils/types';
 import {useSize} from '../SizeContext/SizeContext';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
 import {themeProps} from '../utils/themeProps';
+import {stableClassName} from '../naming';
 import {useTranslator} from '../i18n';
 
 export type {DateRange} from '../Calendar';
@@ -628,18 +630,11 @@ export function DateRangeInput({
           {displayValue || placeholder}
         </button>
         {hasClear && value !== null && !isEffectivelyDisabled && (
-          <button
-            type="button"
+          <InputClearButton
+            label={t('@astryx.dateInput.clear', {label})}
             onClick={handleClear}
-            aria-label={t('@astryx.dateInput.clear', {label})}
-            {...stylex.props(styles.iconButton)}>
-            <Icon
-              icon="close"
-              size="sm"
-              color="secondary"
-              {...themeProps('date-range-input-clear-icon')}
-            />
-          </button>
+            iconClassName={stableClassName('date-range-input-clear-icon')}
+          />
         )}
         {isBusy && <Spinner size="sm" />}
         {statusIcon}

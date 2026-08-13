@@ -366,3 +366,46 @@ describe('ComplexSelector', () => {
     );
   });
 });
+
+describe('ComplexSelector popup theme target', () => {
+  it('puts astryx-complex-selector-popup on the content box inside the layer', async () => {
+    const user = userEvent.setup();
+    render(
+      <ComplexSelector label="Fruit blend" value="Apple" triggerLabel="Apple">
+        {() => <button type="button">Done</button>}
+      </ComplexSelector>,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit blend'}));
+
+    const layer = document.querySelector('[popover]') as HTMLElement;
+    const popup = document.querySelector(
+      '.astryx-complex-selector-popup',
+    ) as HTMLElement;
+    expect(popup).not.toBeNull();
+    // The layer is a bare positioning box; the target must be the content box
+    // it contains, which is what actually paints.
+    expect(popup).not.toBe(layer);
+    expect(layer.contains(popup)).toBe(true);
+    expect(popup).toContainElement(
+      screen.getByRole('button', {name: 'Done', ...h}),
+    );
+  });
+
+  it('keeps the target when the consumer also passes contentXstyle', async () => {
+    const user = userEvent.setup();
+    render(
+      <ComplexSelector
+        label="Fruit blend"
+        value="Apple"
+        triggerLabel="Apple"
+        contentXstyle={{}}>
+        {() => <button type="button">Done</button>}
+      </ComplexSelector>,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit blend'}));
+
+    expect(
+      document.querySelector('.astryx-complex-selector-popup'),
+    ).not.toBeNull();
+  });
+});

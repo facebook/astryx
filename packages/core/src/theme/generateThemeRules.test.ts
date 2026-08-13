@@ -496,6 +496,26 @@ describe('derived var expansion', () => {
     // full-bleed textarea and push the native resize grip off the corner.
     expect(rule).not.toContain('padding-inline: var(--eps-input-padding-x)');
   });
+
+  it('replaces progressbar-mark width/height with vars (no raw properties)', () => {
+    const theme = defineTheme({
+      name: 'test-derived-progressbar-mark',
+      components: {
+        'progressbar-mark': {
+          base: {width: '2px', height: '12px'},
+        },
+      },
+    });
+    const rules = generateThemeRules(theme);
+    const rule = rules.find(r => r.includes('.astryx-progressbar-mark'));
+    expect(rule).toBeDefined();
+    expect(rule).toContain('--_progressbar-mark-width: 2px');
+    expect(rule).toContain('--_progressbar-mark-height: 12px');
+    // Raw dimensions would be a same-element fight with the mark's StyleX,
+    // which an unlayered consumer build wins — the vars have no competitor.
+    expect(rule).not.toMatch(/[{;]\s*width: 2px/);
+    expect(rule).not.toMatch(/[{;]\s*height: 12px/);
+  });
 });
 
 describe('brutalist-style derived expansion', () => {

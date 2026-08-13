@@ -28,7 +28,7 @@ export const docs = {
       },
       {className: 'astryx-selector-option'},
       {className: 'astryx-selector-empty-state'},
-      {className: 'astryx-selector-clear-icon'},
+      {className: 'astryx-selector-clear-icon', deprecatedFor: 'input-clear-icon'},
       {className: 'astryx-selector-indicator-icon', states: ['state']},
       {className: 'astryx-selector-check'},
     ],

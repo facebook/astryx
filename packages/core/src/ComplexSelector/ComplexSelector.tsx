@@ -447,7 +447,16 @@ export function ComplexSelector<Value>({
   const triggerContent = triggerLabel ?? placeholder;
 
   const content = (
-    <div id={contentId} {...stylex.props(styles.content, contentXstyle)}>
+    // The theme target sits here, not on the layer: the layer element is a
+    // bare positioning box (useLayer zeroes its borders, padding and
+    // background), so this content box is the surface a theme has to reach to
+    // paint the popup.
+    <div
+      id={contentId}
+      {...mergeProps(
+        themeProps('complex-selector-popup'),
+        stylex.props(styles.content, contentXstyle),
+      )}>
       {children(optimisticValue, commitValue, close, {
         isOpen,
         isBusy,

@@ -867,6 +867,14 @@
     "defaultMessage": "Clear {label}",
     "description": "Screen-reader-only label on the X that clears the value from a NumberInput. Example: `Clear Age`, `Clear Quantity`."
   },
+  "@astryx.numberInput.decrementLabel": {
+    "defaultMessage": "Decrement {label}",
+    "description": "Accessible label for the NumberInput button that decreases the value by one configured step. Example: `Decrement Quantity`."
+  },
+  "@astryx.numberInput.incrementLabel": {
+    "defaultMessage": "Increment {label}",
+    "description": "Accessible label for the NumberInput button that increases the value by one configured step. Example: `Increment Quantity`."
+  },
   "@astryx.selector.clearLabel": {
     "defaultMessage": "Clear {label}",
     "description": "Screen-reader-only label on the X that clears the selected value from a Selector. `{label}` is the selector's visible label — example: `Clear Country`."
