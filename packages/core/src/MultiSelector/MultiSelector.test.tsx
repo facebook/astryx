@@ -2110,3 +2110,72 @@ describe('MultiSelector popup theme target', () => {
     expect(popup.querySelector('[role="listbox"]')).not.toBeNull();
   });
 });
+
+describe('MultiSelector indicatorPosition', () => {
+  const OPTIONS = ['Apple', 'Banana', 'Cherry'];
+  const rowFor = (label: string): HTMLElement =>
+    screen
+      .getAllByRole('option', {hidden: true})
+      .find(row => row.textContent?.includes(label))!;
+
+  it('draws the checkbox before the label by default', () => {
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={OPTIONS}
+        value={['Banana']}
+        onChange={() => {}}
+        isDefaultOpen
+      />,
+    );
+    const row = rowFor('Banana');
+    const checkbox = row.querySelector('.astryx-checkbox')!;
+    const label = row.lastElementChild!;
+    expect(label).toHaveTextContent('Banana');
+    expect(
+      label.compareDocumentPosition(checkbox) &
+        Node.DOCUMENT_POSITION_PRECEDING,
+    ).toBeTruthy();
+  });
+
+  it('draws the checkbox after the label when set to end', () => {
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={OPTIONS}
+        value={['Banana']}
+        onChange={() => {}}
+        indicatorPosition="end"
+        isDefaultOpen
+      />,
+    );
+    const row = rowFor('Banana');
+    const checkbox = row.querySelector('.astryx-checkbox')!;
+    const label = row.firstElementChild!;
+    expect(label).toHaveTextContent('Banana');
+    expect(
+      label.compareDocumentPosition(checkbox) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('keeps the select-all row on the same edge as the options', () => {
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={OPTIONS}
+        value={['Banana']}
+        onChange={() => {}}
+        hasSelectAll
+        indicatorPosition="end"
+        isDefaultOpen
+      />,
+    );
+    const row = rowFor('Select all');
+    expect(
+      row.firstElementChild!.compareDocumentPosition(
+        row.querySelector('.astryx-checkbox')!,
+      ) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+});

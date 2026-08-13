@@ -2550,3 +2550,107 @@ describe('Selector disabled state theme target', () => {
     expect(css).toContain('opacity: 0.4');
   });
 });
+
+describe('Selector indicatorPosition', () => {
+  const openRows = (): HTMLElement[] => screen.getAllByRole('option', h);
+  const rowFor = (label: string): HTMLElement =>
+    openRows().find(row => row.textContent?.includes(label))!;
+
+  it('draws the mark after the option content by default', () => {
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value="Banana"
+        onChange={() => {}}
+        isDefaultOpen
+      />,
+    );
+    const row = rowFor('Banana');
+    const mark = row.querySelector('.astryx-selector-check')!;
+    const content = row.querySelector('.astryx-selector-option')!;
+    expect(
+      content.compareDocumentPosition(mark) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('draws the mark before the option content when set to start', () => {
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value="Banana"
+        onChange={() => {}}
+        indicatorPosition="start"
+        isDefaultOpen
+      />,
+    );
+    const row = rowFor('Banana');
+    const mark = row.querySelector('.astryx-selector-check')!;
+    const content = row.querySelector('.astryx-selector-option')!;
+    expect(
+      content.compareDocumentPosition(mark) & Node.DOCUMENT_POSITION_PRECEDING,
+    ).toBeTruthy();
+  });
+
+  it('reserves the start column on unchosen rows, and only there', () => {
+    // The default check draws nothing when unchecked, so a leading mark needs a
+    // column of its own or the chosen row would be the only indented one. At
+    // the end there is nothing to align against and no column is reserved.
+    const {unmount} = render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value="Banana"
+        onChange={() => {}}
+        indicatorPosition="start"
+        isDefaultOpen
+      />,
+    );
+    for (const row of openRows()) {
+      expect(row.children).toHaveLength(2);
+    }
+    unmount();
+
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value="Banana"
+        onChange={() => {}}
+        isDefaultOpen
+      />,
+    );
+    for (const row of openRows()) {
+      const isSelected = row.getAttribute('aria-selected') === 'true';
+      expect(row.children).toHaveLength(isSelected ? 2 : 1);
+    }
+  });
+
+  it('positions a themed replacement indicator the same way', () => {
+    const theme = defineTheme({
+      name: 'selector-start-radio-mark-test',
+      indicators: {check: RadioIndicator},
+    });
+    render(
+      <Theme theme={theme}>
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Banana"
+          onChange={() => {}}
+          indicatorPosition="start"
+          isDefaultOpen
+        />
+      </Theme>,
+    );
+    for (const row of openRows()) {
+      const radio = row.querySelector('.astryx-radio')!;
+      const content = row.querySelector('.astryx-selector-option')!;
+      expect(
+        content.compareDocumentPosition(radio) &
+          Node.DOCUMENT_POSITION_PRECEDING,
+      ).toBeTruthy();
+    }
+  });
+});
