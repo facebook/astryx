@@ -1,18 +1,18 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file babel.config.js
+ * @file babel.config.cjs
  * @input Uses @babel/preset-react, @babel/preset-typescript, the local
  *   add-extensions plugin, and @stylexjs/babel-plugin
- * @output Babel config for compiling richtext src -> dist (ESM .js with StyleX)
- * @position Build config for @astryxdesign/richtext
+ * @output Babel config for compiling lab src → dist (ESM .js with StyleX)
+ * @position Build config for @astryxdesign/lab
  *
- * Mirrors packages/lab/babel.config.js: richtext consumes core's StyleX theme
- * tokens (@astryxdesign/core/theme/tokens.stylex), a cross-package reference
- * core never makes. The StyleX resolver therefore needs an alias to core's
- * source and a monorepo-root rootDir.
+ * Mirrors packages/core/babel.config.json, with one difference: lab consumes
+ * core's StyleX theme tokens (@astryxdesign/core/theme/tokens.stylex), a
+ * cross-package reference core never makes. The StyleX resolver therefore
+ * needs an alias to core's source and a monorepo-root rootDir.
  *
- * SYNC: When modified, update this header and /packages/richtext/README.md
+ * SYNC: When modified, update this header and /packages/lab/README.md
  */
 
 /* global module, require, __dirname */

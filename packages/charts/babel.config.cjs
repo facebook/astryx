@@ -1,13 +1,13 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file babel.config.js
+ * @file babel.config.cjs
  * @input Uses @babel/preset-react, @babel/preset-typescript, the local
  *   add-extensions plugin, and @stylexjs/babel-plugin
  * @output Babel config for compiling charts src -> dist (ESM .js with StyleX)
  * @position Build config for @astryxdesign/charts
  *
- * Mirrors packages/lab/babel.config.js: charts consumes core's StyleX theme
+ * Mirrors packages/lab/babel.config.cjs: charts consumes core's StyleX theme
  * tokens (@astryxdesign/core/theme/tokens.stylex), a cross-package reference
  * core never makes. The StyleX resolver therefore needs an alias to core's
  * source and a monorepo-root rootDir.
