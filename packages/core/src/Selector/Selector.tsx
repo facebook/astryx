@@ -1412,6 +1412,12 @@ export function Selector<T extends SelectorOptionType>(
         {
           placement: popoverPlacement,
           alignment: 'start',
+          // The system's standard menu clearance, except in overlay mode:
+          // there the measured negative margin owns the block geometry and
+          // the menu is meant to sit on the trigger, not clear it.
+          offset: shouldOverlaySelectedItem
+            ? undefined
+            : spacingVars['--spacing-1'],
           xstyle: [styles.popover, layerAnimations[popoverPlacement]],
           style: popoverOffsetStyle,
         },

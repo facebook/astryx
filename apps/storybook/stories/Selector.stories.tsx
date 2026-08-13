@@ -746,6 +746,40 @@ export const PlacementAbove: Story = {
   },
 };
 
+export const Placements: Story = {
+  render: () => {
+    const [below, setBelow] = useState('Banana');
+    const [start, setStart] = useState('Banana');
+    const [end, setEnd] = useState('Banana');
+    const options = ['Apple', 'Banana', 'Cherry', 'Date'];
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: 32}}>
+        <Selector
+          label="placement=below"
+          options={options}
+          value={below}
+          onChange={v => setBelow(v)}
+          placement="below"
+        />
+        <Selector
+          label="placement=start"
+          options={options}
+          value={start}
+          onChange={v => setStart(v)}
+          placement="start"
+        />
+        <Selector
+          label="placement=end"
+          options={options}
+          value={end}
+          onChange={v => setEnd(v)}
+          placement="end"
+        />
+      </div>
+    );
+  },
+};
+
 export const StatusVariantComparison: Story = {
   render: () => {
     const [a, setA] = useState<string | undefined>();

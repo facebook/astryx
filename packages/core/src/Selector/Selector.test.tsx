@@ -28,6 +28,7 @@ import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {defineTheme} from '../theme/defineTheme';
 import {Theme} from '../theme/Theme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
+import {spacingVars} from '../theme/tokens.stylex';
 
 function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
   const {prose, component} = generateThemeCSS(theme);
@@ -506,6 +507,89 @@ describe('Selector', () => {
     } finally {
       restoreRects();
     }
+  });
+
+  describe('menu clearance', () => {
+    it('clears the trigger by the standard menu offset when placement is explicit', async () => {
+      const user = userEvent.setup();
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Banana"
+          onChange={() => {}}
+          placement="above"
+        />,
+      );
+
+      await user.click(screen.getByRole('combobox'));
+      const popover = screen
+        .getByRole('listbox', {hidden: true})
+        .closest('[popover]') as HTMLElement;
+      // Both block edges, so the gap survives a position-try-fallbacks flip
+      // to the opposite side (#4803).
+      await waitFor(() => {
+        expect(popover.style.getPropertyValue('--x-marginBlockStart')).toBe(
+          spacingVars['--spacing-1'],
+        );
+      });
+      expect(popover.style.getPropertyValue('--x-marginBlockEnd')).toBe(
+        spacingVars['--spacing-1'],
+      );
+    });
+
+    it('clears the trigger in search mode', async () => {
+      const user = userEvent.setup();
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Banana"
+          onChange={() => {}}
+          hasSearch
+        />,
+      );
+
+      // In hasSearch mode the trigger is a plain button, not a combobox.
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      const popover = screen
+        .getByRole('listbox', {hidden: true})
+        .closest('[popover]') as HTMLElement;
+      await waitFor(() => {
+        expect(popover.style.getPropertyValue('--x-marginBlockStart')).toBe(
+          spacingVars['--spacing-1'],
+        );
+      });
+    });
+
+    it('stays flush in the default selected-item overlay', async () => {
+      const restoreRects = mockSelectorRects();
+      const user = userEvent.setup();
+      try {
+        render(
+          <Selector
+            label="Fruit"
+            options={OPTIONS}
+            value="Banana"
+            onChange={() => {}}
+          />,
+        );
+
+        await user.click(screen.getByRole('combobox'));
+        const popover = screen
+          .getByRole('listbox', {hidden: true})
+          .closest('[popover]') as HTMLElement;
+        await waitFor(() => {
+          expect(popover.getAttribute('style')).toContain(
+            'margin-block-start: -110px',
+          );
+        });
+        expect(popover.style.getPropertyValue('--x-marginBlockStart')).toBe('');
+        expect(popover.style.getPropertyValue('--x-marginBlockEnd')).toBe('');
+      } finally {
+        restoreRects();
+      }
+    });
   });
 
   describe('hasClear', () => {
