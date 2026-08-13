@@ -187,6 +187,11 @@ export function CheckboxIndicator({
 
   return (
     <span
+      // `{...rest}` first, own contract after. TypeScript cannot reject a
+      // hyphenated JSX attribute (see IndicatorProps), so attribute order is
+      // what actually keeps a caller from un-hiding a decorative element —
+      // rubric P3, "owned aria-* set after {...rest}".
+      {...rest}
       ref={ref}
       aria-hidden="true"
       {...mergeProps(
@@ -215,8 +220,7 @@ export function CheckboxIndicator({
         ),
         className,
         style,
-      )}
-      {...rest}>
+      )}>
       {isRenderable(children) ? (
         children
       ) : (

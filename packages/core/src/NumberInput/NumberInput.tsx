@@ -166,6 +166,15 @@ interface NumberInputPropsBase extends Omit<
    */
   isDisabled?: boolean;
   /**
+   * Whether the input is read-only.
+   * The value is shown at full opacity and still submits with the form, but
+   * cannot be edited. Unlike `isDisabled`, a read-only input is not dimmed and
+   * stays in the tab order — use it for a value the user should see and send
+   * but not change. `isDisabled` takes precedence when both are set.
+   * @default false
+   */
+  isReadOnly?: boolean;
+  /**
    * Explains why the input is disabled. When set together with `isDisabled`,
    * the input shows a tooltip with this text on hover and keyboard focus, and
    * stays focusable (via `aria-disabled`) so the reason is discoverable by
@@ -372,6 +381,7 @@ export function NumberInput({
   isOptional = false,
   isRequired = false,
   isDisabled = false,
+  isReadOnly = false,
   disabledMessage,
   startIcon,
   labelIcon,
@@ -481,7 +491,7 @@ export function NumberInput({
       // Value can't change while showing a disabled message (the field is
       // read-only and non-native-disabled), but guard the handler too so the
       // pending value and onChange never fire.
-      if (isDisabled) {
+      if (isDisabled || isReadOnly) {
         return;
       }
       const newValue = e.target.value;
@@ -493,7 +503,7 @@ export function NumberInput({
         onChange(parsed);
       }
     },
-    [value, onChange, min, max, isIntegerOnly, isDisabled],
+    [value, onChange, min, max, isIntegerOnly, isDisabled, isReadOnly],
   );
 
   // Handle focus
@@ -616,6 +626,7 @@ export function NumberInput({
           size,
           status: status?.type ?? null,
           disabled: isDisabled ? 'disabled' : null,
+          readonly: isReadOnly ? 'readonly' : null,
         }),
         stylex.props(
           inputWrapperStyles.base,
@@ -652,7 +663,7 @@ export function NumberInput({
         // keep the value from changing.
         disabled={isDisabled && !showsDisabledMessage}
         aria-disabled={showsDisabledMessage ? 'true' : undefined}
-        readOnly={showsDisabledMessage || undefined}
+        readOnly={isReadOnly || showsDisabledMessage || undefined}
         autoFocus={hasAutoFocus}
         data-autofocus={hasAutoFocus || undefined}
         min={min ?? undefined}
@@ -683,7 +694,7 @@ export function NumberInput({
       <VisuallyHidden as="div" role="alert" aria-live="assertive">
         {!isInputValid ? 'Invalid number' : ''}
       </VisuallyHidden>
-      {hasClear && value != null && !isDisabled && (
+      {hasClear && value != null && !isDisabled && !isReadOnly && (
         <InputClearButton
           label={t('@astryx.numberInput.clearLabel', {label})}
           onClick={handleClear}

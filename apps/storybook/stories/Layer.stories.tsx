@@ -66,6 +66,61 @@ export const ContextMode: Story = {
   render: () => <ContextModeDemo />,
 };
 
+function OffsetDemo() {
+  const [placement, setPlacement] = useState<
+    'above' | 'below' | 'start' | 'end'
+  >('end');
+  const flush = useLayer({mode: 'context', lightDismiss: true});
+  const spaced = useLayer({mode: 'context', lightDismiss: true});
+
+  return (
+    <div style={{display: 'flex', flexDirection: 'column', gap: 16}}>
+      <div style={{display: 'flex', gap: 8}}>
+        {(['above', 'below', 'start', 'end'] as const).map(p => (
+          <Button
+            key={p}
+            label={p}
+            variant={placement === p ? 'primary' : 'secondary'}
+            onClick={() => setPlacement(p)}
+          />
+        ))}
+      </div>
+      <div {...stylex.props(styles.demoArea)} style={{gap: 120}}>
+        <div>
+          <Button
+            ref={flush.ref}
+            label="offset: 0"
+            onClick={() => (flush.isOpen ? flush.hide() : flush.show())}
+          />
+          {flush.render(
+            <div {...stylex.props(styles.popoverContent)}>
+              <Text type="body">Flush against the anchor</Text>
+            </div>,
+            {placement, alignment: 'center'},
+          )}
+        </div>
+        <div>
+          <Button
+            ref={spaced.ref}
+            label="offset: 12"
+            onClick={() => (spaced.isOpen ? spaced.hide() : spaced.show())}
+          />
+          {spaced.render(
+            <div {...stylex.props(styles.popoverContent)}>
+              <Text type="body">12px of clearance, on either side</Text>
+            </div>,
+            {placement, alignment: 'center', offset: 12},
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export const Offset: Story = {
+  render: () => <OffsetDemo />,
+};
+
 function PlacementDemo() {
   const [placement, setPlacement] = useState<
     'above' | 'below' | 'start' | 'end'
@@ -156,7 +211,6 @@ function LayerProviderDemo() {
     <LayerProvider toast={{position: 'topEnd', maxVisible: 3}}>
       <div style={{padding: 16}}>
         <Text type="body">
-          
           LayerProvider wraps your app to configure layer systems (toast
           positioning, max visible toasts). It is optional; hooks fall back to
           defaults when no provider exists.

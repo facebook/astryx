@@ -50,7 +50,7 @@ export const docs = {
       'Copy-to-clipboard behavior: the clipboard write, a transient isCopied flag with its own reset timer, and an optional polite screen-reader announcement. Extracted so every copy affordance is a thin control over one implementation instead of re-deriving the timer and announcement. Rapid re-copies restart the reset timer so the confirmation always lasts the full duration, and the timer is cleaned up on unmount. CodeBlock and Timestamp build their built-in copy buttons on it; reach for it directly when building a copy affordance that is not a plain icon button (a menu item, a labeled text button, a copy-on-click value chip).',
     bestPractices: [
       { guidance: true, description: 'Drive the copied confirmation (copy → check icon, label swap) off the returned isCopied flag rather than tracking your own state.' },
-      { guidance: true, description: 'Pass a localized announce message so the copy is spoken by screen readers — swapping the button aria-label alone is not reliably announced.' },
+      { guidance: true, description: 'Pass a localized announce message so the copy is spoken by screen readers; swapping the button aria-label alone is not reliably announced.' },
       { guidance: true, description: 'For the common compact icon copy button, render a ghost IconButton with a "Copy" tooltip and wire onClick to copy(); the tooltip stays "Copy" and the icon flip is the confirmation.' },
       { guidance: false, description: 'Track a separate copied useState alongside the hook; isCopied already reflects the copied window and resets itself.' },
     ],
@@ -80,6 +80,7 @@ export const docsDense = {
     bestPractices: [
       { guidance: true, description: 'Drive the copy → check confirmation off the returned isCopied, not your own state.' },
       { guidance: true, description: 'Pass a localized announce so the copy is spoken (aria-label swap alone is not reliably announced).' },
+      { guidance: true, description: 'For a compact icon copy button, use a ghost IconButton with a "Copy" tooltip and wire onClick to copy(); the tooltip stays "Copy" and the icon flip is the confirmation.' },
       { guidance: false, description: 'Track a separate copied useState alongside the hook.' },
     ],
   },

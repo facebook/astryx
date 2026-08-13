@@ -205,6 +205,91 @@ describe('falsy children never suppress the state mark (#4893)', () => {
   });
 });
 
+/**
+ * An indicator is decorative BY CONTRACT: the owning control supplies the role
+ * and the accessible name, so an indicator that is also announced says the same
+ * thing twice (#4918).
+ *
+ * The contract is held in two places, because neither covers the whole thing:
+ *
+ *   - `IndicatorProps` omits the a11y props, which makes `role` a compile
+ *     error. It does NOT make `aria-hidden` one: TypeScript exempts JSX
+ *     attribute names that are not valid JS identifiers from excess-property
+ *     checking, so anything hyphenated slips through. That is a language rule,
+ *     not a gap in our types — the second test below is the proof, and it will
+ *     start failing the day TS changes its mind, which is when we can drop the
+ *     ordering.
+ *   - So each component emits its own `aria-hidden` AFTER `{...rest}`, which is
+ *     what actually keeps a caller from un-hiding it. Nothing is stripped.
+ */
+describe('the decorative contract (#4918)', () => {
+  it('rejects `role` at compile time', () => {
+    // @ts-expect-error — the owning control holds the role.
+    const rejected = <CheckIndicator state="checked" role="checkbox" />;
+
+    expect(rejected).toBeTruthy();
+  });
+
+  it('cannot reject a hyphenated a11y attribute — TS exempts those', () => {
+    // NO @ts-expect-error here, deliberately: this compiles, and the comment
+    // above explains why. Runtime order is what makes it harmless.
+    const accepted = <CheckIndicator state="checked" aria-label="inert" />;
+
+    expect(accepted).toBeTruthy();
+  });
+
+  const cases = [
+    {
+      name: 'CheckIndicator (glyph path)',
+      render: (p: Record<string, unknown>) => (
+        <CheckIndicator state="checked" {...p} />
+      ),
+    },
+    {
+      name: 'CheckIndicator (children path)',
+      render: (p: Record<string, unknown>) => (
+        <CheckIndicator state="checked" {...p}>
+          <b />
+        </CheckIndicator>
+      ),
+    },
+    {
+      name: 'CheckboxIndicator',
+      render: (p: Record<string, unknown>) => (
+        <CheckboxIndicator state="checked" {...p} />
+      ),
+    },
+    {
+      name: 'RadioIndicator',
+      render: (p: Record<string, unknown>) => (
+        <RadioIndicator state="checked" {...p} />
+      ),
+    },
+  ] as const;
+
+  for (const {name, render: renderCase} of cases) {
+    it(`${name} stays aria-hidden even when a caller passes false`, () => {
+      const {container} = render(renderCase({'aria-hidden': 'false'}));
+
+      expect(container.firstElementChild).toHaveAttribute(
+        'aria-hidden',
+        'true',
+      );
+    });
+
+    it(`${name} still forwards ordinary props`, () => {
+      // The negative control: order must not turn into "drop everything".
+      const {container} = render(
+        renderCase({'data-testid': 'ind', id: 'pinned'}),
+      );
+      const el = container.firstElementChild;
+
+      expect(el).toHaveAttribute('data-testid', 'ind');
+      expect(el).toHaveAttribute('id', 'pinned');
+    });
+  }
+});
+
 describe('useIndicator', () => {
   it('returns the built-in indicator without a theme override', () => {
     const {result} = renderHook(() => useIndicator('checkbox'));
