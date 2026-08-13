@@ -36,6 +36,7 @@ export const docs = {
         visualProps: ['size'],
         states: ['select-all', 'selected', 'disabled'],
       },
+      {className: 'astryx-multi-selector-popup'},
     ],
   },
   components: [

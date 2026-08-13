@@ -2086,3 +2086,27 @@ describe('MultiSelector dropdown option theme target', () => {
     expect(css).toContain('.astryx-multi-selector-option.lg');
   });
 });
+
+describe('MultiSelector popup theme target', () => {
+  it('puts astryx-multi-selector-popup on the dropdown box inside the layer', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={['Apple', 'Banana']}
+        value={[]}
+        onChange={() => {}}
+      />,
+    );
+    await user.click(screen.getByRole('combobox', {name: /Fruit/}));
+
+    const layer = document.querySelector('[popover]') as HTMLElement;
+    const popup = document.querySelector(
+      '.astryx-multi-selector-popup',
+    ) as HTMLElement;
+    expect(popup).not.toBeNull();
+    expect(popup).not.toBe(layer);
+    expect(layer.contains(popup)).toBe(true);
+    expect(popup.querySelector('[role="listbox"]')).not.toBeNull();
+  });
+});

@@ -1583,7 +1583,11 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       </div>
 
       {popover.render(
-        <div {...stylex.props(styles.dropdown)}>
+        <div
+          {...mergeProps(
+            themeProps('multi-selector-popup'),
+            stylex.props(styles.dropdown),
+          )}>
           {renderSearch()}
           <div
             id={listboxId}
