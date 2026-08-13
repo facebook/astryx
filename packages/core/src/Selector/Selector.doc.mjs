@@ -157,6 +157,13 @@ export const docs = {
         'Custom render function for each selectable option in the dropdown. Use this instead of JSX children; dividers and sections are rendered by the selector.',
     },
     {
+      name: 'indicatorPosition',
+      type: "'start' | 'end'",
+      description:
+        'Which edge of the option row carries the selected mark. start reserves a mark column ahead of every label so they stay aligned, the way a native menu does; end is the house convention shared with Typeahead and CommandPalette.',
+      default: "'end'",
+    },
+    {
       name: 'width',
       type: 'SizeValue',
       description:

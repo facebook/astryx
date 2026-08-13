@@ -577,3 +577,25 @@ export const ThemedIcons: Story = {
     );
   },
 };
+
+/**
+ * `indicatorPosition="end"` moves the checkbox to the trailing edge of each
+ * row, including the select-all row. The default is `start`, where the checkbox
+ * leads the label as it does in CheckboxList.
+ */
+export const EndIndicatorPosition: Story = {
+  render: () => {
+    const [value, setValue] = useState<string[]>(['Name', 'Email']);
+    return (
+      <MultiSelector
+        label="Columns"
+        options={['Name', 'Email', 'Role', 'Status']}
+        value={value}
+        onChange={setValue}
+        hasSelectAll
+        indicatorPosition="end"
+        isDefaultOpen
+      />
+    );
+  },
+};

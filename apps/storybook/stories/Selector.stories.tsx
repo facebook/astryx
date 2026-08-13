@@ -890,3 +890,27 @@ export const DefaultSelectionIndicator: Story = {
     );
   },
 };
+
+/**
+ * `indicatorPosition="start"` moves the mark to the leading edge, the way a
+ * native menu marks its chosen row.
+ *
+ * The column is reserved on every row, not just the chosen one, so the labels
+ * stay on one line — the default check draws nothing when unchecked, and
+ * without the column only the chosen label would be indented.
+ */
+export const StartIndicatorPosition: Story = {
+  render: () => {
+    const [value, setValue] = useState<string | undefined>('Banana');
+    return (
+      <Selector
+        label="Mark at the start"
+        options={['Apple', 'Banana', 'Cherry']}
+        value={value}
+        onChange={setValue}
+        indicatorPosition="start"
+        isDefaultOpen
+      />
+    );
+  },
+};
