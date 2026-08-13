@@ -32,7 +32,8 @@
 import * as stylex from '@stylexjs/stylex';
 import type {SVGProps} from 'react';
 import {Icon} from '../Icon/Icon';
-import {mergeProps} from '../utils';
+import {colorVars} from '../theme/tokens.stylex';
+import {isRenderable, mergeProps} from '../utils';
 import type {IndicatorProps} from './types';
 
 /** The check glyph matches the control sizes the indicator families share. */
@@ -41,6 +42,27 @@ const iconSizeForIndicator = {
   md: 'sm',
 } as const;
 
+const styles = stylex.create({
+  // The children slot stands where the glyph would, so swapping a Spinner in
+  // for the mark does not move the row. 1rem is Icon's `sm` box, which is what
+  // `iconSizeForIndicator` resolves to at both indicator sizes.
+  slot: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    width: '1rem',
+    height: '1rem',
+  },
+  // Foreground for an inherit-shade Spinner, matching what the glyph would
+  // have painted. The sibling indicators set `color` on their chrome for the
+  // same reason.
+  enabled: {color: colorVars['--color-accent']},
+  // The same token Icon's `color="disabled"` resolves to, so the busy and the
+  // glyph paths read identically when the owner is disabled.
+  disabled: {color: colorVars['--color-icon-disabled']},
+});
+
 /**
  * The default single-selection mark: a checkmark when chosen, nothing when not.
  *
@@ -48,16 +70,15 @@ const iconSizeForIndicator = {
  * state, or focus behavior; the option or row that hosts it keeps all of that.
  *
  * @example
- * ```tsx
+ * ```
  * <CheckIndicator state={isSelected ? 'checked' : 'unchecked'} size="sm" />
  * ```
  *
  * Swap every single-selection mark for a radio:
  *
  * @example
- * ```tsx
+ * ```
  * import {RadioIndicator} from '@astryxdesign/core/Indicator';
- *
  * defineTheme({name: 'brand', indicators: {check: RadioIndicator}});
  * ```
  */
@@ -79,19 +100,34 @@ export function CheckIndicator({
   // BEFORE `state`: a host passes a busy visual through in whatever state the
   // row happens to be in, and an unchecked listbox row is the common one.
   //
+  // `isRenderable`, not `children != null`: the idiom a host actually writes is
+  // `children={isBusy && <Spinner/>}`, which passes `false` when it is not
+  // busy. `false` is non-null, so a null check takes this branch, renders
+  // nothing inside it, and DELETES the mark on a chosen row (#4893).
+  //
   // There is no glyph to hang the caller's props on in this branch, so they go
   // on a span — every one of them, so a `data-testid`, an `id`, a handler or
   // an `xstyle` behaves the same whether or not children are present.
-  if (children != null) {
+  if (isRenderable(children)) {
     return (
       <span
         // Spread first, as on the glyph path below, so the indicator's own
         // contract (aria-hidden, and the styling it composes) outranks any
-        // same-named attribute a caller passed through.
+        // same-named attribute a caller passed through. The type omits the
+        // a11y props, but TypeScript cannot reject a hyphenated JSX attribute,
+        // so order is the part that actually holds.
         {...rest}
         ref={ref}
         aria-hidden="true"
-        {...mergeProps(stylex.props(xstyle), className, style)}>
+        {...mergeProps(
+          stylex.props(
+            styles.slot,
+            isDisabled ? styles.disabled : styles.enabled,
+            xstyle,
+          ),
+          className,
+          style,
+        )}>
         {children}
       </span>
     );
@@ -114,6 +150,11 @@ export function CheckIndicator({
       // (IconFromRegistry renders one), so forwarding them is correct at
       // runtime; the cast only reconciles the two declarations.
       {...(rest as Omit<SVGProps<SVGSVGElement>, 'color' | 'ref'>)}
+      // After the spread, deliberately. Icon puts its own a11y defaults BEFORE
+      // `{...props}` as a documented escape hatch (Icon.tsx), which is right
+      // for an icon and wrong for an indicator — this one is decorative by
+      // contract, so it re-asserts it here rather than inheriting the hatch.
+      aria-hidden="true"
       icon="check"
       size={iconSizeForIndicator[size]}
       color={isDisabled ? 'disabled' : 'accent'}

@@ -21,7 +21,7 @@ export const docs = {
           type: 'code',
           lang: 'text',
           label: 'Paste this into your AI',
-          code: 'Install @astryxdesign/core, @astryxdesign/theme-neutral, and @astryxdesign/cli in this project, then run `npx @astryxdesign/cli init` to set up agent docs. Read the generated files to learn the conventions.',
+          code: 'Install @astryxdesign/core, @stylexjs/stylex, @astryxdesign/theme-neutral, and @astryxdesign/cli in this project, then run `npx @astryxdesign/cli init` to set up agent docs. Read the generated files to learn the conventions.',
         },
       ],
     },
@@ -34,13 +34,13 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'Add the core package, a theme, and the CLI to your existing project.',
+          text: 'Add the core package and its `@stylexjs/stylex` peer dependency, plus a theme and the CLI.',
         },
         {
           type: 'code',
           lang: 'bash',
           label: 'Terminal',
-          code: `npm install @astryxdesign/core @astryxdesign/theme-neutral @astryxdesign/cli`,
+          code: `npm install @astryxdesign/core @stylexjs/stylex @astryxdesign/theme-neutral @astryxdesign/cli`,
         },
         {
           type: 'prose',

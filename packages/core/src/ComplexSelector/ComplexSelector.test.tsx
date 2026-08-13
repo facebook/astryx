@@ -117,18 +117,14 @@ describe('ComplexSelector', () => {
     await user.click(screen.getByRole('button', {name: 'Fruit blend'}));
     const popup = document.querySelector('[popover]') as HTMLElement;
     expect(popup).not.toBeNull();
-    const style = getComputedStyle(popup);
-    // Only the leading edge (marginBlockStart) had clearance, which is
-    // correct for a popup that opens downward but leaves zero clearance
-    // when the same popup opens upward (placement="above") — the trailing
-    // edge is what's nearest the trigger in that orientation. Popover (built
-    // on the same usePopover/useLayer pair) sets both edges via its own
-    // `gap` style, which is what this mirrors. jsdom doesn't resolve the
-    // marginBlockStart/marginBlockEnd logical computed-style properties for
-    // this element (both return '' regardless), so assert on the equivalent
-    // physical properties instead, which do resolve correctly here.
-    expect(style.marginTop).toBe('var(--spacing-1)');
-    expect(style.marginBottom).toBe('var(--spacing-1)');
+    // Both edges, not just the leading one: the trailing edge is what faces
+    // the trigger when the same popup opens upward (placement="above") or is
+    // flipped by position-try-fallbacks. useLayer's `offset` sets both from
+    // the resolved placement; jsdom resolves neither the var indirection nor
+    // logical margins, so read the debug-mode declarations it emits.
+    const blockStart = popup.style.getPropertyValue('--x-marginBlockStart');
+    expect(blockStart).not.toBe('');
+    expect(popup.style.getPropertyValue('--x-marginBlockEnd')).toBe(blockStart);
   });
 
   it('runs changeAction through the provided onChange helper', async () => {

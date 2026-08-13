@@ -322,6 +322,32 @@ export const WithOnClick: Story = {
   },
 };
 
+export const StaysOpenOnSelect: Story = {
+  render: () => {
+    const [copied, setCopied] = useState(false);
+    return (
+      <DropdownMenu
+        button={{label: 'Session'}}
+        items={[
+          {
+            label: copied ? 'Copied' : 'Copy session ID',
+            icon: <DocumentDuplicateIcon style={{width: 16, height: 16}} />,
+            hasCloseOnSelect: false,
+            onClick: () => setCopied(true),
+          },
+          {label: 'Rename'},
+          {label: 'Delete', variant: 'destructive'},
+        ]}
+        onOpenChange={isOpen => {
+          if (!isOpen) {
+            setCopied(false);
+          }
+        }}
+      />
+    );
+  },
+};
+
 // Custom item rendering with compound mode
 export const CustomItemRender: Story = {
   render: () => (

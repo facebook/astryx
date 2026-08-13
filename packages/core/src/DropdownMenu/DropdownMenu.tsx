@@ -87,14 +87,6 @@ const styles = stylex.create({
   popover: {
     minWidth: 'anchor-size(width)',
   },
-  popoverBlockGap: {
-    marginBlockStart: spacingVars['--spacing-1'],
-    marginBlockEnd: spacingVars['--spacing-1'],
-  },
-  popoverInlineGap: {
-    marginInlineStart: spacingVars['--spacing-1'],
-    marginInlineEnd: spacingVars['--spacing-1'],
-  },
   popoverCustomWidth: (width: string | number) => ({
     minWidth: typeof width === 'number' ? `${width}px` : width,
   }),
@@ -114,12 +106,17 @@ const styles = stylex.create({
  */
 export interface DropdownMenuItemData extends Pick<
   DropdownMenuItemProps,
-  'icon' | 'onClick' | 'isDisabled' | 'variant'
+  'icon' | 'onClick' | 'isDisabled' | 'variant' | 'hasCloseOnSelect'
 > {
   /**
-   * Primary label text. Narrowed to `string` from the item's `ReactNode`:
-   * data mode derives each row's React key from the label.
+   * Stable identity for the row, used as its React key (as on
+   * `TreeListItemData`). Omit it and the row is keyed by position, which is
+   * correct for a fixed menu; set it when `items` can reorder, filter, or grow,
+   * so a row keeps its DOM node — and therefore keyboard focus — as the array
+   * changes around it.
    */
+  id?: string;
+  /** Primary label text. */
   label: string;
   /**
    * Nested submenu entries. When present, this row becomes a submenu (a
@@ -135,6 +132,8 @@ export interface DropdownMenuDivider {
 
 export interface DropdownMenuSection {
   type: 'section';
+  /** Stable identity for the group; see {@link DropdownMenuItemData.id}. */
+  id?: string;
   title?: string;
   items: DropdownMenuItemData[];
 }
@@ -472,11 +471,6 @@ export function DropdownMenu({
   const popoverXstyle = menuWidth
     ? styles.popoverCustomWidth(menuWidth)
     : styles.popover;
-  const popoverGapStyle =
-    placement === 'above' || placement === 'below'
-      ? styles.popoverBlockGap
-      : styles.popoverInlineGap;
-
   // Context for compound items
   const contextValue = useMemo<DropdownMenuContextValue>(
     () => ({closeMenu, menuSize}),
@@ -542,7 +536,8 @@ export function DropdownMenu({
         {
           placement,
           alignment,
-          xstyle: [popoverXstyle, popoverGapStyle, layerAnimations[placement]],
+          offset: spacingVars['--spacing-1'],
+          xstyle: [popoverXstyle, layerAnimations[placement]],
         },
       )}
     </>

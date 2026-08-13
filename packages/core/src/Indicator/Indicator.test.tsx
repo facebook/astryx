@@ -130,6 +130,166 @@ describe('CheckIndicator', () => {
   });
 });
 
+/**
+ * The busy idiom a host actually writes is `children={isBusy && <Spinner/>}`,
+ * which passes `false` when it is not busy. `false` is non-null and is not
+ * caught by `??`, so both a `!= null` guard and a `children ?? mark` fallback
+ * take the children path, render nothing in it, and delete the state mark
+ * (#4893). Every indicator gets the same case, because all three had the bug.
+ */
+describe('falsy children never suppress the state mark (#4893)', () => {
+  const cases = [
+    {
+      name: 'CheckIndicator',
+      render: (children: ReactNode) =>
+        render(<CheckIndicator state="checked">{children}</CheckIndicator>),
+      markSelector: '.astryx-icon',
+    },
+    {
+      name: 'CheckboxIndicator',
+      render: (children: ReactNode) =>
+        render(
+          <CheckboxIndicator state="checked">{children}</CheckboxIndicator>,
+        ),
+      markSelector: 'svg',
+    },
+    {
+      name: 'RadioIndicator',
+      render: (children: ReactNode) =>
+        render(<RadioIndicator state="checked">{children}</RadioIndicator>),
+      markSelector: '.astryx-radio-indicator-dot',
+    },
+  ] as const;
+
+  // Everything React renders as nothing. `0` is deliberately absent: it
+  // renders the visible text "0", so it IS content and must replace the mark.
+  const emptyValues = [
+    ['false — the `isBusy && …` idiom', false],
+    ['null', null],
+    ['undefined', undefined],
+    ['empty string', ''],
+  ] as const;
+
+  for (const {name, render: renderCase, markSelector} of cases) {
+    for (const [label, child] of emptyValues) {
+      it(`${name} keeps its mark when children is ${label}`, () => {
+        const {container} = renderCase(child);
+
+        expect(
+          container.querySelector(markSelector),
+          `${name} lost its mark to a falsy child`,
+        ).toBeInTheDocument();
+      });
+    }
+
+    it(`${name} still lets real children replace the mark`, () => {
+      // The negative control: without this, "always render the mark" would
+      // pass every case above and break the busy state instead.
+      const {container} = renderCase(<span data-testid="busy" />);
+
+      expect(
+        container.querySelector('[data-testid="busy"]'),
+      ).toBeInTheDocument();
+      expect(container.querySelector(markSelector)).not.toBeInTheDocument();
+    });
+  }
+
+  it('treats 0 as content, not as empty', () => {
+    // isRenderable's documented edge: 0 renders the character "0".
+    const {container} = render(
+      <CheckIndicator state="checked">{0}</CheckIndicator>,
+    );
+
+    expect(container.textContent).toBe('0');
+    expect(container.querySelector('.astryx-icon')).not.toBeInTheDocument();
+  });
+});
+
+/**
+ * An indicator is decorative BY CONTRACT: the owning control supplies the role
+ * and the accessible name, so an indicator that is also announced says the same
+ * thing twice (#4918).
+ *
+ * The contract is held in two places, because neither covers the whole thing:
+ *
+ *   - `IndicatorProps` omits the a11y props, which makes `role` a compile
+ *     error. It does NOT make `aria-hidden` one: TypeScript exempts JSX
+ *     attribute names that are not valid JS identifiers from excess-property
+ *     checking, so anything hyphenated slips through. That is a language rule,
+ *     not a gap in our types — the second test below is the proof, and it will
+ *     start failing the day TS changes its mind, which is when we can drop the
+ *     ordering.
+ *   - So each component emits its own `aria-hidden` AFTER `{...rest}`, which is
+ *     what actually keeps a caller from un-hiding it. Nothing is stripped.
+ */
+describe('the decorative contract (#4918)', () => {
+  it('rejects `role` at compile time', () => {
+    // @ts-expect-error — the owning control holds the role.
+    const rejected = <CheckIndicator state="checked" role="checkbox" />;
+
+    expect(rejected).toBeTruthy();
+  });
+
+  it('cannot reject a hyphenated a11y attribute — TS exempts those', () => {
+    // NO @ts-expect-error here, deliberately: this compiles, and the comment
+    // above explains why. Runtime order is what makes it harmless.
+    const accepted = <CheckIndicator state="checked" aria-label="inert" />;
+
+    expect(accepted).toBeTruthy();
+  });
+
+  const cases = [
+    {
+      name: 'CheckIndicator (glyph path)',
+      render: (p: Record<string, unknown>) => (
+        <CheckIndicator state="checked" {...p} />
+      ),
+    },
+    {
+      name: 'CheckIndicator (children path)',
+      render: (p: Record<string, unknown>) => (
+        <CheckIndicator state="checked" {...p}>
+          <b />
+        </CheckIndicator>
+      ),
+    },
+    {
+      name: 'CheckboxIndicator',
+      render: (p: Record<string, unknown>) => (
+        <CheckboxIndicator state="checked" {...p} />
+      ),
+    },
+    {
+      name: 'RadioIndicator',
+      render: (p: Record<string, unknown>) => (
+        <RadioIndicator state="checked" {...p} />
+      ),
+    },
+  ] as const;
+
+  for (const {name, render: renderCase} of cases) {
+    it(`${name} stays aria-hidden even when a caller passes false`, () => {
+      const {container} = render(renderCase({'aria-hidden': 'false'}));
+
+      expect(container.firstElementChild).toHaveAttribute(
+        'aria-hidden',
+        'true',
+      );
+    });
+
+    it(`${name} still forwards ordinary props`, () => {
+      // The negative control: order must not turn into "drop everything".
+      const {container} = render(
+        renderCase({'data-testid': 'ind', id: 'pinned'}),
+      );
+      const el = container.firstElementChild;
+
+      expect(el).toHaveAttribute('data-testid', 'ind');
+      expect(el).toHaveAttribute('id', 'pinned');
+    });
+  }
+});
+
 describe('useIndicator', () => {
   it('returns the built-in indicator without a theme override', () => {
     const {result} = renderHook(() => useIndicator('checkbox'));

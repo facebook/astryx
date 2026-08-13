@@ -73,6 +73,13 @@ export const docs = {
       description: 'Whether the input is disabled.',
     },
     {
+      name: 'isReadOnly',
+      type: 'boolean',
+      description:
+        'Makes the input read-only: the value is shown at full opacity and still submits with the form, but cannot be edited. Unlike isDisabled, a read-only input is not dimmed and stays in the tab order. Stepping is off in every form while read-only: arrow keys, the wheel, and the number steppers. isDisabled takes precedence when both are set.',
+      default: 'false',
+    },
+    {
       name: 'disabledMessage',
       type: 'string',
       description:
@@ -209,7 +216,7 @@ export const docs = {
       {
         className: 'astryx-number-input',
         visualProps: ['size', 'status'],
-        states: ['disabled'],
+        states: ['disabled', 'readonly'],
       },
     ],
   },
@@ -331,6 +338,13 @@ export const docsZh = {
       name: 'isDisabled',
       type: 'boolean',
       description: '输入框是否禁用。',
+    },
+    {
+      name: 'isReadOnly',
+      type: 'boolean',
+      description:
+        '将输入框设为只读：值以完整不透明度显示并仍随表单提交，但无法编辑。与 isDisabled 不同，只读输入框不会变暗，并保留在 Tab 顺序中。只读时所有步进方式均被禁用：方向键、滚轮和步进按钮。同时设置时 isDisabled 优先。',
+      default: 'false',
     },
     {
       name: 'disabledMessage',
@@ -458,7 +472,7 @@ export const docsZh = {
       {
         className: 'astryx-number-input',
         visualProps: ['size', 'status'],
-        states: ['disabled'],
+        states: ['disabled', 'readonly'],
       },
     ],
   },
@@ -604,6 +618,8 @@ export const docsDense = {
     isOptional: 'Field optional (mutually exclusive w/ isRequired).',
     isRequired: 'Field required (mutually exclusive w/ isOptional).',
     isDisabled: 'Input disabled.',
+    isReadOnly:
+      'Read-only: value visible + still submits, but not editable. Unlike isDisabled: not dimmed, stays in tab order.',
     disabledMessage:
       'Explains why input is disabled. With isDisabled, shows tooltip on hover/focus + keeps input focusable via aria-disabled (field becomes read-only). Use instead of wrapping a disabled NumberInput in Tooltip.',
     placeholder: 'Placeholder text.',

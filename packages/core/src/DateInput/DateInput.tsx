@@ -158,7 +158,7 @@ export type {
   InputStatus as DateInputStatus,
   InputStatusType as DateInputStatusType,
 } from '../Field';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs, isFocusDetached} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
@@ -504,7 +504,18 @@ export function DateInput({
   const popover = usePopover({
     dialogLabel: t('@astryx.dateInput.dialogLabel'),
     closeButtonLabel: t('@astryx.dateInput.closeCalendar'),
-    onHide: () => inputRef.current?.focus(),
+    // Return focus to the input when the calendar closes — but only when the
+    // dismiss left focus detached (Escape, or a click on non-focusable empty
+    // space), which the focus trap can't restore on its own. A native
+    // popover="auto" light-dismiss fires synchronously with the pointer event
+    // that moved focus, so if the user clicked another control — the clear
+    // button, another field, anywhere — focus has already landed there;
+    // reclaiming it would fight their click.
+    onHide: () => {
+      if (isFocusDetached()) {
+        inputRef.current?.focus();
+      }
+    },
   });
 
   // Handle toggling the popover from button click (focus calendar)

@@ -147,14 +147,9 @@ const flyoutStyles = stylex.create({
   },
   popover: {
     minWidth: '160px',
-    // Small inline gap so the flyout doesn't sit flush against the parent menu.
-    marginInlineStart: spacingVars['--spacing-1'],
-    marginInlineEnd: spacingVars['--spacing-1'],
   },
   popoverCustomWidth: (width: string | number) => ({
     minWidth: typeof width === 'number' ? `${width}px` : width,
-    marginInlineStart: spacingVars['--spacing-1'],
-    marginInlineEnd: spacingVars['--spacing-1'],
   }),
 });
 
@@ -559,6 +554,7 @@ export function DropdownMenuSubMenu(
         {
           placement: 'end',
           alignment: 'start',
+          offset: spacingVars['--spacing-1'],
           xstyle: [popoverXstyle, layerAnimations.end],
         },
       )}

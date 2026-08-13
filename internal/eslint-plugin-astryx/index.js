@@ -30,6 +30,7 @@ import noRawParagraphRule from './no-raw-paragraph.js';
 import noNullishJsxGuardRule from './no-nullish-jsx-guard.js';
 import noBorderShorthandRule from './no-border-shorthand.js';
 import noPhysicalPropertiesRule from './no-physical-properties.js';
+import focusOutlineKeyboardOnlyRule from './focus-outline-keyboard-only.js';
 import noReactNamespaceHooksRule from './no-react-namespace-hooks.js';
 import copyrightHeaderRule from './copyright-header.js';
 import noRawConsoleCliRule from './no-raw-console-cli.js';
@@ -250,6 +251,7 @@ const plugin = {
     'no-nullish-jsx-guard': noNullishJsxGuardRule,
     'no-border-shorthand': noBorderShorthandRule,
     'no-physical-properties': noPhysicalPropertiesRule,
+    'focus-outline-keyboard-only': focusOutlineKeyboardOnlyRule,
     'no-react-namespace-hooks': noReactNamespaceHooksRule,
     'require-base-props': requireBasePropsRule,
     'require-ref-prop': requireRefPropRule,
@@ -291,6 +293,9 @@ plugin.configs.strict = {
     '@astryx/no-border-shorthand': 'error',
     // RTL physical→logical migration complete; errors to prevent regressions.
     '@astryx/no-physical-properties': 'error',
+    // A focus outline drawn for pointer users is an accessibility defect, and
+    // core is clean — error in both tiers so it stays that way.
+    '@astryx/focus-outline-keyboard-only': 'error',
     '@astryx/no-react-namespace-hooks': 'error',
     '@astryx/require-base-props': 'error',
     '@astryx/require-ref-prop': 'error',
@@ -321,6 +326,9 @@ plugin.configs.recommended = {
     '@astryx/no-border-shorthand': 'warn',
     // RTL physical→logical migration complete; errors to prevent regressions.
     '@astryx/no-physical-properties': 'error',
+    // A focus outline drawn for pointer users is an accessibility defect, and
+    // core is clean — error in both tiers so it stays that way.
+    '@astryx/focus-outline-keyboard-only': 'error',
     '@astryx/no-react-namespace-hooks': 'error',
     '@astryx/require-base-props': 'warn',
     '@astryx/require-ref-prop': 'warn',

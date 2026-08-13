@@ -50,6 +50,11 @@ const meta: Meta<typeof NumberInput> = {
       control: 'boolean',
       description: 'Whether the input is disabled',
     },
+    isReadOnly: {
+      control: 'boolean',
+      description:
+        'Whether the input is read-only. The value still submits with the form but cannot be edited. Unlike isDisabled it is not dimmed and stays in the tab order.',
+    },
     disabledMessage: {
       control: 'text',
       description:
@@ -380,6 +385,20 @@ export const RequiredField: Story = {
     label: 'Quantity',
     isRequired: true,
     placeholder: 'Enter quantity',
+  },
+};
+
+// Read-only shows a value the user should see and send but not change. Unlike
+// a disabled field it is not dimmed, stays in the tab order, and still submits.
+export const ReadOnly: Story = {
+  render: args => {
+    const [value, setValue] = useState<number | null>(args.value ?? 1024);
+    return <NumberInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Allocated storage (GB)',
+    isReadOnly: true,
+    value: 1024,
   },
 };
 

@@ -260,6 +260,8 @@ export interface ComponentSlotElement {
  * { property: 'padding', vars: ['--_card-padding'] },
  * ```
  */
+// SYNC: apps/docsite/scripts/generate-data.mjs (interface DerivedVar) — see the
+// note on ComponentThemingTarget below.
 export interface ComponentThemingDerivedVar {
   /** The standard CSS property name (camelCase) that theme authors write.
    *  e.g. `'borderRadius'`, `'padding'`, `'paddingBlock'` */
@@ -291,6 +293,10 @@ export interface ComponentThemingDerivedVar {
  * {className: 'astryx-card'}
  * ```
  */
+// SYNC: When adding a field here, add it to the docsite's generated-registry
+// copy too — apps/docsite/scripts/generate-data.mjs (interface ThemingTarget).
+// `next build` type-checks the emitted componentRegistry.ts against that copy,
+// so a field present in a .doc.mjs but missing there fails the docsite build.
 export interface ComponentThemingTarget {
   /** The stable CSS class name rendered by the component.
    *  Always starts with `astryx-`.
