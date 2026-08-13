@@ -4,7 +4,7 @@
 
 /**
  * @file useTreeFocus.ts
- * @input Uses React useCallback, useRef, useIsomorphicLayoutEffect
+ * @input Uses React useCallback, useRef, useIsomorphicLayoutEffect, isRtlElement
  * @output Exports useTreeFocus hook for WAI-ARIA tree keyboard navigation
  * @position Core hook; used by TreeList for roving tabindex + APG tree keyboard model
  *
@@ -16,6 +16,7 @@
 
 import {useCallback, useRef} from 'react';
 import {useIsomorphicLayoutEffect} from './useIsomorphicLayoutEffect';
+import {isRtlElement} from './isRtlElement';
 
 /** Keys handled by the tree keyboard model (used to gate typeahead). */
 const NAVIGATION_KEYS = new Set([
@@ -376,14 +377,25 @@ export function useTreeFocus<T extends HTMLElement = HTMLElement>(
       if (state.timer != null) {
         clearTimeout(state.timer);
       }
-      state.buffer += e.key.toLowerCase();
+      // "aa" would match nothing; a repeat means "next match" (useTypeahead).
+      const char = e.key.toLowerCase();
+      const isRepeatSameChar =
+        state.buffer.length > 0 &&
+        state.buffer.split('').every(c => c === char);
+      state.buffer = isRepeatSameChar ? char : state.buffer + char;
       state.timer = setTimeout(() => {
         typeaheadRef.current.buffer = '';
       }, typeaheadResetMs) as unknown as number;
 
       const query = state.buffer;
-      const start = currentIndex < 0 ? 0 : currentIndex;
-      const ordered = [...items.slice(start + 1), ...items.slice(0, start + 1)];
+      // A longer query is refining, so the current item may still be the match.
+      const hasCurrent = currentIndex >= 0;
+      const start = hasCurrent ? currentIndex : 0;
+      const offset = hasCurrent && query.length === 1 ? 1 : 0;
+      const ordered = [
+        ...items.slice(start + offset),
+        ...items.slice(0, start + offset),
+      ];
       const match = ordered.find(
         item =>
           !itemDisabled(item) &&
@@ -429,7 +441,17 @@ export function useTreeFocus<T extends HTMLElement = HTMLElement>(
         return;
       }
 
-      switch (e.key) {
+      // Under RTL, swap the horizontal arrows to a logical key so the
+      // expand/collapse case bodies (written LTR-first) stay unchanged.
+      let key = e.key;
+      if (key === 'ArrowLeft' || key === 'ArrowRight') {
+        const rtl = isRtlElement(treeRef.current);
+        if (rtl) {
+          key = key === 'ArrowLeft' ? 'ArrowRight' : 'ArrowLeft';
+        }
+      }
+
+      switch (key) {
         case 'ArrowDown': {
           e.preventDefault();
           focusEnabledFrom(items, currentIndex < 0 ? 0 : currentIndex + 1, 1);

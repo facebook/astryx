@@ -13,7 +13,7 @@
  * - /packages/core/src/DateInput/DateInput.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/DateInput/index.ts (exports if types change)
  * - /apps/storybook/stories/DateInput.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/DateInput/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/DateInput/ (showcase blocks)
  */
 
 import {
@@ -25,7 +25,6 @@ import {
   useTransition,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {IconName} from '../Icon';
 import {
   colorVars,
   sizeVars,
@@ -36,12 +35,13 @@ import {
 } from '../theme/tokens.stylex';
 import {
   Field,
+  InputClearButton,
   type InputStatus,
-  type InputStatusType,
   inputWrapperStyles,
   inputStatusBorderStyles,
   inputStatusHoverShadowStyles,
   inputStatusFocusWithinStyles,
+  type FieldStatusVariant,
 } from '../Field';
 import {Icon} from '../Icon';
 import {VisuallyHidden} from '../VisuallyHidden';
@@ -49,8 +49,15 @@ import {useInputGroup} from '../InputGroup/InputGroupContext';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {useSize} from '../SizeContext/SizeContext';
 import {Spinner} from '../Spinner';
-import {Calendar, type ISODateString, type CalendarHandle} from '../Calendar';
+import {
+  Calendar,
+  type ISODateString,
+  type CalendarHandle,
+  type DayOfWeek,
+  type DayOfWeekName,
+} from '../Calendar';
 import {useCalendarConstraints} from '../Calendar/hooks';
+import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
 import {usePopover} from '../Popover';
 import {useTooltip} from '../Tooltip';
 import {getInputARIA, parseDateInput} from '../utils';
@@ -152,10 +159,11 @@ export type {
   InputStatus as DateInputStatus,
   InputStatusType as DateInputStatusType,
 } from '../Field';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs, isFocusDetached} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
+import {stableClassName} from '../naming';
 import {useTranslator} from '../i18n';
 
 export interface DateInputProps extends Omit<
@@ -278,6 +286,14 @@ export interface DateInputProps extends Omit<
    * If message is provided, displays below the input.
    */
   status?: InputStatus;
+  /**
+   * How the status message is placed relative to the input.
+   * - 'attached': message overlaps directly below the input (bordered treatment)
+   * - 'detached': message floats below as a separate element with spacing
+   * - 'tooltip': no message box; the status icon becomes a focusable info-tip button that reveals the message on hover, keyboard focus, or tap
+   * @default 'attached'
+   */
+  statusVariant?: FieldStatusVariant;
 
   /**
    * Width of the field. Numbers are treated as pixels, strings are used as-is
@@ -302,6 +318,14 @@ export interface DateInputProps extends Omit<
    * @default 1
    */
   numberOfMonths?: 1 | 2;
+
+  /**
+   * First day of week in the calendar popover. Accepts a number
+   * (0 = Sunday … 6 = Saturday) or a three-letter day name ('sun'–'sat',
+   * case-insensitive).
+   * @default 0
+   */
+  weekStartsOn?: DayOfWeek | DayOfWeekName;
 
   /**
    * How the committed date value is displayed in the text field. Accepts a
@@ -365,9 +389,11 @@ export function DateInput({
   placeholder: placeholderFromProps,
   size: sizeProp,
   status,
+  statusVariant = 'attached',
   labelTooltip,
   hasClear = false,
   numberOfMonths = 1,
+  weekStartsOn,
   format = 'date_long',
   width,
   xstyle,
@@ -410,30 +436,24 @@ export function DateInput({
     isEnabled: showsDisabledMessage,
   });
 
-  // Status icon mapping
-  const statusIconMap: Record<InputStatusType, IconName> = {
-    warning: 'warning',
-    error: 'error',
-    success: 'success',
-  };
-
-  const statusIconColorMap: Record<
-    InputStatusType,
-    'warning' | 'error' | 'success'
-  > = {
-    warning: 'warning',
-    error: 'error',
-    success: 'success',
-  };
-
   // Constraint checking for text input validation (reuses calendar logic)
   const {isDateDisabled} = useCalendarConstraints({min, max, dateConstraints});
+
+  const {statusIcon, describedBy: statusTooltipDescribedBy} =
+    useInputStatusIcon({
+      status,
+      statusVariant,
+      isInGroup: !!inputGroup,
+    });
 
   const {ariaLabelledBy, ariaDescribedBy} = getInputARIA(
     inputLabelID,
     [
       description ? descriptionID : null,
-      status?.message ? statusMessageID : null,
+      statusVariant !== 'tooltip' && status?.message ? statusMessageID : null,
+      // The tooltip variant renders no message box; describe the input by the
+      // tooltip's content instead so the status is still announced.
+      statusTooltipDescribedBy,
       showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
     ],
     inputGroup,
@@ -486,7 +506,18 @@ export function DateInput({
   const popover = usePopover({
     dialogLabel: t('@astryx.dateInput.dialogLabel'),
     closeButtonLabel: t('@astryx.dateInput.closeCalendar'),
-    onHide: () => inputRef.current?.focus(),
+    // Return focus to the input when the calendar closes — but only when the
+    // dismiss left focus detached (Escape, or a click on non-focusable empty
+    // space), which the focus trap can't restore on its own. A native
+    // popover="auto" light-dismiss fires synchronously with the pointer event
+    // that moved focus, so if the user clicked another control — the clear
+    // button, another field, anywhere — focus has already landed there;
+    // reclaiming it would fight their click.
+    onHide: () => {
+      if (isFocusDetached()) {
+        inputRef.current?.focus();
+      }
+    },
   });
 
   // Handle toggling the popover from button click (focus calendar)
@@ -632,13 +663,19 @@ export function DateInput({
       }}
       {...rest}
       {...mergeProps(
-        themeProps('date-input', {size, status: status?.type ?? null}),
+        themeProps('date-input', {
+          size,
+          status: status?.type ?? null,
+          disabled: isDisabled ? 'disabled' : null,
+        }),
         stylex.props(
           inputWrapperStyles.base,
           sizeStyles[size],
           isEffectivelyDisabled && inputWrapperStyles.disabled,
           status && inputStatusBorderStyles[status.type],
-          status && inputStatusHoverShadowStyles[status.type],
+          status &&
+            !isEffectivelyDisabled &&
+            inputStatusHoverShadowStyles[status.type],
           status && inputStatusFocusWithinStyles[status.type],
           inputGroup && groupStyles.inGroup,
           xstyle,
@@ -660,7 +697,20 @@ export function DateInput({
           styles.iconButton,
           isEffectivelyDisabled && styles.iconButtonDisabled,
         )}>
-        <Icon icon="calendar" size="sm" color="secondary" />
+        <Icon
+          icon="calendar"
+          size="sm"
+          color="secondary"
+          // Stable theme target on the toggle glyph itself, so a theme can
+          // restyle just this icon (color, size, hover) — and each open/closed
+          // state — via `defineTheme`. Same-element rules in @layer astryx-theme
+          // win over the icon's own base color/size, which a button-level target
+          // could not reach. Reflects the popover's open/closed state as a
+          // `data-state` attribute.
+          {...themeProps('date-input-toggle-icon', {
+            state: popover.isOpen ? 'expanded' : 'collapsed',
+          })}
+        />
       </button>
       <input
         ref={mergeRefs(ref, inputRef)}
@@ -707,22 +757,14 @@ export function DateInput({
         {!isInputValid ? 'Invalid date' : ''}
       </VisuallyHidden>
       {hasClear && value !== undefined && !isEffectivelyDisabled && (
-        <button
-          type="button"
+        <InputClearButton
+          label={t('@astryx.dateInput.clear', {label})}
           onClick={handleClear}
-          aria-label={t('@astryx.dateInput.clear', {label})}
-          {...stylex.props(styles.iconButton)}>
-          <Icon icon="close" size="sm" color="secondary" />
-        </button>
-      )}
-      {isBusy && <Spinner size="sm" />}
-      {status && !inputGroup && (
-        <Icon
-          icon={statusIconMap[status.type]}
-          size="md"
-          color={statusIconColorMap[status.type]}
+          iconClassName={stableClassName('date-input-clear-icon')}
         />
       )}
+      {isBusy && <Spinner size="sm" />}
+      {statusIcon}
       {popover.render(
         <Calendar
           handleRef={calendarRef}
@@ -733,6 +775,7 @@ export function DateInput({
           max={max}
           dateConstraints={dateConstraints}
           numberOfMonths={numberOfMonths}
+          weekStartsOn={weekStartsOn}
         />,
         {placement: 'below', alignment: 'start'},
       )}
@@ -764,6 +807,7 @@ export function DateInput({
             }
           : undefined
       }
+      statusVariant={statusVariant}
       labelTooltip={labelTooltip}
       width={width}>
       {inputWrapper}

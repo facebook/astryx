@@ -16,7 +16,7 @@
  * - /packages/core/src/SideNav/SideNav.test.tsx
  * - /packages/core/src/SideNav/index.ts
  * - /apps/storybook/stories/SideNav.stories.tsx
- * - /packages/cli/templates/blocks/components/SideNav/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/SideNav/ (showcase blocks)
  */
 
 import {useMemo, useRef, type ReactNode} from 'react';
@@ -33,7 +33,7 @@ import {
 // of lazy loading layer resources.
 import {usePopover} from '../Popover/usePopover';
 import {Link} from '../Link';
-import {getIcon} from '../Icon/globalIconRegistry';
+import {Icon} from '../Icon';
 import {Tooltip} from '../Tooltip';
 import {navItemStyles} from '../NavItem/navItemStyles.stylex';
 import {useSideNavCollapse} from './SideNavCollapseContext';
@@ -172,6 +172,11 @@ const styles = stylex.create({
     minWidth: spacingVars['--spacing-7'],
     minHeight: spacingVars['--spacing-7'],
     color: colorVars['--color-icon-secondary'],
+    // 28px is the hit/alignment box, not the glyph. Icon sizes its own span
+    // with a matching font-size (the registry chevron is a 1em SVG), so pin
+    // font-size back to inherit to keep the glyph at the 14px it renders at
+    // today. The 28px min box still wins over Icon's width/height.
+    fontSize: 'inherit',
   },
   headerEndContent: {
     flexShrink: 0,
@@ -217,7 +222,14 @@ const styles = stylex.create({
     minWidth: spacingVars['--spacing-7'],
     minHeight: spacingVars['--spacing-7'],
     color: colorVars['--color-icon-secondary'],
+    // See `chevron` — keep the glyph on the inherited font-size.
+    fontSize: 'inherit',
     transform: 'rotate(180deg)',
+  },
+  // Glyph inside a chevron *trigger* (the button already carries the 28px box
+  // and the color, so the Icon only has to avoid resizing itself).
+  chevronGlyph: {
+    fontSize: 'inherit',
   },
   popover: {
     minWidth: 'anchor-size(width)',
@@ -386,7 +398,11 @@ export function SideNavHeading({
   if (isCollapsed && icon) {
     const collapsedIcon = <span {...stylex.props(styles.icon)}>{icon}</span>;
 
-    const collapsedSetRef = mergeRefs<HTMLElement>(collapsedItemRef, ref);
+    const collapsedSetRef = mergeRefs<HTMLElement>(
+      collapsedItemRef,
+      ref,
+      menu ? popover.triggerRef : undefined,
+    );
 
     let collapsedElement: ReactNode;
 
@@ -453,9 +469,12 @@ export function SideNavHeading({
                       )}>
                       {heading}
                     </span>
-                    <span {...stylex.props(styles.popoverChevron)}>
-                      {getIcon('chevronDown')}
-                    </span>
+                    <Icon
+                      icon="chevronDown"
+                      size="sm"
+                      color="secondary"
+                      xstyle={styles.popoverChevron}
+                    />
                   </span>
                   {subheading && (
                     <span {...stylex.props(styles.subheading)}>
@@ -550,7 +569,12 @@ export function SideNavHeading({
   );
 
   const chevronElement = showChevron && (
-    <span {...stylex.props(styles.chevron)}>{getIcon('chevronDown')}</span>
+    <Icon
+      icon="chevronDown"
+      size="sm"
+      color="secondary"
+      xstyle={styles.chevron}
+    />
   );
 
   const headerEndContentElement = headerEndContent && (
@@ -566,9 +590,12 @@ export function SideNavHeading({
       onClick={triggerProps.onClick}>
       {icon && <span {...stylex.props(styles.icon)}>{icon}</span>}
       {renderTextContent(
-        <span {...stylex.props(styles.popoverChevron)}>
-          {getIcon('chevronDown')}
-        </span>,
+        <Icon
+          icon="chevronDown"
+          size="sm"
+          color="secondary"
+          xstyle={styles.popoverChevron}
+        />,
       )}
     </button>
   );
@@ -620,7 +647,12 @@ export function SideNavHeading({
               }}
               {...popover.triggerProps}
               {...stylex.props(styles.chevron, styles.interactive)}>
-              {getIcon('chevronDown')}
+              <Icon
+                icon="chevronDown"
+                size="sm"
+                color="inherit"
+                xstyle={styles.chevronGlyph}
+              />
             </button>,
           )}
           {headerEndContentElement}
@@ -686,7 +718,12 @@ export function SideNavHeading({
                 }}
                 {...popover.triggerProps}
                 {...stylex.props(styles.chevron, styles.interactive)}>
-                {getIcon('chevronDown')}
+                <Icon
+                  icon="chevronDown"
+                  size="sm"
+                  color="inherit"
+                  xstyle={styles.chevronGlyph}
+                />
               </button>
             ) : undefined,
           )}

@@ -14,7 +14,7 @@
  * - /packages/core/src/Calendar/Calendar.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Calendar/index.ts (exports if types change)
  * - /apps/storybook/stories/Calendar.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Calendar/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Calendar/ (showcase blocks)
  */
 
 import {
@@ -57,7 +57,8 @@ import {
   DATE_FORMAT_WITH_WEEKDAY,
   DATE_FORMAT_MONTH_YEAR,
 } from '../utils/plainDate';
-import {mergeProps, composeEventHandlers} from '../utils';
+import {mergeProps, composeEventHandlers, rtlStyles} from '../utils';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {
   computeDayCellState,
   computeRangeRounding,
@@ -411,8 +412,16 @@ export function Calendar({ref, ...props}: CalendarProps) {
       } else {
         // Range mode
         if (rangeSelectionStart === null) {
-          // First click - start the range
+          // First click - start the range. Nothing else about this pick is
+          // perceivable non-visually (WCAG 1.3.1) — the grid doesn't move, so
+          // the month-change announcement stays silent — so speak the range
+          // progress through the same polite live region.
           setRangeSelectionStart(iso);
+          announce(
+            t('@astryx.calendar.rangeStartAnnounce', {
+              date: plainDateFormat(date, DATE_FORMAT_WITH_WEEKDAY),
+            }),
+          );
         } else {
           // Second click - complete the range
           const startPd = plainDateFromISO(rangeSelectionStart);
@@ -432,10 +441,24 @@ export function Calendar({ref, ...props}: CalendarProps) {
           setInternalValue(range);
           setRangeSelectionStart(null);
           (onChange as CalendarRangeProps['onChange'])?.(range);
+          // Completed-range announcement, in chronological order (matches the
+          // swapped {start, end} above even for a reverse pick).
+          announce(
+            t('@astryx.calendar.rangeCompleteAnnounce', {
+              start: plainDateFormat(
+                plainDateFromISO(start),
+                DATE_FORMAT_WITH_WEEKDAY,
+              ),
+              end: plainDateFormat(
+                plainDateFromISO(end),
+                DATE_FORMAT_WITH_WEEKDAY,
+              ),
+            }),
+          );
         }
       }
     },
-    [mode, onChange, rangeSelectionStart],
+    [mode, onChange, rangeSelectionStart, announce, t],
   );
 
   return (
@@ -462,7 +485,7 @@ export function Calendar({ref, ...props}: CalendarProps) {
             // Wrapper span (not Icon props): Icon's string mode clobbers
             // caller classNames, so the RTL mirror must live on its own
             // element.
-            <span {...stylex.props(calendarStyles.navIcon)}>
+            <span {...stylex.props(calendarStyles.navIcon, rtlStyles.mirror)}>
               <Icon icon="chevronLeft" size="sm" color="inherit" />
             </span>
           }
@@ -483,7 +506,7 @@ export function Calendar({ref, ...props}: CalendarProps) {
           label={t('@astryx.calendar.nextMonth')}
           variant="ghost"
           icon={
-            <span {...stylex.props(calendarStyles.navIcon)}>
+            <span {...stylex.props(calendarStyles.navIcon, rtlStyles.mirror)}>
               <Icon icon="chevronRight" size="sm" color="inherit" />
             </span>
           }
@@ -790,6 +813,9 @@ function MonthGrid({
         ref={gridRef}
         role="grid"
         aria-label={monthLabel}
+        // APG grid pattern: a range selection holds multiple selected cells,
+        // so the grid must advertise multi-selectability.
+        aria-multiselectable={mode === 'range' ? true : undefined}
         onKeyDown={handleGridKeyDown}
         onFocus={handleGridFocus}
         {...stylex.props(
@@ -864,6 +890,7 @@ function MonthGrid({
                     isDisabled={isDateDisabled(day.date)}
                     neighbors={neighbors}
                     isTabbable={day.iso === seedTabbableIso}
+                    isRangeSelectionInProgress={rangeSelectionStart !== null}
                     onDayClick={onDayClick}
                     onDayHover={onDayHover}
                   />
@@ -905,6 +932,13 @@ interface DayCellProps {
    * existing `tabindex="0"` and repairs/moves it on navigation and focus.
    */
   isTabbable: boolean;
+  /**
+   * Whether a range selection is mid-flight (first pick made, awaiting the
+   * second). Disambiguates the accessible name of the picked day: mid-flight
+   * it is only the "range start", while a completed one-day range is both
+   * "range start and range end" (rangeStart === rangeEnd in both cases).
+   */
+  isRangeSelectionInProgress: boolean;
   onDayClick: (date: PlainDate) => void;
   onDayHover: (date: PlainDate | null) => void;
 }
@@ -923,9 +957,11 @@ function DayCell({
   isDisabled,
   neighbors,
   isTabbable: isTabbableDay,
+  isRangeSelectionInProgress,
   onDayClick,
   onDayHover,
 }: DayCellProps) {
+  const t = useTranslator();
   const {date, isOutside, dayNumber} = day;
 
   if (isOutside && !hasOutsideDays) {
@@ -964,6 +1000,28 @@ function DayCell({
       ? 'today-in-range'
       : null;
 
+  // Accessible name for the day button. Roving focus lands on the <button>,
+  // not the role="gridcell" wrapper that carries aria-selected — and
+  // aria-selected is invalid on role="button" — so the selection/range state
+  // must be encoded into the button's name (WCAG 4.1.2). Localized via ICU
+  // params rather than string concatenation. A mid-flight first pick (where
+  // rangeStart === rangeEnd) reads as "range start" only; a completed one-day
+  // range reads as both start and end.
+  const dateLabel = plainDateFormat(date, DATE_FORMAT_WITH_WEEKDAY);
+  const dayLabel = state.isSelected
+    ? t('@astryx.calendar.daySelected', {date: dateLabel})
+    : state.isRangeStart && state.isRangeEnd
+      ? isRangeSelectionInProgress
+        ? t('@astryx.calendar.dayRangeStart', {date: dateLabel})
+        : t('@astryx.calendar.dayRangeStartAndEnd', {date: dateLabel})
+      : state.isRangeStart
+        ? t('@astryx.calendar.dayRangeStart', {date: dateLabel})
+        : state.isRangeEnd
+          ? t('@astryx.calendar.dayRangeEnd', {date: dateLabel})
+          : state.isInRange
+            ? t('@astryx.calendar.dayInRange', {date: dateLabel})
+            : dateLabel;
+
   const rangeRounding = computeRangeRounding(state, {
     prevInRange: neighbors.prevInRange,
     nextInRange: neighbors.nextInRange,
@@ -984,16 +1042,16 @@ function DayCell({
           {...stylex.props(
             dayCellStyles.rangeBg,
             dayCellTheme.rangeBg,
-            rangeRounding.roundLeft && dayCellStyles.rangeBgRadiusLeft,
-            rangeRounding.roundRight && dayCellStyles.rangeBgRadiusRight,
-            state.isRangeStart && dayCellStyles.rangeInsetLeft,
+            rangeRounding.roundStart && dayCellStyles.rangeBgRadiusStart,
+            rangeRounding.roundEnd && dayCellStyles.rangeBgRadiusEnd,
+            state.isRangeStart && dayCellStyles.rangeInsetStart,
             state.isRangeStart &&
-              rangeRounding.roundRight &&
-              dayCellStyles.rangeInsetRight,
-            state.isRangeEnd && dayCellStyles.rangeInsetRight,
+              rangeRounding.roundEnd &&
+              dayCellStyles.rangeInsetEnd,
+            state.isRangeEnd && dayCellStyles.rangeInsetEnd,
             state.isRangeStart &&
-              rangeRounding.roundLeft &&
-              dayCellStyles.rangeInsetLeft,
+              rangeRounding.roundStart &&
+              dayCellStyles.rangeInsetStart,
           )}
         />
       )}
@@ -1004,8 +1062,8 @@ function DayCell({
           {...stylex.props(
             dayCellStyles.previewBg,
             dayCellTheme.previewBg,
-            previewRounding.roundLeft && dayCellStyles.previewBgRadiusLeft,
-            previewRounding.roundRight && dayCellStyles.previewBgRadiusRight,
+            previewRounding.roundStart && dayCellStyles.previewBgRadiusStart,
+            previewRounding.roundEnd && dayCellStyles.previewBgRadiusEnd,
             state.isPreviewStart && dayCellStyles.previewStart,
             state.isPreviewEnd && dayCellStyles.previewEnd,
           )}
@@ -1016,7 +1074,7 @@ function DayCell({
       <button
         type="button"
         data-date={day.iso}
-        aria-label={plainDateFormat(date, DATE_FORMAT_WITH_WEEKDAY)}
+        aria-label={dayLabel}
         aria-disabled={state.effectivelyDisabled || undefined}
         // Mark today's cell programmatically (APG date-picker pattern), not just
         // visually, so screen-reader users can identify the current date.
@@ -1045,7 +1103,7 @@ function DayCell({
             // the default rendering.
             marker: markerState,
           }),
-          stylex.props(
+          focusOutlineProps.focusVisible(
             dayCellStyles.day,
             dayCellTheme.day,
             isOutside && dayCellStyles.dayOutside,

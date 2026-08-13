@@ -11,7 +11,7 @@
  * - /packages/core/src/Table/Table.doc.mjs (component description, props)
  * - /packages/core/src/Table/Table.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Table/index.ts (exports if types change)
- * - /packages/cli/templates/blocks/components/Table/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Table/ (showcase blocks)
  */
 
 import {memo, useRef, type ReactElement, type ReactNode, type Ref} from 'react';
@@ -134,6 +134,12 @@ interface TableRowProps<T extends Record<string, unknown>> {
   textOverflow: 'wrap' | 'truncate';
   RowComponent: React.ComponentType<TableRowComponentProps>;
   CellComponent: React.ComponentType<TableCellComponentProps>;
+  /**
+   * 1-based ARIA row index for this row's position in the full dataset.
+   * `undefined` when the table hasn't opted into ARIA row indexing, in which
+   * case no `aria-rowindex` is emitted (native table semantics).
+   */
+  ariaRowIndex?: number;
 }
 
 /**
@@ -150,6 +156,7 @@ function TableRowInner<T extends Record<string, unknown>>({
   textOverflow,
   RowComponent,
   CellComponent,
+  ariaRowIndex,
 }: TableRowProps<T>): ReactElement {
   // Build cells first
   const cells = columns.map((col, columnIndex) => {
@@ -211,12 +218,14 @@ function TableRowInner<T extends Record<string, unknown>>({
     );
   });
 
-  // Apply plugin transforms for row (with pre-rendered children)
+  // Apply plugin transforms for row (with pre-rendered children).
+  // Seed `aria-rowindex` (when the table opts into ARIA row indexing) as a
+  // base htmlProp so plugins compose over it and can still override.
   const rowRenderProps = applyPlugins(
     plugins,
     p => p.transformBodyRow,
     {
-      htmlProps: {},
+      htmlProps: ariaRowIndex == null ? {} : {'aria-rowindex': ariaRowIndex},
       xstyle: [],
       children: <>{cells}</>,
     } satisfies BodyRowRenderProps,
@@ -233,6 +242,17 @@ function TableRowInner<T extends Record<string, unknown>>({
       {rowRenderProps.children}
     </RowComponent>
   );
+
+  // afterRow: plugins (e.g. row expansion) can append a full-width detail
+  // panel `<tr>` after the row. Rendered as a sibling fragment.
+  if (rowRenderProps.afterRow) {
+    return (
+      <>
+        {row}
+        {rowRenderProps.afterRow}
+      </>
+    );
+  }
 
   return row;
 }
@@ -254,6 +274,9 @@ function areRowPropsEqual<T extends Record<string, unknown>>(
     return false;
   }
   if (prevProps.rowIndex !== nextProps.rowIndex) {
+    return false;
+  }
+  if (prevProps.ariaRowIndex !== nextProps.ariaRowIndex) {
     return false;
   }
 
@@ -319,10 +342,11 @@ function BaseTableInner<T extends Record<string, unknown>>({
   idKey,
   plugins: pluginsProp,
   children,
-  tableProps: userTableProps,
   textOverflow = 'wrap',
   scrollWrapper: ScrollWrapper,
   emptyState,
+  rowIndexStart,
+  rowCount,
   xstyle,
   className,
   style,
@@ -332,6 +356,18 @@ function BaseTableInner<T extends Record<string, unknown>>({
   const t = useTranslator();
   // Use stable empty array when no plugins provided
   const plugins = pluginsProp ?? (EMPTY_PLUGINS as TablePlugin<T>[]);
+
+  // ARIA row indexing. The row ordinal is an accessibility concern that is
+  // independent of any visible index column: when the consumer opts in (by
+  // passing rowIndexStart or rowCount), body rows carry `aria-rowindex`
+  // reflecting their position in the full dataset, and the <table> carries
+  // `aria-rowcount`. `aria-rowindex` is 1-based and counts data rows from
+  // `rowIndexStart` (default 1); a windowed/paginated view passes the offset
+  // of its first visible row. `aria-rowcount` is `rowCount` when known, or
+  // `-1` (ARIA's "unknown count") for a windowed view with an unknown total.
+  const ariaRowIndexingEnabled = rowIndexStart != null || rowCount != null;
+  const firstRowAriaIndex = rowIndexStart ?? 1;
+  const ariaRowCount = ariaRowIndexingEnabled ? (rowCount ?? -1) : undefined;
 
   const RowComponent = TableRow as React.ComponentType<TableRowComponentProps>;
   const CellComponent =
@@ -368,7 +404,7 @@ function BaseTableInner<T extends Record<string, unknown>>({
 
   // --- Plugin pipeline: table ---
   const tableRenderProps = applyPlugins(plugins, p => p.transformTable, {
-    htmlProps: {...userTableProps},
+    htmlProps: {},
     xstyle: children ? [styles.table, styles.tableAutoLayout] : [styles.table],
   } satisfies TableRenderProps);
 
@@ -472,8 +508,8 @@ function BaseTableInner<T extends Record<string, unknown>>({
   const hasData = data != null && data.length > 0;
   const hasColumns = resolvedColumns.length > 0;
 
-  // Style precedence: deprecated tableProps.style < consumer style < the
-  // computed column min-width (structural — derived from column defs, so it
+  // Style precedence: consumer style < the computed column min-width
+  // (structural — derived from column defs, so it
   // must win when present; when absent, a consumer minWidth survives).
   const tableStyle: React.CSSProperties = {
     ...tableRenderProps.htmlProps.style,
@@ -486,6 +522,7 @@ function BaseTableInner<T extends Record<string, unknown>>({
   let tableElement: ReactNode = (
     <table
       ref={ref}
+      {...(ariaRowCount != null ? {'aria-rowcount': ariaRowCount} : null)}
       {...tableRenderProps.htmlProps}
       {...mergeProps(
         themeProps('base-table'),
@@ -530,6 +567,11 @@ function BaseTableInner<T extends Record<string, unknown>>({
                       textOverflow={textOverflow}
                       RowComponent={RowComponent}
                       CellComponent={CellComponent}
+                      ariaRowIndex={
+                        ariaRowIndexingEnabled
+                          ? firstRowAriaIndex + rowIndex
+                          : undefined
+                      }
                     />
                   );
                 })

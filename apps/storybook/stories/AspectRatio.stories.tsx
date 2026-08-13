@@ -4,6 +4,7 @@ import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
 import {AspectRatio} from '@astryxdesign/core/AspectRatio';
 import {Grid} from '@astryxdesign/core/Grid';
+import {HStack} from '@astryxdesign/core/Layout';
 import {Text} from '@astryxdesign/core/Text';
 import {Skeleton} from '@astryxdesign/core/Skeleton';
 import {
@@ -45,16 +46,6 @@ const styles = stylex.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  gradientPlaceholder: {
-    width: '100%',
-    height: '100%',
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    borderRadius: radiusVars['--radius-element'],
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    color: 'white',
-  },
   gridItem: {
     overflow: 'hidden',
   },
@@ -62,6 +53,24 @@ const styles = stylex.create({
     maxWidth: 300,
     padding: spacingVars['--spacing-4'],
     backgroundColor: colorVars['--color-background-surface'],
+  },
+  narrowContainer: {
+    maxWidth: 240,
+    padding: spacingVars['--spacing-4'],
+    backgroundColor: colorVars['--color-background-surface'],
+  },
+  // Sizing from the height rather than the container: release the width so
+  // the ratio drives it. A height constraint on its own clamps the box and
+  // the rendered ratio stops matching `ratio`.
+  heightDriven: {
+    height: 120,
+    width: 'auto',
+  },
+  emptyChild: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: colorVars['--color-background-muted'],
+    borderRadius: radiusVars['--radius-element'],
   },
 });
 
@@ -175,7 +184,7 @@ export const Ultrawide21x9: Story = {
         21:9 - Ultrawide cinematic
       </Text>
       <AspectRatio ratio={21 / 9}>
-        <div {...stylex.props(styles.gradientPlaceholder)}>
+        <div {...stylex.props(styles.placeholder)}>
           <Text type="label">Ultrawide 21:9</Text>
         </div>
       </AspectRatio>
@@ -395,6 +404,84 @@ export const ImageGallery: Story = {
           </AspectRatio>
         ))}
       </Grid>
+    </div>
+  ),
+};
+
+export const HeightDriven: Story = {
+  render: () => (
+    <div {...stylex.props(styles.wideContainer)}>
+      <Text type="supporting" xstyle={styles.sectionLabel}>
+        Sized from a fixed height. The box takes its width from the container by
+        default, so a height constraint needs `width: auto` beside it for the
+        ratio to drive the width.
+      </Text>
+      <HStack gap={4} vAlign="start" wrap="wrap">
+        {[
+          {ratio: 1, label: '1:1'},
+          {ratio: 4 / 3, label: '4:3'},
+          {ratio: 16 / 9, label: '16:9'},
+        ].map(({ratio, label}) => (
+          <AspectRatio
+            key={label}
+            ratio={ratio}
+            fit="cover"
+            xstyle={styles.heightDriven}>
+            <img
+              {...stylex.props(styles.image)}
+              src={PLACEHOLDER_IMAGE}
+              alt={`${label} at a fixed height`}
+            />
+          </AspectRatio>
+        ))}
+      </HStack>
+    </div>
+  ),
+};
+
+export const NarrowContainer: Story = {
+  render: () => (
+    <div {...stylex.props(styles.narrowContainer)}>
+      <Text type="supporting" xstyle={styles.sectionLabel}>
+        240px container
+      </Text>
+      <AspectRatio ratio={16 / 9} fit="cover">
+        <img
+          {...stylex.props(styles.image)}
+          src={PLACEHOLDER_IMAGE}
+          alt="16:9 in a narrow container"
+        />
+      </AspectRatio>
+    </div>
+  ),
+};
+
+export const EmptyAndLongContent: Story = {
+  render: () => (
+    <div {...stylex.props(styles.storyWrapper)}>
+      <div {...stylex.props(styles.container)}>
+        <Text type="supporting" xstyle={styles.sectionLabel}>
+          Empty: no media, the box still holds its ratio
+        </Text>
+        <AspectRatio ratio={16 / 9}>
+          <div {...stylex.props(styles.emptyChild)} />
+        </AspectRatio>
+      </div>
+      <div {...stylex.props(styles.container)}>
+        <Text type="supporting" xstyle={styles.sectionLabel}>
+          Long content: the box clips rather than growing
+        </Text>
+        <AspectRatio ratio={16 / 9} fit="contain">
+          <div {...stylex.props(styles.placeholder)}>
+            <Text type="body">
+              A caption long enough to run past the bottom edge of a 16:9 box,
+              repeated so it cannot fit: the ratio is the contract and the
+              container clips what does not fit inside it, rather than growing
+              to accommodate the text and breaking the ratio it promised.
+            </Text>
+          </div>
+        </AspectRatio>
+      </div>
     </div>
   ),
 };

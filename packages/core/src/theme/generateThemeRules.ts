@@ -350,9 +350,11 @@ function generateComponentRules(
       // Entries are processed in order (priority).
       // - `vars`: emit internal CSS custom property declarations
       // - `expand: 'container'`: expand padding to container layout tokens
+      // - `replaces: true`: emit only the var, dropping the source property
       let finalProps = props;
       const derivedProps: [string, string][] = [];
       let containerExpanded = false;
+      const replacedProps = new Set<string>();
 
       for (const [prop, value] of props) {
         const derived = getDerivedVars(component, prop);
@@ -365,6 +367,9 @@ function generateComponentRules(
         for (const entry of [...derived, ...paddingDerived]) {
           if (entry.expand === 'container' && PADDING_PROPS.has(prop)) {
             containerExpanded = true;
+          }
+          if (entry.replaces) {
+            replacedProps.add(prop);
           }
           if (entry.vars) {
             for (const varName of entry.vars) {
@@ -382,6 +387,12 @@ function generateComponentRules(
         const parsed = parsePadding(paddingProps);
         const containerTokens = expandContainerPadding(component, parsed);
         finalProps = [...nonPaddingProps, ...containerTokens];
+      }
+
+      // Drop properties whose derived entry set `replaces` — their value is
+      // carried by the emitted var and must not land on the class element.
+      if (replacedProps.size > 0) {
+        finalProps = finalProps.filter(([p]) => !replacedProps.has(p));
       }
 
       if (derivedProps.length > 0) {
@@ -707,19 +718,4 @@ export function generateThemeCSS(theme: DefinedTheme): ThemeCSSOutput {
   }
 
   return {prose: proseCss, component: componentCss};
-}
-
-/**
- * Generate the full CSS string for a theme as a single string.
- * @deprecated Use generateThemeCSS() which returns { prose, component } for proper layering.
- * This flat version is kept for backwards compatibility with tests and simple cases.
- */
-export function generateThemeCSSFlat(theme: DefinedTheme): string {
-  const rules = generateThemeRules(theme);
-  if (rules.length === 0) {
-    return '';
-  }
-  const scopeSelector = themeScopeStart(theme.name);
-  const inner = rules.join('\n\n');
-  return `@scope (${scopeSelector}) to (${THEME_SCOPE_TO}) {\n${inner}\n}`;
 }

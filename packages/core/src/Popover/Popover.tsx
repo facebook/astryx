@@ -14,7 +14,7 @@
  * - /packages/core/src/Popover/Popover.test.tsx
  * - /packages/core/src/Popover/index.ts
  * - /apps/storybook/stories/Popover.stories.tsx
- * - /packages/cli/templates/blocks/components/Popover/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Popover/ (showcase blocks)
  */
 
 import React, {
@@ -163,9 +163,28 @@ export interface PopoverProps extends Pick<
 
   /**
    * Accessible label for the popover dialog.
-   * Recommended for accessibility (used as aria-label on the dialog).
+   * Recommended for accessibility when `role` is `'dialog'`.
    */
   label?: string;
+
+  /**
+   * ARIA role stamped on the popover content wrapper.
+   *
+   * Use `'dialog'` for dialog-style popovers. Use `'none'` when the popup
+   * content owns its own role, such as a child `role="menu"` or
+   * `role="listbox"`.
+   *
+   * @default 'dialog'
+   */
+  role?: 'dialog' | 'none';
+
+  /**
+   * Whether a dialog-style popover is modal (`aria-modal`). Only applies when
+   * `role` is `'dialog'`.
+   *
+   * @default true
+   */
+  isModal?: boolean;
 
   /**
    * Whether to include a hidden close button for accessibility.
@@ -231,10 +250,6 @@ const styles = stylex.create({
     paddingInlineStart: spacingVars['--spacing-3'],
     paddingInlineEnd: spacingVars['--spacing-3'],
   },
-  gap: {
-    marginBlockStart: spacingVars['--spacing-1'],
-    marginBlockEnd: spacingVars['--spacing-1'],
-  },
   customWidth: (width: string | number) => ({
     width: typeof width === 'number' ? `${width}px` : width,
   }),
@@ -293,6 +308,8 @@ export function Popover({
   isEnabled = true,
   width,
   label,
+  role = 'dialog',
+  isModal,
   hasCloseButton,
   closeButtonLabel,
   hasAutoFocus,
@@ -320,6 +337,8 @@ export function Popover({
 
   const popover = usePopover({
     dialogLabel: label,
+    role,
+    isModal,
     hasLightDismiss,
     hasEscapeDismiss,
     hasCloseButton,
@@ -506,7 +525,8 @@ export function Popover({
           {
             placement,
             alignment,
-            xstyle: [popoverXstyle, styles.gap, layerAnimations[placement]],
+            offset: spacingVars['--spacing-1'],
+            xstyle: [popoverXstyle, layerAnimations[placement]],
           },
         )}
       </>
@@ -542,7 +562,8 @@ export function Popover({
           {
             placement,
             alignment,
-            xstyle: [popoverXstyle, styles.gap, layerAnimations[placement]],
+            offset: spacingVars['--spacing-1'],
+            xstyle: [popoverXstyle, layerAnimations[placement]],
           },
         )}
       </>
@@ -571,7 +592,8 @@ export function Popover({
         {
           placement,
           alignment,
-          xstyle: [popoverXstyle, styles.gap, layerAnimations[placement]],
+          offset: spacingVars['--spacing-1'],
+          xstyle: [popoverXstyle, layerAnimations[placement]],
         },
       )}
     </>

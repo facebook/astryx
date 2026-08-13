@@ -4,7 +4,7 @@
 
 /**
  * @file Item.tsx
- * @input Uses React, ReactNode, StyleXStyles, theme tokens
+ * @input Uses React, ReactNode, StyleXStyles, theme tokens, useClickableContainer
  * @output Exports Item component, ItemProps type
  * @position Core layout primitive; consumed by index.ts, tested by Item.test.tsx
  *
@@ -13,10 +13,10 @@
  * - /packages/core/src/Item/Item.test.tsx
  * - /packages/core/src/Item/index.ts
  * - /apps/storybook/stories/Item.stories.tsx
- * - /packages/cli/templates/blocks/components/Item/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Item/ (showcase blocks)
  */
 
-import type {ReactNode} from 'react';
+import {useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -27,10 +27,13 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
-import {mergeProps} from '../utils';
+import {mergeProps, mergeRefs} from '../utils';
 import {computeTargetAndRel} from '../Link/computeTargetAndRel';
 import {useLinkComponent} from '../Link/useLinkComponent';
+import {useClickableContainer} from '../hooks/useClickableContainer';
+import {useDevWarning} from '../hooks/useDevWarning';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 
 // =============================================================================
 // Types
@@ -107,6 +110,20 @@ export interface ItemProps extends BaseProps<HTMLElement> {
    * Click handler. Makes the item clickable with button semantics.
    */
   onClick?: (event: React.MouseEvent) => void;
+
+  /**
+   * Ref to a nested control inside the item (e.g. a checkbox in
+   * `startContent`) that already provides the item's keyboard access and
+   * action. When set, the item becomes an enlarged click/tap target that
+   * delegates surface clicks to that control via the `useClickableContainer`
+   * pattern: it renders no invisible button/anchor, so the row adds no second
+   * tab stop (WCAG 4.1.2 — one focusable control per option). Clicks on the
+   * control itself, and on any other nested interactive element, are left to
+   * that element. Mutually exclusive with `onClick`/`href` — when
+   * `interactiveRef` is set those are ignored (the nested control is the sole
+   * action).
+   */
+  interactiveRef?: React.RefObject<HTMLElement | null>;
 
   /**
    * Link URL. Makes the item a link via an invisible anchor element.
@@ -202,16 +219,6 @@ const styles = stylex.create({
       ':active': colorVars['--color-overlay-pressed'],
     },
   },
-  focusVisibleOutline: {
-    outline: {
-      default: 'none',
-      ':has(:focus-visible)': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':has(:focus-visible)': '2px',
-    },
-  },
   highlighted: {
     backgroundColor: colorVars['--color-overlay-hover'],
   },
@@ -258,7 +265,9 @@ const styles = stylex.create({
     textAlign: 'start',
   },
   label: {
-    color: colorVars['--color-text-primary'],
+    // Falls back to the primary text token; a parent (e.g. a destructive menu
+    // item) can recolor the label by setting --_item-label-color.
+    color: `var(--_item-label-color, ${colorVars['--color-text-primary']})`,
     fontSize: typeScaleVars['--text-body-size'],
     lineHeight: typeScaleVars['--text-body-leading'],
   },
@@ -273,7 +282,8 @@ const styles = stylex.create({
     WebkitBoxOrient: 'vertical' as const,
   },
   description: {
-    color: colorVars['--color-text-secondary'],
+    // Companion to --_item-label-color for the secondary line.
+    color: `var(--_item-description-color, ${colorVars['--color-text-secondary']})`,
     fontSize: typeScaleVars['--text-supporting-size'],
     lineHeight: typeScaleVars['--text-supporting-leading'],
   },
@@ -349,6 +359,7 @@ export function Item({
   labelLines,
   descriptionLines,
   onClick,
+  interactiveRef,
   href,
   target: targetFromProps,
   rel: relFromProps,
@@ -363,7 +374,29 @@ export function Item({
   ...restProps
 }: ItemProps) {
   const LinkComponent = useLinkComponent();
-  const isInteractive = onClick != null || href != null;
+
+  // Delegation mode: the row is an enlarged click/tap target for a nested
+  // control (e.g. a checkbox) that owns the keyboard access and action. The
+  // control is the row's only tab stop; the row proxies surface clicks to it.
+  const isDelegate = interactiveRef != null;
+  const containerRef = useRef<HTMLElement | null>(null);
+  // Only onClick is needed: onMouseUp handles middle-click href navigation,
+  // which delegation mode never has (href is ignored here).
+  const {onClick: delegatedOnClick} = useClickableContainer({
+    containerRef,
+    interactiveRef: interactiveRef ?? undefined,
+    disabled: isDisabled,
+  });
+
+  useDevWarning(
+    'Item',
+    '`interactiveRef` is mutually exclusive with `onClick`/`href`. In ' +
+      'delegation mode the row only forwards clicks to the referenced control, ' +
+      'so `onClick`/`href` are ignored. Drop one of them.',
+    isDelegate && (onClick != null || href != null),
+  );
+
+  const isInteractive = onClick != null || href != null || isDelegate;
   const {target, rel} = computeTargetAndRel(targetFromProps, relFromProps);
   // When a semantic role is provided (e.g. "menuitem"), a parent component
   // handles keyboard access. Skip the invisible button/anchor and put
@@ -441,7 +474,10 @@ export function Item({
         <span {...stylex.props(styles.startContent)}>{startContent}</span>
       )}
 
-      {hasParentRole ? (
+      {hasParentRole || isDelegate ? (
+        // Delegation mode (and parent-role mode) put the label in a plain span:
+        // keyboard access lives on the nested control, so no invisible
+        // button/anchor is rendered and the row adds no second tab stop.
         <span
           {...stylex.props(
             styles.content,
@@ -497,7 +533,9 @@ export function Item({
 
   return (
     <Component
-      ref={ref as React.Ref<never>}
+      ref={
+        (isDelegate ? mergeRefs(ref, containerRef) : ref) as React.Ref<never>
+      }
       {...restProps}
       aria-selected={(allowsAriaSelected && isSelected) || undefined}
       // aria-selected is invalid on roles that don't permit it (listitem, a
@@ -511,12 +549,11 @@ export function Item({
       aria-disabled={isDisabled || undefined}
       {...mergeProps(
         themeProps('item', {density, align}),
-        stylex.props(
+        focusOutlineProps.focusWithin(
           styles.root,
           densityStyles[density],
           align === 'start' && styles.alignStart,
           isInteractive && styles.interactive,
-          isInteractive && styles.focusVisibleOutline,
           isHighlighted && styles.highlighted,
           isSelected && styles.selected,
           isDisabled && !hasParentRole && styles.disabled,
@@ -527,11 +564,13 @@ export function Item({
       )}
       role={role}
       onClick={
-        hasParentRole
-          ? onClick
-          : isInteractive
-            ? handleContainerClick
-            : undefined
+        isDelegate
+          ? delegatedOnClick
+          : hasParentRole
+            ? onClick
+            : isInteractive
+              ? handleContainerClick
+              : undefined
       }>
       {innerContent}
     </Component>

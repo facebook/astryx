@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'RichTextEditor',
@@ -93,14 +93,34 @@ export const docs = {
       name: 'hasMarkdownShortcuts',
       type: 'boolean',
       description:
-        'Enable Markdown shortcut typing (e.g. "# " for a heading). Uses default @lexical/markdown transformers.',
+        'Enable Markdown shortcut typing (e.g. "# " for a heading). Uses the transformers prop (defaults to the standard @lexical/markdown transformers).',
       default: 'true',
+    },
+    {
+      name: 'transformers',
+      type: 'ReadonlyArray<Transformer>',
+      description:
+        'Markdown transformers: the single source of truth for markdown behaviour. Defaults to the standard @lexical/markdown TRANSFORMERS. In Lexical the same array drives all three markdown operations (shortcut typing, markdown->state import, state->markdown export); this prop wires shortcut typing today and is the intended input for the serialization APIs added in later phases. Pass a custom array to support additional node types (e.g. transformers layered in via the nodes extension point) consistently across all three. Shortcut typing is only applied when hasMarkdownShortcuts is true.',
+      default: 'TRANSFORMERS',
     },
     {
       name: 'hasAutoFocus',
       type: 'boolean',
       description: 'Automatically focus the editor on mount.',
       default: 'false',
+    },
+    {
+      name: 'tabEscapeHint',
+      type: 'string',
+      description:
+        'Screen-reader hint describing how to move focus out of the editor, since Tab is bound to indentation (press Escape, then Tab). Visually hidden, wired via aria-describedby. Override to localize; pass "" to omit.',
+      default: "'Press Escape then Tab to move focus out of the editor.'",
+    },
+    {
+      name: 'maxLength',
+      type: 'number',
+      description:
+        'Maximum number of characters. When set, a character counter (current/max) is displayed below the editor. Like TextArea, does not enforce the limit natively; the counter shows error styling when the plain-text length exceeds the limit.',
     },
     {
       name: 'width',
@@ -136,6 +156,36 @@ export const docs = {
         guidance: true,
         description:
           'Register custom node types via the nodes prop on BOTH the editor and the RichTextView so serialized content round-trips.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use a ref (RichTextEditorRef) to imperatively focus(), clear(), read the state via getEditorState(), serialize to Markdown via getMarkdown() or HTML via getHTML(), or reach the LexicalEditor via getEditor(). The handle is available after mount. getMarkdown() uses the same transformers prop the editor is configured with. focus() and clear() are no-ops when the editor is read-only or disabled, and clear() resets to a single empty paragraph.',
+      },
+      {
+        guidance: true,
+        description:
+          'To produce a defaultValue from Markdown without mounting an editor (e.g. on the server), use markdownToEditorStateJSON(markdown). Convert the other way with editorStateJSONToMarkdown(json). Both run headless via @lexical/headless and accept the same transformers/nodes options as the editor.',
+      },
+      {
+        guidance: true,
+        description:
+          'Add a formatting toolbar by rendering RichTextEditorToolbar in the plugins slot: plugins={<RichTextEditorToolbar />}. It is built from Astryx Toolbar/ToggleButton primitives (so it matches the theme), syncs active states to the selection, and covers bold/italic/underline/strikethrough/code, links, headings, quote, lists, and undo/redo. Compose extra controls via its endContent prop.',
+      },
+      {
+        guidance: true,
+        description:
+          'Links: the toolbar Link button (on by default; disable with hasLink={false}) and Cmd/Ctrl+K toggle a link on the selection via Lexical TOGGLE_LINK_COMMAND. It prompts for a URL with window.prompt by default; pass promptForUrl to plug in a custom prompt (e.g. an Astryx Dialog or floating popover). Entered URLs are sanitized (only http/https/mailto/tel are written; javascript:/data: are rejected). Links open in a new tab by default: target=_blank and rel=noopener noreferrer are written into the link node data (so they serialize and round-trip), not patched onto the DOM; set linkOpensInNewTab={false} for same-tab links. Pressing the button while a link is selected removes it.',
+      },
+      {
+        guidance: true,
+        description:
+          'Auto-linking: render RichTextEditorAutoLinkPlugin in the plugins slot to turn typed/pasted URLs and emails into links automatically. Created links open in a new tab by default (target=_blank, rel=noopener noreferrer, baked into the node). Pass matchers to recognize additional patterns (build them with createLinkMatcherWithRegExp).',
+      },
+      {
+        guidance: true,
+        description:
+          "The toolbar's glyphs are themeable. Each control resolves its icon from the core icon registry under a stable richtext:* key (see RICHTEXT_ICON_KEYS), falling back to a bundled inline SVG. A theme can restyle any glyph without forking the toolbar: registerIcons({'richtext:bold': <MyBoldIcon />}) from @astryxdesign/core/Icon. registerIcons now accepts arbitrary extension keys, and getExtendedIcon(key, fallback) resolves them; the same pattern any library can use to make its own icons theme-overridable.",
       },
       {
         guidance: false,

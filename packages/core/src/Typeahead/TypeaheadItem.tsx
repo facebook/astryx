@@ -8,7 +8,7 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Typeahead/index.ts
- * - /packages/cli/templates/blocks/components/Typeahead/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Typeahead/ (showcase blocks)
  */
 
 import React, {type ReactNode} from 'react';
@@ -132,6 +132,7 @@ export function TypeaheadItem<T extends SearchableItem>({
   icon,
   description,
   isDisabled = false,
+  xstyle,
 }: TypeaheadItemProps<T>) {
   // If item has a pre-rendered element, use it
   if (item.element) {
@@ -143,7 +144,7 @@ export function TypeaheadItem<T extends SearchableItem>({
       ref={ref}
       {...mergeProps(
         themeProps('typeahead-item'),
-        stylex.props(styles.container, isDisabled && styles.disabled),
+        stylex.props(styles.container, isDisabled && styles.disabled, xstyle),
       )}>
       {icon}
       <div {...stylex.props(styles.content)}>

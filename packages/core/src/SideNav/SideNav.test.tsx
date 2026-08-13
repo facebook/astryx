@@ -183,6 +183,27 @@ describe('SideNav', () => {
     expect(nav.children).toHaveLength(1);
   });
 
+  it('centers footer content when collapsed, matching children alignment', () => {
+    render(
+      <SideNav
+        data-testid="nav"
+        collapsible={{isCollapsed: true, hasButton: false}}
+        footer={<span data-testid="footer-content">F</span>}>
+        <span data-testid="children-content">C</span>
+      </SideNav>,
+    );
+
+    // scrollableCollapsed (wraps children) and stickyBottomCollapsed (wraps
+    // footer) are structurally parallel collapsed-rail containers; both
+    // must center their content the same way, or full-width footer content
+    // stretches to the collapsed rail's width instead of centering.
+    const childrenContainer =
+      screen.getByTestId('children-content').parentElement;
+    const footerContainer = screen.getByTestId('footer-content').parentElement;
+    expect(getComputedStyle(childrenContainer!).alignItems).toBe('center');
+    expect(getComputedStyle(footerContainer!).alignItems).toBe('center');
+  });
+
   it('fires a consumer onClick on the collapse button in addition to toggling', async () => {
     const user = userEvent.setup();
     const onClick = vi.fn();
@@ -591,6 +612,31 @@ describe('SideNavHeading collapsed', () => {
     for (const button of Array.from(document.querySelectorAll('button'))) {
       expect(menu!.contains(button)).toBe(false);
     }
+  });
+
+  it('anchors the collapsed icon-only trigger so the popover positions against it', () => {
+    render(
+      <CollapsedWrapper>
+        <SideNavHeading
+          heading="My App"
+          icon={<span data-testid="app-icon">🏠</span>}
+          menu={<div role="menuitem">Alpha</div>}
+        />
+      </CollapsedWrapper>,
+    );
+    const trigger = screen.getByRole('button', {name: 'My App'});
+    // The same element also carries the collapsed-item Tooltip's own
+    // anchor-name (via anchorRef={collapsedItemRef}), so a plain
+    // non-empty check would pass even when the menu popover itself isn't
+    // anchored. Assert the popover's own position-anchor id specifically
+    // appears in the trigger's (possibly multi-value) anchor-name list.
+    const popoverEl = document.querySelector('[popover]') as HTMLElement;
+    const anchorId = popoverEl.style.positionAnchor;
+    expect(anchorId).not.toBe('');
+    const triggerAnchorNames = trigger.style.anchorName
+      .split(',')
+      .map(s => s.trim());
+    expect(triggerAnchorNames).toContain(anchorId);
   });
 });
 

@@ -19,7 +19,7 @@
  * - /packages/core/src/Breadcrumbs/Breadcrumbs.test.tsx
  * - /packages/core/src/Breadcrumbs/index.ts
  * - /apps/storybook/stories/Breadcrumbs.stories.tsx
- * - /packages/cli/templates/blocks/components/Breadcrumbs/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Breadcrumbs/ (showcase blocks)
  */
 
 import React, {
@@ -45,7 +45,7 @@ import type {LinkComponentType} from '../Link/types';
 import {mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
-import {getIcon} from '../Icon/globalIconRegistry';
+import {Icon} from '../Icon';
 import {usePopover} from '../Popover/usePopover';
 import {useListFocus} from '../hooks/useListFocus';
 import {useTypeahead} from '../hooks/useTypeahead';
@@ -59,6 +59,7 @@ import {
 import {
   MENU_ITEM_ROLES,
   MENU_ITEM_SELECTOR,
+  MENU_BOUNDARY_SELECTOR,
 } from '../DropdownMenu/menuItemRoles';
 import type {DropdownMenuOption} from '../DropdownMenu/DropdownMenu';
 
@@ -195,6 +196,11 @@ const itemStyles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     flexShrink: 0,
+    // Sized off supporting text (12px) — exactly Icon's `xsm` box at the
+    // default type scale. Width/height stay on the token so the box and the
+    // glyph keep matching if a theme retunes the supporting step.
+    width: typeScaleVars['--text-supporting-size'],
+    height: typeScaleVars['--text-supporting-size'],
     fontSize: typeScaleVars['--text-supporting-size'],
   },
   separator: {
@@ -515,21 +521,15 @@ function BreadcrumbMenuTrigger({
     handleKeyDown: listNavKeyDown,
     focusFirst,
     focusItem,
+    ownsEvent,
+    getItems: getMenuItems,
   } = useListFocus<HTMLDivElement>({
     itemSelector: MENU_ITEM_SELECTOR,
+    boundarySelector: MENU_BOUNDARY_SELECTOR,
     wrap: false,
     onEscape: closeMenu,
   });
 
-  const getMenuItems = useCallback(
-    (): HTMLElement[] =>
-      listRef.current
-        ? Array.from(
-            listRef.current.querySelectorAll<HTMLElement>(MENU_ITEM_SELECTOR),
-          )
-        : [],
-    [listRef],
-  );
   const typeahead = useTypeahead({
     getItemLabels: () => getMenuItems().map(el => el.textContent),
     onMatch: focusItem,
@@ -542,6 +542,11 @@ function BreadcrumbMenuTrigger({
 
   const listKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
+      // A submenu flyout renders inline inside this menu; its key events bubble
+      // up here. Let that level own them — only handle events from this level.
+      if (!ownsEvent(e)) {
+        return;
+      }
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         const focused = document.activeElement as HTMLElement | null;
@@ -564,7 +569,7 @@ function BreadcrumbMenuTrigger({
       }
       listNavKeyDown(e);
     },
-    [listNavKeyDown, closeMenu, typeahead],
+    [listNavKeyDown, closeMenu, typeahead, ownsEvent],
   );
 
   const openAndFocus = useCallback(() => {
@@ -622,9 +627,16 @@ function BreadcrumbMenuTrigger({
           isSupporting ? itemStyles.supportingLink : itemStyles.defaultLink,
         )}>
         {children}
-        <span aria-hidden="true" {...stylex.props(itemStyles.chevron)}>
-          {getIcon('chevronDown')}
-        </span>
+        <Icon
+          icon="chevronDown"
+          // 0.75rem — the 12px supporting-text box the bare glyph already
+          // rendered at; `itemStyles.chevron` keeps that box on the token.
+          size="xsm"
+          // The chevron reads as part of the link label, so it takes the
+          // trigger's link color rather than an icon color.
+          color="inherit"
+          xstyle={itemStyles.chevron}
+        />
       </button>
 
       {popover.render(

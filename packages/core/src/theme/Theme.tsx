@@ -41,8 +41,8 @@ import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import * as stylex from '@stylexjs/stylex';
 import type {ThemeMode} from './types';
 import {colorVars, typographyVars} from './tokens.stylex';
-import {registerIcons} from '../Icon/globalIconRegistry';
 import {generateThemeCSS, type DefinedTheme} from './defineTheme';
+import {registerTheme} from './themeRegistry';
 import {dataAttr} from '../naming';
 import {ThemeContext} from './useTheme';
 import {warnOnce} from '../utils/devWarning';
@@ -243,6 +243,8 @@ export function Theme({
 }: ThemeProps): React.ReactElement {
   const isNested = use(ThemeNestingContext);
 
+  registerTheme(theme);
+
   useThemeStyleInjection(theme);
   useRootThemeSync(isNested, mode, theme.name);
 
@@ -253,12 +255,6 @@ export function Theme({
       : mode === 'light'
         ? wrapperStyles.light
         : wrapperStyles.system;
-
-  // Icons — register globally (works in both server and client environments)
-  const icons = theme.icons;
-  if (icons != null) {
-    registerIcons(icons);
-  }
 
   // Memoize the context value to prevent unnecessary re-renders
   const ctxValue = useMemo(() => ({theme, mode}), [theme, mode]);

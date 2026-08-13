@@ -6,7 +6,10 @@ import {useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {VStack} from '@astryxdesign/core/Layout';
 import {Heading} from '@astryxdesign/core/Text';
-import type {ReferenceSection, ContentBlock} from '@astryxdesign/core';
+import type {
+  ReferenceSection,
+  ReferenceContentBlock,
+} from '@astryxdesign/cli/authoring';
 import {ContentBlockRenderer} from './content-blocks';
 
 const styles = stylex.create({
@@ -18,8 +21,10 @@ const styles = stylex.create({
 /**
  * Merge adjacent do/dont list blocks into a single unified table.
  */
-function mergeDosDonts(blocks: ContentBlock[]): ContentBlock[] {
-  const merged: ContentBlock[] = [];
+function mergeDosDonts(
+  blocks: ReferenceContentBlock[],
+): ReferenceContentBlock[] {
+  const merged: ReferenceContentBlock[] = [];
   let pendingDo: string[] = [];
   let pendingDont: string[] = [];
 

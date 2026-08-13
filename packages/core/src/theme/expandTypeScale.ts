@@ -368,6 +368,23 @@ export function generateTypeScaleComponents(
       lineHeight: `var(--text-heading-${level}-leading)`,
     };
   }
+  // `Heading` renders both a `level:N` and, when set, a `type:display-N`
+  // visual-prop class simultaneously (type sizing takes precedence over
+  // level sizing — see Heading.tsx's own `type ? sizeByTypeStyles[type] :
+  // sizeByLevelStyles[level]`). Without a `type:display-N` rule here, the
+  // `level:N` rule is the only one that matches, so it silently wins
+  // regardless of `type` once a theme supplies a type scale. Emitting these
+  // after the level rules keeps them later in source order, so they take
+  // precedence at equal specificity, matching the component's own logic.
+  // fontWeight is intentionally omitted, mirroring the `text` branch below
+  // and preserving `defaultWeightByTypeStyles`.
+  for (const type of ['display-1', 'display-2', 'display-3']) {
+    headingRules[`type:${type}`] = {
+      fontFamily: 'var(--font-family-heading)',
+      fontSize: `var(--text-${type}-size)`,
+      lineHeight: `var(--text-${type}-leading)`,
+    };
+  }
   components.heading = headingRules;
 
   const textRules: Record<string, Record<string, string>> = {};

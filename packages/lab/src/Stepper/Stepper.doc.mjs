@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../../core/src/docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'Stepper',
@@ -28,9 +28,11 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'astryx-stepper', visualProps: ['orientation']},
+      {className: 'astryx-stepper', visualProps: ['orientation', 'indicatorPosition']},
       {className: 'astryx-step', visualProps: ['progress', 'status']},
+      {className: 'astryx-step-indicator', visualProps: ['progress', 'status']},
       {className: 'astryx-step-bar'},
+      {className: 'astryx-step-connector'},
     ],
   },
   components: [
@@ -76,6 +78,18 @@ export const docs = {
           default: "'balanced'",
         },
         {
+          name: 'indicatorPosition',
+          type: "'separated' | 'on-track'",
+          description: 'Position of step indicators relative to the connector track.',
+          default: "'separated'",
+        },
+        {
+          name: 'hasCollapsibleLabels',
+          type: 'boolean',
+          description: 'Horizontal only. When the stepper is too narrow to fit every label, collapse the labels of non-current steps (via a container query) so the track can shrink; the current step keeps its label. Steps stay reachable via aria-current and their accessible names.',
+          default: 'false',
+        },
+        {
           name: 'xstyle',
           type: 'StyleXStyles',
           description: 'StyleX styles for layout customization. Must be a stylex.create() value.',
@@ -119,7 +133,7 @@ export const docs = {
         {
           name: 'status',
           type: "'accent' | 'success' | 'warning' | 'error'",
-          description: 'Semantic color for the step. Controls color only and maps to the global XDS semantic tokens. Leave unset for the progress-derived default coloring.',
+          description: 'Semantic color for the step. Controls color only and maps to the global Astryx semantic tokens. Leave unset for the progress-derived default coloring.',
         },
         {
           name: 'indicator',
@@ -159,7 +173,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../../core/src/docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'numbered step sequence for multi-step workflows',
   usage: {
@@ -206,7 +220,7 @@ export const docsDense = {
   ],
 };
 
-/** @type {import('../../core/src/docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docsZh = {
   name: 'Stepper',
   displayName: 'Stepper',
@@ -224,9 +238,11 @@ export const docsZh = {
   },
   theming: {
     targets: [
-      {className: 'astryx-stepper', visualProps: ['orientation']},
+      {className: 'astryx-stepper', visualProps: ['orientation', 'indicatorPosition']},
       {className: 'astryx-step', visualProps: ['progress', 'status']},
+      {className: 'astryx-step-indicator', visualProps: ['progress', 'status']},
       {className: 'astryx-step-bar'},
+      {className: 'astryx-step-connector'},
     ],
   },
   components: [
