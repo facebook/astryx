@@ -3,6 +3,7 @@
 import type {Plugin, UserConfig} from 'vite';
 import stylexBabelPlugin from '@stylexjs/babel-plugin';
 import stylex from '@stylexjs/unplugin';
+import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
@@ -189,13 +190,12 @@ export function astryxStylex(
       // strips stylex.create/defineVars calls and causes runtime errors.
       let xdsPackages: string[] = ['@astryxdesign/core'];
       try {
-        const fs = require('node:fs');
         const xdsDir = path.resolve(rootDir, 'node_modules/@astryxdesign');
         if (fs.existsSync(xdsDir)) {
           xdsPackages = fs
             .readdirSync(xdsDir)
-            .filter((name: string) => !name.startsWith('.'))
-            .map((name: string) => `@astryxdesign/${name}`);
+            .filter(name => !name.startsWith('.'))
+            .map(name => `@astryxdesign/${name}`);
         }
       } catch {
         // Fallback to just @astryxdesign/core if discovery fails
