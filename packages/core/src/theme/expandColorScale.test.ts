@@ -487,10 +487,10 @@ describe('colorDefaults WCAG contrast on the fall-through pairs (#5019)', () => 
     // Light clears text AA outright. Dark is pinned at the WCAG 1.4.11
     // floor, not 4.5: --color-accent also serves as the focus outline
     // (focusDefaults) and as icon/border accent against dark surfaces, and
-    // a dark accent that clears 4.5:1 under white text lands near 3:1
-    // against --color-background-surface — fixing the label would break
-    // the ring. Deriving the pair inside the generator's guarantee is the
-    // durable fix, tracked with #5014.
+    // a dark accent that clears 4.5:1 under white text lands at ~3.05:1
+    // against --color-background-surface — the ring would sit at the
+    // 1.4.11 floor with no margin. Deriving the pair inside the
+    // generator's guarantee is the durable fix, tracked with #5014.
     expect(
       contrastRatio(
         resolveToken(colorDefaults, '--color-on-accent', 0),

@@ -2,6 +2,7 @@
 
 import {render, screen, fireEvent} from '@testing-library/react';
 import {describe, it, expect} from 'vitest';
+import {colorVars} from '../theme/tokens.stylex';
 import {ChatToolCalls} from './ChatToolCalls';
 
 describe('ChatToolCalls', () => {
@@ -183,6 +184,76 @@ describe('ChatToolCalls', () => {
     expect(
       container.querySelector('[title="Command exited with code 1"]'),
     ).not.toBeNull();
+  });
+
+  it('colors the error status icon and deletions stat with the red text token', () => {
+    // #5019 tuned the dark-mode --color-error FILL token for white-on-error
+    // fills, which dropped its contrast as TEXT below WCAG AA on dark
+    // backgrounds. Text must use the dedicated error text token
+    // (--color-text-red) instead — the same pairing FieldStatus and
+    // ChatComposer already use with error surfaces.
+    const {container} = render(
+      <ChatToolCalls
+        calls={[
+          {
+            name: 'bash',
+            status: 'error',
+            errorMessage: 'Command exited with code 1',
+            deletions: 3,
+          },
+        ]}
+      />,
+    );
+
+    // StyleX injects one atomic rule per property+value pair into the
+    // document; scan the injected CSS so we can assert which token an
+    // element's color declaration references without relying on jsdom's
+    // getComputedStyle to resolve the generated atomic classes.
+    let css = '';
+    for (const sheet of Array.from(document.styleSheets)) {
+      try {
+        for (const rule of Array.from(sheet.cssRules)) {
+          css += rule.cssText + '\n';
+        }
+      } catch {
+        // ignore cross-origin sheets
+      }
+    }
+    css += Array.from(document.querySelectorAll('style'))
+      .map(s => s.textContent || '')
+      .join('\n');
+
+    const escapeRegExp = (s: string) =>
+      s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const redTextVar = escapeRegExp(String(colorVars['--color-text-red']));
+    // The (?![a-zA-Z0-9_-]) boundary is mandatory: without it a class-name
+    // prefix collides with longer class names sharing that prefix.
+    const usesRedTextToken = (el: HTMLElement) =>
+      el.className
+        .split(' ')
+        .some(
+          c =>
+            c !== '' &&
+            new RegExp(
+              '\\.' +
+                escapeRegExp(c) +
+                '(?![a-zA-Z0-9_-])[^{]*\\{[^}]*color:\\s*' +
+                redTextVar,
+            ).test(css),
+        );
+
+    // The status icon span carries STATUS_STYLES.error (styles.colorError)
+    // plus the hover tooltip title.
+    const statusIcon = container.querySelector<HTMLElement>(
+      '[title="Command exited with code 1"]',
+    );
+    expect(statusIcon).not.toBeNull();
+    expect(usesRedTextToken(statusIcon as HTMLElement)).toBe(true);
+
+    // The deletions stat span carries styles.statsDeletions. styles.errorText
+    // declares the identical color, so it collapses into the same atomic rule
+    // this assertion pins.
+    expect(usesRedTextToken(screen.getByText('-3'))).toBe(true);
   });
 
   it('renders no error text for non-error calls', () => {

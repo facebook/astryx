@@ -177,7 +177,7 @@ const styles = stylex.create({
     color: colorVars['--color-text-secondary'],
   },
   counterError: {
-    color: colorVars['--color-error'],
+    color: colorVars['--color-text-red'],
   },
 });
 
@@ -748,7 +748,9 @@ function EditorRefBridge({
         // $generateHtmlFromNodes serializes the whole document (null selection)
         // to HTML; must run in a read context and requires a DOM.
         // `@lexical/html` is a subpackage (built dist) — safe.
-        editor.getEditorState().read(() => $generateHtmlFromNodes(editor, null)),
+        editor
+          .getEditorState()
+          .read(() => $generateHtmlFromNodes(editor, null)),
       getEditor: () => editor,
     }),
     [editor, editable, transformers],
@@ -778,7 +780,7 @@ function CharCountPlugin({
     // `declare` class fields) and fails. Both APIs used here are methods on the
     // editor instance, so no top-level `lexical` value import is needed.
     onCountChange(editor.getRootElement()?.textContent?.length ?? 0);
-    return editor.registerTextContentListener((textContent) => {
+    return editor.registerTextContentListener(textContent => {
       onCountChange(textContent.length);
     });
   }, [editor, onCountChange]);

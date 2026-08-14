@@ -274,10 +274,10 @@ const styles = stylex.create({
     color: colorVars['--color-success'],
   },
   statsDeletions: {
-    color: colorVars['--color-error'],
+    color: colorVars['--color-text-red'],
   },
   errorText: {
-    color: colorVars['--color-error'],
+    color: colorVars['--color-text-red'],
   },
 
   // Inline result detail
@@ -332,7 +332,7 @@ const styles = stylex.create({
   colorPending: {color: colorVars['--color-text-disabled']},
   colorRunning: {color: colorVars['--color-accent']},
   colorComplete: {color: colorVars['--color-success']},
-  colorError: {color: colorVars['--color-error']},
+  colorError: {color: colorVars['--color-text-red']},
 });
 
 // =============================================================================

@@ -158,7 +158,10 @@ const styles = stylex.create({
     color: colorVars['--color-text-secondary'],
   },
   counterError: {
-    color: colorVars['--color-error'],
+    // Error TEXT token, not the error fill token: the fill token is tuned for
+    // solid error surfaces under white foregrounds, and its darkened dark-mode
+    // value (#5019) falls below WCAG AA as text on the field background.
+    color: colorVars['--color-text-red'],
   },
 });
 
