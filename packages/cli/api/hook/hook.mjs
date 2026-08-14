@@ -1,18 +1,24 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Programmatic API for the hook command.
+ * @file Programmatic API for the hook command — dispatcher + barrel.
  *
- * Returns the same typed envelope { type, data } that `astryx --json hook` outputs.
- * The CLI command handler is a thin wrapper around this function.
+ * Returns the same typed envelope { type, data } that `astryx --json hook`
+ * outputs. This module is routing only: it computes the shared detail default
+ * (kept in sync with the CLI) and dispatches to one of the hook leaves —
+ * ./list (hook.list), ./detail (hook.detail), or ./detail/params
+ * (hook.detail.params). The CLI command handler is a thin wrapper around this
+ * function and api/index.mjs re-exports `hook` from here, so the export surface
+ * is unchanged.
+ *
+ * @position api/hook/hook.mjs — dispatcher over ./list, ./detail, ./detail/params
  */
 
-import {findCoreDir} from '../../utils/paths.mjs';
-import {discoverHooks, findHookDoc, getAllHookNames} from '../../lib/hook-discovery.mjs';
-import {loadDocs} from '../../lib/component-loader.mjs';
-import {levenshteinDistance} from '../../lib/string-utils.mjs';
+import {list} from './list/list.mjs';
+import {detail as detailLeaf} from './detail/detail.mjs';
+import {params as paramsLeaf} from './detail/params/params.mjs';
 import {AstryxError} from '../error.mjs';
-import {ERROR_CODES} from '../../lib/error-codes.mjs';
+import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 
 /**
  * @param {string} [name]
@@ -29,9 +35,9 @@ import {ERROR_CODES} from '../../lib/error-codes.mjs';
 export async function hook(name, options = {}) {
   const {
     cwd = process.cwd(),
-    list = false,
+    list: listFlag = false,
     category,
-    params = false,
+    params: paramsFlag = false,
     detail: detailOption,
     lang = null,
     zh = false,
@@ -41,156 +47,41 @@ export async function hook(name, options = {}) {
   // single-hook views default to 'full', list-style views (--list,
   // --category, or no name) default to 'brief' (scannable name lists).
   // Keeping this in sync with the CLI is what the API↔CLI parity test checks.
-  const isListView = list || category != null || !name;
+  const isListView = listFlag || category != null || !name;
   const detail = detailOption ?? (isListView ? 'brief' : 'full');
 
-  const coreDir = findCoreDir(cwd);
-  if (!coreDir) {
-    throw new AstryxError('Could not find @astryxdesign/core package', undefined, ERROR_CODES.ERR_CORE_NOT_FOUND);
+  // A public API caller could pass a non-string category; the list leaf does
+  // `category.toLowerCase()`, so guard it up front (same class as the name
+  // guard below) instead of throwing a raw TypeError with no `.code`.
+  if (category != null && typeof category !== 'string') {
+    throw new AstryxError(
+      `Unknown category "${String(category)}"`,
+      undefined,
+      ERROR_CODES.ERR_UNKNOWN_CATEGORY,
+    );
   }
 
   // ── List mode ──────────────────────────────────────────────────
-
-  if (category || list || !name) {
-    const hooks = discoverHooks(coreDir);
-
-    if (category) {
-      const match = Object.entries(hooks).find(
-        ([key]) => key.toLowerCase() === category.toLowerCase(),
-      );
-      if (!match) {
-        throw new AstryxError(
-          `Unknown category "${category}"`,
-          Object.keys(hooks).map(k => ({name: k, reason: 'valid category'})),
-          ERROR_CODES.ERR_UNKNOWN_CATEGORY,
-        );
-      }
-
-      if (detail === 'compact') {
-        const entries = [];
-        for (const hookName of match[1]) {
-          const docPath = findHookDoc(coreDir, hookName);
-          if (docPath) {
-            try {
-              const docs = await loadDocs(docPath, /** @type {{zh?: boolean, dense?: boolean, lang?: string}} */ ({zh, lang}));
-              entries.push({
-                name: hookName,
-                description: docs.usage?.description || '',
-                import: docs.importPath || '@astryxdesign/core/hooks',
-              });
-            } catch {
-              entries.push({name: hookName, description: '', import: '@astryxdesign/core/hooks'});
-            }
-          } else {
-            entries.push({name: hookName, description: '', import: '@astryxdesign/core/hooks'});
-          }
-        }
-        return {type: 'hook.brief', data: {[match[0]]: entries}};
-      }
-
-      if (detail === 'full') {
-        const entries = [];
-        for (const hookName of match[1]) {
-          const docPath = findHookDoc(coreDir, hookName);
-          if (docPath) {
-            try {
-              entries.push(await loadDocs(docPath, /** @type {{zh?: boolean, dense?: boolean, lang?: string}} */ ({zh, lang})));
-            } catch {
-              entries.push({name: hookName});
-            }
-          } else {
-            entries.push({name: hookName});
-          }
-        }
-        return {type: 'hook.full', data: {[match[0]]: entries}};
-      }
-
-      // Default: brief — names only
-      return {type: 'hook.list', data: {[match[0]]: match[1]}};
-    }
-
-    // All hooks
-    if (detail === 'compact') {
-      /** @type {Record<string, Array<{name: string, description: string, import: string}>>} */
-      const result = {};
-      for (const [cat, hookNames] of Object.entries(hooks)) {
-        result[cat] = [];
-        for (const hookName of hookNames) {
-          const docPath = findHookDoc(coreDir, hookName);
-          if (docPath) {
-            try {
-              const docs = await loadDocs(docPath, /** @type {{zh?: boolean, dense?: boolean, lang?: string}} */ ({zh, lang}));
-              result[cat].push({
-                name: hookName,
-                description: docs.usage?.description || '',
-                import: docs.importPath || '@astryxdesign/core/hooks',
-              });
-            } catch {
-              result[cat].push({name: hookName, description: '', import: '@astryxdesign/core/hooks'});
-            }
-          } else {
-            result[cat].push({name: hookName, description: '', import: '@astryxdesign/core/hooks'});
-          }
-        }
-      }
-      return {type: 'hook.brief', data: result};
-    }
-
-    if (detail === 'full') {
-      /** @type {Record<string, Array<unknown>>} */
-      const result = {};
-      for (const [cat, hookNames] of Object.entries(hooks)) {
-        result[cat] = [];
-        for (const hookName of hookNames) {
-          const docPath = findHookDoc(coreDir, hookName);
-          if (docPath) {
-            try {
-              result[cat].push(await loadDocs(docPath, /** @type {{zh?: boolean, dense?: boolean, lang?: string}} */ ({zh, lang})));
-            } catch {
-              result[cat].push({name: hookName});
-            }
-          } else {
-            result[cat].push({name: hookName});
-          }
-        }
-      }
-      return {type: 'hook.full', data: result};
-    }
-
-    // Default: brief — names only
-    return {type: 'hook.list', data: hooks};
+  if (category || listFlag || !name) {
+    return list({cwd, category, detail, zh, lang});
   }
 
   // ── Single hook ────────────────────────────────────────────────
-
-  const docPath = findHookDoc(coreDir, name);
-
-  if (!docPath) {
-    // Fuzzy search for suggestions
-    const allNames = getAllHookNames(coreDir);
-    const needle = name.toLowerCase();
-    const suggestions = allNames
-      .map(hookName => ({
-        name: hookName,
-        distance: levenshteinDistance(needle, hookName.toLowerCase()),
-      }))
-      .filter(m => m.distance <= 5)
-      .sort((a, b) => a.distance - b.distance)
-      .slice(0, 5)
-      .map(m => ({name: m.name, reason: `similar name (distance ${m.distance})`}));
-
+  // A public API caller could pass a non-string name (the CLI only ever passes
+  // string|undefined). Guard it up front so the leaves' `name.replace(...)` /
+  // `name.toLowerCase()` don't throw a raw TypeError with no `.code` (which the
+  // CLI would downgrade to ERR_UNKNOWN). Mirrors the component() dispatcher.
+  if (typeof name !== 'string') {
     throw new AstryxError(
-      `No hook named "${name}"`,
-      suggestions,
+      `No hook named "${String(name)}"`,
+      undefined,
       ERROR_CODES.ERR_UNKNOWN_HOOK,
     );
   }
 
-  const docs = await loadDocs(docPath, /** @type {{zh?: boolean, dense?: boolean, lang?: string}} */ ({zh, lang}));
-
-  if (params) {
-    return {type: 'hook.detail.params', data: docs.params || []};
+  if (paramsFlag) {
+    return paramsLeaf(name, {cwd, zh, lang});
   }
 
-  return {type: 'hook.detail', data: docs};
+  return detailLeaf(name, {cwd, zh, lang});
 }

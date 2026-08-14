@@ -7,7 +7,9 @@
  * @input Uses React useCallback; DOM APIs for a singleton live-region pair
  * @output Exports useAnnounce hook and AnnouncePoliteness type
  * @position Core a11y hook; provides imperative screen-reader announcements
- *   via persistently-mounted polite/assertive live regions
+ *   via persistently-mounted polite/assertive live regions; regions are
+ *   auto-cleared shortly after announcing so stale status text does not
+ *   linger in the accessibility tree
  *
  * SYNC: When modified, update:
  * - /packages/core/src/hooks/index.ts
@@ -45,6 +47,40 @@ const VISUALLY_HIDDEN_CSS =
 interface LiveRegions {
   polite: HTMLElement;
   assertive: HTMLElement;
+}
+
+/**
+ * How long an announcement stays in its region before being auto-cleared.
+ * Long enough for screen readers to pick the message up and finish reading
+ * it; clearing afterwards keeps stale status text out of the accessibility
+ * tree for users who browse the DOM later. Each announce resets the timer.
+ */
+const CLEAR_DELAY_MS = 2000;
+
+const clearTimers: {
+  [K in AnnouncePoliteness]: ReturnType<typeof setTimeout> | null;
+} = {
+  polite: null,
+  assertive: null,
+};
+
+function cancelScheduledClear(politeness: AnnouncePoliteness): void {
+  const timer = clearTimers[politeness];
+  if (timer != null) {
+    clearTimeout(timer);
+    clearTimers[politeness] = null;
+  }
+}
+
+function scheduleClear(
+  politeness: AnnouncePoliteness,
+  target: HTMLElement,
+): void {
+  cancelScheduledClear(politeness);
+  clearTimers[politeness] = setTimeout(() => {
+    clearTimers[politeness] = null;
+    target.textContent = '';
+  }, CLEAR_DELAY_MS);
 }
 
 // Singleton: the live regions are created ONCE and stay mounted for the
@@ -103,6 +139,10 @@ function announceMessage(
   requestAnimationFrame(() => {
     target.textContent = message;
   });
+  // Auto-clear so the last message does not linger in the accessibility tree
+  // indefinitely. Scheduled per announce, so a newer announcement always
+  // resets the countdown (the delay comfortably outlasts the rAF re-set).
+  scheduleClear(politeness, target);
 }
 
 /**
@@ -111,6 +151,7 @@ function announceMessage(
  * so stale status text does not linger in the accessibility tree.
  */
 function clearRegion(politeness: AnnouncePoliteness): void {
+  cancelScheduledClear(politeness);
   if (!regions) {
     return;
   }
@@ -126,6 +167,9 @@ function clearRegion(politeness: AnnouncePoliteness): void {
  * The polite and assertive regions are created once on first use and kept
  * mounted, so announcements are reliable even for messages that appear
  * immediately (unlike a live region rendered together with its content).
+ * Each message is automatically cleared a couple of seconds after being
+ * announced, so users browsing the DOM later do not encounter stale status
+ * text; announcing again before the clear simply resets the countdown.
  *
  * @example
  * ```
@@ -160,6 +204,8 @@ export function useAnnounce(): AnnounceFn {
  * @internal
  */
 export function __resetLiveRegionsForTest(): void {
+  cancelScheduledClear('polite');
+  cancelScheduledClear('assertive');
   if (regions) {
     regions.polite.remove();
     regions.assertive.remove();

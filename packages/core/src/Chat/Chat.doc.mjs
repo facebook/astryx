@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'Chat',
@@ -26,6 +26,8 @@ export const docs = {
       {className: 'astryx-chat-system-message', visualProps: ['variant']},
       {className: 'astryx-chat-message-metadata'},
       {className: 'astryx-chat-send-button'},
+      {className: 'astryx-chat-dictation-button'},
+      {className: 'astryx-chat-layout-scroll-button'},
       {className: 'astryx-chat-tokenized-text'},
       {className: 'astryx-chat-tool-calls'},
       {className: 'astryx-trigger-menu'},
@@ -88,7 +90,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsZh = {
   usage: {
     description: 'Chat 是一组用于构建 AI 和人工聊天体验的可组合基础组件。组合 ChatLayout、ChatMessageList、ChatMessage、气泡、系统消息、工具调用、标记文本和 ChatComposer，可构建完整对话，而无需重新实现发送者感知布局、密度、滚动或编写器行为。',
@@ -117,7 +119,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'AI chat components. Layout (MessageList>Message>Bubble+SystemMessage) + Composer (shell w/ slots, ContentEditable input w/ trigger menus, tokens, msg history, attachments)',
   usage: {

@@ -37,6 +37,7 @@ import {Icon, type IconName} from '../Icon';
 import {Spinner} from '../Spinner';
 import {VisuallyHidden} from '../VisuallyHidden';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 // =============================================================================
 // Types
@@ -133,7 +134,14 @@ const styles = stylex.create({
     width: '14px',
     height: '14px',
     color: colorVars['--color-text-disabled'],
-    transition: `transform ${durationVars['--duration-fast']} ${easeVars['--ease-standard']}`,
+  },
+  // Rides on the chevron <Icon> (via `xstyle`), next to the rotation it
+  // animates, so one element carries both the transform and the theme target.
+  chevronTransition: {
+    transition: {
+      default: `transform ${durationVars['--duration-fast']} ${easeVars['--ease-standard']}`,
+      '@media (prefers-reduced-motion: reduce)': 'none',
+    },
   },
   chevronExpanded: {
     transform: 'rotate(180deg)',
@@ -141,7 +149,10 @@ const styles = stylex.create({
   groupContent: {
     display: 'grid',
     gridTemplateRows: '0fr',
-    transition: `grid-template-rows ${durationVars['--duration-medium']} ${easeVars['--ease-standard']}`,
+    transition: {
+      default: `grid-template-rows ${durationVars['--duration-medium']} ${easeVars['--ease-standard']}`,
+      '@media (prefers-reduced-motion: reduce)': 'none',
+    },
   },
   groupContentExpanded: {
     gridTemplateRows: '1fr',
@@ -149,6 +160,18 @@ const styles = stylex.create({
   groupContentInner: {
     overflow: 'hidden',
     minHeight: 0,
+    // `list` (and, within it, each `callRowClickable` row) overhangs its own
+    // content box by `--spacing-1` on each inline edge via a negative margin,
+    // so its hover background can extend past the text column without
+    // widening the layout — `list`'s own matching paddingInline absorbs the
+    // row-level overhang, but `list`'s negative margin then overhangs *this*
+    // element's box by the same amount, and this is the clip boundary the
+    // grid height animation needs `overflow: hidden` for. Mirror the same
+    // padding/negative-margin pair here so that overhang is absorbed too,
+    // instead of clipped — matching the ungrouped single-call row, which has
+    // no such wrapper to clip it.
+    paddingInline: spacingVars['--spacing-1'],
+    marginInline: `calc(-1 * ${spacingVars['--spacing-1']})`,
   },
   list: {
     display: 'flex',
@@ -266,7 +289,6 @@ const styles = stylex.create({
     width: '14px',
     height: '14px',
     color: colorVars['--color-text-disabled'],
-    transition: `transform ${durationVars['--duration-fast']} ${easeVars['--ease-standard']}`,
     marginInlineStart: 'auto',
   },
   callDetailContent: {
@@ -354,6 +376,7 @@ function getToolCallKey(call: ChatToolCallItem): string {
 // =============================================================================
 
 function CallRow({call}: {call: ChatToolCallItem}) {
+  const t = useTranslator();
   const status = call.status ?? 'complete';
   const hasDetail = call.resultDetail != null;
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -405,7 +428,11 @@ function CallRow({call}: {call: ChatToolCallItem}) {
           // as real text so it reaches screen readers, keyboard, and touch
           // users. Rendering it inside the row also folds it into the
           // accessible name of expandable (role="button") rows.
-          <VisuallyHidden>{`Error: ${call.errorMessage}`}</VisuallyHidden>
+          <VisuallyHidden>
+            {t('@astryx.chatToolCalls.error', {
+              message: call.errorMessage ?? '',
+            })}
+          </VisuallyHidden>
         )}
       </span>
       <span {...stylex.props(styles.callName)}>{call.name}</span>
@@ -436,12 +463,16 @@ function CallRow({call}: {call: ChatToolCallItem}) {
         <span {...stylex.props(styles.callDuration)}>{call.duration}</span>
       )}
       {hasDetail && (
-        <span
-          {...stylex.props(
-            styles.callDetailChevron,
-            isDetailOpen && styles.chevronExpanded,
-          )}>
-          <Icon icon="chevronDown" size="xsm" color="inherit" />
+        <span {...stylex.props(styles.callDetailChevron)}>
+          <Icon
+            icon="chevronDown"
+            size="xsm"
+            color="inherit"
+            xstyle={[
+              styles.chevronTransition,
+              isDetailOpen && styles.chevronExpanded,
+            ]}
+          />
         </span>
       )}
     </div>
@@ -489,6 +520,7 @@ function CallRow({call}: {call: ChatToolCallItem}) {
  * ```
  */
 export function ChatToolCalls(props: ChatToolCallsProps) {
+  const t = useTranslator();
   const {
     calls,
     label: _customLabel,
@@ -571,7 +603,7 @@ export function ChatToolCalls(props: ChatToolCallsProps) {
               <Icon icon="wrench" size="sm" color="inherit" />
             </span>
             <span {...stylex.props(styles.groupLabel)}>
-              {calls.length} tool calls
+              {t('@astryx.chatToolCalls.groupLabel', {count: calls.length})}
             </span>
           </>
         ) : (
@@ -611,12 +643,16 @@ export function ChatToolCalls(props: ChatToolCallsProps) {
             </>
           )}
         </span>
-        <span
-          {...stylex.props(
-            styles.chevron,
-            isExpanded && styles.chevronExpanded,
-          )}>
-          <Icon icon="chevronDown" size="xsm" color="inherit" />
+        <span {...stylex.props(styles.chevron)}>
+          <Icon
+            icon="chevronDown"
+            size="xsm"
+            color="inherit"
+            xstyle={[
+              styles.chevronTransition,
+              isExpanded && styles.chevronExpanded,
+            ]}
+          />
         </span>
       </div>
 

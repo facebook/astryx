@@ -13,7 +13,7 @@
  * - /packages/core/src/TopNav/TopNav.test.tsx
  * - /packages/core/src/TopNav/index.ts
  * - /apps/storybook/stories/TopNav.stories.tsx
- * - /packages/cli/templates/blocks/components/TopNav/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/TopNav/ (showcase blocks)
  */
 
 import type {ReactNode} from 'react';
@@ -243,9 +243,7 @@ export function TopNav({
           </div>
         )}
         {hasCollapsibleContent && mobileContent && (
-          <div {...stylex.props(styles.drawerDivider)}>
-            <Divider />
-          </div>
+          <Divider xstyle={styles.drawerDivider} />
         )}
         {mobileContent && (
           <div {...stylex.props(styles.drawerExtraContent)}>

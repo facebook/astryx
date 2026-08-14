@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'TabList',
@@ -56,12 +56,6 @@ export const docs = {
       default: 'false',
     },
     {
-      name: 'orientation',
-      type: "'horizontal' | 'vertical'",
-      description: "Orientation of the tab strip, controlling which arrow keys move focus between tabs and the reported aria-orientation. 'horizontal': ArrowLeft/ArrowRight. 'vertical': ArrowUp/ArrowDown. Both axes' arrows are accepted regardless.",
-      default: "'horizontal'",
-    },
-    {
       name: 'children',
       type: 'ReactNode',
       description: 'Tab and TabMenu items to render inside the nav.',
@@ -105,7 +99,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsZh = {
   usage: {
     description:
@@ -126,7 +120,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'Tab navigation w/ overflow menu support; semantic nav landmark w/ button or anchor tab items.',
   usage: {

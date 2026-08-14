@@ -5,8 +5,10 @@
 import {Fragment, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Code} from '@astryxdesign/core/CodeBlock';
+import {InlineCode} from '../InlineCode';
+import {tokenizeInline, type InlineToken} from './inlineTokens';
 
-const TOKEN = /(`([^`]+)`|\[([^\]]+)\]\(([^)]+)\))/g;
+type LinkToken = Extract<InlineToken, {type: 'link'}>;
 
 const styles = stylex.create({
   link: {
@@ -29,43 +31,37 @@ const styles = stylex.create({
   },
 });
 
-function renderLink(label: string, href: string, key: number): ReactNode {
-  const isExternal = /^https?:\/\//.test(href);
+function renderLink(token: LinkToken): ReactNode {
+  const isExternal = /^https?:\/\//.test(token.href);
   return (
     <a
-      key={key}
-      href={href}
+      href={token.href}
       rel={isExternal ? 'noreferrer' : undefined}
       target={isExternal ? '_blank' : undefined}
       {...stylex.props(styles.link)}>
-      {label}
+      {token.isCodeLabel ? (
+        // color="inherit" keeps the link's accent color on the code span;
+        // Code's default `primary` would read as body text inside the anchor.
+        <Code color="inherit">{token.label}</Code>
+      ) : (
+        token.label
+      )}
     </a>
   );
 }
 
-// Render a small inline markdown subset for authored docs: code spans and links.
+// Render a small inline markdown subset for authored docs: code spans, links,
+// and a code span used as a whole link label ([`Name`](href)).
 export function renderInlineMarkdown(text: string) {
-  const nodes: ReactNode[] = [];
-  let lastIndex = 0;
-  let match;
-  while ((match = TOKEN.exec(text)) !== null) {
-    if (match.index > lastIndex) {
-      nodes.push(text.slice(lastIndex, match.index));
-    }
-
-    const code = match[2];
-    const linkLabel = match[3];
-    const linkHref = match[4];
-    if (code != null) {
-      nodes.push(<Code key={match.index}>{code}</Code>);
-    } else if (linkLabel != null && linkHref != null) {
-      nodes.push(renderLink(linkLabel, linkHref, match.index));
-    }
-
-    lastIndex = match.index + match[0].length;
-  }
-  if (lastIndex < text.length) {
-    nodes.push(text.slice(lastIndex));
-  }
-  return nodes.map((node, i) => <Fragment key={i}>{node}</Fragment>);
+  return tokenizeInline(text).map((token, i) => (
+    <Fragment key={i}>
+      {token.type === 'code' ? (
+        <InlineCode>{token.value}</InlineCode>
+      ) : token.type === 'link' ? (
+        renderLink(token)
+      ) : (
+        token.value
+      )}
+    </Fragment>
+  ));
 }

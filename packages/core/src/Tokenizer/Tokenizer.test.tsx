@@ -1136,3 +1136,68 @@ describe('Tokenizer', () => {
     });
   });
 });
+
+describe('Tokenizer statusVariant forwarding', () => {
+  it('defaults to attached (status renders with data-variant="attached")', () => {
+    const {container} = render(
+      <Tokenizer
+        label="Members"
+        searchSource={userSource}
+        value={[]}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Required'}}
+      />,
+    );
+    expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+      'data-variant',
+      'attached',
+    );
+  });
+
+  it('forwards statusVariant="detached" to the underlying Field status', () => {
+    const {container} = render(
+      <Tokenizer
+        label="Members"
+        searchSource={userSource}
+        value={[]}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Required'}}
+        statusVariant="detached"
+      />,
+    );
+    expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+      'data-variant',
+      'detached',
+    );
+  });
+});
+
+describe('Tokenizer disabled theme state', () => {
+  it('reflects disabled on the root target so themes can gate paint on it', () => {
+    const {container} = render(
+      <Tokenizer
+        label="Members"
+        searchSource={userSource}
+        value={[]}
+        onChange={() => {}}
+        isDisabled
+      />,
+    );
+    const root = container.querySelector('.astryx-tokenizer');
+    expect(root).toHaveAttribute('data-disabled', 'disabled');
+    expect(root).toHaveClass('disabled');
+  });
+
+  it('omits data-disabled when enabled, like status does', () => {
+    const {container} = render(
+      <Tokenizer
+        label="Members"
+        searchSource={userSource}
+        value={[]}
+        onChange={() => {}}
+      />,
+    );
+    const root = container.querySelector('.astryx-tokenizer');
+    expect(root).not.toHaveAttribute('data-disabled');
+  });
+});

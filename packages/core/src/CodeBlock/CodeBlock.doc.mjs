@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docs = {
   name: 'CodeBlock',
   displayName: 'Code Block',
@@ -170,6 +170,9 @@ import {CodeBlock} from '@astryxdesign/core/CodeBlock';
     targets: [
       {className: 'astryx-code', visualProps: ['color']},
       {className: 'astryx-codeblock', visualProps: ['size', 'language', 'container']},
+      {className: 'astryx-codeblock-header', visualProps: ['size', 'language', 'container']},
+      {className: 'astryx-codeblock-title', visualProps: ['size', 'language']},
+      {className: 'astryx-codeblock-copy-button'},
     ],
   },
   usage: {
@@ -191,7 +194,7 @@ import {CodeBlock} from '@astryxdesign/core/CodeBlock';
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsZh = {
   usage: {
     description: 'CodeBlock displays syntax-highlighted code snippets with optional line numbers, copy button, and collapsible sections. Use CodeBlock for fenced multi-line code and Code for inline code within prose.',
@@ -204,7 +207,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'syntax-highlighted code block via CSS Custom Highlight API (0-DOM overhead); span-based fallback; Code for inline code in prose',
   usage: {

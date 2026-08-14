@@ -31,7 +31,7 @@ permissions: {}
 jobs:
   clear:
     if: github.event.workflow_run.event == 'pull_request_review'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     permissions:
       pull-requests: write
       statuses: write

@@ -12,6 +12,13 @@
  * eliminating z-index stacking. CSS anchor positioning places the panel below
  * the nav wrapper.
  *
+ * The default (desktop) trigger opens on hover and click. Hover opens are
+ * transient; click/keyboard opens are pinned. A click shortly after hover-open
+ * confirms and pins the panel instead of closing it. The panel remains an auto
+ * popover for native dismissal and sibling exclusivity; `popoverTarget`
+ * registers the trigger as its native invoker so the guard runs before any
+ * dismiss.
+ *
  * Supports three render modes via TopNavRenderContext:
  * - 'default': desktop popover mega menu (hover/click triggered)
  * - 'mobile-bar': returns null (hidden in compact mobile bar)
@@ -20,7 +27,7 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/TopNav/TopNav.doc.mjs
  * - /packages/core/src/TopNav/index.ts
- * - /packages/cli/templates/blocks/components/TopNav/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/TopNav/ (showcase blocks)
  */
 
 import React, {
@@ -44,13 +51,14 @@ import {
 } from '../theme/tokens.stylex';
 import {usePopover} from '../Popover/usePopover';
 import {Grid} from '../Grid/Grid';
-import {getIcon} from '../Icon/globalIconRegistry';
+import {Icon} from '../Icon';
 import {mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {navItemStyles} from '../NavItem/navItemStyles.stylex';
 import {useTopNavSlot} from './TopNavContext';
 import {useTopNavRenderMode} from './TopNavRenderContext';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 
 // =============================================================================
 // Styles
@@ -79,14 +87,6 @@ const styles = stylex.create({
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
     },
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': '2px',
-    },
     border: 'none',
     fontFamily: 'inherit',
   },
@@ -97,6 +97,14 @@ const styles = stylex.create({
   chevron: {
     display: 'inline-flex',
     alignItems: 'center',
+    // The registry chevron is a 1em SVG, so it has always rendered at the
+    // trigger's own font size (--text-label-size). Icon's size box would repin
+    // it to a fixed rem (the nearest, sm, is 1rem = 16px vs the 14px here), so
+    // hold it on the inherited em: same pixels, and still tracks the type
+    // scale when a theme changes the label size.
+    width: '1em',
+    height: '1em',
+    fontSize: 'inherit',
     transitionProperty: 'transform',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
@@ -123,6 +131,21 @@ const styles = stylex.create({
       transform: 'translateY(-4px)',
     },
   },
+  // Clamp the anchored layer to the space available below the nav so a tall
+  // menu never runs off the bottom of the viewport. The layer is positioned
+  // with position-area: self-block-end, so its containing block spans from
+  // the nav's block-end to the viewport edge — 100% is exactly that space.
+  // The layer is a flex column so panelContainer can shrink and scroll its
+  // own content, keeping the surface radius/shadow static at the edges.
+  // Internal scroll is a stopgap until the mobile bottom-sheet lands.
+  panelViewportFit: {
+    display: {
+      default: 'none',
+      ':popover-open': 'flex',
+    },
+    flexDirection: 'column',
+    maxHeight: `calc(100% - ${spacingVars['--spacing-3']})`,
+  },
   // Visual styles for the panel content container.
   panelContainer: {
     backgroundColor: colorVars['--color-background-popover'],
@@ -132,6 +155,11 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-container'],
     boxShadow: shadowVars['--shadow-low'],
     overflow: 'hidden',
+    // Allow the container to shrink inside the height-clamped layer so its
+    // content (panelContent) can scroll rather than overflow the viewport.
+    display: 'flex',
+    flexDirection: 'column',
+    minHeight: 0,
   },
   panelContent: {
     display: 'flex',
@@ -139,7 +167,14 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-6'],
     paddingBlock: spacingVars['--spacing-3'],
     paddingInline: spacingVars['--spacing-3'],
-    maxWidth: 960,
+    // Clamp to the viewport (minus a gutter) so the anchored panel never
+    // overflows the screen edge on narrow viewports; caps at 960px otherwise.
+    maxWidth: `min(960px, calc(100dvw - ${spacingVars['--spacing-4']}))`,
+    boxSizing: 'border-box',
+    // Scroll internally when the menu is taller than the available space
+    // below the nav (paired with panelViewportFit on the layer).
+    overflowY: 'auto',
+    overscrollBehavior: 'contain',
   },
   menuWrapper: {
     flexGrow: 2,
@@ -173,6 +208,11 @@ const styles = stylex.create({
   },
   drawerChevron: {
     display: 'inline-flex',
+    // Same em pin as styles.chevron above — the drawer header inherits
+    // --text-label-size from navItemStyles.item.
+    width: '1em',
+    height: '1em',
+    fontSize: 'inherit',
     transitionProperty: 'transform',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
@@ -330,6 +370,8 @@ TopNavMegaMenu.displayName = 'TopNavMegaMenu';
 // DefaultMegaMenu — desktop popover mode
 // =============================================================================
 
+const CLICK_GUARD_MS = 500;
+
 function DefaultMegaMenu({
   ref,
   label,
@@ -343,26 +385,36 @@ function DefaultMegaMenu({
   const showTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const triggerButtonRef = useRef<HTMLButtonElement | null>(null);
-  const clickLockedRef = useRef(false);
+  const hoverOpenedAtRef = useRef(0);
+  const stickyRef = useRef(false);
 
   const handlePopoverShow = useCallback(() => {
     onOpenChange?.(true);
   }, [onOpenChange]);
 
   const handlePopoverHide = useCallback(() => {
+    hoverOpenedAtRef.current = 0;
+    stickyRef.current = false;
     onOpenChange?.(false);
   }, [onOpenChange]);
 
   const popover = usePopover({
     // role: 'none' — the panel exposes its own role="group" labeled by
-    // `label`. Focus stays on the trigger while the panel is open, so a
-    // role="dialog" aria-modal="true" wrapper would announce an unnamed
-    // modal dialog around a grid of links.
+    // `label`. Pointer/hover opens keep focus on the trigger; keyboard and
+    // assistive-tech opens move focus into the panel (a labeled group you exit
+    // with Escape or by tabbing out). Either way role="dialog"
+    // aria-modal="true" would be wrong: it announces an unnamed modal dialog
+    // around a grid of links (and, when focus stays on the trigger, marks the
+    // focused control inert).
     role: 'none',
     // hasSurface: false — mega menu provides its own surface (panelContainer)
     // with border-top and custom overflow. Animation is applied via the
     // render() call's xstyle prop (panelAnimation), not the hook options.
     hasSurface: false,
+    // Keep native outside-click/Escape dismissal and sibling exclusivity.
+    // The trigger's popoverTarget association prevents its activation from
+    // being treated as an ordinary outside interaction.
+    hasLightDismiss: true,
     onShow: handlePopoverShow,
     onHide: handlePopoverHide,
   });
@@ -392,40 +444,75 @@ function DefaultMegaMenu({
   const scheduleShow = useCallback(() => {
     clearTimeouts();
     showTimeoutRef.current = setTimeout(() => {
+      hoverOpenedAtRef.current = Date.now();
       popover.show({skipAutoFocus: true});
     }, delay);
-  }, [clearTimeouts, popover, delay]);
+  }, [clearTimeouts, delay, popover]);
 
   const scheduleHide = useCallback(() => {
     clearTimeouts();
     hideTimeoutRef.current = setTimeout(() => {
       popover.hide();
     }, hideDelay);
-  }, [clearTimeouts, popover, hideDelay]);
+  }, [clearTimeouts, hideDelay, popover]);
 
-  const handleMouseEnter = useCallback(() => {
-    if (!clickLockedRef.current) {
+  const focusFirstPanelItem = useCallback(() => {
+    popover.contentRef.current
+      ?.querySelector<HTMLElement>(
+        'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      )
+      ?.focus();
+  }, [popover.contentRef]);
+
+  const handleTriggerMouseEnter = useCallback(() => {
+    clearTimeouts();
+    if (!popover.isOpen) {
       scheduleShow();
     }
-  }, [scheduleShow]);
+  }, [clearTimeouts, popover.isOpen, scheduleShow]);
+
+  const handlePanelMouseEnter = useCallback(() => {
+    clearTimeouts();
+  }, [clearTimeouts]);
 
   const handleMouseLeave = useCallback(() => {
-    if (!clickLockedRef.current) {
+    if (!stickyRef.current) {
       scheduleHide();
     }
   }, [scheduleHide]);
 
-  const handleClick = useCallback(() => {
-    clearTimeouts();
-    if (popover.isOpen) {
-      clickLockedRef.current = false;
-      popover.hide();
-      triggerButtonRef.current?.focus();
-    } else {
-      clickLockedRef.current = true;
-      popover.show();
-    }
-  }, [popover, clearTimeouts]);
+  const handleClick = useCallback(
+    (event: React.MouseEvent<HTMLButtonElement>) => {
+      // Cancel the native invoker toggle so this guard is the single source of
+      // truth for trigger activation. popoverTarget still establishes the
+      // invoker relationship used by native light-dismiss and stacking.
+      event.preventDefault();
+      clearTimeouts();
+
+      if (event.detail === 0) {
+        stickyRef.current = true;
+        hoverOpenedAtRef.current = 0;
+        if (popover.isOpen) {
+          focusFirstPanelItem();
+        } else {
+          popover.show();
+        }
+      } else if (!popover.isOpen) {
+        stickyRef.current = true;
+        popover.show({skipAutoFocus: true});
+      } else if (Date.now() - hoverOpenedAtRef.current < CLICK_GUARD_MS) {
+        // A click that naturally follows a hover-open confirms the open state
+        // instead of toggling the panel shut. From here it behaves like any
+        // other click-open and stays pinned until explicit dismissal.
+        stickyRef.current = true;
+        hoverOpenedAtRef.current = 0;
+      } else {
+        popover.hide();
+        triggerButtonRef.current?.focus();
+      }
+    },
+    [clearTimeouts, focusFirstPanelItem, popover],
+  );
 
   useEffect(() => {
     return () => {
@@ -439,21 +526,25 @@ function DefaultMegaMenu({
         ref={mergeRefs(triggerButtonRef, ref)}
         type="button"
         {...popover.triggerProps}
+        // Native invoker prevents trigger light-dismiss.
+        popoverTarget={popover.id}
         onClick={handleClick}
-        onMouseEnter={handleMouseEnter}
+        onMouseEnter={handleTriggerMouseEnter}
         onMouseLeave={handleMouseLeave}
         {...mergeProps(
           themeProps('top-nav-mega-menu'),
-          stylex.props(styles.trigger, popover.isOpen && styles.triggerOpen),
+          focusOutlineProps.focusVisible(
+            styles.trigger,
+            popover.isOpen && styles.triggerOpen,
+          ),
         )}>
         {label}
-        <span
-          {...stylex.props(
-            styles.chevron,
-            popover.isOpen && styles.chevronOpen,
-          )}>
-          {getIcon('chevronDown')}
-        </span>
+        <Icon
+          icon="chevronDown"
+          size="sm"
+          color="inherit"
+          xstyle={[styles.chevron, popover.isOpen && styles.chevronOpen]}
+        />
       </button>
       {popover.render(
         <div
@@ -462,17 +553,15 @@ function DefaultMegaMenu({
           // for action menus; link mega menus are the documented anti-case).
           role="group"
           aria-label={label}
-          onMouseEnter={handleMouseEnter}
+          onMouseEnter={handlePanelMouseEnter}
           onMouseLeave={handleMouseLeave}
           {...stylex.props(styles.panelContainer)}>
           <div {...stylex.props(styles.panelContent)}>
             {/* Menu items section */}
             {items != null && (
-              <div {...stylex.props(styles.menuWrapper)}>
-                <Grid columns={2} gap={2}>
-                  {items}
-                </Grid>
-              </div>
+              <Grid columns={2} gap={2} xstyle={styles.menuWrapper}>
+                {items}
+              </Grid>
             )}
 
             {/* Featured section */}
@@ -484,7 +573,7 @@ function DefaultMegaMenu({
         {
           placement: 'below',
           alignment: slot,
-          xstyle: styles.panelAnimation,
+          xstyle: [styles.panelAnimation, styles.panelViewportFit],
         },
       )}
     </>
@@ -516,13 +605,15 @@ function DrawerMegaMenu({
           stylex.props(navItemStyles.item, styles.drawerHeader),
         )}>
         {label}
-        <span
-          {...stylex.props(
+        <Icon
+          icon="chevronDown"
+          size="sm"
+          color="inherit"
+          xstyle={[
             styles.drawerChevron,
             isExpanded && styles.drawerChevronExpanded,
-          )}>
-          {getIcon('chevronDown')}
-        </span>
+          ]}
+        />
       </button>
 
       {/* Animated expand/collapse container */}

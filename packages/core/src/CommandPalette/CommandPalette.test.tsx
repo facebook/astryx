@@ -8,10 +8,11 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, waitFor, fireEvent} from '@testing-library/react';
+import {render, screen, waitFor, fireEvent, act} from '@testing-library/react';
 import {CommandPalette} from './CommandPalette';
 import {createStaticSource} from '@astryxdesign/core/Typeahead';
 import type {SearchSource, SearchableItem} from '@astryxdesign/core/Typeahead';
+import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 
 const simpleSource = createStaticSource([
   {id: 'home', label: 'Home'},
@@ -35,6 +36,9 @@ beforeEach(() => {
   HTMLDialogElement.prototype.close = vi.fn(function (this: HTMLDialogElement) {
     this.removeAttribute('open');
   });
+  // The live regions are module-level singletons; reset them so
+  // announcements from one test don't leak into the next.
+  __resetLiveRegionsForTest();
 });
 
 describe('CommandPalette', () => {
@@ -268,5 +272,124 @@ describe('CommandPalette', () => {
     await waitFor(() =>
       expect(screen.getByText('No results')).toBeInTheDocument(),
     );
+  });
+
+  it('does not move the highlight while typing in the search input', async () => {
+    // The palette's input already filters; letting the shared combobox
+    // typeahead also chase prefixes would drag the highlight — and Enter —
+    // onto a command the user never picked.
+    const gitSource = createStaticSource([
+      {id: 'git-add', label: 'git add'},
+      {id: 'git-commit', label: 'git commit'},
+      {id: 'git-push', label: 'git push'},
+    ]);
+    render(
+      <CommandPalette
+        isOpen={true}
+        onOpenChange={() => {}}
+        searchSource={gitSource}
+      />,
+    );
+
+    const input = screen.getByRole('combobox');
+    await waitFor(() =>
+      expect(screen.getByText('git add')).toBeInTheDocument(),
+    );
+
+    fireEvent.keyDown(input, {key: 'g'});
+    fireEvent.keyDown(input, {key: 'i'});
+    fireEvent.keyDown(input, {key: 't'});
+
+    expect(input).not.toHaveAttribute('aria-activedescendant');
+  });
+
+  describe('screen reader announcements', () => {
+    const politeRegion = () =>
+      document.querySelector('[data-astryx-live-region="polite"]');
+
+    it('announces the result count politely after typing a query', async () => {
+      render(
+        <CommandPalette
+          isOpen={true}
+          onOpenChange={() => {}}
+          searchSource={simpleSource}
+        />,
+      );
+      await waitFor(() => expect(screen.getByText('Home')).toBeInTheDocument());
+      // "e" matches both Home and Settings.
+      fireEvent.change(screen.getByRole('combobox'), {target: {value: 'e'}});
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('2 results');
+      });
+    });
+
+    it('announces the singular form when one item matches', async () => {
+      render(
+        <CommandPalette
+          isOpen={true}
+          onOpenChange={() => {}}
+          searchSource={simpleSource}
+        />,
+      );
+      await waitFor(() => expect(screen.getByText('Home')).toBeInTheDocument());
+      // "set" matches only Settings. Anchored so it cannot pass on "1 results".
+      fireEvent.change(screen.getByRole('combobox'), {target: {value: 'set'}});
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent(/^1 result$/);
+      });
+    });
+
+    it('announces the empty state with the query when nothing matches', async () => {
+      render(
+        <CommandPalette
+          isOpen={true}
+          onOpenChange={() => {}}
+          searchSource={simpleSource}
+        />,
+      );
+      await waitFor(() => expect(screen.getByText('Home')).toBeInTheDocument());
+      fireEvent.change(screen.getByRole('combobox'), {target: {value: 'zzz'}});
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('No results for zzz');
+      });
+    });
+
+    it('announces loading politely while a search is in flight', async () => {
+      // A source whose searches never resolve, so the palette stays busy and
+      // only the loading announcement can reach the live region.
+      const source: SearchSource = {
+        bootstrap: () => [],
+        async search(): Promise<SearchableItem[]> {
+          return new Promise<SearchableItem[]>(() => {});
+        },
+      };
+      render(
+        <CommandPalette
+          isOpen={true}
+          onOpenChange={() => {}}
+          searchSource={source}
+        />,
+      );
+      fireEvent.change(screen.getByRole('combobox'), {target: {value: 'z'}});
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('Loading');
+      });
+    });
+
+    it('does not announce on initial open (bootstrap)', async () => {
+      render(
+        <CommandPalette
+          isOpen={true}
+          onOpenChange={() => {}}
+          searchSource={simpleSource}
+        />,
+      );
+      await waitFor(() => expect(screen.getByText('Home')).toBeInTheDocument());
+      // Flush effects and any pending live-region rAF writes.
+      await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 50));
+      });
+      expect(politeRegion()?.textContent ?? '').toBe('');
+    });
   });
 });

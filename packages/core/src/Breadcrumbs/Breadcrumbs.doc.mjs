@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'Breadcrumbs',
@@ -30,6 +30,8 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-breadcrumb-item'},
+      {className: 'astryx-breadcrumb-item-menu-trigger'},
+      {className: 'astryx-breadcrumb-menu'},
       {className: 'astryx-breadcrumbs', visualProps: ['variant']},
     ],
   },
@@ -126,7 +128,7 @@ export const docs = {
   ],
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsZh = {
   usage: {
     description:
@@ -143,7 +145,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'link trail from root to current page for wayfinding',
   usage: {

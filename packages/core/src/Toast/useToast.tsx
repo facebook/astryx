@@ -7,6 +7,7 @@ import {createRoot} from 'react-dom/client';
 import {dataAttr} from '../naming';
 import {ToastContext, type ToastContextValue} from './ToastContext';
 import {ToastViewport} from './ToastViewport';
+import {warnOnce} from '../utils/devWarning';
 import type {
   ToastOptions,
   ToastDismissFn,
@@ -17,7 +18,6 @@ import type {
 // Fallback singleton
 let fallbackContext: ToastContextValue | null = null;
 let fallbackRoot: ReturnType<typeof createRoot> | null = null;
-let fallbackWarned = false;
 
 const ROOT_THEME_ATTRS = ['data-theme', dataAttr('theme')] as const;
 
@@ -70,13 +70,12 @@ function getFallbackContext(): ToastContextValue {
     );
   }
 
-  if (!fallbackWarned) {
-    fallbackWarned = true;
-    console.warn(
-      'useToast: No LayerProvider found. Using fallback viewport. ' +
-        'Wrap your app with <LayerProvider> or <AppShell> for full control.',
-    );
-  }
+  warnOnce(
+    'toast-fallback-viewport',
+    'useToast',
+    'No LayerProvider found. Using fallback viewport. ' +
+      'Wrap your app with <LayerProvider> or <AppShell> for full control.',
+  );
 
   const container = document.createElement('div');
   container.setAttribute('data-astryx-toast-fallback', '');

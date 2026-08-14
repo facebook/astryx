@@ -281,8 +281,8 @@ describe('TopNavHeading', () => {
     });
   });
 
-  it('renders as anchor when href is provided', () => {
-    render(<TopNavHeading heading="Home" href="/" />);
+  it('renders as anchor when headingHref is provided', () => {
+    render(<TopNavHeading heading="Home" headingHref="/" />);
     const link = screen.getByRole('link');
     expect(link).toHaveAttribute('href', '/');
   });
@@ -420,12 +420,103 @@ describe('TopNavItem', () => {
 
   it('applies aria-disabled when isDisabled', () => {
     render(<TopNavItem label="Home" href="#" isDisabled />);
-    expect(screen.getByRole('link')).toHaveAttribute('aria-disabled', 'true');
+    expect(screen.getByText('Home').closest('a')).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
   });
 
   it('sets tabIndex to -1 when disabled', () => {
     render(<TopNavItem label="Home" href="#" isDisabled />);
-    expect(screen.getByRole('link')).toHaveAttribute('tabIndex', '-1');
+    expect(screen.getByText('Home').closest('a')).toHaveAttribute(
+      'tabIndex',
+      '-1',
+    );
+  });
+
+  describe('disabled items do not navigate', () => {
+    it('drops href/target and suppresses clicks when disabled (default mode)', () => {
+      const handleClick = vi.fn();
+      render(
+        <TopNavItem
+          label="Home"
+          href="/home"
+          target="_blank"
+          onClick={handleClick}
+          isDisabled
+        />,
+      );
+      // An href-less anchor exposes no link role, so it is not announced
+      // with a live destination.
+      expect(screen.queryByRole('link')).not.toBeInTheDocument();
+      const item = screen.getByText('Home').closest('a') as HTMLAnchorElement;
+      expect(item).not.toHaveAttribute('href');
+      expect(item).not.toHaveAttribute('target');
+      expect(item).toHaveAttribute('aria-disabled', 'true');
+      expect(item).toHaveAttribute('tabIndex', '-1');
+
+      // fireEvent bypasses pointer-events: none, simulating programmatic/AT
+      // activation. It returns false when preventDefault was called, i.e.
+      // any default navigation behavior is cancelled.
+      const notCancelled = fireEvent.click(item);
+      expect(notCancelled).toBe(false);
+      expect(handleClick).not.toHaveBeenCalled();
+    });
+
+    it('drops href/target and suppresses clicks when disabled (drawer mode)', () => {
+      const handleClick = vi.fn();
+      render(
+        <TopNavRenderContext value="drawer">
+          <TopNavItem
+            label="Home"
+            href="/home"
+            target="_blank"
+            onClick={handleClick}
+            isDisabled
+          />
+        </TopNavRenderContext>,
+      );
+      expect(screen.queryByRole('link')).not.toBeInTheDocument();
+      const item = screen.getByText('Home').closest('a') as HTMLAnchorElement;
+      expect(item).not.toHaveAttribute('href');
+      expect(item).not.toHaveAttribute('target');
+      expect(item).toHaveAttribute('aria-disabled', 'true');
+      expect(item).toHaveAttribute('tabIndex', '-1');
+
+      // fireEvent bypasses pointer-events: none, simulating programmatic/AT
+      // activation. It returns false when preventDefault was called.
+      const notCancelled = fireEvent.click(item);
+      expect(notCancelled).toBe(false);
+      expect(handleClick).not.toHaveBeenCalled();
+    });
+
+    it('keeps href and click behavior for enabled items (default mode)', async () => {
+      const user = userEvent.setup();
+      const handleClick = vi.fn();
+      render(<TopNavItem label="Home" href="#" onClick={handleClick} />);
+      const link = screen.getByRole('link', {name: 'Home'});
+      expect(link).toHaveAttribute('href', '#');
+      expect(link).not.toHaveAttribute('aria-disabled');
+
+      await user.click(link);
+      expect(handleClick).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps href and click behavior for enabled items (drawer mode)', async () => {
+      const user = userEvent.setup();
+      const handleClick = vi.fn();
+      render(
+        <TopNavRenderContext value="drawer">
+          <TopNavItem label="Home" href="#" onClick={handleClick} />
+        </TopNavRenderContext>,
+      );
+      const link = screen.getByRole('link', {name: 'Home'});
+      expect(link).toHaveAttribute('href', '#');
+      expect(link).not.toHaveAttribute('aria-disabled');
+
+      await user.click(link);
+      expect(handleClick).toHaveBeenCalledTimes(1);
+    });
   });
 
   it('renders icon with label', () => {
@@ -521,6 +612,51 @@ describe('TopNavItem', () => {
       const card = screen.getByTestId('featured-card');
       expect(card).toHaveAttribute('id', 'card-1');
       expect(card).toHaveAttribute('aria-label', 'Featured');
+    });
+  });
+
+  describe('TopNavMegaMenuFeaturedCard image alt handling', () => {
+    it('marks the image as explicitly decorative when imageAlt is omitted', () => {
+      render(
+        <TopNavMegaMenuFeaturedCard
+          title="What's new"
+          image="/promo.jpg"
+          data-testid="featured-card"
+        />,
+      );
+      const img = screen.getByTestId('featured-card').querySelector('img');
+      expect(img).toHaveAttribute('alt', '');
+      expect(img).toHaveAttribute('role', 'presentation');
+      expect(img).toHaveAttribute('aria-hidden', 'true');
+      // The image must not be exposed to assistive technology as a nameless img.
+      expect(screen.queryByRole('img')).toBeNull();
+    });
+
+    it('exposes the image with normal img semantics when imageAlt is provided', () => {
+      render(
+        <TopNavMegaMenuFeaturedCard
+          title="What's new"
+          image="/promo.jpg"
+          imageAlt="Team collaboration"
+        />,
+      );
+      const img = screen.getByRole('img', {name: 'Team collaboration'});
+      expect(img).not.toHaveAttribute('role');
+      expect(img).not.toHaveAttribute('aria-hidden');
+    });
+
+    it('keeps title and link semantics unchanged with a decorative image', () => {
+      render(
+        <TopNavMegaMenuFeaturedCard
+          title="What's new"
+          image="/promo.jpg"
+          linkLabel="Read the announcement"
+          linkHref="/blog/v4"
+        />,
+      );
+      expect(screen.getByText("What's new")).toBeInTheDocument();
+      const link = screen.getByRole('link', {name: /Read the announcement/});
+      expect(link).toHaveAttribute('href', '/blog/v4');
     });
   });
 });

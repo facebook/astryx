@@ -82,6 +82,20 @@ export const defaultIcons: IconRegistry = {
     </svg>
   ),
 
+  /** « — double left chevron (first / jump to start) */
+  chevronsLeft: (
+    <svg {...svgProps}>
+      <path d="M18 6l-6 6 6 6M11 6l-6 6 6 6" />
+    </svg>
+  ),
+
+  /** » — double right chevron (last / jump to end) */
+  chevronsRight: (
+    <svg {...svgProps}>
+      <path d="M6 6l6 6-6 6M13 6l6 6-6 6" />
+    </svg>
+  ),
+
   /** ✓ — checkmark */
   check: (
     <svg {...svgProps}>
