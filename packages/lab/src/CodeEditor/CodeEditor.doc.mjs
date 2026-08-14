@@ -9,6 +9,12 @@ export const docs = {
   category: 'Data Input',
   keywords: ['code', 'editor', 'syntax', 'highlight', 'input', 'textarea'],
 
+  theming: {
+    targets: [
+      {className: 'astryx-codeeditor', visualProps: ['size', 'language']},
+    ],
+  },
+
   usage: {
     description:
       'Editable code component with real-time syntax highlighting using the CSS Custom Highlight API. Supports line numbers, read-only state, placeholder text, and custom tokenizers.',

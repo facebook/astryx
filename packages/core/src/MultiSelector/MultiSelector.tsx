@@ -78,7 +78,6 @@ import type {SizeValue} from '../utils/types';
 import {useSize} from '../SizeContext/SizeContext';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
-import {stableClassName} from '../naming';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
 import {VisuallyHidden} from '../VisuallyHidden';
@@ -1544,7 +1543,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           <InputClearButton
             label={t('@astryx.multiSelector.clearAll', {label})}
             onClick={handleClear}
-            iconClassName={stableClassName('multi-selector-clear-icon')}
+            iconClassName={themeProps('multi-selector-clear-icon').className}
           />
         )}
         {/*
