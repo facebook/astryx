@@ -4,7 +4,11 @@ import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
 import {Avatar} from '@astryxdesign/core/Avatar';
 import {AvatarStatusDot} from '@astryxdesign/core/Avatar';
-import {spacingVars, typographyVars} from '@astryxdesign/core/theme/tokens.stylex';
+import {Theme, defineTheme} from '@astryxdesign/core/theme';
+import {
+  spacingVars,
+  typographyVars,
+} from '@astryxdesign/core/theme/tokens.stylex';
 import {CheckIcon} from '@heroicons/react/24/solid';
 
 const styles = stylex.create({
@@ -32,11 +36,11 @@ const meta: Meta<typeof Avatar> = {
     size: {
       control: 'select',
       options: [
-        'tiny',
-        'xsmall',
-        'small',
-        'medium',
-        'large',
+        'xsm',
+        'sm',
+        'md',
+        'lg',
+        'xl',
         16,
         20,
         24,
@@ -70,11 +74,16 @@ const meta: Meta<typeof Avatar> = {
       control: 'text',
       description: 'Alt text (falls back to name)',
     },
+    tooltip: {
+      control: 'text',
+      description:
+        'Hover/focus tooltip. Omitted or true shows the name; a string shows that text; false disables it. Set false when wrapping in your own Tooltip/HoverCard.',
+    },
     status: {
       control: 'boolean',
       description: 'Show status indicator dot',
       mapping: {
-        true: <AvatarStatusDot />,
+        true: <AvatarStatusDot label="Online" />,
         false: undefined,
       },
     },
@@ -87,7 +96,7 @@ type Story = StoryObj<typeof Avatar>;
 export const Default: Story = {
   args: {
     name: 'John Doe',
-    size: 'medium',
+    size: 'lg',
   },
 };
 
@@ -95,7 +104,7 @@ export const WithImage: Story = {
   args: {
     src: 'https://i.pravatar.cc/150?img=1',
     name: 'Jane Smith',
-    size: 'medium',
+    size: 'lg',
   },
 };
 
@@ -104,11 +113,11 @@ export const AllSizes: Story = {
     <div {...stylex.props(styles.storyWrapper)}>
       <h4 {...stylex.props(styles.heading)}>Named Sizes</h4>
       <div {...stylex.props(styles.row)}>
-        <Avatar name="TY" size="tiny" />
-        <Avatar name="XS" size="xsmall" />
-        <Avatar name="SM" size="small" />
-        <Avatar name="MD" size="medium" />
-        <Avatar name="LG" size="large" />
+        <Avatar name="TY" size="xsm" />
+        <Avatar name="XS" size="sm" />
+        <Avatar name="SM" size="md" />
+        <Avatar name="MD" size="lg" />
+        <Avatar name="LG" size="xl" />
       </div>
     </div>
   ),
@@ -122,28 +131,12 @@ export const WithImages: Story = {
         <Avatar
           src="https://i.pravatar.cc/150?img=1"
           name="User 1"
-          size="tiny"
+          size="xsm"
         />
-        <Avatar
-          src="https://i.pravatar.cc/150?img=2"
-          name="User 2"
-          size="xsmall"
-        />
-        <Avatar
-          src="https://i.pravatar.cc/150?img=3"
-          name="User 3"
-          size="small"
-        />
-        <Avatar
-          src="https://i.pravatar.cc/150?img=4"
-          name="User 4"
-          size="medium"
-        />
-        <Avatar
-          src="https://i.pravatar.cc/150?img=5"
-          name="User 5"
-          size="large"
-        />
+        <Avatar src="https://i.pravatar.cc/150?img=2" name="User 2" size="sm" />
+        <Avatar src="https://i.pravatar.cc/150?img=3" name="User 3" size="md" />
+        <Avatar src="https://i.pravatar.cc/150?img=4" name="User 4" size="lg" />
+        <Avatar src="https://i.pravatar.cc/150?img=5" name="User 5" size="xl" />
       </div>
     </div>
   ),
@@ -154,10 +147,10 @@ export const InitialsFallback: Story = {
     <div {...stylex.props(styles.storyWrapper)}>
       <h4 {...stylex.props(styles.heading)}>Initials Fallback</h4>
       <div {...stylex.props(styles.row)}>
-        <Avatar name="John Doe" size="medium" />
-        <Avatar name="Alice" size="medium" />
-        <Avatar name="Bob Smith Johnson" size="medium" />
-        <Avatar name="Dr. Sarah Connor" size="medium" />
+        <Avatar name="John Doe" size="lg" />
+        <Avatar name="Alice" size="lg" />
+        <Avatar name="Bob Smith Johnson" size="lg" />
+        <Avatar name="Dr. Sarah Connor" size="lg" />
       </div>
     </div>
   ),
@@ -168,11 +161,11 @@ export const NoImageNoName: Story = {
     <div {...stylex.props(styles.storyWrapper)}>
       <h4 {...stylex.props(styles.heading)}>Default Icon (No Image or Name)</h4>
       <div {...stylex.props(styles.row)}>
-        <Avatar size="tiny" />
-        <Avatar size="xsmall" />
-        <Avatar size="small" />
-        <Avatar size="medium" />
-        <Avatar size="large" />
+        <Avatar size="xsm" />
+        <Avatar size="sm" />
+        <Avatar size="md" />
+        <Avatar size="lg" />
+        <Avatar size="xl" />
       </div>
     </div>
   ),
@@ -188,7 +181,7 @@ export const FallbackChain: Story = {
           <Avatar
             src="https://i.pravatar.cc/150?img=10"
             name="Test User"
-            size="large"
+            size="xl"
           />
         </div>
         <div>
@@ -199,7 +192,7 @@ export const FallbackChain: Story = {
             src="https://invalid-url.example/broken.jpg"
             fallbackSrc="https://i.pravatar.cc/150?img=11"
             name="Test User"
-            size="large"
+            size="xl"
           />
         </div>
         <div>
@@ -208,15 +201,12 @@ export const FallbackChain: Story = {
             src="https://invalid-url.example/broken.jpg"
             fallbackSrc="https://also-invalid.example/broken.jpg"
             name="Test User"
-            size="large"
+            size="xl"
           />
         </div>
         <div>
           <p {...stylex.props(styles.heading)}>All invalid, no name</p>
-          <Avatar
-            src="https://invalid-url.example/broken.jpg"
-            size="large"
-          />
+          <Avatar src="https://invalid-url.example/broken.jpg" size="xl" />
         </div>
       </div>
     </div>
@@ -231,19 +221,19 @@ export const WithStatus: Story = {
         <Avatar
           src="https://i.pravatar.cc/150?img=20"
           name="Online User"
-          size="large"
+          size="xl"
           status={<AvatarStatusDot variant="success" label="Online" />}
         />
         <Avatar
           src="https://i.pravatar.cc/150?img=21"
           name="Offline User"
-          size="large"
+          size="xl"
           status={<AvatarStatusDot variant="neutral" label="Offline" />}
         />
         <Avatar
           src="https://i.pravatar.cc/150?img=22"
           name="Busy User"
-          size="large"
+          size="xl"
           status={<AvatarStatusDot variant="error" label="Busy" />}
         />
       </div>
@@ -263,28 +253,28 @@ export const StatusAcrossAllSizes: Story = {
       <div {...stylex.props(styles.row)}>
         <Avatar
           name="TY"
-          size="tiny"
-          status={<AvatarStatusDot variant="success" />}
+          size="xsm"
+          status={<AvatarStatusDot variant="success" label="Online" />}
         />
         <Avatar
           name="XS"
-          size="xsmall"
-          status={<AvatarStatusDot variant="success" />}
+          size="sm"
+          status={<AvatarStatusDot variant="success" label="Online" />}
         />
         <Avatar
           name="SM"
-          size="small"
-          status={<AvatarStatusDot variant="success" />}
+          size="md"
+          status={<AvatarStatusDot variant="success" label="Online" />}
         />
         <Avatar
           name="MD"
-          size="medium"
-          status={<AvatarStatusDot variant="success" />}
+          size="lg"
+          status={<AvatarStatusDot variant="success" label="Online" />}
         />
         <Avatar
           name="LG"
-          size="large"
-          status={<AvatarStatusDot variant="success" />}
+          size="xl"
+          status={<AvatarStatusDot variant="success" label="Online" />}
         />
       </div>
 
@@ -294,37 +284,37 @@ export const StatusAcrossAllSizes: Story = {
           src="https://i.pravatar.cc/150?img=30"
           name="U1"
           size={20}
-          status={<AvatarStatusDot variant="success" />}
+          status={<AvatarStatusDot variant="success" label="Online" />}
         />
         <Avatar
           src="https://i.pravatar.cc/150?img=31"
           name="U2"
           size={32}
-          status={<AvatarStatusDot variant="success" />}
+          status={<AvatarStatusDot variant="success" label="Online" />}
         />
         <Avatar
           src="https://i.pravatar.cc/150?img=32"
           name="U3"
           size={48}
-          status={<AvatarStatusDot variant="error" />}
+          status={<AvatarStatusDot variant="error" label="Busy" />}
         />
         <Avatar
           src="https://i.pravatar.cc/150?img=33"
           name="U4"
           size={72}
-          status={<AvatarStatusDot variant="neutral" />}
+          status={<AvatarStatusDot variant="neutral" label="Offline" />}
         />
         <Avatar
           src="https://i.pravatar.cc/150?img=34"
           name="U5"
           size={96}
-          status={<AvatarStatusDot variant="success" />}
+          status={<AvatarStatusDot variant="success" label="Online" />}
         />
         <Avatar
           src="https://i.pravatar.cc/150?img=35"
           name="U6"
           size={128}
-          status={<AvatarStatusDot variant="success" />}
+          status={<AvatarStatusDot variant="success" label="Online" />}
         />
       </div>
 
@@ -333,19 +323,19 @@ export const StatusAcrossAllSizes: Story = {
         <Avatar
           src="https://i.pravatar.cc/150?img=40"
           name="Positive"
-          size="medium"
+          size="lg"
           status={<AvatarStatusDot variant="success" label="Online" />}
         />
         <Avatar
           src="https://i.pravatar.cc/150?img=41"
           name="Neutral"
-          size="medium"
+          size="lg"
           status={<AvatarStatusDot variant="neutral" label="Offline" />}
         />
         <Avatar
           src="https://i.pravatar.cc/150?img=42"
           name="Negative"
-          size="medium"
+          size="lg"
           status={<AvatarStatusDot variant="error" label="Busy" />}
         />
       </div>
@@ -358,10 +348,71 @@ export const StatusWithSizes: Story = {
     <div {...stylex.props(styles.storyWrapper)}>
       <h4 {...stylex.props(styles.heading)}>Status with Different Sizes</h4>
       <div {...stylex.props(styles.row)}>
-        <Avatar name="AB" size="small" status={<AvatarStatusDot />} />
-        <Avatar name="CD" size="medium" status={<AvatarStatusDot />} />
-        <Avatar name="EF" size="large" status={<AvatarStatusDot />} />
-        <Avatar name="GH" size={72} status={<AvatarStatusDot />} />
+        <Avatar
+          name="AB"
+          size="md"
+          status={<AvatarStatusDot label="Online" />}
+        />
+        <Avatar
+          name="CD"
+          size="lg"
+          status={<AvatarStatusDot label="Online" />}
+        />
+        <Avatar
+          name="EF"
+          size="xl"
+          status={<AvatarStatusDot label="Online" />}
+        />
+        <Avatar
+          name="GH"
+          size={72}
+          status={<AvatarStatusDot label="Online" />}
+        />
+      </div>
+    </div>
+  ),
+};
+
+export const StatusShapesAtSmallSizes: Story = {
+  name: 'Status Shapes at Small Sizes',
+  render: () => (
+    <div {...stylex.props(styles.storyWrapper)}>
+      <h4 {...stylex.props(styles.heading)}>
+        Each variant pairs colour with a distinct shape (filled, ring, minus) so
+        status never relies on colour alone — including the smallest sizes,
+        where icons cannot render
+      </h4>
+      <div {...stylex.props(styles.row)}>
+        <Avatar
+          name="ON"
+          size="xsm"
+          status={<AvatarStatusDot variant="success" label="Online" />}
+        />
+        <Avatar
+          name="OF"
+          size="xsm"
+          status={<AvatarStatusDot variant="neutral" label="Offline" />}
+        />
+        <Avatar
+          name="BU"
+          size="xsm"
+          status={<AvatarStatusDot variant="error" label="Busy" />}
+        />
+        <Avatar
+          name="ON"
+          size="md"
+          status={<AvatarStatusDot variant="success" label="Online" />}
+        />
+        <Avatar
+          name="OF"
+          size="md"
+          status={<AvatarStatusDot variant="neutral" label="Offline" />}
+        />
+        <Avatar
+          name="BU"
+          size="md"
+          status={<AvatarStatusDot variant="error" label="Busy" />}
+        />
       </div>
     </div>
   ),
@@ -379,7 +430,7 @@ export const StatusWithIcon: Story = {
       <div {...stylex.props(styles.row)}>
         <Avatar
           name="TY"
-          size="tiny"
+          size="xsm"
           status={
             <AvatarStatusDot
               variant="success"
@@ -390,7 +441,7 @@ export const StatusWithIcon: Story = {
         />
         <Avatar
           name="XS"
-          size="xsmall"
+          size="sm"
           status={
             <AvatarStatusDot
               variant="success"
@@ -401,7 +452,7 @@ export const StatusWithIcon: Story = {
         />
         <Avatar
           name="SM"
-          size="small"
+          size="md"
           status={
             <AvatarStatusDot
               variant="success"
@@ -413,7 +464,7 @@ export const StatusWithIcon: Story = {
         <Avatar
           src="https://i.pravatar.cc/150?img=50"
           name="MD"
-          size="medium"
+          size="lg"
           status={
             <AvatarStatusDot
               variant="success"
@@ -425,7 +476,7 @@ export const StatusWithIcon: Story = {
         <Avatar
           src="https://i.pravatar.cc/150?img=51"
           name="LG"
-          size="large"
+          size="xl"
           status={
             <AvatarStatusDot
               variant="success"
@@ -517,7 +568,7 @@ export const StatusWithIcon: Story = {
         <Avatar
           src="https://i.pravatar.cc/150?img=52"
           name="Positive"
-          size="large"
+          size="xl"
           status={
             <AvatarStatusDot
               variant="success"
@@ -529,7 +580,7 @@ export const StatusWithIcon: Story = {
         <Avatar
           src="https://i.pravatar.cc/150?img=53"
           name="Neutral"
-          size="large"
+          size="xl"
           status={
             <AvatarStatusDot
               variant="neutral"
@@ -541,7 +592,7 @@ export const StatusWithIcon: Story = {
         <Avatar
           src="https://i.pravatar.cc/150?img=54"
           name="Negative"
-          size="large"
+          size="xl"
           status={
             <AvatarStatusDot
               variant="error"
@@ -568,6 +619,109 @@ export const NumericSizes: Story = {
         <Avatar name="96" size={96} />
         <Avatar name="128" size={128} />
       </div>
+    </div>
+  ),
+};
+
+// A theme can re-scope the fallback initials' typography without forking the
+// component: weight, text color, the wash background, and the per-size
+// font-size scale are all set on the `avatar-fallback` child target (font size
+// through its size tiers). The default row is unchanged (size × 0.4, medium
+// weight, neutral fill); only the themed row opts in.
+//
+// The themed colors deliberately use a hued token pair (blue) rather than
+// `--color-accent-muted`/`--color-text-secondary`: in the monochrome neutral
+// theme those resolve to the same grey as the default fallback, so the demo
+// would look unthemed even though the theme rule is applying.
+const fallbackScaleTheme = defineTheme({
+  name: 'avatar-fallback-scale',
+  components: {
+    'avatar-fallback': {
+      base: {
+        fontWeight: 'var(--font-weight-normal)',
+        color: 'var(--color-text-blue)',
+        backgroundColor: 'var(--color-background-blue)',
+      },
+      'size:xsm': {fontSize: '8px'},
+      'size:sm': {fontSize: '9px'},
+      'size:md': {fontSize: '13px'},
+      'size:lg': {fontSize: '16px'},
+      'size:xl': {fontSize: '40px'},
+    },
+  },
+});
+
+export const ThemedFallbackScale: Story = {
+  name: 'Themed Fallback Type Scale',
+  render: () => (
+    <div {...stylex.props(styles.storyWrapper)}>
+      <h4 {...stylex.props(styles.heading)}>Default fallback (size × 0.4)</h4>
+      <div {...stylex.props(styles.row)}>
+        <Avatar name="TY" size="xsm" />
+        <Avatar name="XS" size="sm" />
+        <Avatar name="SM" size="md" />
+        <Avatar name="MD" size="lg" />
+        <Avatar name="LG" size="xl" />
+      </div>
+
+      <h4 {...stylex.props(styles.heading)}>
+        Themed fallback (per-size scale, regular weight, blue wash)
+      </h4>
+      <Theme theme={fallbackScaleTheme} mode="light">
+        <div {...stylex.props(styles.row)}>
+          <Avatar name="TY" size="xsm" />
+          <Avatar name="XS" size="sm" />
+          <Avatar name="SM" size="md" />
+          <Avatar name="MD" size="lg" />
+          <Avatar name="LG" size="xl" />
+        </div>
+      </Theme>
+    </div>
+  ),
+};
+
+// The fallback surface (initials AND the default person icon) is a direct theme
+// target via the stable `astryx-avatar-fallback` class. Setting a background on
+// the `avatar-fallback` component key paints the fill on the element that
+// actually renders it — no per-component override needed. Both fallback kinds
+// pick up the same themed background.
+//
+// `--color-accent` / `--color-on-accent` gives a full-contrast flip against the
+// default grey wash in every shipped theme, so the themed row reads as themed
+// at a glance (a muted token would land within a shade of the default here).
+const fallbackBackgroundTheme = defineTheme({
+  name: 'avatar-fallback-background',
+  components: {
+    'avatar-fallback': {
+      base: {
+        backgroundColor: 'var(--color-accent)',
+        color: 'var(--color-on-accent)',
+      },
+    },
+  },
+});
+
+export const ThemedFallbackBackground: Story = {
+  name: 'Themed Fallback Background',
+  render: () => (
+    <div {...stylex.props(styles.storyWrapper)}>
+      <h4 {...stylex.props(styles.heading)}>Default fallback background</h4>
+      <div {...stylex.props(styles.row)}>
+        <Avatar name="Ada Lovelace" size="lg" />
+        <Avatar name="Grace Hopper" size="lg" />
+        <Avatar size="lg" />
+      </div>
+
+      <h4 {...stylex.props(styles.heading)}>
+        Themed fallback background (solid accent on initials and icon)
+      </h4>
+      <Theme theme={fallbackBackgroundTheme} mode="light">
+        <div {...stylex.props(styles.row)}>
+          <Avatar name="Ada Lovelace" size="lg" />
+          <Avatar name="Grace Hopper" size="lg" />
+          <Avatar size="lg" />
+        </div>
+      </Theme>
     </div>
   ),
 };

@@ -27,7 +27,7 @@
  * - /packages/core/src/ContextMenu/ContextMenu.test.tsx
  * - /packages/core/src/ContextMenu/index.ts
  * - /apps/storybook/stories/ContextMenu.stories.tsx
- * - /packages/cli/templates/blocks/components/ContextMenu/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/ContextMenu/ (showcase blocks)
  */
 
 import React, {
@@ -46,6 +46,11 @@ import {
   DropdownMenuContext,
   type DropdownMenuContextValue,
 } from '../DropdownMenu/DropdownMenuContext';
+import {
+  MENU_ITEM_ROLES,
+  MENU_ITEM_SELECTOR,
+  MENU_BOUNDARY_SELECTOR,
+} from '../DropdownMenu/menuItemRoles';
 import {useListFocus} from '../hooks/useListFocus';
 import {useTypeahead} from '../hooks/useTypeahead';
 import {useLongPress} from '../hooks/useLongPress';
@@ -66,7 +71,7 @@ import {useTranslator} from '../i18n';
 import type {
   DropdownMenuOption,
   DropdownMenuItemData,
-  DropdownMenuDivider,
+  DropdownMenuDividerData,
   DropdownMenuSection,
 } from '../DropdownMenu/DropdownMenu';
 
@@ -123,7 +128,7 @@ const styles = stylex.create({
 
 export type ContextMenuItemData = DropdownMenuItemData;
 
-export type ContextMenuDivider = DropdownMenuDivider;
+export type ContextMenuDividerData = DropdownMenuDividerData;
 
 export type ContextMenuSection = DropdownMenuSection;
 
@@ -215,12 +220,23 @@ export function ContextMenu({
   xstyle,
   triggerXstyle,
   'data-testid': testId,
-  ...props
+  ...rest
 }: ContextMenuProps) {
   const t = useTranslator();
   const label = labelFromProps ?? t('@astryx.contextMenu.label');
-  const items = ('items' in props ? props.items : undefined) ?? [];
-  const menuContent = 'menuContent' in props ? props.menuContent : undefined;
+  // Separate content props (union discriminant) from DOM pass-through attrs.
+  // The union means exactly one of items/menuContent exists in rest; destructure
+  // both so triggerProps contains only DOM-safe attributes.
+  const {
+    items: itemsProp,
+    menuContent: menuContentProp,
+    ...triggerProps
+  } = rest as {items?: ContextMenuOption[]; menuContent?: ReactNode} & Omit<
+    typeof rest,
+    'items' | 'menuContent'
+  >;
+  const items = itemsProp ?? [];
+  const menuContent = menuContentProp;
 
   const menuId = useId();
   // Cursor point in the trigger's local coordinate space (offset from the
@@ -264,24 +280,18 @@ export function ContextMenu({
     handleKeyDown: listNavKeyDown,
     focusFirst,
     focusItem,
+    ownsEvent,
+    getItems: getMenuItems,
   } = useListFocus<HTMLDivElement>({
-    itemSelector: '[role="menuitem"]:not([aria-disabled="true"])',
+    itemSelector: MENU_ITEM_SELECTOR,
+    boundarySelector: MENU_BOUNDARY_SELECTOR,
     wrap: false,
     onEscape: closeMenu,
   });
 
-  // First-character typeahead over the enabled menu items (menus-11).
-  const getMenuItems = useCallback(
-    (): HTMLElement[] =>
-      listRef.current
-        ? Array.from(
-            listRef.current.querySelectorAll<HTMLElement>(
-              '[role="menuitem"]:not([aria-disabled="true"])',
-            ),
-          )
-        : [],
-    [listRef],
-  );
+  // First-character typeahead over the enabled menu items (menus-11). Reuses
+  // the hook's scoped item collection so an inline submenu flyout's items
+  // aren't swept in.
   const typeahead = useTypeahead({
     getItemLabels: () => getMenuItems().map(el => el.textContent),
     onMatch: focusItem,
@@ -338,12 +348,29 @@ export function ContextMenu({
 
   const listKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
+      // A submenu flyout renders inline inside this menu; its key events bubble
+      // up here. Let that level own them — only handle events from this level.
+      if (!ownsEvent(e)) {
+        return;
+      }
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         const focused = document.activeElement as HTMLElement | null;
-        if (focused?.getAttribute('role') === 'menuitem') {
+        if (
+          focused &&
+          MENU_ITEM_ROLES.has(focused.getAttribute('role') ?? '')
+        ) {
           focused.click();
         }
+        return;
+      }
+      // APG menu pattern: Tab closes the menu. Menu items are tabIndex={-1}
+      // so Tab would otherwise leak focus into the page while the menu stayed
+      // open (menus-5). Do NOT preventDefault — closing restores focus to the
+      // previously focused element, and the browser's default Tab then
+      // continues from there to the next element.
+      if (e.key === 'Tab') {
+        closeMenu();
         return;
       }
       if (typeahead.onKeyDown(e)) {
@@ -352,7 +379,7 @@ export function ContextMenu({
       }
       listNavKeyDown(e);
     },
-    [listNavKeyDown, typeahead],
+    [listNavKeyDown, closeMenu, typeahead, ownsEvent],
   );
 
   // Place the zero-size cursor anchor at a point in the trigger's local
@@ -433,12 +460,13 @@ export function ContextMenu({
   );
 
   const resolvedMenuContent =
-    props.items !== undefined ? renderDropdownItems(items) : menuContent;
+    itemsProp !== undefined ? renderDropdownItems(items) : menuContent;
 
   return (
     <>
       <div
         ref={mergeRefs(ref, triggerRef)}
+        {...triggerProps}
         onContextMenu={handleContextMenu}
         {...longPressHandlers}
         data-testid={testId}

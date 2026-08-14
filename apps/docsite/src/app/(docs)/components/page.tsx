@@ -10,7 +10,7 @@ import {Fragment, useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Text} from '@astryxdesign/core/Text';
 import {Heading} from '@astryxdesign/core/Text';
-import {VStack} from '@astryxdesign/core/Layout';
+import {VStack, HStack} from '@astryxdesign/core/Layout';
 import {Section} from '@astryxdesign/core/Section';
 import {Grid} from '@astryxdesign/core/Grid';
 import {ClickableCard} from '@astryxdesign/core/ClickableCard';
@@ -23,6 +23,9 @@ import {components as componentRegistry} from '../../../generated/componentRegis
 import {blocks} from '../../../generated/blockRegistry';
 import {ShowcaseThumbnail} from '../../../components/ShowcaseThumbnail';
 import {layout} from '../../../layout.stylex';
+
+const FIGMA_LIBRARY_URL =
+  'https://www.figma.com/community/file/1659998707120781098/astryx-library-community';
 
 /**
  * Category display order for the overview page.
@@ -146,38 +149,52 @@ export default function ComponentsGalleryPage() {
               state, and pattern.
             </Text>
           </VStack>
-          <Popover
-            width={360}
-            content={
-              <VStack gap={3}>
-                <VStack gap={1}>
-                  <Text type="body" weight="bold">
-                    1. Install the package
-                  </Text>
-                  <Card padding={0}>
-                    <CodeExampleBlock
-                      code="npm install @astryxdesign/core"
-                      language="bash"
-                      hasCopyButton
-                    />
-                  </Card>
+          <HStack gap={3} vAlign="center">
+            <Popover
+              width={360}
+              content={
+                <VStack gap={3}>
+                  <VStack gap={1}>
+                    <Text type="body" weight="bold">
+                      1. Install the package
+                    </Text>
+                    <Card padding={0}>
+                      <CodeExampleBlock
+                        code="npm install @astryxdesign/core"
+                        language="bash"
+                        hasCopyButton
+                      />
+                    </Card>
+                  </VStack>
+                  <VStack gap={1}>
+                    <Text type="body" weight="bold">
+                      2. Import a component
+                    </Text>
+                    <Card padding={0}>
+                      <CodeExampleBlock
+                        code="import {...} from '@astryxdesign/core/ComponentName';"
+                        language="typescript"
+                        hasCopyButton
+                      />
+                    </Card>
+                  </VStack>
                 </VStack>
-                <VStack gap={1}>
-                  <Text type="body" weight="bold">
-                    2. Import a component
-                  </Text>
-                  <Card padding={0}>
-                    <CodeExampleBlock
-                      code="import {...} from '@astryxdesign/core/ComponentName';"
-                      language="typescript"
-                      hasCopyButton
-                    />
-                  </Card>
-                </VStack>
-              </VStack>
-            }>
-            <Button variant="primary" size="lg" label="Install core library" />
-          </Popover>
+              }>
+              <Button
+                variant="primary"
+                size="lg"
+                label="Install core library"
+              />
+            </Popover>
+            <Button
+              variant="secondary"
+              size="lg"
+              label="View Figma"
+              href={FIGMA_LIBRARY_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+            />
+          </HStack>
         </VStack>
 
         {CATEGORIES.map(cat => {

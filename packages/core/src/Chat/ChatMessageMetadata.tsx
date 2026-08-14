@@ -122,8 +122,7 @@ export function ChatMessageMetadata({
   const sender = msgContext?.sender ?? 'assistant';
 
   const statusConfig = status != null ? STATUS_CONFIG[status] : null;
-  const statusLabel =
-    statusConfig != null ? t(statusConfig.i18nKey) : '';
+  const statusLabel = statusConfig != null ? t(statusConfig.i18nKey) : '';
 
   const hasContent =
     timestamp != null || footer != null || statusConfig != null;

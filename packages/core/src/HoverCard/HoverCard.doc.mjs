@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'HoverCard',
@@ -80,6 +80,12 @@ export const docs = {
           default: 'true',
         },
         {
+          name: 'label',
+          type: 'string',
+          description:
+            'Accessible name for the hover card popup. When provided, the popup is exposed as a named role="dialog"; when omitted, it falls back to role="group" (a group may validly be unnamed).',
+        },
+        {
           name: 'onOpenChange',
           type: '(isOpen: boolean) => void',
           description:
@@ -119,7 +125,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docsZh = {
   name: 'HoverCard',
   displayName: 'Hover Card',
@@ -189,6 +195,12 @@ export const docsZh = {
           default: 'true',
         },
         {
+          name: 'label',
+          type: 'string',
+          description:
+            '悬浮卡片弹出层的无障碍名称。提供时，弹出层以具名的 role="dialog" 暴露；省略时，回退为 role="group"（group 可以合法地没有名称）。',
+        },
+        {
           name: 'onOpenChange',
           type: '(isOpen: boolean) => void',
           description:
@@ -222,7 +234,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
     'Hover/focus triggered overlay for displaying rich, interactive content anchored to trigger element.',
@@ -252,6 +264,7 @@ export const docsDense = {
         hideDelay: 'Hide delay in ms.',
         focusTrigger: 'Controls when focus events trigger hover card.',
         isEnabled: 'Enable/disable hover + focus triggers.',
+        label: 'Accessible name for the popup. With label: named role="dialog"; without: role="group".',
         onOpenChange: 'Callback when visibility changes; true=shown, false=hidden.',
         hasHoverIndication: 'Dashed underline on trigger element.',
         isDefaultOpen: 'Show hover card on mount. Still dismissible.',

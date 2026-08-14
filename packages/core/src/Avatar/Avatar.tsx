@@ -4,7 +4,8 @@
 
 /**
  * @file Avatar.tsx
- * @input Uses React, HTMLAttributes, ReactNode, useState
+ * @input Uses React, HTMLAttributes, ReactNode, useState; useTooltip
+ *   (Tooltip hook) for the optional name-on-hover tooltip; useTranslator (i18n)
  * @output Exports Avatar component, AvatarProps, AvatarSize types
  * @position Core implementation; consumed by index.ts
  *
@@ -12,10 +13,12 @@
  * - /packages/core/src/Avatar/Avatar.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/Avatar/index.ts (exports if types change)
  * - /apps/storybook/stories/Avatar.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Avatar/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Avatar/ (showcase blocks)
+ *
+ * Last synced props: alt, fallbackSrc, name, size, src, status, href, as, target, rel, onClick
  */
 
-import {useMemo, useState, type ReactNode} from 'react';
+import {isValidElement, useMemo, useState, type ReactNode} from 'react';
 import type {BaseProps} from '../BaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -26,8 +29,13 @@ import {
 } from '../theme/tokens.stylex';
 import {AvatarSizeContext} from './AvatarSizeContext';
 import {useAvatarGroup} from '../AvatarGroup/AvatarGroupContext';
-import {mergeProps} from '../utils';
+import {mergeProps, mergeRefs} from '../utils';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {useTooltip} from '../Tooltip/useTooltip';
+import {useLinkComponent} from '../Link/useLinkComponent';
+import type {LinkComponentType} from '../Link/types';
+import {useTranslator} from '../i18n';
 
 /**
  * The offset ratio for positioning elements on a circle's edge at 45°.
@@ -55,9 +63,13 @@ const CIRCLE_EDGE_OFFSET_RATIO = (1 - 1 / Math.SQRT2) / 2;
 const INITIALS_FONT_SIZE_RATIO = 0.4;
 
 /**
- * Named size options
+ * Named size options.
+ *
+ * Avatar uses the same abbreviated scale as Icon (`xsm`/`sm`/`md`/`lg`/`xl`),
+ * but the values are larger because avatars align with media rather than
+ * glyphs. The tiers follow the standard avatar size scale.
  */
-type AvatarNamedSize = 'tiny' | 'xsmall' | 'small' | 'medium' | 'large';
+type AvatarNamedSize = 'xsm' | 'sm' | 'md' | 'lg' | 'xl';
 
 /**
  * Numeric size options (in pixels)
@@ -78,15 +90,15 @@ export function resolveSize(size: AvatarSize): number {
     return size;
   }
   switch (size) {
-    case 'tiny':
+    case 'xsm':
       return 20;
-    case 'xsmall':
+    case 'sm':
       return 24;
-    case 'small':
+    case 'md':
       return 36;
-    case 'medium':
+    case 'lg':
       return 48;
-    case 'large':
+    case 'xl':
       return 128;
   }
 }
@@ -100,6 +112,11 @@ const styles = stylex.create({
     position: 'relative',
     display: 'inline-flex',
     flexShrink: 0,
+    // The wrapper is not clipped (so the status dot can overflow), so it must be
+    // rounded itself: a theme can set a background on the `.astryx-avatar`
+    // wrapper, and an unrounded wrapper would show that fill as square corners
+    // behind the circular content.
+    borderRadius: radiusVars['--radius-full'],
   },
   content: {
     display: 'flex',
@@ -120,6 +137,11 @@ const styles = stylex.create({
     justifyContent: 'center',
     width: '100%',
     height: '100%',
+    // Fallback surface (initials + default icon). Background, text color,
+    // weight, and per-size font size are all themed directly via the stable
+    // `.astryx-avatar-fallback` class target (font size through its size
+    // variant, `.astryx-avatar-fallback.<size>`), so the defaults here are
+    // plain values with no internal-var seam. See Avatar.doc.mjs theming.
     backgroundColor: colorVars['--color-neutral'],
     color: colorVars['--color-text-secondary'],
     fontFamily: typographyVars['--font-family-body'],
@@ -128,6 +150,26 @@ const styles = stylex.create({
   },
   status: {
     position: 'absolute',
+  },
+  // Visible focus ring for the name-tooltip tab stop, matching the repo-wide
+  // focus-visible outline treatment (see Timestamp, Token, Thumbnail). Only
+  // applied when a tooltip is active so keyboard users can reveal it.
+  // Reset the intrinsic styling of the interactive element (<a>/<button>) so it
+  // is a transparent, correctly-sized wrapper around the avatar visuals. The
+  // element carries the focus-visible accent ring for keyboard users.
+  interactive: {
+    appearance: 'none',
+    padding: 0,
+    margin: 0,
+    borderWidth: 0,
+    borderStyle: 'none',
+    backgroundColor: 'transparent',
+    color: 'inherit',
+    font: 'inherit',
+    textDecoration: 'none',
+    cursor: 'pointer',
+    // Match the avatar's circular shape so the focus ring hugs it.
+    borderRadius: radiusVars['--radius-full'],
   },
 });
 
@@ -139,13 +181,22 @@ const dynamicStyles = stylex.create({
     width: size,
     height: size,
   }),
+  // Initials font size defaults to the proportional `size × ratio` scale. It's
+  // a StyleX dynamic style, so the value lands via a class (not an inline
+  // property) — a theme's `.astryx-avatar-fallback.<size>` rule in the theme
+  // layer overrides it per size tier, no internal var needed.
   fontSize: (size: number) => ({
-    fontSize: size * INITIALS_FONT_SIZE_RATIO,
+    fontSize: `${size * INITIALS_FONT_SIZE_RATIO}px`,
   }),
   statusPosition: (size: number) => ({
     bottom: size * CIRCLE_EDGE_OFFSET_RATIO,
-    right: size * CIRCLE_EDGE_OFFSET_RATIO,
-    transform: 'translate(50%, 50%)',
+    insetInlineEnd: size * CIRCLE_EDGE_OFFSET_RATIO,
+    // `insetInlineEnd` anchors to the right edge in LTR / left in RTL, so the
+    // outward push must mirror too: +X in LTR, −X in RTL (Y is unaffected).
+    transform: {
+      default: 'translate(50%, 50%)',
+      ':is([dir="rtl"] *)': 'translate(-50%, 50%)',
+    },
   }),
 });
 
@@ -198,8 +249,9 @@ export interface AvatarProps extends BaseProps<HTMLDivElement> {
    */
   name?: string;
   /**
-   * The size of the avatar.
-   * @default 'small'
+   * The size of the avatar. A named size (`xsm` 20px, `sm` 24px, `md` 36px,
+   * `lg` 48px, `xl` 128px) or a specific pixel value.
+   * @default 'md'
    */
   size?: AvatarSize;
   /**
@@ -209,8 +261,74 @@ export interface AvatarProps extends BaseProps<HTMLDivElement> {
   /**
    * Content displayed in the corner of the avatar.
    * Typically used for status indicators or badges.
+   *
+   * When the element carries a string `label` prop (as `AvatarStatusDot`
+   * does), the label is composed into the avatar's accessible name
+   * (e.g. "Jane Doe, Online") so assistive tech can reach the status —
+   * the `role="img"` root prunes descendant semantics (WCAG 4.1.2).
    */
   status?: ReactNode;
+  /**
+   * Tooltip shown on hover (and keyboard focus).
+   * - omitted / `true`: show the avatar's `name`
+   * - a string: show that text instead
+   * - `false`: no tooltip
+   *
+   * The avatar owns this tooltip. It is NOT auto-disabled when wrapped in your
+   * own Tooltip/HoverCard — set `tooltip={false}` if you provide your own
+   * overlay. No tooltip is shown if `tooltip` is `true`/omitted and there is
+   * no (non-whitespace) `name`.
+   * @default true
+   */
+  tooltip?: string | boolean;
+  /**
+   * When provided, the avatar becomes an interactive link (`<a>` or custom
+   * link component) pointing at `href`. Follows the same element-swap rules as
+   * Button: `href` renders a link, otherwise `onClick` renders a
+   * `<button type="button">`, otherwise the avatar stays a static (non-focusable)
+   * element. An interactive avatar requires a meaningful accessible name via
+   * `alt` or `name`.
+   */
+  href?: string;
+  /**
+   * Custom link component to use when `href` is provided. Overrides the
+   * provider-level default set by LinkProvider. Useful for Next.js `<Link>` or
+   * other router-aware components. Only applies when `href` is provided.
+   */
+  as?: LinkComponentType;
+  /**
+   * HTML target attribute for the link. Only applies when `href` is provided.
+   */
+  target?: string;
+  /**
+   * HTML rel attribute for the link. Only applies when `href` is provided.
+   */
+  rel?: string;
+  /**
+   * Click handler. When provided without `href`, renders the avatar as a
+   * focusable `<button type="button">`. An interactive avatar requires a
+   * meaningful accessible name via `alt` or `name`.
+   */
+  onClick?: React.MouseEventHandler<HTMLElement>;
+}
+
+/**
+ * Reuse a single segmenter when the runtime supports Intl.Segmenter.
+ */
+const graphemeSegmenter =
+  typeof Intl.Segmenter === 'function'
+    ? new Intl.Segmenter(undefined, {granularity: 'grapheme'})
+    : null;
+
+/**
+ * Return the first user-perceived character, with a code-point fallback.
+ */
+function firstGrapheme(word: string): string {
+  if (graphemeSegmenter) {
+    return [...graphemeSegmenter.segment(word)][0]?.segment ?? '';
+  }
+
+  return [...word][0] ?? '';
 }
 
 /**
@@ -228,9 +346,29 @@ function getInitials(name: string): string {
     return '';
   }
   if (words.length === 1) {
-    return words[0].charAt(0).toUpperCase();
+    return firstGrapheme(words[0]).toUpperCase();
   }
-  return (words[0].charAt(0) + words[words.length - 1].charAt(0)).toUpperCase();
+  return (
+    firstGrapheme(words[0]) + firstGrapheme(words[words.length - 1])
+  ).toUpperCase();
+}
+
+/**
+ * Reads the accessible status label off the `status` element, when it
+ * exposes one. `AvatarStatusDot`'s `label` prop is the canonical source,
+ * but any custom status element with a string `label` prop participates.
+ *
+ * The avatar root is `role="img"`, which prunes ALL descendant semantics
+ * from the accessibility tree — a label inside the status subtree is never
+ * announced on its own. Composing it into the avatar's own accessible name
+ * is the only way the status reaches assistive tech (WCAG 4.1.2).
+ */
+function getStatusLabel(status: ReactNode): string | undefined {
+  if (!isValidElement(status)) {
+    return undefined;
+  }
+  const {label} = status.props as {label?: unknown};
+  return typeof label === 'string' && label !== '' ? label : undefined;
 }
 
 /**
@@ -258,8 +396,12 @@ function DefaultIcon({size}: {size: number}) {
  * @example
  * ```
  * <Avatar src="/user.jpg" name="John Doe" />
- * <Avatar name="Jane Smith" size="large" />
+ * <Avatar name="Jane Smith" size="xl" />
  * <Avatar src="/user.jpg" status={<OnlineIndicator />} />
+ * <Avatar name="jsmith" tooltip="Jane Smith, Staff Engineer" />
+ * <Avatar name="Jane" tooltip={false} />
+ * <Avatar src="/user.jpg" name="John Doe" href="/users/john" />
+ * <Avatar src="/user.jpg" name="John Doe" onClick={() => openProfile()} />
  * ```
  */
 export function Avatar({
@@ -267,9 +409,15 @@ export function Avatar({
   'data-testid': testId,
   fallbackSrc,
   name,
-  size = 'small',
+  size = 'md',
   src,
   status,
+  tooltip = true,
+  href,
+  as,
+  target,
+  rel,
+  onClick,
   xstyle,
   className,
   style,
@@ -289,79 +437,241 @@ export function Avatar({
   const showInitials = !showImage && !showFallbackImage && name;
   const showIcon = !showImage && !showFallbackImage && !name;
 
-  // A meaningful accessible name comes from `alt` or `name`. With neither, the
-  // avatar is decorative — expose it as `presentation`/`aria-hidden` rather than
-  // announcing a meaningless generic "Avatar" (obs-9).
-  const accessibleName = alt || name;
+  // A meaningful accessible name comes from `alt`/`name`, composed with the
+  // status element's `label` when one is present ("Jane Doe, Online") — the
+  // `role="img"` root prunes descendant semantics, so surfacing the label in
+  // the avatar's own name is the only way assistive tech can reach the
+  // status (WCAG 4.1.2). A labelled status alone is also meaningful. With
+  // neither a name nor a labelled status, the avatar is decorative — expose
+  // it as `presentation`/`aria-hidden` rather than announcing a meaningless
+  // generic "Avatar" (obs-9).
+  const t = useTranslator();
+  const nameLabel = alt || name;
+  const statusLabel = getStatusLabel(status);
+  const accessibleName =
+    nameLabel && statusLabel
+      ? t('@astryx.avatar.nameWithStatus', {
+          name: nameLabel,
+          status: statusLabel,
+        })
+      : nameLabel || statusLabel;
   const isDecorative = !accessibleName;
   const avatarGroup = useAvatarGroup();
   const resolvedSize = avatarGroup?.size ?? size;
   const numericSize = useMemo(() => resolveSize(resolvedSize), [resolvedSize]);
 
-  return (
-    <AvatarSizeContext value={numericSize}>
-      <div
-        {...props}
-        ref={ref}
-        role={isDecorative ? 'presentation' : 'img'}
-        aria-label={isDecorative ? undefined : accessibleName}
-        aria-hidden={isDecorative || undefined}
-        data-testid={testId}
-        {...mergeProps(
-          themeProps('avatar', {size: resolvedSize}),
-          stylex.props(
-            styles.wrapper,
-            avatarGroup && groupStyles.ring,
-            avatarGroup && groupStyles.overlap,
-            avatarGroup && groupDynamicStyles.overlap(-avatarGroup.overlap),
-            xstyle,
-          ),
-          className,
-          style,
-        )}>
-        <div {...stylex.props(styles.content, dynamicStyles.size(numericSize))}>
-          {showImage && (
-            <img
-              src={src}
-              alt=""
-              onError={() => setErroredSrc(src)}
-              {...stylex.props(styles.image)}
-            />
-          )}
-          {showFallbackImage && (
-            <img
-              src={fallbackSrc}
-              alt=""
-              onError={() => setErroredFallbackSrc(fallbackSrc)}
-              {...stylex.props(styles.image)}
-            />
-          )}
-          {showInitials && (
-            <div
-              {...stylex.props(
+  // Resolve the tooltip content:
+  // - `false`            → no tooltip
+  // - a string           → that string
+  // - `true` / omitted   → the `name` (a whitespace-only name yields nothing)
+  // Note: the *visible* tooltip prefers `name` (not `alt`); the *accessible
+  // name* on the root still uses `alt || name` above, independent of this.
+  const tooltipContent =
+    tooltip === false
+      ? undefined
+      : typeof tooltip === 'string'
+        ? tooltip
+        : name;
+  const trimmedTooltip = tooltipContent?.trim();
+  const showTooltip = trimmedTooltip != null && trimmedTooltip !== '';
+  // Whether the tooltip text is a consumer-authored override (a custom string)
+  // rather than the default name. A custom description is worth wiring to
+  // `aria-describedby` (it adds information, matching Button); the default name
+  // tooltip is visual-only — its text duplicates the root `aria-label`, so
+  // describing it too would double-announce the same name (OQ-4).
+  const isCustomTooltip = typeof tooltip === 'string';
+
+  // Own the name tooltip via the Tooltip hook (the Button pattern), which
+  // returns `describedBy` as a value we choose whether to apply — the only way
+  // to satisfy the per-case aria-describedby rule (default name: none; custom
+  // string: describe) without editing Tooltip. `focusTrigger: 'auto'` shows the
+  // tooltip on keyboard focus once the root is focusable (natively for the
+  // interactive <a>/<button>, or via an explicit tab stop on the static div).
+  const tooltipHook = useTooltip({
+    placement: 'above',
+    isEnabled: showTooltip,
+  });
+  // The tooltip ref attaches to whichever root element renders (static or
+  // interactive), so the tooltip works for link/button avatars too.
+  const rootRef = mergeRefs(ref, showTooltip ? tooltipHook.ref : undefined);
+  const describedByProp =
+    showTooltip && isCustomTooltip
+      ? {
+          'aria-describedby':
+            [props['aria-describedby'], tooltipHook.describedBy]
+              .filter(Boolean)
+              .join(' ') || undefined,
+        }
+      : null;
+
+  // Element-swap trichotomy, copied from Button: `href` renders a link,
+  // otherwise `onClick` renders a `<button>`, otherwise today's static element
+  // is unchanged (the non-breaking default).
+  const renderAsLink = href != null;
+  const renderAsButton = !renderAsLink && onClick != null;
+  const isInteractive = renderAsLink || renderAsButton;
+  const LinkComponent = useLinkComponent(as);
+
+  // An interactive control with no accessible name is an unacceptable control
+  // name. Warn in the same client-safe way sibling components do (Field,
+  // Timestamp, Popover) — a plain `console.warn`, never gated on `process.env`
+  // (which is not available on the client in this codebase).
+  if (isInteractive && !accessibleName) {
+    console.warn(
+      'Avatar: an interactive avatar (with `href` or `onClick`) needs a ' +
+        'meaningful accessible name. Pass `alt` or `name`.',
+    );
+  }
+
+  // The inner visuals are identical across the static and interactive variants.
+  const visualContent = (
+    <>
+      <div {...stylex.props(styles.content, dynamicStyles.size(numericSize))}>
+        {showImage && (
+          <img
+            src={src}
+            alt=""
+            onError={() => setErroredSrc(src)}
+            {...stylex.props(styles.image)}
+          />
+        )}
+        {showFallbackImage && (
+          <img
+            src={fallbackSrc}
+            alt=""
+            onError={() => setErroredFallbackSrc(fallbackSrc)}
+            {...stylex.props(styles.image)}
+          />
+        )}
+        {showInitials && (
+          <div
+            {...mergeProps(
+              themeProps('avatar-fallback', {size: resolvedSize}),
+              stylex.props(
                 styles.fallback,
                 dynamicStyles.fontSize(numericSize),
-              )}>
-              {getInitials(name)}
-            </div>
-          )}
-          {showIcon && (
-            <div {...stylex.props(styles.fallback)}>
-              <DefaultIcon size={numericSize} />
-            </div>
-          )}
-        </div>
-        {status && (
-          <div
-            {...stylex.props(
-              styles.status,
-              dynamicStyles.statusPosition(numericSize),
+              ),
             )}>
-            {status}
+            {getInitials(name)}
+          </div>
+        )}
+        {showIcon && (
+          <div
+            {...mergeProps(
+              themeProps('avatar-fallback', {size: resolvedSize}),
+              stylex.props(styles.fallback),
+            )}>
+            <DefaultIcon size={numericSize} />
           </div>
         )}
       </div>
-    </AvatarSizeContext>
+      {status && (
+        <div
+          {...stylex.props(
+            styles.status,
+            dynamicStyles.statusPosition(numericSize),
+          )}>
+          {status}
+        </div>
+      )}
+    </>
+  );
+
+  // Shared StyleX + theme props for the root element in every variant. The
+  // group ring/overlap, the interactive focus-visible ring, and the
+  // tooltip tab-stop focus ring all live here so the interactive
+  // `<a>`/`<button>` and the static `<div>` carry the exact same box.
+  const rootStylexProps = mergeProps(
+    themeProps('avatar', {size: resolvedSize}),
+    focusOutlineProps.focusVisible(
+      styles.wrapper,
+      isInteractive && styles.interactive,
+      avatarGroup && groupStyles.ring,
+      avatarGroup && groupStyles.overlap,
+      avatarGroup && groupDynamicStyles.overlap(-avatarGroup.overlap),
+      xstyle,
+    ),
+    className,
+    style,
+  );
+
+  let rootElement: ReactNode;
+
+  // `props` is typed for the default `<div>` root (its event handlers are
+  // HTMLDivElement-typed). The interactive branches render an `<a>`/`<button>`,
+  // so the passthrough props are re-typed to the generic element here — the
+  // avatar's own handlers (onClick) are declared on HTMLElement and stay typed.
+  const interactivePassthrough = props as React.HTMLAttributes<HTMLElement>;
+
+  if (renderAsLink) {
+    // The rendered link carries the `data-avatar-item` marker so AvatarGroup's
+    // roving focus (which selects on `[data-avatar-item]`, not a tag/role) picks
+    // it up while ignoring nested buttons in a custom status/badge slot.
+    rootElement = (
+      <LinkComponent
+        {...interactivePassthrough}
+        {...describedByProp}
+        ref={rootRef as React.Ref<HTMLAnchorElement>}
+        href={href}
+        target={target}
+        rel={rel}
+        aria-label={accessibleName}
+        data-avatar-item=""
+        data-testid={testId}
+        onClick={onClick}
+        {...rootStylexProps}>
+        {visualContent}
+      </LinkComponent>
+    );
+  } else if (renderAsButton) {
+    rootElement = (
+      <button
+        {...interactivePassthrough}
+        {...describedByProp}
+        ref={rootRef}
+        type="button"
+        aria-label={accessibleName}
+        data-avatar-item=""
+        data-testid={testId}
+        onClick={onClick}
+        {...rootStylexProps}>
+        {visualContent}
+      </button>
+    );
+  } else {
+    rootElement = (
+      <div
+        {...props}
+        ref={rootRef}
+        role={isDecorative ? 'presentation' : 'img'}
+        aria-label={isDecorative ? undefined : accessibleName}
+        aria-hidden={isDecorative || undefined}
+        // The root is a div[role="img"], not natively focusable. When a name
+        // tooltip is active, add a tab stop so keyboard users can reveal it
+        // (WCAG 1.4.13 / 2.1.1) — matching Timestamp/Button. Suppressed inside
+        // an AvatarGroup, which owns a single roving tab stop for its members.
+        tabIndex={showTooltip && !avatarGroup ? 0 : undefined}
+        data-testid={testId}
+        {...describedByProp}
+        {...rootStylexProps}>
+        {visualContent}
+      </div>
+    );
+  }
+
+  const avatarElement = (
+    <AvatarSizeContext value={numericSize}>{rootElement}</AvatarSizeContext>
+  );
+
+  // Always return the same structure so the avatar keeps its position in the
+  // React tree regardless of the tooltip flag — toggling it must not remount
+  // the avatar subtree (and lose image-load state). The tooltip is a sibling
+  // (no wrapper DOM); the hook's ref is already on the root via `rootRef`.
+  return (
+    <>
+      {avatarElement}
+      {showTooltip ? tooltipHook.renderTooltip(trimmedTooltip) : null}
+    </>
   );
 }
 

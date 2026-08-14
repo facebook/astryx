@@ -21,6 +21,7 @@
 
 import {useMemo, type ReactNode} from 'react';
 import {InternationalizationContext} from './InternationalizationContext';
+import {getLocaleDirection} from './getLocaleDirection';
 import type {Locale, MessagesByLocale, Overrides} from './types';
 
 export interface InternationalizationProviderProps {
@@ -55,6 +56,19 @@ export interface InternationalizationProviderProps {
    * ```
    */
   overrides?: Overrides;
+  /**
+   * Optional explicit text direction override. When omitted, direction is derived
+   * from `locale` via `Intl.Locale.getTextInfo()`. Provide this to force a
+   * direction (e.g. RTL layout testing under an English catalog) or to skip the
+   * derivation when you already know the direction.
+   *
+   * This sets the direction astryx reads via context; it does NOT set the DOM
+   * `dir` attribute. You must set `dir` on `<html>` (or a wrapping element)
+   * yourself — astryx components mirror layout and directional icons from the
+   * DOM `dir`, so an RTL locale won't visually mirror without it. Keep the two
+   * in sync (e.g. `dir={getLocaleDirection(locale)}` on both).
+   */
+  dir?: 'ltr' | 'rtl';
   children: ReactNode;
 }
 
@@ -66,11 +80,13 @@ export function InternationalizationProvider({
   locale,
   messages,
   overrides,
+  dir,
   children,
 }: InternationalizationProviderProps) {
+  const direction = dir ?? getLocaleDirection(locale);
   const value = useMemo(
-    () => ({locale, messages: messages ?? {}, overrides}),
-    [locale, messages, overrides],
+    () => ({locale, direction, messages: messages ?? {}, overrides}),
+    [locale, direction, messages, overrides],
   );
   return (
     <InternationalizationContext value={value}>

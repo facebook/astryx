@@ -213,18 +213,64 @@ export const WithActions: Story = {
           <Button
             label="Filter"
             variant="ghost"
-            size="sm"
+            size="lg"
             icon={<FunnelIcon />}
             isIconOnly
           />
           <Button
             label="New item"
             variant="primary"
-            size="sm"
+            size="lg"
             icon={<PlusIcon />}
           />
         </div>
       </TabList>
+    );
+  },
+};
+
+export const DividerGap: Story = {
+  name: 'Divider Gap (sm / md / lg)',
+  render: () => {
+    const [value, setValue] = useState('overview');
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: '32px'}}>
+        {(['sm', 'md', 'lg'] as const).map(size => (
+          <div
+            key={size}
+            style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
+            <span style={{font: '600 12px system-ui', color: '#4E606F'}}>
+              size=&quot;{size}&quot; · hasDivider · matched Button size
+            </span>
+            <TabList value={value} onChange={setValue} size={size} hasDivider>
+              <Tab value="overview" label="Overview" />
+              <Tab value="activity" label="Activity" />
+              <Tab value="settings" label="Settings" />
+              <div
+                style={{
+                  marginInlineStart: 'auto',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                }}>
+                <Button
+                  label="Filter"
+                  variant="ghost"
+                  size={size}
+                  icon={<FunnelIcon />}
+                  isIconOnly
+                />
+                <Button
+                  label="New item"
+                  variant="primary"
+                  size={size}
+                  icon={<PlusIcon />}
+                />
+              </div>
+            </TabList>
+          </div>
+        ))}
+      </div>
     );
   },
 };

@@ -147,16 +147,33 @@ describe('FileInput', () => {
     expect(screen.getByText('Upload')).toBeInTheDocument();
   });
 
-  it('sets aria-required when isRequired is true', () => {
+  it('conveys required state through the accessible description', () => {
     render(
       <FileInput label="Resume" isRequired value={null} onChange={() => {}} />,
     );
-    // aria-required lives on the focusable role="button" wrapper, not the
+    const trigger = screen.getByRole('button', {name: 'Resume'});
+    // Required is conveyed via a visually hidden "Required" node referenced
+    // from aria-describedby on the focusable role="button" trigger — not the
     // hidden file input (forms-6).
-    expect(screen.getByRole('button', {name: 'Resume'})).toHaveAttribute(
-      'aria-required',
-      'true',
+    expect(trigger).toHaveAccessibleDescription(/Required/);
+    // aria-required is not a supported property of role="button" in
+    // WAI-ARIA 1.2 (AT does not announce it), so it must never appear.
+    expect(trigger).not.toHaveAttribute('aria-required');
+  });
+
+  it('combines required with the description in the accessible description', () => {
+    render(
+      <FileInput
+        label="Resume"
+        description="PDF only"
+        isRequired
+        value={null}
+        onChange={() => {}}
+      />,
     );
+    const trigger = screen.getByRole('button', {name: 'Resume'});
+    expect(trigger).toHaveAccessibleDescription(/PDF only/);
+    expect(trigger).toHaveAccessibleDescription(/Required/);
   });
 
   it('places aria-describedby on the focusable button, not the hidden input (forms-6)', () => {
@@ -176,11 +193,11 @@ describe('FileInput', () => {
     expect(input).toHaveAttribute('aria-hidden', 'true');
   });
 
-  it('does not set aria-required by default', () => {
+  it('does not mention required without isRequired', () => {
     render(<FileInput label="Resume" value={null} onChange={() => {}} />);
-    expect(screen.getByRole('button', {name: 'Resume'})).not.toHaveAttribute(
-      'aria-required',
-    );
+    const trigger = screen.getByRole('button', {name: 'Resume'});
+    expect(trigger).not.toHaveAccessibleDescription(/Required/);
+    expect(trigger).not.toHaveAttribute('aria-required');
   });
 
   it('sets disabled attribute when isDisabled is true', () => {
@@ -348,9 +365,44 @@ describe('FileInput', () => {
       fireEvent.change(fileInputEl(), {
         target: {files: [createFile('note.txt', 100)]},
       });
-      // A rejected selection creates no polite region (only the error goes to
-      // the existing role="status" region).
-      expect(politeRegion()).toBeNull();
+      // A rejected selection announces nothing politely. (The region pair may
+      // exist because the validation error itself is announced assertively via
+      // FieldStatus, but the polite channel must stay empty.)
+      expect(politeRegion()?.textContent ?? '').toBe('');
+    });
+
+    it('announces a validation error exactly once across live regions', async () => {
+      render(
+        <FileInput
+          label="Upload"
+          value={null}
+          onChange={() => {}}
+          accept=".pdf"
+        />,
+      );
+      fireEvent.change(fileInputEl(), {
+        target: {files: [createFile('note.txt', 100)]},
+      });
+      const errorText = '"note.txt" is not an accepted file type';
+      // The error lands in the assertive announce region (via the FieldStatus
+      // the derived error status mounts)…
+      await waitFor(() => {
+        expect(
+          document.querySelector('[data-astryx-live-region="assertive"]'),
+        ).toHaveTextContent(errorText);
+      });
+      // …and in exactly one live region overall. FileInput's own role="status"
+      // region used to duplicate the FieldStatus announcement, so the same
+      // error was read twice (assertively, then politely).
+      const liveRegions = Array.from(
+        document.querySelectorAll(
+          '[role="status"], [role="alert"], [aria-live]',
+        ),
+      );
+      const regionsWithError = liveRegions.filter(el =>
+        (el.textContent ?? '').includes(errorText),
+      );
+      expect(regionsWithError).toHaveLength(1);
     });
   });
 
@@ -641,6 +693,54 @@ describe('FileInput', () => {
     });
   });
 
+  describe('trigger accessible name', () => {
+    it('includes the selected file name in the trigger name', () => {
+      const file = createFile('report.pdf', 1024, 'application/pdf');
+      render(<FileInput label="Document" value={file} onChange={() => {}} />);
+      expect(
+        screen.getByRole('button', {name: 'Document, report.pdf'}),
+      ).toBeInTheDocument();
+    });
+
+    it('includes all selected file names when multiple files are selected', () => {
+      const files = [createFile('a.txt', 100), createFile('b.txt', 200)];
+      render(
+        <FileInput
+          label="Files"
+          value={files}
+          onChange={() => {}}
+          isMultiple
+        />,
+      );
+      expect(
+        screen.getByRole('button', {name: 'Files, a.txt, b.txt'}),
+      ).toBeInTheDocument();
+    });
+
+    it('uses exactly the label when no files are selected', () => {
+      render(<FileInput label="Document" value={null} onChange={() => {}} />);
+      expect(screen.getByRole('button', {name: 'Document'})).toHaveAttribute(
+        'aria-label',
+        'Document',
+      );
+    });
+
+    it('includes the selected file name in dropzone mode', () => {
+      const file = createFile('doc.pdf', 100, 'application/pdf');
+      render(
+        <FileInput
+          label="Upload"
+          value={file}
+          onChange={() => {}}
+          mode="dropzone"
+        />,
+      );
+      expect(
+        screen.getByRole('button', {name: 'Upload, doc.pdf'}),
+      ).toBeInTheDocument();
+    });
+  });
+
   describe('data-testid', () => {
     it('passes data-testid to native input', () => {
       render(
@@ -670,16 +770,20 @@ describe('FileInput', () => {
         />,
       );
 
-      const trigger = screen.getByRole('button');
       const tooltip = screen.getByRole('tooltip', h);
       expect(tooltip).toHaveTextContent('You need the Editor role');
 
-      fireEvent.mouseEnter(trigger);
+      // The trigger button is visually hidden, so the disabled-reason tooltip
+      // anchors its hover listeners to the visible container surface.
+      const surface = document.querySelector(
+        '.astryx-file-input',
+      ) as HTMLElement;
+      fireEvent.mouseEnter(surface);
       await waitFor(() => {
         expect(tooltip).toHaveAttribute('popover-open');
       });
 
-      fireEvent.mouseLeave(trigger);
+      fireEvent.mouseLeave(surface);
       await waitFor(() => {
         expect(tooltip).not.toHaveAttribute('popover-open');
       });
@@ -760,7 +864,10 @@ describe('FileInput', () => {
     });
 
     it('blocks opening the file picker while focusable-disabled', async () => {
-      const user = userEvent.setup();
+      // The trigger is a visually-hidden button (pointer-events: none) — real
+      // pointer clicks land on the container surface, so bypass the pointer
+      // check to exercise the disabled guard directly.
+      const user = userEvent.setup({pointerEventsCheck: 0});
       render(
         <FileInput
           label="Resume"
@@ -798,5 +905,38 @@ describe('FileInput', () => {
       expect(trigger).toHaveAttribute('tabindex', '-1');
       expect(trigger).not.toHaveAttribute('aria-disabled');
     });
+  });
+});
+
+describe('FileInput statusVariant forwarding', () => {
+  it('defaults to attached (status renders with data-variant="attached")', () => {
+    const {container} = render(
+      <FileInput
+        label="Upload"
+        value={null}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Something went wrong'}}
+      />,
+    );
+    expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+      'data-variant',
+      'attached',
+    );
+  });
+
+  it('forwards statusVariant="detached" to the underlying Field status', () => {
+    const {container} = render(
+      <FileInput
+        label="Upload"
+        value={null}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Something went wrong'}}
+        statusVariant="detached"
+      />,
+    );
+    expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+      'data-variant',
+      'detached',
+    );
   });
 });

@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'ButtonGroup',
@@ -29,6 +29,7 @@ export const docs = {
         {name: 'orientation', type: "'horizontal' | 'vertical'", description: 'Layout direction of the button group.', default: "'horizontal'"},
         {name: 'size', type: "'sm' | 'md' | 'lg'", description: 'Default size for buttons in the group. Individual buttons can override.', default: "'md'"},
         {name: 'isDisabled', type: 'boolean', description: 'Whether all buttons in the group are disabled.', default: 'false'},
+        {name: 'elevation', type: "'none' | 'low' | 'med' | 'high'", description: 'Resting shadow depth for the whole group. The connected buttons share one surface, so the shadow lifts them as a unit. Use for a group that floats above content.', default: "'none'"},
         {name: 'ref', type: 'React.Ref<HTMLDivElement>', description: 'Ref forwarded to the root element.'},
         {name: 'xstyle', type: 'StyleXStyles', description: 'StyleX styles for layout customization. Must be a stylex.create() value.'},
         {name: 'data-testid', type: 'string', description: 'Test selector for automated testing frameworks.'},
@@ -53,7 +54,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsZh = {
   components: [
     {
@@ -66,6 +67,7 @@ export const docsZh = {
         orientation: '按钮组的布局方向。',
         size: '组内按钮的默认尺寸。单个按钮可覆盖。',
         isDisabled: '组内所有按钮是否禁用。',
+        elevation: '整个组的静止阴影深度。连接的按钮共享一个表面，阴影将它们作为整体抬起。',
         ref: '转发到根元素的引用。',
         xstyle: 'StyleX 样式，用于布局自定义。必须是 stylex.create() 的值。',
         'data-testid': '自动化测试的选择器。',
@@ -90,7 +92,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'connected button group w/ shared borders, outer-only radius, horizontal/vertical',
   usage: {
@@ -116,6 +118,7 @@ export const docsDense = {
         orientation: 'layout direction',
         size: 'default btn size; individual btns override',
         isDisabled: 'all btns disabled',
+        elevation: 'resting shadow depth for whole group: none|low|med|high',
         xstyle: 'StyleX layout styles; must be stylex.create() value',
         'data-testid': 'test selector',
       },

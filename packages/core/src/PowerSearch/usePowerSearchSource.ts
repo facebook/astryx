@@ -76,8 +76,7 @@ export function usePowerSearchSource(
 
           // Check each field+operator combo against the query
           for (const op of field.operators) {
-            const combinedLabel =
-              `${field.label} ${opLabel(op)}`.toLowerCase();
+            const combinedLabel = `${field.label} ${opLabel(op)}`.toLowerCase();
             if (combinedLabel.includes(lower)) {
               const id = `${field.key}:${op.key}`;
               if (!seen.has(id)) {

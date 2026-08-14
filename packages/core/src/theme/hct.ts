@@ -110,12 +110,8 @@ function labToXyz(L: number, a: number, b: number): [number, number, number] {
 // Tone <-> Y (CIE Luminance)
 // =============================================================================
 
-export function toneToY(tone: number): number {
+function toneToY(tone: number): number {
   return labFInv((tone + 16) / 116);
-}
-
-export function yToTone(y: number): number {
-  return 116 * labF(y) - 16;
 }
 
 // =============================================================================

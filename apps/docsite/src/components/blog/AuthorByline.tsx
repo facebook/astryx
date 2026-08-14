@@ -54,7 +54,7 @@ export function AuthorByline({
   className,
 }: AuthorBylineProps) {
   const resolved = authors.map(resolveAuthor);
-  const avatarSize = variant === 'full' ? 'small' : 'tiny';
+  const avatarSize = variant === 'full' ? 'md' : 'xsm';
   const textType = variant === 'full' ? 'body' : 'supporting';
   // Only link author names in the full (article) byline. The compact byline
   // renders inside a card-wide anchor (BlogCard), where a nested <a> would be

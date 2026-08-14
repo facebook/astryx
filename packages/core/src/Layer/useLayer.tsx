@@ -50,6 +50,18 @@ const styles = stylex.create({
   fixed: {
     position: 'fixed',
   },
+  // Clearance from the anchor. Set on BOTH edges of the placement axis, not
+  // just the one facing the anchor: `position-try-fallbacks` can flip the
+  // layer to the opposite side at paint time, and a single-edge margin then
+  // lands on the far side and the gap vanishes (#4803).
+  offsetBlock: (offset: string) => ({
+    marginBlockStart: offset,
+    marginBlockEnd: offset,
+  }),
+  offsetInline: (offset: string) => ({
+    marginInlineStart: offset,
+    marginInlineEnd: offset,
+  }),
 });
 
 /**
@@ -95,11 +107,31 @@ export interface ContextRenderProps {
    */
   alignment?: LayerAlignment;
   /**
+   * Clearance between the layer and its anchor, as a CSS length (a number is
+   * treated as `px`). Applied along the placement axis and flip-safe, so the
+   * gap survives a `position-try-fallbacks` flip to the opposite side.
+   *
+   * Layers sit flush by default: the hook zeroes the UA margins so anchor
+   * positioning has a clean box, and clearance is a deliberate choice per
+   * surface. `var(--spacing-1)` is the system's standard clearance.
+   *
+   * Ignored when `positioning` is `'custom'` — that mode owns its own insets.
+   *
+   * @default 0
+   */
+  offset?: number | string;
+  /**
    * ARIA role applied to the popover container (e.g. `'tooltip'`). Lets
    * consumers complete the ARIA pattern and gives test tooling a stable,
    * non-hashed selector for the layer.
    */
   role?: string;
+  /**
+   * Accessible name applied to the popover container via `aria-label`.
+   * Pair with `role` so layers with a named role (e.g. `'dialog'`) expose a
+   * proper name to assistive technology.
+   */
+  'aria-label'?: string;
   /**
    * StyleX styles for the popover container.
    */
@@ -276,6 +308,10 @@ export interface FixedLayerReturn {
    * Pass x and y coordinates for fixed positioning.
    */
   render: (children: ReactNode, props: FixedRenderProps) => ReactNode;
+}
+
+function toCssLength(value: number | string): string {
+  return typeof value === 'number' ? `${value}px` : value;
 }
 
 /**
@@ -524,7 +560,9 @@ export function useLayer(
         placement = 'above',
         alignment = 'center',
         positioning = 'anchor',
+        offset,
         role,
+        'aria-label': ariaLabel,
         xstyle,
         className: extraClassName,
         style: extraStyle,
@@ -548,7 +586,14 @@ export function useLayer(
               ),
             };
 
-      const stylexResult = stylex.props(styles.base, xstyle);
+      const offsetStyle =
+        positioning === 'anchor' && offset
+          ? placement === 'above' || placement === 'below'
+            ? styles.offsetBlock(toCssLength(offset))
+            : styles.offsetInline(toCssLength(offset))
+          : null;
+
+      const stylexResult = stylex.props(styles.base, offsetStyle, xstyle);
       const combinedClassName = extraClassName
         ? `${extraClassName} ${stylexResult.className ?? ''}`
         : stylexResult.className;
@@ -561,6 +606,7 @@ export function useLayer(
           ref={popoverRefCallback}
           id={id}
           role={role}
+          aria-label={ariaLabel}
           popover={lightDismiss ? 'auto' : 'manual'}
           className={combinedClassName}
           style={{...stylexResult.style, ...anchorStyle, ...extraStyle}}

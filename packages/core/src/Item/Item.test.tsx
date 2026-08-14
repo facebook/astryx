@@ -9,10 +9,34 @@
  * SYNC: When Item component changes, update tests to match new behavior
  */
 
+import {useRef} from 'react';
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Item} from './Item';
+
+/**
+ * Item in delegation mode: `interactiveRef` points at a nested control that
+ * owns the row's keyboard access and action. The row is an enlarged tap target
+ * that forwards surface clicks to that control (useClickableContainer).
+ */
+function DelegatingItem({onToggle}: {onToggle?: () => void}) {
+  const ref = useRef<HTMLInputElement>(null);
+  return (
+    <Item
+      label="Row"
+      interactiveRef={ref}
+      startContent={
+        <input
+          ref={ref}
+          type="checkbox"
+          aria-label="Pick row"
+          onChange={onToggle}
+        />
+      }
+    />
+  );
+}
 
 describe('Item', () => {
   // ===========================================================================
@@ -31,18 +55,13 @@ describe('Item', () => {
   });
 
   it('renders marker', () => {
-    render(
-      <Item label="Item" marker={<span data-testid="marker">•</span>} />,
-    );
+    render(<Item label="Item" marker={<span data-testid="marker">•</span>} />);
     expect(screen.getByTestId('marker')).toBeInTheDocument();
   });
 
   it('renders startContent', () => {
     render(
-      <Item
-        label="Item"
-        startContent={<span data-testid="avatar">A</span>}
-      />,
+      <Item label="Item" startContent={<span data-testid="avatar">A</span>} />,
     );
     expect(screen.getByTestId('avatar')).toBeInTheDocument();
   });
@@ -196,6 +215,70 @@ describe('Item', () => {
   });
 
   // ===========================================================================
+  // Interactive — interactiveRef (delegation to a nested control)
+  // ===========================================================================
+
+  it('renders no invisible button in interactiveRef (delegation) mode', () => {
+    const {container} = render(<DelegatingItem />);
+    // The nested control provides keyboard access — the row must not add a
+    // second focusable control for the same action (WCAG 4.1.2).
+    expect(container.querySelector('button')).not.toBeInTheDocument();
+  });
+
+  it('keeps the nested control as the only tab stop in interactiveRef mode', async () => {
+    const user = userEvent.setup();
+    render(<DelegatingItem />);
+    await user.tab();
+    expect(screen.getByRole('checkbox')).toHaveFocus();
+    // Next tab leaves the item entirely — the row itself is not focusable.
+    await user.tab();
+    expect(screen.getByRole('checkbox')).not.toHaveFocus();
+    expect(document.body).toHaveFocus();
+  });
+
+  it('delegates a row-surface click to the interactive control', async () => {
+    const user = userEvent.setup();
+    const onToggle = vi.fn();
+    render(<DelegatingItem onToggle={onToggle} />);
+    // Clicking the label (row surface) is forwarded to the checkbox.
+    await user.click(screen.getByText('Row'));
+    expect(onToggle).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not double-fire when the interactive control itself is clicked', async () => {
+    const user = userEvent.setup();
+    const onToggle = vi.fn();
+    render(<DelegatingItem onToggle={onToggle} />);
+    await user.click(screen.getByRole('checkbox'));
+    // The row must not re-forward the control's own click back to it.
+    expect(onToggle).toHaveBeenCalledTimes(1);
+  });
+
+  it('ignores onClick when interactiveRef is set (delegation wins, single tab stop)', async () => {
+    const user = userEvent.setup();
+    const onClick = vi.fn();
+    function ItemWithBoth() {
+      const ref = useRef<HTMLInputElement>(null);
+      return (
+        <Item
+          label="Row"
+          onClick={onClick}
+          interactiveRef={ref}
+          startContent={
+            <input ref={ref} type="checkbox" aria-label="Pick row" />
+          }
+        />
+      );
+    }
+    const {container} = render(<ItemWithBoth />);
+    // No invisible button (onClick is ignored in delegation mode)...
+    expect(container.querySelector('button')).not.toBeInTheDocument();
+    // ...and the checkbox is still the sole tab stop.
+    await user.tab();
+    expect(screen.getByRole('checkbox')).toHaveFocus();
+  });
+
+  // ===========================================================================
   // Interactive — href (invisible anchor pattern)
   // ===========================================================================
 
@@ -255,12 +338,7 @@ describe('Item', () => {
   it('does not fire onClick when disabled item is clicked', async () => {
     const onClick = vi.fn();
     render(
-      <Item
-        label="Disabled"
-        onClick={onClick}
-        isDisabled
-        data-testid="item"
-      />,
+      <Item label="Disabled" onClick={onClick} isDisabled data-testid="item" />,
     );
     const item = screen.getByTestId('item');
     item.dispatchEvent(new MouseEvent('click', {bubbles: true}));
@@ -276,14 +354,46 @@ describe('Item', () => {
   // Selected state
   // ===========================================================================
 
-  it('applies aria-selected when isSelected', () => {
+  it('conveys selection via aria-current on the default div root', () => {
+    // aria-selected is invalid ARIA on a generic div (axe: aria-allowed-attr),
+    // so selection is exposed via aria-current, which is valid on any element.
     render(<Item label="Selected" isSelected data-testid="item" />);
-    expect(screen.getByTestId('item')).toHaveAttribute('aria-selected', 'true');
+    const item = screen.getByTestId('item');
+    expect(item).not.toHaveAttribute('aria-selected');
+    expect(item).toHaveAttribute('aria-current', 'true');
   });
 
-  it('does not apply aria-selected when not selected', () => {
-    render(<Item label="Not Selected" data-testid="item" />);
-    expect(screen.getByTestId('item')).not.toHaveAttribute('aria-selected');
+  it('applies aria-selected (not aria-current) when the role permits it', () => {
+    render(
+      <Item label="Selected" isSelected role="option" data-testid="item" />,
+    );
+    const item = screen.getByTestId('item');
+    expect(item).toHaveAttribute('aria-selected', 'true');
+    // A permitted role uses aria-selected; aria-current would be redundant.
+    expect(item).not.toHaveAttribute('aria-current');
+  });
+
+  it('falls back to aria-current when the role does not permit aria-selected', () => {
+    render(
+      <Item label="Selected" isSelected role="menuitem" data-testid="item" />,
+    );
+    const item = screen.getByTestId('item');
+    expect(item).not.toHaveAttribute('aria-selected');
+    expect(item).toHaveAttribute('aria-current', 'true');
+  });
+
+  it('applies neither aria-selected nor aria-current when not selected', () => {
+    render(<Item label="Not Selected" role="option" data-testid="item" />);
+    const item = screen.getByTestId('item');
+    expect(item).not.toHaveAttribute('aria-selected');
+    expect(item).not.toHaveAttribute('aria-current');
+  });
+
+  it('lets a consumer-provided aria-current win over the selection default', () => {
+    render(
+      <Item label="Step" isSelected aria-current="step" data-testid="item" />,
+    );
+    expect(screen.getByTestId('item')).toHaveAttribute('aria-current', 'step');
   });
 
   // ===========================================================================

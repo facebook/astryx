@@ -4,7 +4,7 @@
 
 /**
  * @file useTableSortable.tsx
- * @input React, types, Icon, theme tokens
+ * @input React, types, Icon, theme tokens, i18n (useTranslator)
  * @output Exports useTableSortable hook and sort-related types
  * @position Sortable plugin; consumed by Table via plugins prop
  *
@@ -16,9 +16,10 @@
 import {useRef, useMemo, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars, radiusVars} from '../../../theme/tokens.stylex';
+import {focusOutlineProps} from '../../../utils/focusOutline.stylex';
 import {Icon} from '../../../Icon';
 import {resolveContextActions} from '../../tableContextMenu';
-import {useTranslator} from '../../../i18n';
+import {useTranslator, type TranslatorFn} from '../../../i18n';
 import type {
   TablePlugin,
   HeaderCellRenderProps,
@@ -130,11 +131,6 @@ const sortStyles = stylex.create({
     width: '100%',
     height: '100%',
     textAlign: 'inherit',
-    outline: {
-      default: 'none',
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: '2px',
     borderRadius: radiusVars['--radius-inner'],
   },
   iconWrapperUnsorted: {
@@ -184,6 +180,7 @@ function getHeaderLabel<T extends Record<string, unknown>>(
 }
 
 function buildAriaLabel<T extends Record<string, unknown>>(
+  t: TranslatorFn,
   column: TableColumn<T>,
   direction: TableSortDirection | null,
   rank: number | null,
@@ -191,13 +188,21 @@ function buildAriaLabel<T extends Record<string, unknown>>(
 ): string {
   const label = getHeaderLabel(column);
   if (direction == null) {
-    return `Sort by ${label}`;
+    return t('@astryx.table.sort.sortBy', {label});
   }
-  let ariaLabel = `Sort by ${label}, sorted ${direction}`;
+  const directionLabel =
+    direction === 'ascending'
+      ? t('@astryx.table.sort.direction.ascending')
+      : t('@astryx.table.sort.direction.descending');
   if (rank != null && total > 1) {
-    ariaLabel += `, priority ${rank} of ${total}`;
+    return t('@astryx.table.sort.sortedByWithPriority', {
+      label,
+      direction: directionLabel,
+      rank,
+      total,
+    });
   }
-  return ariaLabel;
+  return t('@astryx.table.sort.sortedBy', {label, direction: directionLabel});
 }
 
 function getNextDirection(
@@ -227,6 +232,7 @@ function SortHeaderButton<T extends Record<string, unknown>>({
   children: ReactNode;
   configRef: React.RefObject<UseTableSortableConfig>;
 }) {
+  const t = useTranslator();
   const config = configRef.current;
   const sortKey = resolveSortKey(column) ?? '';
   const entryIndex = config.sort.findIndex(e => e.sortKey === sortKey);
@@ -244,7 +250,13 @@ function SortHeaderButton<T extends Record<string, unknown>>({
         ? 'arrowDown'
         : 'arrowsUpDown';
 
-  const ariaLabel = buildAriaLabel(column, direction, rank, config.sort.length);
+  const ariaLabel = buildAriaLabel(
+    t,
+    column,
+    direction,
+    rank,
+    config.sort.length,
+  );
 
   const handleClick = (e: React.MouseEvent | React.KeyboardEvent) => {
     const cfg = configRef.current;
@@ -291,7 +303,7 @@ function SortHeaderButton<T extends Record<string, unknown>>({
   return (
     <button
       type="button"
-      {...stylex.props(sortStyles.button)}
+      {...focusOutlineProps.focusVisible(sortStyles.button)}
       aria-label={ariaLabel}
       onClick={handleClick}>
       <span>{children}</span>

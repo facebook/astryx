@@ -572,4 +572,41 @@ describe('ButtonGroup', () => {
       expect(hasRoundedTrailingCorners(save)).toBe(false);
     });
   });
+
+  describe('elevation', () => {
+    it('renders a distinct class on the group for each elevation level', () => {
+      const classFor = (elevation: 'none' | 'low' | 'med' | 'high') => {
+        const {container} = render(
+          <ButtonGroup label="Actions" elevation={elevation}>
+            <Button label="One" />
+            <Button label="Two" />
+          </ButtonGroup>,
+        );
+        return container.querySelector('[role="group"]')!.className;
+      };
+      const classes = new Set([
+        classFor('none'),
+        classFor('low'),
+        classFor('med'),
+        classFor('high'),
+      ]);
+      expect(classes.size).toBe(4);
+    });
+
+    it('defaults to flat (elevation none)', () => {
+      const {container: def} = render(
+        <ButtonGroup label="Actions">
+          <Button label="One" />
+        </ButtonGroup>,
+      );
+      const {container: none} = render(
+        <ButtonGroup label="Actions" elevation="none">
+          <Button label="One" />
+        </ButtonGroup>,
+      );
+      expect(def.querySelector('[role="group"]')!.className).toBe(
+        none.querySelector('[role="group"]')!.className,
+      );
+    });
+  });
 });

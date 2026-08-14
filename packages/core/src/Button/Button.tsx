@@ -4,7 +4,7 @@
 
 /**
  * @file Button.tsx
- * @input Uses React, ButtonHTMLAttributes, ReactNode
+ * @input Uses React, ButtonHTMLAttributes, ReactNode, i18n (useTranslator)
  * @output Exports Button component, ButtonProps, ButtonVariant types
  * @position Core implementation; consumed by index.ts, tested by Button.test.tsx
  *
@@ -13,14 +13,14 @@
  * - /packages/core/src/Button/Button.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Button/index.ts (exports if types change)
  * - /apps/storybook/stories/Button.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Button/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Button/ (showcase blocks)
  *
  * Last synced props: label, variant, size, isDisabled, isLoading, isInterruptible, clickAction, icon, isIconOnly, width, children, tooltip, endContent, href, as, target, rel
  */
 
 import {useRef, useTransition, type ReactNode} from 'react';
 import type {BaseProps} from '../BaseProps';
-import type {SizeValue} from '../utils/types';
+import type {Elevation, SizeValue} from '../utils/types';
 import * as stylex from '@stylexjs/stylex';
 import {useTooltip} from '../Tooltip/useTooltip';
 import {
@@ -33,6 +33,8 @@ import {
   easeVars,
   fontWeightVars,
   typeScaleVars,
+  shadowVars,
+  focusVars,
 } from '../theme/tokens.stylex';
 import {Spinner} from '../Spinner';
 import {VisuallyHidden} from '../VisuallyHidden';
@@ -44,6 +46,9 @@ import {mergeProps, mergeRefs} from '../utils';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {useTranslator} from '../i18n';
+import type {ButtonVariantMap} from './index';
 
 /**
  * Base button styles
@@ -52,6 +57,15 @@ import {themeProps} from '../utils/themeProps';
  */
 const styles = stylex.create({
   base: {
+    // Kept as a public themeable var (documented in Button.doc.mjs) even though
+    // it now defaults to the shared token: removing it would break any theme
+    // setting it, for no gain. It overrides the shared offset, so a theme can
+    // still tune the ring distance on buttons specifically.
+    '--button-focus-offset': focusVars['--focus-outline-offset'],
+    outlineOffset: {
+      default: '0',
+      ':focus-visible': 'var(--button-focus-offset)',
+    },
     position: 'relative',
     display: 'inline-flex',
     alignItems: 'center',
@@ -161,10 +175,22 @@ const iconSizeStyles = stylex.create({
 });
 
 /**
+ * Resting elevation for floating buttons (e.g. a FAB). `none` is the default
+ * flat button; `low`/`med`/`high` map to the shadow token scale. 'none' stays
+ * a literal so it never conflicts with a variant's background layering.
+ */
+const elevationStyles = stylex.create({
+  none: {boxShadow: 'none'},
+  low: {boxShadow: shadowVars['--shadow-low']},
+  med: {boxShadow: shadowVars['--shadow-med']},
+  high: {boxShadow: shadowVars['--shadow-high']},
+});
+
+/**
  * Variant styles using backgroundImage for layered colors
  * Pseudo-classes are nested within properties per StyleX recommendation
  * Overlay is stacked on top of base color using multiple linear-gradients
- * Focus outline color matches variant (destructive uses negative color)
+ * Focus outline is shared across variants for consistent keyboard affordance.
  */
 const variants = stylex.create({
   primary: {
@@ -177,15 +203,6 @@ const variants = stylex.create({
       },
       ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
     },
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    '--button-focus-offset': '3px',
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': 'var(--button-focus-offset)',
-    },
   },
   secondary: {
     backgroundColor: colorVars['--color-neutral'],
@@ -196,15 +213,6 @@ const variants = stylex.create({
         '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
       },
       ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
-    },
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    '--button-focus-offset': '3px',
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': 'var(--button-focus-offset)',
     },
   },
   ghost: {
@@ -217,19 +225,14 @@ const variants = stylex.create({
       },
       ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
     },
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    '--button-focus-offset': '3px',
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': 'var(--button-focus-offset)',
-    },
   },
   destructive: {
     backgroundColor: colorVars['--color-error'],
     color: colorVars['--color-on-error'],
+    // The ring matches the variant it rings: an accent-colored outline on a
+    // red button reads as another control's focus. Only the color differs —
+    // width, style and offset come from the shared outline.
+    outlineColor: {default: null, ':focus-visible': colorVars['--color-error']},
     backgroundImage: {
       default: null,
       ':hover': {
@@ -237,37 +240,8 @@ const variants = stylex.create({
       },
       ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
     },
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-error']}`,
-    },
-    '--button-focus-offset': '3px',
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': 'var(--button-focus-offset)',
-    },
   },
 });
-
-/**
- * Extensible variant map for Button.
- *
- * Theme packages can add custom variants via TypeScript module augmentation:
- * @example
- * ```
- * declare module '@astryxdesign/core/Button' {
- *   interface ButtonVariantMap {
- *     'primary-muted': true;
- *   }
- * }
- * ```
- */
-export interface ButtonVariantMap {
-  primary: true;
-  secondary: true;
-  ghost: true;
-  destructive: true;
-}
 
 /**
  * Button variant type derived from ButtonVariantMap.
@@ -307,6 +281,12 @@ export interface ButtonProps extends BaseProps<HTMLButtonElement> {
    * @default 'md'
    */
   size?: ButtonSize;
+  /**
+   * Resting elevation — the shadow depth the button sits at. Use for floating
+   * buttons (FABs) that hover above content. `none` is the default flat button.
+   * @default 'none'
+   */
+  elevation?: Elevation;
   /**
    * Whether the button is disabled.
    * @default false
@@ -430,8 +410,8 @@ const loadingStyles = stylex.create({
   spinnerOverlay: {
     position: 'absolute',
     top: 0,
-    left: 0,
-    right: 0,
+    insetInlineStart: 0,
+    insetInlineEnd: 0,
     bottom: 0,
     display: 'grid',
     placeItems: 'center',
@@ -578,6 +558,7 @@ export function Button({
   icon,
   isIconOnly = false,
   width,
+  elevation = 'none',
   children,
   endContent,
   tooltip,
@@ -591,6 +572,7 @@ export function Button({
   ref,
   ...props
 }: ButtonProps): ReactNode {
+  const t = useTranslator();
   const size = useSize(sizeProp, 'md');
   const buttonGroup = useButtonGroup();
 
@@ -673,10 +655,9 @@ export function Button({
   const edgeCompAttr = isFlat ? {[EDGE_COMP_ATTR]: ''} : null;
 
   // Shared StyleX props for both button and link rendering
-  const sharedStylexProps = stylex.props(
+  const sharedStylexProps = focusOutlineProps.focusVisible(
     styles.base,
     sizeStyles[size],
-    variants[variant],
     isIconOnly && styles.iconOnly,
     buttonDisabled && styles.disabled,
     useAriaDisabled && styles.ariaDisabled,
@@ -690,8 +671,14 @@ export function Button({
       (variant === 'primary' || variant === 'destructive') &&
       (buttonGroup.orientation === 'horizontal'
         ? groupStyles.onSolidHorizontal
-        : groupStyles.onSolidVertical),
+        : groupStyles.onSolidVertical), // Standalone floating buttons only — a grouped button's elevation is owned
+    // by the ButtonGroup so the shared surface lifts as one unit.
+    !buttonGroup && elevationStyles[elevation],
     width != null && dynamicStyles.width(width),
+    // AFTER the shared focus outline: the outline supplies width/style/offset
+    // for every variant, and `destructive` re-colors just the ring to match
+    // its own surface. Ordering is the mechanism — StyleX is last-wins.
+    variants[variant],
     xstyle,
   );
 
@@ -737,7 +724,7 @@ export function Button({
       </span>
       {/* Live region for loading state announcements */}
       <VisuallyHidden role="status" aria-live="polite">
-        {isLoadingState ? 'Loading' : ''}
+        {isLoadingState ? t('@astryx.button.loading') : ''}
       </VisuallyHidden>
     </>
   );
@@ -786,6 +773,7 @@ export function Button({
         {...ariaLabelProp}
         {...describedByProp}
         {...edgeCompAttr}
+        aria-busy={isLoadingState || undefined}
         onClick={handleClick}>
         {buttonContent}
       </LinkComponent>
