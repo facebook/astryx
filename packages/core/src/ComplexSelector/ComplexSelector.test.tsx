@@ -177,7 +177,7 @@ describe('ComplexSelector', () => {
 });
 
 describe('ComplexSelector popup theme target', () => {
-  it('puts astryx-complex-selector-popup on the content box inside the layer', async () => {
+  it('puts astryx-complex-selector-popup on the surface that paints, not the content box', async () => {
     const user = userEvent.setup();
     render(
       <ComplexSelector label="Fruit blend" value="Apple" triggerLabel="Apple">
@@ -186,18 +186,27 @@ describe('ComplexSelector popup theme target', () => {
     );
     await user.click(screen.getByRole('button', {name: 'Fruit blend'}));
 
-    const layer = document.querySelector('[popover]') as HTMLElement;
     const popup = document.querySelector(
       '.astryx-complex-selector-popup',
     ) as HTMLElement;
     expect(popup).not.toBeNull();
-    // The layer is a bare positioning box; the target must be the content box
-    // it contains, which is what actually paints.
-    expect(popup).not.toBe(layer);
-    expect(layer.contains(popup)).toBe(true);
+
+    // The surface is the element usePopover renders: it carries the dialog
+    // role and the shared surface class, and the component's content box —
+    // the one with the padding and the scroll — sits INSIDE it. A target on
+    // that inner box cannot paint the popup's background or radius, which is
+    // what a theme reaches for this class to do.
+    expect(popup).toHaveAttribute('role', 'dialog');
+    expect(popup).toHaveClass('astryx-popover-surface');
+    expect(popup.querySelector('[id]')).not.toBeNull();
     expect(popup).toContainElement(
       screen.getByRole('button', {name: 'Done', ...h}),
     );
+
+    // And it is not the bare positioning layer either.
+    const layer = document.querySelector('[popover]') as HTMLElement;
+    expect(popup).not.toBe(layer);
+    expect(layer.contains(popup)).toBe(true);
   });
 
   it('keeps the target when the consumer also passes contentXstyle', async () => {

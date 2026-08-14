@@ -874,6 +874,9 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     // The popup's own role="listbox" is the exposed semantics; the trigger
     // keeps DOM focus, so wrapping it in a modal dialog would misrepresent it.
     role: 'none',
+    // The theme target belongs on the SURFACE that paints the popup, which
+    // `usePopover` owns — not on the scrolling list inside it.
+    surfaceTarget: 'multi-selector-popup',
   });
 
   // Open dropdown on mount when isDefaultOpen is true
@@ -1603,11 +1606,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       </div>
 
       {popover.render(
-        <div
-          {...mergeProps(
-            themeProps('multi-selector-popup'),
-            stylex.props(styles.dropdown),
-          )}>
+        <div {...stylex.props(styles.dropdown)}>
           {renderSearch()}
           <div
             id={listboxId}

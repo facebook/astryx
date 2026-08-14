@@ -810,6 +810,9 @@ export function Selector<T extends SelectorOptionType>(
     // The popup's own role="listbox" is the exposed semantics; the trigger
     // keeps DOM focus, so wrapping it in a modal dialog would misrepresent it.
     role: 'none',
+    // The theme target belongs on the SURFACE that paints the popup, which
+    // `usePopover` owns — not on the scrolling list inside it.
+    surfaceTarget: 'selector-popup',
   });
 
   // Open dropdown on mount when isDefaultOpen is true

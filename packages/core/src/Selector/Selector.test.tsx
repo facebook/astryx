@@ -2739,3 +2739,40 @@ describe('Selector indicatorPosition', () => {
     }
   });
 });
+
+describe('Selector popup theme target', () => {
+  // The surface is the same element whether or not the popup has a search
+  // field — which is the reason the target lives there. Rendered on the
+  // component's own content, it would land on the listbox in one branch and
+  // on a wrapper in the other, so one theme rule would style two different
+  // boxes.
+  it.each([
+    ['without search', false],
+    ['with search', true],
+  ])(
+    'puts astryx-selector-popup on the painting surface, %s',
+    async (_label, hasSearch) => {
+      const user = userEvent.setup();
+      render(
+        <Selector
+          label="Fruit"
+          options={['Apple', 'Banana']}
+          value="Apple"
+          onChange={() => {}}
+          hasSearch={hasSearch}
+        />,
+      );
+      // The trigger is a combobox in the plain variant and a listbox-popup
+      // button in the search variant; the surface is the same either way.
+      await user.click(
+        screen.queryByRole('combobox') ??
+          screen.getByRole('button', {name: /Fruit/}),
+      );
+
+      const popup = document.querySelector('.astryx-selector-popup');
+      expect(popup).not.toBeNull();
+      expect(popup).toHaveClass('astryx-popover-surface');
+      expect(popup?.querySelector('[role="listbox"]')).not.toBeNull();
+    },
+  );
+});

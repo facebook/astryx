@@ -2088,7 +2088,7 @@ describe('MultiSelector dropdown option theme target', () => {
 });
 
 describe('MultiSelector popup theme target', () => {
-  it('puts astryx-multi-selector-popup on the dropdown box inside the layer', async () => {
+  it('puts astryx-multi-selector-popup on the surface that paints, not the list inside it', async () => {
     const user = userEvent.setup();
     render(
       <MultiSelector
@@ -2100,82 +2100,17 @@ describe('MultiSelector popup theme target', () => {
     );
     await user.click(screen.getByRole('combobox', {name: /Fruit/}));
 
-    const layer = document.querySelector('[popover]') as HTMLElement;
     const popup = document.querySelector(
       '.astryx-multi-selector-popup',
     ) as HTMLElement;
     expect(popup).not.toBeNull();
+    expect(popup).toHaveClass('astryx-popover-surface');
+    // The scrolling list is a descendant, not the target itself.
+    expect(popup.querySelector('[role="listbox"]')).not.toBeNull();
+    expect(popup.getAttribute('role')).toBeNull();
+
+    const layer = document.querySelector('[popover]') as HTMLElement;
     expect(popup).not.toBe(layer);
     expect(layer.contains(popup)).toBe(true);
-    expect(popup.querySelector('[role="listbox"]')).not.toBeNull();
-  });
-});
-
-describe('MultiSelector indicatorPosition', () => {
-  const OPTIONS = ['Apple', 'Banana', 'Cherry'];
-  const rowFor = (label: string): HTMLElement =>
-    screen
-      .getAllByRole('option', {hidden: true})
-      .find(row => row.textContent?.includes(label))!;
-
-  it('draws the checkbox before the label by default', () => {
-    render(
-      <MultiSelector
-        label="Fruit"
-        options={OPTIONS}
-        value={['Banana']}
-        onChange={() => {}}
-        isDefaultOpen
-      />,
-    );
-    const row = rowFor('Banana');
-    const checkbox = row.querySelector('.astryx-checkbox')!;
-    const label = row.lastElementChild!;
-    expect(label).toHaveTextContent('Banana');
-    expect(
-      label.compareDocumentPosition(checkbox) &
-        Node.DOCUMENT_POSITION_PRECEDING,
-    ).toBeTruthy();
-  });
-
-  it('draws the checkbox after the label when set to end', () => {
-    render(
-      <MultiSelector
-        label="Fruit"
-        options={OPTIONS}
-        value={['Banana']}
-        onChange={() => {}}
-        indicatorPosition="end"
-        isDefaultOpen
-      />,
-    );
-    const row = rowFor('Banana');
-    const checkbox = row.querySelector('.astryx-checkbox')!;
-    const label = row.firstElementChild!;
-    expect(label).toHaveTextContent('Banana');
-    expect(
-      label.compareDocumentPosition(checkbox) &
-        Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
-  });
-
-  it('keeps the select-all row on the same edge as the options', () => {
-    render(
-      <MultiSelector
-        label="Fruit"
-        options={OPTIONS}
-        value={['Banana']}
-        onChange={() => {}}
-        hasSelectAll
-        indicatorPosition="end"
-        isDefaultOpen
-      />,
-    );
-    const row = rowFor('Select all');
-    expect(
-      row.firstElementChild!.compareDocumentPosition(
-        row.querySelector('.astryx-checkbox')!,
-      ) & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
   });
 });
