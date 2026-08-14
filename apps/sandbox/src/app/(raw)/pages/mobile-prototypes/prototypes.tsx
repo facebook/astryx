@@ -22,10 +22,13 @@ import {Token} from '@astryxdesign/core/Token';
 import {Avatar} from '@astryxdesign/core/Avatar';
 import {Item} from '@astryxdesign/core/Item';
 import {ToggleButton} from '@astryxdesign/core/ToggleButton';
+import {
+  SegmentedControl,
+  SegmentedControlItem,
+} from '@astryxdesign/core/SegmentedControl';
 import {Switch} from '@astryxdesign/core/Switch';
 import {RadioList, RadioListItem} from '@astryxdesign/core/RadioList';
 import {TextInput} from '@astryxdesign/core/TextInput';
-import {Calendar} from '@astryxdesign/core/Calendar';
 import type {ISODateString, DateRange} from '@astryxdesign/core/Calendar';
 import {Pagination} from '@astryxdesign/core/Pagination';
 import {Card} from '@astryxdesign/core/Card';
@@ -49,7 +52,7 @@ import {Grid} from '@astryxdesign/core/Grid';
 import {
   AppScreen,
   BottomSheet,
-  ActionSheet,
+  BottomSheetMenu,
   SideDrawer,
   DrawerEdgeGrip,
   TapField,
@@ -87,6 +90,9 @@ const s = stylex.create({
   // Matches the Calendar's internal top padding so the "Time" header lines up
   // with the calendar's month header when placed beside it.
   timeCol: {paddingTop: 'var(--spacing-3)'},
+  // Tablet DateTimeInput: the two columns fill the sheet body's height so each
+  // can scroll on its own instead of the whole body scrolling as one.
+  dtSideRow: {height: '100%', minHeight: 0},
   // Bleed the menu rows toward the popover edges while keeping their labels
   // aligned with the section header: the popover pads 12px and Item pads 8px,
   // so a -8 inline pull lands the labels back at the header's 12px inset.
@@ -1261,7 +1267,7 @@ function PowerSearchDemo() {
   );
 }
 
-// 9. DateInput — bottom sheet hugging the calendar grid -----------------------
+// 9. DateInput — bottom sheet with a vertical scroll of months ----------------
 function DateInputDemo() {
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState<ISODateString>();
@@ -1269,8 +1275,10 @@ function DateInputDemo() {
     <>
       <AppScreen title="DateInput">
         <Note>
-          Tapping the field opens a bottom sheet whose height{' '}
-          <b>hugs the calendar grid</b>.
+          Months <b>stack in a vertical scroll</b> under one <b>sticky</b>{' '}
+          weekday header — the same mobile pattern as DateRangeInput. It opens
+          at a <b>medium detent</b> and can be <b>dragged up to full height</b>{' '}
+          to scroll through more months; picking a day commits and closes.
         </Note>
         <TapField
           label="Due date"
@@ -1283,23 +1291,20 @@ function DateInputDemo() {
       <BottomSheet
         open={open}
         onClose={() => setOpen(false)}
-        height="hug"
+        snapPoints={[392, 0.92]}
+        defaultSnap={0}
         title="Due date">
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'center',
-            paddingBottom: 12,
-          }}>
-          <Calendar
-            mode="single"
-            value={value}
-            onChange={(v: ISODateString) => {
-              setValue(v);
-              setOpen(false);
-            }}
-          />
-        </div>
+        <ScrollCalendar
+          mode="single"
+          value={value}
+          onChange={(v: ISODateString) => {
+            setValue(v);
+            setOpen(false);
+          }}
+          startYear={2026}
+          startMonth={6}
+          monthCount={4}
+        />
       </BottomSheet>
     </>
   );
@@ -1314,6 +1319,16 @@ function DateTimeInputDemo({beside = false}: {beside?: boolean} = {}) {
   const [open, setOpen] = useState(false);
   const [date, setDate] = useState<ISODateString>();
   const [time, setTime] = useState<string>();
+  // Phone: which picker is showing. Like the iOS compact picker, date and time
+  // are separate targets and only one is expanded at a time.
+  const [segment, setSegment] = useState<'date' | 'time'>('date');
+
+  // Re-open on the Date segment each time the sheet is shown.
+  useEffect(() => {
+    if (open) {
+      setSegment('date');
+    }
+  }, [open]);
 
   const timeChips = TIMES.map(t => (
     <ToggleButton
@@ -1327,11 +1342,18 @@ function DateTimeInputDemo({beside = false}: {beside?: boolean} = {}) {
     </ToggleButton>
   ));
 
+  // Tablet: the same vertical month-scroll as the phone, but shown beside the
+  // time grid. Each column scrolls on its own (see the `beside` layout below),
+  // so ~two months are visible at once and picking a day doesn't switch away.
   const calendar = (
-    <Calendar
+    <ScrollCalendar
       mode="single"
       value={date}
       onChange={(v: ISODateString) => setDate(v)}
+      startYear={2026}
+      startMonth={6}
+      monthCount={4}
+      dense
     />
   );
 
@@ -1339,10 +1361,11 @@ function DateTimeInputDemo({beside = false}: {beside?: boolean} = {}) {
     <>
       <AppScreen title="DateTimeInput">
         <Note>
-          Bottom sheet with a calendar grid and a time list. On a phone the time
-          list sits below the calendar; on a wide sheet it moves beside it. It
-          opens at a medium detent and can be <b>dragged up to full height</b>{' '}
-          to see more times at once; Confirm stays pinned.
+          Date and time are <b>separate targets</b>, like the iOS compact
+          picker: a <b>Date / Time</b> switch beside the title reveals one
+          picker at a time. Choosing a day <b>auto-advances to Time</b>; Confirm
+          stays pinned and enables once both are set. On a wide sheet they sit
+          side by side, each scrolling on its own.
         </Note>
         <TapField
           label="Starts at"
@@ -1355,9 +1378,25 @@ function DateTimeInputDemo({beside = false}: {beside?: boolean} = {}) {
       <BottomSheet
         open={open}
         onClose={() => setOpen(false)}
-        snapPoints={[0.5, 0.92]}
-        defaultSnap={0}
+        // Phone: a fixed one-month detent that drags to full. Tablet (beside):
+        // opens at full height so the calendar column is tall enough to show
+        // ~two months at once, with the calendar and time columns each
+        // scrolling independently inside it.
+        snapPoints={beside ? [0.6, 0.92] : [448, 0.92]}
+        defaultSnap={beside ? 1 : 0}
         title="Starts at"
+        headerAccessory={
+          beside ? undefined : (
+            <SegmentedControl
+              value={segment}
+              size="sm"
+              onChange={v => setSegment(v as 'date' | 'time')}
+              label="Choose date or time">
+              <SegmentedControlItem value="date" label="Date" />
+              <SegmentedControlItem value="time" label="Time" />
+            </SegmentedControl>
+          )
+        }
         footer={
           <Button
             label="Confirm"
@@ -1368,30 +1407,83 @@ function DateTimeInputDemo({beside = false}: {beside?: boolean} = {}) {
           />
         }>
         {beside ? (
-          <HStack gap={4} align="start">
-            {calendar}
+          <HStack gap={4} align="stretch" xstyle={s.dtSideRow}>
+            {/* Two equal-width columns, each scrolling on its own inside the
+                sheet body. Both start at the same top so their header rules —
+                the weekday letters and the "Time" label — sit on one line. */}
             <StackItem size="fill">
-              <VStack gap={2} xstyle={s.timeCol}>
-                <HStack
-                  height="var(--size-element-md)"
-                  align="center"
-                  justify="center">
-                  <Text type="label">Time</Text>
-                </HStack>
-                <Grid columns={3} gap={2} width="100%">
-                  {timeChips}
-                </Grid>
-              </VStack>
+              <div
+                style={{
+                  height: '100%',
+                  overflowY: 'auto',
+                  paddingBottom: 12,
+                }}>
+                {calendar}
+              </div>
+            </StackItem>
+            <StackItem size="fill">
+              <div
+                style={{
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  minHeight: 0,
+                }}>
+                {/* Header mirrors the calendar's weekday row box model exactly
+                    (same inner padding, paddingBottom, and bottom border) so
+                    the divider lines up across both columns. */}
+                <div
+                  style={{
+                    position: 'sticky',
+                    top: 0,
+                    zIndex: 1,
+                    background: 'var(--color-background-surface)',
+                    paddingBottom: 6,
+                    borderBottom: '1px solid var(--color-border)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}>
+                  <div
+                    style={{
+                      padding: '4px 0',
+                      fontSize: 12,
+                      color: 'var(--color-text-secondary)',
+                    }}>
+                    Time
+                  </div>
+                </div>
+                <div
+                  style={{
+                    flex: '1 1 auto',
+                    minHeight: 0,
+                    overflowY: 'auto',
+                    paddingTop: 16,
+                    paddingBottom: 12,
+                  }}>
+                  <Grid columns={3} gap={2} width="100%">
+                    {timeChips}
+                  </Grid>
+                </div>
+              </div>
             </StackItem>
           </HStack>
+        ) : segment === 'date' ? (
+          <ScrollCalendar
+            mode="single"
+            value={date}
+            onChange={(v: ISODateString) => {
+              setDate(v);
+              setSegment('time'); // iOS-style: a day advances to Time
+            }}
+            startYear={2026}
+            startMonth={6}
+            monthCount={4}
+          />
         ) : (
-          <VStack gap={2} align="center">
-            {calendar}
-            <Text type="label">Time</Text>
-            <Grid columns={4} gap={2} width="100%">
-              {timeChips}
-            </Grid>
-          </VStack>
+          <Grid columns={4} gap={2} width="100%">
+            {timeChips}
+          </Grid>
         )}
       </BottomSheet>
     </>
@@ -1401,7 +1493,18 @@ function DateTimeInputDemo({beside = false}: {beside?: boolean} = {}) {
 const DateTimeInputTabletDemo = () => <DateTimeInputDemo beside />;
 
 // 11. DateRangeInput — vertical scroll of months (Airbnb / Material mobile) ---
-const WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+// Single-letter column headers (iOS / Google Calendar mobile pattern). The
+// full name rides along for assistive tech so the S/S and T/T pairs stay
+// unambiguous to a screen reader even though they look identical.
+const WEEKDAYS = [
+  {short: 'S', full: 'Sunday'},
+  {short: 'M', full: 'Monday'},
+  {short: 'T', full: 'Tuesday'},
+  {short: 'W', full: 'Wednesday'},
+  {short: 'T', full: 'Thursday'},
+  {short: 'F', full: 'Friday'},
+  {short: 'S', full: 'Saturday'},
+];
 const MONTH_NAMES = [
   'January',
   'February',
@@ -1421,40 +1524,62 @@ const isoOf = (y: number, m: number, d: number) =>
   iso(`${y}-${pad2(m + 1)}-${pad2(d)}`);
 
 /**
- * Prototype range calendar following the mobile pattern every major system uses
- * (Airbnb, Google Material date-range, iOS scrolling calendars): a single
- * continuously scrolling column of months, each with its own title, one sticky
- * weekday header, and a range highlight that flows across month boundaries.
- * Selection lives in a single component, so a range can span any two months —
- * unlike stacking independent <Calendar>s, which each keep their own start.
+ * Prototype scrolling calendar following the mobile pattern every major system
+ * uses (Airbnb, Google Material, iOS): a single continuously scrolling column
+ * of months, each with its own title, under one sticky weekday header.
+ * Selection lives in a single component, so in `range` mode a range can span
+ * any two months with a highlight that flows across month boundaries, and in
+ * `single` mode the same scroll of months backs a one-date field — picking a
+ * day commits immediately.
  */
-function RangeCalendar({
-  value,
-  onChange,
-  startYear,
-  startMonth,
-  monthCount = 4,
-}: {
-  value?: DateRange;
-  onChange: (v: DateRange | undefined) => void;
+type ScrollCalendarProps = {
   startYear: number;
   startMonth: number;
   monthCount?: number;
-}) {
-  // In-progress start (first tap); we only emit a full DateRange on the 2nd tap.
+  // Tighter rows so a second month peeks in a short side-by-side column
+  // (tablet DateTimeInput). Phone/full-width sheets use the roomier default.
+  dense?: boolean;
+} & (
+  | {
+      mode: 'single';
+      value?: ISODateString;
+      onChange: (v: ISODateString) => void;
+    }
+  | {
+      mode: 'range';
+      value?: DateRange;
+      onChange: (v: DateRange | undefined) => void;
+    }
+);
+
+function ScrollCalendar(props: ScrollCalendarProps) {
+  const {startYear, startMonth, monthCount = 4, dense = false} = props;
+  const cellH = dense ? 32 : 42;
+  const dayD = dense ? 30 : 38;
+  const monthPadTop = dense ? 4 : 16;
+  // Range mode tracks an in-progress start (first tap) and only emits a full
+  // DateRange on the second tap; single mode commits on the first tap, so the
+  // anchor stays null there.
   const [anchor, setAnchor] = useState<ISODateString | null>(null);
-  const selStart = value?.start ?? anchor ?? undefined;
-  const selEnd = value?.end;
+  const selStart =
+    props.mode === 'range'
+      ? (props.value?.start ?? anchor ?? undefined)
+      : props.value;
+  const selEnd = props.mode === 'range' ? props.value?.end : undefined;
   const showBar = !!(selStart && selEnd && selStart !== selEnd);
 
   const pick = (d: ISODateString) => {
+    if (props.mode === 'single') {
+      props.onChange(d);
+      return;
+    }
     if (anchor === null) {
       setAnchor(d);
-      onChange(undefined); // clear any completed range and start over
+      props.onChange(undefined); // clear any completed range and start over
     } else {
       const start = d < anchor ? d : anchor;
       const end = d < anchor ? anchor : d;
-      onChange({start, end});
+      props.onChange({start, end});
       setAnchor(null);
     }
   };
@@ -1477,16 +1602,18 @@ function RangeCalendar({
           paddingBottom: 6,
           borderBottom: '1px solid var(--color-border)',
         }}>
-        {WEEKDAYS.map(w => (
+        {WEEKDAYS.map((w, i) => (
           <div
-            key={w}
+            key={i}
+            aria-label={w.full}
+            title={w.full}
             style={{
               textAlign: 'center',
               fontSize: 12,
               color: 'var(--color-text-secondary)',
               padding: '4px 0',
             }}>
-            {w}
+            {w.short}
           </div>
         ))}
       </div>
@@ -1498,11 +1625,11 @@ function RangeCalendar({
           ...Array.from({length: daysInMonth}, (_, i) => i + 1),
         ];
         return (
-          <div key={`${year}-${month}`} style={{paddingTop: 16}}>
+          <div key={`${year}-${month}`} style={{paddingTop: monthPadTop}}>
             <div
               style={{
-                padding: '4px 2px 10px',
-                fontSize: 15,
+                padding: dense ? '2px 2px 6px' : '4px 2px 10px',
+                fontSize: dense ? 14 : 15,
                 fontWeight: 600,
                 color: 'var(--color-text-primary)',
               }}>
@@ -1533,7 +1660,7 @@ function RangeCalendar({
                     key={i}
                     style={{
                       position: 'relative',
-                      height: 42,
+                      height: cellH,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -1554,8 +1681,8 @@ function RangeCalendar({
                       onClick={() => pick(isoD)}
                       style={{
                         position: 'relative',
-                        width: 38,
-                        height: 38,
+                        width: dayD,
+                        height: dayD,
                         borderRadius: 999,
                         border: 'none',
                         cursor: 'pointer',
@@ -1594,7 +1721,9 @@ function DateRangeInputDemo() {
           Months <b>stack in a vertical scroll</b> instead of side by side — the
           mobile pattern from Airbnb / Material / iOS. Each month keeps its own
           title, the weekday row stays <b>sticky</b> at the top, and the range
-          highlight flows continuously across month boundaries.
+          highlight flows continuously across month boundaries. It opens at a{' '}
+          <b>medium detent</b> and can be <b>dragged up to full height</b> to
+          see more months at once; Apply stays pinned.
         </Note>
         <TapField
           label="Trip dates"
@@ -1607,7 +1736,8 @@ function DateRangeInputDemo() {
       <BottomSheet
         open={open}
         onClose={() => setOpen(false)}
-        height="capped"
+        snapPoints={[448, 0.92]}
+        defaultSnap={0}
         title="Trip dates"
         footer={
           <Button
@@ -1618,7 +1748,8 @@ function DateRangeInputDemo() {
             onClick={() => setOpen(false)}
           />
         }>
-        <RangeCalendar
+        <ScrollCalendar
+          mode="range"
           value={range}
           onChange={setRange}
           startYear={2026}
@@ -1870,7 +2001,8 @@ function PopoverDemo() {
         <Note>
           Small popovers stay anchored to their trigger. When content is large,
           the popover <b>falls back to a bottom sheet</b> so it isn&apos;t
-          clipped by the viewport.
+          clipped by the viewport. The sheet defaults to <b>hug</b> height —
+          only as tall as its content.
         </Note>
         <div ref={smallRef} style={{alignSelf: 'flex-start'}}>
           <Button
@@ -1903,7 +2035,7 @@ function PopoverDemo() {
       <BottomSheet
         open={large}
         onClose={() => setLarge(false)}
-        height="capped"
+        height="hug"
         title="Notification preferences">
         <div
           style={{
@@ -1935,15 +2067,16 @@ function PopoverDemo() {
   );
 }
 
-// 15. DropdownMenu — anchored popover → action sheet --------------------------
+// 15. DropdownMenu — anchored popover → bottom sheet --------------------------
 function DropdownMenuDemo() {
   const [open, setOpen] = useState(false);
   return (
     <>
       <AppScreen title="DropdownMenu">
         <Note>
-          An anchored dropdown becomes an <b>action sheet</b> (bottom-anchored
-          action list) on mobile.
+          An anchored dropdown becomes a <b>bottom sheet</b> (a bottom-anchored
+          command list) on mobile. The sheet defaults to <b>hug</b> height —
+          only as tall as its commands.
         </Note>
         <Button
           label="Actions"
@@ -1952,7 +2085,7 @@ function DropdownMenuDemo() {
           onClick={() => setOpen(true)}
         />
       </AppScreen>
-      <ActionSheet
+      <BottomSheetMenu
         open={open}
         onClose={() => setOpen(false)}
         actions={[
@@ -1966,14 +2099,15 @@ function DropdownMenuDemo() {
   );
 }
 
-// 17. MoreMenu — action sheet -------------------------------------------------
+// 17. MoreMenu — bottom sheet -------------------------------------------------
 function MoreMenuDemo() {
   const [open, setOpen] = useState(false);
   return (
     <>
       <AppScreen title="MoreMenu">
         <Note>
-          The three-dot overflow menu opens an <b>action sheet</b>.
+          The three-dot overflow menu opens a <b>bottom sheet</b>. It defaults
+          to <b>hug</b> height — only as tall as its commands.
         </Note>
         <Card>
           <div
@@ -2000,7 +2134,7 @@ function MoreMenuDemo() {
           </div>
         </Card>
       </AppScreen>
-      <ActionSheet
+      <BottomSheetMenu
         open={open}
         onClose={() => setOpen(false)}
         title="Design Review"
@@ -2019,7 +2153,7 @@ function MoreMenuDemo() {
   );
 }
 
-// 18. ContextMenu — action sheet on long-press --------------------------------
+// 18. ContextMenu — bottom sheet on long-press --------------------------------
 function ContextMenuDemo() {
   const [open, setOpen] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -2035,8 +2169,8 @@ function ContextMenuDemo() {
     <>
       <AppScreen title="ContextMenu">
         <Note>
-          <b>Long-press</b> a row (already supported) to open an{' '}
-          <b>action sheet</b> of contextual actions.
+          <b>Long-press</b> a row (already supported) to open a{' '}
+          <b>bottom sheet</b> of contextual actions.
         </Note>
         <div
           onPointerDown={start}
@@ -2051,7 +2185,7 @@ function ContextMenuDemo() {
           </Card>
         </div>
       </AppScreen>
-      <ActionSheet
+      <BottomSheetMenu
         open={open}
         onClose={() => setOpen(false)}
         actions={[
@@ -2212,67 +2346,8 @@ function PaginationDemo() {
   return (
     <AppScreen title="Pagination">
       <Note>
-        On narrow screens the full page range would overflow, so it collapses to
-        a <b>compact</b> control (prev / page indicator / next).
-      </Note>
-      <div style={{display: 'flex', flexDirection: 'column', gap: 8}}>
-        {Array.from({length: 4}).map((_, i) => (
-          <Card key={i}>
-            <Text type="body">Result {(page - 1) * 4 + i + 1}</Text>
-          </Card>
-        ))}
-      </div>
-      <div style={{display: 'flex', justifyContent: 'center', paddingTop: 4}}>
-        <Pagination
-          page={page}
-          onChange={setPage}
-          totalPages={12}
-          variant="compact"
-          size="sm"
-        />
-      </div>
-
-      <Text type="label">Carousel · dots</Text>
-      <Card>
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 6,
-            minHeight: 96,
-            justifyContent: 'center',
-          }}>
-          <Text type="large" weight="semibold">
-            {current.title}
-          </Text>
-          <Text type="body" color="secondary">
-            {current.body}
-          </Text>
-        </div>
-      </Card>
-      <div style={{display: 'flex', justifyContent: 'center', paddingTop: 4}}>
-        <Pagination
-          page={slide}
-          onChange={setSlide}
-          totalPages={CAROUSEL_SLIDES.length}
-          variant="dots"
-        />
-      </div>
-    </AppScreen>
-  );
-}
-
-// Tablet: room for the full page range instead of the compact control.
-function PaginationTabletDemo() {
-  const [page, setPage] = useState(3);
-  const [slide, setSlide] = useState(1);
-  const current = CAROUSEL_SLIDES[slide - 1];
-  return (
-    <AppScreen title="Pagination">
-      <Note>
-        With room to spare, pagination shows the <b>full page range</b>{' '}
-        (numbered pages with ellipsis) instead of the compact prev / indicator /
-        next control.
+        Pagination shows the <b>full page range</b> (numbered pages with
+        ellipsis) — the same control on phone and tablet.
       </Note>
       <div style={{display: 'flex', flexDirection: 'column', gap: 8}}>
         {Array.from({length: 4}).map((_, i) => (
@@ -2287,6 +2362,7 @@ function PaginationTabletDemo() {
           onChange={setPage}
           totalPages={12}
           variant="pages"
+          size="sm"
         />
       </div>
 
@@ -2700,6 +2776,97 @@ function TableFilterTabletDemo() {
     </>
   );
 }
+
+// Alternative presentation: the same live-filter idea, but the controls live in
+// a non-modal SIDE DRAWER instead of a bottom sheet. Same contract — no scrim,
+// the table stays live and updates as statuses toggle — just anchored to the
+// edge, which suits a filter you keep open while scanning a wide table.
+function TableFilterDrawerDemo({beside = false}: {beside?: boolean} = {}) {
+  const [open, setOpen] = useState(false);
+  const [sel, setSel] = useState<string[]>(['Degraded', 'Down']);
+  const filtered = ROWS.filter(r => sel.includes(r.status));
+  return (
+    <>
+      <AppScreen title="Table filter">
+        <Note>
+          Same live filter, but the controls open in a{' '}
+          <b>non-modal side drawer</b> instead of a bottom sheet. It stays
+          anchored to the edge while you scan the table, which suits a filter
+          you keep open — the list behind stays <b>live</b> and toggles apply
+          immediately.
+        </Note>
+        <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
+          <div style={{flex: 1}}>
+            <TextInput
+              label="Search"
+              isLabelHidden
+              placeholder="Search services"
+              startIcon="search"
+              value=""
+              onChange={() => {}}
+            />
+          </div>
+          <Button
+            label="Filter"
+            variant="secondary"
+            icon={<FilterIcon width={16} height={16} />}
+            endContent={
+              sel.length ? (
+                <Badge label={String(sel.length)} variant="info" />
+              ) : undefined
+            }
+            onClick={() => setOpen(true)}
+          />
+        </div>
+        <Table
+          data={filtered}
+          columns={beside ? TABLE_COLUMNS : TABLE_FILTER_COLUMNS}
+          idKey="name"
+          hasHover={beside}
+        />
+      </AppScreen>
+      <SideDrawer
+        open={open}
+        onClose={() => setOpen(false)}
+        side="end"
+        title="Filters"
+        scrim={false}>
+        <VStack gap={4} height="100%" justify="between">
+          <CheckboxList
+            label="Status"
+            value={sel}
+            onChange={setSel}
+            hasDividers>
+            {STATUSES.map(v => (
+              <CheckboxListItem
+                key={v}
+                label={v}
+                value={v}
+                xstyle={s.filterItem}
+              />
+            ))}
+          </CheckboxList>
+          <VStack gap={2}>
+            <Button
+              label="Reset"
+              variant="ghost"
+              xstyle={s.fullBtn}
+              onClick={() => setSel([])}
+            />
+            <Button
+              label="Done"
+              variant="primary"
+              xstyle={s.fullBtn}
+              onClick={() => setOpen(false)}
+            />
+          </VStack>
+        </VStack>
+      </SideDrawer>
+    </>
+  );
+}
+
+const TableFilterDrawerTabletDemo = () => <TableFilterDrawerDemo beside />;
 
 // =============================================================================
 // Analysis — the interaction spec rendered below a prototype's preview
@@ -3512,9 +3679,27 @@ export interface Prototype {
   showTablet?: boolean;
   /** Caption shown under the tablet frame. */
   tabletCaption?: string;
+  /** Give the tablet frame a taller aspect ratio (more vertical room for the
+      sheet — e.g. DateTimeInput fitting two months beside the time grid). */
+  tabletTall?: boolean;
   /** Distinct demo for the tablet frame; falls back to Demo when omitted. */
   TabletDemo?: () => ReactNode;
   Demo: () => ReactNode;
+  /**
+   * Optional alternative presentation shown in its own labeled row *below* the
+   * main previews — for documenting a second viable pattern (e.g. a side drawer
+   * instead of a bottom sheet). Rendered in phone + tablet frames like the main
+   * demo.
+   */
+  AltDemo?: () => ReactNode;
+  /** Distinct alternative demo for the tablet frame; falls back to AltDemo. */
+  AltTabletDemo?: () => ReactNode;
+  /** Heading for the alternative row (e.g. "Alternative · side drawer"). */
+  altLabel?: string;
+  /** Caption under the alternative phone frame. */
+  altCaption?: string;
+  /** Caption under the alternative tablet frame. */
+  altTabletCaption?: string;
   /** Optional long-form interaction analysis shown below the preview. */
   Analysis?: () => ReactNode;
 }
@@ -3723,9 +3908,10 @@ export const PROTOTYPES: Prototype[] = [
     id: 'dateinput',
     name: 'DateInput',
     category: 'Blocks migration',
-    change: 'Bottom sheet, height hugs the calendar grid.',
+    change:
+      'Bottom sheet with a vertical month scroll; opens at a medium detent and drags up to full.',
     interaction:
-      'Tapping the field opens a bottom sheet sized to hug the month grid; picking a day confirms and closes.',
+      'Tapping the field opens a bottom sheet with months stacked in a vertical scroll under a sticky weekday header. It opens at a medium detent and can be dragged up to full height to scroll through more months; picking a day confirms and closes.',
     showTablet: true,
     tabletCaption: 'Tablet · sheet caps at 640px, centered',
     Demo: DateInputDemo,
@@ -3735,11 +3921,13 @@ export const PROTOTYPES: Prototype[] = [
     name: 'DateTimeInput',
     category: 'Blocks migration',
     change:
-      'Bottom sheet with a calendar grid + time list; opens at a medium detent and drags up to full.',
+      'Bottom sheet with a Date / Time switch (iOS compact-picker pattern); one picker at a time on a phone, side by side on a wide sheet.',
     interaction:
-      'Calendar grid plus a time chooser — below it on a phone, beside it on a wider sheet. Opens at a medium detent and can be dragged up to full height; Confirm stays pinned and enables once both date and time are chosen.',
+      'Date and time are separate targets: a Date / Time switch beside the title reveals one picker at a time. Choosing a day auto-advances to Time. On a wide sheet the calendar and time grid sit side by side, each scrolling on its own. Opens at a medium detent, drags up to full; Confirm stays pinned and enables once both date and time are chosen.',
     showTablet: true,
-    tabletCaption: 'Tablet · time beside the calendar',
+    tabletTall: true,
+    tabletCaption:
+      'Tablet · calendar + time side by side, scrolling independently',
     Demo: DateTimeInputDemo,
     TabletDemo: DateTimeInputTabletDemo,
   },
@@ -3748,9 +3936,9 @@ export const PROTOTYPES: Prototype[] = [
     name: 'DateRangeInput',
     category: 'Blocks migration',
     change:
-      'Bottom sheet with a vertical month scroll (Airbnb / Material mobile pattern).',
+      'Bottom sheet with a vertical month scroll (Airbnb / Material mobile pattern); opens at a medium detent and drags up to full.',
     interaction:
-      'Months stack in a vertical scroll, each with its own title and a sticky weekday header; the range highlight flows across months. One selection spans any two months. Apply is enabled once a full range is selected.',
+      'Months stack in a vertical scroll, each with its own title and a sticky weekday header; the range highlight flows across months. One selection spans any two months. It opens at a medium detent and can be dragged up to full height to see more months at once; Apply stays pinned and enables once a full range is selected.',
     showTablet: true,
     tabletCaption: 'Tablet · sheet caps at 640px, centered',
     Demo: DateRangeInputDemo,
@@ -3783,9 +3971,9 @@ export const PROTOTYPES: Prototype[] = [
     id: 'popover',
     name: 'Popover',
     category: 'Enhancement',
-    change: 'Sheet fallback when content is large.',
+    change: 'Sheet fallback when content is large (defaults to hug height).',
     interaction:
-      'Small popovers stay anchored to the trigger. When content is large it falls back to a bottom sheet so nothing is clipped by the viewport.',
+      'Small popovers stay anchored to the trigger. When content is large it falls back to a bottom sheet so nothing is clipped by the viewport; the sheet defaults to hug height, sized to its content.',
     showTablet: true,
     tabletCaption:
       'Tablet · small popover stays anchored; large content still a sheet',
@@ -3795,32 +3983,33 @@ export const PROTOTYPES: Prototype[] = [
     id: 'dropdownmenu',
     name: 'DropdownMenu',
     category: 'Enhancement',
-    change: 'Anchored popover → action sheet.',
+    change: 'Anchored popover → bottom sheet (defaults to hug height).',
     interaction:
-      'The anchored menu becomes a bottom-anchored action sheet of the same items.',
+      'The anchored menu becomes a bottom sheet of the same items; it defaults to hug height, sized to its commands.',
     showTablet: true,
-    tabletCaption: 'Tablet · action sheet caps at 640px, centered',
+    tabletCaption: 'Tablet · sheet caps at 640px, centered',
     Demo: DropdownMenuDemo,
   },
   {
     id: 'moremenu',
     name: 'MoreMenu',
     category: 'Enhancement',
-    change: 'Action sheet.',
-    interaction: 'The three-dot overflow trigger opens an action sheet.',
+    change: 'Bottom sheet (defaults to hug height).',
+    interaction:
+      'The three-dot overflow trigger opens a bottom sheet; it defaults to hug height, sized to its commands.',
     showTablet: true,
-    tabletCaption: 'Tablet · action sheet caps at 640px, centered',
+    tabletCaption: 'Tablet · sheet caps at 640px, centered',
     Demo: MoreMenuDemo,
   },
   {
     id: 'contextmenu',
     name: 'ContextMenu',
     category: 'Enhancement',
-    change: 'Action sheet (long-press already supported).',
+    change: 'Bottom sheet (long-press already supported).',
     interaction:
-      'Long-press a target to open an action sheet of contextual actions.',
+      'Long-press a target to open a bottom sheet of contextual actions.',
     showTablet: true,
-    tabletCaption: 'Tablet · action sheet caps at 640px, centered',
+    tabletCaption: 'Tablet · sheet caps at 640px, centered',
     Demo: ContextMenuDemo,
   },
   {
@@ -3849,13 +4038,12 @@ export const PROTOTYPES: Prototype[] = [
     id: 'pagination',
     name: 'Pagination',
     category: 'Enhancement',
-    change: 'Compact / overflow behavior on narrow screens.',
+    change: 'Full page range — the same control on phone and tablet.',
     interaction:
-      'The full page range collapses to a compact prev / indicator / next control so it never overflows the width.',
+      'Pagination shows the full page range (numbered pages with ellipsis) on both phone and tablet.',
     showTablet: true,
     tabletCaption: 'Tablet · full page range',
     Demo: PaginationDemo,
-    TabletDemo: PaginationTabletDemo,
   },
   {
     id: 'tooltip',
@@ -3892,5 +4080,10 @@ export const PROTOTYPES: Prototype[] = [
     tabletCaption: 'Tablet · real Table, non-modal live filter',
     Demo: TableFilterDemo,
     TabletDemo: TableFilterTabletDemo,
+    AltDemo: TableFilterDrawerDemo,
+    AltTabletDemo: TableFilterDrawerTabletDemo,
+    altLabel: 'Alternative · side drawer',
+    altCaption: 'Phone · 390px',
+    altTabletCaption: 'Tablet · non-modal side drawer',
   },
 ];
