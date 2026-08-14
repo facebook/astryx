@@ -506,17 +506,25 @@ describe('colorDefaults WCAG contrast on the fall-through pairs (#5019)', () => 
   });
 
   it.each(modes)(
-    'the destructive focus ring stays visible against the surface (%s)',
+    'the destructive focus ring stays visible against the dark surfaces (%s)',
     (_label, mode) => {
       // Button's destructive variant re-colors the focus outline to
       // --color-error, so the error fill is also a WCAG 1.4.11 boundary
-      // against the surface it sits on.
-      expect(
-        contrastRatio(
-          resolveToken(colorDefaults, '--color-error', mode),
-          resolveToken(colorDefaults, '--color-background-surface', mode),
-        ),
-      ).toBeGreaterThanOrEqual(3);
+      // against every surface a button sits on. The dark popover pair
+      // currently clears the floor by only ~0.1 (3.09:1) — this pins it so
+      // a popover retone cannot cross 3:1 silently.
+      for (const surface of [
+        '--color-background-surface',
+        '--color-background-body',
+        '--color-background-popover',
+      ]) {
+        expect(
+          contrastRatio(
+            resolveToken(colorDefaults, '--color-error', mode),
+            resolveToken(colorDefaults, surface, mode),
+          ),
+        ).toBeGreaterThanOrEqual(3);
+      }
     },
   );
 });

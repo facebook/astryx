@@ -233,7 +233,9 @@ const styles = stylex.create({
     color: `light-dark(color-mix(in srgb, ${colorVars['--color-warning']} 58%, black), ${colorVars['--color-warning']})`,
   },
   levelError: {
-    color: `light-dark(${colorVars['--color-error']}, color-mix(in srgb, ${colorVars['--color-error']} 82%, white))`,
+    // 72% clears 4.5:1 on the surface and the 6% row wash now that the dark
+    // error token darkened to meet AA under white fills (#5019).
+    color: `light-dark(${colorVars['--color-error']}, color-mix(in srgb, ${colorVars['--color-error']} 72%, white))`,
   },
   levelInfoTerminal: {color: TERM.text},
   levelDebugTerminal: {color: TERM.textDim},
