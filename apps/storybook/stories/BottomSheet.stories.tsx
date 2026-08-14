@@ -203,7 +203,7 @@ export const MultiStepOrchestrator: Story = {
                 <VStack gap={1}>
                   <Heading level={3}>Profile details</Heading>
                   <Text type="supporting" color="secondary">
-                    Step 1 of 2
+                    Step 1 of 3
                   </Text>
                 </VStack>
                 <Divider />
@@ -229,7 +229,7 @@ export const MultiStepOrchestrator: Story = {
                 <VStack gap={1}>
                   <Heading level={3}>Confirm profile</Heading>
                   <Text type="supporting" color="secondary">
-                    Step 2 of 2
+                    Step 2 of 3
                   </Text>
                 </VStack>
                 <Divider />
@@ -244,6 +244,42 @@ export const MultiStepOrchestrator: Story = {
                     label="Back"
                     variant="secondary"
                     onClick={() => setActiveSheet('profile')}
+                  />
+                  <Button
+                    label="Continue"
+                    onClick={() => setActiveSheet('preferences')}
+                  />
+                </HStack>
+              </VStack>
+            </Section>
+          </BottomSheet>
+          <BottomSheet
+            sheetId="preferences"
+            label="Profile preferences"
+            height="hug">
+            <Section padding={4}>
+              <VStack gap={4}>
+                <VStack gap={1}>
+                  <Heading level={3}>Profile preferences</Heading>
+                  <Text type="supporting" color="secondary">
+                    Step 3 of 3
+                  </Text>
+                </VStack>
+                <Divider />
+                <Text type="supporting" color="secondary">
+                  Choose what you would like to receive after completing your
+                  profile. This step is intentionally taller than Step 2.
+                </Text>
+                <VStack gap={2}>
+                  <CheckboxInput label="Product updates" value={false} />
+                  <CheckboxInput label="Tips and tutorials" value={false} />
+                  <CheckboxInput label="Research invitations" value={false} />
+                </VStack>
+                <HStack gap={2} hAlign="end">
+                  <Button
+                    label="Back"
+                    variant="secondary"
+                    onClick={() => setActiveSheet('confirm')}
                   />
                   <Button label="Finish" onClick={() => setActiveSheet(null)} />
                 </HStack>
