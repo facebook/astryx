@@ -7,9 +7,13 @@
  * class and leave the state behind, and do not hand-author the state next to
  * it.
  *
- * Canonical criteria: principle 2 of "Principles for authoring theming
- * targets" in the wiki's Theming Infrastructure page —
- * https://github.com/facebook/astryx/wiki/Theming-Infrastructure
+ * Canonical criteria: the Component Audit Rubric's §2 checks — T12 (never a
+ * `className`/`style` beside the spread that carries the target; merge with
+ * `mergeProps()`) and T26 (state rides as `themeProps` data, never
+ * hand-authored `data-*`). The rubric is the source of truth, not this
+ * comment. `@astryx/no-classname-clobber` already covers T12 where a
+ * `stylex.props()` spread is present; these checks cover the `themeProps`
+ * shapes it does not see.
  *
  * `themeProps('selector', {size, variant})` returns
  * `{className: 'astryx-selector md secondary', 'data-size': 'md',
@@ -21,7 +25,7 @@
  * The first silently drops the `[data-*]` selectors themes are told to target;
  * a theme rule that works in one component stops working in this one. The
  * second is the same divergence from the other side: the class token and the
- * attribute must be emitted together, or they drift (principle 2).
+ * attribute must be emitted together, or they drift (T26).
  *
  * Fix: spread the call — `{...themeProps('x', {size})}` — or merge it with
  * `mergeProps(themeProps('x', {size}), stylex.props(styles.root))`. For a

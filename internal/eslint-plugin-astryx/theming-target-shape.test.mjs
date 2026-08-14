@@ -47,8 +47,6 @@ const sizeStyles = stylex.create({
 });
 `;
 
-const stateOptions = [{checkStateSurface: true}];
-
 ruleTester.run('theming-target-shape', rule, {
   valid: [
     // A target on an element that paints — the shape the rule steers toward.
@@ -106,26 +104,23 @@ ruleTester.run('theming-target-shape', rule, {
       code: `${setup} const a = <div {...mergeProps(themeProps('banner-icon'), stylex.props(styles.row))} />;`,
       options: [{allowTargets: ['banner-icon']}],
     },
-    // A root target is out of scope unless checkRootTargets is on. The
+    // A component's own root target is out of scope (T7 exempts it). The
     // filename gives the root name.
     {
       code: `${setup} const a = <div {...mergeProps(themeProps('card'), stylex.props(styles.row))} />;`,
       filename: 'packages/core/src/Card/Card.tsx',
     },
-    // --- checkStateSurface ---
-    // State that selects a paint style is exactly what a state seam is for.
+    // --- T6: the target declares the state its styles vary with ---
     {
       code: `${setup} const a = <div {...mergeProps(themeProps('x-option', {selected}), stylex.props(styles.painted, isSelected && styles.selected))} />;`,
-      options: stateOptions,
     },
     // A size table the target already declares.
     {
       code: `${setup} const a = <div {...mergeProps(themeProps('x-option', {size}), stylex.props(styles.painted, sizeStyles[size]))} />;`,
-      options: stateOptions,
     },
     // --- render-prop fallback (on by default) ---
     // No render prop in play: an ordinary styled child is not this check's
-    // business (the broad version is `checkInheritableHoisting`, off).
+    // business — a descendant that DIFFERS from its parent is usually correct.
     {
       code: `${setup} const a = <div {...mergeProps(themeProps('x-option'), stylex.props(styles.painted))}><span {...stylex.props(styles.label)}>t</span></div>;`,
     },
@@ -199,18 +194,6 @@ ruleTester.run('theming-target-shape', rule, {
         {messageId: 'layoutOnlyTarget', data: {target: 'x-select-all', properties: 'display, alignItems'}},
       ],
     },
-    // A root target, when asked for.
-    {
-      code: `${setup} const a = <div {...mergeProps(themeProps('card'), stylex.props(styles.row))} />;`,
-      filename: 'packages/core/src/Card/Card.tsx',
-      options: [{checkRootTargets: true}],
-      errors: [
-        {
-          messageId: 'layoutOnlyRootTarget',
-          data: {target: 'card', properties: 'display, alignItems'},
-        },
-      ],
-    },
     // --- render-prop fallback ---
     // Inheritable typography on a fallback the callback replaces.
     {
@@ -231,7 +214,7 @@ ruleTester.run('theming-target-shape', rule, {
       code: `${setup} const a = <div {...mergeProps(themeProps('x-option'), stylex.props(styles.painted))}>{!renderOption ? <span {...stylex.props(styles.label)}>t</span> : renderOption(item)}</div>;`,
       errors: [{messageId: 'inheritableOnRenderPropFallback'}],
     },
-    // #4628's shape: giving the fallback its own target is principle 4's named
+    // #4628's shape: giving the fallback its own target is T27's named
     // anti-pattern, not an exemption — the callback's output never carries it.
     {
       code: `${setup} const a = <div {...mergeProps(themeProps('x-option'), stylex.props(styles.painted))}>{renderOption ? renderOption(item) : <span {...mergeProps(themeProps('x-option-label'), stylex.props(styles.label))}>t</span>}</div>;`,
@@ -247,37 +230,10 @@ ruleTester.run('theming-target-shape', rule, {
         },
       ],
     },
-    // --- checkInheritableHoisting (broad, opt-in) ---
-    {
-      code: `${setup} const a = <div {...mergeProps(themeProps('x-option'), stylex.props(styles.painted))}><span {...stylex.props(styles.label)}>t</span></div>;`,
-      options: [{checkInheritableHoisting: true}],
-      errors: [
-        {
-          messageId: 'inheritablePropertyOnChild',
-          data: {target: 'x-option', properties: 'fontWeight, color'},
-        },
-      ],
-    },
-    // --- checkStateSurface ---
-    // The state seam only rotates the element. (#4626's shape.)
-    {
-      code: `${setup} const a = <div {...mergeProps(themeProps('selector-indicator', {state}), stylex.props(styles.painted, isOpen && styles.rotated))} />;`,
-      options: stateOptions,
-      errors: [
-        {
-          messageId: 'stateVariesOnlyLayout',
-          data: {
-            target: 'selector-indicator',
-            props: 'state',
-            properties: 'transform',
-          },
-        },
-      ],
-    },
+    // --- T6 ---
     // The element's styles vary with a state the target does not declare.
     {
       code: `${setup} const a = <div {...mergeProps(themeProps('x-option'), stylex.props(styles.painted, isSelected && styles.selected))} />;`,
-      options: stateOptions,
       errors: [
         {
           messageId: 'underDeclaredState',
@@ -292,7 +248,6 @@ ruleTester.run('theming-target-shape', rule, {
     // A size table counts as state variation too.
     {
       code: `${setup} const a = <div {...mergeProps(themeProps('x-option', {selected}), stylex.props(styles.painted, sizeStyles[size]))} />;`,
-      options: stateOptions,
       errors: [
         {
           messageId: 'underDeclaredState',
