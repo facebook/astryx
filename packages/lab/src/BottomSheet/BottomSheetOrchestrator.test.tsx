@@ -89,12 +89,15 @@ function getSharedScrim(): HTMLElement {
   return scrim;
 }
 
-function finishSheetExit(dialog: HTMLElement) {
+function finishSheetTransition(
+  dialog: HTMLElement,
+  propertyName: 'transform' | 'opacity',
+) {
   const sheet = dialog.querySelector<HTMLElement>('.astryx-bottom-sheet');
   if (!sheet) {
     throw new Error('sheet panel not found');
   }
-  fireEvent.transitionEnd(sheet, {propertyName: 'transform'});
+  fireEvent.transitionEnd(sheet, {propertyName});
 }
 
 describe('BottomSheetOrchestrator', () => {
@@ -117,7 +120,7 @@ describe('BottomSheetOrchestrator', () => {
     );
   });
 
-  it('animates the outgoing sheet while the next sheet is active', () => {
+  it('keeps the previous sheet stationary until the new entrance finishes, then fades it', () => {
     render(<Flow />);
     fireEvent.click(screen.getByRole('button', {name: 'Start flow'}));
     const sharedScrim = getSharedScrim();
@@ -136,7 +139,16 @@ describe('BottomSheetOrchestrator', () => {
     expect(document.querySelectorAll('dialog[open]')).toHaveLength(2);
     expect(getSharedScrim()).toBe(sharedScrim);
 
-    finishSheetExit(detailsSheet);
+    // The previous sheet is covered, not exiting: neither transform nor
+    // opacity completion may release it before the new entrance completes.
+    finishSheetTransition(detailsSheet, 'transform');
+    finishSheetTransition(detailsSheet, 'opacity');
+    expect(detailsSheet).toHaveAttribute('open');
+
+    finishSheetTransition(confirmSheet, 'transform');
+    expect(detailsSheet).toHaveAttribute('open');
+
+    finishSheetTransition(detailsSheet, 'opacity');
 
     expect(detailsSheet).not.toHaveAttribute('open');
     expect(confirmSheet).toHaveAttribute('open');
@@ -148,7 +160,9 @@ describe('BottomSheetOrchestrator', () => {
     expect(detailsSheet).toHaveAttribute('open');
     expect(confirmSheet).toHaveAttribute('open');
     expect(confirmSheet).toHaveAttribute('inert');
-    finishSheetExit(confirmSheet);
+    finishSheetTransition(detailsSheet, 'transform');
+    expect(confirmSheet).toHaveAttribute('open');
+    finishSheetTransition(confirmSheet, 'opacity');
 
     expect(detailsSheet).toHaveAttribute('open');
     expect(confirmSheet).not.toHaveAttribute('open');
@@ -171,7 +185,7 @@ describe('BottomSheetOrchestrator', () => {
     expect(confirmSheet).toHaveAttribute('inert');
     expect(document.querySelectorAll('dialog[open]')).toHaveLength(2);
 
-    finishSheetExit(confirmSheet);
+    finishSheetTransition(confirmSheet, 'opacity');
     expect(detailsSheet).toHaveAttribute('open');
     expect(confirmSheet).not.toHaveAttribute('open');
   });
@@ -188,7 +202,7 @@ describe('BottomSheetOrchestrator', () => {
     expect(getSharedScrim()).toHaveStyle({'--_sheet-scrim-opacity': '0'});
     expect(document.body.style.position).toBe('fixed');
 
-    finishSheetExit(outgoingSheet);
+    finishSheetTransition(outgoingSheet, 'transform');
 
     expect(
       document.querySelector('.astryx-bottom-sheet-orchestrator-scrim'),

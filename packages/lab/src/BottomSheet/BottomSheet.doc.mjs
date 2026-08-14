@@ -89,7 +89,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Use BottomSheetOrchestrator with a unique sheetId per sheet for multi-step flows; it owns one shared scrim while the outgoing sheet animates away inertly and the next sheet becomes active.',
+          'Use BottomSheetOrchestrator with a unique sheetId per sheet for multi-step flows; it owns one shared scrim while the new top sheet enters and the stationary previous sheet fades afterward.',
       },
       {
         guidance: true,

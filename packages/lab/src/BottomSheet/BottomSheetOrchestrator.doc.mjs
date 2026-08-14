@@ -16,13 +16,13 @@ export const docs = {
     ],
   },
   description:
-    'Coordinates multiple BottomSheets as a mutually exclusive flow. One activeSheet ID selects the only interactive sheet; during a handoff, the outgoing sheet stays visible and inert until its exit animation finishes. The orchestrator renders one shared scrim for the whole flow so handoffs never stack backdrops.',
+    'Coordinates multiple BottomSheets as a mutually exclusive flow. One activeSheet ID selects the only interactive sheet; during a handoff, the new sheet enters above the previous sheet, which remains stationary and inert before fading away. The orchestrator renders one shared scrim for the whole flow so handoffs never stack backdrops.',
   props: [
     {
       name: 'activeSheet',
       type: 'string | null',
       description:
-        "ID of the interactive BottomSheet, or null when the flow should close. Match a nested BottomSheet's unique sheetId; the previous sheet may remain visually present and inert until its exit animation completes.",
+        "ID of the interactive BottomSheet, or null when the flow should close. Match a nested BottomSheet's unique sheetId; the previous sheet may remain visually present and inert while the new sheet enters, then fade away.",
       required: true,
     },
     {
@@ -48,7 +48,7 @@ export const docs = {
   ],
   usage: {
     description:
-      'Use one activeSheet value as the source of truth for a multi-step bottom-sheet flow. Set it to a child sheetId to open or switch steps, and set it to null to close. A previous sheet becomes inert immediately but remains visible through its exit animation while the new active sheet begins entering. The orchestrator owns one shared scrim, focus trap, and body scroll lock across the transition, and restores focus to the trigger that started the flow after the final exit finishes.',
+      'Use one activeSheet value as the source of truth for a multi-step bottom-sheet flow. Set it to a child sheetId to open or switch steps, and set it to null to close. On a handoff, the previous sheet becomes inert immediately and stays stationary while the new active sheet enters above it; after that entrance completes, the previous sheet fades away. The orchestrator owns one shared scrim, focus trap, and body scroll lock across the transition, and restores focus to the trigger that started the flow after the final exit finishes.',
     bestPractices: [
       {
         guidance: true,
@@ -68,7 +68,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Treat activeSheet as the interaction state: an outgoing sheet can remain visually present during its exit, but it is inert and hidden from assistive technology.',
+          'Treat activeSheet as the interaction state: a previous sheet can remain visually present beneath the entering sheet, but it is inert and hidden from assistive technology.',
       },
       {
         guidance: false,
@@ -106,7 +106,7 @@ export const docsDense = {
     'controller with one shared scrim for mutually exclusive multi-step BottomSheets',
   usage: {
     description:
-      'One activeSheet ID makes one nested sheet interactive over one shared scrim. Change IDs to overlap the outgoing exit with the next entrance; null closes the flow.',
+      'One activeSheet ID makes one nested sheet interactive over one shared scrim. Change IDs to enter a new top sheet, then fade the stationary previous sheet; null closes the flow.',
     bestPractices: [
       {
         guidance: true,

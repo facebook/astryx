@@ -40,6 +40,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type ReactNode,
@@ -153,6 +154,11 @@ const styles = stylex.create({
     width: '100%',
     height: '100%',
   },
+  // The active orchestrated sheet is always the top visual layer. A retained
+  // sheet stays at 1000 while this one enters at 1001.
+  dialogTop: {
+    zIndex: 1001,
+  },
   // Opacity is a var the drag handler lowers toward dismissal;
   // @starting-style animates the entrance fade-in.
   // Plain dim, no backdrop blur: bottom sheets on both Material and iOS dim
@@ -209,10 +215,11 @@ const styles = stylex.create({
       default: 'translateY(0)',
       '@starting-style': 'translateY(100%)',
     },
-    transitionProperty: 'transform',
+    opacity: 1,
+    transitionProperty: 'transform, opacity',
     transitionDuration: durationVars['--duration-medium'],
     transitionTimingFunction: easeVars['--ease-standard'],
-    willChange: 'transform',
+    willChange: 'transform, opacity',
     '@media (prefers-reduced-motion: reduce)': {
       transitionDuration: '0.01s',
     },
@@ -220,7 +227,10 @@ const styles = stylex.create({
   sheetClosing: {
     transform: 'translateY(100%)',
   },
-  sheetExiting: {
+  sheetFading: {
+    opacity: 0,
+  },
+  sheetInactive: {
     pointerEvents: 'none',
   },
   handleBar: {
@@ -390,27 +400,46 @@ export function BottomSheet({
   const hasNativeScrim = orchestrator == null && hasScrim;
   const isModal = hasNativeScrim || hasSharedScrim;
   const orchestratorActiveSheet = orchestrator?.activeSheet ?? null;
+  const onSheetEnterComplete = orchestrator?.onSheetEnterComplete;
   const onSheetExitComplete = orchestrator?.onSheetExitComplete;
   const orchestratorPhase =
     orchestrator != null && hasValidSheetId
       ? orchestrator.getSheetPhase(sheetId)
       : 'hidden';
+  const previousOrchestratorPhaseRef = useRef(orchestratorPhase);
+  const previousOrchestratorPhase = previousOrchestratorPhaseRef.current;
+  useLayoutEffect(() => {
+    previousOrchestratorPhaseRef.current = orchestratorPhase;
+  }, [orchestratorPhase]);
   // Inside an orchestrator, its single active ID is the only source of truth.
   // This deliberately ignores standalone control props supplied from plain JS
   // so the parent still upholds the maximum-one-active invariant at runtime.
   const isOpen = isInsideOrchestrator
-    ? orchestratorPhase === 'active'
+    ? orchestratorPhase === 'active' || orchestratorPhase === 'entering'
     : (controlledIsOpen ?? false);
   const [isStandalonePresented, setIsStandalonePresented] = useState(
     controlledIsOpen ?? false,
   );
-  const isOrchestratedExiting =
-    isInsideOrchestrator && orchestratorPhase === 'exiting';
+  const isOrchestratedInactive =
+    isInsideOrchestrator &&
+    (orchestratorPhase === 'covered' ||
+      orchestratorPhase === 'fading' ||
+      orchestratorPhase === 'exiting');
   const isStandaloneExiting =
     !isInsideOrchestrator && !isOpen && isStandalonePresented;
-  const isExiting = isOrchestratedExiting || isStandaloneExiting;
+  const isInactive = isOrchestratedInactive || isStandaloneExiting;
+  const isClosing =
+    (isInsideOrchestrator && orchestratorPhase === 'exiting') ||
+    isStandaloneExiting;
+  const isFading = isInsideOrchestrator && orchestratorPhase === 'fading';
+  const retainsGesturePosition =
+    isInsideOrchestrator &&
+    (orchestratorPhase === 'covered' || orchestratorPhase === 'fading');
+  const isTopSheet =
+    isInsideOrchestrator &&
+    (orchestratorPhase === 'entering' || orchestratorPhase === 'active');
   const isPresented = isInsideOrchestrator
-    ? isOpen || isOrchestratedExiting
+    ? orchestratorPhase !== 'hidden'
     : isOpen || isStandalonePresented;
   const handleOpenChange = useCallback(
     (nextIsOpen: boolean) => {
@@ -466,15 +495,47 @@ export function BottomSheet({
   // only honor an explicit data-autofocus.
   useEffect(() => {
     const dialog = dialogRef.current;
+    const sheet = sheetNodeRef.current;
     if (!dialog) {
       return;
     }
+
+    const waitForTransition = (
+      propertyName: 'transform' | 'opacity',
+      complete: () => void,
+    ) => {
+      let done = false;
+      const finish = () => {
+        if (done) {
+          return;
+        }
+        done = true;
+        clearTimeout(timer);
+        sheet?.removeEventListener('transitionend', onEnd);
+        complete();
+      };
+      const onEnd = (event: TransitionEvent) => {
+        if (event.target === sheet && event.propertyName === propertyName) {
+          finish();
+        }
+      };
+      sheet?.addEventListener('transitionend', onEnd);
+      // Backstop above --duration-medium so transitionend normally fires
+      // first; this covers reduced motion, hidden tabs, and interrupted CSS.
+      const timer = setTimeout(finish, 450);
+      return () => {
+        clearTimeout(timer);
+        sheet?.removeEventListener('transitionend', onEnd);
+      };
+    };
+
     if (isOpen) {
       if (!isInsideOrchestrator) {
         setIsStandalonePresented(true);
       }
       dialog.style.setProperty('--_sheet-scrim-opacity', '1');
-      if (!dialog.open) {
+      const wasOpen = dialog.open;
+      if (!wasOpen) {
         // Only remember/restore focus for modal sheets; a non-modal sheet must
         // not yank focus back from whatever the user does in the live page.
         if (isModal) {
@@ -500,69 +561,93 @@ export function BottomSheet({
       } else if (isModal) {
         sheetNodeRef.current?.focus();
       }
-    } else if (dialog.open) {
-      if (hasNativeScrim) {
-        dialog.style.setProperty('--_sheet-scrim-opacity', '0');
+
+      if (isInsideOrchestrator && orchestratorPhase === 'entering') {
+        // A rapid Back can reactivate a sheet that is already mounted beneath
+        // the current top sheet. It has no new CSS entrance to wait for.
+        const isReactivatingRetainedSheet =
+          wasOpen &&
+          (previousOrchestratorPhase === 'covered' ||
+            previousOrchestratorPhase === 'fading');
+        if (isReactivatingRetainedSheet) {
+          if (hasValidSheetId) {
+            onSheetEnterComplete?.(sheetId);
+          }
+          return;
+        }
+        return waitForTransition('transform', () => {
+          if (hasValidSheetId) {
+            onSheetEnterComplete?.(sheetId);
+          }
+        });
       }
-      // Only one outgoing sheet is retained. If another navigation supersedes
-      // this exit, close the older dialog immediately instead of accumulating
-      // stale visual layers.
-      if (isInsideOrchestrator && orchestratorPhase === 'hidden') {
+      return;
+    }
+
+    if (!dialog.open) {
+      return;
+    }
+
+    if (isInsideOrchestrator) {
+      if (orchestratorPhase === 'hidden') {
+        // Only one retained sheet is allowed. Rapid navigation immediately
+        // releases any older layer superseded by the latest handoff.
         dialog.close();
         return;
       }
-      // Wait for the slide-out (sheetClosing, applied this render) before
-      // close() releases the top layer. Timeout backstops a missing
-      // transitionend (reduced motion, hidden tab).
-      const sheet = sheetNodeRef.current;
-      let done = false;
-      const finish = () => {
-        if (done) {
-          return;
-        }
-        done = true;
-        clearTimeout(timer);
-        sheet?.removeEventListener('transitionend', onEnd);
-        if (dialog.open) {
-          dialog.close();
-        }
-        if (isInsideOrchestrator && hasValidSheetId) {
-          onSheetExitComplete?.(sheetId);
+
+      if (orchestratorPhase === 'covered') {
+        // Stay exactly where the gesture left this sheet while the new top
+        // layer enters. It is already inert and accessibility-hidden.
+        return;
+      }
+
+      if (orchestratorPhase === 'fading' || orchestratorPhase === 'exiting') {
+        const propertyName =
+          orchestratorPhase === 'fading' ? 'opacity' : 'transform';
+        return waitForTransition(propertyName, () => {
+          if (dialog.open) {
+            dialog.close();
+          }
+          if (hasValidSheetId) {
+            onSheetExitComplete?.(sheetId);
+          }
           // A handoff keeps the original trigger for the rest of the flow. A
-          // final close restores it only after the outgoing motion completes.
-          if (orchestratorActiveSheet == null) {
+          // final close restores it only after the slide-down completes.
+          if (
+            orchestratorPhase === 'exiting' &&
+            orchestratorActiveSheet == null
+          ) {
             triggerRef.current?.focus();
             triggerRef.current = null;
           }
-        } else {
-          setIsStandalonePresented(false);
-          triggerRef.current?.focus();
-          triggerRef.current = null;
-        }
-      };
-      const onEnd = (event: TransitionEvent) => {
-        if (event.target === sheet && event.propertyName === 'transform') {
-          finish();
-        }
-      };
-      sheet?.addEventListener('transitionend', onEnd);
-      // Backstop above --duration-medium so transitionend normally fires
-      // first; this only covers environments that don't emit it.
-      const timer = setTimeout(finish, 450);
-      return () => {
-        clearTimeout(timer);
-        sheet?.removeEventListener('transitionend', onEnd);
-      };
+        });
+      }
+      return;
     }
+
+    if (hasNativeScrim) {
+      dialog.style.setProperty('--_sheet-scrim-opacity', '0');
+    }
+    return waitForTransition('transform', () => {
+      if (dialog.open) {
+        dialog.close();
+      }
+      setIsStandalonePresented(false);
+      triggerRef.current?.focus();
+      triggerRef.current = null;
+    });
   }, [
     hasNativeScrim,
     hasValidSheetId,
     isModal,
     isOpen,
     isInsideOrchestrator,
+    onSheetEnterComplete,
     onSheetExitComplete,
     orchestratorActiveSheet,
     orchestratorPhase,
+    previousOrchestratorPhase,
     sheetId,
     triggerRef,
   ]);
@@ -642,12 +727,13 @@ export function BottomSheet({
         // pass taps through to the page, and sit above content via z-index.
         hasNativeScrim && styles.scrim,
         !hasNativeScrim && styles.dialogNonModal,
+        isTopSheet && styles.dialogTop,
       )}
       ref={mergeRefs(ref, dialogRef)}
       aria-label={label}
-      aria-hidden={isExiting ? 'true' : undefined}
+      aria-hidden={isInactive ? 'true' : undefined}
       aria-modal={isModal && isOpen ? 'true' : undefined}
-      inert={isExiting ? true : undefined}
+      inert={isInactive ? true : undefined}
       onCancel={handleCancel}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
@@ -661,17 +747,23 @@ export function BottomSheet({
             stylex.props(
               styles.sheet,
               isHug ? styles.hugHeight : styles.budget,
-              !isOpen && styles.sheetClosing,
-              isExiting && styles.sheetExiting,
+              isClosing && styles.sheetClosing,
+              isFading && styles.sheetFading,
+              isInactive && styles.sheetInactive,
               xstyle,
             ),
             undefined,
             {
               ['--_sheet-budget' as string]: budget,
-              // Gesture offsets are meaningful only while active. Removing
-              // their inline transform lets sheetClosing drive the exit even
-              // when the sheet was handed off from a shorter snap point.
-              ...(isOpen ? contentProps.style : {}),
+              // A covered/fading sheet keeps the exact detent where the user
+              // left it, but drops gesture transition overrides so opacity can
+              // animate independently. A final close removes the inline
+              // transform so sheetClosing can slide the sheet down.
+              ...(isOpen
+                ? contentProps.style
+                : retainsGesturePosition
+                  ? {transform: contentProps.style.transform}
+                  : {}),
             },
           )}>
           <div

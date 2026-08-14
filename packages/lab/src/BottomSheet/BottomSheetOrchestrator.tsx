@@ -10,10 +10,11 @@
  *
  * The orchestrator turns a set of declaratively nested BottomSheets into a
  * controlled single-selection group: `activeSheet` names the one interactive
- * child, or is null when the flow is closed. During a handoff the previous
- * sheet remains visible, inert, and accessibility-hidden just long enough to
- * finish its exit animation. It also owns the flow's one shared scrim, focus
- * trap, and scroll lock, so sheet-to-sheet handoffs never stack backdrops.
+ * child, or is null when the flow is closed. During a handoff the new sheet
+ * enters above the previous sheet; the previous sheet stays stationary and
+ * inert, then fades after the entrance completes. It also owns the flow's one
+ * shared scrim, focus trap, and scroll lock, so sheet-to-sheet handoffs never
+ * stack backdrops.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/lab/src/BottomSheet/BottomSheet.tsx
@@ -70,11 +71,46 @@ const styles = stylex.create({
   },
 });
 
+type RetainedSheetPhase = 'covered' | 'fading' | 'exiting';
+
+interface SheetTransitionState {
+  enteringSheet: string | null;
+  retainedSheet: string | null;
+  retainedPhase: RetainedSheetPhase | null;
+}
+
+const IDLE_TRANSITION: SheetTransitionState = {
+  enteringSheet: null,
+  retainedSheet: null,
+  retainedPhase: null,
+};
+
+function transitionForActiveSheetChange(
+  previousSheet: string | null,
+  nextSheet: string | null,
+): SheetTransitionState {
+  if (previousSheet == null) {
+    return IDLE_TRANSITION;
+  }
+  if (nextSheet == null) {
+    return {
+      enteringSheet: null,
+      retainedSheet: previousSheet,
+      retainedPhase: 'exiting',
+    };
+  }
+  return {
+    enteringSheet: nextSheet,
+    retainedSheet: previousSheet,
+    retainedPhase: 'covered',
+  };
+}
+
 export interface BottomSheetOrchestratorProps {
   /**
    * ID of the interactive BottomSheet, or null when the flow should close.
    * Must match a nested BottomSheet's `sheetId`. The previous sheet may remain
-   * visually present and inert until its exit animation completes.
+   * visually present and inert while the new sheet enters, then fade away.
    */
   activeSheet: string | null;
 
@@ -98,8 +134,9 @@ export interface BottomSheetOrchestratorProps {
 
 /**
  * Coordinates a set of BottomSheets so zero or one is active at a time, with
- * one shared scrim for the complete flow. A previous sheet may remain visible
- * and inert while its exit animation completes.
+ * one shared scrim for the complete flow. On a sheet-to-sheet handoff, the
+ * previous sheet remains stationary and inert while the new sheet enters above
+ * it, then fades away after the entrance completes.
  *
  * @example
  * ```
@@ -132,16 +169,21 @@ export function BottomSheetOrchestrator({
   const triggerRef = useRef<HTMLElement | null>(null);
   const scrimRef = useRef<HTMLDivElement | null>(null);
   const committedActiveSheetRef = useRef(activeSheet);
-  const [exitingSheet, setExitingSheet] = useState<string | null>(null);
+  const [transition, setTransition] =
+    useState<SheetTransitionState>(IDLE_TRANSITION);
 
-  // Keep the previous active ID available during the very render in which the
-  // controlled prop changes. BottomSheet children therefore see `exiting`
-  // immediately and never briefly hide before the layout effect commits it.
+  // Derive the handoff during the very render in which the controlled prop
+  // changes. Children therefore see `entering` / `covered` immediately and
+  // never briefly hide before the layout effect commits the transition.
   const activeSheetChanged = committedActiveSheetRef.current !== activeSheet;
-  const visibleExitingSheet = activeSheetChanged
-    ? committedActiveSheetRef.current
-    : exitingSheet;
-  const isFlowVisible = activeSheet != null || visibleExitingSheet != null;
+  const visibleTransition = activeSheetChanged
+    ? transitionForActiveSheetChange(
+        committedActiveSheetRef.current,
+        activeSheet,
+      )
+    : transition;
+  const isFlowVisible =
+    activeSheet != null || visibleTransition.retainedSheet != null;
   const isModal = hasScrim && isFlowVisible;
 
   useLayoutEffect(() => {
@@ -150,7 +192,9 @@ export function BottomSheetOrchestrator({
       return;
     }
     committedActiveSheetRef.current = activeSheet;
-    setExitingSheet(previousActiveSheet);
+    setTransition(
+      transitionForActiveSheetChange(previousActiveSheet, activeSheet),
+    );
   }, [activeSheet]);
 
   const close = useCallback(
@@ -166,18 +210,36 @@ export function BottomSheetOrchestrator({
   const getSheetPhase = useCallback(
     (sheetId: string): BottomSheetOrchestratorPhase => {
       if (sheetId === activeSheet) {
-        return 'active';
+        return sheetId === visibleTransition.enteringSheet
+          ? 'entering'
+          : 'active';
       }
-      if (sheetId === visibleExitingSheet) {
-        return 'exiting';
+      if (sheetId === visibleTransition.retainedSheet) {
+        return visibleTransition.retainedPhase ?? 'hidden';
       }
       return 'hidden';
     },
-    [activeSheet, visibleExitingSheet],
+    [activeSheet, visibleTransition],
   );
 
+  const onSheetEnterComplete = useCallback((sheetId: string) => {
+    setTransition(current => {
+      if (current.enteringSheet !== sheetId) {
+        return current;
+      }
+      return {
+        enteringSheet: null,
+        retainedSheet: current.retainedSheet,
+        retainedPhase:
+          current.retainedSheet == null ? null : ('fading' as const),
+      };
+    });
+  }, []);
+
   const onSheetExitComplete = useCallback((sheetId: string) => {
-    setExitingSheet(current => (current === sheetId ? null : current));
+    setTransition(current =>
+      current.retainedSheet === sheetId ? IDLE_TRANSITION : current,
+    );
   }, []);
 
   const setScrimOpacity = useCallback((opacity: number) => {
@@ -201,6 +263,7 @@ export function BottomSheetOrchestrator({
       hasScrim,
       onActiveSheetChange,
       getSheetPhase,
+      onSheetEnterComplete,
       onSheetExitComplete,
       setScrimOpacity,
       triggerRef,
@@ -210,6 +273,7 @@ export function BottomSheetOrchestrator({
       getSheetPhase,
       hasScrim,
       onActiveSheetChange,
+      onSheetEnterComplete,
       onSheetExitComplete,
       setScrimOpacity,
     ],
