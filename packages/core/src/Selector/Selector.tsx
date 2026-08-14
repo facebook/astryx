@@ -848,15 +848,28 @@ export function Selector<T extends SelectorOptionType>(
   // Calculate offset to position selected item over trigger. Explicit
   // placement opts out of the selector-specific overlay behavior and uses the
   // standard layer positioning API instead.
-  const shouldOverlaySelectedItem = placement == null && !hasSearch;
-  const {offset: rawOffset, isPositioned: rawIsPositioned} =
-    useSelectedItemOffset({
-      isOpen: popover.isOpen && shouldOverlaySelectedItem,
-      selectedItemIndex,
-      listboxId,
-      listboxRef,
-      anchorRef,
-    });
+  // The overlay puts the menu on top of its own trigger, so whatever option is
+  // painted there is what a press on the trigger commits. It is only safe when
+  // that option is the selected one — the press re-commits the current value
+  // and reads as a dismissal. No selection means there is no such option, and
+  // the viewport clamp can slide a different one over the trigger (#5004);
+  // either way the menu opens below instead.
+  const canOverlaySelectedItem =
+    placement == null && !hasSearch && selectedItemIndex >= 0;
+  const {
+    offset: rawOffset,
+    isPositioned: rawIsPositioned,
+    isSelectedItemOverTrigger,
+  } = useSelectedItemOffset({
+    isOpen: popover.isOpen && canOverlaySelectedItem,
+    selectedItemIndex,
+    listboxId,
+    listboxRef,
+    anchorRef,
+  });
+
+  const shouldOverlaySelectedItem =
+    canOverlaySelectedItem && isSelectedItemOverTrigger;
 
   const selectedItemOffset = shouldOverlaySelectedItem ? rawOffset : 0;
   const isPositioned = shouldOverlaySelectedItem ? rawIsPositioned : true;

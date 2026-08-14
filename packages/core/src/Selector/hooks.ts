@@ -19,6 +19,10 @@ import type {SelectorOptionData} from './types';
 // the same mathematical center, so compensate before viewport clamping.
 const SELECTED_ITEM_OPTICAL_OFFSET = 1;
 
+// The row is deliberately shifted by that optical pixel, so allow exactly that
+// much slack before calling the trigger uncovered.
+const COVERAGE_TOLERANCE = SELECTED_ITEM_OPTICAL_OFFSET;
+
 /**
  * Return an element's document-relative layout top without CSS transforms.
  * getBoundingClientRect includes the popover's entry scale, which would make
@@ -49,6 +53,13 @@ interface UseSelectedItemOffsetOptions {
 interface UseSelectedItemOffsetResult {
   offset: number;
   isPositioned: boolean;
+  /**
+   * Whether the selected option, at its final clamped position, still covers
+   * the trigger. False means the overlay's premise no longer holds — the
+   * option sitting over the trigger is some other option, so a press meant to
+   * dismiss the menu would commit it (#5004).
+   */
+  isSelectedItemOverTrigger: boolean;
 }
 
 /**
@@ -70,13 +81,21 @@ export function useSelectedItemOffset({
 }: UseSelectedItemOffsetOptions): UseSelectedItemOffsetResult {
   const [offset, setOffset] = useState(0);
   const [isPositioned, setIsPositioned] = useState(false);
+  const [isSelectedItemOverTrigger, setIsSelectedItemOverTrigger] =
+    useState(true);
 
   const commitPosition = useCallback(
-    (nextOffset: number, nextIsPositioned: boolean) => {
+    (
+      nextOffset: number,
+      nextIsPositioned: boolean,
+      nextIsSelectedItemOverTrigger: boolean,
+    ) => {
       // eslint-disable-next-line @eslint-react/set-state-in-effect -- selector popover position is derived from DOM layout
       setOffset(nextOffset);
       // eslint-disable-next-line @eslint-react/set-state-in-effect -- selector popover position is derived from DOM layout
       setIsPositioned(nextIsPositioned);
+      // eslint-disable-next-line @eslint-react/set-state-in-effect -- selector popover position is derived from DOM layout
+      setIsSelectedItemOverTrigger(nextIsSelectedItemOverTrigger);
     },
     [],
   );
@@ -84,12 +103,12 @@ export function useSelectedItemOffset({
   useIsomorphicLayoutEffect(() => {
     if (!isOpen) {
       // Reset offset when closed
-      commitPosition(0, false);
+      commitPosition(0, false, true);
       return;
     }
 
     if (!listboxRef.current || !anchorRef.current) {
-      commitPosition(0, true);
+      commitPosition(0, true, true);
       return;
     }
 
@@ -100,7 +119,7 @@ export function useSelectedItemOffset({
     const targetItem = document.getElementById(targetItemId);
 
     if (!targetItem) {
-      commitPosition(0, true);
+      commitPosition(0, true, true);
       return;
     }
 
@@ -110,7 +129,7 @@ export function useSelectedItemOffset({
     // offset* metrics intentionally exclude the popover's entry transform.
     const listboxHeight = listbox.offsetHeight;
     if (listboxHeight <= 0) {
-      commitPosition(0, true);
+      commitPosition(0, true, true);
       return;
     }
 
@@ -136,7 +155,17 @@ export function useSelectedItemOffset({
     // anchorRect.bottom to clampedTop.
     const clampedOffset = Math.max(0, anchorRect.bottom - clampedTop);
 
-    commitPosition(clampedOffset, true);
+    // Where the target row actually lands once the menu is clamped. The clamp
+    // can slide the list far enough that a different option sits over the
+    // trigger, and that option is what a press on the trigger commits (#5004).
+    const targetItemTop =
+      clampedTop + itemCenterInListbox - targetItem.offsetHeight / 2;
+    const targetItemBottom = targetItemTop + targetItem.offsetHeight;
+    const isSelectedItemOverTrigger =
+      targetItemTop - COVERAGE_TOLERANCE <= anchorRect.top &&
+      targetItemBottom + COVERAGE_TOLERANCE >= anchorRect.bottom;
+
+    commitPosition(clampedOffset, true, isSelectedItemOverTrigger);
   }, [
     isOpen,
     selectedItemIndex,
@@ -146,7 +175,7 @@ export function useSelectedItemOffset({
     commitPosition,
   ]);
 
-  return {offset, isPositioned};
+  return {offset, isPositioned, isSelectedItemOverTrigger};
 }
 
 // =============================================================================

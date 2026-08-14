@@ -379,7 +379,10 @@ describe('Selector', () => {
     );
   });
 
-  it('clamps the default selected-item overlay to the viewport', async () => {
+  it('opens below when the viewport clamp slides another option over the trigger', async () => {
+    // The default rects clamp the menu to a 200px viewport, which lands the
+    // selected option well above the trigger — the option covering it would be
+    // committed by a press meant to dismiss the menu (#5004).
     const restoreRects = mockSelectorRects();
     const user = userEvent.setup();
     try {
@@ -395,12 +398,40 @@ describe('Selector', () => {
       await user.click(screen.getByRole('combobox'));
       const popover = screen
         .getByRole('listbox', {hidden: true})
-        .closest('[popover]');
+        .closest('[popover]') as HTMLElement;
       await waitFor(() => {
-        expect(popover?.getAttribute('style')).toContain(
-          'margin-block-start: -110px',
+        expect(popover.style.getPropertyValue('--x-marginBlockStart')).toBe(
+          spacingVars['--spacing-1'],
         );
       });
+      expect(popover.getAttribute('style')).not.toContain(
+        'margin-block-start: -',
+      );
+    } finally {
+      restoreRects();
+    }
+  });
+
+  it('opens below when nothing is selected', async () => {
+    const restoreRects = mockSelectorRects({viewportHeight: 800});
+    const user = userEvent.setup();
+    try {
+      render(
+        <Selector label="Fruit" options={OPTIONS} placeholder="Pick one" />,
+      );
+
+      await user.click(screen.getByRole('combobox'));
+      const popover = screen
+        .getByRole('listbox', {hidden: true})
+        .closest('[popover]') as HTMLElement;
+      await waitFor(() => {
+        expect(popover.style.getPropertyValue('--x-marginBlockStart')).toBe(
+          spacingVars['--spacing-1'],
+        );
+      });
+      expect(popover.getAttribute('style')).not.toContain(
+        'margin-block-start: -',
+      );
     } finally {
       restoreRects();
     }
@@ -563,7 +594,7 @@ describe('Selector', () => {
     });
 
     it('stays flush in the default selected-item overlay', async () => {
-      const restoreRects = mockSelectorRects();
+      const restoreRects = mockSelectorRects({viewportHeight: 800});
       const user = userEvent.setup();
       try {
         render(
@@ -581,7 +612,7 @@ describe('Selector', () => {
           .closest('[popover]') as HTMLElement;
         await waitFor(() => {
           expect(popover.getAttribute('style')).toContain(
-            'margin-block-start: -110px',
+            'margin-block-start: -61px',
           );
         });
         expect(popover.style.getPropertyValue('--x-marginBlockStart')).toBe('');
