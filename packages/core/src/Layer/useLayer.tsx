@@ -25,7 +25,10 @@ import React, {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
+import {createPortal} from 'react-dom';
 import {addAnchorName, removeAnchorName} from './anchorName';
+import {resolveLayerHost} from './layerHost';
+import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {typographyVars} from '../theme/tokens.stylex';
 
 const styles = stylex.create({
@@ -149,12 +152,11 @@ export interface ContextRenderProps {
   /**
    * HTML tag to render the popover container as.
    *
-   * Defaults to `'div'`. Pass `'span'` when the layer must render inline-safe
-   * markup — e.g. a `HoverCard` wrapping inline text inside a `<p>`. A `<span>`
-   * is phrasing content, so it stays put in the DOM tree instead of being
-   * reparented out of a paragraph by the HTML parser, which keeps server and
-   * client markup identical. The Popover API and CSS anchor positioning work
-   * the same on either tag.
+   * Defaults to `'div'`. Pass `'span'` for a layer that can land in a phrasing
+   * context — the layer is hosted outside inline ancestors (see
+   * `resolveLayerHost`), but the fallback host when no trigger is registered
+   * is the layer's own position in the tree. The Popover API and CSS anchor
+   * positioning work the same on either tag.
    *
    * @default 'div'
    */
@@ -412,6 +414,20 @@ export function useLayer(
   const [isOpen, setIsOpen] = useState(false);
   const popoverRef = useRef<HTMLElement | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
+  // Where the layer is rendered in the DOM. Null until a trigger registers,
+  // which is also what keeps the layer out of server markup and out of the
+  // hydrating render: both sides render nothing, so there is no mismatch, and
+  // the HTML parser never sees the layer's content (see resolveLayerHost).
+  const [host, setHost] = useState<HTMLElement | null>(null);
+  // Gates the layer on having mounted, so the server and the hydrating render
+  // agree (nothing) even when no trigger ever registers a host (#3107).
+  const [isMounted, setIsMounted] = useState(false);
+  useIsomorphicLayoutEffect(() => {
+    setIsMounted(true);
+  }, []);
+  // A show() that arrives before the layer has mounted (isDefaultOpen, or a
+  // controlled isOpen) is replayed once the popover element attaches.
+  const pendingShowRef = useRef(false);
 
   // Ref mirrors isOpen for synchronous reads inside show/hide.
   // State drives re-renders; the ref lets the imperative calls avoid
@@ -420,7 +436,14 @@ export function useLayer(
 
   const show = useCallback(() => {
     const popover = popoverRef.current;
-    if (popover && !isOpenRef.current) {
+    if (!popover) {
+      // The layer mounts a tick after the trigger registers, so an open that
+      // arrives first (isDefaultOpen, controlled isOpen) would be dropped.
+      // Record the intent; popoverRefCallback replays it on attach.
+      pendingShowRef.current = true;
+      return;
+    }
+    if (!isOpenRef.current) {
       // Finding infra-4: the Popover API is unsupported on Safari <17 and
       // Firefox <125. On those browsers `showPopover` does not exist, so
       // calling it unconditionally throws a TypeError and the layer never
@@ -428,7 +451,11 @@ export function useLayer(
       // back to plain visibility (the [popover] attribute is inert there, so
       // the element sits in normal flow) so the layer still becomes visible.
       if (typeof popover.showPopover === 'function') {
-        popover.showPopover();
+        // The trigger is passed as the popover's invoker `source`: a layer
+        // hosted away from its trigger then still takes its sequential focus
+        // order (and its popover nesting) from the trigger rather than from
+        // its own DOM position. Browsers without the option ignore it.
+        popover.showPopover({source: triggerRef.current ?? undefined});
       } else {
         popover.style.display = 'block';
       }
@@ -439,6 +466,7 @@ export function useLayer(
   }, [onShow]);
 
   const hide = useCallback(() => {
+    pendingShowRef.current = false;
     if (isOpenRef.current) {
       const el = popoverRef.current;
       // See finding infra-4 note in `show`: mirror the same guard on hide so
@@ -468,6 +496,9 @@ export function useLayer(
 
           if (el) {
             addAnchorName(el, anchorId);
+            // The trigger attaching is the signal that the layer can mount:
+            // its host is resolved from the trigger's ancestors.
+            setHost(current => resolveLayerHost(el) ?? current);
           }
 
           triggerRef.current = el;
@@ -531,8 +562,12 @@ export function useLayer(
     (el: HTMLElement | null) => {
       popoverRef.current = el;
       bindToggleListener(el, handleToggle);
+      if (el && pendingShowRef.current) {
+        pendingShowRef.current = false;
+        show();
+      }
     },
-    [handleToggle, bindToggleListener],
+    [handleToggle, bindToggleListener, show],
   );
 
   // Re-bind when the handler identity changes while the element stays mounted,
@@ -566,7 +601,7 @@ export function useLayer(
         xstyle,
         className: extraClassName,
         style: extraStyle,
-        as: Container = 'div',
+        as: Container = 'span',
         onMouseEnter,
         onMouseLeave,
       } = props || {};
@@ -598,10 +633,19 @@ export function useLayer(
         ? `${extraClassName} ${stylexResult.className ?? ''}`
         : stylexResult.className;
 
-      // Render as the requested tag. A `span` keeps the layer phrasing content
-      // so it is valid (and stays put on hydration) inside inline contexts like
-      // a `<p>`; `div` remains the default for block layers.
-      return (
+      // Where the layer renders in the DOM is a correctness question, not a
+      // styling one: the top layer already handles clipping and stacking, but
+      // the layer's DOM position decides whether the HTML parser tears its
+      // content out of a paragraph, whether a wrapping <a> swallows its
+      // clicks, which theme variables it inherits, and where it sits in the
+      // tab order. `resolveLayerHost` walks up from the trigger to the nearest
+      // ancestor that hosts it safely — close enough to keep the theme
+      // cascade and tab order, out of the ancestors that break it. Hosting is
+      // client-only, so the parser never sees the layer at all (#3107).
+      //
+      // With no trigger registered there is nothing to walk from, so the layer
+      // renders where the consumer put it, as it always did.
+      const layer = (
         <Container
           ref={popoverRefCallback}
           id={id}
@@ -615,8 +659,10 @@ export function useLayer(
           {children}
         </Container>
       );
+
+      return isMounted ? (host ? createPortal(layer, host) : layer) : null;
     },
-    [anchorId, id, lightDismiss, popoverRefCallback],
+    [anchorId, host, id, isMounted, lightDismiss, popoverRefCallback],
   );
 
   // Render function for fixed mode

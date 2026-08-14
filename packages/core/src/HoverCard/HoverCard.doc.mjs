@@ -114,7 +114,7 @@ export const docs = {
       { guidance: false, description: 'Place critical actions or required information inside a hover card; users may miss content that only appears on hover.' },
       { guidance: false, description: 'Use a hover card when a simple Tooltip or Popover would suffice.' },
       { guidance: false, description: 'Use a HoverCard for content the user must interact with; it disappears when the cursor leaves.' },
-      { guidance: false, description: 'Nest a HoverCard whose content has block elements directly inside phrasing-only contexts such as a <p>, <label>, or heading. The card renders inline, so block content there is invalid HTML the browser reparents. Wrap the surrounding text in a block element (e.g. a <div>) instead.' },
+      { guidance: true, description: 'Trigger a HoverCard from anywhere its trigger belongs, including inline in a <p> and inside a link: the card is hosted outside those ancestors, so its content stays valid and its clicks stay its own.' },
     ],
     anatomy: [
       {name: 'Trigger', required: true, description: 'The element that opens the hover card on hover or focus: a button, link, or inline text.'},
@@ -229,7 +229,7 @@ export const docsZh = {
       { guidance: false, description: 'Place critical actions or required information inside a hover card; users may miss content that only appears on hover.' },
       { guidance: false, description: 'Use a hover card when a simple Tooltip or Popover would suffice.' },
       { guidance: false, description: 'Use a HoverCard for content the user must interact with; it disappears when the cursor leaves.' },
-      { guidance: false, description: 'Nest a HoverCard whose content has block elements directly inside phrasing-only contexts such as a <p>, <label>, or heading. The card renders inline, so block content there is invalid HTML the browser reparents. Wrap the surrounding text in a block element (e.g. a <div>) instead.' },
+      { guidance: true, description: 'Trigger a HoverCard from anywhere its trigger belongs, including inline in a <p> and inside a link: the card is hosted outside those ancestors, so its content stays valid and its clicks stay its own.' },
     ],
   },
 };
@@ -247,7 +247,7 @@ export const docsDense = {
       { guidance: false, description: 'Place critical actions or required information inside a hover card; users may miss content that only appears on hover.' },
       { guidance: false, description: 'Use a hover card when a simple Tooltip or Popover would suffice.' },
       { guidance: false, description: 'Use a HoverCard for content the user must interact with; it disappears when the cursor leaves.' },
-      { guidance: false, description: 'Nest a block-content HoverCard directly inside phrasing-only contexts (<p>, <label>, heading); it renders inline so block content is invalid HTML there. Wrap surrounding text in a block element instead.' },
+      { guidance: true, description: 'Use inline in a <p>, a heading, or a link: the card is hosted outside those ancestors, so its content stays valid and its clicks stay its own.' },
     ],
   },
   components: [

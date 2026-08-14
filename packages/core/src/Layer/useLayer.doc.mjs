@@ -79,7 +79,7 @@ export const docs = {
       name: 'render',
       type: '(children: ReactNode, props: ContextRenderProps | FixedRenderProps) => ReactNode',
       description:
-        'Render function for the popover element. Pass placement/alignment in context mode or x/y in fixed mode. Placement/alignment are logical: they map to the self-* position-area keyword family, which resolves against the popover\'s own inherited direction, so RTL contexts mirror automatically in pure CSS. Pass `positioning: "custom"` in context mode to author position styles yourself via `style` (e.g. explicit anchor() insets or an anchor-size() cover): the hook keeps the popover behavior and position-anchor wiring but derives no position styles, including the automatic RTL mirroring, which becomes your responsibility. Pass `offset` (a CSS length; a number is px) in context mode for clearance from the anchor: it applies to both edges of the placement axis, so the gap survives a flip. Layers are flush by default. In context mode, pass `as: "span"` to render an inline-safe layer (e.g. inside a paragraph). The layer renders inline in the React tree; the Popover API promotes it to the top layer when shown, so it escapes ancestor clipping and stacking without a portal. When the layer would overflow the viewport, position-try fallbacks flip it to the opposite side; centered layers additionally slide along the alignment axis (span fallbacks) so they stay on-screen near viewport edges.',
+        'Render function for the popover element. Pass placement/alignment in context mode or x/y in fixed mode. Placement/alignment are logical: they map to the self-* position-area keyword family, which resolves against the popover\'s own inherited direction, so RTL contexts mirror automatically in pure CSS. Pass `positioning: "custom"` in context mode to author position styles yourself via `style` (e.g. explicit anchor() insets or an anchor-size() cover): the hook keeps the popover behavior and position-anchor wiring but derives no position styles, including the automatic RTL mirroring, which becomes your responsibility. Pass `offset` (a CSS length; a number is px) in context mode for clearance from the anchor: it applies to both edges of the placement axis, so the gap survives a flip. Layers are flush by default. In context mode the layer is hosted on the client in the nearest ancestor of the trigger that can hold it, out of paragraphs, links, buttons and inline formatting: those either break the markup or capture the layer\'s clicks and tab stops. Nothing is emitted on the server, so the HTML parser never reparents it. The Popover API promotes the layer to the top layer when shown, so it escapes ancestor clipping and stacking wherever it is hosted. When the layer would overflow the viewport, position-try fallbacks flip it to the opposite side; centered layers additionally slide along the alignment axis (span fallbacks) so they stay on-screen near viewport edges.',
     },
   ],
   usage: {
@@ -99,7 +99,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Rely on the Popover API top layer to escape ancestor clipping and stacking: render the layer inline (no portal) so it inherits the trigger\'s theme cascade and keeps a natural focus order. Use `as: "span"` when the layer must be valid inside inline contexts like a paragraph.',
+          'Rely on the Popover API top layer to escape ancestor clipping and stacking, and host the layer near its trigger rather than in the body so it inherits the trigger\'s theme cascade and keeps a natural focus order.',
       },
       {
         guidance: false,
@@ -131,7 +131,7 @@ export const docsDense = {
     hide: 'hide layer.',
     isOpen: 'whether layer is open.',
     id: 'unique ARIA id.',
-    render: 'renders popover element; pass placement/alignment or x/y. Placement/alignment logical: mapped to self-* position-area keywords resolved against the popover\'s inherited direction (RTL mirrors in pure CSS). `positioning: "custom"` (context mode) = author position styles yourself via `style`; keeps popover behavior + position-anchor wiring, derives nothing (incl. RTL mirroring, which becomes yours). `offset` (context mode) = clearance from the anchor as a CSS length (number = px), applied to both edges of the placement axis so it survives a flip; layers are flush by default. Context mode accepts `as: "span"` for inline-safe layers. Renders inline; the Popover API top layer escapes clipping/stacking without a portal. Viewport overflow: flips to opposite side; centered layers also slide along the alignment axis (span fallbacks).',
+    render: 'renders popover element; pass placement/alignment or x/y. Placement/alignment logical: mapped to self-* position-area keywords resolved against the popover\'s inherited direction (RTL mirrors in pure CSS). `positioning: "custom"` (context mode) = author position styles yourself via `style`; keeps popover behavior + position-anchor wiring, derives nothing (incl. RTL mirroring, which becomes yours). `offset` (context mode) = clearance from the anchor as a CSS length (number = px), applied to both edges of the placement axis so it survives a flip; layers are flush by default. Context mode hosts the layer client-side in the nearest ancestor of the trigger that can hold it (out of p/a/button/inline formatting); nothing is emitted on the server. The Popover API top layer escapes clipping/stacking wherever it is hosted. Viewport overflow: flips to opposite side; centered layers also slide along the alignment axis (span fallbacks).',
   },
   usage: {
     description:
@@ -150,7 +150,7 @@ export const docsDense = {
       {
         guidance: true,
         description:
-          'Rely on the Popover API top layer to escape clipping/stacking: render inline (no portal) to inherit the trigger theme cascade and natural focus order. Use `as: "span"` when the layer must be valid in inline contexts like a paragraph.',
+          'Rely on the Popover API top layer to escape clipping/stacking; host the layer near its trigger (not in the body) to inherit the trigger theme cascade and natural focus order.',
       },
       {
         guidance: false,

@@ -106,11 +106,10 @@ describe('HoverCard', () => {
     expect(paragraph?.querySelector('div')).toBeNull();
   });
 
-  it('renders the floating layer with inline-safe markup (no block elements in a paragraph)', () => {
-    // HoverCard renders its floating layer inline (no portal), so the layer
-    // must be phrasing content to stay valid — and stay put on hydration —
-    // inside a <p>. Assert the layer popover element is a <span> and that the
-    // paragraph contains no <div> descendants at all.
+  it('hosts the floating layer outside the paragraph its trigger sits in', () => {
+    // The layer is hosted in the nearest ancestor that can hold it: a <p>
+    // takes phrasing content only, so a layer left inside one is torn out of
+    // the paragraph by the HTML parser and its content lands in the page.
     const {container} = render(
       <p>
         Before{' '}
@@ -125,10 +124,35 @@ describe('HoverCard', () => {
     const layer = screen.getByText('Card content').closest('[popover]');
 
     expect(layer).not.toBeNull();
-    expect(layer?.tagName).toBe('SPAN');
-    // The whole layer subtree lives inside the paragraph with no block boxes.
-    expect(paragraph?.contains(layer as Node)).toBe(true);
+    expect(paragraph?.contains(layer as Node)).toBe(false);
     expect(paragraph?.querySelector('div')).toBeNull();
+    // Hosted next to the paragraph, not banished to <body>: that is what keeps
+    // the theme cascade and the tab order intact.
+    expect(layer?.parentElement).toBe(paragraph?.parentElement);
+  });
+
+  it('hosts the floating layer outside a wrapping link', () => {
+    // Interactive ancestors capture the layer's own interactions: a card left
+    // inside an <a> puts its links and buttons inside that link, so clicking
+    // one navigates.
+    render(
+      <a href="#profile">
+        <HoverCard
+          content={
+            <span>
+              <a href="#inner">Inner link</a>
+            </span>
+          }>
+          Trigger
+        </HoverCard>
+      </a>,
+    );
+
+    const link = screen.getByRole('link', {name: /Trigger/});
+    const layer = screen.getByText('Inner link').closest('[popover]');
+
+    expect(layer).not.toBeNull();
+    expect(link.contains(layer as Node)).toBe(false);
   });
 
   it('does not show content initially', () => {
@@ -435,25 +459,39 @@ describe('HoverCard', () => {
     // `typeof document !== 'undefined'` gate: the server rendered nothing while
     // the first client render emitted the portal, so the two trees disagreed.
     //
-    // The layer is now rendered inline as inline-safe phrasing markup (a
-    // `<span popover>`), identically on the server and the client, so there is
-    // nothing for hydration to mismatch.
+    // The layer is now gated on having mounted, so the server and the first
+    // client render agree — both render nothing — and the layer is hosted on
+    // the client, where the HTML parser cannot reparent it.
 
-    it('renders the floating layer in server markup (no document gate)', () => {
-      const html = renderToString(
+    it('keeps the layer out of server markup, and mounts it on hydration', async () => {
+      const tree = (
         <HoverCard content={<span>Card content</span>}>
           <button type="button">Trigger</button>
-        </HoverCard>,
+        </HoverCard>
       );
 
-      // The popover element is present in the server output...
-      expect(html).toContain('popover="manual"');
-      expect(html).toContain('Card content');
-      // ...and it is a <span> (inline-safe), not a <div>.
-      expect(html).toMatch(/<span[^>]*popover="manual"/);
+      const serverHTML = renderToString(tree);
+      expect(serverHTML).not.toContain('popover=');
+      expect(serverHTML).not.toContain('Card content');
+
+      const container = document.createElement('div');
+      container.innerHTML = serverHTML;
+      document.body.appendChild(container);
+
+      let root: ReturnType<typeof hydrateRoot>;
+      await act(async () => {
+        root = hydrateRoot(container, tree);
+      });
+
+      expect(container.querySelector('[popover]')).not.toBeNull();
+
+      await act(async () => {
+        root.unmount();
+      });
+      container.remove();
     });
 
-    it('keeps the floating layer inline-safe in server markup inside a paragraph', () => {
+    it('emits nothing inside a paragraph for the parser to tear out', () => {
       const html = renderToString(
         <p>
           Before{' '}
@@ -464,12 +502,11 @@ describe('HoverCard', () => {
         </p>,
       );
 
-      // No <div> is emitted inside the paragraph — the layer and its wrappers
-      // are all phrasing content, so the server string is valid <p> markup that
-      // the browser parser will not reparent (which would itself desync
-      // hydration).
+      // The server string is a plain paragraph: no layer, no block element,
+      // nothing the parser will reparent out of the <p> (which would itself
+      // desync hydration).
       expect(html).not.toContain('<div');
-      expect(html).toMatch(/<span[^>]*popover="manual"/);
+      expect(html).not.toContain('popover=');
     });
 
     it('server markup matches the first client render (no hydration mismatch)', async () => {
@@ -533,10 +570,9 @@ describe('HoverCard', () => {
       );
 
       const serverHTML = renderToString(tree);
-      // isDefaultOpen must not leak the open state into SSR markup — the open
-      // call happens in an effect after hydration, so the server output is the
-      // same closed markup the first client render produces.
-      expect(serverHTML).toContain('popover="manual"');
+      // isDefaultOpen must not leak the open state into SSR markup — the layer
+      // mounts and opens after hydration.
+      expect(serverHTML).not.toContain('popover=');
 
       const container = document.createElement('div');
       container.innerHTML = serverHTML;

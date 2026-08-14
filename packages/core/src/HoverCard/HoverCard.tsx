@@ -6,7 +6,7 @@
  * @file HoverCard.tsx
  * @input Uses React, useHoverCard hook
  * @output Exports HoverCard component for hover/focus triggered layers
- * @position Layer component; uses inline-safe trigger wrapper and renders the floating layer inline
+ * @position Layer component; inline-safe trigger wrapper, floating layer hosted by useLayer
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/HoverCard/HoverCard.test.tsx
@@ -250,18 +250,12 @@ export function HoverCard({
     };
   }, [textOnly, hoverCard.ref, hoverCard.describedBy]);
 
-  // Render the floating layer inline, in the same place on the server and the
-  // client. The layer is a `popover` element opened via the Popover API, so the
-  // browser promotes it to the top layer when shown — that already escapes
-  // ancestor clipping, stacking, and transform containing-block traps, and CSS
-  // anchor positioning resolves the trigger reference regardless of where the
-  // element sits in the DOM, so no portal is needed to "escape" layout.
-  //
-  // The layer renders as inline-safe phrasing markup (a `<span>`, see
-  // useHoverCard), which stays put inside a `<p>` instead of being reparented
-  // by the HTML parser. That keeps the server markup and the first client
-  // render identical, so there is no hydration mismatch — and it preserves the
-  // inline-safety guarantee (no block elements injected into a paragraph).
+  // The floating layer is not rendered here in the tree: `useLayer` hosts it
+  // on the client in the nearest ancestor of the trigger that can hold it, so
+  // a trigger sitting inline in a `<p>` or inside a link does not put the
+  // card's content in a place the HTML parser tears apart (or a link that
+  // swallows its clicks). Nothing is emitted on the server, so the server
+  // markup and the first client render agree.
   const renderedHoverCard = hoverCard.renderHoverCard(content, {
     xstyle,
     className,

@@ -44,10 +44,8 @@ const styles = stylex.create({
     boxShadow: shadowVars['--shadow-med'],
   },
   // Position-based margin styles
-  // Content wrapper for padding and mouse events.
-  // `display: block` keeps the wrapper a block box even though it renders as a
-  // `span` (the layer uses inline-safe phrasing markup so it is valid inside a
-  // paragraph and produces identical server/client markup).
+  // Content wrapper for padding and mouse events. `display: block` keeps the
+  // wrapper a block box even though it renders as a `span`.
   content: {
     display: 'block',
     paddingBlockStart: spacingVars['--spacing-3'],
@@ -469,8 +467,8 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
           ? `${themeClassName} ${props.className}`
           : themeClassName,
         style: props?.style,
-        // Render the layer as inline-safe phrasing markup so HoverCard stays
-        // valid (and hydration-stable) inside inline contexts like a `<p>`.
+        // Phrasing markup, so the layer is still valid in the fallback case
+        // where no trigger registers and it renders in place.
         as: 'span' as const,
       };
 
