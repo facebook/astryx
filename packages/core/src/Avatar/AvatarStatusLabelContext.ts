@@ -24,7 +24,7 @@ export interface AvatarStatusLabelContextValue {
    * commit phase, so the label is registered and the composed name is applied
    * before the browser paints.
    *
-   * The function is stable and idempotent — registering the same label twice
+   * The function is stable and idempotent: registering the same label twice
    * is a no-op, so a ref reattach cannot duplicate or clear a live label.
    */
   registerStatusLabel: (label: string | undefined) => void;
@@ -40,8 +40,8 @@ export interface AvatarStatusLabelContextValue {
  * off the passed element only works when the consumer passes `AvatarStatusDot`
  * directly; registration works through a consumer's own wrapper component.
  *
- * `null` outside an Avatar — a standalone dot names itself and has nothing to
- * register with.
+ * `null` outside an Avatar, where a standalone dot names itself and has
+ * nothing to register with.
  */
 export const AvatarStatusLabelContext =
   createContext<AvatarStatusLabelContextValue | null>(null);

@@ -271,7 +271,7 @@ export interface AvatarBaseProps extends BaseProps<HTMLDivElement> {
    *
    * `AvatarStatusDot` registers its own `label` with the avatar, which
    * composes it into the avatar's accessible name (e.g. "Jane Doe, Online")
-   * so assistive tech can reach the status — the `role="img"` root prunes
+   * so assistive tech can reach the status: the `role="img"` root prunes
    * descendant semantics (WCAG 4.1.2). Registration works at any depth, so
    * wrapping the dot in your own component keeps the status announced. For a
    * status element that is not an `AvatarStatusDot`, name it with
@@ -438,8 +438,8 @@ function getStatusLabel(status: ReactNode): string | undefined {
 
 /**
  * The string when it carries something, `undefined` when it is absent or
- * blank — an empty accessible name is meaningless, so a blank reads as
- * absent (Icon treats `label=""` the same way).
+ * blank. An empty accessible name is meaningless, so a blank reads as
+ * absent, the way Icon treats `label=""`.
  */
 function meaningful(value: unknown): string | undefined {
   return typeof value === 'string' && value.trim() !== '' ? value : undefined;
@@ -548,14 +548,10 @@ export function Avatar({
   // generic "Avatar" (obs-9).
   const t = useTranslator();
   const nameLabel = meaningfulAlt || meaningfulName;
-  // Three sources, in precedence order: the explicit `statusLabel` prop, then
-  // what the status element registered through context (a callback ref, so it
-  // lands in the same commit), then the deprecated `status.props.label`
-  // introspection that only sees a directly-passed element.
   // Seeded with the introspected label so the common case (an AvatarStatusDot
-  // passed directly) registers the value the avatar already resolved and React
-  // bails out of the update. A label the avatar could not see during render
-  // still costs one extra commit.
+  // passed directly) registers a value the avatar already resolved and React
+  // bails out of the update. A label only registration can see costs one
+  // extra commit.
   const [registeredStatusLabel, setRegisteredStatusLabel] = useState<
     string | undefined
   >(() => getStatusLabel(status));
@@ -640,9 +636,9 @@ export function Avatar({
   // An interactive control needs an identity of its own. A status label is not
   // one: it composes into the accessible name, so `<Avatar href status={<dot
   // label="Online" />} />` resolves a name that reads as legitimate and says
-  // nothing about who the link points at. Only `alt`/`name` — or a consumer's
-  // own `aria-label`/`aria-labelledby` escape hatch, which wins over the
-  // derived props below — count here. The types enforce the `alt`/`name` case
+  // nothing about who the link points at. Only `alt`/`name` count, or a
+  // consumer's own `aria-label`/`aria-labelledby` escape hatch, which wins
+  // over the derived props below. The types enforce the `alt`/`name` case
   // (see AvatarProps); this is the backstop for untyped JS callers.
   const consumerName =
     meaningful(props['aria-label']) ?? meaningful(props['aria-labelledby']);
