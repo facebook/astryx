@@ -59,6 +59,25 @@ function getSheet(): HTMLElement {
   return sheet;
 }
 
+function finishSheetExit() {
+  fireEvent.transitionEnd(getSheet(), {propertyName: 'transform'});
+}
+
+function ExitHarness({hasScrim}: {hasScrim?: boolean}) {
+  const [isOpen, setIsOpen] = useState(true);
+  return (
+    <BottomSheet
+      isOpen={isOpen}
+      onOpenChange={setIsOpen}
+      label="Filters"
+      hasScrim={hasScrim}>
+      <button type="button" onClick={() => setIsOpen(false)}>
+        Close sheet
+      </button>
+    </BottomSheet>
+  );
+}
+
 // The grab handle is the panel's first child (decorative, aria-hidden).
 function getHandle(): HTMLElement {
   const handle = getSheet().querySelector<HTMLElement>('[aria-hidden="true"]');
@@ -132,6 +151,25 @@ describe('BottomSheet', () => {
     );
     fireEvent.click(screen.getByRole('dialog'));
     expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it('keeps a standalone modal sheet presented through its exit animation', () => {
+    render(<ExitHarness />);
+    const dialog = screen.getByRole('dialog', {name: 'Filters'});
+
+    fireEvent.click(screen.getByRole('button', {name: 'Close sheet'}));
+
+    expect(dialog).toHaveAttribute('open');
+    expect(dialog).toHaveAttribute('inert');
+    expect(dialog).toHaveAttribute('aria-hidden', 'true');
+    expect(dialog).not.toHaveAttribute('aria-modal');
+    expect(dialog).toHaveStyle({'--_sheet-scrim-opacity': '0'});
+    expect(document.body.style.position).toBe('fixed');
+
+    finishSheetExit();
+
+    expect(dialog).not.toHaveAttribute('open');
+    expect(document.body.style.position).not.toBe('fixed');
   });
 
   it('does not dismiss when the sheet surface itself is clicked', () => {
@@ -237,6 +275,21 @@ describe('BottomSheet', () => {
       expect(document.activeElement).toBe(
         screen.getByRole('textbox', {name: 'Search'}),
       );
+    });
+
+    it('keeps a standalone non-modal sheet visible until its exit ends', () => {
+      render(<ExitHarness hasScrim={false} />);
+      const dialog = screen.getByRole('dialog', {name: 'Filters'});
+
+      fireEvent.click(screen.getByRole('button', {name: 'Close sheet'}));
+
+      expect(dialog).toHaveAttribute('open');
+      expect(dialog).toHaveAttribute('inert');
+      expect(document.body.style.position).not.toBe('fixed');
+
+      finishSheetExit();
+
+      expect(dialog).not.toHaveAttribute('open');
     });
   });
 

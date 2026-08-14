@@ -21,7 +21,8 @@
  * layer, focus trap, scrim, scroll lock, background inert); `false` uses
  * `show()` for a non-modal sheet with no scrim, leaving the page behind
  * interactive and scrollable (the transparent shell is pointer-events:none so
- * taps pass through).
+ * taps pass through). Both modes keep the native dialog presented but inert
+ * until the slide-out transition ends.
  *
  * The drag/snap/dismiss machinery lives in `useSheetGestures`; the offset
  * geometry lives in the pure, tested `snapOffsets` module. Both are internal
@@ -34,7 +35,7 @@
  * - /apps/storybook/stories/BottomSheet.stories.tsx (examples and visual coverage)
  */
 
-import {useCallback, useEffect, useRef, type ReactNode} from 'react';
+import {useCallback, useEffect, useRef, useState, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '@astryxdesign/core';
 import {
@@ -212,6 +213,9 @@ const styles = stylex.create({
   sheetClosing: {
     transform: 'translateY(100%)',
   },
+  sheetExiting: {
+    pointerEvents: 'none',
+  },
   handleBar: {
     flexShrink: 0,
     display: 'flex',
@@ -344,6 +348,8 @@ export function BottomSheet({
   xstyle,
   ...props
 }: BottomSheetProps) {
+  const [isPresented, setIsPresented] = useState(isOpen);
+  const isExiting = !isOpen && isPresented;
   const dialogRef = useRef<HTMLDialogElement | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
   const sheetNodeRef = useRef<HTMLDivElement | null>(null);
@@ -375,6 +381,7 @@ export function BottomSheet({
       return;
     }
     if (isOpen) {
+      setIsPresented(true);
       dialog.style.setProperty('--_sheet-scrim-opacity', '1');
       if (!dialog.open) {
         // Only remember/restore focus for modal sheets; a non-modal sheet must
@@ -395,6 +402,9 @@ export function BottomSheet({
         }
       }
     } else if (dialog.open) {
+      if (hasScrim) {
+        dialog.style.setProperty('--_sheet-scrim-opacity', '0');
+      }
       // Wait for the slide-out (sheetClosing, applied this render) before
       // close() releases the top layer. Timeout backstops a missing
       // transitionend (reduced motion, hidden tab).
@@ -410,6 +420,7 @@ export function BottomSheet({
         if (dialog.open) {
           dialog.close();
         }
+        setIsPresented(false);
         triggerRef.current?.focus();
         triggerRef.current = null;
       };
@@ -419,8 +430,8 @@ export function BottomSheet({
         }
       };
       sheet?.addEventListener('transitionend', onEnd);
-      // Backstop above --duration-medium (410ms) so transitionend normally
-      // fires first; this only covers environments that don't emit it.
+      // Backstop above --duration-medium so transitionend normally fires
+      // first; this only covers environments that don't emit it.
       const timer = setTimeout(finish, 450);
       return () => {
         clearTimeout(timer);
@@ -431,7 +442,7 @@ export function BottomSheet({
 
   // Only a modal sheet locks body scroll; a non-modal sheet leaves the page
   // scrollable behind it.
-  useScrollLock(isOpen && hasScrim);
+  useScrollLock(isPresented && hasScrim);
 
   // Enforce an accessible name: label is required by types, but a JS caller
   // can still pass an empty string, leaving the sheet unnamed.
@@ -485,7 +496,7 @@ export function BottomSheet({
     <dialog
       {...stylex.props(
         styles.dialog,
-        isOpen && styles.dialogOpen,
+        (isOpen || isPresented) && styles.dialogOpen,
         // Modal: paint the ::backdrop scrim (top layer). Non-modal: no scrim,
         // pass taps through to the page, and sit above content via z-index.
         hasScrim && styles.scrim,
@@ -493,7 +504,9 @@ export function BottomSheet({
       )}
       ref={mergeRefs(ref, dialogRef)}
       aria-label={label}
-      aria-modal={hasScrim ? 'true' : undefined}
+      aria-hidden={isExiting ? 'true' : undefined}
+      aria-modal={hasScrim && isOpen ? 'true' : undefined}
+      inert={isExiting ? true : undefined}
       onCancel={handleCancel}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
@@ -508,12 +521,13 @@ export function BottomSheet({
               styles.sheet,
               isHug ? styles.hugHeight : styles.budget,
               !isOpen && styles.sheetClosing,
+              isExiting && styles.sheetExiting,
               xstyle,
             ),
             undefined,
             {
               ['--_sheet-budget' as string]: budget,
-              ...contentProps.style,
+              ...(isOpen ? contentProps.style : {}),
             },
           )}>
           <div
