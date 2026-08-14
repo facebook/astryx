@@ -1539,6 +1539,10 @@ type ScrollCalendarProps = {
   // Tighter rows so a second month peeks in a short side-by-side column
   // (tablet DateTimeInput). Phone/full-width sheets use the roomier default.
   dense?: boolean;
+  // Lay months out side by side (classic desktop range picker) instead of a
+  // vertical scroll — each month gets its own weekday header. Used on the
+  // tablet DateRangeInput where there's horizontal room for two months.
+  paged?: boolean;
 } & (
   | {
       mode: 'single';
@@ -1553,7 +1557,13 @@ type ScrollCalendarProps = {
 );
 
 function ScrollCalendar(props: ScrollCalendarProps) {
-  const {startYear, startMonth, monthCount = 4, dense = false} = props;
+  const {
+    startYear,
+    startMonth,
+    monthCount = 4,
+    dense = false,
+    paged = false,
+  } = props;
   const cellH = dense ? 32 : 42;
   const dayD = dense ? 30 : 38;
   const monthPadTop = dense ? 4 : 16;
@@ -1589,122 +1599,152 @@ function ScrollCalendar(props: ScrollCalendarProps) {
     return {year: startYear + Math.floor(m / 12), month: ((m % 12) + 12) % 12};
   });
 
-  return (
-    <div style={{width: '100%'}}>
+  // Weekday header row (S M T W ...). Sticky in the scroll layout; repeated
+  // per-month (non-sticky) in the paged / side-by-side layout.
+  const weekdayHeader = (sticky: boolean) => (
+    <div
+      style={{
+        ...(sticky
+          ? {position: 'sticky', top: 0, zIndex: 1}
+          : {position: 'relative'}),
+        background: 'var(--color-background-surface)',
+        display: 'grid',
+        gridTemplateColumns: 'repeat(7, 1fr)',
+        paddingBottom: 6,
+        borderBottom: '1px solid var(--color-border)',
+      }}>
+      {WEEKDAYS.map((w, i) => (
+        <div
+          key={i}
+          aria-label={w.full}
+          title={w.full}
+          style={{
+            textAlign: 'center',
+            fontSize: 12,
+            color: 'var(--color-text-secondary)',
+            padding: '4px 0',
+          }}>
+          {w.short}
+        </div>
+      ))}
+    </div>
+  );
+
+  const renderMonth = (year: number, month: number, withHeader: boolean) => {
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const lead = new Date(year, month, 1).getDay();
+    const cells: (number | null)[] = [
+      ...Array<null>(lead).fill(null),
+      ...Array.from({length: daysInMonth}, (_, i) => i + 1),
+    ];
+    return (
+      <div
+        key={`${year}-${month}`}
+        style={{paddingTop: paged ? 0 : monthPadTop}}>
+        <div
+          style={{
+            padding: dense ? '2px 2px 6px' : '4px 2px 10px',
+            fontSize: dense ? 14 : 15,
+            fontWeight: 600,
+            color: 'var(--color-text-primary)',
+            textAlign: paged ? 'center' : 'start',
+          }}>
+          {MONTH_NAMES[month]} {year}
+        </div>
+        {withHeader && weekdayHeader(false)}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(7, 1fr)',
+            rowGap: 2,
+            paddingTop: withHeader ? 4 : 0,
+          }}>
+          {cells.map((d, i) => {
+            if (d == null) {
+              return <div key={i} />;
+            }
+            const isoD = isoOf(year, month, d);
+            const isStart = isoD === selStart;
+            const isEnd = isoD === selEnd;
+            const inRange = !!(
+              selStart &&
+              selEnd &&
+              isoD > selStart &&
+              isoD < selEnd
+            );
+            const isEndpoint = isStart || isEnd;
+            return (
+              <div
+                key={i}
+                style={{
+                  position: 'relative',
+                  height: cellH,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                {(inRange || (isEndpoint && showBar)) && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 4,
+                      bottom: 4,
+                      left: isStart && !isEnd ? '50%' : 0,
+                      right: isEnd && !isStart ? '50%' : 0,
+                      background: 'var(--color-accent-muted)',
+                    }}
+                  />
+                )}
+                <button
+                  onClick={() => pick(isoD)}
+                  style={{
+                    position: 'relative',
+                    width: dayD,
+                    height: dayD,
+                    borderRadius: 999,
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: 14,
+                    fontFamily: 'inherit',
+                    background: isEndpoint
+                      ? 'var(--color-accent)'
+                      : 'transparent',
+                    color: isEndpoint
+                      ? 'var(--color-on-accent)'
+                      : 'var(--color-text-primary)',
+                    fontWeight: isEndpoint ? 600 : 400,
+                  }}>
+                  {d}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  // Paged: months sit side by side (classic desktop range picker), each a
+  // self-contained block with its own weekday header. The shared `anchor`
+  // means a range still spans columns.
+  if (paged) {
+    return (
       <div
         style={{
-          position: 'sticky',
-          top: 0,
-          zIndex: 1,
-          background: 'var(--color-background-surface)',
           display: 'grid',
-          gridTemplateColumns: 'repeat(7, 1fr)',
-          paddingBottom: 6,
-          borderBottom: '1px solid var(--color-border)',
+          gridTemplateColumns: `repeat(${monthCount}, 1fr)`,
+          gap: 24,
+          alignItems: 'start',
         }}>
-        {WEEKDAYS.map((w, i) => (
-          <div
-            key={i}
-            aria-label={w.full}
-            title={w.full}
-            style={{
-              textAlign: 'center',
-              fontSize: 12,
-              color: 'var(--color-text-secondary)',
-              padding: '4px 0',
-            }}>
-            {w.short}
-          </div>
-        ))}
+        {months.map(({year, month}) => renderMonth(year, month, true))}
       </div>
-      {months.map(({year, month}) => {
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-        const lead = new Date(year, month, 1).getDay();
-        const cells: (number | null)[] = [
-          ...Array<null>(lead).fill(null),
-          ...Array.from({length: daysInMonth}, (_, i) => i + 1),
-        ];
-        return (
-          <div key={`${year}-${month}`} style={{paddingTop: monthPadTop}}>
-            <div
-              style={{
-                padding: dense ? '2px 2px 6px' : '4px 2px 10px',
-                fontSize: dense ? 14 : 15,
-                fontWeight: 600,
-                color: 'var(--color-text-primary)',
-              }}>
-              {MONTH_NAMES[month]} {year}
-            </div>
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(7, 1fr)',
-                rowGap: 2,
-              }}>
-              {cells.map((d, i) => {
-                if (d == null) {
-                  return <div key={i} />;
-                }
-                const isoD = isoOf(year, month, d);
-                const isStart = isoD === selStart;
-                const isEnd = isoD === selEnd;
-                const inRange = !!(
-                  selStart &&
-                  selEnd &&
-                  isoD > selStart &&
-                  isoD < selEnd
-                );
-                const isEndpoint = isStart || isEnd;
-                return (
-                  <div
-                    key={i}
-                    style={{
-                      position: 'relative',
-                      height: cellH,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}>
-                    {(inRange || (isEndpoint && showBar)) && (
-                      <div
-                        style={{
-                          position: 'absolute',
-                          top: 4,
-                          bottom: 4,
-                          left: isStart && !isEnd ? '50%' : 0,
-                          right: isEnd && !isStart ? '50%' : 0,
-                          background: 'var(--color-accent-muted)',
-                        }}
-                      />
-                    )}
-                    <button
-                      onClick={() => pick(isoD)}
-                      style={{
-                        position: 'relative',
-                        width: dayD,
-                        height: dayD,
-                        borderRadius: 999,
-                        border: 'none',
-                        cursor: 'pointer',
-                        fontSize: 14,
-                        fontFamily: 'inherit',
-                        background: isEndpoint
-                          ? 'var(--color-accent)'
-                          : 'transparent',
-                        color: isEndpoint
-                          ? 'var(--color-on-accent)'
-                          : 'var(--color-text-primary)',
-                        fontWeight: isEndpoint ? 600 : 400,
-                      }}>
-                      {d}
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })}
+    );
+  }
+
+  return (
+    <div style={{width: '100%'}}>
+      {weekdayHeader(true)}
+      {months.map(({year, month}) => renderMonth(year, month, false))}
     </div>
   );
 }
@@ -1755,6 +1795,58 @@ function DateRangeInputDemo() {
           startYear={2026}
           startMonth={6}
           monthCount={4}
+        />
+      </BottomSheet>
+    </>
+  );
+}
+
+// Tablet: with room to spare, two months sit side by side (classic desktop
+// range picker) instead of the phone's vertical scroll. One calendar instance
+// keeps the shared range anchor, so a selection still spans both months.
+function DateRangeInputTabletDemo() {
+  const [open, setOpen] = useState(false);
+  const [range, setRange] = useState<DateRange>();
+  const label =
+    range?.start && range?.end ? `${range.start} → ${range.end}` : undefined;
+  return (
+    <>
+      <AppScreen title="DateRangeInput">
+        <Note>
+          With room to spare, two months sit <b>side by side</b> (the desktop
+          range-picker pattern) instead of the phone's vertical scroll. The
+          range highlight flows continuously from one month into the next.
+        </Note>
+        <TapField
+          label="Trip dates"
+          placeholder="Pick a range"
+          icon={<CalendarIcon width={16} height={16} />}
+          value={label}
+          onClick={() => setOpen(true)}
+        />
+      </AppScreen>
+      <BottomSheet
+        open={open}
+        onClose={() => setOpen(false)}
+        height="hug"
+        title="Trip dates"
+        footer={
+          <Button
+            label="Apply"
+            variant="primary"
+            xstyle={s.fullBtn}
+            isDisabled={!range?.start || !range?.end}
+            onClick={() => setOpen(false)}
+          />
+        }>
+        <ScrollCalendar
+          mode="range"
+          paged
+          value={range}
+          onChange={setRange}
+          startYear={2026}
+          startMonth={6}
+          monthCount={2}
         />
       </BottomSheet>
     </>
@@ -3938,10 +4030,11 @@ export const PROTOTYPES: Prototype[] = [
     change:
       'Bottom sheet with a vertical month scroll (Airbnb / Material mobile pattern); opens at a medium detent and drags up to full.',
     interaction:
-      'Months stack in a vertical scroll, each with its own title and a sticky weekday header; the range highlight flows across months. One selection spans any two months. It opens at a medium detent and can be dragged up to full height to see more months at once; Apply stays pinned and enables once a full range is selected.',
+      'Months stack in a vertical scroll, each with its own title and a sticky weekday header; the range highlight flows across months. One selection spans any two months. It opens at a medium detent and can be dragged up to full height to see more months at once; Apply stays pinned and enables once a full range is selected. On a wide sheet two months sit side by side (desktop range-picker pattern).',
     showTablet: true,
-    tabletCaption: 'Tablet · sheet caps at 640px, centered',
+    tabletCaption: 'Tablet · two months side by side',
     Demo: DateRangeInputDemo,
+    TabletDemo: DateRangeInputTabletDemo,
   },
   {
     id: 'formlayout',
