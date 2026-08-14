@@ -152,13 +152,13 @@ export interface ContextRenderProps {
   /**
    * HTML tag to render the popover container as.
    *
-   * Defaults to `'div'`. Pass `'span'` for a layer that can land in a phrasing
-   * context — the layer is hosted outside inline ancestors (see
-   * `resolveLayerHost`), but the fallback host when no trigger is registered
-   * is the layer's own position in the tree. The Popover API and CSS anchor
-   * positioning work the same on either tag.
+   * Defaults to `'span'`, which is also safe in a phrasing context: the layer
+   * is hosted outside inline ancestors (see `resolveLayerHost`), but the
+   * fallback when no trigger ever registers is the layer's own position in the
+   * tree. The Popover API and CSS anchor positioning work the same on either
+   * tag.
    *
-   * @default 'div'
+   * @default 'span'
    */
   as?: 'div' | 'span';
   /**
@@ -414,15 +414,22 @@ export function useLayer(
   const [isOpen, setIsOpen] = useState(false);
   const popoverRef = useRef<HTMLElement | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
-  // Where the layer is rendered in the DOM. Null until a trigger registers,
-  // which is also what keeps the layer out of server markup and out of the
-  // hydrating render: both sides render nothing, so there is no mismatch, and
-  // the HTML parser never sees the layer's content (see resolveLayerHost).
+  // Where the layer is rendered in the DOM: the nearest ancestor of the
+  // trigger that can hold it (see resolveLayerHost). Null until the trigger
+  // registers, and null for good for a layer that never gets one, which then
+  // renders where the consumer put it.
   const [host, setHost] = useState<HTMLElement | null>(null);
   // Gates the layer on having mounted, so the server and the hydrating render
-  // agree (nothing) even when no trigger ever registers a host (#3107).
+  // agree (nothing) and the parser never sees the layer's content (#3107).
+  //
+  // The flip has to arrive as a render, and it has to arrive one commit late:
+  // a ref cannot schedule a render at all, and useSyncExternalStore reports
+  // the client too early — it is already `true` on the first client render,
+  // before the trigger has registered a host, so the layer renders inline for
+  // a frame in the paragraph this whole file exists to keep it out of.
   const [isMounted, setIsMounted] = useState(false);
   useIsomorphicLayoutEffect(() => {
+    // eslint-disable-next-line @eslint-react/set-state-in-effect -- the extra render is the mechanism, see above
     setIsMounted(true);
   }, []);
   // A show() that arrives before the layer has mounted (isDefaultOpen, or a
@@ -591,6 +598,10 @@ export function useLayer(
   // Render function for context mode
   const renderContext = useCallback(
     (children: ReactNode, props?: ContextRenderProps) => {
+      if (!isMounted) {
+        return null;
+      }
+
       const {
         placement = 'above',
         alignment = 'center',
@@ -640,11 +651,9 @@ export function useLayer(
       // clicks, which theme variables it inherits, and where it sits in the
       // tab order. `resolveLayerHost` walks up from the trigger to the nearest
       // ancestor that hosts it safely — close enough to keep the theme
-      // cascade and tab order, out of the ancestors that break it. Hosting is
-      // client-only, so the parser never sees the layer at all (#3107).
-      //
-      // With no trigger registered there is nothing to walk from, so the layer
-      // renders where the consumer put it, as it always did.
+      // cascade and tab order, out of the ancestors that break it. With no
+      // trigger registered there is nothing to walk from, so the layer renders
+      // where the consumer put it, as it always did.
       const layer = (
         <Container
           ref={popoverRefCallback}
@@ -660,7 +669,7 @@ export function useLayer(
         </Container>
       );
 
-      return isMounted ? (host ? createPortal(layer, host) : layer) : null;
+      return host ? createPortal(layer, host) : layer;
     },
     [anchorId, host, id, isMounted, lightDismiss, popoverRefCallback],
   );
