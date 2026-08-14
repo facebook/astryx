@@ -4,7 +4,8 @@
 
 /**
  * @file AvatarStatusDot.tsx
- * @input Uses React, StyleX, theme tokens, and AvatarSizeContext
+ * @input Uses React, StyleX, theme tokens, AvatarSizeContext, and
+ *   AvatarStatusLabelContext (label registration)
  * @output Exports AvatarStatusDot component and AvatarStatusDotProps type
  * @position Sub-component of Avatar; renders a size-aware status indicator
  *
@@ -15,12 +16,13 @@
  * - /packages/cli/assets/templates/blocks/components/Avatar/ (showcase blocks)
  */
 
-import React, {use, type ReactNode} from 'react';
+import React, {use, useCallback, useMemo, type ReactNode} from 'react';
 import type {BaseProps} from '../BaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, radiusVars} from '../theme/tokens.stylex';
 import {AvatarSizeContext} from './AvatarSizeContext';
-import {isRenderable, mergeProps} from '../utils';
+import {AvatarStatusLabelContext} from './AvatarStatusLabelContext';
+import {isRenderable, mergeProps, mergeRefs} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import type {AvatarStatusDotVariantMap} from './index';
 
@@ -311,6 +313,24 @@ export function AvatarStatusDot({
   ...props
 }: AvatarStatusDotProps) {
   const avatarSize = use(AvatarSizeContext);
+  const statusLabelRegistry = use(AvatarStatusLabelContext);
+  const registerStatusLabel = statusLabelRegistry?.registerStatusLabel;
+  // Hand the label to the enclosing Avatar from a callback ref rather than an
+  // Effect: the ref runs in the commit phase, so the avatar's accessible name
+  // is composed before paint. Memoized on the label so React only reattaches
+  // when there is something new to register, and the cleanup withdraws the
+  // label when the dot unmounts.
+  const registerRef = useCallback(() => {
+    if (!registerStatusLabel) {
+      return;
+    }
+    registerStatusLabel(label);
+    return () => registerStatusLabel(undefined);
+  }, [registerStatusLabel, label]);
+  const rootRef = useMemo(
+    () => mergeRefs(ref, registerRef),
+    [ref, registerRef],
+  );
   const {dotSize, borderWidth, iconSize, tier} =
     resolveStatusDotSize(avatarSize);
   const showsIcon = isRenderable(icon) && iconSize > 0;
@@ -321,7 +341,7 @@ export function AvatarStatusDot({
   return (
     <div
       {...props}
-      ref={ref}
+      ref={rootRef}
       {...(label ? {role: 'img', 'aria-label': label} : undefined)}
       {...mergeProps(
         themeProps('avatar-status-dot', {variant}),

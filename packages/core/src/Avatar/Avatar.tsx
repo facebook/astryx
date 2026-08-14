@@ -12,10 +12,11 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Avatar/Avatar.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/Avatar/index.ts (exports if types change)
+ * - /packages/core/src/Avatar/AvatarStatusLabelContext.ts (status label registration)
  * - /apps/storybook/stories/Avatar.stories.tsx (storybook stories)
  * - /packages/cli/assets/templates/blocks/components/Avatar/ (showcase blocks)
  *
- * Last synced props: alt, fallbackSrc, name, size, src, status, href, as, target, rel, onClick
+ * Last synced props: alt, fallbackSrc, name, size, src, status, statusLabel, href, as, target, rel, onClick
  */
 
 import {isValidElement, useMemo, useState, type ReactNode} from 'react';
@@ -28,6 +29,7 @@ import {
   radiusVars,
 } from '../theme/tokens.stylex';
 import {AvatarSizeContext} from './AvatarSizeContext';
+import {AvatarStatusLabelContext} from './AvatarStatusLabelContext';
 import {useAvatarGroup} from '../AvatarGroup/AvatarGroupContext';
 import {mergeProps, mergeRefs} from '../utils';
 import {themeProps} from '../utils/themeProps';
@@ -227,7 +229,7 @@ const groupDynamicStyles = stylex.create({
   }),
 });
 
-export interface AvatarProps extends BaseProps<HTMLDivElement> {
+export interface AvatarBaseProps extends BaseProps<HTMLDivElement> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLDivElement>;
   /**
@@ -267,12 +269,29 @@ export interface AvatarProps extends BaseProps<HTMLDivElement> {
    * Content displayed in the corner of the avatar.
    * Typically used for status indicators or badges.
    *
-   * When the element carries a string `label` prop (as `AvatarStatusDot`
-   * does), the label is composed into the avatar's accessible name
-   * (e.g. "Jane Doe, Online") so assistive tech can reach the status —
-   * the `role="img"` root prunes descendant semantics (WCAG 4.1.2).
+   * `AvatarStatusDot` registers its own `label` with the avatar, which
+   * composes it into the avatar's accessible name (e.g. "Jane Doe, Online")
+   * so assistive tech can reach the status — the `role="img"` root prunes
+   * descendant semantics (WCAG 4.1.2). Registration works at any depth, so
+   * wrapping the dot in your own component keeps the status announced. For a
+   * status element that is not an `AvatarStatusDot`, name it with
+   * `statusLabel`.
    */
   status?: ReactNode;
+  /**
+   * The accessible label for the `status` element, composed into the avatar's
+   * accessible name.
+   *
+   * Only needed for a custom status element: `AvatarStatusDot` registers its
+   * own `label`. Set this and it wins over anything the status element
+   * registers.
+   *
+   * @example
+   * ```
+   * <Avatar name="Jane Doe" statusLabel="On leave" status={<LeaveBadge />} />
+   * ```
+   */
+  statusLabel?: string;
   /**
    * Tooltip shown on hover (and keyboard focus).
    * - omitted / `true`: show the avatar's `name`
@@ -318,6 +337,47 @@ export interface AvatarProps extends BaseProps<HTMLDivElement> {
 }
 
 /**
+ * The ways an interactive avatar can be given an accessible name.
+ *
+ * `alt`/`name` are the ones to reach for: they name the control and, for
+ * `name`, also drive the initials. `aria-label`/`aria-labelledby` are the
+ * escape hatch for a name the avatar cannot derive, and they override the
+ * derived attributes (see `getAvatarA11yProps`).
+ *
+ * A status label is deliberately not on this list. It composes into the
+ * accessible name, but it describes availability, not identity: a link named
+ * "Online" reads as legitimate and says nothing about where it goes.
+ */
+type AvatarInteractiveName =
+  | {'aria-label': string}
+  | {'aria-labelledby': string}
+  | {alt: string}
+  | {name: string};
+
+/**
+ * Props for Avatar.
+ *
+ * A union rather than a plain interface, because an interactive avatar has to
+ * carry an accessible name and a static one does not. `<Avatar href="/u"
+ * src="..." />` is a control nobody can identify, so it fails to compile;
+ * `<Avatar src="..." />` on its own is decorative and stays legal.
+ *
+ * @example
+ * ```
+ * <Avatar src="/ada.jpg" />
+ * <Avatar src="/ada.jpg" name="Ada Lovelace" href="/users/ada" />
+ * <Avatar src="/ada.jpg" alt="Ada Lovelace" onClick={openProfile} />
+ * ```
+ */
+export type AvatarProps =
+  | (AvatarBaseProps & {href?: never; onClick?: never})
+  | (AvatarBaseProps & {href: string} & AvatarInteractiveName)
+  | (AvatarBaseProps & {
+      href?: never;
+      onClick: React.MouseEventHandler<HTMLElement>;
+    } & AvatarInteractiveName);
+
+/**
  * Reuse a single segmenter when the runtime supports Intl.Segmenter.
  */
 const graphemeSegmenter =
@@ -360,13 +420,13 @@ function getInitials(name: string): string {
 
 /**
  * Reads the accessible status label off the `status` element, when it
- * exposes one. `AvatarStatusDot`'s `label` prop is the canonical source,
- * but any custom status element with a string `label` prop participates.
+ * exposes one.
  *
- * The avatar root is `role="img"`, which prunes ALL descendant semantics
- * from the accessibility tree — a label inside the status subtree is never
- * announced on its own. Composing it into the avatar's own accessible name
- * is the only way the status reaches assistive tech (WCAG 4.1.2).
+ * @deprecated Prefer the `statusLabel` prop, or `AvatarStatusDot`'s own
+ * registration through `AvatarStatusLabelContext`. Introspection only sees a
+ * literal `label` prop on the element the consumer passes, so a consumer's own
+ * wrapper component around the dot hides it. Kept as a fallback so call sites
+ * that work today keep working.
  */
 function getStatusLabel(status: ReactNode): string | undefined {
   if (!isValidElement(status)) {
@@ -374,6 +434,36 @@ function getStatusLabel(status: ReactNode): string | undefined {
   }
   const {label} = status.props as {label?: unknown};
   return typeof label === 'string' && label !== '' ? label : undefined;
+}
+
+/**
+ * The string when it carries something, `undefined` when it is absent or
+ * blank — an empty accessible name is meaningless, so a blank reads as
+ * absent (Icon treats `label=""` the same way).
+ */
+function meaningful(value: unknown): string | undefined {
+  return typeof value === 'string' && value.trim() !== '' ? value : undefined;
+}
+
+/**
+ * Derives the root's ARIA attributes from the resolved accessible name,
+ * following Icon's `getIconA11yProps`.
+ *
+ * - A name → meaningful image: `role="img"` + `aria-label`.
+ * - No name → decorative: `role="presentation"` + `aria-hidden="true"`, rather
+ *   than announcing a meaningless generic "Avatar" (obs-9).
+ *
+ * The result is spread BEFORE `{...props}` on every root so an explicit
+ * `aria-label` / `role` / `aria-hidden` from the consumer always wins.
+ */
+function getAvatarA11yProps(
+  accessibleName: string | undefined,
+):
+  | {role: 'img'; 'aria-label': string}
+  | {role: 'presentation'; 'aria-hidden': 'true'} {
+  return accessibleName != null && accessibleName !== ''
+    ? {role: 'img', 'aria-label': accessibleName}
+    : {role: 'presentation', 'aria-hidden': 'true'};
 }
 
 /**
@@ -417,6 +507,7 @@ export function Avatar({
   size = 'md',
   src,
   status,
+  statusLabel,
   tooltip = true,
   href,
   as,
@@ -442,8 +533,8 @@ export function Avatar({
   // A whitespace-only string carries no identity. Without this it produces no
   // initials (getInitials trims to nothing) and no default icon (a space is
   // truthy), leaving an empty plate behind a blank accessible name.
-  const meaningfulName = name?.trim() ? name : undefined;
-  const meaningfulAlt = alt?.trim() ? alt : undefined;
+  const meaningfulName = meaningful(name);
+  const meaningfulAlt = meaningful(alt);
   const showInitials = !showImage && !showFallbackImage && meaningfulName;
   const showIcon = !showImage && !showFallbackImage && !meaningfulName;
 
@@ -457,15 +548,39 @@ export function Avatar({
   // generic "Avatar" (obs-9).
   const t = useTranslator();
   const nameLabel = meaningfulAlt || meaningfulName;
-  const statusLabel = getStatusLabel(status);
+  // Three sources, in precedence order: the explicit `statusLabel` prop, then
+  // what the status element registered through context (a callback ref, so it
+  // lands in the same commit), then the deprecated `status.props.label`
+  // introspection that only sees a directly-passed element.
+  // Seeded with the introspected label so the common case (an AvatarStatusDot
+  // passed directly) registers the value the avatar already resolved and React
+  // bails out of the update. A label the avatar could not see during render
+  // still costs one extra commit.
+  const [registeredStatusLabel, setRegisteredStatusLabel] = useState<
+    string | undefined
+  >(() => getStatusLabel(status));
+  const statusLabelRegistry = useMemo(
+    () => ({registerStatusLabel: setRegisteredStatusLabel}),
+    [],
+  );
+  const resolvedStatusLabel =
+    meaningful(statusLabel) ??
+    meaningful(registeredStatusLabel) ??
+    getStatusLabel(status);
   const accessibleName =
-    nameLabel && statusLabel
+    nameLabel && resolvedStatusLabel
       ? t('@astryx.avatar.nameWithStatus', {
           name: nameLabel,
-          status: statusLabel,
+          status: resolvedStatusLabel,
         })
-      : nameLabel || statusLabel;
-  const isDecorative = !accessibleName;
+      : nameLabel || resolvedStatusLabel;
+  const a11yProps = getAvatarA11yProps(accessibleName);
+  // An `<a>`/`<button>` root carries its own role and must not be hidden, so
+  // only the name transfers. Spread before `{...props}` for the same
+  // consumer-wins precedence as the static root.
+  const a11yLabelProps = accessibleName
+    ? {'aria-label': accessibleName}
+    : undefined;
   const avatarGroup = useAvatarGroup();
   const resolvedSize = avatarGroup?.size ?? size;
   const numericSize = useMemo(() => resolveSize(resolvedSize), [resolvedSize]);
@@ -522,14 +637,20 @@ export function Avatar({
   const isInteractive = renderAsLink || renderAsButton;
   const LinkComponent = useLinkComponent(as);
 
-  // An interactive control with no accessible name is an unacceptable control
-  // name. `useDevWarning` is the shared guardrail: it warns once per mount
-  // rather than on every render, and compiles out of production builds.
+  // An interactive control needs an identity of its own. A status label is not
+  // one: it composes into the accessible name, so `<Avatar href status={<dot
+  // label="Online" />} />` resolves a name that reads as legitimate and says
+  // nothing about who the link points at. Only `alt`/`name` — or a consumer's
+  // own `aria-label`/`aria-labelledby` escape hatch, which wins over the
+  // derived props below — count here. The types enforce the `alt`/`name` case
+  // (see AvatarProps); this is the backstop for untyped JS callers.
+  const consumerName =
+    meaningful(props['aria-label']) ?? meaningful(props['aria-labelledby']);
   useDevWarning(
     'Avatar',
     'an interactive avatar (with `href` or `onClick`) needs a meaningful ' +
       'accessible name. Pass `alt` or `name`.',
-    isInteractive && !accessibleName,
+    isInteractive && !nameLabel && consumerName == null,
   );
 
   // The inner visuals are identical across the static and interactive variants.
@@ -619,13 +740,13 @@ export function Avatar({
     // it up while ignoring nested buttons in a custom status/badge slot.
     rootElement = (
       <LinkComponent
+        {...a11yLabelProps}
         {...interactivePassthrough}
         {...describedByProp}
         ref={rootRef as React.Ref<HTMLAnchorElement>}
         href={href}
         target={target}
         rel={rel}
-        aria-label={accessibleName}
         data-avatar-item=""
         data-testid={testId}
         onClick={onClick}
@@ -636,11 +757,11 @@ export function Avatar({
   } else if (renderAsButton) {
     rootElement = (
       <button
+        {...a11yLabelProps}
         {...interactivePassthrough}
         {...describedByProp}
         ref={rootRef}
         type="button"
-        aria-label={accessibleName}
         data-avatar-item=""
         data-testid={testId}
         onClick={onClick}
@@ -651,11 +772,9 @@ export function Avatar({
   } else {
     rootElement = (
       <div
+        {...a11yProps}
         {...props}
         ref={rootRef}
-        role={isDecorative ? 'presentation' : 'img'}
-        aria-label={isDecorative ? undefined : accessibleName}
-        aria-hidden={isDecorative || undefined}
         // The root is a div[role="img"], not natively focusable. When a name
         // tooltip is active, add a tab stop so keyboard users can reveal it
         // (WCAG 1.4.13 / 2.1.1) — matching Timestamp/Button. Suppressed inside
@@ -670,7 +789,11 @@ export function Avatar({
   }
 
   const avatarElement = (
-    <AvatarSizeContext value={numericSize}>{rootElement}</AvatarSizeContext>
+    <AvatarSizeContext value={numericSize}>
+      <AvatarStatusLabelContext value={statusLabelRegistry}>
+        {rootElement}
+      </AvatarStatusLabelContext>
+    </AvatarSizeContext>
   );
 
   // Always return the same structure so the avatar keeps its position in the
