@@ -24,8 +24,10 @@ const CLIENT_APIS = [
   // React 19's context read — as client-only as useContext at every call site
   // in this package. (`use(promise)` is legal on the server; we over-approximate.)
   'use',
+  'useActionState',
   'useState',
   'useEffect',
+  'useEffectEvent',
   'useRef',
   'useCallback',
   'useMemo',

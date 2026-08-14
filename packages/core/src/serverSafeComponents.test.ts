@@ -48,8 +48,10 @@ const CLIENT_APIS = new Set([
   // over-approximates — but every `use()` call site in this package reads a
   // context, which is exactly as client-only as useContext.
   'use',
+  'useActionState',
   'useState',
   'useEffect',
+  'useEffectEvent',
   'useRef',
   'useCallback',
   'useMemo',
@@ -515,6 +517,15 @@ describe('parseSource', () => {
       parse(`import {use} from 'react';\nexport const a = 1;`).clientAPIs,
     ).toEqual(['use']);
   });
+
+  it.each(['useActionState', 'useEffectEvent'])(
+    'treats React 19 `%s` as a client API',
+    api => {
+      expect(
+        parse(`import {${api}} from 'react';\nexport const a = 1;`).clientAPIs,
+      ).toEqual([api]);
+    },
+  );
 
   it('sees `use client` behind another prologue directive', () => {
     expect(

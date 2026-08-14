@@ -1,5 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+'use client';
+
 /**
  * @file Divider.tsx
  * @input Uses React, stylex, spacing and color tokens
