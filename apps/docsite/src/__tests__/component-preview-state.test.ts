@@ -7,6 +7,7 @@ import {
   getMissingRequiredProps,
   hasInteractivePlayground,
   isOverlayPreviewClosed,
+  needsMobileContextPreview,
   pickPrimaryProps,
 } from '../components/component-detail/interactiveState';
 import type {PropDoc} from '../generated/componentRegistry';
@@ -490,6 +491,14 @@ describe('component detail preview state', () => {
     expect(isOverlayPreviewClosed({}, {isOpen: false})).toBe(false);
     expect(isOverlayPreviewClosed(null, {isOpen: false})).toBe(false);
     expect(isOverlayPreviewClosed(undefined, {})).toBe(false);
+  });
+
+  it('flags mobile context previews only when playground.mobileContext is set (#4983)', () => {
+    expect(needsMobileContextPreview({mobileContext: true})).toBe(true);
+    expect(needsMobileContextPreview({overlay: true})).toBe(false);
+    expect(needsMobileContextPreview({})).toBe(false);
+    expect(needsMobileContextPreview(null)).toBe(false);
+    expect(needsMobileContextPreview(undefined)).toBe(false);
   });
 });
 

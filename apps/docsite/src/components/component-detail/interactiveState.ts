@@ -230,6 +230,17 @@ export function isOverlayPreviewClosed(
   return playground?.overlay === true && state.isOpen !== true;
 }
 
+/**
+ * True when the previewed component only renders inside AppShell's mobile
+ * nav context (`playground.mobileContext`). The stage wraps it in
+ * `AppShellMobileContext` so it is visible on load instead of returning null.
+ */
+export function needsMobileContextPreview(
+  playground: PlaygroundConfig | null | undefined,
+): boolean {
+  return playground?.mobileContext === true;
+}
+
 export function getMissingRequiredProps(
   knobs: KnobProp[],
   state: Record<string, unknown>,

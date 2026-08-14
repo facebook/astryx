@@ -13,6 +13,10 @@ import {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {getComponent, resolveValue} from './resolveElements';
+import {
+  AppShellMobileContext,
+  type AppShellMobileContextValue,
+} from '@astryxdesign/core/AppShell';
 import {Button} from '@astryxdesign/core/Button';
 import {Card} from '@astryxdesign/core/Card';
 import {Center} from '@astryxdesign/core/Center';
@@ -26,6 +30,7 @@ import {
   buildRuntimePreviewState,
   getMissingRequiredProps,
   isOverlayPreviewClosed,
+  needsMobileContextPreview,
   pickPrimaryProps,
   type KnobProp,
 } from './interactiveState';
@@ -150,6 +155,27 @@ function formatValue(
   }
 }
 
+function MobileContextPreview({children}: {children: ReactNode}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const value = useMemo<AppShellMobileContextValue>(
+    () => ({
+      isMobile: true,
+      isMobileNavOpen: isOpen,
+      toggleMobileNav: () => setIsOpen(open => !open),
+      openMobileNav: () => setIsOpen(true),
+      closeMobileNav: () => setIsOpen(false),
+      isMobileNavEnabled: true,
+      hasAutoToggle: false,
+    }),
+    [isOpen],
+  );
+  return (
+    <AppShellMobileContext.Provider value={value}>
+      {children}
+    </AppShellMobileContext.Provider>
+  );
+}
+
 function generateCode(name: string, state: Record<string, unknown>): string {
   const componentName = name;
   // Filter out docs-only props that shouldn't appear in user code
@@ -252,14 +278,19 @@ export function InteractivePreviewStage({
     }
     return resolved;
   }, [wrapper]);
+  const wrapMobileContext = needsMobileContextPreview(playground);
   const renderPreview = useCallback(
     (rendered: ReactNode): ReactNode => {
+      let node = rendered;
       if (wrapper && WrapperComponent) {
-        return createElement(WrapperComponent, wrapperProps, rendered);
+        node = createElement(WrapperComponent, wrapperProps, node);
       }
-      return rendered;
+      if (wrapMobileContext) {
+        node = createElement(MobileContextPreview, null, node);
+      }
+      return node;
     },
-    [wrapper, WrapperComponent, wrapperProps],
+    [wrapper, WrapperComponent, wrapperProps, wrapMobileContext],
   );
 
   if (missingRequiredProps.length > 0) {
@@ -361,7 +392,12 @@ export function InteractivePreviewStage({
               padding: 'var(--spacing-4)',
             }}>
             <PreviewErrorBoundary
-              resetKeys={[Component, runtimeState, WrapperComponent]}>
+              resetKeys={[
+                Component,
+                runtimeState,
+                WrapperComponent,
+                wrapMobileContext,
+              ]}>
               {renderPreview(createElement(Component, runtimeState))}
               {isOverlayPreviewClosed(playground, state) && (
                 <VStack

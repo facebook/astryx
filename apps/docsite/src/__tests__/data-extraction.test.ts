@@ -309,6 +309,22 @@ describe('componentRegistry', () => {
     });
   });
 
+  it('MobileNavToggle supplies mobile context so the properties preview is not empty (#4983)', () => {
+    const core = components['@astryxdesign/core'];
+    const toggle = core.find(c => c.name === 'MobileNavToggle');
+    const drawer = core.find(c => c.name === 'MobileNav');
+    expect(toggle).toBeDefined();
+    expect(drawer).toBeDefined();
+    // MobileNavToggle returns null unless AppShell reports a mobile viewport
+    // with nav enabled. mobileContext wraps the properties preview in that
+    // context so the hamburger is visible on load.
+    expect(toggle!.playground?.mobileContext).toBe(true);
+    expect(toggle!.playground?.overlay).toBeUndefined();
+    // Overlay stays on the drawer entry only so the toggle does not inherit it.
+    expect(drawer!.playground?.overlay).toBe(true);
+    expect(drawer!.playground?.mobileContext).toBeUndefined();
+  });
+
   it('Lightbox declares an overlay playground with a closed initial state (#3657)', () => {
     const core = components['@astryxdesign/core'];
     const lightbox = core.find(c => c.name === 'Lightbox');

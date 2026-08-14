@@ -826,6 +826,7 @@ export interface ElementDescriptor {
 export interface PlaygroundConfig {
   defaults?: Record<string, unknown>;
   overlay?: boolean;
+  mobileContext?: boolean;
   wrapper?: {
     component: string;
     props?: Record<string, unknown>;

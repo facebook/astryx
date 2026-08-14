@@ -187,7 +187,8 @@ export interface ComponentEntry {
   /** Playground configuration for this specific component. Falls back to
    *  the directory doc's `playground` when omitted — declare one here when
    *  siblings must not share it (e.g. an overlay drawer whose toggle
-   *  sub-component should not inherit `overlay: true`). */
+   *  sub-component should not inherit `overlay: true`, or a toggle that
+   *  needs `mobileContext` while the drawer uses overlay mode). */
   playground?: ComponentPlaygroundConfig;
 }
 

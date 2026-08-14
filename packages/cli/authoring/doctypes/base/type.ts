@@ -117,6 +117,11 @@ export interface ComponentPlaygroundConfig {
    *  the component is visible on load and knobs stay usable, whereas a real
    *  top-layer modal makes the rest of the page inert (#3657). */
   overlay?: boolean;
+  /** The component returns nothing unless AppShell reports a mobile viewport
+   *  with mobile nav enabled (e.g. `MobileNavToggle`). The interactive
+   *  preview wraps it in `AppShellMobileContext` with those flags so the
+   *  Properties stage shows the control on load instead of an empty box. */
+  mobileContext?: boolean;
   /** Required parent wrapper for sub-components that depend on a parent
    *  context provider (e.g. `Tab` calls `useTabListContext()` and throws
    *  standalone). The preview wraps the component in this parent before

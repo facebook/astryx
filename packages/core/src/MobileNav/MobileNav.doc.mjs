@@ -78,6 +78,12 @@ export const docs = {
       name: 'MobileNavToggle',
       displayName: 'Mobile Nav Toggle',
       description: 'Hamburger button that opens/closes the mobile nav drawer. Reads open state from AppShell context automatically: does NOT accept isOpen or onOpenChange props. Renders nothing above the mobile breakpoint.',
+      // Returns null without AppShell mobile context. Declared on this entry
+      // so the Properties preview can show the hamburger on load (#4983)
+      // without wrapping MobileNav itself.
+      playground: {
+        mobileContext: true,
+      },
       props: [
         {
           name: 'children',
