@@ -59,7 +59,7 @@ export const docs = {
     {
       name: 'size',
       type: "'xsm' | 'sm' | 'md' | 'lg' | 'xl' | number",
-      description: "Avatar size. Use a named size ('xsm' 20px, 'sm' 24px, 'md' 36px, 'lg' 48px, 'xl' 128px) or a numeric pixel value. Avatar shares Icon's abbreviated scale, but its tiers are larger because avatars align with media rather than glyphs.",
+      description: "Avatar size. Use a named size ('xsm' 20px, 'sm' 24px, 'md' 36px, 'lg' 48px, 'xl' 128px) or a numeric pixel value. Avatar shares Icon's abbreviated scale, but its tiers are larger because avatars align with media rather than glyphs. Inside an AvatarGroup the group's size wins and this prop is ignored.",
       default: "'md'",
     },
     {
@@ -151,7 +151,7 @@ export const docsDense = {
     fallbackSrc: 'fallback image when primary fails',
     name: 'user name for initials and alt text',
     alt: 'alt text; falls back to name',
-    size: "avatar size. Named ('xsm' 20px, 'sm' 24px, 'md' 36px, 'lg' 48px, 'xl' 128px) or numeric px.",
+    size: "avatar size. Named ('xsm' 20px, 'sm' 24px, 'md' 36px, 'lg' 48px, 'xl' 128px) or numeric px. An AvatarGroup's size overrides it.",
     status:
       'corner content for status indicators; its `label` is composed into the avatar accessible name ("Jane Doe, Online")',
     tooltip:

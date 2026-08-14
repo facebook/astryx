@@ -28,7 +28,8 @@ const styles = stylex.create({
     fontFamily: typographyVars['--font-family-body'],
   },
   narrow: {
-    width: '320px',
+    maxWidth: '320px',
+    width: '100%',
     borderWidth: '1px',
     borderStyle: 'dashed',
     borderColor: 'currentColor',
