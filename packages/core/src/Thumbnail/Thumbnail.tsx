@@ -215,14 +215,14 @@ const styles = stylex.create({
     // without sampling pixel brightness.
     backgroundColor: colorVars['--color-overlay'],
     color: colorVars['--color-on-dark'],
-    '--hit-inset': {
+    '--_thumbnail-hit-inset': {
       default: '0px',
       '@media (pointer: coarse)': '-2px',
     },
     '::after': {
       content: '""',
       position: 'absolute',
-      inset: 'var(--hit-inset)',
+      inset: 'var(--_thumbnail-hit-inset)',
     },
   },
   disabled: {
