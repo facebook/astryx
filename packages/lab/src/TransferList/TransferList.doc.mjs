@@ -187,7 +187,7 @@ export const docs = {
       name: 'width',
       type: 'SizeValue',
       description:
-        'Width of the field and its popup — both track this one value.',
+        'Width of the field and its popup; both track this one value.',
       default: "'min(41rem, calc(100vw - 32px))'",
     },
     {
