@@ -12,15 +12,29 @@
 import {createContext, type RefObject} from 'react';
 
 export type BottomSheetOrchestratorPhase =
-  'entering' | 'active' | 'covered' | 'fading' | 'exiting' | 'hidden';
+  | 'entering'
+  | 'active'
+  | 'covered'
+  | 'aligning'
+  | 'fading'
+  | 'exiting'
+  | 'hidden';
+
+export interface BottomSheetOrchestratorTransitionEvent {
+  sheetId: string;
+  phase: 'entering' | 'aligning' | 'fading' | 'exiting';
+}
 
 export interface BottomSheetOrchestratorContextValue {
   activeSheet: string | null;
   hasScrim: boolean;
   onActiveSheetChange: (sheetId: string | null) => void;
   getSheetPhase: (sheetId: string) => BottomSheetOrchestratorPhase;
-  onSheetEnterComplete: (sheetId: string) => void;
-  onSheetExitComplete: (sheetId: string) => void;
+  getSheetAlignmentOffset: (sheetId: string) => number;
+  registerSheetElement: (sheetId: string, element: HTMLElement | null) => void;
+  onSheetTransitionComplete: (
+    event: BottomSheetOrchestratorTransitionEvent,
+  ) => void;
   setScrimOpacity: (opacity: number) => void;
   triggerRef: RefObject<HTMLElement | null>;
 }

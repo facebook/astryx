@@ -400,12 +400,16 @@ export function BottomSheet({
   const hasNativeScrim = orchestrator == null && hasScrim;
   const isModal = hasNativeScrim || hasSharedScrim;
   const orchestratorActiveSheet = orchestrator?.activeSheet ?? null;
-  const onSheetEnterComplete = orchestrator?.onSheetEnterComplete;
-  const onSheetExitComplete = orchestrator?.onSheetExitComplete;
+  const onSheetTransitionComplete = orchestrator?.onSheetTransitionComplete;
+  const registerSheetElement = orchestrator?.registerSheetElement;
   const orchestratorPhase =
     orchestrator != null && hasValidSheetId
       ? orchestrator.getSheetPhase(sheetId)
       : 'hidden';
+  const sheetAlignmentOffset =
+    orchestrator != null && hasValidSheetId
+      ? orchestrator.getSheetAlignmentOffset(sheetId)
+      : 0;
   const previousOrchestratorPhaseRef = useRef(orchestratorPhase);
   const previousOrchestratorPhase = previousOrchestratorPhaseRef.current;
   useLayoutEffect(() => {
@@ -423,6 +427,7 @@ export function BottomSheet({
   const isOrchestratedInactive =
     isInsideOrchestrator &&
     (orchestratorPhase === 'covered' ||
+      orchestratorPhase === 'aligning' ||
       orchestratorPhase === 'fading' ||
       orchestratorPhase === 'exiting');
   const isStandaloneExiting =
@@ -434,7 +439,9 @@ export function BottomSheet({
   const isFading = isInsideOrchestrator && orchestratorPhase === 'fading';
   const retainsGesturePosition =
     isInsideOrchestrator &&
-    (orchestratorPhase === 'covered' || orchestratorPhase === 'fading');
+    (orchestratorPhase === 'covered' ||
+      orchestratorPhase === 'aligning' ||
+      orchestratorPhase === 'fading');
   const isTopSheet =
     isInsideOrchestrator &&
     (orchestratorPhase === 'entering' || orchestratorPhase === 'active');
@@ -488,6 +495,16 @@ export function BottomSheet({
     snapHeights: defaultSnapHeights,
     onScrimOpacity: handleScrimOpacity,
   });
+  const setSheetNode = useCallback(
+    (node: HTMLDivElement | null) => {
+      sheetRef(node);
+      sheetNodeRef.current = node;
+      if (hasValidSheetId) {
+        registerSheetElement?.(sheetId, node);
+      }
+    },
+    [hasValidSheetId, registerSheetElement, sheetId, sheetRef],
+  );
 
   // Modal: showModal() enters the top layer with a focus trap + ::backdrop and
   // we restore focus to the opener on close. Standard: show() is non-modal, so
@@ -568,16 +585,17 @@ export function BottomSheet({
         const isReactivatingRetainedSheet =
           wasOpen &&
           (previousOrchestratorPhase === 'covered' ||
+            previousOrchestratorPhase === 'aligning' ||
             previousOrchestratorPhase === 'fading');
         if (isReactivatingRetainedSheet) {
           if (hasValidSheetId) {
-            onSheetEnterComplete?.(sheetId);
+            onSheetTransitionComplete?.({sheetId, phase: 'entering'});
           }
           return;
         }
         return waitForTransition('transform', () => {
           if (hasValidSheetId) {
-            onSheetEnterComplete?.(sheetId);
+            onSheetTransitionComplete?.({sheetId, phase: 'entering'});
           }
         });
       }
@@ -602,6 +620,14 @@ export function BottomSheet({
         return;
       }
 
+      if (orchestratorPhase === 'aligning') {
+        return waitForTransition('transform', () => {
+          if (hasValidSheetId) {
+            onSheetTransitionComplete?.({sheetId, phase: 'aligning'});
+          }
+        });
+      }
+
       if (orchestratorPhase === 'fading' || orchestratorPhase === 'exiting') {
         const propertyName =
           orchestratorPhase === 'fading' ? 'opacity' : 'transform';
@@ -610,7 +636,10 @@ export function BottomSheet({
             dialog.close();
           }
           if (hasValidSheetId) {
-            onSheetExitComplete?.(sheetId);
+            onSheetTransitionComplete?.({
+              sheetId,
+              phase: orchestratorPhase,
+            });
           }
           // A handoff keeps the original trigger for the rest of the flow. A
           // final close restores it only after the slide-down completes.
@@ -643,8 +672,7 @@ export function BottomSheet({
     isModal,
     isOpen,
     isInsideOrchestrator,
-    onSheetEnterComplete,
-    onSheetExitComplete,
+    onSheetTransitionComplete,
     orchestratorActiveSheet,
     orchestratorPhase,
     previousOrchestratorPhase,
@@ -717,6 +745,12 @@ export function BottomSheet({
       ? `${height}px`
       : height;
   const isHug = height === 'hug';
+  const retainedSheetTransform =
+    sheetAlignmentOffset > 0
+      ? [contentProps.style.transform, `translateY(${sheetAlignmentOffset}px)`]
+          .filter(Boolean)
+          .join(' ')
+      : contentProps.style.transform;
 
   return (
     <dialog
@@ -740,7 +774,7 @@ export function BottomSheet({
       {...props}>
       <div {...stylex.props(styles.positioner)}>
         <div
-          ref={mergeRefs(sheetRef, sheetNodeRef)}
+          ref={setSheetNode}
           tabIndex={-1}
           {...mergeProps(
             themeProps('bottom-sheet'),
@@ -755,14 +789,15 @@ export function BottomSheet({
             undefined,
             {
               ['--_sheet-budget' as string]: budget,
-              // A covered/fading sheet keeps the exact detent where the user
-              // left it, but drops gesture transition overrides so opacity can
-              // animate independently. A final close removes the inline
-              // transform so sheetClosing can slide the sheet down.
+              // A retained sheet starts at the exact detent where the user
+              // left it. If the incoming sheet is shorter, the orchestrator
+              // adds the top-edge alignment translation and preserves it
+              // through the fade. A final close removes the inline transform
+              // so sheetClosing can slide the sheet down.
               ...(isOpen
                 ? contentProps.style
                 : retainsGesturePosition
-                  ? {transform: contentProps.style.transform}
+                  ? {transform: retainedSheetTransform}
                   : {}),
             },
           )}>

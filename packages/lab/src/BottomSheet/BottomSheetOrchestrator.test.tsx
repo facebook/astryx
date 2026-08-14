@@ -100,6 +100,28 @@ function finishSheetTransition(
   fireEvent.transitionEnd(sheet, {propertyName});
 }
 
+function getSheetPanel(dialog: HTMLElement): HTMLElement {
+  const sheet = dialog.querySelector<HTMLElement>('.astryx-bottom-sheet');
+  if (!sheet) {
+    throw new Error('sheet panel not found');
+  }
+  return sheet;
+}
+
+function mockSheetTop(sheet: HTMLElement, top: number) {
+  vi.spyOn(sheet, 'getBoundingClientRect').mockReturnValue({
+    x: 0,
+    y: top,
+    top,
+    right: 640,
+    bottom: 800,
+    left: 0,
+    width: 640,
+    height: 800 - top,
+    toJSON: () => {},
+  });
+}
+
 describe('BottomSheetOrchestrator', () => {
   it('opens only the sheet selected by activeSheet', () => {
     render(<Flow />);
@@ -168,6 +190,35 @@ describe('BottomSheetOrchestrator', () => {
     expect(confirmSheet).not.toHaveAttribute('open');
     expect(document.querySelectorAll('dialog[open]')).toHaveLength(1);
     expect(getSharedScrim()).toBe(sharedScrim);
+  });
+
+  it('moves a taller previous sheet down behind a shorter new sheet before fading it', () => {
+    render(<Flow />);
+    fireEvent.click(screen.getByRole('button', {name: 'Start flow'}));
+    const detailsSheet = screen.getByTestId('details-sheet');
+    const confirmSheet = screen.getByTestId('confirm-sheet');
+    const detailsPanel = getSheetPanel(detailsSheet);
+    const confirmPanel = getSheetPanel(confirmSheet);
+    mockSheetTop(detailsPanel, 100);
+    mockSheetTop(confirmPanel, 300);
+
+    fireEvent.click(screen.getByRole('button', {name: 'Continue'}));
+    finishSheetTransition(confirmSheet, 'transform');
+
+    expect(detailsSheet).toHaveAttribute('open');
+    expect(detailsPanel).toHaveStyle({transform: 'translateY(200px)'});
+
+    // Opacity cannot hide the retained sheet while its top-edge alignment is
+    // still moving. The transform completion advances it to the fade phase.
+    finishSheetTransition(detailsSheet, 'opacity');
+    expect(detailsSheet).toHaveAttribute('open');
+    finishSheetTransition(detailsSheet, 'transform');
+    expect(detailsSheet).toHaveAttribute('open');
+    expect(detailsPanel).toHaveStyle({transform: 'translateY(200px)'});
+    finishSheetTransition(detailsSheet, 'opacity');
+
+    expect(detailsSheet).not.toHaveAttribute('open');
+    expect(confirmSheet).toHaveAttribute('open');
   });
 
   it('replaces an unfinished outgoing sheet during rapid navigation', () => {
