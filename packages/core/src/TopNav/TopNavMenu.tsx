@@ -336,7 +336,7 @@ export function TopNavMenu({
     xstyle: styles.menuOffset,
   });
 
-  const {triggerProps, contentProps, menuRef, setTriggerEl} =
+  const {triggerProps, contentProps, menuRef} =
     useMenuHover<HTMLDivElement>({
       show: popover.show,
       hide: popover.hide,
@@ -349,7 +349,6 @@ export function TopNavMenu({
   const setTriggerRef = mergeRefs<HTMLButtonElement>(
     triggerButtonRef,
     popover.triggerRef,
-    setTriggerEl,
     ref,
   );
 

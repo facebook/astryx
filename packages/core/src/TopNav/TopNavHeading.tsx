@@ -340,7 +340,7 @@ export function TopNavHeading({
     [popover.hide],
   );
 
-  const {triggerProps, contentProps, menuRef, setTriggerEl} =
+  const {triggerProps, contentProps, menuRef} =
     useMenuHover<HTMLDivElement>({
       show: popover.show,
       hide: popover.hide,
@@ -351,7 +351,6 @@ export function TopNavHeading({
 
   const setRef = mergeRefs<HTMLElement>(
     rootRef,
-    setTriggerEl,
     ref,
     menu ? popover.triggerRef : undefined,
   );

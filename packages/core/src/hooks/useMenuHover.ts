@@ -48,7 +48,6 @@ interface UseMenuHoverReturn<T extends HTMLElement = HTMLElement> {
   };
   menuRef: React.RefObject<T | null>;
   focusFirst: () => void;
-  setTriggerEl: (el: HTMLElement | null) => void;
 }
 
 export function useMenuHover<T extends HTMLElement = HTMLElement>(
@@ -67,7 +66,6 @@ export function useMenuHover<T extends HTMLElement = HTMLElement>(
 
   const showTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const triggerElRef = useRef<HTMLElement | null>(null);
   // Whether the menu was opened/interacted via hover (enables mouseleave-to-close)
   const hoverModeRef = useRef(false);
   // One-shot: skip the next mouseenter after click-to-close
@@ -155,12 +153,7 @@ export function useMenuHover<T extends HTMLElement = HTMLElement>(
     clearTimeouts();
   }, [clearTimeouts]);
 
-  const setTriggerRef = useCallback((el: HTMLElement | null) => {
-    triggerElRef.current = el;
-  }, []);
-
   const noop = useCallback(() => {}, []);
-  const noopRef = useCallback((_el: HTMLElement | null) => {}, []);
   const noopKeyDown = useCallback((_e: React.KeyboardEvent) => {}, []);
 
   if (!isEnabled) {
@@ -173,7 +166,6 @@ export function useMenuHover<T extends HTMLElement = HTMLElement>(
       },
       menuRef,
       focusFirst,
-      setTriggerEl: noopRef,
     };
   }
 
@@ -190,6 +182,5 @@ export function useMenuHover<T extends HTMLElement = HTMLElement>(
     },
     menuRef,
     focusFirst,
-    setTriggerEl: setTriggerRef,
   };
 }

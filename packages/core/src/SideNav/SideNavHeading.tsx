@@ -359,7 +359,7 @@ export function SideNavHeading({
     [popover.hide],
   );
 
-  const {triggerProps, contentProps, menuRef, setTriggerEl} =
+  const {triggerProps, contentProps, menuRef} =
     useMenuHover<HTMLDivElement>({
       show: popover.show,
       hide: popover.hide,
@@ -370,7 +370,6 @@ export function SideNavHeading({
 
   const setRef = mergeRefs<HTMLDivElement>(
     rootRef,
-    setTriggerEl,
     ref,
     menu ? popover.triggerRef : undefined,
   );
