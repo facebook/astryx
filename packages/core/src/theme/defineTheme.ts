@@ -41,6 +41,7 @@ import {
   colorDefaults,
   spacingDefaults,
   sizeDefaults,
+  borderDefaults,
   radiusDefaults,
   shadowDefaults,
   durationDefaults,
@@ -73,6 +74,7 @@ export type CoreTokenName =
   | keyof typeof colorDefaults
   | keyof typeof spacingDefaults
   | keyof typeof sizeDefaults
+  | keyof typeof borderDefaults
   | keyof typeof radiusDefaults
   | keyof typeof shadowDefaults
   | keyof typeof durationDefaults
@@ -356,6 +358,7 @@ export const tokenDefaults: Record<string, string> = {
   ...colorDefaults,
   ...spacingDefaults,
   ...sizeDefaults,
+  ...borderDefaults,
   ...radiusDefaults,
   ...shadowDefaults,
   ...durationDefaults,
