@@ -2,21 +2,21 @@
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
-  name: 'BottomSheetOrchestrator',
-  displayName: 'BottomSheetOrchestrator',
+  name: 'BottomSheetSwitcher',
+  displayName: 'BottomSheetSwitcher',
   group: 'BottomSheet',
   category: 'Overlay',
-  keywords: ['bottom sheet', 'orchestrator', 'multi-step', 'flow', 'wizard'],
+  keywords: ['bottom sheet', 'switcher', 'multi-step', 'flow', 'wizard'],
   theming: {
     targets: [
       {
-        className: 'astryx-bottom-sheet-orchestrator-scrim',
+        className: 'astryx-bottom-sheet-switcher-scrim',
         visualProps: [],
       },
     ],
   },
   description:
-    'Coordinates multiple BottomSheets as a mutually exclusive flow. One activeSheet ID selects the only interactive sheet; during a handoff, the new sheet enters above the inert previous sheet. If the new sheet is shorter, the previous sheet simultaneously moves down until their top edges align, then fades after both transforms complete. The orchestrator renders one shared scrim for the whole flow so handoffs never stack backdrops.',
+    'Coordinates multiple BottomSheets as a mutually exclusive flow. One activeSheet ID selects the only interactive sheet; during a handoff, the new sheet enters above the inert previous sheet. If the new sheet is shorter, the previous sheet simultaneously moves down until their top edges align, then fades after both transforms complete. The switcher renders one shared scrim for the whole flow so handoffs never stack backdrops.',
   props: [
     {
       name: 'activeSheet',
@@ -48,7 +48,7 @@ export const docs = {
   ],
   usage: {
     description:
-      'Use one activeSheet value as the source of truth for a multi-step bottom-sheet flow. Set it to a child sheetId to open or switch steps, and set it to null to close. On a handoff, the previous sheet becomes inert immediately while the new active sheet enters above it. A taller previous sheet simultaneously moves down until its top edge aligns with the shorter new sheet; it fades only after both transforms complete. Equal-height or shorter previous sheets stay stationary and fade after the entrance. The orchestrator owns one shared scrim, focus trap, and body scroll lock across the transition, and restores focus to the trigger that started the flow after the final exit finishes.',
+      'Use one activeSheet value as the source of truth for a multi-step bottom-sheet flow. Set it to a child sheetId to open or switch steps, and set it to null to close. On a handoff, the previous sheet becomes inert immediately while the new active sheet enters above it. A taller previous sheet simultaneously moves down until its top edge aligns with the shorter new sheet; it fades only after both transforms complete. Equal-height or shorter previous sheets stay stationary and fade after the entrance. The switcher owns one shared scrim, focus trap, and body scroll lock across the transition, and restores focus to the trigger that started the flow after the final exit finishes.',
     bestPractices: [
       {
         guidance: true,
@@ -58,12 +58,12 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Keep form data above the individual sheets when it must persist while moving backward and forward.',
+          'Keep state local to the sheet that owns it; lift only data that another sheet needs.',
       },
       {
         guidance: true,
         description:
-          'Configure hasScrim on BottomSheetOrchestrator, not its individual BottomSheet children, so the modal layer remains stable across handoffs.',
+          'Configure hasScrim on BottomSheetSwitcher, not its individual BottomSheet children, so the modal layer remains stable across handoffs.',
       },
       {
         guidance: true,
@@ -84,7 +84,7 @@ export const docs = {
 
 <>
   <Button label="Start" onClick={() => setActiveSheet('details')} />
-  <BottomSheetOrchestrator
+  <BottomSheetSwitcher
     activeSheet={activeSheet}
     onActiveSheetChange={setActiveSheet}>
     <BottomSheet sheetId="details" label="Details">
@@ -94,7 +94,7 @@ export const docs = {
       <Button label="Back" onClick={() => setActiveSheet('details')} />
       <Button label="Done" onClick={() => setActiveSheet(null)} />
     </BottomSheet>
-  </BottomSheetOrchestrator>
+  </BottomSheetSwitcher>
 </>`,
     },
   ],
@@ -114,7 +114,7 @@ export const docsDense = {
       },
       {
         guidance: true,
-        description: "Let the orchestrator own the flow's one shared scrim.",
+        description: "Let the switcher own the flow's one shared scrim.",
       },
       {
         guidance: false,

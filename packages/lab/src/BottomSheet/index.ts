@@ -2,12 +2,12 @@
 
 /**
  * @file index.ts
- * @input BottomSheet.tsx, BottomSheetOrchestrator.tsx
+ * @input BottomSheet.tsx, BottomSheetSwitcher.tsx
  * @output Re-exports the BottomSheet public API
  * @position Lab entry point for the BottomSheet directory
  */
 
 export {BottomSheet} from './BottomSheet';
 export type {BottomSheetProps} from './BottomSheet';
-export {BottomSheetOrchestrator} from './BottomSheetOrchestrator';
-export type {BottomSheetOrchestratorProps} from './BottomSheetOrchestrator';
+export {BottomSheetSwitcher} from './BottomSheetSwitcher';
+export type {BottomSheetSwitcherProps} from './BottomSheetSwitcher';

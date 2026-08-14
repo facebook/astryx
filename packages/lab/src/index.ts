@@ -49,8 +49,8 @@ export {Drawer, type DrawerProps} from './Drawer';
 export {
   BottomSheet,
   type BottomSheetProps,
-  BottomSheetOrchestrator,
-  type BottomSheetOrchestratorProps,
+  BottomSheetSwitcher,
+  type BottomSheetSwitcherProps,
 } from './BottomSheet';
 
 // Tour — guided product-tour / NUX walkthrough (facebook/astryx#4239)

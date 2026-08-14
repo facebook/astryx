@@ -3,15 +3,15 @@
 'use client';
 
 /**
- * @file BottomSheetOrchestratorContext.ts
+ * @file BottomSheetSwitcherContext.ts
  * @input Uses React context and refs
- * @output Internal phase and lifecycle context shared by BottomSheetOrchestrator and BottomSheet
+ * @output Internal phase and lifecycle context shared by BottomSheetSwitcher and BottomSheet
  * @position Private coordination layer for mutually exclusive BottomSheets
  */
 
 import {createContext, type RefObject} from 'react';
 
-export type BottomSheetOrchestratorPhase =
+export type BottomSheetSwitcherPhase =
   | 'entering'
   | 'active'
   | 'covered'
@@ -20,27 +20,27 @@ export type BottomSheetOrchestratorPhase =
   | 'exiting'
   | 'hidden';
 
-export interface BottomSheetOrchestratorTransitionEvent {
+export interface BottomSheetSwitcherTransitionEvent {
   sheetId: string;
   phase: 'entering' | 'aligning' | 'fading' | 'exiting';
 }
 
-export interface BottomSheetOrchestratorContextValue {
+export interface BottomSheetSwitcherContextValue {
   activeSheet: string | null;
   hasScrim: boolean;
   onActiveSheetChange: (sheetId: string | null) => void;
-  getSheetPhase: (sheetId: string) => BottomSheetOrchestratorPhase;
+  getSheetPhase: (sheetId: string) => BottomSheetSwitcherPhase;
   getSheetAlignmentOffset: (sheetId: string) => number;
   registerSheetElement: (sheetId: string, element: HTMLElement | null) => void;
   onSheetEnterStart: (sheetId: string) => void;
   onSheetTransitionComplete: (
-    event: BottomSheetOrchestratorTransitionEvent,
+    event: BottomSheetSwitcherTransitionEvent,
   ) => void;
   setScrimOpacity: (opacity: number) => void;
   triggerRef: RefObject<HTMLElement | null>;
 }
 
-export const BottomSheetOrchestratorContext =
-  createContext<BottomSheetOrchestratorContextValue | null>(null);
+export const BottomSheetSwitcherContext =
+  createContext<BottomSheetSwitcherContextValue | null>(null);
 
-BottomSheetOrchestratorContext.displayName = 'BottomSheetOrchestratorContext';
+BottomSheetSwitcherContext.displayName = 'BottomSheetSwitcherContext';

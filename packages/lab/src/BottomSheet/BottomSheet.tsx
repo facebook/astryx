@@ -4,7 +4,7 @@
 
 /**
  * @file BottomSheet.tsx
- * @input Uses React, StyleX, theme tokens, core hooks (useScrollLock), utils, useSheetGestures, BottomSheetOrchestratorContext
+ * @input Uses React, StyleX, theme tokens, core hooks (useScrollLock), utils, useSheetGestures, BottomSheetSwitcherContext
  * @output Exports BottomSheet component and BottomSheetProps
  * @position Lab implementation; consumed by index.ts, tested by BottomSheet.test.tsx, demonstrated in Storybook
  *
@@ -20,7 +20,7 @@
  * For a standalone sheet, `hasScrim` picks the presentation: `true` (default)
  * uses `showModal()` (top layer, focus trap, scrim, scroll lock, background
  * inert); `false` uses `show()` for a non-modal sheet with no scrim. Inside a
- * BottomSheetOrchestrator, the parent owns one shared scrim/focus trap/scroll
+ * BottomSheetSwitcher, the parent owns one shared scrim/focus trap/scroll
  * lock and every child uses `show()` beneath it. Both standalone modes keep
  * the native dialog presented but inert until the slide-out transition ends.
  *
@@ -31,7 +31,7 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/lab/src/BottomSheet/BottomSheet.doc.mjs (props table, features, usage)
  * - /packages/lab/src/BottomSheet/BottomSheet.test.tsx (tests for new/changed behavior)
- * - /packages/lab/src/BottomSheet/BottomSheetOrchestrator.tsx (multi-sheet coordination)
+ * - /packages/lab/src/BottomSheet/BottomSheetSwitcher.tsx (multi-sheet coordination)
  * - /packages/lab/src/BottomSheet/index.ts (exports if types change)
  * - /apps/storybook/stories/BottomSheet.stories.tsx (examples and visual coverage)
  */
@@ -59,7 +59,7 @@ import {
 import {useDevWarning, useScrollLock} from '@astryxdesign/core/hooks';
 import {mergeProps, mergeRefs, themeProps} from '@astryxdesign/core/utils';
 import {useSheetGestures} from './useSheetGestures';
-import {BottomSheetOrchestratorContext} from './BottomSheetOrchestratorContext';
+import {BottomSheetSwitcherContext} from './BottomSheetSwitcherContext';
 
 // A non-modal sheet (hasScrim={false}) uses show() instead of showModal(), so
 // it isn't in the native top layer and needs an explicit z-index to sit above
@@ -154,7 +154,7 @@ const styles = stylex.create({
     width: '100%',
     height: '100%',
   },
-  // The active orchestrated sheet is always the top visual layer. A retained
+  // The active switcher-managed sheet is always the top visual layer. A retained
   // sheet stays at 1000 while this one enters at 1001.
   dialogTop: {
     zIndex: 1001,
@@ -330,34 +330,34 @@ interface StandaloneBottomSheetProps extends BottomSheetBaseProps {
    *   inside the sheet, and drag/flick-to-dismiss still work. Use for a peek
    *   surface that coexists with the page (e.g. a panel over a live map).
    *
-   * BottomSheetOrchestrator owns this setting for orchestrated sheets.
+   * BottomSheetSwitcher owns this setting for switcher-managed sheets.
    * @default true
    */
   hasScrim?: boolean;
 
-  /** Only used for a BottomSheet nested in BottomSheetOrchestrator. */
+  /** Only used for a BottomSheet nested in BottomSheetSwitcher. */
   sheetId?: never;
 }
 
-interface OrchestratedBottomSheetProps extends BottomSheetBaseProps {
+interface SwitcherBottomSheetProps extends BottomSheetBaseProps {
   /**
-   * Unique ID for this sheet within a BottomSheetOrchestrator. The
-   * orchestrator opens it when `activeSheet` matches this value.
+   * Unique ID for this sheet within a BottomSheetSwitcher. The
+   * switcher opens it when `activeSheet` matches this value.
    */
   sheetId: string;
 
-  /** Supplied by BottomSheetOrchestrator when `sheetId` is present. */
+  /** Supplied by BottomSheetSwitcher when `sheetId` is present. */
   isOpen?: never;
 
-  /** Supplied by BottomSheetOrchestrator when `sheetId` is present. */
+  /** Supplied by BottomSheetSwitcher when `sheetId` is present. */
   onOpenChange?: never;
 
-  /** Supplied by BottomSheetOrchestrator for the whole flow. */
+  /** Supplied by BottomSheetSwitcher for the whole flow. */
   hasScrim?: never;
 }
 
 export type BottomSheetProps =
-  StandaloneBottomSheetProps | OrchestratedBottomSheetProps;
+  StandaloneBottomSheetProps | SwitcherBottomSheetProps;
 
 /**
  * A mobile touch sheet that rises from the bottom edge, with a grab handle,
@@ -393,84 +393,83 @@ export function BottomSheet({
   xstyle,
   ...props
 }: BottomSheetProps) {
-  const orchestrator = useContext(BottomSheetOrchestratorContext);
-  const isInsideOrchestrator = orchestrator != null;
+  const switcher = useContext(BottomSheetSwitcherContext);
+  const isInsideSwitcher = switcher != null;
   const hasValidSheetId = sheetId != null && sheetId.length > 0;
-  const hasSharedScrim = orchestrator?.hasScrim === true;
-  const hasNativeScrim = orchestrator == null && hasScrim;
+  const hasSharedScrim = switcher?.hasScrim === true;
+  const hasNativeScrim = switcher == null && hasScrim;
   const isModal = hasNativeScrim || hasSharedScrim;
-  const orchestratorActiveSheet = orchestrator?.activeSheet ?? null;
-  const onSheetEnterStart = orchestrator?.onSheetEnterStart;
-  const onSheetTransitionComplete = orchestrator?.onSheetTransitionComplete;
-  const registerSheetElement = orchestrator?.registerSheetElement;
-  const orchestratorPhase =
-    orchestrator != null && hasValidSheetId
-      ? orchestrator.getSheetPhase(sheetId)
+  const switcherActiveSheet = switcher?.activeSheet ?? null;
+  const onSheetEnterStart = switcher?.onSheetEnterStart;
+  const onSheetTransitionComplete = switcher?.onSheetTransitionComplete;
+  const registerSheetElement = switcher?.registerSheetElement;
+  const switcherPhase =
+    switcher != null && hasValidSheetId
+      ? switcher.getSheetPhase(sheetId)
       : 'hidden';
   const sheetAlignmentOffset =
-    orchestrator != null && hasValidSheetId
-      ? orchestrator.getSheetAlignmentOffset(sheetId)
+    switcher != null && hasValidSheetId
+      ? switcher.getSheetAlignmentOffset(sheetId)
       : 0;
-  const previousOrchestratorPhaseRef = useRef(orchestratorPhase);
-  const previousOrchestratorPhase = previousOrchestratorPhaseRef.current;
+  const previousSwitcherPhaseRef = useRef(switcherPhase);
+  const previousSwitcherPhase = previousSwitcherPhaseRef.current;
   useLayoutEffect(() => {
-    previousOrchestratorPhaseRef.current = orchestratorPhase;
-  }, [orchestratorPhase]);
-  // Inside an orchestrator, its single active ID is the only source of truth.
+    previousSwitcherPhaseRef.current = switcherPhase;
+  }, [switcherPhase]);
+  // Inside a switcher, its single active ID is the only source of truth.
   // This deliberately ignores standalone control props supplied from plain JS
   // so the parent still upholds the maximum-one-active invariant at runtime.
-  const isOpen = isInsideOrchestrator
-    ? orchestratorPhase === 'active' || orchestratorPhase === 'entering'
+  const isOpen = isInsideSwitcher
+    ? switcherPhase === 'active' || switcherPhase === 'entering'
     : (controlledIsOpen ?? false);
   const [isStandalonePresented, setIsStandalonePresented] = useState(
     controlledIsOpen ?? false,
   );
-  const isOrchestratedInactive =
-    isInsideOrchestrator &&
-    (orchestratorPhase === 'covered' ||
-      orchestratorPhase === 'aligning' ||
-      orchestratorPhase === 'fading' ||
-      orchestratorPhase === 'exiting');
+  const isSwitcherInactive =
+    isInsideSwitcher &&
+    (switcherPhase === 'covered' ||
+      switcherPhase === 'aligning' ||
+      switcherPhase === 'fading' ||
+      switcherPhase === 'exiting');
   const isStandaloneExiting =
-    !isInsideOrchestrator && !isOpen && isStandalonePresented;
-  const isInactive = isOrchestratedInactive || isStandaloneExiting;
+    !isInsideSwitcher && !isOpen && isStandalonePresented;
+  const isInactive = isSwitcherInactive || isStandaloneExiting;
   const isClosing =
-    (isInsideOrchestrator && orchestratorPhase === 'exiting') ||
-    isStandaloneExiting;
-  const isFading = isInsideOrchestrator && orchestratorPhase === 'fading';
+    (isInsideSwitcher && switcherPhase === 'exiting') || isStandaloneExiting;
+  const isFading = isInsideSwitcher && switcherPhase === 'fading';
   const retainsGesturePosition =
-    isInsideOrchestrator &&
-    (orchestratorPhase === 'covered' ||
-      orchestratorPhase === 'aligning' ||
-      orchestratorPhase === 'fading');
+    isInsideSwitcher &&
+    (switcherPhase === 'covered' ||
+      switcherPhase === 'aligning' ||
+      switcherPhase === 'fading');
   const isTopSheet =
-    isInsideOrchestrator &&
-    (orchestratorPhase === 'entering' || orchestratorPhase === 'active');
-  const isPresented = isInsideOrchestrator
-    ? orchestratorPhase !== 'hidden'
+    isInsideSwitcher &&
+    (switcherPhase === 'entering' || switcherPhase === 'active');
+  const isPresented = isInsideSwitcher
+    ? switcherPhase !== 'hidden'
     : isOpen || isStandalonePresented;
   const handleOpenChange = useCallback(
     (nextIsOpen: boolean) => {
-      if (orchestrator != null) {
+      if (switcher != null) {
         if (!hasValidSheetId) {
           return;
         }
         if (nextIsOpen) {
-          orchestrator.onActiveSheetChange(sheetId);
-        } else if (orchestrator.activeSheet === sheetId) {
+          switcher.onActiveSheetChange(sheetId);
+        } else if (switcher.activeSheet === sheetId) {
           // Ignore stale dismissal events from a sheet that has already handed
           // off to another step.
-          orchestrator.onActiveSheetChange(null);
+          switcher.onActiveSheetChange(null);
         }
         return;
       }
       controlledOnOpenChange?.(nextIsOpen);
     },
-    [controlledOnOpenChange, hasValidSheetId, orchestrator, sheetId],
+    [controlledOnOpenChange, hasValidSheetId, switcher, sheetId],
   );
   const dialogRef = useRef<HTMLDialogElement | null>(null);
   const standaloneTriggerRef = useRef<HTMLElement | null>(null);
-  const triggerRef = orchestrator?.triggerRef ?? standaloneTriggerRef;
+  const triggerRef = switcher?.triggerRef ?? standaloneTriggerRef;
   const sheetNodeRef = useRef<HTMLDivElement | null>(null);
   const close = useCallback(() => handleOpenChange(false), [handleOpenChange]);
 
@@ -478,8 +477,8 @@ export function BottomSheet({
   // hook reports the scrim opacity for the current detent (a faint floor at the peek).
   const handleScrimOpacity = useCallback(
     (opacity: number) => {
-      if (orchestrator != null) {
-        orchestrator.setScrimOpacity(opacity);
+      if (switcher != null) {
+        switcher.setScrimOpacity(opacity);
       } else {
         dialogRef.current?.style.setProperty(
           '--_sheet-scrim-opacity',
@@ -487,7 +486,7 @@ export function BottomSheet({
         );
       }
     },
-    [orchestrator],
+    [switcher],
   );
 
   const {contentProps, handleProps, bodyProps, sheetRef} = useSheetGestures({
@@ -548,7 +547,7 @@ export function BottomSheet({
     };
 
     if (isOpen) {
-      if (!isInsideOrchestrator) {
+      if (!isInsideSwitcher) {
         setIsStandalonePresented(true);
       }
       dialog.style.setProperty('--_sheet-scrim-opacity', '1');
@@ -557,7 +556,7 @@ export function BottomSheet({
         // Only remember/restore focus for modal sheets; a non-modal sheet must
         // not yank focus back from whatever the user does in the live page.
         if (isModal) {
-          // An orchestrated flow keeps the original opener across sheet
+          // An switcher-managed flow keeps the original opener across sheet
           // handoffs. A standalone sheet clears this ref after every close.
           if (triggerRef.current == null) {
             triggerRef.current = document.activeElement as HTMLElement | null;
@@ -580,7 +579,7 @@ export function BottomSheet({
         sheetNodeRef.current?.focus();
       }
 
-      if (isInsideOrchestrator && orchestratorPhase === 'entering') {
+      if (isInsideSwitcher && switcherPhase === 'entering') {
         if (hasValidSheetId) {
           // show() has made the incoming sheet's final layout measurable even
           // though its visual entrance transform is still in progress. This
@@ -591,9 +590,9 @@ export function BottomSheet({
         // the current top sheet. It has no new CSS entrance to wait for.
         const isReactivatingRetainedSheet =
           wasOpen &&
-          (previousOrchestratorPhase === 'covered' ||
-            previousOrchestratorPhase === 'aligning' ||
-            previousOrchestratorPhase === 'fading');
+          (previousSwitcherPhase === 'covered' ||
+            previousSwitcherPhase === 'aligning' ||
+            previousSwitcherPhase === 'fading');
         if (isReactivatingRetainedSheet) {
           if (hasValidSheetId) {
             onSheetTransitionComplete?.({sheetId, phase: 'entering'});
@@ -613,21 +612,21 @@ export function BottomSheet({
       return;
     }
 
-    if (isInsideOrchestrator) {
-      if (orchestratorPhase === 'hidden') {
+    if (isInsideSwitcher) {
+      if (switcherPhase === 'hidden') {
         // Only one retained sheet is allowed. Rapid navigation immediately
         // releases any older layer superseded by the latest handoff.
         dialog.close();
         return;
       }
 
-      if (orchestratorPhase === 'covered') {
+      if (switcherPhase === 'covered') {
         // Stay exactly where the gesture left this sheet while the new top
         // layer enters. It is already inert and accessibility-hidden.
         return;
       }
 
-      if (orchestratorPhase === 'aligning') {
+      if (switcherPhase === 'aligning') {
         return waitForTransition('transform', () => {
           if (hasValidSheetId) {
             onSheetTransitionComplete?.({sheetId, phase: 'aligning'});
@@ -635,9 +634,9 @@ export function BottomSheet({
         });
       }
 
-      if (orchestratorPhase === 'fading' || orchestratorPhase === 'exiting') {
+      if (switcherPhase === 'fading' || switcherPhase === 'exiting') {
         const propertyName =
-          orchestratorPhase === 'fading' ? 'opacity' : 'transform';
+          switcherPhase === 'fading' ? 'opacity' : 'transform';
         return waitForTransition(propertyName, () => {
           if (dialog.open) {
             dialog.close();
@@ -645,15 +644,12 @@ export function BottomSheet({
           if (hasValidSheetId) {
             onSheetTransitionComplete?.({
               sheetId,
-              phase: orchestratorPhase,
+              phase: switcherPhase,
             });
           }
           // A handoff keeps the original trigger for the rest of the flow. A
           // final close restores it only after the slide-down completes.
-          if (
-            orchestratorPhase === 'exiting' &&
-            orchestratorActiveSheet == null
-          ) {
+          if (switcherPhase === 'exiting' && switcherActiveSheet == null) {
             triggerRef.current?.focus();
             triggerRef.current = null;
           }
@@ -678,12 +674,12 @@ export function BottomSheet({
     hasValidSheetId,
     isModal,
     isOpen,
-    isInsideOrchestrator,
+    isInsideSwitcher,
     onSheetEnterStart,
     onSheetTransitionComplete,
-    orchestratorActiveSheet,
-    orchestratorPhase,
-    previousOrchestratorPhase,
+    switcherActiveSheet,
+    switcherPhase,
+    previousSwitcherPhase,
     sheetId,
     triggerRef,
   ]);
@@ -691,18 +687,18 @@ export function BottomSheet({
   useDevWarning(
     'BottomSheet',
     'requires a non-empty `sheetId` when nested in ' +
-      'BottomSheetOrchestrator; standalone `isOpen` / `onOpenChange` props are ' +
+      'BottomSheetSwitcher; standalone `isOpen` / `onOpenChange` props are ' +
       'ignored there.',
-    isInsideOrchestrator && !hasValidSheetId,
+    isInsideSwitcher && !hasValidSheetId,
   );
   useDevWarning(
     'BottomSheet',
-    '`sheetId` only works inside BottomSheetOrchestrator. Use `isOpen` and ' +
+    '`sheetId` only works inside BottomSheetSwitcher. Use `isOpen` and ' +
       '`onOpenChange` for a standalone sheet.',
-    !isInsideOrchestrator && sheetId != null,
+    !isInsideSwitcher && sheetId != null,
   );
 
-  // Only a standalone modal sheet owns its body lock. The orchestrator keeps
+  // Only a standalone modal sheet owns its body lock. The switcher keeps
   // its shared lock through the outgoing animation.
   useScrollLock(isPresented && hasNativeScrim);
 
@@ -798,7 +794,7 @@ export function BottomSheet({
             {
               ['--_sheet-budget' as string]: budget,
               // A retained sheet starts at the exact detent where the user
-              // left it. If the incoming sheet is shorter, the orchestrator
+              // left it. If the incoming sheet is shorter, the switcher
               // adds the top-edge alignment translation and preserves it
               // through the fade. A final close removes the inline transform
               // so sheetClosing can slide the sheet down.

@@ -3,26 +3,26 @@
 'use client';
 
 /**
- * @file BottomSheetOrchestrator.tsx
- * @input Uses React context, StyleX, theme tokens, focus/scroll-lock hooks, BottomSheetOrchestratorContext
- * @output Exports BottomSheetOrchestrator and BottomSheetOrchestratorProps
- * @position Lab controller for mutually exclusive BottomSheet flows
+ * @file BottomSheetSwitcher.tsx
+ * @input Uses React context, StyleX, theme tokens, focus/scroll-lock hooks, BottomSheetSwitcherContext
+ * @output Exports BottomSheetSwitcher and BottomSheetSwitcherProps
+ * @position Lab switcher for mutually exclusive BottomSheet flows
  *
- * The orchestrator turns a set of declaratively nested BottomSheets into a
+ * The switcher turns a set of declaratively nested BottomSheets into a
  * controlled single-selection group: `activeSheet` names the one interactive
  * child, or is null when the flow is closed. During a handoff the new sheet
  * enters above the previous sheet. If it is shorter, the previous sheet moves
  * down at the same time until their top edges align; otherwise it stays
  * stationary. The previous sheet fades only after both motions complete. The
- * orchestrator also owns the flow's one shared scrim, focus trap, and scroll
+ * switcher also owns the flow's one shared scrim, focus trap, and scroll
  * lock, so handoffs never stack backdrops.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/lab/src/BottomSheet/BottomSheet.tsx
- * - /packages/lab/src/BottomSheet/BottomSheetOrchestrator.doc.mjs
- * - /packages/lab/src/BottomSheet/BottomSheetOrchestrator.test.tsx
+ * - /packages/lab/src/BottomSheet/BottomSheetSwitcher.doc.mjs
+ * - /packages/lab/src/BottomSheet/BottomSheetSwitcher.test.tsx
  * - /packages/lab/src/BottomSheet/index.ts
- * - /apps/storybook/stories/BottomSheet.stories.tsx
+ * - /apps/storybook/stories/BottomSheetSwitcher.stories.tsx
  */
 
 import {
@@ -43,11 +43,11 @@ import {
 import {useFocusTrap, useScrollLock} from '@astryxdesign/core/hooks';
 import {mergeProps, themeProps} from '@astryxdesign/core/utils';
 import {
-  BottomSheetOrchestratorContext,
-  type BottomSheetOrchestratorTransitionEvent,
-  type BottomSheetOrchestratorPhase,
-  type BottomSheetOrchestratorContextValue,
-} from './BottomSheetOrchestratorContext';
+  BottomSheetSwitcherContext,
+  type BottomSheetSwitcherTransitionEvent,
+  type BottomSheetSwitcherPhase,
+  type BottomSheetSwitcherContextValue,
+} from './BottomSheetSwitcherContext';
 
 const styles = stylex.create({
   contents: {
@@ -56,7 +56,7 @@ const styles = stylex.create({
   scrim: {
     position: 'fixed',
     inset: 0,
-    // Orchestrated sheets use z-index 1000 (the existing app-overlay
+    // Switcher-managed sheets use z-index 1000 (the existing app-overlay
     // convention), so the one shared scrim sits immediately beneath them.
     zIndex: 999,
     backgroundColor: colorVars['--color-overlay'],
@@ -136,7 +136,7 @@ function alignmentOffsetForElements(
   return Math.max(0, enteringTop - retainedElement.getBoundingClientRect().top);
 }
 
-export interface BottomSheetOrchestratorProps {
+export interface BottomSheetSwitcherProps {
   /**
    * ID of the interactive BottomSheet, or null when the flow should close.
    * Must match a nested BottomSheet's `sheetId`. The previous sheet may remain
@@ -153,7 +153,7 @@ export interface BottomSheetOrchestratorProps {
   onActiveSheetChange: (sheetId: string | null) => void;
 
   /**
-   * Whether the orchestrator renders one shared scrim and treats the active
+   * Whether the switcher renders one shared scrim and treats the active
    * sheet as modal. Disable for a non-modal multi-sheet flow.
    * @default true
    */
@@ -174,7 +174,7 @@ export interface BottomSheetOrchestratorProps {
  * ```
  * const [activeSheet, setActiveSheet] = useState<string | null>(null);
  *
- * <BottomSheetOrchestrator
+ * <BottomSheetSwitcher
  *   activeSheet={activeSheet}
  *   onActiveSheetChange={setActiveSheet}>
  *   <BottomSheet sheetId="details" label="Details">
@@ -186,15 +186,15 @@ export interface BottomSheetOrchestratorProps {
  *   <BottomSheet sheetId="confirm" label="Confirm">
  *     <Button label="Done" onClick={() => setActiveSheet(null)} />
  *   </BottomSheet>
- * </BottomSheetOrchestrator>
+ * </BottomSheetSwitcher>
  * ```
  */
-export function BottomSheetOrchestrator({
+export function BottomSheetSwitcher({
   activeSheet,
   onActiveSheetChange,
   hasScrim = true,
   children,
-}: BottomSheetOrchestratorProps) {
+}: BottomSheetSwitcherProps) {
   // The opener belongs to the flow, not an individual sheet. Keeping it here
   // means sheet-to-sheet handoffs do not replace it with a control in the
   // previous sheet; focus returns to the original trigger when the flow ends.
@@ -241,7 +241,7 @@ export function BottomSheetOrchestrator({
   useScrollLock(isModal);
 
   const getSheetPhase = useCallback(
-    (sheetId: string): BottomSheetOrchestratorPhase => {
+    (sheetId: string): BottomSheetSwitcherPhase => {
       if (sheetId === activeSheet) {
         return sheetId === visibleTransition.enteringSheet
           ? 'entering'
@@ -300,7 +300,7 @@ export function BottomSheetOrchestrator({
   }, []);
 
   const onSheetTransitionComplete = useCallback(
-    ({sheetId, phase}: BottomSheetOrchestratorTransitionEvent) => {
+    ({sheetId, phase}: BottomSheetSwitcherTransitionEvent) => {
       setTransition(current => {
         if (phase === 'entering') {
           if (current.enteringSheet !== sheetId) {
@@ -361,7 +361,7 @@ export function BottomSheetOrchestrator({
     setScrimOpacity(activeSheet == null ? 0 : 1);
   }, [activeSheet, setScrimOpacity]);
 
-  const contextValue = useMemo<BottomSheetOrchestratorContextValue>(
+  const contextValue = useMemo<BottomSheetSwitcherContextValue>(
     () => ({
       activeSheet,
       hasScrim,
@@ -388,7 +388,7 @@ export function BottomSheetOrchestrator({
   );
 
   return (
-    <BottomSheetOrchestratorContext.Provider value={contextValue}>
+    <BottomSheetSwitcherContext.Provider value={contextValue}>
       <div ref={containerRef} {...stylex.props(styles.contents)}>
         {hasScrim && isFlowVisible && (
           <div
@@ -396,15 +396,15 @@ export function BottomSheetOrchestrator({
             aria-hidden="true"
             onClick={close}
             {...mergeProps(
-              themeProps('bottom-sheet-orchestrator-scrim'),
+              themeProps('bottom-sheet-switcher-scrim'),
               stylex.props(styles.scrim),
             )}
           />
         )}
         {children}
       </div>
-    </BottomSheetOrchestratorContext.Provider>
+    </BottomSheetSwitcherContext.Provider>
   );
 }
 
-BottomSheetOrchestrator.displayName = 'BottomSheetOrchestrator';
+BottomSheetSwitcher.displayName = 'BottomSheetSwitcher';

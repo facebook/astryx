@@ -1,12 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file BottomSheetOrchestrator.test.tsx
- * @input Uses vitest, Testing Library, BottomSheet, BottomSheetOrchestrator
+ * @file BottomSheetSwitcher.test.tsx
+ * @input Uses vitest, Testing Library, BottomSheet, BottomSheetSwitcher
  * @output Tests mutually exclusive sheet selection, dismissal, and focus handoff
- * @position Lab tests for BottomSheetOrchestrator
+ * @position Lab tests for BottomSheetSwitcher
  *
- * SYNC: When BottomSheetOrchestrator.tsx or its BottomSheet integration changes,
+ * SYNC: When BottomSheetSwitcher.tsx or its BottomSheet integration changes,
  * update these tests to match the public behavior.
  */
 
@@ -14,7 +14,7 @@ import {act, fireEvent, render, screen} from '@testing-library/react';
 import {useState} from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {BottomSheet} from './BottomSheet';
-import {BottomSheetOrchestrator} from './BottomSheetOrchestrator';
+import {BottomSheetSwitcher} from './BottomSheetSwitcher';
 
 beforeEach(() => {
   HTMLDialogElement.prototype.showModal = vi.fn(function (
@@ -55,7 +55,7 @@ function Flow() {
       <button type="button" onClick={() => setActiveSheet('details')}>
         Start flow
       </button>
-      <BottomSheetOrchestrator
+      <BottomSheetSwitcher
         activeSheet={activeSheet}
         onActiveSheetChange={setActiveSheet}>
         <BottomSheet
@@ -74,17 +74,17 @@ function Flow() {
             Back
           </button>
         </BottomSheet>
-      </BottomSheetOrchestrator>
+      </BottomSheetSwitcher>
     </>
   );
 }
 
 function getSharedScrim(): HTMLElement {
   const scrim = document.querySelector<HTMLElement>(
-    '.astryx-bottom-sheet-orchestrator-scrim',
+    '.astryx-bottom-sheet-switcher-scrim',
   );
   if (!scrim) {
-    throw new Error('shared orchestrator scrim not found');
+    throw new Error('shared switcher scrim not found');
   }
   return scrim;
 }
@@ -128,7 +128,7 @@ function mockSheetTop(sheet: HTMLElement, top: number) {
   }
 }
 
-describe('BottomSheetOrchestrator', () => {
+describe('BottomSheetSwitcher', () => {
   it('opens only the sheet selected by activeSheet', () => {
     render(<Flow />);
 
@@ -138,7 +138,7 @@ describe('BottomSheetOrchestrator', () => {
     expect(screen.getByTestId('confirm-sheet')).not.toHaveAttribute('open');
     expect(document.querySelectorAll('dialog[open]')).toHaveLength(1);
     expect(
-      document.querySelectorAll('.astryx-bottom-sheet-orchestrator-scrim'),
+      document.querySelectorAll('.astryx-bottom-sheet-switcher-scrim'),
     ).toHaveLength(1);
     expect(HTMLDialogElement.prototype.show).toHaveBeenCalledTimes(1);
     expect(HTMLDialogElement.prototype.showModal).not.toHaveBeenCalled();
@@ -284,25 +284,25 @@ describe('BottomSheetOrchestrator', () => {
     finishSheetTransition(outgoingSheet, 'transform');
 
     expect(
-      document.querySelector('.astryx-bottom-sheet-orchestrator-scrim'),
+      document.querySelector('.astryx-bottom-sheet-switcher-scrim'),
     ).not.toBeInTheDocument();
     expect(document.body.style.position).not.toBe('fixed');
   });
 
   it('can coordinate a non-modal flow without rendering a scrim', () => {
     render(
-      <BottomSheetOrchestrator
+      <BottomSheetSwitcher
         activeSheet="details"
         onActiveSheetChange={() => {}}
         hasScrim={false}>
         <BottomSheet sheetId="details" label="Details">
           Content
         </BottomSheet>
-      </BottomSheetOrchestrator>,
+      </BottomSheetSwitcher>,
     );
 
     expect(
-      document.querySelector('.astryx-bottom-sheet-orchestrator-scrim'),
+      document.querySelector('.astryx-bottom-sheet-switcher-scrim'),
     ).not.toBeInTheDocument();
     expect(screen.getByRole('dialog', {name: 'Details'})).not.toHaveAttribute(
       'aria-modal',
@@ -313,7 +313,7 @@ describe('BottomSheetOrchestrator', () => {
   it('requests activeSheet=null when the active sheet dismisses', () => {
     const onActiveSheetChange = vi.fn();
     render(
-      <BottomSheetOrchestrator
+      <BottomSheetSwitcher
         activeSheet="details"
         onActiveSheetChange={onActiveSheetChange}>
         <BottomSheet sheetId="details" label="Details">
@@ -322,7 +322,7 @@ describe('BottomSheetOrchestrator', () => {
         <BottomSheet sheetId="confirm" label="Confirm">
           Content
         </BottomSheet>
-      </BottomSheetOrchestrator>,
+      </BottomSheetSwitcher>,
     );
 
     fireEvent.keyDown(screen.getByRole('dialog', {name: 'Details'}), {

@@ -23,25 +23,25 @@ export const docs = {
     targets: [{className: 'astryx-bottom-sheet', visualProps: []}],
   },
   description:
-    'A mobile touch sheet that rises from the bottom edge, with animated entrance and exit, a grab handle, drag-to-resize snap points, and swipe-to-dismiss. Built on a native <dialog>. Use sheetId inside BottomSheetOrchestrator for mutually exclusive multi-step flows over one shared scrim.',
+    'A mobile touch sheet that rises from the bottom edge, with animated entrance and exit, a grab handle, drag-to-resize snap points, and swipe-to-dismiss. Built on a native <dialog>. Use sheetId inside BottomSheetSwitcher for mutually exclusive multi-step flows over one shared scrim.',
   props: [
     {
       name: 'isOpen',
       type: 'boolean',
       description:
-        'Whether a standalone sheet is open. Fully controlled; pair with onOpenChange. Omit inside BottomSheetOrchestrator.',
+        'Whether a standalone sheet is open. Fully controlled; pair with onOpenChange. Omit inside BottomSheetSwitcher.',
     },
     {
       name: 'onOpenChange',
       type: '(isOpen: boolean) => void',
       description:
-        'For a standalone sheet, called when it requests an open-state change (false on Escape, scrim click, or a swipe past the dismiss threshold). Omit inside BottomSheetOrchestrator.',
+        'For a standalone sheet, called when it requests an open-state change (false on Escape, scrim click, or a swipe past the dismiss threshold). Omit inside BottomSheetSwitcher.',
     },
     {
       name: 'sheetId',
       type: 'string',
       description:
-        'Unique ID for this sheet inside BottomSheetOrchestrator. The orchestrator opens it when activeSheet matches. Omit isOpen and onOpenChange when sheetId is used.',
+        'Unique ID for this sheet inside BottomSheetSwitcher. The switcher opens it when activeSheet matches. Omit isOpen and onOpenChange when sheetId is used.',
     },
     {
       name: 'label',
@@ -68,7 +68,7 @@ export const docs = {
       name: 'hasScrim',
       type: 'boolean',
       description:
-        'For a standalone BottomSheet, whether to render a scrim—the semi-transparent overlay that covers and blocks the background. true (default) uses showModal(): top layer, focus trap, ::backdrop scrim, body scroll lock, and tap-scrim-to-dismiss, with the background inert. false still renders a viewport-anchored overlay above the page, not inline content, but uses show() with no scrim, leaving the page behind interactive and scrollable. For a multi-step flow, configure hasScrim on BottomSheetOrchestrator instead; it owns one shared scrim across every child.',
+        'For a standalone BottomSheet, whether to render a scrim—the semi-transparent overlay that covers and blocks the background. true (default) uses showModal(): top layer, focus trap, ::backdrop scrim, body scroll lock, and tap-scrim-to-dismiss, with the background inert. false still renders a viewport-anchored overlay above the page, not inline content, but uses show() with no scrim, leaving the page behind interactive and scrollable. For a multi-step flow, configure hasScrim on BottomSheetSwitcher instead; it owns one shared scrim across every child.',
       default: 'true',
     },
   ],
@@ -89,7 +89,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Use BottomSheetOrchestrator with a unique sheetId per sheet for multi-step flows; it owns one shared scrim while the new top sheet enters and a taller previous sheet simultaneously aligns downward behind a shorter step, then fades it afterward.',
+          'Use BottomSheetSwitcher with a unique sheetId per sheet for multi-step flows; it owns one shared scrim while the new top sheet enters and a taller previous sheet simultaneously aligns downward behind a shorter step, then fades it afterward.',
       },
       {
         guidance: true,
@@ -146,7 +146,7 @@ export const docs = {
       code: `const [activeSheet, setActiveSheet] = useState(null);
 <>
   <Button label="Start" onClick={() => setActiveSheet('details')} />
-  <BottomSheetOrchestrator
+  <BottomSheetSwitcher
     activeSheet={activeSheet}
     onActiveSheetChange={setActiveSheet}>
     <BottomSheet sheetId="details" label="Details">
@@ -155,7 +155,7 @@ export const docs = {
     <BottomSheet sheetId="confirm" label="Confirm">
       <Button label="Back" onClick={() => setActiveSheet('details')} />
     </BottomSheet>
-  </BottomSheetOrchestrator>
+  </BottomSheetSwitcher>
 </>`,
     },
     {
@@ -192,7 +192,7 @@ export const docsDense = {
       {
         guidance: true,
         description:
-          'Use BottomSheetOrchestrator + sheetId for mutually exclusive multi-step flows over one shared scrim.',
+          'Use BottomSheetSwitcher + sheetId for mutually exclusive multi-step flows over one shared scrim.',
       },
       {
         guidance: true,
