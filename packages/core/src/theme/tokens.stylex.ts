@@ -58,7 +58,10 @@ export const colorDefaults = {
   '--color-success': 'light-dark(#0D8626, #0D8626)',
   '--color-success-muted': 'light-dark(#0B991F33, #0B991F3F)',
   '--color-on-success': 'light-dark(#FFFFFF, #FFFFFF)',
-  '--color-error': 'light-dark(#E3193B, #F5394F)',
+  // Same hex in both modes (like --color-success): #F5394F held white label
+  // text at 3.76:1 in dark — below WCAG 1.4.3's 4.5:1. #E3193B clears it
+  // (4.70:1) and is already the dark half of --color-background-error-inverted.
+  '--color-error': 'light-dark(#E3193B, #E3193B)',
   '--color-error-muted': 'light-dark(#E3193B33, #F5394F3F)',
   '--color-on-error': 'light-dark(#FFFFFF, #FFFFFF)',
   '--color-warning': 'light-dark(#E9AF08, #F2C00B)',

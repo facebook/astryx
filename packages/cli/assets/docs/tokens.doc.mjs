@@ -166,7 +166,7 @@ export const docs = {
             [
               "--color-error",
               "#E3193B",
-              "#F5394F"
+              "#E3193B"
             ],
             [
               "--color-error-muted",
