@@ -1047,6 +1047,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     onKeyDown,
     onItemMouseEnter,
   } = useMultiCombobox({
+    wasJustDismissed: popover.wasJustDismissed,
     selectableItems: sortedItems,
     isDisabled,
     isOpen: popover.isOpen,
@@ -1542,6 +1543,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         {isBusy && <Spinner size="sm" />}
         {hasClear && value.length > 0 && !isDisabled && (
           <InputClearButton
+            {...popover.keepOpenProps}
             label={t('@astryx.multiSelector.clearAll', {label})}
             onClick={handleClear}
             iconClassName={stableClassName('multi-selector-clear-icon')}
@@ -1560,6 +1562,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
               type="button"
               aria-label={t(STATUS_BUTTON_LABEL_KEY[status.type])}
               aria-describedby={statusTooltip.describedBy}
+              {...popover.keepOpenProps}
               onClick={e => e.stopPropagation()}
               {...stylex.props(
                 focusOutlineStyles.focusVisible,

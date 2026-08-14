@@ -909,6 +909,7 @@ export function Selector<T extends SelectorOptionType>(
     onItemMouseEnter,
   } = useCombobox({
     selectableItems: filteredItems,
+    wasJustDismissed: popover.wasJustDismissed,
     // The optimistic value, not the raw prop: with a pending changeAction the
     // prop still holds the old selection, so the popup would open with the
     // highlight on it and Delete/Backspace could clear a value the action has
@@ -1355,6 +1356,7 @@ export function Selector<T extends SelectorOptionType>(
         {isBusy && <Spinner size="sm" />}
         {hasClear && value != null && !isDisabled && (
           <InputClearButton
+            {...popover.keepOpenProps}
             label={t('@astryx.selector.clearLabel', {label})}
             onClick={handleClear}
             iconClassName={stableClassName('selector-clear-icon')}
@@ -1373,6 +1375,7 @@ export function Selector<T extends SelectorOptionType>(
               type="button"
               aria-label={t(STATUS_BUTTON_LABEL_KEY[status.type])}
               aria-describedby={statusTooltip.describedBy}
+              {...popover.keepOpenProps}
               onClick={e => e.stopPropagation()}
               {...stylex.props(
                 focusOutlineStyles.focusVisible,

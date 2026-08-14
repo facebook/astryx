@@ -17,7 +17,11 @@
 
 import React, {useCallback, useEffect, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {useLayer, type ContextRenderProps} from '../Layer/useLayer';
+import {
+  useLayer,
+  type ContextRenderProps,
+  type KeepLayerOpenProps,
+} from '../Layer/useLayer';
 import {useFocusTrap} from '../hooks/useFocusTrap';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {
@@ -249,6 +253,22 @@ export interface UsePopoverReturn {
   toggle: () => void;
 
   /**
+   * Props for a control that sits on the trigger — a clear button, a status
+   * button — and must not dismiss this popover when pressed. Merge them with
+   * the control's own handlers.
+   */
+  keepOpenProps: KeepLayerOpenProps;
+
+  /**
+   * Whether the browser's own light dismiss just closed this popover.
+   *
+   * Triggers that do not route through `toggle` — a combobox that also seeds a
+   * highlight, say — check this first and do nothing when it is true: the click
+   * is the tail of the gesture that already closed the popup.
+   */
+  wasJustDismissed: () => boolean;
+
+  /**
    * Whether the popover is currently open
    */
   isOpen: boolean;
@@ -399,6 +419,9 @@ export function usePopover(options: UsePopoverOptions = {}): UsePopoverReturn {
 
   // Toggle function
   const toggle = useCallback(() => {
+    if (layer.wasJustDismissed()) {
+      return;
+    }
     if (layer.isOpen) {
       layer.hide();
     } else {
@@ -488,6 +511,8 @@ export function usePopover(options: UsePopoverOptions = {}): UsePopoverReturn {
     show,
     hide: layer.hide,
     toggle,
+    keepOpenProps: layer.keepOpenProps,
+    wasJustDismissed: layer.wasJustDismissed,
     isOpen: layer.isOpen,
     id: layer.id,
     render,

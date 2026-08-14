@@ -322,16 +322,12 @@ export function Popover({
 }: PopoverProps): ReactElement {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const isControlled = isOpen !== undefined;
-  // Track when the popover was last hidden by light dismiss to prevent
-  // the trigger click from immediately re-opening it.
-  const lastHideTimeRef = useRef(0);
 
   const handlePopoverShow = useCallback(() => {
     onOpenChange?.(true);
   }, [onOpenChange]);
 
   const handlePopoverHide = useCallback(() => {
-    lastHideTimeRef.current = Date.now();
     onOpenChange?.(false);
   }, [onOpenChange]);
 
@@ -353,11 +349,7 @@ export function Popover({
     if (!isEnabled) {
       return;
     }
-    // If the popover was just closed by light dismiss (clicking outside),
-    // the trigger click fires in the same event — skip re-opening.
-    if (Date.now() - lastHideTimeRef.current < 50) {
-      return;
-    }
+    // `toggle` absorbs a click that belongs to its own light dismiss.
     popover.toggle();
   }, [isEnabled, popover]);
 

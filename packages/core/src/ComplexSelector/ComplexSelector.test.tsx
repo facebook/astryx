@@ -10,7 +10,7 @@
  */
 
 import {describe, expect, it, vi} from 'vitest';
-import {render, screen, waitFor} from '@testing-library/react';
+import {render, screen, waitFor, act, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {ComplexSelector} from './ComplexSelector';
 
@@ -225,5 +225,37 @@ describe('ComplexSelector popup theme target', () => {
     expect(
       document.querySelector('.astryx-complex-selector-popup'),
     ).not.toBeNull();
+  });
+
+  it('stays closed when the trigger click follows its own light dismiss (#5004)', async () => {
+    const user = userEvent.setup();
+    render(
+      <ComplexSelector label="Fruit blend" value="Apple" triggerLabel="Apple">
+        {() => <button type="button">Done</button>}
+      </ComplexSelector>,
+    );
+    const trigger = screen.getByRole('button', {name: 'Fruit blend'});
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    // The browser dismissed the popup on pointerup and queued the toggle. When
+    // that event lands before the click — WebKit, or any engine under load —
+    // the click used to read a closed popup and reopen it.
+    const popover = document.querySelector('[popover]') as HTMLElement;
+    // Back to back: the guard window is the length of one gesture, and in a
+    // browser the click lands a few milliseconds behind the dismissal.
+    act(() => {
+      popover.dispatchEvent(
+        Object.assign(new Event('toggle'), {
+          oldState: 'open',
+          newState: 'closed',
+        }),
+      );
+    });
+    // Synchronously, so the click still falls inside the one gesture the guard
+    // covers — in a browser it lands a few milliseconds behind the dismissal.
+    fireEvent.click(trigger);
+
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
 });

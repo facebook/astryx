@@ -16,6 +16,7 @@ import {
   fireEvent,
   waitFor,
   within,
+  act,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {useState} from 'react';
@@ -2775,4 +2776,40 @@ describe('Selector popup theme target', () => {
       expect(popup?.querySelector('[role="listbox"]')).not.toBeNull();
     },
   );
+
+  it('stays closed when the trigger click follows its own light dismiss (#5004)', async () => {
+    const user = userEvent.setup();
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value="Banana"
+        onChange={() => {}}
+        placement="below"
+      />,
+    );
+    const trigger = screen.getByRole('combobox');
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    // The browser dismissed the popup on pointerup and queued the toggle. When
+    // that event lands before the click — WebKit, or any engine under load —
+    // the click used to read a closed popup and reopen it.
+    const popover = document.querySelector('[popover]') as HTMLElement;
+    // Back to back: the guard window is the length of one gesture, and in a
+    // browser the click lands a few milliseconds behind the dismissal.
+    act(() => {
+      popover.dispatchEvent(
+        Object.assign(new Event('toggle'), {
+          oldState: 'open',
+          newState: 'closed',
+        }),
+      );
+    });
+    // Synchronously, so the click still falls inside the one gesture the guard
+    // covers — in a browser it lands a few milliseconds behind the dismissal.
+    fireEvent.click(trigger);
+
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
 });

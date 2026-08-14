@@ -18,6 +18,7 @@ import React, {
   useCallback,
   useEffect,
   useId,
+  useMemo,
   useRef,
   useState,
   type ReactNode,
@@ -26,6 +27,7 @@ import React, {
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {addAnchorName, removeAnchorName} from './anchorName';
+import {currentGesture} from './gestureCounter';
 import {typographyVars} from '../theme/tokens.stylex';
 
 const styles = stylex.create({
@@ -63,6 +65,18 @@ const styles = stylex.create({
     marginInlineEnd: offset,
   }),
 });
+
+/**
+ * Props for a control that sits on the trigger but must not dismiss the layer.
+ */
+export interface KeepLayerOpenProps {
+  onPointerDown: React.PointerEventHandler<HTMLElement>;
+  /**
+   * Capture phase, so spreading these props never collides with the control's
+   * own `onClick`.
+   */
+  onClickCapture: React.MouseEventHandler<HTMLElement>;
+}
 
 /**
  * Position placement relative to anchor.
@@ -263,6 +277,31 @@ export interface ContextLayerReturn {
   isOpen: boolean;
 
   /**
+   * Props for a control that lives on the trigger — a clear button, a status
+   * button — and must not dismiss this layer when pressed.
+   *
+   * Such a control sits OUTSIDE the popover, so the browser light-dismisses
+   * the layer as soon as it is pressed and the affordance is unusable while
+   * the layer it belongs to is open. Spreading these props names the control
+   * an invoker of this popover, which puts it inside the layer for that
+   * decision. Merge them with the control's own handlers.
+   */
+  keepOpenProps: KeepLayerOpenProps;
+
+  /**
+   * Whether the browser itself closed this layer — light dismiss, or popover
+   * stack eviction — during the gesture still in flight, rather than a call
+   * to `hide()`.
+   *
+   * A trigger checks this before acting on a click: a click from that same
+   * press is the tail of the dismissal, and toggling on it would reopen what
+   * the user just closed. The browser dismisses on pointerup and the click
+   * follows a beat later, so which one React sees first is a race that varies
+   * by engine and by load — this does not depend on winning it.
+   */
+  wasJustDismissed: () => boolean;
+
+  /**
    * Unique ID for aria-describedby
    */
   id: string;
@@ -297,6 +336,28 @@ export interface FixedLayerReturn {
    * Whether the layer is currently open
    */
   isOpen: boolean;
+
+  /**
+   * Props for a control that lives on the trigger — a clear button, a status
+   * button — and must not dismiss this layer when pressed.
+   *
+   * Such a control sits OUTSIDE the popover, so the browser light-dismisses
+   * the layer as soon as it is pressed and the affordance is unusable while
+   * the layer it belongs to is open. Spreading these props names the control
+   * an invoker of this popover, which puts it inside the layer for that
+   * decision. Merge them with the control's own handlers.
+   */
+  keepOpenProps: KeepLayerOpenProps;
+
+  /**
+   * Whether the browser itself just closed this layer — light dismiss or
+   * popover stack eviction — rather than a call to `hide()`.
+   *
+   * A trigger checks this before acting on a click: within the guard window
+   * the click belongs to the gesture that dismissed the layer, so toggling on
+   * it would reopen what the user just closed.
+   */
+  wasJustDismissed: () => boolean;
 
   /**
    * Unique ID for aria-describedby
@@ -418,6 +479,11 @@ export function useLayer(
   // stale-closure reads of the previous isOpen value.
   const isOpenRef = useRef(false);
 
+  // The gesture during which the browser last closed this layer on its own.
+  // Read through wasJustDismissed by triggers deciding whether a click is
+  // theirs to act on.
+  const dismissedByGestureRef = useRef<number | null>(null);
+
   const show = useCallback(() => {
     const popover = popoverRef.current;
     if (popover && !isOpenRef.current) {
@@ -456,6 +522,50 @@ export function useLayer(
     }
   }, [onHide]);
 
+  const wasJustDismissed = useCallback(
+    () =>
+      dismissedByGestureRef.current !== null &&
+      dismissedByGestureRef.current === currentGesture(),
+    [],
+  );
+
+  const keepOpenProps: KeepLayerOpenProps = useMemo(
+    () => ({
+      onPointerDown: (event: React.PointerEvent<HTMLElement>) => {
+        if (!isOpenRef.current) {
+          return;
+        }
+        // The browser reads the invoker relationship twice — once when the
+        // press starts and once when it ends — and only then decides to
+        // light-dismiss, so the attribute has to span the whole gesture. It
+        // comes off afterwards because a permanent invoker reports itself as
+        // `expanded` to assistive tech, which a clear button is not.
+        const control = event.currentTarget;
+        control.setAttribute('popovertarget', id);
+        document.addEventListener(
+          'pointerup',
+          () => {
+            // A task, not a microtask: the dismissal runs as the pointerup
+            // default action, after this listener.
+            window.setTimeout(() => {
+              control.removeAttribute('popovertarget');
+            }, 0);
+          },
+          {once: true},
+        );
+      },
+      onClickCapture: (event: React.MouseEvent<HTMLElement>) => {
+        const control = event.currentTarget;
+        if (control.hasAttribute('popovertarget')) {
+          // Being an invoker would otherwise toggle the layer shut.
+          event.preventDefault();
+          control.removeAttribute('popovertarget');
+        }
+      },
+    }),
+    [id],
+  );
+
   // Ref for trigger element (context mode only)
   const ref: RefCallback<HTMLElement> | undefined =
     mode === 'context'
@@ -489,6 +599,7 @@ export function useLayer(
       const toggleEvent = e as ToggleEvent;
       if (toggleEvent.newState === 'closed' && isOpenRef.current) {
         isOpenRef.current = false;
+        dismissedByGestureRef.current = currentGesture();
         setIsOpen(false);
         onHide?.();
       }
@@ -662,6 +773,8 @@ export function useLayer(
       show,
       hide,
       isOpen,
+      keepOpenProps,
+      wasJustDismissed,
       id,
       render: renderContext,
     };
@@ -672,6 +785,8 @@ export function useLayer(
     show,
     hide,
     isOpen,
+    keepOpenProps,
+    wasJustDismissed,
     id,
     render: renderFixed,
   };

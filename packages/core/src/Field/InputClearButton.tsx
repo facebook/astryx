@@ -30,6 +30,13 @@ const styles = stylex.create({
 export interface InputClearButtonProps {
   label: string;
   onClick: (e: React.MouseEvent<HTMLButtonElement>) => void;
+  /**
+   * Pointer and capture-phase click handlers, for inputs that render this
+   * button beside an open layer: spread `keepOpenProps` so pressing the clear
+   * button does not light-dismiss the layer it sits next to.
+   */
+  onPointerDown?: React.PointerEventHandler<HTMLElement>;
+  onClickCapture?: React.MouseEventHandler<HTMLElement>;
   xstyle?: stylex.StyleXStyles;
   /**
    * Extra class(es) for the clear glyph itself, merged onto the shared
@@ -44,6 +51,8 @@ export interface InputClearButtonProps {
 export function InputClearButton({
   label,
   onClick,
+  onPointerDown,
+  onClickCapture,
   xstyle,
   iconClassName,
 }: InputClearButtonProps): ReactNode {
@@ -66,6 +75,8 @@ export function InputClearButton({
         />
       }
       onClick={onClick}
+      onPointerDown={onPointerDown}
+      onClickCapture={onClickCapture}
       isIconOnly
       xstyle={[styles.button, xstyle]}
     />
