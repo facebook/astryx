@@ -40,6 +40,8 @@ const CLIENT_APIS = [
   'useInsertionEffect',
   'useImperativeHandle',
   'useDeferredValue',
+  // The one non-hook export in react's client-only set.
+  'startTransition',
 ];
 
 function walk(dir) {

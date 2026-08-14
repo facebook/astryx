@@ -31,6 +31,7 @@
 
 import {describe, it, expect} from 'vitest';
 import {readdirSync, readFileSync, existsSync, statSync} from 'node:fs';
+import {createRequire} from 'node:module';
 import {join, dirname, resolve, relative} from 'node:path';
 import ts from 'typescript';
 
@@ -64,6 +65,8 @@ const CLIENT_APIS = new Set([
   'useInsertionEffect',
   'useImperativeHandle',
   'useDeferredValue',
+  // The one non-hook export in react's client-only set.
+  'startTransition',
 ]);
 
 const EXTENSIONS = ['.tsx', '.ts', '.mjs', '.js', '.jsx'];
@@ -518,7 +521,7 @@ describe('parseSource', () => {
     ).toEqual(['use']);
   });
 
-  it.each(['useActionState', 'useEffectEvent'])(
+  it.each(['useActionState', 'useEffectEvent', 'startTransition'])(
     'treats React 19 `%s` as a client API',
     api => {
       expect(
@@ -526,6 +529,22 @@ describe('parseSource', () => {
       ).toEqual([api]);
     },
   );
+
+  it('reads a client API imported under an alias', () => {
+    expect(
+      parse(
+        `import {useActionState as useSubmitState} from 'react';\nexport const a = 1;`,
+      ).clientAPIs,
+    ).toEqual(['useActionState']);
+  });
+
+  it('reads useEffectEvent reached through a default React binding', () => {
+    expect(
+      parse(
+        `import React from 'react';\nexport const a = () => React.useEffectEvent(() => {});`,
+      ).clientAPIs,
+    ).toEqual(['React.useEffectEvent']);
+  });
 
   it('sees `use client` behind another prologue directive', () => {
     expect(
@@ -537,6 +556,61 @@ describe('parseSource', () => {
     expect(parse(`export const a = 1;\n'use client';`).hasUseClient).toBe(
       false,
     );
+  });
+});
+
+describe('CLIENT_APIS', () => {
+  it('covers every client-only hook the react-server build omits', () => {
+    // React's own builds are the ground truth for "works on the server": the
+    // react-server condition maps to a deliberate allowlist, and the exports
+    // it drops are exactly the client-only surface. Every hook-shaped export
+    // in the client build but not the server build must be in CLIENT_APIS,
+    // or both invariants below go blind to it. The subset holds in one
+    // direction only: `use`, useId, useMemo and useCallback are server-legal
+    // but deliberately over-approximated as client APIs above.
+    const nodeRequire = createRequire(import.meta.url);
+    const cjs = join(dirname(nodeRequire.resolve('react/package.json')), 'cjs');
+    const exportsOf = (file: string) =>
+      new Set(
+        [
+          ...readFileSync(join(cjs, file), 'utf-8').matchAll(
+            /exports\.(\w+)\s*=/g,
+          ),
+        ].map(m => m[1]),
+      );
+    const client = exportsOf('react.production.js');
+    const server = exportsOf('react.react-server.production.js');
+    const missing = [...client].filter(
+      name =>
+        (/^use[A-Z]/.test(name) || name === 'startTransition') &&
+        !server.has(name) &&
+        !CLIENT_APIS.has(name),
+    );
+    expect(
+      missing,
+      `\nreact marks these exports client-only (absent from its react-server\n` +
+        `build) but CLIENT_APIS does not list them. Add them here and to\n` +
+        `scripts/check-use-client.mjs:\n  ${missing.join(', ')}\n`,
+    ).toEqual([]);
+  });
+
+  it('stays in sync with scripts/check-use-client.mjs', () => {
+    const script = readFileSync(
+      join(SRC_DIR, '..', '..', '..', 'scripts', 'check-use-client.mjs'),
+      'utf-8',
+    );
+    const literal = /const CLIENT_APIS = \[([\s\S]*?)\];/.exec(script);
+    const names =
+      literal === null
+        ? []
+        : [
+            ...literal[1]
+              .split('\n')
+              .filter(line => !line.trim().startsWith('//'))
+              .join('\n')
+              .matchAll(/'([^']+)'/g),
+          ].map(m => m[1]);
+    expect(new Set(names)).toEqual(CLIENT_APIS);
   });
 });
 
