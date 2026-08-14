@@ -751,25 +751,44 @@ export const PlacementAbove: Story = {
   },
 };
 
-export const SelectedItemOverlay: Story = {
-  render: args => {
-    const {
-      value: argsValue,
-      onChange: _onChange,
-      changeAction: _changeAction,
-      hasClear: _hc,
-      ...rest
-    } = args;
-    const [value, setValue] = useState(argsValue ?? 'Banana');
+export const Placements: Story = {
+  render: () => {
+    const [below, setBelow] = useState('Banana');
+    const [start, setStart] = useState('Banana');
+    const [end, setEnd] = useState('Banana');
+    const [offset, setOffset] = useState('Banana');
+    const options = ['Apple', 'Banana', 'Cherry', 'Date'];
     return (
-      <Selector
-        {...rest}
-        label="Native-select overlay"
-        options={['Apple', 'Banana', 'Cherry', 'Date']}
-        value={value}
-        onChange={v => setValue(v)}
-        hasSelectedItemOverlay
-      />
+      <div style={{display: 'flex', flexDirection: 'column', gap: 32}}>
+        <Selector
+          label="placement=below"
+          options={options}
+          value={below}
+          onChange={v => setBelow(v)}
+          placement="below"
+        />
+        <Selector
+          label="placement=start"
+          options={options}
+          value={start}
+          onChange={v => setStart(v)}
+          placement="start"
+        />
+        <Selector
+          label="placement=end"
+          options={options}
+          value={end}
+          onChange={v => setEnd(v)}
+          placement="end"
+        />
+        <Selector
+          label="placement=offset"
+          options={options}
+          value={offset}
+          onChange={v => setOffset(v)}
+          placement="offset"
+        />
+      </div>
     );
   },
 };
@@ -913,6 +932,30 @@ export const DefaultSelectionIndicator: Story = {
         options={['Apple', 'Banana', 'Cherry']}
         value={value}
         onChange={setValue}
+        isDefaultOpen
+      />
+    );
+  },
+};
+
+/**
+ * `indicatorPosition="start"` moves the mark to the leading edge, the way a
+ * native menu marks its chosen row.
+ *
+ * The column is reserved on every row, not just the chosen one, so the labels
+ * stay on one line — the default check draws nothing when unchecked, and
+ * without the column only the chosen label would be indented.
+ */
+export const StartIndicatorPosition: Story = {
+  render: () => {
+    const [value, setValue] = useState<string | undefined>('Banana');
+    return (
+      <Selector
+        label="Mark at the start"
+        options={['Apple', 'Banana', 'Cherry']}
+        value={value}
+        onChange={setValue}
+        indicatorPosition="start"
         isDefaultOpen
       />
     );

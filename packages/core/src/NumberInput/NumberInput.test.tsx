@@ -73,21 +73,21 @@ describe('NumberInput', () => {
     expect(screen.getByPlaceholderText('Enter number')).toBeInTheDocument();
   });
 
-  it('displays controlled value as number', () => {
+  it('displays the controlled value as editable text', () => {
     render(<NumberInput label="Quantity" value={456} onChange={() => {}} />);
-    expect(screen.getByRole('spinbutton')).toHaveValue(456);
+    expect(screen.getByRole('spinbutton')).toHaveValue('456');
   });
 
-  it('displays null for null value', () => {
+  it('displays an empty string for a null value', () => {
     render(<NumberInput label="Quantity" value={null} onChange={() => {}} />);
-    expect(screen.getByRole('spinbutton')).toHaveValue(null);
+    expect(screen.getByRole('spinbutton')).toHaveValue('');
   });
 
-  it('displays null for undefined value', () => {
+  it('displays an empty string for an undefined value', () => {
     render(
       <NumberInput label="Quantity" value={undefined} onChange={() => {}} />,
     );
-    expect(screen.getByRole('spinbutton')).toHaveValue(null);
+    expect(screen.getByRole('spinbutton')).toHaveValue('');
   });
 
   it('forwards ref correctly', () => {
@@ -198,31 +198,127 @@ describe('NumberInput', () => {
     expect(container.querySelector('svg')).not.toBeInTheDocument();
   });
 
-  describe('native number input attributes', () => {
-    it('sets min attribute', () => {
+  describe('text-backed spinbutton attributes', () => {
+    it('uses a text input with decimal input mode by default', () => {
+      render(<NumberInput label="Price" value={5} onChange={() => {}} />);
+      const input = screen.getByRole('spinbutton');
+      expect(input).toHaveAttribute('type', 'text');
+      expect(input).toHaveAttribute('inputmode', 'decimal');
+    });
+
+    it('uses numeric input mode for integer-only values', () => {
+      render(
+        <NumberInput
+          label="Count"
+          value={5}
+          onChange={() => {}}
+          isIntegerOnly
+        />,
+      );
+      expect(screen.getByRole('spinbutton')).toHaveAttribute(
+        'inputmode',
+        'numeric',
+      );
+    });
+
+    it('exposes the minimum through spinbutton ARIA', () => {
       render(
         <NumberInput label="Age" value={null} onChange={() => {}} min={0} />,
       );
-      expect(screen.getByRole('spinbutton')).toHaveAttribute('min', '0');
+      expect(screen.getByRole('spinbutton')).toHaveAttribute(
+        'aria-valuemin',
+        '0',
+      );
     });
 
-    it('sets max attribute', () => {
+    it('exposes the maximum through spinbutton ARIA', () => {
       render(
         <NumberInput label="Age" value={null} onChange={() => {}} max={120} />,
       );
-      expect(screen.getByRole('spinbutton')).toHaveAttribute('max', '120');
+      expect(screen.getByRole('spinbutton')).toHaveAttribute(
+        'aria-valuemax',
+        '120',
+      );
     });
 
-    it('sets step attribute', () => {
+    it('exposes the current value through spinbutton ARIA', () => {
+      render(<NumberInput label="Age" value={42} onChange={() => {}} />);
+      expect(screen.getByRole('spinbutton')).toHaveAttribute(
+        'aria-valuenow',
+        '42',
+      );
+    });
+  });
+
+  describe('formatted display values', () => {
+    it('shows the formatted value at rest and exposes it to assistive technology', () => {
       render(
         <NumberInput
-          label="Price"
-          value={null}
+          label="Revenue"
+          value={1234}
           onChange={() => {}}
-          step={0.01}
+          formatValue={number => `$${number.toLocaleString('en-US')}`}
         />,
       );
-      expect(screen.getByRole('spinbutton')).toHaveAttribute('step', '0.01');
+      const input = screen.getByRole('spinbutton');
+      expect(input).toHaveValue('$1,234');
+      expect(input).toHaveAttribute('aria-valuetext', '$1,234');
+      expect(input).toHaveAttribute('aria-valuenow', '1234');
+    });
+
+    it('shows the raw numeric value while focused and restores formatting on blur', () => {
+      render(
+        <NumberInput
+          label="Revenue"
+          value={1234}
+          onChange={() => {}}
+          formatValue={number => `$${number.toLocaleString('en-US')}`}
+        />,
+      );
+      const input = screen.getByRole('spinbutton');
+
+      fireEvent.focus(input);
+      expect(input).toHaveValue('1234');
+
+      fireEvent.blur(input);
+      expect(input).toHaveValue('$1,234');
+    });
+
+    it('preserves invalid pending text while focused, then restores the formatted true value', () => {
+      const onChange = vi.fn();
+      render(
+        <NumberInput
+          label="Quantity"
+          value={3}
+          onChange={onChange}
+          isIntegerOnly
+          formatValue={number => `${number} items`}
+        />,
+      );
+      const input = screen.getByRole('spinbutton');
+
+      fireEvent.focus(input);
+      fireEvent.change(input, {target: {value: '3.5'}});
+      expect(input).toHaveValue('3.5');
+      expect(input).toHaveAttribute('aria-invalid', 'true');
+      expect(onChange).not.toHaveBeenCalledWith(3.5);
+
+      fireEvent.blur(input);
+      expect(input).toHaveValue('3 items');
+    });
+
+    it('does not call the formatter for an empty value', () => {
+      const formatValue = vi.fn((number: number) => String(number));
+      render(
+        <NumberInput
+          label="Quantity"
+          value={null}
+          onChange={() => {}}
+          formatValue={formatValue}
+        />,
+      );
+      expect(screen.getByRole('spinbutton')).toHaveValue('');
+      expect(formatValue).not.toHaveBeenCalled();
     });
   });
 
@@ -703,6 +799,22 @@ describe('NumberInput', () => {
       expect(data.get('quantity')).toBe('42');
     });
 
+    it('submits the raw number instead of the formatted display value', () => {
+      const {container} = render(
+        <form>
+          <NumberInput
+            label="Revenue"
+            htmlName="revenue"
+            value={1234}
+            onChange={() => {}}
+            formatValue={number => `$${number.toLocaleString('en-US')}`}
+          />
+        </form>,
+      );
+      const data = new FormData(container.querySelector('form')!);
+      expect(data.get('revenue')).toBe('1234');
+    });
+
     it('is excluded from form data when disabled', () => {
       const {container} = render(
         <form>
@@ -814,6 +926,74 @@ describe('NumberInput', () => {
         />,
       );
       expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    });
+
+    it('does not step on ArrowUp or ArrowDown', async () => {
+      const user = userEvent.setup();
+      const handleChange = vi.fn();
+      render(
+        <NumberInput
+          label="Quantity"
+          value={42}
+          onChange={handleChange}
+          isReadOnly
+        />,
+      );
+      const input = screen.getByRole('spinbutton');
+      input.focus();
+      await user.keyboard('{ArrowUp}{ArrowDown}');
+      expect(handleChange).not.toHaveBeenCalled();
+      expect(input).toHaveValue('42');
+    });
+
+    it('leaves wheel scrolling to the page instead of stepping', () => {
+      const onScrollableWheel = vi.fn();
+      const handleChange = vi.fn();
+      render(
+        <div onWheel={onScrollableWheel}>
+          <NumberInput
+            label="Quantity"
+            value={42}
+            onChange={handleChange}
+            isReadOnly
+          />
+        </div>,
+      );
+      const input = screen.getByRole('spinbutton');
+      input.focus();
+      const event = new WheelEvent('wheel', {
+        bubbles: true,
+        cancelable: true,
+        deltaY: -100,
+      });
+      fireEvent(input, event);
+
+      expect(handleChange).not.toHaveBeenCalled();
+      expect(event.defaultPrevented).toBe(false);
+      expect(onScrollableWheel).toHaveBeenCalledTimes(1);
+    });
+
+    it('disables both number steppers', () => {
+      const handleChange = vi.fn();
+      render(
+        <NumberInput
+          label="Quantity"
+          value={42}
+          onChange={handleChange}
+          hasNumberSteppers
+          isReadOnly
+        />,
+      );
+      const increment = screen.getByRole('button', {
+        name: 'Increment Quantity',
+      });
+      expect(increment).toBeDisabled();
+      expect(
+        screen.getByRole('button', {name: 'Decrement Quantity'}),
+      ).toBeDisabled();
+
+      fireEvent.click(increment);
+      expect(handleChange).not.toHaveBeenCalled();
     });
 
     it('lets isDisabled win when both are set', () => {
@@ -1145,30 +1325,364 @@ describe('NumberInput statusVariant forwarding', () => {
       'detached',
     );
   });
+});
 
-  it('stops wheel propagation while focused so ancestor containers do not scroll', () => {
+describe('NumberInput stepping', () => {
+  it('increments with ArrowUp and decrements with ArrowDown', () => {
+    const onChange = vi.fn();
+    render(<NumberInput label="Amount" value={5} onChange={onChange} />);
+    const input = screen.getByRole('spinbutton');
+
+    fireEvent.keyDown(input, {key: 'ArrowUp'});
+    expect(onChange).toHaveBeenLastCalledWith(6);
+
+    fireEvent.keyDown(input, {key: 'ArrowDown'});
+    expect(onChange).toHaveBeenLastCalledWith(4);
+  });
+
+  it('lets onKeyDown cancel keyboard stepping', () => {
+    const onChange = vi.fn();
+    const onKeyDown = vi.fn((event: React.KeyboardEvent<HTMLInputElement>) =>
+      event.preventDefault(),
+    );
+    render(
+      <NumberInput
+        label="Amount"
+        value={5}
+        onChange={onChange}
+        onKeyDown={onKeyDown}
+      />,
+    );
+    fireEvent.keyDown(screen.getByRole('spinbutton'), {key: 'ArrowUp'});
+
+    expect(onKeyDown).toHaveBeenCalledTimes(1);
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('uses decimal-safe step arithmetic', () => {
+    const onChange = vi.fn();
+    render(
+      <NumberInput label="Amount" value={0.2} onChange={onChange} step={0.1} />,
+    );
+    fireEvent.keyDown(screen.getByRole('spinbutton'), {key: 'ArrowUp'});
+    expect(onChange).toHaveBeenCalledWith(0.3);
+  });
+
+  it('aligns an off-step value in the requested direction', () => {
+    const onChange = vi.fn();
+    render(
+      <NumberInput
+        label="Amount"
+        value={0.25}
+        onChange={onChange}
+        step={0.1}
+      />,
+    );
+    const input = screen.getByRole('spinbutton');
+
+    fireEvent.keyDown(input, {key: 'ArrowUp'});
+    expect(onChange).toHaveBeenLastCalledWith(0.3);
+
+    fireEvent.keyDown(input, {key: 'ArrowDown'});
+    expect(onChange).toHaveBeenLastCalledWith(0.2);
+  });
+
+  it('starts an empty value at the relevant boundary', () => {
+    const onChange = vi.fn();
+    const {rerender} = render(
+      <NumberInput label="Amount" value={null} onChange={onChange} min={2} />,
+    );
+    fireEvent.keyDown(screen.getByRole('spinbutton'), {key: 'ArrowUp'});
+    expect(onChange).toHaveBeenLastCalledWith(2);
+
+    rerender(
+      <NumberInput label="Amount" value={null} onChange={onChange} max={8} />,
+    );
+    fireEvent.keyDown(screen.getByRole('spinbutton'), {key: 'ArrowDown'});
+    expect(onChange).toHaveBeenLastCalledWith(8);
+  });
+
+  it('keeps generated values integral when isIntegerOnly is set', () => {
+    const onChange = vi.fn();
+    render(
+      <NumberInput
+        label="Amount"
+        value={null}
+        onChange={onChange}
+        min={2.5}
+        isIntegerOnly
+      />,
+    );
+    fireEvent.keyDown(screen.getByRole('spinbutton'), {key: 'ArrowUp'});
+    expect(onChange).toHaveBeenCalledWith(3);
+  });
+
+  it('does not step past min or max', () => {
+    const onChange = vi.fn();
+    const {rerender} = render(
+      <NumberInput
+        label="Amount"
+        value={10}
+        onChange={onChange}
+        min={0}
+        max={10}
+      />,
+    );
+    fireEvent.keyDown(screen.getByRole('spinbutton'), {key: 'ArrowUp'});
+    expect(onChange).not.toHaveBeenCalled();
+
+    rerender(
+      <NumberInput
+        label="Amount"
+        value={0}
+        onChange={onChange}
+        min={0}
+        max={10}
+      />,
+    );
+    fireEvent.keyDown(screen.getByRole('spinbutton'), {key: 'ArrowDown'});
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('allows wheel stepping by default and consumes the focused gesture', () => {
     const onScrollableWheel = vi.fn();
+    const onChange = vi.fn();
     render(
       <div onWheel={onScrollableWheel}>
-        <NumberInput label="Amount" value={5} onChange={() => {}} />
+        <NumberInput label="Amount" value={5} onChange={onChange} />
       </div>,
     );
     const input = screen.getByRole('spinbutton');
     input.focus();
-    fireEvent.wheel(input, {deltaY: 100});
+    const event = new WheelEvent('wheel', {
+      bubbles: true,
+      cancelable: true,
+      deltaY: -100,
+    });
+    fireEvent(input, event);
+
+    expect(onChange).toHaveBeenCalledWith(6);
+    expect(event.defaultPrevented).toBe(true);
     expect(onScrollableWheel).not.toHaveBeenCalled();
   });
 
-  it('does not stop wheel propagation when the input is not focused', () => {
+  it('leaves wheel scrolling alone when isWheelEnabled is false', () => {
     const onScrollableWheel = vi.fn();
+    const onChange = vi.fn();
     render(
       <div onWheel={onScrollableWheel}>
-        <NumberInput label="Amount" value={5} onChange={() => {}} />
+        <NumberInput
+          label="Amount"
+          value={5}
+          onChange={onChange}
+          isWheelEnabled={false}
+        />
       </div>,
     );
     const input = screen.getByRole('spinbutton');
-    fireEvent.wheel(input, {deltaY: 100});
+    input.focus();
+    const event = new WheelEvent('wheel', {
+      bubbles: true,
+      cancelable: true,
+      deltaY: -100,
+    });
+    fireEvent(input, event);
+
+    expect(onChange).not.toHaveBeenCalled();
+    expect(event.defaultPrevented).toBe(false);
     expect(onScrollableWheel).toHaveBeenCalledTimes(1);
+  });
+
+  it('updates the wheel listener when isWheelEnabled changes', () => {
+    const onScrollableWheel = vi.fn();
+    const onChange = vi.fn();
+    const {rerender} = render(
+      <div onWheel={onScrollableWheel}>
+        <NumberInput
+          label="Amount"
+          value={5}
+          onChange={onChange}
+          isWheelEnabled={false}
+        />
+      </div>,
+    );
+    const input = screen.getByRole('spinbutton');
+    input.focus();
+
+    rerender(
+      <div onWheel={onScrollableWheel}>
+        <NumberInput
+          label="Amount"
+          value={5}
+          onChange={onChange}
+          isWheelEnabled
+        />
+      </div>,
+    );
+    fireEvent.wheel(input, {deltaY: -100});
+    expect(onChange).toHaveBeenCalledWith(6);
+    expect(onScrollableWheel).not.toHaveBeenCalled();
+
+    onChange.mockClear();
+    rerender(
+      <div onWheel={onScrollableWheel}>
+        <NumberInput
+          label="Amount"
+          value={5}
+          onChange={onChange}
+          isWheelEnabled={false}
+        />
+      </div>,
+    );
+    fireEvent.wheel(input, {deltaY: -100});
+    expect(onChange).not.toHaveBeenCalled();
+    expect(onScrollableWheel).toHaveBeenCalledTimes(1);
+  });
+
+  it('leaves wheel scrolling alone when the input is not focused', () => {
+    const onScrollableWheel = vi.fn();
+    const onChange = vi.fn();
+    render(
+      <div onWheel={onScrollableWheel}>
+        <NumberInput label="Amount" value={5} onChange={onChange} />
+      </div>,
+    );
+    const input = screen.getByRole('spinbutton');
+    const event = new WheelEvent('wheel', {
+      bubbles: true,
+      cancelable: true,
+      deltaY: 100,
+    });
+    fireEvent(input, event);
+
+    expect(onChange).not.toHaveBeenCalled();
+    expect(event.defaultPrevented).toBe(false);
+    expect(onScrollableWheel).toHaveBeenCalledTimes(1);
+  });
+
+  it('leaves modified wheel gestures alone', () => {
+    const onScrollableWheel = vi.fn();
+    const onChange = vi.fn();
+    render(
+      <div onWheel={onScrollableWheel}>
+        <NumberInput label="Amount" value={5} onChange={onChange} />
+      </div>,
+    );
+    const input = screen.getByRole('spinbutton');
+    input.focus();
+    fireEvent.wheel(input, {deltaY: -100, ctrlKey: true});
+
+    expect(onChange).not.toHaveBeenCalled();
+    expect(onScrollableWheel).toHaveBeenCalledTimes(1);
+  });
+
+  it('leaves wheel scrolling alone when the input is aria-disabled', () => {
+    const onScrollableWheel = vi.fn();
+    const onChange = vi.fn();
+    render(
+      <div onWheel={onScrollableWheel}>
+        <NumberInput
+          label="Amount"
+          value={5}
+          onChange={onChange}
+          isDisabled
+          disabledMessage="This value is locked"
+        />
+      </div>,
+    );
+    const input = screen.getByRole('spinbutton');
+    input.focus();
+    fireEvent.wheel(input, {deltaY: -100});
+
+    expect(onChange).not.toHaveBeenCalled();
+    expect(onScrollableWheel).toHaveBeenCalledTimes(1);
+  });
+
+  describe('hasNumberSteppers', () => {
+    it('does not show stepper buttons by default', () => {
+      render(<NumberInput label="Quantity" value={5} onChange={() => {}} />);
+      expect(
+        screen.queryByRole('button', {name: 'Increment Quantity'}),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', {name: 'Decrement Quantity'}),
+      ).not.toBeInTheDocument();
+    });
+
+    it('shows localized increment and decrement buttons when enabled', () => {
+      render(
+        <NumberInput
+          label="Quantity"
+          value={5}
+          onChange={() => {}}
+          hasNumberSteppers
+        />,
+      );
+      expect(
+        screen.getByRole('button', {name: 'Increment Quantity'}),
+      ).toHaveAttribute('tabindex', '-1');
+      expect(
+        screen.getByRole('button', {name: 'Decrement Quantity'}),
+      ).toHaveAttribute('tabindex', '-1');
+    });
+
+    it('steps the value and returns focus to the input', () => {
+      const onChange = vi.fn();
+      render(
+        <NumberInput
+          label="Quantity"
+          value={5}
+          onChange={onChange}
+          hasNumberSteppers
+        />,
+      );
+      const input = screen.getByRole('spinbutton');
+
+      fireEvent.click(screen.getByRole('button', {name: 'Increment Quantity'}));
+      expect(onChange).toHaveBeenLastCalledWith(6);
+      expect(input).toHaveFocus();
+
+      fireEvent.click(screen.getByRole('button', {name: 'Decrement Quantity'}));
+      expect(onChange).toHaveBeenLastCalledWith(4);
+      expect(input).toHaveFocus();
+    });
+
+    it('disables only the stepper at the reached boundary', () => {
+      render(
+        <NumberInput
+          label="Quantity"
+          value={10}
+          onChange={() => {}}
+          min={0}
+          max={10}
+          hasNumberSteppers
+        />,
+      );
+      expect(
+        screen.getByRole('button', {name: 'Increment Quantity'}),
+      ).toBeDisabled();
+      expect(
+        screen.getByRole('button', {name: 'Decrement Quantity'}),
+      ).not.toBeDisabled();
+    });
+
+    it('disables both steppers with the input', () => {
+      render(
+        <NumberInput
+          label="Quantity"
+          value={5}
+          onChange={() => {}}
+          hasNumberSteppers
+          isDisabled
+        />,
+      );
+      expect(
+        screen.getByRole('button', {name: 'Increment Quantity'}),
+      ).toBeDisabled();
+      expect(
+        screen.getByRole('button', {name: 'Decrement Quantity'}),
+      ).toBeDisabled();
+    });
   });
 });
 

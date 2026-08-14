@@ -36,6 +36,7 @@ export const docs = {
         visualProps: ['size'],
         states: ['select-all', 'selected', 'disabled'],
       },
+      {className: 'astryx-multi-selector-popup'},
     ],
   },
   components: [
@@ -190,6 +191,13 @@ export const docs = {
           type: '(option: MultiSelectorOptionData) => ReactNode',
           description:
             'Custom render function for each selectable option in the dropdown. Not called for dividers, sections, or the select-all row.',
+        },
+        {
+          name: 'indicatorPosition',
+          type: "'start' | 'end'",
+          description:
+            'Which edge of the option row carries the checkbox. end pushes it to the far edge of the row, including on the select-all row.',
+          default: "'start'",
         },
         {
           name: 'width',

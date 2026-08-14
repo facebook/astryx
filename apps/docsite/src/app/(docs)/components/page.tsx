@@ -25,7 +25,7 @@ import {ShowcaseThumbnail} from '../../../components/ShowcaseThumbnail';
 import {layout} from '../../../layout.stylex';
 
 const FIGMA_LIBRARY_URL =
-  'https://www.figma.com/design/q2r7MbL4JJKE0VBfxto919/Astryx-Library';
+  'https://www.figma.com/community/file/1659998707120781098/astryx-library-community';
 
 /**
  * Category display order for the overview page.

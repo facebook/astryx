@@ -292,6 +292,11 @@ export function ComplexSelector<Value>({
     dialogLabel: label,
     hasCloseButton: false,
     hasAutoFocus: true,
+    // The popup's theme target belongs on the SURFACE — the element painting
+    // background, radius and elevation — which `usePopover` owns. Rendered on
+    // the content box below it, a theme's background or radius rule paints the
+    // wrong box.
+    surfaceTarget: 'complex-selector-popup',
     onHide: () => {
       document.getElementById(triggerId)?.focus();
     },

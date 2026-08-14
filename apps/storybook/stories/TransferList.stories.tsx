@@ -65,12 +65,6 @@ const styles = stylex.create({
     padding: 0,
     overflow: 'hidden',
   },
-  narrowSelectorContent: {
-    width: 'min(360px, calc(100vw - 32px))',
-    maxWidth: 'min(360px, calc(100vw - 32px))',
-    maxHeight: 'calc(100vh - 32px)',
-    padding: 0,
-  },
   viewOptionsSurface: {
     display: 'flex',
     flexDirection: 'column',
@@ -345,7 +339,6 @@ function NarrowContainerExample() {
       triggerLabel={`${value.length} visible fields`}
       width="min(360px, calc(100vw - 32px))"
       placement="below"
-      contentXstyle={styles.narrowSelectorContent}
       selectedLabel="Visible"
       availableLabel="Available"
       isReorderable={false}

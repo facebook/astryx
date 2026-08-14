@@ -562,7 +562,7 @@ importers:
   packages/charts:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.3.0
+        specifier: 0.4.0
         version: link:../core
       '@stylexjs/stylex':
         specifier: ^0.19.0
@@ -673,7 +673,7 @@ importers:
   packages/lab:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.3.0
+        specifier: 0.4.0
         version: link:../core
       '@stylexjs/stylex':
         specifier: ^0.19.0
@@ -743,7 +743,7 @@ importers:
   packages/richtext:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.3.0
+        specifier: 0.4.0
         version: link:../core
       '@stylexjs/stylex':
         specifier: ^0.19.0
@@ -758,7 +758,7 @@ importers:
   packages/themes/butter:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.3.0
+        specifier: 0.4.0
         version: link:../../core
       lucide-react:
         specifier: ^1.18.0
@@ -768,13 +768,13 @@ importers:
         version: 19.2.7
     devDependencies:
       '@astryxdesign/cli':
-        specifier: 0.3.0
+        specifier: 0.4.0
         version: link:../../cli
 
   packages/themes/chocolate:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.3.0
+        specifier: 0.4.0
         version: link:../../core
       lucide-react:
         specifier: ^1.18.0
@@ -784,13 +784,13 @@ importers:
         version: 19.2.7
     devDependencies:
       '@astryxdesign/cli':
-        specifier: 0.3.0
+        specifier: 0.4.0
         version: link:../../cli
 
   packages/themes/gothic:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.3.0
+        specifier: 0.4.0
         version: link:../../core
       lucide-react:
         specifier: ^1.18.0
@@ -800,13 +800,13 @@ importers:
         version: 19.2.7
     devDependencies:
       '@astryxdesign/cli':
-        specifier: 0.3.0
+        specifier: 0.4.0
         version: link:../../cli
 
   packages/themes/matcha:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.3.0
+        specifier: 0.4.0
         version: link:../../core
       lucide-react:
         specifier: ^1.18.0
@@ -816,13 +816,13 @@ importers:
         version: 19.2.7
     devDependencies:
       '@astryxdesign/cli':
-        specifier: 0.3.0
+        specifier: 0.4.0
         version: link:../../cli
 
   packages/themes/neutral:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.3.0
+        specifier: 0.4.0
         version: link:../../core
       lucide-react:
         specifier: ^1.18.0
@@ -832,13 +832,13 @@ importers:
         version: 19.2.7
     devDependencies:
       '@astryxdesign/cli':
-        specifier: 0.3.0
+        specifier: 0.4.0
         version: link:../../cli
 
   packages/themes/stone:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.3.0
+        specifier: 0.4.0
         version: link:../../core
       lucide-react:
         specifier: ^1.18.0
@@ -848,13 +848,13 @@ importers:
         version: 19.2.7
     devDependencies:
       '@astryxdesign/cli':
-        specifier: 0.3.0
+        specifier: 0.4.0
         version: link:../../cli
 
   packages/themes/y2k:
     dependencies:
       '@astryxdesign/core':
-        specifier: 0.3.0
+        specifier: 0.4.0
         version: link:../../core
       lucide-react:
         specifier: ^1.18.0
@@ -864,7 +864,7 @@ importers:
         version: 19.2.7
     devDependencies:
       '@astryxdesign/cli':
-        specifier: 0.3.0
+        specifier: 0.4.0
         version: link:../../cli
 
   packages/vega:

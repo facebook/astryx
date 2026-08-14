@@ -639,6 +639,10 @@
     "defaultMessage": "Clear {label}",
     "description": "Aria label for the clear-value button in DateInput / DateRangeInput / DateTimeInput. `{label}` is the field's own label so screen readers announce e.g. 'Clear Start date'."
   },
+  "@astryx.dateInput.invalidDate": {
+    "defaultMessage": "Invalid date",
+    "description": "Screen-reader-only live-region alert in DateInput / DateTimeInput when the typed date cannot be parsed. The field silently reverts on blur, so this is the only rejection feedback a screen-reader user gets."
+  },
   "@astryx.dateTimeInput.timeSuffix": {
     "defaultMessage": "{label} time",
     "description": "Screen-reader-only accessible name for the time-of-day slot in a DateTimeInput. Example: `Start date time`; reorder freely (e.g. \"time of {label}\")."
@@ -710,6 +714,10 @@
   "@astryx.timeInput.placeholder": {
     "defaultMessage": "Select a time",
     "description": "\"Time\" = clock time (HH:MM), not duration or era. Grey placeholder inside an empty TimeInput field; imperative verb."
+  },
+  "@astryx.timeInput.invalidTime": {
+    "defaultMessage": "Invalid time",
+    "description": "Screen-reader-only live-region alert in TimeInput / DateTimeInput when the typed time cannot be parsed. \"Time\" = clock time (HH:MM). The field silently reverts on blur, so this is the only rejection feedback a screen-reader user gets."
   },
   "@astryx.topNav.heading.dialogLabel": {
     "defaultMessage": "Navigation menu",
@@ -807,6 +815,38 @@
     "defaultMessage": "Clear {label}",
     "description": "Screen-reader-only label on the X that removes the selected file from a FileInput. Example: `Clear Attachment`, `Clear Résumé`."
   },
+  "@astryx.fileInput.dropHint": {
+    "defaultMessage": "Drop files here",
+    "description": "Text shown in the dropzone area when a user is dragging files over the FileInput."
+  },
+  "@astryx.fileInput.errorInvalidType": {
+    "defaultMessage": "\"{fileName}\" is not an accepted file type",
+    "description": "Validation error shown when a selected file does not match the accepted types."
+  },
+  "@astryx.fileInput.errorMaxFiles": {
+    "defaultMessage": "Maximum {maxFiles} files allowed",
+    "description": "Validation error shown when the number of selected files exceeds the maximum."
+  },
+  "@astryx.fileInput.errorMaxSize": {
+    "defaultMessage": "\"{fileName}\" exceeds {maxSize} limit",
+    "description": "Validation error shown when a selected file exceeds the maximum size. {maxSize} is a formatted size string like \"2.0 MB\"."
+  },
+  "@astryx.fileInput.fileSelected": {
+    "defaultMessage": "1 file selected: {fileName}",
+    "description": "Live-region announcement when a single file is successfully selected."
+  },
+  "@astryx.fileInput.filesSelected": {
+    "defaultMessage": "{count} files selected",
+    "description": "Live-region announcement when multiple files are successfully selected."
+  },
+  "@astryx.fileInput.placeholder": {
+    "defaultMessage": "Choose file",
+    "description": "Default placeholder text shown when no file is selected in a single-file FileInput."
+  },
+  "@astryx.fileInput.placeholderMultiple": {
+    "defaultMessage": "Choose files",
+    "description": "Default placeholder text shown when no files are selected in a multi-file FileInput."
+  },
   "@astryx.fileInput.required": {
     "defaultMessage": "Required",
     "description": "Screen-reader-only description on the FileInput trigger indicating the field must be filled in. Mirrors the visible `Required` indicator next to the field label; conveyed via description because aria-required is not supported on role=\"button\"."
@@ -866,6 +906,14 @@
   "@astryx.numberInput.clearLabel": {
     "defaultMessage": "Clear {label}",
     "description": "Screen-reader-only label on the X that clears the value from a NumberInput. Example: `Clear Age`, `Clear Quantity`."
+  },
+  "@astryx.numberInput.decrementLabel": {
+    "defaultMessage": "Decrement {label}",
+    "description": "Accessible label for the NumberInput button that decreases the value by one configured step. Example: `Decrement Quantity`."
+  },
+  "@astryx.numberInput.incrementLabel": {
+    "defaultMessage": "Increment {label}",
+    "description": "Accessible label for the NumberInput button that increases the value by one configured step. Example: `Increment Quantity`."
   },
   "@astryx.selector.clearLabel": {
     "defaultMessage": "Clear {label}",

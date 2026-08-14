@@ -17,6 +17,19 @@
 
 import {useEffect} from 'react';
 
+interface ScrollLockSnapshot {
+  scrollX: number;
+  scrollY: number;
+  overflow: string;
+  position: string;
+  top: string;
+  left: string;
+  right: string;
+}
+
+let lockCount = 0;
+let originalBodyState: ScrollLockSnapshot | null = null;
+
 /**
  * Locks body scroll when `isLocked` is true.
  *
@@ -36,28 +49,47 @@ export function useScrollLock(isLocked: boolean): void {
       return;
     }
 
-    const scrollX = window.scrollX;
-    const scrollY = window.scrollY;
     const {body} = document;
-    const prevOverflow = body.style.overflow;
-    const prevPosition = body.style.position;
-    const prevTop = body.style.top;
-    const prevLeft = body.style.left;
-    const prevRight = body.style.right;
 
-    body.style.overflow = 'hidden';
-    body.style.position = 'fixed';
-    body.style.top = `-${scrollY}px`;
-    body.style.left = '0';
-    body.style.right = '0';
+    if (lockCount === 0) {
+      const scrollX = window.scrollX;
+      const scrollY = window.scrollY;
+
+      originalBodyState = {
+        scrollX,
+        scrollY,
+        overflow: body.style.overflow,
+        position: body.style.position,
+        top: body.style.top,
+        left: body.style.left,
+        right: body.style.right,
+      };
+
+      body.style.overflow = 'hidden';
+      body.style.position = 'fixed';
+      body.style.top = `-${scrollY}px`;
+      body.style.left = '0';
+      body.style.right = '0';
+    }
+
+    lockCount += 1;
 
     return () => {
-      body.style.overflow = prevOverflow;
-      body.style.position = prevPosition;
-      body.style.top = prevTop;
-      body.style.left = prevLeft;
-      body.style.right = prevRight;
-      window.scrollTo(scrollX, scrollY);
+      lockCount -= 1;
+
+      if (lockCount !== 0 || originalBodyState == null) {
+        return;
+      }
+
+      const state = originalBodyState;
+      originalBodyState = null;
+
+      body.style.overflow = state.overflow;
+      body.style.position = state.position;
+      body.style.top = state.top;
+      body.style.left = state.left;
+      body.style.right = state.right;
+      window.scrollTo(state.scrollX, state.scrollY);
     };
   }, [isLocked]);
 }

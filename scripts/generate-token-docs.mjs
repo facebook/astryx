@@ -107,6 +107,15 @@ const groups = [
     formatRow: (name, value) => [name, value],
   },
   {
+    key: 'focus',
+    exportName: 'focusDefaults',
+    title: 'Focus Tokens',
+    description:
+      'The keyboard focus ring, shared by every component that draws one. Override these to restyle focus across the system.',
+    headers: ['Token', 'Value'],
+    formatRow: (name, value) => [name, value],
+  },
+  {
     key: 'radius',
     previewType: 'radius-box',
     exportName: 'radiusDefaults',

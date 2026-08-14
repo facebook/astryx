@@ -187,7 +187,7 @@ export const docs = {
       name: 'width',
       type: 'SizeValue',
       description:
-        'Width of the external field. Its default matches the responsive popup width; use contentXstyle to override the popup.',
+        'Width of the field and its popup — both track this one value.',
       default: "'min(41rem, calc(100vw - 32px))'",
     },
     {
@@ -237,12 +237,6 @@ export const docs = {
       type: '(value: readonly T[]) => void | Promise<void>',
       description:
         'Optional async action run after each immediate commit or a changed staged Apply; drives optimistic and busy state.',
-    },
-    {
-      name: 'contentXstyle',
-      type: 'StyleXStyles',
-      description:
-        'StyleX styles composed after the default zero-padding, clipped popover content style.',
     },
     {
       name: 'xstyle',
@@ -710,7 +704,6 @@ export const docsDense = {
     labelTooltip: 'Field-label tooltip.',
     changeAction:
       'Async action after each immediate commit or changed staged Apply.',
-    contentXstyle: 'Popover-content StyleX override.',
     xstyle: 'External field StyleX override.',
     className: 'External field class name.',
     style: 'External field inline styles.',

@@ -815,7 +815,11 @@ ${iconType}export declare const ${toIdentifier(themeDef.name)}Theme: DefinedThem
 // =============================================================================
 
 /**
- * Load known theme target keys and visual props from core component docs.
+ * Load known theme target keys from core component docs: the visual props AND
+ * the runtime states each target reflects. Both are legal override keys — the
+ * Theming Infrastructure wiki documents `radio: {checked}` and
+ * `'calendar-day': {today, selected}` alongside `button: {'variant:secondary'}`
+ * — so validation has to know both or documented syntax warns as unknown.
  * Returns null when docs are unavailable so validation can skip unknown-key
  * warnings rather than guessing from a second registry.
  *
@@ -854,9 +858,10 @@ async function loadKnownComponents() {
         if (typeof className !== 'string') continue;
         const key = className.replace(/^astryx-/, '');
         if (!key) continue;
-        const props = Array.isArray(target.visualProps)
-          ? target.visualProps.filter((/** @type {unknown} */ p) => typeof p === 'string')
-          : [];
+        const props = [target.visualProps, target.states]
+          .filter(list => Array.isArray(list))
+          .flat()
+          .filter((/** @type {unknown} */ p) => typeof p === 'string');
         targets[key] = [...new Set([...(targets[key] || []), ...props])];
       }
     }
@@ -922,7 +927,8 @@ async function validateComponentOverrides(themeDef) {
       continue;
     }
 
-    // Check prop names in prop:value keys
+    // Check prop/state names in the override keys. A key is either `base`, a
+    // `prop:value` pair (possibly `+`-joined), or a bare state name.
     const knownProps = knownComponents[component];
     for (const key of Object.keys(rules)) {
       if (key === 'base') continue;
@@ -934,8 +940,8 @@ async function validateComponentOverrides(themeDef) {
         if (prop && !knownProps.includes(prop)) {
           const hint =
             knownProps.length > 0
-              ? ` Known props: ${knownProps.join(', ')}`
-              : ' This component has no variant props.';
+              ? ` Known props/states: ${knownProps.join(', ')}`
+              : ' This component has no variant props or states.';
           warnings.push(
             `Unknown prop "${prop}" on component "${component}".${hint}`,
           );

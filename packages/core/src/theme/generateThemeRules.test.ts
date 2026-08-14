@@ -23,6 +23,23 @@ const defaultInput = {
   },
 };
 
+describe('focus outline tokens', () => {
+  it('emits a focus ring override into the theme scope', () => {
+    const theme = defineTheme({
+      name: 'brand',
+      tokens: {
+        '--focus-outline-color': '#FF00FF',
+        '--focus-outline-width': '4px',
+      },
+    });
+
+    const {component} = generateThemeCSS(theme);
+
+    expect(component).toContain('--focus-outline-color: #FF00FF;');
+    expect(component).toContain('--focus-outline-width: 4px;');
+  });
+});
+
 describe('generateThemeRules', () => {
   const theme = defineTheme(defaultInput);
   const rules = generateThemeRules(theme);

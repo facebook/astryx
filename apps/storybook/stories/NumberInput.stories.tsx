@@ -82,6 +82,19 @@ const meta: Meta<typeof NumberInput> = {
       control: 'number',
       description: 'Step increment for the input',
     },
+    formatValue: {
+      control: false,
+      description: 'Formats the committed value while the input is not focused',
+    },
+    isWheelEnabled: {
+      control: 'boolean',
+      description:
+        'Whether a wheel gesture over the focused input steps the value',
+    },
+    hasNumberSteppers: {
+      control: 'boolean',
+      description: 'Shows increment and decrement buttons',
+    },
     units: {
       control: 'text',
       description:
@@ -149,6 +162,74 @@ export const WithStep: Story = {
     min: 0,
     step: 0.01,
     startIcon: CurrencyDollarIcon,
+  },
+};
+
+export const FormattedDisplay: Story = {
+  render: args => {
+    const [value, setValue] = useState<number | null>(args.value ?? 1234.56);
+    return <NumberInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Monthly revenue',
+    value: 1234.56,
+    min: 0,
+    step: 0.01,
+    description: 'Focus the input to edit the raw numeric value',
+    formatValue: value =>
+      new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+      }).format(value),
+  },
+};
+
+export const WithNumberSteppers: Story = {
+  render: args => {
+    const [value, setValue] = useState<number | null>(args.value ?? 2);
+    return <NumberInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Quantity',
+    value: 2,
+    min: 0,
+    max: 10,
+    hasNumberSteppers: true,
+  },
+};
+
+export const WheelBehavior: Story = {
+  render: () => {
+    const [enabledValue, setEnabledValue] = useState<number | null>(2);
+    const [disabledValue, setDisabledValue] = useState<number | null>(2);
+    return (
+      <div
+        style={{
+          width: 360,
+          height: 260,
+          overflowY: 'auto',
+          padding: 16,
+          border: '1px solid #ccd3db',
+        }}>
+        <div style={{height: 140}}>Scroll down to the focused examples.</div>
+        <div style={{display: 'flex', flexDirection: 'column', gap: 16}}>
+          <NumberInput
+            label="Wheel stepping enabled (default)"
+            description="Focus, then use the wheel to change the value"
+            value={enabledValue}
+            onChange={setEnabledValue}
+          />
+          <NumberInput
+            label="Wheel stepping disabled"
+            description="Focused wheel gestures continue scrolling"
+            value={disabledValue}
+            onChange={setDisabledValue}
+            isWheelEnabled={false}
+          />
+        </div>
+        <div style={{height: 180}} />
+      </div>
+    );
   },
 };
 

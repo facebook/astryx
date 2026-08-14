@@ -222,3 +222,54 @@ describe('themeBuild() — check mode', () => {
     expect(result?.data.stale).toEqual([]);
   });
 });
+
+describe('themeBuild() — component override validation', () => {
+  it('accepts documented state keys without an "Unknown prop" warning', async () => {
+    // The state-key syntax the Theming Infrastructure wiki documents —
+    // `radio: {checked}`, `calendar-day: {today, selected}` — is declared in
+    // each component's doc under `theming.targets[].states`, not
+    // `visualProps`. `loadKnownComponents()` read only `visualProps`, so every
+    // one of these warned "Unknown prop": documented syntax that looked broken.
+    const themeFile = path.join(tmpDir, 'states.mjs');
+    fs.writeFileSync(
+      themeFile,
+      `export default {
+        name: 'states',
+        tokens: {'--color-bg': '#0a0a0a'},
+        components: {
+          radio: {
+            checked: {borderColor: 'var(--color-accent)'},
+            'checked+disabled': {opacity: '0.5'},
+          },
+          'calendar-day': {
+            today: {fontWeight: '700'},
+            selected: {backgroundColor: 'var(--color-accent)'},
+          },
+        },
+      };\n`,
+    );
+
+    const result = await themeBuild('states.mjs', {}, {cwd: tmpDir});
+
+    expect(result?.data.warnings).toEqual([]);
+  });
+
+  it('still warns on a key that is neither a visual prop nor a state', async () => {
+    // Widening the known set to states must not turn the guard off.
+    const themeFile = path.join(tmpDir, 'bogus.mjs');
+    fs.writeFileSync(
+      themeFile,
+      `export default {
+        name: 'bogus',
+        tokens: {'--color-bg': '#0a0a0a'},
+        components: {radio: {notAState: {opacity: '0.5'}}},
+      };\n`,
+    );
+
+    const result = await themeBuild('bogus.mjs', {}, {cwd: tmpDir});
+
+    expect(result?.data.warnings).toEqual([
+      expect.stringContaining('Unknown prop "notAState" on component "radio"'),
+    ]);
+  });
+});

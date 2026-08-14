@@ -16,6 +16,7 @@ import {TreeList} from './TreeList';
 import type {TreeListItemData} from './TreeListTypes';
 import {defineTheme} from '../theme/defineTheme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
+import {FOCUS_OUTLINE} from '../utils/focusOutline.stylex';
 
 function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
   const {prose, component} = generateThemeCSS(theme);
@@ -299,8 +300,8 @@ describe('TreeList', () => {
     expect(root).toHaveFocus();
 
     expect(
-      getComputedStyle(root).getPropertyValue('--_focus-outline'),
-    ).toContain('solid');
+      getComputedStyle(root).getPropertyValue('--_focus-outline').trim(),
+    ).toBe(FOCUS_OUTLINE);
     // Mid and Leaf are DOM descendants of Root's <li> (nested <ul role="group">
     // subtrees) — their own outline var must stay unset, not inherit Root's.
     expect(getComputedStyle(mid).getPropertyValue('--_focus-outline')).toBe(

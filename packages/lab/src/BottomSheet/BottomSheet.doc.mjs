@@ -47,7 +47,7 @@ export const docs = {
     {
       name: 'hasScrim',
       type: 'boolean',
-      description: "Whether to render a modal scrim behind the sheet. true (default) uses showModal(): top layer, focus trap, ::backdrop scrim, body scroll lock, and tap-scrim-to-dismiss, with the background inert. false uses show(): a non-modal sheet with no scrim, leaving the page behind interactive and scrollable (like Material's standard bottom sheet or an iOS undimmed detent). Escape still closes while focus is inside, and drag/flick-to-dismiss still work.",
+      description: "Whether to render a scrim, the semi-transparent overlay that covers and blocks the background, behind the sheet. true (default) uses showModal(): top layer, focus trap, ::backdrop scrim, body scroll lock, and tap-scrim-to-dismiss, with the background inert. false still renders a viewport-anchored overlay above the page, not inline content, but uses show() with no scrim, leaving the page behind interactive and scrollable. Escape still closes while focus is inside, and drag/flick-to-dismiss still work.",
       default: 'true',
     },
   ],
@@ -57,7 +57,7 @@ export const docs = {
       { guidance: true, description: 'Use for mobile-first surfaces (filters, share sheets, quick actions) where the content should rise from the bottom edge.' },
       { guidance: true, description: 'Keep the caller as the source of truth: derive isOpen from state and clear it in onOpenChange.' },
       { guidance: true, description: "Pick the starting height that fits the content: 'hug' for short bounded content, 'capped' for lists, 'tall' for streaming/resizing content; the user can then drag between snap points." },
-      { guidance: true, description: "Use hasScrim={false} (non-modal, no scrim) for a peek surface that must coexist with a live page behind it (e.g. a panel over a map); keep the default (hasScrim) for focused tasks where the background should be inert." },
+      { guidance: true, description: "Use hasScrim={false} for a floating, no-scrim overlay that must coexist with a live page behind it (e.g. a panel over a map). It remains viewport-anchored rather than rendering inline. Keep the default for focused tasks where the background should be inert." },
       { guidance: false, description: 'Use a BottomSheet for desktop inspectors or master-detail; use Drawer (side="end", hasScrim={false}) instead.' },
     ],
   },
@@ -95,7 +95,7 @@ export const docs = {
 </BottomSheet>`,
     },
     {
-      label: 'Non-modal sheet (no scrim): page stays interactive',
+      label: 'No scrim',
       code: `const [isOpen, setIsOpen] = useState(true);
 <BottomSheet
   isOpen={isOpen}
@@ -117,7 +117,7 @@ export const docsDense = {
       { guidance: true, description: 'Use for mobile-first bottom surfaces (filters, share sheets, quick actions).' },
       { guidance: true, description: 'Derive isOpen from state; clear it in onOpenChange.' },
       { guidance: true, description: "Pick a height that fits: 'hug' for short content, 'capped' for lists, 'tall' for streaming content." },
-      { guidance: true, description: "hasScrim={false} for a non-modal peek over a live page; default (hasScrim) for focused tasks (inert background)." },
+      { guidance: true, description: "hasScrim={false} for a floating no-scrim overlay over a live page; it is not inline. Keep the default for focused tasks (inert background)." },
       { guidance: false, description: 'Use for desktop inspectors or master-detail; use Drawer instead.' },
     ],
   },

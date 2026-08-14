@@ -101,3 +101,7 @@ export type {RGBA} from './color';
 export {devWarn, devError, warnOnce, formatDevMessage} from './devWarning';
 
 export {rtlStyles} from './rtlStyles';
+
+// The shared focus ring, exported for @astryxdesign/lab — same reason
+// rtlStyles is: a style that must be identical across packages, not copied.
+export {focusOutlineStyles, focusOutlineProps} from './focusOutline.stylex';

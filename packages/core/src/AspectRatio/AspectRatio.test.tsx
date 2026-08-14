@@ -276,6 +276,36 @@ describe('AspectRatio', () => {
     });
   });
 
+  describe('style merging', () => {
+    it('keeps the consumer style and applies the ratio over it', () => {
+      render(
+        <AspectRatio
+          ratio={16 / 9}
+          data-testid="aspect-ratio"
+          style={{opacity: 0.5, aspectRatio: '3 / 1'}}>
+          <div>Content</div>
+        </AspectRatio>,
+      );
+      const element = screen.getByTestId('aspect-ratio');
+      expect(element.style.opacity).toBe('0.5');
+      expect(element.style.aspectRatio).toBe(String(16 / 9));
+    });
+
+    it('keeps a consumer className beside the theme target', () => {
+      render(
+        <AspectRatio
+          ratio={1}
+          data-testid="aspect-ratio"
+          className="consumer-class">
+          <div>Content</div>
+        </AspectRatio>,
+      );
+      const element = screen.getByTestId('aspect-ratio');
+      expect(element).toHaveClass('consumer-class');
+      expect(element).toHaveClass('astryx-aspect-ratio');
+    });
+  });
+
   describe('reset.css fit baseline rules', () => {
     // The cover/contain child sizing ships as zero-specificity baseline
     // rules in reset.css keyed on the data-astryx-aspect-ratio-override

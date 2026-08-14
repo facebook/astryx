@@ -120,6 +120,8 @@ export function TableRow({
   xstyle,
   ref,
   isHeaderRow = false,
+  className: incomingClassName,
+  style: incomingStyle,
   ...props
 }: TableRowProps) {
   const ctx = use(TableContext);
@@ -132,6 +134,8 @@ export function TableRow({
         {...mergeProps(
           themeProps('table-row'),
           stylex.props(tableRowMarker, xstyle),
+          incomingClassName,
+          incomingStyle,
         )}>
         {children}
       </tr>
@@ -169,6 +173,8 @@ export function TableRow({
       {...mergeProps(
         themeProps('table-row'),
         stylex.props(tableRowMarker, ...rowStyles),
+        incomingClassName,
+        incomingStyle,
       )}>
       {children}
     </tr>

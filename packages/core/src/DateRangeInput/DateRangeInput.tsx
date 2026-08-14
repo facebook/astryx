@@ -61,6 +61,7 @@ import type {SizeValue} from '../utils/types';
 import {useSize} from '../SizeContext/SizeContext';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {stableClassName} from '../naming';
 import {useTranslator} from '../i18n';
 
@@ -118,11 +119,6 @@ const styles = stylex.create({
     backgroundColor: 'transparent',
     cursor: 'pointer',
     borderRadius: radiusVars['--radius-element'],
-    outline: {
-      default: 'none',
-      ':focus-visible': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: 1,
   },
   iconButtonDisabled: {
     cursor: 'not-allowed',
@@ -160,10 +156,6 @@ const styles = stylex.create({
     color: colorVars['--color-text-primary'],
     cursor: 'pointer',
     textAlign: 'start',
-    outline: {
-      default: 'none',
-      ':focus-visible': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
-    },
   },
   presetButtonActive: {
     backgroundColor: colorVars['--color-accent-muted'],
@@ -592,6 +584,7 @@ export function DateRangeInput({
           }
           tabIndex={-1}
           {...stylex.props(
+            focusOutlineStyles.focusVisible,
             styles.iconButton,
             isEffectivelyDisabled && styles.iconButtonDisabled,
           )}>
@@ -661,6 +654,7 @@ export function DateRangeInput({
                     aria-current={isActive ? 'true' : undefined}
                     onClick={() => handlePresetClick(preset)}
                     {...stylex.props(
+                      focusOutlineStyles.focusVisible,
                       styles.presetButton,
                       isActive && styles.presetButtonActive,
                     )}>

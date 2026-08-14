@@ -38,6 +38,7 @@ export type {
   IndicatorMap,
   IndicatorName,
   IndicatorNameOfFamily,
+  IndicatorPosition,
   IndicatorProps,
   IndicatorRegistry,
   IndicatorSize,

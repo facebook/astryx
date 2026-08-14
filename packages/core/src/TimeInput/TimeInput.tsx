@@ -558,10 +558,25 @@ export function TimeInput({
         // Check if within range
         if (isTimeInRange(newTime, min, max)) {
           fireChange(newTime);
+          // Stepping programmatically rewrites a plain textbox's value, and
+          // screen readers do not announce programmatic textbox changes — the
+          // new value must be spoken explicitly or stepping is silent
+          // (WCAG 4.1.2).
+          announce(formatDisplayTime(newTime, hasSeconds));
         }
       }
     },
-    [value, hasSeconds, increment, min, max, fireChange, isDisabled],
+    [
+      value,
+      hasSeconds,
+      increment,
+      min,
+      max,
+      fireChange,
+      isDisabled,
+      announce,
+      formatDisplayTime,
+    ],
   );
 
   // Handle clear button click
@@ -659,7 +674,7 @@ export function TimeInput({
           user would get no feedback that their entry was rejected (WCAG 3.3.1).
         */}
       <VisuallyHidden as="div" role="alert" aria-live="assertive">
-        {!isInputValid ? 'Invalid time' : ''}
+        {!isInputValid ? t('@astryx.timeInput.invalidTime') : ''}
       </VisuallyHidden>
       {isBusy && <Spinner size="sm" />}
       {hasClear && value && !isDisabled && (

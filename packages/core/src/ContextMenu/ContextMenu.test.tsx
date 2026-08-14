@@ -14,6 +14,7 @@ import userEvent from '@testing-library/user-event';
 import {ContextMenu} from './ContextMenu';
 import {
   ContextMenuItem,
+  ContextMenuDivider,
   ContextMenuCheckboxItem,
   ContextMenuRadioGroup,
   ContextMenuRadioItem,
@@ -467,6 +468,25 @@ describe('ContextMenu compound mode', () => {
     );
 
     expect(screen.getByTestId('shortcut')).toHaveTextContent('⌘X');
+  });
+
+  it('renders the menu divider surface through the ContextMenu alias', () => {
+    render(
+      <ContextMenu
+        menuContent={
+          <>
+            <ContextMenuItem label="Cut" onClick={() => {}} />
+            <ContextMenuDivider />
+            <ContextMenuItem label="Delete" onClick={() => {}} />
+          </>
+        }>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+
+    expect(screen.getByRole('separator', {hidden: true})).toHaveClass(
+      'astryx-dropdown-menu-divider',
+    );
   });
 
   it('calls onClick when compound item is clicked', async () => {

@@ -34,6 +34,7 @@ import {
   fontWeightVars,
   typeScaleVars,
   shadowVars,
+  focusVars,
 } from '../theme/tokens.stylex';
 import {Spinner} from '../Spinner';
 import {VisuallyHidden} from '../VisuallyHidden';
@@ -57,10 +58,10 @@ import type {ButtonVariantMap} from './index';
 const styles = stylex.create({
   base: {
     // Kept as a public themeable var (documented in Button.doc.mjs) even though
-    // its default now matches the shared outline: removing it would break any
-    // theme setting it, for no gain. It overrides the shared offset, so a theme
-    // can still tune the ring distance on buttons specifically.
-    '--button-focus-offset': '3px',
+    // it now defaults to the shared token: removing it would break any theme
+    // setting it, for no gain. It overrides the shared offset, so a theme can
+    // still tune the ring distance on buttons specifically.
+    '--button-focus-offset': focusVars['--focus-outline-offset'],
     outlineOffset: {
       default: '0',
       ':focus-visible': 'var(--button-focus-offset)',

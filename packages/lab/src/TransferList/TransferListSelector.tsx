@@ -28,14 +28,16 @@ import {TransferList, type TransferListProps} from './TransferList';
 const DEFAULT_SELECTOR_WIDTH = 'min(41rem, calc(100vw - 32px))';
 
 const styles = stylex.create({
-  content: {
-    width: DEFAULT_SELECTOR_WIDTH,
-    maxWidth: DEFAULT_SELECTOR_WIDTH,
+  // Width tracks the `width` prop, so the field and its popup are one
+  // measurement rather than two that can disagree.
+  content: (width: string) => ({
+    width,
+    maxWidth: width,
     maxHeight: 'calc(100vh - 32px)',
     padding: 0,
     overflow: 'hidden',
     borderRadius: 'inherit',
-  },
+  }),
   surface: {
     display: 'flex',
     flexDirection: 'column',
@@ -80,7 +82,6 @@ type TransferListSelectorShellProp =
   | 'size'
   | 'width'
   | 'placement'
-  | 'contentXstyle'
   | 'xstyle'
   | 'className'
   | 'style'
@@ -183,7 +184,6 @@ export function TransferListSelector<T extends string = string>({
   isDisabled,
   isLoading,
   width,
-  contentXstyle,
   applyLabel = 'Apply',
   cancelLabel = 'Cancel',
   selectedLabel,
@@ -223,6 +223,11 @@ export function TransferListSelector<T extends string = string>({
     previousCommitBehaviorRef.current = commitBehavior;
   }, [commitBehavior, resetDraft]);
 
+  const resolvedWidth =
+    typeof width === 'number'
+      ? `${width}px`
+      : (width ?? DEFAULT_SELECTOR_WIDTH);
+
   return (
     <ComplexSelector
       {...selectorProps}
@@ -234,8 +239,8 @@ export function TransferListSelector<T extends string = string>({
       triggerLabel={triggerLabel ?? `${value.length} selected`}
       isDisabled={isDisabled}
       isLoading={isLoading}
-      width={width ?? DEFAULT_SELECTOR_WIDTH}
-      contentXstyle={[styles.content, contentXstyle]}>
+      width={resolvedWidth}
+      contentXstyle={styles.content(resolvedWidth)}>
       {(appliedValue, commit, close, state) => {
         const isStaged = commitBehavior === 'staged';
         const transferListValue = isStaged ? draftValue : appliedValue;
