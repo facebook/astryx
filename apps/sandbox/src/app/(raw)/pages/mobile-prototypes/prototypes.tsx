@@ -46,7 +46,7 @@ import {
   SideNavHeading,
   SideNavSection,
 } from '@astryxdesign/core/SideNav';
-import {HStack, VStack, StackItem} from '@astryxdesign/core/Stack';
+import {VStack} from '@astryxdesign/core/Stack';
 import {Grid} from '@astryxdesign/core/Grid';
 
 import {
@@ -87,12 +87,6 @@ const s = stylex.create({
   // natural width and letting the row scroll / wrap.
   noShrink: {flexShrink: 0},
   tabletNav: {flexShrink: 0, height: '100%'},
-  // Matches the Calendar's internal top padding so the "Time" header lines up
-  // with the calendar's month header when placed beside it.
-  timeCol: {paddingTop: 'var(--spacing-3)'},
-  // Tablet DateTimeInput: the two columns fill the sheet body's height so each
-  // can scroll on its own instead of the whole body scrolling as one.
-  dtSideRow: {height: '100%', minHeight: 0},
   // Bleed the menu rows toward the popover edges while keeping their labels
   // aligned with the section header: the popover pads 12px and Item pads 8px,
   // so a -8 inline pull lands the labels back at the header's 12px inset.
@@ -1310,6 +1304,49 @@ function DateInputDemo() {
   );
 }
 
+// Tablet: with room to spare, two months sit side by side (desktop date-picker
+// pattern) instead of the phone's single vertical scroll.
+function DateInputTabletDemo() {
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState<ISODateString>();
+  return (
+    <>
+      <AppScreen title="DateInput">
+        <Note>
+          With room to spare, two months sit <b>side by side</b> (the desktop
+          date-picker pattern) instead of the phone's single vertical scroll.
+          Picking a day commits and closes.
+        </Note>
+        <TapField
+          label="Due date"
+          placeholder="Pick a date"
+          icon={<CalendarIcon width={16} height={16} />}
+          value={value}
+          onClick={() => setOpen(true)}
+        />
+      </AppScreen>
+      <BottomSheet
+        open={open}
+        onClose={() => setOpen(false)}
+        height="hug"
+        title="Due date">
+        <ScrollCalendar
+          mode="single"
+          paged
+          value={value}
+          onChange={(v: ISODateString) => {
+            setValue(v);
+            setOpen(false);
+          }}
+          startYear={2026}
+          startMonth={6}
+          monthCount={2}
+        />
+      </BottomSheet>
+    </>
+  );
+}
+
 // 10. DateTimeInput — calendar grid + time list -------------------------------
 const TIMES = Array.from(
   {length: 24},
@@ -1342,21 +1379,6 @@ function DateTimeInputDemo({beside = false}: {beside?: boolean} = {}) {
     </ToggleButton>
   ));
 
-  // Tablet: the same vertical month-scroll as the phone, but shown beside the
-  // time grid. Each column scrolls on its own (see the `beside` layout below),
-  // so ~two months are visible at once and picking a day doesn't switch away.
-  const calendar = (
-    <ScrollCalendar
-      mode="single"
-      value={date}
-      onChange={(v: ISODateString) => setDate(v)}
-      startYear={2026}
-      startMonth={6}
-      monthCount={4}
-      dense
-    />
-  );
-
   return (
     <>
       <AppScreen title="DateTimeInput">
@@ -1364,8 +1386,9 @@ function DateTimeInputDemo({beside = false}: {beside?: boolean} = {}) {
           Date and time are <b>separate targets</b>, like the iOS compact
           picker: a <b>Date / Time</b> switch beside the title reveals one
           picker at a time. Choosing a day <b>auto-advances to Time</b>; Confirm
-          stays pinned and enables once both are set. On a wide sheet they sit
-          side by side, each scrolling on its own.
+          stays pinned and enables once both are set. On a wide sheet the same
+          switch stays — the Date view just shows <b>two months side by side</b>{' '}
+          and the Time view a wider grid.
         </Note>
         <TapField
           label="Starts at"
@@ -1378,24 +1401,21 @@ function DateTimeInputDemo({beside = false}: {beside?: boolean} = {}) {
       <BottomSheet
         open={open}
         onClose={() => setOpen(false)}
-        // Phone: a fixed one-month detent that drags to full. Tablet (beside):
-        // opens at full height so the calendar column is tall enough to show
-        // ~two months at once, with the calendar and time columns each
-        // scrolling independently inside it.
-        snapPoints={beside ? [0.6, 0.92] : [448, 0.92]}
-        defaultSnap={beside ? 1 : 0}
+        // Same mobile solution on both sizes: a Date / Time switch shows one
+        // picker at a time. The tablet just gets more room — two months side by
+        // side in the Date view and a wider time grid in the Time view.
+        snapPoints={beside ? [0.92] : [448, 0.92]}
+        defaultSnap={0}
         title="Starts at"
         headerAccessory={
-          beside ? undefined : (
-            <SegmentedControl
-              value={segment}
-              size="sm"
-              onChange={v => setSegment(v as 'date' | 'time')}
-              label="Choose date or time">
-              <SegmentedControlItem value="date" label="Date" />
-              <SegmentedControlItem value="time" label="Time" />
-            </SegmentedControl>
-          )
+          <SegmentedControl
+            value={segment}
+            size="sm"
+            onChange={v => setSegment(v as 'date' | 'time')}
+            label="Choose date or time">
+            <SegmentedControlItem value="date" label="Date" />
+            <SegmentedControlItem value="time" label="Time" />
+          </SegmentedControl>
         }
         footer={
           <Button
@@ -1406,71 +1426,10 @@ function DateTimeInputDemo({beside = false}: {beside?: boolean} = {}) {
             onClick={() => setOpen(false)}
           />
         }>
-        {beside ? (
-          <HStack gap={4} align="stretch" xstyle={s.dtSideRow}>
-            {/* Two equal-width columns, each scrolling on its own inside the
-                sheet body. Both start at the same top so their header rules —
-                the weekday letters and the "Time" label — sit on one line. */}
-            <StackItem size="fill">
-              <div
-                style={{
-                  height: '100%',
-                  overflowY: 'auto',
-                  paddingBottom: 12,
-                }}>
-                {calendar}
-              </div>
-            </StackItem>
-            <StackItem size="fill">
-              <div
-                style={{
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  minHeight: 0,
-                }}>
-                {/* Header mirrors the calendar's weekday row box model exactly
-                    (same inner padding, paddingBottom, and bottom border) so
-                    the divider lines up across both columns. */}
-                <div
-                  style={{
-                    position: 'sticky',
-                    top: 0,
-                    zIndex: 1,
-                    background: 'var(--color-background-surface)',
-                    paddingBottom: 6,
-                    borderBottom: '1px solid var(--color-border)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}>
-                  <div
-                    style={{
-                      padding: '4px 0',
-                      fontSize: 12,
-                      color: 'var(--color-text-secondary)',
-                    }}>
-                    Time
-                  </div>
-                </div>
-                <div
-                  style={{
-                    flex: '1 1 auto',
-                    minHeight: 0,
-                    overflowY: 'auto',
-                    paddingTop: 16,
-                    paddingBottom: 12,
-                  }}>
-                  <Grid columns={3} gap={2} width="100%">
-                    {timeChips}
-                  </Grid>
-                </div>
-              </div>
-            </StackItem>
-          </HStack>
-        ) : segment === 'date' ? (
+        {segment === 'date' ? (
           <ScrollCalendar
             mode="single"
+            paged={beside}
             value={date}
             onChange={(v: ISODateString) => {
               setDate(v);
@@ -1478,10 +1437,10 @@ function DateTimeInputDemo({beside = false}: {beside?: boolean} = {}) {
             }}
             startYear={2026}
             startMonth={6}
-            monthCount={4}
+            monthCount={beside ? 2 : 4}
           />
         ) : (
-          <Grid columns={4} gap={2} width="100%">
+          <Grid columns={beside ? 6 : 4} gap={2} width="100%">
             {timeChips}
           </Grid>
         )}
@@ -4005,21 +3964,20 @@ export const PROTOTYPES: Prototype[] = [
     interaction:
       'Tapping the field opens a bottom sheet with months stacked in a vertical scroll under a sticky weekday header. It opens at a medium detent and can be dragged up to full height to scroll through more months; picking a day confirms and closes.',
     showTablet: true,
-    tabletCaption: 'Tablet · sheet caps at 640px, centered',
+    tabletCaption: 'Tablet · two months side by side',
     Demo: DateInputDemo,
+    TabletDemo: DateInputTabletDemo,
   },
   {
     id: 'datetimeinput',
     name: 'DateTimeInput',
     category: 'Blocks migration',
     change:
-      'Bottom sheet with a Date / Time switch (iOS compact-picker pattern); one picker at a time on a phone, side by side on a wide sheet.',
+      'Bottom sheet with a Date / Time switch (iOS compact-picker pattern); one picker at a time on both phone and tablet.',
     interaction:
-      'Date and time are separate targets: a Date / Time switch beside the title reveals one picker at a time. Choosing a day auto-advances to Time. On a wide sheet the calendar and time grid sit side by side, each scrolling on its own. Opens at a medium detent, drags up to full; Confirm stays pinned and enables once both date and time are chosen.',
+      'Date and time are separate targets: a Date / Time switch beside the title reveals one picker at a time. Choosing a day auto-advances to Time; Confirm stays pinned and enables once both are chosen. The tablet keeps the same switch — the Date view shows two months side by side and the Time view a wider grid.',
     showTablet: true,
-    tabletTall: true,
-    tabletCaption:
-      'Tablet · calendar + time side by side, scrolling independently',
+    tabletCaption: 'Tablet · same switch, two months + wider time grid',
     Demo: DateTimeInputDemo,
     TabletDemo: DateTimeInputTabletDemo,
   },
