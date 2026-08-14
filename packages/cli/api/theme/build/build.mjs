@@ -527,13 +527,24 @@ async function generateVariantDeclarationsAsync(themeDef) {
       if (values.size === 0) continue;
 
       const propPascal = prop.charAt(0).toUpperCase() + prop.slice(1);
-      const target = (await resolveAugmentationTargetCandidates(component)).find(
-        candidate =>
-          componentHasAugmentableInterface(
-            candidate.moduleName,
-            `${candidate.interfacePrefix}${propPascal}Map`,
-          ),
-      );
+      let target;
+      let interfaceName;
+
+      if (component === 'text' && prop === 'type') {
+        target = { moduleName: 'theme' };
+        interfaceName = 'CustomTextTypes';
+      } else {
+        target = (await resolveAugmentationTargetCandidates(component)).find(
+          candidate =>
+            componentHasAugmentableInterface(
+              candidate.moduleName,
+              `${candidate.interfacePrefix}${propPascal}Map`,
+            ),
+        );
+        if (target) {
+          interfaceName = `${target.interfacePrefix}${propPascal}Map`;
+        }
+      }
 
       // Only augment interfaces that actually exist as an extension point in
       // core. Props backed by closed literal-union types (e.g. Button `size`,
@@ -543,7 +554,6 @@ async function generateVariantDeclarationsAsync(themeDef) {
       if (!target) continue;
 
       const modulePath = `@astryxdesign/core/${target.moduleName}`;
-      const interfaceName = `${target.interfacePrefix}${propPascal}Map`;
 
       sections.push(`declare module '${modulePath}' {`);
       sections.push(`  interface ${interfaceName} {`);
