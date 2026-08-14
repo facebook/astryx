@@ -101,42 +101,17 @@ so it is never applied by `--fix`.
 ### Theming targets — `theming-target-shape`, `theming-target-name`, `themeprops-reflection`
 
 **Status: prototype.** All three are registered on the plugin but are NOT in
-`configs.strict` / `configs.recommended` yet, and are not wired into
-`eslint.config.js` — the criteria they encode are still being settled. Measured
-counts against `packages/` and the proposed tier for each check are below;
-turning one on is one line in `index.js`.
+`configs.strict` / `configs.recommended`, and are not wired into
+`eslint.config.js`. Turning one on is one line in `index.js`; the counts below
+say what that would cost today.
 
-**The criteria are canonical in the wiki**, under "Principles for authoring
-theming targets" in
-[Theming Infrastructure](https://github.com/facebook/astryx/wiki/Theming-Infrastructure).
-These rules encode the mechanically checkable subset of that page; the
-`Principle` column below cites what each check enforces.
-
-**Rules and principles are reconciled as of this PR** — every divergence found
-while encoding them was resolved on one side or the other, and the audit is in
-the PR description. A divergence is a bug in the rule or a gap in the
-principle, not a tolerated state: when one turns up, fix it rather than
-recording which side wins.
-
-**Three known gaps, open and unfixed** (each is a call for the TL, and each is
-listed in the PR description):
-
-1. `wrapperTarget` only fires when the wrapper paints **nothing**, so a wrapper
-   that carries paint is invisible to it — even though a target on a `div`/
-   `span` whose sole child is an Astryx component belongs on the component
-   regardless.
-2. A target on an Astryx component is skipped by `theming-target-shape`
-   entirely. That is the destination these rules point authors at, so the
-   sanctioned shape is also the blind spot, and it widens as the pattern spreads.
-3. `missingPosition` fires on an existing, unrenameable two-segment target
-   (`banner-icon`) once that target is moved onto its `<Icon>` — P3's shape and a
-   shipped public name collide.
-
-A theming target (`themeProps('selector-option')`) is a public API commitment:
-a stable `.astryx-*` class a theme writes CSS against. These rules check the
-part of "is this a good target?" that is mechanical. Whether a real consumer
-needs the target, whether it has a stated visual intent, and whether the design
-should converge instead (principles 6 and 7) stay human.
+**Every check automates a numbered check in the [Component Audit
+Rubric](https://github.com/facebook/astryx/wiki/Component-Audit-Rubric)'s §2**,
+which is the source of truth for what the rule is. Nothing here is a criterion
+of its own: a check that could not name its rubric id was removed rather than
+kept as a proposal. The rubric records for each check whether an enforcer
+exists, and three of these — **T6**, **T7** and **T27** — are marked `manual` or
+`semi` with no lint rule, which is the gap this plugin closes.
 
 Shared analysis lives in `theming-target.js`: which `themeProps()` calls land on
 an element (spread, through `mergeProps`, through a local `const`, or via
@@ -151,34 +126,26 @@ styled through it is not an unstyled one.
 
 #### `@astryx/theming-target-shape`
 
-| Check (messageId)                                                 | Principle                                                 | What it flags                                                                                                                                             | On `packages/` | Proposed tier                                      |
-| ----------------------------------------------------------------- | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- | -------------------------------------------------- |
-| `layoutOnlyTarget`                                                | P1 — target the element that carries the styling          | A sub-element target on an element whose styles declare no paint property                                                                                 | 6              | `warn`                                             |
-| `wrapperTarget`                                                   | P1 + attach to the component                              | A target on a paint-free `div`/`span` whose only child is an Astryx component — it belongs on that component                                              | 4              | `warn` (→ `error` once fixed)                      |
-| `unstyledTarget`                                                  | P1 — "if nothing at that spot paints, there is no target" | A target on an element with no styles at all and nothing wrapped                                                                                          | 0              | `error`                                            |
-| `layoutOnlyRootTarget` (opt-in: `checkRootTargets`)               | P1                                                        | A component's OWN root target, when the root paints nothing                                                                                               | 59             | off — layout primitives legitimately trip it       |
-| `stateVariesOnlyLayout` (opt-in: `checkStateSurface`)             | P1 refinement — the _state seam_ only moves layout        | The target declares runtime state, but that state only moves layout (a `transform`)                                                                       | 0              | `warn` — worth turning on                          |
-| `underDeclaredState` (opt-in: `checkStateSurface`)                | P2 — state and size are data on the target                | The element's styles vary with a state the target does not pass to `themeProps`                                                                           | 17             | off — a real backlog, each item needs a human call |
-| `targetOnRenderPropFallback`                                      | P4 — prefer inheritance over child targets                | A target on a fallback element that a `render*` callback renders in place of, so it misses all custom-rendered content — principle 4's named anti-pattern | 0              | `warn`                                             |
-| `inheritableOnRenderPropFallback`                                 | P4                                                        | Inheritable typography/color on such a fallback, where hoisting it to the row target would cover both render paths                                        | 0              | `warn`                                             |
-| `inheritablePropertyOnChild` (opt-in: `checkInheritableHoisting`) | P4, broadly                                               | Any inheritable property on an untargeted descendant of a target-carrying element                                                                         | 108            | off — see below                                    |
+| Check (messageId)                 | Rubric | What it flags                                                                                                                         | On `packages/` | Proposed tier |
+| --------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------- | -------------- | ------------- |
+| `layoutOnlyTarget`                | T7     | A sub-element target on an element whose styles declare no paint property                                                             | 6              | `warn`        |
+| `wrapperTarget`                   | T7     | A target on a paint-free `div`/`span` whose only child is an Astryx component — it belongs on that component                          | 4              | `warn`        |
+| `unstyledTarget`                  | T7     | A target on an element with no styles at all and nothing wrapped                                                                      | 0              | `error`       |
+| `targetOnRenderPropFallback`      | T27    | A target on a fallback element that a `render*` callback renders in place of, so it misses all custom-rendered content                | 0              | `warn`        |
+| `inheritableOnRenderPropFallback` | T7/T27 | Inheritable typography/color on such a fallback, where hoisting it to the row target would cover both render paths                    | 0              | `warn`        |
+| `underDeclaredState`              | **T6** | The element's styles vary with a prop the target does not pass to `themeProps` — `fooStyles[prop]` with no `prop` in the sibling call | 17             | `warn`        |
 
-**On hoisting inheritable properties (P4).** The broad form of this check —
-flag `font*` / `color` / `lineHeight` / `letterSpacing` / `textAlign` /
-`textTransform` on any untargeted descendant of a target — is implementable and
-measures **108 hits**, but most of them are correct code: a Banner's title and
-description (`packages/core/src/Banner/Banner.tsx:461,463`) declare different
-typography _because they should differ_, and nothing in the AST distinguishes
-that from a declaration begging to be hoisted. It ships off by default, as an
-exploration aid rather than a check.
+**`underDeclaredState` is the one worth having.** T6 is a BLOCK the rubric
+detects by grep, with no lint rule, and it records it as "historically the
+single most frequent finding" — this is the check that closes that gap. Its 17
+hits are a real pre-existing backlog, each needing a human call about which prop
+belongs on the target, so it ships at `warn`: an `error` tier would fail CI on
+`main`.
 
-The two default-on P4 checks use a narrower predicate that does not depend on
-design intent: a **render-prop fallback**. In
-`renderOption ? renderOption(item) : <span {...stylex.props(styles.itemLabel)}>`,
-the fallback's typography demonstrably reaches one of two render paths — that
-divergence is in the AST, not in anyone's judgment. It is the case principle 4
-describes, and a target on such a fallback is the `-label` anti-pattern the
-principle names outright.
+**T7's root-target exemption is implemented, not optional.** A component's own
+root target is its address rather than a seam anyone chose to add, and there is
+nowhere else to put it — 55 layout primitives (Stack, Grid, Divider) have a
+layout-only root. Only sub-element targets are checked.
 
 The rule stays silent when it cannot see the whole picture: a target spread onto
 an Astryx component (the paint is inside the component), a style it cannot
@@ -199,24 +166,21 @@ component's declared surface.
 </div>
 ```
 
-**Options:** `allowTargets`, `allowFiles`, `checkRootTargets`,
-`checkStateSurface`.
+**Options:** `allowTargets`, `allowFiles`, `checkRenderPropFallback`.
 
 #### `@astryx/theming-target-name`
 
-| Check (messageId)           | Principle                                | What it flags                                                                                                                        | On `packages/` | Proposed tier |
-| --------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | -------------- | ------------- |
-| `appearanceInComponentSlot` | P3 — one vocabulary per concept          | Target attached to a leaf Astryx component whose last segment names an appearance (`-check` on an `<Icon>`) instead of the component | 2              | `warn`        |
-| `missingPosition`           | Name by position                         | `{parent}-{component}` with no position segment, on a composed component                                                             | 0              | `warn`        |
-| `stateSubTarget`            | P2 — never mint a `-selected` sub-target | A target name ending in `-disabled` / `-selected` / `-checked` / …                                                                   | 0              | `error`       |
+| Check (messageId)           | Rubric | What it flags                                                                                                                        | On `packages/` | Proposed tier |
+| --------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------ | -------------- | ------------- |
+| `appearanceInComponentSlot` | T27    | Target attached to a leaf Astryx component whose last segment names an appearance (`-check` on an `<Icon>`) instead of the component | 2              | `warn`        |
+| `stateSubTarget`            | T26    | A target name ending in `-disabled` / `-selected` / `-checked` / …                                                                   | 0              | `error`       |
 
 The component-slot check runs only for **leaf** components (`Icon`,
 `CheckboxInput`, `Divider`, `Button`, …; see `DEFAULT_COMPONENT_SLOTS`) and
-skips the component's own root target. Both narrowings are deliberate: principle
-3 makes `{component}-option` the correct name for an option row in every
-list-like component, so holding a row primitive to
-`{parent}-{position}-{component}` would argue with the principle the rule
-exists to serve. Position words are an open vocabulary and are not checked.
+skips the component's own root target. Both narrowings are deliberate: T27 makes
+`{component}-option` the correct name for an option row in every list-like
+component, so holding a row primitive to a three-part shape would argue with the
+check the rule exists to serve.
 
 `stateSubTarget` reads `-state` as a state segment, but not after `empty`,
 `loading`, or `error`: `selector-empty-state` names the placeholder region
@@ -227,7 +191,7 @@ nowhere else to live — rather than a state of a target that exists either way.
 
 ```tsx
 <Icon icon="check" {...themeProps('selector-check')} />        // ❌ appearance
-<Icon icon="check" {...themeProps('selector-option-icon')} />  // ✅ position + component
+<Icon icon="check" {...themeProps('selector-option-icon')} />  // ✅ names the component
 ```
 
 **Options:** `allowTargets`, `allowFiles`, `componentSlots`.
@@ -235,18 +199,20 @@ nowhere else to live — rather than a state of a target that exists either way.
 #### `@astryx/themeprops-reflection`
 
 `themeProps()` returns the class token **and** the `data-*` reflection of the
-visual props. Every check here enforces **P2** — "reflect variants and runtime
-state through `themeProps({ ... })`, which emits both the class token and the
-kebab-cased `data-*` attribute together." These are mechanical bugs, not
-judgment calls.
+visual props. These are mechanical bugs, not judgment calls: **T12** (no
+`className`/`style` beside the spread that carries the target — merge via
+`mergeProps()`) and **T26** (state rides as `themeProps` data, never
+hand-authored). `@astryx/no-classname-clobber` already covers T12 where a
+`stylex.props()` spread is present; these checks cover the `themeProps` shapes
+it does not see.
 
-| Check (messageId)        | What it flags                                                                                                    | On `packages/` | Proposed tier |
-| ------------------------ | ---------------------------------------------------------------------------------------------------------------- | -------------- | ------------- |
-| `droppedStateReflection` | `className={themeProps('x', {size}).className}` — the `data-*` attributes never render                           | 0              | `error`       |
-| `clobberedByLaterProp`   | `{...themeProps('x')} className={className}` — the later prop overwrites the target, so it never reaches the DOM | 1              | `error`       |
-| `bypassedThemeProps`     | `stableClassName('x')` used to build a theme class by hand, so state can never ride along                        | 2              | `error`       |
-| `classNameOnly`          | `.className` on a call with no visual props — drops nothing today, becomes the bug tomorrow                      | 3              | `warn`        |
-| `handAuthoredState`      | `data-state`/`data-selected`/… hand-written on an element that already carries a target                          | 0              | `error`       |
+| Check (messageId)        | Rubric | What it flags                                                                                                    | On `packages/` | Proposed tier |
+| ------------------------ | ------ | ---------------------------------------------------------------------------------------------------------------- | -------------- | ------------- |
+| `droppedStateReflection` | T26    | `className={themeProps('x', {size}).className}` — the `data-*` attributes never render                           | 0              | `error`       |
+| `clobberedByLaterProp`   | T12    | `{...themeProps('x')} className={className}` — the later prop overwrites the target, so it never reaches the DOM | 1              | `error`       |
+| `bypassedThemeProps`     | T26    | `stableClassName('x')` used to build a theme class by hand, so state can never ride along                        | 7              | `warn`        |
+| `classNameOnly`          | T12    | `.className` on a call with no visual props — drops nothing today, becomes the bug tomorrow                      | 4              | `warn`        |
+| `handAuthoredState`      | T26    | `data-state`/`data-selected`/… hand-written on an element that already carries a target                          | 0              | `error`       |
 
 `handAuthoredState` only looks at a short list of state attribute names: most
 `data-*` attributes in the codebase are identity or query hooks the component's
@@ -257,11 +223,11 @@ own JS reads (`data-value`, `data-date`, `data-page`), and routing those through
 
 #### What these rules do NOT check
 
-Principles 6 (a target needs a stated visual intent, ideally a real use case)
-and 7 (consolidate at the design level first) are human judgment and always
-will be — no AST says whether a consumer needs a seam. Principle 3's
-cross-component convergence and principle 5 (do not expose internal structure)
-are also out of reach: both need a repo-wide target registry, not a per-file
+T1/T3 (tokens), T4/T5 (doc↔source sync) and T33 already have enforcers — the two
+Vitest guards and `@astryx/no-hardcoded-styles` — and are not duplicated here.
+Whether a target should exist at all is T27's and T7's human half: no AST says
+whether a consumer needs a seam, or whether the design should converge instead.
+Cross-component convergence needs a repo-wide target registry, not a per-file
 rule. **Lint checks the shape of a target; a human decides whether it should
 exist.**
 

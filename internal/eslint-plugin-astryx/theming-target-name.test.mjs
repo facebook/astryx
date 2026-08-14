@@ -107,21 +107,6 @@ ruleTester.run('theming-target-name', rule, {
         },
       ],
     },
-    // Names the component, but has no position segment.
-    {
-      code: `${setup} const a = <Icon icon="x" {...themeProps('selector-icon')} />;`,
-      filename,
-      errors: [
-        {
-          messageId: 'missingPosition',
-          data: {
-            target: 'selector-icon',
-            component: 'Icon',
-            slot: 'icon',
-          },
-        },
-      ],
-    },
     // State minted as its own sub-target.
     {
       code: `${setup} const a = <span {...themeProps('selector-option-selected')} />;`,

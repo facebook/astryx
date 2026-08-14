@@ -81,68 +81,20 @@ change.
 
 A `themeProps()` target is a public API commitment: a stable `.astryx-*` class
 an unknown external consumer writes CSS against, and one we cannot rename
-without breaking them. The authoring principles live in
-[Theming Infrastructure](https://github.com/facebook/astryx/wiki/Theming-Infrastructure)
-("Principles for authoring theming targets") — that page is the source of
-truth. Run every **new** target through this checklist:
+without breaking them. The checks are **T6, T7, T12, T26, T27 and T33** in the
+rubric's §2 — read them there and cite them by id; this file does not restate
+them.
 
-1. **Does the element paint?** A target is a paint seam — color, background,
-   border, font, radius, shadow. An element that only lays out (`display`,
-   flex/grid, `margin`/`padding`, width/height, `transform`) has nothing for a
-   theme to restyle.
-2. **Is the layout value declared?** Layout is themeable only where the
-   component declared it and still owns the structure — a component var, a
-   `derived` entry, container-padding expansion. Arbitrary layout CSS on a class
-   target is not.
-3. **Is it attached to the component?** If the themed thing is an internally
-   composed Astryx component, the target rides that instance's
-   `className`/`xstyle` passthrough. Never mint a wrapper to hold a target, and
-   where a wrapper legitimately remains it carries **layout only** — `display`,
-   alignment, `flexShrink`, positioning. Anything that paints (color,
-   background, border, shadow) belongs on the element that renders the pixels.
-4. **Is the name compositional?** `{parent}-{position}-{component}` — position
-   from the shared vocabulary (trigger/option/item/row/header/leading/trailing/
-   menu), and the last segment the actual component (`icon`, `checkbox`,
-   `button`, `divider`), never an appearance (`check`, `caret`, `marker`).
-   State is never a name segment: it rides `themeProps({selected})`, which emits
-   the class token and the `data-*` attribute together.
-5. **Could the parent target reach it by inheritance?** If the property
-   cascades (font, color) **and the parent target can actually deliver it as the
-   code stands**, put it on the parent target rather than minting a child one —
-   a child target on a `renderX` fallback silently misses every custom-rendered
-   result (principle 4). Inheritance does **not** arrive when the child sets the
-   property directly on its own element, which is every composed Astryx
-   component with a `color`/`size` prop: `<Icon color="error">` writes `color` on
-   the glyph, and a directly-set value beats an inherited one. In that case
-   principle 4 does not apply and (3) decides — put the target on the component
-   instance, where a same-element rule in `@layer astryx-theme` reaches it. Do
-   not move paint onto the wrapper to make inheritance work; that manufactures a
-   seam on an element that is not part of the contract.
-6. **Is there a named consumer?** "Structural selectors are brittle, so here's a
-   seam" is not a justification. Say what appearance the target unlocks and who
-   asked for it — and check whether the answer is really a design convergence
-   (principle 7) rather than a theming surface.
+Two things the rubric records that matter when you review a new target:
 
-**Blocking:** (3) a target on a wrapper rather than the component; (5) a target
-on a `renderX` fallback, which cannot reach custom-rendered content; a state
-minted as its own `-selected`/`-disabled` sub-target; a hand-authored `data-*`
-alongside `themeProps`; `className={themeProps(...).className}` or a `className`
-written **after** the `themeProps` spread — both silently drop the target or its
-`data-*` reflection, which is a real bug under
-[the latent-bug rule](#severity--score-the-failure-not-its-likelihood).
-Also blocking: a target whose stated purpose is to `display: none` an internal
-element — that is a design question about the element's existence, not a theming
-one.
-
-**Maintainer judgment:** (1) and (2) where the element paints a little but the
-seam is mostly structural, (6) in every case, and any question of whether the
-target should exist at all.
-
-The `@astryx/theming-target-*` and `@astryx/themeprops-reflection` rules check
-the mechanical subset (see `internal/eslint-plugin-astryx/README.md` for which
-check maps to which principle). They are prototypes and are not enabled in
-either shipped config, so **review owns every new target** — do not assume lint
-caught it.
+- **T6 and T7 have no lint rule** (`semi` and `manual`), and T6 is the most
+  frequent theming finding there is. Review owns both. The prototype
+  `@astryx/theming-target-*` and `@astryx/themeprops-reflection` rules automate
+  part of them but are **in neither shipped config** — a green `pnpm lint` says
+  nothing about a new target.
+- **Whether the target should exist at all** is not mechanical. Say what
+  appearance it unlocks and who asked for it, and check whether the answer is
+  really a design convergence (T27) rather than a theming surface.
 
 ## Same bar for every author
 

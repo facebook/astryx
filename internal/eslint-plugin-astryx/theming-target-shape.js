@@ -5,13 +5,14 @@
  * @description A theming target must sit on the element that PAINTS the thing
  * being themed.
  *
- * Canonical criteria: "Principles for authoring theming targets" in the wiki's
- * Theming Infrastructure page — https://github.com/facebook/astryx/wiki/Theming-Infrastructure
- * This rule encodes principle 1 (and, behind `checkStateSurface`, principle 2);
- * the wiki is the source of truth, not this comment.
+ * Canonical criteria: the Component Audit Rubric's §2 checks — T7 (the target
+ * sits on the element that paints), T6 (a prop that selects between style
+ * objects rides that element's `themeProps()`) and T27 (prefer inheritance over
+ * child targets), which cite the wiki's Theming Infrastructure page behind
+ * them. The rubric is the source of truth, not this comment; every check below
+ * names the id it automates.
  *
- * From the wiki's "Principles for authoring theming targets" (principle 1) and
- * the paint-not-layout rule: a target is a paint seam — color, background,
+ * A target is a paint seam — color, background,
  * border, font, radius, shadow. Layout (`display`, `position`, flex/grid,
  * `margin`, `padding`, `gap`, width/height, `transform`) is the component's
  * structural contract and is themed through declared vars (the derived-var and
@@ -44,10 +45,8 @@
  *     skipped: "unknown" is not "no paint".
  *   - an element that sets a CSS custom property is skipped — it feeds the
  *     derived-var pipeline, and what that var paints is not visible here.
- *
- * Two opt-in checks (`checkStateSurface`) go after principle 2 rather than
- * principle 1 — see the option docs below. They are off by default because the
- * signal is weaker; measure before turning one on.
+ *   - a component's own root target, which T7 exempts: it is the component's
+ *     address, not a seam someone chose to add.
  */
 
 import {
@@ -62,10 +61,8 @@ import {
 
 /**
  * Prop keys that name RUNTIME state — something that changes while the
- * component is on screen. Only these are held to "a state seam should paint":
- * `size` and `variant` must be reflected on the target whatever they change
- * (principle 2 is explicit that an option which can be sized must carry
- * `size`), so a size table that only moves padding is not a finding.
+ * component is on screen. A target that declares the generic `state` key
+ * covers all of them, so they are not separately required.
  */
 const RUNTIME_STATE_HINTS = new Set([
   'state',
@@ -182,61 +179,47 @@ const rule = {
       recommended: true,
     },
     messages: {
+      // T7 — themeProps sits on the element that actually paints.
       layoutOnlyTarget:
-        "Theme target '{{target}}' sits on an element whose styles declare no " +
+        "T7: theme target '{{target}}' sits on an element whose styles declare no " +
         'paint property — only {{properties}}. A target is a paint seam ' +
         '(color, background, border, font, radius, shadow); layout is the ' +
         "component's structural contract and is themed through declared vars " +
         '(derived-var / container-padding), not a raw class target. Move the ' +
         'target to the element that paints, or drop it.',
-      layoutOnlyRootTarget:
-        "Theme target '{{target}}' is this component's root target, and the " +
-        'root declares no paint property — only {{properties}}. The name has ' +
-        'to stay, but the seam is layout-only: a theme can move this box, not ' +
-        'restyle it. Check whether the element that actually paints (the ' +
-        'field/surface it renders into) is the one that should carry the ' +
-        'target.',
       wrapperTarget:
-        "Theme target '{{target}}' sits on a <{{wrapper}}> that only wraps " +
+        "T7: theme target '{{target}}' sits on a <{{wrapper}}> that only wraps " +
         '<{{component}}> and paints nothing itself. Attach the target to ' +
-        '<{{component}}> through its className/xstyle passthrough and name it ' +
-        '{parent}-{position}-{component} — a wrapper minted to hold a target ' +
-        'is not part of the contract.',
+        '<{{component}}> through its className/xstyle passthrough — a wrapper ' +
+        'minted to hold a target is not part of the contract, and a ' +
+        'same-element rule in @layer astryx-theme reaches the paint a ' +
+        'wrapper-level target cannot.',
       unstyledTarget:
-        "Theme target '{{target}}' sits on an element with no styles of its " +
+        "T7: theme target '{{target}}' sits on an element with no styles of its " +
         'own, so there is nothing for a theme to override on it. Put the ' +
         'target on the element that carries the base styles.',
-      stateVariesOnlyLayout:
-        "Theme target '{{target}}' declares state ({{props}}), but the styles " +
-        'that state selects change only {{properties}} — layout, not paint. A ' +
-        'state seam whose only effect is structural belongs in a declared var, ' +
-        'not a class target.',
+      // T27 — prefer inheritance over child targets.
       targetOnRenderPropFallback:
-        "Theme target '{{fallbackTarget}}' is on a fallback that {{callback}}" +
-        '() renders in place of, so the target silently misses every ' +
-        'custom-rendered {{callback}} result — principle 4: "a dedicated ' +
-        '-label target that only wraps the fallback span is both redundant ' +
-        'and inconsistent." Put the inheritable declarations ({{properties}}) ' +
-        "on '{{target}}' and let both paths inherit them.",
+        "T27: theme target '{{fallbackTarget}}' is on a fallback that " +
+        '{{callback}}() renders in place of, so the target silently misses ' +
+        'every custom-rendered {{callback}} result. Put the inheritable ' +
+        "declarations ({{properties}}) on '{{target}}' and let both paths " +
+        'inherit them.',
       inheritableOnRenderPropFallback:
-        'This fallback element declares {{properties}}, which cascade, but ' +
+        'T7: this fallback element declares {{properties}}, which cascade, but ' +
         '{{callback}}() renders in its place and never gets them — the two ' +
         'render paths already diverge. It also has no target of its own, so a ' +
         "theme reaching '{{target}}' cannot restyle it. Hoist the inheritable " +
         "declarations to the '{{target}}' element: one seam then covers both " +
-        'paths (principle 4 — prefer inheritance over child targets).',
-      inheritablePropertyOnChild:
-        'This element declares {{properties}}, which cascade — but it sits ' +
-        "inside the theme target '{{target}}' and has no target of its own, " +
-        'so a theme that restyles that target cannot reach it. Hoist the ' +
-        "declaration to the '{{target}}' element and let it inherit: one seam " +
-        'then covers every render path, including custom-rendered content ' +
-        'that never renders this element at all.',
+        'paths (T7 — every painted property reachable from a documented ' +
+        'target; T27 — prefer inheritance over child targets).',
+      // T6 — historically the most frequent theming finding, and the check
+      // the rubric records as having no lint rule.
       underDeclaredState:
-        "Theme target '{{target}}' is on an element whose styles vary with " +
+        "T6: theme target '{{target}}' is on an element whose styles vary with " +
         '{{missing}}, but themeProps() does not pass {{missing}}. A theme ' +
-        'cannot express "{{example}}" without it (principle 2: state and size ' +
-        'are data on the target).',
+        'cannot express "{{example}}" without it — a prop that selects between ' +
+        'style objects has to ride the target.',
     },
     schema: [
       {
@@ -253,15 +236,6 @@ const rule = {
             items: {type: 'string'},
             description: 'Substring match on the filename.',
           },
-          checkRootTargets: {
-            type: 'boolean',
-            description:
-              "Also report a component's OWN root target when the root " +
-              'declares no paint. Off by default: 54 of the roots in ' +
-              'packages/ are layout primitives (Stack, Grid, Divider, ' +
-              'Breadcrumbs) whose root legitimately only lays out, and the ' +
-              'target cannot be moved anywhere in any case.',
-          },
           checkRenderPropFallback: {
             type: 'boolean',
             description:
@@ -269,24 +243,6 @@ const rule = {
               'that a render-prop callback replaces. Narrow by construction: ' +
               'the divergence between the two render paths is visible in the ' +
               'AST, so this does not depend on design intent.',
-          },
-          checkInheritableHoisting: {
-            type: 'boolean',
-            description:
-              'Also report inheritable typography/color declared on an ' +
-              'untargeted descendant of a target-carrying element. Off by ' +
-              'default: a descendant often needs to DIFFER from its parent ' +
-              '(a muted caption in a card), which is indistinguishable from ' +
-              'a hoistable declaration without knowing the design intent.',
-          },
-          checkStateSurface: {
-            type: 'boolean',
-            description:
-              'Also report state seams that only move layout, and elements ' +
-              'whose conditional styles are not reflected in themeProps(). ' +
-              'Off by default: both read component internals, and a ' +
-              'legitimate state (`disabled` on a root) often selects a ' +
-              'non-paint style.',
           },
         },
         additionalProperties: false,
@@ -298,9 +254,6 @@ const rule = {
     const options = context.options[0] ?? {};
     const allowTargets = new Set(options.allowTargets ?? []);
     const allowFiles = options.allowFiles ?? [];
-    const checkStateSurface = options.checkStateSurface === true;
-    const checkRootTargets = options.checkRootTargets === true;
-    const checkInheritableHoisting = options.checkInheritableHoisting === true;
     const checkRenderPropFallback = options.checkRenderPropFallback !== false;
     const scanner = createFileScanner(context);
     if (allowFiles.some((pattern) => scanner.filename.includes(pattern))) {
@@ -379,13 +332,16 @@ const rule = {
             });
             continue;
           }
-          const isRoot = isRootTarget(rootNames, target.name);
-          if (isRoot && !checkRootTargets) {
+          // A component's own root target is its address rather than a seam
+          // anyone chose to add, and there is nowhere else to put it: 55 layout
+          // primitives (Stack, Grid, Divider) have a layout-only root. T7
+          // governs sub-element targets.
+          if (isRootTarget(rootNames, target.name)) {
             continue;
           }
           context.report({
             node: target.node,
-            messageId: isRoot ? 'layoutOnlyRootTarget' : 'layoutOnlyTarget',
+            messageId: 'layoutOnlyTarget',
             data: {
               target: target.name,
               properties: [...new Set([...layout, ...neutral])]
@@ -397,18 +353,10 @@ const rule = {
         return;
       }
 
-      if (!checkStateSurface) {
-        return;
-      }
-
-      // --- Opt-in: principle 2, "state and size are data on the target" -----
+      // --- T6: a prop that selects between style objects rides the target --
 
       /** State words the element's conditional styles actually switch on. */
       const conditionalWords = new Set();
-      /** Properties selected by RUNTIME state specifically. */
-      const runtimeStateProperties = [];
-      let runtimeStateArgs = 0;
-      let conditionalResolved = true;
       for (const argument of conditional) {
         const test =
           argument.type === 'LogicalExpression'
@@ -420,18 +368,6 @@ const rule = {
         const words = stateWordsInTest(test);
         for (const word of words) {
           conditionalWords.add(word);
-        }
-        const isRuntime = [...words].some((word) =>
-          RUNTIME_STATE_HINTS.has(word),
-        );
-        const resolved = scanner.resolveStyleProperties(argument);
-        if (resolved == null) {
-          conditionalResolved = false;
-          continue;
-        }
-        if (isRuntime) {
-          runtimeStateArgs++;
-          runtimeStateProperties.push(...resolved);
         }
       }
 
@@ -464,27 +400,6 @@ const rule = {
           continue;
         }
 
-        const declaresRuntimeState = [...declared].some((key) =>
-          RUNTIME_STATE_HINTS.has(key),
-        );
-        if (declaresRuntimeState && conditionalResolved && runtimeStateArgs > 0) {
-          const bucketed = classifyProperties(runtimeStateProperties);
-          if (bucketed.paint.length === 0 && !bucketed.hasVar) {
-            context.report({
-              node: target.node,
-              messageId: 'stateVariesOnlyLayout',
-              data: {
-                target: target.name,
-                props: [...declared].join(', '),
-                properties: [
-                  ...new Set([...bucketed.layout, ...bucketed.neutral]),
-                ]
-                  .slice(0, 6)
-                  .join(', '),
-              },
-            });
-          }
-        }
       }
     }
 
@@ -501,11 +416,6 @@ const rule = {
         if (checkRenderPropFallback) {
           for (const node of elements) {
             checkRenderPropFallbacks(node);
-          }
-        }
-        if (checkInheritableHoisting) {
-          for (const node of elements) {
-            checkInheritableChildren(node);
           }
         }
       },
@@ -530,8 +440,8 @@ const rule = {
         if (!isHostElement(fallback.openingElement.name)) {
           continue;
         }
-        // A target ON the fallback is not an exemption — it is principle 4's
-        // named anti-pattern, because the callback's output never carries it.
+        // A target ON the fallback is not an exemption — it is T27's named
+        // anti-pattern, because the callback's output never carries it.
         const fallbackTargets = scanner
           .themeTargets(fallback.openingElement)
           .filter((target) => target.name != null);
@@ -577,73 +487,6 @@ const rule = {
           },
         });
       }
-    }
-
-    /**
-     * Inheritable declarations on untargeted descendants of a target-carrying
-     * element (principle 4: prefer inheritance over child targets).
-     */
-    function checkInheritableChildren(node) {
-      const targets = scanner
-        .themeTargets(node.openingElement)
-        .filter((target) => target.name != null && !allowTargets.has(target.name));
-      if (targets.length === 0) {
-        return;
-      }
-      const targetName = targets[0].name;
-
-      const visit = (current) => {
-        for (const child of current.children ?? []) {
-          if (child.type !== 'JSXElement') {
-            // Descend through expression containers: `{cond && <span …/>}`.
-            if (child.type === 'JSXExpressionContainer') {
-              collectElements(child).forEach(inspect);
-            }
-            continue;
-          }
-          inspect(child);
-        }
-      };
-
-      const inspect = (child) => {
-        // A child with its own target is a seam in its own right.
-        if (scanner.themeTargets(child.openingElement).length > 0) {
-          return;
-        }
-        // A composed component styles itself; its declarations are not here.
-        if (!isHostElement(child.openingElement.name)) {
-          return;
-        }
-        const {all} = scanner.styleArguments(child.openingElement);
-        const properties = [];
-        let resolved = true;
-        for (const argument of all) {
-          const names = scanner.resolveStyleProperties(argument);
-          if (names == null) {
-            resolved = false;
-            break;
-          }
-          properties.push(...names);
-        }
-        if (resolved) {
-          const inheritable = [
-            ...new Set(properties.filter((name) => INHERITABLE_PROPERTIES.has(name))),
-          ];
-          if (inheritable.length > 0) {
-            context.report({
-              node: child.openingElement,
-              messageId: 'inheritablePropertyOnChild',
-              data: {
-                target: targetName,
-                properties: inheritable.slice(0, 6).join(', '),
-              },
-            });
-          }
-        }
-        visit(child);
-      };
-
-      visit(node);
     }
 
     /**

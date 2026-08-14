@@ -8,8 +8,8 @@
  *
  * A theming target (`themeProps('selector-option')`) is a public API
  * commitment — a stable `.astryx-*` class a theme can write CSS against. The
- * wiki's "Principles for authoring theming targets" say *where* a target may
- * sit and *what* it may expose; the rules in
+ * Component Audit Rubric's §2 checks say *where* a target may sit and *what*
+ * it may expose; the rules in
  * `theming-target-shape.js`, `theming-target-name.js` and
  * `themeprops-reflection.js` encode the mechanically checkable subset. All
  * three need the same three facts about an element, which live here:
@@ -248,7 +248,7 @@ const PAINT_PATTERN =
  * untargeted child of a target-carrying element means a theme that restyles
  * the target cannot reach the child — and any sibling render path (a
  * `renderOption` callback, say) never gets the treatment at all. Hoisting the
- * declaration to the target element fixes both (principle 4).
+ * declaration to the target element fixes both (T27).
  *
  * Deliberately the typographic set plus `color`: these are the ones a theme
  * routinely wants to set once on a row and have reach everything inside it.

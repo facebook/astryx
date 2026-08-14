@@ -2,36 +2,36 @@
 
 /**
  * @file theming-target-name.js
- * @description The name of a theming target is part of its contract, so it has
- * a shape: `{parent}-{position}-{component}`.
+ * @description The name of a theming target is part of its contract.
  *
- * Canonical criteria: "Principles for authoring theming targets" in the wiki's
- * Theming Infrastructure page — https://github.com/facebook/astryx/wiki/Theming-Infrastructure
- * This rule encodes the mechanical half of principle 3 (a shared vocabulary)
- * and principle 2's "state is not a name"; the wiki is the source of truth.
+ * Canonical criteria: the Component Audit Rubric's §2 checks — T27 (one name
+ * and shape per visual concept, so siblings can converge) and T26 (state rides
+ * as data on one target, never as a `-selected` sub-target). The rubric is the
+ * source of truth, not this comment.
  *
- * Two things are mechanically checkable in that shape, and this rule checks
- * only those two:
+ * Two things are mechanically checkable, and this rule checks only those two:
  *
- * 1. **The component slot.** When the target is attached directly to an
+ * 1. **The component slot (T27).** When the target is attached directly to an
  *    internally-composed Astryx component, the last segment of the name must be
  *    that component — `icon`, `checkbox`, `button`, `divider` — not what the
  *    glyph happens to look like today. `selector-check` on an `<Icon>` names an
- *    appearance: rename the glyph and the target lies. It also has no position
- *    segment, so a sibling component cannot converge on it (principle 3). The
- *    same target as `selector-option-icon` says where it is and what it is.
+ *    appearance: rename the glyph and the target lies, and no sibling can
+ *    converge on it. `selector-option-icon` says where it is and what it is.
  *
- * 2. **State is not a name.** A target ending in `-disabled` / `-selected` /
- *    `-checked` / `-expanded` / `-open` mints a sub-target for something that
- *    is data on the target: pass it through `themeProps({selected})`, which
- *    emits the class token and the `data-*` attribute together (principle 2).
+ * 2. **State is not a name (T26).** A target ending in `-disabled` /
+ *    `-selected` / `-checked` / `-expanded` / `-open` mints a sub-target for
+ *    something that is data on the target: pass it through
+ *    `themeProps({selected})`, which emits the class token and the `data-*`
+ *    attribute together.
  *
- * What is NOT checked: whether `option` or `trigger` is the right position word
- * for this spot, and whether the parent prefix matches its owning component.
- * The position vocabulary is open (trigger/option/item/row/header/leading/
- * trailing/menu…), and the prefix is not derivable from the file — `Table/`
- * renders `base-table`, `Field/` renders `input-status-icon`, and both are
- * correct. Guessing there produces noise, not findings.
+ * What is NOT checked: the number of segments in a name. An earlier revision
+ * required `{parent}-{position}-{component}` and reported a name that omits the
+ * position segment; no published rule states that shape, and it fired on
+ * `banner-icon` — a shipped public target with a codemod behind it, which
+ * cannot be renamed. Whether `option` or `trigger` is the right position word,
+ * and whether the parent prefix matches its owning component, are likewise not
+ * derivable here: `Table/` renders `base-table` and `Field/` renders
+ * `input-status-icon`, and both are correct.
  *
  * Bad:
  *   <Icon icon="check" {...themeProps('selector-check')} />
@@ -85,11 +85,11 @@ const PLACEHOLDER_QUALIFIERS = new Set(['empty', 'loading', 'error']);
  * Composed components for which the component slot is unambiguous: leaf,
  * decorative, single-purpose things. The check is deliberately NOT applied to
  * every composed component, because the position vocabulary and the component
- * vocabulary collide on row/container primitives — principle 3 says an option
- * row is `{component}-option` in *every* list-like component, so
- * `selector-option` on the shared `<Item>` primitive is the CORRECT name, not
- * `selector-option-item`. Restricting the check to leaves keeps it from
- * arguing with the principle it is meant to support.
+ * vocabulary collide on row/container primitives — T27 makes an option row
+ * `{component}-option` in *every* list-like component, so `selector-option` on
+ * the shared `<Item>` primitive is the CORRECT name, not `selector-option-item`.
+ * Restricting the check to leaves keeps it from arguing with the check it
+ * exists to serve.
  */
 const DEFAULT_COMPONENT_SLOTS = [
   'Icon',
@@ -168,21 +168,15 @@ const rule = {
       recommended: true,
     },
     messages: {
+      // T27 — one name and shape per visual concept, so siblings converge.
       appearanceInComponentSlot:
-        "Theme target '{{target}}' is attached to <{{component}}>, but its " +
-        "last segment is '{{slot}}' — an appearance, not the component. Name " +
-        'it {parent}-{position}-{{expected}} (position: ' +
-        'trigger/option/item/row/header/leading/trailing/menu…) so the target ' +
-        'survives a change of glyph and a sibling component can converge on ' +
-        'the same shape.',
-      missingPosition:
-        "Theme target '{{target}}' is attached to <{{component}}> but names " +
-        'only {parent}-{component}. Add the position segment ' +
-        '({parent}-{position}-{component}: trigger/option/item/row/header/' +
-        'leading/trailing/menu…) so a second {{slot}} in the same component ' +
-        'can be named without collision.',
+        "T27: theme target '{{target}}' is attached to <{{component}}>, but " +
+        "its last segment is '{{slot}}' — an appearance, not the component. " +
+        "End the name with '{{expected}}' so the target survives a change of " +
+        'glyph and a sibling component can converge on the same shape.',
+      // T26 — state and size ride as data on one target.
       stateSubTarget:
-        "Theme target '{{target}}' ends in the state '{{state}}'. State is " +
+        "T26: theme target '{{target}}' ends in the state '{{state}}'. State is " +
         'data on the target, not a target of its own: pass it through ' +
         "themeProps('{{base}}', {{{state}}}), which emits the class token and " +
         'the data-{{state}} attribute together.',
@@ -279,8 +273,8 @@ const rule = {
           continue;
         }
 
-        // `{parent}-{position}-{component}` — the trailing segments that name
-        // the component may themselves be hyphenated (`…-multi-selector`).
+        // The trailing segments that name the component may themselves be
+        // hyphenated (`…-multi-selector`).
         const namesComponent = [...slots].some(
           (slot) =>
             target.name === slot ||
@@ -297,20 +291,6 @@ const rule = {
               component: componentName,
               slot: last,
               expected,
-            },
-          });
-          continue;
-        }
-
-        const slotSegments = expected.split('-').length;
-        if (segments.length - slotSegments < 2) {
-          context.report({
-            node: target.node,
-            messageId: 'missingPosition',
-            data: {
-              target: target.name,
-              component: componentName,
-              slot: expected,
             },
           });
         }
