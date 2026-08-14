@@ -16,13 +16,13 @@ export const docs = {
     ],
   },
   description:
-    'Coordinates multiple BottomSheets as a mutually exclusive flow. One activeSheet ID selects the only interactive sheet; during a handoff, the new sheet enters above the inert previous sheet. If the new sheet is shorter, the previous sheet moves down until their top edges align, then fades away. The orchestrator renders one shared scrim for the whole flow so handoffs never stack backdrops.',
+    'Coordinates multiple BottomSheets as a mutually exclusive flow. One activeSheet ID selects the only interactive sheet; during a handoff, the new sheet enters above the inert previous sheet. If the new sheet is shorter, the previous sheet simultaneously moves down until their top edges align, then fades after both transforms complete. The orchestrator renders one shared scrim for the whole flow so handoffs never stack backdrops.',
   props: [
     {
       name: 'activeSheet',
       type: 'string | null',
       description:
-        "ID of the interactive BottomSheet, or null when the flow should close. Match a nested BottomSheet's unique sheetId; the previous sheet may remain visually present and inert while the new sheet enters, align downward behind a shorter step, then fade away.",
+        "ID of the interactive BottomSheet, or null when the flow should close. Match a nested BottomSheet's unique sheetId; the previous sheet may remain visually present and inert while the new sheet enters, simultaneously align downward behind a shorter step, then fade away.",
       required: true,
     },
     {
@@ -48,7 +48,7 @@ export const docs = {
   ],
   usage: {
     description:
-      'Use one activeSheet value as the source of truth for a multi-step bottom-sheet flow. Set it to a child sheetId to open or switch steps, and set it to null to close. On a handoff, the previous sheet becomes inert immediately while the new active sheet enters above it. After that entrance completes, a taller previous sheet moves down until its top edge aligns with the shorter new sheet, then fades away; equal-height or shorter previous sheets fade in place. The orchestrator owns one shared scrim, focus trap, and body scroll lock across the transition, and restores focus to the trigger that started the flow after the final exit finishes.',
+      'Use one activeSheet value as the source of truth for a multi-step bottom-sheet flow. Set it to a child sheetId to open or switch steps, and set it to null to close. On a handoff, the previous sheet becomes inert immediately while the new active sheet enters above it. A taller previous sheet simultaneously moves down until its top edge aligns with the shorter new sheet; it fades only after both transforms complete. Equal-height or shorter previous sheets stay stationary and fade after the entrance. The orchestrator owns one shared scrim, focus trap, and body scroll lock across the transition, and restores focus to the trigger that started the flow after the final exit finishes.',
     bestPractices: [
       {
         guidance: true,
@@ -106,7 +106,7 @@ export const docsDense = {
     'controller with one shared scrim for mutually exclusive multi-step BottomSheets',
   usage: {
     description:
-      'One activeSheet ID makes one nested sheet interactive over one shared scrim. Change IDs to enter a new top sheet, align a taller previous sheet behind a shorter one, then fade it; null closes the flow.',
+      'One activeSheet ID makes one nested sheet interactive over one shared scrim. Change IDs to enter a new top sheet while simultaneously aligning a taller previous sheet behind a shorter one, then fade it; null closes the flow.',
     bestPractices: [
       {
         guidance: true,

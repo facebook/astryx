@@ -11,11 +11,11 @@
  * The orchestrator turns a set of declaratively nested BottomSheets into a
  * controlled single-selection group: `activeSheet` names the one interactive
  * child, or is null when the flow is closed. During a handoff the new sheet
- * enters above the previous sheet. If it is shorter, the previous sheet then
- * moves down until their top edges align; otherwise it stays stationary. The
- * previous sheet fades only after that motion completes. The orchestrator also
- * owns the flow's one shared scrim, focus trap, and scroll lock, so handoffs
- * never stack backdrops.
+ * enters above the previous sheet. If it is shorter, the previous sheet moves
+ * down at the same time until their top edges align; otherwise it stays
+ * stationary. The previous sheet fades only after both motions complete. The
+ * orchestrator also owns the flow's one shared scrim, focus trap, and scroll
+ * lock, so handoffs never stack backdrops.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/lab/src/BottomSheet/BottomSheet.tsx
@@ -80,6 +80,7 @@ interface SheetTransitionState {
   retainedSheet: string | null;
   retainedPhase: RetainedSheetPhase | null;
   alignmentOffset: number;
+  isAlignmentComplete: boolean;
 }
 
 const IDLE_TRANSITION: SheetTransitionState = {
@@ -87,6 +88,7 @@ const IDLE_TRANSITION: SheetTransitionState = {
   retainedSheet: null,
   retainedPhase: null,
   alignmentOffset: 0,
+  isAlignmentComplete: false,
 };
 
 const ALIGNMENT_THRESHOLD_PX = 1;
@@ -104,6 +106,7 @@ function transitionForActiveSheetChange(
       retainedSheet: previousSheet,
       retainedPhase: 'exiting',
       alignmentOffset: 0,
+      isAlignmentComplete: false,
     };
   }
   return {
@@ -111,6 +114,7 @@ function transitionForActiveSheetChange(
     retainedSheet: previousSheet,
     retainedPhase: 'covered',
     alignmentOffset: 0,
+    isAlignmentComplete: false,
   };
 }
 
@@ -125,19 +129,19 @@ function alignmentOffsetForElements(
   // rendered top edges is exactly how far the taller retained sheet must move
   // down to sit completely behind the shorter entering sheet. Measuring the
   // rendered rects also accounts for a retained sheet's current drag detent.
-  return Math.max(
-    0,
-    enteringElement.getBoundingClientRect().top -
-      retainedElement.getBoundingClientRect().top,
-  );
+  const enteringPositioner = enteringElement.parentElement;
+  const enteringTop =
+    enteringPositioner?.getBoundingClientRect().top ??
+    enteringElement.getBoundingClientRect().top;
+  return Math.max(0, enteringTop - retainedElement.getBoundingClientRect().top);
 }
 
 export interface BottomSheetOrchestratorProps {
   /**
    * ID of the interactive BottomSheet, or null when the flow should close.
    * Must match a nested BottomSheet's `sheetId`. The previous sheet may remain
-   * visually present and inert while the new sheet enters, align downward if
-   * the new sheet is shorter, then fade away.
+   * visually present and inert while the new sheet enters, moving downward at
+   * the same time if the new sheet is shorter, then fade away.
    */
   activeSheet: string | null;
 
@@ -163,7 +167,8 @@ export interface BottomSheetOrchestratorProps {
  * Coordinates a set of BottomSheets so zero or one is active at a time, with
  * one shared scrim for the complete flow. On a sheet-to-sheet handoff, the
  * previous sheet remains inert while the new sheet enters above it. A taller
- * previous sheet then moves down behind a shorter new sheet before fading.
+ * previous sheet simultaneously moves down behind a shorter new sheet, then
+ * fades after both transforms complete.
  *
  * @example
  * ```
@@ -269,6 +274,31 @@ export function BottomSheetOrchestrator({
     [],
   );
 
+  const onSheetEnterStart = useCallback((sheetId: string) => {
+    setTransition(current => {
+      if (
+        current.enteringSheet !== sheetId ||
+        current.retainedSheet == null ||
+        current.retainedPhase !== 'covered'
+      ) {
+        return current;
+      }
+      const alignmentOffset = alignmentOffsetForElements(
+        sheetElementsRef.current.get(sheetId),
+        sheetElementsRef.current.get(current.retainedSheet),
+      );
+      if (alignmentOffset <= ALIGNMENT_THRESHOLD_PX) {
+        return current;
+      }
+      return {
+        ...current,
+        retainedPhase: 'aligning',
+        alignmentOffset,
+        isAlignmentComplete: false,
+      };
+    });
+  }, []);
+
   const onSheetTransitionComplete = useCallback(
     ({sheetId, phase}: BottomSheetOrchestratorTransitionEvent) => {
       setTransition(current => {
@@ -279,16 +309,16 @@ export function BottomSheetOrchestrator({
           if (current.retainedSheet == null) {
             return IDLE_TRANSITION;
           }
-          const alignmentOffset = alignmentOffsetForElements(
-            sheetElementsRef.current.get(sheetId),
-            sheetElementsRef.current.get(current.retainedSheet),
-          );
+          if (
+            current.retainedPhase === 'aligning' &&
+            !current.isAlignmentComplete
+          ) {
+            return {...current, enteringSheet: null};
+          }
           return {
+            ...current,
             enteringSheet: null,
-            retainedSheet: current.retainedSheet,
-            retainedPhase:
-              alignmentOffset > ALIGNMENT_THRESHOLD_PX ? 'aligning' : 'fading',
-            alignmentOffset,
+            retainedPhase: 'fading',
           };
         }
 
@@ -297,7 +327,9 @@ export function BottomSheetOrchestrator({
           current.retainedSheet === sheetId &&
           current.retainedPhase === 'aligning'
         ) {
-          return {...current, retainedPhase: 'fading'};
+          return current.enteringSheet == null
+            ? {...current, retainedPhase: 'fading'}
+            : {...current, isAlignmentComplete: true};
         }
 
         if (
@@ -337,6 +369,7 @@ export function BottomSheetOrchestrator({
       getSheetPhase,
       getSheetAlignmentOffset,
       registerSheetElement,
+      onSheetEnterStart,
       onSheetTransitionComplete,
       setScrimOpacity,
       triggerRef,
@@ -347,6 +380,7 @@ export function BottomSheetOrchestrator({
       getSheetPhase,
       hasScrim,
       onActiveSheetChange,
+      onSheetEnterStart,
       onSheetTransitionComplete,
       registerSheetElement,
       setScrimOpacity,

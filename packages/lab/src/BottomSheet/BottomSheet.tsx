@@ -400,6 +400,7 @@ export function BottomSheet({
   const hasNativeScrim = orchestrator == null && hasScrim;
   const isModal = hasNativeScrim || hasSharedScrim;
   const orchestratorActiveSheet = orchestrator?.activeSheet ?? null;
+  const onSheetEnterStart = orchestrator?.onSheetEnterStart;
   const onSheetTransitionComplete = orchestrator?.onSheetTransitionComplete;
   const registerSheetElement = orchestrator?.registerSheetElement;
   const orchestratorPhase =
@@ -580,6 +581,12 @@ export function BottomSheet({
       }
 
       if (isInsideOrchestrator && orchestratorPhase === 'entering') {
+        if (hasValidSheetId) {
+          // show() has made the incoming sheet's final layout measurable even
+          // though its visual entrance transform is still in progress. This
+          // lets a taller retained sheet start aligning in the same frame.
+          onSheetEnterStart?.(sheetId);
+        }
         // A rapid Back can reactivate a sheet that is already mounted beneath
         // the current top sheet. It has no new CSS entrance to wait for.
         const isReactivatingRetainedSheet =
@@ -672,6 +679,7 @@ export function BottomSheet({
     isModal,
     isOpen,
     isInsideOrchestrator,
+    onSheetEnterStart,
     onSheetTransitionComplete,
     orchestratorActiveSheet,
     orchestratorPhase,

@@ -109,7 +109,7 @@ function getSheetPanel(dialog: HTMLElement): HTMLElement {
 }
 
 function mockSheetTop(sheet: HTMLElement, top: number) {
-  vi.spyOn(sheet, 'getBoundingClientRect').mockReturnValue({
+  const rect = {
     x: 0,
     y: top,
     top,
@@ -119,7 +119,13 @@ function mockSheetTop(sheet: HTMLElement, top: number) {
     width: 640,
     height: 800 - top,
     toJSON: () => {},
-  });
+  };
+  vi.spyOn(sheet, 'getBoundingClientRect').mockReturnValue(rect);
+  if (sheet.parentElement) {
+    vi.spyOn(sheet.parentElement, 'getBoundingClientRect').mockReturnValue(
+      rect,
+    );
+  }
 }
 
 describe('BottomSheetOrchestrator', () => {
@@ -192,7 +198,7 @@ describe('BottomSheetOrchestrator', () => {
     expect(getSharedScrim()).toBe(sharedScrim);
   });
 
-  it('moves a taller previous sheet down behind a shorter new sheet before fading it', () => {
+  it('moves a taller previous sheet down while the shorter new sheet enters, then waits for both', () => {
     render(<Flow />);
     fireEvent.click(screen.getByRole('button', {name: 'Start flow'}));
     const detailsSheet = screen.getByTestId('details-sheet');
@@ -203,18 +209,40 @@ describe('BottomSheetOrchestrator', () => {
     mockSheetTop(confirmPanel, 300);
 
     fireEvent.click(screen.getByRole('button', {name: 'Continue'}));
-    finishSheetTransition(confirmSheet, 'transform');
 
     expect(detailsSheet).toHaveAttribute('open');
     expect(detailsPanel).toHaveStyle({transform: 'translateY(200px)'});
 
-    // Opacity cannot hide the retained sheet while its top-edge alignment is
-    // still moving. The transform completion advances it to the fade phase.
+    // The incoming entrance may finish first, but opacity cannot hide the
+    // retained sheet until its concurrent alignment also completes.
+    finishSheetTransition(confirmSheet, 'transform');
     finishSheetTransition(detailsSheet, 'opacity');
     expect(detailsSheet).toHaveAttribute('open');
     finishSheetTransition(detailsSheet, 'transform');
     expect(detailsSheet).toHaveAttribute('open');
     expect(detailsPanel).toHaveStyle({transform: 'translateY(200px)'});
+    finishSheetTransition(detailsSheet, 'opacity');
+
+    expect(detailsSheet).not.toHaveAttribute('open');
+    expect(confirmSheet).toHaveAttribute('open');
+  });
+
+  it('waits for the incoming entrance when top-edge alignment finishes first', () => {
+    render(<Flow />);
+    fireEvent.click(screen.getByRole('button', {name: 'Start flow'}));
+    const detailsSheet = screen.getByTestId('details-sheet');
+    const confirmSheet = screen.getByTestId('confirm-sheet');
+    const detailsPanel = getSheetPanel(detailsSheet);
+    mockSheetTop(detailsPanel, 100);
+    mockSheetTop(getSheetPanel(confirmSheet), 300);
+
+    fireEvent.click(screen.getByRole('button', {name: 'Continue'}));
+    expect(detailsPanel).toHaveStyle({transform: 'translateY(200px)'});
+
+    finishSheetTransition(detailsSheet, 'transform');
+    finishSheetTransition(detailsSheet, 'opacity');
+    expect(detailsSheet).toHaveAttribute('open');
+    finishSheetTransition(confirmSheet, 'transform');
     finishSheetTransition(detailsSheet, 'opacity');
 
     expect(detailsSheet).not.toHaveAttribute('open');

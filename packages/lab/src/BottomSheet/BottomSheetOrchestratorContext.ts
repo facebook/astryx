@@ -32,6 +32,7 @@ export interface BottomSheetOrchestratorContextValue {
   getSheetPhase: (sheetId: string) => BottomSheetOrchestratorPhase;
   getSheetAlignmentOffset: (sheetId: string) => number;
   registerSheetElement: (sheetId: string, element: HTMLElement | null) => void;
+  onSheetEnterStart: (sheetId: string) => void;
   onSheetTransitionComplete: (
     event: BottomSheetOrchestratorTransitionEvent,
   ) => void;
