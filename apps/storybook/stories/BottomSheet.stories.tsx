@@ -187,6 +187,9 @@ export const MultiStepOrchestrator: Story = {
     const [activeSheet, setActiveSheet] = useState<string | null>(null);
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
+    const [productUpdates, setProductUpdates] = useState(false);
+    const [tipsAndTutorials, setTipsAndTutorials] = useState(false);
+    const [researchInvitations, setResearchInvitations] = useState(false);
 
     return (
       <>
@@ -271,9 +274,21 @@ export const MultiStepOrchestrator: Story = {
                   profile. This step is intentionally taller than Step 2.
                 </Text>
                 <VStack gap={2}>
-                  <CheckboxInput label="Product updates" value={false} />
-                  <CheckboxInput label="Tips and tutorials" value={false} />
-                  <CheckboxInput label="Research invitations" value={false} />
+                  <CheckboxInput
+                    label="Product updates"
+                    value={productUpdates}
+                    onChange={setProductUpdates}
+                  />
+                  <CheckboxInput
+                    label="Tips and tutorials"
+                    value={tipsAndTutorials}
+                    onChange={setTipsAndTutorials}
+                  />
+                  <CheckboxInput
+                    label="Research invitations"
+                    value={researchInvitations}
+                    onChange={setResearchInvitations}
+                  />
                 </VStack>
                 <HStack gap={2} hAlign="end">
                   <Button
