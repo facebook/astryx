@@ -11,14 +11,16 @@
  *
  * ContentEditable-based rich input for the chat composer.
  * Supports trigger menus (@ mentions, / commands) via SearchSource,
- * inline token rendering, serialization, Enter/Shift+Enter, message
- * history, paste/drop file handling, and mobile-safe touch typography.
+ * inline token rendering, serialization, Enter-to-submit with
+ * IME-composition guarding and an onKeyDown seam for platform-specific
+ * key handling, message history, paste/drop file handling, and
+ * mobile-safe touch typography.
  *
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Chat/index.ts
  * - /apps/storybook/stories/ChatComposer.stories.tsx
- * - /packages/cli/templates/blocks/components/ChatComposerInput/ (block examples)
+ * - /packages/cli/assets/templates/blocks/components/ChatComposerInput/ (block examples)
  */
 
 import {
@@ -43,10 +45,7 @@ import {
 } from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
 import {useTriggerMenu} from './useTriggerMenu';
-import {
-  useChatComposerTokens,
-  isCustomToken,
-} from './useChatComposerTokens';
+import {useChatComposerTokens, isCustomToken} from './useChatComposerTokens';
 import {ensureCaretInside, insertTextAtCursor} from './chatComposerSelection';
 import {ChatPastedTextToken} from './ChatPastedTextToken';
 import {
@@ -56,6 +55,7 @@ import {
 import {Badge, type BadgeProps} from '../Badge';
 import {useChatComposerContext} from './ChatContext';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 // =============================================================================
 // Types
@@ -99,8 +99,7 @@ export type ChatComposerTokenCustom = {
  *   Use for tooltips, hovercards, or any content beyond a badge.
  */
 export type ChatComposerToken =
-  | ChatComposerTokenBadge
-  | ChatComposerTokenCustom;
+  ChatComposerTokenBadge | ChatComposerTokenCustom;
 
 export type ChatComposerTriggerItem = SearchableItem;
 
@@ -191,6 +190,21 @@ export interface ChatComposerInputProps extends Omit<
   onFiles?: (files: File[]) => void;
   /** Submit handler (Enter without Shift) */
   onSubmit?: (value: string) => void;
+  /**
+   * Key-down handler invoked before the built-in Enter/history behavior
+   * (but after an open trigger menu consumes the event).
+   *
+   * This is the seam for platform- or app-specific key handling:
+   * - Call `event.preventDefault()` to suppress the default submit (e.g.
+   *   let Enter insert a newline on a touch keyboard).
+   * - Add behavior by acting on the event yourself (e.g. submit on
+   *   Cmd/Ctrl+Enter) without calling `preventDefault()`, so the default
+   *   handling still runs for other keys.
+   *
+   * IME composition is always respected regardless of this handler: Enter
+   * never submits while a composition is in progress.
+   */
+  onKeyDown?: (event: KeyboardEvent<HTMLDivElement>) => void;
 }
 
 // =============================================================================
@@ -224,8 +238,8 @@ const styles = stylex.create({
   placeholder: {
     position: 'absolute',
     top: 0,
-    left: 0,
-    right: 0,
+    insetInlineStart: 0,
+    insetInlineEnd: 0,
     pointerEvents: 'none',
     color: colorVars['--color-text-secondary'],
     fontSize: {
@@ -282,6 +296,7 @@ function serialize(node: Node): string {
 // =============================================================================
 
 export function ChatComposerInput(props: ChatComposerInputProps) {
+  const t = useTranslator();
   const composerCtx = useChatComposerContext();
   const hasControlledValueProp = props.value !== undefined;
 
@@ -290,22 +305,28 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
     handleRef,
     value: controlledValue = composerCtx?.value,
     onChange: onChangeProp,
-    placeholder = composerCtx?.placeholder ?? 'Type a message\u2026',
+    placeholder: placeholderFromProps,
     maxRows = 8,
     triggers,
     debounceMs = 150,
     hasHistory = true,
-    label = 'Message input',
+    label: labelFromProps,
     isDisabled = composerCtx?.isDisabled ?? false,
     onPaste: onPasteProp,
     pasteAsToken: pasteAsTokenProp,
     onFiles,
     onSubmit = composerCtx?.onSubmit,
+    onKeyDown: onKeyDownProp,
     xstyle,
     className,
     style,
     ...rest
   } = props;
+  const label = labelFromProps ?? t('@astryx.chat.composerInput.label');
+  const placeholder =
+    placeholderFromProps ??
+    composerCtx?.placeholder ??
+    t('@astryx.chat.composer.placeholder');
 
   const composerOnChange = composerCtx?.onChange;
   const onChange = useCallback(
@@ -362,6 +383,20 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
   };
   selfRef.current = handle;
   useImperativeHandle(handleRef, () => handle);
+
+  // Register a focus control with the composer shell so body-click-to-focus
+  // works without the shell sniffing the input's DOM shape. Cleared on
+  // unmount so the shell falls back cleanly if the input goes away.
+  const inputControlRef = composerCtx?.inputControlRef;
+  useEffect(() => {
+    if (!inputControlRef) {
+      return;
+    }
+    inputControlRef.current = {focus: () => editableRef.current?.focus()};
+    return () => {
+      inputControlRef.current = null;
+    };
+  }, [inputControlRef]);
 
   useEffect(() => {
     if (controlledValue === undefined || !editableRef.current) {
@@ -474,6 +509,13 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
         return;
       }
 
+      // Consumer passthrough — runs before built-in Enter/history handling.
+      // A consumer can preventDefault() to fully own the keystroke.
+      onKeyDownProp?.(e);
+      if (e.defaultPrevented) {
+        return;
+      }
+
       // Handle Backspace near tokens — prevent browser from creating
       // stray <br> elements or moving the cursor unexpectedly.
       if (e.key === 'Backspace') {
@@ -516,6 +558,13 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
       }
 
       if (e.key === 'Enter' && !e.shiftKey) {
+        // Never submit mid-composition — an IME uses Enter to commit a
+        // candidate (e.g. Japanese/Chinese/Korean input), and browsers may
+        // also surface the legacy keyCode 229 for composing keystrokes.
+        if (e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229) {
+          return;
+        }
+
         e.preventDefault();
         if (!editableRef.current) {
           return;
@@ -580,7 +629,7 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
         }
       }
     },
-    [hasHistory, onSubmit, onChange, emitChange, triggerMenu],
+    [hasHistory, onSubmit, onChange, emitChange, triggerMenu, onKeyDownProp],
   );
 
   const handlePaste = useCallback(
@@ -695,11 +744,7 @@ ChatComposerInput.displayName = 'ChatComposerInput';
 // Token element helper (for custom rendering in stories/consumers)
 // =============================================================================
 
-export function ChatComposerTokenElement({
-  token,
-}: {
-  token: ChatComposerToken;
-}) {
+export function ChatComposerTokenElement({token}: {token: ChatComposerToken}) {
   return (
     <span
       data-astryx-token=""
@@ -709,11 +754,7 @@ export function ChatComposerTokenElement({
       {isCustomToken(token) ? (
         token.render()
       ) : (
-        <Badge
-          label={token.label}
-          variant={token.variant}
-          icon={token.icon}
-        />
+        <Badge label={token.label} variant={token.variant} icon={token.icon} />
       )}
     </span>
   );

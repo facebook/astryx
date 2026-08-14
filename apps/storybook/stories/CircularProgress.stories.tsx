@@ -35,6 +35,18 @@ const meta: Meta<typeof CircularProgress> = {
       control: 'boolean',
       description: 'Visually hide the label',
     },
+    hasValueLabel: {
+      control: 'boolean',
+      description: 'Show the formatted value in the ring center',
+    },
+    isIndeterminate: {
+      control: 'boolean',
+      description: 'Animated indicator for unknown progress',
+    },
+    isDisabled: {
+      control: 'boolean',
+      description: 'Visually disabled ring and text',
+    },
   },
 };
 
@@ -116,8 +128,45 @@ export const Full: Story = {
   },
 };
 
+export const WithValueLabel: Story = {
+  args: {
+    value: 75,
+    label: 'Upload progress',
+    size: 'lg',
+    hasValueLabel: true,
+  },
+};
+
+export const CustomValueFormat: Story = {
+  args: {
+    value: 3,
+    max: 5,
+    label: 'Steps completed',
+    size: 'lg',
+    hasValueLabel: true,
+    formatValueLabel: (value, max) => `${value}/${max}`,
+  },
+};
+
+export const Disabled: Story = {
+  render: () => (
+    <div style={{display: 'flex', gap: '24px', alignItems: 'center'}}>
+      <CircularProgress value={30} label="Canceled" isDisabled />
+      <CircularProgress
+        value={30}
+        label="Canceled with value"
+        size="lg"
+        isDisabled
+        hasValueLabel
+      />
+      <CircularProgress isIndeterminate label="Canceled loading" isDisabled />
+    </div>
+  ),
+};
+
 export const Indeterminate: Story = {
   args: {
+    isIndeterminate: true,
     label: 'Loading...',
   },
 };
@@ -125,9 +174,9 @@ export const Indeterminate: Story = {
 export const IndeterminateSizes: Story = {
   render: () => (
     <div style={{display: 'flex', gap: '24px', alignItems: 'center'}}>
-      <CircularProgress size="sm" label="Loading small" />
-      <CircularProgress size="md" label="Loading medium" />
-      <CircularProgress size="lg" label="Loading large" />
+      <CircularProgress isIndeterminate size="sm" label="Loading small" />
+      <CircularProgress isIndeterminate size="md" label="Loading medium" />
+      <CircularProgress isIndeterminate size="lg" label="Loading large" />
     </div>
   ),
 };
@@ -135,10 +184,11 @@ export const IndeterminateSizes: Story = {
 export const IndeterminateVariants: Story = {
   render: () => (
     <div style={{display: 'flex', gap: '24px', alignItems: 'center'}}>
-      <CircularProgress label="Accent" variant="accent" />
-      <CircularProgress label="Positive" variant="success" />
-      <CircularProgress label="Warning" variant="warning" />
-      <CircularProgress label="Negative" variant="error" />
+      <CircularProgress isIndeterminate label="Accent" variant="accent" />
+      <CircularProgress isIndeterminate label="Positive" variant="success" />
+      <CircularProgress isIndeterminate label="Warning" variant="warning" />
+      <CircularProgress isIndeterminate label="Negative" variant="error" />
+      <CircularProgress isIndeterminate label="Neutral" variant="neutral" />
     </div>
   ),
 };

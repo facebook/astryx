@@ -10,9 +10,12 @@
  * - Premultiplied alpha setup (correct compositing over page)
  * - Shader compilation helpers
  * - Smoothstep circle fragment for crisp point sprites
- * - Robust hex/shorthand color parsing (fallback instead of NaN)
+ * - Hex-to-GL color conversion via the shared @astryxdesign/core/utils/color
+ *   parsers (fallback instead of NaN)
  * - Context-loss registration + eager context teardown helpers
  */
+
+import {parseHex, toGLFloats} from '@astryxdesign/core/utils';
 
 /** Compile a WebGL shader, returns null on failure */
 export function compileShader(
@@ -42,24 +45,36 @@ export function createProgram(
   const vs = compileShader(gl, gl.VERTEX_SHADER, vertSrc);
   const fs = compileShader(gl, gl.FRAGMENT_SHADER, fragSrc);
   if (!vs || !fs) {
+    // One shader may have compiled while the other failed — free the survivor
+    // so the failure path never leaks a shader object.
+    if (vs) {
+      gl.deleteShader(vs);
+    }
+    if (fs) {
+      gl.deleteShader(fs);
+    }
     return null;
   }
   const p = gl.createProgram();
   if (!p) {
+    gl.deleteShader(vs);
+    gl.deleteShader(fs);
     return null;
   }
   gl.attachShader(p, vs);
   gl.attachShader(p, fs);
   gl.linkProgram(p);
+  // The shaders are now linked into the program; flag them for deletion so the
+  // GPU frees them once the program is deleted instead of leaving them attached
+  // (and allocated) for the program's whole lifetime.
+  gl.deleteShader(vs);
+  gl.deleteShader(fs);
   if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
     gl.deleteProgram(p);
     return null;
   }
   return p;
 }
-
-/** Neutral fallback (mid-grey) for colors we can't parse — visible, never NaN. */
-const HEX_FALLBACK: [number, number, number] = [0.5, 0.5, 0.5];
 
 /**
  * Parse a hex color to [r, g, b] floats in 0-1.
@@ -70,23 +85,7 @@ const HEX_FALLBACK: [number, number, number] = [0.5, 0.5, 0.5];
  * fallback rather than producing NaN, so the GPU never receives a bad uniform.
  */
 export function hexToGL(hex: string): [number, number, number] {
-  if (typeof hex !== 'string') {
-    return HEX_FALLBACK;
-  }
-  let h = hex.trim().replace(/^#/, '');
-  // Expand shorthand: `rgb`/`rgba` -> `rrggbb`/`rrggbbaa`.
-  if (h.length === 3 || h.length === 4) {
-    h = h.replace(/./g, c => c + c);
-  }
-  // Drop the alpha byte if present — the GL path only needs rgb.
-  if (h.length === 8) {
-    h = h.slice(0, 6);
-  }
-  if (!/^[0-9a-fA-F]{6}$/.test(h)) {
-    return HEX_FALLBACK;
-  }
-  const n = parseInt(h, 16);
-  return [(n >> 16) / 255, ((n >> 8) & 0xff) / 255, (n & 0xff) / 255];
+  return toGLFloats(parseHex(hex));
 }
 
 /** DPR with 2x supersampling for crisp circles. SSR-safe (falls back to 2). */

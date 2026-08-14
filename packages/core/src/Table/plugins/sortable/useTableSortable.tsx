@@ -4,7 +4,7 @@
 
 /**
  * @file useTableSortable.tsx
- * @input React, types, Icon, theme tokens
+ * @input React, types, Icon, theme tokens, i18n (useTranslator)
  * @output Exports useTableSortable hook and sort-related types
  * @position Sortable plugin; consumed by Table via plugins prop
  *
@@ -16,8 +16,10 @@
 import {useRef, useMemo, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars, radiusVars} from '../../../theme/tokens.stylex';
+import {focusOutlineProps} from '../../../utils/focusOutline.stylex';
 import {Icon} from '../../../Icon';
 import {resolveContextActions} from '../../tableContextMenu';
+import {useTranslator, type TranslatorFn} from '../../../i18n';
 import type {
   TablePlugin,
   HeaderCellRenderProps,
@@ -129,11 +131,6 @@ const sortStyles = stylex.create({
     width: '100%',
     height: '100%',
     textAlign: 'inherit',
-    outline: {
-      default: 'none',
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: '2px',
     borderRadius: radiusVars['--radius-inner'],
   },
   iconWrapperUnsorted: {
@@ -183,6 +180,7 @@ function getHeaderLabel<T extends Record<string, unknown>>(
 }
 
 function buildAriaLabel<T extends Record<string, unknown>>(
+  t: TranslatorFn,
   column: TableColumn<T>,
   direction: TableSortDirection | null,
   rank: number | null,
@@ -190,13 +188,21 @@ function buildAriaLabel<T extends Record<string, unknown>>(
 ): string {
   const label = getHeaderLabel(column);
   if (direction == null) {
-    return `Sort by ${label}`;
+    return t('@astryx.table.sort.sortBy', {label});
   }
-  let ariaLabel = `Sort by ${label}, sorted ${direction}`;
+  const directionLabel =
+    direction === 'ascending'
+      ? t('@astryx.table.sort.direction.ascending')
+      : t('@astryx.table.sort.direction.descending');
   if (rank != null && total > 1) {
-    ariaLabel += `, priority ${rank} of ${total}`;
+    return t('@astryx.table.sort.sortedByWithPriority', {
+      label,
+      direction: directionLabel,
+      rank,
+      total,
+    });
   }
-  return ariaLabel;
+  return t('@astryx.table.sort.sortedBy', {label, direction: directionLabel});
 }
 
 function getNextDirection(
@@ -226,6 +232,7 @@ function SortHeaderButton<T extends Record<string, unknown>>({
   children: ReactNode;
   configRef: React.RefObject<UseTableSortableConfig>;
 }) {
+  const t = useTranslator();
   const config = configRef.current;
   const sortKey = resolveSortKey(column) ?? '';
   const entryIndex = config.sort.findIndex(e => e.sortKey === sortKey);
@@ -243,7 +250,13 @@ function SortHeaderButton<T extends Record<string, unknown>>({
         ? 'arrowDown'
         : 'arrowsUpDown';
 
-  const ariaLabel = buildAriaLabel(column, direction, rank, config.sort.length);
+  const ariaLabel = buildAriaLabel(
+    t,
+    column,
+    direction,
+    rank,
+    config.sort.length,
+  );
 
   const handleClick = (e: React.MouseEvent | React.KeyboardEvent) => {
     const cfg = configRef.current;
@@ -290,7 +303,7 @@ function SortHeaderButton<T extends Record<string, unknown>>({
   return (
     <button
       type="button"
-      {...stylex.props(sortStyles.button)}
+      {...focusOutlineProps.focusVisible(sortStyles.button)}
       aria-label={ariaLabel}
       onClick={handleClick}>
       <span>{children}</span>
@@ -344,6 +357,7 @@ export function useTableSortable<
   T extends Record<string, unknown>,
   TSortKey extends string = string,
 >(config: UseTableSortableConfig<TSortKey>): TablePlugin<T> {
+  const t = useTranslator();
   const configRef = useRef(config);
   configRef.current = config;
 
@@ -367,12 +381,13 @@ export function useTableSortable<
         // checked/clear state always reflects the latest sort.
         const getSortActions = (): TableContextAction[] => {
           const c = configRef.current;
-          const dir = c.sort.find(e => e.sortKey === sortKey)?.direction ?? null;
+          const dir =
+            c.sort.find(e => e.sortKey === sortKey)?.direction ?? null;
           const actions: TableContextAction[] = [
             {
               id: 'sort-asc',
               group: 'sort',
-              label: 'Sort ascending',
+              label: t('@astryx.table.sort.ascending'),
               icon: <Icon icon="arrowUp" size="xsm" aria-hidden />,
               checked: dir === 'ascending',
               onSelect: () =>
@@ -383,7 +398,7 @@ export function useTableSortable<
             {
               id: 'sort-desc',
               group: 'sort',
-              label: 'Sort descending',
+              label: t('@astryx.table.sort.descending'),
               icon: <Icon icon="arrowDown" size="xsm" aria-hidden />,
               checked: dir === 'descending',
               onSelect: () =>
@@ -396,7 +411,7 @@ export function useTableSortable<
             actions.push({
               id: 'sort-clear',
               group: 'sort-clear',
-              label: 'Clear sort',
+              label: t('@astryx.table.sort.clear'),
               icon: <Icon icon="close" size="xsm" aria-hidden />,
               onSelect: () =>
                 c.onSortChange(c.sort.filter(e => e.sortKey !== sortKey)),
@@ -430,6 +445,6 @@ export function useTableSortable<
         };
       },
     }),
-    [],
+    [t],
   );
 }

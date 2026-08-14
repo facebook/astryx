@@ -993,7 +993,7 @@ const propData: PropEntry[] = [
 ];
 
 /**
- * Mirrors the docsite PropsTable pattern: two fixed pixel columns
+ * Mirrors the docsite props-table pattern: two fixed pixel columns
  * (Prop name + Type) and a flexible Description column.
  *
  * On mobile (320px), the fixed columns consume most of the space,

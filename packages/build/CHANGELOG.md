@@ -1,5 +1,71 @@
 # @xds/build
 
+# 0.4.0
+
+#### Fixes
+
+- build: import `node:fs` statically so the Vite plugin's package discovery survives the ESM build (#4972)
+  `astryxStylex()`'s config plugin discovered installed `@astryxdesign/*` packages with `require('node:fs')`. The `./vite` export ships only an ESM bundle (`dist/vite.mjs`, esbuild `format: 'esm'`), where esbuild lowers `require` to a shim that throws `Dynamic require of "node:fs" is not supported` — always, since native `require` never exists under ESM. The surrounding `try/catch` swallowed the throw, so `optimizeDeps.exclude` silently fell back to `['@astryxdesign/core']` and every other installed Astryx package stayed eligible for Vite pre-bundling, which strips `stylex.create`/`defineVars` calls and causes runtime errors.
+
+  The discovery now uses a static `import fs from 'node:fs'`, which esbuild preserves as a real ESM import. A regression test compiles `vite.ts` with the same esbuild options as `build.mjs` and runs the discovery in a child `node` process, since in-process test runners provide a `require` shim that masks the bug.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @is-jain
+
+---
+
+# 0.3.0
+
+---
+
+# 0.2.0
+
+---
+
+# 0.1.9
+
+#### Fixes
+
+- Scope the `source` resolve condition to @astryxdesign packages in withAstryx
+  `withAstryx` set webpack's `conditionNames` to `['source', …]` globally, which resolved _any_ dependency shipping a `source` export to its raw TypeScript — not just Astryx packages. Third-party deps that ship a `source` export (e.g. `lexical`, pulled in by the new RichTextEditor lab component) were then fed untranspiled `.ts` through Next's babel and failed on syntax like `declare` class fields.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @potatowagon
+
+---
+
+# 0.1.8
+
+---
+
+# 0.1.7
+
+---
+
+# 0.1.6
+
+---
+
+# 0.1.5
+
+#### Other Changes
+
+- Use node: protocol prefix for Node.js builtin imports (#3737)
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @Han5991
+
+---
+
 # 0.1.4
 
 ---

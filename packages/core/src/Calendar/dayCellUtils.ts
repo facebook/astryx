@@ -56,7 +56,7 @@ export function computeDayCellState(input: DayCellStateInput): DayCellState {
 
   return {
     effectivelyDisabled: isDisabled || isOutside,
-    isToday: plainDateIsEqual(date, today),
+    isToday: !isOutside && plainDateIsEqual(date, today),
     isSelected: !!(
       !isOutside &&
       mode === 'single' &&
@@ -123,8 +123,8 @@ function computeHighlightRounding(input: {
   const nextBreaks =
     input.nextContinues !== undefined ? !input.nextContinues : false;
   return {
-    roundLeft: input.isStart || input.isFirstColumn || prevBreaks,
-    roundRight: input.isEnd || input.isLastColumn || nextBreaks,
+    roundStart: input.isStart || input.isFirstColumn || prevBreaks,
+    roundEnd: input.isEnd || input.isLastColumn || nextBreaks,
   };
 }
 
@@ -193,7 +193,9 @@ export function isRangeHighlighted(input: {
   isDisabled: boolean;
   isOutside: boolean;
 }): boolean {
-  if (input.mode !== 'range') {return false;}
+  if (input.mode !== 'range') {
+    return false;
+  }
   return isSpanHighlighted({
     date: input.date,
     spanStart: input.rangeStart,

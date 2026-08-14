@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'MultiSelector',
@@ -20,7 +20,23 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-multi-selector', visualProps: ['size', 'status']},
+      {
+        className: 'astryx-multi-selector',
+        visualProps: ['variant', 'size', 'status'],
+        states: ['disabled'],
+      },
+      {className: 'astryx-multi-selector-clear-icon', deprecatedFor: 'input-clear-icon'},
+      {className: 'astryx-multi-selector-empty-state'},
+      {
+        className: 'astryx-multi-selector-indicator-icon',
+        states: ['state'],
+      },
+      {
+        className: 'astryx-multi-selector-option',
+        visualProps: ['size'],
+        states: ['select-all', 'selected', 'disabled'],
+      },
+      {className: 'astryx-multi-selector-popup'},
     ],
   },
   components: [
@@ -73,6 +89,13 @@ export const docs = {
           default: "'md'",
         },
         {
+          name: 'variant',
+          type: "'input' | 'ghost'",
+          description:
+            'Visual trigger style. input is the bordered input treatment for forms; ghost is borderless and matches ghost buttons for toolbar usage.',
+          default: "'input'",
+        },
+        {
           name: 'triggerDisplay',
           type: "'count' | 'labels' | 'badges'",
           description: 'How to display selected items in the trigger.',
@@ -99,7 +122,8 @@ export const docs = {
         {
           name: 'hasSearch',
           type: 'boolean',
-          description: 'Whether to show a search input for filtering options.',
+          description:
+            'Whether to show a search input for filtering options. As the user types, the match count (or "No results found") is announced to screen readers via a polite live region. The search field has built-in affordances: a leading magnifier icon and, once a query is typed, a trailing clear (✕) button that resets the query and returns focus to the input.',
         },
         {
           name: 'searchPlaceholder',
@@ -155,10 +179,31 @@ export const docs = {
           description: 'Validation status with an optional message.',
         },
         {
+          name: 'statusVariant',
+          type: "'attached' | 'detached' | 'tooltip'",
+          description:
+            'How the status message is placed relative to the input. attached overlaps directly below the bordered input and is only valid for the input variant; ghost selectors detach attached status messages by default. Use tooltip for compact toolbar controls.',
+          default:
+            "'attached' for input selectors; 'detached' for ghost selectors",
+        },
+        {
           name: 'renderOption',
           type: '(option: MultiSelectorOptionData) => ReactNode',
           description:
             'Custom render function for each selectable option in the dropdown. Not called for dividers, sections, or the select-all row.',
+        },
+        {
+          name: 'indicatorPosition',
+          type: "'start' | 'end'",
+          description:
+            'Which edge of the option row carries the checkbox. end pushes it to the far edge of the row, including on the select-all row.',
+          default: "'start'",
+        },
+        {
+          name: 'width',
+          type: 'SizeValue',
+          description:
+            'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
         },
         {
           name: 'xstyle',
@@ -199,6 +244,11 @@ export const docs = {
           'Use inside InputGroup only when the control needs a short prefix or suffix addon as part of one decorated input surface; prefer count or labels trigger display so the group stays single-line.',
       },
       {
+        guidance: true,
+        description:
+          'Use variant="ghost" when a multi-selector sits in a toolbar with ghost buttons. If validation status is needed there, prefer statusVariant="tooltip" so the toolbar height stays compact.',
+      },
+      {
         guidance: false,
         description: 'Use for single-value selection; use Selector instead.',
       },
@@ -215,7 +265,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsZh = {
   components: [
     {
@@ -239,7 +289,8 @@ export const docsZh = {
         hasSearch: '是否显示用于过滤选项的搜索输入。',
         searchPlaceholder: '搜索输入的占位文本。',
         isDisabled: '禁用选择器。',
-        htmlName: '用于表单提交的 HTML name 属性。为每个已选值渲染一个隐藏输入，类似原生多选。',
+        htmlName:
+          '用于表单提交的 HTML name 属性。为每个已选值渲染一个隐藏输入，类似原生多选。',
         disabledMessage:
           '解释选择器被禁用的原因。与 isDisabled 一起使用时，悬停/键盘聚焦时显示工具提示，并通过 aria-disabled 保持触发器可聚焦（仍无法激活）。请使用此属性，而不是用 Tooltip 包裹被禁用的选择器。',
         isLabelHidden: '视觉上隐藏标签同时保持其可访问性。',
@@ -248,6 +299,8 @@ export const docsZh = {
         isRequired: '将字段标记为必填。',
         isLoading: '在触发器中显示加载旋转器。',
         status: '带可选消息的验证状态。',
+        statusVariant:
+          '状态消息的放置方式：attached 直接叠加在输入框下方；detached 作为独立元素浮于下方并留有间距。',
         renderOption:
           '每个可选选项的自定义渲染函数。不会用于分隔线、分组或全选行。',
         xstyle: '布局自定义的 StyleX 样式，必须是 stylex.create() 值。',
@@ -295,7 +348,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
     'checkbox multi-select dropdown for finite sets like column toggles or filter facets',
@@ -329,6 +382,11 @@ export const docsDense = {
           'Use inside InputGroup only for a short prefix or suffix addon; prefer count or labels trigger display so the group stays single-line.',
       },
       {
+        guidance: true,
+        description:
+          'Use variant="ghost" in toolbars with ghost buttons; prefer statusVariant="tooltip" for compact validation status.',
+      },
+      {
         guidance: false,
         description: 'Use for single-value selection; use Selector instead.',
       },
@@ -357,6 +415,8 @@ export const docsDense = {
         changeAction: 'async; fires after onChange',
         placeholder: 'text when nothing selected',
         size: 'size variant',
+        variant:
+          'visual trigger style: input bordered control or ghost toolbar control',
         triggerDisplay: 'how to show selected in trigger',
         maxBadges: 'max badges before "+N"; badges mode only',
         hasSelectAll: 'show select-all checkbox',
@@ -373,6 +433,8 @@ export const docsDense = {
         isRequired: 'marks required',
         isLoading: 'spinner in trigger',
         status: 'validation status w/ optional message',
+        statusVariant:
+          'status message placement; ghost detaches attached by default; use tooltip for compact toolbars.',
         renderOption:
           'custom render fn per selectable option; not dividers/sections/select-all',
         xstyle: 'StyleX layout styles; stylex.create() only',

@@ -22,6 +22,7 @@ import {useTheme} from '../theme';
 import {MediaTheme} from '../theme/MediaTheme';
 import type {ToastType, ToastDismissReason} from './types';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 const styles = stylex.create({
   root: {
@@ -115,6 +116,7 @@ export function Toast({
   isExiting = false,
   onDismiss,
 }: ToastProps) {
+  const t = useTranslator();
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isPausedRef = useRef(false);
   const remainingRef = useRef(autoHideDuration);
@@ -226,7 +228,7 @@ export function Toast({
               variant="ghost"
               size="sm"
               icon={<Icon icon="close" size="sm" color="inherit" />}
-              label="Dismiss notification"
+              label={t('@astryx.toast.dismiss')}
               onClick={handleDismiss}
               isIconOnly
             />

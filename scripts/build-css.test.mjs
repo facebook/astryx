@@ -12,7 +12,7 @@ import {describe, it, expect, beforeAll} from 'vitest';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {execSync} from 'node:child_process';
+import {ensureCoreBuilt} from '../packages/cli/clients/cli/commands/ensure-core-built.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -49,8 +49,13 @@ describe('build-css astryx.css', () => {
   let astryxCss;
 
   beforeAll(async () => {
-    console.log('Running pnpm build...');
-    execSync('pnpm build', {cwd: ROOT, stdio: 'pipe', timeout: 120_000});
+    // Core — including its `build:css` step that emits astryx.css — is built
+    // ONCE by the node project's globalSetup (vitest.global-setup.node.mjs →
+    // ensureCoreBuilt). This call is an idempotent, race-safe no-op that just
+    // guarantees dist is present. Do NOT run a full `pnpm build` here: it
+    // launched a whole-monorepo build (all cores, ~2min) concurrently with the
+    // rest of the suite, starving other tests into nondeterministic timeouts.
+    ensureCoreBuilt();
     astryxCss = await fs.readFile(path.join(CORE_DIST, 'astryx.css'), 'utf8');
   }, 180_000);
 

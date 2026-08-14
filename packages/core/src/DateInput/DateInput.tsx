@@ -13,7 +13,7 @@
  * - /packages/core/src/DateInput/DateInput.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/DateInput/index.ts (exports if types change)
  * - /apps/storybook/stories/DateInput.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/DateInput/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/DateInput/ (showcase blocks)
  */
 
 import {
@@ -25,7 +25,6 @@ import {
   useTransition,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {IconName} from '../Icon';
 import {
   colorVars,
   sizeVars,
@@ -36,12 +35,13 @@ import {
 } from '../theme/tokens.stylex';
 import {
   Field,
+  InputClearButton,
   type InputStatus,
-  type InputStatusType,
   inputWrapperStyles,
   inputStatusBorderStyles,
   inputStatusHoverShadowStyles,
   inputStatusFocusWithinStyles,
+  type FieldStatusVariant,
 } from '../Field';
 import {Icon} from '../Icon';
 import {VisuallyHidden} from '../VisuallyHidden';
@@ -49,17 +49,24 @@ import {useInputGroup} from '../InputGroup/InputGroupContext';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {useSize} from '../SizeContext/SizeContext';
 import {Spinner} from '../Spinner';
-import {Calendar, type ISODateString, type CalendarHandle} from '../Calendar';
+import {
+  Calendar,
+  type ISODateString,
+  type CalendarHandle,
+  type DayOfWeek,
+  type DayOfWeekName,
+} from '../Calendar';
 import {useCalendarConstraints} from '../Calendar/hooks';
+import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
 import {usePopover} from '../Popover';
 import {useTooltip} from '../Tooltip';
 import {getInputARIA, parseDateInput} from '../utils';
 import {
   plainDateFromISO,
   plainDateToISO,
-  plainDateFormat,
-  DATE_FORMAT_LONG,
+  formatSharedDate,
 } from '../utils/plainDate';
+import type {TimestampFormat} from '../Timestamp';
 
 const styles = stylex.create({
   iconButton: {
@@ -73,11 +80,6 @@ const styles = stylex.create({
     backgroundColor: 'transparent',
     cursor: 'pointer',
     borderRadius: radiusVars['--radius-element'],
-    outline: {
-      default: 'none',
-      ':focus-visible': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: 1,
   },
   iconButtonDisabled: {
     cursor: 'not-allowed',
@@ -127,16 +129,38 @@ const sizeStyles = stylex.create({
 
 export type DateInputSize = keyof typeof sizeStyles;
 
+/**
+ * Named display formats for a committed date value. These are the date-only
+ * members of Timestamp's `format` vocabulary — reused verbatim (via
+ * `Extract`) so the same literal renders the same date shape in both
+ * `Timestamp` and `DateInput`:
+ * - `'date'`: locale short-month date, e.g. "Mar 21, 2026"
+ * - `'date_long'`: locale long-month date, e.g. "March 21, 2026" (the default)
+ * - `'date_weekday'`: short weekday + date, e.g. "Wed, Mar 21, 2026"
+ * - `'system_date'`: ISO 8601 calendar date, e.g. "2026-03-21"
+ *
+ * Because `DateInputFormat` is `Extract`ed from `TimestampFormat`, the two
+ * types stay in compile-time lockstep: renaming or removing one of these
+ * members from `TimestampFormat` breaks this type at build time.
+ */
+export type DateInputFormat = Extract<
+  TimestampFormat,
+  'date' | 'date_long' | 'date_weekday' | 'system_date'
+>;
+
 // Re-export shared types for convenience
 
 export type {
   InputStatus as DateInputStatus,
   InputStatusType as DateInputStatusType,
 } from '../Field';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs, isFocusDetached} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
+import {stableClassName} from '../naming';
+import {useTranslator} from '../i18n';
 
 export interface DateInputProps extends Omit<
   BaseProps,
@@ -258,6 +282,14 @@ export interface DateInputProps extends Omit<
    * If message is provided, displays below the input.
    */
   status?: InputStatus;
+  /**
+   * How the status message is placed relative to the input.
+   * - 'attached': message overlaps directly below the input (bordered treatment)
+   * - 'detached': message floats below as a separate element with spacing
+   * - 'tooltip': no message box; the status icon becomes a focusable info-tip button that reveals the message on hover, keyboard focus, or tap
+   * @default 'attached'
+   */
+  statusVariant?: FieldStatusVariant;
 
   /**
    * Width of the field. Numbers are treated as pixels, strings are used as-is
@@ -282,6 +314,45 @@ export interface DateInputProps extends Omit<
    * @default 1
    */
   numberOfMonths?: 1 | 2;
+
+  /**
+   * First day of week in the calendar popover. Accepts a number
+   * (0 = Sunday … 6 = Saturday) or a three-letter day name ('sun'–'sat',
+   * case-insensitive).
+   * @default 0
+   */
+  weekStartsOn?: DayOfWeek | DayOfWeekName;
+
+  /**
+   * How the committed date value is displayed in the text field. Accepts a
+   * named format reused from `Timestamp`'s `format` vocabulary (so the same
+   * literal renders the same date shape in both components) or a function that
+   * maps the ISO value to a custom display string.
+   *
+   * - `'date_long'` (default): long-month date, e.g. "March 21, 2026"
+   * - `'date'`: short-month date, e.g. "Mar 21, 2026"
+   * - `'date_weekday'`: short weekday + date, e.g. "Wed, Mar 21, 2026"
+   * - `'system_date'`: ISO 8601 calendar date, e.g. "2026-03-21"
+   * - `(value: ISODateString) => string`: fully custom display string
+   *
+   * Formatting applies only to the committed value — never to text the user is
+   * actively typing. A custom function's output that `parseDateInput` cannot
+   * read back can't be re-committed after an edit; external `value` changes
+   * always recompute the display from the ISO value.
+   *
+   * @default 'date_long'
+   * @example
+   * ```
+   * <DateInput label="Ship date" value={date} onChange={setDate} format="date" />
+   * <DateInput
+   *   label="Ship date"
+   *   value={date}
+   *   onChange={setDate}
+   *   format={iso => new Date(iso + 'T00:00').toDateString()}
+   * />
+   * ```
+   */
+  format?: DateInputFormat | ((value: ISODateString) => string);
 }
 
 /**
@@ -311,12 +382,15 @@ export function DateInput({
   min,
   max,
   dateConstraints,
-  placeholder = 'Select a date',
+  placeholder: placeholderFromProps,
   size: sizeProp,
   status,
+  statusVariant = 'attached',
   labelTooltip,
   hasClear = false,
   numberOfMonths = 1,
+  weekStartsOn,
+  format = 'date_long',
   width,
   xstyle,
   className,
@@ -324,6 +398,9 @@ export function DateInput({
   ref,
   ...rest
 }: DateInputProps) {
+  const t = useTranslator();
+  const placeholder =
+    placeholderFromProps ?? t('@astryx.dateInput.placeholder');
   const size = useSize(sizeProp, 'md');
   const id = useId();
   const inputLabelID = useId();
@@ -355,30 +432,24 @@ export function DateInput({
     isEnabled: showsDisabledMessage,
   });
 
-  // Status icon mapping
-  const statusIconMap: Record<InputStatusType, IconName> = {
-    warning: 'warning',
-    error: 'error',
-    success: 'success',
-  };
-
-  const statusIconColorMap: Record<
-    InputStatusType,
-    'warning' | 'error' | 'success'
-  > = {
-    warning: 'warning',
-    error: 'error',
-    success: 'success',
-  };
-
   // Constraint checking for text input validation (reuses calendar logic)
   const {isDateDisabled} = useCalendarConstraints({min, max, dateConstraints});
+
+  const {statusIcon, describedBy: statusTooltipDescribedBy} =
+    useInputStatusIcon({
+      status,
+      statusVariant,
+      isInGroup: !!inputGroup,
+    });
 
   const {ariaLabelledBy, ariaDescribedBy} = getInputARIA(
     inputLabelID,
     [
       description ? descriptionID : null,
-      status?.message ? statusMessageID : null,
+      statusVariant !== 'tooltip' && status?.message ? statusMessageID : null,
+      // The tooltip variant renders no message box; describe the input by the
+      // tooltip's content instead so the status is still announced.
+      statusTooltipDescribedBy,
       showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
     ],
     inputGroup,
@@ -400,12 +471,26 @@ export function DateInput({
     }
   }
 
+  // Format a committed ISO value for display. The default `date_long` renders
+  // the long-month shape (byte-identical to the historical hardcoded
+  // DATE_FORMAT_LONG rendering, so still non-breaking); a function is called
+  // with the ISO value; every other named member reuses Timestamp's shared
+  // date mapping. Applies ONLY to the committed value, never to in-progress
+  // typed input.
+  const formatCommittedValue = useCallback(
+    (iso: ISODateString): string =>
+      typeof format === 'function'
+        ? format(iso)
+        : formatSharedDate(plainDateFromISO(iso), format),
+    [format],
+  );
+
   // Display value: pending input if typing, otherwise formatted value
   const displayValue =
     pendingInput !== null
       ? pendingInput
       : optimisticValue && /^\d{4}-\d{2}-\d{2}$/.test(optimisticValue)
-        ? plainDateFormat(plainDateFromISO(optimisticValue), DATE_FORMAT_LONG)
+        ? formatCommittedValue(optimisticValue)
         : '';
 
   // Check if current input is valid (for styling purposes)
@@ -415,9 +500,20 @@ export function DateInput({
       : parseDateInput(pendingInput) !== null;
 
   const popover = usePopover({
-    dialogLabel: 'Choose date',
-    closeButtonLabel: 'Close calendar',
-    onHide: () => inputRef.current?.focus(),
+    dialogLabel: t('@astryx.dateInput.dialogLabel'),
+    closeButtonLabel: t('@astryx.dateInput.closeCalendar'),
+    // Return focus to the input when the calendar closes — but only when the
+    // dismiss left focus detached (Escape, or a click on non-focusable empty
+    // space), which the focus trap can't restore on its own. A native
+    // popover="auto" light-dismiss fires synchronously with the pointer event
+    // that moved focus, so if the user clicked another control — the clear
+    // button, another field, anywhere — focus has already landed there;
+    // reclaiming it would fight their click.
+    onHide: () => {
+      if (isFocusDetached()) {
+        inputRef.current?.focus();
+      }
+    },
   });
 
   // Handle toggling the popover from button click (focus calendar)
@@ -563,13 +659,19 @@ export function DateInput({
       }}
       {...rest}
       {...mergeProps(
-        themeProps('date-input', {size, status: status?.type ?? null}),
+        themeProps('date-input', {
+          size,
+          status: status?.type ?? null,
+          disabled: isDisabled ? 'disabled' : null,
+        }),
         stylex.props(
           inputWrapperStyles.base,
           sizeStyles[size],
           isEffectivelyDisabled && inputWrapperStyles.disabled,
           status && inputStatusBorderStyles[status.type],
-          status && inputStatusHoverShadowStyles[status.type],
+          status &&
+            !isEffectivelyDisabled &&
+            inputStatusHoverShadowStyles[status.type],
           status && inputStatusFocusWithinStyles[status.type],
           inputGroup && groupStyles.inGroup,
           xstyle,
@@ -582,12 +684,30 @@ export function DateInput({
         type="button"
         onClick={handleToggle}
         disabled={isEffectivelyDisabled}
-        aria-label={popover.isOpen ? 'Close calendar' : 'Open calendar'}
+        aria-label={
+          popover.isOpen
+            ? t('@astryx.dateInput.toggleCalendarClose')
+            : t('@astryx.dateInput.openCalendar')
+        }
         {...stylex.props(
+          focusOutlineStyles.focusVisible,
           styles.iconButton,
           isEffectivelyDisabled && styles.iconButtonDisabled,
         )}>
-        <Icon icon="calendar" size="sm" color="secondary" />
+        <Icon
+          icon="calendar"
+          size="sm"
+          color="secondary"
+          // Stable theme target on the toggle glyph itself, so a theme can
+          // restyle just this icon (color, size, hover) — and each open/closed
+          // state — via `defineTheme`. Same-element rules in @layer astryx-theme
+          // win over the icon's own base color/size, which a button-level target
+          // could not reach. Reflects the popover's open/closed state as a
+          // `data-state` attribute.
+          {...themeProps('date-input-toggle-icon', {
+            state: popover.isOpen ? 'expanded' : 'collapsed',
+          })}
+        />
       </button>
       <input
         ref={mergeRefs(ref, inputRef)}
@@ -631,25 +751,17 @@ export function DateInput({
           user would get no feedback that their entry was rejected (WCAG 3.3.1).
         */}
       <VisuallyHidden as="div" role="alert" aria-live="assertive">
-        {!isInputValid ? 'Invalid date' : ''}
+        {!isInputValid ? t('@astryx.dateInput.invalidDate') : ''}
       </VisuallyHidden>
       {hasClear && value !== undefined && !isEffectivelyDisabled && (
-        <button
-          type="button"
+        <InputClearButton
+          label={t('@astryx.dateInput.clear', {label})}
           onClick={handleClear}
-          aria-label={`Clear ${label}`}
-          {...stylex.props(styles.iconButton)}>
-          <Icon icon="close" size="sm" color="secondary" />
-        </button>
-      )}
-      {isBusy && <Spinner size="sm" />}
-      {status && !inputGroup && (
-        <Icon
-          icon={statusIconMap[status.type]}
-          size="md"
-          color={statusIconColorMap[status.type]}
+          iconClassName={stableClassName('date-input-clear-icon')}
         />
       )}
+      {isBusy && <Spinner size="sm" />}
+      {statusIcon}
       {popover.render(
         <Calendar
           handleRef={calendarRef}
@@ -660,6 +772,7 @@ export function DateInput({
           max={max}
           dateConstraints={dateConstraints}
           numberOfMonths={numberOfMonths}
+          weekStartsOn={weekStartsOn}
         />,
         {placement: 'below', alignment: 'start'},
       )}
@@ -691,6 +804,7 @@ export function DateInput({
             }
           : undefined
       }
+      statusVariant={statusVariant}
       labelTooltip={labelTooltip}
       width={width}>
       {inputWrapper}

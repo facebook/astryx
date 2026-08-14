@@ -9,6 +9,10 @@
  *   1. Runs the layout engine (scales + stacking + grouping)
  *   2. Calls each series' resolve() and render() methods
  *   3. Provides a single event layer for interaction children
+ *
+ * Accessibility: the svg is exposed as a named image (role="img"; `title` or a
+ * derived default as aria-label), and small datasets are mirrored in a
+ * visually hidden data table for screen reader users.
  */
 
 'use client';
@@ -28,6 +32,7 @@ import {computeLayout} from './layout';
 import {ChartProvider} from './ChartContext';
 import {Text} from '@astryxdesign/core';
 import {VStack, HStack} from '@astryxdesign/core';
+import {VisuallyHidden} from '@astryxdesign/core';
 import * as stylex from '@stylexjs/stylex';
 import {ChartLegend, type ChartLegendProps} from './ChartLegend';
 import {deriveLegendItems} from './legend';
@@ -61,6 +66,18 @@ export interface ChartProps {
 }
 
 const DEFAULT_MARGIN: ChartMargin = {top: 24, right: 24, bottom: 32, left: 48};
+
+/**
+ * Maximum number of data points (rows × data keys) for which the visually
+ * hidden data-table fallback is rendered. Beyond this a table is more noise
+ * than signal for screen reader users, so larger charts are name-only.
+ */
+const MAX_TABLE_POINTS = 100;
+
+/** Stringify a cell value for the hidden data table. */
+function tableCell(value: unknown): string {
+  return value == null ? '' : String(value);
+}
 
 const styles = stylex.create({
   container: {
@@ -123,8 +140,19 @@ export function Chart({
     () => ({...DEFAULT_MARGIN, ...marginOverride}),
     [marginOverride],
   );
-  const innerWidth = Math.max(0, containerWidth - margin.left - margin.right);
-  const innerHeight = Math.max(0, height - margin.top - margin.bottom);
+  // Clamp plot dimensions to finite, non-negative values. layout.ts hardens
+  // against NaN in the *data*, but a non-finite `height` prop or margin override
+  // would still collapse every scale range — and the clipPath/event-rect
+  // geometry — into NaN. `containerWidth` is always finite (from ResizeObserver).
+  const safeHeight = Number.isFinite(height) ? Math.max(0, height) : 0;
+  const rawInnerWidth = containerWidth - margin.left - margin.right;
+  const rawInnerHeight = safeHeight - margin.top - margin.bottom;
+  const innerWidth = Number.isFinite(rawInnerWidth)
+    ? Math.max(0, rawInnerWidth)
+    : 0;
+  const innerHeight = Number.isFinite(rawInnerHeight)
+    ? Math.max(0, rawInnerHeight)
+    : 0;
 
   // ─── Color assignment ─────────────────────────────────────────────────
   // Give every primary series that doesn't supply a static color (auto-colored
@@ -164,6 +192,7 @@ export function Chart({
       xKey,
       xScale: layout.xScale,
       yScale: layout.yScale,
+      yBandScale: layout.yBandScale,
       width: innerWidth,
       height: innerHeight,
     }),
@@ -230,12 +259,30 @@ export function Chart({
       xKey,
       xScale: layout.xScale,
       yScale: layout.yScale,
+      yBandScale: layout.yBandScale,
       resolved: layout.resolved,
       onPointer,
       svgRef,
     }),
     [innerWidth, innerHeight, margin, data, xKey, layout, onPointer],
   );
+
+  // ─── Accessibility ─────────────────────────────────────────────────────
+  // The svg is exposed as a named image. `title` (when given) is the name;
+  // otherwise an English default is derived from the primary series + x key.
+  const primarySeries = series.filter(s => !isUtilityMarkType(s.type));
+  const accessibleLabel =
+    title ??
+    (primarySeries.length > 0
+      ? `Chart of ${primarySeries
+          .map(s => s.label ?? s.key)
+          .join(', ')} by ${xKey}`
+      : 'Chart');
+  const tableKeys = Array.from(new Set(primarySeries.flatMap(s => s.dataKeys)));
+  const showDataTable =
+    data.length > 0 &&
+    tableKeys.length > 0 &&
+    data.length * tableKeys.length <= MAX_TABLE_POINTS;
 
   // ─── Legend ────────────────────────────────────────────────────────────
   const legendConfig = legend === true ? {} : legend || null;
@@ -258,7 +305,7 @@ export function Chart({
       <div
         ref={containerRef}
         {...stylex.props(styles.container)}
-        style={{height}}
+        style={{height: safeHeight}}
       />
     );
   }
@@ -296,6 +343,7 @@ export function Chart({
           </VStack>
         )}
       </ChartProvider>
+      {renderDataTable()}
     </div>
   );
 
@@ -303,9 +351,10 @@ export function Chart({
     return (
       <svg
         ref={svgRef}
+        role="img"
         width="100%"
-        height={height}
-        aria-label={title ?? undefined}
+        height={safeHeight}
+        aria-label={accessibleLabel}
         aria-describedby={subtitle ? descId : undefined}>
         {title && <title>{title}</title>}
         {subtitle && <desc id={descId}>{subtitle}</desc>}
@@ -358,6 +407,39 @@ export function Chart({
           {children}
         </g>
       </svg>
+    );
+  }
+
+  function renderDataTable() {
+    if (!showDataTable) {
+      return null;
+    }
+    return (
+      <VisuallyHidden as="div">
+        <table>
+          <caption>{`${accessibleLabel} data`}</caption>
+          <thead>
+            <tr>
+              <th scope="col">{xKey}</th>
+              {tableKeys.map(key => (
+                <th key={key} scope="col">
+                  {key}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((d, i) => (
+              <tr key={i}>
+                <th scope="row">{tableCell(d[xKey])}</th>
+                {tableKeys.map(key => (
+                  <td key={key}>{tableCell(d[key])}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </VisuallyHidden>
     );
   }
 }

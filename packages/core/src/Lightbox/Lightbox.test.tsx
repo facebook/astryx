@@ -421,6 +421,184 @@ describe('Lightbox', () => {
     });
   });
 
+  describe('keyboard zoom and pan', () => {
+    const media = [
+      {src: '/a.jpg', alt: 'Image A'},
+      {src: '/b.jpg', alt: 'Image B'},
+      {src: '/c.jpg', alt: 'Image C'},
+    ];
+
+    function zoomTarget(): HTMLElement {
+      return screen.getByRole('button', {name: 'Zoom'});
+    }
+
+    it('exposes the image as a focusable zoom toggle when hasZoom is on', () => {
+      render(
+        <Lightbox
+          isOpen={true}
+          onOpenChange={() => {}}
+          media={{src: '/photo.jpg', alt: 'Photo'}}
+          hasZoom
+        />,
+      );
+      const target = zoomTarget();
+      expect(target).toHaveAttribute('tabindex', '0');
+      expect(target).toHaveAttribute('aria-pressed', 'false');
+    });
+
+    it('toggles zoom with Enter on the image', () => {
+      render(
+        <Lightbox
+          isOpen={true}
+          onOpenChange={() => {}}
+          media={{src: '/photo.jpg', alt: 'Photo'}}
+          hasZoom
+        />,
+      );
+      const target = zoomTarget();
+      fireEvent.keyDown(target, {key: 'Enter'});
+      expect(target).toHaveAttribute('aria-pressed', 'true');
+      fireEvent.keyDown(target, {key: 'Enter'});
+      expect(target).toHaveAttribute('aria-pressed', 'false');
+    });
+
+    it('toggles zoom with Space on the image', () => {
+      render(
+        <Lightbox
+          isOpen={true}
+          onOpenChange={() => {}}
+          media={{src: '/photo.jpg', alt: 'Photo'}}
+          hasZoom
+        />,
+      );
+      const target = zoomTarget();
+      fireEvent.keyDown(target, {key: ' '});
+      expect(target).toHaveAttribute('aria-pressed', 'true');
+      fireEvent.keyDown(target, {key: ' '});
+      expect(target).toHaveAttribute('aria-pressed', 'false');
+    });
+
+    it('zooms in with + and out with - from anywhere in the dialog', () => {
+      render(
+        <Lightbox
+          isOpen={true}
+          onOpenChange={() => {}}
+          media={{src: '/photo.jpg', alt: 'Photo'}}
+          hasZoom
+        />,
+      );
+      const dialog = document.querySelector('dialog')!;
+      fireEvent.keyDown(dialog, {key: '+'});
+      expect(zoomTarget()).toHaveAttribute('aria-pressed', 'true');
+      fireEvent.keyDown(dialog, {key: '-'});
+      expect(zoomTarget()).toHaveAttribute('aria-pressed', 'false');
+      // `=` (unshifted `+` on most layouts) also zooms in.
+      fireEvent.keyDown(dialog, {key: '='});
+      expect(zoomTarget()).toHaveAttribute('aria-pressed', 'true');
+    });
+
+    it('pans with arrow keys while zoomed instead of navigating the gallery', () => {
+      const onIndexChange = vi.fn();
+      render(
+        <Lightbox
+          isOpen={true}
+          onOpenChange={() => {}}
+          media={media}
+          index={1}
+          onIndexChange={onIndexChange}
+          hasZoom
+        />,
+      );
+      const dialog = document.querySelector('dialog')!;
+      fireEvent.keyDown(zoomTarget(), {key: 'Enter'});
+      const img = screen.getByAltText('Image B');
+      expect(img.getAttribute('style') ?? '').toContain('translate(0px, 0px)');
+      // ArrowRight reveals content to the right (image shifts left) and must
+      // not fall through to gallery navigation.
+      fireEvent.keyDown(dialog, {key: 'ArrowRight'});
+      expect(onIndexChange).not.toHaveBeenCalled();
+      expect(img.getAttribute('style') ?? '').toContain(
+        'translate(-25px, 0px)',
+      );
+      fireEvent.keyDown(dialog, {key: 'ArrowDown'});
+      expect(img.getAttribute('style') ?? '').toContain(
+        'translate(-25px, -25px)',
+      );
+      fireEvent.keyDown(dialog, {key: 'ArrowLeft'});
+      fireEvent.keyDown(dialog, {key: 'ArrowUp'});
+      expect(img.getAttribute('style') ?? '').toContain('translate(0px, 0px)');
+      expect(onIndexChange).not.toHaveBeenCalled();
+    });
+
+    it('navigates the gallery with arrows when not zoomed, even with hasZoom', () => {
+      const onIndexChange = vi.fn();
+      render(
+        <Lightbox
+          isOpen={true}
+          onOpenChange={() => {}}
+          media={media}
+          index={1}
+          onIndexChange={onIndexChange}
+          hasZoom
+        />,
+      );
+      const dialog = document.querySelector('dialog')!;
+      fireEvent.keyDown(dialog, {key: 'ArrowRight'});
+      expect(onIndexChange).toHaveBeenCalledWith(2);
+    });
+
+    it('announces zoom state changes politely', async () => {
+      render(
+        <Lightbox
+          isOpen={true}
+          onOpenChange={() => {}}
+          media={{src: '/photo.jpg', alt: 'Photo'}}
+          hasZoom
+        />,
+      );
+      fireEvent.keyDown(zoomTarget(), {key: 'Enter'});
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('Zoomed in');
+      });
+      fireEvent.keyDown(zoomTarget(), {key: 'Enter'});
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('Zoomed out');
+      });
+    });
+
+    it('has no zoom target or key bindings when hasZoom is off', () => {
+      const onIndexChange = vi.fn();
+      render(
+        <Lightbox
+          isOpen={true}
+          onOpenChange={() => {}}
+          media={media}
+          index={1}
+          onIndexChange={onIndexChange}
+        />,
+      );
+      expect(screen.queryByRole('button', {name: 'Zoom'})).toBeNull();
+      const dialog = document.querySelector('dialog')!;
+      fireEvent.keyDown(dialog, {key: '+'});
+      expect(document.querySelector('[aria-pressed]')).toBeNull();
+      // Arrows still navigate the gallery.
+      fireEvent.keyDown(dialog, {key: 'ArrowRight'});
+      expect(onIndexChange).toHaveBeenCalledWith(2);
+    });
+
+    it('does not expose a zoom target for video items', () => {
+      render(
+        <Lightbox
+          isOpen={true}
+          onOpenChange={() => {}}
+          media={{src: '/clip.mp4', alt: 'A clip', type: 'video'}}
+          hasZoom
+        />,
+      );
+      expect(screen.queryByRole('button', {name: 'Zoom'})).toBeNull();
+    });
+  });
+
   describe('video support', () => {
     it('renders a video element when type is video', () => {
       const {container} = render(
@@ -442,5 +620,38 @@ describe('Lightbox', () => {
       <Lightbox isOpen={true} onOpenChange={() => {}} media={[]} />,
     );
     expect(container.querySelector('dialog')).not.toBeInTheDocument();
+  });
+
+  describe('backdrop dismiss', () => {
+    it('calls onOpenChange(false) when the dark area around the media is clicked', () => {
+      const onOpenChange = vi.fn();
+      render(
+        <Lightbox
+          isOpen={true}
+          onOpenChange={onOpenChange}
+          media={{src: '/photo.jpg', alt: 'Photo'}}
+        />,
+      );
+      // The container fills the whole dialog, so a click on the visual
+      // backdrop (the dark area around the media) lands on it — not on the
+      // dialog element itself.
+      const dialog = document.querySelector('dialog')!;
+      const container = dialog.firstElementChild!;
+      fireEvent.click(container);
+      expect(onOpenChange).toHaveBeenCalledWith(false);
+    });
+
+    it('does not close when the media itself is clicked', () => {
+      const onOpenChange = vi.fn();
+      render(
+        <Lightbox
+          isOpen={true}
+          onOpenChange={onOpenChange}
+          media={{src: '/photo.jpg', alt: 'Photo'}}
+        />,
+      );
+      fireEvent.click(screen.getByRole('img', {hidden: true}));
+      expect(onOpenChange).not.toHaveBeenCalled();
+    });
   });
 });

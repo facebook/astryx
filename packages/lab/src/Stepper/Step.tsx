@@ -13,7 +13,7 @@
  * - /packages/lab/src/Stepper/Stepper.test.tsx
  * - /packages/lab/src/Stepper/index.ts
  * - /apps/storybook/stories/Stepper.stories.tsx
- * - /packages/cli/templates/blocks/components/Stepper/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Stepper/ (showcase blocks)
  */
 
 import {type ReactNode} from 'react';
@@ -28,10 +28,14 @@ import {
   durationVars,
   easeVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
-import {mergeProps} from '@astryxdesign/core/utils';
+import {focusOutlineStyles, mergeProps} from '@astryxdesign/core/utils';
 import type {BaseProps} from '@astryxdesign/core';
+import {Icon} from '@astryxdesign/core/Icon';
+import {VisuallyHidden} from '@astryxdesign/core/VisuallyHidden';
+import {useTranslator} from '@astryxdesign/core/i18n';
 import {useStepperContext} from './StepperContext';
 import {themeProps} from '@astryxdesign/core/utils';
+import {stepMarker} from './stepper.stylex';
 import type {StepStatus} from './StepStatus';
 
 /**
@@ -73,9 +77,18 @@ export interface StepProps extends BaseProps<HTMLLIElement> {
    */
   icon?: ReactNode;
   /**
-   * Semantic color for the step. Controls **color only** and maps to the
-   * global Astryx semantic tokens (`accent`, `success`, `warning`, `error`).
-   * Leave unset to use the progress-derived default coloring.
+   * Semantic status for the step, mapped to the global Astryx semantic tokens
+   * (`accent`, `success`, `warning`, `error`). In the default `auto` indicator
+   * mode it sets both the indicator color and a matching glyph: `success` shows
+   * a green check-circle, `warning`/`error` show the shared Input status icons.
+   * `accent` is color-only. The current (in-progress) step always keeps its
+   * current-step indicator regardless of `status`. Never recolors the
+   * connector/track.
+   *
+   * Because the indicator glyphs are decorative (aria-hidden), the status also
+   * reaches assistive technology as text: visually hidden "completed" /
+   * "warning" / "error" next to the label, and composed into the accessible
+   * name of clickable steps.
    */
   status?: StepStatus;
   /**
@@ -115,16 +128,38 @@ export interface StepProps extends BaseProps<HTMLLIElement> {
 }
 
 // --- Default progress icons (16px) ---
+//
+// The `completed` progress state and the current-step ring are drawn as local
+// <svg> glyphs rather than sourced from the Icon registry. This is a deliberate
+// exception to the "glyphs come from the registry" convention (audit rule T17),
+// for two reasons:
+//
+//  1. `CurrentIcon` (a dot inside a ring) has no registry equivalent — it is a
+//     progress affordance, not a general-purpose icon.
+//  2. `CheckCircleIcon` (a filled circle with a check) is intentionally NOT the
+//     registry `success` glyph, even though the two look similar. They mean
+//     different things and must stay independently restyleable: `completed`
+//     marks *progress through the sequence* (every step you've passed), while
+//     the semantic `success` status marks a step's *outcome*. A stepper can
+//     show a completed step that also carries a `warning`/`error` status, so
+//     collapsing the two glyphs would conflate progress with outcome. The
+//     semantic `success`/`warning`/`error` STATUS glyphs DO defer to the themed
+//     registry (see the status branch below), so those share one visual
+//     language; only the progress marks are local.
+//
+// Both glyphs paint via `currentColor`, so the indicator's color is still
+// controlled by tokens on the wrapper (never hardcoded), and the wrapper
+// carries the `astryx-step-indicator` theme target.
 
-/** Filled check — shown for completed steps in 'auto' mode. */
+/** Filled circle with a check — shown for a completed step in 'auto' mode. */
 function CheckCircleIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
       <circle cx="8" cy="8" r="8" fill="currentColor" />
       <path
-        d="M5 8.5l2 2 4-4"
-        stroke="white"
-        strokeWidth="1.5"
+        d="M4.75 8.25 7 10.5l4.25-4.5"
+        stroke={colorVars['--color-background-surface']}
+        strokeWidth="1.75"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -144,7 +179,7 @@ function CurrentIcon() {
 
 // --- Styles ---
 
-const BAR_WIDTH = '4px';
+const BAR_WIDTH = spacingVars['--spacing-1'];
 const ICON_SIZE = spacingVars['--spacing-4'];
 const NUMBER_SIZE = spacingVars['--spacing-5'];
 
@@ -170,19 +205,6 @@ const styles = stylex.create({
   },
   barIncomplete: {
     backgroundColor: colorVars['--color-border'],
-  },
-  // Semantic status overrides for the bar — color only.
-  barAccent: {
-    backgroundColor: colorVars['--color-accent'],
-  },
-  barSuccess: {
-    backgroundColor: colorVars['--color-success'],
-  },
-  barWarning: {
-    backgroundColor: colorVars['--color-warning'],
-  },
-  barError: {
-    backgroundColor: colorVars['--color-error'],
   },
 
   // Step body — the selectable area
@@ -265,9 +287,9 @@ const styles = stylex.create({
     width: NUMBER_SIZE,
     height: NUMBER_SIZE,
     borderRadius: radiusVars['--radius-full'],
-    // 10px is below the smallest type token (--text-supporting-size, 12px);
-    // intentional micro-type for the compact 20px numeric badge.
-    fontSize: '10px',
+    // Smallest semantic type token — keeps the compact numeric badge legible
+    // (>=12px) and themeable rather than a raw literal.
+    fontSize: typeScaleVars['--text-supporting-size'],
     paddingBlockEnd: '1px',
     fontWeight: fontWeightVars['--font-weight-semibold'],
     lineHeight: 1,
@@ -325,6 +347,17 @@ const styles = stylex.create({
   labelDisabled: {
     color: colorVars['--color-text-disabled'],
   },
+  // Collapse a non-current step's label when the stepper container is narrow
+  // (opt-in via Stepper hasCollapsibleLabels). Hidden from layout AND from
+  // the accessibility tree's visible text — the step stays reachable via
+  // aria-current and each control's accessible name, which are unaffected.
+  // The current step never gets this style, so its label always shows.
+  labelCollapsible: {
+    display: {
+      default: 'block',
+      '@container astryx-stepper (max-width: 480px)': 'none',
+    },
+  },
 
   // Optional tag
   optionalDot: {
@@ -350,7 +383,10 @@ const styles = stylex.create({
   },
   description: {
     fontSize: typeScaleVars['--text-supporting-size'],
-    lineHeight: typeScaleVars['--text-supporting-leading'],
+    // The supporting-leading token (1.667 → 20px at 12px) reads too loose for
+    // a caption sitting under its label; a fixed 16px line box (1.33) is
+    // tighter without collapsing the text the way capsize trim did.
+    lineHeight: '16px',
     color: colorVars['--color-text-secondary'],
   },
 
@@ -390,7 +426,10 @@ const styles = stylex.create({
     cursor: 'pointer',
     borderRadius: radiusVars['--radius-element'],
     transitionProperty: 'background-color',
-    transitionDuration: durationVars['--duration-fast-min'],
+    transitionDuration: {
+      default: durationVars['--duration-fast-min'],
+      '@media (prefers-reduced-motion: reduce)': '0s',
+    },
     transitionTimingFunction: easeVars['--ease-standard'],
     backgroundColor: {
       default: 'transparent',
@@ -401,16 +440,196 @@ const styles = stylex.create({
     },
   },
 
-  focusRing: {
-    outline: {
-      default: 'none',
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
+  // ===================== ON-TRACK LAYOUT =====================
+  // Indicator is slotted into the connector line as a node on the track.
+  // Each step draws the connector segments that flank its own indicator; the
+  // segment *before* the indicator is hidden on the first step (step === 0) so
+  // the track starts at the first node. Segments abut the indicator directly,
+  // so no child introspection or total-count is needed.
+
+  otVerticalRoot: {
+    display: 'flex',
+    flexDirection: 'column',
+    position: 'relative',
+  },
+  otHorizontalRoot: {
+    display: 'flex',
+    flexDirection: 'column',
+    flex: 1,
+    minWidth: 0,
+  },
+
+  // Interactive wrapper (indicator + label act as one click target).
+  otInteractive: {
+    all: 'unset',
+    boxSizing: 'border-box',
+    // `all: unset` leaves the <button> UA default of centered text; force
+    // start so vertical labels/descriptions read left-aligned. Horizontal
+    // labels re-center via otLabelWrapH (a deeper element).
+    textAlign: 'start',
+    cursor: 'pointer',
+    borderRadius: radiusVars['--radius-element'],
+    transitionProperty: 'background-color',
+    transitionDuration: {
+      default: durationVars['--duration-fast-min'],
+      '@media (prefers-reduced-motion: reduce)': '0s',
     },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': '2px',
+    transitionTimingFunction: easeVars['--ease-standard'],
+    backgroundColor: {
+      default: 'transparent',
+      ':hover': {
+        '@media (hover: hover)': colorVars['--color-overlay-hover'],
+      },
+      ':active': colorVars['--color-overlay-pressed'],
     },
   },
+
+  otRowWrap: {
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    gap: spacingVars['--spacing-2'],
+    width: '100%',
+  },
+  otColWrap: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    width: '100%',
+  },
+
+  // Vertical indicator column: [segment] [indicator] [segment] stacked.
+  otIndicatorColV: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    width: NUMBER_SIZE,
+    flexShrink: 0,
+    alignSelf: 'stretch',
+  },
+  // Shared segment base: square ends so stacked segments read as one
+  // continuous line (no radius).
+  otSegBaseV: {
+    width: BAR_WIDTH,
+    flexShrink: 0,
+    borderRadius: 0,
+  },
+  // Flexible segment (below the node) — grows to fill the step height and
+  // meets the next node's leading segment.
+  otSegFlexV: {
+    flex: 1,
+    minHeight: spacingVars['--spacing-2'],
+  },
+  // Fixed leading segment (above the node) — its height offsets the node down
+  // so it aligns with the label's first line instead of the step's center.
+  otSegLeadV: (value: string) => ({
+    height: value,
+  }),
+
+  // Horizontal track row: [segment] [indicator] [segment] in a line.
+  otTrackRowH: {
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+  },
+  otSegH: {
+    height: BAR_WIDTH,
+    flex: 1,
+    minWidth: spacingVars['--spacing-2'],
+    borderRadius: 0,
+  },
+
+  otSegHiddenIfFirst: {
+    // Structural first/last hiding keyed off the step's own <li> position via
+    // stepMarker, so it never depends on the parent counting children (which
+    // breaks when steps are grouped in a fragment). Scoped to stepMarker so only
+    // the parent <li> is checked, not the outer <ol> (also a :first/:last-child).
+    visibility: {
+      default: 'visible',
+      [stylex.when.ancestor(':first-child', stepMarker)]: 'hidden',
+    },
+  },
+  otSegHiddenIfLast: {
+    visibility: {
+      default: 'visible',
+      [stylex.when.ancestor(':last-child', stepMarker)]: 'hidden',
+    },
+  },
+
+  // Connector fill colors (progress-derived; status recolors when set).
+  lineFilled: {
+    backgroundColor: colorVars['--color-accent'],
+  },
+  lineUnfilled: {
+    backgroundColor: colorVars['--color-border'],
+  },
+
+  otBodyV: {
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'flex-start',
+    flex: 1,
+    gap: spacingVars['--spacing-0-5'],
+    minWidth: 0,
+  },
+  otLabelWrapH: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-0-5'],
+    textAlign: 'center',
+  },
+  otLabelRowStart: {
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-2'],
+  },
+  otLabelRowCenter: {
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+    gap: spacingVars['--spacing-1'],
+  },
+
+  otContentV: {
+    paddingInlineStart: spacingVars['--spacing-7'],
+    paddingBlockStart: spacingVars['--spacing-2'],
+  },
+  otContentH: {
+    paddingBlockStart: spacingVars['--spacing-2'],
+  },
+
+  // Density-driven spacing. The connector runs along the "track axis"
+  // (vertical = block, horizontal = inline), so density is only ever applied
+  // to the *cross* axis — padding the track axis would break the line into
+  // gapped segments.
+  //
+  // Vertical: pad the whole step row (indicator rail + label) so density adds
+  // breathing room *around the indicators*, not just the text. Applied to the
+  // hover target itself.
+  otRowPadV: (value: string) => ({
+    paddingBlock: value,
+    paddingInline: value,
+  }),
+  // The rail draws the connector, so it must span the row's full block extent
+  // to keep the line continuous. A negative block margin cancels the wrapper's
+  // block padding, letting the line bridge step-to-step while the label still
+  // sits inside the padding.
+  otRailBridgeV: (value: string) => ({
+    marginBlock: `calc(-1 * ${value})`,
+  }),
+  // Horizontal: block padding around the track+label column (inside the hover
+  // target) adds vertical breathing room while the inline track stays flush.
+  otPadBlock: (value: string) => ({
+    paddingBlock: value,
+  }),
+  otMarginTop: (value: string) => ({
+    marginBlockStart: value,
+  }),
 });
 
 /**
@@ -420,8 +639,10 @@ const styles = stylex.create({
  *
  * Progress (completed / active / not-started) is derived from the parent's
  * `activeStep` and this step's `step` prop. The optional `status` prop layers a
- * semantic color (`accent` / `success` / `warning` / `error`) on top — color
- * only; it does not change layout or iconography.
+ * semantic meaning on top: in the default `auto` indicator mode it recolors the
+ * indicator and swaps in a matching glyph (`success` → green check-circle,
+ * `warning`/`error` → the shared Input status icons). The current step always
+ * keeps its current-step ring. `status` never recolors the connector/track.
  *
  * @example
  * ```
@@ -430,8 +651,7 @@ const styles = stylex.create({
  *
  * @example
  * ```
- * // Generic icon + semantic color
- * <Step step={1} label="Payment" status="error" icon={<Icon icon="warning" />} />
+ * <Step step={1} label="Payment" status="error" />
  * ```
  */
 export function Step({
@@ -453,8 +673,16 @@ export function Step({
   'data-testid': dataTestId,
   ...rest
 }: StepProps) {
+  const t = useTranslator();
   const ctx = useStepperContext();
-  const {activeStep, orientation, onStepClick, density: ctxDensity} = ctx;
+  const {
+    activeStep,
+    orientation,
+    onStepClick,
+    density: ctxDensity,
+    indicatorPosition,
+    hasCollapsibleLabels,
+  } = ctx;
 
   const density = densityProp ?? ctxDensity;
 
@@ -476,6 +704,11 @@ export function Step({
 
   const isVertical = orientation === 'vertical';
   const isActive = progress === 'in-progress';
+  // Non-current step labels collapse only when the stepper opted in, the layout
+  // is horizontal (width-constrained), and this step is not the current one —
+  // the current step always keeps its label. The actual hide is a container
+  // query on the label element (styles.labelCollapsible).
+  const collapseLabel = hasCollapsibleLabels && !isVertical && !isActive;
   // Any non-disabled step is navigable when an onStepClick handler is provided,
   // including not-started steps (free navigation across the flow).
   const isClickable = !isDisabled && onStepClick != null;
@@ -486,18 +719,9 @@ export function Step({
     }
   };
 
-  // Bar fill is purely progress-based; `status` recolors it when set.
+  // Bar fill is purely progress-based. `status` never recolors the bar — it
+  // only recolors the indicator (icon / number badge) below.
   const isBarFilled = progress === 'completed' || progress === 'in-progress';
-  const statusBarStyle =
-    status === 'accent'
-      ? styles.barAccent
-      : status === 'success'
-        ? styles.barSuccess
-        : status === 'warning'
-          ? styles.barWarning
-          : status === 'error'
-            ? styles.barError
-            : undefined;
 
   // --- Build indicator node ---
   // 'auto': number for not-started, check/dot icon once reached
@@ -508,22 +732,46 @@ export function Step({
 
   const customIcon = isCustomIndicator ? indicatorProp : (icon ?? null);
 
+  // Semantic `status` drives a distinct indicator glyph (default 'auto' mode,
+  // no custom icon), all sourced from the themed Icon registry so a step reads
+  // the same as the rest of the system:
+  //  - success → the themed `success` glyph (same check-circle as a completed
+  //    step), tinted success — i.e. a green check
+  //  - warning → the themed `warning` glyph
+  //  - error   → the themed `error` glyph
+  // The current (in-progress) step always shows the current-step ring — its
+  // indicator "replaces" any status glyph. `accent` has no distinct glyph and
+  // falls through to the progress-derived default.
+  const statusGlyph: 'success' | 'warning' | 'error' | null =
+    indicator === 'auto' &&
+    customIcon == null &&
+    !isActive &&
+    (status === 'success' || status === 'warning' || status === 'error')
+      ? status
+      : null;
+
   if (indicator !== 'none') {
     const showNumber =
       customIcon == null &&
+      statusGlyph == null &&
       (indicator === 'number' ||
         (indicator === 'auto' && progress === 'not-started'));
 
     if (showNumber) {
+      // Status only fills the badge once the step is reached. A not-started
+      // step stays neutral — otherwise `accent` (which has no glyph to swap in)
+      // would paint an inverted accent badge on an upcoming step, making it
+      // read as active/completed.
+      const isReached = progress === 'completed' || progress === 'in-progress';
       const numberColorStyle = isDisabled
         ? styles.numberDisabled
-        : status === 'accent'
+        : isReached && status === 'accent'
           ? styles.numberAccent
-          : status === 'success'
+          : isReached && status === 'success'
             ? styles.numberSuccess
-            : status === 'warning'
+            : isReached && status === 'warning'
               ? styles.numberWarning
-              : status === 'error'
+              : isReached && status === 'error'
                 ? styles.numberError
                 : progress === 'completed'
                   ? styles.numberCompleted
@@ -534,30 +782,70 @@ export function Step({
       indicatorNode = (
         <div
           aria-hidden="true"
-          {...stylex.props(styles.numberBadge, numberColorStyle)}>
+          {...mergeProps(
+            themeProps('step-indicator', {
+              progress,
+              status: status ?? undefined,
+            }),
+            stylex.props(styles.numberBadge, numberColorStyle),
+          )}>
           {step + 1}
         </div>
       );
     } else {
-      // Custom icon takes priority, otherwise the progress-derived default.
-      const iconContent =
+      // Priority: explicit custom icon → status glyph (non-current steps) →
+      // progress-derived default (check when completed, ring when current).
+      const iconContent: ReactNode =
         customIcon != null ? (
           customIcon
+        ) : statusGlyph === 'success' ? (
+          <Icon
+            icon="success"
+            size="sm"
+            color={isDisabled ? 'disabled' : 'success'}
+          />
+        ) : statusGlyph === 'warning' ? (
+          <Icon
+            icon="warning"
+            size="sm"
+            color={isDisabled ? 'disabled' : 'warning'}
+          />
+        ) : statusGlyph === 'error' ? (
+          <Icon
+            icon="error"
+            size="sm"
+            color={isDisabled ? 'disabled' : 'error'}
+          />
         ) : progress === 'completed' ? (
           <CheckCircleIcon />
         ) : (
           <CurrentIcon />
         );
 
+      // Wrapper tint drives the currentColor glyphs (check-circle / ring /
+      // custom icon). The <Icon> status glyphs set their own color, but we tint
+      // the wrapper to match so the indicator's color reflects `status` too.
       const iconColorStyle = isDisabled
         ? styles.iconDisabled
-        : status === 'accent'
-          ? styles.iconAccent
-          : status === 'success'
+        : customIcon != null
+          ? status === 'accent'
+            ? styles.iconAccent
+            : status === 'success'
+              ? styles.iconSuccess
+              : status === 'warning'
+                ? styles.iconWarning
+                : status === 'error'
+                  ? styles.iconError
+                  : progress === 'completed'
+                    ? styles.iconCompleted
+                    : progress === 'in-progress'
+                      ? styles.iconInProgress
+                      : styles.iconNotStarted
+          : statusGlyph === 'success'
             ? styles.iconSuccess
-            : status === 'warning'
+            : statusGlyph === 'warning'
               ? styles.iconWarning
-              : status === 'error'
+              : statusGlyph === 'error'
                 ? styles.iconError
                 : progress === 'completed'
                   ? styles.iconCompleted
@@ -566,17 +854,56 @@ export function Step({
                     : styles.iconNotStarted;
 
       indicatorNode = (
-        <div aria-hidden="true" {...stylex.props(styles.icon, iconColorStyle)}>
+        <div
+          aria-hidden="true"
+          {...mergeProps(
+            themeProps('step-indicator', {
+              progress,
+              status: status ?? undefined,
+            }),
+            stylex.props(styles.icon, iconColorStyle),
+          )}>
           {iconContent}
         </div>
       );
     }
   }
 
+  // Every indicator glyph above is aria-hidden (pure decoration), so the
+  // step's progress/status must also reach assistive tech as text
+  // (WCAG 1.4.1 / 1.3.1). `error`/`warning` announce the semantic status;
+  // `success` and a completed step both announce "completed". The current
+  // step is announced via aria-current="step" instead, and not-started steps
+  // stay silent (the default state needs no qualifier).
+  const statusText: string | null =
+    status === 'error'
+      ? t('@astryx.step.status.error')
+      : status === 'warning'
+        ? t('@astryx.step.status.warning')
+        : status === 'success' || progress === 'completed'
+          ? t('@astryx.step.status.completed')
+          : null;
+
+  // Rendered next to the label: hidden text for static steps, and composed
+  // into the button's accessible name for clickable ones (an aria-label on
+  // the button would otherwise override the hidden text). Two separate keys
+  // rather than string concatenation so translations control the joiner.
+  const statusTextNode =
+    statusText != null ? <VisuallyHidden>{statusText}</VisuallyHidden> : null;
+  const stepAriaLabel =
+    statusText != null
+      ? t('@astryx.step.goToStepWithStatus', {
+          stepNumber: step + 1,
+          label,
+          status: statusText,
+        })
+      : t('@astryx.step.goToStep', {stepNumber: step + 1, label});
+
   const hasIndicator = indicator !== 'none';
   const isNumber =
     hasIndicator &&
     customIcon == null &&
+    statusGlyph == null &&
     (indicator === 'number' ||
       (indicator === 'auto' && progress === 'not-started'));
 
@@ -592,11 +919,21 @@ export function Step({
   const iconLabelNode = (
     <div {...stylex.props(styles.iconLabelRow)}>
       {indicatorNode}
-      <span {...stylex.props(styles.label, labelColorStyle)}>{label}</span>
+      <span
+        {...stylex.props(
+          styles.label,
+          labelColorStyle,
+          collapseLabel && styles.labelCollapsible,
+        )}>
+        {label}
+      </span>
+      {statusTextNode}
       {isOptional && (
         <>
           <span {...stylex.props(styles.optionalDot)}>•</span>
-          <span {...stylex.props(styles.optionalText)}>Optional</span>
+          <span {...stylex.props(styles.optionalText)}>
+            {t('@astryx.step.optional')}
+          </span>
         </>
       )}
       {endContent}
@@ -637,6 +974,226 @@ export function Step({
     status: status ?? undefined,
   });
 
+  // ======= ON-TRACK: indicator is a node on the connector =======
+  if (indicatorPosition === 'on-track') {
+    // Connector fill is purely progress-based (matches the separated bar):
+    // the segment before the indicator is "reached" once we're at/past this
+    // step; the segment after is filled only once this step is completed.
+    // `status` never recolors the connector — only the indicator.
+    const beforeFilled = step <= activeStep;
+    const afterFilled = step < activeStep;
+    const beforeSegStyle = beforeFilled
+      ? styles.lineFilled
+      : styles.lineUnfilled;
+    const afterSegStyle = afterFilled ? styles.lineFilled : styles.lineUnfilled;
+    // First/last connector visibility is decided structurally from the step's
+    // own <li> position (see otSegHiddenIfFirst/Last), not by counting children
+    // in the parent — so grouping steps in a fragment can't break it.
+
+    const densitySpace =
+      density === 'compact'
+        ? spacingVars['--spacing-1']
+        : density === 'spacious'
+          ? spacingVars['--spacing-3']
+          : spacingVars['--spacing-2'];
+
+    const labelLineNode = (
+      <div
+        {...stylex.props(
+          isVertical ? styles.otLabelRowStart : styles.otLabelRowCenter,
+        )}>
+        <span
+          {...stylex.props(
+            styles.label,
+            labelColorStyle,
+            collapseLabel && styles.labelCollapsible,
+          )}>
+          {label}
+        </span>
+        {statusTextNode}
+        {isOptional && (
+          <>
+            <span {...stylex.props(styles.optionalDot)}>•</span>
+            <span {...stylex.props(styles.optionalText)}>
+              {t('@astryx.step.optional')}
+            </span>
+          </>
+        )}
+        {endContent}
+      </div>
+    );
+
+    const otDescriptionNode =
+      description != null ? (
+        <span {...stylex.props(styles.description)}>{description}</span>
+      ) : null;
+
+    const otContentNode =
+      children != null ? (
+        <div
+          {...stylex.props(isVertical ? styles.otContentV : styles.otContentH)}>
+          {children}
+        </div>
+      ) : null;
+
+    if (isVertical) {
+      const inner = (
+        <>
+          <div
+            {...stylex.props(
+              styles.otIndicatorColV,
+              styles.otRailBridgeV(densitySpace),
+            )}>
+            <div
+              aria-hidden="true"
+              {...mergeProps(
+                themeProps('step-connector'),
+                stylex.props(
+                  styles.otSegBaseV,
+                  styles.otSegLeadV(densitySpace),
+                  beforeSegStyle,
+                  styles.otSegHiddenIfFirst,
+                ),
+              )}
+            />
+            {indicatorNode}
+            <div
+              aria-hidden="true"
+              {...mergeProps(
+                themeProps('step-connector'),
+                stylex.props(
+                  styles.otSegBaseV,
+                  styles.otSegFlexV,
+                  afterSegStyle,
+                  styles.otSegHiddenIfLast,
+                ),
+              )}
+            />
+          </div>
+          <div {...stylex.props(styles.otBodyV)}>
+            {labelLineNode}
+            {otDescriptionNode}
+          </div>
+        </>
+      );
+
+      return (
+        <li
+          ref={ref}
+          {...mergeProps(
+            stepThemeProps,
+            stylex.props(stepMarker, styles.otVerticalRoot, xstyle),
+            className,
+            style,
+          )}
+          aria-current={isActive ? 'step' : undefined}
+          data-testid={dataTestId}
+          {...rest}>
+          {isClickable ? (
+            <button
+              type="button"
+              onClick={handleClick}
+              aria-label={stepAriaLabel}
+              {...stylex.props(
+                styles.otInteractive,
+                styles.otRowWrap,
+                styles.otRowPadV(densitySpace),
+                focusOutlineStyles.focusVisible,
+              )}>
+              {inner}
+            </button>
+          ) : (
+            <div
+              {...stylex.props(
+                styles.otRowWrap,
+                styles.otRowPadV(densitySpace),
+              )}>
+              {inner}
+            </div>
+          )}
+          {otContentNode}
+        </li>
+      );
+    }
+
+    // Horizontal on-track
+    const innerH = (
+      <>
+        <div {...stylex.props(styles.otTrackRowH)}>
+          <div
+            aria-hidden="true"
+            {...mergeProps(
+              themeProps('step-connector'),
+              stylex.props(
+                styles.otSegH,
+                beforeSegStyle,
+                styles.otSegHiddenIfFirst,
+              ),
+            )}
+          />
+          {indicatorNode}
+          <div
+            aria-hidden="true"
+            {...mergeProps(
+              themeProps('step-connector'),
+              stylex.props(
+                styles.otSegH,
+                afterSegStyle,
+                styles.otSegHiddenIfLast,
+              ),
+            )}
+          />
+        </div>
+        <div
+          {...stylex.props(
+            styles.otLabelWrapH,
+            styles.otMarginTop(densitySpace),
+          )}>
+          {labelLineNode}
+          {otDescriptionNode}
+        </div>
+      </>
+    );
+
+    return (
+      <li
+        ref={ref}
+        {...mergeProps(
+          stepThemeProps,
+          stylex.props(stepMarker, styles.otHorizontalRoot, xstyle),
+          className,
+          style,
+        )}
+        aria-current={isActive ? 'step' : undefined}
+        data-testid={dataTestId}
+        {...rest}>
+        {isClickable ? (
+          <button
+            type="button"
+            onClick={handleClick}
+            aria-label={stepAriaLabel}
+            {...stylex.props(
+              styles.otInteractive,
+              styles.otColWrap,
+              styles.otPadBlock(densitySpace),
+              focusOutlineStyles.focusVisible,
+            )}>
+            {innerH}
+          </button>
+        ) : (
+          <div
+            {...stylex.props(
+              styles.otColWrap,
+              styles.otPadBlock(densitySpace),
+            )}>
+            {innerH}
+          </div>
+        )}
+        {otContentNode}
+      </li>
+    );
+  }
+
   // ======= VERTICAL =======
   if (isVertical) {
     return (
@@ -644,7 +1201,7 @@ export function Step({
         ref={ref}
         {...mergeProps(
           stepThemeProps,
-          stylex.props(styles.verticalRoot, xstyle),
+          stylex.props(stepMarker, styles.verticalRoot, xstyle),
           className,
           style,
         )}
@@ -657,8 +1214,7 @@ export function Step({
             themeProps('step-bar'),
             stylex.props(
               styles.verticalBar,
-              statusBarStyle ??
-                (isBarFilled ? styles.barCompleted : styles.barIncomplete),
+              isBarFilled ? styles.barCompleted : styles.barIncomplete,
             ),
           )}
           aria-hidden="true"
@@ -669,10 +1225,10 @@ export function Step({
             <button
               type="button"
               onClick={handleClick}
-              aria-label={`Go to step ${step + 1}: ${label}`}
+              aria-label={stepAriaLabel}
               {...stylex.props(
                 styles.buttonReset,
-                styles.focusRing,
+                focusOutlineStyles.focusVisible,
                 density === 'compact' && styles.densityCompact,
                 density === 'balanced' && styles.densityBalanced,
                 density === 'spacious' && styles.densitySpacious,
@@ -703,7 +1259,7 @@ export function Step({
       ref={ref}
       {...mergeProps(
         stepThemeProps,
-        stylex.props(styles.horizontalStep, xstyle),
+        stylex.props(stepMarker, styles.horizontalStep, xstyle),
         className,
         style,
       )}
@@ -716,8 +1272,7 @@ export function Step({
           themeProps('step-bar'),
           stylex.props(
             styles.horizontalBar,
-            statusBarStyle ??
-              (isBarFilled ? styles.barCompleted : styles.barIncomplete),
+            isBarFilled ? styles.barCompleted : styles.barIncomplete,
           ),
         )}
         aria-hidden="true"
@@ -726,10 +1281,10 @@ export function Step({
         <button
           type="button"
           onClick={handleClick}
-          aria-label={`Go to step ${step + 1}: ${label}`}
+          aria-label={stepAriaLabel}
           {...stylex.props(
             styles.buttonReset,
-            styles.focusRing,
+            focusOutlineStyles.focusVisible,
             density === 'compact' && styles.densityCompact,
             density === 'balanced' && styles.densityBalanced,
             density === 'spacious' && styles.densitySpacious,

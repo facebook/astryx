@@ -23,12 +23,13 @@
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/MobileNav/index.ts (exports if types change)
- * - /packages/cli/templates/blocks/components/MobileNav/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/MobileNav/ (showcase blocks)
  */
 
 import {
   useCallback,
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -46,9 +47,10 @@ import {Button} from '../Button';
 import {Icon} from '../Icon';
 import {Heading} from '../Heading/Heading';
 import {useAppShellMobile} from '../AppShell/AppShellMobileContext';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs, composeEventHandlers} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 // =============================================================================
 // Styles
@@ -284,13 +286,20 @@ export function MobileNav({
   label,
   'data-testid': testId,
   xstyle,
-  className: _className,
-  style: _style,
+  className,
+  style,
+  onClick: onClickProp,
   ref,
+  ...rest
 }: MobileNavProps) {
+  const t = useTranslator();
   // Read from AppShell context as fallback
   const appShellMobile = useAppShellMobile();
   const isOpen = isOpenProp ?? appShellMobile.isMobileNavOpen;
+  // Share the id from AppShell context so the toggle's aria-controls resolves to
+  // this drawer; fall back to a locally generated id when used standalone.
+  const fallbackId = useId();
+  const dialogId = appShellMobile.mobileNavId || fallbackId;
   const onOpenChange = useMemo(
     () =>
       onOpenChangeProp ??
@@ -407,10 +416,7 @@ export function MobileNav({
   return (
     <dialog
       ref={mergeRefs(ref, dialogRef)}
-      data-testid={testId}
-      aria-label={label ?? (typeof header === 'string' ? header : 'Navigation')}
-      onClick={handleDialogClick}
-      onCancel={handleCancel}
+      id={dialogId}
       {...mergeProps(
         themeProps('mobile-nav', {side: resolvedSide}),
         stylex.props(
@@ -420,7 +426,19 @@ export function MobileNav({
           isOpen && styles.backdropOpen,
           xstyle,
         ),
-      )}>
+        className,
+        style,
+      )}
+      {...rest}
+      data-testid={testId}
+      aria-label={
+        label ??
+        (typeof header === 'string'
+          ? header
+          : t('@astryx.mobileNav.navigation'))
+      }
+      onClick={composeEventHandlers(onClickProp, handleDialogClick)}
+      onCancel={handleCancel}>
       {/* Drawer panel — tabIndex so showModal() focuses the drawer, not the close button */}
       <div
         tabIndex={-1}
@@ -435,15 +453,15 @@ export function MobileNav({
         {/* Header — content + close button */}
         <div {...stylex.props(styles.header, !header && styles.headerNoTitle)}>
           {typeof header === 'string' ? (
-            <span {...stylex.props(styles.headerText)}>
-              <Heading level={2}>{header}</Heading>
-            </span>
+            <Heading level={2} xstyle={styles.headerText}>
+              {header}
+            </Heading>
           ) : (
             (header ?? null)
           )}
           <Button
             variant="ghost"
-            label="Close navigation"
+            label={t('@astryx.mobileNav.closeNavigation')}
             icon={<Icon icon="close" color="inherit" />}
             onClick={() => onOpenChange(false)}
             isIconOnly

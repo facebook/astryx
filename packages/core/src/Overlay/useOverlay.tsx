@@ -149,7 +149,6 @@ export interface UseOverlayResult {
  *   showOn: 'hover',
  *   content: <Button label="Quick view" variant="ghost" />,
  * });
- *
  * <Card ref={overlay.containerRef} {...overlay.containerProps}>
  *   <Layout content={...} />
  *   {overlay.element}
@@ -158,9 +157,7 @@ export interface UseOverlayResult {
  *
  * @example
  * ```
- * // Callback mode — render on demand
  * const overlay = useOverlay({ showOn: 'hover' });
- *
  * <div ref={overlay.containerRef} {...overlay.containerProps}>
  *   <img src={src} />
  *   {overlay.renderOverlay(<Button label="Quick view" />)}

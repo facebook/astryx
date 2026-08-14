@@ -1,12 +1,14 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {useState} from 'react';
+import * as stylex from '@stylexjs/stylex';
 import type {Meta, StoryObj} from '@storybook/react';
 import {Stepper, Step} from '@astryxdesign/lab/Stepper';
 import {TextInput} from '@astryxdesign/core/TextInput';
 import {Button} from '@astryxdesign/core/Button';
 import {Text} from '@astryxdesign/core/Text';
 import {Icon} from '@astryxdesign/core/Icon';
+import {Badge} from '@astryxdesign/core/Badge';
 
 const meta: Meta<typeof Stepper> = {
   title: 'Lab/Stepper',
@@ -16,6 +18,10 @@ const meta: Meta<typeof Stepper> = {
     activeStep: {control: {type: 'number', min: 0, max: 5}},
     orientation: {control: 'select', options: ['horizontal', 'vertical']},
     density: {control: 'select', options: ['compact', 'balanced', 'spacious']},
+    indicatorPosition: {
+      control: 'select',
+      options: ['separated', 'on-track'],
+    },
   },
 };
 
@@ -56,11 +62,7 @@ export const Default: Story = {
             label="Import data"
             description="Bring in existing projects"
           />
-          <Step
-            step={4}
-            label="Launch"
-            description="Go live with your team"
-          />
+          <Step step={4} label="Launch" description="Go live with your team" />
         </Stepper>
       </div>
     );
@@ -159,11 +161,13 @@ export const NumberedHorizontal: Story = {
 };
 
 // ============================================================
-// STATUS (semantic color + generic icons — validation flows)
+// STATUS (semantic status — validation flows)
 //
-// `status` controls color only (accent/success/warning/error). The
-// indicator accepts any icon, so validation flows pass an explicit
-// <Icon /> rather than relying on a fixed status-driven icon set.
+// In the default `auto` mode, `status` sets both the indicator color and a
+// matching glyph: success → green check-circle, warning/error → the shared
+// Input status icons. `accent` is color-only. The current (in-progress) step
+// always keeps its current-step ring, so status glyphs show on the other
+// steps. `status` never recolors the connector/track.
 // ============================================================
 
 export const StatusVertical: Story = {
@@ -181,21 +185,18 @@ export const StatusVertical: Story = {
             label="Email verified"
             description="ernesttien@meta.com"
             status="success"
-            icon={<Icon icon="check" size="sm" />}
           />
           <Step
             step={1}
             label="Phone verified"
             description="+1 (555) 012-3456"
             status="success"
-            icon={<Icon icon="check" size="sm" />}
           />
           <Step
             step={2}
             label="Identity document"
             description="Passport upload failed"
             status="error"
-            icon={<Icon icon="warning" size="sm" />}
           />
           <Step
             step={3}
@@ -219,7 +220,9 @@ export const StatusVertical: Story = {
 export const StatusAllStates: Story = {
   name: 'Status — Semantic Colors Reference',
   render: () => {
-    const [active, setActive] = useState(1);
+    // Start past all steps so each status glyph is visible (the current step
+    // always shows the ring, which would otherwise mask one status).
+    const [active, setActive] = useState(5);
     return (
       <div style={{maxWidth: 400}}>
         <Stepper
@@ -237,21 +240,18 @@ export const StatusAllStates: Story = {
             label="Success"
             description="--color-success"
             status="success"
-            icon={<Icon icon="check" size="sm" />}
           />
           <Step
             step={2}
             label="Warning"
             description="--color-warning"
             status="warning"
-            icon={<Icon icon="warning" size="sm" />}
           />
           <Step
             step={3}
             label="Error"
             description="--color-error"
             status="error"
-            icon={<Icon icon="warning" size="sm" />}
           />
           <Step
             step={4}
@@ -680,6 +680,374 @@ export const LongLabels: Story = {
             description="Open pull request and address reviewer feedback"
           />
         </Stepper>
+      </div>
+    );
+  },
+};
+
+// ============================================================
+// ON-TRACK — indicator slotted into the connector line
+// ============================================================
+
+export const OnTrackVertical: Story = {
+  name: 'On-Track — Vertical',
+  render: () => {
+    const [active, setActive] = useState(2);
+    return (
+      <div style={{maxWidth: 400}}>
+        <Stepper
+          activeStep={active}
+          orientation="vertical"
+          indicatorPosition="on-track"
+          onStepClick={setActive}>
+          <Step step={0} label="Create workspace" />
+          <Step step={1} label="Invite team members" />
+          <Step step={2} label="Set up integrations" />
+          <Step step={3} label="Import data" />
+          <Step step={4} label="Launch" />
+        </Stepper>
+      </div>
+    );
+  },
+};
+
+export const OnTrackHorizontal: Story = {
+  name: 'On-Track — Horizontal',
+  render: () => {
+    const [active, setActive] = useState(2);
+    return (
+      <div style={{maxWidth: 700}}>
+        <Stepper
+          activeStep={active}
+          orientation="horizontal"
+          indicatorPosition="on-track"
+          onStepClick={setActive}>
+          <Step step={0} label="Cart" indicator="number" />
+          <Step step={1} label="Shipping" indicator="number" />
+          <Step step={2} label="Payment" indicator="number" />
+          <Step step={3} label="Review" indicator="number" />
+          <Step step={4} label="Confirm" indicator="number" />
+        </Stepper>
+      </div>
+    );
+  },
+};
+
+export const OnTrackVerticalDescriptions: Story = {
+  name: 'On-Track — Vertical (with description)',
+  render: () => {
+    const [active, setActive] = useState(2);
+    return (
+      <div style={{maxWidth: 400}}>
+        <Stepper
+          activeStep={active}
+          orientation="vertical"
+          indicatorPosition="on-track"
+          onStepClick={setActive}>
+          <Step
+            step={0}
+            label="Create workspace"
+            description="Name and configure your workspace"
+          />
+          <Step
+            step={1}
+            label="Invite team members"
+            description="Add collaborators by email"
+          />
+          <Step
+            step={2}
+            label="Set up integrations"
+            description="Connect Slack, GitHub, Jira"
+          />
+          <Step
+            step={3}
+            label="Import data"
+            description="Bring in existing projects"
+          />
+          <Step step={4} label="Launch" description="Go live with your team" />
+        </Stepper>
+      </div>
+    );
+  },
+};
+
+export const OnTrackHorizontalDescriptions: Story = {
+  name: 'On-Track — Horizontal (with description)',
+  render: () => {
+    const [active, setActive] = useState(2);
+    return (
+      <div style={{maxWidth: 760}}>
+        <Stepper
+          activeStep={active}
+          orientation="horizontal"
+          indicatorPosition="on-track"
+          onStepClick={setActive}>
+          <Step
+            step={0}
+            label="Cart"
+            indicator="number"
+            description="Review your items"
+          />
+          <Step
+            step={1}
+            label="Shipping"
+            indicator="number"
+            description="Where to deliver"
+          />
+          <Step
+            step={2}
+            label="Payment"
+            indicator="number"
+            description="Card or PayPal"
+          />
+          <Step
+            step={3}
+            label="Review"
+            indicator="number"
+            description="Confirm details"
+          />
+          <Step
+            step={4}
+            label="Confirm"
+            indicator="number"
+            description="Place your order"
+          />
+        </Stepper>
+      </div>
+    );
+  },
+};
+
+export const OnTrackComparison: Story = {
+  name: 'On-Track — vs Separated',
+  render: () => {
+    const [active, setActive] = useState(2);
+    return (
+      <div style={{display: 'flex', gap: 64}}>
+        <div style={{maxWidth: 280}}>
+          <Text type="label">separated (current)</Text>
+          <Stepper
+            activeStep={active}
+            orientation="vertical"
+            indicatorPosition="separated"
+            onStepClick={setActive}>
+            <Step step={0} label="Account" description="Basic details" />
+            <Step step={1} label="Profile" description="About you" />
+            <Step step={2} label="Settings" description="Preferences" />
+            <Step step={3} label="Review" description="Confirm details" />
+          </Stepper>
+        </div>
+        <div style={{maxWidth: 280}}>
+          <Text type="label">on-track</Text>
+          <Stepper
+            activeStep={active}
+            orientation="vertical"
+            indicatorPosition="on-track"
+            onStepClick={setActive}>
+            <Step step={0} label="Account" description="Basic details" />
+            <Step step={1} label="Profile" description="About you" />
+            <Step step={2} label="Settings" description="Preferences" />
+            <Step step={3} label="Review" description="Confirm details" />
+          </Stepper>
+        </div>
+      </div>
+    );
+  },
+};
+
+export const OnTrackStatus: Story = {
+  name: 'On-Track — Status Colors',
+  render: () => {
+    const [active, setActive] = useState(3);
+    return (
+      <div style={{maxWidth: 400}}>
+        <Stepper
+          activeStep={active}
+          orientation="vertical"
+          indicatorPosition="on-track"
+          onStepClick={setActive}>
+          <Step
+            step={0}
+            label="Email verified"
+            description="ernesttien@meta.com"
+            status="success"
+          />
+          <Step
+            step={1}
+            label="Phone verified"
+            description="+1 (555) 012-3456"
+            status="success"
+          />
+          <Step
+            step={2}
+            label="Identity document"
+            description="Passport upload failed"
+            status="error"
+          />
+          <Step
+            step={3}
+            label="Address verification"
+            description="Pending review"
+            status="accent"
+          />
+          <Step step={4} label="Background check" isOptional />
+          <Step step={5} label="Account activated" />
+        </Stepper>
+      </div>
+    );
+  },
+};
+
+export const OnTrackHorizontalManySteps: Story = {
+  name: 'On-Track — Horizontal, Many Steps',
+  render: () => {
+    const [active, setActive] = useState(3);
+    return (
+      <Stepper
+        activeStep={active}
+        orientation="horizontal"
+        indicatorPosition="on-track"
+        onStepClick={setActive}>
+        <Step step={0} label="Idea" indicator="number" />
+        <Step step={1} label="Design" indicator="number" />
+        <Step step={2} label="Build" indicator="number" />
+        <Step step={3} label="Test" indicator="number" />
+        <Step step={4} label="Review" indicator="number" />
+        <Step step={5} label="Deploy" indicator="number" />
+        <Step step={6} label="Monitor" indicator="number" />
+      </Stepper>
+    );
+  },
+};
+
+// ============================================================
+// SLOTS & CUSTOMIZATION
+// ============================================================
+
+export const EndContent: Story = {
+  name: 'Slots — endContent (trailing badges)',
+  render: () => {
+    const [active, setActive] = useState(2);
+    return (
+      <div style={{maxWidth: 440}}>
+        <Stepper
+          activeStep={active}
+          orientation="vertical"
+          onStepClick={setActive}>
+          <Step
+            step={0}
+            label="Draft"
+            description="Written 2 days ago"
+            endContent={<Badge variant="success" label="Done" />}
+          />
+          <Step
+            step={1}
+            label="Review"
+            description="2 approvals required"
+            endContent={<Badge variant="info" label="2 pending" />}
+          />
+          <Step
+            step={2}
+            label="Publish"
+            description="Scheduled for Monday"
+            endContent={<Badge variant="warning" label="Blocked" />}
+          />
+          <Step step={3} label="Archive" />
+        </Stepper>
+      </div>
+    );
+  },
+};
+
+const xstyles = stylex.create({
+  padded: {
+    padding: 24,
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: 'var(--color-border)',
+    borderRadius: 'var(--radius-container)',
+  },
+});
+
+export const CustomXStyle: Story = {
+  name: 'Customization — xstyle + accessible label',
+  render: () => {
+    const [active, setActive] = useState(1);
+    return (
+      <div style={{maxWidth: 520}}>
+        <Stepper
+          activeStep={active}
+          orientation="horizontal"
+          onStepClick={setActive}
+          label="Checkout progress"
+          xstyle={xstyles.padded}>
+          <Step step={0} label="Cart" indicator="number" />
+          <Step step={1} label="Shipping" indicator="number" />
+          <Step step={2} label="Payment" indicator="number" />
+          <Step step={3} label="Confirm" indicator="number" />
+        </Stepper>
+      </div>
+    );
+  },
+};
+
+export const CollapseLabelsWhenNarrow: Story = {
+  name: 'Responsive — Collapse Labels When Narrow',
+  render: () => {
+    const [active, setActive] = useState(2);
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: 32}}>
+        <div>
+          <Text type="label">Wide (labels shown)</Text>
+          <div style={{width: 640}}>
+            <Stepper
+              activeStep={active}
+              orientation="horizontal"
+              hasCollapsibleLabels
+              onStepClick={setActive}>
+              <Step step={0} label="Cart" indicator="number" />
+              <Step step={1} label="Shipping" indicator="number" />
+              <Step step={2} label="Payment" indicator="number" />
+              <Step step={3} label="Review" indicator="number" />
+              <Step step={4} label="Confirm" indicator="number" />
+            </Stepper>
+          </div>
+        </div>
+        <div>
+          <Text type="label">
+            Narrow (only the current step keeps its label)
+          </Text>
+          <div style={{width: 360}}>
+            <Stepper
+              activeStep={active}
+              orientation="horizontal"
+              hasCollapsibleLabels
+              onStepClick={setActive}>
+              <Step step={0} label="Cart" indicator="number" />
+              <Step step={1} label="Shipping" indicator="number" />
+              <Step step={2} label="Payment" indicator="number" />
+              <Step step={3} label="Review" indicator="number" />
+              <Step step={4} label="Confirm" indicator="number" />
+            </Stepper>
+          </div>
+        </div>
+        <div>
+          <Text type="label">Narrow, on-track</Text>
+          <div style={{width: 320}}>
+            <Stepper
+              activeStep={active}
+              orientation="horizontal"
+              indicatorPosition="on-track"
+              hasCollapsibleLabels
+              onStepClick={setActive}>
+              <Step step={0} label="Cart" indicator="number" />
+              <Step step={1} label="Shipping" indicator="number" />
+              <Step step={2} label="Payment" indicator="number" />
+              <Step step={3} label="Review" indicator="number" />
+              <Step step={4} label="Confirm" indicator="number" />
+            </Stepper>
+          </div>
+        </div>
       </div>
     );
   },

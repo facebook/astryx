@@ -1,5 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+'use client';
+
 import {createContext, useContext} from 'react';
 import type {ChartContext} from './types';
 

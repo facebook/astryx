@@ -94,9 +94,7 @@ export const InMessage: StoryObj = {
           How many valid planting arrangements are possible over 3 years?
         </ChatMessageBubble>
       </ChatMessage>
-      <ChatMessage
-        sender="assistant"
-        avatar={<Avatar name="AI" size="small" />}>
+      <ChatMessage sender="assistant" avatar={<Avatar name="AI" size="md" />}>
         <ChatReasoning duration="12s">
           Let me work through the constraints systematically...
         </ChatReasoning>

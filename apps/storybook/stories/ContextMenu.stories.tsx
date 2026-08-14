@@ -1,6 +1,13 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 import type {Meta, StoryObj} from '@storybook/react';
-import {ContextMenu, ContextMenuItem} from '@astryxdesign/core/ContextMenu';
+import {useState} from 'react';
+import {
+  ContextMenu,
+  ContextMenuItem,
+  ContextMenuCheckboxItem,
+  ContextMenuRadioGroup,
+  ContextMenuRadioItem,
+} from '@astryxdesign/core/ContextMenu';
 import {Divider} from '@astryxdesign/core/Divider';
 import {
   PencilIcon,
@@ -97,6 +104,30 @@ export const WithIcons: Story = {
         {
           label: 'Delete',
           icon: TrashIcon,
+          onClick: () => console.log('Delete'),
+        },
+      ]}>
+      <div {...stylex.props(triggerStyles.area)}>Right-click for actions</div>
+    </ContextMenu>
+  ),
+};
+
+export const DestructiveItem: Story = {
+  name: 'Destructive item',
+  render: () => (
+    <ContextMenu
+      items={[
+        {label: 'Rename', onClick: () => console.log('Rename')},
+        {
+          label: 'Duplicate',
+          icon: ClipboardDocumentIcon,
+          onClick: () => console.log('Duplicate'),
+        },
+        {type: 'divider'},
+        {
+          label: 'Delete',
+          icon: TrashIcon,
+          variant: 'destructive',
           onClick: () => console.log('Delete'),
         },
       ]}>
@@ -302,4 +333,57 @@ export const CompoundWithDescriptions: Story = {
       </div>
     </ContextMenu>
   ),
+};
+
+export const WithSelectableItems: Story = {
+  render: function WithSelectableItemsStory() {
+    const [sort, setSort] = useState('name');
+    const [showHidden, setShowHidden] = useState(false);
+    const [showPreview, setShowPreview] = useState(true);
+    return (
+      <ContextMenu
+        menuWidth={220}
+        menuContent={
+          <>
+            <ContextMenuItem
+              icon={PencilIcon}
+              label="Rename"
+              onClick={() => console.log('Rename')}
+            />
+            <Divider />
+            <ContextMenuRadioGroup
+              value={sort}
+              onChange={setSort}
+              label="Sort by">
+              <ContextMenuRadioItem value="name" label="Sort by name" />
+              <ContextMenuRadioItem value="date" label="Sort by date" />
+              <ContextMenuRadioItem value="size" label="Sort by size" />
+            </ContextMenuRadioGroup>
+            <Divider />
+            <ContextMenuCheckboxItem
+              label="Show hidden files"
+              value={showHidden}
+              onChange={setShowHidden}
+            />
+            <ContextMenuCheckboxItem
+              label="Show preview pane"
+              value={showPreview}
+              onChange={setShowPreview}
+            />
+          </>
+        }>
+        <div {...stylex.props(triggerStyles.area)}>
+          Right-click for selectable items
+        </div>
+      </ContextMenu>
+    );
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Checkbox and radio menu items compose inside a ContextMenu just like in a DropdownMenu. The radio group is a single-select set (menuitemradio) that closes the menu on selection; the checkbox items are independent toggles (menuitemcheckbox) that keep the menu open so several can be flipped. Arrow keys, typeahead, and Enter/Space traverse and activate all three row types alongside plain items.',
+      },
+    },
+  },
 };

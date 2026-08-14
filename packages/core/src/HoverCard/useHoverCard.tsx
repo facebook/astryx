@@ -15,7 +15,6 @@
 import {
   useCallback,
   useEffect,
-  useMemo,
   useRef,
   type ReactNode,
   type RefCallback,
@@ -34,7 +33,6 @@ import {
   radiusVars,
   spacingVars,
 } from '../theme/tokens.stylex';
-import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 
 const styles = stylex.create({
@@ -46,18 +44,6 @@ const styles = stylex.create({
     boxShadow: shadowVars['--shadow-med'],
   },
   // Position-based margin styles
-  marginBlock: {
-    marginBlockStart: spacingVars['--spacing-1'],
-    marginBlockEnd: spacingVars['--spacing-1'],
-    marginInlineStart: 0,
-    marginInlineEnd: 0,
-  },
-  marginInline: {
-    marginBlockStart: 0,
-    marginBlockEnd: 0,
-    marginInlineStart: spacingVars['--spacing-1'],
-    marginInlineEnd: spacingVars['--spacing-1'],
-  },
   // Content wrapper for padding and mouse events.
   // `display: block` keeps the wrapper a block box even though it renders as a
   // `span` (the layer uses inline-safe phrasing markup so it is valid inside a
@@ -118,6 +104,15 @@ export interface HoverCardOptions {
    * @default true
    */
   isEnabled?: boolean;
+
+  /**
+   * Accessible name for the hover card popup.
+   *
+   * When provided, the popup is exposed to assistive technology as a named
+   * `role="dialog"`. When omitted, the popup falls back to `role="group"` —
+   * a group may validly be unnamed, an unnamed dialog may not.
+   */
+  label?: string;
 
   /**
    * Controlled open state. When provided, overrides hover/focus triggers:
@@ -181,10 +176,14 @@ export interface HoverCardReturn {
   /**
    * Render function for hover card content.
    * Returns anchor-positioned popover element.
+   *
+   * `positioning` is excluded: the hover card always derives its position
+   * from placement/alignment, so accepting the custom opt-out here would be
+   * a silent no-op.
    */
   renderHoverCard: (
     children: ReactNode,
-    props?: ContextRenderProps,
+    props?: Omit<ContextRenderProps, 'positioning'>,
   ) => ReactNode;
 
   /**
@@ -246,17 +245,12 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
     hideDelay = 200,
     focusTrigger = 'auto',
     isEnabled = true,
+    label,
     isOpen,
     isDefaultOpen = false,
     onShow,
     onHide,
   } = options;
-
-  // Select margin style based on placement axis
-  const marginStyle =
-    placement === 'above' || placement === 'below'
-      ? styles.marginBlock
-      : styles.marginInline;
 
   const layer = useLayer({
     mode: 'context',
@@ -264,10 +258,7 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
     onHide,
   });
 
-  const popoverXstyle = useMemo(
-    () => [styles.container, marginStyle],
-    [marginStyle],
-  );
+  const popoverXstyle = styles.container;
 
   const showTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -450,13 +441,34 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
 
   // Render function that wraps layer.render with hover card behavior
   const renderHoverCard = useCallback(
-    (children: ReactNode, props?: ContextRenderProps): ReactNode => {
+    (
+      children: ReactNode,
+      props?: Omit<ContextRenderProps, 'positioning'>,
+    ): ReactNode => {
       const renderPlacement = props?.placement ?? placement;
+      const themeClassName = themeProps('hovercard').className;
       const renderProps = {
         placement: renderPlacement,
         alignment: props?.alignment ?? alignment,
-        role: 'dialog',
-        xstyle: [popoverXstyle, layerAnimations[renderPlacement]],
+        offset: spacingVars['--spacing-1'],
+        // A named dialog when a label is provided; otherwise a group. A group
+        // may validly be unnamed, an unnamed dialog may not — and hover cards
+        // are non-modal, so group is honest semantics without a name.
+        role: label ? 'dialog' : 'group',
+        'aria-label': label || undefined,
+        // Consumer surface style props land on the layer container — the
+        // themed surface (bg/radius/shadow) where the theme class lives — so
+        // customizing the card targets the same element as the theme. The inner
+        // span keeps `styles.content` for padding.
+        xstyle: [
+          popoverXstyle,
+          layerAnimations[renderPlacement],
+          props?.xstyle,
+        ],
+        className: props?.className
+          ? `${themeClassName} ${props.className}`
+          : themeClassName,
+        style: props?.style,
         // Render the layer as inline-safe phrasing markup so HoverCard stays
         // valid (and hydration-stable) inside inline contexts like a `<p>`.
         as: 'span' as const,
@@ -464,7 +476,7 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
 
       return layer.render(
         <span
-          {...mergeProps(themeProps('hovercard'), stylex.props(styles.content))}
+          {...stylex.props(styles.content)}
           onMouseEnter={() => {
             isHoveringContentRef.current = true;
             clearTimeouts();
@@ -509,7 +521,15 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
         renderProps,
       );
     },
-    [layer, placement, alignment, clearTimeouts, scheduleHide, popoverXstyle],
+    [
+      layer,
+      placement,
+      alignment,
+      label,
+      clearTimeouts,
+      scheduleHide,
+      popoverXstyle,
+    ],
   );
 
   return {

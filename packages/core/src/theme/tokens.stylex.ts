@@ -194,6 +194,24 @@ export const borderVars = stylex.defineVars(borderDefaults);
 export type BorderVarName = keyof typeof borderDefaults;
 
 // =============================================================================
+// Focus Tokens
+// =============================================================================
+// The keyboard focus ring, as one definition for the whole system. Values come
+// from Design Conventions §User Interaction States: 2px --color-accent at 3px
+// offset. Components read these through utils/focusOutline.stylex.ts; the
+// `:focus-visible` condition stays in core, so a theme can restyle the ring
+// but cannot show it to pointer users.
+
+export const focusDefaults = {
+  '--focus-outline-width': '2px',
+  '--focus-outline-style': 'solid',
+  '--focus-outline-color': 'var(--color-accent)',
+  '--focus-outline-offset': '3px',
+} as const;
+
+export const focusVars = stylex.defineVars(focusDefaults);
+
+// =============================================================================
 // Radius Tokens
 // =============================================================================
 
@@ -272,23 +290,6 @@ export const easeDefaults = {
 export const easeVars = stylex.defineVars(easeDefaults);
 
 export type EaseVarName = keyof typeof easeDefaults;
-
-// =============================================================================
-// Motion Tokens — Deprecated (transition shorthand)
-// =============================================================================
-
-/** @deprecated Use durationVars + easeVars instead */
-export const transitionDefaults = {
-  '--transition-fast': '0.15s ease',
-  '--transition-normal': '0.2s ease',
-} as const;
-
-/** @deprecated Use durationVars + easeVars instead */
-export const transitionRaw = transitionDefaults;
-
-/** @deprecated Use durationVars + easeVars instead */
-export const transitionVars = stylex.defineVars(transitionDefaults);
-
 // =============================================================================
 // Typography Tokens - Font Families
 // =============================================================================
@@ -347,8 +348,6 @@ export type SpacingVarName = keyof typeof spacingDefaults;
 export type SizeVarName = keyof typeof sizeDefaults;
 export type RadiusVarName = keyof typeof radiusDefaults;
 export type ShadowVarName = keyof typeof shadowDefaults;
-/** @deprecated Use DurationVarName | EaseVarName instead */
-export type TransitionVarName = keyof typeof transitionDefaults;
 export type TypographyVarName = keyof typeof typographyDefaults;
 export type TextSizeVarName = keyof typeof textSizeDefaults;
 export type FontWeightVarName = keyof typeof fontWeightDefaults;

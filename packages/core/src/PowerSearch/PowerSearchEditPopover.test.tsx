@@ -13,6 +13,8 @@ import {
 import {render, screen, fireEvent, act} from '@testing-library/react';
 import React, {useState} from 'react';
 import {PowerSearch} from './PowerSearch';
+import {PowerSearchEditPopover} from './PowerSearchEditPopover';
+import {useInternalConfig} from './useInternalConfig';
 import type {PowerSearchConfig, PowerSearchFilter} from './types';
 
 // =============================================================================
@@ -215,5 +217,112 @@ describe('PowerSearch', () => {
     const popoverText = getEditPopoverText(container);
     expect(popoverText).toContain('Priority');
     expect(popoverText).toContain('equals');
+  });
+
+  it('does not save/close edit popover when Enter is consumed by child listbox option selection', () => {
+    const multiConfig: PowerSearchConfig = {
+      name: 'test-multi',
+      fields: [
+        {
+          key: 'status',
+          label: 'Status',
+          operators: [
+            {
+              key: 'any_of',
+              label: 'is any of',
+              value: {
+                type: 'enum_list',
+                values: [
+                  {value: 'open', label: 'Open'},
+                  {value: 'closed', label: 'Closed'},
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    };
+
+    const onSave = vi.fn();
+    const onCancel = vi.fn();
+
+    function MultiSelectHarness() {
+      const internalConfig = useInternalConfig(multiConfig);
+      return (
+        <PowerSearchEditPopover
+          config={internalConfig}
+          filter={{
+            field: 'status',
+            operator: 'any_of',
+            value: {type: 'enum_list', value: ['open']},
+          }}
+          mode="edit"
+          onSave={onSave}
+          onCancel={onCancel}
+        />
+      );
+    }
+
+    const {container} = render(<MultiSelectHarness />);
+
+    const input = container.querySelector('input');
+    expect(input).not.toBeNull();
+
+    // Fire an Enter event that has been defaultPrevented (e.g. child typeahead option selection)
+    const enterEvent = new KeyboardEvent('keydown', {
+      key: 'Enter',
+      bubbles: true,
+      cancelable: true,
+    });
+    enterEvent.preventDefault();
+
+    act(() => {
+      input?.dispatchEvent(enterEvent);
+    });
+
+    // onSave should NOT be called because the event was already consumed (defaultPrevented)
+    expect(onSave).not.toHaveBeenCalled();
+  });
+
+  it('does not save/close on a composing Enter while typing a filter value (#4828)', () => {
+    const onSave = vi.fn();
+    const onCancel = vi.fn();
+
+    function StringValueHarness() {
+      const internalConfig = useInternalConfig(testConfig);
+      return (
+        <PowerSearchEditPopover
+          config={internalConfig}
+          filter={{
+            field: 'status',
+            operator: 'is',
+            value: {type: 'string', value: '한국어'},
+          }}
+          mode="edit"
+          onSave={onSave}
+          onCancel={onCancel}
+        />
+      );
+    }
+
+    const {container} = render(<StringValueHarness />);
+    const input = container.querySelector('input');
+    expect(input).not.toBeNull();
+
+    // Same composing-Enter signal as BaseTypeahead's guard: isComposing
+    // (modern) or legacy keyCode 229. An IME commits its composition on
+    // Enter too, so this keydown must not also close/save the popover.
+    // handleKeyDown is bound on an ancestor container div, so the keydown
+    // reaches it the same way it would from any real input inside — same
+    // dispatch mechanism the sibling defaultPrevented test above uses.
+    fireEvent.keyDown(input!, {key: 'Enter', isComposing: true});
+    expect(onSave).not.toHaveBeenCalled();
+
+    fireEvent.keyDown(input!, {key: 'Enter', keyCode: 229});
+    expect(onSave).not.toHaveBeenCalled();
+
+    // A real, non-composing Enter still saves normally.
+    fireEvent.keyDown(input!, {key: 'Enter'});
+    expect(onSave).toHaveBeenCalledTimes(1);
   });
 });

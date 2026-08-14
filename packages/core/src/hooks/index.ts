@@ -17,6 +17,9 @@ export type {UseFocusTrapOptions, UseFocusTrapReturn} from './useFocusTrap';
 export {useAnnounce} from './useAnnounce';
 export type {AnnounceFn, AnnouncePoliteness} from './useAnnounce';
 
+export {useClipboard} from './useClipboard';
+export type {UseClipboardOptions, UseClipboardReturn} from './useClipboard';
+
 export {useGridFocus} from './useGridFocus';
 export type {UseGridFocusOptions, UseGridFocusReturn} from './useGridFocus';
 
@@ -76,6 +79,12 @@ export type {
 export {useInputContainer} from './useInputContainer';
 export type {UseInputContainerOptions} from './useInputContainer';
 
+export {useInputStatusIcon} from './useInputStatusIcon';
+export type {
+  UseInputStatusIconOptions,
+  UseInputStatusIconReturn,
+} from './useInputStatusIcon';
+
 export {useInteractiveRole} from './useInteractiveRole';
 export type {
   InteractiveRole,
@@ -84,3 +93,13 @@ export type {
 
 export {useLongPress} from './useLongPress';
 export type {UseLongPressOptions, UseLongPressHandlers} from './useLongPress';
+
+export {useDevWarning} from './useDevWarning';
+export {useIndicatorFocusRing} from './useIndicatorFocusRing';
+
+export {useContainerReveal} from './useContainerReveal';
+export type {
+  UseContainerRevealOptions,
+  UseContainerRevealReturn,
+  ContentRevealOptions,
+} from './useContainerReveal';

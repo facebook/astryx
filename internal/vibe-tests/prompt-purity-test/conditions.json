@@ -1,0 +1,28 @@
+{
+  "name": "prompt-purity",
+  "description": "A/B the astryx-init injected prompt (generateCompressedIndex in packages/cli/src/commands/agent-docs.mjs). Each condition = a fresh `astryx init` AGENTS.md + one variant self-check block spliced inside the <!-- ASTRYX:START/END --> markers. Only the injected prompt varies; environment, prompts, and model are held constant (Checker Protocol §2).",
+  "control": "A-control",
+  "conditions": [
+    {
+      "id": "A-control",
+      "label": "Injected prompt as-is (no self-check)",
+      "role": "control",
+      "variant": "A-control",
+      "hypothesis": "On hard tasks the agent veers into raw CSS/Tailwind and leaves it in the final file."
+    },
+    {
+      "id": "B-selfcheck",
+      "label": "+ post-generation self-check block",
+      "role": "candidate",
+      "variant": "B-selfcheck",
+      "hypothesis": "A re-read-and-fix step makes the agent catch veers it introduced, raising final purity."
+    },
+    {
+      "id": "C-strong",
+      "label": "+ stronger imperative self-check with CLI verify",
+      "role": "candidate",
+      "variant": "C-strong",
+      "hypothesis": "A more forceful, checklist-style self-check with a mandated `astryx component` verify catches more veers, at some token cost."
+    }
+  ]
+}
