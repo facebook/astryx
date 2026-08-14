@@ -379,7 +379,7 @@ describe('Selector', () => {
     );
   });
 
-  it('clamps the selected-item overlay to the viewport (hasSelectedItemOverlay)', async () => {
+  it('clamps the default selected-item overlay to the viewport', async () => {
     const restoreRects = mockSelectorRects();
     const user = userEvent.setup();
     try {
@@ -389,7 +389,6 @@ describe('Selector', () => {
           options={OPTIONS}
           value="Banana"
           onChange={() => {}}
-          hasSelectedItemOverlay
         />,
       );
 
@@ -437,7 +436,6 @@ describe('Selector', () => {
           options={OPTIONS}
           value="Banana"
           onChange={() => {}}
-          hasSelectedItemOverlay
         />,
       );
 
@@ -488,7 +486,7 @@ describe('Selector', () => {
     expect(inputDropdownClass).not.toBe(ghostDropdownClass);
   });
 
-  it('explicit placement wins over hasSelectedItemOverlay', async () => {
+  it('does not apply selected-item overlay offset when placement is explicit', async () => {
     const restoreRects = mockSelectorRects();
     const user = userEvent.setup();
     try {
@@ -499,7 +497,6 @@ describe('Selector', () => {
           value="Banana"
           onChange={() => {}}
           placement="above"
-          hasSelectedItemOverlay
         />,
       );
 
@@ -517,8 +514,8 @@ describe('Selector', () => {
     }
   });
 
-  describe('default placement (#4227)', () => {
-    it('opens below the trigger with the standard menu clearance by default', async () => {
+  describe('placement values (#4227)', () => {
+    it('placement="offset" clears the trigger and leaves the direction to the layer', async () => {
       const restoreRects = mockSelectorRects();
       const user = userEvent.setup();
       try {
@@ -528,6 +525,7 @@ describe('Selector', () => {
             options={OPTIONS}
             value="Banana"
             onChange={() => {}}
+            placement="offset"
           />,
         );
 
@@ -535,8 +533,8 @@ describe('Selector', () => {
         const popover = screen
           .getByRole('listbox', {hidden: true})
           .closest('[popover]') as HTMLElement;
-        // DropdownMenu's clearance on both block edges, so the gap survives
-        // a position-try-fallbacks flip to above (#4803).
+        // The standard clearance on both block edges, so the gap survives a
+        // position-try-fallbacks flip to the opposite side (#4803).
         await waitFor(() => {
           expect(popover.style.getPropertyValue('--x-marginBlockStart')).toBe(
             spacingVars['--spacing-1'],
@@ -545,12 +543,12 @@ describe('Selector', () => {
         expect(popover.style.getPropertyValue('--x-marginBlockEnd')).toBe(
           spacingVars['--spacing-1'],
         );
-        // Standard below positioning, same recipe as DropdownMenu,
-        // MultiSelector, and ComplexSelector.
+        // The layer starts from the standard menu position (below) and owns
+        // the direction from there via its fallbacks.
         expect(popover.getAttribute('style')).toContain(
           'position-area: self-block-end span-self-inline-end',
         );
-        // No selected-item overlay pulling the menu up over the trigger.
+        // Never the selected-item overlay, even with a value selected.
         expect(popover.getAttribute('style')).not.toContain(
           'margin-block-start: -',
         );
@@ -559,33 +557,39 @@ describe('Selector', () => {
       }
     });
 
-    it('applies the standard clearance to explicit placements', async () => {
+    it('placement="overlay" names the default selected-item overlay', async () => {
+      const restoreRects = mockSelectorRects();
       const user = userEvent.setup();
-      render(
-        <Selector
-          label="Fruit"
-          options={OPTIONS}
-          value="Banana"
-          onChange={() => {}}
-          placement="above"
-        />,
-      );
-
-      await user.click(screen.getByRole('combobox'));
-      const popover = screen
-        .getByRole('listbox', {hidden: true})
-        .closest('[popover]') as HTMLElement;
-      await waitFor(() => {
-        expect(popover.style.getPropertyValue('--x-marginBlockStart')).toBe(
-          spacingVars['--spacing-1'],
+      try {
+        render(
+          <Selector
+            label="Fruit"
+            options={OPTIONS}
+            value="Banana"
+            onChange={() => {}}
+            placement="overlay"
+          />,
         );
-      });
-      expect(popover.style.getPropertyValue('--x-marginBlockEnd')).toBe(
-        spacingVars['--spacing-1'],
-      );
+
+        await user.click(screen.getByRole('combobox'));
+        const popover = screen
+          .getByRole('listbox', {hidden: true})
+          .closest('[popover]') as HTMLElement;
+        // Identical to omitting the prop: the measured pull-up engages and
+        // the standard clearance stays off.
+        await waitFor(() => {
+          expect(popover.getAttribute('style')).toContain(
+            'margin-block-start: -110px',
+          );
+        });
+        expect(popover.style.getPropertyValue('--x-marginBlockStart')).toBe('');
+        expect(popover.style.getPropertyValue('--x-marginBlockEnd')).toBe('');
+      } finally {
+        restoreRects();
+      }
     });
 
-    it('search mode gets the clearance and never overlays, even with hasSelectedItemOverlay', async () => {
+    it('placement="overlay" with hasSearch falls back to offset', async () => {
       const user = userEvent.setup();
       render(
         <Selector
@@ -594,7 +598,7 @@ describe('Selector', () => {
           value="Banana"
           onChange={() => {}}
           hasSearch
-          hasSelectedItemOverlay
+          placement="overlay"
         />,
       );
 
@@ -608,6 +612,9 @@ describe('Selector', () => {
           spacingVars['--spacing-1'],
         );
       });
+      expect(popover.getAttribute('style')).toContain(
+        'position-area: self-block-end span-self-inline-end',
+      );
       expect(popover.getAttribute('style')).not.toContain(
         'margin-block-start: -',
       );

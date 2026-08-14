@@ -84,17 +84,10 @@ export const docs = {
     },
     {
       name: 'placement',
-      type: "'above' | 'below' | 'start' | 'end'",
+      type: "'above' | 'below' | 'start' | 'end' | 'overlay' | 'offset'",
       description:
-        'Menu placement relative to the trigger (e.g. above for bottom-fixed toolbars). The menu opens below with the standard clearance by default, like DropdownMenu.',
-      default: "'below'",
-    },
-    {
-      name: 'hasSelectedItemOverlay',
-      type: 'boolean',
-      description:
-        'Overlays the open menu on the trigger so the selected option sits directly over it, like a native macOS select; the menu is pulled up by a measured offset and clamped to the viewport. Only applies with placement below (the default); an explicit non-below placement or hasSearch uses standard layer positioning instead.',
-      default: 'false',
+        "Where the open menu sits relative to the trigger. 'overlay' (the default) positions the selected option over the trigger and clamps to the viewport, native-select style; it falls back to 'offset' when hasSearch is set. 'offset' clears the trigger by the standard menu gap and leaves the direction to the layer. The four directions opt into explicit layer positioning (e.g. above for bottom-fixed toolbars).",
+      default: "'overlay'",
     },
     {
       name: 'placeholder',

@@ -60,14 +60,9 @@ const meta: Meta<typeof Selector> = {
     },
     placement: {
       control: 'select',
-      options: ['above', 'below', 'start', 'end'],
+      options: ['overlay', 'offset', 'above', 'below', 'start', 'end'],
       description:
-        'Menu placement relative to the trigger. Defaults to below with the standard clearance.',
-    },
-    hasSelectedItemOverlay: {
-      control: 'boolean',
-      description:
-        'Native-select-style overlay: the open menu is pulled up so the selected option sits over the trigger. Only applies with placement below (the default).',
+        "Where the open menu sits relative to the trigger. 'overlay' (the default) pulls the menu up so the selected option sits over the trigger; 'offset' clears it by the standard menu gap and leaves the direction to the layer.",
     },
     isDisabled: {
       control: 'boolean',

@@ -373,6 +373,14 @@ const STATUS_BUTTON_LABEL_KEY: Record<SelectorStatusType, string> = {
 
 export type SelectorSize = 'sm' | 'md' | 'lg';
 
+/**
+ * Menu placement for {@link Selector}: the four explicit layer directions,
+ * plus the two selector-specific modes — `'overlay'` (the selected option
+ * over the trigger, the default) and `'offset'` (clear of the trigger by
+ * the standard menu gap, direction left to the layer).
+ */
+export type SelectorPlacement = LayerPlacement | 'overlay' | 'offset';
+
 export type SelectorVariant = 'input' | 'ghost';
 
 export type SelectorStatusType = 'warning' | 'error' | 'success';
@@ -543,14 +551,20 @@ interface SelectorPropsBase<
   searchPlaceholder?: string;
 
   /**
-   * Position placement relative to the trigger.
+   * Where the open menu sits relative to the trigger.
    *
-   * Omit to use the selector's default selected-item overlay behavior: the
-   * selected item is positioned over the trigger and clamped to the viewport.
-   * Set a placement to opt into explicit layer positioning (for example,
-   * `placement="above"` for bottom-fixed toolbars).
+   * - `'overlay'` (the default): the selected option is positioned over the
+   *   trigger and clamped to the viewport, native-select style. Falls back
+   *   to `'offset'` when `hasSearch` is set, since the search input replaces
+   *   the selected option at the top of the menu.
+   * - `'offset'`: clear of the trigger by the standard menu gap; the
+   *   direction is left to the layer.
+   * - `'above' | 'below' | 'start' | 'end'`: explicit layer positioning
+   *   (for example, `placement="above"` for bottom-fixed toolbars).
+   *
+   * @default 'overlay'
    */
-  placement?: LayerPlacement;
+  placement?: SelectorPlacement;
 
   /**
    * Whether the dropdown starts open on mount.
@@ -845,10 +859,13 @@ export function Selector<T extends SelectorOptionType>(
     [announce, selectableItems],
   );
 
-  // Calculate offset to position selected item over trigger. Explicit
-  // placement opts out of the selector-specific overlay behavior and uses the
-  // standard layer positioning API instead.
-  const shouldOverlaySelectedItem = placement == null && !hasSearch;
+  // Calculate offset to position selected item over trigger. A directional
+  // placement or 'offset' opts out of the selector-specific overlay behavior
+  // and uses the standard layer positioning API instead; 'overlay' (and
+  // omission, its named form) falls back to 'offset' in search mode, where
+  // the search input replaces the selected option at the top of the menu.
+  const shouldOverlaySelectedItem =
+    (placement == null || placement === 'overlay') && !hasSearch;
   const {offset: rawOffset, isPositioned: rawIsPositioned} =
     useSelectedItemOffset({
       isOpen: popover.isOpen && shouldOverlaySelectedItem,
@@ -860,7 +877,13 @@ export function Selector<T extends SelectorOptionType>(
 
   const selectedItemOffset = shouldOverlaySelectedItem ? rawOffset : 0;
   const isPositioned = shouldOverlaySelectedItem ? rawIsPositioned : true;
-  const popoverPlacement = placement ?? 'below';
+  // 'overlay' pins the menu below and pulls it up by the measured margin;
+  // 'offset' starts from the standard menu position (below) and leaves the
+  // direction to the layer's position-try fallbacks.
+  const popoverPlacement: LayerPlacement =
+    placement == null || placement === 'overlay' || placement === 'offset'
+      ? 'below'
+      : placement;
   const popoverOffsetStyle: React.CSSProperties | undefined =
     selectedItemOffset > 0
       ? {marginBlockStart: `-${selectedItemOffset}px`}
