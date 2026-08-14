@@ -31,15 +31,16 @@ const styles = stylex.create({
     // layouts. The inset is 0 by default (hit area == visual glyph) and grows
     // to -4px (=> 28x28) under a coarse pointer. Driven through a custom
     // property because StyleX only allows plain values inside a pseudo-element;
-    // the conditional lives on this top-level property instead.
-    '--clear-hit-inset': {
+    // the conditional lives on this top-level property instead. Private (--_)
+    // because it is an internal implementation detail, not a themeable target.
+    '--_clear-hit-inset': {
       default: '0px',
       '@media (pointer: coarse)': '-4px',
     },
     '::after': {
       content: '""',
       position: 'absolute',
-      inset: 'var(--clear-hit-inset)',
+      inset: 'var(--_clear-hit-inset)',
     },
   },
 });
