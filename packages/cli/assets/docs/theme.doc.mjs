@@ -361,7 +361,7 @@ const brandTheme = defineTheme({
       content: [
         {
           type: 'prose',
-          text: '`astryx theme build` compiles a defineTheme file into production-ready artifacts. Recommended for SSR apps (Next.js, Remix) where styles must be present on first paint.',
+          text: "`astryx theme build` emits production artifacts from a defineTheme file. When `icons` directly references an unaliased named import—for example, `import {oceanIcons} from './icons'` with `icons: oceanIcons`—the generated JavaScript imports a companion icon module that your build pipeline must produce separately. Recommended for SSR apps (Next.js, Remix) where styles must be present on first paint.",
         },
         {
           type: 'code',
@@ -394,6 +394,32 @@ const brandTheme = defineTheme({
               '(Optional) Module augmentations for custom component prop values found in the theme\'s component overrides',
             ],
           ],
+        },
+        {
+          type: 'prose',
+          text: '`astryx theme build` does not compile or bundle icon source. For that detected direct, unaliased named import, `--icons-specifier` changes only its module specifier in the generated JavaScript. The specifier resolves relative to the generated JavaScript file, and the caller must produce a loadable module at that location.',
+        },
+        {
+          type: 'code',
+          lang: 'bash',
+          label: 'Build a theme with an icon registry',
+          code: `npm install --save-dev esbuild
+
+astryx theme build ./src/themes/ocean.ts \\
+  --out ./dist/ocean.css \\
+  --icons-specifier ./icons.mjs
+
+npx esbuild ./src/themes/icons.tsx \\
+  --bundle \\
+  --format=esm \\
+  --jsx=automatic \\
+  --external:react \\
+  --external:lucide-react \\
+  --outfile=./dist/icons.mjs`,
+        },
+        {
+          type: 'prose',
+          text: "`lucide-react` is the icon dependency used by this example registry. Replace it with your registry's icon package, or omit that `--external` flag to bundle the dependency.",
         },
         {
           type: 'prose',
