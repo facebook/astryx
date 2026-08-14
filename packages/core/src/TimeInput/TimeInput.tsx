@@ -32,13 +32,12 @@ import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
   sizeVars,
-  radiusVars,
   typographyVars,
   typeScaleVars,
-  borderVars,
 } from '../theme/tokens.stylex';
 import {
   Field,
+  InputClearButton,
   type InputStatus,
   inputWrapperStyles,
   inputStatusBorderStyles,
@@ -105,23 +104,6 @@ const styles = stylex.create({
   },
   inputInvalid: {
     color: colorVars['--color-text-secondary'],
-  },
-  clearButton: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 0,
-    margin: 0,
-    borderWidth: 0,
-    borderStyle: 'none',
-    backgroundColor: 'transparent',
-    cursor: 'pointer',
-    borderRadius: radiusVars['--radius-element'],
-    outline: {
-      default: 'none',
-      ':focus-visible': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: 1,
   },
 });
 
@@ -576,10 +558,25 @@ export function TimeInput({
         // Check if within range
         if (isTimeInRange(newTime, min, max)) {
           fireChange(newTime);
+          // Stepping programmatically rewrites a plain textbox's value, and
+          // screen readers do not announce programmatic textbox changes — the
+          // new value must be spoken explicitly or stepping is silent
+          // (WCAG 4.1.2).
+          announce(formatDisplayTime(newTime, hasSeconds));
         }
       }
     },
-    [value, hasSeconds, increment, min, max, fireChange, isDisabled],
+    [
+      value,
+      hasSeconds,
+      increment,
+      min,
+      max,
+      fireChange,
+      isDisabled,
+      announce,
+      formatDisplayTime,
+    ],
   );
 
   // Handle clear button click
@@ -677,17 +674,14 @@ export function TimeInput({
           user would get no feedback that their entry was rejected (WCAG 3.3.1).
         */}
       <VisuallyHidden as="div" role="alert" aria-live="assertive">
-        {!isInputValid ? 'Invalid time' : ''}
+        {!isInputValid ? t('@astryx.timeInput.invalidTime') : ''}
       </VisuallyHidden>
       {isBusy && <Spinner size="sm" />}
       {hasClear && value && !isDisabled && (
-        <button
-          type="button"
+        <InputClearButton
+          label={t('@astryx.timeInput.clearLabel', {label})}
           onClick={handleClear}
-          aria-label={t('@astryx.timeInput.clearLabel', {label})}
-          {...stylex.props(styles.clearButton)}>
-          <Icon icon="close" size="sm" color="secondary" />
-        </button>
+        />
       )}
       {statusIcon}
     </div>

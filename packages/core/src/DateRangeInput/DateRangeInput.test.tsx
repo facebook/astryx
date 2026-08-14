@@ -592,7 +592,7 @@ describe('DateRangeInput icon theme targets', () => {
     return icon as HTMLElement;
   };
 
-  it('renders astryx-date-range-input-clear-icon on the clear glyph', () => {
+  it('renders astryx-input-clear-icon (plus the legacy alias) on the clear glyph', () => {
     render(
       <DateRangeInput
         label="Range"
@@ -601,10 +601,13 @@ describe('DateRangeInput icon theme targets', () => {
         hasClear
       />,
     );
-    // The stable target lands on the icon element itself (not the button), so a
-    // theme can restyle just this glyph (color, size, hover) via defineTheme —
-    // a button-level target could not reach the icon's own color/size.
+    // The canonical target lands on the icon element itself (not the button),
+    // so a theme can restyle just this glyph (color, size, hover) via
+    // defineTheme — a button-level target could not reach the icon's own
+    // color/size. The original per-component name rides along for a
+    // deprecation window.
     const icon = iconIn(getButton('Clear Range'));
+    expect(icon).toHaveClass('astryx-input-clear-icon');
     expect(icon).toHaveClass('astryx-date-range-input-clear-icon');
     expect(icon).toHaveClass('astryx-icon');
   });
@@ -618,11 +621,12 @@ describe('DateRangeInput icon theme targets', () => {
     expect(icon).toHaveAttribute('data-state', 'collapsed');
   });
 
-  it('renders the default icons (secondary color, sm size) byte-identically', () => {
-    // Pixel-identical default guard: the glyphs must carry the exact same
-    // StyleX color/size classes as a standalone secondary/sm icon. The added
-    // target class is purely additive — it changes nothing until a theme
-    // targets it.
+  it('routes the clear glyph through the shared clear button (default look unchanged)', () => {
+    // Default-look guard for the clear affordance. It now composes the shared
+    // InputClearButton (a ghost Button with a secondary/sm glyph), so aside
+    // from its target classes the glyph matches a standalone `secondary`/`sm`
+    // close icon — the default clear look is defined once, in InputClearButton.
+    // (The calendar-toggle glyph is covered separately.)
     render(
       <DateRangeInput
         label="Range"
@@ -633,22 +637,24 @@ describe('DateRangeInput icon theme targets', () => {
     );
     const clearIcon = iconIn(getButton('Clear Range'));
 
-    const {container: refContainer} = render(
+    const {container: clearRefContainer} = render(
       <Icon icon="close" size="sm" color="secondary" />,
     );
-    const refIcon = refContainer.querySelector('.astryx-icon') as HTMLElement;
+    const clearRefIcon = clearRefContainer.querySelector(
+      '.astryx-icon',
+    ) as HTMLElement;
 
     const styleClasses = (el: HTMLElement) =>
       el.className
         .split(' ')
         .filter(
           c =>
-            c !== 'astryx-date-range-input-clear-icon' &&
-            c !== 'astryx-date-range-input-toggle-icon',
+            c !== 'astryx-input-clear-icon' &&
+            c !== 'astryx-date-range-input-clear-icon',
         )
         .sort();
 
-    expect(styleClasses(clearIcon)).toEqual(styleClasses(refIcon));
+    expect(styleClasses(clearIcon)).toEqual(styleClasses(clearRefIcon));
   });
 
   it('exposes the icon targets so a theme reaches icon color, size, and hover', () => {

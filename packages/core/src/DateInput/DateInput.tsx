@@ -35,6 +35,7 @@ import {
 } from '../theme/tokens.stylex';
 import {
   Field,
+  InputClearButton,
   type InputStatus,
   inputWrapperStyles,
   inputStatusBorderStyles,
@@ -79,11 +80,6 @@ const styles = stylex.create({
     backgroundColor: 'transparent',
     cursor: 'pointer',
     borderRadius: radiusVars['--radius-element'],
-    outline: {
-      default: 'none',
-      ':focus-visible': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: 1,
   },
   iconButtonDisabled: {
     cursor: 'not-allowed',
@@ -158,10 +154,12 @@ export type {
   InputStatus as DateInputStatus,
   InputStatusType as DateInputStatusType,
 } from '../Field';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs, isFocusDetached} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
+import {stableClassName} from '../naming';
 import {useTranslator} from '../i18n';
 
 export interface DateInputProps extends Omit<
@@ -504,7 +502,18 @@ export function DateInput({
   const popover = usePopover({
     dialogLabel: t('@astryx.dateInput.dialogLabel'),
     closeButtonLabel: t('@astryx.dateInput.closeCalendar'),
-    onHide: () => inputRef.current?.focus(),
+    // Return focus to the input when the calendar closes — but only when the
+    // dismiss left focus detached (Escape, or a click on non-focusable empty
+    // space), which the focus trap can't restore on its own. A native
+    // popover="auto" light-dismiss fires synchronously with the pointer event
+    // that moved focus, so if the user clicked another control — the clear
+    // button, another field, anywhere — focus has already landed there;
+    // reclaiming it would fight their click.
+    onHide: () => {
+      if (isFocusDetached()) {
+        inputRef.current?.focus();
+      }
+    },
   });
 
   // Handle toggling the popover from button click (focus calendar)
@@ -681,6 +690,7 @@ export function DateInput({
             : t('@astryx.dateInput.openCalendar')
         }
         {...stylex.props(
+          focusOutlineStyles.focusVisible,
           styles.iconButton,
           isEffectivelyDisabled && styles.iconButtonDisabled,
         )}>
@@ -741,25 +751,14 @@ export function DateInput({
           user would get no feedback that their entry was rejected (WCAG 3.3.1).
         */}
       <VisuallyHidden as="div" role="alert" aria-live="assertive">
-        {!isInputValid ? 'Invalid date' : ''}
+        {!isInputValid ? t('@astryx.dateInput.invalidDate') : ''}
       </VisuallyHidden>
       {hasClear && value !== undefined && !isEffectivelyDisabled && (
-        <button
-          type="button"
+        <InputClearButton
+          label={t('@astryx.dateInput.clear', {label})}
           onClick={handleClear}
-          aria-label={t('@astryx.dateInput.clear', {label})}
-          {...stylex.props(styles.iconButton)}>
-          <Icon
-            icon="close"
-            size="sm"
-            color="secondary"
-            // Stable theme target on the clear glyph itself, so a theme can
-            // restyle just this icon (color, size, hover) via `defineTheme`.
-            // Same-element rules in @layer astryx-theme win over the icon's own
-            // base color/size, which a button-level target could not reach.
-            {...themeProps('date-input-clear-icon')}
-          />
-        </button>
+          iconClassName={stableClassName('date-input-clear-icon')}
+        />
       )}
       {isBusy && <Spinner size="sm" />}
       {statusIcon}

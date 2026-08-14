@@ -34,6 +34,7 @@ import {Icon, renderIconSlot, type IconType} from '../Icon';
 import type {IconName} from '../Icon';
 import {
   Field,
+  InputClearButton,
   inputStatusBorderStyles,
   inputStatusHoverShadowStyles,
   inputWrapperStyles,
@@ -43,6 +44,7 @@ import {Divider} from '../Divider';
 import {Spinner} from '../Spinner';
 import {TextInput} from '../TextInput';
 import {CheckboxInput} from '../CheckboxInput';
+import type {IndicatorPosition} from '../Indicator';
 import {Badge} from '../Badge';
 import {
   colorVars,
@@ -75,6 +77,8 @@ import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {useSize} from '../SizeContext/SizeContext';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
+import {stableClassName} from '../naming';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
 import {VisuallyHidden} from '../VisuallyHidden';
@@ -198,14 +202,6 @@ const styles = stylex.create({
       ':focus-within': 'none',
     },
     fontWeight: fontWeightVars['--font-weight-medium'],
-    outline: {
-      default: 'none',
-      ':has(:focus-visible)': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':has(:focus-visible)': '3px',
-    },
     transitionProperty:
       'background-image, background-color, color, opacity, transform',
     transform: {
@@ -222,23 +218,6 @@ const styles = stylex.create({
   },
 
   // Clear button
-  clearButton: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 0,
-    margin: 0,
-    borderWidth: 0,
-    borderStyle: 'none',
-    backgroundColor: 'transparent',
-    cursor: 'pointer',
-    borderRadius: radiusVars['--radius-element'],
-    outline: {
-      default: 'none',
-      ':focus-visible': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: 1,
-  },
   statusButton: {
     display: 'flex',
     alignItems: 'center',
@@ -251,11 +230,6 @@ const styles = stylex.create({
     color: 'inherit',
     cursor: 'pointer',
     borderRadius: radiusVars['--radius-element'],
-    outline: {
-      default: 'none',
-      ':focus-visible': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: 1,
   },
 
   // Dropdown container
@@ -269,7 +243,6 @@ const styles = stylex.create({
   // Popover container (for anchor positioning)
   popover: {
     minWidth: 'anchor-size(width)',
-    marginBlockStart: spacingVars['--spacing-1'],
   },
 
   // Search field. The inner TextInput owns the border, focus ring, magnifier
@@ -309,6 +282,14 @@ const styles = stylex.create({
     width: '100%',
     borderRadius: radiusVars['--radius-element'],
     cursor: 'pointer',
+    // Row typography lives here, not on the label span, so a theme override on
+    // the row target reaches both the fallback label and renderOption output
+    // (a declaration on the span would win over the inherited row value).
+    // Matches Selector, whose option row owns its typography the same way.
+    fontFamily: typographyVars['--font-family-body'],
+    fontSize: typeScaleVars['--text-label-size'],
+    fontWeight: fontWeightVars['--font-weight-medium'],
+    color: colorVars['--color-text-primary'],
     backgroundColor: 'transparent',
     border: 'none',
     outline: 'none',
@@ -318,6 +299,7 @@ const styles = stylex.create({
   },
   itemDisabled: {
     opacity: 0.5,
+    color: colorVars['--color-text-disabled'],
     cursor: 'not-allowed',
   },
 
@@ -327,20 +309,23 @@ const styles = stylex.create({
     display: 'flex',
     flexShrink: 0,
   },
+  // Pushed to the row's far edge rather than sitting against the label, which
+  // is what an end-positioned control means here. The row is not
+  // `space-between` (a truncating label plus a trailing control is what wants
+  // the auto margin), and `renderOption` content is not wrapped in a growing
+  // span, so the margin has to live on the checkbox itself.
+  checkboxDecorativeEnd: {
+    marginInlineStart: 'auto',
+  },
 
-  // Label text for items (rendered outside checkbox for correct click behavior)
+  // Label text for items (rendered outside checkbox for correct click
+  // behavior). Typography is inherited from the row; this only handles
+  // truncation.
   itemLabel: {
-    fontFamily: typographyVars['--font-family-body'],
-    fontSize: typeScaleVars['--text-label-size'],
-    fontWeight: fontWeightVars['--font-weight-medium'],
-    color: colorVars['--color-text-primary'],
     minWidth: 0,
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
-  },
-  itemLabelDisabled: {
-    color: colorVars['--color-text-disabled'],
   },
 
   // Empty state
@@ -620,6 +605,13 @@ export interface MultiSelectorProps<
   renderOption?: (option: MultiSelectorOptionData) => ReactNode;
 
   /**
+   * Which edge of the option row carries the checkbox.
+   *
+   * @default 'start'
+   */
+  indicatorPosition?: IndicatorPosition;
+
+  /**
    * Whether the dropdown starts open on mount.
    * Useful for showcases and previews.
    * @default false
@@ -704,6 +696,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   triggerDisplay = 'count',
   maxBadges = 3,
   renderOption,
+  indicatorPosition = 'start',
   isDefaultOpen = false,
   'data-testid': testId,
   htmlName,
@@ -881,6 +874,9 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     // The popup's own role="listbox" is the exposed semantics; the trigger
     // keeps DOM focus, so wrapping it in a modal dialog would misrepresent it.
     role: 'none',
+    // The theme target belongs on the SURFACE that paints the popup, which
+    // `usePopover` owns — not on the scrolling list inside it.
+    surfaceTarget: 'multi-selector-popup',
   });
 
   // Open dropdown on mount when isDefaultOpen is true
@@ -1246,6 +1242,24 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       const isPartiallySelected =
         isSelectAll && selectAllState === 'indeterminate';
 
+      const checkbox = (
+        <div
+          inert
+          {...stylex.props(
+            styles.checkboxDecorative,
+            indicatorPosition === 'end' && styles.checkboxDecorativeEnd,
+          )}>
+          <CheckboxInput
+            label=""
+            isLabelHidden
+            value={checkboxValue}
+            onChange={() => {}}
+            isDisabled={item.disabled}
+            size={size === 'lg' ? 'md' : size}
+          />
+        </div>
+      );
+
       return (
         <div
           key={item.value}
@@ -1266,39 +1280,40 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
             }
           }}
           onMouseEnter={() => onItemMouseEnter(item, flatIndex)}
-          {...stylex.props(
-            styles.item,
-            isSelectAll ? selectAllSizeStyles[size] : itemSizeStyles[size],
-            isSelectAll && styles.selectAllWrapper,
-            isHighlighted && styles.itemHighlighted,
-            item.disabled && styles.itemDisabled,
+          {...mergeProps(
+            // One target for every dropdown row, carrying the row's size and
+            // runtime state so a theme can express "selected option at large"
+            // or restyle just the Select All row (`.select-all`) without
+            // reaching for structural selectors.
+            themeProps('multi-selector-option', {
+              size,
+              'select-all': isSelectAll ? 'select-all' : null,
+              selected: isSelected ? 'selected' : null,
+              disabled: item.disabled ? 'disabled' : null,
+            }),
+            stylex.props(
+              styles.item,
+              isSelectAll ? selectAllSizeStyles[size] : itemSizeStyles[size],
+              isSelectAll && styles.selectAllWrapper,
+              isHighlighted && styles.itemHighlighted,
+              item.disabled && styles.itemDisabled,
+            ),
           )}>
-          <div inert {...stylex.props(styles.checkboxDecorative)}>
-            <CheckboxInput
-              label=""
-              isLabelHidden
-              value={checkboxValue}
-              onChange={() => {}}
-              isDisabled={item.disabled}
-              size={size === 'lg' ? 'md' : size}
-            />
-          </div>
+          {indicatorPosition === 'start' && checkbox}
           {renderOption && !isSelectAll ? (
             renderOption(item)
           ) : (
-            <span
-              {...stylex.props(
-                styles.itemLabel,
-                item.disabled && styles.itemLabelDisabled,
-              )}>
+            <span {...stylex.props(styles.itemLabel)}>
               {item.label ?? item.value}
             </span>
           )}
+          {indicatorPosition === 'end' && checkbox}
         </div>
       );
     },
     [
       renderOption,
+      indicatorPosition,
       highlightedIndex,
       optimisticValue,
       allEnabledSelected,
@@ -1457,6 +1472,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
             styles.triggerContainer,
             sizeStyles[size],
             variant === 'ghost' && styles.triggerGhost,
+            variant === 'ghost' && focusOutlineStyles.focusWithin,
             isDisabled && inputWrapperStyles.disabled,
             variant === 'ghost' && isDisabled && styles.triggerGhostDisabled,
             optimisticValue.length === 0 && styles.triggerPlaceholder,
@@ -1525,23 +1541,11 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           ))}
         {isBusy && <Spinner size="sm" />}
         {hasClear && value.length > 0 && !isDisabled && (
-          <button
-            type="button"
+          <InputClearButton
+            label={t('@astryx.multiSelector.clearAll', {label})}
             onClick={handleClear}
-            aria-label={t('@astryx.multiSelector.clearAll', {label})}
-            {...stylex.props(styles.clearButton)}>
-            <Icon
-              icon="close"
-              size="sm"
-              color="secondary"
-              // Stable theme target on the clear glyph itself, so a theme can
-              // restyle just this icon (color, size, hover) via `defineTheme`.
-              // Same-element rules in @layer astryx-theme win over the icon's
-              // own base color/size, which a button-level target could not
-              // reach.
-              {...themeProps('multi-selector-clear-icon')}
-            />
-          </button>
+            iconClassName={stableClassName('multi-selector-clear-icon')}
+          />
         )}
         {/*
           No wrapper span: Icon's own span already provides the 16px box (`sm`)
@@ -1550,50 +1554,53 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           the two affordances stop sharing a node.
         */}
         {showStatusIcon ? (
-            showStatusTooltip ? (
-              <button
-                ref={statusTooltip.ref}
-                type="button"
-                aria-label={t(STATUS_BUTTON_LABEL_KEY[status.type])}
-                aria-describedby={statusTooltip.describedBy}
-                onClick={e => e.stopPropagation()}
-                {...stylex.props(styles.statusButton)}>
-                <Icon
-                  icon={STATUS_ICON_MAP[status.type]}
-                  size="sm"
-                  color={STATUS_ICON_COLOR_MAP[status.type]}
-                  xstyle={styles.triggerIcon}
-                />
-              </button>
-            ) : (
+          showStatusTooltip ? (
+            <button
+              ref={statusTooltip.ref}
+              type="button"
+              aria-label={t(STATUS_BUTTON_LABEL_KEY[status.type])}
+              aria-describedby={statusTooltip.describedBy}
+              onClick={e => e.stopPropagation()}
+              {...stylex.props(
+                focusOutlineStyles.focusVisible,
+                styles.statusButton,
+              )}>
               <Icon
                 icon={STATUS_ICON_MAP[status.type]}
                 size="sm"
                 color={STATUS_ICON_COLOR_MAP[status.type]}
                 xstyle={styles.triggerIcon}
               />
-            )
+            </button>
           ) : (
             <Icon
-              icon="chevronDown"
+              icon={STATUS_ICON_MAP[status.type]}
               size="sm"
-              color="secondary"
-              // The rotation rides on the glyph, alongside the box and color
-              // the wrapper used to provide, so one element carries the mark,
-              // its open/closed transform, and the theme target.
-              xstyle={[
-                styles.triggerIcon,
-                styles.triggerIconRotation,
-                popover.isOpen && styles.triggerIconOpen,
-              ]}
-              // Stable theme target on the chevron glyph itself, so a theme can
-              // restyle just this icon (color, size, hover) — and its
-              // open/closed state — via `defineTheme`. Same-element rules in
-              // @layer astryx-theme win over the icon's own base color/size,
-              // which a button-level target could not reach.
-              {...themeProps('multi-selector-indicator-icon', {
-                state: popover.isOpen ? 'expanded' : 'collapsed',
-              })}
+              color={STATUS_ICON_COLOR_MAP[status.type]}
+              xstyle={styles.triggerIcon}
+            />
+          )
+        ) : (
+          <Icon
+            icon="chevronDown"
+            size="sm"
+            color="secondary"
+            // The rotation rides on the glyph, alongside the box and color
+            // the wrapper used to provide, so one element carries the mark,
+            // its open/closed transform, and the theme target.
+            xstyle={[
+              styles.triggerIcon,
+              styles.triggerIconRotation,
+              popover.isOpen && styles.triggerIconOpen,
+            ]}
+            // Stable theme target on the chevron glyph itself, so a theme can
+            // restyle just this icon (color, size, hover) — and its
+            // open/closed state — via `defineTheme`. Same-element rules in
+            // @layer astryx-theme win over the icon's own base color/size,
+            // which a button-level target could not reach.
+            {...themeProps('multi-selector-indicator-icon', {
+              state: popover.isOpen ? 'expanded' : 'collapsed',
+            })}
           />
         )}
       </div>
@@ -1612,6 +1619,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         {
           placement: 'below',
           alignment: 'start',
+          offset: spacingVars['--spacing-1'],
           xstyle: styles.popover,
         },
       )}

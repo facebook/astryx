@@ -17,6 +17,7 @@ import {Theme} from '../theme/Theme';
 import {defineTheme} from '../theme/defineTheme';
 import {getForcedColorsRules} from '../__tests__/forcedColors';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
+import {FOCUS_OUTLINE_PARTS} from '../utils/focusOutline.stylex';
 
 afterEach(() => {
   __resetLiveRegionsForTest();
@@ -544,6 +545,38 @@ describe('CheckboxInput', () => {
       expect(data.get('terms')).toBe('on');
     });
 
+    it('does not block form submission when required and disabled with a disabledMessage', () => {
+      const {container} = render(
+        <form>
+          <CheckboxInput
+            label="Terms"
+            htmlName="terms"
+            value={false}
+            onChange={() => {}}
+            isRequired
+            isDisabled
+            disabledMessage="Terms are managed by your administrator"
+          />
+        </form>,
+      );
+      expect(container.querySelector('form')!.checkValidity()).toBe(true);
+    });
+
+    it('still blocks submission when required and unchecked but enabled', () => {
+      const {container} = render(
+        <form>
+          <CheckboxInput
+            label="Terms"
+            htmlName="terms"
+            value={false}
+            onChange={() => {}}
+            isRequired
+          />
+        </form>,
+      );
+      expect(container.querySelector('form')!.checkValidity()).toBe(false);
+    });
+
     it('is excluded from form data when disabled, even with a disabledMessage', () => {
       const {container} = render(
         <form>
@@ -654,7 +687,9 @@ describe('focus ring ownership (WCAG 2.4.7)', () => {
       <CheckboxInput label="Accept" value={false} onChange={() => {}} />,
     );
     focusInput(container);
-    expect(indicatorOf(container).style.outlineStyle).toBe('solid');
+    expect(indicatorOf(container).style.outlineStyle).toBe(
+      FOCUS_OUTLINE_PARTS.outlineStyle,
+    );
   });
 
   it('paints it on a replacement that forwards nothing', () => {
@@ -669,7 +704,7 @@ describe('focus ring ownership (WCAG 2.4.7)', () => {
     expect(replaced.className).toBe('');
     // ...and it still gets a ring, because the owner drew it.
     focusInput(container);
-    expect(replaced.style.outlineStyle).toBe('solid');
+    expect(replaced.style.outlineStyle).toBe(FOCUS_OUTLINE_PARTS.outlineStyle);
   });
 
   it('clears the ring on blur', () => {
@@ -677,7 +712,9 @@ describe('focus ring ownership (WCAG 2.4.7)', () => {
       <CheckboxInput label="Accept" value={false} onChange={() => {}} />,
     );
     const input = focusInput(container);
-    expect(indicatorOf(container).style.outlineStyle).toBe('solid');
+    expect(indicatorOf(container).style.outlineStyle).toBe(
+      FOCUS_OUTLINE_PARTS.outlineStyle,
+    );
     fireEvent.blur(input);
     expect(indicatorOf(container).style.outlineStyle).toBe('');
   });

@@ -100,23 +100,20 @@ export const TallSheet: Story = {
   },
 };
 
-export const NonModal: Story = {
+export const NoScrim: Story = {
   render: () => {
     const [isOpen, setIsOpen] = useState(false);
     const [count, setCount] = useState(0);
     return (
       <>
-        {/* With hasScrim={false} the sheet is non-modal: this background stays
-            clickable while the sheet is open (no scrim, no scroll lock). Open
-            the sheet, then tap the counter — it still responds. The story
-            renders in its own iframe in Docs (see meta docs.story), so the
-            sheet gets a real mini-viewport and behaves correctly. */}
+        {/* A scrim is the semi-transparent layer that covers and blocks the
+            background. With hasScrim={false}, this page stays interactive. */}
         <VStack gap={3}>
-          <Heading level={3}>Live page (background)</Heading>
+          <Heading level={3}>Live page behind the overlay</Heading>
           <Text type="supporting" color="secondary">
-            A non-modal sheet (hasScrim={'{false}'}) leaves this content
-            interactive. Open the sheet, then tap the counter below — it keeps
-            working, and there is no dimming behind the sheet.
+            A scrim is the semi-transparent overlay that covers and blocks the
+            background. This example has no scrim, so the page stays visible and
+            interactive. Open the sheet, then tap the counter below.
           </Text>
           <Button label="Open sheet" onClick={() => setIsOpen(true)} />
           <Button
@@ -132,10 +129,11 @@ export const NonModal: Story = {
           height="capped">
           <Section padding={4}>
             <VStack gap={3}>
-              <Heading level={3}>Non-modal sheet</Heading>
+              <Heading level={3}>No scrim</Heading>
               <Text type="supporting" color="secondary">
-                No scrim; the page behind stays live. Drag the handle to resize,
-                flick down to dismiss, or press Escape while focus is here.
+                This is still an overlay, not inline content. The page behind
+                stays live. Drag the handle to resize, flick down to dismiss, or
+                press Escape while focus is here.
               </Text>
               <Divider />
               {Array.from({length: 8}, (_, i) => (

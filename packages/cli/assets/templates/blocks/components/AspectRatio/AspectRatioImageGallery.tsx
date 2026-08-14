@@ -29,7 +29,7 @@ export default function AspectRatioImageGallery() {
             <img
               src="/template-assets/illustrative-horizontal-1.png"
               alt={alt}
-              style={{borderRadius: 8}}
+              style={{borderRadius: 'var(--radius-element)'}}
             />
           </AspectRatio>
         ))}

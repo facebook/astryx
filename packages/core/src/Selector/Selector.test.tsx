@@ -28,6 +28,7 @@ import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {defineTheme} from '../theme/defineTheme';
 import {Theme} from '../theme/Theme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
+import {spacingVars} from '../theme/tokens.stylex';
 
 function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
   const {prose, component} = generateThemeCSS(theme);
@@ -506,6 +507,89 @@ describe('Selector', () => {
     } finally {
       restoreRects();
     }
+  });
+
+  describe('menu clearance', () => {
+    it('clears the trigger by the standard menu offset when placement is explicit', async () => {
+      const user = userEvent.setup();
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Banana"
+          onChange={() => {}}
+          placement="above"
+        />,
+      );
+
+      await user.click(screen.getByRole('combobox'));
+      const popover = screen
+        .getByRole('listbox', {hidden: true})
+        .closest('[popover]') as HTMLElement;
+      // Both block edges, so the gap survives a position-try-fallbacks flip
+      // to the opposite side (#4803).
+      await waitFor(() => {
+        expect(popover.style.getPropertyValue('--x-marginBlockStart')).toBe(
+          spacingVars['--spacing-1'],
+        );
+      });
+      expect(popover.style.getPropertyValue('--x-marginBlockEnd')).toBe(
+        spacingVars['--spacing-1'],
+      );
+    });
+
+    it('clears the trigger in search mode', async () => {
+      const user = userEvent.setup();
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Banana"
+          onChange={() => {}}
+          hasSearch
+        />,
+      );
+
+      // In hasSearch mode the trigger is a plain button, not a combobox.
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      const popover = screen
+        .getByRole('listbox', {hidden: true})
+        .closest('[popover]') as HTMLElement;
+      await waitFor(() => {
+        expect(popover.style.getPropertyValue('--x-marginBlockStart')).toBe(
+          spacingVars['--spacing-1'],
+        );
+      });
+    });
+
+    it('stays flush in the default selected-item overlay', async () => {
+      const restoreRects = mockSelectorRects();
+      const user = userEvent.setup();
+      try {
+        render(
+          <Selector
+            label="Fruit"
+            options={OPTIONS}
+            value="Banana"
+            onChange={() => {}}
+          />,
+        );
+
+        await user.click(screen.getByRole('combobox'));
+        const popover = screen
+          .getByRole('listbox', {hidden: true})
+          .closest('[popover]') as HTMLElement;
+        await waitFor(() => {
+          expect(popover.getAttribute('style')).toContain(
+            'margin-block-start: -110px',
+          );
+        });
+        expect(popover.style.getPropertyValue('--x-marginBlockStart')).toBe('');
+        expect(popover.style.getPropertyValue('--x-marginBlockEnd')).toBe('');
+      } finally {
+        restoreRects();
+      }
+    });
   });
 
   describe('hasClear', () => {
@@ -2093,7 +2177,7 @@ describe('Selector clear icon theme target', () => {
     return icon as HTMLElement;
   };
 
-  it('renders the astryx-selector-clear-icon target on the clear glyph', () => {
+  it('renders the astryx-input-clear-icon target (plus the legacy alias) on the clear glyph', () => {
     render(
       <Selector
         label="Fruit"
@@ -2103,11 +2187,13 @@ describe('Selector clear icon theme target', () => {
         hasClear
       />,
     );
-    // The stable theme target lands on the icon element itself (not the
-    // button), so a theme can restyle just this glyph (color, size, hover)
-    // via `defineTheme` — a button-level target could not reach the icon's
-    // own color/size.
+    // The canonical target lands on the icon element itself (not the button),
+    // so a theme can restyle just this glyph (color, size, hover) via
+    // `defineTheme` — a button-level target could not reach the icon's own
+    // color/size. The original per-component name rides along for a
+    // deprecation window.
     const icon = getClearIcon();
+    expect(icon).toHaveClass('astryx-input-clear-icon');
     expect(icon).toHaveClass('astryx-selector-clear-icon');
     expect(icon).toHaveClass('astryx-icon');
   });
@@ -2129,11 +2215,13 @@ describe('Selector clear icon theme target', () => {
     expect(onChange).toHaveBeenCalledWith(null);
   });
 
-  it('renders the default icon (secondary color, sm size) byte-identically', () => {
-    // Pixel-identical default guard: the clear glyph must carry the exact same
-    // StyleX color/size classes as a standalone secondary/sm icon. The added
-    // target class is purely additive — it changes nothing until a theme
-    // targets it.
+  it('routes the clear glyph through the shared clear button, keeping the legacy target', () => {
+    // The clear affordance now composes the shared InputClearButton (a ghost
+    // Button with a secondary/sm glyph), so the icon carries the canonical
+    // `astryx-input-clear-icon` target and — for a deprecation window — the
+    // original `astryx-selector-clear-icon`. Aside from those target classes
+    // it matches the shared button's own `close`/`sm`/`secondary` glyph
+    // exactly, so the default look is defined in one place.
     render(
       <Selector
         label="Fruit"
@@ -2144,6 +2232,8 @@ describe('Selector clear icon theme target', () => {
       />,
     );
     const icon = getClearIcon();
+    expect(icon).toHaveClass('astryx-input-clear-icon');
+    expect(icon).toHaveClass('astryx-selector-clear-icon');
 
     const {container: refContainer} = render(
       <Icon icon="close" size="sm" color="secondary" />,
@@ -2153,7 +2243,11 @@ describe('Selector clear icon theme target', () => {
     const styleClasses = (el: HTMLElement) =>
       el.className
         .split(' ')
-        .filter(c => c !== 'astryx-selector-clear-icon')
+        .filter(
+          c =>
+            c !== 'astryx-input-clear-icon' &&
+            c !== 'astryx-selector-clear-icon',
+        )
         .sort();
 
     expect(styleClasses(icon)).toEqual(styleClasses(refIcon));
@@ -2504,7 +2598,12 @@ describe('Selector disabled state theme target', () => {
 
   it('reflects data-disabled="disabled" on the root when disabled', () => {
     const {container} = render(
-      <Selector label="Fruit" options={OPTIONS} onChange={() => {}} isDisabled />,
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        onChange={() => {}}
+        isDisabled
+      />,
     );
     expect(getSelectorRoot(container)).toHaveAttribute(
       'data-disabled',
@@ -2536,4 +2635,144 @@ describe('Selector disabled state theme target', () => {
   });
 });
 
+describe('Selector indicatorPosition', () => {
+  const openRows = (): HTMLElement[] => screen.getAllByRole('option', h);
+  const rowFor = (label: string): HTMLElement =>
+    openRows().find(row => row.textContent?.includes(label))!;
 
+  it('draws the mark after the option content by default', () => {
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value="Banana"
+        onChange={() => {}}
+        isDefaultOpen
+      />,
+    );
+    const row = rowFor('Banana');
+    const mark = row.querySelector('.astryx-selector-check')!;
+    const content = row.querySelector('.astryx-selector-option')!;
+    expect(
+      content.compareDocumentPosition(mark) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('draws the mark before the option content when set to start', () => {
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value="Banana"
+        onChange={() => {}}
+        indicatorPosition="start"
+        isDefaultOpen
+      />,
+    );
+    const row = rowFor('Banana');
+    const mark = row.querySelector('.astryx-selector-check')!;
+    const content = row.querySelector('.astryx-selector-option')!;
+    expect(
+      content.compareDocumentPosition(mark) & Node.DOCUMENT_POSITION_PRECEDING,
+    ).toBeTruthy();
+  });
+
+  it('reserves the mark column on every row, at either position', () => {
+    // The default check draws nothing when unchecked, so without a reserved
+    // column the chosen row would be laid out differently from the rest —
+    // indented at the start, truncating earlier at the end. Every row is two
+    // children wide either way, so a row's geometry does not depend on whether
+    // it happens to be the chosen one.
+    const {unmount} = render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value="Banana"
+        onChange={() => {}}
+        indicatorPosition="start"
+        isDefaultOpen
+      />,
+    );
+    for (const row of openRows()) {
+      expect(row.children).toHaveLength(2);
+    }
+    unmount();
+
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value="Banana"
+        onChange={() => {}}
+        isDefaultOpen
+      />,
+    );
+    for (const row of openRows()) {
+      expect(row.children).toHaveLength(2);
+    }
+  });
+
+  it('positions a themed replacement indicator the same way', () => {
+    const theme = defineTheme({
+      name: 'selector-start-radio-mark-test',
+      indicators: {check: RadioIndicator},
+    });
+    render(
+      <Theme theme={theme}>
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Banana"
+          onChange={() => {}}
+          indicatorPosition="start"
+          isDefaultOpen
+        />
+      </Theme>,
+    );
+    for (const row of openRows()) {
+      const radio = row.querySelector('.astryx-radio')!;
+      const content = row.querySelector('.astryx-selector-option')!;
+      expect(
+        content.compareDocumentPosition(radio) &
+          Node.DOCUMENT_POSITION_PRECEDING,
+      ).toBeTruthy();
+    }
+  });
+});
+
+describe('Selector popup theme target', () => {
+  // The surface is the same element whether or not the popup has a search
+  // field — which is the reason the target lives there. Rendered on the
+  // component's own content, it would land on the listbox in one branch and
+  // on a wrapper in the other, so one theme rule would style two different
+  // boxes.
+  it.each([
+    ['without search', false],
+    ['with search', true],
+  ])(
+    'puts astryx-selector-popup on the painting surface, %s',
+    async (_label, hasSearch) => {
+      const user = userEvent.setup();
+      render(
+        <Selector
+          label="Fruit"
+          options={['Apple', 'Banana']}
+          value="Apple"
+          onChange={() => {}}
+          hasSearch={hasSearch}
+        />,
+      );
+      // The trigger is a combobox in the plain variant and a listbox-popup
+      // button in the search variant; the surface is the same either way.
+      await user.click(
+        screen.queryByRole('combobox') ??
+          screen.getByRole('button', {name: /Fruit/}),
+      );
+
+      const popup = document.querySelector('.astryx-selector-popup');
+      expect(popup).not.toBeNull();
+      expect(popup).toHaveClass('astryx-popover-surface');
+      expect(popup?.querySelector('[role="listbox"]')).not.toBeNull();
+    },
+  );
+});

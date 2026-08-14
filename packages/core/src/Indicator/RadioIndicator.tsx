@@ -16,7 +16,7 @@ import {
   easeVars,
   radiusVars,
 } from '../theme/tokens.stylex';
-import {mergeProps, themeProps} from '../utils';
+import {isRenderable, mergeProps, themeProps} from '../utils';
 import {indicatorScope} from './indicator.markers.stylex';
 import type {IndicatorProps} from './types';
 
@@ -134,7 +134,7 @@ const dotSizeStyles = stylex.create({
  * components whose default is "a checkmark when selected, nothing otherwise".
  *
  * @example
- * ```tsx
+ * ```
  * <RadioIndicator state="checked" size="md" />
  * ```
  */
@@ -155,6 +155,11 @@ export function RadioIndicator({
 
   return (
     <span
+      // `{...rest}` first, own contract after. TypeScript cannot reject a
+      // hyphenated JSX attribute (see IndicatorProps), so attribute order is
+      // what actually keeps a caller from un-hiding a decorative element —
+      // rubric P3, "owned aria-* set after {...rest}".
+      {...rest}
       ref={ref}
       aria-hidden="true"
       {...mergeProps(
@@ -179,21 +184,21 @@ export function RadioIndicator({
         ),
         className,
         style,
-      )}
-      {...rest}>
-      {children ??
-        (isChecked && (
-          <span
-            {...mergeProps(
-              themeProps(
-                'radio-indicator-dot',
-                {size},
-                {legacyNames: ['radio-dot']},
-              ),
-              stylex.props(styles.dot, dotSizeStyles[size]),
-            )}
-          />
-        ))}
+      )}>
+      {isRenderable(children)
+        ? children
+        : isChecked && (
+            <span
+              {...mergeProps(
+                themeProps(
+                  'radio-indicator-dot',
+                  {size},
+                  {legacyNames: ['radio-dot']},
+                ),
+                stylex.props(styles.dot, dotSizeStyles[size]),
+              )}
+            />
+          )}
     </span>
   );
 }

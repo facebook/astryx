@@ -398,6 +398,7 @@ export function CheckboxInput({
             // still blocked by the isDisabled guard in onChange below.
             disabled={isDisabled && !isFocusableDisabled}
             aria-disabled={isFocusableDisabled ? 'true' : undefined}
+            form={isFocusableDisabled ? '' : undefined}
             readOnly={isReadOnly}
             required={isRequired}
             onChange={e => {

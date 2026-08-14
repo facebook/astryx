@@ -34,13 +34,13 @@ export interface StepperContextValue {
   isNonLinear: boolean;
   onStepClick: ((index: number) => void) | null;
   density: StepperDensity;
-  /**
-   * Total number of Step children. Used by the on-track layout to hide the
-   * trailing connector segment on the last step (which otherwise has no next
-   * node to reach toward).
-   */
-  stepCount: number;
   indicatorPosition: StepperIndicatorPosition;
+  /**
+   * Horizontal only. When true, non-current step labels collapse via a
+   * container query once the stepper is too narrow to fit them all, so the
+   * track can shrink. The current step keeps its label.
+   */
+  hasCollapsibleLabels: boolean;
 }
 
 export const StepperContext = createContext<StepperContextValue | null>(null);

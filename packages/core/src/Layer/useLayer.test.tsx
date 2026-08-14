@@ -440,6 +440,91 @@ describe('useLayer context positioning', () => {
     });
   });
 
+  describe('offset', () => {
+    function OffsetHarness({
+      placement,
+      offset,
+      positioning,
+    }: {
+      placement?: LayerPlacement;
+      offset?: number | string;
+      positioning?: 'anchor' | 'custom';
+    }) {
+      const layer = useLayer({mode: 'context'});
+      return (
+        <>
+          <button type="button" ref={layer.ref} onClick={layer.show}>
+            trigger
+          </button>
+          {layer.render(<span>content</span>, {
+            placement,
+            offset,
+            positioning,
+          })}
+        </>
+      );
+    }
+
+    // Debug-mode StyleX variable names for the dynamic offset style, as in
+    // Grid.test.tsx. jsdom resolves neither the var indirection nor logical
+    // margin properties, so the declarations themselves are the assertion.
+    async function openAndGetOffsets(ui: React.ReactElement) {
+      const user = userEvent.setup();
+      const {container, getByRole} = render(ui);
+      await user.click(getByRole('button', {name: 'trigger'}));
+      const el = container.querySelector('[popover]') as HTMLElement;
+      const read = (prop: string) => el.style.getPropertyValue(`--x-${prop}`);
+      return {
+        blockStart: read('marginBlockStart'),
+        blockEnd: read('marginBlockEnd'),
+        inlineStart: read('marginInlineStart'),
+        inlineEnd: read('marginInlineEnd'),
+      };
+    }
+
+    const NONE = {blockStart: '', blockEnd: '', inlineStart: '', inlineEnd: ''};
+
+    it('is flush by default', async () => {
+      expect(await openAndGetOffsets(<OffsetHarness placement="below" />)).toEqual(
+        NONE,
+      );
+    });
+
+    // Both edges of the axis, so the gap survives a position-try-fallbacks
+    // flip to the opposite side (#4803).
+    it('clears both block edges for a block placement', async () => {
+      expect(
+        await openAndGetOffsets(<OffsetHarness placement="above" offset={8} />),
+      ).toEqual({...NONE, blockStart: '8px', blockEnd: '8px'});
+    });
+
+    it('clears both inline edges for an inline placement', async () => {
+      expect(
+        await openAndGetOffsets(<OffsetHarness placement="end" offset={8} />),
+      ).toEqual({...NONE, inlineStart: '8px', inlineEnd: '8px'});
+    });
+
+    it('takes a CSS length string', async () => {
+      expect(
+        await openAndGetOffsets(
+          <OffsetHarness placement="below" offset="var(--spacing-1)" />,
+        ),
+      ).toEqual({
+        ...NONE,
+        blockStart: 'var(--spacing-1)',
+        blockEnd: 'var(--spacing-1)',
+      });
+    });
+
+    it('is ignored under custom positioning, which owns its own insets', async () => {
+      expect(
+        await openAndGetOffsets(
+          <OffsetHarness placement="below" offset={8} positioning="custom" />,
+        ),
+      ).toEqual(NONE);
+    });
+  });
+
   it('fixed mode emits no anchor-positioning styles', async () => {
     function FixedHarness() {
       const layer = useLayer({mode: 'fixed'});

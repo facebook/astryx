@@ -28,9 +28,10 @@ export const docs = {
       },
       {className: 'astryx-selector-option'},
       {className: 'astryx-selector-empty-state'},
-      {className: 'astryx-selector-clear-icon'},
+      {className: 'astryx-selector-clear-icon', deprecatedFor: 'input-clear-icon'},
       {className: 'astryx-selector-indicator-icon', states: ['state']},
       {className: 'astryx-selector-check'},
+      {className: 'astryx-selector-popup'},
     ],
   },
   description: 'Dropdown selector for choosing from a list of options.',
@@ -155,6 +156,13 @@ export const docs = {
       type: '(option: SelectorOptionData) => ReactNode',
       description:
         'Custom render function for each selectable option in the dropdown. Use this instead of JSX children; dividers and sections are rendered by the selector.',
+    },
+    {
+      name: 'indicatorPosition',
+      type: "'start' | 'end'",
+      description:
+        'Which edge of the option row carries the selected mark. start reserves a mark column ahead of every label so they stay aligned, the way a native menu does; end is the house convention shared with Typeahead and CommandPalette.',
+      default: "'end'",
     },
     {
       name: 'width',

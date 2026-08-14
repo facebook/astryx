@@ -30,13 +30,12 @@ import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
   sizeVars,
-  radiusVars,
   typographyVars,
   typeScaleVars,
-  borderVars,
 } from '../theme/tokens.stylex';
 import {
   Field,
+  InputClearButton,
   type InputStatus,
   inputWrapperStyles,
   inputStatusBorderStyles,
@@ -44,30 +43,13 @@ import {
   inputStatusFocusWithinStyles,
   type FieldStatusVariant,
 } from '../Field';
-import {Icon, renderIconSlot, type IconType} from '../Icon';
+import {renderIconSlot, type IconType} from '../Icon';
 import {Spinner} from '../Spinner';
 import {useTooltip} from '../Tooltip';
 import {VisuallyHidden} from '../VisuallyHidden';
 import {getInputARIA} from '../utils';
 
 const styles = stylex.create({
-  clearButton: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 0,
-    margin: 0,
-    borderWidth: 0,
-    borderStyle: 'none',
-    backgroundColor: 'transparent',
-    cursor: 'pointer',
-    borderRadius: radiusVars['--radius-element'],
-    outline: {
-      default: 'none',
-      ':focus-visible': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: 1,
-  },
   input: {
     display: 'block',
     flex: 1,
@@ -166,6 +148,15 @@ export interface TextInputProps extends Omit<
    * @default false
    */
   isDisabled?: boolean;
+  /**
+   * Whether the input is read-only.
+   * The value is shown at full opacity and still submits with the form, but
+   * cannot be edited. Unlike `isDisabled`, a read-only input is not dimmed and
+   * stays in the tab order — use it for a value the user should see and send
+   * but not change. `isDisabled` takes precedence when both are set.
+   * @default false
+   */
+  isReadOnly?: boolean;
   /**
    * Explains why the input is disabled. When set together with `isDisabled`,
    * the input shows a tooltip with this text on hover and keyboard focus, and
@@ -285,6 +276,7 @@ export function TextInput({
   isOptional = false,
   isRequired = false,
   isDisabled = false,
+  isReadOnly = false,
   disabledMessage,
   startIcon,
   status,
@@ -365,7 +357,7 @@ export function TextInput({
     // Value can't change while showing a disabled message (the field is
     // read-only and non-native-disabled), but guard the handler too so the
     // optimistic value and callbacks never fire.
-    if (isDisabled) {
+    if (isDisabled || isReadOnly) {
       return;
     }
     const newValue = e.target.value;
@@ -408,6 +400,7 @@ export function TextInput({
           size,
           status: status?.type ?? null,
           disabled: isDisabled ? 'disabled' : null,
+          readonly: isReadOnly ? 'readonly' : null,
         }),
         stylex.props(
           inputWrapperStyles.base,
@@ -448,7 +441,7 @@ export function TextInput({
         // keep the value from changing.
         disabled={isDisabled && !showsDisabledMessage}
         aria-disabled={showsDisabledMessage ? 'true' : undefined}
-        readOnly={showsDisabledMessage || undefined}
+        readOnly={isReadOnly || showsDisabledMessage || undefined}
         autoFocus={hasAutoFocus}
         data-autofocus={hasAutoFocus || undefined}
         aria-describedby={ariaDescribedBy}
@@ -458,14 +451,11 @@ export function TextInput({
         aria-labelledby={ariaLabelledBy}
         {...stylex.props(styles.input, isDisabled && styles.inputDisabled)}
       />
-      {hasClear && value !== '' && !isDisabled && (
-        <button
-          type="button"
+      {hasClear && value !== '' && !isDisabled && !isReadOnly && (
+        <InputClearButton
+          label={t('@astryx.textInput.clearLabel', {label})}
           onClick={handleClear}
-          aria-label={t('@astryx.textInput.clearLabel', {label})}
-          {...stylex.props(styles.clearButton)}>
-          <Icon icon="close" size="sm" color="secondary" />
-        </button>
+        />
       )}
       {isBusy && <Spinner size="sm" />}
       {statusIcon}

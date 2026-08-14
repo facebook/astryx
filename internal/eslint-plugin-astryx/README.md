@@ -261,3 +261,68 @@ import {isRenderable} from '@astryxdesign/core/utils';
 Ships as a **warning in both tiers** while core migrates its existing call sites; promote to `error` in strict mode once migrated. Provides an ESLint suggestion that rewrites the comparison to `isRenderable(value)` (add the import manually).
 
 See: https://github.com/facebook/astryx/issues/2538
+
+### `@astryx/focus-outline-keyboard-only`
+
+Flags a focus outline written against `:focus` or `:focus-within` inside `stylex.create()`. A focus outline is a **keyboard** affordance; both of those selectors also match a plain mouse click, so the ring gets shown to pointer users too — most easily missed on the paths where focus is restored programmatically (an overlay that returns focus to its trigger after a click-to-dismiss puts the ring back up with no keyboard involved).
+
+Use `:focus-visible`, or `:has(:focus-visible)` when the ring is drawn on a wrapper around the focusable element. A text input still matches `:focus-visible` when clicked, so nothing is lost.
+
+**Bad:**
+
+```ts
+const styles = stylex.create({
+  base: {
+    outline: {
+      default: 'none',
+      ':focus': `2px solid ${colorVars['--color-accent']}`,
+    },
+  },
+  wrapper: {
+    ':focus-within': {outline: `2px solid ${colorVars['--color-accent']}`},
+  },
+});
+```
+
+**Good:**
+
+```ts
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
+
+// Preferred — the shared ring: .focusVisible on the focusable element,
+// .focusWithin (`:has(:focus-visible)`) on a wrapper around it.
+stylex.props(focusOutlineStyles.focusVisible);
+```
+
+**Scope:** `outline` and its longhands only, and only where the ring is drawn — suppressing one on a broader selector (`outline: {':focus': 'none'}`) is legitimate and is not flagged. A field's `:focus-within` border and inset box-shadow (`Field/inputStyles.stylex.ts`) are a different treatment — "you are typing here" — and are deliberately not policed by this rule.
+
+Ships as an **error in both tiers**: core is clean, and this keeps it that way.
+
+### `@astryx/focus-outline-shared`
+
+Flags a focus ring written out inside `stylex.create()` instead of taken from the shared utility. There is one ring in the system and it is themeable through the `--focus-outline-*` tokens; a component that spells out its own gets those values by accident and drifts the moment either side moves — which is what happened before this rule existed (offsets wandered between 1px, 2px and 3px, and one ring was a border-width thick).
+
+**Bad:**
+
+```ts
+const styles = stylex.create({
+  base: {
+    outline: {
+      default: 'none',
+      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
+    },
+  },
+});
+```
+
+**Good:**
+
+```ts
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
+
+stylex.props(focusOutlineStyles.focusVisible, styles.base);
+```
+
+**Scope:** only what the ring LOOKS like — the `outline` shorthand, `outlineWidth`, `outlineStyle` — under a literal `:focus-visible` condition. Not flagged: `outlineOffset` (where the ring sits is a local constraint — inset into a tight grid, or held clear of a field border — and such a component still follows the theme's width, style and color), `outlineColor` (re-coloring per variant is the documented override), and a computed condition key such as `stylex.when.ancestor(':has(:focus-visible)', scope)`, which a shared style cannot express because a scope marker cannot be shared between components.
+
+Ships as an **error in both tiers**: core and lab are clean, and this keeps them that way.

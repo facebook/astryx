@@ -30,6 +30,7 @@ export const docs = {
     targets: [
       {className: 'astryx-stepper', visualProps: ['orientation', 'indicatorPosition']},
       {className: 'astryx-step', visualProps: ['progress', 'status']},
+      {className: 'astryx-step-indicator', visualProps: ['progress', 'status']},
       {className: 'astryx-step-bar'},
       {className: 'astryx-step-connector'},
     ],
@@ -81,6 +82,12 @@ export const docs = {
           type: "'separated' | 'on-track'",
           description: 'Position of step indicators relative to the connector track.',
           default: "'separated'",
+        },
+        {
+          name: 'hasCollapsibleLabels',
+          type: 'boolean',
+          description: 'Horizontal only. When the stepper is too narrow to fit every label, collapse the labels of non-current steps (via a container query) so the track can shrink; the current step keeps its label. Steps stay reachable via aria-current and their accessible names.',
+          default: 'false',
         },
         {
           name: 'xstyle',
@@ -233,6 +240,7 @@ export const docsZh = {
     targets: [
       {className: 'astryx-stepper', visualProps: ['orientation', 'indicatorPosition']},
       {className: 'astryx-step', visualProps: ['progress', 'status']},
+      {className: 'astryx-step-indicator', visualProps: ['progress', 'status']},
       {className: 'astryx-step-bar'},
       {className: 'astryx-step-connector'},
     ],

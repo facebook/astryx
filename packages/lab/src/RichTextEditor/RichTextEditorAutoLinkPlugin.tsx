@@ -99,7 +99,6 @@ export interface RichTextEditorAutoLinkPluginProps {
  * @example
  * ```
  * import {RichTextEditor, RichTextEditorAutoLinkPlugin} from '@astryxdesign/lab';
- *
  * <RichTextEditor
  *   label="Notes"
  *   plugins={<RichTextEditorAutoLinkPlugin />}

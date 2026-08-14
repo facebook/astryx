@@ -149,7 +149,7 @@ export const docs = {
       name: 'weekStartsOn',
       type: "0 | 1 | 2 | 3 | 4 | 5 | 6 | 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat'",
       description:
-        'First day of week in the calendar. A number (0 = Sunday … 6 = Saturday) or a three-letter day name.',
+        'First day of week in the calendar. A number (0 = Sunday to 6 = Saturday) or a three-letter day name.',
       default: '0',
     },
     {
@@ -168,7 +168,7 @@ export const docs = {
     targets: [
       {className: 'astryx-date-range-input', visualProps: ['size', 'status'], states: ['disabled']},
       {className: 'astryx-date-range-input-toggle-icon', states: ['state']},
-      {className: 'astryx-date-range-input-clear-icon'},
+      {className: 'astryx-date-range-input-clear-icon', deprecatedFor: 'input-clear-icon'},
     ],
   },
   usage: {

@@ -36,6 +36,7 @@ import {
 } from '../theme/tokens.stylex';
 import {
   Field,
+  InputClearButton,
   type InputStatus,
   inputWrapperStyles,
   inputStatusBorderStyles,
@@ -60,6 +61,8 @@ import type {SizeValue} from '../utils/types';
 import {useSize} from '../SizeContext/SizeContext';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
+import {stableClassName} from '../naming';
 import {useTranslator} from '../i18n';
 
 export type {DateRange} from '../Calendar';
@@ -116,11 +119,6 @@ const styles = stylex.create({
     backgroundColor: 'transparent',
     cursor: 'pointer',
     borderRadius: radiusVars['--radius-element'],
-    outline: {
-      default: 'none',
-      ':focus-visible': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: 1,
   },
   iconButtonDisabled: {
     cursor: 'not-allowed',
@@ -158,10 +156,6 @@ const styles = stylex.create({
     color: colorVars['--color-text-primary'],
     cursor: 'pointer',
     textAlign: 'start',
-    outline: {
-      default: 'none',
-      ':focus-visible': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
-    },
   },
   presetButtonActive: {
     backgroundColor: colorVars['--color-accent-muted'],
@@ -590,6 +584,7 @@ export function DateRangeInput({
           }
           tabIndex={-1}
           {...stylex.props(
+            focusOutlineStyles.focusVisible,
             styles.iconButton,
             isEffectivelyDisabled && styles.iconButtonDisabled,
           )}>
@@ -628,18 +623,11 @@ export function DateRangeInput({
           {displayValue || placeholder}
         </button>
         {hasClear && value !== null && !isEffectivelyDisabled && (
-          <button
-            type="button"
+          <InputClearButton
+            label={t('@astryx.dateInput.clear', {label})}
             onClick={handleClear}
-            aria-label={t('@astryx.dateInput.clear', {label})}
-            {...stylex.props(styles.iconButton)}>
-            <Icon
-              icon="close"
-              size="sm"
-              color="secondary"
-              {...themeProps('date-range-input-clear-icon')}
-            />
-          </button>
+            iconClassName={stableClassName('date-range-input-clear-icon')}
+          />
         )}
         {isBusy && <Spinner size="sm" />}
         {statusIcon}
@@ -666,6 +654,7 @@ export function DateRangeInput({
                     aria-current={isActive ? 'true' : undefined}
                     onClick={() => handlePresetClick(preset)}
                     {...stylex.props(
+                      focusOutlineStyles.focusVisible,
                       styles.presetButton,
                       isActive && styles.presetButtonActive,
                     )}>
