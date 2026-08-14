@@ -6,8 +6,7 @@ export const docs = {
   name: 'getting-started',
   title: 'Getting Started',
   category: 'guide',
-  description:
-    'Add the design system to your project and start building.',
+  description: 'Add the design system to your project and start building.',
 
   sections: [
     {
@@ -71,11 +70,28 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'Available themes: @astryxdesign/theme-neutral (muted minimal, a good starting point), @astryxdesign/theme-butter, @astryxdesign/theme-chocolate, @astryxdesign/theme-gothic (dark-only), @astryxdesign/theme-matcha, @astryxdesign/theme-stone, and @astryxdesign/theme-y2k. See `astryx docs theme` for the full theming guide.',
+          text: 'Available themes:',
+        },
+        {
+          type: 'list',
+          style: 'unordered',
+          items: [
+            '`@astryxdesign/theme-neutral`: Muted and minimal; a good starting point',
+            '`@astryxdesign/theme-butter`: Warm, golden tones with blue accents',
+            '`@astryxdesign/theme-chocolate`: Rich chocolate and caramel tones',
+            '`@astryxdesign/theme-gothic`: Dark only; inspired by ink, manuscript, and noir typography',
+            '`@astryxdesign/theme-matcha`: Earthy greens inspired by matcha tea and natural botanicals',
+            '`@astryxdesign/theme-stone`: Warm, earthy neutrals inspired by natural stone and sandstone',
+            '`@astryxdesign/theme-y2k`: Bubbly, playful pop inspired by early 2000s aesthetics',
+          ],
         },
         {
           type: 'prose',
           text: 'These stylesheets are cascade-layered: the reset loads in @layer reset and component styles in @layer astryx-base. If your project has existing global CSS, a legacy reset, or Tailwind, declare the layer order explicitly and assign every stylesheet to a layer deliberately: unlayered styles and later layers both override astryx-base regardless of specificity. See the Cascade Layer Safety section in `astryx docs migration` before building screens.',
+        },
+        {
+          type: 'prose',
+          text: 'Run `astryx docs theme` for the full theming guide.',
         },
       ],
     },
@@ -135,11 +151,31 @@ const overrides = stylex.create({
           type: 'table',
           headers: ['Example', 'Stack', 'Path'],
           rows: [
-            ['Next.js', 'Next.js + theme CSS', '[apps/example-nextjs](https://github.com/facebook/astryx/tree/main/apps/example-nextjs)'],
-            ['Next.js + StyleX', 'Next.js + StyleX for custom styles', '[apps/example-nextjs-stylex](https://github.com/facebook/astryx/tree/main/apps/example-nextjs-stylex)'],
-            ['Next.js + Tailwind', 'Next.js + Tailwind bridge', '[apps/example-nextjs-tailwind](https://github.com/facebook/astryx/tree/main/apps/example-nextjs-tailwind)'],
-            ['Next.js Source', 'Next.js importing from source', '[apps/example-nextjs-source](https://github.com/facebook/astryx/tree/main/apps/example-nextjs-source)'],
-            ['Vite', 'Vite', '[apps/example-vite](https://github.com/facebook/astryx/tree/main/apps/example-vite)'],
+            [
+              'Next.js',
+              'Next.js + theme CSS',
+              '[apps/example-nextjs](https://github.com/facebook/astryx/tree/main/apps/example-nextjs)',
+            ],
+            [
+              'Next.js + StyleX',
+              'Next.js + StyleX for custom styles',
+              '[apps/example-nextjs-stylex](https://github.com/facebook/astryx/tree/main/apps/example-nextjs-stylex)',
+            ],
+            [
+              'Next.js + Tailwind',
+              'Next.js + Tailwind bridge',
+              '[apps/example-nextjs-tailwind](https://github.com/facebook/astryx/tree/main/apps/example-nextjs-tailwind)',
+            ],
+            [
+              'Next.js Source',
+              'Next.js importing from source',
+              '[apps/example-nextjs-source](https://github.com/facebook/astryx/tree/main/apps/example-nextjs-source)',
+            ],
+            [
+              'Vite',
+              'Vite',
+              '[apps/example-vite](https://github.com/facebook/astryx/tree/main/apps/example-vite)',
+            ],
           ],
         },
         {
@@ -170,7 +206,7 @@ pnpm dev`,
         },
         {
           type: 'prose',
-          text: 'Then discover what\'s available:',
+          text: "Then discover what's available:",
         },
         {
           type: 'code',
