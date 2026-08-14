@@ -199,6 +199,27 @@ describe('SegmentedControl', () => {
     expect(screen.queryByText('Grid view')).not.toBeInTheDocument();
   });
 
+  it('clamps labels to a single line with ellipsis truncation', () => {
+    render(
+      <SegmentedControl value="grid" onChange={() => {}} label="View mode">
+        <SegmentedControlItem
+          value="grid"
+          label="A very long segment label that should not wrap"
+        />
+      </SegmentedControl>,
+    );
+
+    const label = screen.getByText(
+      'A very long segment label that should not wrap',
+    );
+    const css = getAllInjectedCss();
+    // The segment keeps its label on one line (no wrapping) and truncates
+    // overflow with an ellipsis rather than growing to multiple lines.
+    expect(label.className).toBeTruthy();
+    expect(css).toContain('white-space: nowrap;');
+    expect(css).toContain('text-overflow: ellipsis;');
+  });
+
   it('uses roving tabindex — selected item has tabIndex 0, others -1', () => {
     render(
       <SegmentedControl value="list" onChange={() => {}} label="View mode">
