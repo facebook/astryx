@@ -15,7 +15,7 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'astryx-heading', visualProps: ['level', 'color']},
+      {className: 'astryx-heading', visualProps: ['level', 'color', 'type']},
       {className: 'astryx-text', visualProps: ['type', 'size', 'color']},
     ],
   },

@@ -339,7 +339,7 @@ export interface ComponentThemingTarget {
  * ```
  */
 export interface ComponentThemingVar {
-  /** CSS custom property name, e.g. '--_card-radius' or '--button-press-scale' */
+  /** CSS custom property name, e.g. '--_card-radius' or '--button-focus-offset' */
   name: string;
   /** What this var controls */
   description: string;

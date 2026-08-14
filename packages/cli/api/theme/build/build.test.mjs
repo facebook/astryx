@@ -254,6 +254,28 @@ describe('themeBuild() — component override validation', () => {
     expect(result?.data.warnings).toEqual([]);
   });
 
+  it('accepts the heading type rules a type scale generates', async () => {
+    // `typography.scale` makes defineTheme emit `heading: {'type:display-1' …}`
+    // (Heading renders a `type:` class alongside `level:`), so any theme with a
+    // type scale carried override keys the validator called unknown — including
+    // the shipped neutralTheme.
+    const themeFile = path.join(tmpDir, 'typescale.mjs');
+    fs.writeFileSync(
+      themeFile,
+      `export default {
+        name: 'typescale',
+        tokens: {'--color-bg': '#0a0a0a'},
+        components: {
+          heading: {'type:display-1': {letterSpacing: '0.01em'}},
+        },
+      };\n`,
+    );
+
+    const result = await themeBuild('typescale.mjs', {}, {cwd: tmpDir});
+
+    expect(result?.data.warnings).toEqual([]);
+  });
+
   it('still warns on a key that is neither a visual prop nor a state', async () => {
     // Widening the known set to states must not turn the guard off.
     const themeFile = path.join(tmpDir, 'bogus.mjs');

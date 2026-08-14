@@ -275,13 +275,16 @@ const brandTheme = defineTheme({
     base: { borderRadius: '20px', padding: '24px' },
   },
   button: {
-    base: { borderRadius: '9999px', textTransform: 'uppercase' },
+    base: {
+      borderRadius: '9999px',
+      textTransform: 'uppercase',
+      // Some components have public CSS vars for properties that don't map
+      // to standard CSS. Set these directly. Take the name from
+      // \`astryx component <Name>\` — a var the component does not define
+      // compiles to CSS that never applies.
+      '--button-focus-offset': '3px',
+    },
     'variant:ghost': { borderWidth: '2px', borderStyle: 'solid' },
-  },
-  // Some components have public CSS vars for properties that don't map
-  // to standard CSS. Set these directly.
-  button: {
-    base: { '--button-press-scale': 'scale(0.95)' },
   },
 }`,
         },
