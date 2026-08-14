@@ -30,6 +30,9 @@ import {Button} from '../Button';
 import {rtlStyles} from '../utils';
 import {useTranslator} from '../i18n';
 import {useDevWarning} from '../hooks/useDevWarning';
+import {mergeProps} from '../utils/mergeProps';
+import {themeProps} from '../utils/themeProps';
+import {stableClassName} from '../naming';
 
 const styles = stylex.create({
   // Default popover surface — background, radius, shadow.
@@ -187,6 +190,22 @@ export interface UsePopoverOptions {
    * @default true
    */
   hasSurface?: boolean;
+
+  /**
+   * Theme-target name stamped on the popup SURFACE — the element that paints
+   * the background, radius and elevation — without the `astryx-` prefix
+   * (e.g. `'complex-selector-popup'`).
+   *
+   * The surface is created here, not by the calling component, so a component
+   * that wants its popup themeable cannot reach it on its own: a target it
+   * renders itself lands on its content INSIDE the surface, where a background
+   * or radius rule paints the wrong box. Name the surface through this option
+   * and document the class in the component's `theming.targets`.
+   *
+   * The shared `astryx-popover-surface` class is always present alongside it,
+   * so a theme can style every popup surface at once.
+   */
+  surfaceTarget?: string;
 }
 
 /**
@@ -312,6 +331,7 @@ export function usePopover(options: UsePopoverOptions = {}): UsePopoverReturn {
     hasEscapeDismiss = true,
     hasAutoFocus = true,
     hasSurface = true,
+    surfaceTarget,
     hasCloseButton = true,
     closeButtonLabel: closeButtonLabelFromProps,
     dialogLabel,
@@ -406,16 +426,28 @@ export function usePopover(options: UsePopoverOptions = {}): UsePopoverReturn {
   // Wrapped render function that includes surface styles and optional hidden close button
   const render = useCallback(
     (children: ReactNode, props?: ContextRenderProps): ReactNode => {
+      // `mergeProps` is positional — a third OBJECT argument is read as
+      // `style`, not as more props — so the surface's classes are composed
+      // into one props object before merging with the StyleX result.
+      const surfaceProps = themeProps('popover-surface');
+      const surfaceClassName =
+        surfaceTarget != null
+          ? `${surfaceProps.className} ${stableClassName(surfaceTarget)}`
+          : surfaceProps.className;
+
       return layer.render(
         <div
           ref={contentRef}
           role={role === 'dialog' ? 'dialog' : undefined}
           aria-modal={role === 'dialog' && isModal ? true : undefined}
           aria-label={role === 'dialog' ? dialogLabel : undefined}
-          {...stylex.props(
-            styles.contentWrapper,
-            hasSurface && styles.surface,
-            xstyle,
+          {...mergeProps(
+            {...surfaceProps, className: surfaceClassName},
+            stylex.props(
+              styles.contentWrapper,
+              hasSurface && styles.surface,
+              xstyle,
+            ),
           )}>
           {children}
           {hasCloseButton && (
@@ -439,6 +471,7 @@ export function usePopover(options: UsePopoverOptions = {}): UsePopoverReturn {
       layer,
       hasCloseButton,
       hasSurface,
+      surfaceTarget,
       closeButtonLabel,
       contentRef,
       dialogLabel,

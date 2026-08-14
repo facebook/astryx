@@ -68,6 +68,17 @@ export type IndicatorState<F extends IndicatorFamily = IndicatorFamily> =
 export type IndicatorSize = 'sm' | 'md';
 
 /**
+ * Which edge of its row an indicator sits on.
+ *
+ * Logical, not physical: `start` is the left edge in LTR and the right edge in
+ * RTL. Owned by the host component, not by the indicator — an indicator draws a
+ * picture and has no say in where the row puts it — which is why this is a prop
+ * on the components that lay out rows rather than part of
+ * {@link IndicatorProps}.
+ */
+export type IndicatorPosition = 'start' | 'end';
+
+/**
  * Props every indicator accepts.
  *
  * Indicators are **decorative**: they render `aria-hidden` visuals and own no

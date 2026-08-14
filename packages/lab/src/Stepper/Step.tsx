@@ -28,7 +28,7 @@ import {
   durationVars,
   easeVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
-import {mergeProps} from '@astryxdesign/core/utils';
+import {focusOutlineStyles, mergeProps} from '@astryxdesign/core/utils';
 import type {BaseProps} from '@astryxdesign/core';
 import {Icon} from '@astryxdesign/core/Icon';
 import {VisuallyHidden} from '@astryxdesign/core/VisuallyHidden';
@@ -437,17 +437,6 @@ const styles = stylex.create({
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
       ':active': colorVars['--color-overlay-pressed'],
-    },
-  },
-
-  focusRing: {
-    outline: {
-      default: 'none',
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': '2px',
     },
   },
 
@@ -1109,7 +1098,7 @@ export function Step({
                 styles.otInteractive,
                 styles.otRowWrap,
                 styles.otRowPadV(densitySpace),
-                styles.focusRing,
+                focusOutlineStyles.focusVisible,
               )}>
               {inner}
             </button>
@@ -1187,7 +1176,7 @@ export function Step({
               styles.otInteractive,
               styles.otColWrap,
               styles.otPadBlock(densitySpace),
-              styles.focusRing,
+              focusOutlineStyles.focusVisible,
             )}>
             {innerH}
           </button>
@@ -1239,7 +1228,7 @@ export function Step({
               aria-label={stepAriaLabel}
               {...stylex.props(
                 styles.buttonReset,
-                styles.focusRing,
+                focusOutlineStyles.focusVisible,
                 density === 'compact' && styles.densityCompact,
                 density === 'balanced' && styles.densityBalanced,
                 density === 'spacious' && styles.densitySpacious,
@@ -1295,7 +1284,7 @@ export function Step({
           aria-label={stepAriaLabel}
           {...stylex.props(
             styles.buttonReset,
-            styles.focusRing,
+            focusOutlineStyles.focusVisible,
             density === 'compact' && styles.densityCompact,
             density === 'balanced' && styles.densityBalanced,
             density === 'spacious' && styles.densitySpacious,

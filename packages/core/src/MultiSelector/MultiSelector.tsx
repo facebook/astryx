@@ -44,6 +44,7 @@ import {Divider} from '../Divider';
 import {Spinner} from '../Spinner';
 import {TextInput} from '../TextInput';
 import {CheckboxInput} from '../CheckboxInput';
+import type {IndicatorPosition} from '../Indicator';
 import {Badge} from '../Badge';
 import {
   colorVars,
@@ -76,6 +77,7 @@ import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {useSize} from '../SizeContext/SizeContext';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {stableClassName} from '../naming';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
@@ -200,14 +202,6 @@ const styles = stylex.create({
       ':focus-within': 'none',
     },
     fontWeight: fontWeightVars['--font-weight-medium'],
-    outline: {
-      default: 'none',
-      ':has(:focus-visible)': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':has(:focus-visible)': '3px',
-    },
     transitionProperty:
       'background-image, background-color, color, opacity, transform',
     transform: {
@@ -236,11 +230,6 @@ const styles = stylex.create({
     color: 'inherit',
     cursor: 'pointer',
     borderRadius: radiusVars['--radius-element'],
-    outline: {
-      default: 'none',
-      ':focus-visible': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: 1,
   },
 
   // Dropdown container
@@ -319,6 +308,14 @@ const styles = stylex.create({
     pointerEvents: 'none',
     display: 'flex',
     flexShrink: 0,
+  },
+  // Pushed to the row's far edge rather than sitting against the label, which
+  // is what an end-positioned control means here. The row is not
+  // `space-between` (a truncating label plus a trailing control is what wants
+  // the auto margin), and `renderOption` content is not wrapped in a growing
+  // span, so the margin has to live on the checkbox itself.
+  checkboxDecorativeEnd: {
+    marginInlineStart: 'auto',
   },
 
   // Label text for items (rendered outside checkbox for correct click
@@ -608,6 +605,13 @@ export interface MultiSelectorProps<
   renderOption?: (option: MultiSelectorOptionData) => ReactNode;
 
   /**
+   * Which edge of the option row carries the checkbox.
+   *
+   * @default 'start'
+   */
+  indicatorPosition?: IndicatorPosition;
+
+  /**
    * Whether the dropdown starts open on mount.
    * Useful for showcases and previews.
    * @default false
@@ -692,6 +696,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   triggerDisplay = 'count',
   maxBadges = 3,
   renderOption,
+  indicatorPosition = 'start',
   isDefaultOpen = false,
   'data-testid': testId,
   htmlName,
@@ -869,6 +874,9 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     // The popup's own role="listbox" is the exposed semantics; the trigger
     // keeps DOM focus, so wrapping it in a modal dialog would misrepresent it.
     role: 'none',
+    // The theme target belongs on the SURFACE that paints the popup, which
+    // `usePopover` owns — not on the scrolling list inside it.
+    surfaceTarget: 'multi-selector-popup',
   });
 
   // Open dropdown on mount when isDefaultOpen is true
@@ -1234,6 +1242,24 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       const isPartiallySelected =
         isSelectAll && selectAllState === 'indeterminate';
 
+      const checkbox = (
+        <div
+          inert
+          {...stylex.props(
+            styles.checkboxDecorative,
+            indicatorPosition === 'end' && styles.checkboxDecorativeEnd,
+          )}>
+          <CheckboxInput
+            label=""
+            isLabelHidden
+            value={checkboxValue}
+            onChange={() => {}}
+            isDisabled={item.disabled}
+            size={size === 'lg' ? 'md' : size}
+          />
+        </div>
+      );
+
       return (
         <div
           key={item.value}
@@ -1273,16 +1299,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
               item.disabled && styles.itemDisabled,
             ),
           )}>
-          <div inert {...stylex.props(styles.checkboxDecorative)}>
-            <CheckboxInput
-              label=""
-              isLabelHidden
-              value={checkboxValue}
-              onChange={() => {}}
-              isDisabled={item.disabled}
-              size={size === 'lg' ? 'md' : size}
-            />
-          </div>
+          {indicatorPosition === 'start' && checkbox}
           {renderOption && !isSelectAll ? (
             renderOption(item)
           ) : (
@@ -1290,11 +1307,13 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
               {item.label ?? item.value}
             </span>
           )}
+          {indicatorPosition === 'end' && checkbox}
         </div>
       );
     },
     [
       renderOption,
+      indicatorPosition,
       highlightedIndex,
       optimisticValue,
       allEnabledSelected,
@@ -1453,6 +1472,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
             styles.triggerContainer,
             sizeStyles[size],
             variant === 'ghost' && styles.triggerGhost,
+            variant === 'ghost' && focusOutlineStyles.focusWithin,
             isDisabled && inputWrapperStyles.disabled,
             variant === 'ghost' && isDisabled && styles.triggerGhostDisabled,
             optimisticValue.length === 0 && styles.triggerPlaceholder,
@@ -1541,7 +1561,10 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
               aria-label={t(STATUS_BUTTON_LABEL_KEY[status.type])}
               aria-describedby={statusTooltip.describedBy}
               onClick={e => e.stopPropagation()}
-              {...stylex.props(styles.statusButton)}>
+              {...stylex.props(
+                focusOutlineStyles.focusVisible,
+                styles.statusButton,
+              )}>
               <Icon
                 icon={STATUS_ICON_MAP[status.type]}
                 size="sm"
@@ -1583,11 +1606,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       </div>
 
       {popover.render(
-        <div
-          {...mergeProps(
-            themeProps('multi-selector-popup'),
-            stylex.props(styles.dropdown),
-          )}>
+        <div {...stylex.props(styles.dropdown)}>
           {renderSearch()}
           <div
             id={listboxId}

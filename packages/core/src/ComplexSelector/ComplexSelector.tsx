@@ -123,14 +123,6 @@ const styles = stylex.create({
       ':focus-within': 'none',
     },
     fontWeight: fontWeightVars['--font-weight-medium'],
-    outline: {
-      default: 'none',
-      ':has(:focus-visible)': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':has(:focus-visible)': '3px',
-    },
     transitionProperty:
       'background-image, background-color, color, opacity, transform',
     transform: {
@@ -387,6 +379,7 @@ export function ComplexSelector<Value>({
     dialogLabel: label,
     hasCloseButton: false,
     hasAutoFocus: true,
+    surfaceTarget: 'complex-selector-popup',
     onHide: handlePopoverHide,
   });
 
@@ -447,16 +440,7 @@ export function ComplexSelector<Value>({
   const triggerContent = triggerLabel ?? placeholder;
 
   const content = (
-    // The theme target sits here, not on the layer: the layer element is a
-    // bare positioning box (useLayer zeroes its borders, padding and
-    // background), so this content box is the surface a theme has to reach to
-    // paint the popup.
-    <div
-      id={contentId}
-      {...mergeProps(
-        themeProps('complex-selector-popup'),
-        stylex.props(styles.content, contentXstyle),
-      )}>
+    <div id={contentId} {...stylex.props(styles.content, contentXstyle)}>
       {children(optimisticValue, commitValue, close, {
         isOpen,
         isBusy,
@@ -485,6 +469,7 @@ export function ComplexSelector<Value>({
             styles[size],
             variant === 'input' && focusOutlineStyles.focusWithin,
             variant === 'ghost' && styles.triggerGhost,
+            variant === 'ghost' && focusOutlineStyles.focusWithin,
             isDisabled && inputWrapperStyles.disabled,
             variant === 'ghost' && isDisabled && styles.triggerGhostDisabled,
             isDisabled && styles.disabled,

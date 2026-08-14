@@ -451,8 +451,14 @@ export function Timestamp({
           ? formatInstant(date, effectiveFormat, {isTimezoneShown})
           : '';
 
-  // Full absolute text for tooltip and aria-label
+  // Full absolute text for the tooltip (visible — keeps the compact timezone
+  // abbreviation) and for the AT-facing aria-label, which spells the timezone
+  // out in full: abbreviations like "PST" or "GMT+2" are unexpanded
+  // abbreviations to a screen-reader user (WCAG 3.1.4).
   const fullAbsoluteText = isValidDate ? formatInstant(date, 'full') : '';
+  const ariaLabelText = isValidDate
+    ? formatInstant(date, 'full', {timeZoneNameStyle: 'long'})
+    : '';
 
   // Live updates
   useEffect(() => {
@@ -518,8 +524,14 @@ export function Timestamp({
       <time
         ref={mergeRefs(ref, timeRef)}
         dateTime={isoString}
+        // `ariaLabelText` is '' only for an invalid date, which bails out
+        // before rendering — but keep the guard local: an empty aria-label
+        // must be omitted entirely (not rendered as aria-label="") so AT
+        // falls back to reading the visible <time> content.
         aria-label={
-          isRelativeFormat(effectiveFormat) ? fullAbsoluteText : undefined
+          isRelativeFormat(effectiveFormat) && ariaLabelText !== ''
+            ? ariaLabelText
+            : undefined
         }
         // The hover card is anchored here with focusTrigger="always", which
         // attaches focus listeners but does not itself make the anchor

@@ -25,6 +25,7 @@ import {InputGroup} from '../InputGroup';
 import {InputGroupText} from '../InputGroup/InputGroupText';
 import {defineTheme} from '../theme/defineTheme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
+import {InternationalizationProvider} from '../i18n';
 
 function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
   const {prose, component} = generateThemeCSS(theme);
@@ -168,6 +169,24 @@ describe('DateInput', () => {
 
     expect(within(container).getByRole('alert')).toHaveTextContent('');
     expect(screen.queryByText('Invalid date')).not.toBeInTheDocument();
+  });
+
+  it('resolves the invalid-date announcement from the i18n catalog', () => {
+    const {container} = render(
+      <InternationalizationProvider
+        locale="en"
+        overrides={{en: {'@astryx.dateInput.invalidDate': 'Ungültiges Datum'}}}>
+        <DateInput label="Date" onChange={() => {}} />
+      </InternationalizationProvider>,
+    );
+
+    fireEvent.change(screen.getByRole('combobox'), {
+      target: {value: '13/45/2024'},
+    });
+
+    expect(within(container).getByRole('alert')).toHaveTextContent(
+      'Ungültiges Datum',
+    );
   });
 
   it('reverts to previous value on blur when input is invalid', async () => {

@@ -2088,7 +2088,7 @@ describe('MultiSelector dropdown option theme target', () => {
 });
 
 describe('MultiSelector popup theme target', () => {
-  it('puts astryx-multi-selector-popup on the dropdown box inside the layer', async () => {
+  it('puts astryx-multi-selector-popup on the surface that paints, not the list inside it', async () => {
     const user = userEvent.setup();
     render(
       <MultiSelector
@@ -2100,13 +2100,17 @@ describe('MultiSelector popup theme target', () => {
     );
     await user.click(screen.getByRole('combobox', {name: /Fruit/}));
 
-    const layer = document.querySelector('[popover]') as HTMLElement;
     const popup = document.querySelector(
       '.astryx-multi-selector-popup',
     ) as HTMLElement;
     expect(popup).not.toBeNull();
+    expect(popup).toHaveClass('astryx-popover-surface');
+    // The scrolling list is a descendant, not the target itself.
+    expect(popup.querySelector('[role="listbox"]')).not.toBeNull();
+    expect(popup.getAttribute('role')).toBeNull();
+
+    const layer = document.querySelector('[popover]') as HTMLElement;
     expect(popup).not.toBe(layer);
     expect(layer.contains(popup)).toBe(true);
-    expect(popup.querySelector('[role="listbox"]')).not.toBeNull();
   });
 });

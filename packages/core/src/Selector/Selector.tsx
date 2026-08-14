@@ -33,6 +33,7 @@ import {usePopover} from '../Popover/usePopover';
 import {useTooltip} from '../Tooltip';
 import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {useIndicator} from '../Indicator';
+import type {IndicatorPosition} from '../Indicator';
 import type {IconName} from '../Icon';
 import {
   Field,
@@ -76,6 +77,7 @@ import {useSize} from '../SizeContext/SizeContext';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {stableClassName} from '../naming';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
@@ -179,14 +181,6 @@ const styles = stylex.create({
       ':focus-within': 'none',
     },
     fontWeight: fontWeightVars['--font-weight-medium'],
-    outline: {
-      default: 'none',
-      ':has(:focus-visible)': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':has(:focus-visible)': '3px',
-    },
     transitionProperty:
       'background-image, background-color, color, opacity, transform',
     transform: {
@@ -215,11 +209,6 @@ const styles = stylex.create({
     color: 'inherit',
     cursor: 'pointer',
     borderRadius: radiusVars['--radius-element'],
-    outline: {
-      default: 'none',
-      ':focus-visible': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: 1,
   },
 
   // Dropdown container
@@ -300,6 +289,19 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-2'],
     flex: 1,
     minWidth: 0,
+  },
+  // The mark's column, reserved on every row and at either position, so a row
+  // occupies the same geometry whether or not it is the chosen one — the
+  // default check draws nothing when unchecked, and without the column a list
+  // would indent (or truncate) its chosen row differently from the rest.
+  // `minWidth` rather than `width`: a theme can replace `check` with a larger
+  // indicator (a radio is 20px at `sm`), and the column has to grow with it.
+  itemMarkColumn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    minWidth: '1rem',
   },
   itemCheckmark: {
     flexShrink: 0,
@@ -519,6 +521,16 @@ interface SelectorPropsBase<
   renderOption?: (option: SelectorOptionData) => ReactNode;
 
   /**
+   * Which edge of the option row carries the selected mark. `start` reserves a
+   * mark column ahead of every label so they stay aligned, the way a native
+   * menu does; `end` is the house convention shared with Typeahead and
+   * CommandPalette.
+   *
+   * @default 'end'
+   */
+  indicatorPosition?: IndicatorPosition;
+
+  /**
    * Whether to show a search input for filtering options.
    * @default false
    */
@@ -668,6 +680,7 @@ export function Selector<T extends SelectorOptionType>(
     startIcon,
     htmlName,
     renderOption,
+    indicatorPosition = 'end',
     hasSearch = false,
     searchPlaceholder: searchPlaceholderFromProps,
     placement,
@@ -797,6 +810,9 @@ export function Selector<T extends SelectorOptionType>(
     // The popup's own role="listbox" is the exposed semantics; the trigger
     // keeps DOM focus, so wrapping it in a modal dialog would misrepresent it.
     role: 'none',
+    // The theme target belongs on the SURFACE that paints the popup, which
+    // `usePopover` owns — not on the scrolling list inside it.
+    surfaceTarget: 'selector-popup',
   });
 
   // Open dropdown on mount when isDefaultOpen is true
@@ -1088,6 +1104,45 @@ export function Selector<T extends SelectorOptionType>(
       const isHighlighted = flatIndex === highlightedIndex;
       const isSelected = item.value === normalizedValue;
 
+      /*
+       * Rendered UNCONDITIONALLY, with the state passed down: the default
+       * check draws nothing when unchecked, but a theme that replaces the
+       * `check` indicator with a radio needs the unselected state to draw
+       * its empty circle. `{isSelected && …}` would make that impossible.
+       *
+       * `selector-check` stays the stable target for the mark's position
+       * in the row; the indicator owns what the mark looks like.
+       */
+      const mark = (
+        <span {...stylex.props(styles.itemMarkColumn)}>
+          <SelectionMark
+            state={isSelected ? 'checked' : 'unchecked'}
+            size="sm"
+            isDisabled={item.disabled ?? false}
+            {...themeProps('selector-check')}
+          />
+        </span>
+      );
+
+      const optionContent = (
+        <span {...stylex.props(styles.itemContent)}>
+          {renderOption ? renderOption(item) : <DefaultOption option={item} />}
+        </span>
+      );
+
+      const content =
+        indicatorPosition === 'start' ? (
+          <>
+            {mark}
+            {optionContent}
+          </>
+        ) : (
+          <>
+            {optionContent}
+            {mark}
+          </>
+        );
+
       return (
         <div
           key={item.value}
@@ -1104,33 +1159,13 @@ export function Selector<T extends SelectorOptionType>(
             isSelected && styles.itemSelected,
             item.disabled && styles.itemDisabled,
           )}>
-          <span {...stylex.props(styles.itemContent)}>
-            {renderOption ? (
-              renderOption(item)
-            ) : (
-              <DefaultOption option={item} />
-            )}
-          </span>
-          {/*
-           * Rendered UNCONDITIONALLY, with the state passed down: the default
-           * check draws nothing when unchecked, but a theme that replaces the
-           * `check` indicator with a radio needs the unselected state to draw
-           * its empty circle. `{isSelected && …}` would make that impossible.
-           *
-           * `selector-check` stays the stable target for the mark's position
-           * in the row; the indicator owns what the mark looks like.
-           */}
-          <SelectionMark
-            state={isSelected ? 'checked' : 'unchecked'}
-            size="sm"
-            isDisabled={item.disabled ?? false}
-            {...themeProps('selector-check')}
-          />
+          {content}
         </div>
       );
     },
     [
       renderOption,
+      indicatorPosition,
       highlightedIndex,
       size,
       normalizedValue,
@@ -1251,6 +1286,7 @@ export function Selector<T extends SelectorOptionType>(
             styles.triggerContainer,
             sizeStyles[size],
             variant === 'ghost' && styles.triggerGhost,
+            variant === 'ghost' && focusOutlineStyles.focusWithin,
             isDisabled && inputWrapperStyles.disabled,
             variant === 'ghost' && isDisabled && styles.triggerGhostDisabled,
             !selectedItem && styles.triggerPlaceholder,
@@ -1338,7 +1374,10 @@ export function Selector<T extends SelectorOptionType>(
               aria-label={t(STATUS_BUTTON_LABEL_KEY[status.type])}
               aria-describedby={statusTooltip.describedBy}
               onClick={e => e.stopPropagation()}
-              {...stylex.props(styles.statusButton)}>
+              {...stylex.props(
+                focusOutlineStyles.focusVisible,
+                styles.statusButton,
+              )}>
               <Icon
                 icon={STATUS_ICON_MAP[status.type]}
                 size="sm"
@@ -1412,6 +1451,12 @@ export function Selector<T extends SelectorOptionType>(
         {
           placement: popoverPlacement,
           alignment: 'start',
+          // The system's standard menu clearance, except in overlay mode:
+          // there the measured negative margin owns the block geometry and
+          // the menu is meant to sit on the trigger, not clear it.
+          offset: shouldOverlaySelectedItem
+            ? undefined
+            : spacingVars['--spacing-1'],
           xstyle: [styles.popover, layerAnimations[popoverPlacement]],
           style: popoverOffsetStyle,
         },

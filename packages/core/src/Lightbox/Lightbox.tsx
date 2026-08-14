@@ -35,6 +35,7 @@ import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {mergeProps, mergeRefs, rtlStyles} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {useTranslator} from '../i18n';
 
 /**
@@ -156,16 +157,6 @@ const styles = stylex.create({
     cursor: {
       default: 'zoom-in',
       '@media (hover: hover)': 'zoom-in',
-    },
-  },
-  zoomTarget: {
-    outline: {
-      default: 'none',
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': '2px',
     },
   },
   imageWrapperZoomed: {
@@ -641,7 +632,7 @@ export function Lightbox({
             aria-label={isZoomTarget ? t('@astryx.lightbox.zoom') : undefined}
             {...stylex.props(
               styles.imageWrapper,
-              isZoomTarget && styles.zoomTarget,
+              isZoomTarget && focusOutlineStyles.focusVisible,
               !isVideo && hasZoom && !isZoomed && styles.imageWrapperZoomable,
               !isVideo && isZoomed && styles.imageWrapperZoomed,
               !isVideo && isDragging && styles.imageWrapperDragging,
