@@ -23,21 +23,25 @@ export const docs = {
     targets: [{className: 'astryx-bottom-sheet', visualProps: []}],
   },
   description:
-    'A mobile touch sheet that rises from the bottom edge, with animated entrance and exit, a grab handle, drag-to-resize snap points, and swipe-to-dismiss. Built on a native modal <dialog>.',
+    'A mobile touch sheet that rises from the bottom edge, with animated entrance and exit, a grab handle, drag-to-resize snap points, and swipe-to-dismiss. Built on a native <dialog>. Use sheetId inside BottomSheetOrchestrator for mutually exclusive multi-step flows over one shared scrim.',
   props: [
     {
       name: 'isOpen',
       type: 'boolean',
       description:
-        'Whether the sheet is open. Fully controlled; pair with onOpenChange.',
-      required: true,
+        'Whether a standalone sheet is open. Fully controlled; pair with onOpenChange. Omit inside BottomSheetOrchestrator.',
     },
     {
       name: 'onOpenChange',
       type: '(isOpen: boolean) => void',
       description:
-        'Called when the sheet opens or closes. The boolean is the requested next state (false on Escape, scrim click, or a swipe past the dismiss threshold). The caller owns the open state.',
-      required: true,
+        'For a standalone sheet, called when it requests an open-state change (false on Escape, scrim click, or a swipe past the dismiss threshold). Omit inside BottomSheetOrchestrator.',
+    },
+    {
+      name: 'sheetId',
+      type: 'string',
+      description:
+        'Unique ID for this sheet inside BottomSheetOrchestrator. The orchestrator opens it when activeSheet matches. Omit isOpen and onOpenChange when sheetId is used.',
     },
     {
       name: 'label',
@@ -64,7 +68,7 @@ export const docs = {
       name: 'hasScrim',
       type: 'boolean',
       description:
-        'Whether to render a scrim, the semi-transparent overlay that covers and blocks the background, behind the sheet. true (default) uses showModal(): top layer, focus trap, ::backdrop scrim, body scroll lock, and tap-scrim-to-dismiss, with the background inert. false still renders a viewport-anchored overlay above the page, not inline content, but uses show() with no scrim, leaving the page behind interactive and scrollable. Escape still closes while focus is inside, and drag/flick-to-dismiss still work.',
+        'For a standalone BottomSheet, whether to render a scrim—the semi-transparent overlay that covers and blocks the background. true (default) uses showModal(): top layer, focus trap, ::backdrop scrim, body scroll lock, and tap-scrim-to-dismiss, with the background inert. false still renders a viewport-anchored overlay above the page, not inline content, but uses show() with no scrim, leaving the page behind interactive and scrollable. For a multi-step flow, configure hasScrim on BottomSheetOrchestrator instead; it owns one shared scrim across every child.',
       default: 'true',
     },
   ],
@@ -81,6 +85,11 @@ export const docs = {
         guidance: true,
         description:
           'Keep the caller as the source of truth: derive isOpen from state and clear it in onOpenChange.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use BottomSheetOrchestrator with a unique sheetId per sheet for multi-step flows; it owns one shared scrim while the outgoing sheet animates away inertly and the next sheet becomes active.',
       },
       {
         guidance: true,
@@ -133,6 +142,23 @@ export const docs = {
 </BottomSheet>`,
     },
     {
+      label: 'Multi-step flow (one sheet at a time)',
+      code: `const [activeSheet, setActiveSheet] = useState(null);
+<>
+  <Button label="Start" onClick={() => setActiveSheet('details')} />
+  <BottomSheetOrchestrator
+    activeSheet={activeSheet}
+    onActiveSheetChange={setActiveSheet}>
+    <BottomSheet sheetId="details" label="Details">
+      <Button label="Continue" onClick={() => setActiveSheet('confirm')} />
+    </BottomSheet>
+    <BottomSheet sheetId="confirm" label="Confirm">
+      <Button label="Back" onClick={() => setActiveSheet('details')} />
+    </BottomSheet>
+  </BottomSheetOrchestrator>
+</>`,
+    },
+    {
       label: 'No scrim',
       code: `const [isOpen, setIsOpen] = useState(true);
 <BottomSheet
@@ -162,6 +188,11 @@ export const docsDense = {
       {
         guidance: true,
         description: 'Derive isOpen from state; clear it in onOpenChange.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use BottomSheetOrchestrator + sheetId for mutually exclusive multi-step flows over one shared scrim.',
       },
       {
         guidance: true,

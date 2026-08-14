@@ -4,7 +4,7 @@
 
 /**
  * @file BottomSheet.tsx
- * @input Uses React, StyleX, theme tokens, core hooks (useScrollLock), utils, useSheetGestures
+ * @input Uses React, StyleX, theme tokens, core hooks (useScrollLock), utils, useSheetGestures, BottomSheetOrchestratorContext
  * @output Exports BottomSheet component and BottomSheetProps
  * @position Lab implementation; consumed by index.ts, tested by BottomSheet.test.tsx, demonstrated in Storybook
  *
@@ -17,12 +17,12 @@
  * That shell is what lets the sheet translate freely (including a little past
  * fully-open) without clipping against a fixed dialog edge.
  *
- * `hasScrim` picks the presentation: `true` (default) uses `showModal()` (top
- * layer, focus trap, scrim, scroll lock, background inert); `false` uses
- * `show()` for a non-modal sheet with no scrim, leaving the page behind
- * interactive and scrollable (the transparent shell is pointer-events:none so
- * taps pass through). Both modes keep the native dialog presented but inert
- * until the slide-out transition ends.
+ * For a standalone sheet, `hasScrim` picks the presentation: `true` (default)
+ * uses `showModal()` (top layer, focus trap, scrim, scroll lock, background
+ * inert); `false` uses `show()` for a non-modal sheet with no scrim. Inside a
+ * BottomSheetOrchestrator, the parent owns one shared scrim/focus trap/scroll
+ * lock and every child uses `show()` beneath it. Both standalone modes keep
+ * the native dialog presented but inert until the slide-out transition ends.
  *
  * The drag/snap/dismiss machinery lives in `useSheetGestures`; the offset
  * geometry lives in the pure, tested `snapOffsets` module. Both are internal
@@ -31,11 +31,19 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/lab/src/BottomSheet/BottomSheet.doc.mjs (props table, features, usage)
  * - /packages/lab/src/BottomSheet/BottomSheet.test.tsx (tests for new/changed behavior)
+ * - /packages/lab/src/BottomSheet/BottomSheetOrchestrator.tsx (multi-sheet coordination)
  * - /packages/lab/src/BottomSheet/index.ts (exports if types change)
  * - /apps/storybook/stories/BottomSheet.stories.tsx (examples and visual coverage)
  */
 
-import {useCallback, useEffect, useRef, useState, type ReactNode} from 'react';
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '@astryxdesign/core';
 import {
@@ -50,13 +58,12 @@ import {
 import {useDevWarning, useScrollLock} from '@astryxdesign/core/hooks';
 import {mergeProps, mergeRefs, themeProps} from '@astryxdesign/core/utils';
 import {useSheetGestures} from './useSheetGestures';
+import {BottomSheetOrchestratorContext} from './BottomSheetOrchestratorContext';
 
 // A non-modal sheet (hasScrim={false}) uses show() instead of showModal(), so
 // it isn't in the native top layer and needs an explicit z-index to sit above
 // page content. No z-index token exists in the theme; 1000 matches the Drawer
 // / app-level overlay convention.
-const NON_MODAL_Z = 1000;
-
 // Detent fractions of the viewport, ascending (peek / mid / full). Detents
 // that land within DETENT_DEDUP_PX of each other (e.g. a hug height next to a
 // snap) are de-duped in the gesture hook, and any taller than the sheet are
@@ -142,7 +149,7 @@ const styles = stylex.create({
   // whatever the containing block is, so the sheet stays correctly anchored.
   dialogNonModal: {
     pointerEvents: 'none',
-    zIndex: NON_MODAL_Z,
+    zIndex: 1000,
     width: '100%',
     height: '100%',
   },
@@ -257,19 +264,9 @@ const styles = stylex.create({
   },
 });
 
-export interface BottomSheetProps extends BaseProps<HTMLDialogElement> {
+interface BottomSheetBaseProps extends BaseProps<HTMLDialogElement> {
   /** Ref forwarded to the underlying <dialog> element. */
   ref?: React.Ref<HTMLDialogElement>;
-
-  /** Whether the sheet is open. Fully controlled — pair with `onOpenChange`. */
-  isOpen: boolean;
-
-  /**
-   * Called when the sheet opens or closes. The boolean is the requested next
-   * state (`false` on Escape, scrim click, or a swipe past the dismiss
-   * threshold). The caller owns the open state.
-   */
-  onOpenChange: (isOpen: boolean) => void;
 
   /**
    * Accessible label for the sheet (required — the sheet has no built-in
@@ -296,8 +293,23 @@ export interface BottomSheetProps extends BaseProps<HTMLDialogElement> {
    */
   height?: BottomSheetHeight | number | string;
 
+  /** Test ID for the root element. */
+  'data-testid'?: string;
+}
+
+interface StandaloneBottomSheetProps extends BottomSheetBaseProps {
+  /** Whether the sheet is open. Fully controlled — pair with `onOpenChange`. */
+  isOpen: boolean;
+
   /**
-   * Whether to render a modal scrim behind the sheet.
+   * Called when the sheet opens or closes. The boolean is the requested next
+   * state (`false` on Escape, scrim click, or a swipe past the dismiss
+   * threshold). The caller owns the open state.
+   */
+  onOpenChange: (isOpen: boolean) => void;
+
+  /**
+   * Whether to render a modal scrim behind this standalone sheet.
    * - `true` (default) — `showModal()`: renders in the top layer with a focus
    *   trap, a `::backdrop` scrim, body scroll lock, and tap-scrim-to-dismiss.
    *   The background is inert. Use for focused tasks (filters, forms).
@@ -307,13 +319,35 @@ export interface BottomSheetProps extends BaseProps<HTMLDialogElement> {
    *   sheet or an iOS undimmed detent). Escape still closes while focus is
    *   inside the sheet, and drag/flick-to-dismiss still work. Use for a peek
    *   surface that coexists with the page (e.g. a panel over a live map).
+   *
+   * BottomSheetOrchestrator owns this setting for orchestrated sheets.
    * @default true
    */
   hasScrim?: boolean;
 
-  /** Test ID for the root element. */
-  'data-testid'?: string;
+  /** Only used for a BottomSheet nested in BottomSheetOrchestrator. */
+  sheetId?: never;
 }
+
+interface OrchestratedBottomSheetProps extends BottomSheetBaseProps {
+  /**
+   * Unique ID for this sheet within a BottomSheetOrchestrator. The
+   * orchestrator opens it when `activeSheet` matches this value.
+   */
+  sheetId: string;
+
+  /** Supplied by BottomSheetOrchestrator when `sheetId` is present. */
+  isOpen?: never;
+
+  /** Supplied by BottomSheetOrchestrator when `sheetId` is present. */
+  onOpenChange?: never;
+
+  /** Supplied by BottomSheetOrchestrator for the whole flow. */
+  hasScrim?: never;
+}
+
+export type BottomSheetProps =
+  StandaloneBottomSheetProps | OrchestratedBottomSheetProps;
 
 /**
  * A mobile touch sheet that rises from the bottom edge, with a grab handle,
@@ -339,8 +373,9 @@ export interface BottomSheetProps extends BaseProps<HTMLDialogElement> {
  */
 export function BottomSheet({
   ref,
-  isOpen,
-  onOpenChange,
+  isOpen: controlledIsOpen,
+  onOpenChange: controlledOnOpenChange,
+  sheetId,
   label,
   children,
   height = 'capped',
@@ -348,21 +383,75 @@ export function BottomSheet({
   xstyle,
   ...props
 }: BottomSheetProps) {
-  const [isPresented, setIsPresented] = useState(isOpen);
-  const isExiting = !isOpen && isPresented;
+  const orchestrator = useContext(BottomSheetOrchestratorContext);
+  const isInsideOrchestrator = orchestrator != null;
+  const hasValidSheetId = sheetId != null && sheetId.length > 0;
+  const hasSharedScrim = orchestrator?.hasScrim === true;
+  const hasNativeScrim = orchestrator == null && hasScrim;
+  const isModal = hasNativeScrim || hasSharedScrim;
+  const orchestratorActiveSheet = orchestrator?.activeSheet ?? null;
+  const onSheetExitComplete = orchestrator?.onSheetExitComplete;
+  const orchestratorPhase =
+    orchestrator != null && hasValidSheetId
+      ? orchestrator.getSheetPhase(sheetId)
+      : 'hidden';
+  // Inside an orchestrator, its single active ID is the only source of truth.
+  // This deliberately ignores standalone control props supplied from plain JS
+  // so the parent still upholds the maximum-one-active invariant at runtime.
+  const isOpen = isInsideOrchestrator
+    ? orchestratorPhase === 'active'
+    : (controlledIsOpen ?? false);
+  const [isStandalonePresented, setIsStandalonePresented] = useState(
+    controlledIsOpen ?? false,
+  );
+  const isOrchestratedExiting =
+    isInsideOrchestrator && orchestratorPhase === 'exiting';
+  const isStandaloneExiting =
+    !isInsideOrchestrator && !isOpen && isStandalonePresented;
+  const isExiting = isOrchestratedExiting || isStandaloneExiting;
+  const isPresented = isInsideOrchestrator
+    ? isOpen || isOrchestratedExiting
+    : isOpen || isStandalonePresented;
+  const handleOpenChange = useCallback(
+    (nextIsOpen: boolean) => {
+      if (orchestrator != null) {
+        if (!hasValidSheetId) {
+          return;
+        }
+        if (nextIsOpen) {
+          orchestrator.onActiveSheetChange(sheetId);
+        } else if (orchestrator.activeSheet === sheetId) {
+          // Ignore stale dismissal events from a sheet that has already handed
+          // off to another step.
+          orchestrator.onActiveSheetChange(null);
+        }
+        return;
+      }
+      controlledOnOpenChange?.(nextIsOpen);
+    },
+    [controlledOnOpenChange, hasValidSheetId, orchestrator, sheetId],
+  );
   const dialogRef = useRef<HTMLDialogElement | null>(null);
-  const triggerRef = useRef<HTMLElement | null>(null);
+  const standaloneTriggerRef = useRef<HTMLElement | null>(null);
+  const triggerRef = orchestrator?.triggerRef ?? standaloneTriggerRef;
   const sheetNodeRef = useRef<HTMLDivElement | null>(null);
-  const close = useCallback(() => onOpenChange(false), [onOpenChange]);
+  const close = useCallback(() => handleOpenChange(false), [handleOpenChange]);
 
   // Set imperatively (not via state) so a 60fps drag doesn't re-render. The
   // hook reports the scrim opacity for the current detent (a faint floor at the peek).
-  const handleScrimOpacity = useCallback((opacity: number) => {
-    dialogRef.current?.style.setProperty(
-      '--_sheet-scrim-opacity',
-      String(opacity),
-    );
-  }, []);
+  const handleScrimOpacity = useCallback(
+    (opacity: number) => {
+      if (orchestrator != null) {
+        orchestrator.setScrimOpacity(opacity);
+      } else {
+        dialogRef.current?.style.setProperty(
+          '--_sheet-scrim-opacity',
+          String(opacity),
+        );
+      }
+    },
+    [orchestrator],
+  );
 
   const {contentProps, handleProps, bodyProps, sheetRef} = useSheetGestures({
     isOpen,
@@ -381,29 +470,46 @@ export function BottomSheet({
       return;
     }
     if (isOpen) {
-      setIsPresented(true);
+      if (!isInsideOrchestrator) {
+        setIsStandalonePresented(true);
+      }
       dialog.style.setProperty('--_sheet-scrim-opacity', '1');
       if (!dialog.open) {
         // Only remember/restore focus for modal sheets; a non-modal sheet must
         // not yank focus back from whatever the user does in the live page.
-        if (hasScrim) {
-          triggerRef.current = document.activeElement as HTMLElement | null;
-          dialog.showModal();
+        if (isModal) {
+          // An orchestrated flow keeps the original opener across sheet
+          // handoffs. A standalone sheet clears this ref after every close.
+          if (triggerRef.current == null) {
+            triggerRef.current = document.activeElement as HTMLElement | null;
+          }
+          if (hasNativeScrim) {
+            dialog.showModal();
+          } else {
+            dialog.show();
+          }
         } else {
           dialog.show();
         }
-        // Land on the panel (so AT reads from the label) for modal sheets;
-        // otherwise only honor a descendant data-autofocus.
-        const autofocus = dialog.querySelector<HTMLElement>('[data-autofocus]');
-        if (autofocus) {
-          autofocus.focus();
-        } else if (hasScrim) {
-          sheetNodeRef.current?.focus();
-        }
+      }
+      // Land on every newly active step, including a rapid handoff back to a
+      // dialog whose close timer has not fired yet.
+      const autofocus = dialog.querySelector<HTMLElement>('[data-autofocus]');
+      if (autofocus) {
+        autofocus.focus();
+      } else if (isModal) {
+        sheetNodeRef.current?.focus();
       }
     } else if (dialog.open) {
-      if (hasScrim) {
+      if (hasNativeScrim) {
         dialog.style.setProperty('--_sheet-scrim-opacity', '0');
+      }
+      // Only one outgoing sheet is retained. If another navigation supersedes
+      // this exit, close the older dialog immediately instead of accumulating
+      // stale visual layers.
+      if (isInsideOrchestrator && orchestratorPhase === 'hidden') {
+        dialog.close();
+        return;
       }
       // Wait for the slide-out (sheetClosing, applied this render) before
       // close() releases the top layer. Timeout backstops a missing
@@ -420,9 +526,19 @@ export function BottomSheet({
         if (dialog.open) {
           dialog.close();
         }
-        setIsPresented(false);
-        triggerRef.current?.focus();
-        triggerRef.current = null;
+        if (isInsideOrchestrator && hasValidSheetId) {
+          onSheetExitComplete?.(sheetId);
+          // A handoff keeps the original trigger for the rest of the flow. A
+          // final close restores it only after the outgoing motion completes.
+          if (orchestratorActiveSheet == null) {
+            triggerRef.current?.focus();
+            triggerRef.current = null;
+          }
+        } else {
+          setIsStandalonePresented(false);
+          triggerRef.current?.focus();
+          triggerRef.current = null;
+        }
       };
       const onEnd = (event: TransitionEvent) => {
         if (event.target === sheet && event.propertyName === 'transform') {
@@ -438,11 +554,36 @@ export function BottomSheet({
         sheet?.removeEventListener('transitionend', onEnd);
       };
     }
-  }, [isOpen, hasScrim]);
+  }, [
+    hasNativeScrim,
+    hasValidSheetId,
+    isModal,
+    isOpen,
+    isInsideOrchestrator,
+    onSheetExitComplete,
+    orchestratorActiveSheet,
+    orchestratorPhase,
+    sheetId,
+    triggerRef,
+  ]);
 
-  // Only a modal sheet locks body scroll; a non-modal sheet leaves the page
-  // scrollable behind it.
-  useScrollLock(isPresented && hasScrim);
+  useDevWarning(
+    'BottomSheet',
+    'requires a non-empty `sheetId` when nested in ' +
+      'BottomSheetOrchestrator; standalone `isOpen` / `onOpenChange` props are ' +
+      'ignored there.',
+    isInsideOrchestrator && !hasValidSheetId,
+  );
+  useDevWarning(
+    'BottomSheet',
+    '`sheetId` only works inside BottomSheetOrchestrator. Use `isOpen` and ' +
+      '`onOpenChange` for a standalone sheet.',
+    !isInsideOrchestrator && sheetId != null,
+  );
+
+  // Only a standalone modal sheet owns its body lock. The orchestrator keeps
+  // its shared lock through the outgoing animation.
+  useScrollLock(isPresented && hasNativeScrim);
 
   // Enforce an accessible name: label is required by types, but a JS caller
   // can still pass an empty string, leaving the sheet unnamed.
@@ -477,11 +618,11 @@ export function BottomSheet({
   // pass through to the page rather than dismissing.
   const handleClick = useCallback(
     (event: React.MouseEvent<HTMLDialogElement>) => {
-      if (hasScrim && event.target === event.currentTarget) {
+      if (hasNativeScrim && event.target === event.currentTarget) {
         close();
       }
     },
-    [close, hasScrim],
+    [close, hasNativeScrim],
   );
 
   const isNamed = typeof height === 'string' && height in HEIGHT_BUDGETS;
@@ -496,16 +637,16 @@ export function BottomSheet({
     <dialog
       {...stylex.props(
         styles.dialog,
-        (isOpen || isPresented) && styles.dialogOpen,
+        isPresented && styles.dialogOpen,
         // Modal: paint the ::backdrop scrim (top layer). Non-modal: no scrim,
         // pass taps through to the page, and sit above content via z-index.
-        hasScrim && styles.scrim,
-        !hasScrim && styles.dialogNonModal,
+        hasNativeScrim && styles.scrim,
+        !hasNativeScrim && styles.dialogNonModal,
       )}
       ref={mergeRefs(ref, dialogRef)}
       aria-label={label}
       aria-hidden={isExiting ? 'true' : undefined}
-      aria-modal={hasScrim && isOpen ? 'true' : undefined}
+      aria-modal={isModal && isOpen ? 'true' : undefined}
       inert={isExiting ? true : undefined}
       onCancel={handleCancel}
       onClick={handleClick}
@@ -527,6 +668,9 @@ export function BottomSheet({
             undefined,
             {
               ['--_sheet-budget' as string]: budget,
+              // Gesture offsets are meaningful only while active. Removing
+              // their inline transform lets sheetClosing drive the exit even
+              // when the sheet was handed off from a shorter snap point.
               ...(isOpen ? contentProps.style : {}),
             },
           )}>

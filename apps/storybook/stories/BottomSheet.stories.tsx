@@ -2,12 +2,12 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState} from 'react';
-import {BottomSheet} from '@astryxdesign/lab';
+import {BottomSheet, BottomSheetOrchestrator} from '@astryxdesign/lab';
 import {Button} from '@astryxdesign/core/Button';
 import {Divider} from '@astryxdesign/core/Divider';
 import {Heading} from '@astryxdesign/core/Heading';
 import {Section} from '@astryxdesign/core/Section';
-import {VStack} from '@astryxdesign/core/Stack';
+import {HStack, VStack} from '@astryxdesign/core/Stack';
 import {Text} from '@astryxdesign/core/Text';
 import {TextInput} from '@astryxdesign/core/TextInput';
 import {TextArea} from '@astryxdesign/core/TextArea';
@@ -176,6 +176,81 @@ export const HugHeight: Story = {
             </VStack>
           </Section>
         </BottomSheet>
+      </>
+    );
+  },
+};
+
+export const MultiStepOrchestrator: Story = {
+  name: 'Multi-step orchestrator',
+  render: () => {
+    const [activeSheet, setActiveSheet] = useState<string | null>(null);
+    const [name, setName] = useState('');
+    const [email, setEmail] = useState('');
+
+    return (
+      <>
+        <Button
+          label="Start profile setup"
+          onClick={() => setActiveSheet('profile')}
+        />
+        <BottomSheetOrchestrator
+          activeSheet={activeSheet}
+          onActiveSheetChange={setActiveSheet}>
+          <BottomSheet sheetId="profile" label="Profile details" height="hug">
+            <Section padding={4}>
+              <VStack gap={4}>
+                <VStack gap={1}>
+                  <Heading level={3}>Profile details</Heading>
+                  <Text type="supporting" color="secondary">
+                    Step 1 of 2
+                  </Text>
+                </VStack>
+                <Divider />
+                <TextInput label="Name" value={name} onChange={setName} />
+                <TextInput label="Email" value={email} onChange={setEmail} />
+                <HStack gap={2} hAlign="end">
+                  <Button
+                    label="Cancel"
+                    variant="secondary"
+                    onClick={() => setActiveSheet(null)}
+                  />
+                  <Button
+                    label="Continue"
+                    onClick={() => setActiveSheet('confirm')}
+                  />
+                </HStack>
+              </VStack>
+            </Section>
+          </BottomSheet>
+          <BottomSheet sheetId="confirm" label="Confirm profile" height="hug">
+            <Section padding={4}>
+              <VStack gap={4}>
+                <VStack gap={1}>
+                  <Heading level={3}>Confirm profile</Heading>
+                  <Text type="supporting" color="secondary">
+                    Step 2 of 2
+                  </Text>
+                </VStack>
+                <Divider />
+                <VStack gap={2}>
+                  <Text type="label">{name || 'No name provided'}</Text>
+                  <Text type="supporting" color="secondary">
+                    {email || 'No email provided'}
+                  </Text>
+                </VStack>
+                <HStack gap={2} hAlign="end">
+                  <Button
+                    label="Back"
+                    variant="secondary"
+                    onClick={() => setActiveSheet('profile')}
+                  />
+                  <Button label="Finish" onClick={() => setActiveSheet(null)} />
+                </HStack>
+              </VStack>
+            </Section>
+          </BottomSheet>
+        </BottomSheetOrchestrator>
       </>
     );
   },
