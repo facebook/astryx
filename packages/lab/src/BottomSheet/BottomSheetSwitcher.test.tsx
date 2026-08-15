@@ -79,6 +79,26 @@ function Flow() {
   );
 }
 
+function ConditionalFlow() {
+  const [activeSheet, setActiveSheet] = useState<string | null>(null);
+  return (
+    <>
+      <button type="button" onClick={() => setActiveSheet('details')}>
+        Start conditional flow
+      </button>
+      <BottomSheetSwitcher
+        activeSheet={activeSheet}
+        onActiveSheetChange={setActiveSheet}>
+        {activeSheet != null && (
+          <BottomSheet sheetId={activeSheet} label="Conditional details">
+            Content
+          </BottomSheet>
+        )}
+      </BottomSheetSwitcher>
+    </>
+  );
+}
+
 function getSharedScrim(): HTMLElement {
   const scrim = document.querySelector<HTMLElement>(
     '.astryx-bottom-sheet-switcher-scrim',
@@ -289,6 +309,69 @@ describe('BottomSheetSwitcher', () => {
     expect(document.body.style.position).not.toBe('fixed');
   });
 
+  it('releases the shared modal layer when the closing sheet unmounts immediately', () => {
+    render(<ConditionalFlow />);
+    fireEvent.click(
+      screen.getByRole('button', {name: 'Start conditional flow'}),
+    );
+
+    fireEvent.keyDown(
+      screen.getByRole('dialog', {name: 'Conditional details'}),
+      {key: 'Escape'},
+    );
+
+    expect(
+      document.querySelector('.astryx-bottom-sheet-switcher-scrim'),
+    ).not.toBeInTheDocument();
+    expect(document.body.style.position).not.toBe('fixed');
+  });
+
+  it('portals the visual layer outside transformed or clipped ancestors', () => {
+    render(
+      <div
+        data-testid="clipping-ancestor"
+        style={{overflow: 'hidden', transform: 'translateY(100px)'}}>
+        <BottomSheetSwitcher
+          activeSheet="details"
+          onActiveSheetChange={() => {}}>
+          <BottomSheet sheetId="details" label="Portaled details">
+            Content
+          </BottomSheet>
+        </BottomSheetSwitcher>
+      </div>,
+    );
+
+    const clippingAncestor = screen.getByTestId('clipping-ancestor');
+    const dialog = screen.getByRole('dialog', {name: 'Portaled details'});
+    expect(clippingAncestor).not.toContainElement(dialog);
+    expect(dialog.parentElement?.parentElement).toBe(document.body);
+    expect(getSharedScrim().parentElement).toBe(dialog.parentElement);
+  });
+
+  it('keeps focus in a modal sheet that has no tabbable controls', () => {
+    render(
+      <>
+        <button type="button">Background action</button>
+        <BottomSheetSwitcher
+          activeSheet="details"
+          onActiveSheetChange={() => {}}>
+          <BottomSheet sheetId="details" label="Read-only details">
+            Read-only content
+          </BottomSheet>
+        </BottomSheetSwitcher>
+      </>,
+    );
+
+    const dialog = screen.getByRole('dialog', {name: 'Read-only details'});
+    const panel = getSheetPanel(dialog);
+    expect(panel).toHaveFocus();
+    expect(fireEvent.keyDown(panel, {key: 'Tab'})).toBe(false);
+    expect(panel).toHaveFocus();
+    expect(
+      screen.getByRole('button', {name: 'Background action'}),
+    ).not.toHaveFocus();
+  });
+
   it('can coordinate a non-modal flow without rendering a scrim', () => {
     render(
       <BottomSheetSwitcher
@@ -353,5 +436,18 @@ describe('BottomSheetSwitcher', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('does not refocus the panel when an incoming transition completes', () => {
+    render(<Flow />);
+    fireEvent.click(screen.getByRole('button', {name: 'Start flow'}));
+    fireEvent.click(screen.getByRole('button', {name: 'Continue'}));
+
+    const confirmSheet = screen.getByTestId('confirm-sheet');
+    const backButton = screen.getByRole('button', {name: 'Back'});
+    backButton.focus();
+    finishSheetTransition(confirmSheet, 'transform');
+
+    expect(backButton).toHaveFocus();
   });
 });

@@ -4,7 +4,7 @@
 
 /**
  * @file BottomSheetSwitcher.tsx
- * @input Uses React context, StyleX, theme tokens, focus/scroll-lock hooks, BottomSheetSwitcherContext
+ * @input Uses React context, React DOM portals, StyleX, theme tokens, focus/scroll-lock hooks, BottomSheetSwitcherContext
  * @output Exports BottomSheetSwitcher and BottomSheetSwitcherProps
  * @position Lab switcher for mutually exclusive BottomSheet flows
  *
@@ -15,7 +15,8 @@
  * down at the same time until their top edges align; otherwise it stays
  * stationary. The previous sheet fades only after both motions complete. The
  * switcher also owns the flow's one shared scrim, focus trap, and scroll
- * lock, so handoffs never stack backdrops.
+ * lock, so handoffs never stack backdrops. Its visual layer is portaled to
+ * document.body so containing blocks cannot clip or displace it.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/lab/src/BottomSheet/BottomSheet.tsx
@@ -34,6 +35,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import {createPortal} from 'react-dom';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -202,8 +204,21 @@ export function BottomSheetSwitcher({
   const scrimRef = useRef<HTMLDivElement | null>(null);
   const sheetElementsRef = useRef(new Map<string, HTMLElement>());
   const committedActiveSheetRef = useRef(activeSheet);
+  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
+  const [unmountedSheetIds, setUnmountedSheetIds] = useState<
+    ReadonlySet<string>
+  >(() => new Set());
   const [transition, setTransition] =
     useState<SheetTransitionState>(IDLE_TRANSITION);
+
+  // Switcher-managed sheets use show(), so they do not enter the native top
+  // layer. Portal the complete visual layer to body to keep transformed,
+  // contained, or overflow-clipped application ancestors from displacing the
+  // viewport scrim and sheets. Waiting until layout keeps server and initial
+  // client markup aligned while still mounting the portal before paint.
+  useLayoutEffect(() => {
+    setPortalTarget(document.body);
+  }, []);
 
   // Derive the handoff during the very render in which the controlled prop
   // changes. Children therefore see `entering` / `covered` immediately and
@@ -216,7 +231,9 @@ export function BottomSheetSwitcher({
       )
     : transition;
   const isFlowVisible =
-    activeSheet != null || visibleTransition.retainedSheet != null;
+    (activeSheet != null && !unmountedSheetIds.has(activeSheet)) ||
+    (visibleTransition.retainedSheet != null &&
+      !unmountedSheetIds.has(visibleTransition.retainedSheet));
   const isModal = hasScrim && isFlowVisible;
 
   useLayoutEffect(() => {
@@ -225,8 +242,19 @@ export function BottomSheetSwitcher({
       return;
     }
     committedActiveSheetRef.current = activeSheet;
+    const nextTransition = transitionForActiveSheetChange(
+      previousActiveSheet,
+      activeSheet,
+    );
+    // A consumer may conditionally remove the active BottomSheet in the same
+    // update that closes the flow. With no retained element there can be no
+    // transitionend event, so do not retain an animation state that would keep
+    // the shared scrim and body scroll lock mounted forever.
     setTransition(
-      transitionForActiveSheetChange(previousActiveSheet, activeSheet),
+      nextTransition.retainedSheet != null &&
+        !sheetElementsRef.current.has(nextTransition.retainedSheet)
+        ? IDLE_TRANSITION
+        : nextTransition,
     );
   }, [activeSheet]);
 
@@ -267,12 +295,42 @@ export function BottomSheetSwitcher({
     (sheetId: string, element: HTMLElement | null) => {
       if (element == null) {
         sheetElementsRef.current.delete(sheetId);
+        setUnmountedSheetIds(current => {
+          if (current.has(sheetId)) {
+            return current;
+          }
+          const next = new Set(current);
+          next.add(sheetId);
+          return next;
+        });
+        // Also cover a retained sheet being removed independently of an
+        // activeSheet update. Its animation can no longer report completion.
+        setTransition(current =>
+          current.retainedSheet === sheetId ? IDLE_TRANSITION : current,
+        );
       } else {
         sheetElementsRef.current.set(sheetId, element);
+        setUnmountedSheetIds(current => {
+          if (!current.has(sheetId)) {
+            return current;
+          }
+          const next = new Set(current);
+          next.delete(sheetId);
+          return next;
+        });
       }
     },
     [],
   );
+
+  useLayoutEffect(() => {
+    setTransition(current =>
+      current.retainedSheet != null &&
+      unmountedSheetIds.has(current.retainedSheet)
+        ? IDLE_TRANSITION
+        : current,
+    );
+  }, [unmountedSheetIds]);
 
   const onSheetEnterStart = useCallback((sheetId: string) => {
     setTransition(current => {
@@ -387,22 +445,26 @@ export function BottomSheetSwitcher({
     ],
   );
 
+  const layer = (
+    <div ref={containerRef} {...stylex.props(styles.contents)}>
+      {hasScrim && isFlowVisible && (
+        <div
+          ref={scrimRef}
+          aria-hidden="true"
+          onClick={close}
+          {...mergeProps(
+            themeProps('bottom-sheet-switcher-scrim'),
+            stylex.props(styles.scrim),
+          )}
+        />
+      )}
+      {children}
+    </div>
+  );
+
   return (
     <BottomSheetSwitcherContext.Provider value={contextValue}>
-      <div ref={containerRef} {...stylex.props(styles.contents)}>
-        {hasScrim && isFlowVisible && (
-          <div
-            ref={scrimRef}
-            aria-hidden="true"
-            onClick={close}
-            {...mergeProps(
-              themeProps('bottom-sheet-switcher-scrim'),
-              stylex.props(styles.scrim),
-            )}
-          />
-        )}
-        {children}
-      </div>
+      {portalTarget == null ? null : createPortal(layer, portalTarget)}
     </BottomSheetSwitcherContext.Provider>
   );
 }

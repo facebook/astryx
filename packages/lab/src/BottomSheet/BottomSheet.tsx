@@ -570,13 +570,22 @@ export function BottomSheet({
           dialog.show();
         }
       }
-      // Land on every newly active step, including a rapid handoff back to a
-      // dialog whose close timer has not fired yet.
-      const autofocus = dialog.querySelector<HTMLElement>('[data-autofocus]');
-      if (autofocus) {
-        autofocus.focus();
-      } else if (isModal) {
-        sheetNodeRef.current?.focus();
+      // Land on a step only when its dialog first opens or when a retained
+      // dialog becomes the entering step again during rapid navigation. The
+      // entering -> active phase update must not steal focus from a control the
+      // user already reached while the entrance animation was running.
+      const shouldMoveFocus =
+        !wasOpen ||
+        (isInsideSwitcher &&
+          switcherPhase === 'entering' &&
+          previousSwitcherPhase !== 'entering');
+      if (shouldMoveFocus) {
+        const autofocus = dialog.querySelector<HTMLElement>('[data-autofocus]');
+        if (autofocus) {
+          autofocus.focus();
+        } else if (isModal) {
+          sheetNodeRef.current?.focus();
+        }
       }
 
       if (isInsideSwitcher && switcherPhase === 'entering') {
