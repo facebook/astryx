@@ -112,6 +112,25 @@ describe('Slider', () => {
     },
   );
 
+  it.each([
+    {value: 0, position: 'calc(0% + 10px)'},
+    {value: 100, position: 'calc(100% - 10px)'},
+  ])(
+    'insets a vertical thumb at value $value so it stays in bounds',
+    ({value, position}) => {
+      render(
+        <Slider
+          label="Volume"
+          value={value}
+          min={0}
+          max={100}
+          orientation="vertical"
+        />,
+      );
+      expect(screen.getByRole('slider')).toHaveStyle({bottom: position});
+    },
+  );
+
   it('range mode sets correct aria values on both thumbs', () => {
     render(
       <Slider

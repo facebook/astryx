@@ -370,8 +370,9 @@ function getPercent(val: number, min: number, max: number): number {
  * Thumb travel is inset by half a thumb at each end — the geometry a native
  * `input[type=range]` uses — so the thumb stays inside the component box at
  * min and max instead of overhanging it by half its width (#5050). The fill
- * and the marks map through the same inset, and `getValueFromPosition` is its
- * inverse, so the thumb tracks the pointer that grabbed it.
+ * and the marks map through the same inset, and `travelFraction` inverts it,
+ * so the thumb tracks the pointer that grabbed it. Both directions read
+ * THUMB_SIZE, so a theme cannot resize the thumb through CSS alone.
  */
 const THUMB_INSET = THUMB_SIZE / 2;
 
@@ -385,8 +386,22 @@ function insetSpan(fromPercent: number, toPercent: number): string {
   return cssLength(delta, -(delta / 100) * THUMB_SIZE);
 }
 
+/** Inverse of `insetPosition`: an offset from the box start back to 0–1. */
+function travelFraction(offset: number, size: number): number {
+  const travel = size - THUMB_SIZE;
+  if (travel > 0) {
+    return (offset - THUMB_INSET) / travel;
+  }
+  // Narrower than the thumb, so there is no travel to map onto: fall back to
+  // the raw fraction rather than dividing by zero.
+  return size > 0 ? offset / size : 0;
+}
+
 function cssLength(percent: number, px: number): string {
-  return `calc(${percent}% ${px < 0 ? '-' : '+'} ${Math.abs(px)}px)`;
+  // Percentages of the box and step arithmetic both carry binary
+  // floating-point error into the DOM (`calc(33% + 3.3999999999999995px)`).
+  const round = (n: number) => Number(n.toFixed(3));
+  return `calc(${round(percent)}% ${px < 0 ? '-' : '+'} ${Math.abs(round(px))}px)`;
 }
 
 // =============================================================================
@@ -511,21 +526,16 @@ export function Slider({ref, ...props}: SliderProps) {
       // leaves it where it is instead of jumping.
       let percent: number;
       if (isHorizontal) {
-        const travel = rect.width - THUMB_SIZE;
         // In RTL the inline-start (value = min) is the right edge, so measure
         // the pointer fraction from the right instead of the left. Detected
         // from the track's computed direction (lazy, only on pointer move).
-        percent =
-          travel <= 0
-            ? 0
-            : isRtlElement(track)
-              ? (rect.right - THUMB_INSET - clientX) / travel
-              : (clientX - rect.left - THUMB_INSET) / travel;
+        percent = travelFraction(
+          isRtlElement(track) ? rect.right - clientX : clientX - rect.left,
+          rect.width,
+        );
       } else {
         // Vertical: bottom = min, top = max
-        const travel = rect.height - THUMB_SIZE;
-        percent =
-          travel <= 0 ? 0 : 1 - (clientY - rect.top - THUMB_INSET) / travel;
+        percent = 1 - travelFraction(clientY - rect.top, rect.height);
       }
       percent = clamp(percent, 0, 1);
       const raw = min + percent * (max - min);
