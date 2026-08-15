@@ -197,6 +197,7 @@ export const myTheme = defineTheme({
   //                    {background,border,icon,text}
   //   --spacing-*      0 · 0-5 · 1 … 12
   //   --size-element-* sm · md · lg (control heights)
+  //   --border-width   1px
   //   --focus-outline-* width · style · color · offset
   //   --radius-*       none · inner · element · container · page · chat · full
   //   --shadow-*       low/med/high + inset-{hover,selected,success,warning,error}

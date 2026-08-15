@@ -81,13 +81,7 @@ function tokenGroups() {
   return groups;
 }
 
-/**
- * The token groups a theme can actually set — the ones unioned into
- * `CoreTokenName`. `borderDefaults` is deliberately outside it today (#5017):
- * `--border-width` is documented and emitted but rejected by the type, so the
- * template must not teach it. When #5017 lands, that family joins the union and
- * this guard starts requiring the template to cover it.
- */
+/** The token groups a theme can actually set — the ones in `CoreTokenName`. */
 function settableTokenGroups() {
   const union = defineThemeSrc.match(
     /export type CoreTokenName =([\s\S]*?);/,
