@@ -54,6 +54,7 @@ beforeEach(() => {
     }),
   );
   vi.stubGlobal('cancelAnimationFrame', vi.fn());
+  window.scrollTo = vi.fn();
 });
 
 afterEach(() => {
@@ -530,6 +531,112 @@ describe('BottomSheet', () => {
       expect(body.scrollTop).toBe(20);
     });
 
+    it('prevents iPhone focus panning without moving focus early or duplicating events', () => {
+      const onFocus = vi.fn();
+      const onBlur = vi.fn();
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={() => {}}
+          label="Add a comment"
+          height="tall">
+          <input aria-label="Comment" onFocus={onFocus} onBlur={onBlur} />
+        </BottomSheet>,
+      );
+      const body = getBody();
+      const input = screen.getByRole('textbox', {name: 'Comment'});
+      const focus = vi.spyOn(input, 'focus');
+      body.scrollTop = 20;
+
+      // Touchstart alone may still become a scroll gesture, so it must not
+      // move focus or open the keyboard early.
+      fireEvent.touchStart(input);
+      expect(focus).not.toHaveBeenCalled();
+      expect(onFocus).not.toHaveBeenCalled();
+
+      // Emulate Safari committing focus and panning the sheet body before the
+      // focus event. Astryx restores the captured position without refocusing.
+      document.addEventListener(
+        'focusout',
+        () => {
+          body.scrollTop = 120;
+        },
+        {once: true},
+      );
+      input.focus();
+
+      expect(document.activeElement).toBe(input);
+      expect(body.scrollTop).toBe(20);
+      expect(focus).toHaveBeenCalledTimes(1);
+      expect(focus).not.toHaveBeenCalledWith({preventScroll: true});
+      expect(onFocus).toHaveBeenCalledTimes(1);
+      expect(onBlur).not.toHaveBeenCalled();
+
+      // A second touch places the caret through the native touch sequence; it
+      // must not blur or refocus an already-active control.
+      const focusCallCount = focus.mock.calls.length;
+      fireEvent.touchStart(input);
+      expect(focus).toHaveBeenCalledTimes(focusCallCount);
+      expect(onFocus).toHaveBeenCalledTimes(1);
+      expect(onBlur).not.toHaveBeenCalled();
+    });
+
+    it('restores delayed iPhone page panning without undoing Tall body scroll', () => {
+      const viewport = mockVisualViewport(500);
+      const scrollTo = vi.mocked(window.scrollTo);
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={() => {}}
+          label="Add a comment"
+          height="tall">
+          <input aria-label="Comment" />
+        </BottomSheet>,
+      );
+      const dialog = screen.getByRole('dialog');
+      const body = getBody();
+      const input = screen.getByRole('textbox', {name: 'Comment'});
+      dialog.scrollTop = 10;
+
+      fireEvent.touchStart(input);
+      input.focus();
+
+      // Safari may pan outer scroll containers and the layout viewport after
+      // focus while the keyboard animation is already underway.
+      dialog.scrollTop = 90;
+      fireEvent.scroll(dialog);
+      expect(dialog.scrollTop).toBe(10);
+
+      body.scrollTop = 120;
+      viewport.offsetTop = 180;
+      act(() => viewport.dispatchEvent(new Event('scroll')));
+
+      expect(body.scrollTop).toBe(120);
+      expect(scrollTo).toHaveBeenLastCalledWith(0, 0);
+    });
+
+    it('does not pin ordinary desktop page scrolling after focus', () => {
+      const viewport = mockVisualViewport(window.innerHeight);
+      const scrollTo = vi.mocked(window.scrollTo);
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={() => {}}
+          label="Add a comment"
+          height="tall">
+          <input aria-label="Comment" />
+        </BottomSheet>,
+      );
+      const input = screen.getByRole('textbox', {name: 'Comment'});
+
+      input.focus();
+      scrollTo.mockClear();
+      viewport.offsetTop = 100;
+      act(() => viewport.dispatchEvent(new Event('scroll')));
+
+      expect(scrollTo).not.toHaveBeenCalled();
+    });
+
     it('restores native focus scrolling without duplicating focus events', () => {
       const onTitleBlur = vi.fn();
       const onCommentFocus = vi.fn();
@@ -670,6 +777,7 @@ describe('BottomSheet', () => {
         const positioner = getPositioner();
         const body = getBody();
         const input = screen.getByRole('textbox', {name: 'Comment'});
+        const focus = vi.spyOn(input, 'focus');
         vi.spyOn(body, 'getBoundingClientRect').mockReturnValue(
           rect({top: 400, bottom: 800}),
         );
@@ -678,12 +786,14 @@ describe('BottomSheet', () => {
         );
         body.scrollTop = 20;
 
+        fireEvent.touchStart(input);
         fireEvent.pointerDown(input, {pointerId: 1, clientY: 200});
         body.scrollTop = 120;
         fireEvent.focus(input, {relatedTarget: null});
         act(() => viewport.dispatchEvent(new Event('resize')));
 
         expect(body.scrollTop).toBe(120);
+        expect(focus).not.toHaveBeenCalled();
         expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe('');
         expect(
           positioner.style.getPropertyValue('--_sheet-keyboard-lift'),
