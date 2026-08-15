@@ -114,7 +114,7 @@ export const docs = {
       { guidance: false, description: 'Place critical actions or required information inside a hover card; users may miss content that only appears on hover.' },
       { guidance: false, description: 'Use a hover card when a simple Tooltip or Popover would suffice.' },
       { guidance: false, description: 'Use a HoverCard for content the user must interact with; it disappears when the cursor leaves.' },
-      { guidance: true, description: 'Inline HoverCard triggers inside a paragraph are supported. Rich content is mounted through a theme-preserving portal when the card opens.' },
+      { guidance: true, description: 'Prefer placing a block-content HoverCard outside a <p>, using a block container such as a <div>. Nesting it directly inside a paragraph is supported when necessary, but the card content is portaled beside the paragraph and may appear at a different position in the tab order.' },
     ],
     anatomy: [
       {name: 'Trigger', required: true, description: 'The element that opens the hover card on hover or focus: a button, link, or inline text.'},
@@ -229,7 +229,7 @@ export const docsZh = {
       { guidance: false, description: 'Place critical actions or required information inside a hover card; users may miss content that only appears on hover.' },
       { guidance: false, description: 'Use a hover card when a simple Tooltip or Popover would suffice.' },
       { guidance: false, description: 'Use a HoverCard for content the user must interact with; it disappears when the cursor leaves.' },
-      { guidance: true, description: 'Inline HoverCard triggers inside a paragraph are supported. Rich content is mounted through a theme-preserving portal when the card opens.' },
+      { guidance: true, description: 'Prefer placing a block-content HoverCard outside a <p>, using a block container such as a <div>. Nesting it directly inside a paragraph is supported when necessary, but the card content is portaled beside the paragraph and may appear at a different position in the tab order.' },
     ],
   },
 };
@@ -247,7 +247,7 @@ export const docsDense = {
       { guidance: false, description: 'Place critical actions or required information inside a hover card; users may miss content that only appears on hover.' },
       { guidance: false, description: 'Use a hover card when a simple Tooltip or Popover would suffice.' },
       { guidance: false, description: 'Use a HoverCard for content the user must interact with; it disappears when the cursor leaves.' },
-      { guidance: true, description: 'Inline HoverCard triggers inside a paragraph are supported; rich content mounts through a theme-preserving portal when opened.' },
+      { guidance: true, description: 'Prefer placing a block-content HoverCard outside a <p>, using a block container such as a <div>. Paragraph nesting works when necessary, but portaled content may appear elsewhere in the tab order.' },
     ],
   },
   components: [
