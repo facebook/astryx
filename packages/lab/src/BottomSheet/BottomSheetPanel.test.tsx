@@ -9,7 +9,11 @@
 
 import {act, fireEvent, render, screen} from '@testing-library/react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
-import {BottomSheetPanel, type BottomSheetPanelState} from './BottomSheetPanel';
+import {
+  BottomSheetPanel,
+  type BottomSheetPanelMotion,
+  type BottomSheetPanelState,
+} from './BottomSheetPanel';
 
 const panelTransitionStyle = {
   transitionProperty: 'transform, opacity',
@@ -40,8 +44,8 @@ afterEach(() => {
 function renderPanel(
   state: BottomSheetPanelState,
   callbacks: {
-    onMotionStart?: ReturnType<typeof vi.fn>;
-    onMotionComplete?: ReturnType<typeof vi.fn>;
+    onMotionStart?: (motion: BottomSheetPanelMotion) => void;
+    onMotionComplete?: (motion: BottomSheetPanelMotion) => void;
   } = {},
 ) {
   return render(
