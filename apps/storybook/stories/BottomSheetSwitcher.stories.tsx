@@ -33,18 +33,24 @@ const meta: Meta<typeof BottomSheetSwitcher> = {
 
 export default meta;
 type Story = StoryObj<typeof BottomSheetSwitcher>;
+type NotificationSheetHeight = 'hug' | 'capped';
 
 interface NotificationOverviewSheetProps {
+  height: NotificationSheetHeight;
   onCancel: () => void;
   onContinue: () => void;
 }
 
 function NotificationOverviewSheet({
+  height,
   onCancel,
   onContinue,
 }: NotificationOverviewSheetProps) {
   return (
-    <BottomSheet sheetId="overview" label="Set up notifications" height="hug">
+    <BottomSheet
+      sheetId="overview"
+      label="Set up notifications"
+      height={height}>
       <Section padding={4}>
         <VStack gap={4}>
           <VStack gap={1}>
@@ -89,11 +95,13 @@ function NotificationOverviewSheet({
 }
 
 interface NotificationFrequencySheetProps {
+  height: NotificationSheetHeight;
   onBack: () => void;
   onContinue: () => void;
 }
 
 function NotificationFrequencySheet({
+  height,
   onBack,
   onContinue,
 }: NotificationFrequencySheetProps) {
@@ -103,7 +111,7 @@ function NotificationFrequencySheet({
     <BottomSheet
       sheetId="frequency"
       label="Notification frequency"
-      height="hug">
+      height={height}>
       <Section padding={4}>
         <VStack gap={4}>
           <VStack gap={1}>
@@ -133,11 +141,13 @@ function NotificationFrequencySheet({
 }
 
 interface NotificationChannelsSheetProps {
+  height: NotificationSheetHeight;
   onBack: () => void;
   onFinish: () => void;
 }
 
 function NotificationChannelsSheet({
+  height,
   onBack,
   onFinish,
 }: NotificationChannelsSheetProps) {
@@ -146,7 +156,10 @@ function NotificationChannelsSheet({
   const [textMessages, setTextMessages] = useState(false);
 
   return (
-    <BottomSheet sheetId="channels" label="Notification channels" height="hug">
+    <BottomSheet
+      sheetId="channels"
+      label="Notification channels"
+      height={height}>
       <Section padding={4}>
         <VStack gap={4}>
           <VStack gap={1}>
@@ -182,7 +195,15 @@ function NotificationChannelsSheet({
   );
 }
 
-function MultiStepSwitcherExample() {
+interface MultiStepSwitcherExampleProps {
+  height: NotificationSheetHeight;
+  hasScrim?: boolean;
+}
+
+function MultiStepSwitcherExample({
+  height,
+  hasScrim = true,
+}: MultiStepSwitcherExampleProps) {
   const [activeSheet, setActiveSheet] = useState<string | null>(null);
 
   return (
@@ -193,16 +214,20 @@ function MultiStepSwitcherExample() {
       />
       <BottomSheetSwitcher
         activeSheet={activeSheet}
-        onActiveSheetChange={setActiveSheet}>
+        onActiveSheetChange={setActiveSheet}
+        hasScrim={hasScrim}>
         <NotificationOverviewSheet
+          height={height}
           onCancel={() => setActiveSheet(null)}
           onContinue={() => setActiveSheet('frequency')}
         />
         <NotificationFrequencySheet
+          height={height}
           onBack={() => setActiveSheet('overview')}
           onContinue={() => setActiveSheet('channels')}
         />
         <NotificationChannelsSheet
+          height={height}
           onBack={() => setActiveSheet('frequency')}
           onFinish={() => setActiveSheet(null)}
         />
@@ -211,7 +236,16 @@ function MultiStepSwitcherExample() {
   );
 }
 
-export const MultiStep: Story = {
-  name: 'Notification setup',
-  render: () => <MultiStepSwitcherExample />,
+export const HugContent: Story = {
+  name: 'Hug content',
+  render: () => <MultiStepSwitcherExample height="hug" />,
+};
+
+export const Capped: Story = {
+  render: () => <MultiStepSwitcherExample height="capped" />,
+};
+
+export const NoScrim: Story = {
+  name: 'No scrim',
+  render: () => <MultiStepSwitcherExample height="hug" hasScrim={false} />,
 };
