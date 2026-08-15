@@ -144,6 +144,69 @@ function MobileKeyboardCommentForm({onPost}: {onPost: () => void}) {
   );
 }
 
+interface CappedCommentFormValues {
+  title: string;
+  author: string;
+  email: string;
+  summary: string;
+  comment: string;
+}
+
+function CappedMobileKeyboardForm({onPost}: {onPost: () => void}) {
+  const [values, setValues] = useState<CappedCommentFormValues>({
+    title: '',
+    author: '',
+    email: '',
+    summary: '',
+    comment: '',
+  });
+  const update =
+    (field: keyof CappedCommentFormValues) =>
+    (value: string): void =>
+      setValues(current => ({...current, [field]: value}));
+
+  return (
+    <VStack gap={4}>
+      <Heading level={3}>Add a comment</Heading>
+      <Text type="supporting" color="secondary">
+        Focus fields throughout this scrollable form. The Capped sheet should
+        keep its height, move above the keyboard, and return to the same place
+        after dismissal.
+      </Text>
+      <Divider />
+      <TextInput
+        label="Title"
+        value={values.title}
+        onChange={update('title')}
+      />
+      <TextInput
+        label="Author"
+        value={values.author}
+        onChange={update('author')}
+      />
+      <TextInput
+        label="Email"
+        type="email"
+        value={values.email}
+        onChange={update('email')}
+      />
+      <TextArea
+        label="Summary"
+        rows={4}
+        value={values.summary}
+        onChange={update('summary')}
+      />
+      <TextArea
+        label="Comment"
+        rows={6}
+        value={values.comment}
+        onChange={update('comment')}
+      />
+      <Button label="Post comment" onClick={onPost} />
+    </VStack>
+  );
+}
+
 function ShortMobileKeyboardForm({onSave}: {onSave: () => void}) {
   const [title, setTitle] = useState('');
   const [note, setNote] = useState('');
@@ -152,13 +215,37 @@ function ShortMobileKeyboardForm({onSave}: {onSave: () => void}) {
     <VStack gap={4}>
       <Heading level={3}>Quick note</Heading>
       <Text type="supporting" color="secondary">
-        This short sheet keeps its height and lifts only when the mobile
-        keyboard would otherwise cover the focused field.
+        This genuinely short sheet should keep its height, move above the mobile
+        keyboard, and return to the same place after dismissal.
       </Text>
       <TextInput label="Title" value={title} onChange={setTitle} />
       <TextArea label="Note" rows={2} value={note} onChange={setNote} />
       <Button label="Save note" onClick={onSave} />
     </VStack>
+  );
+}
+
+function MobileKeyboardStory({height}: {height: 'capped' | 'hug' | 'tall'}) {
+  const [isOpen, setIsOpen] = useState(false);
+  return (
+    <>
+      <Button label="Add a comment" onClick={() => setIsOpen(true)} />
+      <BottomSheet
+        isOpen={isOpen}
+        onOpenChange={setIsOpen}
+        label="Add a comment"
+        height={height}>
+        <Section padding={4}>
+          {height === 'hug' ? (
+            <ShortMobileKeyboardForm onSave={() => setIsOpen(false)} />
+          ) : height === 'capped' ? (
+            <CappedMobileKeyboardForm onPost={() => setIsOpen(false)} />
+          ) : (
+            <MobileKeyboardCommentForm onPost={() => setIsOpen(false)} />
+          )}
+        </Section>
+      </BottomSheet>
+    </>
   );
 }
 
@@ -341,44 +428,17 @@ export const HugHeightWithLongContent: Story = {
   },
 };
 
-export const ShortMobileKeyboard: Story = {
-  name: 'Short sheet with mobile keyboard',
-  render: () => {
-    const [isOpen, setIsOpen] = useState(false);
-    return (
-      <>
-        <Button label="Add a quick note" onClick={() => setIsOpen(true)} />
-        <BottomSheet
-          isOpen={isOpen}
-          onOpenChange={setIsOpen}
-          label="Quick note"
-          height="hug">
-          <Section padding={4}>
-            <ShortMobileKeyboardForm onSave={() => setIsOpen(false)} />
-          </Section>
-        </BottomSheet>
-      </>
-    );
-  },
+export const MobileKeyboardCapped: Story = {
+  name: 'Mobile keyboard — Capped',
+  render: () => <MobileKeyboardStory height="capped" />,
 };
 
-export const MobileKeyboard: Story = {
-  name: 'Support mobile keyboard',
-  render: () => {
-    const [isOpen, setIsOpen] = useState(false);
-    return (
-      <>
-        <Button label="Add a comment" onClick={() => setIsOpen(true)} />
-        <BottomSheet
-          isOpen={isOpen}
-          onOpenChange={setIsOpen}
-          label="Add a comment"
-          height="tall">
-          <Section padding={4}>
-            <MobileKeyboardCommentForm onPost={() => setIsOpen(false)} />
-          </Section>
-        </BottomSheet>
-      </>
-    );
-  },
+export const MobileKeyboardHug: Story = {
+  name: 'Mobile keyboard — Hug',
+  render: () => <MobileKeyboardStory height="hug" />,
+};
+
+export const MobileKeyboardTall: Story = {
+  name: 'Mobile keyboard — Tall',
+  render: () => <MobileKeyboardStory height="tall" />,
 };

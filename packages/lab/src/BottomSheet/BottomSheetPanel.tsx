@@ -44,6 +44,7 @@ import {useMobileKeyboard} from './useMobileKeyboard';
 import {useSheetGestures} from './useSheetGestures';
 
 const SNAP_FRACTIONS = [0.14, 0.5, 0.92];
+const TALL_HEIGHT_RATIO = 0.92;
 
 const HEIGHT_BUDGETS = {
   hug: '92dvh',
@@ -364,9 +365,10 @@ export function BottomSheetPanel({
     bottomClearance: MOBILE_KEYBOARD_BOTTOM_CLEARANCE,
     isSheetTraveling: isDragging && dragOffset !== settledOffset,
     isOpen: isInteractive,
+    isPresented: state.kind !== 'hidden',
     positionerRef: positionerRef ?? fallbackPositionerRef,
-    preserveSheetHeight: height === 'hug',
     sheetRef: elementRef,
+    tallHeightRatio: TALL_HEIGHT_RATIO,
   });
   // Keep controller registration attached to one stable host ref. React
   // detaches an old callback ref when a consumer supplies a new identity; if
