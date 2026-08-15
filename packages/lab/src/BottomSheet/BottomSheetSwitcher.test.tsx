@@ -148,6 +148,42 @@ function CallbackRefFlow() {
   );
 }
 
+function ModeSwitchFlow() {
+  const [activeSheet, setActiveSheet] = useState<string | null>(null);
+  const [hasScrim, setHasScrim] = useState(true);
+  return (
+    <>
+      <button type="button" onClick={() => setActiveSheet('details')}>
+        Open first modal
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          setHasScrim(true);
+          setActiveSheet('details');
+        }}>
+        Open second modal
+      </button>
+      <BottomSheetSwitcher
+        activeSheet={activeSheet}
+        onActiveSheetChange={setActiveSheet}
+        hasScrim={hasScrim}>
+        <BottomSheet
+          sheetId="details"
+          label="Details"
+          data-testid="mode-details-sheet">
+          <button type="button" onClick={() => setHasScrim(false)}>
+            Make non-modal
+          </button>
+          <button type="button" onClick={() => setActiveSheet(null)}>
+            Close flow
+          </button>
+        </BottomSheet>
+      </BottomSheetSwitcher>
+    </>
+  );
+}
+
 function getSharedDialog(): HTMLDialogElement {
   const dialog = document.querySelector<HTMLDialogElement>(
     '.astryx-bottom-sheet-switcher-scrim',
@@ -598,6 +634,27 @@ describe('BottomSheetSwitcher', () => {
     finishSheetTransition(getSheetLayer('confirm-sheet'), 'transform');
 
     expect(document.activeElement).toBe(opener);
+  });
+
+  it('captures a new focus trigger after switching through non-modal mode', () => {
+    render(<ModeSwitchFlow />);
+    const firstOpener = screen.getByRole('button', {name: 'Open first modal'});
+    const secondOpener = screen.getByRole('button', {
+      name: 'Open second modal',
+    });
+
+    firstOpener.focus();
+    fireEvent.click(firstOpener);
+    fireEvent.click(screen.getByRole('button', {name: 'Make non-modal'}));
+    fireEvent.click(screen.getByRole('button', {name: 'Close flow'}));
+    finishSheetTransition(getSheetLayer('mode-details-sheet'), 'transform');
+
+    secondOpener.focus();
+    fireEvent.click(secondOpener);
+    fireEvent.click(screen.getByRole('button', {name: 'Close flow'}));
+    finishSheetTransition(getSheetLayer('mode-details-sheet'), 'transform');
+
+    expect(document.activeElement).toBe(secondOpener);
   });
 
   it('does not refocus the panel when an incoming transition completes', () => {

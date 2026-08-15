@@ -308,8 +308,8 @@ export function BottomSheetSwitcher({
     }
     if (dialogModeRef.current === 'modal') {
       triggerRef.current?.focus();
-      triggerRef.current = null;
     }
+    triggerRef.current = null;
     dialogModeRef.current = null;
   }, [hasScrim, isFlowVisible]);
 
