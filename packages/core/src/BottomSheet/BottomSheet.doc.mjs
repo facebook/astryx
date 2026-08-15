@@ -90,21 +90,21 @@ export const docs = {
       name: 'children',
       type: 'ReactNode',
       description:
-        'Sheet content, rendered below the grab handle in a scrollable, mobile-keyboard-aware area.',
+        "Sheet content, rendered below the grab handle in a scrollable area. If it includes a text-entry control that can bring up the mobile keyboard, use height='tall' and keep the sheet fully expanded while editing.",
       required: true,
     },
     {
       name: 'height',
       type: "'hug' | 'capped' | 'tall' | number | string",
       description:
-        "How tall the sheet is. Named budgets: 'hug' fits its content up to 92% of the viewport, 'capped' is a scrolling mid-height panel (~62%), and 'tall' is a near-full panel (~92%) for content that streams in. Or pass a number (px) / CSS length for a custom budget. Dragging uses only snap points shorter than the rendered sheet, so a short hug sheet may have no additional resting detents. On shorter viewports the sheet fills the available height.",
+        "How tall the sheet is. Named budgets: 'hug' fits its content up to 92% of the viewport, 'capped' is a scrolling mid-height panel (~62%), and 'tall' is a pinned near-full panel (~92%) for content that streams in. Or pass a number (px) / CSS length for a custom budget. The user can drag between snap points regardless. On shorter viewports the sheet fills the available height. Only a fully expanded 'tall' sheet provides mobile-keyboard accommodation; shorter Tall detents, Hug, Capped, numeric, and CSS-length heights do not move or add keyboard scroll space.",
       default: "'capped'",
     },
     {
       name: 'hasScrim',
       type: 'boolean',
       description:
-        'For a standalone BottomSheet, whether to render a scrim—the semi-transparent overlay that covers and blocks the background. true (default) uses showModal(): top layer, focus trap, ::backdrop scrim, body scroll lock, and tap-scrim-to-dismiss, with the background inert. false uses show() with no scrim, leaving the page behind interactive and scrollable. For a multi-step flow, configure hasScrim on BottomSheetSwitcher instead; it owns one shared dialog across every child.',
+        'For a standalone BottomSheet, whether to render a scrim, the semi-transparent overlay that covers and blocks the background. true (default) uses showModal(): top layer, focus trap, ::backdrop scrim, body scroll lock, and tap-scrim-to-dismiss, with the background inert. false uses show() with no scrim, leaving the page behind interactive and scrollable. For a multi-step flow, configure hasScrim on BottomSheetSwitcher instead; it owns one shared dialog across every child.',
       default: 'true',
     },
   ],
@@ -180,7 +180,7 @@ export const docs = {
 </>`,
     },
     {
-      label: 'Mobile keyboard (a long form)',
+      label: 'Mobile keyboard',
       code: `const [isOpen, setIsOpen] = useState(false);
 <BottomSheet
   isOpen={isOpen}
@@ -188,17 +188,6 @@ export const docs = {
   label="Add a comment"
   height="tall">
   <LongCommentForm />
-</BottomSheet>`,
-    },
-    {
-      label: 'Mobile keyboard (a short form)',
-      code: `const [isOpen, setIsOpen] = useState(false);
-<BottomSheet
-  isOpen={isOpen}
-  onOpenChange={setIsOpen}
-  label="Quick note"
-  height="hug">
-  <QuickNoteForm />
 </BottomSheet>`,
     },
     {
@@ -218,7 +207,7 @@ export const docs = {
 /** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
-    'mobile touch sheet rising from the bottom edge (native <dialog>): grab handle, drag-to-resize snap points, swipe-to-dismiss, visual-viewport mobile-keyboard handling, named height scale, modal (default) or non-modal (hasScrim={false}) presentation',
+    'mobile touch sheet rising from the bottom edge (native <dialog>): grab handle, drag-to-resize snap points, swipe-to-dismiss, fully-expanded Tall visual-viewport mobile-keyboard handling, named height scale, modal (default) or non-modal (hasScrim={false}) presentation',
   usage: {
     description:
       'Mobile touch surface for filters, actions, forms, and detail views that should rise from the bottom of the viewport; use BottomSheetSwitcher for multi-step flows.',
