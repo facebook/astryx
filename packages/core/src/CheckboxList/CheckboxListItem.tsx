@@ -13,18 +13,20 @@
  * - /packages/core/src/CheckboxList/CheckboxList.test.tsx
  * - /packages/core/src/CheckboxList/index.ts
  * - /apps/storybook/stories/CheckboxList.stories.tsx
- * - /packages/cli/templates/blocks/components/CheckboxList/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/CheckboxList/ (showcase blocks)
  */
 
-import {use, type ReactNode} from 'react';
+import {use, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
+import {useDevWarning} from '../hooks/useDevWarning';
 import {CheckboxInput} from '../CheckboxInput/CheckboxInput';
 import {ListItem} from '../List/ListItem';
 import {ListContext} from '../List/ListContext';
 import {CheckboxListContext} from './CheckboxListContext';
+import {useTranslator} from '../i18n';
 
 // =============================================================================
 // Styles
@@ -49,6 +51,25 @@ export interface CheckboxListItemProps extends BaseProps<HTMLLIElement> {
    * child components control their own text behavior).
    */
   label: ReactNode;
+  /**
+   * Plain-text accessible name for the checkbox when `label` is a ReactNode.
+   *
+   * A string `label` names the checkbox automatically. A rich (ReactNode)
+   * `label` cannot, so pass a concise string equivalent via the standard
+   * `aria-label` — otherwise the checkbox falls back to the generic name
+   * "Checkbox" and every rich-label item in a list announces identically to
+   * screen readers. Applied to the checkbox control, not the row.
+   *
+   * @example
+   * ```
+   * <CheckboxListItem
+   *   label={<span>Pro plan <Badge label="Recommended" /></span>}
+   *   aria-label="Pro plan"
+   *   value="pro"
+   * />
+   * ```
+   */
+  'aria-label'?: string;
   /**
    * Identity key for collection mode (REQUIRED inside CheckboxList).
    * Throws a runtime error if missing when used inside CheckboxList.
@@ -117,6 +138,7 @@ export interface CheckboxListItemProps extends BaseProps<HTMLLIElement> {
  */
 export function CheckboxListItem({
   label,
+  'aria-label': ariaLabel,
   value,
   description,
   endContent,
@@ -128,8 +150,10 @@ export function CheckboxListItem({
   xstyle,
   className,
   style,
+  onClick: onClickProp,
   ...restProps
 }: CheckboxListItemProps) {
+  const t = useTranslator();
   const ctx = use(CheckboxListContext);
 
   if (ctx && ctx.value !== undefined && value === undefined) {
@@ -137,6 +161,25 @@ export function CheckboxListItem({
       'CheckboxListItem requires a `value` prop when used inside CheckboxList with a value array.',
     );
   }
+
+  // Accessible name for the (visually hidden) checkbox label. A string
+  // `label` names it directly; a rich label needs `aria-label`.
+  const checkboxLabel =
+    ariaLabel ??
+    (typeof label === 'string'
+      ? label
+      : t('@astryx.checkboxList.item.checkbox'));
+
+  // Dev-time guardrail: a rich label without `aria-label` leaves the
+  // checkbox with the generic name "Checkbox".
+  useDevWarning(
+    'CheckboxListItem',
+    '`label` is a ReactNode, so the checkbox falls ' +
+      'back to the generic accessible name "Checkbox". Pass ' +
+      '`aria-label` with a concise string equivalent of the visible ' +
+      'label so screen readers can tell items apart.',
+    typeof label !== 'string' && ariaLabel == null,
+  );
 
   // Density from list context for checkbox sizing
   const listCtx = use(ListContext);
@@ -167,6 +210,14 @@ export function CheckboxListItem({
 
   // Whether this item is interactive (has a toggle handler)
   const isInteractive = !effectiveReadOnly && (ctx != null || onCheck != null);
+
+  // The checkbox is the row's single keyboard control and action. The row is
+  // an enlarged click/tap target that delegates surface clicks to it via
+  // ListItem's `interactiveRef` (useClickableContainer), so each option is
+  // exactly one tab stop. Delegate whenever the row should respond to clicks:
+  // a toggleable item, or one carrying a consumer `onClick`.
+  const checkboxRef = useRef<HTMLInputElement | null>(null);
+  const hasRowInteraction = isInteractive || onClickProp != null;
 
   const handleToggle = () => {
     if (effectiveDisabled || effectiveReadOnly || isBusy) {
@@ -200,7 +251,12 @@ export function CheckboxListItem({
       description={description}
       endContent={endContent}
       isDisabled={effectiveDisabled}
-      onClick={isInteractive ? handleToggle : undefined}
+      // Delegate row clicks to the checkbox instead of wiring onClick (which
+      // would add an invisible row button = a second tab stop). The checkbox
+      // stays the option's sole focusable control (WCAG 4.1.2 / APG checkbox
+      // pattern). A consumer onClick rides on the checkbox itself (below), so
+      // it still fires for both direct and delegated (row-surface) clicks.
+      interactiveRef={hasRowInteraction ? checkboxRef : undefined}
       aria-busy={isBusy || undefined}
       xstyle={
         [
@@ -215,10 +271,12 @@ export function CheckboxListItem({
       style={style}
       startContent={
         <CheckboxInput
-          label={typeof label === 'string' ? label : 'Checkbox'}
+          ref={checkboxRef}
+          label={checkboxLabel}
           isLabelHidden
           value={resolvedChecked}
           onChange={() => handleToggle()}
+          onClick={onClickProp}
           isDisabled={effectiveDisabled}
           isReadOnly={effectiveReadOnly}
           isLoading={isBusy}

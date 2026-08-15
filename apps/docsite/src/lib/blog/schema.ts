@@ -51,6 +51,8 @@ export interface BlogPost {
   title: string;
   /** Card excerpt, article dek, and default meta description. */
   description: string;
+  /** Optional article-only dek. Supports inline Markdown links. */
+  dek: string | null;
   /** Publish date (ISO YYYY-MM-DD). Default sort key. */
   date: string;
   /** Primary editorial organization/filter. */

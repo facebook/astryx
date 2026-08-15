@@ -15,22 +15,18 @@
  * - /packages/core/src/RadioList/RadioList.test.tsx
  * - /packages/core/src/RadioList/index.ts
  * - /apps/storybook/stories/RadioList.stories.tsx
- * - /packages/cli/templates/blocks/components/RadioList/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/RadioList/ (showcase blocks)
  */
 
-import React, {use, useId, type ReactNode} from 'react';
+import React, {use, useId, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
-import {
-  colorVars,
-  spacingVars,
-  durationVars,
-  easeVars,
-  borderVars,
-} from '../theme/tokens.stylex';
+import {colorVars, spacingVars} from '../theme/tokens.stylex';
 import {RadioListContext} from './RadioList';
 import {mergeProps} from '../utils';
-import {radioScope} from './radio.markers.stylex';
+import {indicatorScope} from '../Indicator/indicator.markers.stylex';
+import {useIndicatorFocusRing} from '../hooks/useIndicatorFocusRing';
+import {useIndicator} from '../Indicator';
 import {Item} from '../Item';
 import {themeProps} from '../utils/themeProps';
 
@@ -59,67 +55,9 @@ const styles = stylex.create({
   inputDisabled: {
     cursor: 'not-allowed',
   },
-  radio: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: borderVars['--border-width'],
-    borderStyle: 'solid',
-    borderRadius: '50%',
-    transitionProperty: 'background-color, border-color',
-    transitionDuration: durationVars['--duration-fast'],
-    transitionTimingFunction: easeVars['--ease-standard'],
-    boxSizing: 'border-box',
-  },
-  radioUnchecked: {
-    borderColor: {
-      default: colorVars['--color-border-emphasized'],
-      [stylex.when.ancestor(':hover', radioScope)]: {
-        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-border-emphasized']}, ${colorVars['--color-tint-hover']} 20%)`,
-      },
-    },
-    backgroundColor: {
-      default: colorVars['--color-background-surface'],
-      [stylex.when.ancestor(':hover', radioScope)]: {
-        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-background-surface']}, ${colorVars['--color-tint-hover']} 5%)`,
-      },
-    },
-  },
-  radioChecked: {
-    borderColor: {
-      default: colorVars['--color-accent'],
-      [stylex.when.ancestor(':hover', radioScope)]: {
-        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-tint-hover']} 15%)`,
-      },
-    },
-    backgroundColor: {
-      default: colorVars['--color-accent'],
-      [stylex.when.ancestor(':hover', radioScope)]: {
-        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-tint-hover']} 15%)`,
-      },
-    },
-  },
-  radioWrapperFocus: {
-    outline: {
-      default: 'none',
-      ':has(:focus-visible)': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':has(:focus-visible)': '2px',
-    },
-    borderRadius: '50%',
-  },
-  radioDisabled: {
-    opacity: 0.5,
-    borderColor: colorVars['--color-border'],
-  },
-  radioDisabledUnchecked: {
-    backgroundColor: colorVars['--color-background-muted'],
-  },
-  innerDot: {
-    borderRadius: '50%',
-    backgroundColor: colorVars['--color-on-accent'],
+  // Holds only the indicator, so the focus ring has one unambiguous target.
+  indicatorSlot: {
+    display: 'contents',
   },
   labelDisabled: {
     color: colorVars['--color-text-disabled'],
@@ -135,28 +73,6 @@ const wrapperSizeStyles = stylex.create({
   md: {
     width: 24,
     height: 24,
-  },
-});
-
-const radioSizeStyles = stylex.create({
-  sm: {
-    width: 18,
-    height: 18,
-  },
-  md: {
-    width: 22,
-    height: 22,
-  },
-});
-
-const dotSizeStyles = stylex.create({
-  sm: {
-    width: 8,
-    height: 8,
-  },
-  md: {
-    width: 10,
-    height: 10,
   },
 });
 
@@ -220,7 +136,10 @@ export function RadioListItem({
   isDisabled: isItemDisabled = false,
   startContent,
   endContent,
-  'data-testid': dataTestId,
+  xstyle,
+  className,
+  style,
+  ...rest
 }: RadioListItemProps) {
   const context = use(RadioListContext);
   if (!context) {
@@ -238,14 +157,18 @@ export function RadioListItem({
     context.hasDisabledMessage && !isItemDisabled;
   const isChecked = context.value === value;
   const size = context.size;
+  // The radio visual is an indicator: a theme can restyle it through the
+  // `radio` / `radio-dot` targets or replace the component outright.
+  const RadioControl = useIndicator('radio');
+  // See CheckboxInput: the ring goes on the indicator's own element, because
+  // the native input is visually hidden and only the indicator knows its shape.
+  const indicatorRef = useRef<HTMLSpanElement>(null);
+  const {focusProps} = useIndicatorFocusRing(indicatorRef, isDisabled);
 
   const radioCircle = (
     <div
-      {...stylex.props(
-        styles.radioWrapper,
-        wrapperSizeStyles[size],
-        !isDisabled && styles.radioWrapperFocus,
-      )}>
+      {...stylex.props(styles.radioWrapper, wrapperSizeStyles[size])}
+      {...focusProps}>
       <input
         id={id}
         type="radio"
@@ -272,31 +195,13 @@ export function RadioListItem({
           isDisabled && styles.inputDisabled,
         )}
       />
-      <div
-        aria-hidden="true"
-        {...mergeProps(
-          themeProps('radio', {
-            size,
-            checked: isChecked ? 'checked' : null,
-            disabled: isDisabled ? 'disabled' : null,
-          }),
-          stylex.props(
-            styles.radio,
-            radioSizeStyles[size],
-            isChecked ? styles.radioChecked : styles.radioUnchecked,
-            isDisabled && styles.radioDisabled,
-            isDisabled && !isChecked && styles.radioDisabledUnchecked,
-          ),
-        )}>
-        {isChecked && (
-          <div
-            {...mergeProps(
-              themeProps('radio-dot', {size}),
-              stylex.props(styles.innerDot, dotSizeStyles[size]),
-            )}
-          />
-        )}
-      </div>
+      <span ref={indicatorRef} {...stylex.props(styles.indicatorSlot)}>
+        <RadioControl
+          state={isChecked ? 'checked' : 'unchecked'}
+          size={size}
+          isDisabled={isDisabled}
+        />
+      </span>
     </div>
   );
 
@@ -313,11 +218,19 @@ export function RadioListItem({
   return (
     <div
       ref={ref}
-      data-testid={dataTestId}
       {...mergeProps(
         themeProps('radio-list-item'),
-        stylex.props(styles.container, !isDisabled && radioScope),
-      )}>
+        stylex.props(
+          styles.container,
+          // Hover reaches the radio visual through this ancestor marker rather
+          // than props, so hovering the row tints the control.
+          !isDisabled && indicatorScope,
+          xstyle,
+        ),
+        className,
+        style,
+      )}
+      {...rest}>
       <Item
         startContent={mediaContent}
         label={

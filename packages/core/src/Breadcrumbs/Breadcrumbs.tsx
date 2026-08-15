@@ -13,7 +13,7 @@
  * - /packages/core/src/Breadcrumbs/Breadcrumbs.test.tsx
  * - /packages/core/src/Breadcrumbs/index.ts
  * - /apps/storybook/stories/Breadcrumbs.stories.tsx
- * - /packages/cli/templates/blocks/components/Breadcrumbs/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Breadcrumbs/ (showcase blocks)
  */
 
 import {createContext, useMemo, type ReactNode} from 'react';
@@ -22,28 +22,12 @@ import {spacingVars} from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
+import type {BreadcrumbsVariantMap} from './index';
 
 // =============================================================================
 // Variant type
 // =============================================================================
-
-/**
- * Extensible variant map for Breadcrumbs.
- *
- * Theme packages can add custom variants via TypeScript module augmentation:
- * @example
- * ```
- * declare module '@astryxdesign/core/Breadcrumbs' {
- *   interface BreadcrumbsVariantMap {
- *     'compact': true;
- *   }
- * }
- * ```
- */
-export interface BreadcrumbsVariantMap {
-  default: true;
-  supporting: true;
-}
 
 /**
  * Visual variant for the breadcrumb trail.
@@ -150,10 +134,12 @@ export function Breadcrumbs({
   xstyle,
   className,
   style,
-  label = 'Breadcrumb',
+  label: labelFromProps,
   ref,
   ...rest
 }: BreadcrumbsProps) {
+  const t = useTranslator();
+  const label = labelFromProps ?? t('@astryx.breadcrumbs.label');
   const ctxValue = useMemo<BreadcrumbContextValue>(
     () => ({variant, separator}),
     [variant, separator],

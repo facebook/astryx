@@ -1,0 +1,346 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+import type {Meta, StoryObj} from '@storybook/react';
+import {useState} from 'react';
+import {BottomSheet} from '@astryxdesign/lab';
+import {Button} from '@astryxdesign/core/Button';
+import {Divider} from '@astryxdesign/core/Divider';
+import {Heading} from '@astryxdesign/core/Heading';
+import {Section} from '@astryxdesign/core/Section';
+import {VStack} from '@astryxdesign/core/Stack';
+import {Text} from '@astryxdesign/core/Text';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {TextArea} from '@astryxdesign/core/TextArea';
+import {CheckboxInput} from '@astryxdesign/core/CheckboxInput';
+
+const meta: Meta<typeof BottomSheet> = {
+  title: 'Lab/BottomSheet',
+  component: BottomSheet,
+  tags: ['autodocs'],
+  parameters: {
+    layout: 'fullscreen',
+    // Render each story in its own iframe in the Docs page. BottomSheet is a
+    // viewport-anchored overlay (position:fixed, dvh heights, detents from
+    // visualViewport); an iframe gives it a real mini-viewport, so both the
+    // modal (top-layer) and non-modal sheets render contained and with correct
+    // physics — instead of a modal escaping to cover the whole Docs page while
+    // a non-modal gets trapped/janky in the preview card.
+    docs: {
+      story: {inline: false, height: '560px'},
+    },
+  },
+  decorators: [
+    Story => (
+      <div style={{minHeight: 480, padding: 32}}>
+        <Story />
+      </div>
+    ),
+  ],
+};
+
+export default meta;
+type Story = StoryObj<typeof BottomSheet>;
+
+interface CommentFormValues {
+  title: string;
+  author: string;
+  email: string;
+  team: string;
+  project: string;
+  relatedTask: string;
+  summary: string;
+  context: string;
+  changes: string;
+  followUp: string;
+  comment: string;
+}
+
+function MobileKeyboardCommentForm({onPost}: {onPost: () => void}) {
+  const [values, setValues] = useState<CommentFormValues>({
+    title: '',
+    author: '',
+    email: '',
+    team: '',
+    project: '',
+    relatedTask: '',
+    summary: '',
+    context: '',
+    changes: '',
+    followUp: '',
+    comment: '',
+  });
+  const update =
+    (field: keyof CommentFormValues) =>
+    (value: string): void =>
+      setValues(current => ({...current, [field]: value}));
+
+  return (
+    <VStack gap={4}>
+      <Heading level={3}>Add a comment</Heading>
+      <Text type="supporting" color="secondary">
+        Focus fields throughout this long form to verify that the mobile
+        keyboard leaves each control visible and the sheet itself stays put.
+      </Text>
+      <Divider />
+      <TextInput
+        label="Title"
+        value={values.title}
+        onChange={update('title')}
+      />
+      <TextInput
+        label="Author"
+        value={values.author}
+        onChange={update('author')}
+      />
+      <TextInput
+        label="Email"
+        type="email"
+        value={values.email}
+        onChange={update('email')}
+      />
+      <TextInput label="Team" value={values.team} onChange={update('team')} />
+      <TextInput
+        label="Project"
+        value={values.project}
+        onChange={update('project')}
+      />
+      <TextInput
+        label="Related task"
+        value={values.relatedTask}
+        onChange={update('relatedTask')}
+      />
+      <TextArea
+        label="Summary"
+        rows={4}
+        value={values.summary}
+        onChange={update('summary')}
+      />
+      <TextArea
+        label="Context"
+        rows={6}
+        value={values.context}
+        onChange={update('context')}
+      />
+      <TextArea
+        label="What changed?"
+        rows={4}
+        value={values.changes}
+        onChange={update('changes')}
+      />
+      <TextArea
+        label="Suggested follow-up"
+        rows={4}
+        value={values.followUp}
+        onChange={update('followUp')}
+      />
+      <TextArea
+        label="Comment"
+        rows={8}
+        value={values.comment}
+        onChange={update('comment')}
+      />
+      <Button label="Post comment" onClick={onPost} />
+    </VStack>
+  );
+}
+
+function ShortMobileKeyboardForm({onSave}: {onSave: () => void}) {
+  const [title, setTitle] = useState('');
+  const [note, setNote] = useState('');
+
+  return (
+    <VStack gap={4}>
+      <Heading level={3}>Quick note</Heading>
+      <Text type="supporting" color="secondary">
+        This short sheet keeps its height and lifts only when the mobile
+        keyboard would otherwise cover the focused field.
+      </Text>
+      <TextInput label="Title" value={title} onChange={setTitle} />
+      <TextArea label="Note" rows={2} value={note} onChange={setNote} />
+      <Button label="Save note" onClick={onSave} />
+    </VStack>
+  );
+}
+
+export const Showcase: Story = {
+  render: () => {
+    const [isOpen, setIsOpen] = useState(false);
+    return (
+      <>
+        <Button label="Open sheet" onClick={() => setIsOpen(true)} />
+        <BottomSheet isOpen={isOpen} onOpenChange={setIsOpen} label="Filters">
+          <Section padding={4}>
+            <VStack gap={4}>
+              <Heading level={3}>Filters</Heading>
+              <Divider />
+              <VStack gap={2}>
+                <CheckboxInput label="In stock" value={false} />
+                <CheckboxInput label="On sale" value={false} />
+                <CheckboxInput label="Free shipping" value={false} />
+              </VStack>
+              <Button label="Apply" onClick={() => setIsOpen(false)} />
+            </VStack>
+          </Section>
+        </BottomSheet>
+      </>
+    );
+  },
+};
+
+export const TallSheet: Story = {
+  render: () => {
+    const [isOpen, setIsOpen] = useState(false);
+    return (
+      <>
+        <Button label="Open nearby places" onClick={() => setIsOpen(true)} />
+        <BottomSheet
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          label="Nearby places"
+          height="tall">
+          <Section padding={4}>
+            <VStack gap={3}>
+              <Text type="supporting" color="secondary">
+                Drag the handle to resize between snap points; flick down to
+                dismiss or up to expand. Escape also dismisses.
+              </Text>
+              <Divider />
+              {Array.from({length: 12}, (_, i) => (
+                <VStack key={i} gap={1}>
+                  <Text type="label">Place {i + 1}</Text>
+                  <Text type="supporting" color="secondary">
+                    {(0.2 + i * 0.3).toFixed(1)} mi away
+                  </Text>
+                </VStack>
+              ))}
+            </VStack>
+          </Section>
+        </BottomSheet>
+      </>
+    );
+  },
+};
+
+export const NoScrim: Story = {
+  render: () => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [count, setCount] = useState(0);
+    return (
+      <>
+        {/* A scrim is the semi-transparent layer that covers and blocks the
+            background. With hasScrim={false}, this page stays interactive. */}
+        <VStack gap={3}>
+          <Heading level={3}>Live page behind the overlay</Heading>
+          <Text type="supporting" color="secondary">
+            A scrim is the semi-transparent overlay that covers and blocks the
+            background. This example has no scrim, so the page stays visible and
+            interactive. Open the sheet, then tap the counter below.
+          </Text>
+          <Button label="Open sheet" onClick={() => setIsOpen(true)} />
+          <Button
+            label={`Background clicks: ${count}`}
+            onClick={() => setCount(c => c + 1)}
+          />
+        </VStack>
+        <BottomSheet
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          label="Nearby places"
+          hasScrim={false}
+          height="capped">
+          <Section padding={4}>
+            <VStack gap={3}>
+              <Heading level={3}>No scrim</Heading>
+              <Text type="supporting" color="secondary">
+                This is still an overlay, not inline content. The page behind
+                stays live. Drag the handle to resize, flick down to dismiss, or
+                press Escape while focus is here.
+              </Text>
+              <Divider />
+              {Array.from({length: 8}, (_, i) => (
+                <VStack key={i} gap={1}>
+                  <Text type="label">Place {i + 1}</Text>
+                  <Text type="supporting" color="secondary">
+                    {(0.2 + i * 0.3).toFixed(1)} mi away
+                  </Text>
+                </VStack>
+              ))}
+            </VStack>
+          </Section>
+        </BottomSheet>
+      </>
+    );
+  },
+};
+
+export const HugHeight: Story = {
+  render: () => {
+    const [isOpen, setIsOpen] = useState(false);
+    return (
+      <>
+        <Button label="Share page" onClick={() => setIsOpen(true)} />
+        <BottomSheet
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          label="Share page"
+          height="hug">
+          <Section padding={4}>
+            <VStack gap={4}>
+              <Heading level={3}>Share page</Heading>
+              <Text type="supporting" color="secondary">
+                The sheet fits its content, up to 92% of the viewport.
+              </Text>
+              <Divider />
+              <Button label="Copy link" />
+              <Button label="Send in Messenger" />
+              <Button label="Save for later" />
+              <Button label="Done" onClick={() => setIsOpen(false)} />
+            </VStack>
+          </Section>
+        </BottomSheet>
+      </>
+    );
+  },
+};
+
+export const ShortMobileKeyboard: Story = {
+  name: 'Short sheet with mobile keyboard',
+  render: () => {
+    const [isOpen, setIsOpen] = useState(false);
+    return (
+      <>
+        <Button label="Add a quick note" onClick={() => setIsOpen(true)} />
+        <BottomSheet
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          label="Quick note"
+          height="hug">
+          <Section padding={4}>
+            <ShortMobileKeyboardForm onSave={() => setIsOpen(false)} />
+          </Section>
+        </BottomSheet>
+      </>
+    );
+  },
+};
+
+export const MobileKeyboard: Story = {
+  name: 'Support mobile keyboard',
+  render: () => {
+    const [isOpen, setIsOpen] = useState(false);
+    return (
+      <>
+        <Button label="Add a comment" onClick={() => setIsOpen(true)} />
+        <BottomSheet
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          label="Add a comment"
+          height="tall">
+          <Section padding={4}>
+            <MobileKeyboardCommentForm onPost={() => setIsOpen(false)} />
+          </Section>
+        </BottomSheet>
+      </>
+    );
+  },
+};

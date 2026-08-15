@@ -173,6 +173,11 @@ export function ChartTooltip({
   } = useChart();
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+  // Whether the card is currently suppressed (no content, or a custom `render`
+  // opted out by returning null). positionCard reads this so a same-index
+  // pointer move — which repositions the card without a React commit — can't
+  // re-reveal a card the visibility effect below has hidden.
+  const cardHiddenRef = useRef(false);
 
   // Stable Set of resolved series keys — used by deriveTooltipSeriesValues.
   // Recomputed only when the resolved map identity changes (per layout pass).
@@ -188,7 +193,7 @@ export function ChartTooltip({
       if (!card) {
         return;
       }
-      if (!svg || !e.nearest) {
+      if (!svg || !e.nearest || cardHiddenRef.current) {
         card.style.display = 'none';
         return;
       }
@@ -244,6 +249,10 @@ export function ChartTooltip({
       const newIndex = e.nearest?.dataIndex ?? null;
       if (newIndex !== currentIndex) {
         currentIndex = newIndex;
+        // Optimistically treat the new index as showable; the visibility effect
+        // re-hides it after commit if there's no content (e.g. custom `render`
+        // returned null). This keeps the card appearing on the first move.
+        cardHiddenRef.current = false;
         setHoveredIndex(newIndex);
       }
       positionCard(e);
@@ -272,7 +281,10 @@ export function ChartTooltip({
       }
       const points = s._uid ? resolved.get(s._uid) : undefined;
       const point = points?.find(p => p.dataIndex === hoveredIndex);
-      if (!point) {
+      // A resolved point exists at every index, but its coordinates are NaN when
+      // this series' value here is missing/non-finite (the mark itself filters
+      // these at render time — mirror that so we never emit cx/cy="NaN").
+      if (!point || !Number.isFinite(point.px) || !Number.isFinite(point.py)) {
         continue;
       }
       elements.push(
@@ -333,6 +345,11 @@ export function ChartTooltip({
     // Line / area / dot charts → vertical crosshair through the point
     // (band-center or linear position, resolved by the shared helper).
     const px = xPixel(hoveredDatum, xKey, xScale);
+    // xPixel returns NaN for a non-finite x on a linear scale; skip rather than
+    // emit x1/x2="NaN". (The band branch above is always finite via `?? 0`.)
+    if (!Number.isFinite(px)) {
+      return null;
+    }
     return (
       <line
         x1={px}
@@ -355,20 +372,27 @@ export function ChartTooltip({
     margin.top,
   ]);
 
-  // Honor the documented contract: a custom `render` returning null hides the
-  // card (band highlight + dots still show). Without this, positionCard would
-  // leave an empty bordered box at the hovered point. Runs after commit so it
-  // also clears the frame positionCard optimistically displayed; effects never
-  // run during SSR, so `render` stays off the server path.
+  // Single source of truth for whether the card has anything to show. It's
+  // hidden when there's no hover, when the hovered index is stale/out-of-range
+  // (e.g. `data` shrank while hovering, so `datum` is undefined), or when a
+  // custom `render` opts out by returning null — the documented contract, which
+  // still shows the band highlight + dots. The decision is stored in a ref so
+  // the imperative positionCard honors it on subsequent same-index moves
+  // (otherwise it would re-reveal an empty bordered box). Runs after commit, so
+  // `render` (which may return null, or throw) never executes on the SSR path.
   useEffect(() => {
-    if (!render || hoveredIndex == null) {
-      return;
+    const hidden =
+      hoveredIndex == null ||
+      datum == null ||
+      (render != null && render(xValue, seriesValues) == null);
+    cardHiddenRef.current = hidden;
+    if (hidden) {
+      const card = cardRef.current;
+      if (card) {
+        card.style.display = 'none';
+      }
     }
-    const card = cardRef.current;
-    if (card && render(xValue, seriesValues) == null) {
-      card.style.display = 'none';
-    }
-  }, [render, hoveredIndex, xValue, seriesValues]);
+  }, [render, hoveredIndex, datum, xValue, seriesValues]);
 
   // ─── Render ────────────────────────────────────────────────────────────
   if (typeof document === 'undefined') {
@@ -381,8 +405,11 @@ export function ChartTooltip({
     );
   }
 
+  // Mirrors the visibility effect's first two conditions: no card when there's
+  // no hover or the hovered datum is stale/out-of-range (so `render` and the
+  // default body are never called with an undefined x-value + empty rows).
   const cardContent =
-    hoveredIndex == null ? null : render ? (
+    hoveredIndex == null || datum == null ? null : render ? (
       render(xValue, seriesValues)
     ) : (
       <DefaultTooltipContent xValue={xValue} rows={seriesValues} />

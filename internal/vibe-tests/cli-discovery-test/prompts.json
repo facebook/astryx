@@ -1,0 +1,21 @@
+{
+  "name": "cli-discovery-prompts",
+  "description": "Curated stratified subset of test-sets/default.json for the discovery experiment. Identical prompts are used across every condition (Checker Protocol §2). expectedComponents is evaluation-only and is NEVER shown to the agent (§3). Prompts are picked to span complexity so we don't over/under-state discovery: hard tasks make guessing fail, which is when discovery matters most.",
+  "source": "../test-sets/default.json",
+  "selectionStrategy": "stratified by complexity + category; reference default.json by id to avoid drift and answer-leak. Adjust ids after reviewing default.json; K>=5 reps per prompt per condition.",
+  "promptIds": [
+    {"id": "fwc-1", "category": "feature-with-constraint", "complexity": "simple"},
+    {"id": "sd-1", "category": "state-driven", "complexity": "simple"},
+    {"id": "ty-1", "category": "typography", "complexity": "simple"},
+    {"id": "wd-2", "category": "workflow-description", "complexity": "moderate"},
+    {"id": "cwm-1", "category": "clone-with-modification", "complexity": "moderate"},
+    {"id": "ps-1", "category": "page-setup", "complexity": "moderate"},
+    {"id": "dd-1", "category": "data-display", "complexity": "complex"},
+    {"id": "wd-1", "category": "workflow-description", "complexity": "complex"}
+  ],
+  "notes": [
+    "IDs verified against ../test-sets/default.json. Stratified 3 simple / 3 moderate / 2 complex across distinct categories.",
+    "Do NOT copy prompt text or expectedComponents here — reference by id so the single source of truth stays default.json.",
+    "page-setup (ps-1) and data-display (dd-1) are the highest-signal for discovery: an agent that guesses layout/theming APIs will hallucinate, while one that checks the CLI won't."
+  ]
+}

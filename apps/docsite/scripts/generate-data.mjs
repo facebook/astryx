@@ -24,6 +24,10 @@ import * as path from 'node:path';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 import {resolveContentRoot} from './resolve-content-root.mjs';
 import {expandWorkspaceDirs} from '../../../scripts/lib/workspace-globs.mjs';
+import {
+  buildTypeDefinitionIndex,
+  collectPropTypeRefs,
+} from '../src/lib/typeDefinitions.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DOCSITE_ROOT = path.resolve(__dirname, '..');
@@ -657,6 +661,31 @@ async function generateComponentRegistry() {
       }
     }
 
+    // Surface the shape of non-primitive prop types (issue #2682): when a
+    // documented prop type references a named type exported from this
+    // package's source (e.g. `SearchSource<T>`), record the reference on the
+    // prop and attach the extracted declaration to the entry so the props
+    // table can render it on demand.
+    const typeIndex = buildTypeDefinitionIndex(
+      pkg.srcDir,
+      path.relative(CONTENT_ROOT, pkg.srcDir),
+    );
+    for (const comp of components) {
+      const referenced = new Map();
+      for (const prop of comp.props) {
+        const typeRefs = collectPropTypeRefs(prop.type, typeIndex);
+        if (typeRefs.length > 0) {
+          prop.typeRefs = typeRefs;
+          for (const name of typeRefs) {
+            referenced.set(name, typeIndex.get(name));
+          }
+        }
+      }
+      comp.typeDefs = [...referenced.values()].sort((a, b) =>
+        a.name.localeCompare(b.name),
+      );
+    }
+
     components.sort((a, b) => a.name.localeCompare(b.name));
     if (components.length > 0) {
       allComponents[pkg.name] = components;
@@ -673,6 +702,18 @@ export interface PropDoc {
   default?: string;
   required?: boolean;
   slotElements?: ElementDescriptor[];
+  /** Names of package-exported types referenced by \`type\`, resolvable
+   *  against the owning entry's \`typeDefs\`. */
+  typeRefs?: string[];
+}
+
+export interface TypeDefinition {
+  /** Exported type name, e.g. \`SearchSource\`. */
+  name: string;
+  /** Extracted TypeScript declaration source, including member JSDoc. */
+  definition: string;
+  /** Repo-relative source file, e.g. \`packages/core/src/Typeahead/types.ts\`. */
+  sourcePath: string;
 }
 export interface BestPractice {
   guidance: boolean;
@@ -699,6 +740,8 @@ export interface ThemingTarget {
   className: string;
   visualProps?: string[];
   states?: string[];
+  /** Old name of a renamed target; the class superseding it. */
+  deprecatedFor?: string;
 }
 
 export interface ComponentVar {
@@ -714,6 +757,8 @@ export interface DerivedVar {
   property: string;
   vars?: string[];
   expand?: 'container';
+  /** Emit only the vars, dropping the source property from the rule. */
+  replaces?: boolean;
 }
 
 export interface ThemingDoc {
@@ -761,6 +806,8 @@ export interface ComponentEntry {
   hidden: boolean;
   parentDoc: string | null;
   props: PropDoc[];
+  /** Declarations for every type referenced from \`props[].typeRefs\`. */
+  typeDefs: TypeDefinition[];
   usage: UsageDoc | null;
   theming: ThemingDoc | null;
   params: HookParamDoc[] | null;
@@ -941,7 +988,7 @@ export const groupedComponents: Record<string, GroupedComponents> = ${JSON.strin
 async function generateBlockRegistry() {
   console.log('Generating block registry...');
 
-  const BLOCKS_DIR = path.join(CLI_ROOT, 'templates', 'blocks');
+  const BLOCKS_DIR = path.join(CLI_ROOT, 'assets', 'templates', 'blocks');
   const docFiles = findDocFilesRecursive(BLOCKS_DIR);
   const blocks = [];
 
@@ -1048,7 +1095,7 @@ export const showcaseCount = ${showcaseCount};
 async function generateTemplateRegistry() {
   console.log('Generating template registry...');
 
-  const PAGES_DIR = path.join(CLI_ROOT, 'templates', 'pages');
+  const PAGES_DIR = path.join(CLI_ROOT, 'assets', 'templates', 'pages');
   if (!fs.existsSync(PAGES_DIR)) {
     writeRegistry('templateRegistry.ts', `// Auto-generated — no templates found\nexport const templates = [];\nexport const templateCount = 0;\n`);
     return {templates: [], templateCount: 0};
@@ -1119,7 +1166,7 @@ export const templateCount = ${templates.length};
 async function generateDocsRegistry() {
   console.log('Generating docs registry...');
 
-  const DOCS_DIR = path.join(CLI_ROOT, 'docs');
+  const DOCS_DIR = path.join(CLI_ROOT, 'assets', 'docs');
   if (!fs.existsSync(DOCS_DIR)) {
     writeRegistry('docsRegistry.ts', `// Auto-generated — no docs found\nexport const docTopics = [];\nexport const docsCount = 0;\n`);
     return {docTopics: [], docsCount: 0};
@@ -1164,6 +1211,7 @@ export interface ContentBlock {
   code?: string;
   lang?: string;
   label?: string;
+  level?: number;
   headers?: string[];
   rows?: string[][];
   items?: string[];
@@ -1309,10 +1357,33 @@ ${body}
 
 // ── 7. Showcase Registry ───────────────────────────────────────────────
 
+// Blocks are copied into the docsite and rendered via a live import, so they
+// can only reference packages the docsite actually depends on. A block for a
+// component whose package is not a docsite dependency (e.g. anything in
+// `@astryxdesign/lab`, which is canary-only and deliberately not installed
+// here) is authored and version-controlled in the CLI templates, but must be
+// skipped from the docsite's live preview until its package becomes resolvable
+// — otherwise `next build` fails on the unresolved import. The block source is
+// still shown as code; it just has no rendered preview until, for example, the
+// component is promoted to core.
+const _docsiteDeps = (() => {
+  const pkg = JSON.parse(
+    fs.readFileSync(path.join(DOCSITE_ROOT, 'package.json'), 'utf-8'),
+  );
+  return {...pkg.dependencies, ...pkg.devDependencies};
+})();
+
+function importsPackageMissingFromDocsite(tsxSource) {
+  const imports = [
+    ...tsxSource.matchAll(/from\s+['"](@astryxdesign\/[^'"/]+)/g),
+  ].map(m => m[1]);
+  return imports.some(pkg => _docsiteDeps[pkg] == null);
+}
+
 function generateShowcaseRegistry() {
   console.log('Generating showcase registry...');
 
-  const BLOCKS_DIR = path.join(CLI_ROOT, 'templates', 'blocks');
+  const BLOCKS_DIR = path.join(CLI_ROOT, 'assets', 'templates', 'blocks');
   const SHOWCASE_OUT = path.join(OUT_DIR, 'showcases');
 
   // Clean and recreate
@@ -1335,6 +1406,15 @@ function generateShowcaseRegistry() {
     const basename = path.basename(docPath, '.doc.mjs');
     const tsxSrc = path.join(path.dirname(docPath), basename + '.tsx');
     if (!fs.existsSync(tsxSrc)) continue;
+
+    // Skip blocks that reference a package the docsite cannot resolve.
+    const tsxContent = fs.readFileSync(tsxSrc, 'utf-8');
+    if (importsPackageMissingFromDocsite(tsxContent)) {
+      console.log(
+        `  skipping showcase ${basename} — imports a package not installed in the docsite`,
+      );
+      continue;
+    }
 
     const alsoShowcaseFor = extractStringArrayField(content, 'alsoShowcaseFor');
 
@@ -1390,7 +1470,7 @@ ${importLines}
 function generateExampleRegistry() {
   console.log('Generating example registry...');
 
-  const BLOCKS_DIR = path.join(CLI_ROOT, 'templates', 'blocks');
+  const BLOCKS_DIR = path.join(CLI_ROOT, 'assets', 'templates', 'blocks');
   const EXAMPLES_OUT = path.join(OUT_DIR, 'examples');
 
   if (fs.existsSync(EXAMPLES_OUT)) {
@@ -1419,6 +1499,17 @@ function generateExampleRegistry() {
 
     let source = '';
     try { source = fs.readFileSync(tsxSrc, 'utf-8'); } catch { /* ignore */ }
+
+    // Skip live-preview entries for blocks the docsite cannot resolve — they'd
+    // break `next build`. The block's code is still shown via the block
+    // registry; only the rendered preview is withheld until the package is a
+    // docsite dependency.
+    if (importsPackageMissingFromDocsite(source)) {
+      console.log(
+        `  skipping example ${basename} — imports a package not installed in the docsite`,
+      );
+      continue;
+    }
 
     const alsoExampleFor = extractStringArrayField(content, 'alsoExampleFor');
 
@@ -1511,6 +1602,27 @@ async function generateBlogRegistry() {
   const types = collectTypes(posts);
   const tags = collectTags(posts);
 
+  // Definitive set of dark-mode image variants. We scan public/blog/** for
+  // files named "<name>.dark.<ext>" at build time so ThemedImage can decide,
+  // deterministically and with no runtime probe, whether a body image has a
+  // dark counterpart. Paths are stored as site-absolute URLs ("/blog/...").
+  const publicBlogDir = path.join(DOCSITE_ROOT, 'public', 'blog');
+  const darkImages = [];
+  const walkDark = dir => {
+    if (!fs.existsSync(dir)) return;
+    for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walkDark(full);
+      } else if (/\.dark\.[a-zA-Z0-9]+$/.test(entry.name)) {
+        const rel = path.relative(path.join(DOCSITE_ROOT, 'public'), full);
+        darkImages.push('/' + rel.split(path.sep).join('/'));
+      }
+    }
+  };
+  walkDark(publicBlogDir);
+  darkImages.sort();
+
   const content = `// Auto-generated by scripts/generate-data.mjs — do not edit
 import type {BlogPost, BlogPostType} from '../lib/blog/schema';
 
@@ -1521,6 +1633,14 @@ export const blogTypes: BlogPostType[] = ${JSON.stringify(types)};
 export const blogTags: string[] = ${JSON.stringify(tags)};
 
 export const blogPostCount = ${posts.length};
+
+/**
+ * Site-absolute paths of every dark-mode image variant found under
+ * public/blog (files named "<name>.dark.<ext>"). ThemedImage consults this to
+ * decide whether a body image has a dark counterpart — a definitive,
+ * build-time list rather than a runtime existence probe.
+ */
+export const blogDarkImages: string[] = ${JSON.stringify(darkImages, null, 2)};
 `;
   writeRegistry('blogRegistry.ts', content);
   return {blogPostCount: posts.length, blogTypeCount: types.length};

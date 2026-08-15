@@ -11,10 +11,13 @@
  * Centralizes the "what element should I render as?" decision for
  * polymorphic components. The priority order:
  *
- *   1. href → 'link' (navigation always wins)
+ *   1. href → 'link' (navigation always wins, unless disabled)
  *   2. onClick → 'button' (explicit interactivity)
  *   3. interactive trigger context → 'button' (implicit via parent)
  *   4. else → 'inert' (non-interactive)
+ *
+ * A disabled `href` is excluded at step 1 and therefore resolves via the
+ * remaining steps — 'inert' when no onClick or context applies.
  *
  * This hook is the single place to add new context-based triggers
  * (e.g., Popover, DropdownMenu, Disclosure). Components that consume
@@ -49,8 +52,12 @@ export interface UseInteractiveRoleOptions {
   onClick?: ((...args: never[]) => unknown) | null;
 
   /**
-   * Whether the component is disabled. When true and href is provided,
-   * falls back to button (disabled links are an a11y anti-pattern).
+   * Whether the component is disabled. When true, an `href` is ignored for
+   * role resolution (a disabled link is an a11y anti-pattern), so the role is
+   * decided by the remaining inputs: `onClick` → `'button'`, an interactive
+   * context → its role, otherwise `'inert'`. In particular a disabled `href`
+   * with no `onClick` and no context override resolves to `'inert'`, not a
+   * link or a button.
    * @default false
    */
   isDisabled?: boolean;
@@ -83,7 +90,8 @@ export function useInteractiveRole({
 }: UseInteractiveRoleOptions): InteractiveRole {
   const contextRole = useInteractiveRoleContext();
 
-  // 1. href → link (unless disabled — disabled links fall through to button)
+  // 1. href → link (unless disabled — a disabled href is skipped here and
+  // resolved by the checks below, landing on 'inert' if nothing else applies)
   if (href != null && !isDisabled) {
     return 'link';
   }

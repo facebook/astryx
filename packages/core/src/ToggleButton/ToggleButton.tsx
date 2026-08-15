@@ -17,7 +17,7 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/ToggleButton/index.ts (exports if types change)
  * - /apps/storybook/stories/ToggleButton.stories.tsx
- * - /packages/cli/templates/blocks/components/ToggleButton/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/ToggleButton/ (showcase blocks)
  */
 
 import React, {useOptimistic, type ReactNode} from 'react';
@@ -40,7 +40,25 @@ import {themeProps} from '../utils/themeProps';
  */
 const pressedStyles = stylex.create({
   background: {
-    backgroundColor: colorVars['--color-overlay-pressed'],
+    // forced-color-adjust must be `none` here: ToggleButton renders a <button>,
+    // and the UA keeps native form-control colors (ButtonFace surface) for it
+    // under forced colors, ignoring the authored Highlight fill — the label kept
+    // its HighlightText color, giving white text on a white surface. Opting the
+    // pressed button out of UA remapping makes both the Highlight surface and
+    // the HighlightText label render as authored, restoring figure-ground.
+    forcedColorAdjust: 'none',
+    backgroundColor: {
+      default: colorVars['--color-overlay-pressed'],
+      // Forced colors (Windows High Contrast) strips the painted pressed
+      // overlay, which would leave icon-only toggles with no pressed
+      // indication at all. Highlight/HighlightText is the platform convention
+      // for a selected/pressed control (WCAG 1.4.11).
+      '@media (forced-colors: active)': 'Highlight',
+    },
+    color: {
+      default: null,
+      '@media (forced-colors: active)': 'HighlightText',
+    },
   },
 });
 

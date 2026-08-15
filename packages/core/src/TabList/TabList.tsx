@@ -14,7 +14,7 @@
  * - /packages/core/src/TabList/TabList.doc.mjs
  * - /packages/core/src/TabList/index.ts
  * - /packages/core/src/TabList/TabList.test.tsx
- * - /packages/cli/templates/blocks/components/TabList/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/TabList/ (showcase blocks)
  */
 
 import React, {useCallback, useMemo, type ReactNode} from 'react';
@@ -22,13 +22,14 @@ import * as stylex from '@stylexjs/stylex';
 import {borderVars, colorVars, spacingVars} from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
 import {TabListContext} from './TabListContext';
-import type {TabListOrientation, TabListSize} from './TabListContext';
+import type {TabListSize} from './TabListContext';
 import {useSize} from '../SizeContext/SizeContext';
 import {mergeProps, mergeRefs} from '../utils';
 import {useListFocus} from '../hooks/useListFocus';
 import {useKeyboardHint} from '../hooks/useKeyboardHint';
 import {EDGE_COMP_ATTR} from '../Layout/edgeCompensation.stylex';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 /**
  * Selector matching the focusable stops in the tab strip: every Tab
@@ -66,15 +67,6 @@ export interface TabListProps extends Omit<BaseProps<HTMLElement>, 'onChange'> {
    */
   hasDivider?: boolean;
   /**
-   * Orientation of the tab strip, controlling which arrow keys move
-   * focus between tabs.
-   * - `'horizontal'` (default): ArrowLeft / ArrowRight (ArrowUp / ArrowDown
-   *   also work per the WAI-ARIA APG).
-   * - `'vertical'`: ArrowUp / ArrowDown (ArrowLeft / ArrowRight also work).
-   * @default 'horizontal'
-   */
-  orientation?: TabListOrientation;
-  /**
    * Tab and TabMenu children.
    */
   children: ReactNode;
@@ -95,6 +87,14 @@ const styles = stylex.create({
     borderBottomWidth: borderVars['--border-width'],
     borderBottomStyle: 'solid',
     borderBottomColor: colorVars['--color-border'],
+    // Reserve a gap between the tabs and the divider rail so the hover pill
+    // (which fills the tab height) no longer touches the underline, and an
+    // adjacent same-size Button aligns to the tabs rather than butting the
+    // rail. The tabs keep their element-size height; this padding grows the
+    // strip. `--_tab-indicator-bottom` drops the selected indicator through
+    // the reserved gap (+ the 1px border) so it still sits on the rail.
+    paddingBlockEnd: spacingVars['--spacing-1'],
+    '--_tab-indicator-bottom': `calc(-1 * (${spacingVars['--spacing-1']} + ${borderVars['--border-width']}))`,
   },
 });
 
@@ -121,7 +121,6 @@ export function TabList({
   size: sizeProp,
   layout = 'hug',
   hasDivider = false,
-  orientation = 'horizontal',
   xstyle,
   className,
   style,
@@ -129,24 +128,25 @@ export function TabList({
   onKeyDown: onKeyDownProp,
   onFocus: onFocusProp,
   onBlur: onBlurProp,
-  'aria-label': ariaLabel = 'Tabs',
+  'aria-label': ariaLabelFromProps,
   'aria-orientation': _ariaOrientation,
   [EDGE_COMP_ATTR]: _edgeCompAttr,
   ...restProps
 }: TabListProps) {
+  const t = useTranslator();
+  const ariaLabel = ariaLabelFromProps ?? t('@astryx.tabList.label');
   const size = useSize(sizeProp, 'md');
 
   // Roving-tabindex keyboard navigation across the tab strip via the shared
   // hook. `orientation: 'both'` accepts both arrow axes per the WAI-ARIA APG
   // allowance for tab strips (ArrowRight/ArrowDown advance, ArrowLeft/ArrowUp
-  // retreat) regardless of the component's `orientation` prop, which only
-  // drives the keyboard hint badge (see useKeyboardHint below). We do not set
-  // `aria-orientation` on the `<nav>`: that attribute is invalid on the
-  // navigation role and triggers an axe `aria-allowed-attr` violation.
+  // retreat). We do not set `aria-orientation` on the `<nav>`: that attribute
+  // is invalid on the navigation role and triggers an axe `aria-allowed-attr`
+  // violation.
   //
   // `hasRovingTabIndex` makes the hook own the single tab stop: it stamps
   // tabindex 0/-1, repairs the stop on mount and as stops mount/unmount or
-  // toggle disabled, and — via `handleFocus` on the nav — keeps the stop in
+  // toggle disabled, and -- via `handleFocus` on the nav -- keeps the stop in
   // sync after clicks or programmatic focus. Individual Tabs still render
   // `tabIndex={isSelected ? 0 : -1}` (see Tab.tsx) as the initial source of
   // truth; the hook's repair preserves an existing tab stop and only promotes
@@ -162,7 +162,7 @@ export function TabList({
     onKeyDown: onHintKeyDown,
     onFocus: onHintFocus,
     onBlur: onHintBlur,
-  } = useKeyboardHint({orientation});
+  } = useKeyboardHint();
 
   const contextValue = useMemo(
     () => ({value, onChange, size, layout}),

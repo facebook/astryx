@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'HoverCard',
@@ -46,13 +46,13 @@ export const docs = {
         {
           name: 'placement',
           type: "'above' | 'below' | 'start' | 'end'",
-          description: 'Position relative to the anchor element.',
+          description: "Position relative to the anchor element. Logical: start/end resolve against the popover\'s own inherited direction (RTL mirrors in pure CSS).",
           default: "'above'",
         },
         {
           name: 'alignment',
           type: "'start' | 'center' | 'end'",
-          description: 'Alignment along the placement axis.',
+          description: "Alignment along the placement axis. Logical: start/end resolve against the popover\'s own inherited direction (RTL mirrors in pure CSS).",
           default: "'center'",
         },
         {
@@ -78,6 +78,12 @@ export const docs = {
           type: 'boolean',
           description: 'Enables or disables the hover and focus triggers.',
           default: 'true',
+        },
+        {
+          name: 'label',
+          type: 'string',
+          description:
+            'Accessible name for the hover card popup. When provided, the popup is exposed as a named role="dialog"; when omitted, it falls back to role="group" (a group may validly be unnamed).',
         },
         {
           name: 'onOpenChange',
@@ -108,7 +114,7 @@ export const docs = {
       { guidance: false, description: 'Place critical actions or required information inside a hover card; users may miss content that only appears on hover.' },
       { guidance: false, description: 'Use a hover card when a simple Tooltip or Popover would suffice.' },
       { guidance: false, description: 'Use a HoverCard for content the user must interact with; it disappears when the cursor leaves.' },
-      { guidance: false, description: 'Nest a HoverCard whose content has block elements directly inside phrasing-only contexts such as a <p>, <label>, or heading. The card renders inline, so block content there is invalid HTML the browser reparents. Wrap the surrounding text in a block element (e.g. a <div>) instead.' },
+      { guidance: true, description: 'Prefer placing HoverCard in a block context rather than directly in a <p>, heading, or link. Those placements are supported when necessary through a corrective portal, but the DOM and tab order may differ.' },
     ],
     anatomy: [
       {name: 'Trigger', required: true, description: 'The element that opens the hover card on hover or focus: a button, link, or inline text.'},
@@ -119,7 +125,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docsZh = {
   name: 'HoverCard',
   displayName: 'Hover Card',
@@ -155,13 +161,13 @@ export const docsZh = {
         {
           name: 'placement',
           type: "'above' | 'below' | 'start' | 'end'",
-          description: '相对于锚点元素的位置。',
+          description: '相对于锚点元素的位置。逻辑值：start/end 根据弹出层自身继承的方向解析（RTL 镜像）。',
           default: "'above'",
         },
         {
           name: 'alignment',
           type: "'start' | 'center' | 'end'",
-          description: '沿放置轴的对齐方式。',
+          description: '沿放置轴的对齐方式。逻辑值：start/end 根据弹出层自身继承的方向解析（RTL 镜像）。',
           default: "'center'",
         },
         {
@@ -187,6 +193,12 @@ export const docsZh = {
           type: 'boolean',
           description: '启用或禁用悬停和聚焦触发器。',
           default: 'true',
+        },
+        {
+          name: 'label',
+          type: 'string',
+          description:
+            '悬浮卡片弹出层的无障碍名称。提供时，弹出层以具名的 role="dialog" 暴露；省略时，回退为 role="group"（group 可以合法地没有名称）。',
         },
         {
           name: 'onOpenChange',
@@ -217,12 +229,12 @@ export const docsZh = {
       { guidance: false, description: 'Place critical actions or required information inside a hover card; users may miss content that only appears on hover.' },
       { guidance: false, description: 'Use a hover card when a simple Tooltip or Popover would suffice.' },
       { guidance: false, description: 'Use a HoverCard for content the user must interact with; it disappears when the cursor leaves.' },
-      { guidance: false, description: 'Nest a HoverCard whose content has block elements directly inside phrasing-only contexts such as a <p>, <label>, or heading. The card renders inline, so block content there is invalid HTML the browser reparents. Wrap the surrounding text in a block element (e.g. a <div>) instead.' },
+      { guidance: true, description: 'Prefer placing HoverCard in a block context rather than directly in a <p>, heading, or link. Those placements are supported when necessary through a corrective portal, but the DOM and tab order may differ.' },
     ],
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
     'Hover/focus triggered overlay for displaying rich, interactive content anchored to trigger element.',
@@ -235,7 +247,7 @@ export const docsDense = {
       { guidance: false, description: 'Place critical actions or required information inside a hover card; users may miss content that only appears on hover.' },
       { guidance: false, description: 'Use a hover card when a simple Tooltip or Popover would suffice.' },
       { guidance: false, description: 'Use a HoverCard for content the user must interact with; it disappears when the cursor leaves.' },
-      { guidance: false, description: 'Nest a block-content HoverCard directly inside phrasing-only contexts (<p>, <label>, heading); it renders inline so block content is invalid HTML there. Wrap surrounding text in a block element instead.' },
+      { guidance: true, description: 'Prefer a block context over a direct <p>, heading, or link placement. Those placements work when necessary through a corrective portal, but DOM/tab order may differ.' },
     ],
   },
   components: [
@@ -246,12 +258,13 @@ export const docsDense = {
       propDescriptions: {
         children: 'Trigger element; must accept ref.',
         content: 'Hover card content.',
-        placement: 'Position relative to anchor element.',
-        alignment: 'Alignment along placement axis.',
+        placement: 'Position relative to anchor element. Logical: start/end follow the popover\'s inherited direction (RTL mirrors).',
+        alignment: 'Alignment along placement axis. Logical: start/end follow the popover\'s inherited direction (RTL mirrors).',
         delay: 'Show delay in ms.',
         hideDelay: 'Hide delay in ms.',
         focusTrigger: 'Controls when focus events trigger hover card.',
         isEnabled: 'Enable/disable hover + focus triggers.',
+        label: 'Accessible name for the popup. With label: named role="dialog"; without: role="group".',
         onOpenChange: 'Callback when visibility changes; true=shown, false=hidden.',
         hasHoverIndication: 'Dashed underline on trigger element.',
         isDefaultOpen: 'Show hover card on mount. Still dismissible.',

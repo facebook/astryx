@@ -91,7 +91,12 @@ export const Heatmap: StoryObj = {
           colorRange: ['#eff6ff', '#1e40af'],
         }),
       ]}
-      axes={axes}
+      axes={
+        <>
+          <ChartAxis position="bottom" />
+          <ChartAxis position="left" showAxisLine />
+        </>
+      }
       height={280}
     />
   ),

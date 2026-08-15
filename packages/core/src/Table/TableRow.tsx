@@ -11,7 +11,7 @@
  * SYNC: When modified, update:
  * - /packages/core/src/Table/Table.doc.mjs
  * - /packages/core/src/Table/index.ts
- * - /packages/cli/templates/blocks/components/Table/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Table/ (showcase blocks)
  */
 
 import {use, type ReactNode} from 'react';
@@ -120,6 +120,8 @@ export function TableRow({
   xstyle,
   ref,
   isHeaderRow = false,
+  className: incomingClassName,
+  style: incomingStyle,
   ...props
 }: TableRowProps) {
   const ctx = use(TableContext);
@@ -132,6 +134,8 @@ export function TableRow({
         {...mergeProps(
           themeProps('table-row'),
           stylex.props(tableRowMarker, xstyle),
+          incomingClassName,
+          incomingStyle,
         )}>
         {children}
       </tr>
@@ -169,6 +173,8 @@ export function TableRow({
       {...mergeProps(
         themeProps('table-row'),
         stylex.props(tableRowMarker, ...rowStyles),
+        incomingClassName,
+        incomingStyle,
       )}>
       {children}
     </tr>

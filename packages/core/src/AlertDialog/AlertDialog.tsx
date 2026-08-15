@@ -13,7 +13,7 @@
  * - /packages/core/src/AlertDialog/AlertDialog.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/AlertDialog/index.ts (exports if types change)
  * - /apps/storybook/stories/AlertDialog.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/AlertDialog/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/AlertDialog/ (showcase blocks)
  */
 
 import React, {useId, useCallback} from 'react';
@@ -28,6 +28,7 @@ import {Button, type ButtonVariant} from '../Button';
 import type {BaseProps} from '../BaseProps';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 export interface AlertDialogProps extends BaseProps<HTMLDialogElement> {
   ref?: React.Ref<HTMLDialogElement>;
@@ -38,7 +39,8 @@ export interface AlertDialogProps extends BaseProps<HTMLDialogElement> {
 
   /**
    * Renders alert dialog content inline without modal behavior.
-   * For documentation previews and showcases only.
+   * For documentation previews and showcases only. The inline path is not a
+   * modal, so it renders `role="group"` rather than `role="alertdialog"`.
    * @default false
    */
   isInline?: boolean;
@@ -99,9 +101,16 @@ export interface AlertDialogProps extends BaseProps<HTMLDialogElement> {
 /**
  * A confirmation dialog for destructive or irreversible actions.
  *
+ * Implements the WAI-ARIA APG Alert Dialog pattern:
+ * https://www.w3.org/WAI/ARIA/apg/patterns/alertdialog/
+ *
  * Uses `role="alertdialog"` and requires explicit user action to dismiss.
  * Cannot be dismissed by clicking outside. Escape key triggers cancel.
- * Initial focus goes to the cancel button (least destructive action).
+ * Initial focus goes to the cancel button (least destructive action), pinned
+ * with `data-autofocus` so it survives any change to the footer's order.
+ *
+ * The `isInline` preview path is not modal, so it renders `role="group"`
+ * instead — the alertdialog role would promise modality it does not have.
  *
  * @example
  * ```
@@ -122,7 +131,7 @@ export function AlertDialog({
   onOpenChange,
   title,
   description,
-  cancelLabel = 'Cancel',
+  cancelLabel: cancelLabelFromProps,
   actionLabel,
   actionVariant = 'destructive',
   isActionLoading,
@@ -132,7 +141,10 @@ export function AlertDialog({
   className,
   style,
   'data-testid': testId,
+  ...rest
 }: AlertDialogProps) {
+  const t = useTranslator();
+  const cancelLabel = cancelLabelFromProps ?? t('@astryx.alertDialog.cancel');
   const titleId = useId();
   const descriptionId = useId();
 
@@ -142,13 +154,19 @@ export function AlertDialog({
 
   return (
     <Dialog
+      {...rest}
       ref={ref}
       isOpen={isOpen}
       isInline={isInline}
       onOpenChange={onOpenChange}
       width={width}
       purpose="form"
-      role="alertdialog"
+      // `alertdialog` is a modal role: it promises an interruption the user
+      // has to deal with, a focus trap, and an inert page behind it. The
+      // inline path renders a plain always-present div with none of that, so
+      // the role would misdescribe it. `group` keeps the title and
+      // description associated with a container without claiming a dialog.
+      role={isInline ? 'group' : 'alertdialog'}
       aria-labelledby={titleId}
       aria-describedby={descriptionId}
       {...mergeProps(themeProps('alert-dialog'), {className, style})}
@@ -172,6 +190,11 @@ export function AlertDialog({
                 variant="ghost"
                 label={cancelLabel}
                 onClick={handleCancel}
+                // Dialog focuses [data-autofocus] itself after showModal(),
+                // because React's autoFocus runs during commit while the
+                // dialog is still invisible. Cancel is the least destructive
+                // choice, so it is the one that should be preselected.
+                data-autofocus
               />
               <Button
                 variant={actionVariant}

@@ -11,7 +11,7 @@
  * - /packages/core/src/EmptyState/EmptyState.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/EmptyState/index.ts (exports if types change)
  * - /apps/storybook/stories/EmptyState.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/EmptyState/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/EmptyState/ (showcase blocks)
  */
 
 import {type ReactNode, createElement} from 'react';
@@ -105,7 +105,10 @@ export interface EmptyStateProps extends BaseProps<HTMLDivElement> {
   actions?: ReactNode;
   /**
    * Semantic heading level for the title element.
-   * Controls the rendered HTML tag (h1–h6) to fit the document outline.
+   * Controls only the rendered HTML tag (h1–h6) so the title fits the
+   * document outline. This is a semantic change for accessibility and does
+   * not change the visual size of the title, which stays fixed regardless
+   * of level.
    * @default 3
    */
   headingLevel?: 1 | 2 | 3 | 4 | 5 | 6;
@@ -154,6 +157,7 @@ export function EmptyState({
   return (
     <div
       ref={ref}
+      {...props}
       role="status"
       {...mergeProps(
         themeProps('empty-state', {variant: isCompact ? 'compact' : null}),
@@ -164,13 +168,17 @@ export function EmptyState({
         ),
         className,
         style,
-      )}
-      {...props}>
+      )}>
       {icon != null && <div aria-hidden="true">{icon}</div>}
       <div {...stylex.props(styles.textGroup)}>
         {createElement(
           HeadingTag,
-          stylex.props(styles.title, isCompact && styles.titleCompact),
+          mergeProps(
+            themeProps('empty-state-title', {
+              variant: isCompact ? 'compact' : null,
+            }),
+            stylex.props(styles.title, isCompact && styles.titleCompact),
+          ),
           title,
         )}
         {description != null && (
@@ -179,9 +187,14 @@ export function EmptyState({
           // mismatches. The StyleX style sets margin: 0, so appearance is
           // unchanged.
           <div
-            {...stylex.props(
-              styles.description,
-              isCompact && styles.descriptionCompact,
+            {...mergeProps(
+              themeProps('empty-state-description', {
+                variant: isCompact ? 'compact' : null,
+              }),
+              stylex.props(
+                styles.description,
+                isCompact && styles.descriptionCompact,
+              ),
             )}>
             {description}
           </div>

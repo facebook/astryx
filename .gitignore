@@ -11,6 +11,9 @@ storybook-static/
 # Test coverage
 coverage/
 
+# RTL audit generated scorecard (relationship-based; never committed as a baseline)
+rtl-audit-report.json
+
 # IDE
 .idea/
 .vscode/
@@ -68,3 +71,6 @@ yarn.lock
 .node-version
 .tool-versions
 mise.toml
+
+# Generated i18n artifacts (rebuilt from en.json)
+packages/core/locales/pseudo.json

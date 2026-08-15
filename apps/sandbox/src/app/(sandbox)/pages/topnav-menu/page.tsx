@@ -120,7 +120,7 @@ export default function TopNavMenuPage() {
                 <TopNavHeading
                   heading="Marketing"
                   logo={<NavIcon icon={<LogoIcon />} />}
-                  href="#"
+                  headingHref="#"
                 />
               }
               startContent={
@@ -146,7 +146,7 @@ export default function TopNavMenuPage() {
           <div {...stylex.props(styles.navWrapper)}>
             <TopNav
               label="Simple navigation"
-              heading={<TopNavHeading heading="App" href="#" />}
+              heading={<TopNavHeading heading="App" headingHref="#" />}
               startContent={
                 <>
                   <TopNavItem label="Home" href="#" isSelected />

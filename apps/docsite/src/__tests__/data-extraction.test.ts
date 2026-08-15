@@ -309,6 +309,38 @@ describe('componentRegistry', () => {
     });
   });
 
+  it('Lightbox declares an overlay playground with a closed initial state (#3657)', () => {
+    const core = components['@astryxdesign/core'];
+    const lightbox = core.find(c => c.name === 'Lightbox');
+    expect(lightbox).toBeDefined();
+    // Lightbox opens via showModal() and renders nothing while closed; without
+    // overlay mode the properties tab is an empty stage on load.
+    expect(lightbox!.playground?.overlay).toBe(true);
+    expect(lightbox!.playground?.defaults).toMatchObject({
+      isOpen: false,
+      media: {
+        src: expect.stringContaining('/template-assets/'),
+        alt: expect.any(String),
+      },
+    });
+  });
+
+  it('dialog-family components keep contained isInline previews, not overlay mode (#3657)', () => {
+    const core = components['@astryxdesign/core'];
+    for (const name of ['Dialog', 'AlertDialog', 'CommandPalette']) {
+      const entry = core.find(c => c.name === name);
+      expect(entry, name).toBeDefined();
+      // Intentional: the contained preview keeps knobs usable while the
+      // component is visible. Guard the half-migrated shape too — overlay
+      // with isOpen: true would never show the open trigger.
+      expect(entry!.playground?.overlay, name).toBeUndefined();
+      expect(entry!.playground?.defaults, name).toMatchObject({
+        isOpen: true,
+        isInline: true,
+      });
+    }
+  });
+
   it('Chat has many sub-components (standalone docs take priority over compound entries)', () => {
     const core = components['@astryxdesign/core'];
     // Chat compound doc has 14 sub-components, but ChatToolCalls and
@@ -864,7 +896,10 @@ describe('exampleRegistry', () => {
 // "Selectable Card Multi".
 describe('block example title convention', () => {
   const blocksDir = fileURLToPath(
-    new URL('../../../../packages/cli/templates/blocks', import.meta.url),
+    new URL(
+      '../../../../packages/cli/assets/templates/blocks',
+      import.meta.url,
+    ),
   );
 
   function displayNameOf(relPath: string): string | null {
@@ -898,8 +933,7 @@ describe('Card playground defaults', () => {
     const entry = coreComponent('ClickableCard');
     expect(entry).toBeDefined();
     const defaults = entry!.playground?.defaults as
-      | Record<string, unknown>
-      | undefined;
+      Record<string, unknown> | undefined;
     expect(defaults).toBeDefined();
     expect(typeof defaults!.label).toBe('string');
     expect(defaults!.href).toBeDefined();
@@ -912,8 +946,7 @@ describe('Card playground defaults', () => {
     const entry = coreComponent('SelectableCard');
     expect(entry).toBeDefined();
     const defaults = entry!.playground?.defaults as
-      | Record<string, unknown>
-      | undefined;
+      Record<string, unknown> | undefined;
     expect(defaults).toBeDefined();
     expect(typeof defaults!.label).toBe('string');
     expect(typeof defaults!.isSelected).toBe('boolean');
@@ -948,5 +981,35 @@ describe('ToggleButtonGroup vertical example', () => {
     const vertical = examples.find(e => /Vertical/i.test(e.name));
     expect(vertical).toBeDefined();
     expect(vertical!.source).toContain('type="multiple"');
+  });
+});
+
+// ── LinkProvider utility page (#2733) ──────────────────────────────────────
+// LinkProvider is a non-visual provider: its page renders the hook-style
+// static layout (props table on the main page, no interactive playground).
+// That layout keys off `category: 'Utility'` with no curated playground, and
+// still needs props and an example block to have content to show.
+describe('LinkProvider utility page', () => {
+  const linkProvider = components['@astryxdesign/core'].find(
+    c => c.name === 'LinkProvider',
+  );
+
+  it('is a Utility entry without a curated playground', () => {
+    expect(linkProvider).toBeDefined();
+    expect(linkProvider!.category).toBe('Utility');
+    expect(linkProvider!.params).toBeNull();
+    expect(linkProvider!.playground).toBeNull();
+  });
+
+  it('documents props for the static props table', () => {
+    const propNames = linkProvider!.props.map(p => p.name);
+    expect(propNames).toContain('component');
+    expect(propNames).toContain('children');
+  });
+
+  it('registers an example block demonstrating a custom link component', () => {
+    const examples = exampleRegistry['LinkProvider'] ?? [];
+    expect(examples.length).toBeGreaterThanOrEqual(1);
+    expect(examples[0].source).toContain('<LinkProvider component=');
   });
 });

@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'Popover',
@@ -36,13 +36,13 @@ export const docs = {
         {
           name: 'placement',
           type: "'above' | 'below' | 'start' | 'end'",
-          description: 'Position placement relative to the trigger.',
+          description: 'Position placement relative to the trigger. Logical: start/end resolve against the popover\'s own inherited direction, so RTL contexts mirror automatically in pure CSS.',
           default: "'below'",
         },
         {
           name: 'alignment',
           type: "'start' | 'center' | 'end'",
-          description: 'Alignment along the placement axis.',
+          description: 'Alignment along the placement axis. Logical: start/end follow the popover\'s own inherited direction (RTL mirrors).',
           default: "'start'",
         },
         {
@@ -71,6 +71,20 @@ export const docs = {
           name: 'label',
           type: 'string',
           description: 'Accessible label for the popover dialog.',
+        },
+        {
+          name: 'role',
+          type: "'dialog' | 'none'",
+          description:
+            'ARIA role for the popover wrapper. Use dialog for dialog-style popovers; use none when content provides its own role, like menu or listbox.',
+          default: "'dialog'",
+        },
+        {
+          name: 'isModal',
+          type: 'boolean',
+          description:
+            'Whether a dialog-style popover sets aria-modal. Only applies when role is dialog.',
+          default: 'true',
         },
         {
           name: 'hasCloseButton',
@@ -119,6 +133,7 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-popover'},
+      {className: 'astryx-popover-surface'},
     ],
     vars: [
       {name: '--_popover-radius', description: 'Border radius of the popover', default: 'var(--radius-element)', private: true},
@@ -145,7 +160,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docsZh = {
   name: 'Popover',
   displayName: 'Popover',
@@ -177,13 +192,13 @@ export const docsZh = {
         {
           name: 'placement',
           type: "'above' | 'below' | 'start' | 'end'",
-          description: '相对于触发器的位置放置方式。',
+          description: '相对于触发器的位置放置方式。逻辑值：start/end 根据弹出层自身继承的方向解析，RTL 环境通过纯 CSS 自动镜像。',
           default: "'below'",
         },
         {
           name: 'alignment',
           type: "'start' | 'center' | 'end'",
-          description: '沿放置轴的对齐方式。',
+          description: '沿放置轴的对齐方式。逻辑值：start/end 跟随弹出层自身继承的方向（RTL 镜像）。',
           default: "'start'",
         },
         {
@@ -212,6 +227,20 @@ export const docsZh = {
           name: 'label',
           type: 'string',
           description: '弹出框对话框的无障碍标签。',
+        },
+        {
+          name: 'role',
+          type: "'dialog' | 'none'",
+          description:
+            '弹出框包装器的 ARIA 角色。对话框式弹出框使用 dialog；当内容提供自己的角色（如 menu 或 listbox）时使用 none。',
+          default: "'dialog'",
+        },
+        {
+          name: 'isModal',
+          type: 'boolean',
+          description:
+            '对话框式弹出框是否设置 aria-modal。仅在 role 为 dialog 时适用。',
+          default: 'true',
         },
         {
           name: 'hasCloseButton',
@@ -249,6 +278,7 @@ export const docsZh = {
   theming: {
     targets: [
       {className: 'astryx-popover'},
+      {className: 'astryx-popover-surface'},
     ],
     vars: [
       {name: '--_popover-radius', description: 'Border radius of the popover', default: 'var(--radius-element)', private: true},
@@ -275,7 +305,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
     'Click-triggered popover displaying interactive content anchored to trigger element; implements button+dialog ARIA pattern.',
@@ -305,8 +335,8 @@ export const docsDense = {
         children: 'Trigger element. Must contain <button> or [role="button"] element.',
         anchorRef: 'External ref for popover anchor in sibling mode.',
         content: 'Content displayed inside popover.',
-        placement: 'Position relative to trigger.',
-        alignment: 'Alignment along placement axis.',
+        placement: 'Position relative to trigger. Logical: start/end resolve against the popover\'s inherited direction (RTL mirrors).',
+        alignment: 'Alignment along placement axis. Logical: start/end follow the popover\'s inherited direction (RTL mirrors).',
         isOpen: 'Whether popover shown in controlled mode.',
         onOpenChange: 'Callback fired when popover visibility changes.',
         isEnabled: 'When false, trigger interactions ignored.',

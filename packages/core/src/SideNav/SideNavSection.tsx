@@ -15,7 +15,7 @@
  * - /packages/core/src/SideNav/SideNav.test.tsx
  * - /packages/core/src/SideNav/index.ts
  * - /apps/storybook/stories/SideNav.stories.tsx
- * - /packages/cli/templates/blocks/components/SideNav/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/SideNav/ (showcase blocks)
  */
 
 import React, {useId, type ReactNode} from 'react';
@@ -29,6 +29,7 @@ import {
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {useSideNavCollapse} from './SideNavCollapseContext';
+import {VisuallyHidden} from '../VisuallyHidden';
 import {themeProps} from '../utils/themeProps';
 // =============================================================================
 // Styles
@@ -145,6 +146,7 @@ export function SideNavSection({
   className,
   style,
   'data-testid': testId,
+  ...rest
 }: SideNavSectionProps) {
   const {isCollapsed} = useSideNavCollapse();
   const id = useId();
@@ -166,38 +168,24 @@ export function SideNavSection({
 
   const shouldHideHeader = isHeaderHidden || isCollapsed;
 
-  const visuallyHiddenStyle: React.CSSProperties = shouldHideHeader
-    ? {
-        position: 'absolute',
-        width: 1,
-        height: 1,
-        padding: 0,
-        margin: -1,
-        overflow: 'hidden',
-        clip: 'rect(0, 0, 0, 0)',
-        whiteSpace: 'nowrap',
-        borderWidth: 0,
-      }
-    : {};
-
   return (
     <div
       ref={ref}
-      role="group"
-      aria-labelledby={titleId}
-      data-testid={testId}
       {...mergeProps(
         themeProps('side-nav-section'),
         stylex.props(styles.root, xstyle),
         className,
         style,
-      )}>
-      <div
-        {...mergeProps(stylex.props(styles.header), {
-          style: shouldHideHeader ? visuallyHiddenStyle : undefined,
-        })}>
-        {headerContent}
-      </div>
+      )}
+      {...rest}
+      role="group"
+      aria-labelledby={titleId}
+      data-testid={testId}>
+      {shouldHideHeader ? (
+        <VisuallyHidden as="div">{headerContent}</VisuallyHidden>
+      ) : (
+        <div {...stylex.props(styles.header)}>{headerContent}</div>
+      )}
       <div {...stylex.props(styles.items)}>{children}</div>
     </div>
   );

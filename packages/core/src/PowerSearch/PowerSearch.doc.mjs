@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'PowerSearch',
@@ -23,7 +23,7 @@ export const docs = {
     },
     {
       name: 'onChange',
-      type: '(filters: ReadonlyArray<PowerSearchFilter>, changeType: PowerSearchChangeType, index: number) => void',
+      type: "(filters: ReadonlyArray<PowerSearchFilter>, changeType: 'add' | 'edit' | 'remove', index: number) => void",
       description:
         "Called when filters change. changeType is 'add', 'edit', or 'remove'. index is the affected filter's position.",
       required: true,
@@ -79,9 +79,23 @@ export const docs = {
     },
     {
       name: 'status',
-      type: 'InputStatus',
+      type: "{type: 'warning' | 'error' | 'success', message?: string}",
       description:
         'Validation status object with type and optional message.',
+    },
+    {
+      name: 'startIcon',
+      type: 'ReactNode | IconType',
+      description:
+        'Icon to display at the start of the input, before any filter tokens. Forwarded to the internal Tokenizer. Accepts a semantic icon name, an SVG icon component, or a ReactNode directly.',
+      slotElements: [{__element: 'Icon', props: {icon: 'search', size: 'sm'}}],
+    },
+    {
+      name: 'statusVariant',
+      type: "'attached' | 'detached'",
+      description:
+        'How the status message is placed relative to the input. attached overlaps directly below the input (bordered treatment); detached floats below as a separate element with spacing.',
+      default: "'attached'",
     },
     {
       name: 'maxTokenLength',
@@ -145,6 +159,11 @@ export const docs = {
       { guidance: false, description: 'Wrap a disabled PowerSearch in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.' },
     ],
   },
+  theming: {
+    targets: [
+      {className: 'astryx-power-search'},
+    ],
+  },
 };
 
 // -------------------------------------------------------
@@ -153,7 +172,7 @@ export const docs = {
 // See .context/decisions/dense-compression-protocol.md
 // -------------------------------------------------------
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docsZh = {
   name: 'PowerSearch',
   displayName: 'Power Search',
@@ -172,7 +191,7 @@ export const docsZh = {
     },
     {
       name: 'onChange',
-      type: '(filters: ReadonlyArray<PowerSearchFilter>, changeType: PowerSearchChangeType, index: number) => void',
+      type: "(filters: ReadonlyArray<PowerSearchFilter>, changeType: 'add' | 'edit' | 'remove', index: number) => void",
       description:
         "当过滤器变更时调用。changeType 为 'add'、'edit' 或 'remove'。index 为受影响的过滤器位置。",
       required: true,
@@ -227,8 +246,21 @@ export const docsZh = {
     },
     {
       name: 'status',
-      type: 'InputStatus',
+      type: "{type: 'warning' | 'error' | 'success', message?: string}",
       description: '带有类型和可选消息的验证状态对象。',
+    },
+    {
+      name: 'startIcon',
+      type: 'ReactNode | IconType',
+      description:
+        '在输入框开头（筛选 token 之前）显示的图标，转发给内部的 Tokenizer。接受语义图标名称、SVG 图标组件或直接传入 ReactNode。',
+    },
+    {
+      name: 'statusVariant',
+      type: "'attached' | 'detached'",
+      description:
+        '状态消息相对于输入框的放置方式。attached 直接叠加在输入框下方（带边框处理）；detached 作为独立元素浮于下方并留有间距。',
+      default: "'attached'",
     },
     {
       name: 'maxTokenLength',
@@ -287,7 +319,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
     'Structured filter bar where each token represents filter (field+operator+value). Users select fields from typeahead dropdown, configure operators+values in edit popover, manage filters as removable tokens.',
@@ -313,6 +345,8 @@ export const docsDense = {
     isReadOnly: 'Prevent adding, editing, or removing filters.',
     isDisabled: 'Disables entire component.',
     status: 'Validation status object w/ type + optional message.',
+    startIcon: 'Icon at input start, before filter tokens. Forwarded to internal Tokenizer.',
+    statusVariant: 'How status message is placed: attached overlaps below input; detached floats below w/ spacing.',
     maxTokenLength: 'Max char length for filter value display in tokens.',
     popoverSaveButtonLabel: 'Label for save button in edit popover.',
     timezoneID: 'Timezone ID for date formatting (e.g. "America/New_York").',

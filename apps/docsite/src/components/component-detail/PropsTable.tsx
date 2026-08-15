@@ -41,7 +41,7 @@ export function PropsTable({props, heading}: PropsTableProps) {
   return (
     <Section>
       <VStack gap={2}>
-        {heading && <Heading level={4}>{heading}</Heading>}
+        {heading && <Heading level={3}>{heading}</Heading>}
         <Table
           data={data}
           columns={[

@@ -10,7 +10,7 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Kbd/index.ts
- * - /packages/cli/templates/blocks/components/Kbd/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Kbd/ (showcase blocks)
  */
 
 import React, {useSyncExternalStore} from 'react';
@@ -188,10 +188,10 @@ export function Kbd({keys, ref, xstyle, className, style, ...rest}: KbdProps) {
 
   return (
     <span
+      {...rest}
       ref={ref}
       role="img"
       aria-label={accessibleName}
-      {...rest}
       {...mergeProps(
         themeProps('kbd'),
         stylex.props(styles.wrapper, xstyle),

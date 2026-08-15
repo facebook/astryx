@@ -11,7 +11,7 @@
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
-import {Dialog} from './Dialog';
+import {Dialog, resolveDialogPositionOffsets} from './Dialog';
 import {DialogHeader} from './DialogHeader';
 
 // Mock showModal and close methods since they're not fully implemented in jsdom
@@ -190,7 +190,7 @@ describe('Dialog', () => {
         <Dialog
           isOpen={true}
           onOpenChange={() => {}}
-          position={{top: 100, right: 20}}>
+          position={{top: 100, end: 20}}>
           Content
         </Dialog>,
       );
@@ -202,7 +202,19 @@ describe('Dialog', () => {
         <Dialog
           isOpen={true}
           onOpenChange={() => {}}
-          position={{top: '10vh', left: '5vw'}}>
+          position={{top: '10vh', start: '5vw'}}>
+          Content
+        </Dialog>,
+      );
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+    });
+
+    it('accepts logical start/end position configuration', () => {
+      render(
+        <Dialog
+          isOpen={true}
+          onOpenChange={() => {}}
+          position={{top: 100, start: 20, end: 40}}>
           Content
         </Dialog>,
       );
@@ -210,12 +222,40 @@ describe('Dialog', () => {
     });
   });
 
+  // Physical-vs-logical mapping is verified against the pure resolver so we can
+  // assert the exact emitted CSS offsets without relying on StyleX class
+  // compilation or a browser. The public DialogPosition union forbids mixing
+  // logical and physical inline offsets (enforced at compile time, below), so
+  // the resolver has no precedence logic — it just maps what it's given.
+  describe('resolveDialogPositionOffsets (physical-vs-logical mapping)', () => {
+    it('maps logical start/end to inset-inline offsets (mirror under RTL)', () => {
+      // insetInlineStart/End are direction-relative: the browser resolves them
+      // to left/right per `dir`, so the same value mirrors under RTL.
+      const offsets = resolveDialogPositionOffsets({start: 20, end: 40});
+      expect(offsets.insetInlineStart).toBe('20px');
+      expect(offsets.insetInlineEnd).toBe('40px');
+      // No physical offsets requested → auto.
+    });
+
+    it('combines block-axis top/bottom with an inline pair', () => {
+      const offsets = resolveDialogPositionOffsets({top: 100, start: 12});
+      expect(offsets.top).toBe('100px');
+      expect(offsets.insetInlineStart).toBe('12px');
+      // Everything unset falls back to auto.
+      expect(offsets.bottom).toBe('auto');
+      expect(offsets.insetInlineEnd).toBe('auto');
+    });
+
+    it('passes through string offsets (vw/vh/etc.) for logical offsets', () => {
+      const logical = resolveDialogPositionOffsets({start: '5vw', end: '10%'});
+      expect(logical.insetInlineStart).toBe('5vw');
+      expect(logical.insetInlineEnd).toBe('10%');
+    });
+  });
+
   it('forwards additional props to dialog element', () => {
     render(
-      <Dialog
-        isOpen={true}
-        onOpenChange={() => {}}
-        data-testid="custom-dialog">
+      <Dialog isOpen={true} onOpenChange={() => {}} data-testid="custom-dialog">
         Content
       </Dialog>,
     );
@@ -264,6 +304,82 @@ describe('Dialog', () => {
       );
       expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
       expect(screen.getByRole('dialog')).toBeInTheDocument();
+    });
+  });
+
+  describe('accessible name', () => {
+    it('is labelled by the DialogHeader title by default', () => {
+      render(
+        <Dialog isOpen={true} onOpenChange={() => {}}>
+          <DialogHeader title="Dialog title" />
+        </Dialog>,
+      );
+      const dialog = screen.getByRole('dialog');
+      const heading = screen.getByRole('heading', {name: 'Dialog title'});
+      expect(heading.id).not.toBe('');
+      expect(dialog).toHaveAttribute('aria-labelledby', heading.id);
+      expect(dialog).toHaveAccessibleName('Dialog title');
+    });
+
+    it('prefers a consumer-provided aria-label over the header title', () => {
+      render(
+        <Dialog isOpen={true} onOpenChange={() => {}} aria-label="Custom name">
+          <DialogHeader title="Dialog title" />
+        </Dialog>,
+      );
+      const dialog = screen.getByRole('dialog');
+      expect(dialog).not.toHaveAttribute('aria-labelledby');
+      expect(dialog).toHaveAccessibleName('Custom name');
+    });
+
+    it('prefers a consumer-provided aria-labelledby over the header title', () => {
+      render(
+        <>
+          <span id="external-label">External name</span>
+          <Dialog
+            isOpen={true}
+            onOpenChange={() => {}}
+            aria-labelledby="external-label">
+            <DialogHeader title="Dialog title" />
+          </Dialog>
+        </>,
+      );
+      const dialog = screen.getByRole('dialog');
+      expect(dialog).toHaveAttribute('aria-labelledby', 'external-label');
+      expect(dialog).toHaveAccessibleName('External name');
+    });
+
+    it('omits aria-labelledby and warns when open with no name source', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      try {
+        render(
+          <Dialog isOpen={true} onOpenChange={() => {}}>
+            Content
+          </Dialog>,
+        );
+        const dialog = screen.getByRole('dialog');
+        expect(dialog).not.toHaveAttribute('aria-labelledby');
+        expect(warnSpy).toHaveBeenCalledTimes(1);
+        expect(warnSpy).toHaveBeenCalledWith(
+          expect.stringContaining('accessible name'),
+        );
+      } finally {
+        warnSpy.mockRestore();
+      }
+    });
+
+    it('does not warn when the header provides a title', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      try {
+        render(
+          <Dialog isOpen={true} onOpenChange={() => {}}>
+            <DialogHeader title="Dialog title" />
+          </Dialog>,
+        );
+        expect(warnSpy).not.toHaveBeenCalled();
+      } finally {
+        warnSpy.mockRestore();
+      }
     });
   });
 

@@ -1,7 +1,14 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, expect, it} from 'vitest';
-import {parseHex, parseRgb, parseColor, formatHex, formatColor} from './color';
+import {
+  parseHex,
+  parseRgb,
+  parseColor,
+  formatHex,
+  formatColor,
+  toGLFloats,
+} from './color';
 
 describe('parseHex', () => {
   it('parses #rrggbb', () => {
@@ -129,5 +136,98 @@ describe('formatColor', () => {
     const parsed = parseColor('rgba(10, 20, 30, 0.5)');
     expect(parsed).not.toBeNull();
     expect(formatColor(parsed!)).toBe('rgba(10, 20, 30, 0.5)');
+  });
+});
+
+describe('toGLFloats', () => {
+  const GL_FALLBACK: [number, number, number] = [0.5, 0.5, 0.5];
+
+  it('converts RGBA channels to 0-1 floats, dropping alpha', () => {
+    expect(toGLFloats({r: 0, g: 100, b: 224, a: 0.5})).toEqual([
+      0,
+      100 / 255,
+      224 / 255,
+    ]);
+  });
+
+  it('returns the neutral fallback for null so the GPU never gets NaN', () => {
+    expect(toGLFloats(null)).toEqual(GL_FALLBACK);
+  });
+
+  it('clamps hand-constructed out-of-range channels', () => {
+    expect(toGLFloats({r: 300, g: -5, b: 127.5, a: 1})).toEqual([
+      1,
+      0,
+      127.5 / 255,
+    ]);
+  });
+
+  it('returns the fallback for hand-constructed non-finite channels', () => {
+    expect(toGLFloats({r: NaN, g: 0, b: 0, a: 1})).toEqual(GL_FALLBACK);
+    expect(toGLFloats({r: 0, g: Infinity, b: 0, a: 1})).toEqual(GL_FALLBACK);
+  });
+
+  // Conformance table for the GL hex path (#3739): pins the behavior of the
+  // previously duplicated `hexToGL` copies in charts/lab, standardized on the
+  // robust charts implementation. Composed as `toGLFloats(parseHex(input))`,
+  // exactly as the migrated call sites do.
+  it.each([
+    ['#rrggbb', '#0064E0', [0, 100 / 255, 224 / 255]],
+    ['bare rrggbb (no #)', '0064E0', [0, 100 / 255, 224 / 255]],
+    ['#rgb shorthand', '#f00', [1, 0, 0]],
+    ['#rgba shorthand (alpha ignored)', '#f008', [1, 0, 0]],
+    ['#rrggbbaa (alpha byte ignored)', '#00000080', [0, 0, 0]],
+    ['surrounding whitespace', '  #ffffff  ', [1, 1, 1]],
+    ['truncated hex → fallback', '#12', [0.5, 0.5, 0.5]],
+    ['non-hex garbage → fallback', 'not-a-color', [0.5, 0.5, 0.5]],
+    ['CSS variable → fallback', 'var(--color-accent)', [0.5, 0.5, 0.5]],
+    [
+      'rgb() string → fallback on the hex path',
+      'rgb(255, 0, 0)',
+      [0.5, 0.5, 0.5],
+    ],
+    ['empty string → fallback', '', [0.5, 0.5, 0.5]],
+  ])('%s: %j → %j', (_label, input, expected) => {
+    expect(toGLFloats(parseHex(input))).toEqual(expected);
+  });
+
+  it('composes with parseColor when the caller wants rgb()/named support', () => {
+    expect(toGLFloats(parseColor('rgb(255, 0, 0)'))).toEqual([1, 0, 0]);
+    expect(toGLFloats(parseColor('transparent'))).toEqual([0, 0, 0]);
+  });
+});
+
+describe('alpha application (conformance for charts/lab `colors.alpha`)', () => {
+  // The charts/lab `hexAlpha` helpers are rebuilt on parseColor + parseHex +
+  // formatColor (#3739). These pin the composed behavior they rely on.
+  const applyAlpha = (color: string, opacity: number): string => {
+    const rgba = parseColor(color) ?? parseHex(color);
+    return rgba === null ? color : formatColor({...rgba, a: opacity});
+  };
+
+  it('applies opacity to an opaque hex color', () => {
+    expect(applyAlpha('#0064E0', 0.2)).toBe('rgba(0, 100, 224, 0.2)');
+  });
+
+  it('applies opacity to bare hex without the leading #', () => {
+    expect(applyAlpha('0064E0', 0.2)).toBe('rgba(0, 100, 224, 0.2)');
+  });
+
+  it('opacity argument wins over an existing alpha byte', () => {
+    expect(applyAlpha('#0064E080', 0.2)).toBe('rgba(0, 100, 224, 0.2)');
+  });
+
+  it('opacity argument wins over rgba() input alpha', () => {
+    expect(applyAlpha('rgba(0, 100, 224, 0.9)', 0.2)).toBe(
+      'rgba(0, 100, 224, 0.2)',
+    );
+  });
+
+  it('full opacity serializes back to hex', () => {
+    expect(applyAlpha('#0064E0', 1)).toBe('#0064E0');
+  });
+
+  it('unparseable input is preserved unchanged', () => {
+    expect(applyAlpha('var(--color-accent)', 0.2)).toBe('var(--color-accent)');
   });
 });

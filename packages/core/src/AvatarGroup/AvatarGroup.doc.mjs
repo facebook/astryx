@@ -1,5 +1,5 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'AvatarGroup',
@@ -14,6 +14,7 @@ export const docs = {
       {guidance: true, description: 'Set max to limit visible avatars when the list is long; 3-5 is typical.'},
       {guidance: true, description: 'Use AvatarGroupOverflow for custom overflow content like a popover trigger or "add member" button.'},
       {guidance: true, description: 'Pass status dots, click handlers, or tooltips directly on each Avatar child.'},
+      {guidance: true, description: 'Make avatars interactive with href or onClick to link to profiles. Interactive avatars share a single Tab stop; arrow keys move between them, and the group announces a keyboard hint to assistive tech.'},
       {guidance: false, description: "Don't nest AvatarGroups; use a single group with all avatars."},
     ],
     anatomy: [
@@ -24,6 +25,7 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-avatar-group', visualProps: ['size']},
+      {className: 'astryx-avatar-group-overflow'},
     ],
   },
   description: 'Stacked avatar display with overlapping layout and optional overflow indicator. Children are Avatar elements.',
@@ -46,7 +48,7 @@ export const docs = {
       name: 'size',
       type: 'AvatarSize',
       description: 'Size applied to all avatars via context.',
-      default: "'small'",
+      default: "'md'",
     },
     {
       name: 'ref',
@@ -69,7 +71,7 @@ export const docs = {
   ],
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsZh = {
   usage: {
     description:
@@ -83,7 +85,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'compositional overlapping avatar row w/ +N overflow or custom slot',
   usage: {
@@ -93,6 +95,7 @@ export const docsDense = {
       {guidance: true, description: 'Set max to limit visible avatars (3-5 typical).'},
       {guidance: true, description: 'Use AvatarGroupOverflow for custom overflow (popover, add button).'},
       {guidance: true, description: 'Pass status dots / click handlers directly on each Avatar.'},
+      {guidance: true, description: 'Interactive avatars (href/onClick) share one Tab stop; arrows rove between them + the overflow button.'},
       {guidance: false, description: "Don't nest AvatarGroups."},
     ],
   },

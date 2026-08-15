@@ -6,18 +6,12 @@ import {ChatTokenizedText} from './ChatTokenizedText';
 
 describe('ChatTokenizedText', () => {
   it('renders plain text when no tokens provided', () => {
-    render(
-      <ChatTokenizedText>Hello world</ChatTokenizedText>,
-    );
+    render(<ChatTokenizedText>Hello world</ChatTokenizedText>);
     expect(screen.getByText('Hello world')).toBeInTheDocument();
   });
 
   it('renders plain text when tokens array is empty', () => {
-    render(
-      <ChatTokenizedText tokens={[]}>
-        Hello world
-      </ChatTokenizedText>,
-    );
+    render(<ChatTokenizedText tokens={[]}>Hello world</ChatTokenizedText>);
     expect(screen.getByText('Hello world')).toBeInTheDocument();
   });
 
@@ -48,8 +42,7 @@ describe('ChatTokenizedText', () => {
 
   it('handles repeated occurrences of the same token', () => {
     render(
-      <ChatTokenizedText
-        tokens={[{value: '@cindy', label: '@Cindy Zhang'}]}>
+      <ChatTokenizedText tokens={[{value: '@cindy', label: '@Cindy Zhang'}]}>
         @cindy and @cindy again
       </ChatTokenizedText>,
     );
@@ -58,8 +51,7 @@ describe('ChatTokenizedText', () => {
 
   it('renders text with no matching tokens as plain text', () => {
     render(
-      <ChatTokenizedText
-        tokens={[{value: '@cindy', label: '@Cindy Zhang'}]}>
+      <ChatTokenizedText tokens={[{value: '@cindy', label: '@Cindy Zhang'}]}>
         Hello world
       </ChatTokenizedText>,
     );
@@ -68,8 +60,7 @@ describe('ChatTokenizedText', () => {
 
   it('handles tokens with special regex characters in pattern', () => {
     render(
-      <ChatTokenizedText
-        tokens={[{value: '/search', label: '/search'}]}>
+      <ChatTokenizedText tokens={[{value: '/search', label: '/search'}]}>
         Run /search now
       </ChatTokenizedText>,
     );
@@ -79,13 +70,35 @@ describe('ChatTokenizedText', () => {
 
   it('preserves surrounding text', () => {
     const {container} = render(
-      <ChatTokenizedText
-        tokens={[{value: '@cindy', label: '@Cindy Zhang'}]}>
+      <ChatTokenizedText tokens={[{value: '@cindy', label: '@Cindy Zhang'}]}>
         Before @cindy after
       </ChatTokenizedText>,
     );
     expect(container.textContent).toContain('Before');
     expect(container.textContent).toContain('after');
     expect(container.textContent).toContain('@Cindy Zhang');
+  });
+
+  it('forwards rest props (data-*, id) to the root element', () => {
+    render(
+      <ChatTokenizedText data-testid="tokenized" data-custom="x" id="tok-1">
+        Plain text
+      </ChatTokenizedText>,
+    );
+    const root = screen.getByTestId('tokenized');
+    expect(root).toHaveAttribute('data-custom', 'x');
+    expect(root).toHaveAttribute('id', 'tok-1');
+  });
+
+  it('forwards rest props when rendering tokens', () => {
+    render(
+      <ChatTokenizedText
+        tokens={[{value: '@cindy', label: '@Cindy Zhang'}]}
+        data-testid="tokenized"
+        data-custom="x">
+        Hi @cindy
+      </ChatTokenizedText>,
+    );
+    expect(screen.getByTestId('tokenized')).toHaveAttribute('data-custom', 'x');
   });
 });

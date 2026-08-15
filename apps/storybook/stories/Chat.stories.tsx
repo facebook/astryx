@@ -295,7 +295,7 @@ export const ChatConversation: StoryObj = {
           <ChatSystemMessage variant="divider">Today</ChatSystemMessage>
           <ChatMessage
             sender="assistant"
-            avatar={<Avatar name="Navi" size="small" />}>
+            avatar={<Avatar name="Navi" size="md" />}>
             <ChatMessageBubble
               name={<span style={nameStyle}>Navi</span>}
               metadata={
@@ -310,9 +310,7 @@ export const ChatConversation: StoryObj = {
             </ChatMessageBubble>
           </ChatMessage>
 
-          <ChatMessage
-            sender="user"
-            avatar={<Avatar name="Cindy" size="small" />}>
+          <ChatMessage sender="user" avatar={<Avatar name="Cindy" size="md" />}>
             <ChatMessageBubble
               group="first"
               name={<span style={nameStyle}>Cindy</span>}>
@@ -334,7 +332,7 @@ export const ChatConversation: StoryObj = {
 
           <ChatMessage
             sender="assistant"
-            avatar={<Avatar name="Navi" size="small" />}>
+            avatar={<Avatar name="Navi" size="md" />}>
             <ChatMessageBubble
               name={<span style={nameStyle}>Navi</span>}
               metadata={
@@ -349,9 +347,7 @@ export const ChatConversation: StoryObj = {
             </ChatMessageBubble>
           </ChatMessage>
 
-          <ChatMessage
-            sender="user"
-            avatar={<Avatar name="Cindy" size="small" />}>
+          <ChatMessage sender="user" avatar={<Avatar name="Cindy" size="md" />}>
             <ChatMessageBubble
               name={<span style={nameStyle}>Cindy</span>}
               metadata={
@@ -377,9 +373,9 @@ export const DensityComparison: StoryObj = {
   name: 'Density Comparison',
   render: () => {
     const avatarSize = {
-      compact: 'xsmall' as const,
-      balanced: 'small' as const,
-      spacious: 'small' as const,
+      compact: 'sm' as const,
+      balanced: 'md' as const,
+      spacious: 'md' as const,
     };
     const messages = (density: 'compact' | 'balanced' | 'spacious') => (
       <div
@@ -482,7 +478,7 @@ export const SystemMessages: StoryObj = {
         <ChatSystemMessage variant="divider">March 15, 2026</ChatSystemMessage>
         <ChatMessage
           sender="assistant"
-          avatar={<Avatar name="Navi" size="small" />}>
+          avatar={<Avatar name="Navi" size="md" />}>
           <Markdown density="compact">Good morning!</Markdown>
         </ChatMessage>
         <ChatSystemMessage>Conversation started</ChatSystemMessage>
@@ -558,7 +554,7 @@ export const MultiBubble: StoryObj = {
         </ChatMessage>
         <ChatMessage
           sender="assistant"
-          avatar={<Avatar name="Navi" size="small" />}>
+          avatar={<Avatar name="Navi" size="md" />}>
           <ChatMessageBubble group="first">
             Sure, looking at it now!
           </ChatMessageBubble>

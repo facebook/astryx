@@ -301,6 +301,10 @@ export function generateThemeRules(theme: DefinedTheme): string[] {
   // 4. Prop-level color overrides (for text/heading/link specificity)
   generateColorOverrides(theme.components || {}, parts);
 
+  // 5. Text `size`-prop font-size overrides (so an explicit size beats a
+  //    themed type's font-size across the astryx-base → astryx-theme layers)
+  generateSizeOverrides(theme.components || {}, parts);
+
   // (on-media rules are generated separately — see generateOnMediaCSS)
 
   return parts;
@@ -346,9 +350,11 @@ function generateComponentRules(
       // Entries are processed in order (priority).
       // - `vars`: emit internal CSS custom property declarations
       // - `expand: 'container'`: expand padding to container layout tokens
+      // - `replaces: true`: emit only the var, dropping the source property
       let finalProps = props;
       const derivedProps: [string, string][] = [];
       let containerExpanded = false;
+      const replacedProps = new Set<string>();
 
       for (const [prop, value] of props) {
         const derived = getDerivedVars(component, prop);
@@ -361,6 +367,9 @@ function generateComponentRules(
         for (const entry of [...derived, ...paddingDerived]) {
           if (entry.expand === 'container' && PADDING_PROPS.has(prop)) {
             containerExpanded = true;
+          }
+          if (entry.replaces) {
+            replacedProps.add(prop);
           }
           if (entry.vars) {
             for (const varName of entry.vars) {
@@ -378,6 +387,12 @@ function generateComponentRules(
         const parsed = parsePadding(paddingProps);
         const containerTokens = expandContainerPadding(component, parsed);
         finalProps = [...nonPaddingProps, ...containerTokens];
+      }
+
+      // Drop properties whose derived entry set `replaces` — their value is
+      // carried by the emitted var and must not land on the class element.
+      if (replacedProps.size > 0) {
+        finalProps = finalProps.filter(([p]) => !replacedProps.has(p));
       }
 
       if (derivedProps.length > 0) {
@@ -497,6 +512,58 @@ function generateColorOverrides(
         );
       }
     }
+  }
+}
+
+/**
+ * Map a Text `size` prop value to its raw font-size token.
+ * Mirrors `sizeStyles` in `Text/text.stylex.ts` (note `xsm` → `--font-size-xs`).
+ * <!-- SYNC: packages/core/src/Text/text.stylex.ts (sizeStyles) -->
+ */
+const TEXT_SIZE_TOKEN_MAP: Record<string, string> = {
+  '4xs': 'var(--font-size-4xs)',
+  '3xs': 'var(--font-size-3xs)',
+  '2xs': 'var(--font-size-2xs)',
+  xsm: 'var(--font-size-xs)',
+  sm: 'var(--font-size-sm)',
+  base: 'var(--font-size-base)',
+  lg: 'var(--font-size-lg)',
+  xl: 'var(--font-size-xl)',
+  '2xl': 'var(--font-size-2xl)',
+  '3xl': 'var(--font-size-3xl)',
+  '4xl': 'var(--font-size-4xl)',
+};
+
+/**
+ * Generate `size`-prop font-size overrides for the Text component.
+ *
+ * The `size` prop is documented as a font-size override that wins over the
+ * size implied by `type`. Its StyleX class lives in `@layer astryx-base`, but a
+ * theme's per-type font-size rule (`.astryx-text.<type>`) lives in the higher
+ * `@layer astryx-theme`, so the layer cascade let the theme silently shadow
+ * `size` for any `type` the theme styled. Re-emitting the size classes here —
+ * same layer as the type rules, same `.astryx-text.<x>` specificity, later in
+ * source — restores `size` as a real override.
+ *
+ * Only `font-size` is overridden; line-height and other type properties are
+ * intentionally preserved, matching the prop's documented contract.
+ *
+ * Gated on the theme touching `text` (which includes the auto-generated
+ * type-scale rules) — with no theme type rule to beat, the base-layer StyleX
+ * class already wins and no override is needed.
+ */
+function generateSizeOverrides(
+  components: Record<string, unknown>,
+  parts: string[],
+): void {
+  if (!('text' in components)) {
+    return;
+  }
+  for (const [sizeName, sizeValue] of Object.entries(TEXT_SIZE_TOKEN_MAP)) {
+    const suffix = parseStyleKey(`size:${sizeName}`);
+    parts.push(
+      `  ${componentClassSelector('text', suffix)} { font-size: ${sizeValue}; }`,
+    );
   }
 }
 
@@ -651,19 +718,4 @@ export function generateThemeCSS(theme: DefinedTheme): ThemeCSSOutput {
   }
 
   return {prose: proseCss, component: componentCss};
-}
-
-/**
- * Generate the full CSS string for a theme as a single string.
- * @deprecated Use generateThemeCSS() which returns { prose, component } for proper layering.
- * This flat version is kept for backwards compatibility with tests and simple cases.
- */
-export function generateThemeCSSFlat(theme: DefinedTheme): string {
-  const rules = generateThemeRules(theme);
-  if (rules.length === 0) {
-    return '';
-  }
-  const scopeSelector = themeScopeStart(theme.name);
-  const inner = rules.join('\n\n');
-  return `@scope (${scopeSelector}) to (${THEME_SCOPE_TO}) {\n${inner}\n}`;
 }

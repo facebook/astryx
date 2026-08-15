@@ -76,7 +76,6 @@ export interface UseLightboxReturn {
  * @example
  * ```
  * const lightbox = useLightbox({ media: photos });
- *
  * {photos.map((photo, i) => (
  *   <img
  *     key={photo.src}

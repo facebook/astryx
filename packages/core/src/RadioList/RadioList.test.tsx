@@ -14,6 +14,7 @@ import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {RadioList} from './RadioList';
 import {RadioListItem} from './RadioListItem';
+import {getForcedColorsRules} from '../__tests__/forcedColors';
 
 // Mock showPopover/hidePopover (not implemented in jsdom) so the tooltip layer
 // reflects its open state via a `popover-open` attribute the tests can assert.
@@ -580,7 +581,11 @@ describe('RadioList', () => {
     it('submits the selected value under htmlName', () => {
       const {container} = render(
         <form>
-          <RadioList label="Preference" htmlName="pref" value="b" onChange={() => {}}>
+          <RadioList
+            label="Preference"
+            htmlName="pref"
+            value="b"
+            onChange={() => {}}>
             <RadioListItem label="Option A" value="a" />
             <RadioListItem label="Option B" value="b" />
           </RadioList>
@@ -599,13 +604,14 @@ describe('RadioList', () => {
             value="a"
             onChange={() => {}}
             isDisabled
-            disabledMessage="Locked"
-          >
+            disabledMessage="Locked">
             <RadioListItem label="Option A" value="a" />
           </RadioList>
         </form>,
       );
-      expect([...new FormData(container.querySelector('form')!).keys()]).toEqual([]);
+      expect([
+        ...new FormData(container.querySelector('form')!).keys(),
+      ]).toEqual([]);
     });
 
     it('keeps working as an isolated group when htmlName is omitted', () => {
@@ -621,5 +627,40 @@ describe('RadioList', () => {
       const input = container.querySelector('input[type="radio"]')!;
       expect(input.getAttribute('name')).toBeTruthy();
     });
+  });
+
+  describe('RadioListItem rest forwarding', () => {
+    it('forwards data-testid, id, and aria-* to the item root element', () => {
+      render(
+        <RadioList label="Preference" value="" onChange={() => {}}>
+          <RadioListItem
+            label="Option A"
+            value="a"
+            data-testid="item-a"
+            id="item-a-id"
+            aria-label="First option"
+          />
+        </RadioList>,
+      );
+      const item = screen.getByTestId('item-a');
+      expect(item).toHaveAttribute('id', 'item-a-id');
+      expect(item).toHaveAttribute('aria-label', 'First option');
+    });
+  });
+});
+
+// jsdom cannot emulate forced-colors rendering, so this asserts that the
+// compiled output includes the forced-colors rule; visual behavior needs
+// manual verification under Windows High Contrast.
+describe('forced colors (WCAG 1.4.11)', () => {
+  it('compiles a forced-colors fill so the selected dot survives Windows High Contrast', () => {
+    render(
+      <RadioList label="Preference" value="a" onChange={() => {}}>
+        <RadioListItem label="Option A" value="a" />
+      </RadioList>,
+    );
+    // The painted inner dot would be stripped to Canvas (invisible), making
+    // checked and unchecked radios identical; CanvasText keeps it perceivable.
+    expect(getForcedColorsRules()).toContain('background-color: canvastext;');
   });
 });

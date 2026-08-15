@@ -4,7 +4,7 @@
 
 /**
  * @file useKeyboardHint.tsx
- * @input Uses React, StyleX, Kbd, useLayer
+ * @input Uses React, StyleX, Kbd, useLayer, i18n (useTranslator)
  * @output Exports useKeyboardHint hook — ephemeral arrow-key navigation hint
  * @position Core hook; shows sighted keyboard users how to navigate composite
  *   widgets that use roving tabindex (single Tab stop, arrows inside)
@@ -13,7 +13,7 @@
  * - /packages/core/src/hooks/index.ts
  * - /packages/core/src/hooks/useKeyboardHint.doc.mjs
  * - /apps/storybook/stories/useKeyboardHint.stories.tsx
- * - /packages/cli/templates/blocks/components/Hooks/useKeyboardHintHookUsage.tsx
+ * - /packages/cli/assets/templates/blocks/components/Hooks/useKeyboardHintHookUsage.tsx
  */
 
 import React, {useCallback, useEffect, useRef, type ReactNode} from 'react';
@@ -27,6 +27,7 @@ import {
 } from '../theme/tokens.stylex';
 import {Kbd} from '../Kbd';
 import {useLayer} from '../Layer/useLayer';
+import {useTranslator} from '../i18n';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -179,6 +180,7 @@ export function useKeyboardHint(
     isEnabled = true,
   } = options;
 
+  const t = useTranslator();
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dismissedRef = useRef(false);
   const isVisibleRef = useRef(false);
@@ -316,7 +318,9 @@ export function useKeyboardHint(
   const hintElement = layer.render(
     <span aria-hidden="true">
       {arrowContent}
-      <span {...stylex.props(styles.label)}>to navigate</span>
+      <span {...stylex.props(styles.label)}>
+        {t('@astryx.keyboardHint.toNavigate')}
+      </span>
     </span>,
     {
       placement: 'below',

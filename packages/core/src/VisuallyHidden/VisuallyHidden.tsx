@@ -1,7 +1,5 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-'use client';
-
 /**
  * @file VisuallyHidden.tsx
  * @input Uses React createElement/ElementType, stylex
@@ -13,6 +11,7 @@
  * - /packages/core/src/VisuallyHidden/VisuallyHidden.doc.mjs
  * - /packages/core/src/VisuallyHidden/VisuallyHidden.test.tsx
  * - /apps/storybook/stories/VisuallyHidden.stories.tsx
+ * - /packages/cli/assets/templates/blocks/components/VisuallyHidden/ (showcase blocks)
  */
 
 import {createElement, type ElementType, type ReactNode, type Ref} from 'react';
@@ -79,12 +78,9 @@ const styles = stylex.create({
  *
  * @example
  * ```
- * // Accessible name for an icon-only button
  * <IconButton icon="trash" label="">
  *   <VisuallyHidden>Delete incident</VisuallyHidden>
  * </IconButton>
- *
- * // Live region for announcements
  * <VisuallyHidden as="div" aria-live="polite">
  *   {`Moved ${task} to ${column}`}
  * </VisuallyHidden>

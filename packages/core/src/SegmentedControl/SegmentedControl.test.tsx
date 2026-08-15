@@ -14,6 +14,10 @@ import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {SegmentedControl} from './SegmentedControl';
 import {SegmentedControlItem} from './SegmentedControlItem';
+import {
+  getAllInjectedCss,
+  getForcedColorsRules,
+} from '../__tests__/forcedColors';
 
 // Mock showPopover/hidePopover (not implemented in jsdom) so the tooltip layer
 // reflects its open state via a `popover-open` attribute the tests can assert.
@@ -733,5 +737,74 @@ describe('SegmentedControlItem onClick composition', () => {
     fireEvent.click(screen.getByRole('radio', {name: 'List'}));
 
     expect(onChange).not.toHaveBeenCalled();
+  });
+});
+
+describe('SegmentedControl container handler forwarding', () => {
+  it('forwards a consumer onKeyDown while keeping arrow-key navigation', async () => {
+    const user = userEvent.setup();
+    const onKeyDown = vi.fn();
+    const onChange = vi.fn();
+    render(
+      <SegmentedControl
+        value="grid"
+        onChange={onChange}
+        label="View mode"
+        onKeyDown={onKeyDown}>
+        <SegmentedControlItem value="grid" label="Grid" />
+        <SegmentedControlItem value="list" label="List" />
+      </SegmentedControl>,
+    );
+
+    screen.getByRole('radio', {name: 'Grid'}).focus();
+    await user.keyboard('{ArrowRight}');
+
+    expect(onKeyDown).toHaveBeenCalled();
+    // Built-in navigation still ran.
+    expect(onChange).toHaveBeenCalledWith('list');
+  });
+
+  it('lets a consumer onKeyDown opt out of built-in navigation via preventDefault', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <SegmentedControl
+        value="grid"
+        onChange={onChange}
+        label="View mode"
+        onKeyDown={e => e.preventDefault()}>
+        <SegmentedControlItem value="grid" label="Grid" />
+        <SegmentedControlItem value="list" label="List" />
+      </SegmentedControl>,
+    );
+
+    screen.getByRole('radio', {name: 'Grid'}).focus();
+    await user.keyboard('{ArrowRight}');
+
+    expect(onChange).not.toHaveBeenCalled();
+  });
+});
+
+// jsdom cannot emulate forced-colors rendering, so these assert that the
+// compiled output includes the forced-colors rules; visual behavior needs
+// manual verification under Windows High Contrast.
+describe('forced colors (WCAG 1.4.11)', () => {
+  it('compiles forced-colors overrides so the selected segment survives Windows High Contrast', () => {
+    render(
+      <SegmentedControl value="grid" onChange={() => {}} label="View mode">
+        <SegmentedControlItem value="grid" label="Grid" />
+        <SegmentedControlItem value="list" label="List" />
+      </SegmentedControl>,
+    );
+    const css = getForcedColorsRules();
+    // The painted surface fill and shadow are stripped; Highlight/
+    // HighlightText marks the selected segment.
+    expect(css).toContain('background-color: highlight;');
+    expect(css).toContain('color: highlighttext;');
+    // The segment is a <button>; without opting out of UA remapping it keeps
+    // the native ButtonFace surface and ignores the Highlight fill, leaving
+    // HighlightText text on a white surface. forced-color-adjust: none makes
+    // both render as authored.
+    expect(getAllInjectedCss()).toContain('forced-color-adjust: none;');
   });
 });

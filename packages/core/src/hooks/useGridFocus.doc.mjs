@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').HookDoc} */
+/** @type {import('@astryxdesign/cli/authoring').HookDoc} */
 export const docs = {
   name: 'useGridFocus',
   displayName: 'useGridFocus',
@@ -64,8 +64,8 @@ export const docs = {
     {
       name: 'options.isRtl',
       type: 'boolean',
-      description: 'Swap ArrowLeft/ArrowRight so horizontal navigation follows visual direction in right-to-left contexts.',
-      default: 'false',
+      description: 'Swap ArrowLeft/ArrowRight so horizontal navigation follows visual direction in right-to-left contexts. When omitted, auto-detected from the container computed direction on keydown.',
+      default: "undefined (auto-detect from the container's computed direction)",
       required: false,
     },
     {
@@ -124,7 +124,7 @@ export const docs = {
   category: 'focus',
 };
 
-/** @type {import('../docs-types').HookTranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').HookTranslationDoc} */
 export const docsDense = {
   description:
     'Manages keyboard navigation within 2D grid following WAI-ARIA grid pattern. Supports arrow keys for cell-to-cell navigation, Home/End for row boundaries, Ctrl+Home/Ctrl+End for grid boundaries, Page Up/Down for custom callbacks (e.g. month navigation in calendars). Boundary navigation callbacks allow cross-grid navigation.',
@@ -138,7 +138,7 @@ export const docsDense = {
     'options.onNavigateAfter': 'callback when navigation would go after last cell. Receives column index + offset.',
     'options.onPageUp': 'callback for Page Up key (e.g. navigate to previous month in calendars).',
     'options.onPageDown': 'callback for Page Down key (e.g. navigate to next month in calendars).',
-    'options.isRtl': 'swap ArrowLeft/ArrowRight for RTL horizontal navigation. default false.',
+    'options.isRtl': 'swap ArrowLeft/ArrowRight for RTL horizontal navigation. default: auto-detect from container computed direction; explicit boolean wins.',
     'options.hasRovingTabIndex': 'own a single roving tab stop across the grid (one focus target tabindex=0, rest -1); repaired on render + moved with arrows. Attach handleFocus to onFocus. default false.',
   },
   returnDescriptions: {

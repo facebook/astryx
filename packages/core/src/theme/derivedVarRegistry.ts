@@ -25,6 +25,14 @@ export interface DerivedVarEntry {
   vars?: string[];
   /** Named expansion strategy. 'container' expands padding to container tokens. */
   expand?: 'container';
+  /**
+   * Emit only the internal `vars`, dropping the source property from the rule.
+   * Use when the class-carrying element must NOT receive the standard property
+   * itself — the value is consumed by a child through the var instead. Without
+   * this, the property is emitted alongside the var (correct when the same
+   * element both reads the var and applies the property, e.g. Chat/DropdownMenu).
+   */
+  replaces?: boolean;
 }
 
 /**
@@ -56,10 +64,21 @@ export const derivedVarRegistry: Record<string, DerivedVarEntry[]> = {
   field: [{property: 'borderRadius', vars: ['--_field-radius']}],
   hovercard: [{property: 'borderRadius', vars: ['--_hovercard-radius']}],
   popover: [{property: 'borderRadius', vars: ['--_popover-radius']}],
+  'progressbar-mark': [
+    {property: 'width', vars: ['--_progressbar-mark-width'], replaces: true},
+    {property: 'height', vars: ['--_progressbar-mark-height'], replaces: true},
+  ],
   section: [{property: 'padding', expand: 'container'}],
   'segmented-control': [
     {property: 'borderRadius', vars: ['--_segmented-control-radius']},
     {property: 'padding', vars: ['--_segmented-control-padding']},
+  ],
+  textarea: [
+    {
+      property: 'paddingInline',
+      vars: ['--_textarea-inline-padding'],
+      replaces: true,
+    },
   ],
 };
 
