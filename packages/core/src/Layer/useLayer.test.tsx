@@ -55,7 +55,13 @@ function ContextLayerHarness({
   );
 }
 
-function ContextHostingHarness({unsafe}: {unsafe?: boolean}) {
+function ContextHostingHarness({
+  unsafe,
+  themeColor,
+}: {
+  unsafe?: boolean;
+  themeColor?: string;
+}) {
   const layer = useLayer({mode: 'context', lazyMount: true});
   const contents = (
     <>
@@ -67,7 +73,28 @@ function ContextHostingHarness({unsafe}: {unsafe?: boolean}) {
     </>
   );
 
-  return <div data-testid="host">{unsafe ? <p>{contents}</p> : contents}</div>;
+  const hostStyle = themeColor
+    ? ({'--test-layer-color': themeColor} as React.CSSProperties)
+    : undefined;
+
+  return (
+    <div data-testid="host" style={hostStyle}>
+      {unsafe ? <p>{contents}</p> : contents}
+    </div>
+  );
+}
+
+function RelocatingContextHostingHarness({unsafe}: {unsafe: boolean}) {
+  const layer = useLayer({mode: 'context'});
+  const renderedLayer = layer.render(<span>Layer content</span>);
+
+  return unsafe ? (
+    <div data-testid="unsafe-host">
+      <p>{renderedLayer}</p>
+    </div>
+  ) : (
+    <section data-testid="render-position">{renderedLayer}</section>
+  );
 }
 
 describe('getPositionTryFallbacks (issue #3671)', () => {
@@ -211,7 +238,7 @@ describe('useLayer', () => {
     it('keeps closed content mounted by default for existing consumers', () => {
       const {container} = render(<ContextLayerHarness />);
 
-      expect(container.querySelector('template')).toBeNull();
+      expect(container.querySelector('template')).not.toBeNull();
       expect(container.querySelector('[popover]')).not.toBeNull();
       expect(container).toHaveTextContent('Layer content');
     });
@@ -219,7 +246,9 @@ describe('useLayer', () => {
     it('renders only an inert marker until show is requested', () => {
       const {container} = render(<ContextHostingHarness />);
 
-      expect(container.querySelector('template')).not.toBeNull();
+      const sentinel = container.querySelector('template');
+      expect(sentinel).not.toBeNull();
+      expect(sentinel).not.toHaveAttribute('id');
       expect(container.querySelector('[popover]')).toBeNull();
       expect(container).not.toHaveTextContent('Layer action');
     });
@@ -235,21 +264,16 @@ describe('useLayer', () => {
       const following = getByRole('button', {name: 'Following control'});
       expect(layer?.parentElement).toBe(container.firstElementChild);
       expect(layer?.nextElementSibling).toBe(following);
-      expect(container.querySelector('template')).toBeNull();
+      expect(container.querySelector('template')).not.toBeNull();
     });
 
-    it('portals out of an unsafe parent and snapshots inherited styles before opening', async () => {
-      const variables = new Map([['--test-layer-color', 'rgb(1, 2, 3)']]);
+    it('portals out of an unsafe parent and preserves its logical writing context', async () => {
       const getComputedStyleSpy = vi
         .spyOn(window, 'getComputedStyle')
         .mockImplementation(
           () =>
             ({
-              length: variables.size,
-              item: (index: number) =>
-                Array.from(variables.keys())[index] ?? '',
-              getPropertyValue: (property: string) =>
-                variables.get(property) ?? '',
+              getPropertyValue: () => '',
               direction: 'rtl',
               writingMode: 'vertical-rl',
             }) as CSSStyleDeclaration,
@@ -270,7 +294,6 @@ describe('useLayer', () => {
         expect(layer.parentElement).toBe(host);
         expect(paragraph?.contains(layer)).toBe(false);
         expect(layer).toHaveStyle({
-          '--test-layer-color': 'rgb(1, 2, 3)',
           direction: 'rtl',
           writingMode: 'vertical-rl',
         });
@@ -278,6 +301,75 @@ describe('useLayer', () => {
       } finally {
         getComputedStyleSpy.mockRestore();
       }
+    });
+
+    it('inherits custom properties from the corrective host without freezing an inline snapshot', async () => {
+      const originalGetComputedStyle = window.getComputedStyle.bind(window);
+      const getComputedStyleSpy = vi
+        .spyOn(window, 'getComputedStyle')
+        .mockImplementation(element => {
+          if (element.tagName.toLowerCase() !== 'template') {
+            return originalGetComputedStyle(element);
+          }
+          return {
+            length: 1,
+            item: () => '--test-layer-color',
+            getPropertyValue: property =>
+              property === '--test-layer-color' ? 'rgb(1, 2, 3)' : '',
+            direction: 'ltr',
+            writingMode: 'horizontal-tb',
+          } as CSSStyleDeclaration;
+        });
+      HTMLElement.prototype.showPopover = vi.fn();
+      const user = userEvent.setup();
+      try {
+        const {container, getByRole, rerender} = render(
+          <ContextHostingHarness unsafe themeColor="rgb(1, 2, 3)" />,
+        );
+
+        await user.click(getByRole('button', {name: 'Trigger'}));
+
+        let host = container.querySelector(
+          '[data-testid="host"]',
+        ) as HTMLElement;
+        let layer = container.querySelector('[popover]') as HTMLElement;
+        expect(layer.parentElement).toBe(host);
+        expect(layer.style.getPropertyValue('--test-layer-color')).toBe('');
+        expect(host.style.getPropertyValue('--test-layer-color')).toBe(
+          'rgb(1, 2, 3)',
+        );
+
+        rerender(<ContextHostingHarness unsafe themeColor="rgb(4, 5, 6)" />);
+
+        host = container.querySelector('[data-testid="host"]') as HTMLElement;
+        layer = container.querySelector('[popover]') as HTMLElement;
+        expect(layer.parentElement).toBe(host);
+        expect(layer.style.getPropertyValue('--test-layer-color')).toBe('');
+        expect(host.style.getPropertyValue('--test-layer-color')).toBe(
+          'rgb(4, 5, 6)',
+        );
+      } finally {
+        getComputedStyleSpy.mockRestore();
+      }
+    });
+
+    it('re-resolves the host when a persistent render call moves', () => {
+      const {container, rerender} = render(
+        <RelocatingContextHostingHarness unsafe />,
+      );
+
+      const host = container.querySelector('[data-testid="unsafe-host"]');
+      const paragraph = container.querySelector('p');
+      let layer = container.querySelector('[popover]');
+      expect(layer?.parentElement).toBe(host);
+      expect(paragraph?.contains(layer)).toBe(false);
+
+      rerender(<RelocatingContextHostingHarness unsafe={false} />);
+
+      const section = container.querySelector('section');
+      layer = container.querySelector('[popover]');
+      expect(layer?.parentElement).toBe(section);
+      expect(section?.querySelector('template')).not.toBeNull();
     });
   });
 

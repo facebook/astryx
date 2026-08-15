@@ -151,10 +151,11 @@ export interface ContextRenderProps {
   /**
    * HTML tag to render the popover container as.
    *
-   * Defaults to `'div'`. Context layers first render an inert `<template>`
-   * marker at the JSX position. The marker's parent is checked before the
-   * requested container mounts there or portals outside ancestors that cannot
-   * safely contain it. With `lazyMount`, that check waits until `show()`.
+   * Defaults to `'div'`. Context layers render an inert `<template>` marker at
+   * the JSX position. The marker's parent is checked before the requested
+   * container mounts there or portals outside ancestors that cannot safely
+   * contain it. The marker remains available to detect a new parent if the
+   * render call moves. With `lazyMount`, the first check waits until `show()`.
    *
    * @default 'div'
    */
@@ -224,9 +225,9 @@ export interface ContextLayerOptions extends BaseLayerOptions {
   mode: 'context';
   /**
    * Defer mounting the final layer and resolving its inline/portal position
-   * until `show()` is requested. Hiding unmounts it and restores the inert
-   * marker. Use this when rich content must never enter an unsafe ancestor,
-   * even briefly, and does not need to exist while closed.
+   * until `show()` is requested. Hiding unmounts it while the inert marker
+   * remains at the JSX position. Use this when rich content must never enter
+   * an unsafe ancestor, even briefly, and does not need to exist while closed.
    *
    * @default false
    */
@@ -326,27 +327,22 @@ function toCssLength(value: number | string): string {
 interface ContextLayerMount {
   /** Null means the marker's parent is safe and the layer stays inline. */
   portalTarget: HTMLElement | null;
-  /** Inherited values lost when moving outside an unsafe ancestor. */
+  /** Logical writing context lost when moving outside an unsafe ancestor. */
   portalStyle: React.CSSProperties;
 }
 
-function readPortalStyles(element: HTMLElement): React.CSSProperties {
+function readPortalWritingContext(element: HTMLElement): React.CSSProperties {
   const computedStyle =
     element.ownerDocument.defaultView?.getComputedStyle(element);
   if (!computedStyle) {
     return {};
   }
 
-  const customProperties: Record<string, string> = {};
-  for (let index = 0; index < computedStyle.length; index++) {
-    const property = computedStyle.item(index);
-    if (property.startsWith('--')) {
-      customProperties[property] = computedStyle.getPropertyValue(property);
-    }
-  }
-
+  // Do not snapshot custom properties here. The portal target is the closest
+  // safe ancestor, so theme variables continue to inherit and update there.
+  // These two properties can be set on the unsafe chain itself and directly
+  // affect the logical anchor-positioning keywords used by the layer.
   return {
-    ...customProperties,
     direction: computedStyle.direction as React.CSSProperties['direction'],
     writingMode:
       computedStyle.writingMode as React.CSSProperties['writingMode'],
@@ -452,9 +448,9 @@ export function useLayer(
   const [isOpen, setIsOpen] = useState(false);
   const popoverRef = useRef<HTMLElement | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
-  // Context layers first place an inert marker at their real JSX position.
+  // Context layers place a persistent inert marker at their real JSX position.
   // Its parent tells us whether the final layer can stay inline or needs a
-  // corrective portal. lazyMount keeps the marker there while closed.
+  // corrective portal, including after the render call moves.
   const sentinelRef = useRef<HTMLTemplateElement | null>(null);
   const contextMountRef = useRef<ContextLayerMount | null>(null);
   const [contextMount, setContextMount] = useState<ContextLayerMount | null>(
@@ -470,7 +466,7 @@ export function useLayer(
   const isOpenRef = useRef(false);
 
   const requestContextMount = useCallback(() => {
-    if (mode !== 'context' || contextMountRef.current !== null) {
+    if (mode !== 'context') {
       return;
     }
 
@@ -483,7 +479,7 @@ export function useLayer(
     const portalTarget = resolveLayerPortalTarget(inlineParent);
     const mount: ContextLayerMount = {
       portalTarget,
-      portalStyle: portalTarget ? readPortalStyles(sentinel) : {},
+      portalStyle: portalTarget ? readPortalWritingContext(sentinel) : {},
     };
     contextMountRef.current = mount;
     setContextMount(mount);
@@ -639,6 +635,9 @@ export function useLayer(
     (el: HTMLTemplateElement | null) => {
       sentinelRef.current = el;
       if (el && (!lazyMount || pendingShowRef.current)) {
+        // The render call may have moved while the hook stayed mounted.
+        // Resolve again from the newly attached marker rather than reusing a
+        // portal target from its previous JSX position.
         requestContextMount();
       }
     },
@@ -666,8 +665,13 @@ export function useLayer(
   // Render function for context mode
   const renderContext = useCallback(
     (children: ReactNode, props?: ContextRenderProps) => {
+      // Keep the marker mounted after resolving the layer. Apart from giving
+      // us the real JSX parent on first show, this lets its ref report when a
+      // persistent hook's render call moves to a different host.
+      const sentinel = <template ref={sentinelRefCallback} />;
+
       if (contextMount === null) {
-        return <template ref={sentinelRefCallback} id={id} />;
+        return <>{sentinel}</>;
       }
 
       const {
@@ -735,9 +739,14 @@ export function useLayer(
         </Container>
       );
 
-      return contextMount.portalTarget
-        ? createPortal(layer, contextMount.portalTarget)
-        : layer;
+      return (
+        <>
+          {sentinel}
+          {contextMount.portalTarget
+            ? createPortal(layer, contextMount.portalTarget)
+            : layer}
+        </>
+      );
     },
     [
       anchorId,
