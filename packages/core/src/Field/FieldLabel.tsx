@@ -4,18 +4,19 @@
 
 /**
  * @file FieldLabel.tsx
- * @input Uses React, Icon, IconType, useTranslator
+ * @input Uses React, Icon, IconType, useTranslator, FormLayoutContext
  * @output Exports FieldLabel component, FieldLabelProps
  * @position Core label implementation; used by Field, CheckboxInput, Switch
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Field/Field.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/Field/index.ts (exports if types change)
+ * - /packages/core/src/FormLayout/FormLayoutContext.ts (defaultOptionality drives the indicator)
  * - /packages/cli/assets/templates/blocks/components/Field/ (showcase blocks)
  * - /packages/core/locales/en.json (@astryx.field.required / @astryx.field.optional)
  */
 
-import {useMemo, useRef, type ReactNode, type RefObject} from 'react';
+import {use, useMemo, useRef, type ReactNode, type RefObject} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
 import {mergeProps} from '../utils';
@@ -32,6 +33,7 @@ import {Tooltip} from '../Tooltip';
 import {useTranslator} from '../i18n';
 import {themeProps} from '../utils/themeProps';
 import {useInputContainer} from '../hooks';
+import {FormLayoutContext} from '../FormLayout/FormLayoutContext';
 
 const styles = stylex.create({
   label: {
@@ -188,9 +190,22 @@ export function FieldLabel({
   ...rest
 }: FieldLabelProps) {
   const t = useTranslator();
-  const statusText = isOptional
+  const {defaultOptionality} = use(FormLayoutContext);
+
+  // A form-level `defaultOptionality` means "only the exception is marked": a
+  // field that merely restates the form's default shows no indicator, and only
+  // a deviation from it does. This is presentation only — it never touches the
+  // control's `aria-required`, which each input drives from its own props.
+  //
+  //   defaultOptionality  isRequired            isOptional
+  //   'optional'          → required indicator  → (matches default, hidden)
+  //   'required'          → (matches, hidden)   → optional indicator
+  //   unset               → required indicator  → optional indicator
+  const showRequired = isRequired && defaultOptionality !== 'required';
+  const showOptional = isOptional && defaultOptionality !== 'optional';
+  const statusText = showOptional
     ? t('@astryx.field.optional')
-    : isRequired
+    : showRequired
       ? t('@astryx.field.required')
       : null;
 

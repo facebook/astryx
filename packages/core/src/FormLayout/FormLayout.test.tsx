@@ -23,6 +23,12 @@ function DirectionReader() {
   return <span data-testid="direction">{direction}</span>;
 }
 
+// Helper component to read the defaultOptionality context value
+function OptionalityReader() {
+  const {defaultOptionality} = use(FormLayoutContext);
+  return <span data-testid="optionality">{defaultOptionality ?? 'unset'}</span>;
+}
+
 describe('FormLayout', () => {
   // ─── Basic rendering ────────────────────────────────────────────────────
 
@@ -154,6 +160,106 @@ describe('FormLayout', () => {
     expect(screen.getByTestId('inner-child-2')).toBeInTheDocument();
   });
 
+  // ─── defaultOptionality context propagation ─────────────────────────────
+
+  it('leaves defaultOptionality unset by default', () => {
+    render(
+      <FormLayout>
+        <OptionalityReader />
+      </FormLayout>,
+    );
+    expect(screen.getByTestId('optionality')).toHaveTextContent('unset');
+  });
+
+  it('provides defaultOptionality="optional" to children', () => {
+    render(
+      <FormLayout defaultOptionality="optional">
+        <OptionalityReader />
+      </FormLayout>,
+    );
+    expect(screen.getByTestId('optionality')).toHaveTextContent('optional');
+  });
+
+  it('provides defaultOptionality="required" to children', () => {
+    render(
+      <FormLayout defaultOptionality="required">
+        <OptionalityReader />
+      </FormLayout>,
+    );
+    expect(screen.getByTestId('optionality')).toHaveTextContent('required');
+  });
+
+  it('an inner layout shadows the outer defaultOptionality', () => {
+    render(
+      <FormLayout defaultOptionality="optional">
+        <FormLayout defaultOptionality="required">
+          <OptionalityReader />
+        </FormLayout>
+      </FormLayout>,
+    );
+    expect(screen.getByTestId('optionality')).toHaveTextContent('required');
+  });
+
+  // ─── defaultOptionality indicator behavior (through Field) ───────────────
+  //
+  // The rule: only the *exception* is marked. A field that restates the form
+  // default shows nothing; a deviation shows its indicator.
+
+  it('optional default: only isRequired fields show an indicator', () => {
+    render(
+      <FormLayout defaultOptionality="optional">
+        <Field label="Bio" inputID="bio">
+          <input id="bio" />
+        </Field>
+        <Field label="Nickname" inputID="nick" isOptional>
+          <input id="nick" />
+        </Field>
+        <Field label="Email" inputID="email" isRequired>
+          <input id="email" />
+        </Field>
+      </FormLayout>,
+    );
+    // Plain + isOptional match the default → nothing shown.
+    expect(screen.queryByText(/Optional/)).not.toBeInTheDocument();
+    // isRequired deviates → the required indicator shows.
+    expect(screen.getByText(/Required/)).toBeInTheDocument();
+  });
+
+  it('required default: only isOptional fields show an indicator', () => {
+    render(
+      <FormLayout defaultOptionality="required">
+        <Field label="Name" inputID="name">
+          <input id="name" />
+        </Field>
+        <Field label="Email" inputID="email" isRequired>
+          <input id="email" />
+        </Field>
+        <Field label="Nickname" inputID="nick" isOptional>
+          <input id="nick" />
+        </Field>
+      </FormLayout>,
+    );
+    // Plain + isRequired match the default → nothing shown.
+    expect(screen.queryByText(/Required/)).not.toBeInTheDocument();
+    // isOptional deviates → the optional indicator shows.
+    expect(screen.getByText(/Optional/)).toBeInTheDocument();
+  });
+
+  it('unset default preserves per-field indicators (backwards compatible)', () => {
+    render(
+      <FormLayout>
+        <Field label="Email" inputID="email" isRequired>
+          <input id="email" />
+        </Field>
+        <Field label="Nickname" inputID="nick" isOptional>
+          <input id="nick" />
+        </Field>
+      </FormLayout>,
+    );
+    expect(screen.getByText(/Required/)).toBeInTheDocument();
+    expect(screen.getByText(/Optional/)).toBeInTheDocument();
+  });
+
   // ─── Snapshot tests ─────────────────────────────────────────────────────
 
   it('matches snapshot for vertical direction', () => {
@@ -223,10 +329,7 @@ describe('FormLayout', () => {
   it('horizontal-labels with Field: label and input wrapper are siblings under display:contents', () => {
     render(
       <FormLayout direction="horizontal-labels" data-testid="layout">
-        <Field
-          label="Username"
-          inputID="username"
-          data-testid="username-field">
+        <Field label="Username" inputID="username" data-testid="username-field">
           <input id="username" data-testid="username-input" />
         </Field>
       </FormLayout>,

@@ -10,7 +10,10 @@
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/FormLayout/FormLayout.test.tsx (tests for new/changed behavior)
+ * - /packages/core/src/FormLayout/FormLayoutContext.ts (context value shape)
+ * - /packages/core/src/FormLayout/FormLayout.doc.mjs (props table)
  * - /packages/core/src/FormLayout/index.ts (exports if types change)
+ * - /packages/core/src/Field/FieldLabel.tsx (defaultOptionality indicator resolution)
  * - /apps/storybook/stories/FormLayout.stories.tsx (storybook stories)
  * - /packages/cli/assets/templates/blocks/components/FormLayout/ (showcase blocks)
  */
@@ -19,7 +22,11 @@ import {useMemo, type ReactNode} from 'react';
 import type {BaseProps} from '../BaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
-import {FormLayoutContext, type FormLayoutDirection} from './FormLayoutContext';
+import {
+  FormLayoutContext,
+  type FormLayoutDirection,
+  type FormOptionality,
+} from './FormLayoutContext';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 
@@ -82,6 +89,24 @@ export interface FormLayoutProps extends BaseProps<HTMLDivElement> {
    * @default 'vertical'
    */
   direction?: FormLayoutDirection;
+
+  /**
+   * Which state the form treats as its default, so only the *exception*
+   * carries a visible optional/required indicator. Presentation only — it
+   * never changes a control's `aria-required`; the input's own `isRequired`
+   * still drives semantics.
+   *
+   * - `'optional'` — fields read as optional; only a field with `isRequired`
+   *   shows an indicator (the "required" one).
+   * - `'required'` — fields read as required; only a field with `isOptional`
+   *   shows an indicator (the "optional" one).
+   * - unset — today's behavior: `isRequired` and `isOptional` each show their
+   *   own indicator independently.
+   *
+   * A field that merely restates the default (e.g. `isOptional` under
+   * `'optional'`) shows nothing. An inner `FormLayout` shadows an outer one.
+   */
+  defaultOptionality?: FormOptionality;
 }
 
 // =============================================================================
@@ -109,13 +134,17 @@ export interface FormLayoutProps extends BaseProps<HTMLDivElement> {
 export function FormLayout({
   children,
   direction = 'vertical',
+  defaultOptionality,
   xstyle,
   className,
   style,
   ref,
   ...props
 }: FormLayoutProps) {
-  const contextValue = useMemo(() => ({direction}), [direction]);
+  const contextValue = useMemo(
+    () => ({direction, defaultOptionality}),
+    [direction, defaultOptionality],
+  );
 
   return (
     <FormLayoutContext value={contextValue}>
