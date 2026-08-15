@@ -19,8 +19,8 @@
  *
  * Form controls stay usable above mobile on-screen keyboards: the outer sheet
  * remains stable while visual-viewport overlap extends the internal scroll
- * range and focused controls scroll into view. Starting sheet travel blurs the
- * field to dismiss the keyboard.
+ * range and focused controls scroll into view. Starting sheet travel or
+ * closing the sheet blurs the field to dismiss the keyboard.
  *
  * `hasScrim` picks the presentation: `true` (default) uses `showModal()` (top
  * layer, focus trap, scrim, scroll lock, background inert); `false` uses
@@ -442,9 +442,9 @@ export function BottomSheet({
         // otherwise only honor a descendant data-autofocus.
         const autofocus = dialog.querySelector<HTMLElement>('[data-autofocus]');
         if (autofocus) {
-          autofocus.focus();
+          autofocus.focus({preventScroll: true});
         } else if (hasScrim) {
-          sheetNodeRef.current?.focus();
+          sheetNodeRef.current?.focus({preventScroll: true});
         }
       }
     } else if (dialog.open) {

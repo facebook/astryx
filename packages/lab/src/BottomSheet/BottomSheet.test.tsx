@@ -394,6 +394,42 @@ describe('BottomSheet', () => {
   });
 
   describe('mobile keyboard', () => {
+    it('focuses text controls without native pointer-driven scrolling', () => {
+      render(
+        <BottomSheet isOpen onOpenChange={() => {}} label="Add a comment">
+          <input aria-label="Comment" />
+        </BottomSheet>,
+      );
+      const input = screen.getByRole('textbox', {name: 'Comment'});
+      const focus = vi.spyOn(input, 'focus');
+
+      fireEvent.pointerDown(input, {pointerId: 1, clientY: 200});
+
+      expect(focus).toHaveBeenCalledWith({preventScroll: true});
+      expect(document.activeElement).toBe(input);
+
+      focus.mockClear();
+      fireEvent.pointerDown(input, {pointerId: 1, clientY: 220});
+      expect(focus).not.toHaveBeenCalled();
+    });
+
+    it('prevents native scrolling when focus moves into a text control', () => {
+      render(
+        <BottomSheet isOpen onOpenChange={() => {}} label="Add a comment">
+          <input aria-label="Comment" />
+        </BottomSheet>,
+      );
+      const sheet = getSheet();
+      const comment = screen.getByRole('textbox', {name: 'Comment'});
+      sheet.focus();
+      const focus = vi.spyOn(comment, 'focus');
+
+      fireEvent.blur(sheet, {relatedTarget: comment});
+
+      expect(focus).toHaveBeenCalledWith({preventScroll: true});
+      expect(document.activeElement).toBe(comment);
+    });
+
     it('extends internal scrolling and reveals a focused control above the visual viewport', () => {
       const viewport = mockVisualViewport(500);
       render(
@@ -406,8 +442,11 @@ describe('BottomSheet', () => {
       vi.spyOn(body, 'getBoundingClientRect').mockReturnValue(
         rect({top: 100, bottom: 800}),
       );
-      vi.spyOn(input, 'getBoundingClientRect').mockReturnValue(
-        rect({top: 660, bottom: 700}),
+      vi.spyOn(input, 'getBoundingClientRect').mockImplementation(() =>
+        rect({
+          top: 660 - body.scrollTop,
+          bottom: 700 - body.scrollTop,
+        }),
       );
 
       act(() => viewport.dispatchEvent(new Event('resize')));
@@ -431,6 +470,30 @@ describe('BottomSheet', () => {
       );
     });
 
+    it('does not add clearance or scroll when the viewport is unobstructed', () => {
+      mockVisualViewport(800);
+      render(
+        <BottomSheet isOpen onOpenChange={() => {}} label="Add a comment">
+          <input aria-label="Comment" />
+        </BottomSheet>,
+      );
+      const body = getBody();
+      const input = screen.getByRole('textbox', {name: 'Comment'});
+      vi.spyOn(body, 'getBoundingClientRect').mockReturnValue(
+        rect({top: 100, bottom: 800}),
+      );
+      vi.spyOn(input, 'getBoundingClientRect').mockReturnValue(
+        rect({top: 760, bottom: 790}),
+      );
+
+      input.focus();
+
+      expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
+        '0px',
+      );
+      expect(body.scrollTop).toBe(0);
+    });
+
     it('blurs the focused field when sheet travel starts', () => {
       render(
         <BottomSheet isOpen onOpenChange={() => {}} label="Add a comment">
@@ -443,6 +506,25 @@ describe('BottomSheet', () => {
       fireEvent.pointerDown(getHandle(), {pointerId: 1, clientY: 0});
 
       expect(document.activeElement).toBe(getSheet());
+    });
+
+    it('blurs the focused field when a non-drag close starts', () => {
+      const onOpenChange = vi.fn();
+      const content = (isOpen: boolean) => (
+        <BottomSheet
+          isOpen={isOpen}
+          onOpenChange={onOpenChange}
+          label="Add a comment">
+          <input aria-label="Comment" />
+        </BottomSheet>
+      );
+      const {rerender} = render(content(true));
+      const input = screen.getByRole('textbox', {name: 'Comment'});
+      input.focus();
+
+      rerender(content(false));
+
+      expect(document.activeElement).not.toBe(input);
     });
   });
 
