@@ -222,3 +222,99 @@ describe('themeBuild() — check mode', () => {
     expect(result?.data.stale).toEqual([]);
   });
 });
+
+describe('themeBuild() — component override validation', () => {
+  it('accepts documented state keys without an "Unknown prop" warning', async () => {
+    // The state-key syntax the Theming Infrastructure wiki documents —
+    // `radio: {checked}`, `calendar-day: {today, selected}` — is declared in
+    // each component's doc under `theming.targets[].states`, not
+    // `visualProps`. `loadKnownComponents()` read only `visualProps`, so every
+    // one of these warned "Unknown prop": documented syntax that looked broken.
+    const themeFile = path.join(tmpDir, 'states.mjs');
+    fs.writeFileSync(
+      themeFile,
+      `export default {
+        name: 'states',
+        tokens: {'--color-bg': '#0a0a0a'},
+        components: {
+          radio: {
+            checked: {borderColor: 'var(--color-accent)'},
+            'checked+disabled': {opacity: '0.5'},
+          },
+          'calendar-day': {
+            today: {fontWeight: '700'},
+            selected: {backgroundColor: 'var(--color-accent)'},
+          },
+        },
+      };\n`,
+    );
+
+    const result = await themeBuild('states.mjs', {}, {cwd: tmpDir});
+
+    expect(result?.data.warnings).toEqual([]);
+  });
+
+  it('accepts the heading type rules a type scale generates', async () => {
+    // `typography.scale` makes defineTheme emit `heading: {'type:display-1' …}`
+    // (Heading renders a `type:` class alongside `level:`), so any theme with a
+    // type scale carried override keys the validator called unknown — including
+    // the shipped neutralTheme.
+    const themeFile = path.join(tmpDir, 'typescale.mjs');
+    fs.writeFileSync(
+      themeFile,
+      `export default {
+        name: 'typescale',
+        tokens: {'--color-bg': '#0a0a0a'},
+        components: {
+          heading: {'type:display-1': {letterSpacing: '0.01em'}},
+        },
+      };\n`,
+    );
+
+    const result = await themeBuild('typescale.mjs', {}, {cwd: tmpDir});
+
+    expect(result?.data.warnings).toEqual([]);
+  });
+
+  it('still warns on a key that is neither a visual prop nor a state', async () => {
+    // Widening the known set to states must not turn the guard off.
+    const themeFile = path.join(tmpDir, 'bogus.mjs');
+    fs.writeFileSync(
+      themeFile,
+      `export default {
+        name: 'bogus',
+        tokens: {'--color-bg': '#0a0a0a'},
+        components: {radio: {notAState: {opacity: '0.5'}}},
+      };\n`,
+    );
+
+    const result = await themeBuild('bogus.mjs', {}, {cwd: tmpDir});
+
+    expect(result?.data.warnings).toEqual([
+      expect.stringContaining('Unknown prop "notAState" on component "radio"'),
+    ]);
+  });
+});
+
+describe('themeBuild() — the shipped theme template', () => {
+  // `assets/theme.template.ts` is what `astryx theme template` puts in a
+  // consumer's project. It is the one theme file we hand out, so it has to
+  // compile as shipped — and cleanly: a template that greets its first reader
+  // with warnings teaches them to ignore warnings. The claims its comments make
+  // are checked separately by scripts/check-theme-template.test.mjs.
+  it('compiles as shipped, with no warnings', async () => {
+    const src = path.resolve(
+      import.meta.dirname,
+      '../../../assets/theme.template.ts',
+    );
+    fs.copyFileSync(src, path.join(tmpDir, 'theme.template.ts'));
+
+    const result = await themeBuild('theme.template.ts', {}, {cwd: tmpDir});
+
+    expect(result?.data.warnings).toEqual([]);
+    expect(fs.existsSync(path.join(tmpDir, 'my-theme.css'))).toBe(true);
+    // The template teaches custom variants; the augmentation it promises the
+    // reader has to actually be generated.
+    expect(fs.existsSync(path.join(tmpDir, 'my-theme.variants.d.ts'))).toBe(true);
+  });
+});

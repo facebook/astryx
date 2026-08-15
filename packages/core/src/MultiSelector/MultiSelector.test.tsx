@@ -1774,7 +1774,134 @@ describe('MultiSelector indicator (chevron) icon theme target', () => {
   });
 });
 
+describe('MultiSelector list structure', () => {
+  it('does not draw a divider under select-all', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={['Apple', 'Banana', 'Orange']}
+        value={[]}
+        onChange={() => {}}
+        hasSelectAll
+      />,
+    );
+    await user.click(screen.getByRole('combobox'));
+    // Select-all is the first row of the list, not a section of its own. No
+    // option here declares a divider and there is no search row, so the panel
+    // should contain no rule at all.
+    expect(document.querySelectorAll('[role="separator"]')).toHaveLength(0);
+    const [first] = screen.getAllByRole('option', h);
+    expect(first).toHaveTextContent('Select all');
+  });
+
+  it('renders a section title as a plain heading inside the group, not a divider', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={[
+          {
+            type: 'section',
+            title: 'Citrus',
+            options: [
+              {value: 'orange', label: 'Orange'},
+              {value: 'lemon', label: 'Lemon'},
+            ],
+          },
+        ]}
+        value={[]}
+        onChange={() => {}}
+      />,
+    );
+    await user.click(screen.getByRole('combobox'));
+
+    // A labeled Divider used to stand in for the heading; it rendered a
+    // role="separator" as a direct child of the listbox and stacked a second
+    // rule under the search row's own.
+    expect(document.querySelectorAll('[role="separator"]')).toHaveLength(0);
+
+    const group = screen.getByRole('group', {name: 'Citrus', ...h});
+    const heading = group.querySelector(
+      '.astryx-multi-selector-section-heading',
+    );
+    expect(heading).toBeTruthy();
+    expect(heading).toHaveTextContent('Citrus');
+    // The group already carries the title as its accessible name, so the
+    // visible heading must not announce it a second time.
+    expect(heading).toHaveAttribute('aria-hidden', 'true');
+    // ...and it precedes the options it heads.
+    const [firstOption] = within(group).getAllByRole('option', h);
+    expect(
+      heading!.compareDocumentPosition(firstOption) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+});
+
 describe('MultiSelector search affordances', () => {
+  it('renders the search row seamlessly — no nested input box, a divider under it', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={['Apple', 'Banana', 'Orange']}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+
+    const search = screen.getByRole('combobox', h);
+    // The row is the outer gutter; the input sits inside the rounded field.
+    const row = search.closest('.astryx-multi-selector-search');
+    const field = search.parentElement;
+    if (!row || !field) {
+      throw new Error('search row not found');
+    }
+    // The panel is already a bordered surface: the field inside it must not be
+    // a second bordered box (this used to render a TextInput).
+    expect(row).not.toHaveClass('astryx-text-input');
+    expect(search.closest('.astryx-text-input')).toBeNull();
+    // The field is a rounded box inset from the panel edge, shaped like the
+    // option rows under it — not a full-bleed header strip.
+    expect(field).not.toBe(row);
+    // ...and a divider separates it from the options.
+    const separator = document.querySelector('[role="separator"]');
+    if (!separator) {
+      throw new Error('divider not found');
+    }
+    // Order: row, then divider, then the listbox.
+    expect(
+      row.compareDocumentPosition(separator) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    const listbox = screen.getByRole('listbox', h);
+    expect(
+      separator.compareDocumentPosition(listbox) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('keeps the search row outside the scrolling option list', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={['Apple', 'Banana', 'Orange']}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    // The options scroll under the header rather than carrying it away, so the
+    // field stays reachable in a long list.
+    const search = screen.getByRole('combobox', h);
+    const listbox = screen.getByRole('listbox', h);
+    expect(listbox.contains(search)).toBe(false);
+  });
+
   it('renders a decorative (aria-hidden) magnifier icon whenever hasSearch is on', async () => {
     const user = userEvent.setup();
     render(
@@ -1788,8 +1915,7 @@ describe('MultiSelector search affordances', () => {
     );
     await user.click(screen.getByRole('button', {name: 'Fruit'}));
     const search = screen.getByRole('combobox', h);
-    // The search field is a TextInput; the magnifier is its startIcon, so it
-    // sits inside the input container as a sibling of the <input>.
+    // The magnifier leads the search row, as a sibling of the <input>.
     const wrapper = search.parentElement;
     const magnifier = wrapper?.querySelector('.astryx-icon');
     expect(magnifier).toBeTruthy();

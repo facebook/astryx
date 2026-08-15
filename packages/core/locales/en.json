@@ -935,6 +935,10 @@
     "defaultMessage": "Collapse {label}",
     "description": "Screen-reader-only label on the same chevron when the group is expanded. Example: `Collapse Settings`. Pairs with `sideNavItem.expand`."
   },
+  "@astryx.sideNavItem.submenuLabel": {
+    "defaultMessage": "{label} submenu",
+    "description": "Accessible name for the flyout dialog that opens from a collapsed (icon-only) SideNav item to show its sub-items. {label} is the parent item's label. Example: `Settings submenu`."
+  },
   "@astryx.tableFiltering.filterByColumn": {
     "defaultMessage": "Filter {header}",
     "description": "Triple-use string on per-column filter controls: visible label, placeholder, AND aria label. `{header}` is the column header — example: `Filter Name`. Keep short."

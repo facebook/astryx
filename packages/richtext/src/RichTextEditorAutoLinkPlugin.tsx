@@ -14,13 +14,12 @@
  *   `AutoLinkNode` to be registered (it is, by default).
  *
  * SYNC: When modified, update:
- * - /packages/lab/src/RichTextEditor/index.ts (exports)
- * - /packages/lab/src/index.ts (barrel re-export)
- * - /packages/lab/src/RichTextEditor/RichTextEditor.doc.mjs (usage notes)
- * - /packages/lab/src/RichTextEditor/RichTextEditor.test.tsx (tests)
+ * - /packages/richtext/src/index.ts (exports / barrel)
+ * - /packages/richtext/src/RichTextEditor.doc.mjs (usage notes)
+ * - /packages/richtext/src/RichTextEditor.test.tsx (tests)
  * - /apps/storybook/stories/RichTextEditor.stories.tsx (story)
  *
- * NOTE: Experimental `@astryxdesign/lab` component (canary). `lexical` and
+ * NOTE: Experimental `@astryxdesign/richtext` component (canary). `lexical` and
  * `@lexical/*` are OPTIONAL peer dependencies — install them to use this.
  *
  * COMPATIBILITY: astryx aims for its RichTextEditor internals to eventually
@@ -98,7 +97,8 @@ export interface RichTextEditorAutoLinkPluginProps {
  *
  * @example
  * ```
- * import {RichTextEditor, RichTextEditorAutoLinkPlugin} from '@astryxdesign/lab';
+ * import {RichTextEditor, RichTextEditorAutoLinkPlugin} from '@astryxdesign/richtext';
+ *
  * <RichTextEditor
  *   label="Notes"
  *   plugins={<RichTextEditorAutoLinkPlugin />}

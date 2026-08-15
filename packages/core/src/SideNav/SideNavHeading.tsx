@@ -36,6 +36,7 @@ import {Link} from '../Link';
 import {Icon} from '../Icon';
 import {Tooltip} from '../Tooltip';
 import {navItemStyles} from '../NavItem/navItemStyles.stylex';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {useSideNavCollapse} from './SideNavCollapseContext';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
@@ -421,7 +422,11 @@ export function SideNavHeading({
           data-testid={testId}
           {...mergeProps(
             themeProps('side-nav-heading'),
-            stylex.props(navItemStyles.item, styles.rootCollapsed, xstyle),
+            focusOutlineProps.focusVisible(
+              navItemStyles.item,
+              styles.rootCollapsed,
+              xstyle,
+            ),
             className,
             style,
           )}>
@@ -440,7 +445,7 @@ export function SideNavHeading({
             {...triggerProps}
             {...mergeProps(
               themeProps('side-nav-heading'),
-              stylex.props(
+              focusOutlineProps.focusVisible(
                 navItemStyles.item,
                 styles.rootCollapsed,
                 styles.menuTrigger,
@@ -458,7 +463,7 @@ export function SideNavHeading({
               {...contentProps}>
               <button
                 type="button"
-                {...stylex.props(styles.popoverHeading)}
+                {...focusOutlineProps.focusVisible(styles.popoverHeading)}
                 // A close affordance, not the trigger: dismiss only.
                 onClick={closeMenu}>
                 {icon && <span {...stylex.props(styles.icon)}>{icon}</span>}
@@ -556,7 +561,10 @@ export function SideNavHeading({
         {hasAnyHref && headingHref && menu ? (
           <LinkComponent
             href={headingHref}
-            {...stylex.props(styles.heading, styles.headingLink)}>
+            {...focusOutlineProps.focusVisible(
+              styles.heading,
+              styles.headingLink,
+            )}>
             {heading}
           </LinkComponent>
         ) : (
@@ -593,7 +601,7 @@ export function SideNavHeading({
   const popoverHeadingContent = (
     <button
       type="button"
-      {...stylex.props(styles.popoverHeading)}
+      {...focusOutlineProps.focusVisible(styles.popoverHeading)}
       // A close affordance, not the trigger: dismiss only.
       onClick={closeMenu}>
       {icon && <span {...stylex.props(styles.icon)}>{icon}</span>}
@@ -617,7 +625,11 @@ export function SideNavHeading({
         data-testid={testId}
         {...mergeProps(
           themeProps('side-nav-heading'),
-          stylex.props(styles.root, styles.menuTrigger, xstyle),
+          focusOutlineProps.focusVisible(
+            styles.root,
+            styles.menuTrigger,
+            xstyle,
+          ),
           className,
           style,
         )}
@@ -655,7 +667,10 @@ export function SideNavHeading({
                 triggerProps.onClick();
               }}
               {...popover.triggerProps}
-              {...stylex.props(styles.chevron, styles.interactive)}>
+              {...focusOutlineProps.focusVisible(
+                styles.chevron,
+                styles.interactive,
+              )}>
               <Icon
                 icon="chevronDown"
                 size="sm"
@@ -710,7 +725,7 @@ export function SideNavHeading({
               <LinkComponent
                 href={headingHref}
                 aria-label={heading}
-                {...stylex.props(styles.icon)}>
+                {...focusOutlineProps.focusVisible(styles.icon)}>
                 {icon}
               </LinkComponent>
             ) : (
@@ -727,7 +742,10 @@ export function SideNavHeading({
                   triggerProps.onClick();
                 }}
                 {...popover.triggerProps}
-                {...stylex.props(styles.chevron, styles.interactive)}>
+                {...focusOutlineProps.focusVisible(
+                  styles.chevron,
+                  styles.interactive,
+                )}>
                 <Icon
                   icon="chevronDown"
                   size="sm"
@@ -780,7 +798,7 @@ export function SideNavHeading({
             <LinkComponent
               href={headingHref}
               aria-label={heading}
-              {...stylex.props(styles.icon)}>
+              {...focusOutlineProps.focusVisible(styles.icon)}>
               {icon}
             </LinkComponent>
           ) : (

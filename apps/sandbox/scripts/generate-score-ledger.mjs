@@ -37,6 +37,7 @@ import {
   LEDGER_FETCH_TIMEOUT_MS,
   SECTION_TITLES,
   SECTION_WEIGHTS,
+  isEvidenceItem,
   listComponents,
 } from '../../../scripts/score-ledger.mjs';
 
@@ -80,13 +81,33 @@ const KNOWN_ENTRY_KEYS = new Set([
   'regression',
 ]);
 
-/** Drop keys `LedgerEntry` doesn't declare, warning once per key. */
+/**
+ * Known keys whose declared type is more than `unknown`, and the predicate that
+ * decides whether the wiki's value matches. Surviving KNOWN_ENTRY_KEYS is not
+ * enough: a declared key holding the WRONG SHAPE emits a literal tsc rejects
+ * just as an undeclared key does. `evidence` written as an array of bare
+ * strings did that on 2026-08-14, three days after the `regression` key, the
+ * same repo-wide red one layer down.
+ */
+const ENTRY_KEY_SHAPES = {
+  evidence: value => Array.isArray(value) && value.every(isEvidenceItem),
+};
+
+/** Drop keys `LedgerEntry` doesn't declare, or whose shape it rejects. */
 const droppedKeys = new Set();
+const malformedKeys = new Set();
 function pruneEntry(entry) {
   const kept = {};
   for (const [k, v] of Object.entries(entry)) {
-    if (KNOWN_ENTRY_KEYS.has(k)) kept[k] = v;
-    else droppedKeys.add(k);
+    if (!KNOWN_ENTRY_KEYS.has(k)) {
+      droppedKeys.add(k);
+      continue;
+    }
+    if (ENTRY_KEY_SHAPES[k] && !ENTRY_KEY_SHAPES[k](v)) {
+      malformedKeys.add(`${entry.component ?? '?'}.${k}`);
+      continue;
+    }
+    kept[k] = v;
   }
   return kept;
 }
@@ -126,6 +147,14 @@ if (droppedKeys.size > 0) {
     `componentScores: the wiki ledger carries ${droppedKeys.size} field(s) LedgerEntry does not declare ` +
       `(${[...droppedKeys].sort().join(', ')}) — dropped from the snapshot. ` +
       `Add them to LedgerEntry and KNOWN_ENTRY_KEYS to surface them.`,
+  );
+}
+
+if (malformedKeys.size > 0) {
+  console.warn(
+    `componentScores: the wiki ledger holds ${malformedKeys.size} field(s) whose shape LedgerEntry rejects ` +
+      `(${[...malformedKeys].sort().join(', ')}) — dropped from the snapshot. ` +
+      `Fix the row in the wiki; the page's runtime fetch still reads it as written.`,
   );
 }
 

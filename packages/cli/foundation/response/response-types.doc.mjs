@@ -183,6 +183,11 @@ export const doc = {
       description:
         'A scaffold receipt: resolved slug, displayName, maintained flag, outputDir (relative to cwd), the theme entry file, its exportName, and the files written.',
     },
+    {
+      value: 'theme.template',
+      description:
+        'A write receipt for the annotated theme template: the path (relative to cwd), whether it was written, and the reason it was not — `exists` when a file was already there, which is a success.',
+    },
 
     // upgrade
     {

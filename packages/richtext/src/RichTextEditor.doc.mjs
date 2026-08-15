@@ -51,7 +51,8 @@ export const docs = {
     {
       name: 'placeholder',
       type: 'string',
-      description: 'Placeholder text shown when the editor is empty.',
+      description:
+        'Placeholder text shown when the editor is empty. Uses the same responsive body typography and text inset as the editable content.',
     },
     {
       name: 'isReadOnly',
@@ -69,7 +70,14 @@ export const docs = {
       name: 'status',
       type: '{ type: "warning" | "error" | "success"; message?: string }',
       description:
-        'Status indicator. Shows a colored border and an optional message below the editor.',
+        'Validation status. Shows a colored border and status icon; an optional message follows the statusVariant placement. Error also sets aria-invalid.',
+    },
+    {
+      name: 'statusVariant',
+      type: "'attached' | 'detached' | 'tooltip'",
+      description:
+        'How the status is presented: attached keeps the icon in the editor and overlaps the message below; detached floats the message below with its own icon; tooltip hides the message box and reveals it from the focusable in-editor status icon.',
+      default: "'attached'",
     },
     {
       name: 'size',
@@ -84,10 +92,16 @@ export const docs = {
         'Additional Lexical nodes to register beyond the default OSS set (Heading, Quote, List, Link, Code). Extension point for custom nodes (mentions, images) without forking.',
     },
     {
+      name: 'toolbar',
+      type: 'ReactNode',
+      description:
+        'Toolbar content rendered edge-to-edge at the top of the field, before the padded editing surface. Pass RichTextEditorToolbar here for correct visual and keyboard order.',
+    },
+    {
       name: 'plugins',
       type: 'ReactNode',
       description:
-        'Additional Lexical plugins rendered inside the composer. Compose toolbars, mentions, autolink, etc. on top of the base editor.',
+        'Additional Lexical plugins rendered inside the composer. Compose mentions, autolink, and other editor behavior on top of the base editor.',
     },
     {
       name: 'hasMarkdownShortcuts',
@@ -129,6 +143,13 @@ export const docs = {
         'Width of the field. Numbers are pixels, strings used as-is (e.g. "100%").',
     },
     {
+      name: 'minHeight',
+      type: 'SizeValue',
+      description:
+        'Minimum height of the editable content surface. Numbers are pixels; strings are used as CSS lengths. Content continues growing beyond this height.',
+      default: "'4.5rem'",
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
@@ -140,12 +161,12 @@ export const docs = {
   },
   usage: {
     description:
-      'A WYSIWYG rich-text editor built on Lexical, styled with Astryx design tokens. Experimental component in @astryxdesign/lab (canary). lexical and @lexical/* are optional peer dependencies. The editor is deliberately minimal and extensible: pass nodes and plugins to layer richer behaviour (toolbars, mentions, hover cards) on top without forking. Use RichTextView to render serialized content read-only.',
+      'A WYSIWYG rich-text editor built on Lexical, styled with Astryx design tokens. Its field container shares TextArea input visuals for the resting border, hover ring, focus-within ring, disabled state, and status colors. Experimental component in @astryxdesign/richtext (canary). lexical and @lexical/* are optional peer dependencies. The editor is deliberately minimal and extensible: pass toolbar, nodes, and plugins to layer richer behaviour (formatting, mentions, hover cards) on top without forking. Use RichTextView to render serialized content read-only.',
     bestPractices: [
       {
         guidance: true,
         description:
-          'Install lexical and @lexical/react (optional peers) before importing from @astryxdesign/lab.',
+          'Install lexical and @lexical/react (optional peers) before importing from @astryxdesign/richtext.',
       },
       {
         guidance: true,
@@ -170,12 +191,12 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Add a formatting toolbar by rendering RichTextEditorToolbar in the plugins slot: plugins={<RichTextEditorToolbar />}. It is built from Astryx Toolbar/ToggleButton primitives (so it matches the theme), syncs active states to the selection, and covers bold/italic/underline/strikethrough/code, links, headings, quote, lists, and undo/redo. Compose extra controls via its endContent prop.',
+          'Add a formatting toolbar with toolbar={<RichTextEditorToolbar />}. The dedicated slot places it edge-to-edge at the top of the field, before the padded editing surface, with correct keyboard order. It uses small Astryx Toolbar controls: undo/redo, a divided block-format Selector for paragraphs/headings/lists/quotes, then divided inline ToggleButtons for bold/italic/underline/strikethrough/code and links. The complete action row scrolls horizontally when space is tight, keeping every control directly available without a More menu. The Selector keeps its default adaptive placement. Compose extra controls via endContent.',
       },
       {
         guidance: true,
         description:
-          'Links: the toolbar Link button (on by default; disable with hasLink={false}) and Cmd/Ctrl+K toggle a link on the selection via Lexical TOGGLE_LINK_COMMAND. It prompts for a URL with window.prompt by default; pass promptForUrl to plug in a custom prompt (e.g. an Astryx Dialog or floating popover). Entered URLs are sanitized (only http/https/mailto/tel are written; javascript:/data: are rejected). Links open in a new tab by default: target=_blank and rel=noopener noreferrer are written into the link node data (so they serialize and round-trip), not patched onto the DOM; set linkOpensInNewTab={false} for same-tab links. Pressing the button while a link is selected removes it.',
+          'Links: the toolbar Link button (on by default; disable with hasLink={false}) and Cmd/Ctrl+K open an Astryx Dialog. The form preserves the Lexical selection while focus moves into the URL input and supports add, update, remove, Escape, and focus return. Pass promptForUrl only when integrating an existing synchronous URL flow. Entered URLs are sanitized (only http/https/mailto/tel are written; javascript:/data: are rejected). Links open in a new tab by default: target=_blank and rel=noopener noreferrer are written into the link node data; set linkOpensInNewTab={false} for same-tab links.',
       },
       {
         guidance: true,

@@ -58,6 +58,31 @@ describe('promoteCodemodNext', () => {
     expect(result.message).toContain('no staged codemods');
   });
 
+  it('does nothing when next/ holds only the re-seeded empty manifest', async () => {
+    // The state every release leaves behind: README + an index.mjs exporting
+    // []. A release with no codemods must not promote that placeholder into a
+    // version folder or register a tier with no transforms.
+    const {root, transforms} = scaffold({version: '0.4.1'});
+    fs.writeFileSync(path.join(transforms, 'next', 'README.md'), '# Next\n');
+    fs.writeFileSync(
+      path.join(transforms, 'next', 'index.mjs'),
+      '// Copyright (c) Meta Platforms, Inc. and affiliates.\n\nexport default [];\n',
+    );
+
+    const result = await promoteCodemodNext({root});
+
+    expect(result.promoted).toEqual([]);
+    expect(result.registryUpdated).toBe(false);
+    expect(result.message).toContain('no staged codemods');
+    expect(fs.existsSync(path.join(transforms, 'v0.4.1'))).toBe(false);
+    expect(
+      fs.readFileSync(
+        path.join(root, 'packages/cli/assets/codemods/registry.mjs'),
+        'utf8',
+      ),
+    ).not.toContain('0.4.1');
+  });
+
   it('promotes staged files into the current package version and registers it', async () => {
     const {root, transforms} = scaffold({version: '0.4.0'});
     fs.writeFileSync(path.join(transforms, 'next', 'README.md'), '# Next\n');

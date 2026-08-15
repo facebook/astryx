@@ -1,5 +1,44 @@
 # @xds/core
 
+# 0.4.1
+
+#### New Features
+
+- The keyboard focus ring is now a theme token. `--focus-outline-width`, `--focus-outline-style`, `--focus-outline-color` and `--focus-outline-offset` drive every ring in core and lab, so one override in a theme's `tokens` restyles focus system-wide; the color tracks `--color-accent` unless a theme sets it. The `:focus-visible` condition is not themeable, so a themed ring still cannot appear for pointer users (#4973).
+  Every ring is now drawn from the shared focus-outline utility rather than written out per component, and a lint rule keeps it that way. Two corrections come with that: the rings that had drifted to a 2px offset (Slider, Switch, Lightbox, ProgressBar, and lab's InfoTip, Step and LogStream) now sit at the documented 3px, and the buttons inside a field — the Date, DateRange and DateTime calendar toggles, the DateRange presets, and the Selector and MultiSelector status buttons — draw the standard 2px ring instead of a 1px one.
+- AspectRatio, Badge, Blockquote, Card, Center, Code, Grid, Section, Skeleton and VisuallyHidden no longer carry `'use client'` (#823). Each was verified against its transitive import graph to use no React client API, no client-only dependency and no module-level mutable state, so they can now render in a React Server Component without forcing a client boundary. A new `serverSafeComponents.test.ts` derives the server-safe set from the import graph and fails if one of these components later gains a client dependency without restoring the directive — including the transitive case `scripts/check-use-client.mjs` cannot see.
+  Not a breaking change: no prop, type or export changed, and `'use client'` is inert outside an RSC bundler. Client consumers keep working identically, though bundlers may lay these modules out in different chunks now that they are no longer client entry points.
+- Selector and MultiSelector: `indicatorPosition` places the selection indicator on either edge of the option row — `start` or `end`, logical, so it follows RTL. Defaults keep today's rendering (`end` for Selector's check, `start` for MultiSelector's checkbox); a start-positioned check reserves its column on every row so labels stay aligned (#4993).
+
+#### Fixes
+
+- TimeInput: announce arrow-key time stepping via the polite live region (also in DateTimeInput), localize the "Invalid date"/"Invalid time" live-region messages through the i18n catalog, and use long timezone names in Timestamp's AT-facing aria-label while keeping the short form visible (#4363)
+- Banner: the 'banner-icon' theme target now rides on the default status Icon itself instead of its layout wrapper, so theme component overrides ('banner-icon' + 'status:X') that set color actually reach the glyph. The Icon keeps its existing color variant (info still renders accent) and same-element rules in @layer astryx-theme win over it, so default rendering is unchanged. Contract note: '.astryx-banner-icon' now matches the icon element rather than the wrapper when the default icon renders; a theme that used the target for wrapper layout (margin, alignment) now styles the glyph instead. With a custom `icon` node the target stays on the layout-only wrapper, since core never injects props into consumer elements (#4166)
+- CommandPalette: discard in-flight search responses when the palette closes (#3896)
+  Closing the palette while a search was still in flight let the late response re-commit the abandoned query and results into the closed palette, which showed up as a ghost query on reopen. Closing now invalidates any pending request.
+- FileInput: validation messages, default placeholder, drag hint, and file-selected announcements now go through the i18n translator instead of hardcoded English. DropdownMenuRadioGroup: consumer `xstyle` prop is composed into styles instead of being dropped (#4589).
+- The popup theme targets added in #4991 sat on the wrong element. `astryx-complex-selector-popup` and `astryx-multi-selector-popup` were rendered on each component's own content box — the one with the padding and the scroll — while the element that paints the popup's background, radius and elevation is the surface `usePopover` creates one level above it. A theme reaching for those classes to restyle a popup got a rule that could not paint it. Both now land on the surface, so they do what they were documented to do.
+  `Selector` gains the matching `astryx-selector-popup`, which its sibling `MultiSelector` had and it did not.
+
+  New: every popup surface carries the shared `astryx-popover-surface` class, so a theme can style all of them at once, and `usePopover` accepts a `surfaceTarget` naming the surface for a component that wants its own target there. A component cannot do this for itself — the surface belongs to `usePopover`, so any class it renders itself lands inside.
+
+- Selector's menu now clears the trigger by the standard `--spacing-1` gap whenever it is not overlaying it — every explicit `placement`, and search mode. It was the only anchored menu in the system sitting flush against its anchor; DropdownMenu, MultiSelector, ComplexSelector, Popover, and Tooltip all use this clearance. The default selected-item overlay is unchanged: it owns its block geometry and is meant to sit on the trigger (#5003).
+- Selector, MultiSelector: the dropdown panel's search field is now part of the panel instead of a bordered input dropped into it. The panel is already a bordered, elevated surface, so the nested `TextInput` drew a box inside a box; the row now renders a leading magnifier, a borderless input, and the shared clear (✕) button, with a full-bleed divider between it and the options — the same shape the command palette already uses. Focus is shown as an inset ring on the row, rounded to the panel's own corners. Section titles move from labeled dividers to plain secondary headings, matching DropdownMenu and CommandPaletteGroup, and MultiSelector no longer draws a rule under select-all. Behavior, keyboard handling, and accessible names are unchanged; MultiSelector's search row additionally stays put while the options scroll under it. New theme targets: `astryx-selector-search`, `astryx-selector-section-heading`, `astryx-multi-selector-search`, `astryx-multi-selector-section-heading`; anything that styled the dropdown search through `astryx-text-input` needs to move to those.
+- TableRow: honor `className` and `style` on the `<tr>`. `TableRowProps` extends `BaseProps`, but both were spread before `mergeProps()` and then overwritten by the component's own StyleX classes, so a consumer's values silently had no effect. They are now merged through `mergeProps()` alongside the row's StyleX styles, the same way `TableCell` and `TableHeaderCell` already handle them, in both the in-`Table` and standalone rendering paths. The Astryx theme classes and striped/hover styling are unchanged (#4391).
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @AKnassa
+- @arham766
+- @bhamodi
+- @cixzhang
+- @Eloitor
+- @jiunshinn
+
+---
+
 # 0.4.0
 
 #### Breaking Changes

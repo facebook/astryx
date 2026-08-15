@@ -436,7 +436,10 @@ export function TopNavMenu({
           onClick={() => setDrawerExpanded(v => !v)}
           aria-expanded={drawerExpanded}
           aria-controls={`${menuId}-items`}
-          {...stylex.props(navItemStyles.item, drawerStyles.header)}>
+          {...focusOutlineProps.focusVisible(
+            navItemStyles.item,
+            drawerStyles.header,
+          )}>
           {label}
           <Icon
             icon="chevronDown"
@@ -463,7 +466,10 @@ export function TopNavMenu({
                   item.onClick?.();
                   closeMobileNav();
                 }}
-                {...stylex.props(navItemStyles.item, drawerStyles.item)}>
+                {...focusOutlineProps.focusVisible(
+                  navItemStyles.item,
+                  drawerStyles.item,
+                )}>
                 {item.icon && (
                   <span {...stylex.props(drawerStyles.itemIcon)}>
                     {item.icon}

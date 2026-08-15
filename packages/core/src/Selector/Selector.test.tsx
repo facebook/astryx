@@ -25,6 +25,7 @@ import {Icon} from '../Icon';
 import {RadioIndicator} from '../Indicator';
 import {InputGroup, InputGroupText} from '../InputGroup';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
+import {__resetInteractionModalityForTest} from '../utils/interactionModality';
 import {defineTheme} from '../theme/defineTheme';
 import {Theme} from '../theme/Theme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
@@ -2386,7 +2387,165 @@ describe('Selector indicator (chevron) icon theme target', () => {
   });
 });
 
+describe('Selector section headings', () => {
+  it('renders a section title as a plain heading inside the group, not a divider', async () => {
+    const user = userEvent.setup();
+    render(
+      <Selector
+        label="Fruit"
+        options={[
+          {
+            type: 'section',
+            title: 'Citrus',
+            options: [
+              {value: 'orange', label: 'Orange'},
+              {value: 'lemon', label: 'Lemon'},
+            ],
+          },
+        ]}
+        value={undefined}
+        onChange={() => {}}
+      />,
+    );
+    await user.click(screen.getByRole('combobox'));
+
+    // A labeled Divider used to stand in for the heading; it rendered a
+    // role="separator" as a direct child of the listbox and stacked a second
+    // rule under the search row's own.
+    expect(document.querySelectorAll('[role="separator"]')).toHaveLength(0);
+
+    const group = screen.getByRole('group', {name: 'Citrus', hidden: true});
+    const heading = group.querySelector('.astryx-selector-section-heading');
+    expect(heading).toBeTruthy();
+    expect(heading).toHaveTextContent('Citrus');
+    // The group already carries the title as its accessible name, so the
+    // visible heading must not announce it a second time.
+    expect(heading).toHaveAttribute('aria-hidden', 'true');
+  });
+});
+
+describe('Selector search focus ring', () => {
+  // The ring is for keyboard focus only. `:focus-visible` cannot express that
+  // on its own: per CSS Selectors 4 a pointer-focused text input matches it
+  // too (verified in Chromium), which is why a modality gate sits alongside
+  // it. jsdom does not implement `:focus-visible`, so these assert the gate;
+  // the painted ring is verified in real Chromium.
+  //
+  // Focus moves into the search input on the frame after the panel opens, and
+  // the gate is read at that moment: every case must wait for the focus to
+  // land before asserting or typing, or a slow frame reads the modality of
+  // whatever the test did next.
+  beforeEach(() => {
+    __resetInteractionModalityForTest();
+  });
+
+  const field = () =>
+    screen.getByRole('combobox', {hidden: true}).parentElement;
+
+  const waitForSearchFocus = async () =>
+    waitFor(() =>
+      expect(screen.getByRole('combobox', {hidden: true})).toHaveFocus(),
+    );
+
+  it('does not ring when the panel is opened by mouse', async () => {
+    const user = userEvent.setup();
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value={undefined}
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    await waitForSearchFocus();
+    expect(field()).not.toHaveAttribute('data-keyboard-focus');
+  });
+
+  it('does not ring when the query is typed after a mouse open', async () => {
+    const user = userEvent.setup();
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value={undefined}
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    await waitForSearchFocus();
+    await user.keyboard('an');
+    // Typing does not retroactively make a pointer focus a keyboard one; the
+    // caret already shows where the text is going.
+    expect(field()).not.toHaveAttribute('data-keyboard-focus');
+  });
+
+  it('rings when the panel is opened from the keyboard', async () => {
+    const user = userEvent.setup();
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value={undefined}
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.tab();
+    await user.keyboard('{Enter}');
+    await waitForSearchFocus();
+    expect(field()).toHaveAttribute('data-keyboard-focus', 'true');
+  });
+});
+
 describe('Selector search affordances', () => {
+  it('renders the search row seamlessly — no nested input box, a divider under it', async () => {
+    const user = userEvent.setup();
+    const {container} = render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value="Apple"
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+
+    const search = screen.getByRole('combobox', {hidden: true});
+    // The row is the outer gutter; the input sits inside the rounded field.
+    const row = search.closest('.astryx-selector-search');
+    const field = search.parentElement;
+    if (!row || !field) {
+      throw new Error('search row not found');
+    }
+    // The panel is already a bordered surface: the field inside it must not be
+    // a second bordered box (this used to render a TextInput).
+    expect(row).not.toHaveClass('astryx-text-input');
+    expect(search.closest('.astryx-text-input')).toBeNull();
+    // The field is a rounded box inset from the panel edge, shaped like the
+    // option rows under it — not a full-bleed header strip.
+    expect(field).not.toBe(row);
+    expect(getComputedStyle(field).borderRadius).not.toBe('');
+    // ...and a divider separates it from the options.
+    const separator =
+      container.ownerDocument.querySelector('[role="separator"]');
+    if (!separator) {
+      throw new Error('divider not found');
+    }
+    // Order: row, then divider, then the listbox.
+    expect(
+      row.compareDocumentPosition(separator) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    const listbox = screen.getByRole('listbox', {hidden: true});
+    expect(
+      separator.compareDocumentPosition(listbox) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
   it('renders a decorative (aria-hidden) magnifier icon whenever hasSearch is on', async () => {
     const user = userEvent.setup();
     render(
@@ -2400,8 +2559,7 @@ describe('Selector search affordances', () => {
     );
     await user.click(screen.getByRole('button', {name: 'Fruit'}));
     const search = screen.getByRole('combobox', {hidden: true});
-    // The search field is a TextInput; the magnifier is its startIcon, so it
-    // sits inside the input container as a sibling of the <input>.
+    // The magnifier leads the search row, as a sibling of the <input>.
     const container = search.parentElement;
     const magnifier = container?.querySelector('.astryx-icon');
     expect(magnifier).toBeTruthy();

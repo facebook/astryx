@@ -11,8 +11,13 @@
  * disabled state) so all nav-like components stay in sync — especially important
  * when TopNav items render inside MobileNav drawers alongside SideNav items.
  *
- * Individual components layer their own overrides (e.g. collapsed mode, indentation,
- * focus outlines) via stylex.props composition.
+ * Individual components layer their own overrides (e.g. collapsed mode,
+ * indentation) via stylex.props composition.
+ *
+ * The focus ring is not defined here. Compose
+ * `focusOutlineProps.focusVisible` (utils/focusOutline.stylex.ts) at the call
+ * site, on whichever element actually takes focus — in a split-action row that
+ * is the link and the toggle, not the row that contains them.
  */
 
 export type NavItemSize = 'sm' | 'md' | 'lg';
@@ -79,15 +84,36 @@ export const navItemStyles = stylex.create({
 
   /** Selected/active page indicator — deemphasized background, medium weight */
   selected: {
-    backgroundColor: colorVars['--color-neutral'],
+    // Forced colors flatten `--color-neutral` away, leaving the current page
+    // unmarked; Highlight/HighlightText is the platform convention, as in
+    // ToggleButton and SegmentedControlItem. No `forced-color-adjust: none`
+    // here — a nav row is not a native control, so the keywords land without
+    // it, and it would inherit into `endContent` and pin a Badge's own fill.
+    backgroundColor: {
+      default: colorVars['--color-neutral'],
+      '@media (forced-colors: active)': 'Highlight',
+    },
+    color: {
+      default: null,
+      '@media (forced-colors: active)': 'HighlightText',
+    },
     fontWeight: fontWeightVars['--font-weight-medium'],
     ':hover': {
       '@media (hover: hover)': {
-        backgroundColor: colorVars['--color-neutral'],
+        backgroundColor: {
+          default: colorVars['--color-neutral'],
+          // Nested, not a sibling `(hover: hover) and (forced-colors:
+          // active)` block: as siblings `item`'s hover overlay ties on
+          // specificity and wins on source order, erasing the fill.
+          '@media (forced-colors: active)': 'Highlight',
+        },
       },
     },
     ':active': {
-      backgroundColor: colorVars['--color-neutral'],
+      backgroundColor: {
+        default: colorVars['--color-neutral'],
+        '@media (forced-colors: active)': 'Highlight',
+      },
     },
   },
 

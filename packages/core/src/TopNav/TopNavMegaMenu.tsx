@@ -523,7 +523,10 @@ function DrawerMegaMenu({
         aria-controls={`${menuId}-items`}
         {...mergeProps(
           themeProps('top-nav-mega-menu', {mode: 'drawer'}),
-          stylex.props(navItemStyles.item, styles.drawerHeader),
+          focusOutlineProps.focusVisible(
+            navItemStyles.item,
+            styles.drawerHeader,
+          ),
         )}>
         {label}
         <Icon

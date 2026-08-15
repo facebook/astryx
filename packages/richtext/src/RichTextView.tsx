@@ -7,12 +7,11 @@
  * @input Uses React, Lexical (lexical + @lexical/react), design tokens
  * @output Exports RichTextView component and RichTextViewProps
  * @position Read-only renderer for serialized Lexical editor state; experimental
- *   (lab), re-exported from @astryxdesign/lab
+ *   (richtext), exported from @astryxdesign/richtext
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/lab/src/RichTextEditor/RichTextView.test.tsx
- * - /packages/lab/src/RichTextEditor/index.ts
- * - /packages/lab/src/index.ts (barrel re-export)
+ * - /packages/richtext/src/RichTextView.test.tsx
+ * - /packages/richtext/src/index.ts
  * - /apps/storybook/stories/RichTextEditor.stories.tsx
  */
 
@@ -134,7 +133,7 @@ function SyncValuePlugin({value}: {value: string}): null {
  *
  * @example
  * ```
- * import {RichTextView} from '@astryxdesign/lab';
+ * import {RichTextView} from '@astryxdesign/richtext';
  * <RichTextView value={storedEditorStateJSON} />
  * ```
  */

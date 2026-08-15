@@ -438,8 +438,10 @@ const loadingStyles = stylex.create({
  *
  * Layers always carry the native `popover` attribute (useLayer.tsx), and a
  * popover is never an in-flow member — it is `display: none` until shown, then
- * promoted to the top layer. So "last member" is: no following element sibling
- * that isn't a popover.
+ * promoted to the top layer. Context layers also retain an inert `<template>`
+ * marker so they can re-resolve their JSX position. Neither element is a group
+ * member, so "last member" is: no following element sibling besides those two
+ * pieces of layer infrastructure.
  *
  * Reading it the other way round — marking the *buttons* and testing for a
  * marked sibling — is the trap: it silently reclassifies anything it doesn't
@@ -455,7 +457,7 @@ const loadingStyles = stylex.create({
  * The leading edge still uses `:first-child` — a member's button always precedes
  * its own layer, so the first button is genuinely `:first-child`.
  */
-const IS_LAST_ITEM = ':not(:has(~ *:not([popover])))';
+const IS_LAST_ITEM = ':not(:has(~ *:not([popover]):not(template)))';
 
 const groupStyles = stylex.create({
   horizontal: {

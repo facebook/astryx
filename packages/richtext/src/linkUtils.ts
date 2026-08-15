@@ -10,12 +10,11 @@
  *   both can import it without pulling in extra `@lexical/*` surface.
  *
  * SYNC: When modified, update:
- * - /packages/lab/src/RichTextEditor/RichTextEditorToolbar.tsx (link button)
- * - /packages/lab/src/RichTextEditor/RichTextEditor.tsx (AutoLink matchers)
- * - /packages/lab/src/RichTextEditor/RichTextEditor.test.tsx (tests)
- * - /packages/lab/src/RichTextEditor/RichTextEditor.doc.mjs (link docs)
- * - /packages/lab/src/RichTextEditor/index.ts (exports)
- * - /packages/lab/src/index.ts (barrel re-export)
+ * - /packages/richtext/src/RichTextEditorToolbar.tsx (link button)
+ * - /packages/richtext/src/RichTextEditor.tsx (AutoLink matchers)
+ * - /packages/richtext/src/RichTextEditor.test.tsx (tests)
+ * - /packages/richtext/src/RichTextEditor.doc.mjs (link docs)
+ * - /packages/richtext/src/index.ts (exports / barrel)
  *
  * NOTE: Mirrors the Lexical playground's url.ts (`sanitizeUrl` / `validateUrl`
  * / `URL_REGEX` / `EMAIL_REGEX`). Sanitization is the security-critical part:
