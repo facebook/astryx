@@ -66,6 +66,11 @@ describe('init() — receipts + side effects', () => {
     expect(res.data.themeTemplatePath).toBe('theme.template.ts');
     expect(res.data.docsWritten).toEqual([]);
     expect(fs.readdirSync(tmpDir)).toEqual(['theme.template.ts']);
+    // The consumer's copy is their file: it must not carry our repo header,
+    // which their own lint would flag.
+    const written = fs.readFileSync(path.join(tmpDir, 'theme.template.ts'), 'utf-8');
+    expect(written).not.toMatch(/Copyright \(c\) Meta Platforms/);
+    expect(written.startsWith('/**')).toBe(true);
   });
 
   it('--features theme reports `skipped` rather than overwriting an existing template', async () => {

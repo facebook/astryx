@@ -20,6 +20,7 @@ import {CLI_ROOT} from '../../../foundation/fs/paths.mjs';
 import {PathSafetyError} from '../../../foundation/fs/path-safety.mjs';
 import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
 import {installAgentDocs} from '../../../foundation/agent-docs/agent-docs.mjs';
+import {stripCopyrightHeader} from '../../../foundation/text/copyright-header.mjs';
 import {listTemplates} from '../../template/template.mjs';
 import {AstryxError} from '../../error.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
@@ -130,7 +131,11 @@ function applyTheme(cwd, invocation, data) {
       data.themeTemplate = 'skipped';
       logger.log(`• ${THEME_TEMPLATE_DEST} already exists — left as is.`);
     } else {
-      fs.writeFileSync(dest, fs.readFileSync(THEME_TEMPLATE_SRC, 'utf-8'));
+      // Strip our repo header — the consumer's copy is their file, not ours.
+      fs.writeFileSync(
+        dest,
+        stripCopyrightHeader(fs.readFileSync(THEME_TEMPLATE_SRC, 'utf-8')),
+      );
       data.themeTemplate = 'created';
       data.themeTemplatePath = THEME_TEMPLATE_DEST;
       logger.log(`✓ Theme template written → ${THEME_TEMPLATE_DEST}`);

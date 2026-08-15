@@ -76,6 +76,7 @@ describe('astryx init --features', () => {
     expect(status).toBe(0);
     expect(exists('theme.template.ts')).toBe(true);
     expect(read('theme.template.ts')).toMatch(/defineTheme/);
+    expect(read('theme.template.ts')).not.toMatch(/Copyright \(c\) Meta Platforms/);
     expect(stdout).toMatch(/theme/i);
   });
 
