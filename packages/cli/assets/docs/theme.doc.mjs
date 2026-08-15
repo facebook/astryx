@@ -142,13 +142,13 @@ function App() {
       content: [
         {
           type: 'prose',
-          text: 'Use the CLI wizard (recommended) or create manually with defineTheme. Only override tokens that differ from defaults; omitted tokens use the design system defaults.',
+          text: 'Start from a theme we ship, or write one from scratch with defineTheme. Only override tokens that differ from defaults; omitted tokens use the design system defaults.',
         },
         {
           type: 'code',
           lang: 'bash',
-          label: 'Scaffold with CLI',
-          code: 'astryx theme',
+          label: 'Browse, then copy a theme in as editable source',
+          code: 'astryx theme list\nastryx theme add stone',
         },
         {
           type: 'prose',

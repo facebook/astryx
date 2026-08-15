@@ -354,7 +354,7 @@ export function generateCompressedIndex(version, {coreDir, invocation = getCliIn
   } else {
     lines.push("- Custom styling: component props first; else style/className with tokens — var(--color-*|--spacing-*|--radius-*). No raw hex/px. (No StyleX/Tailwind compiler here — don't use xstyle/utility classes.)");
   }
-  lines.push('- Tokens for every value (`astryx docs tokens`). Brand/accent via `astryx theme` — never override --color-* in :root.');
+  lines.push('- Tokens for every value (`astryx docs tokens`). Brand/accent belongs in the theme (`astryx theme list` / `theme add <slug>`, or `astryx init --features theme` for a custom one) — never override --color-* in :root.');
   // Self-check — post-generation pass. Validated via vibe tests (internal/vibe-tests/
   // prompt-purity-test): on complex multi-step UIs the rules above alone still leave raw
   // CSS in ~11-13% of runs; a re-read-and-fix pass cuts that ~4x at negligible token cost.

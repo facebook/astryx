@@ -21,7 +21,11 @@ export const docs = {
           type: 'code',
           lang: 'text',
           label: 'Paste this into your AI',
-          code: 'Install @astryxdesign/core, @stylexjs/stylex, @astryxdesign/theme-neutral, and @astryxdesign/cli in this project, then run `npx @astryxdesign/cli init` to set up agent docs. Read the generated files to learn the conventions.',
+          code: 'Install @astryxdesign/core, @stylexjs/stylex, @astryxdesign/theme-neutral, and @astryxdesign/cli in this project, then run `npx @astryxdesign/cli init` to set up agent docs. Read the generated files to learn the conventions. Then ask me what look and feel this app should have. Run `npx @astryxdesign/cli theme list` to see the themes you can start from, and `npx @astryxdesign/cli theme add <slug>` to copy one in as editable source; for something bespoke, run `npx @astryxdesign/cli init --features theme` and edit the annotated theme.template.ts it writes. If I have no preference, stay on neutral.',
+        },
+        {
+          type: 'prose',
+          text: 'The theme sentence matters for a new app. Every app gets a theme whether or not anyone chooses one, and the default is deliberately unopinionated, so an app that is never asked ships looking like the default. Asking once at setup costs one question; retrofitting a look later means revisiting screens that were built around the old one.',
         },
       ],
     },
