@@ -15,7 +15,7 @@ export const doc = {
   displayName: 'layoutGrammar()',
   summary: 'Return the XLE/XLO grammar cheatsheet for this install.',
   description:
-    'The reference behind `astryx layout grammar` — the agent cheatsheet for writing XLE/XLO ' +
+    'The reference behind `astryx layout grammar`: the agent cheatsheet for writing XLE/XLO ' +
     "layout expressions, with the alias table generated from this branch's registry rather than " +
     'hand-maintained, so short names always reflect the components actually installed.',
   importPath: '@astryxdesign/cli/api',

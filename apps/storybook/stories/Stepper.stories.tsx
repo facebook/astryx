@@ -1,12 +1,14 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {useState} from 'react';
+import * as stylex from '@stylexjs/stylex';
 import type {Meta, StoryObj} from '@storybook/react';
 import {Stepper, Step} from '@astryxdesign/lab/Stepper';
 import {TextInput} from '@astryxdesign/core/TextInput';
 import {Button} from '@astryxdesign/core/Button';
 import {Text} from '@astryxdesign/core/Text';
 import {Icon} from '@astryxdesign/core/Icon';
+import {Badge} from '@astryxdesign/core/Badge';
 
 const meta: Meta<typeof Stepper> = {
   title: 'Lab/Stepper',
@@ -914,6 +916,139 @@ export const OnTrackHorizontalManySteps: Story = {
         <Step step={5} label="Deploy" indicator="number" />
         <Step step={6} label="Monitor" indicator="number" />
       </Stepper>
+    );
+  },
+};
+
+// ============================================================
+// SLOTS & CUSTOMIZATION
+// ============================================================
+
+export const EndContent: Story = {
+  name: 'Slots — endContent (trailing badges)',
+  render: () => {
+    const [active, setActive] = useState(2);
+    return (
+      <div style={{maxWidth: 440}}>
+        <Stepper
+          activeStep={active}
+          orientation="vertical"
+          onStepClick={setActive}>
+          <Step
+            step={0}
+            label="Draft"
+            description="Written 2 days ago"
+            endContent={<Badge variant="success" label="Done" />}
+          />
+          <Step
+            step={1}
+            label="Review"
+            description="2 approvals required"
+            endContent={<Badge variant="info" label="2 pending" />}
+          />
+          <Step
+            step={2}
+            label="Publish"
+            description="Scheduled for Monday"
+            endContent={<Badge variant="warning" label="Blocked" />}
+          />
+          <Step step={3} label="Archive" />
+        </Stepper>
+      </div>
+    );
+  },
+};
+
+const xstyles = stylex.create({
+  padded: {
+    padding: 24,
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: 'var(--color-border)',
+    borderRadius: 'var(--radius-container)',
+  },
+});
+
+export const CustomXStyle: Story = {
+  name: 'Customization — xstyle + accessible label',
+  render: () => {
+    const [active, setActive] = useState(1);
+    return (
+      <div style={{maxWidth: 520}}>
+        <Stepper
+          activeStep={active}
+          orientation="horizontal"
+          onStepClick={setActive}
+          label="Checkout progress"
+          xstyle={xstyles.padded}>
+          <Step step={0} label="Cart" indicator="number" />
+          <Step step={1} label="Shipping" indicator="number" />
+          <Step step={2} label="Payment" indicator="number" />
+          <Step step={3} label="Confirm" indicator="number" />
+        </Stepper>
+      </div>
+    );
+  },
+};
+
+export const CollapseLabelsWhenNarrow: Story = {
+  name: 'Responsive — Collapse Labels When Narrow',
+  render: () => {
+    const [active, setActive] = useState(2);
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: 32}}>
+        <div>
+          <Text type="label">Wide (labels shown)</Text>
+          <div style={{width: 640}}>
+            <Stepper
+              activeStep={active}
+              orientation="horizontal"
+              hasCollapsibleLabels
+              onStepClick={setActive}>
+              <Step step={0} label="Cart" indicator="number" />
+              <Step step={1} label="Shipping" indicator="number" />
+              <Step step={2} label="Payment" indicator="number" />
+              <Step step={3} label="Review" indicator="number" />
+              <Step step={4} label="Confirm" indicator="number" />
+            </Stepper>
+          </div>
+        </div>
+        <div>
+          <Text type="label">
+            Narrow (only the current step keeps its label)
+          </Text>
+          <div style={{width: 360}}>
+            <Stepper
+              activeStep={active}
+              orientation="horizontal"
+              hasCollapsibleLabels
+              onStepClick={setActive}>
+              <Step step={0} label="Cart" indicator="number" />
+              <Step step={1} label="Shipping" indicator="number" />
+              <Step step={2} label="Payment" indicator="number" />
+              <Step step={3} label="Review" indicator="number" />
+              <Step step={4} label="Confirm" indicator="number" />
+            </Stepper>
+          </div>
+        </div>
+        <div>
+          <Text type="label">Narrow, on-track</Text>
+          <div style={{width: 320}}>
+            <Stepper
+              activeStep={active}
+              orientation="horizontal"
+              indicatorPosition="on-track"
+              hasCollapsibleLabels
+              onStepClick={setActive}>
+              <Step step={0} label="Cart" indicator="number" />
+              <Step step={1} label="Shipping" indicator="number" />
+              <Step step={2} label="Payment" indicator="number" />
+              <Step step={3} label="Review" indicator="number" />
+              <Step step={4} label="Confirm" indicator="number" />
+            </Stepper>
+          </div>
+        </div>
+      </div>
     );
   },
 };

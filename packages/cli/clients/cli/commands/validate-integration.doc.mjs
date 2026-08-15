@@ -16,8 +16,8 @@ export const doc = {
   namespace: 'cli',
   summary: 'Validate an Astryx integration package (manifest + contributions)',
   description:
-    'Validates ONE integration at a time — the local package rooted at cwd, or an ' +
-    'installed package resolved by name — schema-checking its manifest, verifying each ' +
+    'Validates ONE integration at a time: the local package rooted at cwd, or an ' +
+    'installed package resolved by name, schema-checking its manifest, verifying each ' +
     'declared contribution root, and reporting every finding. Safe as a CI gate.',
   fn: 'validateIntegration',
   args: [{name: 'package', param: 'pkg', required: false}],

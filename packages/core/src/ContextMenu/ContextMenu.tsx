@@ -71,7 +71,7 @@ import {useTranslator} from '../i18n';
 import type {
   DropdownMenuOption,
   DropdownMenuItemData,
-  DropdownMenuDivider,
+  DropdownMenuDividerData,
   DropdownMenuSection,
 } from '../DropdownMenu/DropdownMenu';
 
@@ -128,7 +128,7 @@ const styles = stylex.create({
 
 export type ContextMenuItemData = DropdownMenuItemData;
 
-export type ContextMenuDivider = DropdownMenuDivider;
+export type ContextMenuDividerData = DropdownMenuDividerData;
 
 export type ContextMenuSection = DropdownMenuSection;
 
@@ -466,9 +466,9 @@ export function ContextMenu({
     <>
       <div
         ref={mergeRefs(ref, triggerRef)}
+        {...triggerProps}
         onContextMenu={handleContextMenu}
         {...longPressHandlers}
-        {...triggerProps}
         data-testid={testId}
         {...stylex.props(
           styles.trigger,

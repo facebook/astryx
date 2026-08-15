@@ -443,25 +443,21 @@ jobs:
           path: a11y-report.json
           retention-days: 1
 
-  # RTL semantic audit. Sibling to pr-a11y: where pr-a11y runs the a11y audit
-  # over the built Storybook, pr-rtl runs the RTL audit. It grades components by
-  # comparing their LTR vs RTL render in the same run — no golden screenshots.
-  # Two layers:
-  #   (A) auto-discovery — D1 (icon-mirror) over EVERY core-* story, detecting
-  #       directional icons generically so a NEW component that ships a
-  #       directional glyph without RTL handling is caught automatically.
-  #   (B) curated precision — D2/D3/D4 (order/behavior/overlay) from targets.json.
+  # RTL semantic audit. Sibling to pr-a11y: same build-storybook artifact, same
+  # analysis.json scoping, so a PR only pays for the components it touched.
+  # Unscoped this swept ~1400 stories and took ~26 min. The full sweep that
+  # covers untouched components runs in rtl-weekly.yml.
   #
-  # SOFT / NON-BLOCKING (continue-on-error): a finding surfaces a scorecard in
-  # the job summary but does NOT block the merge. This is intentional — on
-  # current main, auto-discovery legitimately flags the components RTL hasn't
-  # reached yet (labelled [known] via known-not-rtl.json). The suite is observed
-  # for flake over a stability window before it is promoted to a required check.
-  # To promote: drop continue-on-error here and add `pr-rtl` to required checks.
-  # See apps/storybook/rtl-audit/README.md.
+  # Two layers: (A) auto-discovery — D1 icon-mirror + D5 positional-mirror, no
+  # curated selectors; (B) curated D2/D3/D4 from targets.json.
+  #
+  # SOFT / NON-BLOCKING (continue-on-error): findings surface a scorecard in the
+  # job summary but don't block the merge, while the suite is observed for
+  # flake. To promote: drop continue-on-error and add `pr-rtl` to required
+  # checks. See apps/storybook/rtl-audit/README.md.
   pr-rtl:
-    needs: [build-storybook]
-    if: github.event_name == 'pull_request'
+    needs: [build-storybook, check-components]
+    if: github.event_name == 'pull_request' && needs.check-components.outputs.has_components == 'true'
     runs-on: 2-core-ubuntu-arm
     continue-on-error: true
     permissions:
@@ -475,6 +471,11 @@ jobs:
         with:
           install: 'false'
 
+      - name: Download analysis artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: pr-analysis
+
       - name: Download Storybook artifact
         uses: actions/download-artifact@v8
         with:
@@ -484,18 +485,33 @@ jobs:
       - name: Install Playwright
         run: pnpm install --frozen-lockfile && npx playwright install chromium
 
+      # An empty --filter means "audit everything", so guard the empty case:
+      # has_components can be true while analysis.json resolves to no
+      # components (the two compute component-ness differently).
       - name: Run RTL audit
         id: rtl
         run: |
+          COMPONENTS=$(jq -r '(.newComponents + .modifiedComponents) | join(",")' analysis.json)
+          if [ -z "$COMPONENTS" ]; then
+            echo "No component changes resolved from analysis.json — skipping RTL audit."
+            echo "ran=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "Auditing components: $COMPONENTS"
+          echo "ran=true" >> "$GITHUB_OUTPUT"
+          echo "components=$COMPONENTS" >> "$GITHUB_OUTPUT"
           node apps/storybook/rtl-audit/rtl-audit.mjs \
             --storybook-dir apps/storybook/dist \
-            --output rtl-audit-report.json
+            --output rtl-audit-report.json \
+            --filter "$COMPONENTS"
 
       - name: Write scorecard summary
-        if: always()
+        if: always() && steps.rtl.outputs.ran == 'true'
         run: |
           {
             echo "## RTL semantic audit"
+            echo ""
+            echo "Scoped to the components this PR touches: **${{ steps.rtl.outputs.components }}**. The full unfiltered sweep runs weekly — see \`rtl-weekly.yml\`."
             echo ""
             echo "Relationship-based (LTR vs RTL in the same run) — no golden screenshots. **Soft-gated** pending a stability window."
             echo ""
@@ -543,10 +559,6 @@ jobs:
                       if (!(c.fails || []).length) out.push(`| ${c.storyId} | (error) | — | — | ${(c.notes||[]).join("; ")} |`);
                     }
                     out.push("");
-                    if (pm.knownRealPending && pm.knownRealPending.length) {
-                      out.push("> **Known real bug pending a fix branch:** " + pm.knownRealPending.join("; ") + ". This is a genuine RTL bug on `main`, not a false positive — it clears once that branch lands. Soft-gate = non-blocking.");
-                      out.push("");
-                    }
                   } else {
                     out.push("_No positional-mirror FAILs._");
                     out.push("");
@@ -568,7 +580,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload RTL audit report
-        if: always()
+        if: always() && steps.rtl.outputs.ran == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: rtl-audit-report

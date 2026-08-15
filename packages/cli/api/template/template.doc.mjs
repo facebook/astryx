@@ -17,7 +17,7 @@ export const doc = {
     'One entry point for the template family: with no name it lists the discovered ' +
     "templates; with a name it returns that template's source, a layout skeleton, or " +
     'scaffolds it into the project. Templates are discovered across core, external ' +
-    'packages, and integrations, so the same id can appear in more than one place — ' +
+    'packages, and integrations, so the same id can appear in more than one place; ' +
     'narrow an ambiguous name with type and/or package.',
   importPath: '@astryxdesign/cli/api',
   signature:
@@ -110,7 +110,7 @@ export const doc = {
     },
     {
       code: 'ERR_AMBIGUOUS_TEMPLATE',
-      when: 'the name matches more than one template across kinds/packages — narrow it with type and/or package',
+      when: 'the name matches more than one template across kinds/packages; narrow it with type and/or package',
     },
     {
       code: 'ERR_NO_SOURCE',

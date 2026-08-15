@@ -65,6 +65,27 @@ describe('Avatar', () => {
     expect(icon?.querySelector('svg')).not.toBeNull();
   });
 
+  it('puts the avatar box on the element that carries the theme target', () => {
+    // T7: `.astryx-avatar` documents a `size` visual prop, so the width and
+    // height that prop selects on must live on the targeted element — a theme
+    // rule that resizes the target has to resize the whole avatar, not leave a
+    // fixed-size circle inside a grown box.
+    render(<Avatar name="Ada Lovelace" size="lg" data-testid="a" />);
+    const root = screen.getByTestId('a');
+    expect(root.className).toContain('astryx-avatar');
+    const rootStyle = root.getAttribute('style') ?? '';
+    expect(rootStyle).toContain('48px');
+
+    const content = root.firstElementChild as HTMLElement;
+    expect(content.getAttribute('style') ?? '').not.toContain('48px');
+  });
+
+  it('keeps the box on the root for an interactive avatar too', () => {
+    render(<Avatar name="Ada" size="lg" href="/ada" />);
+    const link = screen.getByRole('link', {name: 'Ada'});
+    expect(link.getAttribute('style') ?? '').toContain('48px');
+  });
+
   it('does not split an emoji surrogate pair when generating initials', () => {
     render(<Avatar name="😀 Ada" data-testid="avatar" />);
     expect(screen.getByTestId('avatar')).toHaveTextContent('😀A');
@@ -186,6 +207,36 @@ describe('Avatar', () => {
       const el = screen.getByTestId('a');
       expect(el).toHaveAttribute('aria-hidden', 'true');
       expect(el).not.toHaveAttribute('aria-label');
+    });
+  });
+
+  describe('a whitespace-only name carries no identity', () => {
+    it('falls through to the default icon instead of an empty plate', () => {
+      render(<Avatar name="   " data-testid="a" />);
+      const el = screen.getByTestId('a');
+      expect(el.querySelector('svg')).not.toBeNull();
+      expect(el).toHaveTextContent('');
+    });
+
+    it('is decorative rather than a role="img" with a blank name', () => {
+      render(<Avatar name="   " data-testid="a" />);
+      const el = screen.getByTestId('a');
+      expect(el).toHaveAttribute('aria-hidden', 'true');
+      expect(el).not.toHaveAttribute('aria-label');
+    });
+
+    it('keeps a meaningful alt as the accessible name and still shows the icon', () => {
+      render(<Avatar name="   " alt="Profile photo" data-testid="a" />);
+      const el = screen.getByRole('img', {name: 'Profile photo'});
+      expect(el).toBe(screen.getByTestId('a'));
+      expect(el.querySelector('svg')).not.toBeNull();
+    });
+
+    it('treats a whitespace-only alt the same way', () => {
+      render(<Avatar alt="  " name="Ada Lovelace" data-testid="a" />);
+      expect(
+        screen.getByRole('img', {name: 'Ada Lovelace'}),
+      ).toBeInTheDocument();
     });
   });
 

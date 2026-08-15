@@ -257,7 +257,7 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-time-input', visualProps: ['size', 'status']},
+      {className: 'astryx-time-input', visualProps: ['size', 'status'], states: ['disabled']},
     ],
   },
 };
@@ -406,7 +406,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-time-input', visualProps: ['size', 'status']},
+      {className: 'astryx-time-input', visualProps: ['size', 'status'], states: ['disabled']},
     ],
   },
   usage: {

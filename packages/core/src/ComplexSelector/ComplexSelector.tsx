@@ -42,6 +42,8 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
+import {composeEventHandlers} from '../utils/composeEventHandlers';
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 
@@ -97,25 +99,28 @@ const styles = stylex.create({
   placeholder: {
     color: colorVars['--color-text-secondary'],
   },
+  // Only what Icon does not already provide: `sm` gives the 16px box and
+  // `color="secondary"` the color, but the glyph still must not shrink inside
+  // the flex trigger.
   triggerIcon: {
     flexShrink: 0,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 16,
-    height: 16,
+  },
+  // Rotation lives on the chevron glyph itself (passed through `xstyle`), not
+  // on the layout wrapper above, so the icon's
+  // `complex-selector-indicator-icon` theme target and the open/closed
+  // transform sit on one element — a theme can restyle the mark and its
+  // rotation through a single selector. The wrapper keeps only layout.
+  triggerIconRotation: {
     transitionProperty: 'transform',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
     transformOrigin: 'center',
-    color: colorVars['--color-icon-secondary'],
   },
   triggerIconOpen: {
     transform: 'rotate(180deg)',
   },
   popover: {
     minWidth: 'anchor-size(width)',
-    marginBlockStart: spacingVars['--spacing-1'],
   },
   content: {
     boxSizing: 'border-box',
@@ -134,12 +139,6 @@ const styles = stylex.create({
   },
   disabled: {
     cursor: 'not-allowed',
-  },
-  focusRing: {
-    ':focus-within': {
-      outline: `2px solid ${colorVars['--color-accent']}`,
-      outlineOffset: '2px',
-    },
   },
 });
 
@@ -266,6 +265,7 @@ export function ComplexSelector<Value>({
   className,
   style,
   'data-testid': testId,
+  onClick: onClickProp,
   ...props
 }: ComplexSelectorProps<Value>) {
   const t = useTranslator();
@@ -292,6 +292,11 @@ export function ComplexSelector<Value>({
     dialogLabel: label,
     hasCloseButton: false,
     hasAutoFocus: true,
+    // The popup's theme target belongs on the SURFACE — the element painting
+    // background, radius and elevation — which `usePopover` owns. Rendered on
+    // the content box below it, a theme's background or radius rule paints the
+    // wrong box.
+    surfaceTarget: 'complex-selector-popup',
     onHide: () => {
       document.getElementById(triggerId)?.focus();
     },
@@ -329,11 +334,11 @@ export function ComplexSelector<Value>({
         ref={popover.triggerRef}
         data-testid={testId}
         {...props}
-        onClick={() => {
+        onClick={composeEventHandlers(onClickProp, () => {
           if (!isDisabled) {
             popover.toggle();
           }
-        }}
+        })}
         {...mergeProps(
           themeProps('complex-selector', {
             size,
@@ -343,7 +348,11 @@ export function ComplexSelector<Value>({
             inputWrapperStyles.base,
             styles.triggerContainer,
             styles[size],
-            styles.focusRing,
+            // The ring belongs to the wrapper (the focusable `<button>` sits
+            // inside it), but it must still be a KEYBOARD ring: `:focus-within`
+            // matched a mouse click on the trigger and drew the outline for
+            // pointer users too. `focusWithin` here is `:has(:focus-visible)`.
+            focusOutlineStyles.focusWithin,
             isDisabled && inputWrapperStyles.disabled,
             isDisabled && styles.disabled,
             triggerLabel == null && styles.placeholder,
@@ -374,25 +383,29 @@ export function ComplexSelector<Value>({
           <span {...stylex.props(styles.triggerText)}>{triggerContent}</span>
         </button>
         {isBusy && <Spinner size="sm" />}
-        <span
-          {...stylex.props(
+        <Icon
+          icon="chevronDown"
+          size="sm"
+          color="secondary"
+          // No wrapper: Icon's own span already provides the 16px box (`sm`)
+          // and the secondary icon color the wrapper used to set, so the glyph
+          // IS the trigger's icon element — one node carrying the box, the
+          // color, the rotation, and the theme target.
+          xstyle={[
             styles.triggerIcon,
+            styles.triggerIconRotation,
             popover.isOpen && styles.triggerIconOpen,
-          )}>
-          <Icon
-            icon="chevronDown"
-            size="sm"
-            color="inherit"
-            {...themeProps('complex-selector-indicator-icon', {
-              state: popover.isOpen ? 'expanded' : 'collapsed',
-            })}
-          />
-        </span>
+          ]}
+          {...themeProps('complex-selector-indicator-icon', {
+            state: popover.isOpen ? 'expanded' : 'collapsed',
+          })}
+        />
       </div>
 
       {popover.render(content, {
         placement,
         alignment: 'start',
+        offset: spacingVars['--spacing-1'],
         xstyle: [styles.popover, layerAnimations[placement]],
       })}
     </>

@@ -106,6 +106,27 @@ describe('ComplexSelector', () => {
     );
   });
 
+  it('gives the popup clearance on both block edges, not just the leading one (#4803)', async () => {
+    const user = userEvent.setup();
+    render(
+      <FruitComplexSelector
+        value={{fruit: 'Apple', ripeness: 'Ripe'}}
+        onChange={() => {}}
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit blend'}));
+    const popup = document.querySelector('[popover]') as HTMLElement;
+    expect(popup).not.toBeNull();
+    // Both edges, not just the leading one: the trailing edge is what faces
+    // the trigger when the same popup opens upward (placement="above") or is
+    // flipped by position-try-fallbacks. useLayer's `offset` sets both from
+    // the resolved placement; jsdom resolves neither the var indirection nor
+    // logical margins, so read the debug-mode declarations it emits.
+    const blockStart = popup.style.getPropertyValue('--x-marginBlockStart');
+    expect(blockStart).not.toBe('');
+    expect(popup.style.getPropertyValue('--x-marginBlockEnd')).toBe(blockStart);
+  });
+
   it('runs changeAction through the provided onChange helper', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
@@ -152,5 +173,57 @@ describe('ComplexSelector', () => {
 
     await user.click(screen.getByRole('button', {name: 'Done', ...h}));
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+});
+
+describe('ComplexSelector popup theme target', () => {
+  it('puts astryx-complex-selector-popup on the surface that paints, not the content box', async () => {
+    const user = userEvent.setup();
+    render(
+      <ComplexSelector label="Fruit blend" value="Apple" triggerLabel="Apple">
+        {() => <button type="button">Done</button>}
+      </ComplexSelector>,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit blend'}));
+
+    const popup = document.querySelector(
+      '.astryx-complex-selector-popup',
+    ) as HTMLElement;
+    expect(popup).not.toBeNull();
+
+    // The surface is the element usePopover renders: it carries the dialog
+    // role and the shared surface class, and the component's content box —
+    // the one with the padding and the scroll — sits INSIDE it. A target on
+    // that inner box cannot paint the popup's background or radius, which is
+    // what a theme reaches for this class to do.
+    expect(popup).toHaveAttribute('role', 'dialog');
+    expect(popup).toHaveClass('astryx-popover-surface');
+    expect(popup.querySelector('[id]')).not.toBeNull();
+    expect(popup).toContainElement(
+      screen.getByRole('button', {name: 'Done', ...h}),
+    );
+
+    // And it is not the bare positioning layer either.
+    const layer = document.querySelector('[popover]') as HTMLElement;
+    expect(popup).not.toBe(layer);
+    expect(layer.contains(popup)).toBe(true);
+  });
+
+  it('keeps the target when the consumer also passes contentXstyle', async () => {
+    const user = userEvent.setup();
+    render(
+      <ComplexSelector
+        label="Fruit blend"
+        value="Apple"
+        triggerLabel="Apple"
+        contentXstyle={{}}>
+        {() => <button type="button">Done</button>}
+      </ComplexSelector>,
+    );
+    await user.click(screen.getByRole('button', {name: 'Fruit blend'}));
+
+    expect(
+      document.querySelector('.astryx-complex-selector-popup'),
+    ).not.toBeNull();
   });
 });

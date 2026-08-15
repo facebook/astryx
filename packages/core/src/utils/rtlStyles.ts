@@ -4,8 +4,8 @@
  * @file rtlStyles.ts
  * @input None
  * @output Shared StyleX style that horizontally mirrors an element under RTL
- * @position Core utility; applied to directional-icon wrappers in Calendar,
- *   Lightbox, and the Table expand/disclosure plugins
+ * @position Core utility; applied to directional icons in Calendar, Lightbox,
+ *   Pagination, Carousel and the Table expand/disclosure plugins
  *
  * `mirror` flips its element on the horizontal axis only when an ancestor
  * carries `dir="rtl"`. Using `scaleX(-1)` (not `scale(-1, -1)`) keeps the

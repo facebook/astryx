@@ -2,6 +2,7 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
+import {useState} from 'react';
 import {useContainerReveal} from '@astryxdesign/core/hooks';
 import {Button} from '@astryxdesign/core/Button';
 import {mergeProps} from '@astryxdesign/core/utils';
@@ -32,6 +33,7 @@ const styles = stylex.create({
   label: {fontSize: 14},
   actions: {display: 'flex', gap: 4},
   hint: {fontSize: 12, color: '#888', marginBottom: 8},
+  toggle: {marginBottom: 8},
   nested: {
     marginTop: 8,
     marginInlineStart: 24,
@@ -51,7 +53,8 @@ function RevealRow({label}: {label: string}) {
   return (
     <div {...mergeProps(getContainerProps(), stylex.props(styles.row))}>
       <span {...stylex.props(styles.label)}>{label}</span>
-      <span {...mergeProps(getContentRevealProps(), stylex.props(styles.actions))}>
+      <span
+        {...mergeProps(getContentRevealProps(), stylex.props(styles.actions))}>
         <Button
           label={`Edit ${label}`}
           variant="ghost"
@@ -80,8 +83,8 @@ export const Reveal: Story = {
   render: () => (
     <div {...stylex.props(styles.stack)}>
       <p {...stylex.props(styles.hint)}>
-        Hover a row — or press Tab to focus into it — to reveal its actions.
-        On touch devices the actions are always visible.
+        Hover a row — or press Tab to focus into it — to reveal its actions. On
+        touch devices the actions are always visible.
       </p>
       <RevealRow label="report.pdf" />
       <RevealRow label="budget.xlsx" />
@@ -183,4 +186,68 @@ export const NestedIsolation: Story = {
       </div>
     </div>
   ),
+};
+
+/**
+ * A flat list of 20 rows. Sibling containers never nest, so every row can share
+ * the same reveal scope: hovering one row reveals only that row's actions, and
+ * mounting the list produces no console warnings.
+ */
+export const ManyRows: Story = {
+  render: () => (
+    <div {...stylex.props(styles.stack)}>
+      <p {...stylex.props(styles.hint)}>
+        Twenty rows on one page. Hover any row — including the last — to reveal
+        its actions.
+      </p>
+      {Array.from({length: 20}, (_, i) => (
+        <RevealRow
+          key={i}
+          label={`file-${String(i + 1).padStart(2, '0')}.txt`}
+        />
+      ))}
+    </div>
+  ),
+};
+
+/**
+ * `isEnabled` is read on every render: flipping it off removes the reveal
+ * styles and leaves the content permanently visible.
+ */
+export const ToggleEnabled: Story = {
+  render: () => {
+    function ToggleRow() {
+      const [isEnabled, setIsEnabled] = useState(true);
+      const {getContainerProps, getContentRevealProps} = useContainerReveal({
+        isEnabled,
+      });
+      return (
+        <div {...stylex.props(styles.stack)}>
+          <div {...stylex.props(styles.toggle)}>
+            <Button
+              label={isEnabled ? 'Reveal on hover' : 'Always visible'}
+              variant="secondary"
+              onClick={() => setIsEnabled(v => !v)}
+            />
+          </div>
+          <div {...mergeProps(getContainerProps(), stylex.props(styles.row))}>
+            <span {...stylex.props(styles.label)}>report.pdf</span>
+            <span
+              {...mergeProps(
+                getContentRevealProps(),
+                stylex.props(styles.actions),
+              )}>
+              <Button
+                label="Delete report.pdf"
+                variant="ghost"
+                isIconOnly
+                icon={<TrashIcon style={{width: 16, height: 16}} />}
+              />
+            </span>
+          </div>
+        </div>
+      );
+    }
+    return <ToggleRow />;
+  },
 };

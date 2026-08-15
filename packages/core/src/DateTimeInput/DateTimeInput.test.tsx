@@ -9,7 +9,7 @@
  * SYNC: When DateTimeInput.tsx changes, update tests to match new behavior
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {getButton, queryButton} from '../__tests__/fastRoleQueries';
@@ -17,6 +17,16 @@ import {DateTimeInput} from './DateTimeInput';
 import type {ISODateTimeString} from './DateTimeInput';
 import {defineTheme} from '../theme/defineTheme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
+import {InternationalizationProvider} from '../i18n';
+import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
+
+function politeRegion(): HTMLElement | null {
+  return document.querySelector('[data-astryx-live-region="polite"]');
+}
+
+afterEach(() => {
+  __resetLiveRegionsForTest();
+});
 
 function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
   const {prose, component} = generateThemeCSS(theme);
@@ -626,6 +636,35 @@ describe('DateTimeInput', () => {
 
       expect(screen.getByText('Invalid time')).toBeInTheDocument();
     });
+
+    it('resolves the invalid date and time announcements from the i18n catalog', () => {
+      render(
+        <InternationalizationProvider
+          locale="en"
+          overrides={{
+            en: {
+              '@astryx.dateInput.invalidDate': 'Ungültiges Datum',
+              '@astryx.timeInput.invalidTime': 'Ungültige Zeit',
+            },
+          }}>
+          <DateTimeInput
+            label="Meeting"
+            value={'2026-03-15T10:00' as ISODateTimeString}
+            onChange={() => {}}
+          />
+        </InternationalizationProvider>,
+      );
+
+      fireEvent.change(screen.getByRole('combobox'), {
+        target: {value: '13/45/2024'},
+      });
+      expect(screen.getByText('Ungültiges Datum')).toBeInTheDocument();
+
+      fireEvent.change(screen.getByLabelText('Meeting time'), {
+        target: {value: '99:99 zz'},
+      });
+      expect(screen.getByText('Ungültige Zeit')).toBeInTheDocument();
+    });
   });
   describe('disabledMessage', () => {
     // jsdom does not implement the Popover API used by the tooltip, so mock
@@ -819,6 +858,101 @@ describe('DateTimeInput', () => {
       expect(onChange).toHaveBeenCalledTimes(1);
       expect(onChange.mock.calls[0][0]).toContain('14:31');
     });
+
+    // Arrow-key stepping mutates a plain textbox programmatically, and screen
+    // readers do not announce programmatic textbox changes — the new value
+    // must be announced through the polite live region (WCAG 4.1.2).
+    it('politely announces the new time after ArrowUp stepping', async () => {
+      render(
+        <DateTimeInput
+          label="Meeting"
+          value={'2026-03-15T14:30' as ISODateTimeString}
+          onChange={() => {}}
+        />,
+      );
+
+      fireEvent.keyDown(screen.getByLabelText('Meeting time'), {
+        key: 'ArrowUp',
+      });
+
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('2:31 PM');
+      });
+    });
+
+    it('politely announces the new time after ArrowDown stepping', async () => {
+      render(
+        <DateTimeInput
+          label="Meeting"
+          value={'2026-03-15T14:30' as ISODateTimeString}
+          onChange={() => {}}
+        />,
+      );
+
+      fireEvent.keyDown(screen.getByLabelText('Meeting time'), {
+        key: 'ArrowDown',
+      });
+
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('2:29 PM');
+      });
+    });
+  });
+
+  describe('weekStartsOn', () => {
+    // The calendar popover renders in the top layer; jsdom keeps the content in
+    // the DOM but role queries skip it, so read the columnheaders directly.
+    const openAndReadWeekdays = (container: HTMLElement): (string | null)[] => {
+      fireEvent.keyDown(screen.getAllByRole('combobox')[0], {key: 'ArrowDown'});
+      return Array.from(container.querySelectorAll('[role="columnheader"]'))
+        .slice(0, 7)
+        .map(h => h.textContent);
+    };
+
+    it('defaults to a Sunday-first week', () => {
+      const {container} = render(
+        <DateTimeInput label="When" onChange={() => {}} />,
+      );
+      expect(openAndReadWeekdays(container)).toEqual([
+        'Su',
+        'Mo',
+        'Tu',
+        'We',
+        'Th',
+        'Fr',
+        'Sa',
+      ]);
+    });
+
+    it('forwards a numeric weekStartsOn to the calendar', () => {
+      const {container} = render(
+        <DateTimeInput label="When" onChange={() => {}} weekStartsOn={1} />,
+      );
+      expect(openAndReadWeekdays(container)).toEqual([
+        'Mo',
+        'Tu',
+        'We',
+        'Th',
+        'Fr',
+        'Sa',
+        'Su',
+      ]);
+    });
+
+    it('accepts a three-letter day name', () => {
+      const {container} = render(
+        <DateTimeInput label="When" onChange={() => {}} weekStartsOn="mon" />,
+      );
+      expect(openAndReadWeekdays(container)).toEqual([
+        'Mo',
+        'Tu',
+        'We',
+        'Th',
+        'Fr',
+        'Sa',
+        'Su',
+      ]);
+    });
   });
   // ===========================================================================
   // Segment theme targets (#4075)
@@ -929,5 +1063,24 @@ describe('DateTimeInput', () => {
       expect(css).toContain('block-size: var(--size-element-lg)');
       expect(css).toContain('padding-inline: var(--spacing-4)');
     });
+  });
+});
+
+describe('DateTimeInput disabled theme state', () => {
+  it('reflects disabled on the root target so themes can gate paint on it', () => {
+    const {container} = render(
+      <DateTimeInput label="Meeting" onChange={() => {}} isDisabled />,
+    );
+    const root = container.querySelector('.astryx-date-time-input');
+    expect(root).toHaveAttribute('data-disabled', 'disabled');
+    expect(root).toHaveClass('disabled');
+  });
+
+  it('omits data-disabled when enabled, like status does', () => {
+    const {container} = render(
+      <DateTimeInput label="Meeting" onChange={() => {}} />,
+    );
+    const root = container.querySelector('.astryx-date-time-input');
+    expect(root).not.toHaveAttribute('data-disabled');
   });
 });

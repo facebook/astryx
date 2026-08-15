@@ -13,8 +13,11 @@ import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {CheckboxInput} from './CheckboxInput';
+import {Theme} from '../theme/Theme';
+import {defineTheme} from '../theme/defineTheme';
 import {getForcedColorsRules} from '../__tests__/forcedColors';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
+import {FOCUS_OUTLINE_PARTS} from '../utils/focusOutline.stylex';
 
 afterEach(() => {
   __resetLiveRegionsForTest();
@@ -542,6 +545,38 @@ describe('CheckboxInput', () => {
       expect(data.get('terms')).toBe('on');
     });
 
+    it('does not block form submission when required and disabled with a disabledMessage', () => {
+      const {container} = render(
+        <form>
+          <CheckboxInput
+            label="Terms"
+            htmlName="terms"
+            value={false}
+            onChange={() => {}}
+            isRequired
+            isDisabled
+            disabledMessage="Terms are managed by your administrator"
+          />
+        </form>,
+      );
+      expect(container.querySelector('form')!.checkValidity()).toBe(true);
+    });
+
+    it('still blocks submission when required and unchecked but enabled', () => {
+      const {container} = render(
+        <form>
+          <CheckboxInput
+            label="Terms"
+            htmlName="terms"
+            value={false}
+            onChange={() => {}}
+            isRequired
+          />
+        </form>,
+      );
+      expect(container.querySelector('form')!.checkValidity()).toBe(false);
+    });
+
     it('is excluded from form data when disabled, even with a disabledMessage', () => {
       const {container} = render(
         <form>
@@ -597,5 +632,90 @@ describe('forced colors (WCAG 1.4.11)', () => {
     // white as the flattened box, so it needs its own CanvasText color to stay
     // perceivable on the Canvas box.
     expect(getForcedColorsRules()).toContain('color: canvastext;');
+  });
+});
+
+// The control's native input is `opacity: 0`, so the visible focus indicator
+// has to land on the indicator beside it — which is themeable, third-party
+// code. If drawing the ring were the indicator's job, a replacement that
+// simply doesn't would ship a control with no visible focus (WCAG 2.4.7), and
+// that is the default: our own sample replacement destructures
+// {state, size, isDisabled} and drops the rest.
+//
+// So the owner paints it, on the indicator's own element, at focus time. The
+// shape is right because `outline` follows that element's border-radius, and
+// no cooperation is required.
+describe('focus ring ownership (WCAG 2.4.7)', () => {
+  /** What a theme author plausibly writes: state in, picture out. */
+  const BareIndicator = ({state}: {state: string}) => (
+    <span aria-hidden="true" data-testid="bare-indicator">
+      {state === 'checked' ? 'x' : ''}
+    </span>
+  );
+
+  const bareTheme = defineTheme({
+    name: 'bare-indicator-theme',
+    indicators: {checkbox: BareIndicator},
+  });
+
+  /**
+   * The element the ring is painted on: the indicator slot's only child — the
+   * indicator's own root, whatever a theme renders there.
+   */
+  const indicatorOf = (container: HTMLElement) => {
+    const input = container.querySelector('input[type="checkbox"]');
+    const slot = input?.nextElementSibling;
+    return slot?.firstElementChild as HTMLElement;
+  };
+
+  const focusInput = (container: HTMLElement) => {
+    const input = container.querySelector(
+      'input[type="checkbox"]',
+    ) as HTMLInputElement;
+    // A keydown first, so jsdom's :focus-visible heuristic sees keyboard
+    // modality — the ring is deliberately keyboard-only, and a bare
+    // fireEvent.focus() reads as a pointer focus. Same approach as the
+    // TreeList focus test.
+    fireEvent.keyDown(document.body, {key: 'Tab'});
+    input.focus();
+    fireEvent.focus(input);
+    return input;
+  };
+
+  it('paints the ring on the built-in indicator', () => {
+    const {container} = render(
+      <CheckboxInput label="Accept" value={false} onChange={() => {}} />,
+    );
+    focusInput(container);
+    expect(indicatorOf(container).style.outlineStyle).toBe(
+      FOCUS_OUTLINE_PARTS.outlineStyle,
+    );
+  });
+
+  it('paints it on a replacement that forwards nothing', () => {
+    const {container} = render(
+      <Theme theme={bareTheme}>
+        <CheckboxInput label="Accept" value={false} onChange={() => {}} />
+      </Theme>,
+    );
+
+    // The replacement really took effect, and really is bare.
+    const replaced = screen.getByTestId('bare-indicator');
+    expect(replaced.className).toBe('');
+    // ...and it still gets a ring, because the owner drew it.
+    focusInput(container);
+    expect(replaced.style.outlineStyle).toBe(FOCUS_OUTLINE_PARTS.outlineStyle);
+  });
+
+  it('clears the ring on blur', () => {
+    const {container} = render(
+      <CheckboxInput label="Accept" value={false} onChange={() => {}} />,
+    );
+    const input = focusInput(container);
+    expect(indicatorOf(container).style.outlineStyle).toBe(
+      FOCUS_OUTLINE_PARTS.outlineStyle,
+    );
+    fireEvent.blur(input);
+    expect(indicatorOf(container).style.outlineStyle).toBe('');
   });
 });

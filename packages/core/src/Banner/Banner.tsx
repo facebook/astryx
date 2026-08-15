@@ -12,6 +12,9 @@
  * - Root container: layout-only wrapper (flex column), no visual styling, no theme target
  * - Header area (themeProps 'banner'): colored status background with icon, title, description, actions, dismiss
  * - Content area (themeProps 'banner-content'): collapsible card background for additional content (children)
+ * - Status icon (themeProps 'banner-icon'): the target rides on the default
+ *   <Icon> itself — the element that paints — so 'status:X' overrides reach
+ *   the glyph (#4166); for a custom `icon` node it stays on the layout wrapper
  * - No left border accent — color is expressed through the full header background
  * - Each visual area owns its own border-radius (no overflow:clip on the container)
  * - When children are provided, a collapse/expand toggle button appears in the end area
@@ -271,8 +274,9 @@ const styles = stylex.create({
     borderEndStartRadius: radiusVars['--radius-container'],
     borderEndEndRadius: radiusVars['--radius-container'],
   },
+  // Applied to the chevron <Icon> itself (via `xstyle`) rather than a wrapper,
+  // so the element that rotates is the element a theme targets.
   chevron: {
-    display: 'inline-flex',
     transitionProperty: 'transform',
     transitionDuration: {
       default: durationVars['--duration-fast'],
@@ -444,16 +448,32 @@ export function Banner({
                 : styles.headerCardStandalone),
           ),
         )}>
+        {/* The 'banner-icon' target rides on the element that paints: the
+            default <Icon> below, or this wrapper when a custom `icon` node
+            is passed (core never injects props into consumer elements, so
+            overrides reach it via inheritance). The wrapper itself stays
+            layout-only. */}
         <div
-          {...mergeProps(
-            themeProps('banner-icon', {status}),
-            stylex.props(styles.iconWrapper),
-          )}
+          {...(icon != null
+            ? mergeProps(
+                themeProps('banner-icon', {status}),
+                stylex.props(styles.iconWrapper),
+              )
+            : stylex.props(styles.iconWrapper))}
           aria-hidden="true">
           {icon != null ? (
             icon
           ) : (
-            <Icon icon={defaultIconName} size="md" color={iconColor} />
+            // Applied to the status <Icon> itself rather than the wrapper, so
+            // the element that paints the glyph is the element a theme
+            // targets — a 'banner-icon' 'status:X' color override beats the
+            // Icon's own variant from @layer astryx-theme (#4166).
+            <Icon
+              icon={defaultIconName}
+              size="md"
+              color={iconColor}
+              {...themeProps('banner-icon', {status})}
+            />
           )}
         </div>
         <div {...stylex.props(styles.headerContent)}>
@@ -484,13 +504,15 @@ export function Banner({
                     : t('@astryx.banner.expand')
                 }
                 icon={
-                  <span
-                    {...stylex.props(
+                  <Icon
+                    icon="chevronDown"
+                    size="sm"
+                    color="inherit"
+                    xstyle={[
                       styles.chevron,
                       isExpanded && styles.chevronExpanded,
-                    )}>
-                    <Icon icon="chevronDown" size="sm" color="inherit" />
-                  </span>
+                    ]}
+                  />
                 }
                 onClick={handleToggleExpand}
                 aria-expanded={isExpanded}

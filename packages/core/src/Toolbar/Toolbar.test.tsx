@@ -72,11 +72,11 @@ describe('Toolbar', () => {
     expect(screen.getByTestId('end')).toBeInTheDocument();
 
     // Three-slot layout produces 3 child divs (plus the aria-hidden
-    // keyboard-hint popover, which is excluded here as an implementation detail)
+    // keyboard-hint layer infrastructure, excluded as an implementation detail)
     const toolbar = screen.getByRole('toolbar');
-    expect(toolbar.querySelectorAll(':scope > :not([popover])')).toHaveLength(
-      3,
-    );
+    expect(
+      toolbar.querySelectorAll(':scope > :not([popover]):not(template)'),
+    ).toHaveLength(3);
   });
 
   it('renders two-slot layout without centerContent', () => {
@@ -91,11 +91,11 @@ describe('Toolbar', () => {
     expect(screen.getByTestId('end')).toBeInTheDocument();
 
     // Two-slot layout produces 2 child divs (plus the aria-hidden
-    // keyboard-hint popover, excluded here)
+    // keyboard-hint layer infrastructure, excluded here)
     const toolbar = screen.getByRole('toolbar');
-    expect(toolbar.querySelectorAll(':scope > :not([popover])')).toHaveLength(
-      2,
-    );
+    expect(
+      toolbar.querySelectorAll(':scope > :not([popover]):not(template)'),
+    ).toHaveLength(2);
   });
 
   it('renders start-only layout', () => {
@@ -107,9 +107,9 @@ describe('Toolbar', () => {
     );
     expect(screen.getByTestId('start')).toBeInTheDocument();
     const toolbar = screen.getByRole('toolbar');
-    expect(toolbar.querySelectorAll(':scope > :not([popover])')).toHaveLength(
-      1,
-    );
+    expect(
+      toolbar.querySelectorAll(':scope > :not([popover]):not(template)'),
+    ).toHaveLength(1);
   });
 
   it('renders end-only layout', () => {
@@ -121,9 +121,9 @@ describe('Toolbar', () => {
     );
     expect(screen.getByTestId('end')).toBeInTheDocument();
     const toolbar = screen.getByRole('toolbar');
-    expect(toolbar.querySelectorAll(':scope > :not([popover])')).toHaveLength(
-      1,
-    );
+    expect(
+      toolbar.querySelectorAll(':scope > :not([popover]):not(template)'),
+    ).toHaveLength(1);
   });
 
   it('sets aria-orientation to horizontal by default', () => {

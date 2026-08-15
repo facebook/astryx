@@ -14,7 +14,7 @@ export const doc = {
   displayName: 'ReferenceDoc',
   namespace: 'authoring',
   description:
-    'The doc-type for a reference/topic doc — tokens, principles, theming, patterns, ' +
+    'The doc-type for a reference/topic doc: tokens, principles, theming, patterns, ' +
     'accessibility, migration guides. Unlike ComponentDoc it is not tied to a component: ' +
     'drop a `.doc.mjs` in the docs directory and it shows up in `astryx docs`. Content is ' +
     'built from ordered sections of mixed content blocks.',
@@ -120,7 +120,7 @@ export const docs = {
   notes: [
     {
       type: 'prose',
-      text: 'Each `sections[].content` is an ordered array of ReferenceContentBlock — a discriminated union. New block types can be added without breaking existing docs. The same union is reused by the `notes` field on SchemaDoc and CommandDoc.',
+      text: 'Each `sections[].content` is an ordered array of ReferenceContentBlock, a discriminated union. New block types can be added without breaking existing docs. The same union is reused by the `notes` field on SchemaDoc and CommandDoc.',
     },
     {
       type: 'code',
@@ -140,7 +140,7 @@ export const docs = {
     },
     {
       type: 'prose',
-      text: "A section may set `previewType` to render a visual preview column for token tables — one of 'swatch' | 'shadow-box' | 'radius-box' | 'spacing-bar' | 'size-bar' | 'border-line' | 'duration-bar' | 'easing-curve' | 'font-sample'.",
+      text: "A section may set `previewType` to render a visual preview column for token tables: one of 'swatch' | 'shadow-box' | 'radius-box' | 'spacing-bar' | 'size-bar' | 'border-line' | 'duration-bar' | 'easing-curve' | 'font-sample'.",
     },
   ],
 };

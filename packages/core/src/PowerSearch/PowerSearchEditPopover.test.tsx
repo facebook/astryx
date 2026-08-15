@@ -283,4 +283,46 @@ describe('PowerSearch', () => {
     // onSave should NOT be called because the event was already consumed (defaultPrevented)
     expect(onSave).not.toHaveBeenCalled();
   });
+
+  it('does not save/close on a composing Enter while typing a filter value (#4828)', () => {
+    const onSave = vi.fn();
+    const onCancel = vi.fn();
+
+    function StringValueHarness() {
+      const internalConfig = useInternalConfig(testConfig);
+      return (
+        <PowerSearchEditPopover
+          config={internalConfig}
+          filter={{
+            field: 'status',
+            operator: 'is',
+            value: {type: 'string', value: '한국어'},
+          }}
+          mode="edit"
+          onSave={onSave}
+          onCancel={onCancel}
+        />
+      );
+    }
+
+    const {container} = render(<StringValueHarness />);
+    const input = container.querySelector('input');
+    expect(input).not.toBeNull();
+
+    // Same composing-Enter signal as BaseTypeahead's guard: isComposing
+    // (modern) or legacy keyCode 229. An IME commits its composition on
+    // Enter too, so this keydown must not also close/save the popover.
+    // handleKeyDown is bound on an ancestor container div, so the keydown
+    // reaches it the same way it would from any real input inside — same
+    // dispatch mechanism the sibling defaultPrevented test above uses.
+    fireEvent.keyDown(input!, {key: 'Enter', isComposing: true});
+    expect(onSave).not.toHaveBeenCalled();
+
+    fireEvent.keyDown(input!, {key: 'Enter', keyCode: 229});
+    expect(onSave).not.toHaveBeenCalled();
+
+    // A real, non-composing Enter still saves normally.
+    fireEvent.keyDown(input!, {key: 'Enter'});
+    expect(onSave).toHaveBeenCalledTimes(1);
+  });
 });

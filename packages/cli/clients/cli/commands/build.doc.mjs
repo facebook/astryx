@@ -17,7 +17,7 @@ export const doc = {
     'Build a page: composition kit for an idea, or the workflow playbook (no args)',
   description:
     'The assemble-a-page entry point. With no query it returns the how-to-build-a-page ' +
-    'playbook; with a query it groups the unified search hits into a composition kit — ' +
+    'playbook; with a query it groups the unified search hits into a composition kit: ' +
     'the closest templates, drop-in blocks, and idea-specific components and hooks.',
   fn: 'build',
   args: [{name: 'query', param: 'query', required: false}],

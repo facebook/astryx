@@ -36,6 +36,7 @@ import {
 } from '../theme/tokens.stylex';
 import {
   Field,
+  InputClearButton,
   type InputStatus,
   inputWrapperStyles,
   inputStatusBorderStyles,
@@ -45,7 +46,13 @@ import {
 } from '../Field';
 import {Icon} from '../Icon';
 import {Spinner} from '../Spinner';
-import {Calendar, type ISODateString, type DateRange} from '../Calendar';
+import {
+  Calendar,
+  type ISODateString,
+  type DateRange,
+  type DayOfWeek,
+  type DayOfWeekName,
+} from '../Calendar';
 import {usePopover} from '../Popover';
 import {useTooltip} from '../Tooltip';
 import {mergeProps} from '../utils';
@@ -54,6 +61,8 @@ import type {SizeValue} from '../utils/types';
 import {useSize} from '../SizeContext/SizeContext';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
+import {stableClassName} from '../naming';
 import {useTranslator} from '../i18n';
 
 export type {DateRange} from '../Calendar';
@@ -110,11 +119,6 @@ const styles = stylex.create({
     backgroundColor: 'transparent',
     cursor: 'pointer',
     borderRadius: radiusVars['--radius-element'],
-    outline: {
-      default: 'none',
-      ':focus-visible': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: 1,
   },
   iconButtonDisabled: {
     cursor: 'not-allowed',
@@ -152,10 +156,6 @@ const styles = stylex.create({
     color: colorVars['--color-text-primary'],
     cursor: 'pointer',
     textAlign: 'start',
-    outline: {
-      default: 'none',
-      ':focus-visible': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
-    },
   },
   presetButtonActive: {
     backgroundColor: colorVars['--color-accent-muted'],
@@ -355,6 +355,14 @@ export interface DateRangeInputProps extends Omit<
    * @default 2
    */
   numberOfMonths?: 1 | 2;
+
+  /**
+   * First day of week in the calendar. Accepts a number
+   * (0 = Sunday … 6 = Saturday) or a three-letter day name ('sun'–'sat',
+   * case-insensitive).
+   * @default 0
+   */
+  weekStartsOn?: DayOfWeek | DayOfWeekName;
 }
 
 /**
@@ -396,6 +404,7 @@ export function DateRangeInput({
   statusVariant = 'attached',
   labelTooltip,
   numberOfMonths = 2,
+  weekStartsOn,
   width,
   xstyle,
   className,
@@ -548,6 +557,7 @@ export function DateRangeInput({
           themeProps('date-range-input', {
             size,
             status: status?.type ?? null,
+            disabled: isDisabled ? 'disabled' : null,
           }),
           stylex.props(
             inputWrapperStyles.base,
@@ -574,6 +584,7 @@ export function DateRangeInput({
           }
           tabIndex={-1}
           {...stylex.props(
+            focusOutlineStyles.focusVisible,
             styles.iconButton,
             isEffectivelyDisabled && styles.iconButtonDisabled,
           )}>
@@ -612,18 +623,11 @@ export function DateRangeInput({
           {displayValue || placeholder}
         </button>
         {hasClear && value !== null && !isEffectivelyDisabled && (
-          <button
-            type="button"
+          <InputClearButton
+            label={t('@astryx.dateInput.clear', {label})}
             onClick={handleClear}
-            aria-label={t('@astryx.dateInput.clear', {label})}
-            {...stylex.props(styles.iconButton)}>
-            <Icon
-              icon="close"
-              size="sm"
-              color="secondary"
-              {...themeProps('date-range-input-clear-icon')}
-            />
-          </button>
+            iconClassName={stableClassName('date-range-input-clear-icon')}
+          />
         )}
         {isBusy && <Spinner size="sm" />}
         {statusIcon}
@@ -650,6 +654,7 @@ export function DateRangeInput({
                     aria-current={isActive ? 'true' : undefined}
                     onClick={() => handlePresetClick(preset)}
                     {...stylex.props(
+                      focusOutlineStyles.focusVisible,
                       styles.presetButton,
                       isActive && styles.presetButtonActive,
                     )}>
@@ -667,6 +672,7 @@ export function DateRangeInput({
             max={max}
             dateConstraints={dateConstraints}
             numberOfMonths={numberOfMonths}
+            weekStartsOn={weekStartsOn}
           />
         </div>,
         {placement: 'below', alignment: 'start'},

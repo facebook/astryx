@@ -122,7 +122,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'Display text often needs heading semantics for accessibility. Use the type prop on Heading to apply display styling while preserving the correct HTML element: <Heading level={1} type="display-1"> gives you display-1 styling with an <h1> tag, so screen readers see the correct document outline.',
+          text: 'Display text often needs heading semantics for accessibility. Use the type prop on Heading to apply display styling while preserving the correct HTML element: `<Heading level={1} type="display-1">` gives you display-1 styling with an `<h1>` tag, so screen readers see the correct document outline.',
         },
       ],
     },
@@ -205,7 +205,7 @@ const denseTheme = defineTheme({
           items: [
             'Use Heading for document headings and Text for everything else; they apply the full type scale automatically.',
             'Adjust typography holistically: change base and ratio in defineTheme to shift the entire ramp (e.g. { base: 16, ratio: 1.25 } for editorial, { base: 12, ratio: 1.125 } for dense UI).',
-            'Use display types with as="h1" (or h2/h3) when display text is a page heading; this preserves accessibility while giving you display-level sizing. Or better, use <Heading level={1} type="display-1"> which handles both semantics and styling.',
+            'Use display types with as="h1" (or h2/h3) when display text is a page heading; this preserves accessibility while giving you display-level sizing. Or better, use `<Heading level={1} type="display-1">` which handles both semantics and styling.',
             'Let line-height snap to the 4px grid via the type scale; expandTypeScale computes leading automatically from base and ratio.',
             'Use the supporting type for secondary information: timestamps, helper text, metadata, captions.',
             'Use accessibilityLevel on Heading when the visual hierarchy doesn\u0027t match the document outline (e.g. sidebar or card headings).',

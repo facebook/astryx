@@ -16,7 +16,7 @@ export const doc = {
   namespace: 'cli',
   summary: 'Scaffold a theme into your project as editable source',
   description:
-    "Copies a bundled theme's source into your project so you own it — no theme package " +
+    "Copies a bundled theme's source into your project so you own it, no theme package " +
     'needed. Writes are staged then renamed, rolling back on failure. Running it with no ' +
     'slug, or with --list, lists the bundled themes instead.',
   fn: 'themeAdd',

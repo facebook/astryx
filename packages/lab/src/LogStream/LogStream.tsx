@@ -34,7 +34,11 @@ import {
 import * as stylex from '@stylexjs/stylex';
 
 import type {BaseProps} from '@astryxdesign/core';
-import {mergeProps, themeProps} from '@astryxdesign/core/utils';
+import {
+  focusOutlineStyles,
+  mergeProps,
+  themeProps,
+} from '@astryxdesign/core/utils';
 import {
   borderVars,
   colorVars,
@@ -288,11 +292,6 @@ const styles = stylex.create({
     fontWeight: fontWeightVars['--font-weight-medium'],
     cursor: 'pointer',
     boxShadow: shadowVars['--shadow-med'],
-    outline: {
-      default: 'none',
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: 2,
   },
   jumpToLatestTerminal: {
     borderColor: TERM.border,
@@ -561,6 +560,7 @@ export function LogStream({
           type="button"
           onClick={handleJumpToLatest}
           {...stylex.props(
+            focusOutlineStyles.focusVisible,
             styles.jumpToLatest,
             isTerminal && styles.jumpToLatestTerminal,
           )}>

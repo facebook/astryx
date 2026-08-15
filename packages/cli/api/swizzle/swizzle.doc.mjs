@@ -88,7 +88,7 @@ export const doc = {
     },
     {
       code: 'ERR_AMBIGUOUS_COMPONENT',
-      when: 'more than one package provides the component — choose one with package',
+      when: 'more than one package provides the component; choose one with package',
     },
     {
       code: 'ERR_NO_SOURCE',
