@@ -44,7 +44,12 @@ const styles = stylex.create({
     borderWidth: 0,
     borderStyle: 'none',
     overflow: 'visible',
+    // A layer is hosted wherever its trigger happens to sit, so type that is
+    // inherited rather than declared makes the same component render at a
+    // different size in different callers.
     fontFamily: typographyVars['--font-family-body'],
+    fontSize: typographyVars['--text-body-size'],
+    lineHeight: typographyVars['--text-body-leading'],
     // Override browser default [popover] background (canvas color)
     backgroundColor: 'transparent',
   },
