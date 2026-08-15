@@ -23,7 +23,6 @@
 
 import {
   useCallback,
-  useEffect,
   useImperativeHandle,
   useRef,
   useState,
@@ -37,6 +36,7 @@ import {mergeProps, mergeRefs} from '../utils';
 import {
   SideNavCollapseContext,
   type SideNavCollapseState,
+  type SideNavCollapsibleConfig,
   type SideNavImperativeCollapseHandle,
 } from './SideNavCollapseContext';
 import {SideNavCollapseButton} from './SideNavCollapseButton';
@@ -206,6 +206,9 @@ export interface SideNavProps extends BaseProps<HTMLElement> {
    * Imperative collapse handle for SideNavCollapseButton instances rendered
    * outside this SideNav. This intentionally stays separate from `ref`, which
    * continues to expose the root HTMLElement.
+   *
+   * @deprecated Hand the same controlled `collapsible` config to SideNav and
+   * to the outside button instead.
    */
   handleRef?: React.Ref<SideNavImperativeCollapseHandle>;
 
@@ -279,21 +282,14 @@ export interface SideNavProps extends BaseProps<HTMLElement> {
    * - `true` — enables collapse with default toggle button and uncontrolled state
    * - Object — enables collapse with advanced configuration:
    *   - `defaultIsCollapsed` — start collapsed (uncontrolled)
-   *   - `isCollapsed` + `onCollapsedChange` — controlled mode
+   *   - `isCollapsed` + `onCollapsedChange` — controlled mode. Pass the same
+   *     object to a `SideNavCollapseButton` rendered outside this SideNav
    *   - `hasButton` — render built-in collapse button (default: true)
    *   - `buttonLabel` — accessibility label for the collapse button
    *
    * @default false
    */
-  collapsible?:
-    | boolean
-    | {
-        defaultIsCollapsed?: boolean;
-        isCollapsed?: boolean;
-        onCollapsedChange?: (isCollapsed: boolean) => void;
-        hasButton?: boolean;
-        buttonLabel?: string;
-      };
+  collapsible?: boolean | SideNavCollapsibleConfig;
 }
 
 // =============================================================================
@@ -358,7 +354,6 @@ export function SideNav({
     toggle: () => {},
     isCollapsible,
   });
-  const collapseListenersRef = useRef<Set<() => void>>(new Set());
 
   const setCollapsedState = useCallback(
     (value: boolean) => {
@@ -385,6 +380,13 @@ export function SideNav({
   const toggle = useCallback(() => {
     const next = !collapsed;
 
+    // Deprecated `handleRef` path only: an out-of-tree button reads this
+    // snapshot while rendering, which can happen before SideNav re-renders.
+    collapseStateRef.current = {
+      ...collapseStateRef.current,
+      isCollapsed: next,
+    };
+
     setCollapsedState(next);
     if (isResizable) {
       if (next) {
@@ -397,29 +399,11 @@ export function SideNav({
 
   const showResizeHandle = isResizable && !collapsed;
 
-  // Replace the snapshot only when a value actually changes, so the object
-  // identity is stable between notifications — `useSyncExternalStore` in
-  // SideNavCollapseButton compares snapshots by reference and would loop
-  // forever on a fresh object every render.
-  if (
-    collapseStateRef.current.isCollapsed !== collapsed ||
-    collapseStateRef.current.isCollapsible !== isCollapsible ||
-    collapseStateRef.current.toggle !== toggle
-  ) {
-    collapseStateRef.current = {
-      isCollapsed: collapsed,
-      toggle,
-      isCollapsible,
-    };
-  }
-
-  // A SideNavCollapseButton outside this tree (via `handleRef`) is not
-  // reachable by context, so it subscribes instead.
-  useEffect(() => {
-    for (const listener of collapseListenersRef.current) {
-      listener();
-    }
-  }, [collapsed, isCollapsible, toggle]);
+  collapseStateRef.current = {
+    isCollapsed: collapsed,
+    toggle,
+    isCollapsible,
+  };
 
   const collapseContext = {
     isCollapsed: collapsed,
@@ -431,13 +415,6 @@ export function SideNav({
     handleRef,
     () => ({
       getCollapseState: () => collapseStateRef.current,
-      subscribe: (listener: () => void) => {
-        const listeners = collapseListenersRef.current;
-        listeners.add(listener);
-        return () => {
-          listeners.delete(listener);
-        };
-      },
     }),
     [],
   );

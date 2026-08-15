@@ -9,7 +9,7 @@
  * @position Composable toggle button for sidenav collapse
  *
  * Place inside SideNav (reads context automatically) or outside
- * (pass handleRef to connect). Customizable via label/children.
+ * (pass the same controlled `collapsible` config both get).
  *
  * SYNC: When modified, update:
  * - /packages/core/src/SideNav/SideNav.doc.mjs
@@ -17,7 +17,7 @@
  * - /packages/cli/assets/templates/blocks/components/SideNav/ (showcase blocks)
  */
 
-import React, {useCallback, useSyncExternalStore, type ReactNode} from 'react';
+import React, {useCallback, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {durationVars, easeVars} from '../theme/tokens.stylex';
 import {Icon} from '../Icon';
@@ -27,6 +27,7 @@ import {composeEventHandlers, rtlStyles} from '../utils';
 import {
   useSideNavCollapse,
   type SideNavCollapseState,
+  type SideNavControlledCollapsible,
   type SideNavImperativeCollapseHandle,
 } from './SideNavCollapseContext';
 import {useAppShellMobile} from '../AppShell/AppShellMobileContext';
@@ -68,8 +69,16 @@ const styles = stylex.create({
 export interface SideNavCollapseButtonProps extends BaseProps<HTMLButtonElement> {
   ref?: React.Ref<HTMLButtonElement>;
   /**
-   * Imperative handle from SideNav. Only needed when the button is rendered
-   * outside the sidenav, where collapse context is unavailable.
+   * The same controlled `collapsible` config given to SideNav
+   * (`{isCollapsed, onCollapsedChange}`). Needed only when the button is
+   * rendered outside the sidenav, where collapse context cannot reach it.
+   */
+  collapsible?: SideNavControlledCollapsible;
+
+  /**
+   * Imperative handle from SideNav.
+   *
+   * @deprecated Pass `collapsible` instead.
    */
   handleRef?: React.RefObject<SideNavImperativeCollapseHandle | null>;
 
@@ -82,7 +91,7 @@ export interface SideNavCollapseButtonProps extends BaseProps<HTMLButtonElement>
   /**
    * Button size. Defaults to the size its container cascades — `sm` in a
    * SideNav footer — or `md` outside one. Set it for placements with no row
-   * to inherit from, e.g. a `handleRef` button in a `TopNav`.
+   * to inherit from, e.g. a button placed in a `TopNav`.
    */
   size?: ElementSize;
 
@@ -101,7 +110,8 @@ export interface SideNavCollapseButtonProps extends BaseProps<HTMLButtonElement>
  *
  * Place anywhere inside SideNav (header, topContent, footer, footerIcons)
  * and it reads collapse state from context automatically. For placement
- * outside the sidenav (e.g. in TopNav or content area), pass handleRef.
+ * outside the sidenav (e.g. in TopNav or content area), hold the state and
+ * hand the same `collapsible` config to both.
  *
  * @example
  * ```
@@ -112,13 +122,15 @@ export interface SideNavCollapseButtonProps extends BaseProps<HTMLButtonElement>
  *
  * @example
  * ```
- * const ref = useRef(null);
- * <TopNav endContent={<SideNavCollapseButton handleRef={ref} />} />
- * <SideNav handleRef={ref} collapsible>...</SideNav>
+ * const [isCollapsed, setIsCollapsed] = useState(false);
+ * const collapsible = {isCollapsed, onCollapsedChange: setIsCollapsed};
+ * <TopNav endContent={<SideNavCollapseButton collapsible={collapsible} />} />
+ * <SideNav collapsible={{...collapsible, hasButton: false}}>...</SideNav>
  * ```
  */
 export function SideNavCollapseButton({
   ref,
+  collapsible,
   handleRef,
   label,
   size,
@@ -127,8 +139,10 @@ export function SideNavCollapseButton({
   ...props
 }: SideNavCollapseButtonProps) {
   const t = useTranslator();
-  const {isCollapsed, toggle, isCollapsible} =
-    useSideNavCollapseState(handleRef);
+  const {isCollapsed, toggle, isCollapsible} = useSideNavCollapseState(
+    collapsible,
+    handleRef,
+  );
   const {isMobile} = useAppShellMobile();
 
   // Hide when not collapsible, or when in mobile mode (sidenav is in
@@ -177,43 +191,39 @@ export function SideNavCollapseButton({
 SideNavCollapseButton.displayName = 'SideNavCollapseButton';
 
 function useSideNavCollapseState(
+  collapsible: SideNavControlledCollapsible | undefined,
   handleRef:
     React.RefObject<SideNavImperativeCollapseHandle | null> | undefined,
 ): SideNavCollapseState {
   const contextCollapseState = useSideNavCollapse();
 
-  // Out-of-tree mode: the state lives in a SideNav this component is not a
-  // descendant of, so it is an external store. Reading `handleRef.current`
-  // during render instead would leave the chevron stale after a toggle.
-  const subscribe = useCallback(
-    (listener: () => void) =>
-      handleRef?.current?.subscribe?.(listener) ?? (() => {}),
-    [handleRef],
+  const {isCollapsed, onCollapsedChange} = collapsible ?? {};
+  const toggleCollapsible = useCallback(
+    () => onCollapsedChange?.(!isCollapsed),
+    [isCollapsed, onCollapsedChange],
   );
 
-  const getSnapshot = useCallback(
-    () => handleRef?.current?.getCollapseState() ?? null,
-    [handleRef],
-  );
-
-  const externalCollapseState = useSyncExternalStore(
-    subscribe,
-    getSnapshot,
-    // The handle is null on the server — there is no SideNav to read from.
-    () => null,
-  );
-
-  const toggle = useCallback(() => {
+  const toggleHandle = useCallback(() => {
     handleRef?.current?.getCollapseState()?.toggle();
   }, [handleRef]);
+
+  if (collapsible != null) {
+    return {
+      isCollapsed: isCollapsed ?? false,
+      toggle: toggleCollapsible,
+      isCollapsible: true,
+    };
+  }
 
   if (handleRef == null) {
     return contextCollapseState;
   }
 
+  const externalCollapseState = handleRef.current?.getCollapseState() ?? null;
+
   return {
     isCollapsed: externalCollapseState?.isCollapsed ?? false,
-    toggle,
+    toggle: toggleHandle,
     isCollapsible: externalCollapseState?.isCollapsible ?? true,
   };
 }

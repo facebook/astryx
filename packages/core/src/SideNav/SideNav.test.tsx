@@ -1870,11 +1870,12 @@ describe('SideNav audit regressions', () => {
     const user = userEvent.setup();
 
     function App() {
-      const handleRef = useRef<SideNavImperativeCollapseHandle | null>(null);
+      const [isCollapsed, setIsCollapsed] = useState(false);
+      const collapsible = {isCollapsed, onCollapsedChange: setIsCollapsed};
       return (
         <>
-          <SideNavCollapseButton handleRef={handleRef} />
-          <SideNav collapsible={{hasButton: false}} handleRef={handleRef}>
+          <SideNavCollapseButton collapsible={collapsible} />
+          <SideNav collapsible={{...collapsible, hasButton: false}}>
             <SideNavItem label="Dashboard" href="/dashboard" />
           </SideNav>
         </>
@@ -1883,11 +1884,12 @@ describe('SideNav audit regressions', () => {
 
     render(<App />);
 
-    const external = screen.getByRole('button', {name: 'Collapse sidebar'});
-    await user.click(external);
+    await user.click(screen.getByRole('button', {name: 'Collapse sidebar'}));
+    const expand = await screen.findByRole('button', {name: 'Expand sidebar'});
 
+    await user.click(expand);
     expect(
-      await screen.findByRole('button', {name: 'Expand sidebar'}),
+      await screen.findByRole('button', {name: 'Collapse sidebar'}),
     ).toBeInTheDocument();
   });
 });
