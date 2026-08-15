@@ -28,7 +28,7 @@ import type {StyleXStyles} from '@stylexjs/stylex';
 import {createPortal} from 'react-dom';
 import {addAnchorName, removeAnchorName} from './anchorName';
 import {resolveLayerPortalTarget} from './layerHost';
-import {typographyVars} from '../theme/tokens.stylex';
+import {typeScaleVars, typographyVars} from '../theme/tokens.stylex';
 
 const styles = stylex.create({
   // Base reset for all layers
@@ -48,8 +48,8 @@ const styles = stylex.create({
     // inherited rather than declared makes the same component render at a
     // different size in different callers.
     fontFamily: typographyVars['--font-family-body'],
-    fontSize: typographyVars['--text-body-size'],
-    lineHeight: typographyVars['--text-body-leading'],
+    fontSize: typeScaleVars['--text-body-size'],
+    lineHeight: typeScaleVars['--text-body-leading'],
     // Override browser default [popover] background (canvas color)
     backgroundColor: 'transparent',
   },
