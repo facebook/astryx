@@ -266,7 +266,7 @@ export const WithStatus: Story = {
 
 export const StatusLabelSources: Story = {
   render: () => {
-    // A consumer's own wrapper. AvatarStatusDot registers its label with the
+    // A consumer's own wrapper. AvatarStatusDot reports its label to the
     // avatar through context, so the status still reaches the accessible name.
     function PresenceDot({presence}: {presence: string}) {
       return <AvatarStatusDot variant="success" label={presence} />;
@@ -291,8 +291,7 @@ export const StatusLabelSources: Story = {
           <Avatar
             name="Katherine Johnson"
             size="xl"
-            statusLabel="On leave"
-            status={<AvatarStatusDot variant="neutral" />}
+            status={<AvatarStatusDot variant="neutral" label="On leave" />}
           />
         </div>
       </div>

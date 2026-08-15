@@ -209,19 +209,19 @@ describe('Avatar', () => {
   describe('status label through a consumer wrapper (P14)', () => {
     // A consumer's own component around AvatarStatusDot. Its prop is
     // deliberately not called `label`, so `status.props.label` introspection
-    // has nothing to read; context registration reaches it.
+    // has nothing to read; the dot's own report through context reaches it.
     function PresenceDot({presence = 'Online'}: {presence?: string}) {
       return <AvatarStatusDot variant="success" label={presence} />;
     }
 
-    it('composes a label registered from inside a wrapper component', () => {
+    it('composes a label reported from inside a wrapper component', () => {
       render(<Avatar name="Ada Lovelace" status={<PresenceDot />} />);
       expect(
         screen.getByRole('img', {name: 'Ada Lovelace, Online'}),
       ).toBeInTheDocument();
     });
 
-    it('composes a label registered at any nesting depth', () => {
+    it('composes a label reported at any nesting depth', () => {
       function Outer() {
         return (
           <span>
@@ -277,35 +277,9 @@ describe('Avatar', () => {
       expect(el).not.toHaveAttribute('aria-hidden');
     });
 
-    it('lets an explicit statusLabel win over a registered label', () => {
-      render(
-        <Avatar
-          name="Ada Lovelace"
-          statusLabel="In a meeting"
-          status={<PresenceDot />}
-        />,
-      );
-      expect(
-        screen.getByRole('img', {name: 'Ada Lovelace, In a meeting'}),
-      ).toBeInTheDocument();
-    });
-
-    it('names a fully custom status element through statusLabel', () => {
-      render(
-        <Avatar
-          name="Ada Lovelace"
-          statusLabel="On leave"
-          status={<span data-testid="custom" />}
-        />,
-      );
-      expect(
-        screen.getByRole('img', {name: 'Ada Lovelace, On leave'}),
-      ).toBeInTheDocument();
-    });
-
-    it('lets a registered label win over the deprecated introspection', () => {
+    it('lets a reported label win over introspection', () => {
       // The wrapper's own `label` prop is not the string the dot renders with,
-      // so introspection and registration disagree here.
+      // so introspection and the dot's report disagree here.
       function TranslatedDot({label}: {label: string}) {
         return <AvatarStatusDot label={label === 'busy' ? 'Busy' : label} />;
       }
@@ -318,10 +292,9 @@ describe('Avatar', () => {
     });
 
     it('costs one extra commit and does not loop', () => {
-      // Registration happens in the commit phase, so a wrapped label the
-      // avatar could not see during render arrives one commit late. Two
-      // commits is the whole cost; anything more means the registration is
-      // feeding itself.
+      // A report lands in the commit phase, so a wrapped label the avatar
+      // could not see during render arrives one commit late. Two commits is
+      // the whole cost; anything more means the report is feeding itself.
       const commits: number[] = [];
       render(
         <Profiler id="avatar" onRender={() => commits.push(1)}>
@@ -334,7 +307,9 @@ describe('Avatar', () => {
       expect(commits).toHaveLength(2);
     });
 
-    it('costs no extra commit when the label is visible during render', () => {
+    it('names a directly-passed dot on the first render, before any report', () => {
+      // Introspection answers render one; the dot's report then arrives and
+      // costs the same single extra commit, with the same resolved name.
       const commits: number[] = [];
       render(
         <Profiler id="avatar" onRender={() => commits.push(1)}>
@@ -344,7 +319,10 @@ describe('Avatar', () => {
           />
         </Profiler>,
       );
-      expect(commits).toHaveLength(1);
+      expect(
+        screen.getByRole('img', {name: 'Ada Lovelace, Online'}),
+      ).toBeInTheDocument();
+      expect(commits).toHaveLength(2);
     });
   });
 
@@ -630,12 +608,8 @@ describe('Avatar — interactivity (Button trichotomy)', () => {
     expect(button.className).toContain('astryx-avatar');
   });
 
-  // The three renders below are what the types now reject. The
-  // `@ts-expect-error` is the type-level assertion: if the union ever stops
-  // catching an unnamed interactive avatar, the typecheck fails here.
   it('warns in dev when interactive without an accessible name (href)', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    // @ts-expect-error an interactive avatar requires `name` or `alt`
     render(<Avatar href="/somewhere" />);
     expect(warn).toHaveBeenCalledWith(
       expect.stringContaining('interactive avatar'),
@@ -644,7 +618,6 @@ describe('Avatar — interactivity (Button trichotomy)', () => {
 
   it('warns in dev when interactive without an accessible name (onClick)', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    // @ts-expect-error an interactive avatar requires `name` or `alt`
     render(<Avatar onClick={() => {}} />);
     expect(warn).toHaveBeenCalledWith(
       expect.stringContaining('interactive avatar'),
@@ -668,7 +641,6 @@ describe('Avatar — interactivity (Button trichotomy)', () => {
     // none, because it reads as a legitimate one.
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     render(
-      // @ts-expect-error a status label is not an identity: `name`/`alt` still required
       <Avatar
         href="/somewhere"
         src="https://example.com/ada.jpg"

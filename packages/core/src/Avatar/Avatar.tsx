@@ -12,11 +12,11 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Avatar/Avatar.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/Avatar/index.ts (exports if types change)
- * - /packages/core/src/Avatar/AvatarStatusLabelContext.ts (status label registration)
+ * - /packages/core/src/Avatar/AvatarStatusLabelContext.ts (status label reporting)
  * - /apps/storybook/stories/Avatar.stories.tsx (storybook stories)
  * - /packages/cli/assets/templates/blocks/components/Avatar/ (showcase blocks)
  *
- * Last synced props: alt, fallbackSrc, name, size, src, status, statusLabel, href, as, target, rel, onClick
+ * Last synced props: alt, fallbackSrc, name, size, src, status, href, as, target, rel, onClick
  */
 
 import {isValidElement, useMemo, useState, type ReactNode} from 'react';
@@ -229,7 +229,7 @@ const groupDynamicStyles = stylex.create({
   }),
 });
 
-export interface AvatarBaseProps extends BaseProps<HTMLDivElement> {
+export interface AvatarProps extends BaseProps<HTMLDivElement> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLDivElement>;
   /**
@@ -269,29 +269,16 @@ export interface AvatarBaseProps extends BaseProps<HTMLDivElement> {
    * Content displayed in the corner of the avatar.
    * Typically used for status indicators or badges.
    *
-   * `AvatarStatusDot` registers its own `label` with the avatar, which
-   * composes it into the avatar's accessible name (e.g. "Jane Doe, Online")
-   * so assistive tech can reach the status: the `role="img"` root prunes
-   * descendant semantics (WCAG 4.1.2). Registration works at any depth, so
-   * wrapping the dot in your own component keeps the status announced. For a
-   * status element that is not an `AvatarStatusDot`, name it with
-   * `statusLabel`.
+   * `AvatarStatusDot` reports its own `label` to the avatar, which composes
+   * it into the avatar's accessible name (e.g. "Jane Doe, Online") so
+   * assistive tech can reach the status: the `role="img"` root prunes
+   * descendant semantics (WCAG 4.1.2). Reporting goes through context, so it
+   * still works when the dot sits inside a wrapper component of your own. A
+   * custom status element that is not an `AvatarStatusDot` names itself the
+   * same way, by rendering an `AvatarStatusDot` or by carrying a string
+   * `label` prop.
    */
   status?: ReactNode;
-  /**
-   * The accessible label for the `status` element, composed into the avatar's
-   * accessible name.
-   *
-   * Only needed for a custom status element: `AvatarStatusDot` registers its
-   * own `label`. Set this and it wins over anything the status element
-   * registers.
-   *
-   * @example
-   * ```
-   * <Avatar name="Jane Doe" statusLabel="On leave" status={<LeaveBadge />} />
-   * ```
-   */
-  statusLabel?: string;
   /**
    * Tooltip shown on hover (and keyboard focus).
    * - omitted / `true`: show the avatar's `name`
@@ -335,47 +322,6 @@ export interface AvatarBaseProps extends BaseProps<HTMLDivElement> {
    */
   onClick?: React.MouseEventHandler<HTMLElement>;
 }
-
-/**
- * The ways an interactive avatar can be given an accessible name.
- *
- * `alt`/`name` are the ones to reach for: they name the control and, for
- * `name`, also drive the initials. `aria-label`/`aria-labelledby` are the
- * escape hatch for a name the avatar cannot derive, and they override the
- * derived attributes (see `getAvatarA11yProps`).
- *
- * A status label is deliberately not on this list. It composes into the
- * accessible name, but it describes availability, not identity: a link named
- * "Online" reads as legitimate and says nothing about where it goes.
- */
-type AvatarInteractiveName =
-  | {'aria-label': string}
-  | {'aria-labelledby': string}
-  | {alt: string}
-  | {name: string};
-
-/**
- * Props for Avatar.
- *
- * A union rather than a plain interface, because an interactive avatar has to
- * carry an accessible name and a static one does not. `<Avatar href="/u"
- * src="..." />` is a control nobody can identify, so it fails to compile;
- * `<Avatar src="..." />` on its own is decorative and stays legal.
- *
- * @example
- * ```
- * <Avatar src="/ada.jpg" />
- * <Avatar src="/ada.jpg" name="Ada Lovelace" href="/users/ada" />
- * <Avatar src="/ada.jpg" alt="Ada Lovelace" onClick={openProfile} />
- * ```
- */
-export type AvatarProps =
-  | (AvatarBaseProps & {href?: never; onClick?: never})
-  | (AvatarBaseProps & {href: string} & AvatarInteractiveName)
-  | (AvatarBaseProps & {
-      href?: never;
-      onClick: React.MouseEventHandler<HTMLElement>;
-    } & AvatarInteractiveName);
 
 /**
  * Reuse a single segmenter when the runtime supports Intl.Segmenter.
@@ -422,11 +368,11 @@ function getInitials(name: string): string {
  * Reads the accessible status label off the `status` element, when it
  * exposes one.
  *
- * @deprecated Prefer the `statusLabel` prop, or `AvatarStatusDot`'s own
- * registration through `AvatarStatusLabelContext`. Introspection only sees a
- * literal `label` prop on the element the consumer passes, so a consumer's own
- * wrapper component around the dot hides it. Kept as a fallback so call sites
- * that work today keep working.
+ * Only sees a literal `label` prop on the element the consumer passes, so a
+ * consumer's own wrapper around the dot hides it — that case comes in through
+ * `AvatarStatusLabelContext` instead. Kept because it answers the first
+ * render, before any report has landed, and because it tracks a label that
+ * changes on an element that does not report at all.
  */
 function getStatusLabel(status: ReactNode): string | undefined {
   if (!isValidElement(status)) {
@@ -507,7 +453,6 @@ export function Avatar({
   size = 'md',
   src,
   status,
-  statusLabel,
   tooltip = true,
   href,
   as,
@@ -548,21 +493,15 @@ export function Avatar({
   // generic "Avatar" (obs-9).
   const t = useTranslator();
   const nameLabel = meaningfulAlt || meaningfulName;
-  // Seeded with the introspected label so the common case (an AvatarStatusDot
-  // passed directly) registers a value the avatar already resolved and React
-  // bails out of the update. A label only registration can see costs one
-  // extra commit.
-  const [registeredStatusLabel, setRegisteredStatusLabel] = useState<
+  // The status element reports its own label through context — the only route
+  // that survives a consumer's own wrapper around the dot. A report lands in
+  // the commit phase, so introspection still answers the first render, where
+  // nothing has reported yet.
+  const [reportedStatusLabel, setReportedStatusLabel] = useState<
     string | undefined
-  >(() => getStatusLabel(status));
-  const statusLabelRegistry = useMemo(
-    () => ({registerStatusLabel: setRegisteredStatusLabel}),
-    [],
-  );
+  >();
   const resolvedStatusLabel =
-    meaningful(statusLabel) ??
-    meaningful(registeredStatusLabel) ??
-    getStatusLabel(status);
+    meaningful(reportedStatusLabel) ?? getStatusLabel(status);
   const accessibleName =
     nameLabel && resolvedStatusLabel
       ? t('@astryx.avatar.nameWithStatus', {
@@ -638,8 +577,7 @@ export function Avatar({
   // label="Online" />} />` resolves a name that reads as legitimate and says
   // nothing about who the link points at. Only `alt`/`name` count, or a
   // consumer's own `aria-label`/`aria-labelledby` escape hatch, which wins
-  // over the derived props below. The types enforce the `alt`/`name` case
-  // (see AvatarProps); this is the backstop for untyped JS callers.
+  // over the derived props below.
   const consumerName =
     meaningful(props['aria-label']) ?? meaningful(props['aria-labelledby']);
   useDevWarning(
@@ -786,7 +724,7 @@ export function Avatar({
 
   const avatarElement = (
     <AvatarSizeContext value={numericSize}>
-      <AvatarStatusLabelContext value={statusLabelRegistry}>
+      <AvatarStatusLabelContext value={setReportedStatusLabel}>
         {rootElement}
       </AvatarStatusLabelContext>
     </AvatarSizeContext>

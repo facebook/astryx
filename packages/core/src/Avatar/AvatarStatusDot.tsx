@@ -5,7 +5,7 @@
 /**
  * @file AvatarStatusDot.tsx
  * @input Uses React, StyleX, theme tokens, AvatarSizeContext, and
- *   AvatarStatusLabelContext (label registration)
+ *   AvatarStatusLabelContext (label reporting)
  * @output Exports AvatarStatusDot component and AvatarStatusDotProps type
  * @position Sub-component of Avatar; renders a size-aware status indicator
  *
@@ -313,24 +313,18 @@ export function AvatarStatusDot({
   ...props
 }: AvatarStatusDotProps) {
   const avatarSize = use(AvatarSizeContext);
-  const statusLabelRegistry = use(AvatarStatusLabelContext);
-  const registerStatusLabel = statusLabelRegistry?.registerStatusLabel;
-  // Hand the label to the enclosing Avatar from a callback ref rather than an
-  // Effect: the ref runs in the commit phase, so the avatar's accessible name
-  // is composed before paint. Memoized on the label so React only reattaches
-  // when there is something new to register, and the cleanup withdraws the
-  // label when the dot unmounts.
-  const registerRef = useCallback(() => {
-    if (!registerStatusLabel) {
-      return;
-    }
-    registerStatusLabel(label);
-    return () => registerStatusLabel(undefined);
-  }, [registerStatusLabel, label]);
-  const rootRef = useMemo(
-    () => mergeRefs(ref, registerRef),
-    [ref, registerRef],
-  );
+  const reportStatusLabel = use(AvatarStatusLabelContext);
+  // Report the label from a ref callback rather than an Effect: the ref runs
+  // in the commit phase, so the avatar's accessible name is composed before
+  // paint.
+  const reportRef = useCallback(() => {
+    reportStatusLabel?.(label);
+    return () => reportStatusLabel?.(undefined);
+  }, [reportStatusLabel, label]);
+  // Memoized so React only detaches and reattaches when the reported label
+  // actually changes; an inline merge would withdraw and re-report on every
+  // render of the avatar.
+  const rootRef = useMemo(() => mergeRefs(ref, reportRef), [ref, reportRef]);
   const {dotSize, borderWidth, iconSize, tier} =
     resolveStatusDotSize(avatarSize);
   const showsIcon = isRenderable(icon) && iconSize > 0;

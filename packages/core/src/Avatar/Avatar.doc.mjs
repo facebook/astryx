@@ -70,7 +70,7 @@ export const docs = {
     {
       name: 'status',
       type: 'ReactNode',
-      description: 'Corner content for status indicators. AvatarStatusDot registers its `label` with the avatar, which composes it into the accessible name (e.g. "Jane Doe, Online") so screen readers announce the status. Registration works at any depth, so wrapping the dot in your own component keeps the status announced; for a status element that is not an AvatarStatusDot, name it with `statusLabel`.',
+      description: 'Corner content for status indicators. AvatarStatusDot reports its `label` to the avatar, which composes it into the accessible name (e.g. "Jane Doe, Online") so screen readers announce the status. Reporting goes through context, so it still works when the dot sits inside a wrapper component of your own.',
       slotElements: [
         {
           __element: 'AvatarStatusDot',
@@ -80,11 +80,6 @@ export const docs = {
           },
         },
       ],
-    },
-    {
-      name: 'statusLabel',
-      type: 'string',
-      description: 'Accessible label for the `status` element, composed into the avatar\'s accessible name. Only needed for a custom status element; AvatarStatusDot registers its own label. Wins over anything the status element registers.',
     },
     {
       name: 'tooltip',
@@ -165,12 +160,10 @@ export const docsDense = {
     alt: 'alt text; falls back to name',
     size: "avatar size. Named ('xsm' 20px, 'sm' 24px, 'md' 36px, 'lg' 48px, 'xl' 128px) or numeric px. An AvatarGroup's size overrides it.",
     status:
-      'corner content for status indicators; AvatarStatusDot registers its `label`, composed into the avatar accessible name ("Jane Doe, Online"), at any nesting depth',
-    statusLabel:
-      'accessible label for a custom `status` element; wins over what the element registers',
+      'corner content for status indicators; AvatarStatusDot reports its `label`, composed into the avatar accessible name ("Jane Doe, Online"), at any nesting depth',
     tooltip:
       "hover/focus tooltip. true/omitted → name; string → that text; false → none. Owns its tooltip; set false when wrapping in your own Tooltip/HoverCard. Default true.",
-    href: 'renders avatar as a link (<a>/custom). Needs alt/name (enforced by the types). Button-style element swap.',
+    href: 'renders avatar as a link (<a>/custom). Needs alt/name for an accessible name; warns in development without one. Button-style element swap.',
     as: 'custom link component for href (e.g. Next Link). Only with href.',
     target: 'link target. Only with href.',
     rel: 'link rel. Only with href.',
