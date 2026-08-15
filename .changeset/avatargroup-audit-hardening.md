@@ -4,7 +4,7 @@
 
 [fix] AvatarGroup: four defects out of the component audit, three of them in `AvatarGroupOverflow`.
 
-The indicator was `display: flex` on a span, which is a block-level flex container, so the exported component rendered as a full-width bar instead of a circle anywhere outside an `AvatarGroup` — measured 1168px wide in a 1168px parent. It is `inline-flex` now; inside a group nothing changes, because a flex item is blockified either way.
+The indicator was `display: flex` on a span, which is a block-level flex container, so the exported component rendered as a full-width bar instead of a circle anywhere outside an `AvatarGroup`: measured 1168px wide in a 1168px parent. It is `inline-flex` now; inside a group nothing changes, because a flex item is blockified either way.
 
 Its label font size was a bare `size * 0.35`, which computes 7px at `xsm` and 8.4px at `sm`. That is under the 12px legibility floor, and the effect is worse than the number suggests: the glyph stroke ends up thinner than a pixel, so it never reaches its own text colour. Decoded from a screenshot, the darkest pixel at `xsm` is `#bebebe` on a `#f0f0f0` field, a contrast of 1.63:1 where 4.5:1 is required. The size now floors at the `--text-supporting-size` role token and scales proportionally above it, so `md` and larger are unchanged.
 
