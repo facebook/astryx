@@ -85,6 +85,9 @@ const s = stylex.create({
     borderRadius: 'var(--radius-element)',
     marginInline: 4,
   },
+  // MultiSelector: the checkbox (start content) inset is 8px, so it needs a
+  // slightly smaller pull-out to line the checkbox up with the sheet title.
+  flushSheetCheckList: {marginInline: 'calc(-1 * var(--spacing-3))'},
   rowBorder: {
     borderBottomWidth: 1,
     borderBottomStyle: 'solid',
@@ -1026,9 +1029,15 @@ function MultiSelectorDemo() {
           isLabelHidden
           value={draft}
           onChange={setDraft}
+          xstyle={s.flushSheetCheckList}
           hasDividers>
           {LABELS.map(l => (
-            <CheckboxListItem key={l} label={l} value={l} />
+            <CheckboxListItem
+              key={l}
+              label={l}
+              value={l}
+              xstyle={s.flushSheetItem}
+            />
           ))}
         </CheckboxList>
       </BottomSheet>
