@@ -15,17 +15,18 @@
  * motion completion.
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/lab/src/BottomSheet/BottomSheetPanel.tsx
- * - /packages/lab/src/BottomSheet/BottomSheet.doc.mjs
- * - /packages/lab/src/BottomSheet/BottomSheet.test.tsx
- * - /packages/lab/src/BottomSheet/BottomSheetSwitcher.tsx
- * - /packages/lab/src/BottomSheet/BottomSheetSwitcher.test.tsx
+ * - /packages/core/src/BottomSheet/BottomSheetPanel.tsx
+ * - /packages/core/src/BottomSheet/BottomSheet.doc.mjs
+ * - /packages/core/src/BottomSheet/BottomSheet.test.tsx
+ * - /packages/core/src/BottomSheet/BottomSheetSwitcher.tsx
+ * - /packages/core/src/BottomSheet/BottomSheetSwitcher.test.tsx
  * - /apps/storybook/stories/BottomSheet.stories.tsx
+ * - /packages/cli/assets/templates/blocks/components/BottomSheet/BottomSheetShowcase.tsx
  */
 
 import {
   useCallback,
-  useContext,
+  use,
   useEffect,
   useLayoutEffect,
   useRef,
@@ -33,13 +34,16 @@ import {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {BaseProps} from '@astryxdesign/core';
+import type {BaseProps} from '../BaseProps';
+import {colorVars, durationVars, easeVars} from '../theme/tokens.stylex';
 import {
-  colorVars,
-  durationVars,
-  easeVars,
-} from '@astryxdesign/core/theme/tokens.stylex';
-import {useDevWarning, useScrollLock} from '@astryxdesign/core/hooks';
+  hasActiveFocusTrapEscape,
+  isImeKeyEvent,
+  useDevWarning,
+  useFocusTrap,
+  useScrollLock,
+} from '../hooks';
+import {mergeProps, mergeRefs, themeProps} from '../utils';
 import {
   BottomSheetPanel,
   type BottomSheetPanelMotion,
@@ -200,6 +204,10 @@ function StandaloneBottomSheet({
       : {kind: 'hidden'};
 
   const close = useCallback(() => onOpenChange(false), [onOpenChange]);
+  const {containerRef} = useFocusTrap<HTMLDialogElement>({
+    isActive: isOpen && hasScrim,
+    onEscape: close,
+  });
   const handlePanelElementChange = useCallback(
     (element: HTMLDivElement | null) => {
       panelRef.current = element;
@@ -219,6 +227,9 @@ function StandaloneBottomSheet({
       return;
     }
 
+    // The controlled prop opens an already-mounted dialog; presentation state
+    // must latch here so a later close can keep it mounted through its exit.
+    // eslint-disable-next-line @eslint-react/set-state-in-effect -- latches controlled open state for exit animation
     setIsPresented(true);
     dialog.style.setProperty('--_sheet-scrim-opacity', '1');
     const wasOpen = dialog.open;
@@ -272,12 +283,20 @@ function StandaloneBottomSheet({
   );
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLDialogElement>) => {
-      if (event.key === 'Escape') {
+      // Modal Escape is owned by useFocusTrap so a nested trap can win. A
+      // non-modal sheet retains local dismissal while deferring to a nested
+      // layer and ignoring IME composition cancellation.
+      if (
+        !hasScrim &&
+        event.key === 'Escape' &&
+        !isImeKeyEvent(event.nativeEvent) &&
+        !hasActiveFocusTrapEscape()
+      ) {
         event.preventDefault();
         close();
       }
     },
-    [close],
+    [close, hasScrim],
   );
   const handleClick = useCallback(
     (event: React.MouseEvent<HTMLDialogElement>) => {
@@ -290,13 +309,16 @@ function StandaloneBottomSheet({
 
   return (
     <dialog
-      {...stylex.props(
-        styles.dialog,
-        shouldPresent && styles.dialogOpen,
-        hasScrim && styles.scrim,
-        !hasScrim && styles.dialogNonModal,
+      {...mergeProps(
+        hasScrim ? themeProps('bottom-sheet-scrim') : {},
+        stylex.props(
+          styles.dialog,
+          shouldPresent && styles.dialogOpen,
+          hasScrim && styles.scrim,
+          !hasScrim && styles.dialogNonModal,
+        ),
       )}
-      ref={dialogRef}
+      ref={mergeRefs(dialogRef, containerRef)}
       aria-label={label}
       aria-hidden={!isOpen && isPresented ? 'true' : undefined}
       aria-modal={hasScrim && isOpen ? 'true' : undefined}
@@ -309,6 +331,7 @@ function StandaloneBottomSheet({
           {...props}
           ref={ref}
           state={panelState}
+          label={label}
           height={height}
           xstyle={xstyle}
           onDismiss={close}
@@ -455,6 +478,7 @@ function SwitcherBottomSheetItem({
         {...props}
         ref={ref}
         state={panelState}
+        label={label}
         height={height}
         xstyle={xstyle}
         onDismiss={close}
@@ -466,9 +490,9 @@ function SwitcherBottomSheetItem({
         {/* A switcher item consumes its parent controller. Its content starts a
             fresh ownership scope so a nested BottomSheet is standalone unless
             it establishes a nested BottomSheetSwitcher of its own. */}
-        <BottomSheetSwitcherContext.Provider value={null}>
+        <BottomSheetSwitcherContext value={null}>
           {children}
-        </BottomSheetSwitcherContext.Provider>
+        </BottomSheetSwitcherContext>
       </BottomSheetPanel>
     </div>
   );
@@ -479,7 +503,7 @@ function SwitcherBottomSheetItem({
  * BottomSheetSwitcher shared dialog when given a sheetId inside that context.
  */
 export function BottomSheet(props: BottomSheetProps) {
-  const switcher = useContext(BottomSheetSwitcherContext);
+  const switcher = use(BottomSheetSwitcherContext);
   const runtimeSheetId = (props as {sheetId?: string}).sheetId;
   const hasValidSheetId =
     typeof runtimeSheetId === 'string' && runtimeSheetId.length > 0;

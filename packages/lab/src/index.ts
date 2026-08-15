@@ -45,13 +45,13 @@ export * from './Chat';
 // Drawer — experimental overlay panel
 export {Drawer, type DrawerProps} from './Drawer';
 
-// BottomSheet — mobile touch sheet on a native modal <dialog>
+// BottomSheet — compatibility re-export; import from Core for new usage.
 export {
   BottomSheet,
   type BottomSheetProps,
   BottomSheetSwitcher,
   type BottomSheetSwitcherProps,
-} from './BottomSheet';
+} from '@astryxdesign/core/BottomSheet';
 
 // Tour — guided product-tour / NUX walkthrough (facebook/astryx#4239)
 export {

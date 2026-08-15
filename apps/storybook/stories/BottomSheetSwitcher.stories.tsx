@@ -2,7 +2,7 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState} from 'react';
-import {BottomSheet, BottomSheetSwitcher} from '@astryxdesign/lab';
+import {BottomSheet, BottomSheetSwitcher} from '@astryxdesign/core/BottomSheet';
 import {Button} from '@astryxdesign/core/Button';
 import {CheckboxInput} from '@astryxdesign/core/CheckboxInput';
 import {Divider} from '@astryxdesign/core/Divider';
@@ -13,7 +13,7 @@ import {Text} from '@astryxdesign/core/Text';
 import {RadioList, RadioListItem} from '@astryxdesign/core/RadioList';
 
 const meta: Meta<typeof BottomSheetSwitcher> = {
-  title: 'Lab/BottomSheetSwitcher',
+  title: 'Core/BottomSheetSwitcher',
   component: BottomSheetSwitcher,
   tags: ['autodocs'],
   parameters: {

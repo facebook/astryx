@@ -6,7 +6,7 @@
  * @file useSheetGestures.ts
  * @input Uses React (useCallback, useEffect, useMemo, useRef, useState)
  * @output Exports useSheetGestures hook and its option/result types
- * @position Internal to BottomSheet; not exported from the lab entry point
+ * @position Internal to BottomSheet; not exported from the core entry point
  *
  * Drag + snap machinery for the bottom sheet. Tracks a pointer drag down the
  * block axis, translates the sliding surface live, and on release either
@@ -23,8 +23,7 @@
  * settle transition.
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/lab/src/BottomSheet/useSheetGestures.doc.mjs
- * - /packages/lab/src/BottomSheet/useSheetGestures.test.ts
+ * - /packages/core/src/BottomSheet/useSheetGestures.test.ts
  */
 
 import {
@@ -34,6 +33,7 @@ import {
   useRef,
   useState,
   type CSSProperties,
+  type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
 } from 'react';
 import {
@@ -130,7 +130,7 @@ export interface SheetContentProps {
 }
 
 export interface SheetHandleProps {
-  style: CSSProperties;
+  onKeyDown: (event: ReactKeyboardEvent) => void;
   onPointerDown: (event: ReactPointerEvent) => void;
   onPointerMove: (event: ReactPointerEvent) => void;
   onPointerUp: (event: ReactPointerEvent) => void;
@@ -168,6 +168,8 @@ export interface UseSheetGesturesResult {
   settledOffset: number;
   /** Whether a drag is currently in progress. */
   isDragging: boolean;
+  /** Visible sheet height as an integer percentage for separator semantics. */
+  visiblePercent: number;
 }
 
 function prefersReducedMotion(): boolean {
@@ -206,6 +208,7 @@ export function useSheetGestures({
   const [dragOffset, setDragOffset] = useState(0);
   const [settledOffset, setSettledOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [visiblePercent, setVisiblePercent] = useState(100);
 
   const onDismissRef = useRef(onDismiss);
   const onSnapRef = useRef(onSnap);
@@ -259,9 +262,16 @@ export function useSheetGestures({
   // Reset to the tallest detent each time the sheet re-opens.
   useEffect(() => {
     if (isOpen) {
+      // Reopening starts at the tallest detent and cancels any interrupted
+      // drag from the previous presentation.
+      // eslint-disable-next-line @eslint-react/set-state-in-effect -- resets gesture state on controlled reopen
       setDragOffset(0);
+      // eslint-disable-next-line @eslint-react/set-state-in-effect -- resets gesture state on controlled reopen
       setSettledOffset(0);
+      // eslint-disable-next-line @eslint-react/set-state-in-effect -- resets gesture state on controlled reopen
       setIsDragging(false);
+      // eslint-disable-next-line @eslint-react/set-state-in-effect -- resets separator value on controlled reopen
+      setVisiblePercent(100);
     }
   }, [isOpen]);
 
@@ -282,6 +292,32 @@ export function useSheetGestures({
   const detentOffsets = useCallback((height: number): number[] => {
     return computeDetentOffsets(height, snapHeightsRef.current?.() ?? []);
   }, []);
+
+  const commitDetent = useCallback(
+    (
+      target: number,
+      height: number,
+      offsets: ReadonlyArray<number>,
+      previousOffset: number,
+    ) => {
+      const maxOffset = offsets[offsets.length - 1];
+      const shortestDetentHeight = height - maxOffset;
+      const dismissOffset =
+        maxOffset + shortestDetentHeight * DISMISS_OVERSHOOT_RATIO;
+      setSettledOffset(target);
+      setVisiblePercent(
+        Math.round(Math.max(0, Math.min(1, (height - target) / height)) * 100),
+      );
+      onSnapRef.current?.(height - target);
+      onScrimOpacityRef.current?.(
+        scrimOpacityForOffset(target, offsets, dismissOffset),
+      );
+      if (target !== previousOffset) {
+        hapticTick();
+      }
+    },
+    [],
+  );
 
   const settleFromDrag = useCallback(
     (
@@ -305,10 +341,7 @@ export function useSheetGestures({
       // Fast upward flick = expand to the tallest detent (the sheet's full
       // provided height).
       if (dir < 0 && isFlick) {
-        setSettledOffset(0);
-        onSnapRef.current?.(height);
-        onScrimOpacityRef.current?.(1);
-        hapticTick();
+        commitDetent(0, height, offsets, baseOffset);
         return;
       }
       if (offset > maxOffset + shortestDetentHeight * DISMISS_OVERSHOOT_RATIO) {
@@ -318,20 +351,50 @@ export function useSheetGestures({
       // Settle to the nearest detent in the drag direction (never back past
       // the starting detent), de-duped and direction-clamped by the util.
       const target = resolveSettleOffset(offset, offsets, dir, baseOffset);
-      setSettledOffset(target);
-      onSnapRef.current?.(height - target);
-      // Keep the scrim in sync with the resting detent (faint floor at the peek).
-      const dismissOffset =
-        maxOffset + shortestDetentHeight * DISMISS_OVERSHOOT_RATIO;
-      onScrimOpacityRef.current?.(
-        scrimOpacityForOffset(target, offsets, dismissOffset),
-      );
-      // Haptic "tick" when landing on a different detent (where supported).
-      if (target !== baseOffset) {
-        hapticTick();
-      }
+      commitDetent(target, height, offsets, baseOffset);
     },
-    [detentOffsets],
+    [commitDetent, detentOffsets],
+  );
+
+  const handleKeyDown = useCallback(
+    (event: ReactKeyboardEvent) => {
+      if (!isOpen) {
+        return;
+      }
+      const height = measureHeight();
+      if (height <= 0) {
+        return;
+      }
+      const offsets = detentOffsets(height);
+      const currentIndex = offsets.reduce(
+        (bestIndex, offset, index) =>
+          Math.abs(offset - settledOffset) <
+          Math.abs(offsets[bestIndex] - settledOffset)
+            ? index
+            : bestIndex,
+        0,
+      );
+      let target: number;
+      switch (event.key) {
+        case 'ArrowUp':
+          target = offsets[Math.max(0, currentIndex - 1)];
+          break;
+        case 'ArrowDown':
+          target = offsets[Math.min(offsets.length - 1, currentIndex + 1)];
+          break;
+        case 'Home':
+          target = offsets[0];
+          break;
+        case 'End':
+          target = offsets[offsets.length - 1];
+          break;
+        default:
+          return;
+      }
+      event.preventDefault();
+      commitDetent(target, height, offsets, settledOffset);
+    },
+    [commitDetent, detentOffsets, isOpen, measureHeight, settledOffset],
   );
 
   const beginDrag = useCallback(
@@ -506,7 +569,7 @@ export function useSheetGestures({
     top: boolean;
     bottom: boolean;
   } | null>(null);
-  const prevTouchHandlers = useRef<{
+  const previousTouchHandlersRef = useRef<{
     start: (e: TouchEvent) => void;
     move: (e: TouchEvent) => void;
     end: (e: TouchEvent) => void;
@@ -615,8 +678,8 @@ export function useSheetGestures({
     };
 
     const prev = bodyNodeRef.current;
-    if (prev && prevTouchHandlers.current) {
-      const h = prevTouchHandlers.current;
+    if (prev && previousTouchHandlersRef.current) {
+      const h = previousTouchHandlersRef.current;
       prev.removeEventListener('touchstart', h.start);
       prev.removeEventListener('touchmove', h.move);
       prev.removeEventListener('touchend', h.end);
@@ -628,17 +691,17 @@ export function useSheetGestures({
       node.addEventListener('touchmove', onTouchMove, {passive: false});
       node.addEventListener('touchend', onTouchEnd, {passive: true});
       node.addEventListener('touchcancel', onTouchEnd, {passive: true});
-      prevTouchHandlers.current = {
+      previousTouchHandlersRef.current = {
         start: onTouchStart,
         move: onTouchMove,
         end: onTouchEnd,
       };
     } else {
-      prevTouchHandlers.current = null;
+      previousTouchHandlersRef.current = null;
     }
   }, []);
 
-  const reducedMotion = useMemo(prefersReducedMotion, [isOpen]);
+  const reducedMotion = prefersReducedMotion();
 
   // While dragging, follow the finger; otherwise rest at the settled detent.
   const activeOffset = isDragging ? dragOffset : settledOffset;
@@ -658,13 +721,13 @@ export function useSheetGestures({
 
   const handleProps = useMemo<SheetHandleProps>(
     () => ({
-      style: {touchAction: 'none', cursor: 'grab'},
+      onKeyDown: handleKeyDown,
       onPointerDown: handlePointerDown,
       onPointerMove: handlePointerMove,
       onPointerUp: endDrag,
       onPointerCancel: endDrag,
     }),
-    [handlePointerDown, handlePointerMove, endDrag],
+    [endDrag, handleKeyDown, handlePointerDown, handlePointerMove],
   );
 
   const bodyProps = useMemo<SheetBodyProps>(
@@ -686,5 +749,6 @@ export function useSheetGestures({
     dragOffset,
     settledOffset,
     isDragging,
+    visiblePercent,
   };
 }

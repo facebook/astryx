@@ -6,7 +6,7 @@
  * @file useMobileKeyboard.ts
  * @input Uses React effects and refs supplied by BottomSheet
  * @output Exports internal useMobileKeyboard hook
- * @position Internal to BottomSheet; not exported from the lab entry point
+ * @position Internal to BottomSheet; not exported from the core entry point
  *
  * Keeps focused controls inside the visual viewport without resizing the
  * sheet. When the on-screen keyboard covers the stable layout viewport, it
@@ -45,11 +45,11 @@ interface UseMobileKeyboardOptions {
 
 interface FocusScrollSnapshot {
   target: HTMLElement;
-  elements: Array<{
+  elements: {
     element: HTMLElement;
     scrollLeft: number;
     scrollTop: number;
-  }>;
+  }[];
   windowX: number;
   windowY: number;
 }
@@ -99,7 +99,9 @@ function isTextEntryControl(element: Element | null): element is HTMLElement {
     return (
       !element.disabled &&
       !element.readOnly &&
-      !NON_TEXT_INPUT_TYPES.has(element.type)
+      !NON_TEXT_INPUT_TYPES.has(
+        (element.getAttribute('type') ?? 'text').toLowerCase(),
+      )
     );
   }
   return (

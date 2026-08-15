@@ -14,9 +14,9 @@
  * state, or switcher registration; those belong to the hosting controller.
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/lab/src/BottomSheet/BottomSheet.tsx
- * - /packages/lab/src/BottomSheet/BottomSheetPanel.test.tsx
- * - /packages/lab/src/BottomSheet/useSheetGestures.ts
+ * - /packages/core/src/BottomSheet/BottomSheet.tsx
+ * - /packages/core/src/BottomSheet/BottomSheetPanel.test.tsx
+ * - /packages/core/src/BottomSheet/useSheetGestures.ts
  */
 
 import {
@@ -29,7 +29,7 @@ import {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {BaseProps} from '@astryxdesign/core';
+import type {BaseProps} from '../BaseProps';
 import {
   colorVars,
   durationVars,
@@ -38,8 +38,9 @@ import {
   shadowVars,
   sizeVars,
   spacingVars,
-} from '@astryxdesign/core/theme/tokens.stylex';
-import {mergeProps, themeProps} from '@astryxdesign/core/utils';
+} from '../theme/tokens.stylex';
+import {mergeProps, themeProps} from '../utils';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {useMobileKeyboard} from './useMobileKeyboard';
 import {useSheetGestures} from './useSheetGestures';
 
@@ -160,6 +161,7 @@ interface BottomSheetPanelProps extends BaseProps<HTMLDivElement> {
   /** Ref forwarded to the visual sheet panel. */
   ref?: React.Ref<HTMLDivElement>;
   state: BottomSheetPanelState;
+  label: string;
   height: BottomSheetHeight | number | string;
   children: ReactNode;
   onDismiss: () => void;
@@ -283,6 +285,7 @@ function parseTransitionTime(value: string): number | null {
 export function BottomSheetPanel({
   ref,
   state,
+  label,
   height,
   children,
   className,
@@ -337,6 +340,7 @@ export function BottomSheetPanel({
     dragOffset,
     settledOffset,
     isDragging,
+    visiblePercent,
   } = useSheetGestures({
     isOpen: isInteractive,
     onDismiss,
@@ -357,7 +361,7 @@ export function BottomSheetPanel({
       bodyProps.ref(element);
       bodyElementRef.current = element;
     },
-    [bodyProps.ref],
+    [bodyProps],
   );
   useMobileKeyboard({
     bodyRef: bodyElementRef,
@@ -423,6 +427,9 @@ export function BottomSheetPanel({
     : typeof height === 'number'
       ? `${height}px`
       : height;
+  const heightVariant = isNamedHeight
+    ? (height as BottomSheetHeight)
+    : 'custom';
   const retainedTransform =
     alignmentOffset > 0
       ? [contentProps.style.transform, `translateY(${alignmentOffset}px)`]
@@ -436,7 +443,7 @@ export function BottomSheetPanel({
       ref={setElement}
       tabIndex={tabIndex ?? -1}
       {...mergeProps(
-        themeProps('bottom-sheet'),
+        themeProps('bottom-sheet', {height: heightVariant}),
         stylex.props(
           styles.sheet,
           height === 'hug' ? styles.hugHeight : styles.budget,
@@ -457,12 +464,27 @@ export function BottomSheetPanel({
         },
       )}>
       <div
-        {...stylex.props(styles.handleBar)}
+        {...mergeProps(
+          themeProps('bottom-sheet-handle'),
+          focusOutlineProps.focusVisible(styles.handleBar),
+        )}
         {...handleProps}
-        aria-hidden="true">
-        <div {...stylex.props(styles.handlePill)} />
+        role="separator"
+        aria-label={label}
+        aria-orientation="horizontal"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={visiblePercent}
+        tabIndex={isInteractive ? 0 : -1}>
+        <div {...stylex.props(styles.handlePill)} aria-hidden="true" />
       </div>
-      <div {...stylex.props(styles.body)} {...bodyProps} ref={setBodyElement}>
+      <div
+        {...mergeProps(
+          themeProps('bottom-sheet-body'),
+          stylex.props(styles.body),
+        )}
+        {...bodyProps}
+        ref={setBodyElement}>
         {children}
       </div>
     </div>

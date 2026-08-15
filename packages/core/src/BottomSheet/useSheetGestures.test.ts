@@ -68,7 +68,7 @@ function setup(options: Partial<UseSheetGesturesOptions> = {}) {
         isOpen: true,
         onDismiss,
         ...options,
-      } as UseSheetGesturesOptions,
+      },
     },
   );
   return {hook, onDismiss};
@@ -201,7 +201,7 @@ describe('useSheetGestures', () => {
     move(hook, 60, 200, t); // offset 60, above the mid detent -> full
     move(hook, 150, 600, t); // offset 150, halfway -> between 1 and 0.3 (~0.65)
     move(hook, 220, 1000, t); // offset 220, past the peek -> peek floor
-    const values = onScrimOpacity.mock.calls.map(c => c[0]);
+    const values = onScrimOpacity.mock.calls.map(c => Number(c[0]));
     expect(values[0]).toBe(1);
     expect(values[1]).toBeGreaterThan(0.55);
     expect(values[1]).toBeLessThan(0.75);
@@ -220,7 +220,7 @@ describe('useSheetGestures', () => {
     expect(hook.result.current.settledOffset).toBe(200);
     // Last reported opacity (on settle) is the peek floor, not fully hidden —
     // the sheet is still modal, so the backdrop keeps a minimum dim.
-    const values = onScrimOpacity.mock.calls.map(c => c[0]);
+    const values = onScrimOpacity.mock.calls.map(c => Number(c[0]));
     expect(values[values.length - 1]).toBeCloseTo(0.3);
   });
 

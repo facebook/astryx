@@ -4,7 +4,7 @@
  * @file BottomSheetSwitcher.test.tsx
  * @input Uses vitest, Testing Library, BottomSheet, BottomSheetSwitcher
  * @output Tests mutually exclusive sheet selection, dismissal, and focus handoff
- * @position Lab tests for BottomSheetSwitcher
+ * @position Core tests for BottomSheetSwitcher
  *
  * SYNC: When BottomSheetSwitcher.tsx or its BottomSheet integration changes,
  * update these tests to match the public behavior.
@@ -13,7 +13,7 @@
 import {fireEvent, render, screen} from '@testing-library/react';
 import {createRef, useState} from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
-import {useFocusTrap} from '@astryxdesign/core/hooks';
+import {useFocusTrap} from '../hooks';
 import {BottomSheet} from './BottomSheet';
 import {BottomSheetSwitcher} from './BottomSheetSwitcher';
 
@@ -588,7 +588,7 @@ describe('BottomSheetSwitcher', () => {
     expect(HTMLDialogElement.prototype.showModal).toHaveBeenCalledTimes(1);
   });
 
-  it('keeps focus in a modal sheet that has no tabbable controls', () => {
+  it('keeps focus in a modal sheet whose only control is the resize handle', () => {
     render(
       <>
         <button type="button">Background action</button>
@@ -605,8 +605,10 @@ describe('BottomSheetSwitcher', () => {
     const dialog = screen.getByRole('dialog', {name: 'Read-only details'});
     const panel = getSheetPanel(dialog);
     expect(panel).toHaveFocus();
-    expect(fireEvent.keyDown(panel, {key: 'Tab'})).toBe(false);
-    expect(panel).toHaveFocus();
+    const handle = screen.getByRole('separator', {name: 'Read-only details'});
+    handle.focus();
+    expect(fireEvent.keyDown(handle, {key: 'Tab'})).toBe(false);
+    expect(handle).toHaveFocus();
     expect(
       screen.getByRole('button', {name: 'Background action'}),
     ).not.toHaveFocus();

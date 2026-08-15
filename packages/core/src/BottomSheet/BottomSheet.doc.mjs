@@ -23,7 +23,12 @@ export const docs = {
     'visual viewport',
   ],
   theming: {
-    targets: [{className: 'astryx-bottom-sheet', visualProps: []}],
+    targets: [
+      {className: 'astryx-bottom-sheet', visualProps: ['height']},
+      {className: 'astryx-bottom-sheet-handle', visualProps: []},
+      {className: 'astryx-bottom-sheet-body', visualProps: []},
+      {className: 'astryx-bottom-sheet-scrim', visualProps: []},
+    ],
   },
   description:
     "A mobile touch sheet that rises from the bottom edge, with animated entrance and exit, a grab handle, drag-to-resize snap points, and swipe-to-dismiss. A standalone sheet owns a native <dialog>; inside BottomSheetSwitcher it renders a panel in the switcher's shared dialog. In both modes, ref and shared DOM props target the visual panel <div>.",
@@ -77,7 +82,7 @@ export const docs = {
   ],
   usage: {
     description:
-      'A mobile touch surface for filters, actions, and detail views that should rise from the bottom of the screen. Opening slides the sheet in; closing keeps its native dialog presented but inert until the slide-out and scrim fade complete. Drag the grab handle to resize: a slow drag settles to the nearest snap point (a short peek, ~half, and ~full detent, filtered to those shorter than the sheet), a fast flick down dismisses, a fast flick up expands. Pulling down on the content when it is scrolled to the top also drags the sheet, giving a larger, more forgiving target. The scrim thins to a faint glance state (but never fully clears) as the sheet collapses onto its shortest "peek" detent; the sheet stays modal, so the background remains inert until dismissed; a residual dim keeps that legible. The sheet is modal: focus is trapped while open and restored to the opener after its exit, and Escape dismisses, so the swipe gesture always has a keyboard equivalent. Visual-viewport overlap adds internal scroll range and keeps focused controls above the mobile keyboard without changing the measured sheet height; short sheets temporarily lift when they otherwise have no usable focus area. Actual sheet travel or closing dismisses the keyboard. Content padding clears the home indicator via env(safe-area-inset-bottom).',
+      'A mobile touch surface for filters, actions, and detail views that should rise from the bottom of the screen. Opening slides the sheet in; closing keeps its native dialog presented but inert until the slide-out and scrim fade complete. Drag the grab handle to resize: a slow drag settles to the nearest snap point (a short peek, ~half, and ~full detent, filtered to those shorter than the sheet), a fast flick down dismisses, a fast flick up expands. Keyboard users can focus the handle and use Arrow Up / Arrow Down to move one detent or Home / End to jump to the tallest / shortest detent. Pulling down on the content when it is scrolled to the top also drags the sheet, giving a larger, more forgiving target. The scrim thins to a faint glance state (but never fully clears) as the sheet collapses onto its shortest "peek" detent; the sheet stays modal, so the background remains inert until dismissed; a residual dim keeps that legible. The sheet is modal: focus is trapped while open and restored to the opener after its exit, and Escape dismisses. Visual-viewport overlap adds internal scroll range and keeps focused controls above the mobile keyboard without changing the measured sheet height; short sheets temporarily lift when they otherwise have no usable focus area. Actual sheet travel or closing dismisses the keyboard. Content padding clears the home indicator via env(safe-area-inset-bottom).',
     bestPractices: [
       {
         guidance: true,

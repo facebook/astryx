@@ -4,13 +4,14 @@
  * @file BottomSheet.test.tsx
  * @input Uses vitest, @testing-library/react, BottomSheet component
  * @output Unit tests for BottomSheet component behavior
- * @position Lab testing; validates BottomSheet.tsx implementation
+ * @position Core testing; validates BottomSheet.tsx implementation
  *
  * SYNC: When BottomSheet.tsx changes, update tests to match new behavior
  */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {act, render, screen, fireEvent} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import {createRef, useState} from 'react';
 import {BottomSheet} from './BottomSheet';
 
@@ -157,9 +158,9 @@ function ExitHarness({hasScrim}: {hasScrim?: boolean}) {
   );
 }
 
-// The grab handle is the panel's first child (decorative, aria-hidden).
+// The grab handle is the focusable separator that adjusts sheet detents.
 function getHandle(): HTMLElement {
-  const handle = getSheet().querySelector<HTMLElement>('[aria-hidden="true"]');
+  const handle = getSheet().querySelector<HTMLElement>('[role="separator"]');
   if (!handle) {
     throw new Error('grab handle not found');
   }
@@ -168,7 +169,7 @@ function getHandle(): HTMLElement {
 
 // Drive a pointer drag on the grab handle. jsdom PointerEvents don't carry
 // clientY, so dispatch plain events with the coords the handlers read.
-function drag(handle: HTMLElement, points: Array<{y: number}>) {
+function drag(handle: HTMLElement, points: {y: number}[]) {
   const [down, ...rest] = points;
   fireEvent.pointerDown(handle, {pointerId: 1, clientY: down.y});
   for (const p of rest) {
@@ -251,6 +252,69 @@ describe('BottomSheet', () => {
     );
     expect(HTMLDialogElement.prototype.showModal).toHaveBeenCalled();
     expect(screen.getByRole('dialog')).toHaveAttribute('aria-modal', 'true');
+  });
+
+  it('exposes an adjustable keyboard handle for the sheet detents', async () => {
+    const user = userEvent.setup();
+    render(
+      <BottomSheet isOpen onOpenChange={() => {}} label="Filters">
+        Content
+      </BottomSheet>,
+    );
+    vi.spyOn(getSheet(), 'getBoundingClientRect').mockReturnValue(
+      rect({top: 400, bottom: 800}),
+    );
+    const handle = screen.getByRole('separator', {name: 'Filters'});
+
+    expect(handle).toHaveAttribute('aria-orientation', 'horizontal');
+    expect(handle).toHaveAttribute('aria-valuemin', '0');
+    expect(handle).toHaveAttribute('aria-valuemax', '100');
+    expect(handle).toHaveAttribute('aria-valuenow', '100');
+
+    handle.focus();
+    await user.keyboard('{End}');
+    expect(Number(handle.getAttribute('aria-valuenow'))).toBeLessThan(100);
+
+    await user.keyboard('{Home}');
+    expect(handle).toHaveAttribute('aria-valuenow', '100');
+  });
+
+  it('wires forward and backward Tab trapping in a modal sheet', () => {
+    render(
+      <BottomSheet isOpen onOpenChange={() => {}} label="Filters">
+        <button type="button">First action</button>
+        <button type="button">Last action</button>
+      </BottomSheet>,
+    );
+    const handle = screen.getByRole('separator', {name: 'Filters'});
+    const first = screen.getByRole('button', {name: 'First action'});
+    const last = screen.getByRole('button', {name: 'Last action'});
+
+    handle.focus();
+    expect(fireEvent.keyDown(document, {key: 'Tab'})).toBe(false);
+    expect(document.activeElement).toBe(first);
+    first.focus();
+    expect(fireEvent.keyDown(document, {key: 'Tab', shiftKey: true})).toBe(
+      false,
+    );
+    expect(document.activeElement).toBe(handle);
+    expect(document.activeElement).not.toBe(last);
+  });
+
+  it('does not dismiss a modal sheet when Escape cancels IME composition', () => {
+    const onOpenChange = vi.fn();
+    render(
+      <BottomSheet isOpen onOpenChange={onOpenChange} label="Filters">
+        Content
+      </BottomSheet>,
+    );
+
+    fireEvent.keyDown(screen.getByRole('dialog'), {
+      key: 'Escape',
+      isComposing: true,
+      keyCode: 229,
+    });
+    expect(onOpenChange).not.toHaveBeenCalled();
   });
 
   it('requests close on Escape', () => {
@@ -416,14 +480,15 @@ describe('BottomSheet', () => {
   });
 
   describe('grab handle', () => {
-    it('renders a decorative handle hidden from assistive tech', () => {
+    it('keeps only the visual pill decorative', () => {
       render(
         <BottomSheet isOpen onOpenChange={() => {}} label="Filters">
           Content
         </BottomSheet>,
       );
       const handle = getHandle();
-      expect(handle).toHaveAttribute('aria-hidden', 'true');
+      expect(handle).not.toHaveAttribute('aria-hidden');
+      expect(handle.firstElementChild).toHaveAttribute('aria-hidden', 'true');
     });
   });
 
@@ -572,7 +637,7 @@ describe('BottomSheet', () => {
         }),
       );
 
-      act(() => viewport.dispatchEvent(new Event('resize')));
+      void act(() => viewport.dispatchEvent(new Event('resize')));
       expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
         '0px',
       );
@@ -587,7 +652,7 @@ describe('BottomSheet', () => {
       expect(body.scrollTop).toBe(248);
 
       viewport.height = 800;
-      act(() => viewport.dispatchEvent(new Event('resize')));
+      void act(() => viewport.dispatchEvent(new Event('resize')));
       expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
         '0px',
       );
@@ -663,7 +728,7 @@ describe('BottomSheet', () => {
       expect(body.scrollTop).toBe(250);
 
       viewport.height = 800;
-      act(() => viewport.dispatchEvent(new Event('resize')));
+      void act(() => viewport.dispatchEvent(new Event('resize')));
       expect(sheet.style.height).toBe('');
       expect(positioner.style.getPropertyValue('--_sheet-keyboard-lift')).toBe(
         '0px',
@@ -813,7 +878,7 @@ describe('BottomSheet', () => {
       expect(body.scrollTop).toBe(250);
 
       viewport.height = 800;
-      act(() => viewport.dispatchEvent(new Event('resize')));
+      void act(() => viewport.dispatchEvent(new Event('resize')));
       expect(positioner.style.getPropertyValue('--_sheet-keyboard-lift')).toBe(
         '0px',
       );
