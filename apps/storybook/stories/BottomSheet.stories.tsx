@@ -303,6 +303,44 @@ export const HugHeight: Story = {
   },
 };
 
+export const HugHeightWithLongContent: Story = {
+  name: 'Hug height — Long content',
+  render: () => {
+    const [isOpen, setIsOpen] = useState(false);
+    return (
+      <>
+        <Button label="View release notes" onClick={() => setIsOpen(true)} />
+        <BottomSheet
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          label="Release notes"
+          height="hug">
+          <Section padding={4}>
+            <VStack gap={4}>
+              <Heading level={3}>Release notes</Heading>
+              <Text type="supporting" color="secondary">
+                The sheet hugs its content until it reaches 92% of the viewport,
+                then the content scrolls within the sheet.
+              </Text>
+              <Divider />
+              {Array.from({length: 12}, (_, i) => (
+                <VStack key={i} gap={1}>
+                  <Text type="label">Update {i + 1}</Text>
+                  <Text type="supporting" color="secondary">
+                    A summary of the improvements, fixes, and other changes in
+                    this update.
+                  </Text>
+                </VStack>
+              ))}
+              <Button label="Done" onClick={() => setIsOpen(false)} />
+            </VStack>
+          </Section>
+        </BottomSheet>
+      </>
+    );
+  },
+};
+
 export const ShortMobileKeyboard: Story = {
   name: 'Short sheet with mobile keyboard',
   render: () => {
