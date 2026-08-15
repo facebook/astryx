@@ -116,7 +116,6 @@ function NotificationFrequencySheet({
           <RadioList
             label="Notification frequency"
             isLabelHidden
-            orientation="horizontal"
             value={frequency}
             onChange={setFrequency}>
             <RadioListItem label="Immediately" value="immediately" />
