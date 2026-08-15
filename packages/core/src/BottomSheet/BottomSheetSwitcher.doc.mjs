@@ -85,7 +85,7 @@ export const docs = {
     ],
   },
   description:
-    'Coordinates multiple BottomSheets as a mutually exclusive flow. One activeSheet ID selects the only interactive sheet; during a handoff, the new sheet enters above the inert previous sheet. If the new sheet is shorter, the previous sheet simultaneously moves down until their top edges align, then fades after both transforms complete. The switcher owns one shared native <dialog>: modal flows call showModal() once for one top-layer boundary and one ::backdrop across the whole flow, while no-scrim flows use a non-modal show() shell.',
+    'Coordinates multiple BottomSheets as a mutually exclusive flow. One activeSheet ID selects the only interactive sheet; during a handoff, the new sheet enters above the inert previous sheet. If the new sheet is shorter, the previous sheet simultaneously moves down until their top edges align, then fades after both transforms complete. The switcher owns one shared native <dialog>: modal flows call showModal() once for one top-layer boundary and one ::backdrop across the whole flow, while no-scrim flows use a non-modal show() shell. Its ref and shared DOM props target that dialog.',
   props: [
     {
       name: 'activeSheet',
@@ -117,7 +117,7 @@ export const docs = {
   ],
   usage: {
     description:
-      'Use one activeSheet value as the source of truth for a multi-step bottom-sheet flow. Set it to a child sheetId to open or switch steps, and set it to null to close. On a handoff, the previous sheet becomes inert immediately while the new active sheet enters above it. A taller previous sheet simultaneously moves down until its top edge aligns with the shorter new sheet; it fades only after both transforms complete. Equal-height or shorter previous sheets stay stationary and fade after the entrance. The switcher keeps one shared dialog open across the transition, with one modal boundary, native backdrop, focus trap, and body scroll lock when hasScrim is true, and restores focus to the trigger that started the flow after the final exit finishes.',
+      'Use one activeSheet value as the source of truth for a multi-step bottom-sheet flow. Set it to a child sheetId to open or switch steps, and set it to null to close. On a handoff, the previous sheet becomes inert immediately while the new active sheet enters above it. A taller previous sheet simultaneously moves down until its top edge aligns with the shorter new sheet; it fades only after both transforms complete. Equal-height or shorter previous sheets stay stationary and fade after the entrance. The switcher keeps one shared dialog open across the transition. When hasScrim is true, that dialog provides one modal boundary, native backdrop, focus trap, and body scroll lock, then restores focus to the trigger after the final exit. When false, the dialog is non-modal and leaves the page behind interactive.',
     bestPractices: [
       {
         guidance: true,
@@ -193,7 +193,8 @@ export const docsDense = {
       },
       {
         guidance: true,
-        description: "Let the switcher own the flow's one shared scrim.",
+        description:
+          "Let the switcher own the flow's shared dialog and scrim setting.",
       },
       {
         guidance: true,

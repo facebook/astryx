@@ -97,7 +97,7 @@ export const docs = {
       name: 'height',
       type: "'hug' | 'capped' | 'tall' | number | string",
       description:
-        "How tall the sheet is. Named budgets: 'hug' fits its content up to 92% of the viewport, 'capped' is a scrolling mid-height panel (~62%), and 'tall' is a pinned near-full panel (~92%) for content that streams in. Or pass a number (px) / CSS length for a custom budget. The user can drag between snap points regardless. On shorter viewports the sheet fills the available height.",
+        "How tall the sheet is. Named budgets: 'hug' fits its content up to 92% of the viewport, 'capped' is a scrolling mid-height panel (~62%), and 'tall' is a near-full panel (~92%) for content that streams in. Or pass a number (px) / CSS length for a custom budget. Dragging uses only snap points shorter than the rendered sheet, so a short hug sheet may have no additional resting detents. On shorter viewports the sheet fills the available height.",
       default: "'capped'",
     },
     {
@@ -110,7 +110,7 @@ export const docs = {
   ],
   usage: {
     description:
-      'A mobile touch surface for filters, actions, and detail views that should rise from the bottom of the screen. Opening slides the sheet in; closing keeps its native dialog presented but inert until the slide-out and scrim fade complete. Drag the grab handle to resize: a slow drag settles to the nearest snap point (a short peek, ~half, and ~full detent, filtered to those shorter than the sheet), a fast flick down dismisses, a fast flick up expands. Keyboard users can focus the handle and use Arrow Up / Arrow Down to move one detent or Home / End to jump to the tallest / shortest detent. Pulling down on the content when it is scrolled to the top also drags the sheet, giving a larger, more forgiving target. The scrim thins to a faint glance state (but never fully clears) as the sheet collapses onto its shortest "peek" detent; the sheet stays modal, so the background remains inert until dismissed; a residual dim keeps that legible. The sheet is modal: focus is trapped while open and restored to the opener after its exit, and Escape dismisses. Visual-viewport overlap adds internal scroll range and keeps focused controls above the mobile keyboard without changing the measured sheet height; short sheets temporarily lift when they otherwise have no usable focus area. Actual sheet travel or closing dismisses the keyboard. Content padding clears the home indicator via env(safe-area-inset-bottom).',
+      'A mobile touch surface for filters, actions, and detail views that should rise from the bottom of the screen. Opening slides the sheet in; closing keeps its native dialog presented but inert until the exit animation completes, with the modal backdrop fading alongside it when present. Drag the grab handle to resize: a slow drag settles to the nearest available snap point (a short peek, ~half, and ~full detent, filtered to those shorter than the sheet), a fast flick down dismisses, and a fast flick up expands. Keyboard users can focus the handle and use Arrow Up / Arrow Down to move one detent or Home / End to jump to the tallest / shortest detent. Pulling down on the content when it is scrolled to the top also drags the sheet, giving a larger, more forgiving target. With the default scrim, the backdrop thins to a faint glance state (but never fully clears) as the sheet collapses onto its shortest "peek" detent; the background remains inert until dismissal. The default modal mode traps focus while open and restores it to the opener after exit. With hasScrim={false}, the sheet is non-modal and leaves the page behind interactive. Escape dismisses in either mode. Visual-viewport overlap adds internal scroll range and keeps focused controls above the mobile keyboard without changing the measured sheet height; short sheets temporarily lift when they otherwise have no usable focus area. Actual sheet travel or closing dismisses the keyboard. Content padding clears the home indicator via env(safe-area-inset-bottom).',
     bestPractices: [
       {
         guidance: true,
@@ -130,7 +130,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          "Pick the starting height that fits the content: 'hug' for short bounded content, 'capped' for lists, 'tall' for streaming/resizing content; the user can then drag between snap points.",
+          "Pick the starting height that fits the content: 'hug' for short bounded content, 'capped' for lists, 'tall' for streaming/resizing content; the user can then drag between the snap points available for that rendered height.",
       },
       {
         guidance: true,
@@ -141,11 +141,6 @@ export const docs = {
         guidance: true,
         description:
           'Use hasScrim={false} for a floating, no-scrim overlay that must coexist with a live page behind it (e.g. a panel over a map). It remains viewport-anchored rather than rendering inline. Keep the default for focused tasks where the background should be inert.',
-      },
-      {
-        guidance: false,
-        description:
-          'Use a BottomSheet for desktop inspectors or master-detail; use Drawer (side="end", hasScrim={false}) instead.',
       },
     ],
   },
@@ -241,7 +236,7 @@ export const docsDense = {
     'mobile touch sheet rising from the bottom edge (native <dialog>): grab handle, drag-to-resize snap points, swipe-to-dismiss, visual-viewport mobile-keyboard handling, named height scale, modal (default) or non-modal (hasScrim={false}) presentation',
   usage: {
     description:
-      'Mobile surface for filters, actions, forms, and detail views. Drag the handle to resize between snap points; flick down to dismiss, up to expand. Modal: focus trap + restore, and Escape dismisses so swipe has a keyboard equivalent. Focused form controls scroll above the visual-viewport keyboard; short sheets temporarily lift without changing height. Actual sheet travel or closing dismisses the keyboard. Content clears the home indicator via safe-area inset.',
+      'Mobile surface for filters, actions, forms, and detail views. Drag the handle between available snap points; flick down to dismiss, up to expand. The default modal mode traps and restores focus; hasScrim={false} leaves the page behind interactive. Escape dismisses in either mode. Focused form controls scroll above the visual-viewport keyboard; short sheets temporarily lift without changing height. Actual sheet travel or closing dismisses the keyboard. Content clears the home indicator via safe-area inset.',
     bestPractices: [
       {
         guidance: true,
@@ -271,11 +266,6 @@ export const docsDense = {
         guidance: true,
         description:
           'hasScrim={false} for a floating no-scrim overlay over a live page; it is not inline. Keep the default for focused tasks (inert background).',
-      },
-      {
-        guidance: false,
-        description:
-          'Use for desktop inspectors or master-detail; use Drawer instead.',
       },
     ],
   },
