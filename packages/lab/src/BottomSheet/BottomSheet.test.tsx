@@ -106,6 +106,38 @@ function mockVisualViewport(height: number, offsetTop = 0) {
   return viewport;
 }
 
+interface ResizeObserverRecord {
+  callback: ResizeObserverCallback;
+  observed: Set<Element>;
+}
+
+function mockResizeObserverInstances(): ResizeObserverRecord[] {
+  const observers: ResizeObserverRecord[] = [];
+  class ResizeObserverMock {
+    callback: ResizeObserverCallback;
+    observed = new Set<Element>();
+
+    constructor(callback: ResizeObserverCallback) {
+      this.callback = callback;
+      observers.push(this);
+    }
+
+    observe(target: Element) {
+      this.observed.add(target);
+    }
+
+    unobserve(target: Element) {
+      this.observed.delete(target);
+    }
+
+    disconnect() {
+      this.observed.clear();
+    }
+  }
+  vi.stubGlobal('ResizeObserver', ResizeObserverMock);
+  return observers;
+}
+
 function finishSheetExit() {
   fireEvent.transitionEnd(getSheet(), {propertyName: 'transform'});
 }
@@ -157,6 +189,20 @@ describe('BottomSheet', () => {
     expect(dialog).toBeInTheDocument();
     expect(dialog).toHaveAccessibleName('Filters');
     expect(screen.getByText('Sheet content')).toBeInTheDocument();
+  });
+
+  it('keeps consumer content as the last scroll-body child', () => {
+    render(
+      <BottomSheet isOpen onOpenChange={() => {}} label="Filters">
+        <div data-testid="consumer-content">Sheet content</div>
+      </BottomSheet>,
+    );
+    const body = getBody();
+    const consumer = screen.getByTestId('consumer-content');
+
+    expect(body.children).toHaveLength(1);
+    expect(body.lastElementChild).toBe(consumer);
+    expect(consumer.matches(':last-child')).toBe(true);
   });
 
   it('does not show when isOpen is false', () => {
@@ -426,6 +472,26 @@ describe('BottomSheet', () => {
       expect(onFocus).toHaveBeenCalledTimes(1);
     });
 
+    it('restores pointer focus scrolling when a control stops propagation', () => {
+      render(
+        <BottomSheet isOpen onOpenChange={() => {}} label="Add a comment">
+          <input
+            aria-label="Comment"
+            onPointerDown={event => event.stopPropagation()}
+          />
+        </BottomSheet>,
+      );
+      const body = getBody();
+      const input = screen.getByRole('textbox', {name: 'Comment'});
+      body.scrollTop = 20;
+
+      fireEvent.pointerDown(input, {pointerId: 1, clientY: 200});
+      body.scrollTop = 120;
+      fireEvent.focus(input, {relatedTarget: null});
+
+      expect(body.scrollTop).toBe(20);
+    });
+
     it('restores native focus scrolling without duplicating focus events', () => {
       const onTitleBlur = vi.fn();
       const onCommentFocus = vi.fn();
@@ -576,32 +642,7 @@ describe('BottomSheet', () => {
     });
 
     it('re-reveals a focused control when content layout changes', () => {
-      const observers: Array<{
-        callback: ResizeObserverCallback;
-        observed: Set<Element>;
-      }> = [];
-      class ResizeObserverMock {
-        callback: ResizeObserverCallback;
-        observed = new Set<Element>();
-
-        constructor(callback: ResizeObserverCallback) {
-          this.callback = callback;
-          observers.push(this);
-        }
-
-        observe(target: Element) {
-          this.observed.add(target);
-        }
-
-        unobserve(target: Element) {
-          this.observed.delete(target);
-        }
-
-        disconnect() {
-          this.observed.clear();
-        }
-      }
-      vi.stubGlobal('ResizeObserver', ResizeObserverMock);
+      const observers = mockResizeObserverInstances();
       mockVisualViewport(500);
       render(
         <BottomSheet isOpen onOpenChange={() => {}} label="Add a comment">
@@ -632,6 +673,177 @@ describe('BottomSheet', () => {
       });
 
       expect(body.scrollTop).toBe(448);
+    });
+
+    it('re-reveals a focused control when the sheet height changes', () => {
+      const observers = mockResizeObserverInstances();
+      mockVisualViewport(500);
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={() => {}}
+          label="Add a comment"
+          height="tall">
+          <input aria-label="Comment" />
+        </BottomSheet>,
+      );
+      const sheet = getSheet();
+      const positioner = getPositioner();
+      const body = getBody();
+      const input = screen.getByRole('textbox', {name: 'Comment'});
+      let isShort = false;
+      const currentLift = () =>
+        Number.parseFloat(
+          positioner.style.getPropertyValue('--_sheet-keyboard-lift'),
+        ) || 0;
+      vi.spyOn(sheet, 'getBoundingClientRect').mockImplementation(() =>
+        rect({
+          top: (isShort ? 400 : 0) - currentLift(),
+          bottom: 800 - currentLift(),
+        }),
+      );
+      vi.spyOn(body, 'getBoundingClientRect').mockImplementation(() =>
+        rect({
+          top: (isShort ? 450 : 100) - currentLift(),
+          bottom: 800 - currentLift(),
+        }),
+      );
+      vi.spyOn(input, 'getBoundingClientRect').mockImplementation(() => {
+        const bodyTop = isShort ? 450 : 100;
+        return rect({
+          top: bodyTop + 560 - currentLift() - body.scrollTop,
+          bottom: bodyTop + 600 - currentLift() - body.scrollTop,
+        });
+      });
+
+      input.focus();
+      expect(body.scrollTop).toBe(248);
+
+      isShort = true;
+      const observer = observers.find(instance => instance.observed.has(body));
+      expect(observer?.observed.has(sheet)).toBe(true);
+      act(() => {
+        observer?.callback([], observer as unknown as ResizeObserver);
+      });
+
+      expect(positioner.style.getPropertyValue('--_sheet-keyboard-lift')).toBe(
+        '38px',
+      );
+      expect(body.scrollTop).toBe(560);
+      expect(input.getBoundingClientRect().bottom).toBe(452);
+    });
+
+    it('retains keyboard layout during travel until the viewport recovers', () => {
+      const viewport = mockVisualViewport(500);
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={() => {}}
+          label="Add a comment"
+          height="hug">
+          <input aria-label="Comment" />
+        </BottomSheet>,
+      );
+      const sheet = getSheet();
+      const positioner = getPositioner();
+      const body = getBody();
+      const input = screen.getByRole('textbox', {name: 'Comment'});
+      const currentLift = () =>
+        Number.parseFloat(
+          positioner.style.getPropertyValue('--_sheet-keyboard-lift'),
+        ) || 0;
+      vi.spyOn(sheet, 'getBoundingClientRect').mockImplementation(() =>
+        rect({top: 400 - currentLift(), bottom: 800 - currentLift()}),
+      );
+      vi.spyOn(body, 'getBoundingClientRect').mockImplementation(() =>
+        rect({top: 450 - currentLift(), bottom: 800 - currentLift()}),
+      );
+      vi.spyOn(input, 'getBoundingClientRect').mockImplementation(() =>
+        rect({
+          top: 700 - currentLift() - body.scrollTop,
+          bottom: 740 - currentLift() - body.scrollTop,
+        }),
+      );
+
+      input.focus();
+      expect(positioner.style.getPropertyValue('--_sheet-keyboard-lift')).toBe(
+        '38px',
+      );
+      expect(body.scrollTop).toBe(250);
+
+      fireEvent.pointerDown(getHandle(), {pointerId: 1, clientY: 0});
+      fireEvent.pointerMove(getHandle(), {pointerId: 1, clientY: 40});
+
+      expect(document.activeElement).toBe(sheet);
+      expect(positioner.style.getPropertyValue('--_sheet-keyboard-lift')).toBe(
+        '38px',
+      );
+      expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
+        '310px',
+      );
+      expect(body.scrollTop).toBe(250);
+
+      viewport.height = 800;
+      act(() => viewport.dispatchEvent(new Event('resize')));
+      expect(positioner.style.getPropertyValue('--_sheet-keyboard-lift')).toBe(
+        '0px',
+      );
+      expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
+        '0px',
+      );
+    });
+
+    it('re-reveals after the sheet entrance transform settles', () => {
+      mockVisualViewport(500);
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={() => {}}
+          label="Add a comment"
+          height="hug">
+          <input aria-label="Comment" />
+        </BottomSheet>,
+      );
+      const sheet = getSheet();
+      const positioner = getPositioner();
+      const body = getBody();
+      const input = screen.getByRole('textbox', {name: 'Comment'});
+      let entranceOffset = 100;
+      const currentLift = () =>
+        Number.parseFloat(
+          positioner.style.getPropertyValue('--_sheet-keyboard-lift'),
+        ) || 0;
+      vi.spyOn(sheet, 'getBoundingClientRect').mockImplementation(() =>
+        rect({
+          top: 400 + entranceOffset - currentLift(),
+          bottom: 800 + entranceOffset - currentLift(),
+        }),
+      );
+      vi.spyOn(body, 'getBoundingClientRect').mockImplementation(() =>
+        rect({
+          top: 450 + entranceOffset - currentLift(),
+          bottom: 800 + entranceOffset - currentLift(),
+        }),
+      );
+      vi.spyOn(input, 'getBoundingClientRect').mockImplementation(() =>
+        rect({
+          top: 700 + entranceOffset - currentLift() - body.scrollTop,
+          bottom: 740 + entranceOffset - currentLift() - body.scrollTop,
+        }),
+      );
+
+      input.focus();
+      expect(positioner.style.getPropertyValue('--_sheet-keyboard-lift')).toBe(
+        '138px',
+      );
+
+      entranceOffset = 0;
+      fireEvent.transitionEnd(sheet, {propertyName: 'transform'});
+
+      expect(positioner.style.getPropertyValue('--_sheet-keyboard-lift')).toBe(
+        '38px',
+      );
+      expect(input.getBoundingClientRect().bottom).toBe(452);
     });
 
     it('keeps the keyboard open for a handle tap and blurs after travel starts', () => {

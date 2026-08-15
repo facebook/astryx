@@ -261,7 +261,7 @@ const styles = stylex.create({
     minHeight: 0,
     overflowY: 'auto',
     // Set from visualViewport while the on-screen keyboard/browser chrome
-    // covers the stable sheet. The trailing spacer below extends the internal
+    // covers the stable sheet. The generated tail below extends the internal
     // scroll range; the outer sheet and this flex item's box stay unchanged.
     scrollPaddingBlockEnd: MOBILE_KEYBOARD_BOTTOM_CLEARANCE,
     // No overscroll bounce inside the sheet — a pull-down at the top edge is
@@ -272,11 +272,16 @@ const styles = stylex.create({
     // intercepted via a non-passive touchmove listener, not by blocking
     // touch-action (which would suppress scrolling entirely).
     touchAction: 'pan-y',
-  },
-  keyboardSpacer: {
-    // SYNC: custom property is set by useMobileKeyboard.ts.
-    blockSize: 'var(--_sheet-keyboard-inset, 0px)',
-    pointerEvents: 'none',
+    // Extend the scroll range without inserting an element after public
+    // children. Direct children must retain their :last-child semantics for
+    // Astryx container edge compensation and consumer-authored selectors.
+    '::after': {
+      content: '""',
+      display: 'block',
+      // SYNC: custom property is set by useMobileKeyboard.ts.
+      blockSize: 'var(--_sheet-keyboard-inset, 0px)',
+      pointerEvents: 'none',
+    },
   },
   // Both budgets add the overdrag padding back to the height so the visible
   // height (minus the off-screen padding) matches the intended budget.
@@ -604,7 +609,6 @@ export function BottomSheet({
             {...bodyProps}
             ref={mergedBodyRef}>
             {children}
-            <div {...stylex.props(styles.keyboardSpacer)} aria-hidden="true" />
           </div>
         </div>
       </div>
