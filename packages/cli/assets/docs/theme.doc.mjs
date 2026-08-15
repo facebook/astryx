@@ -410,6 +410,10 @@ import './themes/ocean.css';
   <App />
 </Theme>`,
         },
+        {
+          type: 'prose',
+          text: 'The build also warns when the theme names font families it does not load (webfonts like Fraunces) and prints the `<link>`/`@font-face` to add — the built CSS only sets font-family, so loading the font files stays the app\'s job. See `astryx docs typography` for the full recipe.',
+        },
       ],
     },
     {

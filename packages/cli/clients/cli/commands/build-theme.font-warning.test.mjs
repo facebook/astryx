@@ -1,0 +1,111 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+/**
+ * @file End-to-end test for the `astryx theme build` font-loading warning
+ * (#5015). A theme that names webfont families gets, AFTER the install
+ * instructions, a stdout notice naming the fonts plus the copy-pasteable
+ * fix — the Google Fonts <link> pair and a self-hosted @font-face with
+ * font-display: swap — and still exits 0 (it is a warning, not an error).
+ * Themes that only name generics or known system stacks get none of it.
+ */
+
+import {describe, it, expect, beforeAll, beforeEach, afterEach} from 'vitest';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import * as os from 'node:os';
+import {ensureCoreBuilt} from './ensure-core-built.mjs';
+import {runCli} from '../../../test-utils/run-cli.mjs';
+
+function writeTheme(dir, name, source) {
+  fs.mkdirSync(dir, {recursive: true});
+  const file = path.join(dir, `${name}.mjs`);
+  fs.writeFileSync(file, source);
+  return file;
+}
+
+// `astryx theme build` imports the compiled @astryxdesign/core/theme entry.
+// Build core once if it isn't already present so the suite works in any CI
+// job, regardless of job ordering.
+beforeAll(() => {
+  ensureCoreBuilt();
+}, 200_000);
+
+let tmpDir;
+beforeEach(() => {
+  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-build-theme-fonts-'));
+});
+afterEach(() => {
+  fs.rmSync(tmpDir, {recursive: true, force: true});
+});
+
+describe('theme build font-loading warning', () => {
+  it('prints the unloaded fonts and the <link>/@font-face fix after the install instructions', async () => {
+    const project = path.join(tmpDir, 'project');
+    const themeFile = writeTheme(
+      project,
+      'fonty',
+      `export default {
+  name: 'fonty',
+  typography: {
+    body: {family: 'Space Grotesk', fallbacks: 'Arial, sans-serif'},
+    code: {family: 'JetBrains Mono'},
+  },
+};\n`,
+    );
+
+    const result = await runCli(
+      ['theme', 'build', path.relative(project, themeFile)],
+      project,
+    );
+
+    expect(result.code).toBe(0);
+    // The install instructions still come out intact…
+    expect(result.stdout).toContain("from './fonty'");
+    // …followed by the warning naming the theme and every unloaded family…
+    expect(result.stdout).toContain('names fonts it does not load');
+    expect(result.stdout).toContain('"Space Grotesk"');
+    expect(result.stdout).toContain('"JetBrains Mono"');
+    // …and the copy-pasteable fix, both flavors.
+    expect(result.stdout).toContain(
+      '<link rel="preconnect" href="https://fonts.googleapis.com"',
+    );
+    expect(result.stdout).toContain('family=Space+Grotesk');
+    expect(result.stdout).toContain('family=JetBrains+Mono');
+    expect(result.stdout).toContain('display=swap');
+    expect(result.stdout).toContain('@font-face');
+    expect(result.stdout).toContain('font-display: swap');
+    expect(result.stdout).toContain('astryx docs typography');
+    // The one-line summaries follow the CLI's stream contract: warnings on
+    // stderr, like the override-validation warnings in the same build.
+    expect(result.stderr).toContain('Font "Space Grotesk"');
+    expect(result.stderr).toContain('Font "JetBrains Mono"');
+  });
+
+  it('prints nothing font-related for a theme of generics and system stacks', async () => {
+    const project = path.join(tmpDir, 'project');
+    const themeFile = writeTheme(
+      project,
+      'sys',
+      `export default {
+  name: 'sys',
+  tokens: {
+    '--color-bg': '#fff',
+    '--font-family-body': 'Helvetica, Arial, sans-serif',
+    '--font-family-code': 'ui-monospace',
+  },
+};\n`,
+    );
+
+    const result = await runCli(
+      ['theme', 'build', path.relative(project, themeFile)],
+      project,
+    );
+
+    expect(result.code).toBe(0);
+    expect(result.stdout).toContain("from './sys'");
+    expect(result.stdout).not.toContain('names fonts it does not load');
+    expect(result.stdout).not.toContain('fonts.googleapis.com');
+    expect(result.stdout).not.toContain('@font-face');
+    expect(result.stderr).not.toContain('Font "');
+  });
+});

@@ -11,8 +11,10 @@
  * - A JS module that re-exports the built theme (+ icon registry)
  * - A .d.ts (plus an optional .variants.d.ts for custom prop values)
  *
- * It performs the writes and returns a `theme.build` receipt, or `null` when
- * the theme produced no CSS (nothing to build). Errors throw AstryxError (with
+ * It performs the writes and returns a `theme.build` receipt — its `warnings`
+ * carry override problems and any fonts the theme names but does not load
+ * (font-warning.mjs) — or `null` when the theme produced no CSS (nothing to
+ * build). Errors throw AstryxError (with
  * a stable code). Human progress is emitted through the shared `logger`
  * (silent by default), so the CLI keeps its exact output while a programmatic
  * caller stays quiet.
@@ -41,6 +43,10 @@ import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {AstryxError} from '../../error.mjs';
 import {logger} from '../../logger.mjs';
 import {loadComponentDoc} from '../../../foundation/discovery/component-loader.mjs';
+import {
+  collectUnloadedFonts,
+  formatFontLoadingHelp,
+} from './font-warning.mjs';
 
 // Import shared theme processing from core. `astryx theme build` MUST produce the
 // exact same CSS as the `<Theme>` runtime, so it has exactly one generation
@@ -1341,16 +1347,17 @@ Or with a <link> tag:
   </Theme>
 `);
 
-  // Print font declaration warnings (derived from typography roles)
-  if (resolvedTheme && resolvedTheme.fonts && resolvedTheme.fonts.length > 0) {
-    logger.log(
-      `\n⚠ Theme "${themeDef.name}" requires fonts not included in the build:`,
-    );
-    for (const font of resolvedTheme.fonts) {
-      logger.log(`  ${font.family} — add to your document <head>:`);
-      logger.log(`  <link rel="stylesheet" href="${font.url}" />`);
-    }
-    logger.log('');
+  // Fonts the theme names but nothing loads (#5015). Resolved tokens and
+  // component overrides carry the final font-family values on both load
+  // paths, so this sees jiti-resolved and legacy themes alike.
+  const unloadedFonts = collectUnloadedFonts(resolvedTheme);
+  for (const family of unloadedFonts) {
+    const msg = `Font "${family}" is named by this theme but not loaded — add a <link> or @font-face in your app (recipe: astryx docs typography)`;
+    warningMessages.push(msg);
+    logger.warn(`  ⚠ ${msg}`);
+  }
+  if (unloadedFonts.length > 0) {
+    logger.log(formatFontLoadingHelp(themeDef.name, unloadedFonts));
   }
 
   return {

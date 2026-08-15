@@ -1,0 +1,133 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+/**
+ * API-contract tests for the font-loading warning in `themeBuild()` (#5015):
+ * a theme that names font families it does not load gets one entry per family
+ * in the `theme.build` receipt's `warnings` array, on BOTH load paths — a raw
+ * typography config (resolved through core's defineTheme) and an
+ * already-resolved theme that sets `--font-family-*` tokens directly. Themes
+ * that only name generics or known system families warn about nothing, and
+ * the warning never breaks the API's silence contract (default noopLogger).
+ *
+ * Needs a built core — the `node` project's globalSetup
+ * (vitest.global-setup.node.mjs) builds it once before workers fork.
+ */
+
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import * as os from 'node:os';
+import {themeBuild} from './build.mjs';
+
+vi.setConfig({testTimeout: 30000});
+
+let tmpDir;
+beforeEach(() => {
+  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-theme-fonts-api-'));
+});
+afterEach(() => {
+  fs.rmSync(tmpDir, {recursive: true, force: true});
+});
+
+describe('themeBuild() — font-loading warnings in the receipt', () => {
+  it('warns once per unloaded family for a typography config (heading inherits body without duplicating)', async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'fonty.mjs'),
+      `export default {
+  name: 'fonty',
+  typography: {
+    body: {family: 'Space Grotesk', fallbacks: 'Arial, sans-serif'},
+    code: {family: 'JetBrains Mono'},
+  },
+};\n`,
+    );
+
+    const result = await themeBuild('fonty.mjs', {}, {cwd: tmpDir});
+
+    expect(result?.type).toBe('theme.build');
+    const warnings = result?.data.warnings ?? [];
+    expect(warnings).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining('Font "Space Grotesk"'),
+        expect.stringContaining('Font "JetBrains Mono"'),
+      ]),
+    );
+    // Heading inherits body's family; the shared family warns exactly once.
+    expect(warnings.filter(w => w.includes('Space Grotesk'))).toHaveLength(1);
+  });
+
+  it('warns for an already-resolved theme: font-family tokens and component overrides, nothing else', async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'raw.mjs'),
+      `export default {
+  name: 'raw',
+  tokens: {
+    '--font-family-body': '"Bungee", cursive',
+    '--font-size-base': '1rem',
+  },
+  components: {button: {base: {fontFamily: 'Orbitron'}}},
+};\n`,
+    );
+
+    const result = await themeBuild('raw.mjs', {}, {cwd: tmpDir});
+
+    // Exactly the two named families — a non-family --font-* token must not
+    // produce a bogus "Font \\"1rem\\"" entry, and the components half of the
+    // feature must survive the real themeBuild path, not just the unit helper.
+    const fontWarnings = (result?.data.warnings ?? []).filter(w =>
+      w.startsWith('Font "'),
+    );
+    expect(fontWarnings).toEqual([
+      expect.stringContaining('Font "Bungee"'),
+      expect.stringContaining('Font "Orbitron"'),
+    ]);
+  });
+
+  it('warns about nothing when every named family is a generic or known system font', async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'sys.mjs'),
+      `export default {
+  name: 'sys',
+  tokens: {
+    '--color-bg': '#fff',
+    '--font-family-body': 'Helvetica, Arial, sans-serif',
+  },
+};\n`,
+    );
+
+    const result = await themeBuild('sys.mjs', {}, {cwd: tmpDir});
+
+    expect(result?.type).toBe('theme.build');
+    expect(result?.data.warnings).toEqual([]);
+  });
+
+  it('stays silent under the default noopLogger even when font warnings fire', async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'loud.mjs'),
+      `export default { name: 'loud', tokens: { '--font-family-body': '"Orbitron", sans-serif' } };\n`,
+    );
+
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const outSpy = vi
+      .spyOn(process.stdout, 'write')
+      .mockImplementation(() => true);
+
+    try {
+      const result = await themeBuild('loud.mjs', {}, {cwd: tmpDir});
+      expect(result?.data.warnings).toEqual(
+        expect.arrayContaining([expect.stringContaining('Font "Orbitron"')]),
+      );
+      expect(logSpy).not.toHaveBeenCalled();
+      expect(warnSpy).not.toHaveBeenCalled();
+      expect(errSpy).not.toHaveBeenCalled();
+      expect(outSpy).not.toHaveBeenCalled();
+    } finally {
+      logSpy.mockRestore();
+      warnSpy.mockRestore();
+      errSpy.mockRestore();
+      outSpy.mockRestore();
+    }
+  });
+});
