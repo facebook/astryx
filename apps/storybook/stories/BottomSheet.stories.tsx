@@ -78,9 +78,10 @@ function MobileKeyboardCommentForm({onPost}: {onPost: () => void}) {
     <VStack gap={4}>
       <Heading level={3}>Add a comment</Heading>
       <Text type="supporting" color="secondary">
-        Focus fields near the beginning, middle, and end. The outer Tall sheet
-        remains stationary while its body scrolls each control above the mobile
-        keyboard.
+        Keep the Tall sheet fully expanded, then focus fields near the
+        beginning, middle, and end. The outer sheet remains stationary while its
+        body scrolls each control above the mobile keyboard. Keyboard
+        accommodation is not provided at shorter snap points.
       </Text>
       <Text type="supporting" color="secondary">
         Move the sheet with its handle or close it with Post comment to verify

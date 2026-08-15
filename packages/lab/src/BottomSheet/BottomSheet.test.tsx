@@ -209,6 +209,20 @@ function fireTouchPointer(
   return fireEvent(target, event);
 }
 
+function fireTimedPointer(
+  target: Element,
+  type: 'pointerdown' | 'pointermove' | 'pointerup',
+  {time, y}: {time: number; y: number},
+) {
+  const event = new Event(type, {bubbles: true, cancelable: true});
+  Object.defineProperties(event, {
+    clientY: {value: y},
+    pointerId: {value: 1},
+    timeStamp: {value: time},
+  });
+  return fireEvent(target, event);
+}
+
 describe('BottomSheet', () => {
   it('renders children when open and applies the accessible label', () => {
     render(
@@ -509,7 +523,6 @@ describe('BottomSheet', () => {
 
   describe('mobile keyboard', () => {
     it('prevents native touch focus panning without moving focus early or duplicating events', () => {
-      mockIOSWebKit();
       const onFocus = vi.fn();
       const onBlur = vi.fn();
       render(
@@ -528,32 +541,22 @@ describe('BottomSheet', () => {
       );
       const sheet = getSheet();
       const input = screen.getByRole('textbox', {name: 'Comment'});
-      const sheetFocus = vi.spyOn(sheet, 'focus');
-      const focus = vi.spyOn(input, 'focus').mockImplementation(() => {});
+      const focus = vi.spyOn(input, 'focus');
+      sheet.focus();
 
-      // Touchstart may still become a scroll gesture, so it must not focus the
-      // control or open the keyboard early. It only establishes the stationary
-      // sheet as the source of the upcoming native focus transition.
-      fireEvent.touchStart(input);
-      expect(sheetFocus).toHaveBeenCalledWith({preventScroll: true});
-      expect(focus).not.toHaveBeenCalled();
-      expect(onFocus).not.toHaveBeenCalled();
-
-      // Pointerdown alone also must not move focus or open the keyboard early.
+      // Pointerdown may still become a scroll gesture, so it must not move
+      // focus or open the keyboard early.
       fireTouchPointer(input, 'pointerdown', {x: 20, y: 200});
       expect(focus).not.toHaveBeenCalled();
       expect(onFocus).not.toHaveBeenCalled();
+      expect(document.activeElement).toBe(sheet);
 
-      // Pointerup leaves focus and caret placement to the native activation.
+      // Pointerup confirms a tap and prevents focus panning. The subsequent
+      // native click remains responsible for caret placement.
       fireTouchPointer(input, 'pointerup', {x: 20, y: 200});
-      expect(focus).not.toHaveBeenCalled();
-      expect(document.activeElement).not.toBe(input);
-
-      // Model the browser's outgoing blur and single destination focus. The
-      // prevention runs before the platform schedules its native reveal.
-      fireEvent.blur(sheet, {relatedTarget: input});
+      expect(focus).toHaveBeenCalledTimes(1);
       expect(focus).toHaveBeenCalledWith({preventScroll: true});
-      fireEvent.focus(input, {relatedTarget: sheet});
+      expect(document.activeElement).toBe(input);
       expect(onFocus).toHaveBeenCalledTimes(1);
       expect(onBlur).not.toHaveBeenCalled();
 
@@ -565,39 +568,47 @@ describe('BottomSheet', () => {
     });
 
     it('does not focus when a touch becomes a scroll gesture', () => {
-      mockIOSWebKit();
+      const onPreviousBlur = vi.fn();
       render(
         <BottomSheet
           isOpen
           onOpenChange={() => {}}
           label="Add a comment"
           height="tall">
+          <button type="button" onBlur={onPreviousBlur}>
+            Previous action
+          </button>
           <input aria-label="Comment" />
         </BottomSheet>,
       );
       const body = getBody();
+      const previous = screen.getByRole('button', {name: 'Previous action'});
       const input = screen.getByRole('textbox', {name: 'Comment'});
       const focus = vi.spyOn(input, 'focus');
       body.scrollTop = 20;
+      previous.focus();
 
-      fireEvent.touchStart(input);
       fireTouchPointer(input, 'pointerdown', {x: 20, y: 200});
       fireTouchPointer(input, 'pointermove', {x: 20, y: 240});
       fireTouchPointer(input, 'pointerup', {x: 20, y: 240});
 
       expect(focus).not.toHaveBeenCalled();
-      expect(document.activeElement).not.toBe(input);
+      expect(document.activeElement).toBe(previous);
+      expect(onPreviousBlur).not.toHaveBeenCalled();
     });
 
     it('does not focus when pointer activation is canceled', () => {
-      mockIOSWebKit();
       const onFocus = vi.fn();
+      const onPreviousBlur = vi.fn();
       render(
         <BottomSheet
           isOpen
           onOpenChange={() => {}}
           label="Add a comment"
           height="tall">
+          <button type="button" onBlur={onPreviousBlur}>
+            Previous action
+          </button>
           <input
             aria-label="Comment"
             onPointerDown={event => event.preventDefault()}
@@ -605,10 +616,11 @@ describe('BottomSheet', () => {
           />
         </BottomSheet>,
       );
+      const previous = screen.getByRole('button', {name: 'Previous action'});
       const input = screen.getByRole('textbox', {name: 'Comment'});
       const focus = vi.spyOn(input, 'focus');
+      previous.focus();
 
-      fireEvent.touchStart(input);
       const pointerDownAllowed = fireTouchPointer(input, 'pointerdown', {
         x: 20,
         y: 200,
@@ -617,12 +629,12 @@ describe('BottomSheet', () => {
 
       expect(pointerDownAllowed).toBe(false);
       expect(focus).not.toHaveBeenCalled();
-      expect(document.activeElement).not.toBe(input);
+      expect(document.activeElement).toBe(previous);
       expect(onFocus).not.toHaveBeenCalled();
+      expect(onPreviousBlur).not.toHaveBeenCalled();
     });
 
     it('prevents input-to-input focus panning without duplicating focus or blur events', () => {
-      mockIOSWebKit();
       const onTitleBlur = vi.fn();
       const onCommentFocus = vi.fn();
       render(
@@ -638,12 +650,41 @@ describe('BottomSheet', () => {
       const title = screen.getByRole('textbox', {name: 'Title'});
       const comment = screen.getByRole('textbox', {name: 'Comment'});
       title.focus();
-      const focus = vi.spyOn(comment, 'focus').mockImplementation(() => {});
+      const focus = vi.spyOn(comment, 'focus');
 
-      fireEvent.blur(title, {relatedTarget: comment});
-      fireEvent.focus(comment, {relatedTarget: title});
+      fireTouchPointer(comment, 'pointerdown', {x: 20, y: 200});
+      fireTouchPointer(comment, 'pointerup', {x: 20, y: 200});
 
       expect(focus).toHaveBeenCalledWith({preventScroll: true});
+      expect(document.activeElement).toBe(comment);
+      expect(onTitleBlur).toHaveBeenCalledTimes(1);
+      expect(onCommentFocus).toHaveBeenCalledTimes(1);
+
+      fireEvent.click(comment);
+      expect(onTitleBlur).toHaveBeenCalledTimes(1);
+      expect(onCommentFocus).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not duplicate callbacks during programmatic input-to-input focus', () => {
+      const onTitleBlur = vi.fn();
+      const onCommentFocus = vi.fn();
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={() => {}}
+          label="Add a comment"
+          height="tall">
+          <input aria-label="Title" onBlur={onTitleBlur} />
+          <input aria-label="Comment" onFocus={onCommentFocus} />
+        </BottomSheet>,
+      );
+      const title = screen.getByRole('textbox', {name: 'Title'});
+      const comment = screen.getByRole('textbox', {name: 'Comment'});
+
+      title.focus();
+      comment.focus();
+
+      expect(document.activeElement).toBe(comment);
       expect(onTitleBlur).toHaveBeenCalledTimes(1);
       expect(onCommentFocus).toHaveBeenCalledTimes(1);
     });
@@ -787,6 +828,60 @@ describe('BottomSheet', () => {
         '0px',
       );
       expect(body.scrollTop).toBe(0);
+    });
+
+    it('does not accommodate the keyboard at a shorter Tall detent', () => {
+      const observers = mockResizeObserverInstances();
+      const viewport = mockVisualViewport(800);
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={() => {}}
+          label="Add a comment"
+          height="tall">
+          <input aria-label="Comment" />
+        </BottomSheet>,
+      );
+      const sheet = getSheet();
+      const body = getBody();
+      const input = screen.getByRole('textbox', {name: 'Comment'});
+      const sheetObserver = observers.find(instance =>
+        instance.observed.has(sheet),
+      );
+      expect(sheetObserver).toBeDefined();
+      act(() => {
+        sheetObserver?.callback(
+          [{contentRect: rect({top: 0, bottom: 800})} as ResizeObserverEntry],
+          sheetObserver as unknown as ResizeObserver,
+        );
+      });
+
+      fireTimedPointer(getHandle(), 'pointerdown', {time: 0, y: 0});
+      fireTimedPointer(getHandle(), 'pointermove', {time: 1000, y: 240});
+      fireTimedPointer(getHandle(), 'pointerup', {time: 2000, y: 240});
+      expect(sheet.style.transform).toBe('translateY(400px)');
+
+      vi.spyOn(body, 'getBoundingClientRect').mockReturnValue(
+        rect({top: 500, bottom: 1200}),
+      );
+      vi.spyOn(input, 'getBoundingClientRect').mockReturnValue(
+        rect({top: 700, bottom: 740}),
+      );
+      viewport.height = 500;
+      const focus = vi.spyOn(input, 'focus');
+      fireTouchPointer(input, 'pointerdown', {x: 20, y: 700});
+      fireTouchPointer(input, 'pointerup', {x: 20, y: 700});
+      expect(focus).not.toHaveBeenCalled();
+
+      focus.mockRestore();
+      input.focus();
+      act(() => viewport.dispatchEvent(new Event('resize')));
+
+      expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
+        '0px',
+      );
+      expect(body.scrollTop).toBe(0);
+      expect(sheet.style.transform).toBe('translateY(400px)');
     });
 
     it.each([

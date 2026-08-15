@@ -121,7 +121,7 @@ interface BottomSheetSharedProps extends BaseProps<HTMLDivElement> {
   /** Sheet content, rendered below the grab handle in a scrollable area. */
   children: ReactNode;
 
-  /** Height budget or custom CSS length. Only Tall is keyboard-aware. @default 'capped' */
+  /** Height budget or custom CSS length. Only fully expanded Tall is keyboard-aware. @default 'capped' */
   height?: BottomSheetHeight | number | string;
 }
 

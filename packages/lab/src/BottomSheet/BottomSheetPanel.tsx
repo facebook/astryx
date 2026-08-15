@@ -362,6 +362,7 @@ export function BottomSheetPanel({
     bodyRef: bodyElementRef,
     bottomClearance: MOBILE_KEYBOARD_BOTTOM_CLEARANCE,
     isEnabled: height === 'tall',
+    isFullyExpanded: settledOffset === 0,
     isSheetTraveling: isDragging && dragOffset !== settledOffset,
     isOpen: isInteractive,
     isPresented,

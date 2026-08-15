@@ -57,14 +57,14 @@ export const docs = {
       name: 'children',
       type: 'ReactNode',
       description:
-        "Sheet content, rendered below the grab handle in a scrollable area. If it includes a text-entry control that can bring up the mobile keyboard, use height='tall'.",
+        "Sheet content, rendered below the grab handle in a scrollable area. If it includes a text-entry control that can bring up the mobile keyboard, use height='tall' and keep the sheet fully expanded while editing.",
       required: true,
     },
     {
       name: 'height',
       type: "'hug' | 'capped' | 'tall' | number | string",
       description:
-        "How tall the sheet is. Named budgets: 'hug' fits its content up to 92% of the viewport, 'capped' is a scrolling mid-height panel (~62%), and 'tall' is a pinned near-full panel (~92%) for content that streams in. Or pass a number (px) / CSS length for a custom budget. The user can drag between snap points regardless. On shorter viewports the sheet fills the available height. Only 'tall' provides mobile-keyboard accommodation; Hug, Capped, numeric, and CSS-length heights do not move or add keyboard scroll space.",
+        "How tall the sheet is. Named budgets: 'hug' fits its content up to 92% of the viewport, 'capped' is a scrolling mid-height panel (~62%), and 'tall' is a pinned near-full panel (~92%) for content that streams in. Or pass a number (px) / CSS length for a custom budget. The user can drag between snap points regardless. On shorter viewports the sheet fills the available height. Only a fully expanded 'tall' sheet provides mobile-keyboard accommodation; shorter Tall detents, Hug, Capped, numeric, and CSS-length heights do not move or add keyboard scroll space.",
       default: "'capped'",
     },
     {
@@ -77,7 +77,7 @@ export const docs = {
   ],
   usage: {
     description:
-      'A mobile touch surface for filters, actions, and detail views that should rise from the bottom of the screen. Opening slides the sheet in; closing keeps its native dialog presented but inert until the slide-out and scrim fade complete. Drag the grab handle to resize: a slow drag settles to the nearest snap point (a short peek, ~half, and ~full detent, filtered to those shorter than the sheet), a fast flick down dismisses, a fast flick up expands. Pulling down on the content when it is scrolled to the top also drags the sheet, giving a larger, more forgiving target. The scrim thins to a faint glance state (but never fully clears) as the sheet collapses onto its shortest "peek" detent; the sheet stays modal, so the background remains inert until dismissed; a residual dim keeps that legible. The sheet is modal: focus is trapped while open and restored to the opener after its exit, and Escape dismisses, so the swipe gesture always has a keyboard equivalent. Mobile-keyboard accommodation is supported only by Tall: the outer Tall sheet remains stationary while visual-viewport overlap extends its internal scroll range and the body scrolls focused controls above the keyboard. Hug, Capped, numeric, and CSS-length heights do not automatically move or add keyboard scroll space. Actual Tall-sheet travel or closing dismisses the keyboard. Content padding clears the home indicator via env(safe-area-inset-bottom).',
+      'A mobile touch surface for filters, actions, and detail views that should rise from the bottom of the screen. Opening slides the sheet in; closing keeps its native dialog presented but inert until the slide-out and scrim fade complete. Drag the grab handle to resize: a slow drag settles to the nearest snap point (a short peek, ~half, and ~full detent, filtered to those shorter than the sheet), a fast flick down dismisses, a fast flick up expands. Pulling down on the content when it is scrolled to the top also drags the sheet, giving a larger, more forgiving target. The scrim thins to a faint glance state (but never fully clears) as the sheet collapses onto its shortest "peek" detent; the sheet stays modal, so the background remains inert until dismissed; a residual dim keeps that legible. The sheet is modal: focus is trapped while open and restored to the opener after its exit, and Escape dismisses, so the swipe gesture always has a keyboard equivalent. Mobile-keyboard accommodation is supported only while Tall is fully expanded: the outer sheet remains stationary while visual-viewport overlap extends its internal scroll range and the body scrolls focused controls above the keyboard. Shorter Tall detents, Hug, Capped, numeric, and CSS-length heights do not automatically move or add keyboard scroll space. Actual Tall-sheet travel or closing dismisses the keyboard. Content padding clears the home indicator via env(safe-area-inset-bottom).',
     bestPractices: [
       {
         guidance: true,
@@ -102,7 +102,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          "If a sheet contains a text-entry control that can bring up the mobile keyboard, use 'tall'. Its outer sheet stays stationary while the built-in body scrolls. Hug, Capped, numeric, and CSS-length heights do not provide keyboard-aware positioning or scroll space.",
+          "If a sheet contains a text-entry control that can bring up the mobile keyboard, use 'tall' and keep it fully expanded while editing. Its outer sheet stays stationary while the built-in body scrolls. Shorter Tall detents, Hug, Capped, numeric, and CSS-length heights do not provide keyboard-aware positioning or scroll space.",
       },
       {
         guidance: true,
@@ -194,10 +194,10 @@ export const docs = {
 /** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
-    'mobile touch sheet rising from the bottom edge (native <dialog>): grab handle, drag-to-resize snap points, swipe-to-dismiss, Tall-only visual-viewport mobile-keyboard handling, named height scale, modal (default) or non-modal (hasScrim={false}) presentation',
+    'mobile touch sheet rising from the bottom edge (native <dialog>): grab handle, drag-to-resize snap points, swipe-to-dismiss, fully-expanded Tall visual-viewport mobile-keyboard handling, named height scale, modal (default) or non-modal (hasScrim={false}) presentation',
   usage: {
     description:
-      'Mobile surface for filters, actions, forms, and detail views. Drag the handle to resize between snap points; flick down to dismiss, up to expand. Modal: focus trap + restore, and Escape dismisses so swipe has a keyboard equivalent. Only Tall accommodates the mobile keyboard: its outer sheet stays stationary while its body gains scroll space and reveals focused controls. Hug, Capped, and custom heights do not move or add keyboard scroll space. Tall-sheet travel or closing dismisses the keyboard. Content clears the home indicator via safe-area inset.',
+      'Mobile surface for filters, actions, forms, and detail views. Drag the handle to resize between snap points; flick down to dismiss, up to expand. Modal: focus trap + restore, and Escape dismisses so swipe has a keyboard equivalent. Only fully expanded Tall accommodates the mobile keyboard: its outer sheet stays stationary while its body gains scroll space and reveals focused controls. Shorter Tall detents, Hug, Capped, and custom heights do not move or add keyboard scroll space. Tall-sheet travel or closing dismisses the keyboard. Content clears the home indicator via safe-area inset.',
     bestPractices: [
       {
         guidance: true,
@@ -221,7 +221,7 @@ export const docsDense = {
       {
         guidance: true,
         description:
-          "If a sheet contains a text-entry control that can bring up the mobile keyboard, use 'tall'. Hug, Capped, numeric, and CSS-length heights are not keyboard-aware.",
+          "If a sheet contains a text-entry control that can bring up the mobile keyboard, use 'tall' and keep it fully expanded while editing. Shorter Tall detents, Hug, Capped, numeric, and CSS-length heights are not keyboard-aware.",
       },
       {
         guidance: true,
