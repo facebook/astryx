@@ -259,8 +259,9 @@ export function HoverCard({
   // useHoverCard), identically on the server and the first client render.
   // Consumer content is mounted immediately before the card opens and removed
   // when it hides. If the inline shell is inside a paragraph, it moves to a
-  // body portal before mounting content; computed CSS variables are forwarded
-  // so the portal retains the trigger's themed appearance.
+  // portal beside the paragraph before mounting content. This keeps nested
+  // Theme scopes intact, while forwarded computed CSS variables retain any
+  // paragraph-local inherited values.
   const renderedHoverCard = hoverCard.renderHoverCard(content, {
     xstyle,
     className,

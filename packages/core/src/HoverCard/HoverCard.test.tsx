@@ -15,6 +15,7 @@ import {renderToString} from 'react-dom/server';
 import {hydrateRoot} from 'react-dom/client';
 import {StrictMode} from 'react';
 import {Button} from '../Button/Button';
+import {Theme, defineTheme} from '../theme';
 import {HoverCard} from './HoverCard';
 
 // Store original matches to restore later
@@ -188,7 +189,7 @@ describe('HoverCard', () => {
       const content = screen.getByText('Block card content');
       const portaledLayer = content.closest('[popover]');
 
-      expect(portaledLayer?.parentElement).toBe(document.body);
+      expect(portaledLayer?.parentElement).toBe(container);
       expect(portaledLayer?.tagName).toBe('DIV');
       expect(paragraph?.contains(content)).toBe(false);
       expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
@@ -216,6 +217,47 @@ describe('HoverCard', () => {
     await waitFor(() => {
       const layer = screen.getByText('Block card content').closest('[popover]');
       expect(layer?.parentElement).toBe(container);
+    });
+  });
+
+  it('keeps a paragraph portal inside the nearest nested theme scope', async () => {
+    const outerTheme = defineTheme({name: 'hovercard-outer-test'});
+    const innerTheme = defineTheme({
+      name: 'hovercard-inner-test',
+      components: {
+        hovercard: {base: {borderWidth: '7px'}},
+        button: {base: {fontWeight: '700'}},
+      },
+    });
+
+    const {container} = render(
+      <Theme theme={outerTheme}>
+        <Theme theme={innerTheme}>
+          <p>
+            <HoverCard
+              content={<Button label="View profile">View profile</Button>}
+              delay={0}>
+              Trigger
+            </HoverCard>
+          </p>
+        </Theme>
+      </Theme>,
+    );
+
+    fireEvent.mouseEnter(screen.getByText('Trigger'));
+
+    await waitFor(() => {
+      const button = screen.getByText('View profile').closest('button');
+      const layer = button?.closest('[popover]') ?? null;
+      const innerThemeScope = container.querySelector(
+        '[data-astryx-theme="hovercard-inner-test"]',
+      );
+
+      expect(button).not.toBeNull();
+      expect(innerThemeScope).not.toBeNull();
+      expect(layer?.parentElement).toBe(innerThemeScope);
+      expect(innerThemeScope?.contains(layer)).toBe(true);
+      expect(container.querySelector('p')?.contains(layer)).toBe(false);
     });
   });
 
@@ -256,7 +298,7 @@ describe('HoverCard', () => {
       const button = screen.getByRole('button', {name: 'View profile'});
       const layer = button.closest('[popover]');
 
-      expect(layer?.parentElement).toBe(document.body);
+      expect(layer?.parentElement).toBe(container);
       expect(container.querySelector('p')?.contains(button)).toBe(false);
       expect(layer).toHaveStyle({
         '--color-neutral': 'rgb(1, 2, 3)',

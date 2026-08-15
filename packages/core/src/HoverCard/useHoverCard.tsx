@@ -294,7 +294,7 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
   const [shouldRenderContent, setShouldRenderContent] = useState(false);
   const isContentRenderedRef = useRef(false);
   const pendingShowRef = useRef(false);
-  const paragraphPortalTargetRef = useRef<HTMLElement | null>(null);
+  const portalTargetRef = useRef<HTMLElement | null>(null);
   const portalStyleRef = useRef<CSSProperties>({});
   // Track when we're dismissing via Escape to prevent re-show on refocus
   const isEscapeDismissingRef = useRef(false);
@@ -321,11 +321,15 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
     // a portal without ever producing an invalid <p> descendant.
     const ownerDocument = triggerRef.current?.ownerDocument;
     const inlineLayer = ownerDocument?.getElementById(layer.id);
-    if (inlineLayer?.closest('p')) {
-      paragraphPortalTargetRef.current = ownerDocument?.body ?? null;
+    const paragraph = inlineLayer?.closest('p');
+    if (inlineLayer && paragraph?.parentElement) {
+      // Render beside the paragraph rather than at the end of the document.
+      // This gives rich content valid ancestry while keeping it inside any
+      // nested Theme scope that contains the paragraph.
+      portalTargetRef.current = paragraph.parentElement;
       portalStyleRef.current = readPortalStyles(inlineLayer);
     } else {
-      paragraphPortalTargetRef.current = null;
+      portalTargetRef.current = null;
       portalStyleRef.current = {};
     }
 
@@ -338,7 +342,7 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
     pendingShowRef.current = false;
     layer.hide();
     isContentRenderedRef.current = false;
-    paragraphPortalTargetRef.current = null;
+    portalTargetRef.current = null;
     portalStyleRef.current = {};
     // eslint-disable-next-line @eslint-react/set-state-in-effect -- controlled close intentionally removes lazily rendered content after closing the popover
     setShouldRenderContent(false);
@@ -525,7 +529,7 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
     ): ReactNode => {
       const renderPlacement = props?.placement ?? placement;
       const themeClassName = themeProps('hovercard').className;
-      const portalTarget = paragraphPortalTargetRef.current;
+      const portalTarget = portalTargetRef.current;
       const shouldPortal = shouldRenderContent && portalTarget !== null;
       const ContentWrapper = shouldPortal ? 'div' : 'span';
       const renderProps = {
@@ -549,14 +553,16 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
         className: props?.className
           ? `${themeClassName} ${props.className}`
           : themeClassName,
-        // A portal leaves the trigger's cascade, so snapshot every computed
-        // custom property from the inline shell and apply it to the popover.
-        // Explicit consumer styles remain authoritative.
+        // Moving beside the paragraph leaves paragraph-local inheritance, so
+        // snapshot every computed custom property from the inline shell and
+        // apply it to the popover. Explicit consumer styles remain
+        // authoritative.
         style: shouldPortal
           ? {...portalStyleRef.current, ...props?.style}
           : props?.style,
-        // The closed shell is inline-safe and hydration-stable. Once moved to
-        // the body, use a block container so rich content has valid ancestry.
+        // The closed shell is inline-safe and hydration-stable. Once moved
+        // outside the paragraph, use a block container so rich content has
+        // valid ancestry.
         as: shouldPortal ? ('div' as const) : ('span' as const),
       };
 
