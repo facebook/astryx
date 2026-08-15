@@ -19,7 +19,7 @@ export default function BottomSheetSwitcherShowcase() {
       <BottomSheetSwitcher
         activeSheet={activeSheet}
         onActiveSheetChange={setActiveSheet}>
-        <BottomSheet sheetId="details" label="Setup details" height="hug">
+        <BottomSheet sheetId="details" label="Setup details" height="capped">
           <Section padding={4}>
             <VStack gap={4}>
               <Heading level={3}>Setup details</Heading>

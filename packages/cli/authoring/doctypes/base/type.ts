@@ -116,7 +116,14 @@ export interface ComponentPlaygroundConfig {
    *  CommandPalette) intentionally keep contained inline previews instead:
    *  the component is visible on load and knobs stay usable, whereas a real
    *  top-layer modal makes the rest of the page inert (#3657). */
-  overlay?: boolean;
+  overlay?:
+    | boolean
+    | {
+        /** Controlled prop that determines whether the overlay is open. */
+        stateProp: string;
+        /** Value assigned to stateProp when the preview's open button is used. */
+        openValue: unknown;
+      };
   /** Required parent wrapper for sub-components that depend on a parent
    *  context provider (e.g. `Tab` calls `useTabListContext()` and throws
    *  standalone). The preview wraps the component in this parent before

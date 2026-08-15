@@ -825,7 +825,10 @@ export interface ElementDescriptor {
 
 export interface PlaygroundConfig {
   defaults?: Record<string, unknown>;
-  overlay?: boolean;
+  overlay?: boolean | {
+    stateProp: string;
+    openValue: unknown;
+  };
   wrapper?: {
     component: string;
     props?: Record<string, unknown>;

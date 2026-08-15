@@ -227,7 +227,21 @@ export function isOverlayPreviewClosed(
   playground: PlaygroundConfig | null | undefined,
   state: Record<string, unknown>,
 ): boolean {
-  return playground?.overlay === true && state.isOpen !== true;
+  const control = getOverlayPreviewControl(playground);
+  return (
+    control != null && !Object.is(state[control.stateProp], control.openValue)
+  );
+}
+
+/** Controlled prop/value used by the Properties preview's open button. */
+export function getOverlayPreviewControl(
+  playground: PlaygroundConfig | null | undefined,
+): {stateProp: string; openValue: unknown} | null {
+  const overlay = playground?.overlay;
+  if (overlay === true) {
+    return {stateProp: 'isOpen', openValue: true};
+  }
+  return overlay != null && typeof overlay === 'object' ? overlay : null;
 }
 
 export function getMissingRequiredProps(

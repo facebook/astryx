@@ -22,6 +22,34 @@ export const docs = {
     'mobile keyboard',
     'visual viewport',
   ],
+  playground: {
+    overlay: true,
+    defaults: {
+      isOpen: false,
+      label: 'Filters',
+      height: 'hug',
+      children: {
+        __element: 'Section',
+        props: {padding: 4},
+        children: {
+          __element: 'VStack',
+          props: {gap: 2},
+          children: [
+            {
+              __element: 'Heading',
+              props: {level: 3},
+              children: 'Filters',
+            },
+            {
+              __element: 'Text',
+              props: {type: 'body'},
+              children: 'Adjust the properties below, then open the preview.',
+            },
+          ],
+        },
+      },
+    },
+  },
   theming: {
     targets: [
       {className: 'astryx-bottom-sheet', visualProps: ['height']},

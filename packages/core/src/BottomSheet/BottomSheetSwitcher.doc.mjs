@@ -7,6 +7,70 @@ export const docs = {
   group: 'BottomSheet',
   category: 'Overlay',
   keywords: ['bottom sheet', 'switcher', 'multi-step', 'flow', 'wizard'],
+  playground: {
+    overlay: {stateProp: 'activeSheet', openValue: 'details'},
+    defaults: {
+      activeSheet: null,
+      children: [
+        {
+          __element: 'BottomSheet',
+          props: {
+            sheetId: 'details',
+            label: 'Setup details',
+            height: 'capped',
+          },
+          children: {
+            __element: 'Section',
+            props: {padding: 4},
+            children: {
+              __element: 'VStack',
+              props: {gap: 2},
+              children: [
+                {
+                  __element: 'Heading',
+                  props: {level: 3},
+                  children: 'Setup details',
+                },
+                {
+                  __element: 'Text',
+                  props: {type: 'body'},
+                  children: 'This first step uses the capped height.',
+                },
+              ],
+            },
+          },
+        },
+        {
+          __element: 'BottomSheet',
+          props: {
+            sheetId: 'confirm',
+            label: 'Confirm setup',
+            height: 'hug',
+          },
+          children: {
+            __element: 'Section',
+            props: {padding: 4},
+            children: {
+              __element: 'VStack',
+              props: {gap: 2},
+              children: [
+                {
+                  __element: 'Heading',
+                  props: {level: 3},
+                  children: 'Confirm setup',
+                },
+                {
+                  __element: 'Text',
+                  props: {type: 'body'},
+                  children: 'This shorter confirmation step hugs its content.',
+                },
+              ],
+            },
+          },
+        },
+      ],
+    },
+  },
   theming: {
     targets: [
       {
@@ -32,7 +96,7 @@ export const docs = {
     },
     {
       name: 'onActiveSheetChange',
-      type: '(sheetId: string | null) => void',
+      type: '(activeSheet: string | null) => void',
       description:
         'Called with null when the active sheet dismisses. The same state setter can be used by flow controls to switch to another sheet ID.',
       required: true,
