@@ -321,6 +321,7 @@ export function BottomSheetPanel({
   }, [onMotionComplete, onMotionStart, state]);
 
   const isInteractive = state.kind === 'open';
+  const isPresented = state.kind !== 'hidden';
   const isRetained = state.kind === 'retained';
   const isInactive = isRetained || state.kind === 'exiting';
   const isClosing = state.kind === 'exiting';
@@ -363,6 +364,7 @@ export function BottomSheetPanel({
     isEnabled: height === 'tall',
     isSheetTraveling: isDragging && dragOffset !== settledOffset,
     isOpen: isInteractive,
+    isPresented,
     sheetRef: elementRef,
   });
   // Keep controller registration attached to one stable host ref. React

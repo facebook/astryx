@@ -57,7 +57,7 @@ export const docs = {
       name: 'children',
       type: 'ReactNode',
       description:
-        "Sheet content, rendered below the grab handle in a scrollable area. Mobile-keyboard accommodation is enabled only when height is 'tall'.",
+        "Sheet content, rendered below the grab handle in a scrollable area. If it includes a text-entry control that can bring up the mobile keyboard, use height='tall'.",
       required: true,
     },
     {
@@ -102,7 +102,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          "Use 'tall' for forms that require reliable mobile-keyboard behavior. Its outer sheet stays stationary while the built-in body scrolls. Hug, Capped, numeric, and CSS-length heights do not provide keyboard-aware positioning or scroll space.",
+          "If a sheet contains a text-entry control that can bring up the mobile keyboard, use 'tall'. Its outer sheet stays stationary while the built-in body scrolls. Hug, Capped, numeric, and CSS-length heights do not provide keyboard-aware positioning or scroll space.",
       },
       {
         guidance: true,
@@ -167,7 +167,7 @@ export const docs = {
 </>`,
     },
     {
-      label: 'Mobile keyboard — Tall',
+      label: 'Mobile keyboard',
       code: `const [isOpen, setIsOpen] = useState(false);
 <BottomSheet
   isOpen={isOpen}
@@ -221,7 +221,7 @@ export const docsDense = {
       {
         guidance: true,
         description:
-          "Use 'tall' for forms requiring reliable mobile-keyboard behavior. Hug, Capped, numeric, and CSS-length heights are not keyboard-aware.",
+          "If a sheet contains a text-entry control that can bring up the mobile keyboard, use 'tall'. Hug, Capped, numeric, and CSS-length heights are not keyboard-aware.",
       },
       {
         guidance: true,

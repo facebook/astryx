@@ -17,7 +17,6 @@
 import {useEffect, useRef, type RefObject} from 'react';
 
 const MOBILE_KEYBOARD_INSET_VAR = '--_sheet-keyboard-inset';
-const TOUCH_FOCUS_MOVE_THRESHOLD = 10;
 const NON_TEXT_INPUT_TYPES = new Set([
   'button',
   'checkbox',
@@ -37,50 +36,12 @@ interface UseMobileKeyboardOptions {
   isEnabled: boolean;
   isSheetTraveling: boolean;
   isOpen: boolean;
+  isPresented: boolean;
   sheetRef: RefObject<HTMLDivElement | null>;
-}
-
-interface FocusScrollSnapshot {
-  target: HTMLElement;
-  elements: Array<{
-    element: HTMLElement;
-    scrollLeft: number;
-    scrollTop: number;
-  }>;
-  windowX: number;
-  windowY: number;
-}
-
-interface PendingTouchFocus {
-  clientX: number;
-  clientY: number;
-  control: HTMLElement;
-  pointerId: number;
 }
 
 interface KeyboardGeometry {
   bodyBottom: number;
-}
-
-function captureFocusScroll(target: HTMLElement): FocusScrollSnapshot {
-  const elements: FocusScrollSnapshot['elements'] = [];
-  for (
-    let element = target.parentElement;
-    element;
-    element = element.parentElement
-  ) {
-    elements.push({
-      element,
-      scrollLeft: element.scrollLeft,
-      scrollTop: element.scrollTop,
-    });
-  }
-  return {
-    target,
-    elements,
-    windowX: window.scrollX,
-    windowY: window.scrollY,
-  };
 }
 
 function getVisualViewportBounds(): {top: number; bottom: number} {
@@ -90,6 +51,14 @@ function getVisualViewportBounds(): {top: number; bottom: number} {
     top,
     bottom: top + (viewport?.height ?? window.innerHeight),
   };
+}
+
+function isIOSWebKit(): boolean {
+  const userAgent = window.navigator.userAgent;
+  return (
+    /iPad|iPhone|iPod/.test(userAgent) ||
+    (/Macintosh/.test(userAgent) && window.navigator.maxTouchPoints > 1)
+  );
 }
 
 function isTextEntryControl(element: Element | null): element is HTMLElement {
@@ -135,10 +104,13 @@ export function useMobileKeyboard({
   isEnabled,
   isSheetTraveling,
   isOpen,
+  isPresented,
   sheetRef,
 }: UseMobileKeyboardOptions): void {
   const hasKeyboardLayoutRef = useRef(false);
   const retainKeyboardLayoutRef = useRef(false);
+  const isActiveRef = useRef(isOpen);
+  isActiveRef.current = isOpen;
 
   useEffect(() => {
     if (!isEnabled || !isSheetTraveling) {
@@ -162,7 +134,7 @@ export function useMobileKeyboard({
   }, [isEnabled, isSheetTraveling, sheetRef]);
 
   useEffect(() => {
-    if (!isEnabled || isOpen) {
+    if (!isEnabled || !isPresented || isOpen) {
       return;
     }
     const sheet = sheetRef.current;
@@ -173,44 +145,27 @@ export function useMobileKeyboard({
       activeElement !== sheet &&
       sheet.contains(activeElement)
     ) {
+      retainKeyboardLayoutRef.current = hasKeyboardLayoutRef.current;
       activeElement.blur();
     }
-  }, [isEnabled, isOpen, sheetRef]);
+  }, [isEnabled, isOpen, isPresented, sheetRef]);
 
   useEffect(() => {
     const body = bodyRef.current;
     const sheet = sheetRef.current;
-    if (!isEnabled || !isOpen || !body) {
+    if (!isEnabled || !isPresented || !body) {
       return;
     }
 
     let keyboardGeometry: KeyboardGeometry | null = null;
-    let pendingFocusScroll: FocusScrollSnapshot | null = null;
-    let pendingPointerFocusScroll: FocusScrollSnapshot | null = null;
-    let pendingTouchFocus: PendingTouchFocus | null = null;
+    let isPreventingFocusScroll = false;
+    const preventFocusScroll = isIOSWebKit();
 
     const clearKeyboardLayout = () => {
       body.style.setProperty(MOBILE_KEYBOARD_INSET_VAR, '0px');
       keyboardGeometry = null;
       hasKeyboardLayoutRef.current = false;
       retainKeyboardLayoutRef.current = false;
-    };
-
-    const restoreScrollSnapshot = (snapshot: FocusScrollSnapshot) => {
-      for (const {element, scrollLeft, scrollTop} of snapshot.elements) {
-        if (element.scrollLeft !== scrollLeft) {
-          element.scrollLeft = scrollLeft;
-        }
-        if (element.scrollTop !== scrollTop) {
-          element.scrollTop = scrollTop;
-        }
-      }
-      if (
-        window.scrollX !== snapshot.windowX ||
-        window.scrollY !== snapshot.windowY
-      ) {
-        window.scrollTo(snapshot.windowX, snapshot.windowY);
-      }
     };
 
     const scrollBodyBy = (distance: number, smoothly: boolean) => {
@@ -250,98 +205,43 @@ export function useMobileKeyboard({
       body.style.setProperty(MOBILE_KEYBOARD_INSET_VAR, `${inset}px`);
     };
 
-    // Capture before the browser's focus action. For touch taps, wait until
-    // pointerup confirms the gesture was not a scroll, then focus with
-    // preventScroll before Safari performs its own focus default. The
-    // subsequent click remains native and owns caret placement.
-    const rememberPointerFocusScroll = (event: PointerEvent) => {
-      const control = findTextEntryControl(event.target, body);
-      pendingPointerFocusScroll =
-        control && control !== document.activeElement
-          ? captureFocusScroll(control)
-          : null;
-      pendingTouchFocus =
-        event.pointerType === 'touch' &&
-        event.isPrimary !== false &&
-        control &&
-        control !== document.activeElement
-          ? {
-              clientX: event.clientX,
-              clientY: event.clientY,
-              control,
-              pointerId: event.pointerId,
-            }
-          : null;
-    };
-    const handlePointerMove = (event: PointerEvent) => {
-      if (
-        pendingTouchFocus?.pointerId === event.pointerId &&
-        Math.hypot(
-          event.clientX - pendingTouchFocus.clientX,
-          event.clientY - pendingTouchFocus.clientY,
-        ) > TOUCH_FOCUS_MOVE_THRESHOLD
-      ) {
-        if (pendingPointerFocusScroll?.target === pendingTouchFocus.control) {
-          pendingPointerFocusScroll = null;
-        }
-        pendingTouchFocus = null;
-      }
-    };
-    const handlePointerCancel = (event: PointerEvent) => {
-      if (pendingTouchFocus?.pointerId === event.pointerId) {
-        if (pendingPointerFocusScroll?.target === pendingTouchFocus.control) {
-          pendingPointerFocusScroll = null;
-        }
-        pendingTouchFocus = null;
-      }
-    };
-    const preventTouchFocusScroll = (event: PointerEvent) => {
-      const pending = pendingTouchFocus;
-      pendingTouchFocus = null;
-      if (
-        !pending ||
-        pending.pointerId !== event.pointerId ||
-        findTextEntryControl(event.target, body) !== pending.control ||
-        document.activeElement === pending.control
-      ) {
-        if (pendingPointerFocusScroll?.target === pending?.control) {
-          pendingPointerFocusScroll = null;
-        }
+    // Give an initial touch a focused, stationary source so the subsequent
+    // native focus transition has an outgoing blur where preventScroll can be
+    // applied. The touch remains uncancelled for native click and caret work.
+    const primeTouchFocus = (event: TouchEvent) => {
+      if (!isActiveRef.current || !sheet) {
         return;
       }
-
-      pending.control.focus({preventScroll: true});
+      const control = findTextEntryControl(event.target, body);
+      const activeElement = document.activeElement;
+      if (
+        !control ||
+        (activeElement instanceof Element &&
+          body.contains(activeElement) &&
+          isTextEntryControl(activeElement))
+      ) {
+        return;
+      }
+      sheet.focus({preventScroll: true});
     };
 
-    // Keyboard and programmatic focus transitions cannot pass preventScroll to
-    // the browser. After consumer blur handlers run but before the destination
-    // scrolls into view, snapshot every scrollable ancestor, then restore those
-    // positions during the destination's focus event. This prevents native
-    // panning without re-entering the browser's focus lifecycle or duplicating
-    // consumer focus/blur callbacks.
-    const rememberFocusScroll = (event: FocusEvent) => {
+    // Apply preventScroll while the browser is still processing the outgoing
+    // focus transition. The original trusted activation continues afterward.
+    const preventNativeFocusScroll = (event: FocusEvent) => {
+      if (!isActiveRef.current || isPreventingFocusScroll) {
+        return;
+      }
       const control = findTextEntryControl(event.relatedTarget, body);
       if (!control) {
-        pendingFocusScroll = null;
-        return;
-      }
-      pendingFocusScroll = captureFocusScroll(control);
-    };
-    const restoreFocusScroll = (event: FocusEvent) => {
-      const control = findTextEntryControl(event.target, body);
-      const snapshot =
-        pendingFocusScroll?.target === control
-          ? pendingFocusScroll
-          : pendingPointerFocusScroll?.target === control
-            ? pendingPointerFocusScroll
-            : null;
-      pendingFocusScroll = null;
-      pendingPointerFocusScroll = null;
-      if (!snapshot || snapshot.target !== control) {
         return;
       }
 
-      restoreScrollSnapshot(snapshot);
+      isPreventingFocusScroll = true;
+      try {
+        control.focus({preventScroll: true});
+      } finally {
+        isPreventingFocusScroll = false;
+      }
     };
 
     const revealFocusedControl = () => {
@@ -465,6 +365,12 @@ export function useMobileKeyboard({
       refreshObservedLayout();
       scheduleReveal();
     };
+    const handleFocusOut = () => {
+      // Keep the added scroll range while the keyboard animates away. A focus
+      // transition to another text-entry control cancels this in focusin.
+      retainKeyboardLayoutRef.current = hasKeyboardLayoutRef.current;
+      scheduleReveal();
+    };
     const handleSheetTransitionEnd = (event: TransitionEvent) => {
       if (event.target === sheet && event.propertyName === 'transform') {
         scheduleReveal();
@@ -472,16 +378,15 @@ export function useMobileKeyboard({
     };
 
     const viewport = window.visualViewport;
-    // Capture before consumer handlers so stopPropagation cannot opt the
-    // browser back into native focus panning accidentally.
-    document.addEventListener('pointerdown', rememberPointerFocusScroll, true);
-    document.addEventListener('pointermove', handlePointerMove, true);
-    document.addEventListener('pointercancel', handlePointerCancel, true);
-    document.addEventListener('pointerup', preventTouchFocusScroll, true);
-    document.addEventListener('focusout', rememberFocusScroll);
-    body.addEventListener('focus', restoreFocusScroll, true);
+    if (preventFocusScroll) {
+      document.addEventListener('touchstart', primeTouchFocus, {
+        capture: true,
+        passive: true,
+      });
+      document.addEventListener('blur', preventNativeFocusScroll, true);
+    }
     body.addEventListener('focusin', handleFocusIn);
-    body.addEventListener('focusout', scheduleReveal);
+    body.addEventListener('focusout', handleFocusOut);
     sheet?.addEventListener('transitionend', handleSheetTransitionEnd);
     viewport?.addEventListener('resize', scheduleReveal);
     viewport?.addEventListener('scroll', scheduleReveal);
@@ -499,18 +404,12 @@ export function useMobileKeyboard({
 
     return () => {
       cancelAnimationFrame(animationFrame);
-      document.removeEventListener(
-        'pointerdown',
-        rememberPointerFocusScroll,
-        true,
-      );
-      document.removeEventListener('pointermove', handlePointerMove, true);
-      document.removeEventListener('pointercancel', handlePointerCancel, true);
-      document.removeEventListener('pointerup', preventTouchFocusScroll, true);
-      document.removeEventListener('focusout', rememberFocusScroll);
-      body.removeEventListener('focus', restoreFocusScroll, true);
+      if (preventFocusScroll) {
+        document.removeEventListener('touchstart', primeTouchFocus, true);
+        document.removeEventListener('blur', preventNativeFocusScroll, true);
+      }
       body.removeEventListener('focusin', handleFocusIn);
-      body.removeEventListener('focusout', scheduleReveal);
+      body.removeEventListener('focusout', handleFocusOut);
       sheet?.removeEventListener('transitionend', handleSheetTransitionEnd);
       viewport?.removeEventListener('resize', scheduleReveal);
       viewport?.removeEventListener('scroll', scheduleReveal);
@@ -521,5 +420,5 @@ export function useMobileKeyboard({
       hasKeyboardLayoutRef.current = false;
       retainKeyboardLayoutRef.current = false;
     };
-  }, [bodyRef, bottomClearance, isEnabled, isOpen, sheetRef]);
+  }, [bodyRef, bottomClearance, isEnabled, isPresented, sheetRef]);
 }
