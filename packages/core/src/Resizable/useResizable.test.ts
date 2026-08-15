@@ -25,8 +25,10 @@ const BASE_CONFIG = {
   autoSaveId: AUTO_SAVE_ID,
 };
 
-function readStored() {
-  return JSON.parse(localStorage.getItem(KEY) ?? 'null');
+type StoredEntry = {size: number; isCollapsed: boolean} | number | null;
+
+function readStored(): StoredEntry {
+  return JSON.parse(localStorage.getItem(KEY) ?? 'null') as StoredEntry;
 }
 
 beforeEach(() => {

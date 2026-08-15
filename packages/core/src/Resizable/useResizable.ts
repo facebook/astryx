@@ -4,7 +4,8 @@
 
 /**
  * @file useResizable.ts
- * @input Resize configuration (defaultSize, minSizePx, maxSizePx, collapsible, snaps)
+ * @input Resize configuration (defaultSize, minSizePx, maxSizePx, snaps) and
+ *   collapse configuration (collapsible, defaultIsCollapsed, isCollapsed)
  * @output Hook return: size, isCollapsed, collapse/expand/resize methods, props for handle
  * @position Public hook; consumed by layout components via `resizable` prop
  */
@@ -194,11 +195,15 @@ function loadPersistedState(key: string): PersistedResizableState | null {
         : {size: parsed, isCollapsed: null};
     }
     if (typeof parsed === 'object' && parsed != null) {
-      const {size, isCollapsed} = parsed as {size?: unknown; isCollapsed?: unknown};
-      const hasSize = typeof size === 'number' && Number.isFinite(size) && size > 0;
+      const {size, isCollapsed} = parsed as {
+        size?: unknown;
+        isCollapsed?: unknown;
+      };
+      const hasSize =
+        typeof size === 'number' && Number.isFinite(size) && size > 0;
       if (hasSize || isCollapsed === true) {
         return {
-          size: hasSize ? (size as number) : null,
+          size: hasSize ? size : null,
           isCollapsed: isCollapsed === true,
         };
       }
@@ -272,7 +277,8 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
 
   const isControlled = controlledIsCollapsed !== undefined;
   const isCollapsed =
-    collapsible && (isControlled ? controlledIsCollapsed : uncontrolledIsCollapsed);
+    collapsible &&
+    (isControlled ? controlledIsCollapsed : uncontrolledIsCollapsed);
   const dragStartSizeRef = useRef(size);
 
   // Controlled callers own the state; collapse() and a drag past the
