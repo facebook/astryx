@@ -230,6 +230,26 @@ export function isOverlayPreviewClosed(
   return playground?.overlay === true && state.isOpen !== true;
 }
 
+export const DEFAULT_EMPTY_PREVIEW_NOTE =
+  'Renders nothing in the current prop state.';
+
+/**
+ * The note to show when the previewed component rendered no DOM at all — a
+ * silently empty stage reads as a broken component (#2706, #4983). Returns
+ * null while the stage has output, and for overlay-mode components, which
+ * carry their own open-trigger placeholder.
+ */
+export function getEmptyPreviewNote(
+  playground: PlaygroundConfig | null | undefined,
+  state: Record<string, unknown>,
+  hasRenderedOutput: boolean,
+): string | null {
+  if (hasRenderedOutput || isOverlayPreviewClosed(playground, state)) {
+    return null;
+  }
+  return playground?.emptyNote ?? DEFAULT_EMPTY_PREVIEW_NOTE;
+}
+
 export function getMissingRequiredProps(
   knobs: KnobProp[],
   state: Record<string, unknown>,

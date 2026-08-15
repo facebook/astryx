@@ -59,6 +59,9 @@ export const docs = {
     {
       name: 'CheckIndicator',
       displayName: 'Check Indicator',
+      // 'unchecked' draws nothing by design, and it is the first enum option
+      // the playground would otherwise pick, leaving an empty stage (#4983).
+      playground: {defaults: {state: 'checked'}},
       description:
         'The mark on a chosen option: a checkmark by default, and nothing at all when unchosen, so a listbox shows no empty box beside every row. This is the indicator to replace to change what "chosen" looks like: mapping it to RadioIndicator gives every single-selection mark radio visuals, including an empty circle on unchosen rows. Unlike the checkbox and radio visuals it renders no chrome of its own (it IS the glyph), so a host\'s theme target lands on the same element as astryx-icon.',
       props: [

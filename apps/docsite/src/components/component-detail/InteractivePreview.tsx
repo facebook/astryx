@@ -4,7 +4,9 @@
 
 import {
   createElement,
+  useEffect,
   useMemo,
+  useRef,
   useState,
   useCallback,
   isValidElement,
@@ -24,6 +26,7 @@ import {ComponentPreviewTheme} from './ComponentPreviewTheme';
 import {
   buildInitialState,
   buildRuntimePreviewState,
+  getEmptyPreviewNote,
   getMissingRequiredProps,
   isOverlayPreviewClosed,
   pickPrimaryProps,
@@ -226,6 +229,8 @@ export function InteractivePreviewStage({
   embedded?: boolean;
 }) {
   const [showCode, setShowCode] = useState(false);
+  const outputRef = useRef<HTMLDivElement | null>(null);
+  const [hasRenderedOutput, setHasRenderedOutput] = useState(true);
   const Component = getComponent(name);
   const runtimeState = useMemo(
     () =>
@@ -261,6 +266,15 @@ export function InteractivePreviewStage({
     },
     [wrapper, WrapperComponent, wrapperProps],
   );
+
+  // A stage that renders nothing looks like a broken component, so the note
+  // below needs to know whether anything actually painted. The probe wrapper
+  // is `display: contents`, so measuring costs no layout box; a null ref
+  // (code view, error boundary) counts as output and shows no note.
+  useEffect(() => {
+    const output = outputRef.current;
+    setHasRenderedOutput(output == null || output.childNodes.length > 0);
+  });
 
   if (missingRequiredProps.length > 0) {
     return (
@@ -314,6 +328,7 @@ export function InteractivePreviewStage({
   }
 
   const code = generateCode(name, state);
+  const emptyNote = getEmptyPreviewNote(playground, state, hasRenderedOutput);
 
   return (
     <ComponentPreviewTheme>
@@ -362,7 +377,9 @@ export function InteractivePreviewStage({
             }}>
             <PreviewErrorBoundary
               resetKeys={[Component, runtimeState, WrapperComponent]}>
-              {renderPreview(createElement(Component, runtimeState))}
+              <div ref={outputRef} style={{display: 'contents'}}>
+                {renderPreview(createElement(Component, runtimeState))}
+              </div>
               {isOverlayPreviewClosed(playground, state) && (
                 <VStack
                   gap={2}
@@ -386,6 +403,11 @@ export function InteractivePreviewStage({
                   )}
                 </VStack>
               )}
+              {emptyNote != null ? (
+                <Text type="supporting" color="secondary">
+                  {emptyNote}
+                </Text>
+              ) : null}
             </PreviewErrorBoundary>
           </Center>
         )}

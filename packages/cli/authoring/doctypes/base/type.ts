@@ -117,6 +117,20 @@ export interface ComponentPlaygroundConfig {
    *  the component is visible on load and knobs stay usable, whereas a real
    *  top-layer modal makes the rest of the page inert (#3657). */
   overlay?: boolean;
+  /** Why the stage is empty, for a component that renders nothing in its
+   *  preview state — a visual gated on context the preview cannot supply
+   *  (`MobileNavToggle` needs AppShell below the mobile breakpoint), or one
+   *  that deliberately draws nothing in a state. The preview detects the
+   *  empty render itself and shows this instead of a blank stage, so the
+   *  note disappears as soon as the component does render. Prefer
+   *  `defaults` whenever a prop value can make the component visible.
+   *
+   *  @example
+   *  ```
+   *  playground: {emptyNote: 'Renders only inside AppShell, below the mobile breakpoint.'}
+   *  ```
+   */
+  emptyNote?: string;
   /** Required parent wrapper for sub-components that depend on a parent
    *  context provider (e.g. `Tab` calls `useTabListContext()` and throws
    *  standalone). The preview wraps the component in this parent before

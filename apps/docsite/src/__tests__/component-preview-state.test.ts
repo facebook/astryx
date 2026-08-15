@@ -2,8 +2,10 @@
 
 import {describe, expect, it, vi} from 'vitest';
 import {
+  DEFAULT_EMPTY_PREVIEW_NOTE,
   buildInitialState,
   buildRuntimePreviewState,
+  getEmptyPreviewNote,
   getMissingRequiredProps,
   hasInteractivePlayground,
   isOverlayPreviewClosed,
@@ -547,5 +549,47 @@ describe('hasInteractivePlayground', () => {
         playground: {defaults: {mode: 'light'}},
       }),
     ).toBe(true);
+  });
+
+  it('explains an empty stage instead of leaving it blank', () => {
+    // MobileNavToggle shape: gated on AppShell mobile context (#4983).
+    const playground = {
+      emptyNote: 'Renders only inside AppShell, below the mobile breakpoint.',
+    };
+    expect(getEmptyPreviewNote(playground, {}, false)).toBe(
+      playground.emptyNote,
+    );
+    expect(getEmptyPreviewNote(null, {}, false)).toBe(
+      DEFAULT_EMPTY_PREVIEW_NOTE,
+    );
+  });
+
+  it('stays silent while the stage has rendered output', () => {
+    expect(getEmptyPreviewNote({emptyNote: 'gated'}, {}, true)).toBeNull();
+    expect(getEmptyPreviewNote(null, {}, true)).toBeNull();
+  });
+
+  it('leaves closed overlay previews to their own open trigger', () => {
+    const playground = {overlay: true};
+    expect(getEmptyPreviewNote(playground, {isOpen: false}, false)).toBeNull();
+    // Opened and still empty is a real empty render, so it gets the note.
+    expect(getEmptyPreviewNote(playground, {isOpen: true}, false)).toBe(
+      DEFAULT_EMPTY_PREVIEW_NOTE,
+    );
+  });
+
+  it('seeds a visible state for components that draw nothing by default', () => {
+    // CheckIndicator: 'unchecked' draws nothing, and is the first enum option.
+    const knobs = pickPrimaryProps('CheckIndicator', [
+      prop({
+        name: 'state',
+        type: "'unchecked' | 'checked'",
+        required: true,
+      }),
+    ]);
+    expect(buildInitialState(knobs, null).state).toBe('unchecked');
+    expect(buildInitialState(knobs, {defaults: {state: 'checked'}}).state).toBe(
+      'checked',
+    );
   });
 });

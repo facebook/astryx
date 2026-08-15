@@ -7,6 +7,13 @@ export const docs = {
   subComponentOf: 'Chat',
   displayName: 'Chat Message Metadata',
   description: 'Composable metadata row for chat messages. Renders timestamp, footer content, and delivery status in a single row. Direction reverses for user sender. Renders nothing if all props are empty.',
+  // Every prop is optional, so an unseeded preview renders nothing (#4983).
+  playground: {
+    defaults: {
+      status: 'read',
+      timestamp: {__element: 'Text', props: {type: 'body'}, children: 'Just now'},
+    },
+  },
   props: [
     {
       name: 'timestamp',

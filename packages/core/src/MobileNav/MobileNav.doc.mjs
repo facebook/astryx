@@ -77,6 +77,12 @@ export const docs = {
     {
       name: 'MobileNavToggle',
       displayName: 'Mobile Nav Toggle',
+      // Gated on AppShell mobile context, which a preview stage cannot supply
+      // at desktop width — without this the stage is silently empty (#4983).
+      playground: {
+        emptyNote:
+          'Renders only inside AppShell, below the mobile breakpoint — narrow the window to preview it.',
+      },
       description: 'Hamburger button that opens/closes the mobile nav drawer. Reads open state from AppShell context automatically: does NOT accept isOpen or onOpenChange props. Renders nothing above the mobile breakpoint.',
       props: [
         {

@@ -8,6 +8,12 @@ export const docs = {
   displayName: 'Side Nav Collapse Button',
   isHiddenFromOverview: true,
   description: 'Toggle button for sidenav collapse. Place inside SideNav (reads context automatically) or outside it (hand the same controlled collapsible config to both). Renders as an icon-only ghost button by default.',
+  // Hides itself when collapse is unavailable, which is what a bare preview
+  // gives it — say so instead of leaving an empty stage (#4983).
+  playground: {
+    emptyNote:
+      'Renders only where collapse is available: inside a collapsible SideNav, or with a collapsible config of its own.',
+  },
   props: [
     {
       name: 'collapsible',
