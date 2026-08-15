@@ -120,27 +120,12 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Keep the caller as the source of truth: derive isOpen from state and clear it in onOpenChange.',
+          "Pick the starting height that fits the content: 'hug' for short bounded content, 'capped' for lists, and 'tall' for forms or streaming/resizing content.",
       },
       {
-        guidance: true,
+        guidance: false,
         description:
-          'Use BottomSheetSwitcher with a unique sheetId per sheet for multi-step flows; it owns one shared dialog while the new top sheet enters and a taller previous sheet simultaneously aligns downward behind a shorter step, then fades it afterward.',
-      },
-      {
-        guidance: true,
-        description:
-          "Pick the starting height that fits the content: 'hug' for short bounded content, 'capped' for lists, 'tall' for streaming/resizing content; the user can then drag between the snap points available for that rendered height.",
-      },
-      {
-        guidance: true,
-        description:
-          "Use 'tall' for long mobile forms. 'hug' also supports short forms by temporarily lifting when the keyboard leaves too little usable space. Keep controls in the built-in scroll body.",
-      },
-      {
-        guidance: true,
-        description:
-          'Use hasScrim={false} for a floating, no-scrim overlay that must coexist with a live page behind it (e.g. a panel over a map). It remains viewport-anchored rather than rendering inline. Keep the default for focused tasks where the background should be inert.',
+          "Don't make the sheet content overly long. Consider breaking it into steps and using Bottom Sheet Switcher.",
       },
     ],
   },
@@ -241,31 +226,17 @@ export const docsDense = {
       {
         guidance: true,
         description:
-          'Use for mobile-first bottom surfaces (filters, share sheets, quick actions).',
-      },
-      {
-        guidance: true,
-        description: 'Derive isOpen from state; clear it in onOpenChange.',
+          'Use for mobile-first surfaces (filters, share sheets, quick actions) where the content should rise from the bottom edge.',
       },
       {
         guidance: true,
         description:
-          'Use BottomSheetSwitcher + sheetId for mutually exclusive multi-step flows in one shared dialog.',
+          "Pick the starting height that fits the content: 'hug' for short bounded content, 'capped' for lists, and 'tall' for forms or streaming/resizing content.",
       },
       {
-        guidance: true,
+        guidance: false,
         description:
-          "Pick a height that fits: 'hug' for short content, 'capped' for lists, 'tall' for streaming content.",
-      },
-      {
-        guidance: true,
-        description:
-          "Use 'tall' for long forms. 'hug' supports short forms by lifting temporarily when the keyboard leaves too little usable space.",
-      },
-      {
-        guidance: true,
-        description:
-          'hasScrim={false} for a floating no-scrim overlay over a live page; it is not inline. Keep the default for focused tasks (inert background).',
+          "Don't make the sheet content overly long. Consider breaking it into steps and using Bottom Sheet Switcher.",
       },
     ],
   },

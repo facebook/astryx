@@ -122,37 +122,12 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Give every nested BottomSheet a stable, unique sheetId and model the flow as one activeSheet value.',
-      },
-      {
-        guidance: true,
-        description:
-          'Keep state local to the sheet that owns it; lift only data that another sheet needs.',
-      },
-      {
-        guidance: true,
-        description:
-          "Treat each switcher sheet's content as a new ownership scope. A BottomSheet opened from that content is standalone; wrap it in a nested BottomSheetSwitcher when it starts another multi-step flow.",
-      },
-      {
-        guidance: true,
-        description:
-          'Configure hasScrim on BottomSheetSwitcher, not its individual BottomSheet children, so the modal layer remains stable across handoffs.',
-      },
-      {
-        guidance: true,
-        description:
-          'When hasScrim is false, keep the switcher outside transformed, contained, and overflow-clipping ancestors so its non-modal dialog can remain viewport-aligned.',
-      },
-      {
-        guidance: true,
-        description:
-          'Treat activeSheet as the interaction state: a previous sheet can remain visually present and move beneath the entering sheet, but it is inert and hidden from assistive technology.',
+          'Use when each step depends on the previous one and only one step needs attention at a time.',
       },
       {
         guidance: false,
         description:
-          'Use separate isOpen booleans for sheets in the same flow; they can drift and request overlapping dialogs.',
+          "Don't split information across sheets when people need to compare it; use a full-page layout that keeps the relevant content visible together instead.",
       },
     ],
   },
@@ -189,21 +164,13 @@ export const docsDense = {
     bestPractices: [
       {
         guidance: true,
-        description: 'Use stable, unique sheetId values for every child.',
-      },
-      {
-        guidance: true,
         description:
-          "Let the switcher own the flow's shared dialog and scrim setting.",
-      },
-      {
-        guidance: true,
-        description:
-          'Nested sheets start a new standalone or nested-switcher scope.',
+          'Use when each step depends on the previous one and only one step needs attention at a time.',
       },
       {
         guidance: false,
-        description: 'Coordinate a single flow with separate open booleans.',
+        description:
+          "Don't split information across sheets when people need to compare it; use a full-page layout that keeps the relevant content visible together instead.",
       },
     ],
   },
