@@ -19,7 +19,8 @@ import {
 const SHEET_HEIGHT = 400;
 
 // A fake pointer event object good enough for the handlers, which only read
-// pointerId, clientY, timeStamp, and currentTarget's capture + measure APIs.
+// pointerId, clientY, timeStamp, preventDefault, and currentTarget's capture +
+// measure APIs.
 function pointerEvent(
   clientY: number,
   timeStamp: number,
@@ -31,6 +32,7 @@ function pointerEvent(
     clientY,
     timeStamp,
     currentTarget: target,
+    preventDefault: vi.fn(),
   } as unknown as React.PointerEvent;
 }
 

@@ -361,6 +361,10 @@ export function useSheetGestures({
 
   const handlePointerDown = useCallback(
     (event: ReactPointerEvent) => {
+      // The handle has no native focus action. Prevent pointer-down from
+      // moving focus off a form control on a tap; once the pointer actually
+      // moves, BottomSheet dismisses the keyboard as sheet travel begins.
+      event.preventDefault();
       beginDrag(event, measureHeight());
     },
     [beginDrag, measureHeight],

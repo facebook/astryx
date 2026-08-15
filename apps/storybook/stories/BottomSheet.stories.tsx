@@ -144,6 +144,24 @@ function MobileKeyboardCommentForm({onPost}: {onPost: () => void}) {
   );
 }
 
+function ShortMobileKeyboardForm({onSave}: {onSave: () => void}) {
+  const [title, setTitle] = useState('');
+  const [note, setNote] = useState('');
+
+  return (
+    <VStack gap={4}>
+      <Heading level={3}>Quick note</Heading>
+      <Text type="supporting" color="secondary">
+        This short sheet keeps its height and lifts only when the mobile
+        keyboard would otherwise cover the focused field.
+      </Text>
+      <TextInput label="Title" value={title} onChange={setTitle} />
+      <TextArea label="Note" rows={2} value={note} onChange={setNote} />
+      <Button label="Save note" onClick={onSave} />
+    </VStack>
+  );
+}
+
 export const Showcase: Story = {
   render: () => {
     const [isOpen, setIsOpen] = useState(false);
@@ -278,6 +296,27 @@ export const HugHeight: Story = {
               <Button label="Save for later" />
               <Button label="Done" onClick={() => setIsOpen(false)} />
             </VStack>
+          </Section>
+        </BottomSheet>
+      </>
+    );
+  },
+};
+
+export const ShortMobileKeyboard: Story = {
+  name: 'Short sheet with mobile keyboard',
+  render: () => {
+    const [isOpen, setIsOpen] = useState(false);
+    return (
+      <>
+        <Button label="Add a quick note" onClick={() => setIsOpen(true)} />
+        <BottomSheet
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          label="Quick note"
+          height="hug">
+          <Section padding={4}>
+            <ShortMobileKeyboardForm onSave={() => setIsOpen(false)} />
           </Section>
         </BottomSheet>
       </>

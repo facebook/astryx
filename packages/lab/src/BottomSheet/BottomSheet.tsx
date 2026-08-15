@@ -18,9 +18,10 @@
  * fully-open) without clipping against a fixed dialog edge.
  *
  * Form controls stay usable above mobile on-screen keyboards: the outer sheet
- * remains stable while visual-viewport overlap extends the internal scroll
- * range and focused controls scroll into view. Starting sheet travel or
- * closing the sheet blurs the field to dismiss the keyboard.
+ * keeps its measured height while visual-viewport overlap extends the internal
+ * scroll range and focused controls scroll into view. Short sheets lift only
+ * far enough to expose a usable focus area. Starting sheet travel or closing
+ * the sheet blurs the field to dismiss the keyboard.
  *
  * `hasScrim` picks the presentation: `true` (default) uses `showModal()` (top
  * layer, focus trap, scrim, scroll lock, background inert); `false` uses
@@ -192,6 +193,10 @@ const styles = stylex.create({
     display: 'flex',
     justifyContent: 'center',
     pointerEvents: 'none',
+    // SYNC: custom property is set by useMobileKeyboard.ts. Applying the
+    // keyboard-only lift outside the measured sheet keeps hug height and drag
+    // detents stable.
+    transform: 'translateY(calc(0px - var(--_sheet-keyboard-lift, 0px)))',
   },
   sheet: {
     pointerEvents: 'auto',
@@ -357,7 +362,8 @@ export interface BottomSheetProps extends BaseProps<HTMLDialogElement> {
  * the page behind interactive and scrollable.
  *
  * Focused form controls scroll above the mobile on-screen keyboard without
- * resizing the sheet. Dragging the sheet dismisses the keyboard.
+ * resizing the sheet. A short sheet temporarily lifts when it has no usable
+ * area above the keyboard. Moving the sheet dismisses the keyboard.
  *
  * @example
  * ```
@@ -385,6 +391,7 @@ export function BottomSheet({
   const isExiting = !isOpen && isPresented;
   const dialogRef = useRef<HTMLDialogElement | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
+  const positionerNodeRef = useRef<HTMLDivElement | null>(null);
   const sheetNodeRef = useRef<HTMLDivElement | null>(null);
   const bodyNodeRef = useRef<HTMLDivElement | null>(null);
   const close = useCallback(() => onOpenChange(false), [onOpenChange]);
@@ -398,13 +405,21 @@ export function BottomSheet({
     );
   }, []);
 
-  const {contentProps, handleProps, bodyProps, sheetRef, isDragging} =
-    useSheetGestures({
-      isOpen,
-      onDismiss: close,
-      snapHeights: defaultSnapHeights,
-      onScrimOpacity: handleScrimOpacity,
-    });
+  const {
+    contentProps,
+    handleProps,
+    bodyProps,
+    sheetRef,
+    dragOffset,
+    settledOffset,
+    isDragging,
+  } = useSheetGestures({
+    isOpen,
+    onDismiss: close,
+    snapHeights: defaultSnapHeights,
+    onScrimOpacity: handleScrimOpacity,
+  });
+  const isSheetTraveling = isDragging && dragOffset !== settledOffset;
   const mergedBodyRef = useMemo(
     () => mergeRefs(bodyProps.ref, bodyNodeRef),
     [bodyProps.ref],
@@ -412,8 +427,9 @@ export function BottomSheet({
   useMobileKeyboard({
     bodyRef: bodyNodeRef,
     bottomClearance: MOBILE_KEYBOARD_BOTTOM_CLEARANCE,
-    isDragging,
+    isSheetTraveling,
     isOpen,
+    positionerRef: positionerNodeRef,
     preserveSheetHeight: height === 'hug',
     sheetRef: sheetNodeRef,
   });
@@ -558,7 +574,7 @@ export function BottomSheet({
       onClick={handleClick}
       onKeyDown={handleKeyDown}
       {...props}>
-      <div {...stylex.props(styles.positioner)}>
+      <div ref={positionerNodeRef} {...stylex.props(styles.positioner)}>
         <div
           ref={mergeRefs(sheetRef, sheetNodeRef)}
           tabIndex={-1}
