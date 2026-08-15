@@ -78,9 +78,15 @@ function MobileKeyboardCommentForm({onPost}: {onPost: () => void}) {
     <VStack gap={4}>
       <Heading level={3}>Add a comment</Heading>
       <Text type="supporting" color="secondary">
-        Focus fields throughout this long form to verify that the mobile
-        keyboard leaves each control visible and the sheet itself stays put.
+        Focus fields near the beginning, middle, and end. The outer Tall sheet
+        remains stationary while its body scrolls each control above the mobile
+        keyboard.
       </Text>
+      <Text type="supporting" color="secondary">
+        Move the sheet with its handle or close it with Post comment to verify
+        that sheet travel and closing dismiss the keyboard.
+      </Text>
+      <Button label="Close sheet" onClick={onPost} />
       <Divider />
       <TextInput
         label="Title"
@@ -140,24 +146,6 @@ function MobileKeyboardCommentForm({onPost}: {onPost: () => void}) {
         onChange={update('comment')}
       />
       <Button label="Post comment" onClick={onPost} />
-    </VStack>
-  );
-}
-
-function ShortMobileKeyboardForm({onSave}: {onSave: () => void}) {
-  const [title, setTitle] = useState('');
-  const [note, setNote] = useState('');
-
-  return (
-    <VStack gap={4}>
-      <Heading level={3}>Quick note</Heading>
-      <Text type="supporting" color="secondary">
-        This short sheet keeps its height and lifts only when the mobile
-        keyboard would otherwise cover the focused field.
-      </Text>
-      <TextInput label="Title" value={title} onChange={setTitle} />
-      <TextArea label="Note" rows={2} value={note} onChange={setNote} />
-      <Button label="Save note" onClick={onSave} />
     </VStack>
   );
 }
@@ -341,29 +329,8 @@ export const HugHeightWithLongContent: Story = {
   },
 };
 
-export const ShortMobileKeyboard: Story = {
-  name: 'Short sheet with mobile keyboard',
-  render: () => {
-    const [isOpen, setIsOpen] = useState(false);
-    return (
-      <>
-        <Button label="Add a quick note" onClick={() => setIsOpen(true)} />
-        <BottomSheet
-          isOpen={isOpen}
-          onOpenChange={setIsOpen}
-          label="Quick note"
-          height="hug">
-          <Section padding={4}>
-            <ShortMobileKeyboardForm onSave={() => setIsOpen(false)} />
-          </Section>
-        </BottomSheet>
-      </>
-    );
-  },
-};
-
-export const MobileKeyboard: Story = {
-  name: 'Support mobile keyboard',
+export const MobileKeyboardTall: Story = {
+  name: 'Mobile keyboard — Tall',
   render: () => {
     const [isOpen, setIsOpen] = useState(false);
     return (

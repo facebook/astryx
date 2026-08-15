@@ -8,18 +8,15 @@
  * @output Exports internal useMobileKeyboard hook
  * @position Internal to BottomSheet; not exported from the lab entry point
  *
- * Keeps focused controls inside the visual viewport without resizing the
- * sheet. When the on-screen keyboard covers the stable layout viewport, it
- * extends the body's internal scroll range and reveals only the focused
- * control. A short sheet lifts just enough to expose a usable focus area while
- * retaining its measured height. Starting sheet travel or closing the sheet
- * blurs the field and dismisses the keyboard.
+ * Gives an explicitly Tall sheet a keyboard-aware internal scroll range while
+ * leaving the sheet itself stationary. Shorter and custom-height sheets opt out
+ * entirely. Starting Tall-sheet travel or closing the sheet blurs the field and
+ * dismisses the keyboard.
  */
 
 import {useEffect, useRef, type RefObject} from 'react';
 
 const MOBILE_KEYBOARD_INSET_VAR = '--_sheet-keyboard-inset';
-const MOBILE_KEYBOARD_LIFT_VAR = '--_sheet-keyboard-lift';
 const NON_TEXT_INPUT_TYPES = new Set([
   'button',
   'checkbox',
@@ -36,10 +33,9 @@ const NON_TEXT_INPUT_TYPES = new Set([
 interface UseMobileKeyboardOptions {
   bodyRef: RefObject<HTMLDivElement | null>;
   bottomClearance: number;
+  isEnabled: boolean;
   isSheetTraveling: boolean;
   isOpen: boolean;
-  positionerRef: RefObject<HTMLDivElement | null>;
-  preserveSheetHeight: boolean;
   sheetRef: RefObject<HTMLDivElement | null>;
 }
 
@@ -56,9 +52,6 @@ interface FocusScrollSnapshot {
 
 interface KeyboardGeometry {
   bodyBottom: number;
-  bodyTop: number;
-  focusedHeight: number;
-  sheetTop: number | null;
 }
 
 function captureFocusScroll(target: HTMLElement): FocusScrollSnapshot {
@@ -131,17 +124,16 @@ function findTextEntryControl(
 export function useMobileKeyboard({
   bodyRef,
   bottomClearance,
+  isEnabled,
   isSheetTraveling,
   isOpen,
-  positionerRef,
-  preserveSheetHeight,
   sheetRef,
 }: UseMobileKeyboardOptions): void {
   const hasKeyboardLayoutRef = useRef(false);
   const retainKeyboardLayoutRef = useRef(false);
 
   useEffect(() => {
-    if (!isSheetTraveling) {
+    if (!isEnabled || !isSheetTraveling) {
       return;
     }
     const sheet = sheetRef.current;
@@ -152,17 +144,17 @@ export function useMobileKeyboard({
       activeElement !== sheet &&
       sheet.contains(activeElement)
     ) {
-      // Keep the current keyboard lift/scroll range while focusing the sheet
+      // Keep the current keyboard scroll range while focusing the sheet
       // dismisses the keyboard. Viewport resize events unwind that layout as
-      // the visual viewport recovers, so the sheet does not jump away from the
-      // pointer on the first drag frame.
+      // the visual viewport recovers, avoiding a content jump on the first
+      // drag frame.
       retainKeyboardLayoutRef.current = hasKeyboardLayoutRef.current;
       sheet.focus({preventScroll: true});
     }
-  }, [isSheetTraveling, sheetRef]);
+  }, [isEnabled, isSheetTraveling, sheetRef]);
 
   useEffect(() => {
-    if (isOpen) {
+    if (!isEnabled || isOpen) {
       return;
     }
     const sheet = sheetRef.current;
@@ -175,37 +167,21 @@ export function useMobileKeyboard({
     ) {
       activeElement.blur();
     }
-  }, [isOpen, sheetRef]);
+  }, [isEnabled, isOpen, sheetRef]);
 
   useEffect(() => {
     const body = bodyRef.current;
-    const positioner = positionerRef.current;
     const sheet = sheetRef.current;
-    if (!isOpen || !body || !positioner) {
+    if (!isEnabled || !isOpen || !body) {
       return;
     }
 
-    let isSheetHeightFrozen = false;
-    let keyboardLift = 0;
     let keyboardGeometry: KeyboardGeometry | null = null;
     let pendingFocusScroll: FocusScrollSnapshot | null = null;
     let pendingPointerFocusScroll: FocusScrollSnapshot | null = null;
 
-    const setKeyboardLift = (nextLift: number) => {
-      if (nextLift === keyboardLift) {
-        return;
-      }
-      keyboardLift = nextLift;
-      positioner.style.setProperty(MOBILE_KEYBOARD_LIFT_VAR, `${nextLift}px`);
-    };
-
     const clearKeyboardLayout = () => {
       body.style.setProperty(MOBILE_KEYBOARD_INSET_VAR, '0px');
-      setKeyboardLift(0);
-      if (isSheetHeightFrozen && sheet) {
-        sheet.style.removeProperty('height');
-        isSheetHeightFrozen = false;
-      }
       keyboardGeometry = null;
       hasKeyboardLayoutRef.current = false;
       retainKeyboardLayoutRef.current = false;
@@ -227,22 +203,9 @@ export function useMobileKeyboard({
         return;
       }
 
-      const targetBodyTop = Math.max(
-        viewport.top,
-        viewport.bottom - bottomClearance - geometry.focusedHeight,
-      );
-      const neededLift = Math.max(0, geometry.bodyTop - targetBodyTop);
-      const maxLift =
-        geometry.sheetTop == null
-          ? neededLift
-          : Math.max(0, geometry.sheetTop - viewport.top);
-      const nextLift = Math.min(neededLift, maxLift);
-      setKeyboardLift(nextLift);
-
-      const bodyBottom = geometry.bodyBottom - nextLift;
       const inset = Math.max(
         0,
-        bodyBottom - (viewport.bottom - bottomClearance),
+        geometry.bodyBottom - (viewport.bottom - bottomClearance),
       );
       body.style.setProperty(MOBILE_KEYBOARD_INSET_VAR, `${inset}px`);
     };
@@ -323,81 +286,39 @@ export function useMobileKeyboard({
       const measuredBodyRect = body.getBoundingClientRect();
       const measuredFocusedRect = activeElement.getBoundingClientRect();
       const viewport = getVisualViewportBounds();
-      // The positioner's transform is included in client rects. Add the
-      // current lift back before calculating the next one so repeated
-      // viewport/layout observations converge instead of alternating between
-      // lifted and unlifted values.
-      const unliftedBodyTop = measuredBodyRect.top + keyboardLift;
-      const unliftedBodyBottom = measuredBodyRect.bottom + keyboardLift;
-      const unliftedFocusedTop = measuredFocusedRect.top + keyboardLift;
-      const unliftedFocusedBottom = measuredFocusedRect.bottom + keyboardLift;
-      const overlap = Math.max(0, unliftedBodyBottom - viewport.bottom);
+      const overlap = Math.max(0, measuredBodyRect.bottom - viewport.bottom);
       // The extra clearance leaves room for mobile suggestion UI, but only
       // while the visual viewport actually overlaps the sheet. With no
       // obstruction, ordinary desktop and hardware-keyboard focus must not
       // shift an already visible control.
       const clearance = overlap > 0 ? bottomClearance : 0;
-      if (overlap > 0 && preserveSheetHeight && sheet && !isSheetHeightFrozen) {
-        // A normal-flow spacer would otherwise increase a hug sheet's
-        // intrinsic height. Lock its current geometry before growing the
-        // internal scroll range, then release it when the obstruction clears.
-        sheet.style.height = `${sheet.getBoundingClientRect().height}px`;
-        isSheetHeightFrozen = true;
-      }
-
-      let nextLift = 0;
-      const measuredSheetTop = sheet?.getBoundingClientRect().top;
-      const unliftedSheetTop =
-        measuredSheetTop == null ? null : measuredSheetTop + keyboardLift;
-      if (overlap > 0) {
-        const focusedHeight = measuredFocusedRect.height;
-        const targetBodyTop = Math.max(
-          viewport.top,
-          viewport.bottom - clearance - focusedHeight,
-        );
-        const neededLift = Math.max(0, unliftedBodyTop - targetBodyTop);
-        const maxLift =
-          unliftedSheetTop == null
-            ? neededLift
-            : Math.max(0, unliftedSheetTop - viewport.top);
-        nextLift = Math.min(neededLift, maxLift);
-      }
-      setKeyboardLift(nextLift);
       keyboardGeometry =
         overlap > 0
           ? {
-              bodyBottom: unliftedBodyBottom,
-              bodyTop: unliftedBodyTop,
-              focusedHeight: measuredFocusedRect.height,
-              sheetTop: unliftedSheetTop,
+              bodyBottom: measuredBodyRect.bottom,
             }
           : null;
       hasKeyboardLayoutRef.current = overlap > 0;
 
-      const bodyTop = unliftedBodyTop - nextLift;
-      const bodyBottom = unliftedBodyBottom - nextLift;
-      const focusedTop = unliftedFocusedTop - nextLift;
-      const focusedBottom = unliftedFocusedBottom - nextLift;
       const inset =
         overlap > 0
-          ? Math.max(0, bodyBottom - (viewport.bottom - clearance))
+          ? Math.max(0, measuredBodyRect.bottom - (viewport.bottom - clearance))
           : 0;
       body.style.setProperty(MOBILE_KEYBOARD_INSET_VAR, `${inset}px`);
-      if (overlap === 0 && isSheetHeightFrozen && sheet) {
-        sheet.style.removeProperty('height');
-        isSheetHeightFrozen = false;
-      }
 
-      const safeTop = Math.max(bodyTop, viewport.top);
-      const safeBottom = Math.min(bodyBottom, viewport.bottom - clearance);
+      const safeTop = Math.max(measuredBodyRect.top, viewport.top);
+      const safeBottom = Math.min(
+        measuredBodyRect.bottom,
+        viewport.bottom - clearance,
+      );
       if (safeBottom <= safeTop) {
         return;
       }
 
-      if (focusedBottom > safeBottom) {
-        body.scrollTop += focusedBottom - safeBottom;
-      } else if (focusedTop < safeTop) {
-        body.scrollTop -= safeTop - focusedTop;
+      if (measuredFocusedRect.bottom > safeBottom) {
+        body.scrollTop += measuredFocusedRect.bottom - safeBottom;
+      } else if (measuredFocusedRect.top < safeTop) {
+        body.scrollTop -= safeTop - measuredFocusedRect.top;
       }
     };
 
@@ -513,19 +434,8 @@ export function useMobileKeyboard({
       resizeObserver?.disconnect();
       mutationObserver?.disconnect();
       body.style.removeProperty(MOBILE_KEYBOARD_INSET_VAR);
-      positioner.style.removeProperty(MOBILE_KEYBOARD_LIFT_VAR);
-      if (isSheetHeightFrozen && sheet) {
-        sheet.style.removeProperty('height');
-      }
       hasKeyboardLayoutRef.current = false;
       retainKeyboardLayoutRef.current = false;
     };
-  }, [
-    bodyRef,
-    bottomClearance,
-    isOpen,
-    positionerRef,
-    preserveSheetHeight,
-    sheetRef,
-  ]);
+  }, [bodyRef, bottomClearance, isEnabled, isOpen, sheetRef]);
 }

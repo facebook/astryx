@@ -25,7 +25,6 @@ import {
   useImperativeHandle,
   useLayoutEffect,
   useRef,
-  type RefObject,
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
@@ -124,9 +123,11 @@ const styles = stylex.create({
     flexGrow: 1,
     minHeight: 0,
     overflowY: 'auto',
-    scrollPaddingBlockEnd: MOBILE_KEYBOARD_BOTTOM_CLEARANCE,
     overscrollBehavior: 'none',
     touchAction: 'pan-y',
+  },
+  tallKeyboardBody: {
+    scrollPaddingBlockEnd: MOBILE_KEYBOARD_BOTTOM_CLEARANCE,
     '::after': {
       content: '""',
       display: 'block',
@@ -164,7 +165,6 @@ interface BottomSheetPanelProps extends BaseProps<HTMLDivElement> {
   children: ReactNode;
   onDismiss: () => void;
   onScrimOpacity: (opacity: number) => void;
-  positionerRef?: RefObject<HTMLDivElement | null>;
   onElementChange?: (element: HTMLDivElement | null) => void;
   onMotionStart?: (motion: BottomSheetPanelMotion) => void;
   onMotionComplete?: (motion: BottomSheetPanelMotion) => void;
@@ -291,7 +291,6 @@ export function BottomSheetPanel({
   xstyle,
   onDismiss,
   onScrimOpacity,
-  positionerRef,
   onElementChange,
   onMotionStart,
   onMotionComplete,
@@ -299,7 +298,6 @@ export function BottomSheetPanel({
 }: BottomSheetPanelProps) {
   const elementRef = useRef<HTMLDivElement | null>(null);
   const bodyElementRef = useRef<HTMLDivElement | null>(null);
-  const fallbackPositionerRef = useRef<HTMLDivElement | null>(null);
   const previousStateRef = useRef(state);
   const reactivatedEntranceRef = useRef(false);
   const onMotionStartRef = useRef(onMotionStart);
@@ -362,10 +360,9 @@ export function BottomSheetPanel({
   useMobileKeyboard({
     bodyRef: bodyElementRef,
     bottomClearance: MOBILE_KEYBOARD_BOTTOM_CLEARANCE,
+    isEnabled: height === 'tall',
     isSheetTraveling: isDragging && dragOffset !== settledOffset,
     isOpen: isInteractive,
-    positionerRef: positionerRef ?? fallbackPositionerRef,
-    preserveSheetHeight: height === 'hug',
     sheetRef: elementRef,
   });
   // Keep controller registration attached to one stable host ref. React
@@ -462,7 +459,13 @@ export function BottomSheetPanel({
         aria-hidden="true">
         <div {...stylex.props(styles.handlePill)} />
       </div>
-      <div {...stylex.props(styles.body)} {...bodyProps} ref={setBodyElement}>
+      <div
+        {...stylex.props(
+          styles.body,
+          height === 'tall' && styles.tallKeyboardBody,
+        )}
+        {...bodyProps}
+        ref={setBodyElement}>
         {children}
       </div>
     </div>
