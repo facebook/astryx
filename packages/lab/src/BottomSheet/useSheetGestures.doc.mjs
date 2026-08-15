@@ -22,7 +22,7 @@ export const docs = {
   ],
   usage: {
     description:
-      'Drag + snap machinery for the bottom sheet. A slow drag on the handle resizes the sheet live and, on release, settles to the nearest snap detent; a fast downward flick dismisses (swipe-to-close); a fast upward flick expands to the tallest detent. The measured sheet height is always the tallest detent, and snapHeights add shorter rest points beneath it. Pointer-events based (one path for mouse + touch), SSR-safe, and respects prefers-reduced-motion. Escape (routed by the owning dialog) provides the keyboard equivalent of the dismiss swipe.',
+      'Drag + snap machinery for the bottom sheet. A slow drag on the handle resizes the sheet live and, on release, settles to the nearest snap detent; a fast downward flick dismisses (swipe-to-close); a fast upward flick expands to the tallest detent. A pull past the end of the scrollable body expands a collapsed sheet, then becomes trapped once the sheet is fully expanded so the root viewport cannot rubber-band. The measured sheet height is always the tallest detent, and snapHeights add shorter rest points beneath it. Pointer-events based (one path for mouse + touch), SSR-safe, and respects prefers-reduced-motion. Escape (routed by the owning dialog) provides the keyboard equivalent of the dismiss swipe.',
     bestPractices: [
       { guidance: true, description: 'Spread handleProps on the grab-handle element and contentProps on the sliding surface (the panel that carries the translate).' },
       { guidance: true, description: 'Pass snapHeights in px relative to the viewport; the hook filters out any that are >= the measured sheet height.' },

@@ -377,7 +377,7 @@ describe('useSheetGestures', () => {
       expect(hook.result.current.isDragging).toBe(true);
     });
 
-    it('promotes a bottom pull-up (touch) into a sheet drag', () => {
+    it('promotes a bottom pull-up into a sheet drag when the sheet can expand', () => {
       const {hook} = setup({snapHeights: () => [200]});
       // scrolled to the bottom: scrollTop + clientHeight === scrollHeight
       const el = makeScroller({
@@ -385,6 +385,11 @@ describe('useSheetGestures', () => {
         clientHeight: 200,
         scrollHeight: 800,
       });
+      // Rest at the 200px detent so an upward pull has a taller destination.
+      down(hook, 0, 0, el);
+      move(hook, 200, 400, el);
+      up(hook, 200, 800, el);
+      expect(hook.result.current.settledOffset).toBe(200);
       act(() => hook.result.current.sheetRef(el));
       act(() => hook.result.current.bodyProps.ref(el));
       act(() => {
@@ -392,6 +397,25 @@ describe('useSheetGestures', () => {
         touch(el, 'touchmove', 250); // pull up
       });
       expect(hook.result.current.isDragging).toBe(true);
+    });
+
+    it('traps a bottom pull-up when the sheet is already fully expanded', () => {
+      const {hook} = setup({snapHeights: () => [200]});
+      const el = makeScroller({
+        scrollTop: 600,
+        clientHeight: 200,
+        scrollHeight: 800,
+      });
+      act(() => hook.result.current.sheetRef(el));
+      act(() => hook.result.current.bodyProps.ref(el));
+      let moveEvent: Event | null = null;
+      act(() => {
+        touch(el, 'touchstart', 300);
+        moveEvent = touch(el, 'touchmove', 250);
+      });
+      expect(moveEvent?.defaultPrevented).toBe(true);
+      expect(hook.result.current.isDragging).toBe(false);
+      expect(hook.result.current.contentProps.style.transform).toBeUndefined();
     });
 
     it('leaves native scrolling alone in the middle of the content', () => {

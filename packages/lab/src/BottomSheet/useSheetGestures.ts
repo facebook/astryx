@@ -159,7 +159,9 @@ export interface UseSheetGesturesResult {
   /**
    * Spread on the scrollable body. An overscroll-at-top pull-down starts a
    * sheet drag (a larger, more forgiving target when the content isn't itself
-   * scrolling); normal scrolling passes through untouched.
+   * scrolling). At the opposite edge, an upward pull expands a collapsed
+   * sheet but is trapped once the sheet is fully expanded; normal scrolling
+   * passes through untouched.
    */
   bodyProps: SheetBodyProps;
   /** Current live drag translate in px (0 = fully expanded, larger = collapsed). */
@@ -516,11 +518,13 @@ export function useSheetGestures({
   const pointerMoveRef = useRef(handlePointerMove);
   const endDragRef = useRef(endDrag);
   const measureHeightRef = useRef(measureHeight);
+  const settledOffsetRef = useRef(settledOffset);
   useEffect(() => {
     beginDragRef.current = beginDrag;
     pointerMoveRef.current = handlePointerMove;
     endDragRef.current = endDrag;
     measureHeightRef.current = measureHeight;
+    settledOffsetRef.current = settledOffset;
   });
 
   const bodyRef = useCallback((node: HTMLElement | null) => {
@@ -589,7 +593,8 @@ export function useSheetGestures({
       // opposite direction is a real scroll, so disarm and let it through.
       const pullDownAtTop = armed.top && delta > 0 && atTop(scroller);
       const pullUpAtBottom = armed.bottom && delta < 0 && atBottom(scroller);
-      if (pullDownAtTop || pullUpAtBottom) {
+      const canExpand = settledOffsetRef.current > 0;
+      if (pullDownAtTop || (pullUpAtBottom && canExpand)) {
         event.preventDefault();
         touchDragRef.current = null;
         beginDragRef.current(
@@ -598,6 +603,12 @@ export function useSheetGestures({
           armed.startY,
         );
         pointerMoveRef.current(asPointer(t, scroller));
+      } else if (pullUpAtBottom) {
+        // A fully expanded sheet has nowhere farther to travel. Trap the end
+        // gesture explicitly instead of relying only on overscroll-behavior:
+        // iOS Safari can otherwise chain the pull to the root viewport and
+        // make an anchored Tall sheet appear to rubber-band with the page.
+        event.preventDefault();
       } else if ((armed.top && delta < 0) || (armed.bottom && delta > 0)) {
         // Scrolling away from the armed edge; hand back to native scroll.
         touchDragRef.current = null;
