@@ -659,29 +659,3 @@ export const IconlessNestedItems: Story = {
     </SideNav>
   ),
 };
-
-// =============================================================================
-// Resizable + Collapsible, persisted
-// =============================================================================
-
-export const ResizablePersisted: Story = {
-  name: 'Resizable + Collapsible (persisted)',
-  render: () => (
-    <SideNav
-      collapsible
-      resizable={{autoSaveId: 'storybook-sidenav', defaultWidth: 260}}
-      header={
-        <SideNavHeading
-          icon={<NavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />}
-          heading="My App"
-          headingHref="/"
-        />
-      }>
-      <SideNavSection title="Main">
-        <SideNavItem label="Home" icon={HomeIcon} isSelected href="/" />
-        <SideNavItem label="Projects" icon={FolderIcon} href="/projects" />
-        <SideNavItem label="Reports" icon={ChartBarIcon} href="/reports" />
-      </SideNavSection>
-    </SideNav>
-  ),
-};
