@@ -97,6 +97,11 @@ export type BottomSheetHeight = keyof typeof HEIGHT_BUDGETS;
 // SYNC: must match OVERSCROLL_MAX in useSheetGestures.ts (the drag cap).
 const OVERSCROLL_PADDING = 48;
 
+// Chrome Android needs trailing room after the final input when its suggestion
+// UI appears. This single value controls both the CSS scroll padding and the
+// hook's viewport calculations.
+const MOBILE_KEYBOARD_BOTTOM_CLEARANCE = 48;
+
 /**
  * Default snap detents in px, resolved against the *visual* viewport (like iOS
  * detents), so a mid rest point is ~half the screen regardless of the sheet's
@@ -253,8 +258,7 @@ const styles = stylex.create({
     // Set from visualViewport while the on-screen keyboard/browser chrome
     // covers the stable sheet. The trailing spacer below extends the internal
     // scroll range; the outer sheet and this flex item's box stay unchanged.
-    // SYNC: matches MOBILE_KEYBOARD_FOCUS_GAP in useMobileKeyboard.ts.
-    scrollPaddingBlockEnd: 48,
+    scrollPaddingBlockEnd: MOBILE_KEYBOARD_BOTTOM_CLEARANCE,
     // No overscroll bounce inside the sheet — a pull-down at the top edge is
     // handed off to the sheet drag (see useSheetGestures' touch handling)
     // rather than rubber-banding the content.
@@ -407,6 +411,7 @@ export function BottomSheet({
   );
   useMobileKeyboard({
     bodyRef: bodyNodeRef,
+    bottomClearance: MOBILE_KEYBOARD_BOTTOM_CLEARANCE,
     isDragging,
     isOpen,
     sheetRef: sheetNodeRef,

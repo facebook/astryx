@@ -17,14 +17,11 @@
 
 import {useEffect, type RefObject} from 'react';
 
-// Chrome Android can keep suggestion UI below the keyboard. Keeping this much
-// room after a focused control prevents the browser from panning the dialog.
-// SYNC: the matching static styles live in BottomSheet.tsx.
-const MOBILE_KEYBOARD_FOCUS_GAP = 48;
 const MOBILE_KEYBOARD_INSET_VAR = '--_sheet-keyboard-inset';
 
 interface UseMobileKeyboardOptions {
   bodyRef: RefObject<HTMLDivElement | null>;
+  bottomClearance: number;
   isDragging: boolean;
   isOpen: boolean;
   sheetRef: RefObject<HTMLDivElement | null>;
@@ -41,6 +38,7 @@ function getVisualViewportBounds(): {top: number; bottom: number} {
 
 export function useMobileKeyboard({
   bodyRef,
+  bottomClearance,
   isDragging,
   isOpen,
   sheetRef,
@@ -82,13 +80,13 @@ export function useMobileKeyboard({
       const overlap = Math.max(0, bodyRect.bottom - viewport.bottom);
       // The extra gap leaves room for Chrome Android's suggestion row after
       // the final input, not just the keyboard's measured overlap.
-      const inset = overlap > 0 ? overlap + MOBILE_KEYBOARD_FOCUS_GAP : 0;
+      const inset = overlap > 0 ? overlap + bottomClearance : 0;
       body.style.setProperty(MOBILE_KEYBOARD_INSET_VAR, `${inset}px`);
 
       const focusedRect = activeElement.getBoundingClientRect();
       const safeTop = Math.max(bodyRect.top, viewport.top);
       const safeBottom =
-        Math.min(bodyRect.bottom, viewport.bottom) - MOBILE_KEYBOARD_FOCUS_GAP;
+        Math.min(bodyRect.bottom, viewport.bottom) - bottomClearance;
       if (safeBottom <= safeTop) {
         return;
       }
@@ -125,5 +123,5 @@ export function useMobileKeyboard({
       window.removeEventListener('resize', scheduleReveal);
       body.style.removeProperty(MOBILE_KEYBOARD_INSET_VAR);
     };
-  }, [bodyRef, isOpen]);
+  }, [bodyRef, bottomClearance, isOpen]);
 }
