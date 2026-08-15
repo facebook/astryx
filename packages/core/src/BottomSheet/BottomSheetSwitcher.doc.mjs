@@ -17,7 +17,7 @@ export const docs = {
           props: {
             sheetId: 'details',
             label: 'Setup details',
-            height: 'capped',
+            height: 'hug',
           },
           children: {
             __element: 'Section',
@@ -34,7 +34,51 @@ export const docs = {
                 {
                   __element: 'Text',
                   props: {type: 'body'},
-                  children: 'This first step uses the capped height.',
+                  children: 'Add the essential information for this setup.',
+                },
+                {
+                  __element: 'Text',
+                  props: {type: 'supporting'},
+                  children: 'You can review these details before saving.',
+                },
+              ],
+            },
+          },
+        },
+        {
+          __element: 'BottomSheet',
+          props: {
+            sheetId: 'preferences',
+            label: 'Choose preferences',
+            height: 'hug',
+          },
+          children: {
+            __element: 'Section',
+            props: {padding: 4},
+            children: {
+              __element: 'VStack',
+              props: {gap: 2},
+              children: [
+                {
+                  __element: 'Heading',
+                  props: {level: 3},
+                  children: 'Choose preferences',
+                },
+                {
+                  __element: 'Text',
+                  props: {type: 'body'},
+                  children: 'Select how this setup should behave.',
+                },
+                {
+                  __element: 'Text',
+                  props: {type: 'supporting'},
+                  children:
+                    'Notifications can be sent immediately, daily, or weekly.',
+                },
+                {
+                  __element: 'Text',
+                  props: {type: 'supporting'},
+                  children: 'You can update these preferences later.',
                 },
               ],
             },
@@ -62,7 +106,7 @@ export const docs = {
                 {
                   __element: 'Text',
                   props: {type: 'body'},
-                  children: 'This shorter confirmation step hugs its content.',
+                  children: 'Everything is ready to save.',
                 },
               ],
             },
@@ -133,7 +177,7 @@ export const docs = {
   },
   examples: [
     {
-      label: 'Two-step flow',
+      label: 'Three-step flow',
       code: `const [activeSheet, setActiveSheet] = useState(null);
 
 <>
@@ -141,11 +185,18 @@ export const docs = {
   <BottomSheetSwitcher
     activeSheet={activeSheet}
     onActiveSheetChange={setActiveSheet}>
-    <BottomSheet sheetId="details" label="Details">
+    <BottomSheet sheetId="details" label="Details" height="hug">
+      <SetupDetails />
+      <Button label="Continue" onClick={() => setActiveSheet('preferences')} />
+    </BottomSheet>
+    <BottomSheet sheetId="preferences" label="Preferences" height="hug">
+      <Preferences />
+      <Button label="Back" onClick={() => setActiveSheet('details')} />
       <Button label="Continue" onClick={() => setActiveSheet('confirm')} />
     </BottomSheet>
-    <BottomSheet sheetId="confirm" label="Confirm">
-      <Button label="Back" onClick={() => setActiveSheet('details')} />
+    <BottomSheet sheetId="confirm" label="Confirm" height="hug">
+      <Confirmation />
+      <Button label="Back" onClick={() => setActiveSheet('preferences')} />
       <Button label="Done" onClick={() => setActiveSheet(null)} />
     </BottomSheet>
   </BottomSheetSwitcher>

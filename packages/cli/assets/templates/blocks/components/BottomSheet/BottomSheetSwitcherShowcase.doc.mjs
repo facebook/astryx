@@ -7,7 +7,7 @@ export const doc = {
   name: 'Bottom Sheet Switcher',
   displayName: 'Bottom Sheet Switcher',
   description:
-    'A two-step flow that transitions between bottom sheets inside one shared dialog.',
+    'A three-step flow that transitions between content-hugging sheets of different heights inside one shared dialog.',
   isReady: true,
   isShowcase: true,
   aspectRatio: 3 / 4,
