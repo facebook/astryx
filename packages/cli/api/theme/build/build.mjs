@@ -592,6 +592,30 @@ const themeScopeStart = (/** @type {string} */ name) =>
 const THEME_SCOPE_TO = `[data-astryx-theme]`;
 
 /**
+ * Module extensions the theme loader resolves, source before artifact.
+ *
+ * `theme build` writes `<name>.js` next to `<name>.ts`, and jiti's default
+ * order tries `.js` first — so once a base theme had been built, every sibling
+ * theme that `extends` it resolved to that generated artifact instead of the
+ * source. The artifact carries no `components` and exports a different name,
+ * so the inheritance silently evaporated. Resolving source first is also what
+ * the author's TypeScript sees, which is the point: the CSS the build emits
+ * matches the theme they type-checked.
+ */
+const THEME_MODULE_EXTENSIONS = [
+  '.ts',
+  '.tsx',
+  '.mts',
+  '.cts',
+  '.mtsx',
+  '.ctsx',
+  '.mjs',
+  '.cjs',
+  '.js',
+  '.json',
+];
+
+/**
  * Import a theme module using jiti and find the defineTheme() result.
  * Returns the resolved DefinedTheme object.
  * @param {string} filePath
@@ -601,6 +625,7 @@ async function importThemeModule(filePath) {
   const jiti = createJiti(import.meta.url, {
     moduleCache: false,
     jsx: true,
+    extensions: THEME_MODULE_EXTENSIONS,
   });
 
   const mod = await jiti.import(filePath, {default: true});
@@ -733,6 +758,13 @@ function extractIconInfo(filePath) {
  * Includes the theme name, marker, and re-exports the icon registry.
  * All styling is in the CSS file.
  *
+ * The module carries the theme's resolved `components` and on-media surfaces
+ * alongside its tokens. They are not needed to apply the theme — the CSS holds
+ * all of that — but a built theme is a legitimate base for `extends` (the
+ * shipped themes expose one as their `./built` subpath), and a base that
+ * carries only tokens makes its children silently lose every component
+ * override it had.
+ *
  * The icon registry is imported rather than inlined because it holds React
  * elements, which cannot be serialized. `extractIconInfo` lifts the specifier
  * out of the TypeScript source, where an extensionless `./icons` is resolved by
@@ -774,6 +806,27 @@ function generateBuiltModule(themeDef, iconInfo, iconsSpecifier) {
     .map((line, i) => (i === 0 ? line : '  ' + line))
     .join('\n');
 
+  /**
+   * Serialize a resolved theme field as an indented object literal, or '' when
+   * there is nothing to emit.
+   * @param {string} field
+   * @param {unknown} value
+   * @returns {string}
+   */
+  const serializeField = (field, value) => {
+    if (!value || Object.keys(value).length === 0) return '';
+    const body = JSON.stringify(value, null, 2)
+      .split('\n')
+      .map((line, i) => (i === 0 ? line : '  ' + line))
+      .join('\n');
+    return `  ${field}: ${body},\n`;
+  };
+
+  const inheritableFields =
+    serializeField('components', themeDef.components) +
+    serializeField('__onDark', themeDef.__onDark) +
+    serializeField('__onLight', themeDef.__onLight);
+
   return `${iconImport}/**
  * ${themeDef.name} theme — built by \`${getCliInvocation()} theme build\`
  * Import the CSS file alongside this module:
@@ -785,7 +838,7 @@ export const ${toIdentifier(themeDef.name)}Theme = {
   name: '${themeDef.name}',
   __built: true,
   tokens: ${tokensStr},
-${iconsField}
+${inheritableFields}${iconsField}
 };
 ${iconReExport}`;
 }
@@ -1099,20 +1152,29 @@ export async function themeBuild(
   let css;
   let resolvedTheme;
   {
-    // jiti returns an already-resolved theme; legacy eval returns raw input.
-    const isAlreadyResolved =
-      !themeDef.typography && !themeDef.motion && !themeDef.radius;
-    if (isAlreadyResolved) {
-      resolvedTheme = themeDef;
+    // jiti returns an already-resolved theme; a plain object literal (or the
+    // legacy eval path) returns raw defineTheme input, which still has to go
+    // through the resolver. Detect that by the input-only fields — a resolved
+    // theme has none of them — and hand the WHOLE object over: picking fields
+    // by name is how `extends` (and `color`, and `syntax`) used to be dropped
+    // on the way in.
+    const INPUT_ONLY_FIELDS = [
+      'extends',
+      'typography',
+      'motion',
+      'radius',
+      'color',
+      'syntax',
+      'onDark',
+      'onLight',
+    ];
+    const needsResolution = INPUT_ONLY_FIELDS.some(
+      field => themeDef[field] !== undefined,
+    );
+    if (needsResolution) {
+      resolvedTheme = _defineTheme({...themeDef});
     } else {
-      resolvedTheme = _defineTheme({
-        name: themeDef.name,
-        typography: themeDef.typography,
-        motion: themeDef.motion,
-        radius: themeDef.radius,
-        tokens: themeDef.tokens,
-        components: themeDef.components,
-      });
+      resolvedTheme = themeDef;
     }
     const scopeSelector = themeScopeStart(themeDef.name);
     const scopeTo = THEME_SCOPE_TO;
