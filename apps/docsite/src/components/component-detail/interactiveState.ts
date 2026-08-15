@@ -5,9 +5,12 @@
  * Keeps runtime-only defaults (callbacks, mock search sources, descriptor
  * resolution) and preview-only controlled callbacks out of the generated JSON
  * registries while preserving typed option values from parsed controls.
+ * Also builds the simulated AppShell mobile context for
+ * `playground.appShellMobile` previews.
  */
 
 import {allSyntaxPresets} from '@astryxdesign/core/theme/syntax';
+import type {AppShellMobileContextValue} from '@astryxdesign/core/AppShell';
 import {themeObjectsFull} from '../../generated/themeRegistry';
 import {
   coerceDefault,
@@ -242,6 +245,28 @@ export function getOverlayPreviewControl(
     return {stateProp: 'isOpen', openValue: true};
   }
   return overlay != null && typeof overlay === 'object' ? overlay : null;
+}
+
+/**
+ * Context value for previews of components that read AppShell mobile context
+ * (`playground.appShellMobile`). MobileNavToggle renders null unless the
+ * context reports an enabled mobile viewport — the default value outside
+ * AppShell never does — so the preview simulates one, wiring the drawer open
+ * state back to the provided setter to keep the toggle interactive (#4983).
+ */
+export function buildAppShellMobilePreviewContext(
+  isMobileNavOpen: boolean,
+  onOpenChange: (isOpen: boolean) => void,
+): AppShellMobileContextValue {
+  return {
+    isMobile: true,
+    isMobileNavEnabled: true,
+    isMobileNavOpen,
+    toggleMobileNav: () => onOpenChange(!isMobileNavOpen),
+    openMobileNav: () => onOpenChange(true),
+    closeMobileNav: () => onOpenChange(false),
+    hasAutoToggle: true,
+  };
 }
 
 export function getMissingRequiredProps(

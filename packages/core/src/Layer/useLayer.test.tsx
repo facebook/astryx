@@ -500,6 +500,20 @@ describe('useLayer', () => {
   });
 
   describe('when the Popover API is supported', () => {
+    it('declares body type instead of inheriting the host context', () => {
+      const {container} = render(
+        <div style={{fontSize: '30px', lineHeight: '3'}}>
+          <LayerHarness onReady={() => {}} />
+        </div>,
+      );
+
+      const layer = container.querySelector('[popover]') as HTMLElement;
+      expect(layer).toHaveStyle({
+        fontSize: 'var(--text-body-size)',
+        lineHeight: 'var(--text-body-leading)',
+      });
+    });
+
     it('calls showPopover/hidePopover on show/hide', () => {
       const showSpy = vi.fn();
       const hideSpy = vi.fn();

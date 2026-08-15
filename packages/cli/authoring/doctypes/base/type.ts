@@ -124,6 +124,14 @@ export interface ComponentPlaygroundConfig {
         /** Value assigned to stateProp when the preview's open button is used. */
         openValue: unknown;
       };
+  /** The component reads AppShell mobile context and renders nothing
+   *  without it (e.g. `MobileNavToggle` returns null unless the context
+   *  reports an enabled mobile viewport — the default value outside
+   *  AppShell never does). The interactive preview provides a simulated
+   *  mobile AppShell context so the stage is not an empty box, keeps the
+   *  drawer open state interactive, and notes the simulation under the
+   *  rendered component (#4983). */
+  appShellMobile?: boolean;
   /** Required parent wrapper for sub-components that depend on a parent
    *  context provider (e.g. `Tab` calls `useTabListContext()` and throws
    *  standalone). The preview wraps the component in this parent before

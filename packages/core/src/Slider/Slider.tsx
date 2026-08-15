@@ -174,6 +174,15 @@ const styles = stylex.create({
   },
   trackContainerHorizontal: {
     height: THUMB_SIZE,
+    // The whole track is the tap target (a click anywhere on it moves the
+    // slider), but it is only THUMB_SIZE (20px) tall — under the WCAG 2.5.8 AA
+    // 24px minimum. Floor its block size to 24px on touch pointers only. The
+    // rail and thumb center on 50%, so they stay put; only the invisible
+    // tappable area grows. Desktop (fine pointer) is unchanged.
+    minBlockSize: {
+      default: null,
+      '@media (pointer: coarse)': '24px',
+    },
     width: '100%',
     cursor: 'pointer',
   },

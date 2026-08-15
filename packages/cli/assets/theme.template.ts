@@ -198,6 +198,7 @@ export const myTheme = defineTheme({
   //   --spacing-*      0 · 0-5 · 1 … 12
   //   --size-element-* sm · md · lg (control heights)
   //   --focus-outline-* width · style · color · offset
+  //   --border-width   hairline thickness shared by bordered surfaces
   //   --radius-*       none · inner · element · container · page · chat · full
   //   --shadow-*       low/med/high + inset-{hover,selected,success,warning,error}
   //   --duration-*     {fast,medium,slow} × {-min, base, -max}
