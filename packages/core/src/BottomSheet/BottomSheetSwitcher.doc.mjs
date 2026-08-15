@@ -117,7 +117,7 @@ export const docs = {
   ],
   usage: {
     description:
-      'Use one activeSheet value as the source of truth for a multi-step bottom-sheet flow. Set it to a child sheetId to open or switch steps, and set it to null to close. On a handoff, the previous sheet becomes inert immediately while the new active sheet enters above it. A taller previous sheet simultaneously moves down until its top edge aligns with the shorter new sheet; it fades only after both transforms complete. Equal-height or shorter previous sheets stay stationary and fade after the entrance. The switcher keeps one shared dialog open across the transition. When hasScrim is true, that dialog provides one modal boundary, native backdrop, focus trap, and body scroll lock, then restores focus to the trigger after the final exit. When false, the dialog is non-modal and leaves the page behind interactive.',
+      "Coordinates a multi-step bottom-sheet flow in one shared dialog; set activeSheet to a nested BottomSheet's sheetId to open or switch steps, and to null to close.",
     bestPractices: [
       {
         guidance: true,
@@ -185,7 +185,7 @@ export const docsDense = {
     'controller with one shared native dialog for mutually exclusive multi-step BottomSheets',
   usage: {
     description:
-      'One activeSheet ID makes one nested sheet interactive in one shared dialog. Change IDs to enter a new top sheet while simultaneously aligning a taller previous sheet behind a shorter one, then fade it; null closes the flow.',
+      "Coordinates a multi-step bottom-sheet flow in one shared dialog; set activeSheet to a nested BottomSheet's sheetId to open or switch steps, and to null to close.",
     bestPractices: [
       {
         guidance: true,
