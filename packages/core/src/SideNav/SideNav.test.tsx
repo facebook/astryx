@@ -1259,7 +1259,9 @@ describe('SideNavItem — collapsed submenu hover intent', () => {
     vi.useFakeTimers();
     const trigger = renderFlyout();
 
-    fireEvent.click(trigger);
+    // `detail: 1` marks a pointer click: the hook reads a detail-0 click as
+    // Enter/Space, which always opens rather than toggling.
+    fireEvent.click(trigger, {detail: 1});
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
 
     // Clicking is a commitment: the flyout outlives the pointer.
@@ -1279,7 +1281,7 @@ describe('SideNavItem — collapsed submenu hover intent', () => {
 
     // The pointer never left, so dismissing fires a fresh mouseenter as the
     // flyout unmounts — which used to reopen what the user just closed.
-    fireEvent.click(trigger);
+    fireEvent.click(trigger, {detail: 1});
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
 
     fireEvent.mouseEnter(trigger);
@@ -1307,7 +1309,7 @@ describe('SideNavItem — collapsed submenu hover intent', () => {
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
 
     // Tapping still opens it — the touch path goes through click, untouched.
-    fireEvent.click(trigger);
+    fireEvent.click(trigger, {detail: 1});
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
   });
 

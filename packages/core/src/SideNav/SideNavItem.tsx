@@ -468,6 +468,11 @@ export function SideNavItem({
       hide: popover.hide,
       isOpen: popover.isOpen,
       isEnabled: isCollapsed && hasChildren,
+      // Standard popover toggling: the flyout opens beside the rail, not over
+      // the icon, so the click after a hover-open is a deliberate dismissal
+      // rather than the #3121 confirmation the nav menus need.
+      clickGuardMs: 0,
+      ownsFocus: false,
     });
 
   // In collapsed mode: hide items without icons

@@ -49,7 +49,8 @@ const DEFAULT_CLICK_GUARD_MS = 500;
  * A panel positioned over its own trigger puts that trigger back under a
  * stationary pointer when it closes, and the browser fires a fresh mouseenter —
  * which reopened the menu the user had just dismissed. Time-bounded rather than
- * a one-shot flag, so a deliberate re-hover seconds later still opens.
+ * a one-shot flag, so a deliberate re-hover seconds later still opens; a real
+ * mouseleave clears it early.
  */
 const REOPEN_SUPPRESS_MS = 300;
 
@@ -79,6 +80,13 @@ export interface UseMenuHoverOptions {
    * `popover="manual"` popups and triggers inside the panel.
    */
   popoverId?: string;
+  /**
+   * Whether the hook moves focus on a click or keyboard open. False for
+   * consumers that wire the pointer half only and leave focus to the popover's
+   * own trap — a panel that is a dialog rather than a menu (`SideNavItem`'s
+   * collapsed flyout) has no items for the hook to focus. @default true
+   */
+  ownsFocus?: boolean;
 }
 
 export interface UseMenuHoverReturn<T extends HTMLElement = HTMLElement> {
@@ -130,6 +138,7 @@ export function useMenuHover<T extends HTMLElement = HTMLElement>(
     clickGuardMs = DEFAULT_CLICK_GUARD_MS,
     itemSelector,
     popoverId,
+    ownsFocus = true,
   } = options;
 
   const hasHover = useMediaQuery('(hover: hover)');
@@ -211,9 +220,13 @@ export function useMenuHover<T extends HTMLElement = HTMLElement>(
   }, [focusFirst, menuRef]);
 
   const openAndFocus = useCallback(() => {
+    if (!ownsFocus) {
+      show();
+      return;
+    }
     show({skipAutoFocus: true});
     focusMenu();
-  }, [show, focusMenu]);
+  }, [ownsFocus, show, focusMenu]);
 
   const confirmHoverOpen = useCallback((): boolean => {
     const isConfirming =
@@ -246,7 +259,9 @@ export function useMenuHover<T extends HTMLElement = HTMLElement>(
         hoverModeRef.current = false;
         hoverOpenedAtRef.current = 0;
         if (isOpen) {
-          focusMenu();
+          if (ownsFocus) {
+            focusMenu();
+          }
         } else {
           openAndFocus();
         }
@@ -262,7 +277,9 @@ export function useMenuHover<T extends HTMLElement = HTMLElement>(
       }
 
       if (confirmHoverOpen()) {
-        focusMenu();
+        if (ownsFocus) {
+          focusMenu();
+        }
         return;
       }
 
@@ -272,6 +289,7 @@ export function useMenuHover<T extends HTMLElement = HTMLElement>(
       popoverId,
       clearTimeouts,
       isOpen,
+      ownsFocus,
       confirmHoverOpen,
       openAndFocus,
       focusMenu,
@@ -310,6 +328,9 @@ export function useMenuHover<T extends HTMLElement = HTMLElement>(
   }, [hasHover, isOpen, clearTimeouts, show, showDelay]);
 
   const handleMouseLeave = useCallback(() => {
+    // A real leave ends the stationary-pointer case the suppression window
+    // exists for, so the next enter is deliberate whenever it arrives.
+    closedAtRef.current = 0;
     if (!hoverModeRef.current) {
       return;
     }
