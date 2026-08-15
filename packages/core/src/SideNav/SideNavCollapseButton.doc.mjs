@@ -27,7 +27,7 @@ export const docs = {
     {
       name: 'size',
       type: "'sm' | 'md' | 'lg'",
-      description: "Button size. Defaults to the size its container cascades — 'sm' inside a SideNav footer — and to 'md' with no container. Set it when the button sits outside a sized container and has to match its neighbours.",
+      description: "Button size. Defaults to the size its container cascades ('sm' inside a SideNav footer) and to 'md' with no container. Set it when the button sits outside a sized container and has to match its neighbours.",
     },
     {
       name: 'children',
@@ -78,7 +78,7 @@ export const docsDense = {
   description: 'Toggle button for sidenav collapse. Place inside SideNav (reads context) or outside (pass the same controlled collapsible config both get). Icon-only ghost button by default.',
   propDescriptions: {
     collapsible: 'Controlled collapsible config, same object SideNav gets. Only needed when button rendered outside sidenav.',
-    handleRef: 'Deprecated — pass collapsible instead.',
+    handleRef: 'Deprecated. Pass collapsible instead.',
     label: 'Custom label. Text button w/ chevron when provided, icon-only when omitted.',
     size: "Button size. Inherits from the container ('sm' in a SideNav footer), else 'md'.",
     children: 'Custom content. Overrides default chevron icon + label.',
