@@ -1385,10 +1385,10 @@ function DateTimeInputDemo({beside = false}: {beside?: boolean} = {}) {
         <Note>
           Date and time are <b>separate targets</b>, like the iOS compact
           picker: a <b>Date / Time</b> switch beside the title reveals one
-          picker at a time. Choosing a day <b>auto-advances to Time</b>; Confirm
-          stays pinned and enables once both are set. On a wide sheet the same
-          switch stays — the Date view just shows <b>two months side by side</b>{' '}
-          and the Time view a wider grid.
+          picker at a time. Pick a day, then <b>tap Time</b> to choose an hour;
+          Confirm stays pinned and enables once both are set. On a wide sheet
+          the same switch stays — the Date view just shows{' '}
+          <b>two months side by side</b> and the Time view a wider grid.
         </Note>
         <TapField
           label="Starts at"
@@ -1431,10 +1431,7 @@ function DateTimeInputDemo({beside = false}: {beside?: boolean} = {}) {
             mode="single"
             paged={beside}
             value={date}
-            onChange={(v: ISODateString) => {
-              setDate(v);
-              setSegment('time'); // iOS-style: a day advances to Time
-            }}
+            onChange={(v: ISODateString) => setDate(v)}
             startYear={2026}
             startMonth={6}
             monthCount={beside ? 2 : 4}
@@ -3975,7 +3972,7 @@ export const PROTOTYPES: Prototype[] = [
     change:
       'Bottom sheet with a Date / Time switch (iOS compact-picker pattern); one picker at a time on both phone and tablet.',
     interaction:
-      'Date and time are separate targets: a Date / Time switch beside the title reveals one picker at a time. Choosing a day auto-advances to Time; Confirm stays pinned and enables once both are chosen. The tablet keeps the same switch — the Date view shows two months side by side and the Time view a wider grid.',
+      'Date and time are separate targets: a Date / Time switch beside the title reveals one picker at a time. Pick a day, then tap Time to choose an hour; Confirm stays pinned and enables once both are chosen. The tablet keeps the same switch — the Date view shows two months side by side and the Time view a wider grid.',
     showTablet: true,
     tabletCaption: 'Tablet · same switch, two months + wider time grid',
     Demo: DateTimeInputDemo,
