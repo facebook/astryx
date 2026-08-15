@@ -291,7 +291,7 @@ describe('HoverCard', () => {
     });
   });
 
-  it('forwards computed CSS variables to a paragraph portal', async () => {
+  it('does not freeze computed CSS variables on a paragraph portal', async () => {
     const variables = new Map([
       ['--color-neutral', 'rgb(1, 2, 3)'],
       ['--color-text-primary', 'rgb(250, 251, 252)'],
@@ -299,14 +299,18 @@ describe('HoverCard', () => {
     const getComputedStyleSpy = vi
       .spyOn(window, 'getComputedStyle')
       .mockImplementation(
-        () =>
+        element =>
           ({
             length: variables.size,
             item: (index: number) => Array.from(variables.keys())[index] ?? '',
             getPropertyValue: (property: string) =>
               variables.get(property) ?? '',
-            direction: 'rtl',
-            writingMode: 'vertical-rl',
+            direction:
+              element.tagName.toLowerCase() === 'template' ? 'rtl' : 'ltr',
+            writingMode:
+              element.tagName.toLowerCase() === 'template'
+                ? 'vertical-rl'
+                : 'horizontal-tb',
           }) as CSSStyleDeclaration,
       );
 
@@ -329,11 +333,15 @@ describe('HoverCard', () => {
 
       expect(layer?.parentElement).toBe(container);
       expect(container.querySelector('p')?.contains(button)).toBe(false);
-      expect(layer).toHaveStyle({
-        '--color-neutral': 'rgb(1, 2, 3)',
-        '--color-text-primary': 'rgb(250, 251, 252)',
-      });
-      expect(layer).toHaveStyle({direction: 'rtl', writingMode: 'vertical-rl'});
+      expect(layer).not.toBeNull();
+      expect(
+        (layer as HTMLElement).style.getPropertyValue('--color-neutral'),
+      ).toBe('');
+      expect(
+        (layer as HTMLElement).style.getPropertyValue('--color-text-primary'),
+      ).toBe('');
+      expect((layer as HTMLElement).style.direction).toBe('rtl');
+      expect((layer as HTMLElement).style.writingMode).toBe('vertical-rl');
     });
 
     getComputedStyleSpy.mockRestore();

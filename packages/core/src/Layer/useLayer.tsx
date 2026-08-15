@@ -331,21 +331,31 @@ interface ContextLayerMount {
   portalStyle: React.CSSProperties;
 }
 
-function readPortalWritingContext(element: HTMLElement): React.CSSProperties {
-  const computedStyle =
-    element.ownerDocument.defaultView?.getComputedStyle(element);
-  if (!computedStyle) {
+function readPortalWritingContext(
+  element: HTMLElement,
+  portalTarget: HTMLElement,
+): React.CSSProperties {
+  const view = element.ownerDocument.defaultView;
+  if (!view) {
     return {};
   }
+  const sourceStyle = view.getComputedStyle(element);
+  const targetStyle = view.getComputedStyle(portalTarget);
 
   // Do not snapshot custom properties here. The portal target is the closest
   // safe ancestor, so theme variables continue to inherit and update there.
   // These two properties can be set on the unsafe chain itself and directly
-  // affect the logical anchor-positioning keywords used by the layer.
+  // affect the logical anchor-positioning keywords used by the layer. Only
+  // override values the portal would actually lose; matching values should
+  // keep inheriting from the target so later direction changes remain live.
   return {
-    direction: computedStyle.direction as React.CSSProperties['direction'],
-    writingMode:
-      computedStyle.writingMode as React.CSSProperties['writingMode'],
+    ...(sourceStyle.direction !== targetStyle.direction && {
+      direction: sourceStyle.direction as React.CSSProperties['direction'],
+    }),
+    ...(sourceStyle.writingMode !== targetStyle.writingMode && {
+      writingMode:
+        sourceStyle.writingMode as React.CSSProperties['writingMode'],
+    }),
   };
 }
 
@@ -353,12 +363,12 @@ function readPortalWritingContext(element: HTMLElement): React.CSSProperties {
  * Map logical placement/alignment to a CSS position-area value.
  *
  * Uses the self-* logical keyword family: the inline axis resolves against
- * the popover's own inherited direction (the layer renders inside the
- * trigger's subtree, so it inherits `direction` and mirrors in RTL with no
- * JS). The block axis is direction-neutral but must come from the same
- * keyword family — mixing physical `top` with `self-inline-*` produces an
- * invalid position-area (computes to `none`, which pins the popover to the
- * viewport corner because styles.base zeroes the UA margins).
+ * the popover's own direction (inherited inline or preserved when portaled),
+ * so it mirrors in RTL without placement-specific JS. The block axis is
+ * direction-neutral but must come from the same keyword family — mixing
+ * physical `top` with `self-inline-*` produces an invalid position-area
+ * (computes to `none`, which pins the popover to the viewport corner because
+ * styles.base zeroes the UA margins).
  *
  * Note the plain logical family (`inline-start`, no `self-`) is NOT a
  * substitute: it resolves against the containing block — the page root for
@@ -447,6 +457,10 @@ export function useLayer(
 
   const [isOpen, setIsOpen] = useState(false);
   const popoverRef = useRef<HTMLElement | null>(null);
+  // The DOM element on which the current logical open state was applied.
+  // A portal target change replaces the popover element; retaining the old
+  // reference lets the ref callback recognize and reopen its replacement.
+  const openedPopoverRef = useRef<HTMLElement | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
   // Context layers place a persistent inert marker at their real JSX position.
   // Its parent tells us whether the final layer can stay inline or needs a
@@ -465,6 +479,38 @@ export function useLayer(
   // stale-closure reads of the previous isOpen value.
   const isOpenRef = useRef(false);
 
+  const showPopoverElement = useCallback((popover: HTMLElement) => {
+    // Finding infra-4: the Popover API is unsupported on Safari <17 and
+    // Firefox <125. On those browsers `showPopover` does not exist, so fall
+    // back to plain visibility instead of throwing.
+    if (typeof popover.showPopover === 'function') {
+      // The trigger is passed as the popover's invoker `source`: a layer
+      // hosted away from its trigger then still takes its sequential focus
+      // order (and its popover nesting) from the trigger rather than from its
+      // own DOM position. Browsers without the option ignore it.
+      popover.showPopover({source: triggerRef.current ?? undefined});
+    } else {
+      popover.style.display = 'block';
+    }
+    openedPopoverRef.current = popover;
+  }, []);
+
+  const isCurrentContextPopover = useCallback(
+    (popover: HTMLElement): boolean => {
+      if (mode !== 'context') {
+        return true;
+      }
+      const mount = contextMountRef.current;
+      if (mount === null) {
+        return false;
+      }
+      const expectedParent =
+        mount.portalTarget ?? sentinelRef.current?.parentElement ?? null;
+      return popover.parentElement === expectedParent;
+    },
+    [mode],
+  );
+
   const requestContextMount = useCallback(() => {
     if (mode !== 'context') {
       return;
@@ -479,7 +525,9 @@ export function useLayer(
     const portalTarget = resolveLayerPortalTarget(inlineParent);
     const mount: ContextLayerMount = {
       portalTarget,
-      portalStyle: portalTarget ? readPortalWritingContext(sentinel) : {},
+      portalStyle: portalTarget
+        ? readPortalWritingContext(sentinel, portalTarget)
+        : {},
     };
     contextMountRef.current = mount;
     setContextMount(mount);
@@ -496,36 +544,26 @@ export function useLayer(
   const show = useCallback(() => {
     // A context popover left over until React commits a previous hide must not
     // be reopened. The synchronous mount ref is the source of truth.
+    const candidate = popoverRef.current;
     const popover =
-      mode === 'context' && contextMountRef.current === null
-        ? null
-        : popoverRef.current;
+      candidate && isCurrentContextPopover(candidate) ? candidate : null;
     if (!popover) {
       pendingShowRef.current = true;
       requestContextMount();
       return;
     }
     if (!isOpenRef.current) {
-      // Finding infra-4: the Popover API is unsupported on Safari <17 and
-      // Firefox <125. On those browsers `showPopover` does not exist, so
-      // calling it unconditionally throws a TypeError and the layer never
-      // opens. Guard behind a feature check; when the API is missing, fall
-      // back to plain visibility (the [popover] attribute is inert there, so
-      // the element sits in normal flow) so the layer still becomes visible.
-      if (typeof popover.showPopover === 'function') {
-        // The trigger is passed as the popover's invoker `source`: a layer
-        // hosted away from its trigger then still takes its sequential focus
-        // order (and its popover nesting) from the trigger rather than from
-        // its own DOM position. Browsers without the option ignore it.
-        popover.showPopover({source: triggerRef.current ?? undefined});
-      } else {
-        popover.style.display = 'block';
-      }
+      showPopoverElement(popover);
       isOpenRef.current = true;
       setIsOpen(true);
       onShow?.();
     }
-  }, [mode, onShow, requestContextMount]);
+  }, [
+    onShow,
+    requestContextMount,
+    showPopoverElement,
+    isCurrentContextPopover,
+  ]);
 
   const hide = useCallback(() => {
     pendingShowRef.current = false;
@@ -540,6 +578,7 @@ export function useLayer(
           el.style.display = 'none';
         }
       }
+      openedPopoverRef.current = null;
       isOpenRef.current = false;
       setIsOpen(false);
       onHide?.();
@@ -579,6 +618,7 @@ export function useLayer(
     (e: Event) => {
       const toggleEvent = e as ToggleEvent;
       if (toggleEvent.newState === 'closed' && isOpenRef.current) {
+        openedPopoverRef.current = null;
         isOpenRef.current = false;
         setIsOpen(false);
         onHide?.();
@@ -626,15 +666,30 @@ export function useLayer(
       if (el && pendingShowRef.current) {
         pendingShowRef.current = false;
         show();
+      } else if (
+        el &&
+        isOpenRef.current &&
+        openedPopoverRef.current !== el &&
+        isCurrentContextPopover(el)
+      ) {
+        // Changing a portal target remounts the popover. Preserve the logical
+        // open state without firing onShow again for the replacement element.
+        showPopoverElement(el);
       }
     },
-    [handleToggle, bindToggleListener, show],
+    [
+      handleToggle,
+      bindToggleListener,
+      show,
+      showPopoverElement,
+      isCurrentContextPopover,
+    ],
   );
 
   const sentinelRefCallback = useCallback(
     (el: HTMLTemplateElement | null) => {
       sentinelRef.current = el;
-      if (el && (!lazyMount || pendingShowRef.current)) {
+      if (el && (!lazyMount || pendingShowRef.current || isOpenRef.current)) {
         // The render call may have moved while the hook stayed mounted.
         // Resolve again from the newly attached marker rather than reusing a
         // portal target from its previous JSX position.

@@ -42,6 +42,11 @@ describe('resolveLayerPortalTarget', () => {
     ['link', '<a href="#x"><template></template></a>'],
     ['button', '<button><template></template></button>'],
     ['label', '<label><template></template></label>'],
+    ['data', '<data><template></template></data>'],
+    ['definition', '<dfn><template></template></dfn>'],
+    ['meter', '<meter><template></template></meter>'],
+    ['output', '<output><template></template></output>'],
+    ['progress', '<progress><template></template></progress>'],
     [
       'nested inline formatting',
       '<p><em><b><template id="marker"></template></b></em></p>',
@@ -70,6 +75,7 @@ describe('resolveLayerPortalTarget', () => {
     ],
     ['list', '<ul><template></template></ul>'],
     ['select', '<select><template></template></select>'],
+    ['heading group', '<hgroup><template></template></hgroup>'],
   ])('walks out of a structural %s', (_name, markup) => {
     const root = mount(`<div id="host">${markup}</div>`);
     const marker = root.querySelector('template');

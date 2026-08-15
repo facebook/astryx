@@ -10,7 +10,7 @@
  */
 
 import {describe, it, expect, vi, afterEach} from 'vitest';
-import {render, act} from '@testing-library/react';
+import {render, act, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {useLayer, getPositionTryFallbacks} from './useLayer';
 import type {
@@ -18,6 +18,12 @@ import type {
   LayerAlignment,
   ContextRenderProps,
 } from './useLayer';
+
+function mockCSSStyleDeclaration(
+  styles: Partial<CSSStyleDeclaration>,
+): CSSStyleDeclaration {
+  return styles as CSSStyleDeclaration;
+}
 
 /**
  * Minimal harness that exposes the imperative show/hide callbacks and renders
@@ -58,9 +64,13 @@ function ContextLayerHarness({
 function ContextHostingHarness({
   unsafe,
   themeColor,
+  direction,
+  writingMode,
 }: {
   unsafe?: boolean;
   themeColor?: string;
+  direction?: React.CSSProperties['direction'];
+  writingMode?: React.CSSProperties['writingMode'];
 }) {
   const layer = useLayer({mode: 'context', lazyMount: true});
   const contents = (
@@ -73,9 +83,11 @@ function ContextHostingHarness({
     </>
   );
 
-  const hostStyle = themeColor
-    ? ({'--test-layer-color': themeColor} as React.CSSProperties)
-    : undefined;
+  const hostStyle = {
+    ...(themeColor ? {'--test-layer-color': themeColor} : {}),
+    direction,
+    writingMode,
+  } as React.CSSProperties;
 
   return (
     <div data-testid="host" style={hostStyle}>
@@ -94,6 +106,34 @@ function RelocatingContextHostingHarness({unsafe}: {unsafe: boolean}) {
     </div>
   ) : (
     <section data-testid="render-position">{renderedLayer}</section>
+  );
+}
+
+function RelocatingOpenContextHostingHarness({
+  unsafe,
+  onShow,
+}: {
+  unsafe: boolean;
+  onShow?: () => void;
+}) {
+  const layer = useLayer({mode: 'context', lazyMount: true, onShow});
+  const renderedLayer = layer.render(
+    <button type="button">Layer action</button>,
+  );
+
+  return (
+    <>
+      <button type="button" ref={layer.ref} onClick={layer.show}>
+        Trigger
+      </button>
+      {unsafe ? (
+        <div data-testid="unsafe-host">
+          <p>{renderedLayer}</p>
+        </div>
+      ) : (
+        <section data-testid="safe-host">{renderedLayer}</section>
+      )}
+    </>
   );
 }
 
@@ -270,13 +310,12 @@ describe('useLayer', () => {
     it('portals out of an unsafe parent and preserves its logical writing context', async () => {
       const getComputedStyleSpy = vi
         .spyOn(window, 'getComputedStyle')
-        .mockImplementation(
-          () =>
-            ({
-              getPropertyValue: () => '',
-              direction: 'rtl',
-              writingMode: 'vertical-rl',
-            }) as CSSStyleDeclaration,
+        .mockImplementation(() =>
+          mockCSSStyleDeclaration({
+            getPropertyValue: () => '',
+            direction: 'rtl',
+            writingMode: 'vertical-rl',
+          }),
         );
       const showSpy = vi.fn();
       HTMLElement.prototype.showPopover = showSpy;
@@ -311,14 +350,14 @@ describe('useLayer', () => {
           if (element.tagName.toLowerCase() !== 'template') {
             return originalGetComputedStyle(element);
           }
-          return {
+          return mockCSSStyleDeclaration({
             length: 1,
             item: () => '--test-layer-color',
             getPropertyValue: property =>
               property === '--test-layer-color' ? 'rgb(1, 2, 3)' : '',
             direction: 'ltr',
             writingMode: 'horizontal-tb',
-          } as CSSStyleDeclaration;
+          });
         });
       HTMLElement.prototype.showPopover = vi.fn();
       const user = userEvent.setup();
@@ -353,6 +392,56 @@ describe('useLayer', () => {
       }
     });
 
+    it('keeps a shared writing context inheriting live from the corrective host', async () => {
+      const getComputedStyleSpy = vi
+        .spyOn(window, 'getComputedStyle')
+        .mockImplementation(element => {
+          const htmlElement = element as HTMLElement;
+          const host = htmlElement.matches('[data-testid="host"]')
+            ? htmlElement
+            : htmlElement.closest<HTMLElement>('[data-testid="host"]');
+          return mockCSSStyleDeclaration({
+            getPropertyValue: () => '',
+            direction: host?.style.direction || 'ltr',
+            writingMode: host?.style.writingMode || 'horizontal-tb',
+          });
+        });
+      HTMLElement.prototype.showPopover = vi.fn();
+      const user = userEvent.setup();
+
+      try {
+        const {container, getByRole, rerender} = render(
+          <ContextHostingHarness
+            unsafe
+            direction="rtl"
+            writingMode="vertical-rl"
+          />,
+        );
+
+        await user.click(getByRole('button', {name: 'Trigger'}));
+
+        let layer = container.querySelector('[popover]') as HTMLElement;
+        expect(layer.style.direction).toBe('');
+        expect(layer.style.writingMode).toBe('');
+        expect(window.getComputedStyle(layer).direction).toBe('rtl');
+
+        rerender(
+          <ContextHostingHarness
+            unsafe
+            direction="ltr"
+            writingMode="horizontal-tb"
+          />,
+        );
+
+        layer = container.querySelector('[popover]') as HTMLElement;
+        expect(layer.style.direction).toBe('');
+        expect(layer.style.writingMode).toBe('');
+        expect(window.getComputedStyle(layer).direction).toBe('ltr');
+      } finally {
+        getComputedStyleSpy.mockRestore();
+      }
+    });
+
     it('re-resolves the host when a persistent render call moves', () => {
       const {container, rerender} = render(
         <RelocatingContextHostingHarness unsafe />,
@@ -370,6 +459,43 @@ describe('useLayer', () => {
       layer = container.querySelector('[popover]');
       expect(layer?.parentElement).toBe(section);
       expect(section?.querySelector('template')).not.toBeNull();
+    });
+
+    it('reopens an open lazy layer after its render call moves', async () => {
+      const showSpy = vi.fn(function (this: HTMLElement) {
+        if (!this.isConnected) {
+          throw new Error('showPopover called on a detached layer');
+        }
+        this.dataset.open = 'true';
+      });
+      const onShow = vi.fn();
+      HTMLElement.prototype.showPopover = showSpy;
+      const {container, getByRole, rerender} = render(
+        <RelocatingOpenContextHostingHarness unsafe onShow={onShow} />,
+      );
+
+      fireEvent.click(getByRole('button', {name: 'Trigger'}));
+
+      await waitFor(() => {
+        expect(container.querySelector('[popover]')).toHaveAttribute(
+          'data-open',
+          'true',
+        );
+      });
+
+      rerender(
+        <RelocatingOpenContextHostingHarness unsafe={false} onShow={onShow} />,
+      );
+
+      await waitFor(() => {
+        const layer = container.querySelector('[popover]');
+        expect(layer?.parentElement).toBe(
+          container.querySelector('[data-testid="safe-host"]'),
+        );
+        expect(layer).toHaveAttribute('data-open', 'true');
+      });
+      expect(showSpy).toHaveBeenCalledTimes(2);
+      expect(onShow).toHaveBeenCalledOnce();
     });
   });
 
