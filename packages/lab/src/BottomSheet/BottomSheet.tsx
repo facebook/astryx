@@ -39,7 +39,6 @@ import {
   easeVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
 import {useDevWarning, useScrollLock} from '@astryxdesign/core/hooks';
-import {mergeProps, mergeRefs} from '@astryxdesign/core/utils';
 import {
   BottomSheetPanel,
   type BottomSheetPanelMotion,
@@ -111,7 +110,10 @@ const styles = stylex.create({
   },
 });
 
-interface BottomSheetSharedProps {
+interface BottomSheetSharedProps extends BaseProps<HTMLDivElement> {
+  /** Ref forwarded to the visual sheet panel <div>. */
+  ref?: React.Ref<HTMLDivElement>;
+
   /** Accessible label for the sheet. */
   label: string;
 
@@ -120,25 +122,16 @@ interface BottomSheetSharedProps {
 
   /** Height budget or custom CSS length. @default 'capped' */
   height?: BottomSheetHeight | number | string;
-
-  /** Test ID for the host element. */
-  'data-testid'?: string;
 }
 
-interface StandaloneBottomSheetProps
-  extends BottomSheetSharedProps, BaseProps<HTMLDialogElement> {
-  /** Ref forwarded to the standalone sheet's <dialog> element. */
-  ref?: React.Ref<HTMLDialogElement>;
+interface StandaloneBottomSheetProps extends BottomSheetSharedProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   hasScrim?: boolean;
   sheetId?: never;
 }
 
-interface SwitcherBottomSheetProps
-  extends BottomSheetSharedProps, BaseProps<HTMLDivElement> {
-  /** Ref forwarded to this sheet's layer in the shared dialog. */
-  ref?: React.Ref<HTMLDivElement>;
+interface SwitcherBottomSheetProps extends BottomSheetSharedProps {
   sheetId: string;
   isOpen?: never;
   onOpenChange?: never;
@@ -296,17 +289,18 @@ function StandaloneBottomSheet({
         hasScrim && styles.scrim,
         !hasScrim && styles.dialogNonModal,
       )}
-      ref={mergeRefs(ref, dialogRef)}
+      ref={dialogRef}
       aria-label={label}
       aria-hidden={!isOpen && isPresented ? 'true' : undefined}
       aria-modal={hasScrim && isOpen ? 'true' : undefined}
       inert={!isOpen && isPresented ? true : undefined}
       onCancel={handleCancel}
       onClick={handleClick}
-      onKeyDown={handleKeyDown}
-      {...props}>
+      onKeyDown={handleKeyDown}>
       <div {...stylex.props(styles.positioner)}>
         <BottomSheetPanel
+          {...props}
+          ref={ref}
           state={panelState}
           height={height}
           xstyle={xstyle}
@@ -429,25 +423,19 @@ function SwitcherBottomSheetItem({
     isInteractive && !label,
   );
 
-  const {className: layerClassName, style: layerStyle, ...layerProps} = props;
-
   return (
     <div
-      {...layerProps}
-      {...mergeProps(
-        stylex.props(
-          styles.positioner,
-          !isPresented && styles.positionerHidden,
-          isTopSheet && styles.positionerTop,
-        ),
-        layerClassName,
-        layerStyle,
+      {...stylex.props(
+        styles.positioner,
+        !isPresented && styles.positionerHidden,
+        isTopSheet && styles.positionerTop,
       )}
-      ref={ref}
       hidden={!isPresented}
       aria-hidden={isInactive ? 'true' : undefined}
       inert={isInactive ? true : undefined}>
       <BottomSheetPanel
+        {...props}
+        ref={ref}
         state={panelState}
         height={height}
         xstyle={xstyle}

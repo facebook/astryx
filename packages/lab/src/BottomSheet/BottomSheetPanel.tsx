@@ -23,11 +23,12 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
+import type {BaseProps} from '@astryxdesign/core';
 import {
   colorVars,
   durationVars,
@@ -37,7 +38,7 @@ import {
   sizeVars,
   spacingVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
-import {mergeProps, themeProps} from '@astryxdesign/core/utils';
+import {mergeProps, mergeRefs, themeProps} from '@astryxdesign/core/utils';
 import {useSheetGestures} from './useSheetGestures';
 
 const SNAP_FRACTIONS = [0.14, 0.5, 0.92];
@@ -145,11 +146,12 @@ export type BottomSheetPanelState =
     }
   | {kind: 'exiting'};
 
-interface BottomSheetPanelProps {
+interface BottomSheetPanelProps extends BaseProps<HTMLDivElement> {
+  /** Ref forwarded to the visual sheet panel. */
+  ref?: React.Ref<HTMLDivElement>;
   state: BottomSheetPanelState;
   height: BottomSheetHeight | number | string;
   children: ReactNode;
-  xstyle?: StyleXStyles;
   onDismiss: () => void;
   onScrimOpacity: (opacity: number) => void;
   onElementChange?: (element: HTMLDivElement | null) => void;
@@ -199,15 +201,20 @@ function waitForTransition(
 
 /** Internal visual and gesture surface shared by every BottomSheet host. */
 export function BottomSheetPanel({
+  ref,
   state,
   height,
   children,
+  className,
+  style,
+  tabIndex,
   xstyle,
   onDismiss,
   onScrimOpacity,
   onElementChange,
   onMotionStart,
   onMotionComplete,
+  ...props
 }: BottomSheetPanelProps) {
   const elementRef = useRef<HTMLDivElement | null>(null);
   const previousStateRef = useRef(state);
@@ -252,6 +259,10 @@ export function BottomSheetPanel({
     },
     [onElementChange, sheetRef],
   );
+  const mergedRef = useMemo(
+    () => mergeRefs(ref, setElement),
+    [ref, setElement],
+  );
 
   const motion = motionForState(state);
   useEffect(() => {
@@ -285,8 +296,9 @@ export function BottomSheetPanel({
 
   return (
     <div
-      ref={setElement}
-      tabIndex={-1}
+      {...props}
+      ref={mergedRef}
+      tabIndex={tabIndex ?? -1}
       {...mergeProps(
         themeProps('bottom-sheet'),
         stylex.props(
@@ -297,7 +309,7 @@ export function BottomSheetPanel({
           isInactive && styles.sheetInactive,
           xstyle,
         ),
-        undefined,
+        className,
         {
           ['--_sheet-budget' as string]: budget,
           ...(isInteractive
@@ -305,6 +317,7 @@ export function BottomSheetPanel({
             : isRetained
               ? {transform: retainedTransform}
               : {}),
+          ...style,
         },
       )}>
       <div

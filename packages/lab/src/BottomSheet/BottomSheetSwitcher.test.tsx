@@ -110,22 +110,31 @@ function getSharedDialog(): HTMLDialogElement {
 }
 
 function finishSheetTransition(
-  dialog: HTMLElement,
+  element: HTMLElement,
   propertyName: 'transform' | 'opacity',
 ) {
-  const sheet = dialog.querySelector<HTMLElement>('.astryx-bottom-sheet');
-  if (!sheet) {
-    throw new Error('sheet panel not found');
-  }
+  const sheet = getSheetPanel(element);
   fireEvent.transitionEnd(sheet, {propertyName});
 }
 
-function getSheetPanel(dialog: HTMLElement): HTMLElement {
-  const sheet = dialog.querySelector<HTMLElement>('.astryx-bottom-sheet');
+function getSheetPanel(element: HTMLElement): HTMLElement {
+  if (element.classList.contains('astryx-bottom-sheet')) {
+    return element;
+  }
+  const sheet = element.querySelector<HTMLElement>('.astryx-bottom-sheet');
   if (!sheet) {
     throw new Error('sheet panel not found');
   }
   return sheet;
+}
+
+function getSheetLayer(testId: string): HTMLElement {
+  const panel = screen.getByTestId(testId);
+  const layer = panel.parentElement;
+  if (layer == null) {
+    throw new Error('sheet layer not found');
+  }
+  return layer;
 }
 
 function mockSheetTop(sheet: HTMLElement, top: number) {
@@ -154,9 +163,9 @@ describe('BottomSheetSwitcher', () => {
 
     fireEvent.click(screen.getByRole('button', {name: 'Start flow'}));
 
-    expect(screen.getByTestId('details-sheet')).not.toHaveAttribute('hidden');
-    expect(screen.getByTestId('confirm-sheet')).toHaveAttribute('hidden');
-    expect(screen.getByTestId('confirm-sheet')).toHaveStyle({display: 'none'});
+    expect(getSheetLayer('details-sheet')).not.toHaveAttribute('hidden');
+    expect(getSheetLayer('confirm-sheet')).toHaveAttribute('hidden');
+    expect(getSheetLayer('confirm-sheet')).toHaveStyle({display: 'none'});
     expect(document.querySelectorAll('dialog[open]')).toHaveLength(1);
     expect(
       document.querySelectorAll('.astryx-bottom-sheet-switcher-scrim'),
@@ -167,13 +176,13 @@ describe('BottomSheetSwitcher', () => {
     expect(getSharedDialog()).toHaveAccessibleName('Details');
   });
 
-  it('forwards sheet DOM props and refs to its layer in the shared dialog', () => {
-    const layerRef = createRef<HTMLDivElement>();
+  it('forwards sheet DOM props and refs to its panel in the shared dialog', () => {
+    const panelRef = createRef<HTMLDivElement>();
 
     render(
       <BottomSheetSwitcher activeSheet="details" onActiveSheetChange={() => {}}>
         <BottomSheet
-          ref={layerRef}
+          ref={panelRef}
           sheetId="details"
           label="Details"
           data-testid="details-layer"
@@ -183,18 +192,19 @@ describe('BottomSheetSwitcher', () => {
       </BottomSheetSwitcher>,
     );
 
-    const layer = screen.getByTestId('details-layer');
-    expect(layerRef.current).toBe(layer);
-    expect(layer).toHaveAttribute('data-sheet-owner', 'settings');
-    expect(getSharedDialog()).toContainElement(layer);
+    const panel = screen.getByTestId('details-layer');
+    expect(panelRef.current).toBe(panel);
+    expect(panel).toHaveClass('astryx-bottom-sheet');
+    expect(panel).toHaveAttribute('data-sheet-owner', 'settings');
+    expect(getSharedDialog()).toContainElement(panel);
   });
 
   it('keeps the previous sheet stationary until the new entrance finishes, then fades it', () => {
     render(<Flow />);
     fireEvent.click(screen.getByRole('button', {name: 'Start flow'}));
     const sharedDialog = getSharedDialog();
-    const detailsSheet = screen.getByTestId('details-sheet');
-    const confirmSheet = screen.getByTestId('confirm-sheet');
+    const detailsSheet = getSheetLayer('details-sheet');
+    const confirmSheet = getSheetLayer('confirm-sheet');
 
     fireEvent.click(screen.getByRole('button', {name: 'Continue'}));
 
@@ -241,8 +251,8 @@ describe('BottomSheetSwitcher', () => {
   it('moves a taller previous sheet down while the shorter new sheet enters, then waits for both', () => {
     render(<Flow />);
     fireEvent.click(screen.getByRole('button', {name: 'Start flow'}));
-    const detailsSheet = screen.getByTestId('details-sheet');
-    const confirmSheet = screen.getByTestId('confirm-sheet');
+    const detailsSheet = getSheetLayer('details-sheet');
+    const confirmSheet = getSheetLayer('confirm-sheet');
     const detailsPanel = getSheetPanel(detailsSheet);
     const confirmPanel = getSheetPanel(confirmSheet);
     mockSheetTop(detailsPanel, 100);
@@ -270,8 +280,8 @@ describe('BottomSheetSwitcher', () => {
   it('waits for the incoming entrance when top-edge alignment finishes first', () => {
     render(<Flow />);
     fireEvent.click(screen.getByRole('button', {name: 'Start flow'}));
-    const detailsSheet = screen.getByTestId('details-sheet');
-    const confirmSheet = screen.getByTestId('confirm-sheet');
+    const detailsSheet = getSheetLayer('details-sheet');
+    const confirmSheet = getSheetLayer('confirm-sheet');
     const detailsPanel = getSheetPanel(detailsSheet);
     mockSheetTop(detailsPanel, 100);
     mockSheetTop(getSheetPanel(confirmSheet), 300);
@@ -292,8 +302,8 @@ describe('BottomSheetSwitcher', () => {
   it('replaces an unfinished outgoing sheet during rapid navigation', () => {
     render(<Flow />);
     fireEvent.click(screen.getByRole('button', {name: 'Start flow'}));
-    const detailsSheet = screen.getByTestId('details-sheet');
-    const confirmSheet = screen.getByTestId('confirm-sheet');
+    const detailsSheet = getSheetLayer('details-sheet');
+    const confirmSheet = getSheetLayer('confirm-sheet');
 
     fireEvent.click(screen.getByRole('button', {name: 'Continue'}));
     fireEvent.click(screen.getByRole('button', {name: 'Back'}));
@@ -315,7 +325,7 @@ describe('BottomSheetSwitcher', () => {
 
     fireEvent.click(getSharedDialog());
 
-    const outgoingSheet = screen.getByTestId('details-sheet');
+    const outgoingSheet = getSheetLayer('details-sheet');
     expect(outgoingSheet).not.toHaveAttribute('hidden');
     expect(outgoingSheet).toHaveAttribute('inert');
     expect(getSharedDialog()).toHaveStyle({'--_sheet-scrim-opacity': '0'});
@@ -461,7 +471,7 @@ describe('BottomSheetSwitcher', () => {
     fireEvent.click(screen.getByRole('button', {name: 'Start flow'}));
     fireEvent.click(screen.getByRole('button', {name: 'Continue'}));
 
-    const confirmSheet = screen.getByTestId('confirm-sheet');
+    const confirmSheet = getSheetLayer('confirm-sheet');
     const backButton = screen.getByRole('button', {name: 'Back'});
     backButton.focus();
     finishSheetTransition(confirmSheet, 'transform');
