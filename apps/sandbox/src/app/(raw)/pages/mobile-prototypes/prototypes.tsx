@@ -74,6 +74,10 @@ import {
 
 const s = stylex.create({
   fullBtn: {width: '100%'},
+  // Selector sheet: spacious ListItems inset their content 12px, which pushes
+  // option labels past the sheet title. Drop the inline padding so labels line
+  // up with the title (and the divider) at the sheet's edge.
+  flushSheetItem: {paddingInline: 0},
   rowBorder: {
     borderBottomWidth: 1,
     borderBottomStyle: 'solid',
@@ -897,6 +901,7 @@ function SelectorDemo() {
               key={c}
               label={c}
               isSelected={c === country}
+              xstyle={s.flushSheetItem}
               endContent={
                 c === country ? (
                   <CheckIcon
@@ -927,6 +932,7 @@ function SelectorDemo() {
               key={t}
               label={t}
               isSelected={t === tz}
+              xstyle={s.flushSheetItem}
               endContent={
                 t === tz ? (
                   <CheckIcon
