@@ -63,6 +63,11 @@ export const docs = {
       {
         guidance: true,
         description:
+          "Treat each switcher sheet's content as a new ownership scope. A BottomSheet opened from that content is standalone; wrap it in a nested BottomSheetSwitcher when it starts another multi-step flow.",
+      },
+      {
+        guidance: true,
+        description:
           'Configure hasScrim on BottomSheetSwitcher, not its individual BottomSheet children, so the modal layer remains stable across handoffs.',
       },
       {
@@ -120,6 +125,11 @@ export const docsDense = {
       {
         guidance: true,
         description: "Let the switcher own the flow's one shared scrim.",
+      },
+      {
+        guidance: true,
+        description:
+          'Nested sheets start a new standalone or nested-switcher scope.',
       },
       {
         guidance: false,

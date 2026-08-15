@@ -100,6 +100,25 @@ function ConditionalFlow() {
   );
 }
 
+function NestedStandaloneSheetFlow() {
+  const [isNestedOpen, setIsNestedOpen] = useState(false);
+  return (
+    <BottomSheetSwitcher activeSheet="details" onActiveSheetChange={() => {}}>
+      <BottomSheet sheetId="details" label="Details">
+        <button type="button" onClick={() => setIsNestedOpen(true)}>
+          Open nested sheet
+        </button>
+        <BottomSheet
+          isOpen={isNestedOpen}
+          onOpenChange={setIsNestedOpen}
+          label="Nested standalone sheet">
+          Nested content
+        </BottomSheet>
+      </BottomSheet>
+    </BottomSheetSwitcher>
+  );
+}
+
 function NestedEscapeTrap({onEscape}: {onEscape: () => void}) {
   const {containerRef} = useFocusTrap<HTMLDivElement>({
     isActive: true,
@@ -317,6 +336,28 @@ describe('BottomSheetSwitcher', () => {
     expect(onActiveSheetChange).toHaveBeenCalledWith(null);
   });
 
+  it('resets switcher context for a sheet nested inside item content', () => {
+    render(<NestedStandaloneSheetFlow />);
+    const opener = screen.getByRole('button', {name: 'Open nested sheet'});
+    opener.focus();
+    fireEvent.click(opener);
+
+    const nestedDialog = screen.getByRole('dialog', {
+      name: 'Nested standalone sheet',
+    });
+    expect(nestedDialog).toHaveAttribute('open');
+    expect(getSheetPanel(nestedDialog)).toHaveFocus();
+    expect(document.querySelectorAll('dialog[open]')).toHaveLength(2);
+    expect(HTMLDialogElement.prototype.showModal).toHaveBeenCalledTimes(2);
+
+    fireEvent.keyDown(nestedDialog, {key: 'Escape'});
+    finishSheetTransition(nestedDialog, 'transform');
+
+    expect(nestedDialog).not.toHaveAttribute('open');
+    expect(getSharedDialog()).toHaveAttribute('open');
+    expect(opener).toHaveFocus();
+  });
+
   it('keeps the previous sheet stationary until the new entrance finishes, then fades it', () => {
     render(<Flow />);
     fireEvent.click(screen.getByRole('button', {name: 'Start flow'}));
@@ -435,6 +476,42 @@ describe('BottomSheetSwitcher', () => {
     finishSheetTransition(confirmSheet, 'opacity');
     expect(detailsSheet).not.toHaveAttribute('hidden');
     expect(confirmSheet).toHaveAttribute('hidden');
+  });
+
+  it('ignores late scrim updates from an outgoing sheet gesture', () => {
+    render(<Flow />);
+    fireEvent.click(screen.getByRole('button', {name: 'Start flow'}));
+
+    const detailsPanel = getSheetPanel(getSheetLayer('details-sheet'));
+    mockSheetTop(detailsPanel, 100);
+    const handle = detailsPanel.firstElementChild;
+    if (!(handle instanceof HTMLElement)) {
+      throw new Error('sheet handle not found');
+    }
+
+    fireEvent.pointerDown(handle, {
+      pointerId: 1,
+      clientY: 100,
+      timeStamp: 0,
+    });
+    fireEvent.pointerMove(handle, {
+      pointerId: 1,
+      clientY: 600,
+      timeStamp: 16,
+    });
+    expect(
+      getSharedDialog().style.getPropertyValue('--_sheet-scrim-opacity'),
+    ).not.toBe('1');
+
+    fireEvent.click(screen.getByRole('button', {name: 'Continue'}));
+    expect(getSharedDialog()).toHaveStyle({'--_sheet-scrim-opacity': '1'});
+
+    fireEvent.pointerMove(handle, {
+      pointerId: 1,
+      clientY: 680,
+      timeStamp: 32,
+    });
+    expect(getSharedDialog()).toHaveStyle({'--_sheet-scrim-opacity': '1'});
   });
 
   it('keeps an active handoff when a consumer callback ref changes', () => {

@@ -475,6 +475,18 @@ export function BottomSheetSwitcher({
       String(opacity),
     );
   }, []);
+  const onSheetScrimOpacityChange = useCallback(
+    (sheetId: string, opacity: number) => {
+      // A pointer captured by the outgoing sheet can keep delivering gesture
+      // events after a handoff. Only the currently committed sheet owns the
+      // shared backdrop, so stale gesture updates must not reach the dialog.
+      if (sheetId !== committedActiveSheetRef.current) {
+        return;
+      }
+      setScrimOpacity(opacity);
+    },
+    [setScrimOpacity],
+  );
 
   useLayoutEffect(() => {
     setScrimOpacity(activeSheet == null ? 0 : 1);
@@ -491,7 +503,7 @@ export function BottomSheetSwitcher({
       registerSheetLabel,
       onSheetEnterStart,
       onSheetTransitionComplete,
-      setScrimOpacity,
+      onSheetScrimOpacityChange,
     }),
     [
       activeSheet,
@@ -500,10 +512,10 @@ export function BottomSheetSwitcher({
       hasScrim,
       onActiveSheetChange,
       onSheetEnterStart,
+      onSheetScrimOpacityChange,
       onSheetTransitionComplete,
       registerSheetElement,
       registerSheetLabel,
-      setScrimOpacity,
     ],
   );
 

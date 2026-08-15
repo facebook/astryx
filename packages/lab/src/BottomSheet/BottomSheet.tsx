@@ -162,6 +162,10 @@ function panelStateForSwitcherPhase(
 }
 
 function focusPanel(panel: HTMLElement | null, isModal: boolean): void {
+  const activeElement = document.activeElement;
+  if (activeElement != null && panel?.contains(activeElement)) {
+    return;
+  }
   const autofocus = panel?.querySelector<HTMLElement>('[data-autofocus]');
   if (autofocus != null) {
     autofocus.focus();
@@ -339,7 +343,7 @@ function SwitcherBottomSheetItem({
     registerSheetLabel,
     onSheetEnterStart,
     onSheetTransitionComplete,
-    setScrimOpacity,
+    onSheetScrimOpacityChange,
   } = switcher;
   const hasValidSheetId = typeof sheetId === 'string' && sheetId.length > 0;
   const phase = hasValidSheetId ? getSheetPhase(sheetId) : 'hidden';
@@ -394,6 +398,14 @@ function SwitcherBottomSheetItem({
     },
     [hasValidSheetId, onSheetTransitionComplete, sheetId],
   );
+  const handleScrimOpacity = useCallback(
+    (opacity: number) => {
+      if (hasValidSheetId) {
+        onSheetScrimOpacityChange(sheetId, opacity);
+      }
+    },
+    [hasValidSheetId, onSheetScrimOpacityChange, sheetId],
+  );
 
   useLayoutEffect(() => {
     if (!hasValidSheetId) {
@@ -440,11 +452,16 @@ function SwitcherBottomSheetItem({
         height={height}
         xstyle={xstyle}
         onDismiss={close}
-        onScrimOpacity={setScrimOpacity}
+        onScrimOpacity={handleScrimOpacity}
         onElementChange={handlePanelElementChange}
         onMotionStart={handleMotionStart}
         onMotionComplete={handleMotionComplete}>
-        {children}
+        {/* A switcher item consumes its parent controller. Its content starts a
+            fresh ownership scope so a nested BottomSheet is standalone unless
+            it establishes a nested BottomSheetSwitcher of its own. */}
+        <BottomSheetSwitcherContext.Provider value={null}>
+          {children}
+        </BottomSheetSwitcherContext.Provider>
       </BottomSheetPanel>
     </div>
   );

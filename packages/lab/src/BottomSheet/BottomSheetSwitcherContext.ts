@@ -37,7 +37,7 @@ export interface BottomSheetSwitcherContextValue {
   onSheetTransitionComplete: (
     event: BottomSheetSwitcherTransitionEvent,
   ) => void;
-  setScrimOpacity: (opacity: number) => void;
+  onSheetScrimOpacityChange: (sheetId: string, opacity: number) => void;
 }
 
 export const BottomSheetSwitcherContext =
