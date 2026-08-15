@@ -4,7 +4,7 @@
 
 /**
  * @file BottomSheetSwitcher.tsx
- * @input Uses React context, React DOM portals, StyleX, theme tokens, focus/scroll-lock hooks, BottomSheetSwitcherContext
+ * @input Uses React context, StyleX, theme tokens, focus/scroll-lock hooks, BottomSheetSwitcherContext
  * @output Exports BottomSheetSwitcher and BottomSheetSwitcherProps
  * @position Lab switcher for mutually exclusive BottomSheet flows
  *
@@ -13,10 +13,12 @@
  * child, or is null when the flow is closed. During a handoff the new sheet
  * enters above the previous sheet. If it is shorter, the previous sheet moves
  * down at the same time until their top edges align; otherwise it stays
- * stationary. The previous sheet fades only after both motions complete. The
- * switcher also owns the flow's one shared scrim, focus trap, and scroll
- * lock, so handoffs never stack backdrops. Its visual layer is portaled to
- * document.body so containing blocks cannot clip or displace it.
+ * stationary. The previous sheet fades only after both motions complete.
+ *
+ * All child sheets render as panels inside one switcher-owned `<dialog>`. A
+ * scrim flow calls showModal() once and keeps that native top-layer dialog open
+ * across every handoff. A no-scrim flow calls show() on the same inline shell.
+ * This keeps one modal boundary and one native ::backdrop without a portal.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/lab/src/BottomSheet/BottomSheet.tsx
@@ -28,14 +30,15 @@
 
 import {
   useCallback,
-  useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
   useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type MouseEvent as ReactMouseEvent,
   type ReactNode,
+  type SyntheticEvent,
 } from 'react';
-import {createPortal} from 'react-dom';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -43,34 +46,57 @@ import {
   easeVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
 import {useFocusTrap, useScrollLock} from '@astryxdesign/core/hooks';
-import {mergeProps, themeProps} from '@astryxdesign/core/utils';
+import {mergeProps, mergeRefs, themeProps} from '@astryxdesign/core/utils';
 import {
   BottomSheetSwitcherContext,
-  type BottomSheetSwitcherTransitionEvent,
-  type BottomSheetSwitcherPhase,
   type BottomSheetSwitcherContextValue,
+  type BottomSheetSwitcherPhase,
+  type BottomSheetSwitcherTransitionEvent,
 } from './BottomSheetSwitcherContext';
 
 const styles = stylex.create({
-  contents: {
-    display: 'contents',
-  },
-  scrim: {
+  dialog: {
     position: 'fixed',
     inset: 0,
-    // Switcher-managed sheets use z-index 1000 (the existing app-overlay
-    // convention), so the one shared scrim sits immediately beneath them.
-    zIndex: 999,
-    backgroundColor: colorVars['--color-overlay'],
-    opacity: {
-      default: 'var(--_sheet-scrim-opacity, 1)',
-      '@starting-style': 0,
-    },
-    transitionProperty: 'opacity',
-    transitionDuration: durationVars['--duration-medium'],
-    transitionTimingFunction: easeVars['--ease-standard'],
-    '@media (prefers-reduced-motion: reduce)': {
-      transitionDuration: '0.01s',
+    width: '100dvw',
+    height: '100dvh',
+    maxWidth: 'none',
+    maxHeight: 'none',
+    margin: 0,
+    padding: 0,
+    border: 'none',
+    backgroundColor: 'transparent',
+    overflow: 'visible',
+    display: 'none',
+    outline: 'none',
+  },
+  dialogOpen: {
+    display: 'block',
+  },
+  // show() leaves a no-scrim flow in the normal rendering tree. The shell must
+  // pass pointer input through to the live page; each sheet panel opts back in.
+  // width/height 100% avoids overflowing a transformed containing block, but
+  // consumers of this non-modal mode must still avoid clipping ancestors.
+  dialogNonModal: {
+    pointerEvents: 'none',
+    zIndex: 1000,
+    width: '100%',
+    height: '100%',
+  },
+  scrim: {
+    '::backdrop': {
+      backgroundColor: colorVars['--color-overlay'],
+      opacity: {
+        default: 'var(--_sheet-scrim-opacity, 1)',
+        '@starting-style': 0,
+      },
+      transitionProperty: 'opacity, display',
+      transitionDuration: durationVars['--duration-medium'],
+      transitionTimingFunction: easeVars['--ease-standard'],
+      transitionBehavior: 'allow-discrete',
+      '@media (prefers-reduced-motion: reduce)': {
+        transitionDuration: '0.01s',
+      },
     },
   },
 });
@@ -127,10 +153,6 @@ function alignmentOffsetForElements(
   if (enteringElement == null || retainedElement == null) {
     return 0;
   }
-  // The panels share a bottom edge, so the positive difference between their
-  // rendered top edges is exactly how far the taller retained sheet must move
-  // down to sit completely behind the shorter entering sheet. Measuring the
-  // rendered rects also accounts for a retained sheet's current drag detent.
   const enteringPositioner = enteringElement.parentElement;
   const enteringTop =
     enteringPositioner?.getBoundingClientRect().top ??
@@ -147,16 +169,12 @@ export interface BottomSheetSwitcherProps {
    */
   activeSheet: string | null;
 
-  /**
-   * Called when the active BottomSheet requests dismissal, with null. Callers
-   * can pass the same callback (or its state setter) to controls that move the
-   * flow to another sheet ID.
-   */
+  /** Called with null when the active sheet requests dismissal. */
   onActiveSheetChange: (sheetId: string | null) => void;
 
   /**
-   * Whether the switcher renders one shared scrim and treats the active
-   * sheet as modal. Disable for a non-modal multi-sheet flow.
+   * Whether to open the shared dialog modally with its native ::backdrop.
+   * Disable for an inline, non-modal flow over an interactive page.
    * @default true
    */
   hasScrim?: boolean;
@@ -166,30 +184,9 @@ export interface BottomSheetSwitcherProps {
 }
 
 /**
- * Coordinates a set of BottomSheets so zero or one is active at a time, with
- * one shared scrim for the complete flow. On a sheet-to-sheet handoff, the
- * previous sheet remains inert while the new sheet enters above it. A taller
- * previous sheet simultaneously moves down behind a shorter new sheet, then
- * fades after both transforms complete.
- *
- * @example
- * ```
- * const [activeSheet, setActiveSheet] = useState<string | null>(null);
- *
- * <BottomSheetSwitcher
- *   activeSheet={activeSheet}
- *   onActiveSheetChange={setActiveSheet}>
- *   <BottomSheet sheetId="details" label="Details">
- *     <Button
- *       label="Continue"
- *       onClick={() => setActiveSheet('confirm')}
- *     />
- *   </BottomSheet>
- *   <BottomSheet sheetId="confirm" label="Confirm">
- *     <Button label="Done" onClick={() => setActiveSheet(null)} />
- *   </BottomSheet>
- * </BottomSheetSwitcher>
- * ```
+ * Coordinates a set of BottomSheets so zero or one is active at a time inside
+ * one shared native dialog. During a handoff the previous panel stays visible
+ * and inert beneath the entering panel, then fades after motion completes.
  */
 export function BottomSheetSwitcher({
   activeSheet,
@@ -197,32 +194,20 @@ export function BottomSheetSwitcher({
   hasScrim = true,
   children,
 }: BottomSheetSwitcherProps) {
-  // The opener belongs to the flow, not an individual sheet. Keeping it here
-  // means sheet-to-sheet handoffs do not replace it with a control in the
-  // previous sheet; focus returns to the original trigger when the flow ends.
+  const dialogRef = useRef<HTMLDialogElement | null>(null);
+  const dialogModeRef = useRef<'modal' | 'non-modal' | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
-  const scrimRef = useRef<HTMLDivElement | null>(null);
   const sheetElementsRef = useRef(new Map<string, HTMLElement>());
   const committedActiveSheetRef = useRef(activeSheet);
-  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
+  const [sheetLabels, setSheetLabels] = useState<ReadonlyMap<string, string>>(
+    () => new Map(),
+  );
   const [unmountedSheetIds, setUnmountedSheetIds] = useState<
     ReadonlySet<string>
   >(() => new Set());
   const [transition, setTransition] =
     useState<SheetTransitionState>(IDLE_TRANSITION);
 
-  // Switcher-managed sheets use show(), so they do not enter the native top
-  // layer. Portal the complete visual layer to body to keep transformed,
-  // contained, or overflow-clipped application ancestors from displacing the
-  // viewport scrim and sheets. Waiting until layout keeps server and initial
-  // client markup aligned while still mounting the portal before paint.
-  useLayoutEffect(() => {
-    setPortalTarget(document.body);
-  }, []);
-
-  // Derive the handoff during the very render in which the controlled prop
-  // changes. Children therefore see `entering` / `covered` immediately and
-  // never briefly hide before the layout effect commits the transition.
   const activeSheetChanged = committedActiveSheetRef.current !== activeSheet;
   const visibleTransition = activeSheetChanged
     ? transitionForActiveSheetChange(
@@ -246,10 +231,6 @@ export function BottomSheetSwitcher({
       previousActiveSheet,
       activeSheet,
     );
-    // A consumer may conditionally remove the active BottomSheet in the same
-    // update that closes the flow. With no retained element there can be no
-    // transitionend event, so do not retain an animation state that would keep
-    // the shared scrim and body scroll lock mounted forever.
     setTransition(
       nextTransition.retainedSheet != null &&
         !sheetElementsRef.current.has(nextTransition.retainedSheet)
@@ -262,11 +243,50 @@ export function BottomSheetSwitcher({
     () => onActiveSheetChange(null),
     [onActiveSheetChange],
   );
-  const {containerRef} = useFocusTrap<HTMLDivElement>({
+  const {containerRef} = useFocusTrap<HTMLDialogElement>({
     isActive: isModal,
     onEscape: close,
   });
   useScrollLock(isModal);
+
+  // Open one shared shell for the complete flow. Modal flows enter the native
+  // top layer once; handoffs only swap panels inside it. The final panel owns
+  // the exit timing, so isFlowVisible becomes false only when it is safe to
+  // close the dialog and restore focus.
+  useLayoutEffect(() => {
+    const dialog = dialogRef.current;
+    if (dialog == null) {
+      return;
+    }
+
+    if (isFlowVisible) {
+      const nextMode = hasScrim ? 'modal' : 'non-modal';
+      if (dialog.open && dialogModeRef.current !== nextMode) {
+        dialog.close();
+      }
+      if (!dialog.open) {
+        if (hasScrim && triggerRef.current == null) {
+          triggerRef.current = document.activeElement as HTMLElement | null;
+        }
+        if (hasScrim) {
+          dialog.showModal();
+        } else {
+          dialog.show();
+        }
+      }
+      dialogModeRef.current = nextMode;
+      return;
+    }
+
+    if (dialog.open) {
+      dialog.close();
+    }
+    if (dialogModeRef.current === 'modal') {
+      triggerRef.current?.focus();
+      triggerRef.current = null;
+    }
+    dialogModeRef.current = null;
+  }, [hasScrim, isFlowVisible]);
 
   const getSheetPhase = useCallback(
     (sheetId: string): BottomSheetSwitcherPhase => {
@@ -303,8 +323,6 @@ export function BottomSheetSwitcher({
           next.add(sheetId);
           return next;
         });
-        // Also cover a retained sheet being removed independently of an
-        // activeSheet update. Its animation can no longer report completion.
         setTransition(current =>
           current.retainedSheet === sheetId ? IDLE_TRANSITION : current,
         );
@@ -319,6 +337,28 @@ export function BottomSheetSwitcher({
           return next;
         });
       }
+    },
+    [],
+  );
+
+  const registerSheetLabel = useCallback(
+    (sheetId: string, label: string | null) => {
+      setSheetLabels(current => {
+        if (label == null) {
+          if (!current.has(sheetId)) {
+            return current;
+          }
+          const next = new Map(current);
+          next.delete(sheetId);
+          return next;
+        }
+        if (current.get(sheetId) === label) {
+          return current;
+        }
+        const next = new Map(current);
+        next.set(sheetId, label);
+        return next;
+      });
     },
     [],
   );
@@ -405,17 +445,13 @@ export function BottomSheetSwitcher({
   );
 
   const setScrimOpacity = useCallback((opacity: number) => {
-    scrimRef.current?.style.setProperty(
+    dialogRef.current?.style.setProperty(
       '--_sheet-scrim-opacity',
       String(opacity),
     );
   }, []);
 
-  // A new step always starts from a fully dimmed backdrop; gesture updates
-  // may then fade this shared element toward the peek detent. On final close,
-  // the shared scrim fades out alongside the exiting sheet and stays mounted
-  // until that sheet reports its transition complete.
-  useEffect(() => {
+  useLayoutEffect(() => {
     setScrimOpacity(activeSheet == null ? 0 : 1);
   }, [activeSheet, setScrimOpacity]);
 
@@ -427,10 +463,10 @@ export function BottomSheetSwitcher({
       getSheetPhase,
       getSheetAlignmentOffset,
       registerSheetElement,
+      registerSheetLabel,
       onSheetEnterStart,
       onSheetTransitionComplete,
       setScrimOpacity,
-      triggerRef,
     }),
     [
       activeSheet,
@@ -441,30 +477,66 @@ export function BottomSheetSwitcher({
       onSheetEnterStart,
       onSheetTransitionComplete,
       registerSheetElement,
+      registerSheetLabel,
       setScrimOpacity,
     ],
   );
 
-  const layer = (
-    <div ref={containerRef} {...stylex.props(styles.contents)}>
-      {hasScrim && isFlowVisible && (
-        <div
-          ref={scrimRef}
-          aria-hidden="true"
-          onClick={close}
-          {...mergeProps(
-            themeProps('bottom-sheet-switcher-scrim'),
-            stylex.props(styles.scrim),
-          )}
-        />
-      )}
-      {children}
-    </div>
+  const activeLabel =
+    (activeSheet == null ? null : sheetLabels.get(activeSheet)) ??
+    (visibleTransition.retainedSheet == null
+      ? undefined
+      : sheetLabels.get(visibleTransition.retainedSheet));
+
+  const handleCancel = useCallback(
+    (event: SyntheticEvent<HTMLDialogElement>) => {
+      event.preventDefault();
+      close();
+    },
+    [close],
+  );
+  const handleKeyDown = useCallback(
+    (event: ReactKeyboardEvent<HTMLDialogElement>) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        close();
+      }
+    },
+    [close],
+  );
+  const handleClick = useCallback(
+    (event: ReactMouseEvent<HTMLDialogElement>) => {
+      if (hasScrim && event.target === event.currentTarget) {
+        close();
+      }
+    },
+    [close, hasScrim],
+  );
+
+  const dialogStyleProps = stylex.props(
+    styles.dialog,
+    isFlowVisible && styles.dialogOpen,
+    hasScrim && styles.scrim,
+    !hasScrim && styles.dialogNonModal,
   );
 
   return (
     <BottomSheetSwitcherContext.Provider value={contextValue}>
-      {portalTarget == null ? null : createPortal(layer, portalTarget)}
+      <dialog
+        {...(hasScrim
+          ? mergeProps(
+              themeProps('bottom-sheet-switcher-scrim'),
+              dialogStyleProps,
+            )
+          : dialogStyleProps)}
+        ref={mergeRefs(dialogRef, containerRef)}
+        aria-label={activeLabel}
+        aria-modal={isModal ? 'true' : undefined}
+        onCancel={handleCancel}
+        onClick={handleClick}
+        onKeyDown={handleKeyDown}>
+        {children}
+      </dialog>
     </BottomSheetSwitcherContext.Provider>
   );
 }

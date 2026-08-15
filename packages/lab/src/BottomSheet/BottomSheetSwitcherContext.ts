@@ -4,12 +4,12 @@
 
 /**
  * @file BottomSheetSwitcherContext.ts
- * @input Uses React context and refs
+ * @input Uses React context
  * @output Internal phase and lifecycle context shared by BottomSheetSwitcher and BottomSheet
  * @position Private coordination layer for mutually exclusive BottomSheets
  */
 
-import {createContext, type RefObject} from 'react';
+import {createContext} from 'react';
 
 export type BottomSheetSwitcherPhase =
   | 'entering'
@@ -32,12 +32,12 @@ export interface BottomSheetSwitcherContextValue {
   getSheetPhase: (sheetId: string) => BottomSheetSwitcherPhase;
   getSheetAlignmentOffset: (sheetId: string) => number;
   registerSheetElement: (sheetId: string, element: HTMLElement | null) => void;
+  registerSheetLabel: (sheetId: string, label: string | null) => void;
   onSheetEnterStart: (sheetId: string) => void;
   onSheetTransitionComplete: (
     event: BottomSheetSwitcherTransitionEvent,
   ) => void;
   setScrimOpacity: (opacity: number) => void;
-  triggerRef: RefObject<HTMLElement | null>;
 }
 
 export const BottomSheetSwitcherContext =

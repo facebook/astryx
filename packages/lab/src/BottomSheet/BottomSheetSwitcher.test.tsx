@@ -11,7 +11,7 @@
  */
 
 import {act, fireEvent, render, screen} from '@testing-library/react';
-import {useState} from 'react';
+import {createRef, useState} from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {BottomSheet} from './BottomSheet';
 import {BottomSheetSwitcher} from './BottomSheetSwitcher';
@@ -99,14 +99,14 @@ function ConditionalFlow() {
   );
 }
 
-function getSharedScrim(): HTMLElement {
-  const scrim = document.querySelector<HTMLElement>(
+function getSharedDialog(): HTMLDialogElement {
+  const dialog = document.querySelector<HTMLDialogElement>(
     '.astryx-bottom-sheet-switcher-scrim',
   );
-  if (!scrim) {
-    throw new Error('shared switcher scrim not found');
+  if (!dialog) {
+    throw new Error('shared switcher dialog not found');
   }
-  return scrim;
+  return dialog;
 }
 
 function finishSheetTransition(
@@ -154,68 +154,87 @@ describe('BottomSheetSwitcher', () => {
 
     fireEvent.click(screen.getByRole('button', {name: 'Start flow'}));
 
-    expect(screen.getByTestId('details-sheet')).toHaveAttribute('open');
-    expect(screen.getByTestId('confirm-sheet')).not.toHaveAttribute('open');
+    expect(screen.getByTestId('details-sheet')).not.toHaveAttribute('hidden');
+    expect(screen.getByTestId('confirm-sheet')).toHaveAttribute('hidden');
     expect(document.querySelectorAll('dialog[open]')).toHaveLength(1);
     expect(
       document.querySelectorAll('.astryx-bottom-sheet-switcher-scrim'),
     ).toHaveLength(1);
-    expect(HTMLDialogElement.prototype.show).toHaveBeenCalledTimes(1);
-    expect(HTMLDialogElement.prototype.showModal).not.toHaveBeenCalled();
-    expect(screen.getByTestId('details-sheet')).toHaveAttribute(
-      'aria-modal',
-      'true',
+    expect(HTMLDialogElement.prototype.showModal).toHaveBeenCalledTimes(1);
+    expect(HTMLDialogElement.prototype.show).not.toHaveBeenCalled();
+    expect(getSharedDialog()).toHaveAttribute('aria-modal', 'true');
+    expect(getSharedDialog()).toHaveAccessibleName('Details');
+  });
+
+  it('forwards sheet DOM props and refs to its layer in the shared dialog', () => {
+    const layerRef = createRef<HTMLDivElement>();
+
+    render(
+      <BottomSheetSwitcher activeSheet="details" onActiveSheetChange={() => {}}>
+        <BottomSheet
+          ref={layerRef}
+          sheetId="details"
+          label="Details"
+          data-testid="details-layer"
+          data-sheet-owner="settings">
+          Content
+        </BottomSheet>
+      </BottomSheetSwitcher>,
     );
+
+    const layer = screen.getByTestId('details-layer');
+    expect(layerRef.current).toBe(layer);
+    expect(layer).toHaveAttribute('data-sheet-owner', 'settings');
+    expect(getSharedDialog()).toContainElement(layer);
   });
 
   it('keeps the previous sheet stationary until the new entrance finishes, then fades it', () => {
     render(<Flow />);
     fireEvent.click(screen.getByRole('button', {name: 'Start flow'}));
-    const sharedScrim = getSharedScrim();
+    const sharedDialog = getSharedDialog();
     const detailsSheet = screen.getByTestId('details-sheet');
     const confirmSheet = screen.getByTestId('confirm-sheet');
 
     fireEvent.click(screen.getByRole('button', {name: 'Continue'}));
 
-    expect(detailsSheet).toHaveAttribute('open');
+    expect(detailsSheet).not.toHaveAttribute('hidden');
     expect(detailsSheet).toHaveAttribute('inert');
     expect(detailsSheet).toHaveAttribute('aria-hidden', 'true');
-    expect(detailsSheet).not.toHaveAttribute('aria-modal');
-    expect(confirmSheet).toHaveAttribute('open');
-    expect(confirmSheet).toHaveAttribute('aria-modal', 'true');
+    expect(confirmSheet).not.toHaveAttribute('hidden');
     expect(confirmSheet).not.toHaveAttribute('inert');
-    expect(document.querySelectorAll('dialog[open]')).toHaveLength(2);
-    expect(getSharedScrim()).toBe(sharedScrim);
+    expect(document.querySelectorAll('dialog[open]')).toHaveLength(1);
+    expect(getSharedDialog()).toBe(sharedDialog);
+    expect(sharedDialog).toHaveAccessibleName('Confirm');
 
     // The previous sheet is covered, not exiting: neither transform nor
     // opacity completion may release it before the new entrance completes.
     finishSheetTransition(detailsSheet, 'transform');
     finishSheetTransition(detailsSheet, 'opacity');
-    expect(detailsSheet).toHaveAttribute('open');
+    expect(detailsSheet).not.toHaveAttribute('hidden');
 
     finishSheetTransition(confirmSheet, 'transform');
-    expect(detailsSheet).toHaveAttribute('open');
+    expect(detailsSheet).not.toHaveAttribute('hidden');
 
     finishSheetTransition(detailsSheet, 'opacity');
 
-    expect(detailsSheet).not.toHaveAttribute('open');
-    expect(confirmSheet).toHaveAttribute('open');
+    expect(detailsSheet).toHaveAttribute('hidden');
+    expect(confirmSheet).not.toHaveAttribute('hidden');
     expect(document.querySelectorAll('dialog[open]')).toHaveLength(1);
-    expect(getSharedScrim()).toBe(sharedScrim);
+    expect(getSharedDialog()).toBe(sharedDialog);
 
     fireEvent.click(screen.getByRole('button', {name: 'Back'}));
 
-    expect(detailsSheet).toHaveAttribute('open');
-    expect(confirmSheet).toHaveAttribute('open');
+    expect(detailsSheet).not.toHaveAttribute('hidden');
+    expect(confirmSheet).not.toHaveAttribute('hidden');
     expect(confirmSheet).toHaveAttribute('inert');
     finishSheetTransition(detailsSheet, 'transform');
-    expect(confirmSheet).toHaveAttribute('open');
+    expect(confirmSheet).not.toHaveAttribute('hidden');
     finishSheetTransition(confirmSheet, 'opacity');
 
-    expect(detailsSheet).toHaveAttribute('open');
-    expect(confirmSheet).not.toHaveAttribute('open');
+    expect(detailsSheet).not.toHaveAttribute('hidden');
+    expect(confirmSheet).toHaveAttribute('hidden');
     expect(document.querySelectorAll('dialog[open]')).toHaveLength(1);
-    expect(getSharedScrim()).toBe(sharedScrim);
+    expect(getSharedDialog()).toBe(sharedDialog);
   });
 
   it('moves a taller previous sheet down while the shorter new sheet enters, then waits for both', () => {
@@ -230,21 +249,21 @@ describe('BottomSheetSwitcher', () => {
 
     fireEvent.click(screen.getByRole('button', {name: 'Continue'}));
 
-    expect(detailsSheet).toHaveAttribute('open');
+    expect(detailsSheet).not.toHaveAttribute('hidden');
     expect(detailsPanel).toHaveStyle({transform: 'translateY(200px)'});
 
     // The incoming entrance may finish first, but opacity cannot hide the
     // retained sheet until its concurrent alignment also completes.
     finishSheetTransition(confirmSheet, 'transform');
     finishSheetTransition(detailsSheet, 'opacity');
-    expect(detailsSheet).toHaveAttribute('open');
+    expect(detailsSheet).not.toHaveAttribute('hidden');
     finishSheetTransition(detailsSheet, 'transform');
-    expect(detailsSheet).toHaveAttribute('open');
+    expect(detailsSheet).not.toHaveAttribute('hidden');
     expect(detailsPanel).toHaveStyle({transform: 'translateY(200px)'});
     finishSheetTransition(detailsSheet, 'opacity');
 
-    expect(detailsSheet).not.toHaveAttribute('open');
-    expect(confirmSheet).toHaveAttribute('open');
+    expect(detailsSheet).toHaveAttribute('hidden');
+    expect(confirmSheet).not.toHaveAttribute('hidden');
   });
 
   it('waits for the incoming entrance when top-edge alignment finishes first', () => {
@@ -261,12 +280,12 @@ describe('BottomSheetSwitcher', () => {
 
     finishSheetTransition(detailsSheet, 'transform');
     finishSheetTransition(detailsSheet, 'opacity');
-    expect(detailsSheet).toHaveAttribute('open');
+    expect(detailsSheet).not.toHaveAttribute('hidden');
     finishSheetTransition(confirmSheet, 'transform');
     finishSheetTransition(detailsSheet, 'opacity');
 
-    expect(detailsSheet).not.toHaveAttribute('open');
-    expect(confirmSheet).toHaveAttribute('open');
+    expect(detailsSheet).toHaveAttribute('hidden');
+    expect(confirmSheet).not.toHaveAttribute('hidden');
   });
 
   it('replaces an unfinished outgoing sheet during rapid navigation', () => {
@@ -278,34 +297,32 @@ describe('BottomSheetSwitcher', () => {
     fireEvent.click(screen.getByRole('button', {name: 'Continue'}));
     fireEvent.click(screen.getByRole('button', {name: 'Back'}));
 
-    expect(detailsSheet).toHaveAttribute('open');
+    expect(detailsSheet).not.toHaveAttribute('hidden');
     expect(detailsSheet).not.toHaveAttribute('inert');
-    expect(confirmSheet).toHaveAttribute('open');
+    expect(confirmSheet).not.toHaveAttribute('hidden');
     expect(confirmSheet).toHaveAttribute('inert');
-    expect(document.querySelectorAll('dialog[open]')).toHaveLength(2);
+    expect(document.querySelectorAll('dialog[open]')).toHaveLength(1);
 
     finishSheetTransition(confirmSheet, 'opacity');
-    expect(detailsSheet).toHaveAttribute('open');
-    expect(confirmSheet).not.toHaveAttribute('open');
+    expect(detailsSheet).not.toHaveAttribute('hidden');
+    expect(confirmSheet).toHaveAttribute('hidden');
   });
 
   it('dismisses the flow from the one shared scrim', () => {
     render(<Flow />);
     fireEvent.click(screen.getByRole('button', {name: 'Start flow'}));
 
-    fireEvent.click(getSharedScrim());
+    fireEvent.click(getSharedDialog());
 
     const outgoingSheet = screen.getByTestId('details-sheet');
-    expect(outgoingSheet).toHaveAttribute('open');
+    expect(outgoingSheet).not.toHaveAttribute('hidden');
     expect(outgoingSheet).toHaveAttribute('inert');
-    expect(getSharedScrim()).toHaveStyle({'--_sheet-scrim-opacity': '0'});
+    expect(getSharedDialog()).toHaveStyle({'--_sheet-scrim-opacity': '0'});
     expect(document.body.style.position).toBe('fixed');
 
     finishSheetTransition(outgoingSheet, 'transform');
 
-    expect(
-      document.querySelector('.astryx-bottom-sheet-switcher-scrim'),
-    ).not.toBeInTheDocument();
+    expect(getSharedDialog()).not.toHaveAttribute('open');
     expect(document.body.style.position).not.toBe('fixed');
   });
 
@@ -320,13 +337,11 @@ describe('BottomSheetSwitcher', () => {
       {key: 'Escape'},
     );
 
-    expect(
-      document.querySelector('.astryx-bottom-sheet-switcher-scrim'),
-    ).not.toBeInTheDocument();
+    expect(getSharedDialog()).not.toHaveAttribute('open');
     expect(document.body.style.position).not.toBe('fixed');
   });
 
-  it('portals the visual layer outside transformed or clipped ancestors', () => {
+  it('keeps the shared dialog inline and opens it modally', () => {
     render(
       <div
         data-testid="clipping-ancestor"
@@ -334,7 +349,7 @@ describe('BottomSheetSwitcher', () => {
         <BottomSheetSwitcher
           activeSheet="details"
           onActiveSheetChange={() => {}}>
-          <BottomSheet sheetId="details" label="Portaled details">
+          <BottomSheet sheetId="details" label="Inline modal details">
             Content
           </BottomSheet>
         </BottomSheetSwitcher>
@@ -342,10 +357,10 @@ describe('BottomSheetSwitcher', () => {
     );
 
     const clippingAncestor = screen.getByTestId('clipping-ancestor');
-    const dialog = screen.getByRole('dialog', {name: 'Portaled details'});
-    expect(clippingAncestor).not.toContainElement(dialog);
-    expect(dialog.parentElement?.parentElement).toBe(document.body);
-    expect(getSharedScrim().parentElement).toBe(dialog.parentElement);
+    const dialog = screen.getByRole('dialog', {name: 'Inline modal details'});
+    expect(clippingAncestor).toContainElement(dialog);
+    expect(dialog).toHaveAttribute('open');
+    expect(HTMLDialogElement.prototype.showModal).toHaveBeenCalledTimes(1);
   });
 
   it('keeps focus in a modal sheet that has no tabbable controls', () => {
@@ -387,9 +402,11 @@ describe('BottomSheetSwitcher', () => {
     expect(
       document.querySelector('.astryx-bottom-sheet-switcher-scrim'),
     ).not.toBeInTheDocument();
-    expect(screen.getByRole('dialog', {name: 'Details'})).not.toHaveAttribute(
-      'aria-modal',
-    );
+    const dialog = screen.getByRole('dialog', {name: 'Details'});
+    expect(dialog).not.toHaveAttribute('aria-modal');
+    expect(dialog).toHaveAttribute('open');
+    expect(HTMLDialogElement.prototype.show).toHaveBeenCalledTimes(1);
+    expect(HTMLDialogElement.prototype.showModal).not.toHaveBeenCalled();
     expect(document.body.style.position).not.toBe('fixed');
   });
 

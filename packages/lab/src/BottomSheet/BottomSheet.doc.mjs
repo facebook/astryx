@@ -23,7 +23,7 @@ export const docs = {
     targets: [{className: 'astryx-bottom-sheet', visualProps: []}],
   },
   description:
-    'A mobile touch sheet that rises from the bottom edge, with animated entrance and exit, a grab handle, drag-to-resize snap points, and swipe-to-dismiss. Built on a native <dialog>. Use sheetId inside BottomSheetSwitcher for mutually exclusive multi-step flows over one shared scrim.',
+    "A mobile touch sheet that rises from the bottom edge, with animated entrance and exit, a grab handle, drag-to-resize snap points, and swipe-to-dismiss. A standalone sheet owns a native <dialog>; inside BottomSheetSwitcher it renders a panel in the switcher's shared dialog.",
   props: [
     {
       name: 'isOpen',
@@ -68,7 +68,7 @@ export const docs = {
       name: 'hasScrim',
       type: 'boolean',
       description:
-        'For a standalone BottomSheet, whether to render a scrim—the semi-transparent overlay that covers and blocks the background. true (default) uses showModal(): top layer, focus trap, ::backdrop scrim, body scroll lock, and tap-scrim-to-dismiss, with the background inert. false still renders a viewport-anchored overlay above the page, not inline content, but uses show() with no scrim, leaving the page behind interactive and scrollable. For a multi-step flow, configure hasScrim on BottomSheetSwitcher instead; it owns one shared scrim across every child.',
+        'For a standalone BottomSheet, whether to render a scrim—the semi-transparent overlay that covers and blocks the background. true (default) uses showModal(): top layer, focus trap, ::backdrop scrim, body scroll lock, and tap-scrim-to-dismiss, with the background inert. false uses show() with no scrim, leaving the page behind interactive and scrollable. For a multi-step flow, configure hasScrim on BottomSheetSwitcher instead; it owns one shared dialog across every child.',
       default: 'true',
     },
   ],
@@ -89,7 +89,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Use BottomSheetSwitcher with a unique sheetId per sheet for multi-step flows; it owns one shared scrim while the new top sheet enters and a taller previous sheet simultaneously aligns downward behind a shorter step, then fades it afterward.',
+          'Use BottomSheetSwitcher with a unique sheetId per sheet for multi-step flows; it owns one shared dialog while the new top sheet enters and a taller previous sheet simultaneously aligns downward behind a shorter step, then fades it afterward.',
       },
       {
         guidance: true,
@@ -192,7 +192,7 @@ export const docsDense = {
       {
         guidance: true,
         description:
-          'Use BottomSheetSwitcher + sheetId for mutually exclusive multi-step flows over one shared scrim.',
+          'Use BottomSheetSwitcher + sheetId for mutually exclusive multi-step flows in one shared dialog.',
       },
       {
         guidance: true,

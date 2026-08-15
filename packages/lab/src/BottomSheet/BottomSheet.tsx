@@ -9,20 +9,17 @@
  * @position Lab implementation; consumed by index.ts, tested by BottomSheet.test.tsx, demonstrated in Storybook
  *
  * A mobile touch surface that rises from the bottom edge: grab handle, snap
- * points, and swipe-to-dismiss. It owns a native `<dialog>` directly and
- * composes core primitives (`useScrollLock`, `<dialog>.showModal()` for the
- * top layer + focus trap, a `::backdrop` scrim) rather than delegating to a
- * heavier overlay component — so it controls its own sizing and can render a
- * full-height transparent shell with the visible sheet bottom-anchored inside.
- * That shell is what lets the sheet translate freely (including a little past
- * fully-open) without clipping against a fixed dialog edge.
+ * points, and swipe-to-dismiss. Standalone sheets own a native `<dialog>`.
+ * Switcher-managed sheets render only their panel layer inside the switcher's
+ * one shared `<dialog>`, allowing two panels to animate during a handoff
+ * without creating multiple modal boundaries or backdrops.
  *
  * For a standalone sheet, `hasScrim` picks the presentation: `true` (default)
  * uses `showModal()` (top layer, focus trap, scrim, scroll lock, background
  * inert); `false` uses `show()` for a non-modal sheet with no scrim. Inside a
- * BottomSheetSwitcher, the parent owns one shared scrim/focus trap/scroll
- * lock and every child uses `show()` beneath it. Both standalone modes keep
- * the native dialog presented but inert until the slide-out transition ends.
+ * BottomSheetSwitcher, the parent owns dialog presentation, focus, scroll
+ * lock, and the native ::backdrop. Both standalone modes keep their dialog
+ * presented but inert until the slide-out transition ends.
  *
  * The drag/snap/dismiss machinery lives in `useSheetGestures`; the offset
  * geometry lives in the pure, tested `snapOffsets` module. Both are internal
@@ -154,11 +151,6 @@ const styles = stylex.create({
     width: '100%',
     height: '100%',
   },
-  // The active switcher-managed sheet is always the top visual layer. A retained
-  // sheet stays at 1000 while this one enters at 1001.
-  dialogTop: {
-    zIndex: 1001,
-  },
   // Opacity is a var the drag handler lowers toward dismissal;
   // @starting-style animates the entrance fade-in.
   // Plain dim, no backdrop blur: bottom sheets on both Material and iOS dim
@@ -187,6 +179,11 @@ const styles = stylex.create({
     display: 'flex',
     justifyContent: 'center',
     pointerEvents: 'none',
+  },
+  // Both switcher panels share one dialog stacking context. The interactive
+  // panel sits above the retained panel while it enters.
+  positionerTop: {
+    zIndex: 1,
   },
   sheet: {
     pointerEvents: 'auto',
@@ -274,10 +271,7 @@ const styles = stylex.create({
   },
 });
 
-interface BottomSheetBaseProps extends BaseProps<HTMLDialogElement> {
-  /** Ref forwarded to the underlying <dialog> element. */
-  ref?: React.Ref<HTMLDialogElement>;
-
+interface BottomSheetSharedProps {
   /**
    * Accessible label for the sheet (required — the sheet has no built-in
    * heading to derive a name from).
@@ -307,7 +301,11 @@ interface BottomSheetBaseProps extends BaseProps<HTMLDialogElement> {
   'data-testid'?: string;
 }
 
-interface StandaloneBottomSheetProps extends BottomSheetBaseProps {
+interface StandaloneBottomSheetProps
+  extends BottomSheetSharedProps, BaseProps<HTMLDialogElement> {
+  /** Ref forwarded to the standalone sheet's <dialog> element. */
+  ref?: React.Ref<HTMLDialogElement>;
+
   /** Whether the sheet is open. Fully controlled — pair with `onOpenChange`. */
   isOpen: boolean;
 
@@ -339,7 +337,11 @@ interface StandaloneBottomSheetProps extends BottomSheetBaseProps {
   sheetId?: never;
 }
 
-interface SwitcherBottomSheetProps extends BottomSheetBaseProps {
+interface SwitcherBottomSheetProps
+  extends BottomSheetSharedProps, BaseProps<HTMLDivElement> {
+  /** Ref forwarded to this sheet's panel layer in the shared dialog. */
+  ref?: React.Ref<HTMLDivElement>;
+
   /**
    * Unique ID for this sheet within a BottomSheetSwitcher. The
    * switcher opens it when `activeSheet` matches this value.
@@ -399,10 +401,10 @@ export function BottomSheet({
   const hasSharedScrim = switcher?.hasScrim === true;
   const hasNativeScrim = switcher == null && hasScrim;
   const isModal = hasNativeScrim || hasSharedScrim;
-  const switcherActiveSheet = switcher?.activeSheet ?? null;
   const onSheetEnterStart = switcher?.onSheetEnterStart;
   const onSheetTransitionComplete = switcher?.onSheetTransitionComplete;
   const registerSheetElement = switcher?.registerSheetElement;
+  const registerSheetLabel = switcher?.registerSheetLabel;
   const switcherPhase =
     switcher != null && hasValidSheetId
       ? switcher.getSheetPhase(sheetId)
@@ -468,9 +470,9 @@ export function BottomSheet({
     [controlledOnOpenChange, hasValidSheetId, switcher, sheetId],
   );
   const dialogRef = useRef<HTMLDialogElement | null>(null);
-  const standaloneTriggerRef = useRef<HTMLElement | null>(null);
-  const triggerRef = switcher?.triggerRef ?? standaloneTriggerRef;
+  const triggerRef = useRef<HTMLElement | null>(null);
   const sheetNodeRef = useRef<HTMLDivElement | null>(null);
+  const hasPresentedSwitcherSheetRef = useRef(false);
   const close = useCallback(() => handleOpenChange(false), [handleOpenChange]);
 
   // Set imperatively (not via state) so a 60fps drag doesn't re-render. The
@@ -506,21 +508,17 @@ export function BottomSheet({
     [hasValidSheetId, registerSheetElement, sheetId, sheetRef],
   );
 
-  // Modal: showModal() enters the top layer with a focus trap + ::backdrop and
-  // we restore focus to the opener on close. Standard: show() is non-modal, so
-  // we neither trap nor steal focus (the background stays interactive) — we
-  // only honor an explicit data-autofocus.
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    const sheet = sheetNodeRef.current;
-    if (!dialog) {
+  useLayoutEffect(() => {
+    if (!hasValidSheetId) {
       return;
     }
+    registerSheetLabel?.(sheetId, label);
+    return () => registerSheetLabel?.(sheetId, null);
+  }, [hasValidSheetId, label, registerSheetLabel, sheetId]);
 
-    const waitForTransition = (
-      propertyName: 'transform' | 'opacity',
-      complete: () => void,
-    ) => {
+  const waitForSheetTransition = useCallback(
+    (propertyName: 'transform' | 'opacity', complete: () => void) => {
+      const sheet = sheetNodeRef.current;
       let done = false;
       const finish = () => {
         if (done) {
@@ -537,82 +535,46 @@ export function BottomSheet({
         }
       };
       sheet?.addEventListener('transitionend', onEnd);
-      // Backstop above --duration-medium so transitionend normally fires
-      // first; this covers reduced motion, hidden tabs, and interrupted CSS.
       const timer = setTimeout(finish, 450);
       return () => {
         clearTimeout(timer);
         sheet?.removeEventListener('transitionend', onEnd);
       };
-    };
+    },
+    [],
+  );
+
+  // A standalone BottomSheet owns presentation and focus restoration for its
+  // dialog. Switcher-managed sheets skip this entirely; their parent presents
+  // one shared dialog for the complete flow.
+  useEffect(() => {
+    if (isInsideSwitcher) {
+      return;
+    }
+    const dialog = dialogRef.current;
+    if (dialog == null) {
+      return;
+    }
 
     if (isOpen) {
-      if (!isInsideSwitcher) {
-        setIsStandalonePresented(true);
-      }
+      setIsStandalonePresented(true);
       dialog.style.setProperty('--_sheet-scrim-opacity', '1');
       const wasOpen = dialog.open;
       if (!wasOpen) {
-        // Only remember/restore focus for modal sheets; a non-modal sheet must
-        // not yank focus back from whatever the user does in the live page.
-        if (isModal) {
-          // An switcher-managed flow keeps the original opener across sheet
-          // handoffs. A standalone sheet clears this ref after every close.
-          if (triggerRef.current == null) {
-            triggerRef.current = document.activeElement as HTMLElement | null;
-          }
-          if (hasNativeScrim) {
-            dialog.showModal();
-          } else {
-            dialog.show();
-          }
+        if (hasNativeScrim) {
+          triggerRef.current = document.activeElement as HTMLElement | null;
+          dialog.showModal();
         } else {
           dialog.show();
         }
       }
-      // Land on a step only when its dialog first opens or when a retained
-      // dialog becomes the entering step again during rapid navigation. The
-      // entering -> active phase update must not steal focus from a control the
-      // user already reached while the entrance animation was running.
-      const shouldMoveFocus =
-        !wasOpen ||
-        (isInsideSwitcher &&
-          switcherPhase === 'entering' &&
-          previousSwitcherPhase !== 'entering');
-      if (shouldMoveFocus) {
+      if (!wasOpen) {
         const autofocus = dialog.querySelector<HTMLElement>('[data-autofocus]');
         if (autofocus) {
           autofocus.focus();
-        } else if (isModal) {
+        } else if (hasNativeScrim) {
           sheetNodeRef.current?.focus();
         }
-      }
-
-      if (isInsideSwitcher && switcherPhase === 'entering') {
-        if (hasValidSheetId) {
-          // show() has made the incoming sheet's final layout measurable even
-          // though its visual entrance transform is still in progress. This
-          // lets a taller retained sheet start aligning in the same frame.
-          onSheetEnterStart?.(sheetId);
-        }
-        // A rapid Back can reactivate a sheet that is already mounted beneath
-        // the current top sheet. It has no new CSS entrance to wait for.
-        const isReactivatingRetainedSheet =
-          wasOpen &&
-          (previousSwitcherPhase === 'covered' ||
-            previousSwitcherPhase === 'aligning' ||
-            previousSwitcherPhase === 'fading');
-        if (isReactivatingRetainedSheet) {
-          if (hasValidSheetId) {
-            onSheetTransitionComplete?.({sheetId, phase: 'entering'});
-          }
-          return;
-        }
-        return waitForTransition('transform', () => {
-          if (hasValidSheetId) {
-            onSheetTransitionComplete?.({sheetId, phase: 'entering'});
-          }
-        });
       }
       return;
     }
@@ -620,57 +582,10 @@ export function BottomSheet({
     if (!dialog.open) {
       return;
     }
-
-    if (isInsideSwitcher) {
-      if (switcherPhase === 'hidden') {
-        // Only one retained sheet is allowed. Rapid navigation immediately
-        // releases any older layer superseded by the latest handoff.
-        dialog.close();
-        return;
-      }
-
-      if (switcherPhase === 'covered') {
-        // Stay exactly where the gesture left this sheet while the new top
-        // layer enters. It is already inert and accessibility-hidden.
-        return;
-      }
-
-      if (switcherPhase === 'aligning') {
-        return waitForTransition('transform', () => {
-          if (hasValidSheetId) {
-            onSheetTransitionComplete?.({sheetId, phase: 'aligning'});
-          }
-        });
-      }
-
-      if (switcherPhase === 'fading' || switcherPhase === 'exiting') {
-        const propertyName =
-          switcherPhase === 'fading' ? 'opacity' : 'transform';
-        return waitForTransition(propertyName, () => {
-          if (dialog.open) {
-            dialog.close();
-          }
-          if (hasValidSheetId) {
-            onSheetTransitionComplete?.({
-              sheetId,
-              phase: switcherPhase,
-            });
-          }
-          // A handoff keeps the original trigger for the rest of the flow. A
-          // final close restores it only after the slide-down completes.
-          if (switcherPhase === 'exiting' && switcherActiveSheet == null) {
-            triggerRef.current?.focus();
-            triggerRef.current = null;
-          }
-        });
-      }
-      return;
-    }
-
     if (hasNativeScrim) {
       dialog.style.setProperty('--_sheet-scrim-opacity', '0');
     }
-    return waitForTransition('transform', () => {
+    return waitForSheetTransition('transform', () => {
       if (dialog.open) {
         dialog.close();
       }
@@ -678,19 +593,85 @@ export function BottomSheet({
       triggerRef.current?.focus();
       triggerRef.current = null;
     });
+  }, [hasNativeScrim, isInsideSwitcher, isOpen, waitForSheetTransition]);
+
+  // A switcher child only coordinates its panel phase. The shared dialog is
+  // already presented before these passive effects run, so focus and geometry
+  // measurements work without opening or closing a child dialog.
+  useEffect(() => {
+    if (!isInsideSwitcher) {
+      return;
+    }
+    const sheet = sheetNodeRef.current;
+    if (sheet == null) {
+      return;
+    }
+
+    if (isOpen) {
+      const wasInteractive =
+        previousSwitcherPhase === 'active' ||
+        previousSwitcherPhase === 'entering';
+      const shouldMoveFocus =
+        !hasPresentedSwitcherSheetRef.current || !wasInteractive;
+      hasPresentedSwitcherSheetRef.current = true;
+      if (shouldMoveFocus) {
+        const autofocus = sheet.querySelector<HTMLElement>('[data-autofocus]');
+        if (autofocus) {
+          autofocus.focus();
+        } else if (isModal) {
+          sheet.focus();
+        }
+      }
+
+      if (switcherPhase === 'entering' && hasValidSheetId) {
+        onSheetEnterStart?.(sheetId);
+        const isReactivatingRetainedSheet =
+          previousSwitcherPhase === 'covered' ||
+          previousSwitcherPhase === 'aligning' ||
+          previousSwitcherPhase === 'fading';
+        if (isReactivatingRetainedSheet) {
+          onSheetTransitionComplete?.({sheetId, phase: 'entering'});
+          return;
+        }
+        return waitForSheetTransition('transform', () => {
+          onSheetTransitionComplete?.({sheetId, phase: 'entering'});
+        });
+      }
+      return;
+    }
+
+    if (switcherPhase === 'hidden') {
+      hasPresentedSwitcherSheetRef.current = false;
+      return;
+    }
+    if (switcherPhase === 'covered') {
+      return;
+    }
+    if (switcherPhase === 'aligning' && hasValidSheetId) {
+      return waitForSheetTransition('transform', () => {
+        onSheetTransitionComplete?.({sheetId, phase: 'aligning'});
+      });
+    }
+    if (
+      (switcherPhase === 'fading' || switcherPhase === 'exiting') &&
+      hasValidSheetId
+    ) {
+      const propertyName = switcherPhase === 'fading' ? 'opacity' : 'transform';
+      return waitForSheetTransition(propertyName, () => {
+        onSheetTransitionComplete?.({sheetId, phase: switcherPhase});
+      });
+    }
   }, [
-    hasNativeScrim,
     hasValidSheetId,
+    isInsideSwitcher,
     isModal,
     isOpen,
-    isInsideSwitcher,
     onSheetEnterStart,
     onSheetTransitionComplete,
-    switcherActiveSheet,
-    switcherPhase,
     previousSwitcherPhase,
     sheetId,
-    triggerRef,
+    switcherPhase,
+    waitForSheetTransition,
   ]);
 
   useDevWarning(
@@ -764,19 +745,78 @@ export function BottomSheet({
           .filter(Boolean)
           .join(' ')
       : contentProps.style.transform;
+  const {
+    className: switcherLayerClassName,
+    style: switcherLayerStyle,
+    ...switcherLayerProps
+  } = props as BaseProps<HTMLDivElement>;
+
+  const panel = (
+    <div
+      ref={setSheetNode}
+      tabIndex={-1}
+      {...mergeProps(
+        themeProps('bottom-sheet'),
+        stylex.props(
+          styles.sheet,
+          isHug ? styles.hugHeight : styles.budget,
+          isClosing && styles.sheetClosing,
+          isFading && styles.sheetFading,
+          isInactive && styles.sheetInactive,
+          xstyle,
+        ),
+        undefined,
+        {
+          ['--_sheet-budget' as string]: budget,
+          // A retained sheet starts at the exact detent where the user left
+          // it. If the incoming sheet is shorter, add the alignment translation
+          // and preserve it through the fade.
+          ...(isOpen
+            ? contentProps.style
+            : retainsGesturePosition
+              ? {transform: retainedSheetTransform}
+              : {}),
+        },
+      )}>
+      <div
+        {...stylex.props(styles.handleBar)}
+        {...handleProps}
+        aria-hidden="true">
+        <div {...stylex.props(styles.handlePill)} />
+      </div>
+      <div {...stylex.props(styles.body)} {...bodyProps}>
+        {children}
+      </div>
+    </div>
+  );
+
+  if (isInsideSwitcher) {
+    return (
+      <div
+        {...switcherLayerProps}
+        {...mergeProps(
+          stylex.props(styles.positioner, isTopSheet && styles.positionerTop),
+          switcherLayerClassName,
+          switcherLayerStyle,
+        )}
+        ref={ref as React.Ref<HTMLDivElement>}
+        hidden={!isPresented}
+        aria-hidden={isInactive ? 'true' : undefined}
+        inert={isInactive ? true : undefined}>
+        {panel}
+      </div>
+    );
+  }
 
   return (
     <dialog
       {...stylex.props(
         styles.dialog,
         isPresented && styles.dialogOpen,
-        // Modal: paint the ::backdrop scrim (top layer). Non-modal: no scrim,
-        // pass taps through to the page, and sit above content via z-index.
         hasNativeScrim && styles.scrim,
         !hasNativeScrim && styles.dialogNonModal,
-        isTopSheet && styles.dialogTop,
       )}
-      ref={mergeRefs(ref, dialogRef)}
+      ref={mergeRefs(ref as React.Ref<HTMLDialogElement>, dialogRef)}
       aria-label={label}
       aria-hidden={isInactive ? 'true' : undefined}
       aria-modal={isModal && isOpen ? 'true' : undefined}
@@ -784,47 +824,8 @@ export function BottomSheet({
       onCancel={handleCancel}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
-      {...props}>
-      <div {...stylex.props(styles.positioner)}>
-        <div
-          ref={setSheetNode}
-          tabIndex={-1}
-          {...mergeProps(
-            themeProps('bottom-sheet'),
-            stylex.props(
-              styles.sheet,
-              isHug ? styles.hugHeight : styles.budget,
-              isClosing && styles.sheetClosing,
-              isFading && styles.sheetFading,
-              isInactive && styles.sheetInactive,
-              xstyle,
-            ),
-            undefined,
-            {
-              ['--_sheet-budget' as string]: budget,
-              // A retained sheet starts at the exact detent where the user
-              // left it. If the incoming sheet is shorter, the switcher
-              // adds the top-edge alignment translation and preserves it
-              // through the fade. A final close removes the inline transform
-              // so sheetClosing can slide the sheet down.
-              ...(isOpen
-                ? contentProps.style
-                : retainsGesturePosition
-                  ? {transform: retainedSheetTransform}
-                  : {}),
-            },
-          )}>
-          <div
-            {...stylex.props(styles.handleBar)}
-            {...handleProps}
-            aria-hidden="true">
-            <div {...stylex.props(styles.handlePill)} />
-          </div>
-          <div {...stylex.props(styles.body)} {...bodyProps}>
-            {children}
-          </div>
-        </div>
-      </div>
+      {...(props as BaseProps<HTMLDialogElement>)}>
+      <div {...stylex.props(styles.positioner)}>{panel}</div>
     </dialog>
   );
 }
