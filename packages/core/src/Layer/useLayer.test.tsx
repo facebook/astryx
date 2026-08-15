@@ -12,7 +12,9 @@
 import {describe, it, expect, vi, afterEach} from 'vitest';
 import {render, act, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import * as stylex from '@stylexjs/stylex';
 import {useLayer, getPositionTryFallbacks} from './useLayer';
+import {typeScaleVars} from '../theme/tokens.stylex';
 import type {
   LayerPlacement,
   LayerAlignment,
@@ -599,6 +601,66 @@ async function openAndGetStyle(ui: React.ReactElement): Promise<string> {
   const popover = container.querySelector('[popover]');
   return popover?.getAttribute('style') ?? '';
 }
+
+describe('typography baseline', () => {
+  const overrideStyles = stylex.create({
+    supporting: {fontSize: typeScaleVars['--text-supporting-size']},
+  });
+
+  function TypographyHarness({
+    ambientFontSize,
+    xstyle,
+  }: {
+    ambientFontSize: string;
+    xstyle?: ContextRenderProps['xstyle'];
+  }) {
+    const layer = useLayer({mode: 'context'});
+    return (
+      <div style={{fontSize: ambientFontSize, lineHeight: '3'}}>
+        <button type="button" ref={layer.ref} onClick={layer.show}>
+          trigger
+        </button>
+        {layer.render(<span>content</span>, {xstyle})}
+      </div>
+    );
+  }
+
+  async function openAndGetType(ui: React.ReactElement) {
+    const user = userEvent.setup();
+    const {container, getByRole} = render(ui);
+    await user.click(getByRole('button', {name: 'trigger'}));
+    const el = container.querySelector('[popover]') as HTMLElement;
+    const computed = window.getComputedStyle(el);
+    return {fontSize: computed.fontSize, lineHeight: computed.lineHeight};
+  }
+
+  // jsdom resolves no var() indirection, so the token reference is what the
+  // assertion can see — the point is that a declaration exists at all, since
+  // an absent one is exactly what let the ambient size through.
+  it.each(['13px', '20px'])(
+    'takes the body role rather than the surrounding %s',
+    async ambientFontSize => {
+      expect(
+        await openAndGetType(
+          <TypographyHarness ambientFontSize={ambientFontSize} />,
+        ),
+      ).toEqual({
+        fontSize: 'var(--text-body-size)',
+        lineHeight: 'var(--text-body-leading)',
+      });
+    },
+  );
+
+  it('still lets a consumer xstyle set its own size', async () => {
+    const {fontSize} = await openAndGetType(
+      <TypographyHarness
+        ambientFontSize="13px"
+        xstyle={overrideStyles.supporting}
+      />,
+    );
+    expect(fontSize).toBe('var(--text-supporting-size)');
+  });
+});
 
 describe('useLayer context positioning', () => {
   // The mapping uses the self-* logical keyword family, so the emitted
