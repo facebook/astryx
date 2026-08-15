@@ -565,6 +565,7 @@ describe('BottomSheet', () => {
     });
 
     it('does not focus when a touch becomes a scroll gesture', () => {
+      mockIOSWebKit();
       render(
         <BottomSheet
           isOpen
@@ -579,12 +580,45 @@ describe('BottomSheet', () => {
       const focus = vi.spyOn(input, 'focus');
       body.scrollTop = 20;
 
+      fireEvent.touchStart(input);
       fireTouchPointer(input, 'pointerdown', {x: 20, y: 200});
       fireTouchPointer(input, 'pointermove', {x: 20, y: 240});
       fireTouchPointer(input, 'pointerup', {x: 20, y: 240});
 
       expect(focus).not.toHaveBeenCalled();
       expect(document.activeElement).not.toBe(input);
+    });
+
+    it('does not focus when pointer activation is canceled', () => {
+      mockIOSWebKit();
+      const onFocus = vi.fn();
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={() => {}}
+          label="Add a comment"
+          height="tall">
+          <input
+            aria-label="Comment"
+            onPointerDown={event => event.preventDefault()}
+            onFocus={onFocus}
+          />
+        </BottomSheet>,
+      );
+      const input = screen.getByRole('textbox', {name: 'Comment'});
+      const focus = vi.spyOn(input, 'focus');
+
+      fireEvent.touchStart(input);
+      const pointerDownAllowed = fireTouchPointer(input, 'pointerdown', {
+        x: 20,
+        y: 200,
+      });
+      fireTouchPointer(input, 'pointerup', {x: 20, y: 200});
+
+      expect(pointerDownAllowed).toBe(false);
+      expect(focus).not.toHaveBeenCalled();
+      expect(document.activeElement).not.toBe(input);
+      expect(onFocus).not.toHaveBeenCalled();
     });
 
     it('prevents input-to-input focus panning without duplicating focus or blur events', () => {
@@ -779,6 +813,7 @@ describe('BottomSheet', () => {
         const body = getBody();
         const input = screen.getByRole('textbox', {name: 'Comment'});
         const focus = vi.spyOn(input, 'focus');
+        const sheetFocus = vi.spyOn(sheet, 'focus');
         vi.spyOn(body, 'getBoundingClientRect').mockReturnValue(
           rect({top: 400, bottom: 800}),
         );
@@ -787,6 +822,7 @@ describe('BottomSheet', () => {
         );
         body.scrollTop = 20;
 
+        fireEvent.touchStart(input);
         fireTouchPointer(input, 'pointerdown', {x: 20, y: 200});
         fireTouchPointer(input, 'pointerup', {x: 20, y: 200});
         fireEvent.pointerDown(input, {pointerId: 1, clientY: 200});
@@ -796,6 +832,7 @@ describe('BottomSheet', () => {
 
         expect(body.scrollTop).toBe(120);
         expect(focus).not.toHaveBeenCalled();
+        expect(sheetFocus).not.toHaveBeenCalled();
         expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe('');
         expect(
           positioner.style.getPropertyValue('--_sheet-keyboard-lift'),
