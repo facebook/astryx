@@ -371,6 +371,7 @@ function isWordChar(ch: string | undefined): boolean {
 function isSafeUrl(url: string): boolean {
   // Trim and collapse whitespace/control chars that browsers tolerate but
   // could bypass a naive prefix check (e.g. "java\nscript:alert(1)").
+  // eslint-disable-next-line no-control-regex -- control chars are the bypass
   const normalized = url.replace(/[\x00-\x1f\x7f]/g, '').trim();
   const lower = normalized.toLowerCase();
   if (
