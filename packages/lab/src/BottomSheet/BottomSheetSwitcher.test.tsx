@@ -156,6 +156,7 @@ describe('BottomSheetSwitcher', () => {
 
     expect(screen.getByTestId('details-sheet')).not.toHaveAttribute('hidden');
     expect(screen.getByTestId('confirm-sheet')).toHaveAttribute('hidden');
+    expect(screen.getByTestId('confirm-sheet')).toHaveStyle({display: 'none'});
     expect(document.querySelectorAll('dialog[open]')).toHaveLength(1);
     expect(
       document.querySelectorAll('.astryx-bottom-sheet-switcher-scrim'),

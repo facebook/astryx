@@ -180,6 +180,12 @@ const styles = stylex.create({
     justifyContent: 'center',
     pointerEvents: 'none',
   },
+  // Author styles override the user-agent [hidden] rule, so the switcher must
+  // explicitly remove non-presented layers from layout. Keep the hidden
+  // attribute as the semantic reflection of that state.
+  positionerHidden: {
+    display: 'none',
+  },
   // Both switcher panels share one dialog stacking context. The interactive
   // panel sits above the retained panel while it enters.
   positionerTop: {
@@ -795,7 +801,11 @@ export function BottomSheet({
       <div
         {...switcherLayerProps}
         {...mergeProps(
-          stylex.props(styles.positioner, isTopSheet && styles.positionerTop),
+          stylex.props(
+            styles.positioner,
+            !isPresented && styles.positionerHidden,
+            isTopSheet && styles.positionerTop,
+          ),
           switcherLayerClassName,
           switcherLayerStyle,
         )}
