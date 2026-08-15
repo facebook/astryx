@@ -43,9 +43,7 @@ const styles = stylex.create({
     borderRadius: 'var(--_hovercard-radius)',
     boxShadow: shadowVars['--shadow-med'],
   },
-  // Position-based margin styles
-  // Content wrapper for padding and mouse events. `display: block` keeps the
-  // wrapper a block box even though it renders as a `span`.
+  // Content wrapper for padding and interaction events.
   content: {
     display: 'block',
     paddingBlockStart: spacingVars['--spacing-3'],
