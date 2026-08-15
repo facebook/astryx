@@ -1340,7 +1340,7 @@ function DateInputTabletDemo() {
           }}
           startYear={2026}
           startMonth={6}
-          monthCount={2}
+          monthCount={6}
         />
       </BottomSheet>
     </>
@@ -1434,7 +1434,7 @@ function DateTimeInputDemo({beside = false}: {beside?: boolean} = {}) {
             onChange={(v: ISODateString) => setDate(v)}
             startYear={2026}
             startMonth={6}
-            monthCount={beside ? 2 : 4}
+            monthCount={beside ? 6 : 4}
           />
         ) : (
           <Grid columns={beside ? 6 : 4} gap={2} width="100%">
@@ -1680,19 +1680,33 @@ function ScrollCalendar(props: ScrollCalendarProps) {
     );
   };
 
-  // Paged: months sit side by side (classic desktop range picker), each a
-  // self-contained block with its own weekday header. The shared `anchor`
+  // Paged: months sit side by side (classic desktop range picker). Two fixed-
+  // width columns fill the visible width and the rest scroll in horizontally
+  // (snap per month), so there's always more to reach. The shared `anchor`
   // means a range still spans columns.
   if (paged) {
     return (
       <div
         style={{
-          display: 'grid',
-          gridTemplateColumns: `repeat(${monthCount}, 1fr)`,
+          display: 'flex',
           gap: 24,
+          overflowX: 'auto',
+          overscrollBehavior: 'contain',
+          scrollSnapType: 'x mandatory',
+          paddingBottom: 8,
           alignItems: 'start',
         }}>
-        {months.map(({year, month}) => renderMonth(year, month, true))}
+        {months.map(({year, month}) => (
+          <div
+            key={`${year}-${month}-col`}
+            style={{
+              flex: '0 0 288px',
+              minWidth: 288,
+              scrollSnapAlign: 'start',
+            }}>
+            {renderMonth(year, month, true)}
+          </div>
+        ))}
       </div>
     );
   }
@@ -1802,7 +1816,7 @@ function DateRangeInputTabletDemo() {
           onChange={setRange}
           startYear={2026}
           startMonth={6}
-          monthCount={2}
+          monthCount={6}
         />
       </BottomSheet>
     </>
