@@ -523,6 +523,7 @@ describe('BottomSheet', () => {
 
   describe('mobile keyboard', () => {
     it('prevents native touch focus panning without moving focus early or duplicating events', () => {
+      mockIOSWebKit();
       const onFocus = vi.fn();
       const onBlur = vi.fn();
       render(
@@ -568,6 +569,7 @@ describe('BottomSheet', () => {
     });
 
     it('does not focus when a touch becomes a scroll gesture', () => {
+      mockIOSWebKit();
       const onPreviousBlur = vi.fn();
       render(
         <BottomSheet
@@ -598,6 +600,7 @@ describe('BottomSheet', () => {
     });
 
     it('does not focus when pointer activation is canceled', () => {
+      mockIOSWebKit();
       const onFocus = vi.fn();
       const onPreviousBlur = vi.fn();
       render(
@@ -635,6 +638,7 @@ describe('BottomSheet', () => {
     });
 
     it('prevents input-to-input focus panning without duplicating focus or blur events', () => {
+      mockIOSWebKit();
       const onTitleBlur = vi.fn();
       const onCommentFocus = vi.fn();
       render(
@@ -666,6 +670,7 @@ describe('BottomSheet', () => {
     });
 
     it('does not duplicate callbacks during programmatic input-to-input focus', () => {
+      mockIOSWebKit();
       const onTitleBlur = vi.fn();
       const onCommentFocus = vi.fn();
       render(
@@ -831,6 +836,7 @@ describe('BottomSheet', () => {
     });
 
     it('does not accommodate the keyboard at a shorter Tall detent', () => {
+      mockIOSWebKit();
       const observers = mockResizeObserverInstances();
       const viewport = mockVisualViewport(800);
       render(

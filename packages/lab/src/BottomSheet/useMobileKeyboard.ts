@@ -95,6 +95,14 @@ function getVisualViewportBounds(): {top: number; bottom: number} {
   };
 }
 
+function isIOSWebKit(): boolean {
+  const userAgent = window.navigator.userAgent;
+  return (
+    /iPad|iPhone|iPod/.test(userAgent) ||
+    (/Macintosh/.test(userAgent) && window.navigator.maxTouchPoints > 1)
+  );
+}
+
 function isTextEntryControl(element: Element | null): element is HTMLElement {
   if (element instanceof HTMLTextAreaElement) {
     return !element.disabled && !element.readOnly;
@@ -198,6 +206,7 @@ export function useMobileKeyboard({
     let pendingFocusScroll: FocusScrollSnapshot | null = null;
     let pendingPointerFocusScroll: FocusScrollSnapshot | null = null;
     let pendingTouchFocus: PendingTouchFocus | null = null;
+    const preventFocusScroll = isIOSWebKit();
 
     const clearKeyboardLayout = () => {
       body.style.setProperty(MOBILE_KEYBOARD_INSET_VAR, '0px');
@@ -492,12 +501,18 @@ export function useMobileKeyboard({
     };
 
     const viewport = window.visualViewport;
-    document.addEventListener('pointerdown', rememberPointerFocusScroll, true);
-    document.addEventListener('pointermove', handlePointerMove, true);
-    document.addEventListener('pointercancel', handlePointerCancel, true);
-    document.addEventListener('pointerup', preventTouchFocusScroll);
-    document.addEventListener('focusout', rememberFocusScroll);
-    body.addEventListener('focus', restoreFocusScroll, true);
+    if (preventFocusScroll) {
+      document.addEventListener(
+        'pointerdown',
+        rememberPointerFocusScroll,
+        true,
+      );
+      document.addEventListener('pointermove', handlePointerMove, true);
+      document.addEventListener('pointercancel', handlePointerCancel, true);
+      document.addEventListener('pointerup', preventTouchFocusScroll);
+      document.addEventListener('focusout', rememberFocusScroll);
+      body.addEventListener('focus', restoreFocusScroll, true);
+    }
     body.addEventListener('focusin', handleFocusIn);
     body.addEventListener('focusout', handleFocusOut);
     sheet?.addEventListener('transitionend', handleSheetTransitionEnd);
@@ -517,16 +532,22 @@ export function useMobileKeyboard({
 
     return () => {
       cancelAnimationFrame(animationFrame);
-      document.removeEventListener(
-        'pointerdown',
-        rememberPointerFocusScroll,
-        true,
-      );
-      document.removeEventListener('pointermove', handlePointerMove, true);
-      document.removeEventListener('pointercancel', handlePointerCancel, true);
-      document.removeEventListener('pointerup', preventTouchFocusScroll);
-      document.removeEventListener('focusout', rememberFocusScroll);
-      body.removeEventListener('focus', restoreFocusScroll, true);
+      if (preventFocusScroll) {
+        document.removeEventListener(
+          'pointerdown',
+          rememberPointerFocusScroll,
+          true,
+        );
+        document.removeEventListener('pointermove', handlePointerMove, true);
+        document.removeEventListener(
+          'pointercancel',
+          handlePointerCancel,
+          true,
+        );
+        document.removeEventListener('pointerup', preventTouchFocusScroll);
+        document.removeEventListener('focusout', rememberFocusScroll);
+        body.removeEventListener('focus', restoreFocusScroll, true);
+      }
       body.removeEventListener('focusin', handleFocusIn);
       body.removeEventListener('focusout', handleFocusOut);
       sheet?.removeEventListener('transitionend', handleSheetTransitionEnd);
