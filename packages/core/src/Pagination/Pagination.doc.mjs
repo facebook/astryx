@@ -64,10 +64,30 @@ export const docs = {
     },
     {
       name: 'variant',
-      type: "'pages' | 'count' | 'compact' | 'dots' | 'none'",
+      type: "'pages' | 'count' | 'compact' | 'dots' | 'input' | 'none'",
       description:
-        "Visual variant controlling what appears between prev/next buttons. 'pages' shows page number buttons with ellipsis, 'count' shows 'X-Y of Z' text, 'compact' shows 'Page X of Y', 'dots' shows dot indicators, 'none' shows just prev/next buttons.",
+        "Visual variant controlling what appears between prev/next buttons. 'pages' shows page number buttons with ellipsis, 'count' shows 'X-Y of Z' text, 'compact' shows 'Page X of Y', 'dots' shows dot indicators, 'input' shows an editable page-number box with a leading label ('Page [ n ] / N') flanked by first/last buttons by default (the box needs a known total to clamp against, so it is disabled in cursor/hasMore mode), 'none' shows just prev/next buttons.",
       default: "'pages'",
+    },
+    {
+      name: 'pageLabel',
+      type: 'string',
+      description:
+        "The noun rendered before the editable box in the 'input' variant, e.g. 'Page' or 'Row'. Navigation is always page-based (via onChange); this only relabels the box. Defaults to the localized 'Page'.",
+    },
+    {
+      name: 'hasFirstLast',
+      type: 'boolean',
+      description:
+        "Whether to show first/last («/») double-chevron buttons flanking prev/next. Only applies to the 'input' variant; omitted when the page count is unknown (cursor/hasMore pagination).",
+      default: 'true',
+    },
+    {
+      name: 'step',
+      type: 'number',
+      description:
+        'Number of pages the previous/next buttons advance per click. Clamped to the valid page range, so a step that would overshoot lands on the first/last page. When greater than 1, the buttons\' accessible names reflect the stride. Non-integer or values < 1 fall back to 1.',
+      default: '1',
     },
     {
       name: 'siblingCount',
@@ -105,6 +125,8 @@ export const docs = {
     targets: [
       {className: 'astryx-pagination', visualProps: ['size', 'variant']},
       {className: 'astryx-pagination-dot', visualProps: ['size'], states: ['active']},
+      {className: 'astryx-pagination-input-label', visualProps: ['size']},
+      {className: 'astryx-pagination-input-total', visualProps: ['size']},
     ],
   },
   playground: {
@@ -192,10 +214,30 @@ export const docsZh = {
     },
     {
       name: 'variant',
-      type: "'pages' | 'count' | 'compact' | 'dots' | 'none'",
+      type: "'pages' | 'count' | 'compact' | 'dots' | 'input' | 'none'",
       description:
-        "控制上一页/下一页按钮之间显示内容的视觉变体。'pages' 显示带省略号的页码按钮，'count' 显示 'X-Y of Z' 文本，'compact' 显示 'Page X of Y'，'dots' 显示点指示器，'none' 仅显示上一页/下一页按钮。",
+        "控制上一页/下一页按钮之间显示内容的视觉变体。'pages' 显示带省略号的页码按钮，'count' 显示 'X-Y of Z' 文本，'compact' 显示 'Page X of Y'，'dots' 显示点指示器，'input' 显示带前置标签的可编辑页码框——'Page [ n ] / N'——默认两侧带首页/末页按钮，'none' 仅显示上一页/下一页按钮。",
       default: "'pages'",
+    },
+    {
+      name: 'pageLabel',
+      type: 'string',
+      description:
+        "'input' 变体中可编辑框前显示的名词，如 'Page' 或 'Row'。导航始终基于页码（通过 onChange）；此项仅用于重新标注。默认为本地化的 'Page'。",
+    },
+    {
+      name: 'hasFirstLast',
+      type: 'boolean',
+      description:
+        "是否显示首页/末页（«/»）双箭头按钮，位于上一页/下一页两侧。仅适用于 'input' 变体；当页数未知（游标/hasMore 分页）时省略。",
+      default: 'true',
+    },
+    {
+      name: 'step',
+      type: 'number',
+      description:
+        '上一页/下一页按钮每次点击前进的页数。会被限制在有效页码范围内，因此超出范围的步进会落在首页/末页。大于 1 时，按钮的无障碍名称会反映跨步页数。非整数或小于 1 的值回退为 1。',
+      default: '1',
     },
     {
       name: 'siblingCount',
@@ -233,6 +275,8 @@ export const docsZh = {
     targets: [
       {className: 'astryx-pagination', visualProps: ['size', 'variant']},
       {className: 'astryx-pagination-dot', visualProps: ['size'], states: ['active']},
+      {className: 'astryx-pagination-input-label', visualProps: ['size']},
+      {className: 'astryx-pagination-input-total', visualProps: ['size']},
     ],
   },
   usage: {
@@ -280,7 +324,10 @@ export const docsDense = {
     pageSize: 'Items per page; coerced to positive integer, non-finite falls back to default',
     pageSizeOptions: 'Page size options. Shows selector dropdown when provided.',
     onPageSizeChange: 'Called on page size change. Auto resets to page 1.',
-    variant: 'Display between prev/next buttons.',
+    variant: "Display between prev/next. 'input' = 'Page [n] / N' + first/last.",
+    pageLabel: "Noun before the 'input' box (e.g. 'Page' or 'Row'). Navigation stays page-based. Default localized 'Page'.",
+    hasFirstLast: "Show first/last («/») buttons in the 'input' variant. Omitted when total unknown.",
+    step: 'Pages the prev/next buttons advance per click. Clamped to range; < 1 or non-integer falls back to 1.',
     siblingCount: "Page buttons each side of current; only variant='pages'.",
     size: 'Control size.',
     isDisabled: 'Component disabled.',

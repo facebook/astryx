@@ -20,8 +20,18 @@ export const docs = {
         {
           type: 'code',
           lang: 'text',
-          label: 'Paste this into your AI',
-          code: 'Install @astryxdesign/core, @astryxdesign/theme-neutral, and @astryxdesign/cli in this project, then run `npx @astryxdesign/cli init` to set up agent docs. Read the generated files to learn the conventions.',
+          label: 'Set up the design system',
+          code: 'Install @astryxdesign/core, @stylexjs/stylex, @astryxdesign/theme-neutral, and @astryxdesign/cli in this project, then run `npx @astryxdesign/cli init` to set up agent docs. Read the generated files to learn the conventions.',
+        },
+        {
+          type: 'prose',
+          text: 'Then give it a look. Every app gets a theme whether or not anyone picks one, so it is worth one question at setup rather than revisiting screens later that were built around the wrong look:',
+        },
+        {
+          type: 'code',
+          lang: 'text',
+          label: 'Give it a look',
+          code: "Ask me what look and feel this app should have. Run `npx @astryxdesign/cli theme list` and start from the closest shipped theme with `theme add <slug>`, which copies it in as editable source; if none of them fit, run `npx @astryxdesign/cli theme template` and fill in the annotated template it writes. Default to neutral if I have no preference, and show me the result before moving on.",
         },
       ],
     },
@@ -30,17 +40,21 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Add the core package, a theme, and the CLI to your existing project.',
+          text: 'Astryx requires React 19 or later: `react` and `react-dom` >= 19.0.0 are peer dependencies of `@astryxdesign/core`.',
+        },
+        {
+          type: 'prose',
+          text: 'Add the core package and its `@stylexjs/stylex` peer dependency, plus a theme and the CLI.',
         },
         {
           type: 'code',
           lang: 'bash',
           label: 'Terminal',
-          code: `npm install @astryxdesign/core @astryxdesign/theme-neutral @astryxdesign/cli`,
+          code: `npm install @astryxdesign/core @stylexjs/stylex @astryxdesign/theme-neutral @astryxdesign/cli`,
         },
         {
           type: 'prose',
-          text: "Then run `astryx init` to install the AI agent cheat sheet (AGENTS.md/CLAUDE.md). It's non-interactive — no prompts — so it's safe for AI agents, CI, and scripts. Add `--all` for pointers to the theme and page-building workflows.",
+          text: "Then run `astryx init` to install the AI agent cheat sheet (AGENTS.md/CLAUDE.md). It's non-interactive; no prompts; so it's safe for AI agents, CI, and scripts. Add `--all` for pointers to the theme and page-building workflows.",
         },
         {
           type: 'code',
@@ -161,7 +175,7 @@ pnpm dev`,
           lang: 'json',
           label: 'package.json',
           code: `"scripts": {
-  "astryx": "node node_modules/@astryxdesign/cli/bin/astryx.mjs"
+  "astryx": "node node_modules/@astryxdesign/cli/clients/cli/bin/astryx.mjs"
 }`,
         },
         {

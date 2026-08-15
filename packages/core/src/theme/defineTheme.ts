@@ -28,9 +28,16 @@
  *   <App />
  * </Theme>
  * ```
+ *
+ * SYNC: `DefineThemeInput` is the theme surface. Adding, removing, or renaming
+ * a field means updating:
+ * - /packages/cli/assets/theme.template.ts (documents every field; the
+ *   drift guard is scripts/check-theme-template.test.mjs)
+ * - /packages/cli/assets/docs/theme.doc.mjs (`astryx docs theme`)
  */
 
 import type {IconRegistry} from '../Icon/globalIconRegistry';
+import type {IndicatorRegistry} from '../Indicator/types';
 import type {TypographyConfig, FontWeight} from './types';
 import {
   resolveOnMedia,
@@ -41,11 +48,11 @@ import {
   colorDefaults,
   spacingDefaults,
   sizeDefaults,
+  focusDefaults,
   radiusDefaults,
   shadowDefaults,
   durationDefaults,
   easeDefaults,
-  transitionDefaults,
   typographyDefaults,
   textSizeDefaults,
   fontWeightDefaults,
@@ -63,6 +70,7 @@ import {expandColorScale, type ColorScaleConfig} from './expandColorScale';
 import type {DomainTokenName} from './domainTokens';
 import {domainTokenDefaults} from './domainTokens';
 import type {SyntaxThemeDefinition} from './syntax';
+import {registerTheme} from './themeRegistry';
 
 // =============================================================================
 // Types
@@ -73,11 +81,11 @@ export type CoreTokenName =
   | keyof typeof colorDefaults
   | keyof typeof spacingDefaults
   | keyof typeof sizeDefaults
+  | keyof typeof focusDefaults
   | keyof typeof radiusDefaults
   | keyof typeof shadowDefaults
   | keyof typeof durationDefaults
   | keyof typeof easeDefaults
-  | keyof typeof transitionDefaults
   | keyof typeof typographyDefaults
   | keyof typeof textSizeDefaults
   | keyof typeof fontWeightDefaults
@@ -282,6 +290,19 @@ export interface DefineThemeInput {
   /** Icon registry — maps semantic icon names to React nodes */
   icons?: Partial<IconRegistry>;
   /**
+   * Indicator overrides — replaces the components that draw stateful control
+   * visuals with the theme's own, by name.
+   *
+   * Replacement is by indicator name, not per call site, so a single entry
+   * reaches every component that draws that indicator: mapping `check` to
+   * `RadioIndicator` gives radio visuals to every single-selection mark in the
+   * app.
+   *
+   * Each entry is checked against its indicator's family, so a replacement
+   * must accept the states that family passes.
+   */
+  indicators?: IndicatorRegistry;
+  /**
    * Default syntax highlighting theme for code components.
    * Sets --color-syntax-* tokens at the theme root. Can be overridden
    * per-region (or per-instance) by wrapping in SyntaxTheme.
@@ -330,6 +351,8 @@ export interface DefinedTheme {
   components?: ComponentStyleMap;
   /** Icon registry */
   icons?: Partial<IconRegistry>;
+  /** Indicator overrides for stateful control visuals, keyed by name */
+  indicators?: IndicatorRegistry;
   /** Whether this theme has been pre-compiled by theme build CLI */
   __built?: true;
   /**
@@ -362,11 +385,11 @@ export const tokenDefaults: Record<string, string> = {
   ...colorDefaults,
   ...spacingDefaults,
   ...sizeDefaults,
+  ...focusDefaults,
   ...radiusDefaults,
   ...shadowDefaults,
   ...durationDefaults,
   ...easeDefaults,
-  ...transitionDefaults,
   ...typographyDefaults,
   ...textSizeDefaults,
   ...fontWeightDefaults,
@@ -624,15 +647,26 @@ export function defineTheme(input: DefineThemeInput): DefinedTheme {
       ? {...base.icons, ...input.icons}
       : (input.icons ?? base?.icons);
 
-  return {
+  // Indicator overrides merge by name, like icons: a child theme replacing one
+  // indicator keeps the ones its base replaced.
+  const indicators =
+    input.indicators && base?.indicators
+      ? {...base.indicators, ...input.indicators}
+      : (input.indicators ?? base?.indicators);
+
+  const theme: DefinedTheme = {
     name: input.name,
     tokens,
     components,
     icons,
+    indicators,
     __inputTokens: input.tokens,
     __onDark,
     __onLight,
   };
+
+  registerTheme(theme);
+  return theme;
 }
 
 // =============================================================================
@@ -644,7 +678,6 @@ export {
   generateThemeRulesSplit,
   generateOnMediaCSS,
   generateThemeCSS,
-  generateThemeCSSFlat,
   type ThemeRulesSplit,
   type ThemeCSSOutput,
 } from './generateThemeRules';

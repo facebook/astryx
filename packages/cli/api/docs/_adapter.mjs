@@ -25,7 +25,7 @@ const DOCS_DIR = path.join(CLI_ROOT, 'assets', 'docs');
  */
 export function discoverTopics() {
   /** @type {Record<string, string>} */
-  const topics = {};
+  const topics = Object.create(null);
   if (!fs.existsSync(DOCS_DIR)) return topics;
   for (const file of fs.readdirSync(DOCS_DIR)) {
     const match = file.match(/^([\w-]+)\.doc\.mjs$/);

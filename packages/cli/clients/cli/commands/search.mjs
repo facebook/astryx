@@ -8,44 +8,43 @@
  * with their domain, with a follow-up command so the user knows what to run
  * next.
  *
+ * The command surface (description, args, flags) is sourced from the colocated
+ * `search.doc.mjs` CommandDoc via `defineCommand`; this file supplies only the
+ * action (parse flags -> call the api function -> render).
+ *
  * Usage:
  *   astryx search button                 Ranked results across all domains
  *   astryx search modal --type component Filter to a single domain
  *   astryx search forms --limit 5        Cap the result count
- *   astryx search button --detail        Verbose (include import / reason)
+ *   astryx search button --verbose       Verbose (include import / reason)
  *   astryx search button --json          Typed JSON envelope
  */
 
 import {getCliInvocation, formatCliCommand} from '../../../foundation/env/package-manager.mjs';
-import {jsonOut, humanLog} from '../../../foundation/response/json.mjs';
+import {jsonOut} from '../../../foundation/response/json.mjs';
+import {emit, section, text, records} from '../formatters/index.mjs';
 import {cliError} from '../lib/cli-error.mjs';
-import {search as searchApi, SEARCH_DOMAINS} from '../../../api/search/search.mjs';
-
-const DOMAIN_LABEL = {
-  component: 'component',
-  hook: 'hook',
-  doc: 'docs',
-  template: 'template',
-};
+import {defineCommand} from '../lib/define-command.mjs';
+import {search as searchApi} from '../../../api/search/search.mjs';
+import {doc as searchCommand} from './search.doc.mjs';
+import {doc as searchFn} from '../../../api/search/search.doc.mjs';
 
 /**
  * @param {import('commander').Command} program
  */
 export function registerSearch(program) {
-  program
-    .command('search <query>')
-    .description('Search components, hooks, docs, and templates in one ranked list')
-    .option('--type <domain>', `Filter to one domain (${SEARCH_DOMAINS.join('|')})`)
-    .option('--limit <n>', 'Max number of results (default 20)')
-    .option('--detail', 'Verbose output (include import paths and match reason)')
-    .action(async (/** @type {string} */ query, /** @type {{type?: import('../../../api/search/search.type.mjs').SearchDomain, limit?: string, detail?: boolean}} */ options) => {
+  defineCommand(program, searchCommand, {
+    fn: searchFn,
+    action: async (
+      /** @type {string} */ query,
+      /** @type {{type?: import('../../../api/search/search.type.mjs').SearchDomain, limit?: string, verbose?: boolean}} */ options,
+    ) => {
       const json = program.opts().json || false;
 
       // Parse --limit to a number; the API validates it (positive integer) and
       // throws ERR_INVALID_ARGUMENT, so we pass NaN through rather than
       // pre-rejecting with a generic code here.
-      const limit =
-        options.limit != null ? Number.parseInt(options.limit, 10) : 20;
+      const limit = options.limit != null ? Number.parseInt(options.limit, 10) : 20;
 
       /** @type {import('../../../api/search/search.type.mjs').SearchResponse} */
       let result;
@@ -71,32 +70,26 @@ export function registerSearch(program) {
 
       // No matches is a valid, successful outcome — clean message, exit 0.
       if (results.length === 0) {
-        humanLog('');
-        humanLog(`No results for "${q}".`);
-        humanLog('');
-        humanLog(`Try a broader term, or browse: ${run} component --list`);
-        humanLog('');
+        emit(
+          text(`No results for "${q}".`),
+          text(`Try a broader term, or browse: ${run} component --list`),
+        );
         return;
       }
 
-      humanLog('');
-      humanLog(`Results for "${q}" (${results.length}):`);
-      humanLog('');
-      for (const r of results) {
-        const tag = `[${DOMAIN_LABEL[r.domain] || r.domain}]`.padEnd(12);
-        const display = r.domain === 'template' && r.displayName ? r.displayName : r.name;
-        humanLog(`  ${tag} ${display}`);
-        if (r.description) {
-          humanLog(`               ${r.description}`);
-        }
-        humanLog(`               → ${formatCliCommand(r.command)}`);
-        if (options.detail) {
-          if (r.import) humanLog(`               import: ${r.import}`);
-          humanLog(`               match: ${r.reason} (score ${r.score})`);
-        }
-        humanLog('');
-      }
-    });
+      // The text view is just a projection of the JSON: one record per result,
+      // fields in a fixed order (missing ones skipped), command prefixed for the
+      // caller's package manager. Ranked order is preserved (best match first).
+      const fields = options.verbose
+        ? ['name', 'domain', 'displayName', 'score', 'reason', 'import', 'description', 'command']
+        : ['name', 'domain', 'displayName', 'import', 'description', 'command'];
+
+      emit(
+        section(`Results for "${q}" (${results.length})`),
+        records(results, {fields, format: {command: formatCliCommand}}),
+      );
+    },
+  });
 }
 
 // Re-export the API for external consumers.

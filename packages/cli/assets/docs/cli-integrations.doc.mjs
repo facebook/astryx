@@ -16,11 +16,11 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'An integration is an npm package that contributes components, templates, and/or upgrade codemods to a consumer\u2019s design-system workflow. Consumers install the package and add it to their `astryx.config`; from then on the integration\u2019s contributions show up alongside core\u2019s in the same CLI commands.',
+          text: 'An integration is an npm package that contributes components, templates, and/or upgrade codemods to a consumer\'s design-system workflow. Consumers install the package and add it to their `astryx.config`; from then on the integration\'s contributions show up alongside core\'s in the same CLI commands.',
         },
         {
           type: 'prose',
-          text: 'The system runs on two files. The consumer writes `astryx.config.{ts,mjs,js}` at their project root to list which packages to load. The author writes `astryx.integration.{ts,mjs,js}` at the package root to declare what the package contributes. This page is the author\u2019s guide. For the consumer side, run `npx astryx docs getting-started`.',
+          text: 'The system runs on two files. The consumer writes `astryx.config.{ts,mjs,js}` at their project root to list which packages to load. The author writes `astryx.integration.{ts,mjs,js}` at the package root to declare what the package contributes. This page is the author\'s guide. For the consumer side, run `npx astryx docs getting-started`.',
         },
         {
           type: 'prose',
@@ -33,7 +33,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'Your components and templates then appear next to core\u2019s:',
+          text: 'Your components and templates then appear next to core\'s:',
         },
         {
           type: 'code',
@@ -115,7 +115,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Ship codemods so `astryx upgrade` can migrate consumers across breaking changes in your package. Point the integration file\u2019s `codemods` field at your codemods root, and author each one as a plain object stamped with `type: \'code\'` (transforms source files) or `type: \'config\'` (rewrites the consumer\u2019s `astryx.config`).',
+          text: 'Ship codemods so `astryx upgrade` can migrate consumers across breaking changes in your package. Point the integration file\'s `codemods` field at your codemods root, and author each one as a plain object stamped with `type: \'code\'` (transforms source files) or `type: \'config\'` (rewrites the consumer\'s `astryx.config`).',
         },
         {
           type: 'code',
@@ -134,7 +134,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Every CLI command loads the consumer\u2019s `astryx.config`, resolves each listed integration\u2019s manifest from `node_modules`, and discovers its contributions. Everything is validated against one strict schema at the load boundary: the CLI parses each file through `@astryxdesign/cli/authoring` when it loads it, not when you author it. There are no factories; you write a plain object and stamp its `type`.',
+          text: 'Every CLI command loads the consumer\'s `astryx.config`, resolves each listed integration\'s manifest from `node_modules`, and discovers its contributions. Everything is validated against one strict schema at the load boundary: the CLI parses each file through `@astryxdesign/cli/authoring` when it loads it, not when you author it. There are no factories; you write a plain object and stamp its `type`.',
         },
         {
           type: 'prose',

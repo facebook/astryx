@@ -2,25 +2,29 @@
 
 /**
  * @file no-raw-console-cli.js
- * @description Ban bare `console.log` in CLI runtime files so it can never
- * corrupt the `--json` stdout contract (#2467).
+ * @description Enforce the CLI's output funnels so `--json` stdout stays clean
+ * and human output stays consistent (#2467).
  *
- * The CLI's machine-readable JSON output owns stdout in `--json` mode. A stray
- * `console.log` writes to that same stream and breaks JSON consumers. The
- * sanctioned escape hatch is `humanLog()` (lib/json.mjs), which is a no-op in
- * JSON mode. This rule pushes authors toward it:
+ * Two bans:
  *
- *   Banned:   console.log(...)            (writes raw stdout)
- *   Allowed:  console.error(...)          (stderr — never corrupts JSON)
- *             console.warn(...)           (stderr)
- *             humanLog(...)               (json-aware stdout)
+ * 1. Bare `console.log` in ANY CLI runtime file. The machine-readable JSON
+ *    output owns stdout in `--json` mode; a stray `console.log` corrupts it.
+ *      Banned:   console.log(...)
+ *      Allowed:  console.error / console.warn (stderr — never corrupts JSON)
  *
- * Autofix rewrites `console.log(` → `humanLog(`. The author is responsible for
- * ensuring `humanLog` is imported from `../lib/json.mjs`; the fix only renames
- * the call so the wrong primitive isn't silently kept.
+ * 2. `humanLog(...)` / `humanWarn(...)` in COMMAND files
+ *    (clients/cli/commands/**). Command human output must go through the single
+ *    formatter sink `emit(...)` (clients/cli/formatters) so every command renders
+ *    consistently; errors/warnings go through `cliError()` (stderr). `humanLog`
+ *    is now an internal primitive used only by `emit` and the shared `logger` —
+ *    commands should never call it directly.
  *
- * A handful of files legitimately write raw stdout — the JSON envelope writers
- * and the banner — and are exempt:
+ * The console.log autofix rewrites `console.log(` → `humanLog(` for non-command
+ * files (the logger/formatters/etc.). There is no autofix for ban #2: moving a
+ * command to `emit` isn't a mechanical rename (emit takes Blocks, not strings).
+ *
+ * Files that legitimately write raw stdout or own the funnels are exempt from
+ * ban #1:
  *   - packages/cli/foundation/response/json.mjs (defines humanLog / jsonOut)
  *   - packages/cli/clients/cli/index.mjs      (wiring / banner)
  *   - packages/cli/clients/cli/bin/astryx.mjs (entrypoint / error boundary)
@@ -32,9 +36,18 @@ const EXEMPT_SUFFIXES = [
   'packages/cli/clients/cli/bin/astryx.mjs',
 ];
 
+// Command files must funnel human output through emit(); humanLog/humanWarn are
+// off-limits there (they remain available to the sink implementers: the logger,
+// the formatters, and cli-error, none of which live under commands/).
+const COMMANDS_DIR = 'clients/cli/commands/';
+
+function normalize(filename) {
+  // Normalize Windows separators so path matching is platform-agnostic.
+  return filename.replace(/\\/g, '/');
+}
+
 function isExempt(filename) {
-  // Normalize Windows separators so suffix matching is path-agnostic.
-  const normalized = filename.replace(/\\/g, '/');
+  const normalized = normalize(filename);
   return EXEMPT_SUFFIXES.some(suffix => normalized.endsWith(suffix));
 }
 
@@ -43,7 +56,7 @@ const rule = {
     type: 'problem',
     docs: {
       description:
-        'Ban bare console.log in CLI runtime files; use humanLog so --json stdout stays clean',
+        'Enforce CLI output funnels: no console.log anywhere; no humanLog/humanWarn in command files (use emit)',
       category: 'Astryx Conventions',
       recommended: true,
     },
@@ -53,6 +66,10 @@ const rule = {
         'Do not use console.log in CLI runtime code — it writes raw stdout and ' +
         'can corrupt --json output. Use humanLog() (from lib/json.mjs), or ' +
         'console.error/console.warn for stderr.',
+      noHumanLogInCommand:
+        'Do not call {{name}}() in a command file — human stdout must go through ' +
+        'emit() (clients/cli/formatters), and errors/warnings through cliError(). ' +
+        'humanLog/humanWarn are internal primitives for the logger and formatters.',
     },
     schema: [],
   },
@@ -61,10 +78,13 @@ const rule = {
     if (isExempt(filename)) {
       return {};
     }
+    const inCommands = normalize(filename).includes(COMMANDS_DIR);
 
     return {
       CallExpression(node) {
         const callee = node.callee;
+
+        // Ban #1: console.log (all CLI runtime files).
         if (
           callee.type === 'MemberExpression' &&
           !callee.computed &&
@@ -81,6 +101,20 @@ const rule = {
               // author's responsibility).
               return fixer.replaceText(callee, 'humanLog');
             },
+          });
+          return;
+        }
+
+        // Ban #2: humanLog/humanWarn inside command files.
+        if (
+          inCommands &&
+          callee.type === 'Identifier' &&
+          (callee.name === 'humanLog' || callee.name === 'humanWarn')
+        ) {
+          context.report({
+            node: callee,
+            messageId: 'noHumanLogInCommand',
+            data: {name: callee.name},
           });
         }
       },

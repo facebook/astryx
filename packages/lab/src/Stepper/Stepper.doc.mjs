@@ -28,9 +28,11 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'astryx-stepper', visualProps: ['orientation']},
+      {className: 'astryx-stepper', visualProps: ['orientation', 'indicatorPosition']},
       {className: 'astryx-step', visualProps: ['progress', 'status']},
+      {className: 'astryx-step-indicator', visualProps: ['progress', 'status']},
       {className: 'astryx-step-bar'},
+      {className: 'astryx-step-connector'},
     ],
   },
   components: [
@@ -82,6 +84,12 @@ export const docs = {
           default: "'separated'",
         },
         {
+          name: 'hasCollapsibleLabels',
+          type: 'boolean',
+          description: 'Horizontal only. When the stepper is too narrow to fit every label, collapse the labels of non-current steps (via a container query) so the track can shrink; the current step keeps its label. Steps stay reachable via aria-current and their accessible names.',
+          default: 'false',
+        },
+        {
           name: 'xstyle',
           type: 'StyleXStyles',
           description: 'StyleX styles for layout customization. Must be a stylex.create() value.',
@@ -125,7 +133,7 @@ export const docs = {
         {
           name: 'status',
           type: "'accent' | 'success' | 'warning' | 'error'",
-          description: 'Semantic color for the step. Controls color only and maps to the global XDS semantic tokens. Leave unset for the progress-derived default coloring.',
+          description: 'Semantic color for the step. Controls color only and maps to the global Astryx semantic tokens. Leave unset for the progress-derived default coloring.',
         },
         {
           name: 'indicator',
@@ -230,9 +238,11 @@ export const docsZh = {
   },
   theming: {
     targets: [
-      {className: 'astryx-stepper', visualProps: ['orientation']},
+      {className: 'astryx-stepper', visualProps: ['orientation', 'indicatorPosition']},
       {className: 'astryx-step', visualProps: ['progress', 'status']},
+      {className: 'astryx-step-indicator', visualProps: ['progress', 'status']},
       {className: 'astryx-step-bar'},
+      {className: 'astryx-step-connector'},
     ],
   },
   components: [

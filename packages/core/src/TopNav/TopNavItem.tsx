@@ -35,6 +35,7 @@ import {navItemStyles, type NavItemSize} from '../NavItem/navItemStyles.stylex';
 import {mergeProps} from '../utils';
 import {useAppShellMobile} from '../AppShell/AppShellMobileContext';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 
 /**
  * NavItem styles with hover/selected states
@@ -63,14 +64,6 @@ const styles = stylex.create({
       },
       ':active': colorVars['--color-overlay-pressed'],
     },
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': '2px',
-    },
   },
   selected: {
     color: colorVars['--color-text-primary'],
@@ -87,16 +80,6 @@ const styles = stylex.create({
     paddingInline: spacingVars['--spacing-2'],
   },
   // Drawer mode — focus outline (base item + selected come from navItemStyles)
-  drawerFocus: {
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': '2px',
-    },
-  },
 });
 
 export interface TopNavItemProps extends BaseProps<HTMLAnchorElement> {
@@ -246,10 +229,9 @@ export function TopNavItem({
             mode: 'drawer',
             selected: isSelected ? 'selected' : null,
           }),
-          stylex.props(
+          focusOutlineProps.focusVisible(
             navItemStyles.item,
             navItemStyles[size],
-            styles.drawerFocus,
             isSelected && navItemStyles.selected,
             isDisabled && navItemStyles.disabled,
             xstyle,
@@ -283,7 +265,7 @@ export function TopNavItem({
         themeProps('top-nav-item', {
           selected: isSelected ? 'selected' : null,
         }),
-        stylex.props(
+        focusOutlineProps.focusVisible(
           styles.base,
           isSelected && styles.selected,
           isDisabled && navItemStyles.disabled,

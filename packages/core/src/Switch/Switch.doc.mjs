@@ -141,7 +141,7 @@ export const docs = {
       name: 'labelSpacing',
       type: "'hug' | 'spread'",
       description:
-        'Spacing behavior between label and switch. "hug" places them next to each other; "spread" pushes them to opposite ends of the container (full width). "default" is a deprecated alias for "hug".',
+        'Spacing behavior between label and switch. "hug" places them next to each other; "spread" pushes them to opposite ends of the container (full width).',
       default: "'hug'",
     },
     {
@@ -429,6 +429,6 @@ export const docsDense = {
     labelTooltip: 'Tooltip text in info icon at label end.',
     labelPosition: 'Which side label appears; "start" places before switch.',
     labelSpacing:
-      'Spacing behavior; "hug" places next to each other, "spread" pushes to opposite ends (full width). "default" is deprecated alias for "hug".',
+      'Spacing behavior; "hug" places next to each other, "spread" pushes to opposite ends (full width).',
   },
 };

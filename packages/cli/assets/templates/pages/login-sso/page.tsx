@@ -20,14 +20,13 @@ import {Avatar} from '@astryxdesign/core/Avatar';
 // Styles
 // ---------------------------------------------------------------------------
 
-const BG_URL = 'https://lookaside.facebook.com/assets/astryx/building.png';
+const BG_URL = '/template-assets/building.png';
 
 const pageStyle: CSSProperties = {
   minHeight: '100%',
   backgroundImage: `url(${BG_URL})`,
   backgroundSize: 'cover',
   backgroundPosition: 'center',
-  padding: 'var(--spacing-6)',
 };
 
 type SSOProvider = {
@@ -98,7 +97,7 @@ export default function LoginSSO() {
   };
 
   return (
-    <Center axis="both" style={pageStyle}>
+    <Center axis="both" padding={6} style={pageStyle}>
       <Card padding={8} width="100%" maxWidth={400}>
         <VStack gap={4} hAlign="stretch">
           {/* ── Step 1: Email entry ── */}

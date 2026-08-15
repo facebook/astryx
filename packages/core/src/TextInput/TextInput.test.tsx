@@ -371,6 +371,155 @@ describe('TextInput', () => {
     });
   });
 
+  describe('form participation', () => {
+    it('submits the value under htmlName', () => {
+      const {container} = render(
+        <form>
+          <TextInput
+            label="Owner"
+            htmlName="owner"
+            value="alice"
+            onChange={() => {}}
+          />
+        </form>,
+      );
+      const data = new FormData(container.querySelector('form')!);
+      expect(data.get('owner')).toBe('alice');
+    });
+
+    it('is excluded from form data when disabled', () => {
+      const {container} = render(
+        <form>
+          <TextInput
+            label="Owner"
+            htmlName="owner"
+            value="alice"
+            onChange={() => {}}
+            isDisabled
+          />
+        </form>,
+      );
+      expect([
+        ...new FormData(container.querySelector('form')!).keys(),
+      ]).toEqual([]);
+    });
+
+    // Regression: a disabledMessage swaps the native `disabled` attribute for
+    // aria-disabled + readOnly so the reason stays focus-discoverable, but
+    // read-only fields still submit — the name has to be withheld too.
+    it('is excluded from form data when disabled, even with a disabledMessage', () => {
+      const {container} = render(
+        <form>
+          <TextInput
+            label="Owner"
+            htmlName="owner"
+            value="alice"
+            onChange={() => {}}
+            isDisabled
+            disabledMessage="You need the Editor role to change this"
+          />
+        </form>,
+      );
+      expect([
+        ...new FormData(container.querySelector('form')!).keys(),
+      ]).toEqual([]);
+    });
+  });
+
+  describe('isReadOnly', () => {
+    it('marks the input read-only', () => {
+      render(
+        <TextInput
+          label="Owner"
+          value="alice"
+          onChange={() => {}}
+          isReadOnly
+        />,
+      );
+      expect(screen.getByRole('textbox')).toHaveAttribute('readonly');
+    });
+
+    it('still submits its value with the form', () => {
+      const {container} = render(
+        <form>
+          <TextInput
+            label="Owner"
+            htmlName="owner"
+            value="alice"
+            onChange={() => {}}
+            isReadOnly
+          />
+        </form>,
+      );
+      expect(new FormData(container.querySelector('form')!).get('owner')).toBe(
+        'alice',
+      );
+    });
+
+    it('does not call onChange when the user types', async () => {
+      const user = userEvent.setup();
+      const handleChange = vi.fn();
+      render(
+        <TextInput
+          label="Owner"
+          value="alice"
+          onChange={handleChange}
+          isReadOnly
+        />,
+      );
+      await user.type(screen.getByRole('textbox'), 'xyz');
+      expect(handleChange).not.toHaveBeenCalled();
+    });
+
+    it('stays focusable and is not disabled', async () => {
+      const user = userEvent.setup();
+      render(
+        <TextInput
+          label="Owner"
+          value="alice"
+          onChange={() => {}}
+          isReadOnly
+        />,
+      );
+      const input = screen.getByRole('textbox');
+      expect(input).not.toBeDisabled();
+      await user.tab();
+      expect(input).toHaveFocus();
+    });
+
+    it('hides the clear button', () => {
+      render(
+        <TextInput
+          label="Owner"
+          value="alice"
+          onChange={() => {}}
+          hasClear
+          isReadOnly
+        />,
+      );
+      expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    });
+
+    it('lets isDisabled win when both are set', () => {
+      const {container} = render(
+        <form>
+          <TextInput
+            label="Owner"
+            htmlName="owner"
+            value="alice"
+            onChange={() => {}}
+            isReadOnly
+            isDisabled
+          />
+        </form>,
+      );
+      expect(screen.getByRole('textbox')).toBeDisabled();
+      expect([
+        ...new FormData(container.querySelector('form')!).keys(),
+      ]).toEqual([]);
+    });
+  });
+
   describe('onEnter', () => {
     it('calls onEnter when Enter key is pressed', async () => {
       const user = userEvent.setup();
@@ -807,5 +956,45 @@ describe('TextInput statusVariant forwarding', () => {
     const statusButton = screen.getByRole('button', {name: /error details/i});
     const tooltip = screen.getByRole('tooltip', h);
     expect(statusButton.getAttribute('aria-describedby')).toContain(tooltip.id);
+  });
+});
+
+describe('TextInput disabled theme state', () => {
+  // Reflecting isDisabled on the root theming target lets a theme gate its own
+  // hover/border treatment on disabled (data-disabled + a .disabled variant),
+  // mirroring how status is reflected — without structural :has() CSS.
+  it('reflects disabled on the root target so themes can gate paint on it', () => {
+    const {container} = render(
+      <TextInput label="Name" value="" onChange={() => {}} isDisabled />,
+    );
+    const root = container.querySelector('.astryx-text-input');
+    expect(root).toHaveAttribute('data-disabled', 'disabled');
+    expect(root).toHaveClass('disabled');
+  });
+
+  it('omits data-disabled when enabled, like status does', () => {
+    const {container} = render(
+      <TextInput label="Name" value="" onChange={() => {}} />,
+    );
+    const root = container.querySelector('.astryx-text-input');
+    expect(root).not.toHaveAttribute('data-disabled');
+  });
+});
+
+describe('TextInput readonly theme state', () => {
+  it('reflects readonly on the root target so themes can gate paint on it', () => {
+    const {container} = render(
+      <TextInput label="Name" value="" onChange={() => {}} isReadOnly />,
+    );
+    const root = container.querySelector('.astryx-text-input');
+    expect(root).toHaveAttribute('data-readonly', 'readonly');
+  });
+
+  it('omits data-readonly when editable', () => {
+    const {container} = render(
+      <TextInput label="Name" value="" onChange={() => {}} />,
+    );
+    const root = container.querySelector('.astryx-text-input');
+    expect(root).not.toHaveAttribute('data-readonly');
   });
 });

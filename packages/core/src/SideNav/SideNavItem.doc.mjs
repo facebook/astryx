@@ -91,6 +91,12 @@ export const docs = {
       description: 'Enables collapse behavior for items with children. Pass true for uncontrolled (starts expanded), or an object for controlled mode.',
       default: 'false',
     },
+    {
+      name: 'size',
+      type: "'sm' | 'md' | 'lg'",
+      description: 'Size variant for the nav item row.',
+      default: "'md'",
+    },
   ],
 };
 
@@ -159,6 +165,12 @@ export const docsZh = {
       description: '启用带子项的折叠行为。传 true 为非受控模式（默认展开），或传对象用于受控模式。',
       default: 'false',
     },
+    {
+      name: 'size',
+      type: "'sm' | 'md' | 'lg'",
+      description: '导航项的尺寸变体。',
+      default: "'md'",
+    },
   ],
 };
 
@@ -179,5 +191,6 @@ export const docsDense = {
     endContent: 'Right-side content such as badges or counts.',
     children: 'Sub-items for nesting.',
     collapsible: 'Enables collapse for items w/ children. true=uncontrolled, object=controlled mode.',
+    size: "Row size variant: 'sm' | 'md' | 'lg'.",
   },
 };

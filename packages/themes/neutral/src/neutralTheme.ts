@@ -323,8 +323,11 @@ export const neutralTheme = defineTheme({
 
     // =========================================================================
     // Radius — slightly larger than default (kept as-is)
+    // --radius-none and --radius-full are always fixed and must never be
+    // scaled by a theme (see defineTheme's radius config docs) — 0 and
+    // 9999px respectively, matching @astryxdesign/core's own defaults.
     // =========================================================================
-    '--radius-none': '0.25rem',
+    '--radius-none': '0px',
     '--radius-inner': '0.375rem',
     '--radius-element': '0.625rem',
     '--radius-container': '0.75rem',

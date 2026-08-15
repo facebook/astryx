@@ -106,7 +106,7 @@ function App() {
             [
               'Y2K',
               "import {y2kTheme} from '@astryxdesign/theme-y2k'",
-              'Playful Y2K pop; periwinkle body, holographic accents, Poppins + Crimson Text.',
+              'Playful Y2K pop; periwinkle body, holographic accents, Poppins + `Crimson Text`.',
             ],
           ],
         },
@@ -142,13 +142,17 @@ function App() {
       content: [
         {
           type: 'prose',
-          text: 'Use the CLI wizard (recommended) or create manually with defineTheme. Only override tokens that differ from defaults; omitted tokens use the design system defaults.',
+          text: 'Start from a theme we ship, or write one from scratch with defineTheme. Only override tokens that differ from defaults; omitted tokens use the design system defaults.',
         },
         {
           type: 'code',
           lang: 'bash',
-          label: 'Scaffold with CLI',
-          code: 'astryx theme',
+          label: 'Browse, then copy a theme in as editable source',
+          code: 'astryx theme list\nastryx theme add stone',
+        },
+        {
+          type: 'prose',
+          text: 'For an annotated map of the whole surface — every defineTheme field, the token families, and the component override syntax, each with the CLI command that prints its reference — run `astryx theme template`. It writes `theme.template.ts` into your project to read and copy from (`astryx init --features theme` writes it as part of project setup).',
         },
       ],
     },
@@ -191,7 +195,7 @@ const myTheme = defineTheme({
             [
               'color',
               '--color-accent, --color-background-*, --color-text-*, --color-border, etc.',
-              'accent? (hex — omit for neutral-only), neutralStyle? (warm|cool|neutral), contrast? (standard|high)',
+              'accent? (hex; omit for neutral-only), neutralStyle? (warm|cool|neutral), contrast? (standard|high)',
             ],
             [
               'typography.scale',
@@ -275,13 +279,16 @@ const brandTheme = defineTheme({
     base: { borderRadius: '20px', padding: '24px' },
   },
   button: {
-    base: { borderRadius: '9999px', textTransform: 'uppercase' },
+    base: {
+      borderRadius: '9999px',
+      textTransform: 'uppercase',
+      // Some components have public CSS vars for properties that don't map
+      // to standard CSS. Set these directly. Take the name from
+      // \`astryx component <Name>\` — a var the component does not define
+      // compiles to CSS that never applies.
+      '--button-focus-offset': '3px',
+    },
     'variant:ghost': { borderWidth: '2px', borderStyle: 'solid' },
-  },
-  // Some components have public CSS vars for properties that don't map
-  // to standard CSS. Set these directly.
-  button: {
-    base: { '--button-press-scale': 'scale(0.95)' },
   },
 }`,
         },
@@ -510,7 +517,7 @@ import './themes/ocean.css';
       content: [
         {
           type: 'prose',
-          text: 'Wrap different sections in separate <Theme> providers.',
+          text: 'Wrap different sections in separate [`<Theme>`](/components/Theme) providers.',
         },
         {
           type: 'code',
@@ -536,7 +543,7 @@ import './themes/ocean.css';
       content: [
         {
           type: 'prose',
-          text: 'Use `tokenVar()` when a non-StyleX styling library wants a CSS variable reference, and `resolveThemeTokens()` when JavaScript needs token values for a specific theme and mode without React context.',
+          text: 'Use `tokenVar()` when a non-StyleX styling library wants a CSS variable reference, and `resolveThemeTokens()` when JavaScript needs token values for a specific theme and mode without React context. Themes are also registered by name when created with `defineTheme()`; call `registerTheme(theme)` for prebuilt or object-literal themes that need name-based SSR lookup.',
         },
         {
           type: 'code',
@@ -606,7 +613,7 @@ function ChartConfig() {
         },
         {
           type: 'prose',
-          text: 'Prefer CSS variables, StyleX token imports, xstyle, or className for ordinary styling. To change the theme or mode, manage state at the app level and pass it to <Theme>.',
+          text: 'Prefer CSS variables, StyleX token imports, xstyle, or className for ordinary styling. To change the theme or mode, manage state at the app level and pass it to `<Theme>`.',
         },
         {
           type: 'prose',

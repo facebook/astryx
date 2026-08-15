@@ -45,7 +45,7 @@ import type {LinkComponentType} from '../Link/types';
 import {mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
-import {getIcon} from '../Icon/globalIconRegistry';
+import {Icon} from '../Icon';
 import {usePopover} from '../Popover/usePopover';
 import {useListFocus} from '../hooks/useListFocus';
 import {useTypeahead} from '../hooks/useTypeahead';
@@ -196,6 +196,11 @@ const itemStyles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     flexShrink: 0,
+    // Sized off supporting text (12px) — exactly Icon's `xsm` box at the
+    // default type scale. Width/height stay on the token so the box and the
+    // glyph keep matching if a theme retunes the supporting step.
+    width: typeScaleVars['--text-supporting-size'],
+    height: typeScaleVars['--text-supporting-size'],
     fontSize: typeScaleVars['--text-supporting-size'],
   },
   separator: {
@@ -622,9 +627,16 @@ function BreadcrumbMenuTrigger({
           isSupporting ? itemStyles.supportingLink : itemStyles.defaultLink,
         )}>
         {children}
-        <span aria-hidden="true" {...stylex.props(itemStyles.chevron)}>
-          {getIcon('chevronDown')}
-        </span>
+        <Icon
+          icon="chevronDown"
+          // 0.75rem — the 12px supporting-text box the bare glyph already
+          // rendered at; `itemStyles.chevron` keeps that box on the token.
+          size="xsm"
+          // The chevron reads as part of the link label, so it takes the
+          // trigger's link color rather than an icon color.
+          color="inherit"
+          xstyle={itemStyles.chevron}
+        />
       </button>
 
       {popover.render(

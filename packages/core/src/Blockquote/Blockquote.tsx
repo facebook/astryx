@@ -1,7 +1,5 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-'use client';
-
 /**
  * @file Blockquote.tsx
  * @input Uses React, stylex, spacing and color tokens

@@ -37,17 +37,63 @@ describe('Avatar', () => {
     expect(innerImg).toHaveAttribute('alt', '');
   });
 
-  it('renders fallback initials through the themeable font-size var, not a bare px literal', () => {
+  it('renders fallback initials at the proportional size via a StyleX class, not an inline property', () => {
     render(<Avatar name="Ada Lovelace" size="sm" data-testid="a" />);
     const initials = screen.getByText('AL');
-    // The seam: the dynamic font size resolves to the Avatar-scoped var (with
-    // the proportional `size × 0.4` default baked in as the fallback), so a
-    // theme can re-scope it per size. A regression to a bare px literal would
-    // break theming.
+    // The default proportional size (sm = 24 × 0.4 = 9.6px) is fed to StyleX as
+    // a dynamic value: StyleX applies `font-size` through a class and sets only
+    // the computed value inline (as a custom property). Because the property
+    // lands via a class, a theme's `.astryx-avatar-fallback.<size>` rule in the
+    // theme layer overrides it per size tier — no internal var seam needed.
     const style = initials.getAttribute('style') ?? '';
-    expect(style).toContain('var(--_avatar-fallback-font-size,');
-    // Default still reproduces the proportional scale (sm = 24 × 0.4 = 9.6px).
-    expect(style).toMatch(/var\(--_avatar-fallback-font-size,\s*9\.6\d*px\)/);
+    expect(style).toMatch(/9\.6\d*px/);
+    // Regression guard: the seam must NOT reintroduce the removed internal var.
+    expect(style).not.toContain('--_avatar-fallback-font-size');
+  });
+
+  it('marks the fallback surface with the stable theming class (initials and icon)', () => {
+    // The background is themed directly on `.astryx-avatar-fallback`, so both
+    // the initials and the default-icon fallback must carry the class.
+    const {rerender} = render(<Avatar name="Ada Lovelace" />);
+    expect(screen.getByText('AL').className).toContain(
+      'astryx-avatar-fallback',
+    );
+
+    rerender(<Avatar />);
+    const icon = document.querySelector('.astryx-avatar-fallback');
+    expect(icon).not.toBeNull();
+    expect(icon?.querySelector('svg')).not.toBeNull();
+  });
+
+  it('puts the avatar box on the element that carries the theme target', () => {
+    // T7: `.astryx-avatar` documents a `size` visual prop, so the width and
+    // height that prop selects on must live on the targeted element — a theme
+    // rule that resizes the target has to resize the whole avatar, not leave a
+    // fixed-size circle inside a grown box.
+    render(<Avatar name="Ada Lovelace" size="lg" data-testid="a" />);
+    const root = screen.getByTestId('a');
+    expect(root.className).toContain('astryx-avatar');
+    const rootStyle = root.getAttribute('style') ?? '';
+    expect(rootStyle).toContain('48px');
+
+    const content = root.firstElementChild as HTMLElement;
+    expect(content.getAttribute('style') ?? '').not.toContain('48px');
+  });
+
+  it('keeps the box on the root for an interactive avatar too', () => {
+    render(<Avatar name="Ada" size="lg" href="/ada" />);
+    const link = screen.getByRole('link', {name: 'Ada'});
+    expect(link.getAttribute('style') ?? '').toContain('48px');
+  });
+
+  it('does not split an emoji surrogate pair when generating initials', () => {
+    render(<Avatar name="😀 Ada" data-testid="avatar" />);
+    expect(screen.getByTestId('avatar')).toHaveTextContent('😀A');
+  });
+
+  it('preserves a complete grapheme when generating initials', () => {
+    render(<Avatar name="🇬🇧 Ada" data-testid="avatar" />);
+    expect(screen.getByTestId('avatar')).toHaveTextContent('🇬🇧A');
   });
 
   it('retries a new src after a previous src failed to load', () => {
@@ -156,6 +202,36 @@ describe('Avatar', () => {
       const el = screen.getByTestId('a');
       expect(el).toHaveAttribute('aria-hidden', 'true');
       expect(el).not.toHaveAttribute('aria-label');
+    });
+  });
+
+  describe('a whitespace-only name carries no identity', () => {
+    it('falls through to the default icon instead of an empty plate', () => {
+      render(<Avatar name="   " data-testid="a" />);
+      const el = screen.getByTestId('a');
+      expect(el.querySelector('svg')).not.toBeNull();
+      expect(el).toHaveTextContent('');
+    });
+
+    it('is decorative rather than a role="img" with a blank name', () => {
+      render(<Avatar name="   " data-testid="a" />);
+      const el = screen.getByTestId('a');
+      expect(el).toHaveAttribute('aria-hidden', 'true');
+      expect(el).not.toHaveAttribute('aria-label');
+    });
+
+    it('keeps a meaningful alt as the accessible name and still shows the icon', () => {
+      render(<Avatar name="   " alt="Profile photo" data-testid="a" />);
+      const el = screen.getByRole('img', {name: 'Profile photo'});
+      expect(el).toBe(screen.getByTestId('a'));
+      expect(el.querySelector('svg')).not.toBeNull();
+    });
+
+    it('treats a whitespace-only alt the same way', () => {
+      render(<Avatar alt="  " name="Ada Lovelace" data-testid="a" />);
+      expect(
+        screen.getByRole('img', {name: 'Ada Lovelace'}),
+      ).toBeInTheDocument();
     });
   });
 

@@ -44,6 +44,7 @@ import {useContainerReveal} from '../hooks/useContainerReveal';
 import type {BaseProps} from '../BaseProps';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {useTranslator} from '../i18n';
 
 export interface ThumbnailProps extends BaseProps<HTMLDivElement> {
@@ -159,14 +160,6 @@ const styles = stylex.create({
   },
   interactive: {
     cursor: 'pointer',
-    outline: {
-      default: null,
-      ':has(:focus-visible)': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':has(:focus-visible)': '2px',
-    },
   },
   // Hover/pressed overlay — the exact same treatment as ClickableCard and
   // SelectableCard. A transparent `::after` tints on hover/press instead of
@@ -402,7 +395,7 @@ export function Thumbnail({
       {...props}>
       <div
         {...mergeProps(
-          stylex.props(
+          focusOutlineProps.focusWithin(
             styles.imageContainer,
             isInteractive && styles.interactive,
             isInteractive && styles.overlay,

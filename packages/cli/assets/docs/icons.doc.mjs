@@ -29,6 +29,8 @@ export const docs = {
             ['chevronDown', 'Dropdown triggers, expand/collapse'],
             ['chevronLeft', 'Navigate back, previous'],
             ['chevronRight', 'Navigate forward, next'],
+            ['chevronsLeft', 'Jump to first, skip to start'],
+            ['chevronsRight', 'Jump to last, skip to end'],
             ['check', 'Checkbox checked, confirm'],
             ['success', 'Success status indicator'],
             ['error', 'Error status indicator'],
@@ -81,19 +83,21 @@ import { HeartIcon } from 'lucide-react';
       content: [
         {
           type: 'prose',
-          text: 'Themes can replace the default SVGs for any semantic name using registerIcons(). This lets you swap the entire icon set (e.g. heroicons \u2192 lucide) without touching component code.',
+          text: 'Themes can replace the default SVGs for any semantic name with the `icons` field in `defineTheme()`. This lets you swap the icon set (e.g. heroicons → lucide) without touching component code, and keeps lookup scoped to the active theme instead of mutating global defaults.',
         },
         {
           type: 'code',
           lang: 'tsx',
-          label: 'Registering theme icons',
-          code: `import { registerIcons } from '@astryxdesign/core/Icon';
-import { XMarkIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
+          label: 'Theme-scoped icons',
+          code: `import {defineTheme} from '@astryxdesign/core/theme';
+import {XMarkIcon, ChevronDownIcon} from '@heroicons/react/24/outline';
 
-registerIcons({
-  close: <XMarkIcon />,
-  chevronDown: <ChevronDownIcon />,
-  // ... override as many as needed
+export const brandTheme = defineTheme({
+  name: 'brand',
+  icons: {
+    close: <XMarkIcon />,
+    chevronDown: <ChevronDownIcon />,
+  },
 });`,
         },
       ],
@@ -110,9 +114,9 @@ registerIcons({
           type: 'list',
           style: 'ordered',
           items: [
-            'Add the name to IconName type in packages/core/src/Icon/globalIconRegistry.tsx',
-            'Add the default SVG to packages/core/src/Icon/defaultIcons.tsx',
-            'Add a row to the Available Names table in packages/cli/docs/icons.doc.mjs',
+            'Add the name to IconName type in `packages/core/src/Icon/globalIconRegistry.tsx`',
+            'Add the default SVG to `packages/core/src/Icon/defaultIcons.tsx`',
+            'Add a row to the Available Names table in `packages/cli/assets/docs/icons.doc.mjs`',
           ],
         },
       ],

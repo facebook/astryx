@@ -65,6 +65,19 @@ const TARGETS = {
       '@astryxdesign/core': [path.join(ROOT, 'packages/core/src')],
     },
   },
+  richtext: {
+    src: path.resolve(ROOT, 'packages/richtext/src'),
+    dist: path.resolve(ROOT, 'packages/richtext/dist'),
+    outFile: 'richtext.css',
+    banner:
+      'Astryx Rich Text Pre-compiled StyleX CSS — Lexical editor and viewer',
+    // richtext imports @astryxdesign/core/theme/tokens.stylex; point the
+    // resolver at core's source so the cross-package token reference resolves.
+    aliases: {
+      '@astryxdesign/core/*': [path.join(ROOT, 'packages/core/src/*')],
+      '@astryxdesign/core': [path.join(ROOT, 'packages/core/src')],
+    },
+  },
 };
 
 function parseTarget() {

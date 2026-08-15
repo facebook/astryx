@@ -13,7 +13,11 @@ import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import * as stylex from '@stylexjs/stylex';
 import {TestIcon} from '../__tests__/TestIcon';
+import {Theme} from '../theme/Theme';
+import {defineTheme} from '../theme/defineTheme';
+import {resetThemes} from '../theme/themeRegistry';
 import {Icon} from './Icon';
+import {resetIcons} from './globalIconRegistry';
 
 describe('Icon', () => {
   it('renders the icon component', () => {
@@ -167,6 +171,25 @@ describe('Icon', () => {
   it('applies aria-hidden by default in string (registry) mode', () => {
     render(<Icon icon="check" data-testid="icon" />);
     expect(screen.getByTestId('icon')).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  it('resolves string-mode icons from the nearest Theme without leaking globally', () => {
+    resetIcons();
+    resetThemes();
+    const outer = defineTheme({name: 'outer', icons: {check: 'outer-check'}});
+    const inner = defineTheme({name: 'inner', icons: {check: 'inner-check'}});
+
+    render(
+      <Theme theme={outer}>
+        <Icon icon="check" data-testid="outer" />
+        <Theme theme={inner}>
+          <Icon icon="check" data-testid="inner" />
+        </Theme>
+      </Theme>,
+    );
+
+    expect(screen.getByTestId('outer')).toHaveTextContent('outer-check');
+    expect(screen.getByTestId('inner')).toHaveTextContent('inner-check');
   });
 
   it('lets a string-mode icon be made meaningful by overriding aria-hidden', () => {

@@ -28,7 +28,7 @@ import {usePopover} from '../Popover/usePopover';
 import {useMenuHover} from '../hooks/useMenuHover';
 import {useListFocus} from '../hooks/useListFocus';
 import {useTypeahead} from '../hooks/useTypeahead';
-import {getIcon} from '../Icon/globalIconRegistry';
+import {Icon} from '../Icon';
 import {mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {navItemStyles} from '../NavItem/navItemStyles.stylex';
@@ -37,6 +37,7 @@ import {useTopNavRenderMode} from './TopNavRenderContext';
 import {useAppShellMobile} from '../AppShell/AppShellMobileContext';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {
   colorVars,
   spacingVars,
@@ -74,14 +75,6 @@ const styles = stylex.create({
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
     },
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': '2px',
-    },
     border: 'none',
     fontFamily: 'inherit',
   },
@@ -92,6 +85,14 @@ const styles = stylex.create({
   chevron: {
     display: 'inline-flex',
     alignItems: 'center',
+    // The registry chevron is a 1em SVG, so it has always rendered at the
+    // trigger's own font size (--text-label-size). Icon's size box would repin
+    // it to a fixed rem (the nearest, sm, is 1rem = 16px vs the 14px here), so
+    // hold it on the inherited em: same pixels, and still tracks the type
+    // scale when a theme changes the label size.
+    width: '1em',
+    height: '1em',
+    fontSize: 'inherit',
     transitionProperty: 'transform',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
@@ -105,9 +106,6 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-1'],
     minWidth: 280,
     padding: spacingVars['--spacing-1'],
-  },
-  menuOffset: {
-    marginBlockStart: spacingVars['--spacing-1'],
   },
   menuItem: {
     display: 'flex',
@@ -128,14 +126,6 @@ const styles = stylex.create({
       },
     },
     border: 'none',
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': '2px',
-    },
   },
   menuItemIcon: {
     display: 'flex',
@@ -179,6 +169,11 @@ const drawerStyles = stylex.create({
   },
   chevron: {
     display: 'inline-flex',
+    // Same em pin as styles.chevron above — the drawer header inherits
+    // --text-label-size from navItemStyles.item.
+    width: '1em',
+    height: '1em',
+    fontSize: 'inherit',
     transitionProperty: 'transform',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
@@ -345,10 +340,9 @@ export function TopNavMenu({
     // wrapper would announce an unnamed dialog around the menu and make the
     // trigger claim aria-haspopup="dialog" for menu content (see TabMenu).
     role: 'none',
-    xstyle: styles.menuOffset,
   });
 
-  const {triggerProps, contentProps, menuRef, setTriggerEl} =
+  const {triggerProps, contentProps, menuRef, setTriggerEl, close} =
     useMenuHover<HTMLDivElement>({
       show: popover.show,
       hide: popover.hide,
@@ -356,6 +350,9 @@ export function TopNavMenu({
       isEnabled: true,
       showDelay: delay,
       hideDelay,
+      // Trigger sits outside an auto popover; the invoker relationship exempts
+      // it from light dismiss.
+      popoverId: popover.id,
     });
 
   const setTriggerRef = mergeRefs<HTMLButtonElement>(
@@ -374,7 +371,8 @@ export function TopNavMenu({
     useListFocus<HTMLDivElement>({
       itemSelector: '[role="menuitem"]',
       hasRovingTabIndex: true,
-      onEscape: popover.hide,
+      // Not popover.hide: Escape must also restore focus to the trigger.
+      onEscape: close,
     });
 
   // First-character typeahead over the menu items (menus-11).
@@ -438,15 +436,20 @@ export function TopNavMenu({
           onClick={() => setDrawerExpanded(v => !v)}
           aria-expanded={drawerExpanded}
           aria-controls={`${menuId}-items`}
-          {...stylex.props(navItemStyles.item, drawerStyles.header)}>
+          {...focusOutlineProps.focusVisible(
+            navItemStyles.item,
+            drawerStyles.header,
+          )}>
           {label}
-          <span
-            {...stylex.props(
+          <Icon
+            icon="chevronDown"
+            size="sm"
+            color="inherit"
+            xstyle={[
               drawerStyles.chevron,
               drawerExpanded && drawerStyles.chevronExpanded,
-            )}>
-            {getIcon('chevronDown')}
-          </span>
+            ]}
+          />
         </button>
         <div
           id={`${menuId}-items`}
@@ -463,7 +466,10 @@ export function TopNavMenu({
                   item.onClick?.();
                   closeMobileNav();
                 }}
-                {...stylex.props(navItemStyles.item, drawerStyles.item)}>
+                {...focusOutlineProps.focusVisible(
+                  navItemStyles.item,
+                  drawerStyles.item,
+                )}>
                 {item.icon && (
                   <span {...stylex.props(drawerStyles.itemIcon)}>
                     {item.icon}
@@ -495,16 +501,18 @@ export function TopNavMenu({
         {...triggerProps}
         {...mergeProps(
           themeProps('top-nav-menu'),
-          stylex.props(styles.trigger, popover.isOpen && styles.triggerOpen),
+          focusOutlineProps.focusVisible(
+            styles.trigger,
+            popover.isOpen && styles.triggerOpen,
+          ),
         )}>
         {label}
-        <span
-          {...stylex.props(
-            styles.chevron,
-            popover.isOpen && styles.chevronOpen,
-          )}>
-          {getIcon('chevronDown')}
-        </span>
+        <Icon
+          icon="chevronDown"
+          size="sm"
+          color="inherit"
+          xstyle={[styles.chevron, popover.isOpen && styles.chevronOpen]}
+        />
       </button>
       {popover.render(
         <div
@@ -529,7 +537,7 @@ export function TopNavMenu({
                 tabIndex={-1}
                 href={item.href}
                 onClick={item.onClick}
-                {...stylex.props(styles.menuItem)}>
+                {...focusOutlineProps.focusVisible(styles.menuItem)}>
                 <div {...stylex.props(styles.menuItemIcon)}>{item.icon}</div>
                 <div {...stylex.props(styles.menuItemContent)}>
                   <span {...stylex.props(styles.menuItemTitle)}>
@@ -548,7 +556,7 @@ export function TopNavMenu({
         {
           placement: 'below',
           alignment: slot,
-          xstyle: styles.menuOffset,
+          offset: spacingVars['--spacing-1'],
         },
       )}
     </>

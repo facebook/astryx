@@ -163,6 +163,8 @@ export function CommandPaletteInput({
   onKeyDown,
   ref,
   xstyle,
+  className,
+  style,
   ...props
 }: CommandPaletteInputProps) {
   const t = useTranslator();
@@ -207,6 +209,8 @@ export function CommandPaletteInput({
       {...mergeProps(
         themeProps('command-palette-input'),
         stylex.props(styles.wrapper, xstyle),
+        className,
+        style,
       )}>
       <span {...stylex.props(styles.icon)}>
         <Icon icon="search" size="sm" color="inherit" />

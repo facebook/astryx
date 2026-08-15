@@ -20,6 +20,7 @@ import {CLI_ROOT} from '../../../foundation/fs/paths.mjs';
 import {PathSafetyError} from '../../../foundation/fs/path-safety.mjs';
 import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
 import {installAgentDocs} from '../../../foundation/agent-docs/agent-docs.mjs';
+import {themeTemplate} from '../../theme/template/template.mjs';
 import {listTemplates} from '../../template/template.mjs';
 import {AstryxError} from '../../error.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
@@ -44,15 +45,17 @@ export function getNextSteps(invocation) {
   return [
     '',
     '  Next steps:',
-    "    1. Import base styles: import '@astryxdesign/core/reset.css'",
+    '    1. Ensure the @stylexjs/stylex peer dependency is met',
+    `       (run \`${invocation} doctor\` to verify)`,
+    "    2. Import base styles: import '@astryxdesign/core/reset.css'",
     "       and import '@astryxdesign/core/astryx.css'",
-    "    2. Import components: import { Button } from '@astryxdesign/core'",
-    '    3. Optionally add a theme (use the pre-built path for performance):',
+    "    3. Import components: import { Button } from '@astryxdesign/core'",
+    '    4. Optionally add a theme (use the pre-built path for performance):',
     "       import { neutralTheme } from '@astryxdesign/theme-neutral/built'",
     "       import '@astryxdesign/theme-neutral/theme.css'",
     '       <Theme theme={neutralTheme}>...</Theme>',
     `       For custom themes, run \`${invocation} theme build <file>\` to generate the built artifacts.`,
-    `    4. ${invocation} --help for all commands`,
+    `    5. ${invocation} --help for all commands`,
     '',
   ];
 }
@@ -102,6 +105,36 @@ function applyAgents(cwd, options, invocation, data) {
     );
     data.docsError = {kind: 'install-failed'};
   }
+}
+
+/**
+ * Write the annotated theme template, via the same leaf `astryx theme template`
+ * uses — init is a convenience wrapper over the theme command, not a second
+ * implementation of it.
+ *
+ * @param {string} cwd
+ * @param {string} invocation
+ * @param {import('../init.type.mjs').InitRunData} data
+ */
+function applyTheme(cwd, invocation, data) {
+  data.theme = true;
+  try {
+    const {path: written, written: didWrite} = themeTemplate({cwd}).data;
+    data.themeTemplate = didWrite ? 'created' : 'skipped';
+    data.themeTemplatePath = didWrite ? written : null;
+    logger.log(
+      didWrite
+        ? `✓ Theme template written → ${written}`
+        : `• ${written} already exists — left as is.`,
+    );
+  } catch {
+    // Soft failure, like agent docs: the guidance below is still useful.
+    data.themeTemplate = 'failed';
+    logger.error('Could not write the theme template.');
+  }
+  logger.log(
+    `  Copy it to your theme file and edit, or run \`${invocation} theme add <slug>\` to start from a shipped theme (\`${invocation} theme list\` to browse).`,
+  );
 }
 
 /**
@@ -208,18 +241,15 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
       docsWritten: [],
       docsError: null,
       theme: false,
+      themeTemplate: null,
+      themeTemplatePath: null,
       template: null,
       templatePath: null,
       nextSteps: false,
     };
     for (const feature of features) {
       if (feature === 'agents') applyAgents(cwd, options, invocation, data);
-      if (feature === 'theme') {
-        logger.log(
-          `✓ For a custom theme, run \`${invocation} theme\` (browse) or \`${invocation} theme add <slug>\` (scaffold).`,
-        );
-        data.theme = true;
-      }
+      if (feature === 'theme') applyTheme(cwd, invocation, data);
       if (feature === 'template') {
         applyTemplate(cwd, {templateName: options.templateName}, invocation, data);
       }
@@ -236,6 +266,8 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
     docsWritten: [],
     docsError: null,
     theme: false,
+    themeTemplate: null,
+    themeTemplatePath: null,
     template: null,
     templatePath: null,
     nextSteps: true,

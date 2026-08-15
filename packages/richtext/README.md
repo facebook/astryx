@@ -1,23 +1,62 @@
 # @astryxdesign/richtext
 
-Astryx rich text — a Lexical-based rich text editor and viewer.
+Astryx rich text — a Lexical-based rich text editor and read-only viewer, styled
+with Astryx design tokens.
 
-> **Status: empty scaffold.** This package is bootstrapped but does not export
-> anything yet. It will house the rich text editor and viewer that currently
-> live in `@astryxdesign/lab`; that code will move here without a fresh package
-> rollout.
+```tsx
+import {RichTextEditor, RichTextView} from '@astryxdesign/richtext';
 
-It will ship to npm **only under the `@canary` dist-tag** — there is never a
-stable (`latest`) release yet.
+<RichTextEditor label="Notes" onChange={setState} />;
+<RichTextView label="Notes" value={serializedState} />;
+```
 
-## Trying richtext in your own project (canary)
+The editor is deliberately minimal and extensible: pass `nodes` and `plugins` to
+layer richer behaviour (toolbars, mentions, hover cards) on top without forking.
+`RichTextEditorToolbar` is a composable formatting toolbar that drops into the
+editor's `plugins` slot, and `markdownToEditorStateJSON` /
+`editorStateJSONToMarkdown` convert Markdown to/from serialized editor state
+headlessly (no mounted editor required). It consumes `@astryxdesign/core` theme
+tokens directly (StyleX build mirrors `@astryxdesign/lab` / `@astryxdesign/charts`).
 
-Once components land, `@astryxdesign/richtext` will be published **only** under
-the `@canary` dist-tag, so you must request that tag explicitly. There is no
-`latest` version to install.
+`lexical` and the `@lexical/*` packages are **optional** peer dependencies —
+install them alongside richtext to use the editor. See the RFC:
+[facebook/astryx#3899](https://github.com/facebook/astryx/issues/3899).
+
+It ships to npm **only under the `@canary` dist-tag** — there is never a stable
+(`latest`) release yet.
+
+> Note: this package is the successor to the experimental `RichTextEditor` that
+> used to live in `@astryxdesign/lab`; that code has moved here so it can be
+> canaried independently (e.g. into EPS/Nest) without a fresh package rollout.
+
+## Status
+
+Under active development. The editor, view, composable toolbar, and Markdown
+serializers are in place; API and visuals are still being refined. The goal is
+graduation to `@astryxdesign/core` after the design/API stabilizes.
+
+## Usage
+
+Inside the monorepo (storybook/sandbox), imports resolve via pnpm workspaces:
+
+```tsx
+import {RichTextEditor, RichTextView} from '@astryxdesign/richtext';
+import '@astryxdesign/core/astryx.css';
+import '@astryxdesign/richtext/richtext.css';
+```
+
+Interactive examples live in the storybook app under **Lab/RichTextEditor**
+(`apps/storybook/stories/RichTextEditor.stories.tsx`).
+
+### Trying richtext in your own project (canary)
+
+`@astryxdesign/richtext` is published **only** under the `@canary` dist-tag, so
+you must request that tag explicitly. There is no `latest` version to install.
 
 ```bash
 npm install @astryxdesign/richtext@canary @astryxdesign/core@canary
+# plus the optional lexical peers you use:
+npm install lexical @lexical/react @lexical/markdown @lexical/rich-text
 ```
 
 > Canary builds track the latest commit on `main` (`0.x.y-canary.<sha>`). They
@@ -37,28 +76,9 @@ checkout only (never in git) to publish the `@canary` tag. The committed
 
 When maintainers are ready to promote richtext to a stable public release:
 
-1. Move the editor/view source from `@astryxdesign/lab` into `src/` and export
-   it from `src/index.ts`. Add the StyleX CSS build wiring (see below).
-2. Remove `"private": true` **and** the `"astryx": { "canaryOnly": true }`
+1. Remove `"private": true` **and** the `"astryx": { "canaryOnly": true }`
    marker from `package.json`.
-3. Add a changeset (`pnpm changeset`) selecting `@astryxdesign/richtext` so the
+2. Add a changeset (`pnpm changeset`) selecting `@astryxdesign/richtext` so the
    release workflow versions and publishes it to the `latest` dist-tag.
-4. The stable (`latest`) release job (`.github/workflows/release.yml`) will then
+3. The stable (`latest`) release job (`.github/workflows/release.yml`) will then
    include richtext on the next release.
-
-### Adding the StyleX CSS build (deferred until the first component)
-
-This scaffold intentionally omits the `build:css` step. `build-css.mjs` exits
-with an error ("No StyleX rules found") when a package has zero StyleX
-components, which would break CI for an empty package. When the first StyleX
-component lands:
-
-1. Register a `richtext` target in `scripts/build-css.mjs` (mirror the `lab` /
-   `charts` entries — same core token alias).
-2. Add `"build:css": "node ../../scripts/build-css.mjs --package richtext"` to
-   the `scripts` block and append `&& pnpm build:css` to the `build` script
-   (before `check-no-dev-jsx`).
-3. Add a `"./richtext.css"` entry to `exports` and add `richtext.css` under
-   `files` if needed.
-
-The babel config is already StyleX-ready, so this is a small, mechanical add.

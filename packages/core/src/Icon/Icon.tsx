@@ -26,6 +26,7 @@ import React, {type ComponentType, type SVGProps} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
+import {useThemeName} from '../theme/useTheme';
 import {getIcon} from './globalIconRegistry';
 import type {IconName} from './globalIconRegistry';
 import {mergeProps} from '../utils';
@@ -379,7 +380,8 @@ function IconFromRegistry({
   xstyle?: StyleXStyles;
   spanProps?: Omit<SVGProps<SVGSVGElement>, 'ref' | 'color'>;
 }) {
-  const resolvedIcon = getIcon(name);
+  const themeName = useThemeName();
+  const resolvedIcon = getIcon(name, themeName);
 
   if (resolvedIcon == null) {
     return null;

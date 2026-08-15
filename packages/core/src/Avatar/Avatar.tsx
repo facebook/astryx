@@ -31,7 +31,9 @@ import {AvatarSizeContext} from './AvatarSizeContext';
 import {useAvatarGroup} from '../AvatarGroup/AvatarGroupContext';
 import {mergeProps, mergeRefs} from '../utils';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {useTooltip} from '../Tooltip/useTooltip';
+import {useDevWarning} from '../hooks/useDevWarning';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
 import {useTranslator} from '../i18n';
@@ -111,16 +113,17 @@ const styles = stylex.create({
     position: 'relative',
     display: 'inline-flex',
     flexShrink: 0,
-    // The wrapper is not clipped (so the status dot can overflow), so it must be
-    // rounded itself: a themed fallback background lands on `.astryx-avatar` (the
-    // class-bearing wrapper) as well as the internal var, and an unrounded
-    // wrapper would show that fill as square corners behind the circular content.
+    // The wrapper carries the avatar's box as well as its radius, so a theme
+    // rule on the `.astryx-avatar` target reaches both: the size the `size`
+    // visual prop selects on is set here, and the content below fills it.
     borderRadius: radiusVars['--radius-full'],
   },
   content: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+    width: '100%',
+    height: '100%',
     borderRadius: radiusVars['--radius-full'],
     overflow: 'hidden',
     userSelect: 'none',
@@ -136,14 +139,15 @@ const styles = stylex.create({
     justifyContent: 'center',
     width: '100%',
     height: '100%',
-    // Fallback surface (initials + default icon). Each property reads an
-    // Avatar-scoped internal var so a theme can re-scope the fallback wash and
-    // initials weight/color without forking; the defaults reproduce today's
-    // exact output. See derivedVarRegistry (avatar) + Avatar.doc.mjs theming.
-    backgroundColor: `var(--_avatar-fallback-background, ${colorVars['--color-neutral']})`,
-    color: `var(--_avatar-fallback-color, ${colorVars['--color-text-secondary']})`,
+    // Fallback surface (initials + default icon). Background, text color,
+    // weight, and per-size font size are all themed directly via the stable
+    // `.astryx-avatar-fallback` class target (font size through its size
+    // variant, `.astryx-avatar-fallback.<size>`), so the defaults here are
+    // plain values with no internal-var seam. See Avatar.doc.mjs theming.
+    backgroundColor: colorVars['--color-neutral'],
+    color: colorVars['--color-text-secondary'],
     fontFamily: typographyVars['--font-family-body'],
-    fontWeight: `var(--_avatar-fallback-font-weight, ${fontWeightVars['--font-weight-medium']})`,
+    fontWeight: fontWeightVars['--font-weight-medium'],
     textTransform: 'uppercase',
   },
   status: {
@@ -152,16 +156,6 @@ const styles = stylex.create({
   // Visible focus ring for the name-tooltip tab stop, matching the repo-wide
   // focus-visible outline treatment (see Timestamp, Token, Thumbnail). Only
   // applied when a tooltip is active so keyboard users can reveal it.
-  focusable: {
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': '2px',
-    },
-  },
   // Reset the intrinsic styling of the interactive element (<a>/<button>) so it
   // is a transparent, correctly-sized wrapper around the avatar visuals. The
   // element carries the focus-visible accent ring for keyboard users.
@@ -178,22 +172,6 @@ const styles = stylex.create({
     cursor: 'pointer',
     // Match the avatar's circular shape so the focus ring hugs it.
     borderRadius: radiusVars['--radius-full'],
-    outlineWidth: {
-      default: 0,
-      ':focus-visible': 2,
-    },
-    outlineStyle: {
-      default: 'none',
-      ':focus-visible': 'solid',
-    },
-    outlineColor: {
-      default: null,
-      ':focus-visible': colorVars['--color-accent'],
-    },
-    outlineOffset: {
-      default: 0,
-      ':focus-visible': 2,
-    },
   },
 });
 
@@ -205,13 +183,12 @@ const dynamicStyles = stylex.create({
     width: size,
     height: size,
   }),
-  // Initials font size defaults to the proportional `size × ratio` scale but is
-  // reachable via the `--_avatar-fallback-font-size` derived var, so a theme can
-  // set a per-size type scale (e.g. `components.avatar['size:sm']`).
+  // Initials font size defaults to the proportional `size × ratio` scale. It's
+  // a StyleX dynamic style, so the value lands via a class (not an inline
+  // property) — a theme's `.astryx-avatar-fallback.<size>` rule in the theme
+  // layer overrides it per size tier, no internal var needed.
   fontSize: (size: number) => ({
-    fontSize: `var(--_avatar-fallback-font-size, ${
-      size * INITIALS_FONT_SIZE_RATIO
-    }px)`,
+    fontSize: `${size * INITIALS_FONT_SIZE_RATIO}px`,
   }),
   statusPosition: (size: number) => ({
     bottom: size * CIRCLE_EDGE_OFFSET_RATIO,
@@ -276,6 +253,9 @@ export interface AvatarProps extends BaseProps<HTMLDivElement> {
   /**
    * The size of the avatar. A named size (`xsm` 20px, `sm` 24px, `md` 36px,
    * `lg` 48px, `xl` 128px) or a specific pixel value.
+   *
+   * Inside an `AvatarGroup` the group's `size` wins: a group sizes its members
+   * uniformly, so this prop is ignored there.
    * @default 'md'
    */
   size?: AvatarSize;
@@ -338,6 +318,25 @@ export interface AvatarProps extends BaseProps<HTMLDivElement> {
 }
 
 /**
+ * Reuse a single segmenter when the runtime supports Intl.Segmenter.
+ */
+const graphemeSegmenter =
+  typeof Intl.Segmenter === 'function'
+    ? new Intl.Segmenter(undefined, {granularity: 'grapheme'})
+    : null;
+
+/**
+ * Return the first user-perceived character, with a code-point fallback.
+ */
+function firstGrapheme(word: string): string {
+  if (graphemeSegmenter) {
+    return [...graphemeSegmenter.segment(word)][0]?.segment ?? '';
+  }
+
+  return [...word][0] ?? '';
+}
+
+/**
  * Generates initials from a name string.
  * Takes the first letter of the first two words.
  * @example
@@ -352,9 +351,11 @@ function getInitials(name: string): string {
     return '';
   }
   if (words.length === 1) {
-    return words[0].charAt(0).toUpperCase();
+    return firstGrapheme(words[0]).toUpperCase();
   }
-  return (words[0].charAt(0) + words[words.length - 1].charAt(0)).toUpperCase();
+  return (
+    firstGrapheme(words[0]) + firstGrapheme(words[words.length - 1])
+  ).toUpperCase();
 }
 
 /**
@@ -401,7 +402,7 @@ function DefaultIcon({size}: {size: number}) {
  * ```
  * <Avatar src="/user.jpg" name="John Doe" />
  * <Avatar name="Jane Smith" size="xl" />
- * <Avatar src="/user.jpg" status={<OnlineIndicator />} />
+ * <Avatar src="/user.jpg" status={<AvatarStatusDot variant="success" label="Online" />} />
  * <Avatar name="jsmith" tooltip="Jane Smith, Staff Engineer" />
  * <Avatar name="Jane" tooltip={false} />
  * <Avatar src="/user.jpg" name="John Doe" href="/users/john" />
@@ -438,8 +439,13 @@ export function Avatar({
   const showImage = src && erroredSrc !== src;
   const showFallbackImage =
     !showImage && fallbackSrc && erroredFallbackSrc !== fallbackSrc;
-  const showInitials = !showImage && !showFallbackImage && name;
-  const showIcon = !showImage && !showFallbackImage && !name;
+  // A whitespace-only string carries no identity. Without this it produces no
+  // initials (getInitials trims to nothing) and no default icon (a space is
+  // truthy), leaving an empty plate behind a blank accessible name.
+  const meaningfulName = name?.trim() ? name : undefined;
+  const meaningfulAlt = alt?.trim() ? alt : undefined;
+  const showInitials = !showImage && !showFallbackImage && meaningfulName;
+  const showIcon = !showImage && !showFallbackImage && !meaningfulName;
 
   // A meaningful accessible name comes from `alt`/`name`, composed with the
   // status element's `label` when one is present ("Jane Doe, Online") — the
@@ -450,7 +456,7 @@ export function Avatar({
   // it as `presentation`/`aria-hidden` rather than announcing a meaningless
   // generic "Avatar" (obs-9).
   const t = useTranslator();
-  const nameLabel = alt || name;
+  const nameLabel = meaningfulAlt || meaningfulName;
   const statusLabel = getStatusLabel(status);
   const accessibleName =
     nameLabel && statusLabel
@@ -475,7 +481,7 @@ export function Avatar({
       ? undefined
       : typeof tooltip === 'string'
         ? tooltip
-        : name;
+        : meaningfulName;
   const trimmedTooltip = tooltipContent?.trim();
   const showTooltip = trimmedTooltip != null && trimmedTooltip !== '';
   // Whether the tooltip text is a consumer-authored override (a custom string)
@@ -517,20 +523,19 @@ export function Avatar({
   const LinkComponent = useLinkComponent(as);
 
   // An interactive control with no accessible name is an unacceptable control
-  // name. Warn in the same client-safe way sibling components do (Field,
-  // Timestamp, Popover) — a plain `console.warn`, never gated on `process.env`
-  // (which is not available on the client in this codebase).
-  if (isInteractive && !accessibleName) {
-    console.warn(
-      'Avatar: an interactive avatar (with `href` or `onClick`) needs a ' +
-        'meaningful accessible name. Pass `alt` or `name`.',
-    );
-  }
+  // name. `useDevWarning` is the shared guardrail: it warns once per mount
+  // rather than on every render, and compiles out of production builds.
+  useDevWarning(
+    'Avatar',
+    'an interactive avatar (with `href` or `onClick`) needs a meaningful ' +
+      'accessible name. Pass `alt` or `name`.',
+    isInteractive && !accessibleName,
+  );
 
   // The inner visuals are identical across the static and interactive variants.
   const visualContent = (
     <>
-      <div {...stylex.props(styles.content, dynamicStyles.size(numericSize))}>
+      <div {...stylex.props(styles.content)}>
         {showImage && (
           <img
             src={src}
@@ -549,15 +554,22 @@ export function Avatar({
         )}
         {showInitials && (
           <div
-            {...stylex.props(
-              styles.fallback,
-              dynamicStyles.fontSize(numericSize),
+            {...mergeProps(
+              themeProps('avatar-fallback', {size: resolvedSize}),
+              stylex.props(
+                styles.fallback,
+                dynamicStyles.fontSize(numericSize),
+              ),
             )}>
-            {getInitials(name)}
+            {getInitials(meaningfulName)}
           </div>
         )}
         {showIcon && (
-          <div {...stylex.props(styles.fallback)}>
+          <div
+            {...mergeProps(
+              themeProps('avatar-fallback', {size: resolvedSize}),
+              stylex.props(styles.fallback),
+            )}>
             <DefaultIcon size={numericSize} />
           </div>
         )}
@@ -580,10 +592,10 @@ export function Avatar({
   // `<a>`/`<button>` and the static `<div>` carry the exact same box.
   const rootStylexProps = mergeProps(
     themeProps('avatar', {size: resolvedSize}),
-    stylex.props(
+    focusOutlineProps.focusVisible(
       styles.wrapper,
+      dynamicStyles.size(numericSize),
       isInteractive && styles.interactive,
-      !isInteractive && showTooltip && !avatarGroup && styles.focusable,
       avatarGroup && groupStyles.ring,
       avatarGroup && groupStyles.overlap,
       avatarGroup && groupDynamicStyles.overlap(-avatarGroup.overlap),

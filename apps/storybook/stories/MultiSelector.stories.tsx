@@ -2,6 +2,7 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState} from 'react';
+import {Button} from '@astryxdesign/core/Button';
 import {MultiSelector} from '@astryxdesign/core/MultiSelector';
 import {Theme, defineTheme} from '@astryxdesign/core/theme';
 
@@ -25,6 +26,7 @@ const meta: Meta<typeof MultiSelector> = {
     description: {control: 'text'},
     placeholder: {control: 'text'},
     size: {control: 'radio', options: ['sm', 'md', 'lg']},
+    variant: {control: 'radio', options: ['input', 'ghost']},
     triggerDisplay: {
       control: 'radio',
       options: ['count', 'labels', 'badges'],
@@ -149,7 +151,8 @@ export const SelectAll: Story = {
   decorators: [Story => <Story />],
 };
 
-// Searchable
+// Searchable: the dropdown search field has a built-in leading magnifier icon
+// and a trailing clear (✕) button that appears once a query is typed.
 export const Searchable: Story = {
   render: () => {
     const [value, setValue] = useState<string[]>([]);
@@ -263,6 +266,51 @@ export const DisabledWithMessage: Story = {
         disabledMessage="Select a table before choosing columns"
         placeholder="Select columns..."
       />
+    );
+  },
+  decorators: [Story => <Story />],
+};
+
+// Ghost variant for toolbar composition
+export const GhostVariant: Story = {
+  render: () => {
+    const [columns, setColumns] = useState<string[]>(['Name', 'Email']);
+    const [filters, setFilters] = useState<string[]>(['Active']);
+    return (
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          width: 'max-content',
+        }}>
+        <Button label="Refresh" variant="ghost" />
+        <MultiSelector
+          label="Columns"
+          isLabelHidden
+          variant="ghost"
+          size="md"
+          options={['Name', 'Email', 'Role', 'Status', 'Created']}
+          value={columns}
+          onChange={setColumns}
+          triggerDisplay="labels"
+          placeholder="Columns"
+        />
+        <MultiSelector
+          label="Status"
+          isLabelHidden
+          variant="ghost"
+          size="md"
+          options={['Active', 'Inactive', 'Pending', 'Archived']}
+          value={filters}
+          onChange={setFilters}
+          triggerDisplay="labels"
+          placeholder="Status"
+          status={{type: 'warning', message: 'Some filters hide archived rows'}}
+          statusVariant="tooltip"
+        />
+        <Button label="Export" variant="ghost" />
+      </div>
     );
   },
   decorators: [Story => <Story />],
@@ -526,6 +574,29 @@ export const ThemedIcons: Story = {
           hasClear
         />
       </Theme>
+    );
+  },
+};
+
+/**
+ * `indicatorPosition="end"` moves the checkbox to the trailing edge of each
+ * row. The default is `start`, where the checkbox leads the label as it does in
+ * CheckboxList.
+ */
+export const EndIndicatorPosition: Story = {
+  render: () => {
+    const [value, setValue] = useState<string[]>(['Name', 'Email']);
+    return (
+      // No hasSelectAll: its divider is an unallowed listbox child and fails
+      // the a11y audit as soon as a story opens the popup (#4994).
+      <MultiSelector
+        label="Columns"
+        options={['Name', 'Email', 'Role', 'Status']}
+        value={value}
+        onChange={setValue}
+        indicatorPosition="end"
+        isDefaultOpen
+      />
     );
   },
 };

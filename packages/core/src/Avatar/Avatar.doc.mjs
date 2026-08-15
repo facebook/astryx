@@ -29,20 +29,12 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-avatar', visualProps: ['size']},
+      {className: 'astryx-avatar-fallback', visualProps: ['size']},
       {className: 'astryx-avatar-status-dot', visualProps: ['variant']},
       {className: 'astryx-avatar-status-dot-glyph', visualProps: ['shape']},
     ],
     vars: [
-      {name: '--_avatar-fallback-font-size', description: 'Initials font size; default is proportional to the avatar size (size × 0.4). Override per size tier (e.g. size:sm) for a custom type scale.', default: 'calc(avatar-size × 0.4)', private: true},
-      {name: '--_avatar-fallback-font-weight', description: 'Initials font weight', default: 'var(--font-weight-medium)', private: true},
-      {name: '--_avatar-fallback-color', description: 'Fallback text and default-icon color', default: 'var(--color-text-secondary)', private: true},
-      {name: '--_avatar-fallback-background', description: 'Fallback wash background fill', default: 'var(--color-neutral)', private: true},
-    ],
-    derived: [
-      {property: 'fontSize', vars: ['--_avatar-fallback-font-size']},
-      {property: 'fontWeight', vars: ['--_avatar-fallback-font-weight']},
-      {property: 'color', vars: ['--_avatar-fallback-color']},
-      {property: 'backgroundColor', vars: ['--_avatar-fallback-background']},
+      {name: '--_avatar-group-overlap', description: 'Negative inline offset applied to every avatar after the first when avatars are stacked in an AvatarGroup. Set from the group size; a more negative value tightens the stack.', default: 'set at runtime from the group avatar size (px)', private: true},
     ],
   },
   description: 'Displays a user avatar with image, initials fallback, and optional status indicator.',
@@ -70,7 +62,7 @@ export const docs = {
     {
       name: 'size',
       type: "'xsm' | 'sm' | 'md' | 'lg' | 'xl' | number",
-      description: "Avatar size. Use a named size ('xsm' 20px, 'sm' 24px, 'md' 36px, 'lg' 48px, 'xl' 128px) or a numeric pixel value. Avatar shares Icon's abbreviated scale, but its tiers are larger because avatars align with media rather than glyphs.",
+      description: "Avatar size. Use a named size ('xsm' 20px, 'sm' 24px, 'md' 36px, 'lg' 48px, 'xl' 128px) or a numeric pixel value. Avatar shares Icon's abbreviated scale, but its tiers are larger because avatars align with media rather than glyphs. Inside an AvatarGroup the group's size wins and this prop is ignored.",
       default: "'md'",
     },
     {
@@ -104,7 +96,7 @@ export const docs = {
       name: 'as',
       type: 'ElementType',
       description:
-        'Custom link component used when `href` is set (e.g. Next.js `Link`). Overrides the provider-level LinkProvider default. Only applies with `href`.',
+        'Custom link component used when `href` is set (e.g. `next/link`). Overrides the provider-level LinkProvider default. Only applies with `href`.',
     },
     {
       name: 'target',
@@ -162,7 +154,7 @@ export const docsDense = {
     fallbackSrc: 'fallback image when primary fails',
     name: 'user name for initials and alt text',
     alt: 'alt text; falls back to name',
-    size: "avatar size. Named ('xsm' 20px, 'sm' 24px, 'md' 36px, 'lg' 48px, 'xl' 128px) or numeric px.",
+    size: "avatar size. Named ('xsm' 20px, 'sm' 24px, 'md' 36px, 'lg' 48px, 'xl' 128px) or numeric px. An AvatarGroup's size overrides it.",
     status:
       'corner content for status indicators; its `label` is composed into the avatar accessible name ("Jane Doe, Online")',
     tooltip:

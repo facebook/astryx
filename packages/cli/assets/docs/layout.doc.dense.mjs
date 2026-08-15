@@ -64,7 +64,7 @@ export const docsDense = {
             'no Card-wrapped list items (card soup)',
             'no stacked full-width Cards as page structure',
             'no Cards in Cards',
-            'no decorative Badge — counts/enums only; StatusDot/Token for status',
+            'no decorative Badge: counts/enums only; StatusDot/Token for status',
           ],
         },
       ],

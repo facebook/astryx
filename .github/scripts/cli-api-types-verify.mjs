@@ -2,11 +2,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * Verify the PUBLISHED `@astryxdesign/cli/api` type surface.
+ * Verify the PUBLISHED `@astryxdesign/cli/api` and `/authoring` type surfaces.
  *
- * The `./api` declarations (`api/**\/*.d.mts`) are generated from the JSDoc in
- * `api/**\/*.mjs` at `prepack` — they are NOT committed. This test proves the
- * surface a consumer actually installs is correct, end to end:
+ * Both sets of declarations (`api/**\/*.d.mts`, `authoring/**\/*.d.mts`) are
+ * generated from the JSDoc in their `.mjs` at `prepack` — they are NOT
+ * committed. This test proves the surface a consumer actually installs is
+ * correct, end to end:
  *
  *   1. `pnpm pack` the CLI (fires `prepack` → `sync:api-types`), producing the
  *      exact tarball that would be published.
@@ -73,6 +74,23 @@ if (!fs.existsSync(path.join(pkgDir, 'api', 'index.d.mts'))) {
   fail('packaged tarball is missing api/index.d.mts \u2014 the ./api types did not ship');
 }
 console.log('\u2713 tarball ships api/index.d.mts');
+// The authoring parser declarations are generated too, so the same "did it
+// actually ship" question applies to them.
+if (!fs.existsSync(path.join(pkgDir, 'authoring', 'doctypes', 'parse.d.mts'))) {
+  fail(
+    'packaged tarball is missing authoring/doctypes/parse.d.mts \u2014 the generated ./authoring types did not ship',
+  );
+}
+console.log('\u2713 tarball ships the generated ./authoring declarations');
+// The api declarations re-export from foundation (e.g. api/template re-exports
+// the template adapter), so foundation's declarations have to ship too or those
+// re-exports resolve to `any` for a strict consumer.
+if (!fs.existsSync(path.join(pkgDir, 'foundation', 'discovery', 'template-adapter.d.mts'))) {
+  fail(
+    'packaged tarball is missing foundation/discovery/template-adapter.d.mts \u2014 the api declarations re-export from foundation, so its declarations must ship too',
+  );
+}
+console.log('\u2713 tarball ships the generated foundation declarations');
 fs.symlinkSync(CORE_DIR, path.join(nm, 'core'), 'dir');
 
 // 3. Type-check a representative consumer against the packed types.
@@ -100,6 +118,32 @@ async function main() {
     listThemes, validateIntegration, summarizeIssues, AstryxError, s];
 }
 void main;
+
+// ── ./authoring ─────────────────────────────────────────────────────────
+// These declarations are generated from JSDoc too. The narrowing below is the
+// regression test for a stale parseDoc return union: when three doc kinds were
+// missing from it, \`doc.type === 'schema'\` was a no-overlap error and \`fields\`
+// was inaccessible — while everything still compiled inside the repo.
+import {
+  parseDoc, parseComponent, parseHook, parseFunction, parseReference,
+  parseTemplate, parseSchema, parseCommand, parseEnum,
+} from '@astryxdesign/cli/authoring';
+import type {SchemaDoc, CommandDoc, EnumDoc, FunctionDoc} from '@astryxdesign/cli/authoring';
+
+function authoringSurface(raw: unknown) {
+  const doc = parseDoc(raw);
+  if (doc.type === 'schema') { const f = doc.fields; void f; }
+  if (doc.type === 'command') { const su: string = doc.summary; void su; }
+  if (doc.type === 'enum') { const m = doc.members; void m; }
+
+  const schema: SchemaDoc = parseSchema(raw);
+  const command: CommandDoc = parseCommand(raw);
+  const enumDoc: EnumDoc = parseEnum(raw);
+  const fn: FunctionDoc = parseFunction(raw);
+  void [schema, command, enumDoc, fn];
+  void [parseComponent, parseHook, parseReference, parseTemplate];
+}
+void authoringSurface;
 export {};
 `;
 fs.writeFileSync(path.join(VERIFY_DIR, 'scenario.ts'), scenario);
@@ -146,5 +190,7 @@ if (errors.length > 0) {
   fail('a consumer of the packaged @astryxdesign/cli/api does not type-check', errors.join('\n'));
 }
 
-console.log('\u2713 packaged @astryxdesign/cli/api type-checks for a strict consumer');
-console.log('\nAll ./api type-surface checks passed.');
+console.log(
+  '\u2713 packaged @astryxdesign/cli/api + /authoring type-check for a strict consumer',
+);
+console.log('\nAll published type-surface checks passed.');

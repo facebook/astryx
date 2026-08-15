@@ -157,8 +157,8 @@ const styles = stylex.create({
     gridColumn: 1,
     justifySelf: 'center',
     alignSelf: 'start',
-    width: '20px',
-    height: '2px',
+    width: spacingVars['--spacing-5'],
+    height: spacingVars['--spacing-0-5'],
     borderRadius: radiusVars['--radius-full'],
     backgroundColor: {
       default: colorVars['--color-icon-secondary'],

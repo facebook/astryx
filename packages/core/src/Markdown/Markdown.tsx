@@ -1083,18 +1083,21 @@ function renderBlock(
       return (
         <Tag
           key={index}
-          {...stylex.props(
-            styles.headingBase,
-            headingStyles[level],
-            spacing,
-            contentWidthValue != null
-              ? dynamicStyles.proseWidth(contentWidthValue)
-              : null,
-            contentAlign !== 'start'
-              ? dynamicStyles.proseAlign(ALIGN_MARGIN[contentAlign])
-              : null,
-            isFirst && styles.noMarginBlockStart,
-            isLast && styles.noMarginBlockEnd,
+          {...mergeProps(
+            themeProps('markdown-heading', {density, level}),
+            stylex.props(
+              styles.headingBase,
+              headingStyles[level],
+              spacing,
+              contentWidthValue != null
+                ? dynamicStyles.proseWidth(contentWidthValue)
+                : null,
+              contentAlign !== 'start'
+                ? dynamicStyles.proseAlign(ALIGN_MARGIN[contentAlign])
+                : null,
+              isFirst && styles.noMarginBlockStart,
+              isLast && styles.noMarginBlockEnd,
+            ),
           )}>
           {headingChildren}
         </Tag>
@@ -1130,16 +1133,19 @@ function renderBlock(
         <div
           key={index}
           role="paragraph"
-          {...stylex.props(
-            spacing,
-            contentWidthValue != null
-              ? dynamicStyles.proseWidth(contentWidthValue)
-              : null,
-            contentAlign !== 'start'
-              ? dynamicStyles.proseAlign(ALIGN_MARGIN[contentAlign])
-              : null,
-            isFirst && styles.noMarginBlockStart,
-            isLast && styles.noMarginBlockEnd,
+          {...mergeProps(
+            themeProps('markdown-paragraph', {density}),
+            stylex.props(
+              spacing,
+              contentWidthValue != null
+                ? dynamicStyles.proseWidth(contentWidthValue)
+                : null,
+              contentAlign !== 'start'
+                ? dynamicStyles.proseAlign(ALIGN_MARGIN[contentAlign])
+                : null,
+              isFirst && styles.noMarginBlockStart,
+              isLast && styles.noMarginBlockEnd,
+            ),
           )}>
           {paraChildren}
         </div>
@@ -1161,11 +1167,14 @@ function renderBlock(
       return (
         <div
           key={index}
-          {...stylex.props(
-            spacing,
-            styles.codeBlockWrapper,
-            isFirst && styles.noMarginBlockStart,
-            isLast && styles.noMarginBlockEnd,
+          {...mergeProps(
+            themeProps('markdown-codeblock', {density}),
+            stylex.props(
+              spacing,
+              styles.codeBlockWrapper,
+              isFirst && styles.noMarginBlockStart,
+              isLast && styles.noMarginBlockEnd,
+            ),
           )}>
           <CodeBlock
             code={node.content}
@@ -1207,6 +1216,7 @@ function renderBlock(
       return (
         <Blockquote
           key={index}
+          {...themeProps('markdown-blockquote', {density})}
           xstyle={[
             spacing,
             contentWidthValue != null
@@ -1254,10 +1264,13 @@ function renderBlock(
         return (
           <div
             key={index}
-            {...stylex.props(
-              spacing,
-              isFirst && styles.noMarginBlockStart,
-              isLast && styles.noMarginBlockEnd,
+            {...mergeProps(
+              themeProps('markdown-list', {density}),
+              stylex.props(
+                spacing,
+                isFirst && styles.noMarginBlockStart,
+                isLast && styles.noMarginBlockEnd,
+              ),
             )}>
             <CheckboxList
               label={t('@astryx.markdown.taskList')}
@@ -1327,16 +1340,19 @@ function renderBlock(
       return (
         <div
           key={index}
-          {...stylex.props(
-            spacing,
-            contentWidthValue != null
-              ? dynamicStyles.proseWidth(contentWidthValue)
-              : null,
-            contentAlign !== 'start'
-              ? dynamicStyles.proseAlign(ALIGN_MARGIN[contentAlign])
-              : null,
-            isFirst && styles.noMarginBlockStart,
-            isLast && styles.noMarginBlockEnd,
+          {...mergeProps(
+            themeProps('markdown-list', {density}),
+            stylex.props(
+              spacing,
+              contentWidthValue != null
+                ? dynamicStyles.proseWidth(contentWidthValue)
+                : null,
+              contentAlign !== 'start'
+                ? dynamicStyles.proseAlign(ALIGN_MARGIN[contentAlign])
+                : null,
+              isFirst && styles.noMarginBlockStart,
+              isLast && styles.noMarginBlockEnd,
+            ),
           )}>
           <List
             listStyle={node.ordered ? 'decimal' : 'disc'}
@@ -1414,17 +1430,20 @@ function renderBlock(
           tabIndex={0}
           role="group"
           aria-label={t('@astryx.markdown.table')}
-          {...stylex.props(
-            styles.tableWrapper,
-            spacing,
-            contentWidthValue != null
-              ? dynamicStyles.blockWidth(contentWidthValue)
-              : null,
-            BLOCK_ALIGN_MARGIN[contentAlign] != null
-              ? dynamicStyles.blockAlign(BLOCK_ALIGN_MARGIN[contentAlign])
-              : null,
-            isFirst && styles.noMarginBlockStart,
-            isLast && styles.noMarginBlockEnd,
+          {...mergeProps(
+            themeProps('markdown-table', {density}),
+            stylex.props(
+              styles.tableWrapper,
+              spacing,
+              contentWidthValue != null
+                ? dynamicStyles.blockWidth(contentWidthValue)
+                : null,
+              BLOCK_ALIGN_MARGIN[contentAlign] != null
+                ? dynamicStyles.blockAlign(BLOCK_ALIGN_MARGIN[contentAlign])
+                : null,
+              isFirst && styles.noMarginBlockStart,
+              isLast && styles.noMarginBlockEnd,
+            ),
           )}>
           <Table dividers="rows" textOverflow="wrap">
             <TableHeader>
@@ -1499,11 +1518,14 @@ function renderBlock(
       return (
         <hr
           key={index}
-          {...stylex.props(
-            styles.hr,
-            spacing,
-            isFirst && styles.noMarginBlockStart,
-            isLast && styles.noMarginBlockEnd,
+          {...mergeProps(
+            themeProps('markdown-hr', {density}),
+            stylex.props(
+              styles.hr,
+              spacing,
+              isFirst && styles.noMarginBlockStart,
+              isLast && styles.noMarginBlockEnd,
+            ),
           )}
         />
       );
@@ -1514,10 +1536,13 @@ function renderBlock(
         return (
           <div
             key={index}
-            {...stylex.props(
-              spacing,
-              isFirst && styles.noMarginBlockStart,
-              isLast && styles.noMarginBlockEnd,
+            {...mergeProps(
+              themeProps('markdown-image', {density}),
+              stylex.props(
+                spacing,
+                isFirst && styles.noMarginBlockStart,
+                isLast && styles.noMarginBlockEnd,
+              ),
             )}>
             [{node.alt}]
           </div>
@@ -1530,10 +1555,13 @@ function renderBlock(
       return (
         <div
           key={index}
-          {...stylex.props(
-            spacing,
-            isFirst && styles.noMarginBlockStart,
-            isLast && styles.noMarginBlockEnd,
+          {...mergeProps(
+            themeProps('markdown-image', {density}),
+            stylex.props(
+              spacing,
+              isFirst && styles.noMarginBlockStart,
+              isLast && styles.noMarginBlockEnd,
+            ),
           )}>
           <img src={safeSrc} alt={node.alt} {...stylex.props(styles.image)} />
         </div>

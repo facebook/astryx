@@ -144,7 +144,10 @@ export const neutralTheme = defineTheme({
 
     // Text
     '--color-text-primary': ['#171717', '#fafafa'],
-    '--color-text-secondary': ['#737373', '#a3a3a3'],
+    // Light secondary is neutral-600 (#525252), not 500 (#737373): 500 only
+    // reaches 4.19:1 on the T95 body (#f1f1f1), just under WCAG AA 4.5:1.
+    // 600 clears it (6.9:1 on body, 7.8:1 on card). Dark stays neutral-400.
+    '--color-text-secondary': ['#525252', '#a3a3a3'],
     '--color-text-disabled': ['#a3a3a3', '#525252'],
     '--color-text-accent': ['#262626', '#ebebeb'],
     '--color-on-dark': '#ffffff',
@@ -320,8 +323,11 @@ export const neutralTheme = defineTheme({
 
     // =========================================================================
     // Radius — slightly larger than default (kept as-is)
+    // --radius-none and --radius-full are always fixed and must never be
+    // scaled by a theme (see defineTheme's radius config docs) — 0 and
+    // 9999px respectively, matching @astryxdesign/core's own defaults.
     // =========================================================================
-    '--radius-none': '0.25rem',
+    '--radius-none': '0px',
     '--radius-inner': '0.375rem',
     '--radius-element': '0.625rem',
     '--radius-container': '0.75rem',
@@ -480,6 +486,37 @@ export const neutralTheme = defineTheme({
         backgroundColor: 'var(--color-background-gray)',
         color: 'var(--color-text-gray)',
       },
+    },
+
+    // =========================================================================
+    // StatusDot — fill uses the SAME vivid stops as the filled semantic Badge
+    // (and ProgressBar), so a dot and its badge read as one status language.
+    //
+    // The default component maps each variant to a raw semantic token
+    // (--color-success / --color-error / --color-warning / --color-icon-
+    // secondary), which in light mode are the dark T30/T40 stops meant to
+    // sit as TEXT on a pastel surface — as a solid dot they read muddy
+    // (dark green / maroon / brown). Redirect them to the badge fills.
+    //
+    //   success → badge success bg  (green T45 / dark-ramp T60)
+    //   warning → badge warning bg  (yellow T85, same hex both modes)
+    //   error   → badge error bg    (red T55 / dark-ramp T60)
+    //   accent  → badge info bg     (blue T50 / dark-ramp T60) — the
+    //             StatusDot "accent" is the info/attention color, so it
+    //             pairs with the info badge rather than --color-accent
+    //             (near-black #262626, the darkest offender).
+    //
+    // `neutral` is intentionally NOT overridden: the neutral badge bg is a
+    // near-invisible light gray (--color-background-gray #e5e5e5 / 10% white
+    // wash), fine as a large pill but unreadable as an 8px dot. It keeps the
+    // component default's visible mid-gray (--color-icon-secondary), which is
+    // not among the "too dark" cases.
+    // =========================================================================
+    statusdot: {
+      'variant:success': {backgroundColor: 'light-dark(#198100, #64af4c)'},
+      'variant:warning': {backgroundColor: '#ffce2f'},
+      'variant:error': {backgroundColor: 'light-dark(#e33f4a, #ff705d)'},
+      'variant:accent': {backgroundColor: 'light-dark(#0074e2, #6d9cfe)'},
     },
 
     // =========================================================================

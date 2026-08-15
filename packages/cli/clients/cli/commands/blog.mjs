@@ -15,39 +15,21 @@
  */
 
 import {getRunPrefix} from '../../../foundation/env/package-manager.mjs';
-import {humanLog, jsonOut} from '../../../foundation/response/json.mjs';
+import {jsonOut} from '../../../foundation/response/json.mjs';
+import {emit, section, text, record, records, code} from '../formatters/index.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {blog as blogApi} from '../../../api/blog/blog.mjs';
-
-/**
- * @param {import('../../../api/blog/blog.type.mjs').BlogListData} data
- * @param {string} run
- */
-function formatList({feedUrl, posts}, run) {
-  const lines = [`\nAstryx blog · feed: ${feedUrl}\n`];
-  if (posts.length === 0) {
-    lines.push('No posts found in the feed.');
-    return lines.join('\n');
-  }
-  for (const p of posts) {
-    lines.push(`  ${p.slug}`);
-    lines.push(`    ${p.title}`);
-    if (p.type) lines.push(`    ${p.type}`);
-    if (p.textUrl) lines.push(`    ${p.textUrl}`);
-    lines.push('');
-  }
-  lines.push(`Read one: ${run} astryx blog <slug>`);
-  return lines.join('\n');
-}
+import {defineCommand} from '../lib/define-command.mjs';
+import {doc as blogCommand} from './blog.doc.mjs';
+import {doc as blogFn} from '../../../api/blog/blog.doc.mjs';
 
 /**
  * @param {import('commander').Command} program
  */
 export function registerBlog(program) {
-  program
-    .command('blog [slug]')
-    .description('Read the Astryx blog from the published feed')
-    .action(async (/** @type {string | undefined} */ slug) => {
+  defineCommand(program, blogCommand, {
+    fn: blogFn,
+    action: async (/** @type {string | undefined} */ slug) => {
       const run = getRunPrefix();
       /** @type {import('../../../api/blog/blog.type.mjs').BlogListResponse | import('../../../api/blog/blog.type.mjs').BlogDetailResponse} */
       let result;
@@ -68,11 +50,26 @@ export function registerBlog(program) {
       }
 
       if (result.type === 'blog.list') {
-        humanLog(formatList(result.data, run));
+        const {feedUrl, posts} = result.data;
+        if (posts.length === 0) {
+          emit(
+            section('Astryx blog', `feed: ${feedUrl}`),
+            text('No posts found in the feed.'),
+          );
+          return;
+        }
+        // One record per post — fields mirror the JSON post shape; empty
+        // fields (type/textUrl) are skipped by record().
+        emit(
+          section('Astryx blog', `feed: ${feedUrl}`),
+          records(posts, {fields: ['slug', 'title', 'type', 'textUrl']}),
+          text(`Read one: ${run} astryx blog <slug>`),
+        );
       } else {
-        // blog.detail — print the feed URL, then the plaintext body.
-        humanLog(`Feed: ${result.data.feedUrl}\n`);
-        humanLog(result.data.text);
+        // blog.detail — the feed URL, then the post body emitted verbatim
+        // (code() so article typography/spacing isn't ASCII-normalized).
+        emit(record({feed: result.data.feedUrl}), code(result.data.text));
       }
-    });
+    },
+  });
 }

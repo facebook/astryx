@@ -56,7 +56,12 @@ export const RESPONSE_TYPES = {
   ],
   docs: ['docs.list', 'docs.detail', 'docs.detail.section'],
   blog: ['blog.list', 'blog.detail'],
-  discover: ['discover.list', 'discover.detail', 'discover.detail.doc', 'discover.search'],
+  discover: [
+    'discover.list',
+    'discover.detail',
+    'discover.detail.doc',
+    'discover.search',
+  ],
   search: ['search'],
   build: ['build.help', 'build.kit'],
   swizzle: ['swizzle.list', 'swizzle.copy'],
@@ -67,9 +72,10 @@ export const RESPONSE_TYPES = {
     'template.copy',
   ],
   hook: ['hook.list', 'hook.detail', 'hook.detail.params'],
-  'theme build': ['theme.build'],
+  'theme build': ['theme.build', 'theme.build.check'],
   'theme list': ['theme.list'],
   'theme add': ['theme.list', 'theme.add'],
+  'theme template': ['theme.template'],
   upgrade: ['upgrade.list', 'upgrade.status', 'upgrade.run'],
   manifest: ['manifest'],
   doctor: ['doctor'],
@@ -84,17 +90,31 @@ export const RESPONSE_TYPES = {
  * @type {Record<string, string[]>}
  */
 const EXAMPLES = {
-  component: ['astryx component', 'astryx component XDSButton', 'astryx component XDSButton --props --json'],
+  component: [
+    'astryx component',
+    'astryx component XDSButton',
+    'astryx component XDSButton --props --json',
+  ],
   docs: ['astryx docs', 'astryx docs spacing --json'],
   discover: ['astryx discover --json'],
-  search: ['astryx search modal --json', 'astryx search button --type component --json'],
+  search: [
+    'astryx search modal --json',
+    'astryx search button --type component --json',
+  ],
   build: ['astryx build', 'astryx build "analytics dashboard" --json'],
   swizzle: ['astryx swizzle XDSButton'],
   template: ['astryx template --json', 'astryx template dashboard ./src/app'],
-  hook: ['astryx hook', 'astryx hook useToggle --json'],
-  'theme build': ['astryx theme build ./src/themes/ocean.ts --out ./dist/ocean.css'],
+  hook: ['astryx hook', 'astryx hook useFocusTrap --json'],
+  'theme build': [
+    'astryx theme build ./src/themes/ocean.ts --out ./dist/ocean.css',
+    'astryx theme build ./src/themes/ocean.ts --check',
+  ],
   'theme list': ['astryx theme list --json'],
-  'theme add': ['astryx theme add matcha', 'astryx theme add matcha ./src/themes/matcha'],
+  'theme add': [
+    'astryx theme add matcha',
+    'astryx theme add matcha ./src/themes/matcha',
+  ],
+  'theme template': ['astryx theme template', 'astryx theme template --json'],
   upgrade: ['astryx upgrade --json'],
   manifest: ['astryx manifest --json', 'astryx --json'],
   doctor: ['astryx doctor', 'astryx doctor --json'],
@@ -103,7 +123,9 @@ const EXAMPLES = {
     'astryx validate-integration @acme/widgets --json',
   ],
   init: ['astryx init'],
-  'layout expand': [`astryx layout expand 'V[g6] > C{card-callout}*4' ./src/Page.tsx`],
+  'layout expand': [
+    `astryx layout expand 'V[g6] > C{card-callout}*4' ./src/Page.tsx`,
+  ],
   'layout check': [`astryx layout check 'A[cp6] > L > LC > S[p6]' --json`],
   'layout grammar': ['astryx layout grammar'],
 };
@@ -182,14 +204,19 @@ function describeCommand(cmd, root, jsonSupported) {
   // `_hidden` is a Commander internal not present on its public types.
   if (!name || /** @type {any} */ (cmd)._hidden || name === 'help') return null;
 
-  const subcommands = /** @type {object[]} */ ((cmd.commands || [])
-    .map((sub) => describeCommand(sub, root, jsonSupported))
-    .filter(Boolean));
+  const subcommands = /** @type {object[]} */ (
+    (cmd.commands || [])
+      .map(sub => describeCommand(sub, root, jsonSupported))
+      .filter(Boolean)
+  );
 
   // `registeredArguments` is Commander 12's public-ish accessor; `_args` is the
   // older internal. Cast through any to read whichever exists.
-  const args =
-    /** @type {any[]} */ (/** @type {any} */ (cmd).registeredArguments || /** @type {any} */ (cmd)._args || []);
+  const args = /** @type {any[]} */ (
+    /** @type {any} */ (cmd).registeredArguments ||
+      /** @type {any} */ (cmd)._args ||
+      []
+  );
 
   /** @type {any} */
   const entry = {
@@ -234,7 +261,7 @@ function describeGlobalOptions(program) {
   const opts = (program.options || []).map(describeOption);
   // Commander registers a built-in --version flag; if for some reason it
   // isn't present in program.options, surface it so the manifest is complete.
-  if (!opts.some((o) => /(^|[\s,])--version\b/.test(o.flag))) {
+  if (!opts.some(o => /(^|[\s,])--version\b/.test(o.flag))) {
     opts.push({
       flag: '-V, --version',
       description: 'Output the version number',
@@ -257,10 +284,11 @@ export function buildManifest(program, opts = {}) {
   const jsonSupported = opts.jsonSupported || new Set();
   const version = opts.version || /** @type {any} */ (program)._version || '';
 
-  const commands = /** @type {any[]} */ ((program.commands || [])
-    .map((cmd) => describeCommand(cmd, program, jsonSupported))
-    .filter(Boolean))
-    .sort((a, b) => a.name.localeCompare(b.name));
+  const commands = /** @type {any[]} */ (
+    (program.commands || [])
+      .map(cmd => describeCommand(cmd, program, jsonSupported))
+      .filter(Boolean)
+  ).sort((a, b) => a.name.localeCompare(b.name));
 
   return {
     name: 'astryx',

@@ -397,37 +397,6 @@ export function resolveImportPath(coreDir, componentName) {
 // ── External package discovery ───────────────────────────────────────
 
 /**
- * Discover components from an external package's docs directory.
- * Scans for *.doc.mjs files and returns their names as a flat array.
- *
- * @deprecated Use discoverExternalComponentsGrouped for group-aware discovery.
- * @param {string} docsDir
- * @returns {string[]}
- */
-export function discoverExternalComponents(docsDir) {
-  if (!fs.existsSync(docsDir)) return [];
-  /** @type {string[]} */
-  const components = [];
-
-  /** @param {string} dirPath */
-  function scanDir(dirPath) {
-    const entries = fs.readdirSync(dirPath, {withFileTypes: true});
-    for (const entry of entries) {
-      if (entry.name === 'node_modules' || entry.name === '__tests__') continue;
-      const fullPath = path.join(dirPath, entry.name);
-      if (entry.isDirectory()) {
-        scanDir(fullPath);
-      } else if (entry.name.endsWith('.doc.mjs')) {
-        components.push(entry.name.replace('.doc.mjs', ''));
-      }
-    }
-  }
-
-  scanDir(docsDir);
-  return components.sort();
-}
-
-/**
  * Discover components from an external package's docs directory,
  * reading `group:` fields from each .doc.mjs for subcategories.
  *

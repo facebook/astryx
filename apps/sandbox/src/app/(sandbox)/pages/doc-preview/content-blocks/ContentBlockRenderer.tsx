@@ -2,7 +2,7 @@
 
 'use client';
 
-import type {ReferenceContentBlock} from '@astryxdesign/core';
+import type {ReferenceContentBlock} from '@astryxdesign/cli/authoring';
 import {ProseBlock} from './ProseBlock';
 import {CodeBlock} from './CodeBlock';
 import {TableBlock} from './TableBlock';

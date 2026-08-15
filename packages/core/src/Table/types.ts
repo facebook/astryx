@@ -290,6 +290,12 @@ export interface BodyRowRenderProps {
   children: ReactNode;
   /** Ref for the `<tr>` element. Plugins can set this to access the row DOM node. */
   ref?: Ref<HTMLTableRowElement>;
+  /**
+   * Extra content rendered as a sibling immediately after this row's `<tr>`.
+   * Plugins use it to append a full-width detail-panel `<tr>` (e.g. row
+   * expansion). Multiple plugins compose by wrapping the previous `afterRow`.
+   */
+  afterRow?: ReactNode;
 }
 
 /** Props passed through the plugin pipeline for each body `<td>` */
@@ -379,6 +385,11 @@ export interface TableContextAction {
   group?: string;
   /** When true, the item renders as checked (e.g. the active sort direction). */
   checked?: boolean;
+  /**
+   * Visual variant. `'destructive'` renders the action in the error color for
+   * dangerous operations (e.g. Delete row). @default 'default'
+   */
+  variant?: 'default' | 'destructive';
 }
 
 /**
@@ -575,15 +586,6 @@ export interface BaseTableProps<
 
   /** Children mode — render `<tr>`/`<td>` directly instead of data-driven */
   children?: ReactNode;
-  /**
-   * Additional HTML attributes for the `<table>` element.
-   *
-   * @deprecated Pass `className`, `style`, `xstyle`, and other HTML
-   * attributes directly on the component instead — they now reach the root
-   * `<table>` and win over `tableProps` on conflicts. Migrate with
-   * `npx astryx upgrade --codemod migrate-table-tableprops-to-direct-props`.
-   */
-  tableProps?: HTMLAttributes<HTMLTableElement>;
   /**
    * Optional wrapper rendered around the `<table>` element, inside the
    * plugin `transformTableContext` layer. Used by `Table` to add a

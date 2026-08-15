@@ -5,7 +5,6 @@ import {render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {NavHeadingMenu} from './NavHeadingMenu';
 import {NavHeadingMenuItem} from './NavHeadingMenuItem';
-import {NavMenuItem} from './NavMenuItem';
 import {NavHeadingCloseContext} from './NavMenuContext';
 
 describe('NavHeadingMenu', () => {
@@ -320,20 +319,5 @@ describe('context forwarding', () => {
     screen.getByRole('menuitem').focus();
     await user.keyboard('{Escape}');
     expect(closeMenu).toHaveBeenCalledOnce();
-  });
-});
-
-describe('NavMenuItem backward compat', () => {
-  it('is the same component as NavHeadingMenuItem', () => {
-    expect(NavMenuItem).toBe(NavHeadingMenuItem);
-  });
-
-  it('renders correctly when used as NavMenuItem', () => {
-    render(
-      <NavHeadingMenu>
-        <NavMenuItem label="Legacy" />
-      </NavHeadingMenu>,
-    );
-    expect(screen.getByRole('menuitem')).toHaveTextContent('Legacy');
   });
 });

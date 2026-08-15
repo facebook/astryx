@@ -49,6 +49,8 @@ import {mergeProps, mergeRefs} from '../utils';
 import {devWarn} from '../utils/devWarning';
 import {DialogContext} from './DialogContext';
 import {themeProps} from '../utils/themeProps';
+import type {DialogVariantMap} from './index';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 
 /**
  * Calculate a directional translate offset for dialog entry animation.
@@ -67,24 +69,6 @@ function getDialogDirection(
     x: Math.round((dx / dist) * distance),
     y: Math.round((dy / dist) * distance),
   };
-}
-
-/**
- * Extensible variant map for Dialog.
- *
- * Theme packages can add custom variants via TypeScript module augmentation:
- * @example
- * ```
- * declare module '@astryxdesign/core/Dialog' {
- *   interface DialogVariantMap {
- *     'drawer': true;
- *   }
- * }
- * ```
- */
-export interface DialogVariantMap {
-  standard: true;
-  fullscreen: true;
 }
 
 /**
@@ -114,27 +98,14 @@ interface DialogBlockPosition {
  * Static position for a dialog. The inline axis is logical XOR physical — the
  * type forbids mixing the two, so a single dialog can't be positioned both ways:
  * - Logical `start`/`end` map to `inset-inline-*` and mirror under RTL (preferred).
- * - Physical `left`/`right` are deprecated, do not mirror, and are removed in a
- *   future major.
  * Block-axis `top`/`bottom` may be combined with either.
  */
-export type DialogPosition =
-  | (DialogBlockPosition & {
-      /** Logical inline-start offset (`inset-inline-start`); mirrors under RTL. */
-      start?: number | string;
-      /** Logical inline-end offset (`inset-inline-end`); mirrors under RTL. */
-      end?: number | string;
-      left?: never;
-      right?: never;
-    })
-  | (DialogBlockPosition & {
-      /** @deprecated Use `start`. Physical (never mirrors); removed in a future major. */
-      left?: number | string;
-      /** @deprecated Use `end`. Physical (never mirrors); removed in a future major. */
-      right?: number | string;
-      start?: never;
-      end?: never;
-    });
+export interface DialogPosition extends DialogBlockPosition {
+  /** Logical inline-start offset (`inset-inline-start`); mirrors under RTL. */
+  start?: number | string;
+  /** Logical inline-end offset (`inset-inline-end`); mirrors under RTL. */
+  end?: number | string;
+}
 
 const enterDirectional = stylex.keyframes({
   from: {
@@ -167,14 +138,6 @@ const styles = stylex.create({
     animationDuration: durationVars['--duration-medium-max'],
     animationTimingFunction: easeVars['--ease-standard'],
     animationFillMode: 'backwards' as const,
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': '2px',
-    },
   },
   // Applied via isOpen prop — avoids :where([open]) attribute selectors
   // which have zero specificity and can lose to default styles depending
@@ -240,9 +203,7 @@ const dynamicStyles = stylex.create({
     top: string,
     insetInlineStart: string,
     insetInlineEnd: string,
-    right: string,
     bottom: string,
-    left: string,
   ) => ({
     // Assigns pre-resolved offsets from resolveDialogPositionOffsets(). This
     // literal has no logic — StyleX can't analyze a helper, so the values
@@ -252,11 +213,7 @@ const dynamicStyles = stylex.create({
     top,
     insetInlineStart,
     insetInlineEnd,
-    // eslint-disable-next-line @astryx/no-physical-properties -- deprecated consumer-facing DialogPosition.right; physical by contract, superseded by logical `end`
-    right,
     bottom,
-    // eslint-disable-next-line @astryx/no-physical-properties -- deprecated consumer-facing DialogPosition.left; physical by contract, superseded by logical `start`
-    left,
   }),
 });
 
@@ -269,9 +226,8 @@ function formatPosition(value: number | string): string {
 
 /**
  * Map a {@link DialogPosition} to resolved CSS offsets. Logical `start`/`end`
- * become `inset-inline-*` (mirror under RTL); physical `left`/`right` stay
- * physical. The union type guarantees at most one inline pair is set, so no
- * precedence is needed — each unset offset falls back to `auto`.
+ * become `inset-inline-*` (mirror under RTL); each unset offset falls back to
+ * `auto`.
  *
  * Not re-exported from the package; internal to Dialog. Directly unit-tested
  * so the mapping is verified without StyleX class compilation.
@@ -279,7 +235,7 @@ function formatPosition(value: number | string): string {
  * @see DialogPosition
  */
 export function resolveDialogPositionOffsets(position: DialogPosition) {
-  const {top, bottom, start, end, left, right} = position;
+  const {top, bottom, start, end} = position;
 
   return {
     top: top !== undefined ? formatPosition(top) : 'auto',
@@ -287,9 +243,6 @@ export function resolveDialogPositionOffsets(position: DialogPosition) {
     // Logical offsets mirror under RTL (preferred replacements).
     insetInlineStart: start !== undefined ? formatPosition(start) : 'auto',
     insetInlineEnd: end !== undefined ? formatPosition(end) : 'auto',
-    // Deprecated physical offsets never mirror.
-    left: left !== undefined ? formatPosition(left) : 'auto',
-    right: right !== undefined ? formatPosition(right) : 'auto',
   };
 }
 
@@ -680,7 +633,7 @@ export function Dialog({
       {...safeProps}
       {...mergeProps(
         themeProps('dialog', {variant}),
-        stylex.props(
+        focusOutlineProps.focusVisible(
           styles.dialog,
           isOpen && styles.open,
           styles.backdrop,
@@ -692,9 +645,7 @@ export function Dialog({
                 o.top,
                 o.insetInlineStart,
                 o.insetInlineEnd,
-                o.right,
                 o.bottom,
-                o.left,
               );
             })(),
           isFullscreen && styles.fullscreen,

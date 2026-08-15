@@ -15,7 +15,7 @@ export const docs = {
     {
       name: 'options.isEnabled',
       type: 'boolean',
-      description: 'When false the hook is inert: no marker is applied and content getters return no styles, so content is always shown. Lets a component gate reveal on its own prop (e.g. revealOn === "hover").',
+      description: 'When false the hook is inert: the container gets no styles and content getters return no styles, so content is always shown. Read on every render, so a component can flip it after mount (e.g. revealOn === "hover").',
       default: 'true',
       required: false,
     },
@@ -34,11 +34,11 @@ export const docs = {
   ],
   usage: {
     description:
-      'A headless hover/focus reveal primitive. Gives a container a scoped trigger that reveals (or conceals) content inside it when the container is hovered or receives keyboard focus — the classic "row actions appear on hover" pattern. The reveal is CSS-only: no hover state lives in React and hovering never triggers a re-render. The caller authors no StyleX for the reveal itself — the hook hands out a scoped marker and matching styles, so nested containers never leak hover/focus into one another. Accessible by construction: revealed content is visually hidden with a clip recipe (never display:none), so it stays mounted, keeps its place in the tab order, and is announced to assistive technology; it reveals on :focus-within so keyboard users see it when tabbing in, stays visible on touch (never gated behind hover on coarse pointers), and honors prefers-reduced-motion.',
+      'A headless hover/focus reveal primitive. Gives a container a scoped trigger that reveals (or conceals) content inside it when the container is hovered or receives keyboard focus: the classic "row actions appear on hover" pattern. The reveal is CSS-only: no hover state lives in React and hovering never triggers a re-render. The caller authors no StyleX for the reveal itself; the hook hands out the container and content styles, and a nested container shadows its ancestor, so nested containers never leak hover/focus into one another. Accessible by construction: revealed content is visually hidden at rest with position and opacity (never display:none), so it stays mounted, keeps its place in the tab order, and is announced to assistive technology; it reveals on :focus-within so keyboard users see it when tabbing in, stays visible on touch (never gated behind hover on coarse pointers), and honors prefers-reduced-motion.',
     bestPractices: [
       { guidance: true, description: 'Destructure getContainerProps and getContentRevealProps; spread getContainerProps() on the container (via mergeProps with your own stylex.props) and getContentRevealProps() on the content to reveal.' },
-      { guidance: true, description: 'Use for secondary affordances — reveal-on-hover row actions (edit/copy/remove on list or table rows) and overlay controls on a card or media tile (e.g. Thumbnail\'s remove button).' },
-      { guidance: true, description: 'Gate the reveal with isEnabled when a consumer prop decides whether content is revealed on hover or always shown.' },
+      { guidance: true, description: 'Use for secondary affordances: reveal-on-hover row actions (edit/copy/remove on list or table rows) and overlay controls on a card or media tile (e.g. Thumbnail\'s remove button).' },
+      { guidance: true, description: 'Gate the reveal with isEnabled when a consumer prop decides whether content is revealed on hover or always shown; it can change at any time.' },
       { guidance: true, description: 'Pass isLayoutPreserved for absolutely-positioned or overlay content to reserve its box and avoid layout shift when it appears.' },
       { guidance: false, description: 'Use it to hide content that must always be discoverable; keep essential actions visible instead of gating them behind hover.' },
     ],
@@ -52,10 +52,10 @@ export const docs = {
 /** @type {import('@astryxdesign/cli/authoring').HookTranslationDoc} */
 export const docsDense = {
   description:
-    'Headless hover/focus reveal primitive. Gives a container a scoped trigger that reveals (or conceals) content inside it on hover / keyboard focus — the "row actions appear on hover" pattern. CSS-only: no hover state in React, no re-render on hover. Caller authors no StyleX — hook hands out a scoped marker + matching styles, so nested containers never leak hover/focus. Accessible: revealed content visually hidden via clip (never display:none), stays mounted + in tab order + announced; reveals on :focus-within, stays visible on touch, honors prefers-reduced-motion.',
+    'Headless hover/focus reveal primitive. Gives a container a scoped trigger that reveals (or conceals) content inside it on hover / keyboard focus: the "row actions appear on hover" pattern. CSS-only: no hover state in React, no re-render on hover. Caller authors no StyleX; hook hands out container + content styles; a nested container shadows its ancestor, so nested containers never leak hover/focus. Accessible: revealed content visually hidden at rest via position + opacity (never display:none), stays mounted + in tab order + announced; reveals on :focus-within, stays visible on touch, honors prefers-reduced-motion.',
   paramDescriptions: {
     options: 'config for reveal container. optional.',
-    'options.isEnabled': 'when false hook is inert: no marker, content getters return no styles, content always shown. Lets component gate reveal on its own prop.',
+    'options.isEnabled': 'when false hook is inert: no container styles, content getters return no styles, content always shown. Read every render, so it can flip after mount.',
   },
   returnDescriptions: {
     getContainerProps: 'spread onto container whose hover/focus-within drives reveal.',
@@ -63,11 +63,11 @@ export const docsDense = {
   },
   usage: {
     description:
-      'Headless hover/focus reveal primitive. Gives a container a scoped trigger that reveals (or conceals) content inside it on hover / keyboard focus — the "row actions appear on hover" pattern. CSS-only: no hover state in React, no re-render on hover. Caller authors no StyleX — hook hands out a scoped marker + matching styles, so nested containers never leak hover/focus. Accessible: revealed content visually hidden via clip (never display:none), stays mounted + in tab order + announced; reveals on :focus-within, stays visible on touch, honors prefers-reduced-motion.',
+      'Headless hover/focus reveal primitive. Gives a container a scoped trigger that reveals (or conceals) content inside it on hover / keyboard focus: the "row actions appear on hover" pattern. CSS-only: no hover state in React, no re-render on hover. Caller authors no StyleX; hook hands out container + content styles; a nested container shadows its ancestor, so nested containers never leak hover/focus. Accessible: revealed content visually hidden at rest via position + opacity (never display:none), stays mounted + in tab order + announced; reveals on :focus-within, stays visible on touch, honors prefers-reduced-motion.',
     bestPractices: [
       { guidance: true, description: 'Destructure getContainerProps + getContentRevealProps; spread getContainerProps() on container (via mergeProps w/ your stylex.props) + getContentRevealProps() on content to reveal.' },
-      { guidance: true, description: 'Use for secondary affordances — reveal-on-hover row actions (edit/copy/remove on list / table rows) + overlay controls on card / media tile (e.g. Thumbnail remove button).' },
-      { guidance: true, description: 'Gate reveal w/ isEnabled when a consumer prop decides revealed-on-hover vs always shown.' },
+      { guidance: true, description: 'Use for secondary affordances: reveal-on-hover row actions (edit/copy/remove on list / table rows) + overlay controls on card / media tile (e.g. Thumbnail remove button).' },
+      { guidance: true, description: 'Gate reveal w/ isEnabled when a consumer prop decides revealed-on-hover vs always shown; can change at any time.' },
       { guidance: true, description: 'Pass isLayoutPreserved for absolutely-positioned / overlay content to reserve its box + avoid layout shift.' },
       { guidance: false, description: 'Use to hide content that must always be discoverable; keep essential actions visible instead of gating behind hover.' },
     ],

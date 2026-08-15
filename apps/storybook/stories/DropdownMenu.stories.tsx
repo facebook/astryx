@@ -1,16 +1,17 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
+import {Badge} from '@astryxdesign/core/Badge';
 import {useState} from 'react';
 import {
   DropdownMenu,
   DropdownMenuItem,
+  DropdownMenuDivider,
   DropdownMenuCheckboxItem,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuSubMenu,
 } from '@astryxdesign/core/DropdownMenu';
-import {Divider} from '@astryxdesign/core/Divider';
 import {
   PencilIcon,
   TrashIcon,
@@ -23,6 +24,7 @@ import {
   UserIcon,
   EllipsisHorizontalIcon,
   Cog6ToothIcon,
+  MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof DropdownMenu> = {
@@ -51,6 +53,11 @@ const meta: Meta<typeof DropdownMenu> = {
       control: 'select',
       options: ['above', 'below', 'start', 'end'],
       description: 'Menu placement relative to trigger',
+    },
+    alignment: {
+      control: 'select',
+      options: ['start', 'center', 'end'],
+      description: 'Menu alignment along the placement axis',
     },
     'data-testid': {
       control: 'text',
@@ -175,6 +182,30 @@ export const WithDisabledItems: Story = {
   ),
 };
 
+export const DestructiveItem: Story = {
+  name: 'Destructive item',
+  render: () => (
+    <DropdownMenu
+      button={{label: 'Actions'}}
+      items={[
+        {label: 'Edit', onClick: () => console.log('Edit')},
+        {
+          label: 'Duplicate',
+          icon: 'copy',
+          onClick: () => console.log('Duplicate'),
+        },
+        {type: 'divider'},
+        {
+          label: 'Delete',
+          icon: 'close',
+          variant: 'destructive',
+          onClick: () => console.log('Delete'),
+        },
+      ]}
+    />
+  ),
+};
+
 // Controlled mode
 export const Controlled: Story = {
   render: () => {
@@ -293,6 +324,32 @@ export const WithOnClick: Story = {
   },
 };
 
+export const StaysOpenOnSelect: Story = {
+  render: () => {
+    const [copied, setCopied] = useState(false);
+    return (
+      <DropdownMenu
+        button={{label: 'Session'}}
+        items={[
+          {
+            label: copied ? 'Copied' : 'Copy session ID',
+            icon: <DocumentDuplicateIcon style={{width: 16, height: 16}} />,
+            hasCloseOnSelect: false,
+            onClick: () => setCopied(true),
+          },
+          {label: 'Rename'},
+          {label: 'Delete', variant: 'destructive'},
+        ]}
+        onOpenChange={isOpen => {
+          if (!isOpen) {
+            setCopied(false);
+          }
+        }}
+      />
+    );
+  },
+};
+
 // Custom item rendering with compound mode
 export const CustomItemRender: Story = {
   render: () => (
@@ -402,7 +459,7 @@ export const CompoundBasic: Story = {
         label="Duplicate"
         onClick={() => console.log('Duplicate')}
       />
-      <Divider />
+      <DropdownMenuDivider />
       <DropdownMenuItem
         icon={TrashIcon}
         label="Delete"
@@ -426,7 +483,7 @@ export const CompoundWithDisabled: Story = {
         label="Duplicate"
         onClick={() => console.log('Duplicate')}
       />
-      <Divider />
+      <DropdownMenuDivider />
       <DropdownMenuItem
         icon={TrashIcon}
         label="Delete (no permission)"
@@ -469,7 +526,7 @@ export const CompoundConditional: Story = {
           />
           {canDelete && (
             <>
-              <Divider />
+              <DropdownMenuDivider />
               <DropdownMenuItem
                 icon={TrashIcon}
                 label="Delete"
@@ -521,6 +578,29 @@ export const PlacementAbove: Story = {
       ]}
     />
   ),
+};
+
+export const AlignmentEnd: Story = {
+  render: () => (
+    <DropdownMenu
+      button={{label: 'Row actions'}}
+      alignment="end"
+      menuWidth={220}
+      items={[
+        {label: 'Edit', onClick: () => console.log('Edit')},
+        {label: 'Duplicate', onClick: () => console.log('Duplicate')},
+        {label: 'Delete', onClick: () => console.log('Delete')},
+      ]}
+    />
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Use alignment="end" when a menu should extend back over the trigger, such as a row action menu near the inline-end edge.',
+      },
+    },
+  },
 };
 
 export const RTL: Story = {
@@ -741,4 +821,51 @@ export const SubmenuDataDriven: Story = {
       },
     },
   },
+};
+
+// The same menu — dividers and a trailing shortcut hint — expressed in each
+// mode. Neither could express both before: data mode had no `endContent`,
+// compound mode had no divider component.
+export const ModeParity: Story = {
+  parameters: {layout: 'padded'},
+  render: () => (
+    <div style={{display: 'flex', gap: 160, justifyContent: 'center'}}>
+      <DropdownMenu
+        button={{label: 'Data mode'}}
+        menuWidth={220}
+        items={[
+          {
+            label: 'Search',
+            icon: MagnifyingGlassIcon,
+            endContent: <Badge label="⌘K" />,
+          },
+          {
+            label: 'Duplicate',
+            icon: DocumentDuplicateIcon,
+            endContent: <Badge label="⌘D" />,
+          },
+          {type: 'divider'},
+          {label: 'Delete', icon: TrashIcon, variant: 'destructive'},
+        ]}
+      />
+      <DropdownMenu button={{label: 'Compound mode'}} menuWidth={220}>
+        <DropdownMenuItem
+          icon={MagnifyingGlassIcon}
+          label="Search"
+          endContent={<Badge label="⌘K" />}
+        />
+        <DropdownMenuItem
+          icon={DocumentDuplicateIcon}
+          label="Duplicate"
+          endContent={<Badge label="⌘D" />}
+        />
+        <DropdownMenuDivider />
+        <DropdownMenuItem
+          icon={TrashIcon}
+          label="Delete"
+          variant="destructive"
+        />
+      </DropdownMenu>
+    </div>
+  ),
 };

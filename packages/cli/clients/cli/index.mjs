@@ -21,6 +21,7 @@ import {getCliInvocation} from '../../foundation/env/package-manager.mjs';
 import {API_VERSION, setJsonMode} from '../../foundation/response/json.mjs';
 import {buildManifest} from './lib/manifest.mjs';
 import {cliError} from './lib/cli-error.mjs';
+import {emit, section, text, records} from './formatters/index.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 import {levenshteinDistance} from '../../foundation/text/string-utils.mjs';
 import {installJsonShim} from './lib/json-shim.mjs';
@@ -68,6 +69,7 @@ export const JSON_SUPPORTED = new Set([
   'theme build',
   'theme list',
   'theme add',
+  'theme template',
   'upgrade',
   'manifest',
   'doctor',
@@ -134,6 +136,50 @@ const SETUP_NUDGE_EXEMPT = new Set(['init', 'agent-docs']);
  */
 export async function createProgram() {
   const program = new Command();
+
+  // Deterministic, single-line help. Commander wraps each option/command
+  // description to a column width (80 when captured non-TTY), which splits long
+  // descriptions like --json across several indented lines. Override `wrap` to a
+  // no-op so every item stays on one line — matching the rest of the CLI's
+  // plain, unwrapped, width-independent output. Set before subcommands are
+  // registered so they inherit it via copyInheritedSettings.
+  program.configureHelp({wrap: (str) => str});
+
+  // Document the text-output contract in --help so agents know how to parse/grep
+  // it (and when to reach for --json instead). Kept in sync with the formatter
+  // kit in clients/cli/formatters.
+  program.addHelpText(
+    'after',
+    '\n' +
+      [
+        section(
+          'Output format',
+          'Text mirrors --json (the machine-readable surface); it is built from these blocks:',
+        ),
+        records(
+          [
+            {
+              block: 'Record',
+              shape: 'aligned "key: value" lines = one item; records separated by a blank line',
+            },
+            {
+              block: 'Section',
+              shape: 'a header line (no "key:"), optional one-line subtitle, then its records/list',
+            },
+            {block: 'List', shape: '"- value" lines for a simple sequence of values'},
+            {block: 'Text', shape: 'free-form prose / notes'},
+            {block: 'Code', shape: 'a verbatim block (source, skeleton, or doc), emitted exactly'},
+          ],
+          {fields: ['block', 'shape']},
+        ),
+        text(
+          'Grep a field across records, e.g.  astryx search button | grep "^command:". ' +
+            'Errors/warnings go to stderr; use --json for structured parsing.',
+        ),
+      ]
+        .map(block => block.toString())
+        .join('\n\n'),
+  );
 
   program
     .name('astryx')
@@ -360,14 +406,21 @@ export async function createProgram() {
         console.log(JSON.stringify({apiVersion: API_VERSION, type: 'manifest', data: manifest}, null, 2));
         return;
       }
-      // Human-readable summary. Agents should use --json.
-      console.log(`\n${manifest.name} v${manifest.version} — ${manifest.commands.length} commands\n`);
-      for (const c of manifest.commands) {
-        const tag = c.json ? ' [--json]' : '';
-        console.log(`  ${c.name}${tag}`);
-        if (c.description) console.log(`    ${c.description}`);
-      }
-      console.log(`\nRun \`${getCliInvocation()} manifest --json\` for the full structured manifest.\n`);
+      // Human-readable summary as greppable records (agents should use --json).
+      // One record per command: name, whether it supports --json, and the
+      // description.
+      emit(
+        section(`${manifest.name} v${manifest.version} (${manifest.commands.length} commands)`),
+        records(
+          manifest.commands.map(c => ({
+            command: c.name,
+            json: c.json ? 'yes' : '',
+            description: c.description || '',
+          })),
+          {fields: ['command', 'json', 'description']},
+        ),
+        text(`Run \`${getCliInvocation()} manifest --json\` for the full structured manifest.`),
+      );
     });
 
   // Hidden command used by package.json postinstall scripts

@@ -341,10 +341,9 @@ export function generateCompressedIndex(version, {coreDir, invocation = getCliIn
 
   // Rules — the top error-preventers.
   lines.push('RULES:');
-  lines.push('- No <div> — components do all layout/spacing. Full page → AppShell; sidebar nav → SideNav.');
-  lines.push('- Frame first: pick the shell (AppShell / Layout+LayoutPanel) and budget regions in px BEFORE writing content (`astryx docs layout`).');
-  lines.push('- Dense data = rows (Table, List/Item) edge-to-edge — never Card-wrapped list items. Card = dashboard widgets, galleries, settings groups only.');
-  lines.push('- Status → StatusDot/Token; Badge only for counts and enumerated states, never decoration.');
+  lines.push('- No <div> — components do all layout/spacing, page frame included.');
+  lines.push('- Frame first: read `astryx docs layout` before writing any page or screen — page frame, region widths, breakpoint behavior.');
+  lines.push('- Dense data = rows (Table, List/Item), never Card-wrapped list items; Card is for standalone widgets. Status = StatusDot/Token; Badge = counts only.');
   // Styling guidance tailored to the project's configured system — never
   // recommend a path that isn't compiled here (xstyle needs the StyleX compiler;
   // utilities need Tailwind). Tokens are always the source of truth.
@@ -355,7 +354,7 @@ export function generateCompressedIndex(version, {coreDir, invocation = getCliIn
   } else {
     lines.push("- Custom styling: component props first; else style/className with tokens — var(--color-*|--spacing-*|--radius-*). No raw hex/px. (No StyleX/Tailwind compiler here — don't use xstyle/utility classes.)");
   }
-  lines.push('- Tokens for every value (`astryx docs tokens`). Brand/accent via `astryx theme` — never override --color-* in :root.');
+  lines.push('- Tokens for every value (`astryx docs tokens`). Brand/accent belongs in the theme (`astryx theme list` / `theme add <slug>`, or `astryx theme template` for a custom one) — never override --color-* in :root.');
   // Self-check — post-generation pass. Validated via vibe tests (internal/vibe-tests/
   // prompt-purity-test): on complex multi-step UIs the rules above alone still leave raw
   // CSS in ~11-13% of runs; a re-read-and-fix pass cuts that ~4x at negligible token cost.

@@ -1,28 +1,13 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Regression test for issue #4109: theme-build component-override keys
- * must match the class names components actually render.
+ * @file Regression tests for theme-build component-override keys.
  *
  * `astryx theme build` emits a component override as a `.astryx-<key>` rule,
  * where `<key>` is the theme's `components` key passed through verbatim
- * (generateThemeRules re-adds the `astryx-` prefix). The CLI's KNOWN_COMPONENTS
- * registry is what the validator accepts and what its "Did you mean?" hints
- * point authors toward — so every registry key MUST correspond to a class a
- * component really renders, or the emitted rule is a dead selector that
- * silently does nothing.
- *
- * The registry had de-hyphenated keys for every multi-word component
- * (`textinput`, `dateinput`, `numberinput`, `timeinput`, `appshell`,
- * `aspectratio`, `checkboxinput`, `dropdownmenu`, `formlayout`, `mobilenav`,
- * `moremenu`, `radiolist`, `sidenav`, `tablist`, `topnav`), while the
- * components render the hyphenated class (`astryx-text-input`, etc.). Authors
- * following the registry shipped dead `.astryx-textinput` rules.
- *
- * Source of truth = the class the component renders, captured in each
- * component's `{Name}.doc.mjs` `theming.targets[].className` (itself guarded
- * against the real `themeProps()`/`stableClassName()` call sites by
- * packages/core/src/theme/themingTargets.test.ts).
+ * (generateThemeRules re-adds the `astryx-` prefix). The validator reads the
+ * same documented theming targets that component docs expose, so the docs must
+ * stay aligned with the classes components actually render.
  */
 
 import {describe, it, expect, beforeAll} from 'vitest';
@@ -35,28 +20,6 @@ import {runCli} from '../../../test-utils/run-cli.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const CORE_SRC = path.resolve(HERE, '../../../../core/src');
-const BUILD_THEME_SRC = path.resolve(HERE, '../../../api/theme/build/build.mjs');
-
-/**
- * Extract the KNOWN_COMPONENTS registry keys from the build-theme source.
- * Reading the source (rather than importing the un-exported constant) keeps
- * this test decoupled from the module's private surface.
- */
-function knownComponentKeys() {
-  const src = fs.readFileSync(BUILD_THEME_SRC, 'utf8');
-  const start = src.indexOf('const KNOWN_COMPONENTS = {');
-  expect(start).toBeGreaterThan(-1);
-  const end = src.indexOf('};', start);
-  const block = src.slice(start, end);
-  const keys = new Set();
-  const re = /^\s*'?([a-z][a-z0-9-]*)'?\s*:/gm;
-  let m;
-  while ((m = re.exec(block)) !== null) {
-    keys.add(m[1]);
-  }
-  return keys;
-}
-
 /**
  * The set of real override keys: every `theming.targets[].className` across the
  * component docs, with the `astryx-` prefix stripped. This is the canonical
@@ -97,7 +60,10 @@ function renderedClassLiterals() {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
         walk(full);
-      } else if (entry.name.endsWith('.tsx') && !entry.name.endsWith('.test.tsx')) {
+      } else if (
+        (entry.name.endsWith('.tsx') || entry.name.endsWith('.ts')) &&
+        !entry.name.includes('.test.')
+      ) {
         const text = fs.readFileSync(full, 'utf8');
         for (const re of [
           /themeProps\(\s*'([^']+)'/g,
@@ -108,6 +74,25 @@ function renderedClassLiterals() {
             classes.add(m[1]);
           }
         }
+        // A component can also name its popup SURFACE — an element usePopover
+        // owns, so the class cannot be rendered from the component itself.
+        // `surfaceTarget: 'x'` puts `astryx-x` on that surface, which makes it
+        // just as rendered as a direct themeProps() call.
+        const surfaceRe = /surfaceTarget:\s*'([^']+)'/g;
+        let sm;
+        while ((sm = surfaceRe.exec(text)) !== null) {
+          classes.add(sm[1]);
+        }
+        // Renamed targets emit their old name too, via themeProps'
+        // `legacyNames`. Those classes are just as rendered as the primary
+        // one, so a doc entry for the old name is still backed by real output.
+        const legacyRe = /legacyNames:\s*\[([^\]]*)\]/g;
+        let lm;
+        while ((lm = legacyRe.exec(text)) !== null) {
+          for (const nm of lm[1].matchAll(/'([^']+)'/g)) {
+            classes.add(nm[1]);
+          }
+        }
       }
     }
   };
@@ -115,42 +100,11 @@ function renderedClassLiterals() {
   return classes;
 }
 
-describe('theme-build KNOWN_COMPONENTS registry (#4109)', () => {
-  // `layer` is a layout/anchor concept with no rendered `astryx-layer`
-  // class or doc target; it predates and is unrelated to #4109.
-  const allowedWithoutTarget = new Set(['layer']);
-
-  it('every registry key is a class documented as a theming target', () => {
-    const known = knownComponentKeys();
-    const real = realOverrideKeys();
-
-    const dead = [...known].filter(
-      k => !real.has(k) && !allowedWithoutTarget.has(k),
-    );
-    expect(dead).toEqual([]);
-  });
-
-  it('every registry key is a class a component actually renders (themeProps literal)', () => {
-    // Validate the registry against the TRUE source of truth — the literal
-    // passed to themeProps()/stableClassName() in the component source — not
-    // just the hand-authored doc targets. This catches a de-hyphenated key
-    // even if the docs were (wrongly) kept in agreement with it.
-    const known = knownComponentKeys();
-    const rendered = renderedClassLiterals();
-
-    const dead = [...known].filter(
-      k => !rendered.has(k) && !allowedWithoutTarget.has(k),
-    );
-    expect(dead).toEqual([]);
-  });
-
+describe('theme-build documented target validation', () => {
   it('every documented theming target is backed by a real themeProps literal', () => {
-    // Guards the two "sources of truth" against drift: a component whose
-    // themeProps() arg and doc target className disagree would be a latent bug
-    // that the registry checks above could not catch (they'd validate against
-    // whichever side happened to match). `theming.targets[].className` is
-    // hand-authored; themeProps()/stableClassName() literals are what actually
-    // renders — they must agree.
+    // Guards against a component whose doc target className and rendered
+    // themeProps()/stableClassName() literal disagree. The docs are what theme
+    // build validates against; the literals are what actually matches the DOM.
     const targets = realOverrideKeys();
     const rendered = renderedClassLiterals();
 
@@ -165,6 +119,32 @@ describe('theme build emits a live TextInput selector (#4109)', () => {
     ensureCoreBuilt();
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-4109-'));
   }, 200_000);
+
+  it('accepts documented subtargets from component docs', async () => {
+    const themeFile = path.join(tmpDir, 'subtargets.mjs');
+    const outFile = path.join(tmpDir, 'subtargets.css');
+    fs.writeFileSync(
+      themeFile,
+      `export default {\n` +
+        `  name: 'subtargets-4109',\n` +
+        `  tokens: {},\n` +
+        `  components: {\n` +
+        `    'side-nav-item': { base: { borderRadius: '12px' } },\n` +
+        `    'chat-composer': { base: { padding: '10px' } },\n` +
+        `    'chat-message-bubble': { 'variant:ghost': { borderRadius: '18px' } },\n` +
+        `  },\n` +
+        `};\n`,
+    );
+
+    const result = await runCli(['theme', 'build', themeFile, '-o', outFile]);
+    const css = fs.readFileSync(outFile, 'utf8');
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).not.toContain('Unknown component');
+    expect(css).toContain('.astryx-side-nav-item');
+    expect(css).toContain('.astryx-chat-composer');
+    expect(css).toContain('.astryx-chat-message-bubble.ghost');
+  });
 
   it('emits .astryx-text-input (the rendered class), not the dead .astryx-textinput', async () => {
     const themeFile = path.join(tmpDir, 'theme.mjs');
