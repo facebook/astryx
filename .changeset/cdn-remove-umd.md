@@ -2,7 +2,7 @@
 '@astryxdesign/core': minor
 ---
 
-[breaking] Remove the UMD bundle — the CDN path is ES modules now.
+[breaking] Remove the UMD bundle — the CDN path is ES modules now (#5068).
 
 `dist/astryx.umd.js` is no longer built or published, and with it go the `unpkg` and `jsdelivr` package fields, the `./astryx.umd.js` export and the `build:umd` step. There is no `window.Astryx` global any more.
 
