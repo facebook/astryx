@@ -330,7 +330,7 @@ export const HugHeightWithLongContent: Story = {
 };
 
 export const MobileKeyboardTall: Story = {
-  name: 'Mobile keyboard — Tall',
+  name: 'Mobile keyboard',
   render: () => {
     const [isOpen, setIsOpen] = useState(false);
     return (
