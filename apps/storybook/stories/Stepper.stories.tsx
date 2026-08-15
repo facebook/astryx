@@ -1052,3 +1052,49 @@ export const CollapseLabelsWhenNarrow: Story = {
     );
   },
 };
+
+// ============================================================
+// FRAGMENT-GROUPED STEPS
+// ============================================================
+
+export const FragmentGroupedSteps: Story = {
+  name: 'Fragment-Grouped Steps',
+  render: () => {
+    const steps = (
+      <>
+        <Step step={0} label="Cart" indicator="number" />
+        <Step step={1} label="Shipping" indicator="number" />
+        <Step step={2} label="Payment" indicator="number" />
+        <Step step={3} label="Review" indicator="number" />
+      </>
+    );
+    return (
+      <div style={{display: 'grid', gap: 40, maxWidth: 700}}>
+        <div>
+          <Text type="label">Steps passed directly</Text>
+          <Stepper activeStep={2} indicatorPosition="on-track">
+            <Step step={0} label="Cart" indicator="number" />
+            <Step step={1} label="Shipping" indicator="number" />
+            <Step step={2} label="Payment" indicator="number" />
+            <Step step={3} label="Review" indicator="number" />
+          </Stepper>
+        </div>
+        <div>
+          <Text type="label">Same steps grouped in a fragment</Text>
+          <Stepper activeStep={2} indicatorPosition="on-track">
+            {steps}
+          </Stepper>
+        </div>
+        <div>
+          <Text type="label">Fragment-grouped, vertical</Text>
+          <Stepper
+            activeStep={2}
+            orientation="vertical"
+            indicatorPosition="on-track">
+            {steps}
+          </Stepper>
+        </div>
+      </div>
+    );
+  },
+};
