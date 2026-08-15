@@ -10,7 +10,7 @@ import {Heading} from '@astryxdesign/core/Heading';
 import {Section} from '@astryxdesign/core/Section';
 import {HStack, VStack} from '@astryxdesign/core/Stack';
 import {Text} from '@astryxdesign/core/Text';
-import {TextInput} from '@astryxdesign/core/TextInput';
+import {RadioList, RadioListItem} from '@astryxdesign/core/RadioList';
 
 const meta: Meta<typeof BottomSheetSwitcher> = {
   title: 'Lab/BottomSheetSwitcher',
@@ -34,39 +34,53 @@ const meta: Meta<typeof BottomSheetSwitcher> = {
 export default meta;
 type Story = StoryObj<typeof BottomSheetSwitcher>;
 
-interface ProfileDetails {
-  name: string;
-  email: string;
-}
-
-interface ProfileDetailsSheetProps {
+interface NotificationOverviewSheetProps {
   onCancel: () => void;
-  onContinue: (details: ProfileDetails) => void;
+  onContinue: () => void;
 }
 
-function ProfileDetailsSheet({onCancel, onContinue}: ProfileDetailsSheetProps) {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-
+function NotificationOverviewSheet({
+  onCancel,
+  onContinue,
+}: NotificationOverviewSheetProps) {
   return (
-    <BottomSheet sheetId="profile" label="Profile details" height="hug">
+    <BottomSheet sheetId="overview" label="Set up notifications" height="hug">
       <Section padding={4}>
         <VStack gap={4}>
           <VStack gap={1}>
-            <Heading level={3}>Profile details</Heading>
+            <Heading level={3}>Set up notifications</Heading>
             <Text type="supporting" color="secondary">
               Step 1 of 3
             </Text>
           </VStack>
           <Divider />
-          <TextInput label="Name" value={name} onChange={setName} />
-          <TextInput label="Email" value={email} onChange={setEmail} />
+          <Text type="supporting" color="secondary">
+            Stay informed about activity that matters without checking back
+            throughout the day.
+          </Text>
+          <VStack gap={3}>
+            <VStack gap={1}>
+              <Text type="label">Important activity</Text>
+              <Text type="supporting" color="secondary">
+                Know when someone mentions you or needs your attention.
+              </Text>
+            </VStack>
+            <VStack gap={1}>
+              <Text type="label">Timely reminders</Text>
+              <Text type="supporting" color="secondary">
+                Get a reminder before work reaches its due date.
+              </Text>
+            </VStack>
+            <VStack gap={1}>
+              <Text type="label">Useful summaries</Text>
+              <Text type="supporting" color="secondary">
+                Catch up on anything you may have missed.
+              </Text>
+            </VStack>
+          </VStack>
           <HStack gap={2} hAlign="end">
             <Button label="Cancel" variant="secondary" onClick={onCancel} />
-            <Button
-              label="Continue"
-              onClick={() => onContinue({name, email})}
-            />
+            <Button label="Continue" onClick={onContinue} />
           </HStack>
         </VStack>
       </Section>
@@ -74,34 +88,41 @@ function ProfileDetailsSheet({onCancel, onContinue}: ProfileDetailsSheetProps) {
   );
 }
 
-interface ConfirmProfileSheetProps {
-  details: ProfileDetails;
+interface NotificationFrequencySheetProps {
   onBack: () => void;
   onContinue: () => void;
 }
 
-function ConfirmProfileSheet({
-  details,
+function NotificationFrequencySheet({
   onBack,
   onContinue,
-}: ConfirmProfileSheetProps) {
+}: NotificationFrequencySheetProps) {
+  const [frequency, setFrequency] = useState('daily');
+
   return (
-    <BottomSheet sheetId="confirm" label="Confirm profile" height="hug">
+    <BottomSheet
+      sheetId="frequency"
+      label="Notification frequency"
+      height="hug">
       <Section padding={4}>
         <VStack gap={4}>
           <VStack gap={1}>
-            <Heading level={3}>Confirm profile</Heading>
+            <Heading level={3}>How often?</Heading>
             <Text type="supporting" color="secondary">
               Step 2 of 3
             </Text>
           </VStack>
           <Divider />
-          <VStack gap={2}>
-            <Text type="label">{details.name || 'No name provided'}</Text>
-            <Text type="supporting" color="secondary">
-              {details.email || 'No email provided'}
-            </Text>
-          </VStack>
+          <RadioList
+            label="Notification frequency"
+            isLabelHidden
+            orientation="horizontal"
+            value={frequency}
+            onChange={setFrequency}>
+            <RadioListItem label="Immediately" value="immediately" />
+            <RadioListItem label="Daily" value="daily" />
+            <RadioListItem label="Weekly" value="weekly" />
+          </RadioList>
           <HStack gap={2} hAlign="end">
             <Button label="Back" variant="secondary" onClick={onBack} />
             <Button label="Continue" onClick={onContinue} />
@@ -112,49 +133,44 @@ function ConfirmProfileSheet({
   );
 }
 
-interface ProfilePreferencesSheetProps {
+interface NotificationChannelsSheetProps {
   onBack: () => void;
   onFinish: () => void;
 }
 
-function ProfilePreferencesSheet({
+function NotificationChannelsSheet({
   onBack,
   onFinish,
-}: ProfilePreferencesSheetProps) {
-  const [productUpdates, setProductUpdates] = useState(false);
-  const [tipsAndTutorials, setTipsAndTutorials] = useState(false);
-  const [researchInvitations, setResearchInvitations] = useState(false);
+}: NotificationChannelsSheetProps) {
+  const [email, setEmail] = useState(true);
+  const [pushNotifications, setPushNotifications] = useState(true);
+  const [textMessages, setTextMessages] = useState(false);
 
   return (
-    <BottomSheet sheetId="preferences" label="Profile preferences" height="hug">
+    <BottomSheet sheetId="channels" label="Notification channels" height="hug">
       <Section padding={4}>
         <VStack gap={4}>
           <VStack gap={1}>
-            <Heading level={3}>Profile preferences</Heading>
+            <Heading level={3}>Where should we notify you?</Heading>
             <Text type="supporting" color="secondary">
               Step 3 of 3
             </Text>
           </VStack>
           <Divider />
           <Text type="supporting" color="secondary">
-            Choose what you would like to receive after completing your profile.
-            This step is intentionally taller than Step 2.
+            Choose any combination. You can change these preferences later.
           </Text>
           <VStack gap={2}>
+            <CheckboxInput label="Email" value={email} onChange={setEmail} />
             <CheckboxInput
-              label="Product updates"
-              value={productUpdates}
-              onChange={setProductUpdates}
+              label="Push notifications"
+              value={pushNotifications}
+              onChange={setPushNotifications}
             />
             <CheckboxInput
-              label="Tips and tutorials"
-              value={tipsAndTutorials}
-              onChange={setTipsAndTutorials}
-            />
-            <CheckboxInput
-              label="Research invitations"
-              value={researchInvitations}
-              onChange={setResearchInvitations}
+              label="Text messages"
+              value={textMessages}
+              onChange={setTextMessages}
             />
           </VStack>
           <HStack gap={2} hAlign="end">
@@ -169,34 +185,26 @@ function ProfilePreferencesSheet({
 
 function MultiStepSwitcherExample() {
   const [activeSheet, setActiveSheet] = useState<string | null>(null);
-  const [profileDetails, setProfileDetails] = useState<ProfileDetails>({
-    name: '',
-    email: '',
-  });
 
   return (
     <>
       <Button
-        label="Start profile setup"
-        onClick={() => setActiveSheet('profile')}
+        label="Set up notifications"
+        onClick={() => setActiveSheet('overview')}
       />
       <BottomSheetSwitcher
         activeSheet={activeSheet}
         onActiveSheetChange={setActiveSheet}>
-        <ProfileDetailsSheet
+        <NotificationOverviewSheet
           onCancel={() => setActiveSheet(null)}
-          onContinue={details => {
-            setProfileDetails(details);
-            setActiveSheet('confirm');
-          }}
+          onContinue={() => setActiveSheet('frequency')}
         />
-        <ConfirmProfileSheet
-          details={profileDetails}
-          onBack={() => setActiveSheet('profile')}
-          onContinue={() => setActiveSheet('preferences')}
+        <NotificationFrequencySheet
+          onBack={() => setActiveSheet('overview')}
+          onContinue={() => setActiveSheet('channels')}
         />
-        <ProfilePreferencesSheet
-          onBack={() => setActiveSheet('confirm')}
+        <NotificationChannelsSheet
+          onBack={() => setActiveSheet('frequency')}
           onFinish={() => setActiveSheet(null)}
         />
       </BottomSheetSwitcher>
@@ -205,6 +213,6 @@ function MultiStepSwitcherExample() {
 }
 
 export const MultiStep: Story = {
-  name: 'Multi-step switcher',
+  name: 'Notification setup',
   render: () => <MultiStepSwitcherExample />,
 };
