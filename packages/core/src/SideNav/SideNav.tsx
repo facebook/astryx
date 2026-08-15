@@ -21,13 +21,7 @@
  * - /packages/cli/assets/templates/blocks/components/SideNav/ (showcase blocks)
  */
 
-import {
-  useCallback,
-  useImperativeHandle,
-  useRef,
-  useState,
-  type ReactNode,
-} from 'react';
+import {useCallback, useImperativeHandle, useRef, type ReactNode} from 'react';
 import type {BaseProps} from '../BaseProps';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
@@ -91,12 +85,15 @@ function resolveCollapseConfig(
   return {
     isCollapsible: !!collapsible || resizableCarriesCollapse,
     defaultIsCollapsed:
-      fromResizable.defaultIsCollapsed ??
-      fromCollapsible.defaultIsCollapsed ??
-      false,
-    isCollapsed: fromResizable.isCollapsed ?? fromCollapsible.isCollapsed,
-    onCollapsedChange:
-      fromResizable.onCollapseChange ?? fromCollapsible.onCollapsedChange,
+      (resizableCarriesCollapse
+        ? fromResizable.defaultIsCollapsed
+        : fromCollapsible.defaultIsCollapsed) ?? false,
+    isCollapsed: resizableCarriesCollapse
+      ? fromResizable.isCollapsed
+      : fromCollapsible.isCollapsed,
+    onCollapsedChange: resizableCarriesCollapse
+      ? fromResizable.onCollapseChange
+      : fromCollapsible.onCollapsedChange,
     conflict: describeCollapseConflict(fromCollapsible, fromResizable),
   };
 }
@@ -110,38 +107,18 @@ function describeCollapseConflict(
   collapsible: SideNavCollapsibleConfig,
   resizable: ResizableConfig,
 ): string | null {
-  const collapsibleKeys: string[] = [];
-  const resizableKeys: string[] = [];
+  const collapsibleKeys = [
+    collapsible.defaultIsCollapsed !== undefined && 'defaultIsCollapsed',
+    collapsible.isCollapsed !== undefined && 'isCollapsed',
+    collapsible.onCollapsedChange !== undefined && 'onCollapsedChange',
+  ].filter((key): key is string => key !== false);
+  const resizableKeys = [
+    resizable.defaultIsCollapsed !== undefined && 'defaultIsCollapsed',
+    resizable.isCollapsed !== undefined && 'isCollapsed',
+    resizable.onCollapseChange !== undefined && 'onCollapseChange',
+  ].filter((key): key is string => key !== false);
 
-  if (
-    collapsible.defaultIsCollapsed !== undefined &&
-    resizable.defaultIsCollapsed !== undefined
-  ) {
-    collapsibleKeys.push('defaultIsCollapsed');
-    resizableKeys.push('defaultIsCollapsed');
-  }
-
-  // The dangerous shape: the consumer holds a setter they believe is the
-  // source of truth while `resizable` is the one actually driving collapse.
-  const resizableOwnsState =
-    resizable.isCollapsed !== undefined ||
-    resizable.onCollapseChange !== undefined;
-  if (resizableOwnsState) {
-    if (collapsible.isCollapsed !== undefined) {
-      collapsibleKeys.push('isCollapsed');
-    }
-    if (collapsible.onCollapsedChange !== undefined) {
-      collapsibleKeys.push('onCollapsedChange');
-    }
-    if (resizable.isCollapsed !== undefined) {
-      resizableKeys.push('isCollapsed');
-    }
-    if (resizable.onCollapseChange !== undefined) {
-      resizableKeys.push('onCollapseChange');
-    }
-  }
-
-  if (collapsibleKeys.length === 0) {
+  if (collapsibleKeys.length === 0 || resizableKeys.length === 0) {
     return null;
   }
 
@@ -441,11 +418,8 @@ export function SideNav({
   const resizableConfig = typeof resizable === 'object' ? resizable : {};
   const isResizable = !!resizable;
 
-  // One collapse config, one owner: the resize hook holds the state whenever
-  // it is in play, otherwise SideNav does.
   const collapseConfig = resolveCollapseConfig(collapsible, resizable);
   const {isCollapsible, onCollapsedChange} = collapseConfig;
-  const isResizableOwned = isResizable && isCollapsible;
 
   useDevWarning(
     'SideNav',
@@ -453,11 +427,6 @@ export function SideNav({
     collapseConfig.conflict != null,
   );
 
-  // Collapse state (controlled + uncontrolled) — read only when SideNav owns it
-  const isControlled = collapseConfig.isCollapsed !== undefined;
-  const [uncontrolledCollapsed, setUncontrolledCollapsed] = useState(
-    collapseConfig.defaultIsCollapsed,
-  );
   const navRef = useRef<HTMLElement>(null);
   const collapseStateRef = useRef<SideNavCollapseState>({
     isCollapsed: false,
@@ -465,18 +434,8 @@ export function SideNav({
     isCollapsible,
   });
 
-  const setCollapsedState = useCallback(
-    (value: boolean) => {
-      if (!isControlled) {
-        setUncontrolledCollapsed(value);
-      }
-      onCollapsedChange?.(value);
-    },
-    [isControlled, onCollapsedChange],
-  );
-
-  // Resize hook — owns collapse when resizable is in play, so there is no
-  // second copy of the state to diverge from (#4790).
+  // useResizable is the sole collapse owner in every SideNav mode. Keeping that
+  // owner mounted when resize is toggled preserves the current collapse state.
   const resizableHook = useResizable({
     defaultSize: resizableConfig.defaultWidth ?? 260,
     minSizePx: resizableConfig.minWidth ?? 180,
@@ -484,17 +443,13 @@ export function SideNav({
     collapsible: isCollapsible,
     collapsedSize: COLLAPSE_THRESHOLD,
     autoSaveId: resizableConfig.autoSaveId,
-    defaultIsCollapsed: isResizableOwned
-      ? collapseConfig.defaultIsCollapsed
-      : undefined,
-    isCollapsed: isResizableOwned ? collapseConfig.isCollapsed : undefined,
+    defaultIsCollapsed: collapseConfig.defaultIsCollapsed,
+    isCollapsed: collapseConfig.isCollapsed,
     onSizeChange: resizableConfig.onWidthChange,
-    onCollapseChange: isResizableOwned ? onCollapsedChange : undefined,
+    onCollapseChange: onCollapsedChange,
   });
 
-  const collapsed = isResizableOwned
-    ? resizableHook.isCollapsed
-    : (collapseConfig.isCollapsed ?? uncontrolledCollapsed);
+  const collapsed = resizableHook.isCollapsed;
 
   const toggle = useCallback(() => {
     const next = !collapsed;
@@ -506,16 +461,12 @@ export function SideNav({
       isCollapsed: next,
     };
 
-    if (isResizableOwned) {
-      if (next) {
-        resizableHook.collapse();
-      } else {
-        resizableHook.expand();
-      }
+    if (next) {
+      resizableHook.collapse();
     } else {
-      setCollapsedState(next);
+      resizableHook.expand();
     }
-  }, [collapsed, setCollapsedState, isResizableOwned, resizableHook]);
+  }, [collapsed, resizableHook]);
 
   const showResizeHandle = isResizable && !collapsed;
 

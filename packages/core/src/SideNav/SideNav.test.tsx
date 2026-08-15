@@ -2489,6 +2489,28 @@ describe('SideNav collapse ownership', () => {
     expect(onCollapseChange).toHaveBeenCalledExactlyOnceWith(false);
   });
 
+  it('keeps collapse state when resize is toggled off and on', async () => {
+    const user = userEvent.setup();
+    const {rerender} = render(
+      <SideNav collapsible resizable>
+        Content
+      </SideNav>,
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Collapse sidebar'}));
+    expectCollapsed(true);
+
+    rerender(<SideNav collapsible>Content</SideNav>);
+    expectCollapsed(true);
+
+    rerender(
+      <SideNav collapsible resizable>
+        Content
+      </SideNav>,
+    );
+    expectCollapsed(true);
+  });
+
   it('gives resizable the winning value when both set defaultIsCollapsed', () => {
     render(
       <SideNav
@@ -2545,6 +2567,27 @@ describe('SideNav collapse conflict warning', () => {
     expect(message).toContain('resizable wins');
     // The winner is the state that actually renders.
     expectCollapsed(true);
+  });
+
+  it('does not split state and callback ownership across props', async () => {
+    const user = userEvent.setup();
+    const collapsibleChange = vi.fn();
+    const resizableChange = vi.fn();
+    render(
+      <SideNav
+        collapsible={{
+          isCollapsed: true,
+          onCollapsedChange: collapsibleChange,
+        }}
+        resizable={{onCollapseChange: resizableChange}}>
+        Content
+      </SideNav>,
+    );
+
+    expectCollapsed(false);
+    await user.click(screen.getByRole('button', {name: 'Collapse sidebar'}));
+    expect(resizableChange).toHaveBeenCalledExactlyOnceWith(true);
+    expect(collapsibleChange).not.toHaveBeenCalled();
   });
 
   it('stays silent for collapsible alongside a resize config', () => {
