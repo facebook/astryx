@@ -13,6 +13,7 @@
 import {act, fireEvent, render, screen} from '@testing-library/react';
 import {createRef, useState} from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import {useFocusTrap} from '@astryxdesign/core/hooks';
 import {BottomSheet} from './BottomSheet';
 import {BottomSheetSwitcher} from './BottomSheetSwitcher';
 
@@ -94,6 +95,54 @@ function ConditionalFlow() {
             Content
           </BottomSheet>
         )}
+      </BottomSheetSwitcher>
+    </>
+  );
+}
+
+function NestedEscapeTrap({onEscape}: {onEscape: () => void}) {
+  const {containerRef} = useFocusTrap<HTMLDivElement>({
+    isActive: true,
+    onEscape,
+  });
+  return (
+    <div ref={containerRef} data-testid="nested-escape-trap">
+      Nested layer
+    </div>
+  );
+}
+
+const panelRefA = (_element: HTMLDivElement | null) => {};
+const panelRefB = (_element: HTMLDivElement | null) => {};
+
+function CallbackRefFlow() {
+  const [activeSheet, setActiveSheet] = useState<string | null>('details');
+  const [useAlternateRef, setUseAlternateRef] = useState(false);
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setUseAlternateRef(current => !current)}>
+        Rerender parent
+      </button>
+      <BottomSheetSwitcher
+        activeSheet={activeSheet}
+        onActiveSheetChange={setActiveSheet}>
+        <BottomSheet
+          ref={useAlternateRef ? panelRefB : panelRefA}
+          sheetId="details"
+          label="Details"
+          data-testid="callback-details-sheet">
+          <button type="button" onClick={() => setActiveSheet('confirm')}>
+            Continue with callback ref
+          </button>
+        </BottomSheet>
+        <BottomSheet
+          sheetId="confirm"
+          label="Confirm"
+          data-testid="callback-confirm-sheet">
+          Confirmation
+        </BottomSheet>
       </BottomSheetSwitcher>
     </>
   );
@@ -197,6 +246,39 @@ describe('BottomSheetSwitcher', () => {
     expect(panel).toHaveClass('astryx-bottom-sheet');
     expect(panel).toHaveAttribute('data-sheet-owner', 'settings');
     expect(getSharedDialog()).toContainElement(panel);
+  });
+
+  it('forwards switcher DOM props, events, styles, and refs to the shared dialog', () => {
+    const dialogRef = createRef<HTMLDialogElement>();
+    const onClick = vi.fn();
+    const onActiveSheetChange = vi.fn();
+
+    render(
+      <BottomSheetSwitcher
+        ref={dialogRef}
+        activeSheet="details"
+        onActiveSheetChange={onActiveSheetChange}
+        aria-label="Notification setup"
+        data-flow-owner="settings"
+        className="consumer-switcher"
+        style={{insetInlineStart: 12}}
+        onClick={onClick}>
+        <BottomSheet sheetId="details" label="Details">
+          Content
+        </BottomSheet>
+      </BottomSheetSwitcher>,
+    );
+
+    const dialog = getSharedDialog();
+    expect(dialogRef.current).toBe(dialog);
+    expect(dialog).toHaveAccessibleName('Notification setup');
+    expect(dialog).toHaveAttribute('data-flow-owner', 'settings');
+    expect(dialog).toHaveClass('consumer-switcher');
+    expect(dialog).toHaveStyle({insetInlineStart: '12px'});
+
+    fireEvent.click(dialog);
+    expect(onClick).toHaveBeenCalledTimes(1);
+    expect(onActiveSheetChange).toHaveBeenCalledWith(null);
   });
 
   it('keeps the previous sheet stationary until the new entrance finishes, then fades it', () => {
@@ -317,6 +399,25 @@ describe('BottomSheetSwitcher', () => {
     finishSheetTransition(confirmSheet, 'opacity');
     expect(detailsSheet).not.toHaveAttribute('hidden');
     expect(confirmSheet).toHaveAttribute('hidden');
+  });
+
+  it('keeps an active handoff when a consumer callback ref changes', () => {
+    render(<CallbackRefFlow />);
+    const detailsSheet = getSheetLayer('callback-details-sheet');
+    const confirmSheet = getSheetLayer('callback-confirm-sheet');
+
+    fireEvent.click(
+      screen.getByRole('button', {name: 'Continue with callback ref'}),
+    );
+    expect(detailsSheet).not.toHaveAttribute('hidden');
+    expect(detailsSheet).toHaveAttribute('inert');
+    expect(confirmSheet).not.toHaveAttribute('hidden');
+
+    fireEvent.click(screen.getByRole('button', {name: 'Rerender parent'}));
+
+    expect(detailsSheet).not.toHaveAttribute('hidden');
+    expect(detailsSheet).toHaveAttribute('inert');
+    expect(confirmSheet).not.toHaveAttribute('hidden');
   });
 
   it('dismisses the flow from the one shared scrim', () => {
@@ -441,6 +542,46 @@ describe('BottomSheetSwitcher', () => {
     });
 
     expect(onActiveSheetChange).toHaveBeenCalledWith(null);
+  });
+
+  it('ignores Escape while an IME composition is active', () => {
+    const onActiveSheetChange = vi.fn();
+    render(
+      <BottomSheetSwitcher
+        activeSheet="details"
+        onActiveSheetChange={onActiveSheetChange}>
+        <BottomSheet sheetId="details" label="Details">
+          Content
+        </BottomSheet>
+      </BottomSheetSwitcher>,
+    );
+
+    const dialog = screen.getByRole('dialog', {name: 'Details'});
+    fireEvent.keyDown(dialog, {key: 'Escape', isComposing: true});
+    fireEvent.keyDown(dialog, {key: 'Escape', keyCode: 229});
+
+    expect(onActiveSheetChange).not.toHaveBeenCalled();
+  });
+
+  it('lets a nested focus trap handle Escape before the switcher', () => {
+    const onActiveSheetChange = vi.fn();
+    const onNestedEscape = vi.fn();
+    render(
+      <BottomSheetSwitcher
+        activeSheet="details"
+        onActiveSheetChange={onActiveSheetChange}>
+        <BottomSheet sheetId="details" label="Details">
+          <NestedEscapeTrap onEscape={onNestedEscape} />
+        </BottomSheet>
+      </BottomSheetSwitcher>,
+    );
+
+    fireEvent.keyDown(screen.getByTestId('nested-escape-trap'), {
+      key: 'Escape',
+    });
+
+    expect(onNestedEscape).toHaveBeenCalledTimes(1);
+    expect(onActiveSheetChange).not.toHaveBeenCalled();
   });
 
   it('returns focus to the original opener after a multi-sheet flow ends', async () => {

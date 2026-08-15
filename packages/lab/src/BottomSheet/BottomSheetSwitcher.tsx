@@ -40,13 +40,24 @@ import {
   type SyntheticEvent,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
+import type {BaseProps} from '@astryxdesign/core';
 import {
   colorVars,
   durationVars,
   easeVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
-import {useFocusTrap, useScrollLock} from '@astryxdesign/core/hooks';
-import {mergeProps, mergeRefs, themeProps} from '@astryxdesign/core/utils';
+import {
+  hasActiveFocusTrapEscape,
+  isImeKeyEvent,
+  useFocusTrap,
+  useScrollLock,
+} from '@astryxdesign/core/hooks';
+import {
+  composeEventHandlers,
+  mergeProps,
+  mergeRefs,
+  themeProps,
+} from '@astryxdesign/core/utils';
 import {
   BottomSheetSwitcherContext,
   type BottomSheetSwitcherContextValue,
@@ -160,7 +171,13 @@ function alignmentOffsetForElements(
   return Math.max(0, enteringTop - retainedElement.getBoundingClientRect().top);
 }
 
-export interface BottomSheetSwitcherProps {
+export interface BottomSheetSwitcherProps extends BaseProps<HTMLDialogElement> {
+  /** Ref forwarded to the shared native dialog. */
+  ref?: React.Ref<HTMLDialogElement>;
+
+  /** Called when the shared native dialog receives a cancel event. */
+  onCancel?: (event: SyntheticEvent<HTMLDialogElement>) => void;
+
   /**
    * ID of the interactive BottomSheet, or null when the flow should close.
    * Must match a nested BottomSheet's `sheetId`. The previous sheet may remain
@@ -193,6 +210,14 @@ export function BottomSheetSwitcher({
   onActiveSheetChange,
   hasScrim = true,
   children,
+  ref,
+  xstyle,
+  className,
+  style,
+  onCancel,
+  onClick,
+  onKeyDown,
+  ...props
 }: BottomSheetSwitcherProps) {
   const dialogRef = useRef<HTMLDialogElement | null>(null);
   const dialogModeRef = useRef<'modal' | 'non-modal' | null>(null);
@@ -497,12 +522,20 @@ export function BottomSheetSwitcher({
   );
   const handleKeyDown = useCallback(
     (event: ReactKeyboardEvent<HTMLDialogElement>) => {
-      if (event.key === 'Escape') {
+      // Modal Escape is owned by useFocusTrap so nested traps can win. A
+      // non-modal switcher has no outer trap, so retain local dismissal while
+      // deferring to an active nested layer and ignoring IME cancellation.
+      if (
+        !isModal &&
+        event.key === 'Escape' &&
+        !isImeKeyEvent(event.nativeEvent) &&
+        !hasActiveFocusTrapEscape()
+      ) {
         event.preventDefault();
         close();
       }
     },
-    [close],
+    [close, isModal],
   );
   const handleClick = useCallback(
     (event: ReactMouseEvent<HTMLDialogElement>) => {
@@ -518,23 +551,31 @@ export function BottomSheetSwitcher({
     isFlowVisible && styles.dialogOpen,
     hasScrim && styles.scrim,
     !hasScrim && styles.dialogNonModal,
+    xstyle,
   );
+  const dialogPresentationProps = hasScrim
+    ? mergeProps(
+        themeProps('bottom-sheet-switcher-scrim'),
+        dialogStyleProps,
+        className,
+        style,
+      )
+    : mergeProps(dialogStyleProps, className, style);
+  const ariaLabel =
+    props['aria-label'] ??
+    (props['aria-labelledby'] == null ? activeLabel : undefined);
 
   return (
     <BottomSheetSwitcherContext.Provider value={contextValue}>
       <dialog
-        {...(hasScrim
-          ? mergeProps(
-              themeProps('bottom-sheet-switcher-scrim'),
-              dialogStyleProps,
-            )
-          : dialogStyleProps)}
-        ref={mergeRefs(dialogRef, containerRef)}
-        aria-label={activeLabel}
+        {...props}
+        {...dialogPresentationProps}
+        ref={mergeRefs(ref, dialogRef, containerRef)}
+        aria-label={ariaLabel}
         aria-modal={isModal ? 'true' : undefined}
-        onCancel={handleCancel}
-        onClick={handleClick}
-        onKeyDown={handleKeyDown}>
+        onCancel={composeEventHandlers(onCancel, handleCancel)}
+        onClick={composeEventHandlers(onClick, handleClick)}
+        onKeyDown={composeEventHandlers(onKeyDown, handleKeyDown)}>
         {children}
       </dialog>
     </BottomSheetSwitcherContext.Provider>

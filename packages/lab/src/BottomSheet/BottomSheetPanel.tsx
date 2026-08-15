@@ -22,8 +22,8 @@
 import {
   useCallback,
   useEffect,
+  useImperativeHandle,
   useLayoutEffect,
-  useMemo,
   useRef,
   type ReactNode,
 } from 'react';
@@ -38,7 +38,7 @@ import {
   sizeVars,
   spacingVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
-import {mergeProps, mergeRefs, themeProps} from '@astryxdesign/core/utils';
+import {mergeProps, themeProps} from '@astryxdesign/core/utils';
 import {useSheetGestures} from './useSheetGestures';
 
 const SNAP_FRACTIONS = [0.14, 0.5, 0.92];
@@ -259,10 +259,11 @@ export function BottomSheetPanel({
     },
     [onElementChange, sheetRef],
   );
-  const mergedRef = useMemo(
-    () => mergeRefs(ref, setElement),
-    [ref, setElement],
-  );
+  // Keep controller registration attached to one stable host ref. React
+  // detaches an old callback ref when a consumer supplies a new identity; if
+  // that public ref were merged with setElement, an ordinary parent rerender
+  // could be mistaken for the panel unmounting and cancel a sheet handoff.
+  useImperativeHandle(ref, () => elementRef.current as HTMLDivElement);
 
   const motion = motionForState(state);
   useEffect(() => {
@@ -297,7 +298,7 @@ export function BottomSheetPanel({
   return (
     <div
       {...props}
-      ref={mergedRef}
+      ref={setElement}
       tabIndex={tabIndex ?? -1}
       {...mergeProps(
         themeProps('bottom-sheet'),
