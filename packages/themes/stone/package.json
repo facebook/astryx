@@ -1,6 +1,6 @@
 {
   "name": "@astryxdesign/theme-stone",
-  "version": "0.1.8",
+  "version": "0.4.1",
   "displayName": "Stone Theme",
   "private": false,
   "description": "Warm stone and slate, earthy and understated, with just enough character to feel handcrafted.",
@@ -46,17 +46,17 @@
     "src"
   ],
   "scripts": {
-    "build": "astryx theme build src/stoneTheme.ts -o dist/theme.css && tsup && tsc --project tsconfig.build.json"
+    "build": "astryx theme build src/stoneTheme.ts -o dist/theme.css --icons-specifier ./icons.mjs && tsup && tsc --project tsconfig.build.json"
   },
   "dependencies": {
     "lucide-react": "^1.18.0"
   },
   "peerDependencies": {
-    "@astryxdesign/core": "0.1.8",
+    "@astryxdesign/core": "0.4.1",
     "react": ">=19"
   },
   "devDependencies": {
-    "@astryxdesign/cli": "0.1.8"
+    "@astryxdesign/cli": "0.4.1"
   },
   "module": "./dist/source.mjs"
 }

@@ -24,11 +24,11 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {createRequire} from 'node:module';
 
-import {MIN_NODE_VERSION, isNodeVersionSupported} from '../../lib/node-version.mjs';
-import {CLI_ROOT, findCoreDir} from '../../utils/paths.mjs';
-import {detectPackageManager, getCliInvocation} from '../../utils/package-manager.mjs';
-import {findConfigPath, Project} from '../../lib/project.mjs';
-import {semverCompare} from '../../utils/semver.mjs';
+import {MIN_NODE_VERSION, isNodeVersionSupported} from '../../foundation/env/node-version.mjs';
+import {CLI_ROOT, findCoreDir} from '../../foundation/fs/paths.mjs';
+import {detectPackageManager, getCliInvocation} from '../../foundation/env/package-manager.mjs';
+import {findConfigPath, Project} from '../../foundation/config/project.mjs';
+import {semverCompare, isValidSemver, satisfiesRange} from '../../foundation/env/semver.mjs';
 
 const _require = createRequire(import.meta.url);
 
@@ -52,6 +52,8 @@ const _require = createRequire(import.meta.url);
  * @property {string|null} coreDir - Resolved core package directory, or null.
  * @property {string|null} configPath - Resolved astryx.config.mjs path, or null.
  * @property {string|null} configTheme - theme value read from config, or null.
+ * @property {Error|null} [configError] - Error thrown while resolving the config
+ *   path (e.g. multiple config files present), surfaced by checkConfig as a FAIL.
  */
 
 /* ── helpers ──────────────────────────────────────────────────────────── */
@@ -213,6 +215,22 @@ export function checkVersionAlignment(ctx) {
     };
   }
 
+  // A monorepo/linked install often pins a non-semver range like `workspace:*`
+  // or `link:...`. `'workspace:*'.split('.').map(Number)` yields NaN, and
+  // `NaN !== cliMajor` is always true — that produced a spurious drift WARN
+  // with a `NaN.undefined.x` fix string. If either version isn't real semver,
+  // there's nothing to compare: skip.
+  if (!isValidSemver(coreVersion) || !isValidSemver(cliVersion)) {
+    return {
+      id: 'version-alignment',
+      label: '@astryxdesign/core <-> @astryxdesign/cli alignment',
+      status: 'info',
+      message:
+        `Skipped — @astryxdesign/core v${coreVersion} / @astryxdesign/cli ` +
+        `v${cliVersion} are not both comparable semver.`,
+    };
+  }
+
   const [coreMajor, coreMinor] = coreVersion.split('.').map(Number);
   const [cliMajor, cliMinor] = cliVersion.split('.').map(Number);
   const drift = coreMajor !== cliMajor || coreMinor !== cliMinor;
@@ -282,6 +300,17 @@ export function checkThemes(ctx) {
  * @returns {Promise<DoctorCheck>}
  */
 export async function checkConfig(ctx) {
+  // A resolution error (e.g. multiple astryx.config.* files) is exactly the
+  // kind of setup problem doctor should report — not crash on.
+  if (ctx.configError) {
+    return {
+      id: 'config',
+      label: 'astryx.config.mjs',
+      status: 'fail',
+      message: ctx.configError.message,
+      fix: 'Keep exactly one astryx.config.{ts,mjs,js} at your project root.',
+    };
+  }
   if (!ctx.configPath) {
     return {
       id: 'config',
@@ -407,30 +436,53 @@ export function checkPeerDeps(ctx) {
   }
 
   const missing = [];
+  /** @type {Array<{name: string, want: string, have: string}>} */
+  const mismatched = [];
   for (const name of peerNames) {
-    let present = false;
+    const want = peers[name];
+    let pkgJsonPath;
     try {
-      _require.resolve(`${name}/package.json`, {paths: [ctx.cwd]});
-      present = true;
+      pkgJsonPath = _require.resolve(`${name}/package.json`, {paths: [ctx.cwd]});
     } catch {
-      // Some packages don't expose package.json — try resolving the entry.
+      // package.json isn't exported — fall back to entry resolution for
+      // presence only (we then can't read the version to range-check it).
       try {
         _require.resolve(name, {paths: [ctx.cwd]});
-        present = true;
       } catch {
-        // Still unresolved — leave present at its initial false.
+        missing.push(`${name}@${want}`);
       }
+      continue;
     }
-    if (!present) missing.push(`${name}@${peers[name]}`);
+    // Present and version-readable: verify it actually satisfies the range,
+    // not just that the package exists (a bare `npm install` can resolve an
+    // out-of-range version from a stale consumer range and still "look" fine).
+    const have = pkgVersion(path.dirname(pkgJsonPath));
+    if (have && !satisfiesRange(have, want)) {
+      mismatched.push({name, want, have});
+    }
   }
 
-  if (missing.length > 0) {
+  if (missing.length > 0 || mismatched.length > 0) {
+    const problems = [];
+    if (missing.length) problems.push(`missing: ${missing.join(', ')}`);
+    if (mismatched.length) {
+      problems.push(
+        `out of range: ${mismatched
+          .map(m => `${m.name}@${m.have} (needs ${m.want})`)
+          .join(', ')}`,
+      );
+    }
+    // Pin the required range for anything wrong so the hint fixes it even when a
+    // stale consumer range would otherwise resolve an incompatible version.
+    // Quote targets containing shell metacharacters (e.g. `react@>=19.0.0`).
+    const quote = (/** @type {string} */ s) => (/[<>|() ]/.test(s) ? `'${s}'` : s);
+    const targets = [...missing, ...mismatched.map(m => `${m.name}@${m.want}`)].map(quote);
     return {
       id: 'peer-deps',
       label: '@astryxdesign/core peer dependencies',
       status: 'warn',
-      message: `Missing peer dependencies: ${missing.join(', ')}.`,
-      fix: `Install the required peers, e.g. \`npm install ${missing.map(m => m.split('@')[0]).join(' ')}\`.`,
+      message: `Peer dependency issues — ${problems.join('; ')}.`,
+      fix: `Install compatible peers: \`npm install ${targets.join(' ')}\`.`,
     };
   }
 
@@ -485,7 +537,16 @@ export const SYNC_CHECKS = [
 export async function runChecks(options = {}) {
   const cwd = options.cwd ?? process.cwd();
   const coreDir = findCoreDir(cwd);
-  const configPath = findConfigPath(cwd);
+  // findConfigPath throws when multiple config files coexist. That's a
+  // misconfiguration doctor exists to report — catch it and surface it through
+  // checkConfig as a FAIL rather than crashing the whole diagnostic engine.
+  let configPath = null;
+  let configError = null;
+  try {
+    configPath = findConfigPath(cwd);
+  } catch (err) {
+    configError = /** @type {Error} */ (err);
+  }
 
   // Resolve a possible theme key from config (best-effort; never throws).
   let configTheme = null;
@@ -504,6 +565,7 @@ export async function runChecks(options = {}) {
     coreDir,
     configPath,
     configTheme,
+    configError,
   };
 
   /** @type {DoctorCheck[]} */

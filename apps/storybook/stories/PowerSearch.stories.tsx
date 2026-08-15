@@ -1375,3 +1375,31 @@ export const DisabledWithMessage: Story = {
     placeholder: 'Search...',
   },
 };
+
+export const StatusVariantComparison: Story = {
+  render: () => {
+    const [a, setA] = useState<PowerSearchFilter[]>([]);
+    const [b, setB] = useState<PowerSearchFilter[]>([]);
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: 24, width: 400}}>
+        <PowerSearch
+          config={basicConfig}
+          filters={a}
+          onChange={newFilters => setA([...newFilters])}
+          isLabelHidden={false}
+          label="Attached (default)"
+          status={{type: 'error', message: 'Add at least one filter'}}
+        />
+        <PowerSearch
+          config={basicConfig}
+          filters={b}
+          onChange={newFilters => setB([...newFilters])}
+          isLabelHidden={false}
+          label="Detached"
+          status={{type: 'error', message: 'Add at least one filter'}}
+          statusVariant="detached"
+        />
+      </div>
+    );
+  },
+};

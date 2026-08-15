@@ -15,7 +15,7 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/ToggleButton/index.ts
  * - /apps/storybook/stories/ToggleButton.stories.tsx
- * - /packages/cli/templates/blocks/components/ToggleButton/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/ToggleButton/ (showcase blocks)
  */
 
 import {createContext, useCallback, use, useMemo, type ReactNode} from 'react';
@@ -153,8 +153,7 @@ export interface ToggleButtonGroupMultipleProps extends ToggleButtonGroupBasePro
 
 /** Discriminated union of single and multiple group props. */
 export type ToggleButtonGroupProps =
-  | ToggleButtonGroupSingleProps
-  | ToggleButtonGroupMultipleProps;
+  ToggleButtonGroupSingleProps | ToggleButtonGroupMultipleProps;
 
 // =============================================================================
 // Component
@@ -176,9 +175,7 @@ export type ToggleButtonGroupProps =
  * </ToggleButtonGroup>
  * ```
  */
-export function ToggleButtonGroup(
-  props: ToggleButtonGroupProps,
-): ReactNode {
+export function ToggleButtonGroup(props: ToggleButtonGroupProps): ReactNode {
   const {
     children,
     label,

@@ -371,6 +371,9 @@ export function useTableSelection<T extends Record<string, unknown>>(
               store.getConfig().getIsItemSelected(item),
             );
           });
+          return () => {
+            unsub();
+          };
         };
 
         return {

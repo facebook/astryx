@@ -12,6 +12,9 @@
  * - Root container: layout-only wrapper (flex column), no visual styling, no theme target
  * - Header area (themeProps 'banner'): colored status background with icon, title, description, actions, dismiss
  * - Content area (themeProps 'banner-content'): collapsible card background for additional content (children)
+ * - Status icon (themeProps 'banner-icon'): the target rides on the default
+ *   <Icon> itself — the element that paints — so 'status:X' overrides reach
+ *   the glyph (#4166); for a custom `icon` node it stays on the layout wrapper
  * - No left border accent — color is expressed through the full header background
  * - Each visual area owns its own border-radius (no overflow:clip on the container)
  * - When children are provided, a collapse/expand toggle button appears in the end area
@@ -28,7 +31,7 @@
  * - /packages/core/src/Banner/Banner.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Banner/index.ts (exports if types change)
  * - /apps/storybook/stories/Banner.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Banner/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Banner/ (showcase blocks)
  */
 
 import {useId, useState, type ReactNode} from 'react';
@@ -53,54 +56,17 @@ import type {Elevation} from '../utils/types';
 import {edgeCompSlot} from '../Layout/edgeCompensation.stylex';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
+import type {BannerStatusMap, BannerContainerMap} from './index';
 
 // =============================================================================
 // Types
 // =============================================================================
 
 /**
- * Extensible status map for Banner.
- *
- * Theme packages can add custom statuses via TypeScript module augmentation:
- * @example
- * ```
- * declare module '@astryxdesign/core/Banner' {
- *   interface BannerStatusMap {
- *     'neutral': true;
- *   }
- * }
- * ```
- */
-export interface BannerStatusMap {
-  info: true;
-  warning: true;
-  error: true;
-  success: true;
-}
-
-/**
  * Status type controlling the banner's icon and color.
  * Extensible via module augmentation of BannerStatusMap.
  */
 export type BannerStatus = keyof BannerStatusMap;
-
-/**
- * Extensible container map for Banner.
- *
- * Theme packages can add custom container types via TypeScript module augmentation:
- * @example
- * ```
- * declare module '@astryxdesign/core/Banner' {
- *   interface BannerContainerMap {
- *     'floating': true;
- *   }
- * }
- * ```
- */
-export interface BannerContainerMap {
-  card: true;
-  section: true;
-}
 
 /**
  * Container type of the banner.
@@ -243,10 +209,10 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-container'],
   },
   headerCardWithContent: {
-    borderTopLeftRadius: radiusVars['--radius-container'],
-    borderTopRightRadius: radiusVars['--radius-container'],
-    borderBottomLeftRadius: 0,
-    borderBottomRightRadius: 0,
+    borderStartStartRadius: radiusVars['--radius-container'],
+    borderStartEndRadius: radiusVars['--radius-container'],
+    borderEndStartRadius: 0,
+    borderEndEndRadius: 0,
   },
   // When there's only a title (no description) and actions, center everything vertically
   headerCentered: {
@@ -294,22 +260,23 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-background-card'],
     paddingBlock: spacingVars['--spacing-3'],
     paddingInline: spacingVars['--spacing-4'],
-    borderLeftWidth: borderVars['--border-width'],
-    borderRightWidth: borderVars['--border-width'],
+    borderInlineStartWidth: borderVars['--border-width'],
+    borderInlineEndWidth: borderVars['--border-width'],
     borderBottomWidth: borderVars['--border-width'],
-    borderLeftStyle: 'solid',
-    borderRightStyle: 'solid',
+    borderInlineStartStyle: 'solid',
+    borderInlineEndStyle: 'solid',
     borderBottomStyle: 'solid',
-    borderLeftColor: colorVars['--color-border'],
-    borderRightColor: colorVars['--color-border'],
+    borderInlineStartColor: colorVars['--color-border'],
+    borderInlineEndColor: colorVars['--color-border'],
     borderBottomColor: colorVars['--color-border'],
   },
   contentAreaCard: {
-    borderBottomLeftRadius: radiusVars['--radius-container'],
-    borderBottomRightRadius: radiusVars['--radius-container'],
+    borderEndStartRadius: radiusVars['--radius-container'],
+    borderEndEndRadius: radiusVars['--radius-container'],
   },
+  // Applied to the chevron <Icon> itself (via `xstyle`) rather than a wrapper,
+  // so the element that rotates is the element a theme targets.
   chevron: {
-    display: 'inline-flex',
     transitionProperty: 'transform',
     transitionDuration: {
       default: durationVars['--duration-fast'],
@@ -481,16 +448,32 @@ export function Banner({
                 : styles.headerCardStandalone),
           ),
         )}>
+        {/* The 'banner-icon' target rides on the element that paints: the
+            default <Icon> below, or this wrapper when a custom `icon` node
+            is passed (core never injects props into consumer elements, so
+            overrides reach it via inheritance). The wrapper itself stays
+            layout-only. */}
         <div
-          {...mergeProps(
-            themeProps('banner-icon', {status}),
-            stylex.props(styles.iconWrapper),
-          )}
+          {...(icon != null
+            ? mergeProps(
+                themeProps('banner-icon', {status}),
+                stylex.props(styles.iconWrapper),
+              )
+            : stylex.props(styles.iconWrapper))}
           aria-hidden="true">
           {icon != null ? (
             icon
           ) : (
-            <Icon icon={defaultIconName} size="md" color={iconColor} />
+            // Applied to the status <Icon> itself rather than the wrapper, so
+            // the element that paints the glyph is the element a theme
+            // targets — a 'banner-icon' 'status:X' color override beats the
+            // Icon's own variant from @layer astryx-theme (#4166).
+            <Icon
+              icon={defaultIconName}
+              size="md"
+              color={iconColor}
+              {...themeProps('banner-icon', {status})}
+            />
           )}
         </div>
         <div {...stylex.props(styles.headerContent)}>
@@ -521,13 +504,15 @@ export function Banner({
                     : t('@astryx.banner.expand')
                 }
                 icon={
-                  <span
-                    {...stylex.props(
+                  <Icon
+                    icon="chevronDown"
+                    size="sm"
+                    color="inherit"
+                    xstyle={[
                       styles.chevron,
                       isExpanded && styles.chevronExpanded,
-                    )}>
-                    <Icon icon="chevronDown" size="sm" color="inherit" />
-                  </span>
+                    ]}
+                  />
                 }
                 onClick={handleToggleExpand}
                 aria-expanded={isExpanded}

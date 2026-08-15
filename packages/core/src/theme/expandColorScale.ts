@@ -2,7 +2,7 @@
 
 /**
  * @file expandColorScale.ts
- * @input Color scale configuration { accent, neutralStyle?, contrast? }
+ * @input Color scale configuration { accent?, neutralStyle?, contrast? }
  * @output Token overrides for derivable color tokens
  * @position Theme utility; consumed by defineTheme.ts
  *
@@ -11,11 +11,28 @@
  * derive from the accent — status colors, categorical hues, and fixed
  * tokens (on-dark/on-light) fall through to colorDefaults.
  *
+ * `accent` is optional: a neutral-only config still gets the full neutral
+ * ramp (seeded from the default accent's hue) while the accent tokens
+ * themselves fall through to colorDefaults, same as the tokens above.
+ *
+ * WCAG contrast guarantees (asserted in expandColorScale.test.ts):
+ * - Text tones are guaranteed >= 4.5:1 against their surfaces by tone
+ *   spacing alone — HCT tone is CIE L*, which fixes relative luminance
+ *   regardless of hue/chroma, so the fixed tone assignments hold for any
+ *   accent/neutralStyle (WCAG 1.4.3).
+ * - --color-border-emphasized (form-control boundaries) is tone-bumped
+ *   until it reaches >= 3:1 against the generated surface (WCAG 1.4.11).
+ * - --color-border, --color-skeleton, and --color-track are intentionally
+ *   decorative/redundant cues and are NOT held to 3:1 — see the test file
+ *   for the rationale.
+ *
  * SYNC: When modified, update:
  * - /packages/core/src/theme/defineTheme.ts
+ * - /packages/cli/assets/theme.template.ts (the annotated field reference)
  */
 
-import {hexToHct, tonalPalette, hexWithAlpha} from './hct';
+import {contrastRatio} from './contrast';
+import {hexToHct, hctToHex, tonalPalette, hexWithAlpha} from './hct';
 
 // =============================================================================
 // Types
@@ -31,11 +48,21 @@ import {hexToHct, tonalPalette, hexWithAlpha} from './hct';
  *
  * // With customization
  * { accent: '#B7410E', neutralStyle: 'warm', contrast: 'high' }
+ *
+ * // Neutral-only — keeps the default accent, themes the neutrals
+ * { neutralStyle: 'warm' }
  * ```
  */
 export interface ColorScaleConfig {
-  /** Seed accent color as hex (#RRGGBB). Everything derives from this. */
-  accent: string;
+  /**
+   * Seed accent color as hex (#RRGGBB). Everything derives from this.
+   *
+   * Optional. When omitted, the neutral palettes are seeded from the
+   * default accent's hue and the accent tokens (--color-accent,
+   * --color-accent-muted, --color-on-accent) are not generated — they
+   * fall through to colorDefaults.
+   */
+  accent?: string;
 
   /**
    * Neutral tone warmth. Controls how much of the seed's hue bleeds
@@ -45,7 +72,9 @@ export interface ColorScaleConfig {
   neutralStyle?: 'warm' | 'cool' | 'neutral';
 
   /**
-   * Contrast level. Affects tone assignments for text and UI elements.
+   * Contrast level. `'high'` pulls text, icons, and borders toward stronger
+   * tones (and thickens the subtle border's alpha) so structural and textual
+   * boundaries stay perceivable.
    * @default 'standard'
    */
   contrast?: 'standard' | 'high';
@@ -69,6 +98,14 @@ const NEUTRAL_VARIANT_CHROMA: Record<string, number> = {
   neutral: 6,
 };
 
+/**
+ * Hue source for accent-less configs — the light half of
+ * colorDefaults['--color-accent'] (a test guards the two against drift).
+ * Only its hue reaches the output: the accent tokens stay ungenerated, so
+ * they keep their colorDefaults values rather than this seed's derivation.
+ */
+const DEFAULT_ACCENT_SEED = '#0064E0';
+
 // =============================================================================
 // Computation
 // =============================================================================
@@ -81,6 +118,39 @@ function accentWithAlpha(alpha: number): string {
   return `color-mix(in srgb, var(--color-accent) ${alpha * 100}%, transparent)`;
 }
 
+/** WCAG 1.4.11 minimum contrast for non-text UI boundaries. */
+const NON_TEXT_MIN_CONTRAST = 3;
+
+/**
+ * Walk tone in `step` increments from `startTone` until the color reaches
+ * `minRatio` against `background`, and return the resulting hex.
+ *
+ * Used for tokens whose preferred tone is not guaranteed by tone spacing
+ * alone (e.g. --color-border-emphasized). Because HCT tone is CIE L*,
+ * each step moves luminance monotonically, so the loop always terminates —
+ * at worst at pure black/white (21:1 against anything mid-range).
+ */
+export function ensureContrastTone(
+  hue: number,
+  chroma: number,
+  startTone: number,
+  step: -1 | 1,
+  background: string,
+  minRatio: number,
+): string {
+  let tone = startTone;
+  let hex = hctToHex({hue, chroma, tone});
+  while (
+    contrastRatio(hex, background) < minRatio &&
+    tone + step >= 0 &&
+    tone + step <= 100
+  ) {
+    tone += step;
+    hex = hctToHex({hue, chroma, tone});
+  }
+  return hex;
+}
+
 /**
  * Expand a color scale config into Astryx color token overrides.
  *
@@ -89,18 +159,23 @@ function accentWithAlpha(alpha: number): string {
  * --color-on-dark/on-light) are NOT generated — they fall through
  * to colorDefaults.
  *
+ * Without an `accent`, the accent tokens join that fall-through set: the
+ * neutrals are seeded from the default accent's hue, and --color-accent,
+ * --color-accent-muted and --color-on-accent keep their colorDefaults values.
+ *
  * @example
  * ```
  * const tokens = expandColorScale({ accent: '#0064E0' });
  * // tokens['--color-accent'] === 'light-dark(#..., #...)'
+ *
+ * const neutralOnly = expandColorScale({ neutralStyle: 'warm' });
+ * // neutralOnly['--color-accent'] === undefined
  * ```
  */
-export function expandColorScale(
-  config: ColorScaleConfig,
-): ColorScaleTokens {
+export function expandColorScale(config: ColorScaleConfig): ColorScaleTokens {
   const {accent, neutralStyle = 'cool', contrast = 'standard'} = config;
 
-  const seed = hexToHct(accent);
+  const seed = hexToHct(accent ?? DEFAULT_ACCENT_SEED);
   const seedHue = seed.hue;
 
   const primaryChroma = Math.max(seed.chroma, 48);
@@ -118,15 +193,59 @@ export function expandColorScale(
   const textSecondaryLightTone = isHigh ? 20 : 30;
   const textSecondaryDarkTone = isHigh ? 80 : 70;
 
+  // Borders track contrast the same way text does: high contrast pulls the
+  // emphasized border tone toward mid-scale (stronger against both the near-
+  // white light surface and the near-black dark surface) and thickens the
+  // otherwise-decorative subtle hairline by doubling its alpha, so structural
+  // boundaries stay perceivable for users who opt into high contrast.
+  const borderSubtleAlpha = isHigh ? 0.2 : 0.1;
+
+  // Emphasized borders outline form controls (CheckboxInput, Selector), so
+  // they are non-text UI boundaries under WCAG 1.4.11 and must reach 3:1
+  // against the surface they sit on. High contrast starts at a more
+  // aggressive tone (50 vs 70/30), guaranteeing a stronger result; standard
+  // contrast starts at 70/30 and walks toward mid-scale only as far as needed.
+  const borderEmphasizedStartLight = isHigh ? 50 : 70;
+  const borderEmphasizedStartDark = isHigh ? 50 : 30;
+  const borderEmphasized = ld(
+    ensureContrastTone(
+      seedHue,
+      neutralVariantChroma,
+      borderEmphasizedStartLight,
+      -1,
+      N[99],
+      NON_TEXT_MIN_CONTRAST,
+    ),
+    ensureContrastTone(
+      seedHue,
+      neutralVariantChroma,
+      borderEmphasizedStartDark,
+      1,
+      N[10],
+      NON_TEXT_MIN_CONTRAST,
+    ),
+  );
+
   return {
-    // Core semantic
-    '--color-accent': ld(P[40], P[80]),
-    // Derived accent tokens reference --color-accent instead of baking its
-    // resolved hex, so a scoped override of the base token re-accents the
-    // whole subtree at runtime. --color-on-accent stays baked: it is a
-    // contrast computation against the accent, which CSS cannot express.
-    '--color-accent-muted': ld(accentWithAlpha(0.2), accentWithAlpha(0.25)),
-    '--color-on-accent': ld(P[100], P[20]),
+    // Core semantic — only with a seed accent. Without one these fall through
+    // to colorDefaults, whose --color-accent is NOT what the default seed
+    // derives: defaulting the seed instead of omitting the tokens would
+    // recolor every neutral-only theme. Nullish and not truthy, matching the
+    // seed above, so a supplied-but-malformed accent keeps its old behavior.
+    ...(accent != null
+      ? {
+          '--color-accent': ld(P[40], P[80]),
+          // Derived accent tokens reference --color-accent instead of baking its
+          // resolved hex, so a scoped override of the base token re-accents the
+          // whole subtree at runtime. --color-on-accent stays baked: it is a
+          // contrast computation against the accent, which CSS cannot express.
+          '--color-accent-muted': ld(
+            accentWithAlpha(0.2),
+            accentWithAlpha(0.25),
+          ),
+          '--color-on-accent': ld(P[100], P[20]),
+        }
+      : null),
     '--color-neutral': ld(hexWithAlpha(N[10], 0.1), hexWithAlpha(N[90], 0.2)),
     '--color-background-surface': ld(N[99], N[10]),
     '--color-background-body': ld(N[95], N[5]),
@@ -168,8 +287,14 @@ export function expandColorScale(
     '--color-background-inverted': ld(N[10], N[99]),
 
     // Border
-    '--color-border': ld(hexWithAlpha(N[10], 0.1), hexWithAlpha(N[95], 0.1)),
-    '--color-border-emphasized': ld(NV[70], NV[30]),
+    // Border
+    // Decorative hairline — not a WCAG 1.4.11 boundary. High contrast
+    // doubles the alpha so structural boundaries stay perceivable.
+    '--color-border': ld(
+      hexWithAlpha(N[10], borderSubtleAlpha),
+      hexWithAlpha(N[95], borderSubtleAlpha),
+    ),
+    '--color-border-emphasized': borderEmphasized,
 
     // Effects
     '--color-skeleton': ld(NV[70], NV[30]),

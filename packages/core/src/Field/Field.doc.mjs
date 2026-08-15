@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'Field',
@@ -30,6 +30,11 @@ export const docs = {
       {className: 'astryx-field', visualProps: ['layout']},
       {className: 'astryx-field-label'},
       {className: 'astryx-field-status', visualProps: ['type', 'variant']},
+      {
+        className: 'astryx-input-status-icon',
+        visualProps: ['size', 'status'],
+      },
+      {className: 'astryx-input-clear-icon'},
     ],
     vars: [
       {name: '--_field-radius', description: 'Border radius of input fields', default: 'var(--radius-element)', private: true},
@@ -192,7 +197,7 @@ function CustomSliderField() {
   ],
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsZh = {
   usage: {
     description: 'Field is a low-level wrapper for custom, native, or third-party controls that do not already provide field label, description, and status UI. Use it when you need the Field shell around a control you own; use styled Astryx inputs like TextInput, Typeahead, and Select directly when they already expose label, description, and validation props.',
@@ -208,7 +213,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
     'Low-level field shell for custom controls needing label/description/status.',

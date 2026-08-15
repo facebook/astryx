@@ -17,6 +17,7 @@ import {
 } from './parsePropType';
 import {resolveValue} from './resolveElements';
 import type {
+  ComponentEntry,
   PropDoc,
   PlaygroundConfig,
 } from '../../generated/componentRegistry';
@@ -196,6 +197,24 @@ export function buildInitialState(
     }
   }
   return state;
+}
+
+/**
+ * Whether a component detail page renders the interactive Properties
+ * playground. Hooks document params/returns through HookSignature instead.
+ * Utility entries (providers and context, e.g. LinkProvider, LayerProvider,
+ * VisuallyHidden) are non-visual, so auto-generated knobs render an empty or
+ * meaningless stage; they get the hook-style static layout with a plain props
+ * table unless their doc curates a playground (e.g. Theme, which previews
+ * themed content). See #2733.
+ */
+export function hasInteractivePlayground(
+  comp: Pick<ComponentEntry, 'category' | 'params' | 'playground'>,
+): boolean {
+  if (comp.params != null) {
+    return false;
+  }
+  return comp.category !== 'Utility' || comp.playground != null;
 }
 
 /**

@@ -25,6 +25,11 @@ const meta: Meta<typeof TreeList> = {
       options: ['compact', 'balanced', 'spacious'],
       description: 'Spacing density for tree list items',
     },
+    variant: {
+      control: 'select',
+      options: ['lineGuides', 'noGuides'],
+      description: 'Hierarchy guide-line treatment',
+    },
   },
 };
 
@@ -426,4 +431,107 @@ export const ThemedItemLabel: Story = {
       />
     </Theme>
   ),
+};
+
+const guideItems: TreeListItemData[] = [
+  {
+    id: 'root',
+    label: 'Project',
+    isExpanded: true,
+    children: [
+      {
+        id: 'src',
+        label: 'src',
+        isExpanded: true,
+        children: [
+          {id: 'app', label: 'App.tsx'},
+          {id: 'index', label: 'index.tsx'},
+        ],
+      },
+      {id: 'pkg', label: 'package.json'},
+    ],
+  },
+];
+
+/**
+ * Hide the hierarchy guide (connector) lines through the
+ * `astryx-tree-list-guide` theme target — `display: 'none'` — when the
+ * surrounding layout already conveys nesting, or when a theme supplies its own
+ * connectors. No prop is needed: the theme rule lands in `@layer astryx-theme`,
+ * above StyleX's base layer, so it wins.
+ */
+const hiddenGuidesTheme = defineTheme({
+  name: 'tree-list-guide-hidden-demo',
+  components: {
+    'tree-list-guide': {
+      base: {
+        display: 'none',
+      },
+    },
+  },
+});
+
+export const HiddenGuides: Story = {
+  render: () => (
+    <Theme theme={hiddenGuidesTheme} mode="light">
+      <TreeList items={guideItems} />
+    </Theme>
+  ),
+};
+
+/**
+ * Recolor the guides via the `astryx-tree-list-guide` theme target instead of
+ * hiding the built-in connectors and reimplementing them.
+ *
+ * `components['tree-list-guide'].base` restyles the connector lines only.
+ * Defaults are unchanged; this story only demonstrates the override channel.
+ */
+const guideTheme = defineTheme({
+  name: 'tree-list-guide-demo',
+  components: {
+    'tree-list-guide': {
+      base: {
+        backgroundColor: 'var(--color-accent)',
+      },
+    },
+  },
+});
+
+export const ThemedGuides: Story = {
+  render: () => (
+    <Theme theme={guideTheme} mode="light">
+      <TreeList items={guideItems} />
+    </Theme>
+  ),
+};
+
+/**
+ * The `variant` prop selects the base guide-line look, orthogonal to `density`
+ * (which owns spacing). `lineGuides` (default) draws the connector lines;
+ * `noGuides` hides them while keeping the indentation intact, so nesting is
+ * conveyed by indent alone. The guides remain themeable via the
+ * `astryx-tree-list-guide` target regardless of variant.
+ */
+export const Variants: Story = {
+  render: () => (
+    <div style={{display: 'flex', gap: 48, alignItems: 'flex-start'}}>
+      <div>
+        <div style={{marginBottom: 8, fontWeight: 600}}>
+          lineGuides (default)
+        </div>
+        <TreeList items={guideItems} variant="lineGuides" />
+      </div>
+      <div>
+        <div style={{marginBottom: 8, fontWeight: 600}}>noGuides</div>
+        <TreeList items={guideItems} variant="noGuides" />
+      </div>
+    </div>
+  ),
+};
+
+export const NoGuides: Story = {
+  args: {
+    items: guideItems,
+    variant: 'noGuides',
+  },
 };

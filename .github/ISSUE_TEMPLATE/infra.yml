@@ -1,0 +1,73 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
+name: "Test or CI Infrastructure"
+description: Report a problem in Astryx's test suite, CI pipeline, or build tooling.
+title: "[Infra] "
+labels: ["type:test"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Before you submit
+
+        This template is for problems in the repository's **own tooling** — a flaky or misconfigured test, CI pipeline cost or reliability, build and dependency configuration. Read the [contributing guide](https://github.com/facebook/astryx/wiki/Contributing) before submitting.
+
+        - A bug in an Astryx component → **Bug Report**
+        - A new component, feature, or significant API change → **RFC**
+
+        Infrastructure reports are judged on measurements, not impressions. A report that names the failing run and the numbers behind it can be acted on immediately; one that says a job "feels slow" cannot.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What is broken, flaky, or costly today? Describe the defect in the tooling, not the change you want. Name the workflow, job, or test file it lives in.
+      placeholder: "The `foo` job re-runs `bar` on every push because ..., which means ..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: |
+        The concrete signal behind the report. The more reproducible, the better.
+        - Link to the failing or slow workflow run, naming the job and step
+        - Measured numbers — durations, failure counts across N runs, resolved versions
+        - For flakes: how often it reproduces, and whether the failing commit is related
+      placeholder: "Run 12345678 (`test` job, step `pnpm test`) failed with ... . Across the last 50 runs on main this failed N times ..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope Check
+      description: Does the same defect exist elsewhere? A sweep for sibling cases — other jobs, other suites, other packages — sizes the fix once instead of over follow-up rounds.
+      placeholder: "Audited the rest of the workflows and suites: only X and Y share this pattern; Z is unaffected because ..."
+    validations:
+      required: false
+
+  - type: textarea
+    id: direction
+    attributes:
+      label: Proposed Direction
+      description: |
+        One or more ideas for how this could be fixed — not as an implementation proposal, but to show the trade-offs you have considered. Say what you would deliberately leave alone.
+      placeholder: |
+        Option A: shard the job so ...
+        Option B: cache the ... step, at the cost of ...
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission Checklist
+      options:
+        - label: I have read the [Contributing guide](https://github.com/facebook/astryx/wiki/Contributing)
+          required: true
+        - label: This is a problem in the repository's tooling, not a defect in a shipped component
+          required: true
+        - label: I have linked the failing run or included the measurements behind this report
+          required: true

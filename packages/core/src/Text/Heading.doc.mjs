@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'Heading',
@@ -33,7 +33,7 @@ export const docs = {
     {
       name: 'color',
       type: "'primary' | 'secondary' | 'disabled' | 'placeholder' | 'accent' | 'inherit'",
-      description: 'Text color.',
+      description: 'Text color. Themes may add custom colors.',
       default: "'primary'",
     },
     {
@@ -120,7 +120,7 @@ export const docsZh = {
     {
       name: 'color',
       type: "'primary' | 'secondary' | 'disabled' | 'placeholder' | 'accent' | 'inherit'",
-      description: '文本颜色。',
+      description: '文本颜色。主题可添加自定义颜色。',
       default: "'primary'",
     },
     {
@@ -186,7 +186,7 @@ export const docsDense = {
     type: 'Display variant (display-1/2/3); overrides visual styling from level with display-scale sizing.',
     children: 'Heading content.',
     accessibilityLevel: 'aria-level override when different from level for document outline.',
-    color: 'Text color.',
+    color: 'Text color. Themes may add custom colors.',
     display: "Display type; overridden to 'block' when maxLines>0 or hasCapsize.",
     maxLines: 'Max lines before truncation; 0=none. Shows tooltip if truncated.',
     hasTruncateTooltip: "Tooltip for truncated text; true=default position, false=disabled, or a placement ('above' | 'below' | 'start' | 'end').",

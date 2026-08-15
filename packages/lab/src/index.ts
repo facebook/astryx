@@ -13,7 +13,6 @@
  */
 
 // Code components — syntax highlighting domain
-export {CodeBlock, type CodeBlockProps} from './CodeBlock';
 export {CodeEditor, type CodeEditorProps} from './CodeEditor';
 export {
   tokenize,
@@ -25,6 +24,17 @@ export {
 // InfoTip — accessible info-icon help affordance (RFC facebook/astryx#3349)
 export {InfoTip, type InfoTipProps, type InfoTipSize} from './InfoTip';
 
+// TransferList — controlled dual-panel collection input
+export {
+  TransferList,
+  TransferListSelector,
+  transferListVars,
+  type TransferListOption,
+  type TransferListProps,
+  type TransferListSelectorCommitBehavior,
+  type TransferListSelectorProps,
+} from './TransferList';
+
 // Chat — experimental reasoning display
 export {
   ChatReasoning,
@@ -34,6 +44,25 @@ export * from './Chat';
 
 // Drawer — experimental overlay panel
 export {Drawer, type DrawerProps} from './Drawer';
+
+// BottomSheet — mobile touch sheet on a native modal <dialog>
+export {
+  BottomSheet,
+  type BottomSheetProps,
+  BottomSheetSwitcher,
+  type BottomSheetSwitcherProps,
+} from './BottomSheet';
+
+// Tour — guided product-tour / NUX walkthrough (facebook/astryx#4239)
+export {
+  Tour,
+  type TourProps,
+  TourStep,
+  type TourStepProps,
+  useTour,
+  type UseTourReturn,
+  type TourDismissSource,
+} from './Tour';
 
 // Stat — experimental KPI/metric display
 export {
@@ -222,6 +251,9 @@ export {
 export * from './Stepper';
 export * from './CircularProgress';
 
+// ListInput — compact editor for short collections of simple records
+export * from './ListInput';
+
 // LogStream — experimental streaming log viewer
 export {
   LogStream,
@@ -230,15 +262,7 @@ export {
   type LogStreamLevel,
 } from './LogStream';
 
-// RichTextEditor — experimental Lexical WYSIWYG editor (RFC facebook/astryx#3899)
-// Optional peer deps: lexical + @lexical/*. Read-only rendering via RichTextView.
-export {
-  RichTextEditor,
-  type RichTextEditorProps,
-  type RichTextEditorStatus,
-  type RichTextEditorStatusType,
-  type RichTextEditorSize,
-  RichTextView,
-  type RichTextViewProps,
-  sharedEditorTheme,
-} from './RichTextEditor';
+// RichTextEditor (RFC facebook/astryx#3899) has graduated out of @astryxdesign/lab
+// into its own canary-only package, @astryxdesign/richtext, so it can be canaried
+// independently (e.g. into EPS/Nest). Import it from there:
+//   import {RichTextEditor, RichTextView} from '@astryxdesign/richtext';

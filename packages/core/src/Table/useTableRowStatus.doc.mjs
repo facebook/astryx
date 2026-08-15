@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'useTableRowStatus',
@@ -13,13 +13,13 @@ export const docs = {
       name: 'getStatus',
       type: "(item: T) => { color: 'accent' | 'success' | 'error' | 'warning' | 'red' | 'orange' | 'green' | 'yellow' | 'blue' | 'gray' | string; icon?: IconName; label: string } | null",
       description:
-        'Derive the status indicator for a row: a semantic color (accent, success, error, warning, red, orange, green, yellow, blue, gray — mapped to a theme token) or a raw CSS color as an escape hatch; an optional icon to signal status by shape instead of the dot (recommended when multiple statuses coexist; valid names: close, chevronDown, chevronLeft, chevronRight, check, success, error, warning, info, calendar, clock, externalLink, menu, moreHorizontal, search, arrowUp, arrowDown, arrowsUpDown, funnel, eyeSlash, viewColumns, copy, checkDouble, wrench, stop, microphone); and a required accessible label (announced via role="img" and shown in a tooltip on hover, so a status is never conveyed by color alone). Return null for rows with no status. Memoize with useCallback for a stable plugin identity.',
+        'Derive the status indicator for a row: a semantic color (accent, success, error, warning, red, orange, green, yellow, blue, gray, each mapped to a theme token) or a raw CSS color as an escape hatch; an optional icon to signal status by shape instead of the dot (recommended when multiple statuses coexist; valid names: close, chevronDown, chevronLeft, chevronRight, chevronsLeft, chevronsRight, check, success, error, warning, info, calendar, clock, externalLink, menu, moreHorizontal, search, arrowUp, arrowDown, arrowsUpDown, funnel, eyeSlash, viewColumns, copy, checkDouble, wrench, stop, microphone); and a required accessible label (announced via role="img" and shown in a tooltip on hover, so a status is never conveyed by color alone). Return null for rows with no status. Memoize with useCallback for a stable plugin identity.',
       required: true,
     },
   ],
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
     'Returns a TablePlugin that prepends a narrow per-row status column: a colored dot, or an icon when provided (shape + color beats color alone for a11y). getStatus maps a row to {color, icon?, label} or null. color is a semantic name (success/error/warning/etc.) mapped to a theme token, or a raw CSS color. label is required (tooltip + accessible name). Memoize getStatus with useCallback.',

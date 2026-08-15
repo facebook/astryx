@@ -1,7 +1,5 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-'use client';
-
 /**
  * @file Blockquote.tsx
  * @input Uses React, stylex, spacing and color tokens
@@ -12,7 +10,7 @@
  * - /packages/core/src/Blockquote/Blockquote.doc.mjs
  * - /packages/core/src/Blockquote/Blockquote.test.tsx
  * - /apps/storybook/stories/Blockquote.stories.tsx
- * - /packages/cli/templates/blocks/components/Blockquote/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Blockquote/ (showcase blocks)
  */
 
 import type {ReactNode} from 'react';

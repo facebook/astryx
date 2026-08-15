@@ -12,9 +12,9 @@
  * - /packages/core/src/ClickableCard/ClickableCard.doc.mjs (props table, features)
  * - /packages/core/src/ClickableCard/index.ts (exports if types change)
  * - /apps/storybook/stories/ClickableCard.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Card/ClickableCardShowcase.tsx (showcase block)
- * - /packages/cli/templates/blocks/components/Card/ClickableCardWithNestedButton.tsx (block)
- * - /packages/cli/templates/blocks/components/Card/ClickableCardElevated.tsx (block)
+ * - /packages/cli/assets/templates/blocks/components/Card/ClickableCardShowcase.tsx (showcase block)
+ * - /packages/cli/assets/templates/blocks/components/Card/ClickableCardWithNestedButton.tsx (block)
+ * - /packages/cli/assets/templates/blocks/components/Card/ClickableCardElevated.tsx (block)
  *
  * Composes Card for all visual styling (radius, padding, variants,
  * container tokens, theming). Adds an interactive wrapper with
@@ -46,6 +46,7 @@ import {useClickableContainer} from '../hooks/useClickableContainer';
 import type {BaseProps} from '../BaseProps';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 
 // =============================================================================
 // Styles — only the interactive layer, Card handles everything else
@@ -57,13 +58,6 @@ const styles = stylex.create({
     cursor: 'pointer',
     textDecoration: 'none',
     color: 'inherit',
-    outlineOffset: '2px',
-  },
-  focusWithin: {
-    ':has(:focus-visible)': {
-      outline: `2px solid ${colorVars['--color-accent']}`,
-      outlineOffset: '2px',
-    },
   },
   // Hover overlay — guarded by @media (hover: hover) so touch devices
   // don't show a stuck hover state. Active/pressed state works everywhere.
@@ -79,13 +73,13 @@ const styles = stylex.create({
       backgroundColor: 'transparent',
     },
     ':active::after': {
-      backgroundColor: 'color-mix(in srgb, currentColor 10%, transparent)',
+      backgroundColor: colorVars['--color-overlay-pressed'],
     },
   },
   hoverOnPointer: {
     '@media (hover: hover)': {
       ':hover::after': {
-        backgroundColor: 'color-mix(in srgb, currentColor 5%, transparent)',
+        backgroundColor: colorVars['--color-overlay-hover'],
       },
     },
   },
@@ -307,14 +301,15 @@ export function ClickableCard({
       padding={padding}
       variant={variant}
       elevation={elevation}
-      {...mergeProps(themeProps('clickable-card', {variant}), {
-        className: classNameProp,
+      {...mergeProps(
+        themeProps('clickable-card', {variant}),
+        focusOutlineProps.focusWithin(),
+        classNameProp,
         style,
-      })}
+      )}
       xstyle={
         [
           styles.interactive,
-          styles.focusWithin,
           hasBorder ? styles.bordered : styles.borderless,
           !isDisabled && styles.overlay,
           !isDisabled && styles.hoverOnPointer,

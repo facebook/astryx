@@ -9,6 +9,7 @@
  * SYNC: When Slider.tsx changes, update tests to match new behavior
  */
 
+import {useState} from 'react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, act, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -50,23 +51,17 @@ beforeEach(() => {
 describe('Slider', () => {
   // --- Aria labels ---
 
-  it('single thumb uses label as aria-label', () => {
+  it('single thumb takes its accessible name from the label', () => {
     render(<Slider label="Volume" value={50} />);
     const slider = screen.getByRole('slider');
-    expect(slider).toHaveAttribute('aria-label', 'Volume');
+    expect(slider).toHaveAccessibleName('Volume');
   });
 
-  it('range thumbs have correct aria-labels', () => {
+  it('range thumbs have individual names composing with the group label', () => {
     render(<Slider label="Price range" value={[20, 80] as [number, number]} />);
     const sliders = screen.getAllByRole('slider');
-    expect(sliders[0]).toHaveAttribute(
-      'aria-label',
-      'Price range, minimum value',
-    );
-    expect(sliders[1]).toHaveAttribute(
-      'aria-label',
-      'Price range, maximum value',
-    );
+    expect(sliders[0]).toHaveAccessibleName('Minimum value');
+    expect(sliders[1]).toHaveAccessibleName('Maximum value');
   });
 
   it('sets aria-valuetext with formatValue', () => {
@@ -85,6 +80,57 @@ describe('Slider', () => {
     expect(slider).toHaveAttribute('aria-valuenow', '72');
   });
 
+  it.each([
+    {value: 150, expectedValue: 100, expectedPosition: 'calc(100% - 10px)'},
+    {value: -50, expectedValue: 0, expectedPosition: 'calc(0% + 10px)'},
+  ])(
+    'clamps a controlled value of $value to $expectedValue',
+    ({value, expectedValue, expectedPosition}) => {
+      render(<Slider label="Volume" value={value} min={0} max={100} />);
+      const slider = screen.getByRole('slider');
+      expect(slider).toHaveAttribute('aria-valuenow', String(expectedValue));
+      // Thumb positions via the logical `inset-inline-start` so it mirrors
+      // under RTL (see RTL Phase 4), offset by half a thumb so the extremes
+      // stay inside the component box.
+      expect(slider).toHaveStyle({insetInlineStart: expectedPosition});
+    },
+  );
+
+  // Regression: #5050 — at min/max the thumb centred on the container edge,
+  // so half of it (10px of a 20px thumb) hung outside the component.
+  it.each([
+    {value: 0, position: 'calc(0% + 10px)'},
+    {value: 50, position: 'calc(50% + 0px)'},
+    {value: 100, position: 'calc(100% - 10px)'},
+  ])(
+    'insets the thumb at value $value so it stays in bounds',
+    ({value, position}) => {
+      render(<Slider label="Volume" value={value} min={0} max={100} />);
+      expect(screen.getByRole('slider')).toHaveStyle({
+        insetInlineStart: position,
+      });
+    },
+  );
+
+  it.each([
+    {value: 0, position: 'calc(0% + 10px)'},
+    {value: 100, position: 'calc(100% - 10px)'},
+  ])(
+    'insets a vertical thumb at value $value so it stays in bounds',
+    ({value, position}) => {
+      render(
+        <Slider
+          label="Volume"
+          value={value}
+          min={0}
+          max={100}
+          orientation="vertical"
+        />,
+      );
+      expect(screen.getByRole('slider')).toHaveStyle({bottom: position});
+    },
+  );
+
   it('range mode sets correct aria values on both thumbs', () => {
     render(
       <Slider
@@ -97,6 +143,102 @@ describe('Slider', () => {
     const sliders = screen.getAllByRole('slider');
     expect(sliders[0]).toHaveAttribute('aria-valuenow', '25');
     expect(sliders[1]).toHaveAttribute('aria-valuenow', '75');
+    // Per the APG multi-thumb pattern, each thumb's bounds are constrained by
+    // its sibling: the lower thumb can't exceed the upper thumb's value and
+    // the upper thumb can't go below the lower thumb's value.
+    expect(sliders[0]).toHaveAttribute('aria-valuemin', '0');
+    expect(sliders[0]).toHaveAttribute('aria-valuemax', '75');
+    expect(sliders[1]).toHaveAttribute('aria-valuemin', '25');
+    expect(sliders[1]).toHaveAttribute('aria-valuemax', '100');
+  });
+
+  it('range thumb bounds update after moving a thumb', async () => {
+    const user = userEvent.setup();
+    function ControlledRange() {
+      const [value, setValue] = useState<[number, number]>([25, 75]);
+      return (
+        <Slider
+          label="Range"
+          value={value}
+          onChange={setValue}
+          min={0}
+          max={100}
+        />
+      );
+    }
+    render(<ControlledRange />);
+    const sliders = screen.getAllByRole('slider');
+    act(() => {
+      sliders[0].focus();
+    });
+    await user.keyboard('{ArrowRight}');
+    expect(sliders[0]).toHaveAttribute('aria-valuenow', '26');
+    // The upper thumb's floor tracks the lower thumb's new value.
+    expect(sliders[1]).toHaveAttribute('aria-valuemin', '26');
+    expect(sliders[0]).toHaveAttribute('aria-valuemax', '75');
+  });
+
+  it('range thumb bounds include the minStepsBetweenThumbs gap', () => {
+    render(
+      <Slider
+        label="Range"
+        value={[20, 80] as [number, number]}
+        min={0}
+        max={100}
+        step={5}
+        minStepsBetweenThumbs={2}
+      />,
+    );
+    const sliders = screen.getAllByRole('slider');
+    // minGap = 2 steps * 5 = 10
+    expect(sliders[0]).toHaveAttribute('aria-valuemax', '70');
+    expect(sliders[1]).toHaveAttribute('aria-valuemin', '30');
+  });
+
+  // --- Label association ---
+
+  // A <label htmlFor> must point at an existing form-associated element;
+  // div[role="slider"] is not labelable, so the Slider label must render as a
+  // group label instead (WCAG 1.3.1).
+  const LABELABLE_TAGS = new Set([
+    'BUTTON',
+    'INPUT',
+    'METER',
+    'OUTPUT',
+    'PROGRESS',
+    'SELECT',
+    'TEXTAREA',
+  ]);
+
+  function expectNoOrphanedLabels(container: HTMLElement) {
+    for (const labelEl of container.querySelectorAll('label[for]')) {
+      const target = document.getElementById(labelEl.getAttribute('for')!);
+      expect(target).not.toBeNull();
+      expect(LABELABLE_TAGS.has(target!.tagName)).toBe(true);
+    }
+  }
+
+  it('single mode renders the label as a group label naming the thumb', () => {
+    const {container} = render(<Slider label="Volume" value={50} />);
+    expectNoOrphanedLabels(container);
+    const slider = screen.getByRole('slider');
+    const labelledBy = slider.getAttribute('aria-labelledby');
+    expect(labelledBy).toBeTruthy();
+    expect(document.getElementById(labelledBy!)).toHaveTextContent('Volume');
+    expect(slider).toHaveAccessibleName('Volume');
+  });
+
+  it('range mode labels the slider group via aria-labelledby', () => {
+    const {container} = render(
+      <Slider label="Price range" value={[20, 80] as [number, number]} />,
+    );
+    expectNoOrphanedLabels(container);
+    const group = screen.getByRole('group', {name: 'Price range'});
+    const labelledBy = group.getAttribute('aria-labelledby');
+    expect(labelledBy).toBeTruthy();
+    expect(document.getElementById(labelledBy!)).toHaveTextContent(
+      'Price range',
+    );
   });
 
   it('sets aria-orientation for vertical', () => {
@@ -288,6 +430,58 @@ describe('Slider', () => {
     expect(handleChangeEnd).toHaveBeenCalledWith(55);
   });
 
+  // --- Fractional step precision ---
+
+  it('emits exact decimal values for fractional steps on keyboard', async () => {
+    const user = userEvent.setup();
+    const handleChange = vi.fn();
+    const handleChangeEnd = vi.fn();
+    render(
+      <Slider
+        label="Opacity"
+        value={0.2}
+        min={0}
+        max={1}
+        step={0.1}
+        onChange={handleChange}
+        onChangeEnd={handleChangeEnd}
+      />,
+    );
+    const slider = screen.getByRole('slider');
+    act(() => {
+      slider.focus();
+    });
+    await user.keyboard('{ArrowRight}');
+    // 0.2 + 0.1 must not surface binary float error (0.30000000000000004)
+    expect(handleChange).toHaveBeenCalledWith(0.3);
+    expect(handleChangeEnd).toHaveBeenCalledWith(0.3);
+  });
+
+  it('emits exact decimal values for fractional steps in range mode', async () => {
+    const user = userEvent.setup();
+    const handleChange = vi.fn();
+    const handleChangeEnd = vi.fn();
+    render(
+      <Slider
+        label="Range"
+        value={[0.2, 0.6] as [number, number]}
+        min={0}
+        max={1}
+        step={0.1}
+        onChange={handleChange}
+        onChangeEnd={handleChangeEnd}
+      />,
+    );
+    const sliders = screen.getAllByRole('slider');
+    act(() => {
+      sliders[1].focus();
+    });
+    await user.keyboard('{ArrowRight}');
+    // 0.6 + 0.1 snaps to 7 * 0.1, which is 0.7000000000000001 without rounding
+    expect(handleChange).toHaveBeenCalledWith([0.2, 0.7]);
+    expect(handleChangeEnd).toHaveBeenCalledWith([0.2, 0.7]);
+  });
+
   it('fires onChangeEnd on keyboard Home/End with correct value', async () => {
     const user = userEvent.setup();
     const handleChangeEnd = vi.fn();
@@ -401,6 +595,89 @@ describe('Slider', () => {
     });
 
     expect(document.activeElement).toBe(slider);
+  });
+
+  // --- RTL pointer value mapping (RTL Phase 4) ---
+  // Contract: the inline-start edge (value = min) is the RIGHT edge under RTL,
+  // so the same physical click maps to the mirrored value relative to LTR.
+  // `valueDisplay="none"` keeps the thumb a direct child of the track element
+  // (no Tooltip wrapper) so the mocked rect lands on trackRef.
+
+  it('maps a track click to the LTR value in the default direction', () => {
+    const handleChange = vi.fn();
+    render(
+      <Slider
+        label="Volume"
+        value={0}
+        min={0}
+        max={100}
+        valueDisplay="none"
+        onChange={handleChange}
+      />,
+    );
+    const track = screen.getByRole('slider').parentElement!;
+    track.getBoundingClientRect = () => ({
+      left: 0,
+      top: 0,
+      right: 200,
+      bottom: 20,
+      width: 200,
+      height: 20,
+      x: 0,
+      y: 0,
+      toJSON: () => {},
+    });
+
+    // Click at x=50 of a 200px track. The thumb's travel is the track minus
+    // half a thumb at each end (180px from x=10), so the fraction is
+    // (50 - 10) / 180 → value 22.
+    fireEvent.pointerDown(track, {clientX: 50, clientY: 10, pointerId: 1});
+    expect(handleChange).toHaveBeenLastCalledWith(22);
+  });
+
+  it('mirrors a track click to the RTL value when the track is rtl', () => {
+    const handleChange = vi.fn();
+    render(
+      <Slider
+        label="Volume"
+        value={0}
+        min={0}
+        max={100}
+        valueDisplay="none"
+        onChange={handleChange}
+      />,
+    );
+    const track = screen.getByRole('slider').parentElement!;
+    track.getBoundingClientRect = () => ({
+      left: 0,
+      top: 0,
+      right: 200,
+      bottom: 20,
+      width: 200,
+      height: 20,
+      x: 0,
+      y: 0,
+      toJSON: () => {},
+    });
+
+    // Force the track's computed direction to rtl (isRtlElement reads this).
+    const realGetComputedStyle = window.getComputedStyle;
+    const gcsSpy = vi
+      .spyOn(window, 'getComputedStyle')
+      .mockImplementation((el: Element, pseudo?: string | null) => {
+        if (el === track) {
+          return {direction: 'rtl'} as CSSStyleDeclaration;
+        }
+        return realGetComputedStyle(el, pseudo ?? undefined);
+      });
+
+    // Same physical click at x=50. Under RTL the inline start is the right
+    // edge, so the fraction is (right - 10 - x) / 180 = 140/180 → value 78
+    // (the mirror of the LTR value 22).
+    fireEvent.pointerDown(track, {clientX: 50, clientY: 10, pointerId: 1});
+    expect(handleChange).toHaveBeenLastCalledWith(78);
+
+    gcsSpy.mockRestore();
   });
 
   // --- Mark label click snapping ---

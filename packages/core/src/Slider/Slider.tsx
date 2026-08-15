@@ -13,7 +13,7 @@
  * - /packages/core/src/Slider/Slider.test.tsx
  * - /packages/core/src/Slider/index.ts
  * - /apps/storybook/stories/Slider.stories.tsx
- * - /packages/cli/templates/blocks/components/Slider/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Slider/ (showcase blocks)
  */
 
 import {
@@ -40,7 +40,9 @@ import {Tooltip} from '../Tooltip/Tooltip';
 import {useTooltip} from '../Tooltip';
 import {VisuallyHidden} from '../VisuallyHidden';
 import type {InputStatus} from '../Field/types';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs, rtlStyles} from '../utils';
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
+import {isRtlElement} from '../hooks/isRtlElement';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
@@ -192,8 +194,8 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-full'],
   },
   trackHorizontal: {
-    left: 0,
-    right: 0,
+    insetInlineStart: 0,
+    insetInlineEnd: 0,
     height: TRACK_SIZE,
     top: '50%',
     transform: 'translateY(-50%)',
@@ -202,8 +204,6 @@ const styles = stylex.create({
     top: 0,
     bottom: 0,
     width: TRACK_SIZE,
-    left: '50%',
-    transform: 'translateX(-50%)',
   },
   filledTrack: {
     position: 'absolute',
@@ -217,8 +217,6 @@ const styles = stylex.create({
   },
   filledTrackVertical: {
     width: TRACK_SIZE,
-    left: '50%',
-    transform: 'translateX(-50%)',
   },
   thumb: {
     position: 'absolute',
@@ -239,10 +237,14 @@ const styles = stylex.create({
   },
   thumbHorizontal: {
     top: '50%',
-  },
-  thumbVertical: {
-    left: '50%',
-    transform: 'translate(-50%, 50%)',
+    // The thumb is positioned via logical `insetInlineStart`, which resolves
+    // from the right edge under RTL. The centering translate is a physical
+    // (screen-space) transform, so it must flip its X direction under RTL to
+    // keep the thumb centered on the value point.
+    transform: {
+      default: 'translate(-50%, -50%)',
+      ':is([dir="rtl"] *)': 'translate(50%, -50%)',
+    },
   },
   thumbHover: {
     backgroundColor: {
@@ -250,16 +252,6 @@ const styles = stylex.create({
       ':hover': {
         '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-tint-hover']} 15%)`,
       },
-    },
-  },
-  thumbFocusVisible: {
-    outline: {
-      default: 'none',
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': '2px',
     },
   },
   thumbDisabled: {
@@ -277,14 +269,14 @@ const styles = stylex.create({
     position: 'absolute',
   },
   marksContainerHorizontal: {
-    left: 0,
-    right: 0,
+    insetInlineStart: 0,
+    insetInlineEnd: 0,
     top: '50%',
   },
   marksContainerVertical: {
     top: 0,
     bottom: 0,
-    left: '50%',
+    insetInlineStart: '50%',
   },
   mark: {
     position: 'absolute',
@@ -294,7 +286,10 @@ const styles = stylex.create({
   markHorizontal: {
     width: 2,
     height: 8,
-    transform: 'translate(-50%, -50%)',
+    transform: {
+      default: 'translate(-50%, -50%)',
+      ':is([dir="rtl"] *)': 'translate(50%, -50%)',
+    },
   },
   markVertical: {
     height: 2,
@@ -309,12 +304,15 @@ const styles = stylex.create({
     whiteSpace: 'nowrap',
   },
   markLabelHorizontal: {
-    transform: 'translateX(-50%)',
+    transform: {
+      default: 'translateX(-50%)',
+      ':is([dir="rtl"] *)': 'translateX(50%)',
+    },
     top: THUMB_SIZE / 2 + 4,
   },
   markLabelVertical: {
     transform: 'translateY(50%)',
-    left: THUMB_SIZE / 2 + 4,
+    insetInlineStart: THUMB_SIZE / 2 + 4,
   },
 });
 
@@ -326,12 +324,39 @@ function clamp(val: number, min: number, max: number): number {
   return Math.min(Math.max(val, min), max);
 }
 
+/**
+ * Number of decimal places a value carries, including values in exponent
+ * notation (e.g. 1e-7 → 7). Used to round away binary floating-point error
+ * after step arithmetic.
+ */
+function getDecimalPrecision(num: number): number {
+  if (Math.abs(num) < 1) {
+    const parts = num.toExponential().split('e-');
+    if (parts.length === 2) {
+      const mantissaDecimals = parts[0].split('.')[1]?.length ?? 0;
+      return mantissaDecimals + parseInt(parts[1], 10);
+    }
+  }
+  const decimalPart = String(num).split('.')[1];
+  return decimalPart ? decimalPart.length : 0;
+}
+
 function snapToStep(val: number, min: number, step: number): number {
   if (step <= 0) {
     return val;
   }
   const steps = Math.round((val - min) / step);
-  return min + steps * step;
+  const snapped = min + steps * step;
+  // `min + steps * step` accumulates binary floating-point error with
+  // fractional steps (0 + 3 * 0.1 → 0.30000000000000004), which leaks into
+  // onChange/onChangeEnd payloads, aria-valuenow, and the value tooltip.
+  // Snapped values can never carry more decimals than min/step combined, so
+  // rounding to that precision removes only the error.
+  const precision = Math.min(
+    Math.max(getDecimalPrecision(min), getDecimalPrecision(step)),
+    20, // toFixed() throws past 20 digits
+  );
+  return Number(snapped.toFixed(precision));
 }
 
 function getPercent(val: number, min: number, max: number): number {
@@ -339,6 +364,44 @@ function getPercent(val: number, min: number, max: number): number {
     return 0;
   }
   return ((val - min) / (max - min)) * 100;
+}
+
+/**
+ * Thumb travel is inset by half a thumb at each end — the geometry a native
+ * `input[type=range]` uses — so the thumb stays inside the component box at
+ * min and max instead of overhanging it by half its width (#5050). The fill
+ * and the marks map through the same inset, and `travelFraction` inverts it,
+ * so the thumb tracks the pointer that grabbed it. Both directions read
+ * THUMB_SIZE, so a theme cannot resize the thumb through CSS alone.
+ */
+const THUMB_INSET = THUMB_SIZE / 2;
+
+function insetPosition(percent: number): string {
+  return cssLength(percent, THUMB_INSET - (percent / 100) * THUMB_SIZE);
+}
+
+/** Distance between two inset positions; the inset itself cancels out. */
+function insetSpan(fromPercent: number, toPercent: number): string {
+  const delta = toPercent - fromPercent;
+  return cssLength(delta, -(delta / 100) * THUMB_SIZE);
+}
+
+/** Inverse of `insetPosition`: an offset from the box start back to 0–1. */
+function travelFraction(offset: number, size: number): number {
+  const travel = size - THUMB_SIZE;
+  if (travel > 0) {
+    return (offset - THUMB_INSET) / travel;
+  }
+  // Narrower than the thumb, so there is no travel to map onto: fall back to
+  // the raw fraction rather than dividing by zero.
+  return size > 0 ? offset / size : 0;
+}
+
+function cssLength(percent: number, px: number): string {
+  // Percentages of the box and step arithmetic both carry binary
+  // floating-point error into the DOM (`calc(33% + 3.3999999999999995px)`).
+  const round = (n: number) => Number(n.toFixed(3));
+  return `calc(${round(percent)}% ${px < 0 ? '-' : '+'} ${Math.abs(round(px))}px)`;
 }
 
 // =============================================================================
@@ -392,6 +455,7 @@ export function Slider({ref, ...props}: SliderProps) {
   const isHorizontal = orientation === 'horizontal';
 
   const id = useId();
+  const labelID = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
   const requiredID = useId();
@@ -439,10 +503,12 @@ export function Slider({ref, ...props}: SliderProps) {
 
   // Value helpers — guard against undefined value (e.g. playground previews
   // that render the component without providing a value prop).
-  const values: number[] = useMemo(
-    () => (isRange ? value : [value != null ? value : min]),
-    [isRange, value, min],
-  );
+  const values: number[] = useMemo(() => {
+    const currentValues = Array.isArray(value)
+      ? value
+      : [value != null ? value : min];
+    return currentValues.map(currentValue => clamp(currentValue, min, max));
+  }, [value, min, max]);
 
   const valuesRef = useRef(values);
   valuesRef.current = values;
@@ -455,12 +521,21 @@ export function Slider({ref, ...props}: SliderProps) {
       }
       const rect = track.getBoundingClientRect();
 
+      // Inverse of `insetPosition`: the pointer maps onto the thumb's travel
+      // (the box minus half a thumb at each end), so pressing on the thumb
+      // leaves it where it is instead of jumping.
       let percent: number;
       if (isHorizontal) {
-        percent = (clientX - rect.left) / rect.width;
+        // In RTL the inline-start (value = min) is the right edge, so measure
+        // the pointer fraction from the right instead of the left. Detected
+        // from the track's computed direction (lazy, only on pointer move).
+        percent = travelFraction(
+          isRtlElement(track) ? rect.right - clientX : clientX - rect.left,
+          rect.width,
+        );
       } else {
         // Vertical: bottom = min, top = max
-        percent = 1 - (clientY - rect.top) / rect.height;
+        percent = 1 - travelFraction(clientY - rect.top, rect.height);
       }
       percent = clamp(percent, 0, 1);
       const raw = min + percent * (max - min);
@@ -690,14 +765,28 @@ export function Slider({ref, ...props}: SliderProps) {
     const percent = getPercent(val, min, max);
 
     const positionStyle = isHorizontal
-      ? {left: `${percent}%`}
-      : {bottom: `${percent}%`, left: '50%'};
+      ? {insetInlineStart: insetPosition(percent)}
+      : {bottom: insetPosition(percent), left: '50%'};
 
+    // In range mode each thumb keeps a short individual name that composes
+    // with the group label (announced via the group's aria-labelledby), per
+    // the APG multi-thumb slider pattern. In single mode the thumb takes its
+    // name from the visible label element via aria-labelledby.
     const thumbLabel = isRange
       ? thumbIndex === 0
-        ? `${label}, minimum value`
-        : `${label}, maximum value`
-      : label;
+        ? 'Minimum value'
+        : 'Maximum value'
+      : undefined;
+
+    // ARIA bounds must agree with the movement clamping in updateValue: in
+    // range mode a thumb can't cross its sibling (minus the
+    // minStepsBetweenThumbs gap), and the result is always clamped to
+    // [min, max].
+    const minGap = minStepsBetweenThumbs * step;
+    const ariaValueMin =
+      isRange && thumbIndex === 1 ? clamp(values[0] + minGap, min, max) : min;
+    const ariaValueMax =
+      isRange && thumbIndex === 0 ? clamp(values[1] - minGap, min, max) : max;
 
     // Suppress the per-thumb value bubble while the disabled-message tooltip is
     // showing, so a disabled slider surfaces the *reason* on hover/focus rather
@@ -714,14 +803,15 @@ export function Slider({ref, ...props}: SliderProps) {
         // focus-discoverable; value changes stay blocked by the isDisabled
         // guards in the pointer/keyboard handlers.
         tabIndex={isDisabled && !showsDisabledMessage ? -1 : 0}
-        aria-valuemin={min}
-        aria-valuemax={max}
+        aria-valuemin={ariaValueMin}
+        aria-valuemax={ariaValueMax}
         aria-valuenow={val}
         aria-valuetext={formatValue ? formatValue(val) : undefined}
         aria-orientation={orientation}
         aria-disabled={isDisabled || undefined}
         aria-invalid={status?.type === 'error' ? true : undefined}
         aria-label={thumbLabel}
+        aria-labelledby={!isRange ? labelID : undefined}
         aria-describedby={ariaDescribedBy}
         onKeyDown={e => handleKeyDown(thumbIndex, e)}
         {...mergeProps(
@@ -731,9 +821,11 @@ export function Slider({ref, ...props}: SliderProps) {
           }),
           stylex.props(
             styles.thumb,
-            isHorizontal ? styles.thumbHorizontal : styles.thumbVertical,
+            isHorizontal
+              ? styles.thumbHorizontal
+              : rtlStyles.centerInline('50%'),
             !isDisabled && styles.thumbHover,
-            !isDisabled && styles.thumbFocusVisible,
+            !isDisabled && focusOutlineStyles.focusVisible,
             isDisabled && styles.thumbDisabled,
           ),
           undefined,
@@ -759,22 +851,23 @@ export function Slider({ref, ...props}: SliderProps) {
     return thumbElement;
   };
 
-  // Filled track position
+  // Filled track position — ends at the thumb centre, so it uses the same
+  // inset mapping as the thumb.
   const filledStyle = (() => {
     if (isRange) {
       const [v0, v1] = values;
       const p0 = getPercent(v0, min, max);
       const p1 = getPercent(v1, min, max);
       if (isHorizontal) {
-        return {left: `${p0}%`, width: `${p1 - p0}%`};
+        return {insetInlineStart: insetPosition(p0), width: insetSpan(p0, p1)};
       }
-      return {bottom: `${p0}%`, height: `${p1 - p0}%`};
+      return {bottom: insetPosition(p0), height: insetSpan(p0, p1)};
     }
     const p = getPercent(values[0], min, max);
     if (isHorizontal) {
-      return {left: '0%', width: `${p}%`};
+      return {insetInlineStart: '0%', width: insetPosition(p)};
     }
-    return {bottom: '0%', height: `${p}%`};
+    return {bottom: '0%', height: insetPosition(p)};
   })();
 
   // Text value display
@@ -794,6 +887,14 @@ export function Slider({ref, ...props}: SliderProps) {
       isLabelHidden={isLabelHidden}
       description={description}
       inputID={id}
+      labelID={labelID}
+      // The thumb is a div[role="slider"], which a <label htmlFor> can't
+      // name (only form-associated elements are labelable). Render the label
+      // as a group label and associate it via aria-labelledby instead: the
+      // single thumb references it directly, and in range mode the
+      // role="group" container references it while each thumb keeps its own
+      // "Minimum value"/"Maximum value" name.
+      isGroupLabel
       descriptionID={description ? descriptionID : undefined}
       isOptional={isOptional}
       isRequired={isRequired}
@@ -836,7 +937,9 @@ export function Slider({ref, ...props}: SliderProps) {
           ))}
         <div
           ref={mergeRefs(ref, trackRef, disabledMessageTooltip.ref)}
-          {...(isRange ? {role: 'group', 'aria-label': label} : undefined)}
+          {...(isRange
+            ? {role: 'group', 'aria-labelledby': labelID}
+            : undefined)}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
@@ -855,7 +958,9 @@ export function Slider({ref, ...props}: SliderProps) {
               themeProps('slider-track', {orientation}),
               stylex.props(
                 styles.track,
-                isHorizontal ? styles.trackHorizontal : styles.trackVertical,
+                isHorizontal
+                  ? styles.trackHorizontal
+                  : [styles.trackVertical, rtlStyles.centerInline('0px')],
               ),
             )}
           />
@@ -868,7 +973,7 @@ export function Slider({ref, ...props}: SliderProps) {
                 styles.filledTrack,
                 isHorizontal
                   ? styles.filledTrackHorizontal
-                  : styles.filledTrackVertical,
+                  : [styles.filledTrackVertical, rtlStyles.centerInline('0px')],
               ),
               {style: filledStyle},
             )}
@@ -887,8 +992,8 @@ export function Slider({ref, ...props}: SliderProps) {
               {marks.map(mark => {
                 const percent = getPercent(mark.value, min, max);
                 const markPos = isHorizontal
-                  ? {left: `${percent}%`}
-                  : {bottom: `${percent}%`};
+                  ? {insetInlineStart: insetPosition(percent)}
+                  : {bottom: insetPosition(percent)};
                 return (
                   <div key={mark.value}>
                     <div

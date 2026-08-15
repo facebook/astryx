@@ -13,7 +13,7 @@
  * - /packages/core/src/TextInput/TextInput.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/TextInput/index.ts (exports if types change)
  * - /apps/storybook/stories/TextInput.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/TextInput/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/TextInput/ (showcase blocks)
  */
 
 import {
@@ -27,48 +27,29 @@ import {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {IconName} from '../Icon';
 import {
   colorVars,
   sizeVars,
-  radiusVars,
   typographyVars,
   typeScaleVars,
-  borderVars,
 } from '../theme/tokens.stylex';
 import {
   Field,
+  InputClearButton,
   type InputStatus,
-  type InputStatusType,
   inputWrapperStyles,
   inputStatusBorderStyles,
   inputStatusHoverShadowStyles,
   inputStatusFocusWithinStyles,
+  type FieldStatusVariant,
 } from '../Field';
-import {Icon, renderIconSlot, type IconType} from '../Icon';
+import {renderIconSlot, type IconType} from '../Icon';
 import {Spinner} from '../Spinner';
 import {useTooltip} from '../Tooltip';
 import {VisuallyHidden} from '../VisuallyHidden';
 import {getInputARIA} from '../utils';
 
 const styles = stylex.create({
-  clearButton: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 0,
-    margin: 0,
-    borderWidth: 0,
-    borderStyle: 'none',
-    backgroundColor: 'transparent',
-    cursor: 'pointer',
-    borderRadius: radiusVars['--radius-element'],
-    outline: {
-      default: 'none',
-      ':focus-visible': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: 1,
-  },
   input: {
     display: 'block',
     flex: 1,
@@ -119,6 +100,7 @@ export type {
 import {mergeProps, mergeRefs} from '../utils';
 import {useSize} from '../SizeContext/SizeContext';
 import {useInputContainer} from '../hooks/useInputContainer';
+import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
@@ -167,6 +149,15 @@ export interface TextInputProps extends Omit<
    */
   isDisabled?: boolean;
   /**
+   * Whether the input is read-only.
+   * The value is shown at full opacity and still submits with the form, but
+   * cannot be edited. Unlike `isDisabled`, a read-only input is not dimmed and
+   * stays in the tab order — use it for a value the user should see and send
+   * but not change. `isDisabled` takes precedence when both are set.
+   * @default false
+   */
+  isReadOnly?: boolean;
+  /**
    * Explains why the input is disabled. When set together with `isDisabled`,
    * the input shows a tooltip with this text on hover and keyboard focus, and
    * stays focusable (via `aria-disabled`) so the reason is discoverable by
@@ -198,6 +189,14 @@ export interface TextInputProps extends Omit<
    * If message is provided, displays a floating message box below the input.
    */
   status?: InputStatus;
+  /**
+   * How the status message is placed relative to the input.
+   * - 'attached': message overlaps directly below the input (bordered treatment)
+   * - 'detached': message floats below as a separate element with spacing
+   * - 'tooltip': no message box; the status icon becomes a focusable info-tip button that reveals the message on hover, keyboard focus, or tap
+   * @default 'attached'
+   */
+  statusVariant?: FieldStatusVariant;
   /**
    * The size of the input.
    * - 'sm': Compact size (18px height)
@@ -277,9 +276,11 @@ export function TextInput({
   isOptional = false,
   isRequired = false,
   isDisabled = false,
+  isReadOnly = false,
   disabledMessage,
   startIcon,
   status,
+  statusVariant = 'attached',
   size: sizeProp,
   onChange,
   changeAction,
@@ -328,26 +329,25 @@ export function TextInput({
     isEnabled: showsDisabledMessage,
   });
 
-  const statusIconMap: Record<InputStatusType, IconName> = {
-    warning: 'warning',
-    error: 'error',
-    success: 'success',
-  };
-
-  const statusIconColorMap: Record<
-    InputStatusType,
-    'warning' | 'error' | 'success'
-  > = {
-    warning: 'warning',
-    error: 'error',
-    success: 'success',
-  };
+  const {statusIcon, describedBy: statusTooltipDescribedBy} =
+    useInputStatusIcon({
+      status,
+      statusVariant,
+      isInGroup: !!inputGroup,
+    });
 
   const {ariaLabelledBy, ariaDescribedBy} = getInputARIA(
     inputLabelID,
     [
       description ? descriptionID : null,
-      status?.message ? statusMessageID : null,
+      // The status message element is rendered by Field, which is skipped
+      // inside an InputGroup — only reference it when it actually exists.
+      !inputGroup && statusVariant !== 'tooltip' && status?.message
+        ? statusMessageID
+        : null,
+      // The tooltip variant renders no message box; describe the input by the
+      // tooltip's content instead so the status is still announced.
+      statusTooltipDescribedBy,
       showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
     ],
     inputGroup,
@@ -357,7 +357,7 @@ export function TextInput({
     // Value can't change while showing a disabled message (the field is
     // read-only and non-native-disabled), but guard the handler too so the
     // optimistic value and callbacks never fire.
-    if (isDisabled) {
+    if (isDisabled || isReadOnly) {
       return;
     }
     const newValue = e.target.value;
@@ -396,13 +396,18 @@ export function TextInput({
       onClick={handleWrapperClick}
       onMouseUp={handleWrapperMouseUp}
       {...mergeProps(
-        themeProps('text-input', {size, status: status?.type ?? null}),
+        themeProps('text-input', {
+          size,
+          status: status?.type ?? null,
+          disabled: isDisabled ? 'disabled' : null,
+          readonly: isReadOnly ? 'readonly' : null,
+        }),
         stylex.props(
           inputWrapperStyles.base,
           sizeStyles[size],
           isDisabled && inputWrapperStyles.disabled,
           status && inputStatusBorderStyles[status.type],
-          status && inputStatusHoverShadowStyles[status.type],
+          status && !isDisabled && inputStatusHoverShadowStyles[status.type],
           status && inputStatusFocusWithinStyles[status.type],
           inputGroup && groupStyles.inGroup,
           xstyle,
@@ -416,7 +421,7 @@ export function TextInput({
         {...rest}
         ref={mergeRefs(ref, inputRef)}
         id={id}
-        name={htmlName}
+        name={isDisabled ? undefined : htmlName}
         type={type}
         value={optimisticValue}
         onChange={handleChange}
@@ -436,7 +441,7 @@ export function TextInput({
         // keep the value from changing.
         disabled={isDisabled && !showsDisabledMessage}
         aria-disabled={showsDisabledMessage ? 'true' : undefined}
-        readOnly={showsDisabledMessage || undefined}
+        readOnly={isReadOnly || showsDisabledMessage || undefined}
         autoFocus={hasAutoFocus}
         data-autofocus={hasAutoFocus || undefined}
         aria-describedby={ariaDescribedBy}
@@ -446,23 +451,14 @@ export function TextInput({
         aria-labelledby={ariaLabelledBy}
         {...stylex.props(styles.input, isDisabled && styles.inputDisabled)}
       />
-      {hasClear && value !== '' && !isDisabled && (
-        <button
-          type="button"
+      {hasClear && value !== '' && !isDisabled && !isReadOnly && (
+        <InputClearButton
+          label={t('@astryx.textInput.clearLabel', {label})}
           onClick={handleClear}
-          aria-label={t('@astryx.textInput.clearLabel', {label})}
-          {...stylex.props(styles.clearButton)}>
-          <Icon icon="close" size="sm" color="secondary" />
-        </button>
-      )}
-      {isBusy && <Spinner size="sm" />}
-      {status && !inputGroup && (
-        <Icon
-          icon={statusIconMap[status.type]}
-          size="md"
-          color={statusIconColorMap[status.type]}
         />
       )}
+      {isBusy && <Spinner size="sm" />}
+      {statusIcon}
     </div>
   );
 
@@ -495,6 +491,7 @@ export function TextInput({
             }
           : undefined
       }
+      statusVariant={statusVariant}
       labelTooltip={labelTooltip}
       width={width}>
       {inputWrapper}

@@ -5,6 +5,7 @@ import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {MetadataList} from './MetadataList';
 import {MetadataListItem} from './MetadataListItem';
+import {InternationalizationProvider} from '../i18n';
 
 describe('MetadataList', () => {
   it('renders a description list with items', () => {
@@ -87,6 +88,29 @@ describe('MetadataList', () => {
     expect(screen.queryByText('B')).not.toBeInTheDocument();
   });
 
+  it('localizes the show more / show less labels through the i18n catalog', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <InternationalizationProvider
+        locale="fr"
+        overrides={{
+          fr: {
+            '@astryx.metadataList.showMore': 'Afficher plus',
+            '@astryx.metadataList.showLess': 'Afficher moins',
+          },
+        }}>
+        <MetadataList maxNumOfItems={1}>
+          <MetadataListItem label="A">1</MetadataListItem>
+          <MetadataListItem label="B">2</MetadataListItem>
+        </MetadataList>
+      </InternationalizationProvider>,
+    );
+
+    await user.click(screen.getByText('Afficher plus'));
+    expect(screen.getByText('Afficher moins')).toBeInTheDocument();
+  });
+
   it('does not show toggle in horizontal mode even with maxNumOfItems', () => {
     render(
       <MetadataList orientation="horizontal" maxNumOfItems={1}>
@@ -98,6 +122,64 @@ describe('MetadataList', () => {
     expect(screen.queryByText('Show more')).not.toBeInTheDocument();
     expect(screen.getByText('A')).toBeInTheDocument();
     expect(screen.getByText('B')).toBeInTheDocument();
+  });
+
+  describe('numeric columns', () => {
+    // A fixed column count is a runtime value, so it arrives as a StyleX
+    // dynamic style: the template lands in the element's inline style (as the
+    // generated custom property) rather than in a static class rule.
+    const gridTemplateOf = (container: HTMLElement) =>
+      container.querySelector('dl')?.getAttribute('style') ?? '';
+
+    it('renders the requested number of columns with stacked labels', () => {
+      const {container} = render(
+        <MetadataList columns={3}>
+          <MetadataListItem label="A">1</MetadataListItem>
+        </MetadataList>,
+      );
+
+      expect(gridTemplateOf(container)).toContain('repeat(3, 1fr)');
+    });
+
+    it('renders label and value tracks per column with side labels', () => {
+      const {container} = render(
+        <MetadataList columns={3} label={{position: 'start'}}>
+          <MetadataListItem label="A">1</MetadataListItem>
+        </MetadataList>,
+      );
+
+      expect(gridTemplateOf(container)).toContain('repeat(3, auto 1fr)');
+    });
+
+    it('leaves the grid to the static rule for columns="multi"', () => {
+      const {container} = render(
+        <MetadataList columns="multi">
+          <MetadataListItem label="A">1</MetadataListItem>
+        </MetadataList>,
+      );
+
+      expect(gridTemplateOf(container)).not.toContain('repeat(');
+    });
+
+    it('ignores numeric columns in horizontal orientation', () => {
+      const {container} = render(
+        <MetadataList columns={3} orientation="horizontal">
+          <MetadataListItem label="A">1</MetadataListItem>
+        </MetadataList>,
+      );
+
+      expect(gridTemplateOf(container)).not.toContain('repeat(');
+    });
+
+    it('still applies a custom label width with side labels', () => {
+      const {container} = render(
+        <MetadataList label={{position: 'start', width: 120}}>
+          <MetadataListItem label="A">1</MetadataListItem>
+        </MetadataList>,
+      );
+
+      expect(gridTemplateOf(container)).toContain('120px 1fr');
+    });
   });
 });
 

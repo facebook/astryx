@@ -20,6 +20,7 @@ import {HStack, VStack} from '../Stack';
 import {Icon} from '../Icon';
 import {TreeList, type TreeListItemData} from '../TreeList';
 import {useTranslator} from '../i18n';
+import {isImeKeyEvent} from '../hooks/useFocusTrap';
 import {spacingVars, typeScaleVars} from '../theme/tokens.stylex';
 import {PowerSearchValueEditor} from './PowerSearchValueEditor';
 import {resolveOperatorLabel} from './resolveOperatorLabel';
@@ -702,6 +703,12 @@ export function PowerSearchEditPopover({
   // Handle Enter to save, Escape to cancel
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
+      // Don't treat an IME composition-commit Enter as save-to-close --
+      // typing a CJK filter value and pressing Enter to confirm the
+      // composition would otherwise close the popover mid-composition.
+      if (isImeKeyEvent(e.nativeEvent)) {
+        return;
+      }
       if (e.key === 'Enter' && !isSaveDisabled && !e.defaultPrevented) {
         e.preventDefault();
         handleSave();

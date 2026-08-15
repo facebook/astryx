@@ -38,6 +38,7 @@
 
 import {useRef} from 'react';
 import type {TablePlugin} from './types';
+import {devWarn} from '../utils/devWarning';
 
 // ======================================================================// Canonical Plugin Order
 // ======================================================================
@@ -112,8 +113,9 @@ function validatePlugin<T extends Record<string, unknown>>(
   // Warn about unknown keys (likely misspelled transform names)
   for (const key of keys) {
     if (!VALID_TRANSFORM_KEYS.has(key)) {
-      console.warn(
-        `[Table] Plugin "${name}" has unknown key "${key}". ` +
+      devWarn(
+        'Table',
+        `Plugin "${name}" has unknown key "${key}". ` +
           `Valid keys: ${[...VALID_TRANSFORM_KEYS].join(', ')}. ` +
           `This key will be ignored.`,
       );
@@ -125,8 +127,9 @@ function validatePlugin<T extends Record<string, unknown>>(
     if (VALID_TRANSFORM_KEYS.has(key)) {
       const value = (plugin as Record<string, unknown>)[key];
       if (value != null && typeof value !== 'function') {
-        console.warn(
-          `[Table] Plugin "${name}" has non-function value for "${key}" ` +
+        devWarn(
+          'Table',
+          `Plugin "${name}" has non-function value for "${key}" ` +
             `(got ${typeof value}). Transform will be skipped.`,
         );
       }
@@ -140,8 +143,9 @@ function validatePlugin<T extends Record<string, unknown>>(
       typeof (plugin as Record<string, unknown>)[key] === 'function',
   );
   if (!hasTransforms) {
-    console.warn(
-      `[Table] Plugin "${name}" has no transform methods. ` +
+    devWarn(
+      'Table',
+      `Plugin "${name}" has no transform methods. ` +
         `It will be included in the pipeline but won't do anything.`,
     );
   }
