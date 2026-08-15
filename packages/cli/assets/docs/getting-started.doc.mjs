@@ -20,12 +20,18 @@ export const docs = {
         {
           type: 'code',
           lang: 'text',
-          label: 'Paste this into your AI',
-          code: 'Install @astryxdesign/core, @stylexjs/stylex, @astryxdesign/theme-neutral, and @astryxdesign/cli in this project, then run `npx @astryxdesign/cli init` to set up agent docs. Read the generated files to learn the conventions. Then ask me what look and feel this app should have. Run `npx @astryxdesign/cli theme list` to see the themes you can start from, and `npx @astryxdesign/cli theme add <slug>` to copy one in as editable source; for something bespoke, run `npx @astryxdesign/cli init --features theme` and edit the annotated theme.template.ts it writes. If I have no preference, stay on neutral.',
+          label: 'Set up the design system',
+          code: 'Install @astryxdesign/core, @stylexjs/stylex, @astryxdesign/theme-neutral, and @astryxdesign/cli in this project, then run `npx @astryxdesign/cli init` to set up agent docs. Read the generated files to learn the conventions.',
         },
         {
           type: 'prose',
-          text: 'The theme sentence matters for a new app. Every app gets a theme whether or not anyone chooses one, and the default is deliberately unopinionated, so an app that is never asked ships looking like the default. Asking once at setup costs one question; retrofitting a look later means revisiting screens that were built around the old one.',
+          text: 'Then give it a look. Every app gets a theme whether or not anyone picks one, so it is worth one question at setup rather than revisiting screens later that were built around the wrong look:',
+        },
+        {
+          type: 'code',
+          lang: 'text',
+          label: 'Give it a look',
+          code: "Ask me what look and feel this app should have. Run `npx @astryxdesign/cli theme list` and start from the closest shipped theme with `theme add <slug>`, which copies it in as editable source; if none of them fit, run `npx @astryxdesign/cli theme template` and fill in the annotated template it writes. Default to neutral if I have no preference, and show me the result before moving on.",
         },
       ],
     },

@@ -20,7 +20,7 @@ import {CLI_ROOT} from '../../../foundation/fs/paths.mjs';
 import {PathSafetyError} from '../../../foundation/fs/path-safety.mjs';
 import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
 import {installAgentDocs} from '../../../foundation/agent-docs/agent-docs.mjs';
-import {stripCopyrightHeader} from '../../../foundation/text/copyright-header.mjs';
+import {themeTemplate} from '../../theme/template/template.mjs';
 import {listTemplates} from '../../template/template.mjs';
 import {AstryxError} from '../../error.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
@@ -28,10 +28,6 @@ import {logger} from '../../logger.mjs';
 
 const VALID_FEATURES = ['agents', 'theme', 'template'];
 const VALID_AGENTS = ['claude', 'cursor', 'codex', 'hermes', 'all'];
-
-/** The annotated `defineTheme` reference, copied by `--features theme`. */
-const THEME_TEMPLATE_SRC = path.join(CLI_ROOT, 'assets', 'theme.template.ts');
-const THEME_TEMPLATE_DEST = 'theme.template.ts';
 
 /**
  * Build the "Next steps" lines printed at the end of `astryx init`.
@@ -112,12 +108,9 @@ function applyAgents(cwd, options, invocation, data) {
 }
 
 /**
- * Copy the annotated theme template into the project and point at it.
- *
- * `--features theme` used to print a one-line hint and write nothing, which is
- * the weakest form of this: a theme author's first problem is not knowing the
- * command, it is not knowing what the theme surface contains. An existing file
- * is never clobbered — someone's edited copy outranks ours.
+ * Write the annotated theme template, via the same leaf `astryx theme template`
+ * uses — init is a convenience wrapper over the theme command, not a second
+ * implementation of it.
  *
  * @param {string} cwd
  * @param {string} invocation
@@ -125,25 +118,19 @@ function applyAgents(cwd, options, invocation, data) {
  */
 function applyTheme(cwd, invocation, data) {
   data.theme = true;
-  const dest = path.join(cwd, THEME_TEMPLATE_DEST);
   try {
-    if (fs.existsSync(dest)) {
-      data.themeTemplate = 'skipped';
-      logger.log(`• ${THEME_TEMPLATE_DEST} already exists — left as is.`);
-    } else {
-      // Strip our repo header — the consumer's copy is their file, not ours.
-      fs.writeFileSync(
-        dest,
-        stripCopyrightHeader(fs.readFileSync(THEME_TEMPLATE_SRC, 'utf-8')),
-      );
-      data.themeTemplate = 'created';
-      data.themeTemplatePath = THEME_TEMPLATE_DEST;
-      logger.log(`✓ Theme template written → ${THEME_TEMPLATE_DEST}`);
-    }
+    const {path: written, written: didWrite} = themeTemplate({cwd}).data;
+    data.themeTemplate = didWrite ? 'created' : 'skipped';
+    data.themeTemplatePath = didWrite ? written : null;
+    logger.log(
+      didWrite
+        ? `✓ Theme template written → ${written}`
+        : `• ${written} already exists — left as is.`,
+    );
   } catch {
     // Soft failure, like agent docs: the guidance below is still useful.
     data.themeTemplate = 'failed';
-    logger.error(`Could not write ${THEME_TEMPLATE_DEST}.`);
+    logger.error('Could not write the theme template.');
   }
   logger.log(
     `  Copy it to your theme file and edit, or run \`${invocation} theme add <slug>\` to start from a shipped theme (\`${invocation} theme list\` to browse).`,

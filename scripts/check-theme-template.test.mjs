@@ -5,7 +5,7 @@
  *
  * `packages/cli/assets/theme.template.ts` is the annotated map of the theme
  * surface: every `defineTheme` field, the token families, the component
- * override syntax. `astryx init --features theme` copies it into a consumer's
+ * override syntax. `astryx theme template` copies it into a consumer's
  * project, so a claim that has rotted is not a stale comment in our repo — it
  * is wrong instruction sitting in someone else's.
  *

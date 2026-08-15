@@ -297,7 +297,7 @@ describe('themeBuild() — component override validation', () => {
 });
 
 describe('themeBuild() — the shipped theme template', () => {
-  // `assets/theme.template.ts` is what `astryx init --features theme` puts in a
+  // `assets/theme.template.ts` is what `astryx theme template` puts in a
   // consumer's project. It is the one theme file we hand out, so it has to
   // compile as shipped — and cleanly: a template that greets its first reader
   // with warnings teaches them to ignore warnings. The claims its comments make

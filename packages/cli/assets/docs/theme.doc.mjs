@@ -152,7 +152,7 @@ function App() {
         },
         {
           type: 'prose',
-          text: 'For an annotated map of the whole surface — every defineTheme field, the token families, and the component override syntax, each with the CLI command that prints its reference — run `astryx init --features theme`. It writes `theme.template.ts` into your project to read and copy from.',
+          text: 'For an annotated map of the whole surface — every defineTheme field, the token families, and the component override syntax, each with the CLI command that prints its reference — run `astryx theme template`. It writes `theme.template.ts` into your project to read and copy from (`astryx init --features theme` writes it as part of project setup).',
         },
       ],
     },
