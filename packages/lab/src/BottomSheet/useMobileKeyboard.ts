@@ -213,6 +213,20 @@ export function useMobileKeyboard({
       }
     };
 
+    const scrollBodyBy = (distance: number, smoothly: boolean) => {
+      if (typeof body.scrollBy !== 'function') {
+        body.scrollTop += distance;
+        return;
+      }
+      const reduceMotion =
+        typeof window.matchMedia === 'function' &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      body.scrollBy({
+        top: distance,
+        behavior: smoothly && !reduceMotion ? 'smooth' : 'auto',
+      });
+    };
+
     const applyKeyboardGeometry = (geometry: KeyboardGeometry) => {
       const viewport = getVisualViewportBounds();
       // A collapsed detent can extend the body below the layout viewport even
@@ -380,9 +394,9 @@ export function useMobileKeyboard({
       }
 
       if (measuredFocusedRect.bottom > safeBottom) {
-        body.scrollTop += measuredFocusedRect.bottom - safeBottom;
+        scrollBodyBy(measuredFocusedRect.bottom - safeBottom, overlap > 0);
       } else if (measuredFocusedRect.top < safeTop) {
-        body.scrollTop -= safeTop - measuredFocusedRect.top;
+        scrollBodyBy(measuredFocusedRect.top - safeTop, overlap > 0);
       }
     };
 

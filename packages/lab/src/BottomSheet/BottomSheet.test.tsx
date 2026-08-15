@@ -707,6 +707,41 @@ describe('BottomSheet', () => {
       expect(sheet.style.height).toBe('');
     });
 
+    it('smoothly scrolls a focused Tall control above the keyboard', () => {
+      mockVisualViewport(500);
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={() => {}}
+          label="Add a comment"
+          height="tall">
+          <input aria-label="Comment" />
+        </BottomSheet>,
+      );
+      const body = getBody();
+      const input = screen.getByRole('textbox', {name: 'Comment'});
+      const scrollBy = vi.fn((options: ScrollToOptions) => {
+        body.scrollTop += options.top ?? 0;
+      });
+      Object.defineProperty(body, 'scrollBy', {
+        configurable: true,
+        value: scrollBy,
+      });
+      vi.spyOn(body, 'getBoundingClientRect').mockReturnValue(
+        rect({top: 100, bottom: 800}),
+      );
+      vi.spyOn(input, 'getBoundingClientRect').mockImplementation(() =>
+        rect({
+          top: 660 - body.scrollTop,
+          bottom: 700 - body.scrollTop,
+        }),
+      );
+
+      input.focus();
+
+      expect(scrollBy).toHaveBeenCalledWith({top: 248, behavior: 'smooth'});
+    });
+
     it('does not add clearance or scroll when the viewport is unobstructed', () => {
       mockVisualViewport(800);
       render(
