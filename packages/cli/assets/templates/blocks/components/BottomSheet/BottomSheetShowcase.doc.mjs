@@ -4,8 +4,8 @@
 export const doc = {
   type: 'block',
   exampleFor: 'BottomSheet',
-  name: 'BottomSheet',
-  displayName: 'BottomSheet',
+  name: 'Bottom Sheet',
+  displayName: 'Bottom Sheet',
   description:
     'A mobile filter surface that rises from the bottom edge and fits its content.',
   isReady: true,

@@ -3,7 +3,7 @@
 
 export const docs = {
   name: 'BottomSheetSwitcher',
-  displayName: 'BottomSheetSwitcher',
+  displayName: 'Bottom Sheet Switcher',
   group: 'BottomSheet',
   category: 'Overlay',
   keywords: ['bottom sheet', 'switcher', 'multi-step', 'flow', 'wizard'],

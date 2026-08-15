@@ -3,7 +3,7 @@
 
 export const docs = {
   name: 'BottomSheet',
-  displayName: 'BottomSheet',
+  displayName: 'Bottom Sheet',
   group: 'BottomSheet',
   category: 'Overlay',
   keywords: [

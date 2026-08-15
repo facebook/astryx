@@ -4,8 +4,8 @@
 export const doc = {
   type: 'block',
   exampleFor: 'BottomSheet',
-  name: 'BottomSheet — Height variants',
-  displayName: 'BottomSheet — Height variants',
+  name: 'Bottom Sheet — Height variants',
+  displayName: 'Bottom Sheet — Height variants',
   description:
     'Compares hug, capped, and tall starting heights for different amounts of content.',
   isReady: true,

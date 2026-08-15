@@ -4,8 +4,8 @@
 export const doc = {
   type: 'block',
   exampleFor: 'BottomSheetSwitcher',
-  name: 'BottomSheetSwitcher',
-  displayName: 'BottomSheetSwitcher',
+  name: 'Bottom Sheet Switcher',
+  displayName: 'Bottom Sheet Switcher',
   description:
     'A two-step flow that transitions between bottom sheets inside one shared dialog.',
   isReady: true,

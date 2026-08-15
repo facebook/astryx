@@ -4,8 +4,8 @@
 export const doc = {
   type: 'block',
   exampleFor: 'BottomSheet',
-  name: 'BottomSheet — No scrim',
-  displayName: 'BottomSheet — No scrim',
+  name: 'Bottom Sheet — No scrim',
+  displayName: 'Bottom Sheet — No scrim',
   description:
     'Keeps the page visible and interactive behind a non-modal bottom sheet.',
   isReady: true,

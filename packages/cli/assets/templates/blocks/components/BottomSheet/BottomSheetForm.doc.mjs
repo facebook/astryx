@@ -4,8 +4,8 @@
 export const doc = {
   type: 'block',
   exampleFor: 'BottomSheet',
-  name: 'BottomSheet — Form',
-  displayName: 'BottomSheet — Form',
+  name: 'Bottom Sheet — Form',
+  displayName: 'Bottom Sheet — Form',
   description:
     'Collects a short title and note in a keyboard-aware bottom sheet.',
   isReady: true,
