@@ -55,7 +55,7 @@ export const docs = {
     {
       name: 'endContent',
       type: 'ReactNode',
-      description: 'Right-side content such as badges or counts.',
+      description: 'Passive right-side content only (badges, counts). Interactive controls go in actions.',
       slotElements: [
         {
           __element: 'Icon',
@@ -164,7 +164,7 @@ export const docsZh = {
     {
       name: 'endContent',
       type: 'ReactNode',
-      description: '右侧内容，如徽章或计数。',
+      description: '仅用于被动右侧内容（徽章、计数）。交互控件请使用 actions。',
     },
     {
       name: 'actions',
@@ -206,7 +206,8 @@ export const docsDense = {
     isDisabled: 'Disabled state.',
     href: 'Navigation URL.',
     onClick: 'Click handler.',
-    endContent: 'Right-side content such as badges or counts.',
+    endContent:
+      'Passive right-side content only (badges, counts). Interactive controls go in actions.',
     actions:
       'Row-level secondary controls (icon buttons, menus) rendered as siblings of the primary element, after the expand/collapse toggle and before nested children in DOM/focus order. Hidden when rail collapsed. Passive content goes in endContent; interactive content goes here.',
     children: 'Sub-items for nesting.',

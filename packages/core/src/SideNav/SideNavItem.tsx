@@ -324,7 +324,9 @@ export interface SideNavItemProps extends BaseProps<HTMLElement> {
    */
   onClick?: (e: React.MouseEvent) => void;
   /**
-   * Right-side content (badges, counts).
+   * Passive right-side content only (badges, counts). Interactive
+   * controls (icon buttons, menus) go in `actions`. `endContent`
+   * renders inside the primary link or button.
    */
   endContent?: ReactNode;
   /**
@@ -647,15 +649,21 @@ export function SideNavItem({
     isDisabled && navItemStyles.disabled,
   ] as const;
 
-  // Two shapes of the same row appearance:
-  // - `rowProps` for the split-action path, where the row is a plain <div>
-  //   container and its children take focus (so the ring belongs on them);
-  // - `focusableRowProps` for every other path, where the row element is
-  //   itself the focusable control.
+  // Three shapes of the same row appearance:
+  // - `rowProps` — split-action path (toggle, no actions): presentational
+  //   <div>; the ring belongs on each child tab stop.
+  // - `focusableRowProps` — ordinary row: the row element is the control.
+  // - `actionsRowProps` — same pill as `focusableRowProps`, plus
+  //   `focusWithin` so the ring paints. The wrapper is not a tab stop, so
+  //   `:focus-visible` on it would never match.
   const rowProps = mergeProps(itemThemeProps, stylex.props(...itemStyleArgs));
   const focusableRowProps = mergeProps(
     itemThemeProps,
     focusOutlineProps.focusVisible(...itemStyleArgs),
+  );
+  const actionsRowProps = mergeProps(
+    focusableRowProps,
+    focusOutlineProps.focusWithin(),
   );
 
   // Row-wrapper path: primary element + row controls as siblings.
@@ -683,7 +691,7 @@ export function SideNavItem({
         };
 
     itemElement = (
-      <div data-testid={testId} {...rowProps}>
+      <div data-testid={testId} {...(hasActions ? actionsRowProps : rowProps)}>
         <NavItemElement
           ref={ref}
           href={href}
@@ -692,7 +700,9 @@ export function SideNavItem({
           onClick={handleClick}
           {...rest}
           {...rowPrimaryAriaProps}
-          {...focusOutlineProps.focusVisible(styles.splitAction)}>
+          {...(hasActions
+            ? stylex.props(styles.splitAction)
+            : focusOutlineProps.focusVisible(styles.splitAction))}>
           {itemContent}
         </NavItemElement>
         {hasIndependentToggle && (

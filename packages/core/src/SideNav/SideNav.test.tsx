@@ -11,7 +11,14 @@
 
 import React from 'react';
 import {describe, it, expect, vi, afterEach} from 'vitest';
-import {render, screen, act, fireEvent, waitFor, within} from '@testing-library/react';
+import {
+  render,
+  screen,
+  act,
+  fireEvent,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {useRef, useState, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
@@ -2285,6 +2292,54 @@ describe('SideNav focus ring (A15)', () => {
     expect(row.tagName).toBe('DIV');
     expect(row).toContainElement(toggle);
     expectNoSharedFocusRing(row);
+  });
+
+  it('rings the row wrapper of an actions row, not the truncated primary', () => {
+    render(
+      <SideNavItem
+        label="Project"
+        href="/project"
+        actions={
+          <button type="button" data-testid="row-action">
+            More
+          </button>
+        }
+      />,
+    );
+
+    const link = screen.getByRole('link', {name: 'Project'});
+    const row = link.parentElement!;
+    expect(row.tagName).toBe('DIV');
+    expect(row).toContainElement(screen.getByTestId('row-action'));
+    // Same pill as an ordinary row: the shared ring lives on the wrapper,
+    // whose box includes the actions. Putting it on the primary would clip
+    // to the truncated split-action element (square, not full-row).
+    expectSharedFocusRing(row);
+    expectNoSharedFocusRing(link);
+  });
+
+  it('rings the wrapper of an actions row that also splits the chevron', () => {
+    render(
+      <SideNavItem
+        label="Settings"
+        href="/settings"
+        collapsible
+        actions={
+          <button type="button" data-testid="row-action">
+            More
+          </button>
+        }>
+        <SideNavItem label="General" href="/settings/general" />
+      </SideNavItem>,
+    );
+
+    const link = screen.getByRole('link', {name: 'Settings'});
+    const toggle = screen.getByRole('button', {name: 'Collapse Settings'});
+    const row = link.parentElement!;
+    expect(row).toContainElement(screen.getByTestId('row-action'));
+    expectSharedFocusRing(row);
+    expectNoSharedFocusRing(link);
+    expectSharedFocusRing(toggle);
   });
 
   it('draws the shared ring on a heading rendered as one link', () => {
