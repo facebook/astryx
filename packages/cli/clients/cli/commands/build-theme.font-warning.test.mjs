@@ -81,6 +81,33 @@ describe('theme build font-loading warning', () => {
     expect(result.stderr).toContain('Font "JetBrains Mono"');
   });
 
+  it('keeps --json stdout one valid envelope: warnings inside, snippet suppressed', async () => {
+    const project = path.join(tmpDir, 'project');
+    const themeFile = writeTheme(
+      project,
+      'fonty',
+      `export default { name: 'fonty', tokens: { '--font-family-body': '"Space Grotesk", sans-serif' } };\n`,
+    );
+
+    const result = await runCli(
+      ['--json', 'theme', 'build', path.relative(project, themeFile)],
+      project,
+    );
+
+    expect(result.code).toBe(0);
+    // The whole stdout must parse — any human snippet leaking into --json
+    // mode corrupts the envelope, so this asserts the "JSON is always JSON"
+    // contract, not just substring presence.
+    const envelope = JSON.parse(result.stdout);
+    expect(envelope.type).toBe('theme.build');
+    expect(envelope.data.warnings).toEqual(
+      expect.arrayContaining([expect.stringContaining('Font "Space Grotesk"')]),
+    );
+    expect(result.stdout).not.toContain('fonts.googleapis.com');
+    // Human one-liners are silenced too — machine mode stays quiet.
+    expect(result.stderr).not.toContain('Font "');
+  });
+
   it('prints nothing font-related for a theme of generics and system stacks', async () => {
     const project = path.join(tmpDir, 'project');
     const themeFile = writeTheme(

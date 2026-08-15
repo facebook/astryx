@@ -129,6 +129,76 @@ describe('collectUnloadedFonts', () => {
   it('returns nothing for a theme with no tokens or components', () => {
     expect(collectUnloadedFonts({})).toEqual([]);
   });
+
+  it('returns nothing for a null or undefined resolved theme', () => {
+    // Older build.mjs consumers guard with `resolvedTheme || themeDef` — if
+    // a path ever hands the collector nothing, it must shrug, not throw.
+    expect(collectUnloadedFonts(null)).toEqual([]);
+    expect(collectUnloadedFonts(undefined)).toEqual([]);
+  });
+
+  it('ignores non-string values without throwing: numeric or object-valued', () => {
+    // The generator only allows object values under ':pseudo' keys, so an
+    // object-valued fontFamily is not a family declaration — skip, not crash.
+    expect(
+      collectUnloadedFonts({
+        tokens: {'--font-family-body': 42},
+        components: {
+          button: {base: {fontFamily: 700}},
+          card: {base: {fontFamily: {default: '"Sneaky"'}}},
+        },
+      }),
+    ).toEqual([]);
+  });
+
+  it('collects fontFamily nested under a pseudo-class block', () => {
+    // generateThemeRules accepts {':hover': {fontFamily}} inside a style
+    // key — a family named only there must still warn.
+    expect(
+      collectUnloadedFonts({
+        components: {
+          button: {base: {':hover': {fontFamily: '"Rubik Doodle", cursive'}}},
+        },
+      }),
+    ).toEqual(['Rubik Doodle']);
+  });
+
+  it('strips a var() whose fallback list contains another var()', () => {
+    expect(
+      collectUnloadedFonts({
+        tokens: {
+          '--font-family-body': 'var(--brand, var(--fallback), "Web Font")',
+        },
+      }),
+    ).toEqual([]);
+    // …and still keeps a family declared outside the nested call.
+    expect(
+      collectUnloadedFonts({
+        tokens: {'--font-family-code': 'var(--a, var(--b, serif)), Bungee'},
+      }),
+    ).toEqual(['Bungee']);
+  });
+
+  it('matches generic keywords case-insensitively', () => {
+    expect(
+      collectUnloadedFonts({
+        tokens: {
+          '--font-family-body': 'Sans-Serif',
+          '--font-family-heading': 'SERIF',
+          '--font-family-code': 'Ui-Monospace',
+        },
+      }),
+    ).toEqual([]);
+  });
+
+  it('collapses newlines and whitespace runs inside a family name', () => {
+    // Template-literal theme sources wrap long stacks across lines.
+    expect(
+      collectUnloadedFonts({
+        tokens: {'--font-family-body': '"Space\n      Grotesk",\n  serif'},
+      }),
+    ).toEqual(['Space Grotesk']);
+  });
 });
 
 describe('formatFontLoadingHelp', () => {
@@ -161,5 +231,12 @@ describe('formatFontLoadingHelp', () => {
 
   it('points at the docs recipe', () => {
     expect(help).toContain('astryx docs typography');
+  });
+
+  it('percent-encodes family names in the css2 URL', () => {
+    const spiced = formatFontLoadingHelp('spice', ['P&Co Sans', 'Sömething']);
+    expect(spiced).toContain(
+      'href="https://fonts.googleapis.com/css2?family=P%26Co+Sans&family=S%C3%B6mething&display=swap"',
+    );
   });
 });

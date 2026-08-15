@@ -116,7 +116,8 @@ function splitFamilies(value) {
     []) {
     let name = segment.trim();
     if (!name) continue;
-    const quoted = /^(["']).*\1$/.test(name);
+    // /s: a quoted name may span lines (template-literal theme sources).
+    const quoted = /^(["']).*\1$/s.test(name);
     if (quoted) name = name.slice(1, -1);
     name = name.trim().replace(/\s+/g, ' ');
     if (!name || (!quoted && /[()]/.test(name))) continue;

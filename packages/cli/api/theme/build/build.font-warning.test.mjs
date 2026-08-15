@@ -83,6 +83,34 @@ describe('themeBuild() — font-loading warnings in the receipt', () => {
     ]);
   });
 
+  it('warns for a family named only inside a pseudo-class component override (defineTheme path)', async () => {
+    // ':hover' blocks are legal override values (generateThemeRules), and the
+    // typography path deep-merges author components with generated ones — a
+    // webfont hiding at that depth must survive the merge and still warn.
+    fs.writeFileSync(
+      path.join(tmpDir, 'pseudo.mjs'),
+      `export default {
+  name: 'pseudo',
+  typography: {
+    body: {family: 'Helvetica', fallbacks: 'Arial, sans-serif'},
+  },
+  components: {
+    button: {base: {':hover': {fontFamily: '"Rubik Doodle", cursive'}}},
+  },
+};\n`,
+    );
+
+    const result = await themeBuild('pseudo.mjs', {}, {cwd: tmpDir});
+
+    const fontWarnings = (result?.data.warnings ?? []).filter(w =>
+      w.startsWith('Font "'),
+    );
+    // Exactly the hidden family — Helvetica/Arial are system fonts.
+    expect(fontWarnings).toEqual([
+      expect.stringContaining('Font "Rubik Doodle"'),
+    ]);
+  });
+
   it('warns about nothing when every named family is a generic or known system font', async () => {
     fs.writeFileSync(
       path.join(tmpDir, 'sys.mjs'),
