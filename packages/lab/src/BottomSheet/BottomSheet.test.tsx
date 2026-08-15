@@ -45,6 +45,14 @@ beforeEach(() => {
       dispatchEvent: vi.fn(),
     }),
   );
+  vi.stubGlobal(
+    'requestAnimationFrame',
+    vi.fn((callback: FrameRequestCallback) => {
+      callback(0);
+      return 1;
+    }),
+  );
+  vi.stubGlobal('cancelAnimationFrame', vi.fn());
 });
 
 afterEach(() => {
@@ -57,6 +65,37 @@ function getSheet(): HTMLElement {
     throw new Error('sheet panel not found');
   }
   return sheet;
+}
+
+function getBody(): HTMLElement {
+  const body = getSheet().lastElementChild;
+  if (!(body instanceof HTMLElement)) {
+    throw new Error('sheet scroll body not found');
+  }
+  return body;
+}
+
+function rect({top, bottom}: {top: number; bottom: number}): DOMRect {
+  return {
+    x: 0,
+    y: top,
+    top,
+    right: 400,
+    bottom,
+    left: 0,
+    width: 400,
+    height: bottom - top,
+    toJSON: () => ({}),
+  };
+}
+
+function mockVisualViewport(height: number, offsetTop = 0) {
+  const viewport = Object.assign(new EventTarget(), {
+    height,
+    offsetTop,
+  });
+  vi.stubGlobal('visualViewport', viewport);
+  return viewport;
 }
 
 function finishSheetExit() {
@@ -351,6 +390,59 @@ describe('BottomSheet', () => {
         expect(screen.getByRole('dialog')).toBeInTheDocument();
         unmount();
       }
+    });
+  });
+
+  describe('mobile keyboard', () => {
+    it('extends internal scrolling and reveals a focused control above the visual viewport', () => {
+      const viewport = mockVisualViewport(500);
+      render(
+        <BottomSheet isOpen onOpenChange={() => {}} label="Add a comment">
+          <input aria-label="Comment" />
+        </BottomSheet>,
+      );
+      const body = getBody();
+      const input = screen.getByRole('textbox', {name: 'Comment'});
+      vi.spyOn(body, 'getBoundingClientRect').mockReturnValue(
+        rect({top: 100, bottom: 800}),
+      );
+      vi.spyOn(input, 'getBoundingClientRect').mockReturnValue(
+        rect({top: 660, bottom: 700}),
+      );
+
+      act(() => viewport.dispatchEvent(new Event('resize')));
+      expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
+        '0px',
+      );
+
+      input.focus();
+
+      // 300px keyboard overlap + 48px room for Android suggestion UI.
+      expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
+        '348px',
+      );
+      // Visible bottom is 500px; preserve the same 48px focus gap.
+      expect(body.scrollTop).toBe(248);
+
+      viewport.height = 800;
+      act(() => viewport.dispatchEvent(new Event('resize')));
+      expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
+        '0px',
+      );
+    });
+
+    it('blurs the focused field when sheet travel starts', () => {
+      render(
+        <BottomSheet isOpen onOpenChange={() => {}} label="Add a comment">
+          <input aria-label="Comment" />
+        </BottomSheet>,
+      );
+      const input = screen.getByRole('textbox', {name: 'Comment'});
+      input.focus();
+
+      fireEvent.pointerDown(getHandle(), {pointerId: 1, clientY: 0});
+
+      expect(document.activeElement).toBe(getSheet());
     });
   });
 

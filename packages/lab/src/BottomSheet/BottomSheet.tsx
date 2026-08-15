@@ -17,6 +17,11 @@
  * That shell is what lets the sheet translate freely (including a little past
  * fully-open) without clipping against a fixed dialog edge.
  *
+ * Form controls stay usable above mobile on-screen keyboards: the outer sheet
+ * remains stable while visual-viewport overlap extends the internal scroll
+ * range and focused controls scroll into view. Starting sheet travel blurs the
+ * field to dismiss the keyboard.
+ *
  * `hasScrim` picks the presentation: `true` (default) uses `showModal()` (top
  * layer, focus trap, scrim, scroll lock, background inert); `false` uses
  * `show()` for a non-modal sheet with no scrim, leaving the page behind
@@ -35,7 +40,15 @@
  * - /apps/storybook/stories/BottomSheet.stories.tsx (examples and visual coverage)
  */
 
-import {useCallback, useEffect, useRef, useState, type ReactNode} from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+  type RefObject,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '@astryxdesign/core';
 import {
@@ -83,6 +96,12 @@ export type BottomSheetHeight = keyof typeof HEIGHT_BUDGETS;
 // upward overdrag rather than showing a gap.
 // SYNC: must match OVERSCROLL_MAX in useSheetGestures.ts (the drag cap).
 const OVERSCROLL_PADDING = 48;
+
+// Chrome Android can keep suggestion UI below the keyboard. Keeping this much
+// room after a focused control prevents the browser from panning the whole
+// dialog when that UI appears (and matches Silk's keyboard-sheet guidance).
+const KEYBOARD_FOCUS_GAP = 48;
+const KEYBOARD_INSET_VAR = '--_sheet-keyboard-inset';
 
 /**
  * Default snap detents in px, resolved against the *visual* viewport (like iOS
@@ -237,6 +256,10 @@ const styles = stylex.create({
     flexGrow: 1,
     minHeight: 0,
     overflowY: 'auto',
+    // Set from visualViewport while the on-screen keyboard/browser chrome
+    // covers the stable sheet. The trailing spacer below extends the internal
+    // scroll range; the outer sheet and this flex item's box stay unchanged.
+    scrollPaddingBlockEnd: KEYBOARD_FOCUS_GAP,
     // No overscroll bounce inside the sheet — a pull-down at the top edge is
     // handed off to the sheet drag (see useSheetGestures' touch handling)
     // rather than rubber-banding the content.
@@ -245,6 +268,10 @@ const styles = stylex.create({
     // intercepted via a non-passive touchmove listener, not by blocking
     // touch-action (which would suppress scrolling entirely).
     touchAction: 'pan-y',
+  },
+  keyboardSpacer: {
+    blockSize: `var(${KEYBOARD_INSET_VAR}, 0px)`,
+    pointerEvents: 'none',
   },
   // Both budgets add the overdrag padding back to the height so the visible
   // height (minus the off-screen padding) matches the intended budget.
@@ -256,6 +283,116 @@ const styles = stylex.create({
     maxHeight: `calc(${HEIGHT_BUDGETS.hug} + ${OVERSCROLL_PADDING}px)`,
   },
 });
+
+function getVisualViewportBounds(): {top: number; bottom: number} {
+  const viewport = window.visualViewport;
+  const top = viewport?.offsetTop ?? 0;
+  return {
+    top,
+    bottom: top + (viewport?.height ?? window.innerHeight),
+  };
+}
+
+/**
+ * Keep focused controls inside the visual viewport without moving or resizing
+ * the sheet itself. The keyboard covers the stable layout viewport on current
+ * mobile browsers, so the scroll body receives equivalent trailing space and
+ * moves only its focused descendant into the visible area. Starting a sheet
+ * drag focuses the panel, which blurs the field and dismisses the keyboard.
+ */
+function useMobileKeyboard({
+  bodyRef,
+  isDragging,
+  isOpen,
+  sheetRef,
+}: {
+  bodyRef: RefObject<HTMLDivElement | null>;
+  isDragging: boolean;
+  isOpen: boolean;
+  sheetRef: RefObject<HTMLDivElement | null>;
+}) {
+  useEffect(() => {
+    if (!isDragging) {
+      return;
+    }
+    const sheet = sheetRef.current;
+    const activeElement = document.activeElement;
+    if (
+      sheet &&
+      activeElement instanceof HTMLElement &&
+      activeElement !== sheet &&
+      sheet.contains(activeElement)
+    ) {
+      sheet.focus({preventScroll: true});
+    }
+  }, [isDragging, sheetRef]);
+
+  useEffect(() => {
+    const body = bodyRef.current;
+    if (!isOpen || !body) {
+      return;
+    }
+
+    const revealFocusedControl = () => {
+      const activeElement = document.activeElement;
+      if (
+        !(activeElement instanceof HTMLElement) ||
+        !body.contains(activeElement)
+      ) {
+        body.style.setProperty(KEYBOARD_INSET_VAR, '0px');
+        return;
+      }
+
+      const bodyRect = body.getBoundingClientRect();
+      const viewport = getVisualViewportBounds();
+      const overlap = Math.max(0, bodyRect.bottom - viewport.bottom);
+      // The extra gap leaves room for Chrome Android's suggestion row after
+      // the final input, not just the keyboard's measured overlap.
+      const inset = overlap > 0 ? overlap + KEYBOARD_FOCUS_GAP : 0;
+      body.style.setProperty(KEYBOARD_INSET_VAR, `${inset}px`);
+
+      const focusedRect = activeElement.getBoundingClientRect();
+      const safeTop = Math.max(bodyRect.top, viewport.top);
+      const safeBottom =
+        Math.min(bodyRect.bottom, viewport.bottom) - KEYBOARD_FOCUS_GAP;
+      if (safeBottom <= safeTop) {
+        return;
+      }
+
+      if (focusedRect.bottom > safeBottom) {
+        body.scrollTop += focusedRect.bottom - safeBottom;
+      } else if (focusedRect.top < safeTop) {
+        body.scrollTop -= safeTop - focusedRect.top;
+      }
+    };
+
+    let animationFrame = 0;
+    const scheduleReveal = () => {
+      cancelAnimationFrame(animationFrame);
+      animationFrame = requestAnimationFrame(revealFocusedControl);
+    };
+
+    const viewport = window.visualViewport;
+    body.addEventListener('focusin', scheduleReveal);
+    body.addEventListener('focusout', scheduleReveal);
+    viewport?.addEventListener('resize', scheduleReveal);
+    viewport?.addEventListener('scroll', scheduleReveal);
+    window.addEventListener('resize', scheduleReveal);
+    // The dialog enters the top layer in a later effect. Wait until the next
+    // frame so flex geometry is final before measuring the body.
+    scheduleReveal();
+
+    return () => {
+      cancelAnimationFrame(animationFrame);
+      body.removeEventListener('focusin', scheduleReveal);
+      body.removeEventListener('focusout', scheduleReveal);
+      viewport?.removeEventListener('resize', scheduleReveal);
+      viewport?.removeEventListener('scroll', scheduleReveal);
+      window.removeEventListener('resize', scheduleReveal);
+      body.style.removeProperty(KEYBOARD_INSET_VAR);
+    };
+  }, [bodyRef, isOpen]);
+}
 
 export interface BottomSheetProps extends BaseProps<HTMLDialogElement> {
   /** Ref forwarded to the underlying <dialog> element. */
@@ -277,7 +414,10 @@ export interface BottomSheetProps extends BaseProps<HTMLDialogElement> {
    */
   label: string;
 
-  /** Sheet content, rendered below the grab handle in a scrollable area. */
+  /**
+   * Sheet content, rendered below the grab handle in a scrollable,
+   * mobile-keyboard-aware area.
+   */
   children: ReactNode;
 
   /**
@@ -326,6 +466,9 @@ export interface BottomSheetProps extends BaseProps<HTMLDialogElement> {
  * With `hasScrim={false}` it opens non-modally (`show()`, no scrim), leaving
  * the page behind interactive and scrollable.
  *
+ * Focused form controls scroll above the mobile on-screen keyboard without
+ * resizing the sheet. Dragging the sheet dismisses the keyboard.
+ *
  * @example
  * ```
  * const [isOpen, setIsOpen] = useState(false);
@@ -353,6 +496,7 @@ export function BottomSheet({
   const dialogRef = useRef<HTMLDialogElement | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
   const sheetNodeRef = useRef<HTMLDivElement | null>(null);
+  const bodyNodeRef = useRef<HTMLDivElement | null>(null);
   const close = useCallback(() => onOpenChange(false), [onOpenChange]);
 
   // Set imperatively (not via state) so a 60fps drag doesn't re-render. The
@@ -364,11 +508,22 @@ export function BottomSheet({
     );
   }, []);
 
-  const {contentProps, handleProps, bodyProps, sheetRef} = useSheetGestures({
+  const {contentProps, handleProps, bodyProps, sheetRef, isDragging} =
+    useSheetGestures({
+      isOpen,
+      onDismiss: close,
+      snapHeights: defaultSnapHeights,
+      onScrimOpacity: handleScrimOpacity,
+    });
+  const mergedBodyRef = useMemo(
+    () => mergeRefs(bodyProps.ref, bodyNodeRef),
+    [bodyProps.ref],
+  );
+  useMobileKeyboard({
+    bodyRef: bodyNodeRef,
+    isDragging,
     isOpen,
-    onDismiss: close,
-    snapHeights: defaultSnapHeights,
-    onScrimOpacity: handleScrimOpacity,
+    sheetRef: sheetNodeRef,
   });
 
   // Modal: showModal() enters the top layer with a focus trap + ::backdrop and
@@ -536,8 +691,12 @@ export function BottomSheet({
             aria-hidden="true">
             <div {...stylex.props(styles.handlePill)} />
           </div>
-          <div {...stylex.props(styles.body)} {...bodyProps}>
+          <div
+            {...stylex.props(styles.body)}
+            {...bodyProps}
+            ref={mergedBodyRef}>
             {children}
+            <div {...stylex.props(styles.keyboardSpacer)} aria-hidden="true" />
           </div>
         </div>
       </div>
