@@ -414,6 +414,7 @@ export function BottomSheet({
     bottomClearance: MOBILE_KEYBOARD_BOTTOM_CLEARANCE,
     isDragging,
     isOpen,
+    preserveSheetHeight: height === 'hug',
     sheetRef: sheetNodeRef,
   });
 

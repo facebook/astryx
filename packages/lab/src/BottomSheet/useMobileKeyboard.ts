@@ -36,7 +36,40 @@ interface UseMobileKeyboardOptions {
   bottomClearance: number;
   isDragging: boolean;
   isOpen: boolean;
+  preserveSheetHeight: boolean;
   sheetRef: RefObject<HTMLDivElement | null>;
+}
+
+interface FocusScrollSnapshot {
+  target: HTMLElement;
+  elements: Array<{
+    element: HTMLElement;
+    scrollLeft: number;
+    scrollTop: number;
+  }>;
+  windowX: number;
+  windowY: number;
+}
+
+function captureFocusScroll(target: HTMLElement): FocusScrollSnapshot {
+  const elements: FocusScrollSnapshot['elements'] = [];
+  for (
+    let element = target.parentElement;
+    element;
+    element = element.parentElement
+  ) {
+    elements.push({
+      element,
+      scrollLeft: element.scrollLeft,
+      scrollTop: element.scrollTop,
+    });
+  }
+  return {
+    target,
+    elements,
+    windowX: window.scrollX,
+    windowY: window.scrollY,
+  };
 }
 
 function getVisualViewportBounds(): {top: number; bottom: number} {
@@ -90,6 +123,7 @@ export function useMobileKeyboard({
   bottomClearance,
   isDragging,
   isOpen,
+  preserveSheetHeight,
   sheetRef,
 }: UseMobileKeyboardOptions): void {
   useEffect(() => {
@@ -126,29 +160,76 @@ export function useMobileKeyboard({
 
   useEffect(() => {
     const body = bodyRef.current;
+    const sheet = sheetRef.current;
     if (!isOpen || !body) {
       return;
     }
 
-    // Focus text-entry controls before the browser's pointer default runs, so
-    // the keyboard can open without the browser independently panning the page
-    // or sheet. Do not cancel the event: its default still places the caret at
-    // the tapped position and dispatches the control's normal click.
-    const preventPointerFocusScroll = (event: PointerEvent) => {
-      const control = findTextEntryControl(event.target, body);
-      if (control && control !== document.activeElement) {
-        control.focus({preventScroll: true});
+    let isSheetHeightFrozen = false;
+    let pendingFocusScroll: FocusScrollSnapshot | null = null;
+    let pendingPointerFocusScroll: FocusScrollSnapshot | null = null;
+
+    const clearKeyboardLayout = () => {
+      body.style.setProperty(MOBILE_KEYBOARD_INSET_VAR, '0px');
+      if (isSheetHeightFrozen && sheet) {
+        sheet.style.removeProperty('height');
+        isSheetHeightFrozen = false;
       }
     };
 
-    // Focus a text-entry related target before the browser completes its own
-    // focus transition. Listening to blur on document covers transitions that
-    // begin outside the scroll body (including the sheet itself), as well as
-    // Tab and mobile keyboard "Next" actions between fields.
-    const preventFocusTransitionScroll = (event: FocusEvent) => {
+    // Let the browser perform pointer focus normally so caret placement, click
+    // behavior, and the focus lifecycle stay native. Capture scroll positions
+    // before its default focus action so they can be restored below.
+    const rememberPointerFocusScroll = (event: PointerEvent) => {
+      const control = findTextEntryControl(event.target, body);
+      pendingPointerFocusScroll =
+        control && control !== document.activeElement
+          ? captureFocusScroll(control)
+          : null;
+    };
+
+    // Keyboard and programmatic focus transitions cannot pass preventScroll to
+    // the browser. After consumer blur handlers run but before the destination
+    // scrolls into view, snapshot every scrollable ancestor, then restore those
+    // positions during the destination's focus event. This prevents native
+    // panning without re-entering the browser's focus lifecycle or duplicating
+    // consumer focus/blur callbacks.
+    const rememberFocusScroll = (event: FocusEvent) => {
       const control = findTextEntryControl(event.relatedTarget, body);
-      if (control && control !== document.activeElement) {
-        control.focus({preventScroll: true});
+      if (!control) {
+        pendingFocusScroll = null;
+        return;
+      }
+
+      pendingFocusScroll = captureFocusScroll(control);
+    };
+    const restoreFocusScroll = (event: FocusEvent) => {
+      const control = findTextEntryControl(event.target, body);
+      const snapshot =
+        pendingFocusScroll?.target === control
+          ? pendingFocusScroll
+          : pendingPointerFocusScroll?.target === control
+            ? pendingPointerFocusScroll
+            : null;
+      pendingFocusScroll = null;
+      pendingPointerFocusScroll = null;
+      if (!snapshot || snapshot.target !== control) {
+        return;
+      }
+
+      for (const {element, scrollLeft, scrollTop} of snapshot.elements) {
+        if (element.scrollLeft !== scrollLeft) {
+          element.scrollLeft = scrollLeft;
+        }
+        if (element.scrollTop !== scrollTop) {
+          element.scrollTop = scrollTop;
+        }
+      }
+      if (
+        window.scrollX !== snapshot.windowX ||
+        window.scrollY !== snapshot.windowY
+      ) {
+        window.scrollTo(snapshot.windowX, snapshot.windowY);
       }
     };
 
@@ -158,7 +239,7 @@ export function useMobileKeyboard({
         !(activeElement instanceof HTMLElement) ||
         !body.contains(activeElement)
       ) {
-        body.style.setProperty(MOBILE_KEYBOARD_INSET_VAR, '0px');
+        clearKeyboardLayout();
         return;
       }
 
@@ -171,7 +252,18 @@ export function useMobileKeyboard({
       // shift an already visible control.
       const clearance = overlap > 0 ? bottomClearance : 0;
       const inset = overlap + clearance;
+      if (overlap > 0 && preserveSheetHeight && sheet && !isSheetHeightFrozen) {
+        // A normal-flow spacer would otherwise increase a hug sheet's
+        // intrinsic height. Lock its current geometry before growing the
+        // internal scroll range, then release it when the obstruction clears.
+        sheet.style.height = `${sheet.getBoundingClientRect().height}px`;
+        isSheetHeightFrozen = true;
+      }
       body.style.setProperty(MOBILE_KEYBOARD_INSET_VAR, `${inset}px`);
+      if (overlap === 0 && isSheetHeightFrozen && sheet) {
+        sheet.style.removeProperty('height');
+        isSheetHeightFrozen = false;
+      }
 
       const focusedRect = activeElement.getBoundingClientRect();
       const safeTop = Math.max(bodyRect.top, viewport.top);
@@ -194,8 +286,9 @@ export function useMobileKeyboard({
     };
 
     const viewport = window.visualViewport;
-    body.addEventListener('pointerdown', preventPointerFocusScroll, true);
-    document.addEventListener('blur', preventFocusTransitionScroll, true);
+    document.addEventListener('pointerdown', rememberPointerFocusScroll);
+    document.addEventListener('focusout', rememberFocusScroll);
+    body.addEventListener('focus', restoreFocusScroll, true);
     body.addEventListener('focusin', scheduleReveal);
     body.addEventListener('focusout', scheduleReveal);
     viewport?.addEventListener('resize', scheduleReveal);
@@ -207,14 +300,18 @@ export function useMobileKeyboard({
 
     return () => {
       cancelAnimationFrame(animationFrame);
-      body.removeEventListener('pointerdown', preventPointerFocusScroll, true);
-      document.removeEventListener('blur', preventFocusTransitionScroll, true);
+      document.removeEventListener('pointerdown', rememberPointerFocusScroll);
+      document.removeEventListener('focusout', rememberFocusScroll);
+      body.removeEventListener('focus', restoreFocusScroll, true);
       body.removeEventListener('focusin', scheduleReveal);
       body.removeEventListener('focusout', scheduleReveal);
       viewport?.removeEventListener('resize', scheduleReveal);
       viewport?.removeEventListener('scroll', scheduleReveal);
       window.removeEventListener('resize', scheduleReveal);
       body.style.removeProperty(MOBILE_KEYBOARD_INSET_VAR);
+      if (isSheetHeightFrozen && sheet) {
+        sheet.style.removeProperty('height');
+      }
     };
-  }, [bodyRef, bottomClearance, isOpen]);
+  }, [bodyRef, bottomClearance, isOpen, preserveSheetHeight, sheetRef]);
 }

@@ -394,40 +394,60 @@ describe('BottomSheet', () => {
   });
 
   describe('mobile keyboard', () => {
-    it('focuses text controls without native pointer-driven scrolling', () => {
+    it('restores pointer-driven focus scrolling without re-focusing', () => {
+      const onFocus = vi.fn();
       render(
         <BottomSheet isOpen onOpenChange={() => {}} label="Add a comment">
-          <input aria-label="Comment" />
+          <input aria-label="Comment" onFocus={onFocus} />
         </BottomSheet>,
       );
+      const body = getBody();
       const input = screen.getByRole('textbox', {name: 'Comment'});
       const focus = vi.spyOn(input, 'focus');
+      body.scrollTop = 20;
 
       fireEvent.pointerDown(input, {pointerId: 1, clientY: 200});
-
-      expect(focus).toHaveBeenCalledWith({preventScroll: true});
-      expect(document.activeElement).toBe(input);
-
-      focus.mockClear();
-      fireEvent.pointerDown(input, {pointerId: 1, clientY: 220});
       expect(focus).not.toHaveBeenCalled();
+
+      // Emulate the browser panning before it dispatches the focus event.
+      body.scrollTop = 120;
+      fireEvent.focus(input, {relatedTarget: null});
+
+      expect(body.scrollTop).toBe(20);
+      expect(focus).not.toHaveBeenCalled();
+      expect(onFocus).toHaveBeenCalledTimes(1);
     });
 
-    it('prevents native scrolling when focus moves into a text control', () => {
+    it('restores native focus scrolling without duplicating focus events', () => {
+      const onTitleBlur = vi.fn();
+      const onCommentFocus = vi.fn();
       render(
         <BottomSheet isOpen onOpenChange={() => {}} label="Add a comment">
-          <input aria-label="Comment" />
+          <input aria-label="Title" onBlur={onTitleBlur} />
+          <input aria-label="Comment" onFocus={onCommentFocus} />
         </BottomSheet>,
       );
-      const sheet = getSheet();
+      const body = getBody();
+      const title = screen.getByRole('textbox', {name: 'Title'});
       const comment = screen.getByRole('textbox', {name: 'Comment'});
-      sheet.focus();
-      const focus = vi.spyOn(comment, 'focus');
+      title.focus();
+      body.scrollTop = 20;
+      document.addEventListener(
+        'focusout',
+        () => {
+          // Emulate the browser scrolling the destination between focusout and
+          // focus. The hook must restore the position before consumer focus.
+          body.scrollTop = 120;
+        },
+        {once: true},
+      );
 
-      fireEvent.blur(sheet, {relatedTarget: comment});
+      comment.focus();
 
-      expect(focus).toHaveBeenCalledWith({preventScroll: true});
       expect(document.activeElement).toBe(comment);
+      expect(body.scrollTop).toBe(20);
+      expect(onTitleBlur).toHaveBeenCalledTimes(1);
+      expect(onCommentFocus).toHaveBeenCalledTimes(1);
     });
 
     it('extends internal scrolling and reveals a focused control above the visual viewport', () => {
@@ -492,6 +512,42 @@ describe('BottomSheet', () => {
         '0px',
       );
       expect(body.scrollTop).toBe(0);
+    });
+
+    it('keeps a hug sheet at its intrinsic height while adding keyboard scroll range', () => {
+      const viewport = mockVisualViewport(500);
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={() => {}}
+          label="Add a comment"
+          height="hug">
+          <input aria-label="Comment" />
+        </BottomSheet>,
+      );
+      const sheet = getSheet();
+      const body = getBody();
+      const input = screen.getByRole('textbox', {name: 'Comment'});
+      vi.spyOn(sheet, 'getBoundingClientRect').mockReturnValue(
+        rect({top: 400, bottom: 800}),
+      );
+      vi.spyOn(body, 'getBoundingClientRect').mockReturnValue(
+        rect({top: 450, bottom: 800}),
+      );
+      vi.spyOn(input, 'getBoundingClientRect').mockReturnValue(
+        rect({top: 700, bottom: 740}),
+      );
+
+      input.focus();
+
+      expect(sheet.style.height).toBe('400px');
+      expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
+        '348px',
+      );
+
+      viewport.height = 800;
+      act(() => viewport.dispatchEvent(new Event('resize')));
+      expect(sheet.style.height).toBe('');
     });
 
     it('blurs the focused field when sheet travel starts', () => {
