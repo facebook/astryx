@@ -189,6 +189,13 @@ export const doc = {
         'A write receipt for the annotated theme template: the path (relative to cwd), whether it was written, and the reason it was not — `exists` when a file was already there, which is a success.',
     },
 
+    // cdn
+    {
+      value: 'cdn.template',
+      description:
+        'A write receipt for the no-build-step CDN starter page: the path (relative to cwd), the Astryx version every CDN URL was pinned to, whether it was written, and the reason it was not — `exists` when a file was already there, which is a success.',
+    },
+
     // upgrade
     {
       value: 'upgrade.list',
