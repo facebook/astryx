@@ -71,11 +71,13 @@ describe('e2e smoke: real binary error boundary + exit codes', () => {
     expect(stderr).toMatch(/unknown command/i);
   });
 
-  it('init --json is rejected with a real exit 1 + JSON error envelope on stdout', () => {
+  it('an unsupported --json command is rejected with a real exit 1 + envelope on stdout', () => {
     // Proves the whole chain across the process boundary: bin boots → Commander
-    // runs → preAction --json gate rejects init → error envelope on stdout →
-    // process really exits 1 (not merely process.exitCode set in-process).
-    const {status, stdout} = spawnCli(['init', '--json']);
+    // runs → preAction --json gate rejects the command → error envelope on
+    // stdout → process really exits 1 (not merely process.exitCode set
+    // in-process). `theme` is a command group with no output of its own, so it
+    // stays off the allowlist.
+    const {status, stdout} = spawnCli(['theme', '--json']);
     expect(status).toBe(1);
     const parsed = JSON.parse(stdout);
     expect(parsed).toHaveProperty('error');

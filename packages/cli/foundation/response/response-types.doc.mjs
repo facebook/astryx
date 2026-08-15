@@ -17,6 +17,16 @@ export const doc = {
   description:
     'The `type` discriminant present on every --json success envelope. Consumers switch on it to narrow `data`.',
   members: [
+    {
+      value: 'init.run',
+      description:
+        "The install receipt: the `mode` (`default` | `features`), the features run, agent-doc files written, any soft `docsError`, whether theme guidance was emitted, the template outcome (`workflow` | `created` | `skipped`) plus its path, and whether the next-steps were emitted.",
+    },
+    {
+      value: 'init.remove',
+      description:
+        'Confirmation that the managed agent-docs block was removed (`data.removed: true`) — returned when --remove-agents is set.',
+    },
     // component
     {
       value: 'component.list',

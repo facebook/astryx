@@ -122,3 +122,68 @@ describe('astryx init --remove-agents', () => {
     expect(exists('AGENTS.md')).toBe(false);
   });
 });
+
+describe('astryx init --json', () => {
+  it('emits the install receipt as an envelope', async () => {
+    const {status, stdout} = await runCli(['init', '--json'], {cwd: tmpDir});
+    expect(status).toBe(0);
+
+    const env = JSON.parse(stdout);
+    expect(env.type).toBe('init.run');
+    expect(env.data.mode).toBe('default');
+    expect(env.data.docsWritten).toContain('AGENTS.md');
+    expect(env.data.docsError).toBe(null);
+  });
+
+  it('still does the work', async () => {
+    await runCli(['init', '--json'], {cwd: tmpDir});
+    expect(exists('AGENTS.md')).toBe(true);
+    expect(read('AGENTS.md')).toContain(MARKER_START);
+  });
+
+  it('keeps stdout a single envelope — no guidance text leaks in', async () => {
+    const {stdout} = await runCli(['init', '--json'], {cwd: tmpDir});
+    // The human path prints a "Next steps:" block; under --json the whole of
+    // stdout has to parse, so any of it leaking would fail here.
+    expect(() => JSON.parse(stdout)).not.toThrow();
+    expect(stdout).not.toMatch(/Next steps:/);
+  });
+
+  it('reports the features it ran with --all', async () => {
+    const {stdout} = await runCli(['init', '--all', '--json'], {cwd: tmpDir});
+    const env = JSON.parse(stdout);
+    expect(env.data.mode).toBe('features');
+    expect(env.data.features).toEqual(
+      expect.arrayContaining(['agents', 'theme']),
+    );
+  });
+
+  it('emits init.remove for --remove-agents', async () => {
+    await runCli(['init'], {cwd: tmpDir});
+    const {stdout} = await runCli(['init', '--remove-agents', '--json'], {
+      cwd: tmpDir,
+    });
+    const env = JSON.parse(stdout);
+    expect(env.type).toBe('init.remove');
+    expect(env.data.removed).toBe(true);
+  });
+
+  it('reports a bad --agent as an error envelope, not a receipt', async () => {
+    const {status, stdout} = await runCli(
+      ['init', '--agent', 'bogus', '--json'],
+      {cwd: tmpDir},
+    );
+    expect(status).toBe(1);
+    const env = JSON.parse(stdout);
+    expect(env.code).toBe('ERR_UNKNOWN_AGENT');
+    expect(env.type).toBeUndefined();
+  });
+
+  it('agrees with human mode on the exit code', async () => {
+    const human = await runCli(['init', '--agent', 'bogus'], {cwd: tmpDir});
+    const json = await runCli(['init', '--agent', 'bogus', '--json'], {
+      cwd: tmpDir,
+    });
+    expect(json.status).toBe(human.status);
+  });
+});
