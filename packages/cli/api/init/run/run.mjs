@@ -28,6 +28,10 @@ import {logger} from '../../logger.mjs';
 const VALID_FEATURES = ['agents', 'theme', 'template'];
 const VALID_AGENTS = ['claude', 'cursor', 'codex', 'hermes', 'all'];
 
+/** The annotated `defineTheme` reference, copied by `--features theme`. */
+const THEME_TEMPLATE_SRC = path.join(CLI_ROOT, 'assets', 'theme.template.ts');
+const THEME_TEMPLATE_DEST = 'theme.template.ts';
+
 /**
  * Build the "Next steps" lines printed at the end of `astryx init`.
  *
@@ -104,6 +108,41 @@ function applyAgents(cwd, options, invocation, data) {
     );
     data.docsError = {kind: 'install-failed'};
   }
+}
+
+/**
+ * Copy the annotated theme template into the project and point at it.
+ *
+ * `--features theme` used to print a one-line hint and write nothing, which is
+ * the weakest form of this: a theme author's first problem is not knowing the
+ * command, it is not knowing what the theme surface contains. An existing file
+ * is never clobbered — someone's edited copy outranks ours.
+ *
+ * @param {string} cwd
+ * @param {string} invocation
+ * @param {import('../init.type.mjs').InitRunData} data
+ */
+function applyTheme(cwd, invocation, data) {
+  data.theme = true;
+  const dest = path.join(cwd, THEME_TEMPLATE_DEST);
+  try {
+    if (fs.existsSync(dest)) {
+      data.themeTemplate = 'skipped';
+      logger.log(`• ${THEME_TEMPLATE_DEST} already exists — left as is.`);
+    } else {
+      fs.writeFileSync(dest, fs.readFileSync(THEME_TEMPLATE_SRC, 'utf-8'));
+      data.themeTemplate = 'created';
+      data.themeTemplatePath = THEME_TEMPLATE_DEST;
+      logger.log(`✓ Theme template written → ${THEME_TEMPLATE_DEST}`);
+    }
+  } catch {
+    // Soft failure, like agent docs: the guidance below is still useful.
+    data.themeTemplate = 'failed';
+    logger.error(`Could not write ${THEME_TEMPLATE_DEST}.`);
+  }
+  logger.log(
+    `  Copy it to your theme file and edit, or run \`${invocation} theme add <slug>\` to start from a shipped theme (\`${invocation} theme list\` to browse).`,
+  );
 }
 
 /**
@@ -210,18 +249,15 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
       docsWritten: [],
       docsError: null,
       theme: false,
+      themeTemplate: null,
+      themeTemplatePath: null,
       template: null,
       templatePath: null,
       nextSteps: false,
     };
     for (const feature of features) {
       if (feature === 'agents') applyAgents(cwd, options, invocation, data);
-      if (feature === 'theme') {
-        logger.log(
-          `✓ For a custom theme, run \`${invocation} theme\` (browse) or \`${invocation} theme add <slug>\` (scaffold).`,
-        );
-        data.theme = true;
-      }
+      if (feature === 'theme') applyTheme(cwd, invocation, data);
       if (feature === 'template') {
         applyTemplate(cwd, {templateName: options.templateName}, invocation, data);
       }
@@ -238,6 +274,8 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
     docsWritten: [],
     docsError: null,
     theme: false,
+    themeTemplate: null,
+    themeTemplatePath: null,
     template: null,
     templatePath: null,
     nextSteps: true,

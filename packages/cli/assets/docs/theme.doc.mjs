@@ -150,6 +150,10 @@ function App() {
           label: 'Scaffold with CLI',
           code: 'astryx theme',
         },
+        {
+          type: 'prose',
+          text: 'For an annotated map of the whole surface — every defineTheme field, the token families, and the component override syntax, each with the CLI command that prints its reference — run `astryx init --features theme`. It writes `theme.template.ts` into your project to read and copy from.',
+        },
       ],
     },
     {

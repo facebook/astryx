@@ -28,6 +28,12 @@
  *   <App />
  * </Theme>
  * ```
+ *
+ * SYNC: `DefineThemeInput` is the theme surface. Adding, removing, or renaming
+ * a field means updating:
+ * - /packages/cli/assets/theme.template.ts (documents every field; the
+ *   drift guard is scripts/check-theme-template.test.mjs)
+ * - /packages/cli/assets/docs/theme.doc.mjs (`astryx docs theme`)
  */
 
 import type {IconRegistry} from '../Icon/globalIconRegistry';

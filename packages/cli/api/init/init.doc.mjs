@@ -30,7 +30,7 @@ export const doc = {
       name: 'options.features',
       type: 'string',
       description:
-        'Comma-separated features to install: agents, theme, template.',
+        'Comma-separated features to install: agents (agent docs), theme (writes the annotated theme.template.ts), template (page-template guidance).',
     },
     {
       name: 'options.all',
@@ -64,7 +64,7 @@ export const doc = {
     {
       type: 'init.run',
       description:
-        'The install receipt: the `mode` (`default` | `features`), the features run, agent-doc files written, any soft docsError, whether theme guidance was emitted, the template outcome (`workflow` | `created` | `skipped`) plus its path, and whether the next-steps were emitted.',
+        'The install receipt: the `mode` (`default` | `features`), the features run, agent-doc files written, any soft docsError, the theme-template outcome (`created` | `skipped` | `failed`) plus its path, the page-template outcome (`workflow` | `created` | `skipped`) plus its path, and whether the next-steps were emitted.',
     },
     {
       type: 'init.remove',

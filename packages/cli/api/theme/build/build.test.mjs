@@ -295,3 +295,26 @@ describe('themeBuild() — component override validation', () => {
     ]);
   });
 });
+
+describe('themeBuild() — the shipped theme template', () => {
+  // `assets/theme.template.ts` is what `astryx init --features theme` puts in a
+  // consumer's project. It is the one theme file we hand out, so it has to
+  // compile as shipped — and cleanly: a template that greets its first reader
+  // with warnings teaches them to ignore warnings. The claims its comments make
+  // are checked separately by scripts/check-theme-template.test.mjs.
+  it('compiles as shipped, with no warnings', async () => {
+    const src = path.resolve(
+      import.meta.dirname,
+      '../../../assets/theme.template.ts',
+    );
+    fs.copyFileSync(src, path.join(tmpDir, 'theme.template.ts'));
+
+    const result = await themeBuild('theme.template.ts', {}, {cwd: tmpDir});
+
+    expect(result?.data.warnings).toEqual([]);
+    expect(fs.existsSync(path.join(tmpDir, 'my-theme.css'))).toBe(true);
+    // The template teaches custom variants; the augmentation it promises the
+    // reader has to actually be generated.
+    expect(fs.existsSync(path.join(tmpDir, 'my-theme.variants.d.ts'))).toBe(true);
+  });
+});
