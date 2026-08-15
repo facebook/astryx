@@ -10,7 +10,7 @@
  * update these tests to match the public behavior.
  */
 
-import {act, fireEvent, render, screen} from '@testing-library/react';
+import {fireEvent, render, screen} from '@testing-library/react';
 import {createRef, useState} from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {useFocusTrap} from '@astryxdesign/core/hooks';
@@ -584,27 +584,20 @@ describe('BottomSheetSwitcher', () => {
     expect(onActiveSheetChange).not.toHaveBeenCalled();
   });
 
-  it('returns focus to the original opener after a multi-sheet flow ends', async () => {
-    vi.useFakeTimers();
-    try {
-      render(<Flow />);
-      const opener = screen.getByRole('button', {name: 'Start flow'});
-      opener.focus();
-      fireEvent.click(opener);
-      fireEvent.click(screen.getByRole('button', {name: 'Continue'}));
+  it('returns focus to the original opener after a multi-sheet flow ends', () => {
+    render(<Flow />);
+    const opener = screen.getByRole('button', {name: 'Start flow'});
+    opener.focus();
+    fireEvent.click(opener);
+    fireEvent.click(screen.getByRole('button', {name: 'Continue'}));
 
-      fireEvent.keyDown(screen.getByRole('dialog', {name: 'Confirm'}), {
-        key: 'Escape',
-      });
-      expect(document.activeElement).not.toBe(opener);
-      await act(async () => {
-        vi.runAllTimers();
-      });
+    fireEvent.keyDown(screen.getByRole('dialog', {name: 'Confirm'}), {
+      key: 'Escape',
+    });
+    expect(document.activeElement).not.toBe(opener);
+    finishSheetTransition(getSheetLayer('confirm-sheet'), 'transform');
 
-      expect(document.activeElement).toBe(opener);
-    } finally {
-      vi.useRealTimers();
-    }
+    expect(document.activeElement).toBe(opener);
   });
 
   it('does not refocus the panel when an incoming transition completes', () => {

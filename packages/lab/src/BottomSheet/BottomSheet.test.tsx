@@ -10,7 +10,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {render, screen, fireEvent, act} from '@testing-library/react';
+import {render, screen, fireEvent} from '@testing-library/react';
 import {createRef, useState} from 'react';
 import {BottomSheet} from './BottomSheet';
 
@@ -400,21 +400,15 @@ describe('BottomSheet', () => {
       );
     }
 
-    it('restores focus to the opener after close', async () => {
-      vi.useFakeTimers();
-      try {
-        render(<Harness />);
-        const opener = screen.getByRole('button', {name: 'Open sheet'});
-        opener.focus();
-        fireEvent.click(opener);
-        fireEvent.click(screen.getByRole('button', {name: 'Done'}));
-        await act(async () => {
-          vi.runAllTimers();
-        });
-        expect(document.activeElement).toBe(opener);
-      } finally {
-        vi.useRealTimers();
-      }
+    it('restores focus to the opener after close', () => {
+      render(<Harness />);
+      const opener = screen.getByRole('button', {name: 'Open sheet'});
+      opener.focus();
+      fireEvent.click(opener);
+      fireEvent.click(screen.getByRole('button', {name: 'Done'}));
+      finishSheetExit();
+
+      expect(document.activeElement).toBe(opener);
     });
   });
 

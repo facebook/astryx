@@ -7,9 +7,15 @@
  * @position Internal presentation tests shared by standalone and switcher modes
  */
 
-import {fireEvent, render, screen} from '@testing-library/react';
+import {act, fireEvent, render, screen} from '@testing-library/react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {BottomSheetPanel, type BottomSheetPanelState} from './BottomSheetPanel';
+
+const panelTransitionStyle = {
+  transitionProperty: 'transform, opacity',
+  transitionDuration: '410ms',
+  transitionDelay: '0ms',
+};
 
 beforeEach(() => {
   vi.stubGlobal(
@@ -42,6 +48,7 @@ function renderPanel(
     <BottomSheetPanel
       state={state}
       height="hug"
+      style={panelTransitionStyle}
       onDismiss={() => {}}
       onScrimOpacity={() => {}}
       onMotionStart={callbacks.onMotionStart}
@@ -83,6 +90,7 @@ describe('BottomSheetPanel', () => {
       <BottomSheetPanel
         state={{kind: 'retained', motion: 'covered', alignmentOffset: 0}}
         height="hug"
+        style={panelTransitionStyle}
         onDismiss={() => {}}
         onScrimOpacity={() => {}}
         onMotionComplete={onMotionComplete}>
@@ -94,6 +102,7 @@ describe('BottomSheetPanel', () => {
       <BottomSheetPanel
         state={{kind: 'open', entering: true}}
         height="hug"
+        style={panelTransitionStyle}
         onDismiss={() => {}}
         onScrimOpacity={() => {}}
         onMotionComplete={onMotionComplete}>
@@ -128,6 +137,7 @@ describe('BottomSheetPanel', () => {
       <BottomSheetPanel
         state={{kind: 'exiting'}}
         height="hug"
+        style={panelTransitionStyle}
         onDismiss={() => {}}
         onScrimOpacity={() => {}}
         onMotionComplete={onMotionComplete}>
@@ -136,5 +146,91 @@ describe('BottomSheetPanel', () => {
     );
     fireEvent.transitionEnd(getPanel(), {propertyName: 'transform'});
     expect(onMotionComplete).toHaveBeenLastCalledWith('exiting');
+  });
+
+  it('completes immediately when the rendered transition is disabled', () => {
+    vi.mocked(matchMedia).mockReturnValue({
+      matches: true,
+      media: '(prefers-reduced-motion: reduce)',
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    });
+    const onMotionComplete = vi.fn();
+    render(
+      <BottomSheetPanel
+        state={{kind: 'open', entering: true}}
+        height="hug"
+        onDismiss={() => {}}
+        onScrimOpacity={() => {}}
+        onMotionComplete={onMotionComplete}>
+        Panel content
+      </BottomSheetPanel>,
+    );
+
+    expect(onMotionComplete).toHaveBeenCalledWith('entering');
+  });
+
+  it('derives its transition backstop from the rendered timing', () => {
+    vi.useFakeTimers();
+    try {
+      const onMotionComplete = vi.fn();
+      render(
+        <BottomSheetPanel
+          state={{kind: 'open', entering: true}}
+          height="hug"
+          style={{
+            transitionProperty: 'transform, opacity',
+            transitionDuration: '0.5s, 200ms',
+            transitionDelay: '100ms, 0ms',
+          }}
+          onDismiss={() => {}}
+          onScrimOpacity={() => {}}
+          onMotionComplete={onMotionComplete}>
+          Panel content
+        </BottomSheetPanel>,
+      );
+
+      act(() => vi.advanceTimersByTime(649));
+      expect(onMotionComplete).not.toHaveBeenCalled();
+      act(() => vi.advanceTimersByTime(1));
+      expect(onMotionComplete).toHaveBeenCalledWith('entering');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('does not detach a stable public ref during an ordinary rerender', () => {
+    const panelRef = vi.fn();
+    const {rerender, unmount} = render(
+      <BottomSheetPanel
+        ref={panelRef}
+        state={{kind: 'open', entering: false}}
+        height="hug"
+        onDismiss={() => {}}
+        onScrimOpacity={() => {}}>
+        First render
+      </BottomSheetPanel>,
+    );
+
+    expect(panelRef).toHaveBeenCalledTimes(1);
+    rerender(
+      <BottomSheetPanel
+        ref={panelRef}
+        state={{kind: 'open', entering: false}}
+        height="hug"
+        onDismiss={() => {}}
+        onScrimOpacity={() => {}}>
+        Second render
+      </BottomSheetPanel>,
+    );
+    expect(panelRef).toHaveBeenCalledTimes(1);
+
+    unmount();
+    expect(panelRef).toHaveBeenLastCalledWith(null);
+    expect(panelRef).toHaveBeenCalledTimes(2);
   });
 });

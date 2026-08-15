@@ -53,7 +53,7 @@ export type BottomSheetHeight = keyof typeof HEIGHT_BUDGETS;
 
 // SYNC: must match OVERSCROLL_MAX in useSheetGestures.ts.
 const OVERSCROLL_PADDING = 48;
-const TRANSITION_BACKSTOP_MS = 450;
+const TRANSITION_BACKSTOP_BUFFER_MS = 50;
 
 function defaultSnapHeights(): number[] {
   if (typeof window === 'undefined') {
@@ -176,14 +176,23 @@ function waitForTransition(
   propertyName: 'transform' | 'opacity',
   complete: () => void,
 ): () => void {
+  if (element == null) {
+    complete();
+    return () => {};
+  }
+
   let done = false;
+  let timer: ReturnType<typeof setTimeout> | null = null;
   const finish = () => {
     if (done) {
       return;
     }
     done = true;
-    clearTimeout(timer);
-    element?.removeEventListener('transitionend', handleTransitionEnd);
+    if (timer != null) {
+      clearTimeout(timer);
+    }
+    element.removeEventListener('transitionend', handleTransitionEnd);
+    element.removeEventListener('transitioncancel', handleTransitionEnd);
     complete();
   };
   const handleTransitionEnd = (event: TransitionEvent) => {
@@ -191,12 +200,72 @@ function waitForTransition(
       finish();
     }
   };
-  element?.addEventListener('transitionend', handleTransitionEnd);
-  const timer = setTimeout(finish, TRANSITION_BACKSTOP_MS);
+  element.addEventListener('transitionend', handleTransitionEnd);
+  element.addEventListener('transitioncancel', handleTransitionEnd);
+
+  const computedStyle = getComputedStyle(element);
+  if (
+    element.style.transition.trim() === 'none' ||
+    computedStyle.transition.trim() === 'none'
+  ) {
+    finish();
+    return () => {};
+  }
+  const properties = computedStyle.transitionProperty
+    .split(',')
+    .map(value => value.trim());
+  const durations = computedStyle.transitionDuration
+    .split(',')
+    .map(parseTransitionTime);
+  const delays = computedStyle.transitionDelay
+    .split(',')
+    .map(parseTransitionTime);
+  let hasUnresolvedTiming = false;
+  const transitionMs = properties.reduce((longest, property, index) => {
+    if (property !== propertyName && property !== 'all') {
+      return longest;
+    }
+    const duration = durations[index % durations.length];
+    const delay = delays[index % delays.length];
+    if (duration == null || delay == null) {
+      hasUnresolvedTiming = true;
+      return longest;
+    }
+    return Math.max(longest, duration + delay);
+  }, 0);
+
+  if (hasUnresolvedTiming) {
+    // JSDOM can leave CSS variables unresolved. In that case the native event
+    // remains authoritative; choosing a fixed timeout here would make an
+    // assumption about the consumer's theme.
+    return () => {
+      element.removeEventListener('transitionend', handleTransitionEnd);
+      element.removeEventListener('transitioncancel', handleTransitionEnd);
+    };
+  }
+
+  if (transitionMs <= 0) {
+    finish();
+    return () => {};
+  }
+
+  timer = setTimeout(finish, transitionMs + TRANSITION_BACKSTOP_BUFFER_MS);
   return () => {
-    clearTimeout(timer);
-    element?.removeEventListener('transitionend', handleTransitionEnd);
+    if (timer != null) {
+      clearTimeout(timer);
+    }
+    element.removeEventListener('transitionend', handleTransitionEnd);
+    element.removeEventListener('transitioncancel', handleTransitionEnd);
   };
+}
+
+function parseTransitionTime(value: string): number | null {
+  const normalizedValue = value.trim();
+  if (!/^-?(?:\d+|\d*\.\d+)(?:ms|s)$/.test(normalizedValue)) {
+    return null;
+  }
+  const time = Number.parseFloat(value);
+  return normalizedValue.endsWith('ms') ? time : time * 1000;
 }
 
 /** Internal visual and gesture surface shared by every BottomSheet host. */
@@ -221,6 +290,8 @@ export function BottomSheetPanel({
   const reactivatedEntranceRef = useRef(false);
   const onMotionStartRef = useRef(onMotionStart);
   const onMotionCompleteRef = useRef(onMotionComplete);
+  const startedMotionRef = useRef<BottomSheetPanelMotion | null>(null);
+  const pendingMotionCompleteRef = useRef<BottomSheetPanelMotion | null>(null);
 
   const isEntering = state.kind === 'open' && state.entering;
   const previousState = previousStateRef.current;
@@ -263,23 +334,49 @@ export function BottomSheetPanel({
   // detaches an old callback ref when a consumer supplies a new identity; if
   // that public ref were merged with setElement, an ordinary parent rerender
   // could be mistaken for the panel unmounting and cancel a sheet handoff.
-  useImperativeHandle(ref, () => elementRef.current as HTMLDivElement);
+  useImperativeHandle(ref, () => elementRef.current as HTMLDivElement, []);
 
   const motion = motionForState(state);
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (motion == null) {
       return;
     }
-    onMotionStartRef.current?.(motion);
+    startedMotionRef.current = null;
+    pendingMotionCompleteRef.current = null;
     if (motion === 'entering' && reactivatedEntranceRef.current) {
-      onMotionCompleteRef.current?.(motion);
+      pendingMotionCompleteRef.current = motion;
       return;
     }
     return waitForTransition(
       elementRef.current,
       motion === 'fading' ? 'opacity' : 'transform',
-      () => onMotionCompleteRef.current?.(motion),
+      () => {
+        if (startedMotionRef.current === motion) {
+          onMotionCompleteRef.current?.(motion);
+        } else {
+          pendingMotionCompleteRef.current = motion;
+        }
+      },
     );
+  }, [motion]);
+  useEffect(() => {
+    if (motion == null) {
+      return;
+    }
+    onMotionStartRef.current?.(motion);
+    startedMotionRef.current = motion;
+    if (pendingMotionCompleteRef.current === motion) {
+      pendingMotionCompleteRef.current = null;
+      onMotionCompleteRef.current?.(motion);
+    }
+    return () => {
+      if (startedMotionRef.current === motion) {
+        startedMotionRef.current = null;
+      }
+      if (pendingMotionCompleteRef.current === motion) {
+        pendingMotionCompleteRef.current = null;
+      }
+    };
   }, [motion]);
 
   const isNamedHeight = typeof height === 'string' && height in HEIGHT_BUDGETS;
