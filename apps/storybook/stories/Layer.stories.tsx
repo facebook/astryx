@@ -244,7 +244,11 @@ function describeFocus(): string {
 }
 
 function InlineHostingDemo() {
-  const layer = useLayer({mode: 'context', lightDismiss: true});
+  const layer = useLayer({
+    mode: 'context',
+    lightDismiss: true,
+    lazyMount: true,
+  });
   const scrollRef = useRef<HTMLDivElement>(null);
   const paragraphRef = useRef<HTMLParagraphElement>(null);
   const [probe, setProbe] = useState<HostingProbe | null>(null);
@@ -397,7 +401,7 @@ export const InlineTriggerHosting: Story = {
     docs: {
       description: {
         story:
-          'A layer opened from an inline trigger is hosted in the nearest ancestor that can hold it — out of the paragraph, whose content model would otherwise make the HTML parser tear the card out — and it is rendered on the client only. The readout shows where the layer landed and what typography it inherits; the log shows what the browser scrolls as focus moves into and out of it.',
+          'A closed context layer leaves only an inert marker at its JSX position. When opened from this unsafe paragraph, the final layer is lazily portaled to the nearest ancestor that can contain it; a layer at a safe position would stay inline. The readout shows where the layer landed and what typography it inherits; the log shows what the browser scrolls as focus moves into and out of it.',
       },
     },
   },

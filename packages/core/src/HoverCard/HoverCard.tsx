@@ -250,12 +250,10 @@ export function HoverCard({
     };
   }, [textOnly, hoverCard.ref, hoverCard.describedBy]);
 
-  // The floating layer is not rendered here in the tree: `useLayer` hosts it
-  // on the client in the nearest ancestor of the trigger that can hold it, so
-  // a trigger sitting inline in a `<p>` or inside a link does not put the
-  // card's content in a place the HTML parser tears apart (or a link that
-  // swallows its clicks). Nothing is emitted on the server, so the server
-  // markup and the first client render agree.
+  // While closed, useLayer leaves only an inert <template> marker at this JSX
+  // position. When the card needs to open, it uses that marker to keep the
+  // final layer inline when the parent is safe or portal it outside a <p>,
+  // link, or other ancestor that cannot contain it safely.
   const renderedHoverCard = hoverCard.renderHoverCard(content, {
     xstyle,
     className,

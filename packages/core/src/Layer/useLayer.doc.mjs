@@ -42,6 +42,13 @@ export const docs = {
         'Whether clicking outside should dismiss the layer using native popover light-dismiss behavior.',
       default: 'false',
     },
+    {
+      name: 'lazyMount',
+      type: 'boolean',
+      description:
+        'Context mode only. Wait until show() to resolve the inline/portal position and mount content; hide unmounts it and restores the inert marker.',
+      default: 'false',
+    },
   ],
   returns: [
     {
@@ -79,7 +86,7 @@ export const docs = {
       name: 'render',
       type: '(children: ReactNode, props: ContextRenderProps | FixedRenderProps) => ReactNode',
       description:
-        'Render function for the popover element. Pass placement/alignment in context mode or x/y in fixed mode. Placement/alignment are logical: they map to the self-* position-area keyword family, which resolves against the popover\'s own inherited direction, so RTL contexts mirror automatically in pure CSS. Pass `positioning: "custom"` in context mode to author position styles yourself via `style` (e.g. explicit anchor() insets or an anchor-size() cover): the hook keeps the popover behavior and position-anchor wiring but derives no position styles, including the automatic RTL mirroring, which becomes your responsibility. Pass `offset` (a CSS length; a number is px) in context mode for clearance from the anchor: it applies to both edges of the placement axis, so the gap survives a flip. Layers are flush by default. In context mode the layer is hosted on the client in the nearest ancestor of the trigger that can hold it, out of paragraphs, links, buttons and inline formatting: those either break the markup or capture the layer\'s clicks and tab stops. Nothing is emitted on the server, so the HTML parser never reparents it. The Popover API promotes the layer to the top layer when shown, so it escapes ancestor clipping and stacking wherever it is hosted. When the layer would overflow the viewport, position-try fallbacks flip it to the opposite side; centered layers additionally slide along the alignment axis (span fallbacks) so they stay on-screen near viewport edges.',
+        'Render function for the popover element. Pass placement/alignment in context mode or x/y in fixed mode. Placement/alignment are logical: they map to the self-* position-area keyword family, which resolves against the popover\'s own inherited direction, so RTL contexts mirror automatically in pure CSS. Pass `positioning: "custom"` in context mode to author position styles yourself via `style` (e.g. explicit anchor() insets or an anchor-size() cover): the hook keeps the popover behavior and position-anchor wiring but derives no position styles, including the automatic RTL mirroring, which becomes your responsibility. Pass `offset` (a CSS length; a number is px) in context mode for clearance from the anchor: it applies to both edges of the placement axis, so the gap survives a flip. Layers are flush by default. Context mode first renders an inert `<template>` marker in matching server and client markup. The final layer stays at that JSX position if its parent is safe; otherwise it is portaled to the nearest ancestor outside paragraphs, links, buttons, inline formatting, and structurally restricted containers. A corrective portal snapshots inherited CSS custom properties, direction, and writing mode so local theming remains visually consistent. By default this resolution occurs after hydration so closed-layer DOM remains available; `lazyMount` defers it until `show()` and restores the marker on hide. The Popover API promotes the layer to the top layer when shown, so it escapes ancestor clipping and stacking wherever it is hosted. When the layer would overflow the viewport, position-try fallbacks flip it to the opposite side; centered layers additionally slide along the alignment axis (span fallbacks) so they stay on-screen near viewport edges.',
     },
   ],
   usage: {
@@ -123,6 +130,7 @@ export const docsDense = {
     onShow: 'fires when layer becomes visible.',
     onHide: 'fires when layer hides.',
     lightDismiss: 'whether native outside-click light-dismiss is enabled.',
+    lazyMount: 'context only: defer position resolution/content mounting until show; unmount on hide.',
   },
   returnDescriptions: {
     ref: 'trigger ref for context mode; undefined in fixed mode.',
@@ -131,7 +139,7 @@ export const docsDense = {
     hide: 'hide layer.',
     isOpen: 'whether layer is open.',
     id: 'unique ARIA id.',
-    render: 'renders popover element; pass placement/alignment or x/y. Placement/alignment logical: mapped to self-* position-area keywords resolved against the popover\'s inherited direction (RTL mirrors in pure CSS). `positioning: "custom"` (context mode) = author position styles yourself via `style`; keeps popover behavior + position-anchor wiring, derives nothing (incl. RTL mirroring, which becomes yours). `offset` (context mode) = clearance from the anchor as a CSS length (number = px), applied to both edges of the placement axis so it survives a flip; layers are flush by default. Context mode hosts the layer client-side in the nearest ancestor of the trigger that can hold it (out of p/a/button/inline formatting); nothing is emitted on the server. The Popover API top layer escapes clipping/stacking wherever it is hosted. Viewport overflow: flips to opposite side; centered layers also slide along the alignment axis (span fallbacks).',
+    render: 'renders popover element; pass placement/alignment or x/y. Placement/alignment logical: mapped to self-* position-area keywords resolved against the popover\'s inherited direction (RTL mirrors in pure CSS). `positioning: "custom"` (context mode) = author position styles yourself via `style`; keeps popover behavior + position-anchor wiring, derives nothing (incl. RTL mirroring, which becomes yours). `offset` (context mode) = clearance from the anchor as a CSS length (number = px), applied to both edges of the placement axis so it survives a flip; layers are flush by default. Context mode begins with an inert `<template>` marker for stable SSR/hydration, then keeps the final layer inline at a safe JSX position or portals it to the nearest safe ancestor; corrective portals preserve CSS custom properties, direction, and writing mode. `lazyMount` waits for show and restores the marker on hide. The Popover API top layer escapes clipping/stacking wherever it is hosted. Viewport overflow: flips to opposite side; centered layers also slide along the alignment axis (span fallbacks).',
   },
   usage: {
     description:

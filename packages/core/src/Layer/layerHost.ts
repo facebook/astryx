@@ -2,8 +2,8 @@
 
 /**
  * @file layerHost.ts
- * @input Uses a trigger element
- * @output Exports resolveLayerHost, the element a layer is hosted in
+ * @input Uses the layer's intended inline parent element
+ * @output Exports resolveLayerPortalTarget, the corrective portal target
  * @position Layer utility; used by useLayer to place the popover in the DOM
  *
  * SYNC: When modified, update:
@@ -43,6 +43,25 @@ const UNSAFE_HOSTS = new Set([
   'legend',
   'option',
   'optgroup',
+  // Structural containers whose direct children are restricted. An inert
+  // <template> marker is valid script-supporting content in these positions,
+  // but the eventual div/span layer is not.
+  'table',
+  'thead',
+  'tbody',
+  'tfoot',
+  'tr',
+  'colgroup',
+  'ul',
+  'ol',
+  'menu',
+  'dl',
+  'select',
+  'datalist',
+  'picture',
+  'ruby',
+  'rt',
+  'rp',
   // Interactive containers
   'a',
   'button',
@@ -75,35 +94,42 @@ const UNSAFE_HOSTS = new Set([
 ]);
 
 /**
- * The element a layer should be rendered into: the nearest ancestor of the
- * trigger that can host it safely.
+ * Return the corrective portal target for a layer's intended inline parent.
  *
- * Walking up from the trigger (rather than portaling to `document.body`) is
- * what keeps the two things a layer inherits from its position in the tree:
+ * A null result means the inline parent and all of its ancestors are safe, so
+ * the layer should stay at its JSX position. Otherwise the result is the
+ * nearest element outside every unsafe ancestor around that position.
  *
- * - **Theme.** Themes are CSS custom properties on an ancestor. Every
- *   ancestor of the trigger is inside the same theme scope the trigger is in;
- *   `document.body` is not, and a layer hosted there falls back to root
- *   values.
+ * Walking up from the actual render position (rather than the trigger, or
+ * portaling to `document.body`) keeps the two things a layer inherits there:
+ *
+ * - **Theme.** Theme scopes live on DOM ancestors. Staying as close as
+ *   possible to the intended render position preserves their component rules
+ *   and custom properties; `document.body` may sit outside a nested scope.
  * - **Tab order.** Sequential focus follows DOM order, so a host near the
  *   trigger keeps the layer's focusables next to it. (`show()` also passes
  *   the trigger as the popover's invoker `source`, which pins focus order to
  *   the invoker in browsers that support it.)
  *
- * Returns `null` when there is no trigger or no safe ancestor, which leaves
- * the layer where the consumer rendered it.
+ * The outermost unsafe ancestor matters. A safe div may itself sit inside an
+ * anchor; stopping at that div would still put the layer's buttons inside the
+ * link. Walking the whole chain ensures the target is outside both.
  */
-export function resolveLayerHost(
-  trigger: HTMLElement | null,
+export function resolveLayerPortalTarget(
+  inlineParent: HTMLElement | null,
 ): HTMLElement | null {
-  if (!trigger) {
+  if (!inlineParent) {
     return null;
   }
 
-  let node: HTMLElement | null = trigger.parentElement;
-  while (node && UNSAFE_HOSTS.has(node.tagName.toLowerCase())) {
+  let outermostUnsafe: HTMLElement | null = null;
+  let node: HTMLElement | null = inlineParent;
+  while (node) {
+    if (UNSAFE_HOSTS.has(node.tagName.toLowerCase())) {
+      outermostUnsafe = node;
+    }
     node = node.parentElement;
   }
 
-  return node;
+  return outermostUnsafe?.parentElement ?? null;
 }

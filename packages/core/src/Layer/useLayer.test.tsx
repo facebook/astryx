@@ -47,12 +47,27 @@ function ContextLayerHarness({
   const layer = useLayer({mode: 'context'});
   return (
     <>
-      <button type="button" ref={layer.ref}>
+      <button type="button" ref={layer.ref} onClick={layer.show}>
         Trigger
       </button>
       {layer.render(<span>Layer content</span>, {placement, alignment})}
     </>
   );
+}
+
+function ContextHostingHarness({unsafe}: {unsafe?: boolean}) {
+  const layer = useLayer({mode: 'context', lazyMount: true});
+  const contents = (
+    <>
+      <button type="button" ref={layer.ref} onClick={layer.show}>
+        Trigger
+      </button>
+      {layer.render(<button type="button">Layer action</button>)}
+      <button type="button">Following control</button>
+    </>
+  );
+
+  return <div data-testid="host">{unsafe ? <p>{contents}</p> : contents}</div>;
 }
 
 describe('getPositionTryFallbacks (issue #3671)', () => {
@@ -130,10 +145,12 @@ describe('getPositionTryFallbacks (issue #3671)', () => {
     }
   });
 
-  it('updates the fallback list when placement/alignment props change on re-render', () => {
+  it('updates the fallback list when placement/alignment props change on re-render', async () => {
+    const user = userEvent.setup();
     const {container, rerender} = render(
       <ContextLayerHarness placement="above" alignment="center" />,
     );
+    await user.click(container.querySelector('button')!);
     const layerEl = container.querySelector('[popover]') as HTMLElement;
     expect(layerEl.style.positionTryFallbacks).toContain('top span-left');
 
@@ -158,8 +175,10 @@ describe('getPositionTryFallbacks (issue #3671)', () => {
     expect(layerEl.style.top).toBe('20px');
   });
 
-  it('applies span fallbacks to the rendered popover for the default (above/center) layer', () => {
+  it('applies span fallbacks to the rendered popover for the default (above/center) layer', async () => {
+    const user = userEvent.setup();
     const {container} = render(<ContextLayerHarness />);
+    await user.click(container.querySelector('button')!);
     const layerEl = container.querySelector('[popover]') as HTMLElement;
     expect(layerEl).not.toBeNull();
     expect(layerEl.style.positionTryFallbacks).toBe(
@@ -186,6 +205,80 @@ describe('useLayer', () => {
     } else {
       HTMLElement.prototype.hidePopover = originalHidePopover;
     }
+  });
+
+  describe('context hosting', () => {
+    it('keeps closed content mounted by default for existing consumers', () => {
+      const {container} = render(<ContextLayerHarness />);
+
+      expect(container.querySelector('template')).toBeNull();
+      expect(container.querySelector('[popover]')).not.toBeNull();
+      expect(container).toHaveTextContent('Layer content');
+    });
+
+    it('renders only an inert marker until show is requested', () => {
+      const {container} = render(<ContextHostingHarness />);
+
+      expect(container.querySelector('template')).not.toBeNull();
+      expect(container.querySelector('[popover]')).toBeNull();
+      expect(container).not.toHaveTextContent('Layer action');
+    });
+
+    it('keeps the final layer inline when the JSX position is safe', async () => {
+      HTMLElement.prototype.showPopover = vi.fn();
+      const user = userEvent.setup();
+      const {container, getByRole} = render(<ContextHostingHarness />);
+
+      await user.click(getByRole('button', {name: 'Trigger'}));
+
+      const layer = container.querySelector('[popover]');
+      const following = getByRole('button', {name: 'Following control'});
+      expect(layer?.parentElement).toBe(container.firstElementChild);
+      expect(layer?.nextElementSibling).toBe(following);
+      expect(container.querySelector('template')).toBeNull();
+    });
+
+    it('portals out of an unsafe parent and snapshots inherited styles before opening', async () => {
+      const variables = new Map([['--test-layer-color', 'rgb(1, 2, 3)']]);
+      const getComputedStyleSpy = vi
+        .spyOn(window, 'getComputedStyle')
+        .mockImplementation(
+          () =>
+            ({
+              length: variables.size,
+              item: (index: number) =>
+                Array.from(variables.keys())[index] ?? '',
+              getPropertyValue: (property: string) =>
+                variables.get(property) ?? '',
+              direction: 'rtl',
+              writingMode: 'vertical-rl',
+            }) as CSSStyleDeclaration,
+        );
+      const showSpy = vi.fn();
+      HTMLElement.prototype.showPopover = showSpy;
+      const user = userEvent.setup();
+
+      try {
+        const {container, getByRole} = render(<ContextHostingHarness unsafe />);
+        const trigger = getByRole('button', {name: 'Trigger'});
+
+        await user.click(trigger);
+
+        const host = container.querySelector('[data-testid="host"]');
+        const paragraph = container.querySelector('p');
+        const layer = container.querySelector('[popover]') as HTMLElement;
+        expect(layer.parentElement).toBe(host);
+        expect(paragraph?.contains(layer)).toBe(false);
+        expect(layer).toHaveStyle({
+          '--test-layer-color': 'rgb(1, 2, 3)',
+          direction: 'rtl',
+          writingMode: 'vertical-rl',
+        });
+        expect(showSpy).toHaveBeenCalledWith({source: trigger});
+      } finally {
+        getComputedStyleSpy.mockRestore();
+      }
+    });
   });
 
   describe('when the Popover API is supported', () => {
@@ -485,9 +578,9 @@ describe('useLayer context positioning', () => {
     const NONE = {blockStart: '', blockEnd: '', inlineStart: '', inlineEnd: ''};
 
     it('is flush by default', async () => {
-      expect(await openAndGetOffsets(<OffsetHarness placement="below" />)).toEqual(
-        NONE,
-      );
+      expect(
+        await openAndGetOffsets(<OffsetHarness placement="below" />),
+      ).toEqual(NONE);
     });
 
     // Both edges of the axis, so the gap survives a position-try-fallbacks

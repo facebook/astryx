@@ -252,6 +252,7 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
 
   const layer = useLayer({
     mode: 'context',
+    lazyMount: true,
     onShow,
     onHide,
   });
@@ -457,7 +458,7 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
         // Consumer surface style props land on the layer container — the
         // themed surface (bg/radius/shadow) where the theme class lives — so
         // customizing the card targets the same element as the theme. The inner
-        // span keeps `styles.content` for padding.
+        // div keeps `styles.content` for padding.
         xstyle: [
           popoverXstyle,
           layerAnimations[renderPlacement],
@@ -467,13 +468,13 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
           ? `${themeClassName} ${props.className}`
           : themeClassName,
         style: props?.style,
-        // Phrasing markup, so the layer is still valid in the fallback case
-        // where no trigger registers and it renders in place.
-        as: 'span' as const,
+        // useLayer mounts only after it has verified or corrected the parent,
+        // so rich HoverCard content can use block-safe markup.
+        as: 'div' as const,
       };
 
       return layer.render(
-        <span
+        <div
           {...stylex.props(styles.content)}
           onMouseEnter={() => {
             isHoveringContentRef.current = true;
@@ -515,7 +516,7 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
             scheduleHide();
           }}>
           {children}
-        </span>,
+        </div>,
         renderProps,
       );
     },
