@@ -3,17 +3,15 @@
 /** @type {import('@astryxdesign/cli/authoring').TemplateDoc} */
 export const doc = {
   type: 'block',
-  exampleFor: 'BottomSheetSwitcher',
-  name: 'BottomSheetSwitcher',
-  displayName: 'BottomSheetSwitcher',
+  exampleFor: 'BottomSheet',
+  name: 'BottomSheet — No scrim',
+  displayName: 'BottomSheet — No scrim',
   description:
-    'A two-step flow that transitions between bottom sheets inside one shared dialog.',
+    'Keeps the page visible and interactive behind a non-modal bottom sheet.',
   isReady: true,
-  isShowcase: true,
   aspectRatio: 3 / 4,
   componentsUsed: [
     'BottomSheet',
-    'BottomSheetSwitcher',
     'Button',
     'Heading',
     'Section',
