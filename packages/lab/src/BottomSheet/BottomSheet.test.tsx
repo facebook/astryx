@@ -180,6 +180,22 @@ function drag(handle: HTMLElement, points: Array<{y: number}>) {
   fireEvent.pointerUp(handle, {pointerId: 1, clientY: last.y});
 }
 
+function fireTouchPointer(
+  target: Element,
+  type: 'pointerdown' | 'pointermove' | 'pointerup',
+  {x, y}: {x: number; y: number},
+) {
+  const event = new Event(type, {bubbles: true, cancelable: true});
+  Object.defineProperties(event, {
+    clientX: {value: x},
+    clientY: {value: y},
+    isPrimary: {value: true},
+    pointerId: {value: 1},
+    pointerType: {value: 'touch'},
+  });
+  return fireEvent(target, event);
+}
+
 describe('BottomSheet', () => {
   it('renders children when open and applies the accessible label', () => {
     render(
@@ -548,42 +564,33 @@ describe('BottomSheet', () => {
       const focus = vi.spyOn(input, 'focus');
       body.scrollTop = 20;
 
-      // Touchstart alone may still become a scroll gesture, so it must not
+      // Pointerdown alone may still become a scroll gesture, so it must not
       // move focus or open the keyboard early.
-      fireEvent.touchStart(input);
+      fireTouchPointer(input, 'pointerdown', {x: 20, y: 200});
       expect(focus).not.toHaveBeenCalled();
       expect(onFocus).not.toHaveBeenCalled();
 
-      // Emulate Safari committing focus and panning the sheet body before the
-      // focus event. Astryx restores the captured position without refocusing.
-      document.addEventListener(
-        'focusout',
-        () => {
-          body.scrollTop = 120;
-        },
-        {once: true},
-      );
-      input.focus();
+      // Pointerup confirms a tap. Focus with preventScroll before Safari's
+      // default focus action, while leaving the native click/caret path intact.
+      fireTouchPointer(input, 'pointerup', {x: 20, y: 200});
 
       expect(document.activeElement).toBe(input);
       expect(body.scrollTop).toBe(20);
       expect(focus).toHaveBeenCalledTimes(1);
-      expect(focus).not.toHaveBeenCalledWith({preventScroll: true});
+      expect(focus).toHaveBeenCalledWith({preventScroll: true});
       expect(onFocus).toHaveBeenCalledTimes(1);
       expect(onBlur).not.toHaveBeenCalled();
 
-      // A second touch places the caret through the native touch sequence; it
-      // must not blur or refocus an already-active control.
+      // The native click still runs for caret placement and must not produce a
+      // second focus transition.
       const focusCallCount = focus.mock.calls.length;
-      fireEvent.touchStart(input);
+      fireEvent.click(input);
       expect(focus).toHaveBeenCalledTimes(focusCallCount);
       expect(onFocus).toHaveBeenCalledTimes(1);
       expect(onBlur).not.toHaveBeenCalled();
     });
 
-    it('restores delayed iPhone page panning without undoing Tall body scroll', () => {
-      const viewport = mockVisualViewport(500);
-      const scrollTo = vi.mocked(window.scrollTo);
+    it('does not focus when a touch becomes a scroll gesture', () => {
       render(
         <BottomSheet
           isOpen
@@ -593,48 +600,21 @@ describe('BottomSheet', () => {
           <input aria-label="Comment" />
         </BottomSheet>,
       );
-      const dialog = screen.getByRole('dialog');
       const body = getBody();
       const input = screen.getByRole('textbox', {name: 'Comment'});
-      dialog.scrollTop = 10;
+      const focus = vi.spyOn(input, 'focus');
+      body.scrollTop = 20;
 
-      fireEvent.touchStart(input);
-      input.focus();
+      fireTouchPointer(input, 'pointerdown', {x: 20, y: 200});
+      fireTouchPointer(input, 'pointermove', {x: 20, y: 240});
+      fireTouchPointer(input, 'pointerup', {x: 20, y: 240});
 
-      // Safari may pan outer scroll containers and the layout viewport after
-      // focus while the keyboard animation is already underway.
-      dialog.scrollTop = 90;
-      fireEvent.scroll(dialog);
-      expect(dialog.scrollTop).toBe(10);
+      expect(focus).not.toHaveBeenCalled();
+      expect(document.activeElement).not.toBe(input);
 
       body.scrollTop = 120;
-      viewport.offsetTop = 180;
-      act(() => viewport.dispatchEvent(new Event('scroll')));
-
+      fireEvent.focus(input, {relatedTarget: null});
       expect(body.scrollTop).toBe(120);
-      expect(scrollTo).toHaveBeenLastCalledWith(0, 0);
-    });
-
-    it('does not pin ordinary desktop page scrolling after focus', () => {
-      const viewport = mockVisualViewport(window.innerHeight);
-      const scrollTo = vi.mocked(window.scrollTo);
-      render(
-        <BottomSheet
-          isOpen
-          onOpenChange={() => {}}
-          label="Add a comment"
-          height="tall">
-          <input aria-label="Comment" />
-        </BottomSheet>,
-      );
-      const input = screen.getByRole('textbox', {name: 'Comment'});
-
-      input.focus();
-      scrollTo.mockClear();
-      viewport.offsetTop = 100;
-      act(() => viewport.dispatchEvent(new Event('scroll')));
-
-      expect(scrollTo).not.toHaveBeenCalled();
     });
 
     it('restores native focus scrolling without duplicating focus events', () => {
@@ -786,7 +766,8 @@ describe('BottomSheet', () => {
         );
         body.scrollTop = 20;
 
-        fireEvent.touchStart(input);
+        fireTouchPointer(input, 'pointerdown', {x: 20, y: 200});
+        fireTouchPointer(input, 'pointerup', {x: 20, y: 200});
         fireEvent.pointerDown(input, {pointerId: 1, clientY: 200});
         body.scrollTop = 120;
         fireEvent.focus(input, {relatedTarget: null});
