@@ -28,7 +28,7 @@ import type {StyleXStyles} from '@stylexjs/stylex';
 import {createPortal} from 'react-dom';
 import {addAnchorName, removeAnchorName} from './anchorName';
 import {resolveLayerPortalTarget} from './layerHost';
-import {typographyVars} from '../theme/tokens.stylex';
+import {typeScaleVars, typographyVars} from '../theme/tokens.stylex';
 
 const styles = stylex.create({
   // Base reset for all layers
@@ -45,6 +45,12 @@ const styles = stylex.create({
     borderStyle: 'none',
     overflow: 'visible',
     fontFamily: typographyVars['--font-family-body'],
+    // A layer's DOM position is incidental — inline next to the trigger, or
+    // portaled to whatever ancestor is safe (#5039) — so inherited type size
+    // varies with the trigger's surroundings. The layer establishes the body
+    // role itself; content that needs another size sets its own.
+    fontSize: typeScaleVars['--text-body-size'],
+    lineHeight: typeScaleVars['--text-body-leading'],
     // Override browser default [popover] background (canvas color)
     backgroundColor: 'transparent',
   },
