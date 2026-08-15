@@ -25,6 +25,7 @@ import {
   useImperativeHandle,
   useLayoutEffect,
   useRef,
+  type RefObject,
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
@@ -39,6 +40,7 @@ import {
   spacingVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
 import {mergeProps, themeProps} from '@astryxdesign/core/utils';
+import {useMobileKeyboard} from './useMobileKeyboard';
 import {useSheetGestures} from './useSheetGestures';
 
 const SNAP_FRACTIONS = [0.14, 0.5, 0.92];
@@ -53,6 +55,7 @@ export type BottomSheetHeight = keyof typeof HEIGHT_BUDGETS;
 
 // SYNC: must match OVERSCROLL_MAX in useSheetGestures.ts.
 const OVERSCROLL_PADDING = 48;
+const MOBILE_KEYBOARD_BOTTOM_CLEARANCE = 48;
 const TRANSITION_BACKSTOP_BUFFER_MS = 50;
 
 function defaultSnapHeights(): number[] {
@@ -121,8 +124,15 @@ const styles = stylex.create({
     flexGrow: 1,
     minHeight: 0,
     overflowY: 'auto',
+    scrollPaddingBlockEnd: MOBILE_KEYBOARD_BOTTOM_CLEARANCE,
     overscrollBehavior: 'none',
     touchAction: 'pan-y',
+    '::after': {
+      content: '""',
+      display: 'block',
+      blockSize: 'var(--_sheet-keyboard-inset, 0px)',
+      pointerEvents: 'none',
+    },
   },
   budget: {
     height: `calc(var(--_sheet-budget) + ${OVERSCROLL_PADDING}px)`,
@@ -154,6 +164,7 @@ interface BottomSheetPanelProps extends BaseProps<HTMLDivElement> {
   children: ReactNode;
   onDismiss: () => void;
   onScrimOpacity: (opacity: number) => void;
+  positionerRef?: RefObject<HTMLDivElement | null>;
   onElementChange?: (element: HTMLDivElement | null) => void;
   onMotionStart?: (motion: BottomSheetPanelMotion) => void;
   onMotionComplete?: (motion: BottomSheetPanelMotion) => void;
@@ -280,12 +291,15 @@ export function BottomSheetPanel({
   xstyle,
   onDismiss,
   onScrimOpacity,
+  positionerRef,
   onElementChange,
   onMotionStart,
   onMotionComplete,
   ...props
 }: BottomSheetPanelProps) {
   const elementRef = useRef<HTMLDivElement | null>(null);
+  const bodyElementRef = useRef<HTMLDivElement | null>(null);
+  const fallbackPositionerRef = useRef<HTMLDivElement | null>(null);
   const previousStateRef = useRef(state);
   const reactivatedEntranceRef = useRef(false);
   const onMotionStartRef = useRef(onMotionStart);
@@ -315,7 +329,15 @@ export function BottomSheetPanel({
   const isFading = isRetained && state.motion === 'fading';
   const alignmentOffset = isRetained ? state.alignmentOffset : 0;
 
-  const {contentProps, handleProps, bodyProps, sheetRef} = useSheetGestures({
+  const {
+    contentProps,
+    handleProps,
+    bodyProps,
+    sheetRef,
+    dragOffset,
+    settledOffset,
+    isDragging,
+  } = useSheetGestures({
     isOpen: isInteractive,
     onDismiss,
     snapHeights: defaultSnapHeights,
@@ -330,6 +352,22 @@ export function BottomSheetPanel({
     },
     [onElementChange, sheetRef],
   );
+  const setBodyElement = useCallback(
+    (element: HTMLDivElement | null) => {
+      bodyProps.ref(element);
+      bodyElementRef.current = element;
+    },
+    [bodyProps.ref],
+  );
+  useMobileKeyboard({
+    bodyRef: bodyElementRef,
+    bottomClearance: MOBILE_KEYBOARD_BOTTOM_CLEARANCE,
+    isSheetTraveling: isDragging && dragOffset !== settledOffset,
+    isOpen: isInteractive,
+    positionerRef: positionerRef ?? fallbackPositionerRef,
+    preserveSheetHeight: height === 'hug',
+    sheetRef: elementRef,
+  });
   // Keep controller registration attached to one stable host ref. React
   // detaches an old callback ref when a consumer supplies a new identity; if
   // that public ref were merged with setElement, an ordinary parent rerender
@@ -424,7 +462,7 @@ export function BottomSheetPanel({
         aria-hidden="true">
         <div {...stylex.props(styles.handlePill)} />
       </div>
-      <div {...stylex.props(styles.body)} {...bodyProps}>
+      <div {...stylex.props(styles.body)} {...bodyProps} ref={setBodyElement}>
         {children}
       </div>
     </div>

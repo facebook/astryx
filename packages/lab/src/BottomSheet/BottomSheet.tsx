@@ -11,7 +11,8 @@
  * BottomSheet selects one of two focused hosts. A standalone host owns its
  * native dialog lifecycle; a switcher item participates in the parent's shared
  * dialog and transition state machine. Both render the same BottomSheetPanel,
- * which owns sheet presentation, gestures, and motion completion.
+ * which owns sheet presentation, gestures, mobile-keyboard accommodation, and
+ * motion completion.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/lab/src/BottomSheet/BottomSheetPanel.tsx
@@ -101,6 +102,7 @@ const styles = stylex.create({
     display: 'flex',
     justifyContent: 'center',
     pointerEvents: 'none',
+    transform: 'translateY(calc(0px - var(--_sheet-keyboard-lift, 0px)))',
   },
   positionerHidden: {
     display: 'none',
@@ -186,6 +188,7 @@ function StandaloneBottomSheet({
   ...props
 }: StandaloneBottomSheetProps) {
   const dialogRef = useRef<HTMLDialogElement | null>(null);
+  const positionerRef = useRef<HTMLDivElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
   const [isPresented, setIsPresented] = useState(isOpen);
@@ -301,7 +304,7 @@ function StandaloneBottomSheet({
       onCancel={handleCancel}
       onClick={handleClick}
       onKeyDown={handleKeyDown}>
-      <div {...stylex.props(styles.positioner)}>
+      <div ref={positionerRef} {...stylex.props(styles.positioner)}>
         <BottomSheetPanel
           {...props}
           ref={ref}
@@ -310,6 +313,7 @@ function StandaloneBottomSheet({
           xstyle={xstyle}
           onDismiss={close}
           onScrimOpacity={handleScrimOpacity}
+          positionerRef={positionerRef}
           onElementChange={handlePanelElementChange}
           onMotionComplete={handleMotionComplete}>
           {children}
@@ -359,6 +363,7 @@ function SwitcherBottomSheetItem({
     phase === 'exiting';
   const isPresented = phase !== 'hidden';
   const isTopSheet = phase === 'active' || phase === 'entering';
+  const positionerRef = useRef<HTMLDivElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const previousPhaseRef = useRef(phase);
   const previousPhase = previousPhaseRef.current;
@@ -437,6 +442,7 @@ function SwitcherBottomSheetItem({
 
   return (
     <div
+      ref={positionerRef}
       {...stylex.props(
         styles.positioner,
         !isPresented && styles.positionerHidden,
@@ -453,6 +459,7 @@ function SwitcherBottomSheetItem({
         xstyle={xstyle}
         onDismiss={close}
         onScrimOpacity={handleScrimOpacity}
+        positionerRef={positionerRef}
         onElementChange={handlePanelElementChange}
         onMotionStart={handleMotionStart}
         onMotionComplete={handleMotionComplete}>

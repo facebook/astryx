@@ -18,6 +18,9 @@ export const docs = {
     'dialog',
     'overlay',
     'modal',
+    'form',
+    'mobile keyboard',
+    'visual viewport',
   ],
   theming: {
     targets: [{className: 'astryx-bottom-sheet', visualProps: []}],
@@ -54,7 +57,7 @@ export const docs = {
       name: 'children',
       type: 'ReactNode',
       description:
-        'Sheet content, rendered below the grab handle in a scrollable area.',
+        'Sheet content, rendered below the grab handle in a scrollable, mobile-keyboard-aware area.',
       required: true,
     },
     {
@@ -74,7 +77,7 @@ export const docs = {
   ],
   usage: {
     description:
-      'A mobile touch surface for filters, actions, and detail views that should rise from the bottom of the screen. Opening slides the sheet in; closing keeps its native dialog presented but inert until the slide-out and scrim fade complete. Drag the grab handle to resize: a slow drag settles to the nearest snap point (a short peek, ~half, and ~full detent, filtered to those shorter than the sheet), a fast flick down dismisses, a fast flick up expands. Pulling down on the content when it is scrolled to the top also drags the sheet, giving a larger, more forgiving target. The scrim thins to a faint glance state (but never fully clears) as the sheet collapses onto its shortest "peek" detent; the sheet stays modal, so the background remains inert until dismissed; a residual dim keeps that legible. The sheet is modal: focus is trapped while open and restored to the opener after its exit, and Escape dismisses, so the swipe gesture always has a keyboard equivalent. Content padding clears the home indicator via env(safe-area-inset-bottom).',
+      'A mobile touch surface for filters, actions, and detail views that should rise from the bottom of the screen. Opening slides the sheet in; closing keeps its native dialog presented but inert until the slide-out and scrim fade complete. Drag the grab handle to resize: a slow drag settles to the nearest snap point (a short peek, ~half, and ~full detent, filtered to those shorter than the sheet), a fast flick down dismisses, a fast flick up expands. Pulling down on the content when it is scrolled to the top also drags the sheet, giving a larger, more forgiving target. The scrim thins to a faint glance state (but never fully clears) as the sheet collapses onto its shortest "peek" detent; the sheet stays modal, so the background remains inert until dismissed; a residual dim keeps that legible. The sheet is modal: focus is trapped while open and restored to the opener after its exit, and Escape dismisses, so the swipe gesture always has a keyboard equivalent. Visual-viewport overlap adds internal scroll range and keeps focused controls above the mobile keyboard without changing the measured sheet height; short sheets temporarily lift when they otherwise have no usable focus area. Actual sheet travel or closing dismisses the keyboard. Content padding clears the home indicator via env(safe-area-inset-bottom).',
     bestPractices: [
       {
         guidance: true,
@@ -95,6 +98,11 @@ export const docs = {
         guidance: true,
         description:
           "Pick the starting height that fits the content: 'hug' for short bounded content, 'capped' for lists, 'tall' for streaming/resizing content; the user can then drag between snap points.",
+      },
+      {
+        guidance: true,
+        description:
+          "Use 'tall' for long mobile forms. 'hug' also supports short forms by temporarily lifting when the keyboard leaves too little usable space. Keep controls in the built-in scroll body.",
       },
       {
         guidance: true,
@@ -159,6 +167,28 @@ export const docs = {
 </>`,
     },
     {
+      label: 'Mobile keyboard (a long form)',
+      code: `const [isOpen, setIsOpen] = useState(false);
+<BottomSheet
+  isOpen={isOpen}
+  onOpenChange={setIsOpen}
+  label="Add a comment"
+  height="tall">
+  <LongCommentForm />
+</BottomSheet>`,
+    },
+    {
+      label: 'Mobile keyboard (a short form)',
+      code: `const [isOpen, setIsOpen] = useState(false);
+<BottomSheet
+  isOpen={isOpen}
+  onOpenChange={setIsOpen}
+  label="Quick note"
+  height="hug">
+  <QuickNoteForm />
+</BottomSheet>`,
+    },
+    {
       label: 'No scrim',
       code: `const [isOpen, setIsOpen] = useState(true);
 <BottomSheet
@@ -175,10 +205,10 @@ export const docs = {
 /** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
-    'mobile touch sheet rising from the bottom edge (native <dialog>): grab handle, drag-to-resize snap points, swipe-to-dismiss, named height scale, modal (default) or non-modal (hasScrim={false}) presentation',
+    'mobile touch sheet rising from the bottom edge (native <dialog>): grab handle, drag-to-resize snap points, swipe-to-dismiss, visual-viewport mobile-keyboard handling, named height scale, modal (default) or non-modal (hasScrim={false}) presentation',
   usage: {
     description:
-      'Mobile surface for filters, actions, and detail views. Drag the handle to resize between snap points; flick down to dismiss, up to expand. Modal: focus trap + restore, and Escape dismisses so swipe has a keyboard equivalent. Content clears the home indicator via safe-area inset.',
+      'Mobile surface for filters, actions, forms, and detail views. Drag the handle to resize between snap points; flick down to dismiss, up to expand. Modal: focus trap + restore, and Escape dismisses so swipe has a keyboard equivalent. Focused form controls scroll above the visual-viewport keyboard; short sheets temporarily lift without changing height. Actual sheet travel or closing dismisses the keyboard. Content clears the home indicator via safe-area inset.',
     bestPractices: [
       {
         guidance: true,
@@ -198,6 +228,11 @@ export const docsDense = {
         guidance: true,
         description:
           "Pick a height that fits: 'hug' for short content, 'capped' for lists, 'tall' for streaming content.",
+      },
+      {
+        guidance: true,
+        description:
+          "Use 'tall' for long forms. 'hug' supports short forms by lifting temporarily when the keyboard leaves too little usable space.",
       },
       {
         guidance: true,
