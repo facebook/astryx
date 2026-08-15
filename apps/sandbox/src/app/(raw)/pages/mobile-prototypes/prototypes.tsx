@@ -74,10 +74,17 @@ import {
 
 const s = stylex.create({
   fullBtn: {width: '100%'},
-  // Selector sheet: spacious ListItems inset their content 12px, which pushes
-  // option labels past the sheet title. Drop the inline padding so labels line
-  // up with the title (and the divider) at the sheet's edge.
-  flushSheetItem: {paddingInline: 0},
+  // Selector sheet: spacious ListItems inset their label 12px from the row, so
+  // it sits 12px right of the sheet title. Pull the list out 12px (plus the 4px
+  // hover inset below) so labels line up with the title...
+  flushSheetList: {marginInline: 'calc(-1 * var(--spacing-3) - 4px)'},
+  // ...and because a divider list draws its hover/selected fill full-bleed with
+  // square corners, round it and keep it off the sheet wall so the highlight
+  // doesn't read as clipped once the list is pulled out.
+  flushSheetItem: {
+    borderRadius: 'var(--radius-element)',
+    marginInline: 4,
+  },
   rowBorder: {
     borderBottomWidth: 1,
     borderBottomStyle: 'solid',
@@ -895,7 +902,7 @@ function SelectorDemo() {
         onClose={() => setOpenCountry(false)}
         height="hug"
         title="Country">
-        <List hasDividers density="spacious">
+        <List hasDividers density="spacious" xstyle={s.flushSheetList}>
           {COUNTRIES.map(c => (
             <ListItem
               key={c}
@@ -926,7 +933,7 @@ function SelectorDemo() {
         snapPoints={[0.5, 0.92]}
         defaultSnap={0}
         title="Timezone">
-        <List hasDividers density="spacious">
+        <List hasDividers density="spacious" xstyle={s.flushSheetList}>
           {TIMEZONES.map(t => (
             <ListItem
               key={t}
