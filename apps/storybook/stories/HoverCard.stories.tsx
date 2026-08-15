@@ -91,9 +91,7 @@ export const CustomDelay: Story = {
     delay: 500,
     hideDelay: 300,
     content: <ProfileCard />,
-    children: (
-      <Button label="Slow hover (500ms)">Slow hover (500ms)</Button>
-    ),
+    children: <Button label="Slow hover (500ms)">Slow hover (500ms)</Button>,
   },
 };
 
@@ -166,6 +164,28 @@ export const InteractiveContent: Story = {
           Hover for interactive content
         </Button>
       </HoverCard>
+    </div>
+  ),
+};
+
+export const BlockContentInsideParagraph: Story = {
+  render: () => (
+    <div style={{padding: 100}}>
+      <p>
+        This profile belongs to{' '}
+        <HoverCard
+          content={
+            <div style={{width: 200}}>
+              <strong>Jane Doe</strong>
+              <div>Software Engineer</div>
+              <Button label="View profile">View profile</Button>
+            </div>
+          }
+          placement="below">
+          Jane Doe
+        </HoverCard>
+        .
+      </p>
     </div>
   ),
 };

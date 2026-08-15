@@ -16,9 +16,12 @@ import {
   useCallback,
   useEffect,
   useRef,
+  useState,
+  type CSSProperties,
   type ReactNode,
   type RefCallback,
 } from 'react';
+import {createPortal} from 'react-dom';
 import * as stylex from '@stylexjs/stylex';
 import {
   useLayer,
@@ -34,6 +37,7 @@ import {
   spacingVars,
 } from '../theme/tokens.stylex';
 import {themeProps} from '../utils/themeProps';
+import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 
 const styles = stylex.create({
   // Base container styles passed to useLayer
@@ -44,10 +48,9 @@ const styles = stylex.create({
     boxShadow: shadowVars['--shadow-med'],
   },
   // Position-based margin styles
-  // Content wrapper for padding and mouse events.
-  // `display: block` keeps the wrapper a block box even though it renders as a
-  // `span` (the layer uses inline-safe phrasing markup so it is valid inside a
-  // paragraph and produces identical server/client markup).
+  // Lazily mounted content wrapper for padding and mouse events.
+  // `display: block` keeps the wrapper a block box even though the shell and
+  // wrapper render as spans.
   content: {
     display: 'block',
     paddingBlockStart: spacingVars['--spacing-3'],
@@ -56,6 +59,30 @@ const styles = stylex.create({
     paddingInlineEnd: spacingVars['--spacing-3'],
   },
 });
+
+function readPortalStyles(element: HTMLElement): CSSProperties {
+  const computedStyle =
+    element.ownerDocument.defaultView?.getComputedStyle(element);
+  if (!computedStyle) {
+    return {};
+  }
+
+  const customProperties: Record<string, string> = {};
+  for (let index = 0; index < computedStyle.length; index++) {
+    const property = computedStyle.item(index);
+    if (property.startsWith('--')) {
+      customProperties[property] = computedStyle.getPropertyValue(property);
+    }
+  }
+
+  return {
+    ...customProperties,
+    // Logical anchor-positioning keywords resolve against the popover's own
+    // writing mode, so preserve these inherited values across the portal too.
+    direction: computedStyle.direction as CSSProperties['direction'],
+    writingMode: computedStyle.writingMode as CSSProperties['writingMode'],
+  };
+}
 
 /**
  * Focus trigger behavior for hover cards
@@ -264,8 +291,58 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
   const isHoveringContentRef = useRef(false);
+  const [shouldRenderContent, setShouldRenderContent] = useState(false);
+  const isContentRenderedRef = useRef(false);
+  const pendingShowRef = useRef(false);
+  const paragraphPortalTargetRef = useRef<HTMLElement | null>(null);
+  const portalStyleRef = useRef<CSSProperties>({});
   // Track when we're dismissing via Escape to prevent re-show on refocus
   const isEscapeDismissingRef = useRef(false);
+
+  // Commit consumer content before opening the already-mounted popover shell.
+  // The shell is phrasing-safe and can participate in SSR/hydration; arbitrary
+  // card content is omitted until an interaction actually requests the card.
+  useIsomorphicLayoutEffect(() => {
+    isContentRenderedRef.current = shouldRenderContent;
+    if (shouldRenderContent && pendingShowRef.current) {
+      pendingShowRef.current = false;
+      layer.show();
+    }
+  }, [shouldRenderContent, layer]);
+
+  const show = useCallback(() => {
+    if (isContentRenderedRef.current) {
+      layer.show();
+      return;
+    }
+
+    // Inspect the empty inline shell before mounting consumer content. If the
+    // shell lives in a paragraph, unsafe content can be committed directly to
+    // a portal without ever producing an invalid <p> descendant.
+    const ownerDocument = triggerRef.current?.ownerDocument;
+    const inlineLayer = ownerDocument?.getElementById(layer.id);
+    if (inlineLayer?.closest('p')) {
+      paragraphPortalTargetRef.current = ownerDocument?.body ?? null;
+      portalStyleRef.current = readPortalStyles(inlineLayer);
+    } else {
+      paragraphPortalTargetRef.current = null;
+      portalStyleRef.current = {};
+    }
+
+    pendingShowRef.current = true;
+    // eslint-disable-next-line @eslint-react/set-state-in-effect -- controlled/default-open effects intentionally request the same lazy content transition as pointer and focus events
+    setShouldRenderContent(true);
+  }, [layer]);
+
+  const hide = useCallback(() => {
+    pendingShowRef.current = false;
+    layer.hide();
+    isContentRenderedRef.current = false;
+    paragraphPortalTargetRef.current = null;
+    portalStyleRef.current = {};
+    // eslint-disable-next-line @eslint-react/set-state-in-effect -- controlled close intentionally removes lazily rendered content after closing the popover
+    setShouldRenderContent(false);
+  }, [layer]);
 
   // Clear all timeouts
   const clearTimeouts = useCallback(() => {
@@ -286,9 +363,9 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
     }
     clearTimeouts();
     showTimeoutRef.current = setTimeout(() => {
-      layer.show();
+      show();
     }, delay);
-  }, [isEnabled, isOpen, clearTimeouts, layer, delay]);
+  }, [isEnabled, isOpen, clearTimeouts, show, delay]);
 
   // Schedule hide with delay (suppressed when isOpen is true)
   const scheduleHide = useCallback(() => {
@@ -299,10 +376,10 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
     hideTimeoutRef.current = setTimeout(() => {
       // Don't hide if hovering content
       if (!isHoveringContentRef.current) {
-        layer.hide();
+        hide();
       }
     }, hideDelay);
-  }, [isOpen, clearTimeouts, layer, hideDelay]);
+  }, [isOpen, clearTimeouts, hide, hideDelay]);
 
   // Event handlers
   const handleMouseEnter = useCallback(() => {
@@ -323,8 +400,8 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
       return;
     }
     clearTimeouts();
-    layer.show();
-  }, [isEnabled, clearTimeouts, layer]);
+    show();
+  }, [isEnabled, clearTimeouts, show]);
 
   const handleFocusOut = useCallback(
     (e: FocusEvent) => {
@@ -349,10 +426,10 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
         e.stopPropagation();
         // Hide immediately without refocusing (we're already on trigger)
         clearTimeouts();
-        layer.hide();
+        hide();
       }
     },
-    [clearTimeouts, layer],
+    [clearTimeouts, hide],
   );
 
   // Interaction ref that handles event listeners only
@@ -414,13 +491,14 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
   useEffect(() => {
     return () => {
       clearTimeouts();
+      pendingShowRef.current = false;
     };
   }, [clearTimeouts]);
 
   // Show on mount when isDefaultOpen is true
   useEffect(() => {
     if (isDefaultOpen) {
-      layer.show();
+      show();
     }
     // eslint-disable-next-line @eslint-react/exhaustive-deps -- intentionally only on mount
   }, []);
@@ -432,12 +510,12 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
     }
     if (isOpen) {
       clearTimeouts();
-      layer.show();
+      show();
     } else {
       clearTimeouts();
-      layer.hide();
+      hide();
     }
-  }, [isOpen, clearTimeouts, layer]);
+  }, [isOpen, clearTimeouts, show, hide]);
 
   // Render function that wraps layer.render with hover card behavior
   const renderHoverCard = useCallback(
@@ -447,6 +525,9 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
     ): ReactNode => {
       const renderPlacement = props?.placement ?? placement;
       const themeClassName = themeProps('hovercard').className;
+      const portalTarget = paragraphPortalTargetRef.current;
+      const shouldPortal = shouldRenderContent && portalTarget !== null;
+      const ContentWrapper = shouldPortal ? 'div' : 'span';
       const renderProps = {
         placement: renderPlacement,
         alignment: props?.alignment ?? alignment,
@@ -458,8 +539,8 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
         'aria-label': label || undefined,
         // Consumer surface style props land on the layer container — the
         // themed surface (bg/radius/shadow) where the theme class lives — so
-        // customizing the card targets the same element as the theme. The inner
-        // span keeps `styles.content` for padding.
+        // customizing the card targets the same element as the theme. The
+        // inner wrapper keeps `styles.content` for padding.
         xstyle: [
           popoverXstyle,
           layerAnimations[renderPlacement],
@@ -468,66 +549,79 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
         className: props?.className
           ? `${themeClassName} ${props.className}`
           : themeClassName,
-        style: props?.style,
-        // Render the layer as inline-safe phrasing markup so HoverCard stays
-        // valid (and hydration-stable) inside inline contexts like a `<p>`.
-        as: 'span' as const,
+        // A portal leaves the trigger's cascade, so snapshot every computed
+        // custom property from the inline shell and apply it to the popover.
+        // Explicit consumer styles remain authoritative.
+        style: shouldPortal
+          ? {...portalStyleRef.current, ...props?.style}
+          : props?.style,
+        // The closed shell is inline-safe and hydration-stable. Once moved to
+        // the body, use a block container so rich content has valid ancestry.
+        as: shouldPortal ? ('div' as const) : ('span' as const),
       };
 
-      return layer.render(
-        <span
-          {...stylex.props(styles.content)}
-          onMouseEnter={() => {
-            isHoveringContentRef.current = true;
-            clearTimeouts();
-          }}
-          onMouseLeave={() => {
-            isHoveringContentRef.current = false;
-            scheduleHide();
-          }}
-          onKeyDown={e => {
-            if (e.key === 'Escape') {
-              // Stop propagation so parent components don't react to the same Escape
-              e.stopPropagation();
-              // Set flag to prevent re-show when we refocus trigger
-              isEscapeDismissingRef.current = true;
-              // Hide immediately
+      const renderedLayer = layer.render(
+        shouldRenderContent ? (
+          <ContentWrapper
+            {...stylex.props(styles.content)}
+            onMouseEnter={() => {
+              isHoveringContentRef.current = true;
               clearTimeouts();
-              layer.hide();
-              // Refocus the trigger
-              triggerRef.current?.focus();
-            }
-          }}
-          onBlur={e => {
-            // Check if focus is moving back to the trigger or staying within content
-            const relatedTarget = e.relatedTarget as HTMLElement | null;
-            const popoverElement = e.currentTarget;
+            }}
+            onMouseLeave={() => {
+              isHoveringContentRef.current = false;
+              scheduleHide();
+            }}
+            onKeyDown={e => {
+              if (e.key === 'Escape') {
+                // Stop propagation so parent components don't react to the same Escape
+                e.stopPropagation();
+                // Set flag to prevent re-show when we refocus trigger
+                isEscapeDismissingRef.current = true;
+                // Hide immediately
+                clearTimeouts();
+                hide();
+                // Refocus the trigger
+                triggerRef.current?.focus();
+              }
+            }}
+            onBlur={e => {
+              // Check if focus is moving back to the trigger or staying within content
+              const relatedTarget = e.relatedTarget as HTMLElement | null;
+              const popoverElement = e.currentTarget;
 
-            // If focus stays within the hover card, do nothing
-            if (popoverElement.contains(relatedTarget)) {
-              return;
-            }
+              // If focus stays within the hover card, do nothing
+              if (popoverElement.contains(relatedTarget)) {
+                return;
+              }
 
-            // If focus is moving back to the trigger, do nothing
-            if (triggerRef.current?.contains(relatedTarget)) {
-              return;
-            }
+              // If focus is moving back to the trigger, do nothing
+              if (triggerRef.current?.contains(relatedTarget)) {
+                return;
+              }
 
-            // Focus is leaving the hover card entirely
-            scheduleHide();
-          }}>
-          {children}
-        </span>,
+              // Focus is leaving the hover card entirely
+              scheduleHide();
+            }}>
+            {children}
+          </ContentWrapper>
+        ) : null,
         renderProps,
       );
+
+      return shouldPortal
+        ? createPortal(renderedLayer, portalTarget)
+        : renderedLayer;
     },
     [
       layer,
       placement,
       alignment,
       label,
+      shouldRenderContent,
       clearTimeouts,
       scheduleHide,
+      hide,
       popoverXstyle,
     ],
   );
@@ -539,7 +633,7 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
     anchorId: layer.anchorId,
     describedBy: layer.id,
     renderHoverCard,
-    show: layer.show,
-    hide: layer.hide,
+    show,
+    hide,
   };
 }

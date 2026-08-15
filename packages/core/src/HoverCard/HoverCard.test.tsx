@@ -14,6 +14,7 @@ import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
 import {renderToString} from 'react-dom/server';
 import {hydrateRoot} from 'react-dom/client';
 import {StrictMode} from 'react';
+import {Button} from '../Button/Button';
 import {HoverCard} from './HoverCard';
 
 // Store original matches to restore later
@@ -58,23 +59,28 @@ describe('HoverCard', () => {
     expect(screen.getByRole('button', {name: 'Trigger'})).toBeInTheDocument();
   });
 
-  it('exposes the floating layer as role="group" when no label is provided', () => {
+  it('exposes the floating layer as role="group" when no label is provided', async () => {
     render(
-      <HoverCard content={<span>Card content</span>}>
+      <HoverCard content={<span>Card content</span>} delay={0}>
         <button type="button">Trigger</button>
       </HoverCard>,
     );
     // A group may validly be unnamed; an unnamed dialog may not. Without a
     // label the layer must not claim the dialog role.
-    expect(screen.getByRole('group', {hidden: true})).toHaveTextContent(
-      'Card content',
-    );
+    const group = screen.getByRole('group', {hidden: true});
+    expect(group).toBeEmptyDOMElement();
     expect(screen.queryByRole('dialog', {hidden: true})).toBeNull();
+
+    fireEvent.mouseEnter(screen.getByRole('button', {name: 'Trigger'}));
+    await waitFor(() => expect(group).toHaveTextContent('Card content'));
   });
 
-  it('exposes the floating layer as a named dialog when label is provided', () => {
+  it('exposes the floating layer as a named dialog when label is provided', async () => {
     render(
-      <HoverCard content={<span>Card content</span>} label="Profile preview">
+      <HoverCard
+        content={<span>Card content</span>}
+        label="Profile preview"
+        delay={0}>
         <button type="button">Trigger</button>
       </HoverCard>,
     );
@@ -84,8 +90,11 @@ describe('HoverCard', () => {
     // elements.
     const dialog = screen.getByRole('dialog', {hidden: true});
     expect(dialog).toHaveAttribute('aria-label', 'Profile preview');
-    expect(dialog).toHaveTextContent('Card content');
+    expect(dialog).toBeEmptyDOMElement();
     expect(screen.queryByRole('group', {hidden: true})).toBeNull();
+
+    fireEvent.mouseEnter(screen.getByRole('button', {name: 'Trigger'}));
+    await waitFor(() => expect(dialog).toHaveTextContent('Card content'));
   });
 
   it('wraps element children in an inline-safe span', () => {
@@ -122,7 +131,7 @@ describe('HoverCard', () => {
     );
 
     const paragraph = container.querySelector('p');
-    const layer = screen.getByText('Card content').closest('[popover]');
+    const layer = container.querySelector('[popover]');
 
     expect(layer).not.toBeNull();
     expect(layer?.tagName).toBe('SPAN');
@@ -131,15 +140,132 @@ describe('HoverCard', () => {
     expect(paragraph?.querySelector('div')).toBeNull();
   });
 
-  it('does not show content initially', () => {
+  it('does not render content initially', () => {
     render(
       <HoverCard content={<span>Card content</span>}>
         <button type="button">Trigger</button>
       </HoverCard>,
     );
-    // Content is in DOM (popover not open but element exists)
-    const content = screen.queryByText('Card content');
-    expect(content).toBeInTheDocument();
+    expect(screen.queryByText('Card content')).toBeNull();
+  });
+
+  it('portals paragraph content before showing and removes it after hiding', async () => {
+    vi.mocked(HTMLElement.prototype.showPopover).mockClear();
+    let contentWasPresentAtShow = false;
+    vi.mocked(HTMLElement.prototype.showPopover).mockImplementationOnce(
+      function (this: HTMLElement) {
+        contentWasPresentAtShow =
+          this.textContent?.includes('Block card content') ?? false;
+        popoverOpenState.set(this, true);
+      },
+    );
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+
+    const {container} = render(
+      <p>
+        Before{' '}
+        <HoverCard
+          content={<div>Block card content</div>}
+          delay={0}
+          hideDelay={0}>
+          Trigger
+        </HoverCard>{' '}
+        after
+      </p>,
+    );
+
+    const trigger = screen.getByText('Trigger');
+    const paragraph = container.querySelector('p');
+    const initialLayer = paragraph?.querySelector('[popover]');
+    expect(screen.queryByText('Block card content')).toBeNull();
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
+    expect(initialLayer).not.toBeNull();
+
+    fireEvent.mouseEnter(trigger);
+    await waitFor(() => {
+      const content = screen.getByText('Block card content');
+      const portaledLayer = content.closest('[popover]');
+
+      expect(portaledLayer?.parentElement).toBe(document.body);
+      expect(portaledLayer?.tagName).toBe('DIV');
+      expect(paragraph?.contains(content)).toBe(false);
+      expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
+      expect(contentWasPresentAtShow).toBe(true);
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+    });
+
+    fireEvent.mouseLeave(trigger);
+    await waitFor(() => {
+      expect(screen.queryByText('Block card content')).toBeNull();
+    });
+
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('does not portal block content when the layer is outside a paragraph', async () => {
+    const {container} = render(
+      <HoverCard content={<div>Block card content</div>} delay={0}>
+        <button type="button">Trigger</button>
+      </HoverCard>,
+    );
+
+    fireEvent.mouseEnter(screen.getByRole('button', {name: 'Trigger'}));
+
+    await waitFor(() => {
+      const layer = screen.getByText('Block card content').closest('[popover]');
+      expect(layer?.parentElement).toBe(container);
+    });
+  });
+
+  it('forwards computed CSS variables to a paragraph portal', async () => {
+    const variables = new Map([
+      ['--color-neutral', 'rgb(1, 2, 3)'],
+      ['--color-text-primary', 'rgb(250, 251, 252)'],
+    ]);
+    const getComputedStyleSpy = vi
+      .spyOn(window, 'getComputedStyle')
+      .mockImplementation(
+        () =>
+          ({
+            length: variables.size,
+            item: (index: number) => Array.from(variables.keys())[index] ?? '',
+            getPropertyValue: (property: string) =>
+              variables.get(property) ?? '',
+            direction: 'rtl',
+            writingMode: 'vertical-rl',
+          }) as CSSStyleDeclaration,
+      );
+
+    const {container} = render(
+      <p>
+        <HoverCard
+          content={<Button label="View profile">View profile</Button>}
+          delay={0}>
+          Trigger
+        </HoverCard>
+      </p>,
+    );
+
+    expect(screen.queryByRole('button', {name: 'View profile'})).toBeNull();
+
+    fireEvent.mouseEnter(screen.getByText('Trigger'));
+
+    await waitFor(() => {
+      const button = screen.getByRole('button', {name: 'View profile'});
+      const layer = button.closest('[popover]');
+
+      expect(layer?.parentElement).toBe(document.body);
+      expect(container.querySelector('p')?.contains(button)).toBe(false);
+      expect(layer).toHaveStyle({
+        '--color-neutral': 'rgb(1, 2, 3)',
+        '--color-text-primary': 'rgb(250, 251, 252)',
+      });
+      expect(layer).toHaveStyle({direction: 'rtl', writingMode: 'vertical-rl'});
+    });
+
+    getComputedStyleSpy.mockRestore();
   });
 
   it('applies the theme body font to the floating layer', () => {
@@ -149,7 +275,7 @@ describe('HoverCard', () => {
       </HoverCard>,
     );
 
-    const layer = screen.getByText('Card content').closest('[popover]');
+    const layer = screen.getByRole('group', {hidden: true});
     expect(layer).not.toBeNull();
     expect(getComputedStyle(layer as Element).fontFamily).toBe(
       'var(--font-family-body)',
@@ -303,6 +429,7 @@ describe('HoverCard', () => {
     it('hides hover card when Escape is pressed on trigger', async () => {
       const onOpenChange = vi.fn();
       // Reset the mock before this test
+      vi.mocked(HTMLElement.prototype.showPopover).mockClear();
       vi.mocked(HTMLElement.prototype.hidePopover).mockClear();
 
       render(
@@ -333,6 +460,7 @@ describe('HoverCard', () => {
     });
 
     it('hides hover card when Escape is pressed inside content', async () => {
+      vi.mocked(HTMLElement.prototype.showPopover).mockClear();
       vi.mocked(HTMLElement.prototype.hidePopover).mockClear();
 
       render(
@@ -363,6 +491,7 @@ describe('HoverCard', () => {
     });
 
     it('refocuses trigger after Escape from content', async () => {
+      vi.mocked(HTMLElement.prototype.showPopover).mockClear();
       render(
         <HoverCard
           content={<button type="button">Interactive button</button>}
@@ -446,29 +575,29 @@ describe('HoverCard', () => {
         </HoverCard>,
       );
 
-      // The popover element is present in the server output...
+      // The phrasing-safe popover shell is present in server output, while
+      // arbitrary consumer content is deferred until the card is requested.
       expect(html).toContain('popover="manual"');
-      expect(html).toContain('Card content');
+      expect(html).not.toContain('Card content');
       // ...and it is a <span> (inline-safe), not a <div>.
       expect(html).toMatch(/<span[^>]*popover="manual"/);
     });
 
-    it('keeps the floating layer inline-safe in server markup inside a paragraph', () => {
+    it('omits block hover card content from server markup inside a paragraph', () => {
       const html = renderToString(
         <p>
           Before{' '}
-          <HoverCard content={<span>Card content</span>}>
+          <HoverCard content={<div>Block card content</div>}>
             <a href="#trigger">Trigger</a>
           </HoverCard>{' '}
           after
         </p>,
       );
 
-      // No <div> is emitted inside the paragraph — the layer and its wrappers
-      // are all phrasing content, so the server string is valid <p> markup that
-      // the browser parser will not reparent (which would itself desync
-      // hydration).
+      // The empty popover shell is phrasing-safe; consumer content does not
+      // reach the parser until an interaction requests the card.
       expect(html).not.toContain('<div');
+      expect(html).not.toContain('Block card content');
       expect(html).toMatch(/<span[^>]*popover="manual"/);
     });
 
@@ -477,7 +606,7 @@ describe('HoverCard', () => {
         <StrictMode>
           <p>
             Glossary:{' '}
-            <HoverCard content={<span>Definition</span>}>
+            <HoverCard content={<div>Definition</div>}>
               <a href="#term">term</a>
             </HoverCard>
             .

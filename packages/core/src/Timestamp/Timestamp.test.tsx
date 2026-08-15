@@ -16,6 +16,24 @@ import {formatTooltipLines} from './tooltipEntries';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {InternationalizationProvider} from '../i18n';
 
+async function openTimestampHoverCard(): Promise<HTMLElement> {
+  const timestamp = document.querySelector('time');
+  if (timestamp == null) {
+    throw new Error('Expected Timestamp to render a <time> element');
+  }
+  const trigger = timestamp.parentElement;
+  if (trigger == null) {
+    throw new Error('Expected Timestamp to render a hover-card trigger');
+  }
+
+  fireEvent.mouseEnter(trigger);
+  await waitFor(() => {
+    expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
+  });
+
+  return screen.getByRole('dialog', {hidden: true});
+}
+
 describe('Timestamp', () => {
   // The hover card is loaded lazily (React.lazy + Suspense), so its chunk
   // resolves asynchronously the first time a card renders. Warm the module
@@ -646,14 +664,13 @@ describe('Timestamp', () => {
       );
       const el = screen.getByTestId('ts');
 
-      // The card layer mounts inline and carries the full absolute time in
-      // its visible form (short timezone abbreviation) as its single default
-      // copyable row. The aria-label spells the timezone out in full
-      // (WCAG 3.1.4), so the two strings intentionally differ — compare the
-      // card against an independently formatted short-form string.
+      // The card carries the full absolute time in its visible form (short
+      // timezone abbreviation) as its single default copyable row. The
+      // aria-label spells the timezone out in full (WCAG 3.1.4), so the two
+      // strings intentionally differ — compare the card against an
+      // independently formatted short-form string after opening it.
       // Compare with normalized whitespace: Intl output can contain narrow
       // no-break spaces that jest-dom's matcher normalization would break on.
-      const card = await screen.findByRole('dialog', {hidden: true});
       const normalize = (s: string) => s.replace(/\s+/g, ' ');
       const datetime = new Date(el.getAttribute('datetime') ?? '');
       const expected = new Intl.DateTimeFormat(undefined, {
@@ -665,14 +682,14 @@ describe('Timestamp', () => {
         second: '2-digit',
         timeZoneName: 'short',
       }).format(datetime);
-      expect(normalize(card.textContent ?? '')).toContain(normalize(expected));
-
       // Tab onto the timestamp — the only tab stop in the document.
       await user.tab();
       expect(el).toHaveFocus();
       await waitFor(() => {
         expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
       });
+      const card = screen.getByRole('dialog', {hidden: true});
+      expect(normalize(card.textContent ?? '')).toContain(normalize(expected));
     });
 
     it('does not add a tab stop when the hover card is disabled', () => {
@@ -720,8 +737,8 @@ describe('Timestamp', () => {
     const originalHidePopover = HTMLElement.prototype.hidePopover;
 
     beforeEach(() => {
-      // The card content renders inline in a (mocked) popover; real timers let
-      // RTL's findBy* and the async clipboard write resolve (the outer
+      // The card content mounts when the mocked popover opens; real timers let
+      // the hover delay and async clipboard writes resolve (the outer
       // beforeEach installs fake timers).
       vi.useRealTimers();
       HTMLElement.prototype.showPopover = vi.fn();
@@ -756,7 +773,7 @@ describe('Timestamp', () => {
           .queryAllByRole('tooltip', {hidden: true})
           .filter(el => !/^(Copy|Copied)$/.test(el.textContent?.trim() ?? '')),
       ).toHaveLength(0);
-      const card = await screen.findByRole('dialog', {hidden: true});
+      const card = await openTimestampHoverCard();
       // The default card is the named details card, exactly as the configured
       // one is.
       expect(card).toHaveAttribute('aria-label', 'Timestamp details');
@@ -786,7 +803,7 @@ describe('Timestamp', () => {
 
     it("copies the default absolute row's value", async () => {
       render(<Timestamp value={Date.now() / 1000 - 3600} format="relative" />);
-      const card = await screen.findByRole('dialog', {hidden: true});
+      const card = await openTimestampHoverCard();
       const rowValue = card.querySelector('dd')?.textContent ?? '';
       expect(rowValue).toBeTruthy();
       fireEvent.click(card.querySelector('button')!);
@@ -802,7 +819,7 @@ describe('Timestamp', () => {
 
     it("shows a 'Copy' tooltip on the copy button, flipping to 'Copied' after a copy", async () => {
       render(<Timestamp value={Date.now() / 1000 - 3600} format="relative" />);
-      const card = await screen.findByRole('dialog', {hidden: true});
+      const card = await openTimestampHoverCard();
       const button = card.querySelector('button')!;
       // The visible tooltip content defaults to the short imperative 'Copy'
       // (the full "Copy <value>" string stays the button's aria-label).
@@ -837,9 +854,9 @@ describe('Timestamp', () => {
     const originalHidePopover = HTMLElement.prototype.hidePopover;
 
     beforeEach(() => {
-      // The card content renders inline in a (mocked) popover, so its rows are
-      // in the DOM without opening it. Real timers so RTL's findBy* and the
-      // async clipboard write resolve (the outer beforeEach installs fake ones).
+      // The card content mounts when the mocked popover opens. Use real timers
+      // so the hover delay and async clipboard writes resolve (the outer
+      // beforeEach installs fake timers).
       vi.useRealTimers();
       HTMLElement.prototype.showPopover = vi.fn();
       HTMLElement.prototype.hidePopover = vi.fn();
@@ -872,7 +889,7 @@ describe('Timestamp', () => {
           .queryAllByRole('tooltip', {hidden: true})
           .filter(el => !/^(Copy|Copied)$/.test(el.textContent?.trim() ?? '')),
       ).toHaveLength(0);
-      const card = await screen.findByRole('dialog', {hidden: true});
+      const card = await openTimestampHoverCard();
       expect(card).toHaveAttribute('aria-label', 'Timestamp details');
     });
 
@@ -888,7 +905,7 @@ describe('Timestamp', () => {
           ]}
         />,
       );
-      const card = await screen.findByRole('dialog', {hidden: true});
+      const card = await openTimestampHoverCard();
       expect(card.querySelectorAll('dd')).toHaveLength(3);
       // Entries are read-only unless they opt in, so no copy buttons and no
       // trailing action column are rendered.
@@ -915,7 +932,7 @@ describe('Timestamp', () => {
           ]}
         />,
       );
-      const card = await screen.findByRole('dialog', {hidden: true});
+      const card = await openTimestampHoverCard();
       // Three rows, but only the opted-in row carries a copy button.
       expect(card.querySelectorAll('dd')).toHaveLength(3);
       expect(card.querySelectorAll('button')).toHaveLength(1);
@@ -936,7 +953,7 @@ describe('Timestamp', () => {
           ]}
         />,
       );
-      const card = await screen.findByRole('dialog', {hidden: true});
+      const card = await openTimestampHoverCard();
       const values = Array.from(card.querySelectorAll('dd')).map(
         el => el.textContent,
       );
@@ -960,7 +977,7 @@ describe('Timestamp', () => {
           ]}
         />,
       );
-      const card = await screen.findByRole('dialog', {hidden: true});
+      const card = await openTimestampHoverCard();
       const [rowValue] = Array.from(card.querySelectorAll('dd')).map(
         el => el.textContent ?? '',
       );
@@ -991,7 +1008,7 @@ describe('Timestamp', () => {
           />
         </InternationalizationProvider>,
       );
-      const card = await screen.findByRole('dialog', {hidden: true});
+      const card = await openTimestampHoverCard();
       fireEvent.click(card.querySelector('button')!);
       await waitFor(() => {
         expect(
@@ -1011,7 +1028,7 @@ describe('Timestamp', () => {
       );
       // Without entries an absolute format has no hover surface at all;
       // configuring entries must not be silently ignored.
-      const card = await screen.findByRole('dialog', {hidden: true});
+      const card = await openTimestampHoverCard();
       expect(card.textContent).toContain('UTC');
       // ...and the anchor becomes keyboard-reachable, as it is for relative.
       expect(screen.getByTestId('ts')).toHaveAttribute('tabindex', '0');
@@ -1120,7 +1137,7 @@ describe('Timestamp', () => {
         />,
       );
       // autoThreshold={0} forces the absolute branch regardless of the clock.
-      const card = await screen.findByRole('dialog', {hidden: true});
+      const card = await openTimestampHoverCard();
       expect(card.textContent).toContain('2026-02-19 17:00:00');
       expect(screen.getByTestId('ts')).toHaveAttribute('tabindex', '0');
     });
@@ -1135,7 +1152,7 @@ describe('Timestamp', () => {
           ]}
         />,
       );
-      const card = await screen.findByRole('dialog', {hidden: true});
+      const card = await openTimestampHoverCard();
       expect(card.textContent).toContain('2026-02-19 17:00:00');
     });
 
@@ -1151,7 +1168,7 @@ describe('Timestamp', () => {
           ]}
         />,
       );
-      const card = await screen.findByRole('dialog', {hidden: true});
+      const card = await openTimestampHoverCard();
       // An unlabeled entry still emits its label cell, so the grid stays
       // aligned and the <dl> stays valid markup.
       expect(card.querySelectorAll('dt')).toHaveLength(3);
@@ -1189,7 +1206,7 @@ describe('Timestamp', () => {
             ]}
           />,
         );
-        const card = await screen.findByRole('dialog', {hidden: true});
+        const card = await openTimestampHoverCard();
         const values = Array.from(card.querySelectorAll('dd')).map(
           el => el.textContent,
         );

@@ -250,18 +250,17 @@ export function HoverCard({
     };
   }, [textOnly, hoverCard.ref, hoverCard.describedBy]);
 
-  // Render the floating layer inline, in the same place on the server and the
-  // client. The layer is a `popover` element opened via the Popover API, so the
-  // browser promotes it to the top layer when shown — that already escapes
-  // ancestor clipping, stacking, and transform containing-block traps, and CSS
-  // anchor positioning resolves the trigger reference regardless of where the
-  // element sits in the DOM, so no portal is needed to "escape" layout.
+  // Render an empty floating-layer shell inline, in the same place on the
+  // server and the first client render. The layer is a `popover` element, so
+  // the browser promotes it to the top layer when shown and CSS anchor
+  // positioning resolves the trigger reference wherever the shell is mounted.
   //
-  // The layer renders as inline-safe phrasing markup (a `<span>`, see
-  // useHoverCard), which stays put inside a `<p>` instead of being reparented
-  // by the HTML parser. That keeps the server markup and the first client
-  // render identical, so there is no hydration mismatch — and it preserves the
-  // inline-safety guarantee (no block elements injected into a paragraph).
+  // The layer shell renders as inline-safe phrasing markup (a `<span>`, see
+  // useHoverCard), identically on the server and the first client render.
+  // Consumer content is mounted immediately before the card opens and removed
+  // when it hides. If the inline shell is inside a paragraph, it moves to a
+  // body portal before mounting content; computed CSS variables are forwarded
+  // so the portal retains the trigger's themed appearance.
   const renderedHoverCard = hoverCard.renderHoverCard(content, {
     xstyle,
     className,
