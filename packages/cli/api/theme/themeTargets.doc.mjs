@@ -19,8 +19,8 @@ export const doc = {
     'class it paints, the component that declares it, and the props and states that are legal ' +
     'override keys under it. Same source as the Theming table `astryx component <Name>` prints ' +
     '— the component docs — so the list cannot drift from the components, and `theme build` ' +
-    'validates overrides against this exact set. Pass a filter to scope it to one component or ' +
-    'to any key containing a substring.',
+    'validates overrides against this exact set. A filter naming a component gives that ' +
+    'component\u2019s set; anything else is a substring search over the keys.',
   importPath: '@astryxdesign/cli/api',
   signature:
     'themeTargets(filter?: string, ctx?: {cwd?: string}): Promise<ThemeTargetsResponse>',
@@ -30,7 +30,7 @@ export const doc = {
       name: 'filter',
       type: 'string',
       description:
-        'A component name, or a substring of a target key or class. Omit for the whole surface.',
+        'A component name (exact, case-insensitive) or a substring of a target key. Omit for the whole surface.',
     },
     {
       name: 'ctx.cwd',
