@@ -1,16 +1,20 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx cdn template` leaf — writes the annotated no-build-step starter
- * page into the consumer's project.
+ * @file `template.cdn` leaf — writes the annotated no-build-step starter page
+ * into the consumer's project.
  *
- * Sibling of `theme template`: both write an annotated file that is a doc which
- * happens to run. This one is the CDN entry point — an HTML page that loads
- * Astryx from jsDelivr + esm.sh with no bundler, no install, and no build.
+ * A CDN starter is a template, so it lives in the template family. It is the
+ * one member that is not discovered: it ships as an asset rather than as a
+ * `page.tsx` + `template.doc.mjs` pair, which is why the dispatcher routes to
+ * it from a flag instead of resolving a name.
  *
  * Every CDN URL in the asset carries the `__ASTRYX_VERSION__` placeholder, which
  * is substituted here. An unpinned CDN URL resolves to whatever is latest and is
  * cached hard, so a page written today can break tomorrow without being edited.
+ *
+ * @position api/template/cdn — writes the CDN starter asset; the template
+ *   dispatcher routes `--cdn` here before any discovery happens.
  */
 
 import * as fs from 'node:fs';
@@ -38,9 +42,9 @@ export const CDN_VERSION_PLACEHOLDER = '__ASTRYX_VERSION__';
  * work, and this command is safe to re-run.
  *
  * @param {{targetPath?: string, overwrite?: boolean, cwd?: string}} [options]
- * @returns {import('../cdn.type.mjs').CdnTemplateResponse}
+ * @returns {import('../template.type.mjs').TemplateCdnResponse}
  */
-export function cdnTemplate(options = {}) {
+export function templateCdn(options = {}) {
   const {
     targetPath = CDN_TEMPLATE_DEFAULT_PATH,
     overwrite = false,
@@ -65,7 +69,7 @@ export function cdnTemplate(options = {}) {
 
   if (fs.existsSync(resolved) && !overwrite) {
     return {
-      type: 'cdn.template',
+      type: 'template.cdn',
       data: {path: relative, version, written: false, reason: 'exists'},
     };
   }
@@ -76,7 +80,7 @@ export function cdnTemplate(options = {}) {
   fs.writeFileSync(resolved, contents);
 
   return {
-    type: 'cdn.template',
+    type: 'template.cdn',
     data: {path: relative, version, written: true, reason: null},
   };
 }

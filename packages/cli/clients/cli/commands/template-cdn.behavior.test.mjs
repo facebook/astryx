@@ -1,13 +1,14 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file CLI behavior for `astryx cdn template`.
+ * @file CLI behavior for `astryx template --cdn`.
  *
- * The API leaf is covered by api/cdn/template/template.test.mjs; what is only
- * reachable here is the terminal binding — the group's subcommand dispatch,
- * which message the user sees, and the JSON envelope. A receipt read at the
- * wrong depth (`result.written` instead of `result.data.written`) writes the
- * file and then reports a skip, and no unit test of the leaf can see it.
+ * The API leaf is covered by api/template/cdn/cdn.test.mjs; what is only
+ * reachable here is the terminal binding — that the flag short-circuits the
+ * family's name resolution, which message the user sees, and the JSON envelope.
+ * A receipt read at the wrong depth (`result.written` instead of
+ * `result.data.written`) writes the file and then reports a skip, and no unit
+ * test of the leaf can see it.
  */
 
 import {describe, it, expect, beforeEach, afterEach} from 'vitest';
@@ -18,7 +19,7 @@ import {runCli} from '../../../test-utils/run-cli.mjs';
 
 let tmpDir;
 beforeEach(() => {
-  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-cli-cdn-template-'));
+  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-cli-template-cdn-'));
   fs.writeFileSync(
     path.join(tmpDir, 'package.json'),
     JSON.stringify({name: 'tmp', private: true}),
@@ -30,9 +31,9 @@ afterEach(() => {
 
 const read = f => fs.readFileSync(path.join(tmpDir, f), 'utf-8');
 
-describe('astryx cdn template', () => {
+describe('astryx template --cdn', () => {
   it('writes the page and says it wrote it', async () => {
-    const {status, stdout} = await runCli(['cdn', 'template'], {cwd: tmpDir});
+    const {status, stdout} = await runCli(['template', '--cdn'], {cwd: tmpDir});
 
     expect(status).toBe(0);
     expect(stdout).toMatch(/Wrote cdn\.template\.html/);
@@ -43,7 +44,7 @@ describe('astryx cdn template', () => {
   it('leaves an existing file alone, and says that instead', async () => {
     fs.writeFileSync(path.join(tmpDir, 'cdn.template.html'), '<!-- mine -->\n');
 
-    const {status, stdout} = await runCli(['cdn', 'template'], {cwd: tmpDir});
+    const {status, stdout} = await runCli(['template', '--cdn'], {cwd: tmpDir});
 
     expect(status).toBe(0);
     expect(stdout).toMatch(/already exists/);
@@ -53,7 +54,7 @@ describe('astryx cdn template', () => {
   it('replaces it with --overwrite', async () => {
     fs.writeFileSync(path.join(tmpDir, 'cdn.template.html'), '<!-- mine -->\n');
 
-    const {status} = await runCli(['cdn', 'template', '--overwrite'], {
+    const {status} = await runCli(['template', '--cdn', '--overwrite'], {
       cwd: tmpDir,
     });
 
@@ -61,8 +62,8 @@ describe('astryx cdn template', () => {
     expect(read('cdn.template.html')).toMatch(/importmap/);
   });
 
-  it('writes to a path given as an argument', async () => {
-    const {status} = await runCli(['cdn', 'template', 'public/demo.html'], {
+  it('writes to the path given to the flag', async () => {
+    const {status} = await runCli(['template', '--cdn', 'public/demo.html'], {
       cwd: tmpDir,
     });
 
@@ -70,14 +71,14 @@ describe('astryx cdn template', () => {
     expect(read(path.join('public', 'demo.html'))).toMatch(/importmap/);
   });
 
-  it('returns a cdn.template envelope under --json', async () => {
-    const {status, stdout} = await runCli(['--json', 'cdn', 'template'], {
+  it('returns a template.cdn envelope under --json', async () => {
+    const {status, stdout} = await runCli(['--json', 'template', '--cdn'], {
       cwd: tmpDir,
     });
 
     expect(status).toBe(0);
     const payload = JSON.parse(stdout);
-    expect(payload.type).toBe('cdn.template');
+    expect(payload.type).toBe('template.cdn');
     expect(payload.data).toEqual({
       path: 'cdn.template.html',
       version: expect.stringMatching(/^\d+\.\d+\.\d+/),
@@ -87,9 +88,10 @@ describe('astryx cdn template', () => {
   });
 
   it('refuses a path that escapes the project', async () => {
-    const {status, stderr} = await runCli(['cdn', 'template', '../escaped.html'], {
-      cwd: tmpDir,
-    });
+    const {status, stderr} = await runCli(
+      ['template', '--cdn', '../escaped.html'],
+      {cwd: tmpDir},
+    );
 
     expect(status).toBe(1);
     expect(stderr).toMatch(/outside the project root/);
@@ -98,11 +100,14 @@ describe('astryx cdn template', () => {
     );
   });
 
-  it('rejects an unknown subcommand and lists the real ones', async () => {
-    const {status, stderr} = await runCli(['cdn', 'bogus'], {cwd: tmpDir});
+  // The flag exists because the positional cannot: `template cdn` would resolve
+  // `cdn` against everything discoverAll() finds, so a template with that id
+  // would shadow the starter page. The flag answers before discovery runs.
+  it('does not shadow, or get shadowed by, a discovered template id', async () => {
+    const {status, stderr} = await runCli(['template', 'cdn'], {cwd: tmpDir});
 
     expect(status).toBe(1);
-    expect(stderr).toMatch(/unknown subcommand 'cdn bogus'/);
-    expect(stderr).toMatch(/template/);
+    expect(stderr).toMatch(/Unknown template "cdn"/);
+    expect(fs.existsSync(path.join(tmpDir, 'cdn.template.html'))).toBe(false);
   });
 });

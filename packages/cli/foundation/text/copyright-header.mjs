@@ -6,7 +6,7 @@
  *
  * Every file in this repo carries the Meta copyright header, and several
  * commands copy repo files out verbatim — `theme add` (bundled theme sources),
- * `init --features theme` (the annotated theme template), `cdn template` (the
+ * `init --features theme` (the annotated theme template), `template --cdn` (the
  * CDN starter page). A consumer's own source tree should not inherit our
  * boilerplate, and their lint may well reject it.
  *

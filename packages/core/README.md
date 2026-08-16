@@ -261,7 +261,7 @@ The CLI writes this page for you, annotated and pinned to the version you have
 installed:
 
 ```bash
-npx astryx cdn template          # writes cdn.template.html
+npx astryx template --cdn        # writes cdn.template.html
 ```
 
 ```html
@@ -269,6 +269,9 @@ npx astryx cdn template          # writes cdn.template.html
 <html lang="en" data-astryx-theme="neutral">
   <head>
     <meta charset="utf-8" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap" />
     <link
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/@astryxdesign/core@0.4.1/src/reset.css" />
@@ -324,7 +327,7 @@ npx astryx cdn template          # writes cdn.template.html
 </html>
 ```
 
-Five details carry the whole recipe:
+Six details carry the whole recipe:
 
 - **`data-astryx-theme` on `<html>`.** Theme CSS is scoped to that attribute, so
   without it the page renders with the built-in defaults instead of the theme you
@@ -337,11 +340,13 @@ Five details carry the whole recipe:
   the theme styles prose elements and each component styles itself, and `Button`
   is `font: inherit`. Without that one declaration its label renders in the
   browser's default serif.
+- **The webfont itself.** The theme _names_ Figtree; it never loads it. Without
+  the Google Fonts link every viewer silently gets the next family in the stack.
 - **No JSX.** Nothing is compiling this file, so elements are created with
   `React.createElement`.
 
 > Pin every version. Unversioned CDN URLs resolve to the latest release and are
-> cached aggressively (0.4.1 above is a real pin; `astryx cdn template` writes
+> cached aggressively (0.4.1 above is a real pin; `astryx template --cdn` writes
 > yours). The raw ESM entry (`dist/index.js`) uses bare `react` imports and will
 > not run from a plain `<script src>` — the import map is what makes those
 > specifiers resolvable.

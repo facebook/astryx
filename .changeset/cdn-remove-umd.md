@@ -17,7 +17,7 @@ without a global for the bundle to bind to — it documented a path that never h
 If you were loading it with an older React anyway, load the same components as modules instead: an
 import map for `react`, `react/jsx-runtime`, `react-dom`, `react-dom/client` and
 `@astryxdesign/core` (pinned, with `?external=react,react-dom`), then one `<script type="module">`.
-`astryx cdn template` writes that page for you, pinned to your installed version and annotated; the
+`astryx template --cdn` writes that page for you, pinned to your installed version and annotated; the
 recipe is also in the core README under "No build step (CDN)".
 
 @cixzhang

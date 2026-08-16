@@ -2,7 +2,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * CDN starter-page smoke test — scaffolds `astryx cdn template` into a temp
+ * CDN starter-page smoke test — scaffolds `astryx template --cdn` into a temp
  * directory, serves it, and opens it in headless Chromium. Fails on any console
  * error, page error, or failed request, and on a page that loaded without
  * rendering anything.
@@ -49,13 +49,13 @@ fs.writeFileSync(
   path.join(tmpDir, 'package.json'),
   JSON.stringify({name: 'cdn-smoke', private: true}),
 );
-const scaffold = spawnSync(process.execPath, [CLI, '--json', 'cdn', 'template'], {
+const scaffold = spawnSync(process.execPath, [CLI, '--json', 'template', '--cdn'], {
   cwd: tmpDir,
   encoding: 'utf8',
   timeout: 60_000,
 });
 if (scaffold.status !== 0 || !fs.existsSync(pagePath)) {
-  fail(`astryx cdn template (exit ${scaffold.status})`, scaffold.stderr);
+  fail(`astryx template --cdn (exit ${scaffold.status})`, scaffold.stderr);
   process.exit(1);
 }
 const pinned = JSON.parse(scaffold.stdout).data.version;
