@@ -34,6 +34,16 @@
  */
 
 /**
+ * xds --json theme build <a> <b> … — several themes in one invocation. Each
+ * result carries the file as it was passed and the receipt a single-file build
+ * would have returned (null when that theme produced no CSS). One file still
+ * returns the bare theme.build / theme.build.check envelope.
+ * @typedef {object} ThemeBuildBatchResponse
+ * @property {'theme.build.batch'} type
+ * @property {{count: number, results: Array<{file: string, receipt: ThemeBuildResponse | ThemeBuildCheckResponse | null}>}} data
+ */
+
+/**
  * A single theme entry as surfaced by `theme list`.
  * @typedef {object} ThemeListEntry
  * @property {string} slug

@@ -342,10 +342,12 @@ export function registerTheme(program) {
         if (entries.length === 1) {
           if (results[0].receipt) jsonOut(results[0].receipt);
         } else {
-          jsonOut({
+          /** @type {import('../../../api/theme/theme.type.mjs').ThemeBuildBatchResponse} */
+          const batch = {
             type: 'theme.build.batch',
             data: {count: results.length, results},
-          });
+          };
+          jsonOut(batch);
         }
       } else if (entries.length > 1) {
         emit(
