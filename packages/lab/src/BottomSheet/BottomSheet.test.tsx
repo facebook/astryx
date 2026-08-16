@@ -185,7 +185,12 @@ function getHandle(): HTMLElement {
 // clientY, so dispatch plain events with the coords the handlers read.
 function drag(handle: HTMLElement, points: {y: number}[]) {
   const [down, ...rest] = points;
-  fireEvent.pointerDown(handle, {pointerId: 1, clientY: down.y});
+  fireEvent.pointerDown(handle, {
+    pointerId: 1,
+    clientY: down.y,
+    button: 0,
+    isPrimary: true,
+  });
   for (const p of rest) {
     fireEvent.pointerMove(handle, {pointerId: 1, clientY: p.y});
   }
@@ -216,7 +221,9 @@ function fireTimedPointer(
 ) {
   const event = new Event(type, {bubbles: true, cancelable: true});
   Object.defineProperties(event, {
+    button: {value: 0},
     clientY: {value: y},
+    isPrimary: {value: true},
     pointerId: {value: 1},
     timeStamp: {value: time},
   });
@@ -533,6 +540,32 @@ describe('BottomSheet', () => {
       // the distance branch (offset > 0.25) once released downward.
       drag(getHandle(), [{y: 0}, {y: 40}, {y: 120}]);
       expect(onOpenChange).toHaveBeenCalledWith(false);
+    });
+
+    it('restores the sheet when a context menu interrupts an active drag', () => {
+      const onOpenChange = vi.fn();
+      render(
+        <BottomSheet isOpen onOpenChange={onOpenChange} label="Filters">
+          Content
+        </BottomSheet>,
+      );
+      const handle = getHandle();
+      const dialog = screen.getByRole('dialog');
+
+      fireEvent.pointerDown(handle, {
+        pointerId: 1,
+        clientY: 0,
+        button: 0,
+        isPrimary: true,
+      });
+      fireEvent.pointerMove(handle, {pointerId: 1, clientY: 300});
+      expect(getSheet().style.transform).toBe('translateY(300px)');
+
+      expect(fireEvent.contextMenu(handle)).toBe(false);
+
+      expect(getSheet().style.transform).toBe('');
+      expect(dialog).toHaveStyle({'--_sheet-scrim-opacity': '1'});
+      expect(onOpenChange).not.toHaveBeenCalled();
     });
   });
 
@@ -1122,6 +1155,8 @@ describe('BottomSheet', () => {
       const pointerDownAllowed = fireEvent.pointerDown(getHandle(), {
         pointerId: 1,
         clientY: 0,
+        button: 0,
+        isPrimary: true,
       });
       expect(pointerDownAllowed).toBe(false);
       expect(document.activeElement).toBe(input);

@@ -34,6 +34,7 @@ import {
   useRef,
   useState,
   type CSSProperties,
+  type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
 } from 'react';
 import {
@@ -137,6 +138,8 @@ export interface SheetContentProps {
 
 export interface SheetHandleProps {
   style: CSSProperties;
+  onContextMenu: (event: ReactMouseEvent) => void;
+  onLostPointerCapture: (event: ReactPointerEvent) => void;
   onPointerDown: (event: ReactPointerEvent) => void;
   onPointerMove: (event: ReactPointerEvent) => void;
   onPointerUp: (event: ReactPointerEvent) => void;
@@ -145,6 +148,8 @@ export interface SheetHandleProps {
 
 export interface SheetBodyProps {
   ref: (node: HTMLElement | null) => void;
+  onContextMenu: (event: ReactMouseEvent) => void;
+  onLostPointerCapture: (event: ReactPointerEvent) => void;
   onPointerDown: (event: ReactPointerEvent) => void;
   onPointerMove: (event: ReactPointerEvent) => void;
   onPointerUp: (event: ReactPointerEvent) => void;
@@ -292,6 +297,52 @@ export function useSheetGestures({
     return computeDetentOffsets(height, snapHeightsRef.current?.() ?? []);
   }, []);
 
+  const cancelDrag = useCallback(
+    (target?: HTMLElement) => {
+      const state = dragStateRef.current;
+      if (state == null) {
+        return;
+      }
+
+      // Clear first: releasePointerCapture() may synchronously dispatch
+      // lostpointercapture, which must observe that this drag is already done.
+      dragStateRef.current = null;
+      if (target?.hasPointerCapture?.(state.pointerId)) {
+        target.releasePointerCapture(state.pointerId);
+      }
+      setDragOffset(state.baseOffset);
+      setIsDragging(false);
+
+      // An interrupted drag returns to its previous resting detent. Restore
+      // the matching scrim opacity as well so the modal shell cannot remain
+      // dimmed with its sheet translated out of view.
+      const offsets = detentOffsets(state.height);
+      const maxOffset = offsets[offsets.length - 1];
+      const shortestDetentHeight = state.height - maxOffset;
+      const dismissOffset =
+        maxOffset + shortestDetentHeight * DISMISS_OVERSHOOT_RATIO;
+      onScrimOpacityRef.current?.(
+        scrimOpacityForOffset(state.baseOffset, offsets, dismissOffset),
+      );
+    },
+    [detentOffsets],
+  );
+
+  useEffect(() => {
+    const handleWindowBlur = () => cancelDrag();
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        cancelDrag();
+      }
+    };
+    window.addEventListener('blur', handleWindowBlur);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      window.removeEventListener('blur', handleWindowBlur);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [cancelDrag]);
+
   const settleFromDrag = useCallback(
     (
       offset: number,
@@ -379,6 +430,9 @@ export function useSheetGestures({
 
   const handlePointerDown = useCallback(
     (event: ReactPointerEvent) => {
+      if (event.button !== 0 || !event.isPrimary) {
+        return;
+      }
       // The handle has no native focus action. Prevent pointer-down from
       // moving focus off a form control on a tap; once the pointer actually
       // moves, BottomSheet dismisses the keyboard as sheet travel begins.
@@ -386,6 +440,26 @@ export function useSheetGestures({
       beginDrag(event, measureHeight());
     },
     [beginDrag, measureHeight],
+  );
+
+  const handleContextMenu = useCallback(
+    (event: ReactMouseEvent) => {
+      if (dragStateRef.current == null) {
+        return;
+      }
+      event.preventDefault();
+      cancelDrag(event.currentTarget as HTMLElement);
+    },
+    [cancelDrag],
+  );
+
+  const handleLostPointerCapture = useCallback(
+    (event: ReactPointerEvent) => {
+      if (dragStateRef.current?.pointerId === event.pointerId) {
+        cancelDrag();
+      }
+    },
+    [cancelDrag],
   );
 
   const handlePointerMove = useCallback(
@@ -439,11 +513,11 @@ export function useSheetGestures({
         return;
       }
       const target = event.currentTarget as HTMLElement;
-      target.releasePointerCapture?.(event.pointerId);
       const delta = event.clientY - state.startCoord;
       const offset = Math.max(0, state.baseOffset + delta);
       const dir = delta === 0 ? 0 : delta > 0 ? 1 : -1;
       dragStateRef.current = null;
+      target.releasePointerCapture?.(event.pointerId);
       setIsDragging(false);
       settleFromDrag(
         offset,
@@ -467,6 +541,9 @@ export function useSheetGestures({
   } | null>(null);
 
   const handleBodyPointerDown = useCallback((event: ReactPointerEvent) => {
+    if (event.button !== 0 || !event.isPrimary) {
+      return;
+    }
     const scroller = event.currentTarget as HTMLElement;
     if (scroller.scrollTop > 0) {
       armedBodyRef.current = null;
@@ -531,11 +608,13 @@ export function useSheetGestures({
   } | null>(null);
 
   const beginDragRef = useRef(beginDrag);
+  const cancelDragRef = useRef(cancelDrag);
   const pointerMoveRef = useRef(handlePointerMove);
   const endDragRef = useRef(endDrag);
   const measureHeightRef = useRef(measureHeight);
   useEffect(() => {
     beginDragRef.current = beginDrag;
+    cancelDragRef.current = cancelDrag;
     pointerMoveRef.current = handlePointerMove;
     endDragRef.current = endDrag;
     measureHeightRef.current = measureHeight;
@@ -624,11 +703,20 @@ export function useSheetGestures({
 
     const onTouchEnd = (event: TouchEvent) => {
       touchDragRef.current = null;
-      if (dragStateRef.current) {
-        const t = event.changedTouches[0];
-        if (t) {
-          endDragRef.current(asPointer(t, event.currentTarget as HTMLElement));
-        }
+      const pointerId = dragStateRef.current?.pointerId;
+      if (pointerId == null) {
+        return;
+      }
+      const t = [...event.changedTouches].find(
+        touch => touch.identifier === pointerId,
+      );
+      const target = event.currentTarget as HTMLElement;
+      if (t) {
+        endDragRef.current(asPointer(t, target));
+      } else if (event.touches.length === 0) {
+        // Some interrupted multi-touch sequences omit the active touch from
+        // changedTouches. If no fingers remain, the drag cannot finish later.
+        cancelDragRef.current(target);
       }
     };
 
@@ -677,23 +765,40 @@ export function useSheetGestures({
   const handleProps = useMemo<SheetHandleProps>(
     () => ({
       style: {touchAction: 'none', cursor: 'grab'},
+      onContextMenu: handleContextMenu,
+      onLostPointerCapture: handleLostPointerCapture,
       onPointerDown: handlePointerDown,
       onPointerMove: handlePointerMove,
       onPointerUp: endDrag,
       onPointerCancel: endDrag,
     }),
-    [handlePointerDown, handlePointerMove, endDrag],
+    [
+      endDrag,
+      handleContextMenu,
+      handleLostPointerCapture,
+      handlePointerDown,
+      handlePointerMove,
+    ],
   );
 
   const bodyProps = useMemo<SheetBodyProps>(
     () => ({
       ref: bodyRef,
+      onContextMenu: handleContextMenu,
+      onLostPointerCapture: handleLostPointerCapture,
       onPointerDown: handleBodyPointerDown,
       onPointerMove: handleBodyPointerMove,
       onPointerUp: handleBodyEnd,
       onPointerCancel: handleBodyEnd,
     }),
-    [bodyRef, handleBodyPointerDown, handleBodyPointerMove, handleBodyEnd],
+    [
+      bodyRef,
+      handleBodyEnd,
+      handleBodyPointerDown,
+      handleBodyPointerMove,
+      handleContextMenu,
+      handleLostPointerCapture,
+    ],
   );
 
   return {

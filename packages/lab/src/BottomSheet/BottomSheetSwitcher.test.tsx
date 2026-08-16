@@ -484,6 +484,8 @@ describe('BottomSheetSwitcher', () => {
       pointerId: 1,
       clientY: 100,
       timeStamp: 0,
+      button: 0,
+      isPrimary: true,
     });
     fireEvent.pointerMove(handle, {
       pointerId: 1,
@@ -665,7 +667,12 @@ describe('BottomSheetSwitcher', () => {
     }
 
     fireEvent.click(dialog);
-    fireEvent.pointerDown(handle, {pointerId: 1, clientY: 0});
+    fireEvent.pointerDown(handle, {
+      pointerId: 1,
+      clientY: 0,
+      button: 0,
+      isPrimary: true,
+    });
     fireEvent.pointerMove(handle, {pointerId: 1, clientY: 120});
     fireEvent.pointerUp(handle, {pointerId: 1, clientY: 120});
 
@@ -704,12 +711,51 @@ describe('BottomSheetSwitcher', () => {
     fireEvent.click(dialog);
     fireEvent.keyDown(dialog, {key: 'Escape'});
     fireEvent(dialog, new Event('cancel', {cancelable: true}));
-    fireEvent.pointerDown(handle, {pointerId: 1, clientY: 0});
+    fireEvent.pointerDown(handle, {
+      pointerId: 1,
+      clientY: 0,
+      button: 0,
+      isPrimary: true,
+    });
     fireEvent.pointerMove(handle, {pointerId: 1, clientY: 120});
     fireEvent.pointerUp(handle, {pointerId: 1, clientY: 120});
 
     expect(onActiveSheetChange).not.toHaveBeenCalled();
     expect(dialog).toHaveStyle({'--_sheet-scrim-opacity': '1'});
+  });
+
+  it('restores the active sheet when a context menu interrupts its drag', () => {
+    const onActiveSheetChange = vi.fn();
+    render(
+      <BottomSheetSwitcher
+        activeSheet="details"
+        onActiveSheetChange={onActiveSheetChange}>
+        <BottomSheet sheetId="details" label="Details">
+          Content
+        </BottomSheet>
+      </BottomSheetSwitcher>,
+    );
+    const dialog = getSharedDialog();
+    const panel = getSheetPanel(dialog);
+    const handle = panel.firstElementChild;
+    if (!(handle instanceof HTMLElement)) {
+      throw new Error('sheet handle not found');
+    }
+
+    fireEvent.pointerDown(handle, {
+      pointerId: 1,
+      clientY: 0,
+      button: 0,
+      isPrimary: true,
+    });
+    fireEvent.pointerMove(handle, {pointerId: 1, clientY: 300});
+    expect(panel.style.transform).toBe('translateY(300px)');
+
+    expect(fireEvent.contextMenu(handle)).toBe(false);
+
+    expect(panel.style.transform).toBe('');
+    expect(dialog).toHaveStyle({'--_sheet-scrim-opacity': '1'});
+    expect(onActiveSheetChange).not.toHaveBeenCalled();
   });
 
   it('ignores Escape while an IME composition is active', () => {

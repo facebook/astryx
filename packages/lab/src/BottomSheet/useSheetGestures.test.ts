@@ -26,9 +26,13 @@ function pointerEvent(
   timeStamp: number,
   target: HTMLElement,
   pointerId = 1,
+  button = 0,
+  isPrimary = true,
 ) {
   return {
     pointerId,
+    button,
+    isPrimary,
     clientY,
     timeStamp,
     currentTarget: target,
@@ -288,6 +292,62 @@ describe('useSheetGestures', () => {
     );
   });
 
+  it('returns to the settled detent when a context menu interrupts a drag', () => {
+    const onScrimOpacity = vi.fn();
+    const {hook, onDismiss} = setup({
+      snapHeights: () => [200, 300],
+      onScrimOpacity,
+    });
+    const target = makeTarget();
+    down(hook, 0, 0, target);
+    move(hook, 300, 1000, target);
+
+    const preventDefault = vi.fn();
+    act(() =>
+      hook.result.current.handleProps.onContextMenu({
+        currentTarget: target,
+        preventDefault,
+      } as unknown as React.MouseEvent),
+    );
+
+    expect(preventDefault).toHaveBeenCalledTimes(1);
+    expect(hook.result.current.isDragging).toBe(false);
+    expect(hook.result.current.contentProps.style.transform).toBeUndefined();
+    expect(onScrimOpacity).toHaveBeenLastCalledWith(1);
+    expect(onDismiss).not.toHaveBeenCalled();
+  });
+
+  it('returns to the settled detent when pointer capture is lost', () => {
+    const {hook, onDismiss} = setup({snapHeights: () => [200]});
+    const target = makeTarget();
+    down(hook, 0, 0, target);
+    move(hook, 300, 1000, target);
+
+    act(() =>
+      hook.result.current.handleProps.onLostPointerCapture(
+        pointerEvent(300, 1000, target),
+      ),
+    );
+
+    expect(hook.result.current.isDragging).toBe(false);
+    expect(hook.result.current.contentProps.style.transform).toBeUndefined();
+    expect(onDismiss).not.toHaveBeenCalled();
+  });
+
+  it('does not start a drag from a secondary pointer button', () => {
+    const {hook} = setup();
+    const target = makeTarget();
+    act(() => hook.result.current.sheetRef(target));
+
+    act(() =>
+      hook.result.current.handleProps.onPointerDown(
+        pointerEvent(0, 0, target, 1, 2),
+      ),
+    );
+
+    expect(hook.result.current.isDragging).toBe(false);
+  });
+
   it('rubber-bands an upward drag past the fully-open position', () => {
     const {hook} = setup({snapHeights: () => [200]});
     const t = makeTarget();
@@ -394,6 +454,12 @@ describe('useSheetGestures', () => {
       Object.defineProperty(ev, 'changedTouches', {
         value: [{identifier: id, clientY: y}],
       });
+      Object.defineProperty(ev, 'touches', {
+        value:
+          type === 'touchend' || type === 'touchcancel'
+            ? []
+            : [{identifier: id, clientY: y}],
+      });
       Object.defineProperty(ev, 'currentTarget', {value: el});
       el.dispatchEvent(ev);
       return ev;
@@ -430,6 +496,36 @@ describe('useSheetGestures', () => {
         touch(el, 'touchmove', 250); // pull up
       });
       expect(hook.result.current.isDragging).toBe(true);
+    });
+
+    it('finishes the active drag when another ended touch is listed first', () => {
+      const {hook} = setup({snapHeights: () => [200]});
+      const el = makeScroller({
+        scrollTop: 0,
+        clientHeight: 200,
+        scrollHeight: 800,
+      });
+      act(() => hook.result.current.sheetRef(el));
+      act(() => hook.result.current.bodyProps.ref(el));
+      act(() => {
+        touch(el, 'touchstart', 0, 2);
+        touch(el, 'touchmove', 300, 2);
+
+        const end = new Event('touchend', {
+          bubbles: true,
+          cancelable: true,
+        });
+        Object.defineProperty(end, 'changedTouches', {
+          value: [
+            {identifier: 1, clientY: 100},
+            {identifier: 2, clientY: 300},
+          ],
+        });
+        Object.defineProperty(end, 'touches', {value: []});
+        el.dispatchEvent(end);
+      });
+
+      expect(hook.result.current.isDragging).toBe(false);
     });
 
     it('leaves native scrolling alone in the middle of the content', () => {
