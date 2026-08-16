@@ -2,18 +2,23 @@
 
 /**
  * @file Theme resolution — resolve a theme from config or environment
+ * @input Configured theme module (package or file) and its `themeVariants` export
+ * @output Theme name, fonts, and custom variant metadata for component docs
+ * @position CLI theme metadata resolution
  *
  * Resolution sources (in priority order):
  * 1. ASTRYX_THEME environment variable
- * 2. xds.theme field in package.json
+ * 2. astryx.theme field in package.json
  *
  * Resolution strategy for the value:
  * - Starts with `.` or `/` → file path relative to cwd
  * - Starts with `@` → npm package (require/import)
  * - Otherwise → try `@astryxdesign/theme-{name}`, then try as bare package name
  *
- * Returns the theme object's `variants` and `fonts` if available,
- * or null if no theme is configured or found.
+ * Returns the theme object's `name` and `fonts`, plus the loaded module's
+ * `themeVariants` export (custom component prop values that `astryx theme
+ * build` emits beside the built theme object), or null if no theme is
+ * configured or found.
  */
 
 import * as fs from 'node:fs';
@@ -82,10 +87,23 @@ function extractTheme(mod) {
 }
 
 /**
+ * Read the custom-value metadata a built theme module exports as
+ * `themeVariants`: `{ [componentKey]: { [prop]: value[] } }`. It is a sibling
+ * of the theme object rather than a theme field, because build/CLI metadata
+ * stays outside `DefinedTheme` (docs/architecture/theme-authoring-contract.md).
+ * @param {any} mod
+ * @returns {Record<string, Record<string, string[]>> | null}
+ */
+function extractVariants(mod) {
+  const variants = mod?.themeVariants;
+  return variants && typeof variants === 'object' ? variants : null;
+}
+
+/**
  * Resolve the active Astryx theme from config and environment.
  *
  * @param {string} [cwd] - Working directory (defaults to process.cwd())
- * @returns {{ variants?: Record<string, string[]>, fonts?: Record<string, string>, name?: string } | null}
+ * @returns {{ variants?: Record<string, Record<string, string[]>> | null, fonts?: Record<string, string>, name?: string } | null}
  */
 export function resolveTheme(cwd = process.cwd()) {
   // 1. Determine theme specifier
@@ -150,7 +168,7 @@ export function resolveTheme(cwd = process.cwd()) {
 
   return {
     name: theme.name || null,
-    variants: theme.variants || null,
+    variants: extractVariants(mod),
     fonts: theme.fonts || null,
   };
 }
