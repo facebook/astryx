@@ -588,7 +588,7 @@ describe('BottomSheetSwitcher', () => {
     expect(HTMLDialogElement.prototype.showModal).toHaveBeenCalledTimes(1);
   });
 
-  it('keeps focus in a modal sheet whose only control is the resize handle', () => {
+  it('keeps focus in a modal sheet that has no tabbable controls', () => {
     render(
       <>
         <button type="button">Background action</button>
@@ -605,10 +605,8 @@ describe('BottomSheetSwitcher', () => {
     const dialog = screen.getByRole('dialog', {name: 'Read-only details'});
     const panel = getSheetPanel(dialog);
     expect(panel).toHaveFocus();
-    const handle = screen.getByRole('separator', {name: 'Read-only details'});
-    handle.focus();
-    expect(fireEvent.keyDown(handle, {key: 'Tab'})).toBe(false);
-    expect(handle).toHaveFocus();
+    expect(fireEvent.keyDown(panel, {key: 'Tab'})).toBe(false);
+    expect(panel).toHaveFocus();
     expect(
       screen.getByRole('button', {name: 'Background action'}),
     ).not.toHaveFocus();

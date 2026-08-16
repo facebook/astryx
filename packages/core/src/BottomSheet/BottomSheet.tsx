@@ -26,7 +26,7 @@
 
 import {
   useCallback,
-  use,
+  useContext,
   useEffect,
   useLayoutEffect,
   useRef,
@@ -36,14 +36,7 @@ import {
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
 import {colorVars, durationVars, easeVars} from '../theme/tokens.stylex';
-import {
-  hasActiveFocusTrapEscape,
-  isImeKeyEvent,
-  useDevWarning,
-  useFocusTrap,
-  useScrollLock,
-} from '../hooks';
-import {mergeProps, mergeRefs, themeProps} from '../utils';
+import {useDevWarning, useScrollLock} from '../hooks';
 import {
   BottomSheetPanel,
   type BottomSheetPanelMotion,
@@ -202,10 +195,6 @@ function StandaloneBottomSheet({
       : {kind: 'hidden'};
 
   const close = useCallback(() => onOpenChange(false), [onOpenChange]);
-  const {containerRef} = useFocusTrap<HTMLDialogElement>({
-    isActive: isOpen && hasScrim,
-    onEscape: close,
-  });
   const handlePanelElementChange = useCallback(
     (element: HTMLDivElement | null) => {
       panelRef.current = element;
@@ -281,20 +270,12 @@ function StandaloneBottomSheet({
   );
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLDialogElement>) => {
-      // Modal Escape is owned by useFocusTrap so a nested trap can win. A
-      // non-modal sheet retains local dismissal while deferring to a nested
-      // layer and ignoring IME composition cancellation.
-      if (
-        !hasScrim &&
-        event.key === 'Escape' &&
-        !isImeKeyEvent(event.nativeEvent) &&
-        !hasActiveFocusTrapEscape()
-      ) {
+      if (event.key === 'Escape') {
         event.preventDefault();
         close();
       }
     },
-    [close, hasScrim],
+    [close],
   );
   const handleClick = useCallback(
     (event: React.MouseEvent<HTMLDialogElement>) => {
@@ -307,16 +288,13 @@ function StandaloneBottomSheet({
 
   return (
     <dialog
-      {...mergeProps(
-        hasScrim ? themeProps('bottom-sheet-scrim') : {},
-        stylex.props(
-          styles.dialog,
-          shouldPresent && styles.dialogOpen,
-          hasScrim && styles.scrim,
-          !hasScrim && styles.dialogNonModal,
-        ),
+      {...stylex.props(
+        styles.dialog,
+        shouldPresent && styles.dialogOpen,
+        hasScrim && styles.scrim,
+        !hasScrim && styles.dialogNonModal,
       )}
-      ref={mergeRefs(dialogRef, containerRef)}
+      ref={dialogRef}
       aria-label={label}
       aria-hidden={!isOpen && isPresented ? 'true' : undefined}
       aria-modal={hasScrim && isOpen ? 'true' : undefined}
@@ -329,7 +307,6 @@ function StandaloneBottomSheet({
           {...props}
           ref={ref}
           state={panelState}
-          label={label}
           height={height}
           xstyle={xstyle}
           onDismiss={close}
@@ -473,7 +450,6 @@ function SwitcherBottomSheetItem({
         {...props}
         ref={ref}
         state={panelState}
-        label={label}
         height={height}
         xstyle={xstyle}
         onDismiss={close}
@@ -484,9 +460,10 @@ function SwitcherBottomSheetItem({
         {/* A switcher item consumes its parent controller. Its content starts a
             fresh ownership scope so a nested BottomSheet is standalone unless
             it establishes a nested BottomSheetSwitcher of its own. */}
-        <BottomSheetSwitcherContext value={null}>
+        {/* eslint-disable-next-line @eslint-react/no-context-provider -- preserve the promoted Lab implementation */}
+        <BottomSheetSwitcherContext.Provider value={null}>
           {children}
-        </BottomSheetSwitcherContext>
+        </BottomSheetSwitcherContext.Provider>
       </BottomSheetPanel>
     </div>
   );
@@ -497,7 +474,8 @@ function SwitcherBottomSheetItem({
  * BottomSheetSwitcher shared dialog when given a sheetId inside that context.
  */
 export function BottomSheet(props: BottomSheetProps) {
-  const switcher = use(BottomSheetSwitcherContext);
+  // eslint-disable-next-line @eslint-react/no-use-context -- preserve the promoted Lab implementation
+  const switcher = useContext(BottomSheetSwitcherContext);
   const runtimeSheetId = (props as {sheetId?: string}).sheetId;
   const hasValidSheetId =
     typeof runtimeSheetId === 'string' && runtimeSheetId.length > 0;

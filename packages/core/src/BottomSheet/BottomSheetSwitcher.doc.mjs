@@ -118,13 +118,8 @@ export const docs = {
   theming: {
     targets: [
       {
-        className: 'astryx-bottom-sheet-scrim',
-        visualProps: [],
-      },
-      {
         className: 'astryx-bottom-sheet-switcher-scrim',
         visualProps: [],
-        deprecatedFor: 'bottom-sheet-scrim',
       },
     ],
   },

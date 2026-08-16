@@ -39,7 +39,6 @@ import {
   spacingVars,
 } from '../theme/tokens.stylex';
 import {mergeProps, themeProps} from '../utils';
-import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {useMobileKeyboard} from './useMobileKeyboard';
 import {useSheetGestures} from './useSheetGestures';
 
@@ -162,7 +161,6 @@ interface BottomSheetPanelProps extends BaseProps<HTMLDivElement> {
   /** Ref forwarded to the visual sheet panel. */
   ref?: React.Ref<HTMLDivElement>;
   state: BottomSheetPanelState;
-  label: string;
   height: BottomSheetHeight | number | string;
   children: ReactNode;
   onDismiss: () => void;
@@ -285,7 +283,6 @@ function parseTransitionTime(value: string): number | null {
 export function BottomSheetPanel({
   ref,
   state,
-  label,
   height,
   children,
   className,
@@ -339,7 +336,6 @@ export function BottomSheetPanel({
     dragOffset,
     settledOffset,
     isDragging,
-    visiblePercent,
   } = useSheetGestures({
     isOpen: isInteractive,
     onDismiss,
@@ -360,7 +356,8 @@ export function BottomSheetPanel({
       bodyProps.ref(element);
       bodyElementRef.current = element;
     },
-    [bodyProps],
+    // eslint-disable-next-line @eslint-react/exhaustive-deps -- preserve the promoted Lab implementation
+    [bodyProps.ref],
   );
   useMobileKeyboard({
     bodyRef: bodyElementRef,
@@ -427,9 +424,6 @@ export function BottomSheetPanel({
     : typeof height === 'number'
       ? `${height}px`
       : height;
-  const heightVariant = isNamedHeight
-    ? (height as BottomSheetHeight)
-    : 'custom';
   const retainedTransform =
     alignmentOffset > 0
       ? [contentProps.style.transform, `translateY(${alignmentOffset}px)`]
@@ -443,7 +437,7 @@ export function BottomSheetPanel({
       ref={setElement}
       tabIndex={tabIndex ?? -1}
       {...mergeProps(
-        themeProps('bottom-sheet', {height: heightVariant}),
+        themeProps('bottom-sheet'),
         stylex.props(
           styles.sheet,
           height === 'hug' ? styles.hugHeight : styles.budget,
@@ -464,27 +458,15 @@ export function BottomSheetPanel({
         },
       )}>
       <div
-        {...mergeProps(
-          themeProps('bottom-sheet-handle'),
-          focusOutlineProps.focusVisible(styles.handleBar),
-        )}
+        {...stylex.props(styles.handleBar)}
         {...handleProps}
-        role="separator"
-        aria-label={label}
-        aria-orientation="horizontal"
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={visiblePercent}
-        tabIndex={isInteractive ? 0 : -1}>
-        <div {...stylex.props(styles.handlePill)} aria-hidden="true" />
+        aria-hidden="true">
+        <div {...stylex.props(styles.handlePill)} />
       </div>
       <div
-        {...mergeProps(
-          themeProps('bottom-sheet-body'),
-          stylex.props(
-            styles.body,
-            height === 'tall' && styles.tallKeyboardBody,
-          ),
+        {...stylex.props(
+          styles.body,
+          height === 'tall' && styles.tallKeyboardBody,
         )}
         {...bodyProps}
         ref={setBodyElement}>

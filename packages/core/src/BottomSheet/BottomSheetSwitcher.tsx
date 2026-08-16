@@ -231,17 +231,12 @@ export function BottomSheetSwitcher({
     useState<SheetTransitionState>(IDLE_TRANSITION);
 
   const activeSheetChanged = committedActiveSheetRef.current !== activeSheet;
-  const pendingVisibleTransition = activeSheetChanged
+  const visibleTransition = activeSheetChanged
     ? transitionForActiveSheetChange(
         committedActiveSheetRef.current,
         activeSheet,
       )
     : transition;
-  const visibleTransition =
-    pendingVisibleTransition.retainedSheet != null &&
-    unmountedSheetIds.has(pendingVisibleTransition.retainedSheet)
-      ? IDLE_TRANSITION
-      : pendingVisibleTransition;
   const isFlowVisible =
     (activeSheet != null && !unmountedSheetIds.has(activeSheet)) ||
     (visibleTransition.retainedSheet != null &&
@@ -389,6 +384,16 @@ export function BottomSheetSwitcher({
     },
     [],
   );
+
+  useLayoutEffect(() => {
+    // eslint-disable-next-line @eslint-react/set-state-in-effect -- clear a retained sheet after its panel unmounts
+    setTransition(current =>
+      current.retainedSheet != null &&
+      unmountedSheetIds.has(current.retainedSheet)
+        ? IDLE_TRANSITION
+        : current,
+    );
+  }, [unmountedSheetIds]);
 
   const onSheetEnterStart = useCallback((sheetId: string) => {
     setTransition(current => {
@@ -560,9 +565,7 @@ export function BottomSheetSwitcher({
   );
   const dialogPresentationProps = hasScrim
     ? mergeProps(
-        themeProps('bottom-sheet-scrim', undefined, {
-          legacyNames: ['bottom-sheet-switcher-scrim'],
-        }),
+        themeProps('bottom-sheet-switcher-scrim'),
         dialogStyleProps,
         className,
         style,
@@ -573,7 +576,8 @@ export function BottomSheetSwitcher({
     (props['aria-labelledby'] == null ? activeLabel : undefined);
 
   return (
-    <BottomSheetSwitcherContext value={contextValue}>
+    // eslint-disable-next-line @eslint-react/no-context-provider -- preserve the promoted Lab implementation
+    <BottomSheetSwitcherContext.Provider value={contextValue}>
       <dialog
         {...props}
         {...dialogPresentationProps}
@@ -585,7 +589,7 @@ export function BottomSheetSwitcher({
         onKeyDown={composeEventHandlers(onKeyDown, handleKeyDown)}>
         {children}
       </dialog>
-    </BottomSheetSwitcherContext>
+    </BottomSheetSwitcherContext.Provider>
   );
 }
 

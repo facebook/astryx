@@ -52,10 +52,7 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'astryx-bottom-sheet', visualProps: ['height']},
-      {className: 'astryx-bottom-sheet-handle', visualProps: []},
-      {className: 'astryx-bottom-sheet-body', visualProps: []},
-      {className: 'astryx-bottom-sheet-scrim', visualProps: []},
+      {className: 'astryx-bottom-sheet', visualProps: []},
     ],
   },
   description:

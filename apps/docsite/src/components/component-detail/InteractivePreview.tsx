@@ -399,23 +399,37 @@ export function InteractivePreviewStage({
               ) : (
                 renderPreview(createElement(Component, runtimeState))
               )}
-              {isOverlayPreviewClosed(playground, state) &&
-                onPropChange != null &&
-                overlayControl != null &&
-                (overlayControl.stateProp !== 'isOpen' ||
-                  canControlOpenState) && (
-                  <Button
-                    label="Open preview"
-                    variant="secondary"
-                    size="sm"
-                    onClick={() =>
-                      onPropChange(
-                        overlayControl.stateProp,
-                        overlayControl.openValue,
-                      )
-                    }
-                  />
-                )}
+              {isOverlayPreviewClosed(playground, state) && (
+                <VStack
+                  gap={2}
+                  style={{
+                    alignItems: 'center',
+                    paddingBlock: 24,
+                    paddingInline: 16,
+                    textAlign: 'center',
+                  }}>
+                  <Text type="supporting" color="secondary">
+                    Opens as a full-screen overlay — nothing renders while it is
+                    closed.
+                  </Text>
+                  {onPropChange != null &&
+                    overlayControl != null &&
+                    (overlayControl.stateProp !== 'isOpen' ||
+                      canControlOpenState) && (
+                      <Button
+                        label="Open preview"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() =>
+                          onPropChange(
+                            overlayControl.stateProp,
+                            overlayControl.openValue,
+                          )
+                        }
+                      />
+                    )}
+                </VStack>
+              )}
             </PreviewErrorBoundary>
           </Center>
         )}

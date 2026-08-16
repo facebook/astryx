@@ -50,7 +50,6 @@ function renderPanel(
 ) {
   return render(
     <BottomSheetPanel
-      label="Filters"
       state={state}
       height="hug"
       style={panelTransitionStyle}
@@ -93,7 +92,6 @@ describe('BottomSheetPanel', () => {
     const onMotionComplete = vi.fn();
     const {rerender} = render(
       <BottomSheetPanel
-        label="Filters"
         state={{kind: 'retained', motion: 'covered', alignmentOffset: 0}}
         height="hug"
         style={panelTransitionStyle}
@@ -106,7 +104,6 @@ describe('BottomSheetPanel', () => {
 
     rerender(
       <BottomSheetPanel
-        label="Filters"
         state={{kind: 'open', entering: true}}
         height="hug"
         style={panelTransitionStyle}
@@ -142,7 +139,6 @@ describe('BottomSheetPanel', () => {
 
     rerender(
       <BottomSheetPanel
-        label="Filters"
         state={{kind: 'exiting'}}
         height="hug"
         style={panelTransitionStyle}
@@ -170,7 +166,6 @@ describe('BottomSheetPanel', () => {
     const onMotionComplete = vi.fn();
     render(
       <BottomSheetPanel
-        label="Filters"
         state={{kind: 'open', entering: true}}
         height="hug"
         onDismiss={() => {}}
@@ -189,7 +184,6 @@ describe('BottomSheetPanel', () => {
       const onMotionComplete = vi.fn();
       render(
         <BottomSheetPanel
-          label="Filters"
           state={{kind: 'open', entering: true}}
           height="hug"
           style={{
@@ -218,7 +212,6 @@ describe('BottomSheetPanel', () => {
     const {rerender, unmount} = render(
       <BottomSheetPanel
         ref={panelRef}
-        label="Filters"
         state={{kind: 'open', entering: false}}
         height="hug"
         onDismiss={() => {}}
@@ -231,7 +224,6 @@ describe('BottomSheetPanel', () => {
     rerender(
       <BottomSheetPanel
         ref={panelRef}
-        label="Filters"
         state={{kind: 'open', entering: false}}
         height="hug"
         onDismiss={() => {}}
