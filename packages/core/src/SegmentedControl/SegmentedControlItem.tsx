@@ -126,6 +126,7 @@ const styles = stylex.create({
   },
   fill: {
     flex: 1,
+    minWidth: 0,
     justifyContent: 'center',
   },
   icon: {
