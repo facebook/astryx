@@ -1,35 +1,39 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Regression test for the custom-variant type augmentations emitted by
- * `astryx theme build` (#3391 companion: #3371).
+ * @file Regression tests for custom-variant type augmentations and runtime
+ * discovery emitted by `astryx theme build` (#3391, #3371, #5059).
  *
  * When a theme declares a custom component prop value (e.g.
  * `button['variant:accentOutline']`), the build emits a `<name>.variants.d.ts`
  * with a module augmentation so the custom value type-checks. This suite pins
- * the two bugs that made that augmentation dead code:
+ * the bugs that made those values unavailable to consumers:
  *
  *   1. The augmentation targeted a non-existent, `XDS`-prefixed interface
  *      (`XDSButtonVariantMap`) instead of core's real `ButtonVariantMap`, so it
  *      created a new unused interface and never widened the prop union.
  *   2. Props with no augmentation point (closed literal-union types such as
- *      Button `size` or Heading `type`/`level`) still got a `declare module`
+ *      Button `size` or Heading `level`) still got a `declare module`
  *      block against a `*Map` interface that doesn't exist.
  *   3. The generated `.variants.d.ts` was never referenced by the main
  *      `<name>.d.ts`, so even a correct augmentation never loaded.
  *   4. The augmentation targeted the public component subpath while the prop
  *      type read a map from the implementation module, so TypeScript merged the
  *      public interface but the component still saw the original closed union.
+ *   5. The custom variants existed only as that type augmentation — the built
+ *      JS module never carried a runtime `variants` field, so `resolveTheme()`
+ *      always handed the CLI `variants: null` and `astryx component`'s
+ *      `*`-annotation for theme-added variants could never fire (#5059).
  *
  * Building `astryx theme build` requires a compiled @astryxdesign/core, so this
  * suite builds core once in beforeAll (mirrors build-theme.prose.test.mjs).
  */
 
-import {describe, it, expect, beforeAll, beforeEach, afterEach} from 'vitest';
+import {describe, it, expect, beforeAll, beforeEach, afterEach, vi} from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
-import {fileURLToPath} from 'node:url';
+import {fileURLToPath, pathToFileURL} from 'node:url';
 import {execFileSync} from 'node:child_process';
 import {ensureCoreBuilt} from './ensure-core-built.mjs';
 import {runCli} from '../../../test-utils/run-cli.mjs';
@@ -60,6 +64,7 @@ beforeEach(() => {
   );
 });
 afterEach(() => {
+  vi.unstubAllEnvs();
   fs.rmSync(tmpDir, {recursive: true, force: true});
 });
 
@@ -168,7 +173,7 @@ describe('theme build custom-variant augmentations', () => {
     expect(mediaWeightValueIndex).toBeGreaterThan(mediaWeightIndex);
   });
 
-  it('unions custom Heading types from onDark and onLight into the public type contract', async () => {
+  it('unions and deduplicates root, onDark, and onLight values in types and runtime metadata', async () => {
     const themeFile = writeTheme(
       tmpDir,
       `export default {
@@ -187,7 +192,11 @@ describe('theme build custom-variant augmentations', () => {
         },
         onLight: {
           components: {
-            heading: { 'type:editorial': { letterSpacing: '-0.02em' } },
+            heading: {
+              'type:editorial': { letterSpacing: '-0.02em' },
+              'type:shared': { fontWeight: 500 },
+              'type:hero': { fontSize: '72px' },
+            },
           },
         },
       };\n`,
@@ -206,6 +215,15 @@ describe('theme build custom-variant augmentations', () => {
     expect(variantsDts).toContain("'hero': true;");
     expect(variantsDts).toContain("'editorial': true;");
     expect(variantsDts).toContain("'shared': true;");
+    expect([...variantsDts.matchAll(/'([^']+)': true;/g)].map(([, value]) => value))
+      .toEqual(['shared', 'hero', 'editorial']);
+
+    const built = await import(
+      pathToFileURL(path.join(tmpDir, 'variants-theme.js')).href
+    );
+    expect(built.variantsThemeTheme.variants).toEqual({
+      heading: ['shared', 'hero', 'editorial'],
+    });
 
     const projectDir = path.join(
       CLI_ROOT,
@@ -451,6 +469,227 @@ describe('theme build custom-variant augmentations', () => {
     } finally {
       fs.rmSync(projectDir, {recursive: true, force: true});
     }
+  });
+
+  it('shows built theme variants in full and brief component docs through project config', async () => {
+    // The type augmentation alone is invisible to `astryx component`, which
+    // reads the RUNTIME theme module via resolveTheme(). The built module must
+    // carry the same data as `{ [componentKey]: value[] }` — flattened across
+    // props, which is the contract resolve-theme.mjs declares and
+    // component-format.mjs stars in the theming targets table.
+    const themeFile = writeTheme(
+      tmpDir,
+      `export default {
+        name: 'variants-theme',
+        tokens: { '--color-bg': '#fff' },
+        components: {
+          button: { 'variant:accentOutline': { backgroundColor: 'transparent' } },
+          badge: { 'variant:gray': { backgroundColor: '#eee' } },
+          heading: { 'type:hero': { fontSize: '80px' } },
+        },
+      };\n`,
+    );
+
+    const result = await runCli(
+      ['theme', 'build', path.relative(tmpDir, themeFile)],
+      tmpDir,
+    );
+    expect(result.code).toBe(0);
+
+    const built = await import(
+      pathToFileURL(path.join(tmpDir, 'variants-theme.js')).href
+    );
+    expect(built.variantsThemeTheme.variants).toEqual({
+      button: ['accentOutline'],
+      badge: ['gray'],
+      heading: ['hero'],
+    });
+
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      JSON.stringify({
+        type: 'module',
+        astryx: {theme: './variants-theme.js'},
+      }),
+    );
+    const coreDir = path.join(tmpDir, 'packages', 'core');
+    fs.mkdirSync(path.dirname(coreDir), {recursive: true});
+    fs.symlinkSync(path.resolve(CLI_ROOT, '../core'), coreDir);
+    vi.stubEnv('ASTRYX_THEME', '');
+
+    for (const [component, value] of [['Badge', 'gray'], ['Heading', 'hero']]) {
+      const full = await runCli(['component', component], tmpDir);
+      expect(full.code).toBe(0);
+      expect(full.stdout).toContain(`${value}*`);
+      expect(full.stdout).toContain(
+        '_\\* = custom variant from variants-theme theme_',
+      );
+
+      const brief = await runCli(
+        ['component', component, '--detail', 'brief'],
+        tmpDir,
+      );
+      expect(brief.code).toBe(0);
+      expect(brief.stdout).toContain(`theme: ${value}*`);
+    }
+  });
+
+  it('keeps runtime variants aligned with the .d.ts: non-augmentable props are excluded', async () => {
+    // HeadingTypeMap makes `type:hero` augmentable, while Button `size` remains
+    // a closed union. Runtime metadata must follow the same classification as
+    // the declarations so the CLI advertises only values consumers can use.
+    const themeFile = writeTheme(
+      tmpDir,
+      `export default {
+        name: 'variants-theme',
+        tokens: { '--color-bg': '#fff' },
+        components: {
+          button: {
+            'variant:accentOutline': { backgroundColor: 'transparent' },
+            'size:jumbo': { paddingBlock: '40px' },
+          },
+          heading: { 'type:hero': { fontSize: '80px' } },
+        },
+      };\n`,
+    );
+
+    const result = await runCli(
+      ['theme', 'build', path.relative(tmpDir, themeFile)],
+      tmpDir,
+    );
+    expect(result.code).toBe(0);
+
+    const built = await import(
+      pathToFileURL(path.join(tmpDir, 'variants-theme.js')).href
+    );
+    expect(built.variantsThemeTheme.variants).toEqual({
+      button: ['accentOutline'],
+      heading: ['hero'],
+    });
+    const variantsDts = fs.readFileSync(
+      path.join(tmpDir, 'variants-theme.variants.d.ts'),
+      'utf-8',
+    );
+    expect(variantsDts).toContain('interface ButtonVariantMap');
+    expect(variantsDts).toContain('interface HeadingTypeMap');
+    expect(variantsDts).toContain("'accentOutline': true;");
+    expect(variantsDts).toContain("'hero': true;");
+    expect(variantsDts).not.toContain('ButtonSizeMap');
+    expect(variantsDts).not.toContain("'jumbo': true;");
+  });
+
+  it('discovers custom values when the theme has only color-scheme component layers', async () => {
+    const themeFile = writeTheme(
+      tmpDir,
+      `export default {
+        name: 'variants-theme',
+        tokens: { '--color-bg': '#fff' },
+        onDark: {
+          components: { heading: { 'type:hero': { fontSize: '80px' } } },
+        },
+        onLight: {
+          components: { badge: { 'variant:gray': { backgroundColor: '#eee' } } },
+        },
+      };\n`,
+    );
+
+    const result = await runCli(
+      ['theme', 'build', path.relative(tmpDir, themeFile)],
+      tmpDir,
+    );
+    expect(result.code).toBe(0);
+
+    const built = await import(
+      pathToFileURL(path.join(tmpDir, 'variants-theme.js')).href
+    );
+    expect(built.variantsThemeTheme.variants).toEqual({
+      heading: ['hero'],
+      badge: ['gray'],
+    });
+    const variantsDts = fs.readFileSync(
+      path.join(tmpDir, 'variants-theme.variants.d.ts'),
+      'utf-8',
+    );
+    expect(variantsDts).toContain("'hero': true;");
+    expect(variantsDts).toContain("'gray': true;");
+  });
+
+  it('preserves inherited custom values when extending a built theme artifact', async () => {
+    writeTheme(
+      tmpDir,
+      `export default {
+        name: 'variants-theme',
+        tokens: { '--color-bg': '#fff' },
+        components: { badge: { 'variant:gray': { backgroundColor: '#eee' } } },
+        onDark: {
+          components: { heading: { 'type:hero': { fontSize: '80px' } } },
+        },
+      };\n`,
+    );
+    const base = await runCli(['theme', 'build', 'variants-theme.mjs'], tmpDir);
+    expect(base.code).toBe(0);
+
+    fs.writeFileSync(
+      path.join(tmpDir, 'variant-child.mjs'),
+      `import {variantsThemeTheme} from './variants-theme.js';
+      export default {
+        name: 'variant-child',
+        extends: variantsThemeTheme,
+        tokens: {},
+        components: {
+          badge: {
+            'variant:gray': { color: '#222' },
+            'variant:brand': { backgroundColor: '#cef' },
+          },
+        },
+        onLight: {
+          components: { heading: { 'type:editorial': { fontSize: '48px' } } },
+        },
+      };\n`,
+    );
+    const child = await runCli(['theme', 'build', 'variant-child.mjs'], tmpDir);
+    expect(child.code).toBe(0);
+
+    const built = await import(
+      pathToFileURL(path.join(tmpDir, 'variant-child.js')).href
+    );
+    expect(built.variantChildTheme.variants).toEqual({
+      badge: ['gray', 'brand'],
+      heading: ['hero', 'editorial'],
+    });
+    const variantsDts = fs.readFileSync(
+      path.join(tmpDir, 'variant-child.variants.d.ts'),
+      'utf-8',
+    );
+    expect([...variantsDts.matchAll(/'([^']+)': true;/g)].map(([, value]) => value))
+      .toEqual(['gray', 'brand', 'hero', 'editorial']);
+  });
+
+  it('emits no variants field when the theme adds no custom variants', async () => {
+    // Themes without custom values keep the historical module shape — no
+    // `variants` key at all, matching what a pre-#5059 CLI produced and what
+    // component-format.mjs treats as "no theme variants".
+    const themeFile = writeTheme(
+      tmpDir,
+      `export default {
+        name: 'variants-theme',
+        tokens: { '--color-bg': '#fff' },
+        components: {
+          button: { 'size:jumbo': { paddingBlock: '40px' } },
+        },
+      };\n`,
+    );
+
+    const result = await runCli(
+      ['theme', 'build', path.relative(tmpDir, themeFile)],
+      tmpDir,
+    );
+    expect(result.code).toBe(0);
+
+    const built = await import(
+      pathToFileURL(path.join(tmpDir, 'variants-theme.js')).href
+    );
+    expect('variants' in built.variantsThemeTheme).toBe(false);
   });
 
   it('references the variants file from the main .d.ts so the augmentation loads', async () => {
