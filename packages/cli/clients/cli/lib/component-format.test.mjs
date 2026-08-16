@@ -187,3 +187,55 @@ describe('formatBrief signature stays terse', () => {
     expect(formatBrief(docs, 'HStack', '')).toContain('gap');
   });
 });
+
+describe('theme custom-variant annotation', () => {
+  // Regression guard for #5059: built themes never carried a runtime
+  // `variants` field, so every `themeData?.variants` read below was dead code
+  // and the `*` annotation could not fire for ANY built theme. `astryx theme
+  // build` now emits `variants: { [componentKey]: value[] }` into the built
+  // module; these tests pin the annotation actually rendering when it arrives.
+  const docs = {
+    name: 'Badge',
+    description: 'A badge.',
+    theming: {
+      targets: [{className: 'astryx-badge', visualProps: ['variant']}],
+    },
+    props: [
+      {
+        name: 'variant',
+        type: "'neutral' | 'info'",
+        description: 'Visual variant.',
+      },
+    ],
+  };
+
+  it('formatFull suffixes theme variants with * and prints the footnote', () => {
+    const out = formatFull(docs, {
+      themeData: {name: 'vartheme', variants: {badge: ['gray']}},
+    });
+
+    // Core variants stay plain; the theme-added one is starred.
+    expect(out).toContain('neutral, info, gray*');
+    expect(out).toContain('_\\* = custom variant from vartheme theme_');
+  });
+
+  it('formatBrief appends the starred theme variants to the Targets line', () => {
+    const out = formatBrief(docs, 'Badge', '', {
+      themeData: {name: 'vartheme', variants: {badge: ['gray']}},
+    });
+
+    expect(out).toContain('theme: gray*');
+  });
+
+  it('stays silent for a theme without runtime variants (older built module)', () => {
+    // A theme built by a pre-#5059 CLI resolves with `variants: null` —
+    // the docs must not crash, star anything, or print the footnote.
+    const out = formatFull(docs, {
+      themeData: {name: 'vartheme', variants: null},
+    });
+
+    // The targets row ends at the core variants — nothing starred after them.
+    expect(out).toContain('neutral, info |');
+    expect(out).not.toContain('custom variant from');
+  });
+});
