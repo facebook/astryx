@@ -95,3 +95,33 @@ describe('findHookDoc fuzzy Levenshtein fallback (pinned current behavior)', () 
     expect(findHookDoc(CORE, 'zzzzzzzzzz')).toBeNull();
   }, SLOW);
 });
+
+describe('core hooks barrel coverage (real core)', () => {
+  // Discovery is filesystem-driven: a hook is only reachable from `astryx hook`
+  // and `astryx search` if it ships a .doc.mjs. Nothing about adding a hook
+  // forces one, so the index silently goes stale — six exported hooks,
+  // useAnnounce among them, were invisible until this check existed.
+  it('every hook exported from the barrel has a doc and is discoverable', () => {
+    const barrel = fs.readFileSync(path.join(CORE, 'src', 'hooks', 'index.ts'), 'utf-8');
+    const exported = new Set();
+    for (const match of barrel.matchAll(/export\s+(type\s+)?\{([^}]*)\}/g)) {
+      if (match[1]) continue; // type-only re-export
+      for (const specifier of match[2].split(',')) {
+        const name = specifier.trim().split(/\s+as\s+/).pop()?.trim();
+        if (name && /^use[A-Z]/.test(name)) exported.add(name);
+      }
+    }
+    expect(exported.size).toBeGreaterThan(10);
+
+    const discovered = new Set(getAllHookNames(CORE));
+    const missing = [...exported].filter(name => !discovered.has(name)).sort();
+    if (missing.length) {
+      throw new Error(
+        `${missing.length} exported hook(s) are missing from the CLI hook index, so ` +
+          `\`astryx hook <name>\` and \`astryx search\` deny they exist. Add a ` +
+          `<hook>.doc.mjs next to each hook in packages/core/src/hooks/:\n  ${missing.join('\n  ')}`,
+      );
+    }
+    expect(missing).toEqual([]);
+  }, SLOW);
+});
