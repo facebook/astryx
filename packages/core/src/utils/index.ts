@@ -70,6 +70,8 @@ export type {ISOTimeString, ParsedTime} from './timeParser';
 export {parseStyleKey} from './parseStyleKey';
 export {getKey, type Key, type KeyFallback} from './getKey';
 
+export {characterCount, firstCharacter, truncateCharacters} from './characters';
+
 export {mergeProps} from './mergeProps';
 export {mergeRefs} from './mergeRefs';
 export {isFocusDetached} from './focusReturn';

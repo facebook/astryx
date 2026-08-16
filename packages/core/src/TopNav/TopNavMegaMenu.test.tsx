@@ -9,6 +9,8 @@
  * SYNC: When TopNavMegaMenu changes, update tests to match new behavior
  */
 
+import * as stylex from '@stylexjs/stylex';
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {describe, it, expect, vi, beforeAll, afterAll, afterEach} from 'vitest';
 import {render, screen, act, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -815,5 +817,46 @@ describe('TopNavMegaMenuItem', () => {
       </TopNavRenderContext>,
     );
     expect(screen.getByRole('link', {name: /Analytics/})).toBeInTheDocument();
+  });
+});
+
+// =============================================================================
+// The shared focus ring (#4654) — see the note in SideNav.test.tsx: jsdom will
+// not derive `:focus-visible` here, so what is pinned is that the focusable
+// element composes the shared utility's classes rather than falling back to
+// the browser's own outline.
+// =============================================================================
+
+const sharedFocusRingClasses = stylex
+  .props(focusOutlineStyles.focusVisible)
+  .className!.split(' ');
+
+function expectSharedFocusRing(el: Element) {
+  const classes = el.className.split(' ');
+  for (const c of sharedFocusRingClasses) {
+    expect(classes).toContain(c);
+  }
+}
+
+describe('TopNavMegaMenu — drawer focus ring', () => {
+  it('draws the shared ring on the drawer section header', () => {
+    render(
+      <TopNavRenderContext value="drawer">
+        <TopNavMegaMenu
+          label="Products"
+          items={<TopNavMegaMenuItem title="Analytics" href="/analytics" />}
+        />
+      </TopNavRenderContext>,
+    );
+    expectSharedFocusRing(screen.getByRole('button', {name: 'Products'}));
+  });
+
+  it('draws the shared ring on a drawer item', () => {
+    render(
+      <TopNavRenderContext value="drawer">
+        <TopNavMegaMenuItem title="Analytics" href="/analytics" />
+      </TopNavRenderContext>,
+    );
+    expectSharedFocusRing(screen.getByRole('link', {name: /Analytics/}));
   });
 });

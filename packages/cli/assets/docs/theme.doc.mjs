@@ -142,13 +142,17 @@ function App() {
       content: [
         {
           type: 'prose',
-          text: 'Use the CLI wizard (recommended) or create manually with defineTheme. Only override tokens that differ from defaults; omitted tokens use the design system defaults.',
+          text: 'Start from a theme we ship, or write one from scratch with defineTheme. Only override tokens that differ from defaults; omitted tokens use the design system defaults.',
         },
         {
           type: 'code',
           lang: 'bash',
-          label: 'Scaffold with CLI',
-          code: 'astryx theme',
+          label: 'Browse, then copy a theme in as editable source',
+          code: 'astryx theme list\nastryx theme add stone',
+        },
+        {
+          type: 'prose',
+          text: 'For an annotated map of the whole surface — every defineTheme field, the token families, and the component override syntax, each with the CLI command that prints its reference — run `astryx theme template`. It writes `theme.template.ts` into your project to read and copy from (`astryx init --features theme` writes it as part of project setup).',
         },
       ],
     },
@@ -249,9 +253,14 @@ const brandTheme = defineTheme({
             ['tokens', 'Base tokens are copied first, then child tokens override on top.'],
             ['components', 'Deep-merged: child component rules override matching keys from the base.'],
             ['icons', 'Shallow-merged: child icons override matching names from the base.'],
-            ['fonts', 'Base fonts included first, then child fonts appended.'],
+            ['indicators', 'Shallow-merged: child indicators override matching names from the base.'],
+            ['onDark, onLight', "Deep-merged per surface: the base's resolved surface first, then the child's overrides."],
             ['typography, motion, radius, color', 'Child config replaces base entirely (these are scale inputs, not additive).'],
           ],
+        },
+        {
+          type: 'prose',
+          text: 'Inheritance is resolved when the theme is defined, so an extended theme is flat: `astryx theme build` emits one self-contained stylesheet holding everything the child inherited, and the base theme\'s CSS does not need to be loaded next to it. A base that is not a theme — most often an import that missed — is a build error rather than a theme that silently inherits nothing.',
         },
       ],
     },
@@ -275,13 +284,16 @@ const brandTheme = defineTheme({
     base: { borderRadius: '20px', padding: '24px' },
   },
   button: {
-    base: { borderRadius: '9999px', textTransform: 'uppercase' },
+    base: {
+      borderRadius: '9999px',
+      textTransform: 'uppercase',
+      // Some components have public CSS vars for properties that don't map
+      // to standard CSS. Set these directly. Take the name from
+      // \`astryx component <Name>\` — a var the component does not define
+      // compiles to CSS that never applies.
+      '--button-focus-offset': '3px',
+    },
     'variant:ghost': { borderWidth: '2px', borderStyle: 'solid' },
-  },
-  // Some components have public CSS vars for properties that don't map
-  // to standard CSS. Set these directly.
-  button: {
-    base: { '--button-press-scale': 'scale(0.95)' },
   },
 }`,
         },
@@ -409,6 +421,10 @@ import './themes/ocean.css';
 <Theme theme={oceanTheme}>
   <App />
 </Theme>`,
+        },
+        {
+          type: 'prose',
+          text: 'The build also warns when the theme names font families it does not load (webfonts like Fraunces) and prints the `<link>`/`@font-face` to add — the built CSS only sets font-family, so loading the font files stays the app\'s job. See `astryx docs typography` for the full recipe.',
         },
       ],
     },
