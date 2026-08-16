@@ -176,7 +176,7 @@ export const doc = {
     {
       value: 'theme.build.batch',
       description:
-        'Several themes built in one invocation: `count` plus one `{file, receipt}` per theme, in argument order, where each receipt is the theme.build (or theme.build.check) envelope a single-file build returns, or null when the theme produced no CSS. A single file still returns the bare envelope.',
+        'Several themes built in one invocation: `count` plus one {file, receipt} per theme in argument order, where receipt is that theme\'s theme.build (or theme.build.check) envelope, or null when it produced no CSS.',
     },
     {
       value: 'theme.list',
