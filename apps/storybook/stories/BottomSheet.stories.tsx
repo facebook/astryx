@@ -176,6 +176,35 @@ export const Showcase: Story = {
   },
 };
 
+export const FormPurpose: Story = {
+  name: 'Form purpose',
+  render: () => {
+    const [isOpen, setIsOpen] = useState(false);
+    return (
+      <>
+        <Button label="Edit profile" onClick={() => setIsOpen(true)} />
+        <BottomSheet
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          purpose="form"
+          label="Edit profile"
+          height="hug">
+          <Section padding={4}>
+            <VStack gap={4}>
+              <Heading level={3}>Edit profile</Heading>
+              <Text type="supporting" color="secondary">
+                Swiping down or clicking the scrim keeps this form open. Escape
+                and the explicit actions can still close it.
+              </Text>
+              <Button label="Save changes" onClick={() => setIsOpen(false)} />
+            </VStack>
+          </Section>
+        </BottomSheet>
+      </>
+    );
+  },
+};
+
 export const TallSheet: Story = {
   render: () => {
     const [isOpen, setIsOpen] = useState(false);

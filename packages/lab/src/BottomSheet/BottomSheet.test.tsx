@@ -320,6 +320,55 @@ describe('BottomSheet', () => {
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
+  it('purpose=form blocks scrim and swipe dismissal but allows Escape', () => {
+    const onOpenChange = vi.fn();
+    render(
+      <BottomSheet
+        isOpen
+        purpose="form"
+        onOpenChange={onOpenChange}
+        label="Edit profile">
+        Content
+      </BottomSheet>,
+    );
+    const dialog = screen.getByRole('dialog');
+
+    fireEvent.click(dialog);
+    drag(getHandle(), [{y: 0}, {y: 40}, {y: 120}]);
+
+    expect(onOpenChange).not.toHaveBeenCalled();
+    expect(dialog).toHaveStyle({'--_sheet-scrim-opacity': '1'});
+
+    fireEvent.keyDown(dialog, {key: 'Escape'});
+    fireEvent(dialog, new Event('cancel', {cancelable: true}));
+
+    expect(onOpenChange).toHaveBeenCalledTimes(2);
+    expect(onOpenChange).toHaveBeenNthCalledWith(1, false);
+    expect(onOpenChange).toHaveBeenNthCalledWith(2, false);
+  });
+
+  it('purpose=required blocks every implicit dismissal path', () => {
+    const onOpenChange = vi.fn();
+    render(
+      <BottomSheet
+        isOpen
+        purpose="required"
+        onOpenChange={onOpenChange}
+        label="Required action">
+        Content
+      </BottomSheet>,
+    );
+    const dialog = screen.getByRole('alertdialog');
+
+    fireEvent.click(dialog);
+    fireEvent.keyDown(dialog, {key: 'Escape'});
+    fireEvent(dialog, new Event('cancel', {cancelable: true}));
+    drag(getHandle(), [{y: 0}, {y: 40}, {y: 120}]);
+
+    expect(onOpenChange).not.toHaveBeenCalled();
+    expect(dialog).toHaveStyle({'--_sheet-scrim-opacity': '1'});
+  });
+
   it('keeps a standalone modal sheet presented through its exit animation', () => {
     render(<ExitHarness />);
     const dialog = screen.getByRole('dialog', {name: 'Filters'});

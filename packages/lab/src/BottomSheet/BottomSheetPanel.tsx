@@ -163,6 +163,7 @@ interface BottomSheetPanelProps extends BaseProps<HTMLDivElement> {
   state: BottomSheetPanelState;
   height: BottomSheetHeight | number | string;
   children: ReactNode;
+  canSwipeDismiss?: boolean;
   onDismiss: () => void;
   onScrimOpacity: (opacity: number) => void;
   onElementChange?: (element: HTMLDivElement | null) => void;
@@ -289,6 +290,7 @@ export function BottomSheetPanel({
   style,
   tabIndex,
   xstyle,
+  canSwipeDismiss = true,
   onDismiss,
   onScrimOpacity,
   onElementChange,
@@ -338,6 +340,7 @@ export function BottomSheetPanel({
     isDragging,
   } = useSheetGestures({
     isOpen: isInteractive,
+    canDismiss: canSwipeDismiss,
     onDismiss,
     snapHeights: defaultSnapHeights,
     onScrimOpacity,

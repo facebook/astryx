@@ -41,6 +41,7 @@ import {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '@astryxdesign/core';
+import type {DialogPurpose} from '@astryxdesign/core/Dialog';
 import {
   colorVars,
   durationVars,
@@ -226,6 +227,9 @@ export function BottomSheetSwitcher({
   const [sheetLabels, setSheetLabels] = useState<ReadonlyMap<string, string>>(
     () => new Map(),
   );
+  const [sheetPurposes, setSheetPurposes] = useState<
+    ReadonlyMap<string, DialogPurpose>
+  >(() => new Map());
   const [unmountedSheetIds, setUnmountedSheetIds] = useState<
     ReadonlySet<string>
   >(() => new Set());
@@ -244,6 +248,10 @@ export function BottomSheetSwitcher({
     (visibleTransition.retainedSheet != null &&
       !unmountedSheetIds.has(visibleTransition.retainedSheet));
   const isModal = hasScrim && isFlowVisible;
+  const activeSheetPurpose =
+    (activeSheet == null ? null : sheetPurposes.get(activeSheet)) ?? 'info';
+  const allowsEscapeDismiss = activeSheetPurpose !== 'required';
+  const allowsLightDismiss = activeSheetPurpose === 'info';
 
   useLayoutEffect(() => {
     const previousActiveSheet = committedActiveSheetRef.current;
@@ -263,13 +271,19 @@ export function BottomSheetSwitcher({
     );
   }, [activeSheet]);
 
-  const close = useCallback(
-    () => onActiveSheetChange(null),
-    [onActiveSheetChange],
-  );
+  const dismissOnEscape = useCallback(() => {
+    if (allowsEscapeDismiss) {
+      onActiveSheetChange(null);
+    }
+  }, [allowsEscapeDismiss, onActiveSheetChange]);
+  const dismissOnLightInteraction = useCallback(() => {
+    if (allowsLightDismiss) {
+      onActiveSheetChange(null);
+    }
+  }, [allowsLightDismiss, onActiveSheetChange]);
   const {containerRef} = useFocusTrap<HTMLDialogElement>({
     isActive: isModal,
-    onEscape: close,
+    onEscape: dismissOnEscape,
   });
   useScrollLock(isModal);
 
@@ -381,6 +395,28 @@ export function BottomSheetSwitcher({
         }
         const next = new Map(current);
         next.set(sheetId, label);
+        return next;
+      });
+    },
+    [],
+  );
+
+  const registerSheetPurpose = useCallback(
+    (sheetId: string, purpose: DialogPurpose | null) => {
+      setSheetPurposes(current => {
+        if (purpose == null) {
+          if (!current.has(sheetId)) {
+            return current;
+          }
+          const next = new Map(current);
+          next.delete(sheetId);
+          return next;
+        }
+        if (current.get(sheetId) === purpose) {
+          return current;
+        }
+        const next = new Map(current);
+        next.set(sheetId, purpose);
         return next;
       });
     },
@@ -500,6 +536,7 @@ export function BottomSheetSwitcher({
       getSheetAlignmentOffset,
       registerSheetElement,
       registerSheetLabel,
+      registerSheetPurpose,
       onSheetEnterStart,
       onSheetTransitionComplete,
       onSheetScrimOpacityChange,
@@ -515,6 +552,7 @@ export function BottomSheetSwitcher({
       onSheetTransitionComplete,
       registerSheetElement,
       registerSheetLabel,
+      registerSheetPurpose,
     ],
   );
 
@@ -527,9 +565,9 @@ export function BottomSheetSwitcher({
   const handleCancel = useCallback(
     (event: SyntheticEvent<HTMLDialogElement>) => {
       event.preventDefault();
-      close();
+      dismissOnEscape();
     },
-    [close],
+    [dismissOnEscape],
   );
   const handleKeyDown = useCallback(
     (event: ReactKeyboardEvent<HTMLDialogElement>) => {
@@ -543,18 +581,18 @@ export function BottomSheetSwitcher({
         !hasActiveFocusTrapEscape()
       ) {
         event.preventDefault();
-        close();
+        dismissOnEscape();
       }
     },
-    [close, isModal],
+    [dismissOnEscape, isModal],
   );
   const handleClick = useCallback(
     (event: ReactMouseEvent<HTMLDialogElement>) => {
       if (hasScrim && event.target === event.currentTarget) {
-        close();
+        dismissOnLightInteraction();
       }
     },
-    [close, hasScrim],
+    [dismissOnLightInteraction, hasScrim],
   );
 
   const dialogStyleProps = stylex.props(
@@ -583,7 +621,10 @@ export function BottomSheetSwitcher({
         aria-modal={isModal ? 'true' : undefined}
         onCancel={composeEventHandlers(onCancel, handleCancel)}
         onClick={composeEventHandlers(onClick, handleClick)}
-        onKeyDown={composeEventHandlers(onKeyDown, handleKeyDown)}>
+        onKeyDown={composeEventHandlers(onKeyDown, handleKeyDown)}
+        {...(activeSheetPurpose === 'required'
+          ? {role: 'alertdialog'}
+          : undefined)}>
         {children}
       </dialog>
     </BottomSheetSwitcherContext.Provider>

@@ -102,6 +102,12 @@ function magnetize(value: number, targets: number[]): number {
 export interface UseSheetGesturesOptions {
   /** Whether the owning sheet is open. Drag state resets when it closes. */
   isOpen: boolean;
+  /**
+   * Whether a downward swipe may dismiss the sheet. When false, a gesture
+   * past the dismiss threshold settles at the shortest detent instead.
+   * @default true
+   */
+  canDismiss?: boolean;
   /** Called on a swipe-to-close (fast downward flick, or drag past the floor). */
   onDismiss: () => void;
   /**
@@ -198,6 +204,7 @@ function prefersReducedMotion(): boolean {
  */
 export function useSheetGestures({
   isOpen,
+  canDismiss = true,
   onDismiss,
   snapHeights,
   onSnap,
@@ -208,11 +215,13 @@ export function useSheetGestures({
   const [isDragging, setIsDragging] = useState(false);
 
   const onDismissRef = useRef(onDismiss);
+  const canDismissRef = useRef(canDismiss);
   const onSnapRef = useRef(onSnap);
   const onScrimOpacityRef = useRef(onScrimOpacity);
   const snapHeightsRef = useRef(snapHeights);
   useEffect(() => {
     onDismissRef.current = onDismiss;
+    canDismissRef.current = canDismiss;
     onSnapRef.current = onSnap;
     onScrimOpacityRef.current = onScrimOpacity;
     snapHeightsRef.current = snapHeights;
@@ -297,9 +306,25 @@ export function useSheetGestures({
       const shortestDetentHeight = height - maxOffset;
       const speed = Math.abs(velocity);
       const isFlick = speed > FLICK_VELOCITY && travel > FLICK_MIN_DISTANCE;
+      const settleAt = (target: number) => {
+        setSettledOffset(target);
+        onSnapRef.current?.(height - target);
+        const dismissOffset =
+          maxOffset + shortestDetentHeight * DISMISS_OVERSHOOT_RATIO;
+        onScrimOpacityRef.current?.(
+          scrimOpacityForOffset(target, offsets, dismissOffset),
+        );
+        if (target !== baseOffset) {
+          hapticTick();
+        }
+      };
 
       if (dir > 0 && isFlick) {
-        onDismissRef.current();
+        if (canDismissRef.current) {
+          onDismissRef.current();
+        } else {
+          settleAt(maxOffset);
+        }
         return;
       }
       // Fast upward flick = expand to the tallest detent (the sheet's full
@@ -312,24 +337,17 @@ export function useSheetGestures({
         return;
       }
       if (offset > maxOffset + shortestDetentHeight * DISMISS_OVERSHOOT_RATIO) {
-        onDismissRef.current();
+        if (canDismissRef.current) {
+          onDismissRef.current();
+        } else {
+          settleAt(maxOffset);
+        }
         return;
       }
       // Settle to the nearest detent in the drag direction (never back past
       // the starting detent), de-duped and direction-clamped by the util.
       const target = resolveSettleOffset(offset, offsets, dir, baseOffset);
-      setSettledOffset(target);
-      onSnapRef.current?.(height - target);
-      // Keep the scrim in sync with the resting detent (faint floor at the peek).
-      const dismissOffset =
-        maxOffset + shortestDetentHeight * DISMISS_OVERSHOOT_RATIO;
-      onScrimOpacityRef.current?.(
-        scrimOpacityForOffset(target, offsets, dismissOffset),
-      );
-      // Haptic "tick" when landing on a different detent (where supported).
-      if (target !== baseOffset) {
-        hapticTick();
-      }
+      settleAt(target);
     },
     [detentOffsets],
   );

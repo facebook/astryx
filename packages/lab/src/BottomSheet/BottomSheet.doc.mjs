@@ -54,7 +54,7 @@ export const docs = {
     targets: [{className: 'astryx-bottom-sheet', visualProps: []}],
   },
   description:
-    "A mobile touch sheet that rises from the bottom edge, with animated entrance and exit, a grab handle, drag-to-resize snap points, and swipe-to-dismiss. A standalone sheet owns a native <dialog>; inside BottomSheetSwitcher it renders a panel in the switcher's shared dialog. In both modes, ref and shared DOM props target the visual panel <div>.",
+    "A mobile touch sheet that rises from the bottom edge, with animated entrance and exit, a grab handle, drag-to-resize snap points, and purpose-controlled dismissal. A standalone sheet owns a native <dialog>; inside BottomSheetSwitcher it renders a panel in the switcher's shared dialog. In both modes, ref and shared DOM props target the visual panel <div>.",
   props: [
     {
       name: 'isOpen',
@@ -66,7 +66,14 @@ export const docs = {
       name: 'onOpenChange',
       type: '(isOpen: boolean) => void',
       description:
-        'For a standalone sheet, called when it requests an open-state change (false on Escape, scrim click, or a swipe past the dismiss threshold). Omit inside BottomSheetSwitcher.',
+        'For a standalone sheet, called when it requests an open-state change. Automatic calls follow purpose: info dismisses on Escape, scrim click, or swipe; form dismisses on Escape only; required never dismisses implicitly. Omit inside BottomSheetSwitcher.',
+    },
+    {
+      name: 'purpose',
+      type: "'required' | 'form' | 'info'",
+      description:
+        "Controls implicit dismissal behavior, matching Dialog. info allows Escape, scrim click, and swipe-to-dismiss. form protects entered data by blocking scrim click and swipe while allowing Escape. required blocks every implicit dismissal path and uses role='alertdialog'. Explicit controls may still update the controlled state. Works for standalone and BottomSheetSwitcher-managed sheets.",
+      default: "'info'",
     },
     {
       name: 'sheetId',
@@ -99,7 +106,7 @@ export const docs = {
       name: 'hasScrim',
       type: 'boolean',
       description:
-        'For a standalone BottomSheet, whether to render a scrim, the semi-transparent overlay that covers and blocks the background. true (default) uses showModal(): top layer, focus trap, ::backdrop scrim, body scroll lock, and tap-scrim-to-dismiss, with the background inert. false uses show() with no scrim, leaving the page behind interactive and scrollable. For a multi-step flow, configure hasScrim on BottomSheetSwitcher instead; it owns one shared dialog across every child.',
+        "For a standalone BottomSheet, whether to render a scrim, the semi-transparent overlay that covers and blocks the background. true (default) uses showModal(): top layer, focus trap, ::backdrop scrim, body scroll lock, and tap-scrim-to-dismiss when purpose='info', with the background inert. false uses show() with no scrim, leaving the page behind interactive and scrollable. For a multi-step flow, configure hasScrim on BottomSheetSwitcher instead; it owns one shared dialog across every child.",
       default: 'true',
     },
   ],
@@ -116,6 +123,11 @@ export const docs = {
         guidance: true,
         description:
           "Pick the starting height that fits the content: 'hug' for short bounded content, 'capped' for lists, and 'tall' for forms or streaming/resizing content.",
+      },
+      {
+        guidance: true,
+        description:
+          "Use purpose='form' to protect entered data from scrim clicks and swipes while keeping Escape available; reserve purpose='required' for flows that must end through an explicit action.",
       },
       {
         guidance: false,
@@ -196,13 +208,24 @@ export const docs = {
   <PlaceList />
 </BottomSheet>`,
     },
+    {
+      label: 'Protect form input',
+      code: `const [isOpen, setIsOpen] = useState(false);
+<BottomSheet
+  isOpen={isOpen}
+  onOpenChange={setIsOpen}
+  purpose="form"
+  label="Edit profile">
+  <ProfileForm onSave={() => setIsOpen(false)} />
+</BottomSheet>`,
+    },
   ],
 };
 
 /** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
-    'mobile touch sheet rising from the bottom edge (native <dialog>): grab handle, drag-to-resize snap points, swipe-to-dismiss, fully-expanded Tall visual-viewport mobile-keyboard handling, named height scale, modal (default) or non-modal (hasScrim={false}) presentation',
+    'mobile touch sheet rising from the bottom edge (native <dialog>): grab handle, drag-to-resize snap points, Dialog-aligned dismissal purpose (info/form/required), fully-expanded Tall visual-viewport mobile-keyboard handling, named height scale, modal (default) or non-modal (hasScrim={false}) presentation',
   usage: {
     description:
       'Mobile touch surface for filters, actions, forms, and detail views that should rise from the bottom of the viewport; use BottomSheetSwitcher for multi-step flows.',
@@ -216,6 +239,11 @@ export const docsDense = {
         guidance: true,
         description:
           "Pick the starting height that fits the content: 'hug' for short bounded content, 'capped' for lists, and 'tall' for forms or streaming/resizing content.",
+      },
+      {
+        guidance: true,
+        description:
+          "Use purpose='form' to protect entered data from scrim clicks and swipes while keeping Escape available; reserve purpose='required' for flows that must end through an explicit action.",
       },
       {
         guidance: false,

@@ -21,14 +21,14 @@ export const docs = {
       name: 'onActiveSheetChange',
       type: '(activeSheet: string | null) => void',
       description:
-        'Called with null when the active sheet dismisses. The same state setter can be used by flow controls to switch to another sheet ID.',
+        "Called with null when the active sheet dismisses according to its purpose. Child BottomSheets may use purpose='form' or purpose='required' to limit implicit dismissal while flow controls can still use the same state setter to switch sheets or close the flow.",
       required: true,
     },
     {
       name: 'hasScrim',
       type: 'boolean',
       description:
-        'Whether the shared dialog is modal. true uses showModal() once for one native ::backdrop, focus trap, scroll lock, and click-to-dismiss across the whole flow. false uses show() with no backdrop and leaves the page interactive; avoid transformed, contained, or clipping ancestors because the non-modal dialog remains in its containing context.',
+        "Whether the shared dialog is modal. true uses showModal() once for one native ::backdrop, focus trap, scroll lock, and click-to-dismiss when the active BottomSheet has purpose='info'. false uses show() with no backdrop and leaves the page interactive; avoid transformed, contained, or clipping ancestors because the non-modal dialog remains in its containing context.",
       default: 'true',
     },
     {

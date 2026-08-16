@@ -108,6 +108,26 @@ describe('useSheetGestures', () => {
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 
+  it('settles instead of dismissing on a downward flick when canDismiss is false', () => {
+    const onSnap = vi.fn();
+    const onScrimOpacity = vi.fn();
+    const {hook, onDismiss} = setup({
+      canDismiss: false,
+      snapHeights: () => [200],
+      onSnap,
+      onScrimOpacity,
+    });
+    const t = makeTarget();
+    down(hook, 0, 0, t);
+    move(hook, 60, 20, t);
+    up(hook, 60, 22, t);
+
+    expect(onDismiss).not.toHaveBeenCalled();
+    expect(hook.result.current.settledOffset).toBe(200);
+    expect(onSnap).toHaveBeenLastCalledWith(200);
+    expect(onScrimOpacity).toHaveBeenLastCalledWith(0.3);
+  });
+
   it('expands to the tallest detent on a fast upward flick', () => {
     const onSnap = vi.fn();
     const {hook, onDismiss} = setup({snapHeights: () => [200], onSnap});
@@ -188,6 +208,24 @@ describe('useSheetGestures', () => {
     move(hook, 330, 900, t);
     up(hook, 330, 1400, t);
     expect(onDismiss).toHaveBeenCalledTimes(1);
+  });
+
+  it('rebounds to the shortest detent when canDismiss is false', () => {
+    const onScrimOpacity = vi.fn();
+    const {hook, onDismiss} = setup({
+      canDismiss: false,
+      snapHeights: () => [200],
+      onScrimOpacity,
+    });
+    const t = makeTarget();
+    down(hook, 0, 0, t);
+    move(hook, 160, 400, t);
+    move(hook, 330, 900, t);
+    up(hook, 330, 1400, t);
+
+    expect(onDismiss).not.toHaveBeenCalled();
+    expect(hook.result.current.settledOffset).toBe(200);
+    expect(onScrimOpacity).toHaveBeenLastCalledWith(0.3);
   });
 
   it('fades the scrim from full toward the peek floor as it collapses onto the peek detent', () => {

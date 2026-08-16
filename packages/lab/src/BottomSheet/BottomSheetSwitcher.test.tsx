@@ -646,6 +646,72 @@ describe('BottomSheetSwitcher', () => {
     expect(onActiveSheetChange).toHaveBeenCalledWith(null);
   });
 
+  it('honors purpose=form for a switcher-managed sheet', () => {
+    const onActiveSheetChange = vi.fn();
+    render(
+      <BottomSheetSwitcher
+        activeSheet="details"
+        onActiveSheetChange={onActiveSheetChange}>
+        <BottomSheet sheetId="details" label="Edit details" purpose="form">
+          Content
+        </BottomSheet>
+      </BottomSheetSwitcher>,
+    );
+    const dialog = getSharedDialog();
+    const panel = getSheetPanel(dialog);
+    const handle = panel.firstElementChild;
+    if (!(handle instanceof HTMLElement)) {
+      throw new Error('sheet handle not found');
+    }
+
+    fireEvent.click(dialog);
+    fireEvent.pointerDown(handle, {pointerId: 1, clientY: 0});
+    fireEvent.pointerMove(handle, {pointerId: 1, clientY: 120});
+    fireEvent.pointerUp(handle, {pointerId: 1, clientY: 120});
+
+    expect(onActiveSheetChange).not.toHaveBeenCalled();
+    expect(dialog).toHaveStyle({'--_sheet-scrim-opacity': '1'});
+
+    fireEvent.keyDown(dialog, {key: 'Escape'});
+    fireEvent(dialog, new Event('cancel', {cancelable: true}));
+
+    expect(onActiveSheetChange).toHaveBeenCalledTimes(2);
+    expect(onActiveSheetChange).toHaveBeenNthCalledWith(1, null);
+    expect(onActiveSheetChange).toHaveBeenNthCalledWith(2, null);
+  });
+
+  it('honors purpose=required for a switcher-managed sheet', () => {
+    const onActiveSheetChange = vi.fn();
+    render(
+      <BottomSheetSwitcher
+        activeSheet="details"
+        onActiveSheetChange={onActiveSheetChange}>
+        <BottomSheet
+          sheetId="details"
+          label="Required details"
+          purpose="required">
+          Content
+        </BottomSheet>
+      </BottomSheetSwitcher>,
+    );
+    const dialog = screen.getByRole('alertdialog');
+    const panel = getSheetPanel(dialog);
+    const handle = panel.firstElementChild;
+    if (!(handle instanceof HTMLElement)) {
+      throw new Error('sheet handle not found');
+    }
+
+    fireEvent.click(dialog);
+    fireEvent.keyDown(dialog, {key: 'Escape'});
+    fireEvent(dialog, new Event('cancel', {cancelable: true}));
+    fireEvent.pointerDown(handle, {pointerId: 1, clientY: 0});
+    fireEvent.pointerMove(handle, {pointerId: 1, clientY: 120});
+    fireEvent.pointerUp(handle, {pointerId: 1, clientY: 120});
+
+    expect(onActiveSheetChange).not.toHaveBeenCalled();
+    expect(dialog).toHaveStyle({'--_sheet-scrim-opacity': '1'});
+  });
+
   it('ignores Escape while an IME composition is active', () => {
     const onActiveSheetChange = vi.fn();
     render(
