@@ -202,7 +202,7 @@ export const doc = {
     {
       value: 'theme.targets',
       description:
-        'The whole themeable surface: the echoed filter, how many components are represented, and one entry per theming target — its defineTheme key, the astryx- class it paints, the component that declares it, and the props and states that are legal override keys under it.',
+        'The whole themeable surface: the echoed filter, the component count, and one entry per theming target — {key, className, component, props, states}, where props and states are its legal override keys.',
     },
 
     // upgrade
