@@ -8,6 +8,7 @@ import {
   type BottomSheetHeight,
 } from '@astryxdesign/core/BottomSheet';
 import {Button} from '@astryxdesign/core/Button';
+import {Divider} from '@astryxdesign/core/Divider';
 import {Heading} from '@astryxdesign/core/Heading';
 import {Section} from '@astryxdesign/core/Section';
 import {HStack, VStack} from '@astryxdesign/core/Stack';
@@ -38,6 +39,7 @@ export default function BottomSheetHeights() {
           <VStack gap={3}>
             <Heading level={3}>{height ?? 'Hug'} height</Heading>
             <Text type="body">{descriptions[height ?? 'hug']}</Text>
+            <Divider />
             <Button label="Close" onClick={() => setHeight(null)} />
           </VStack>
         </Section>

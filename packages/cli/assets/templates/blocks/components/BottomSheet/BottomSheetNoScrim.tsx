@@ -5,6 +5,7 @@
 import {useState} from 'react';
 import {BottomSheet} from '@astryxdesign/core/BottomSheet';
 import {Button} from '@astryxdesign/core/Button';
+import {Divider} from '@astryxdesign/core/Divider';
 import {Heading} from '@astryxdesign/core/Heading';
 import {Section} from '@astryxdesign/core/Section';
 import {VStack} from '@astryxdesign/core/Stack';
@@ -38,6 +39,7 @@ export default function BottomSheetNoScrim() {
             <Text type="body">
               The page remains visible and interactive behind this sheet.
             </Text>
+            <Divider />
             <Button label="Close details" onClick={() => setIsOpen(false)} />
           </VStack>
         </Section>

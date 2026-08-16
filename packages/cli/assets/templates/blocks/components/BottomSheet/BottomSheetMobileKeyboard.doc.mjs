@@ -13,6 +13,7 @@ export const doc = {
   componentsUsed: [
     'BottomSheet',
     'Button',
+    'Divider',
     'Heading',
     'Section',
     'Stack',

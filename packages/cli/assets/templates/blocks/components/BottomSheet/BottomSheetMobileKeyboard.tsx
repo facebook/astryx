@@ -5,6 +5,7 @@
 import {useState} from 'react';
 import {BottomSheet} from '@astryxdesign/core/BottomSheet';
 import {Button} from '@astryxdesign/core/Button';
+import {Divider} from '@astryxdesign/core/Divider';
 import {Heading} from '@astryxdesign/core/Heading';
 import {Section} from '@astryxdesign/core/Section';
 import {VStack} from '@astryxdesign/core/Stack';
@@ -58,6 +59,7 @@ export default function BottomSheetMobileKeyboard() {
                 Focus fields throughout the form to see them remain visible
                 above the mobile keyboard.
               </Text>
+              <Divider />
               <TextInput
                 label="Name"
                 value={values.name}
