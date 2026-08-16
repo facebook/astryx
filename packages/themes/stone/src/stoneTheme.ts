@@ -345,16 +345,6 @@ export const stoneTheme = defineTheme({
       },
     },
 
-    // Switch off-state track reads --color-background-gray by default.
-    // Redefine it inside the switch scope to --color-skeleton, matching
-    // the ProgressBar track. The on-state reads --color-accent (unaffected);
-    // disabled-off also picks up --color-skeleton for consistency.
-    switch: {
-      base: {
-        '--color-background-gray': 'var(--color-skeleton)',
-      },
-    },
-
     // FieldStatus surface matches badge — see badge override above.
     'field-status': {
       'type:success': {

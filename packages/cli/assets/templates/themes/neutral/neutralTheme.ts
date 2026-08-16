@@ -570,20 +570,6 @@ export const neutralTheme = defineTheme({
     // dark T20). Verified all six combinations clear AA non-text 3:1.
     // =========================================================================
 
-    // =========================================================================
-    // Switch — off-state track uses the same lifted-neutral surface as the
-    // ProgressBar track (--color-border-emphasized). Aligns the two
-    // "channel-on-body" components so their off-states share one visual
-    // language: light T85 #d4d4d4 sits one step darker than the body T95
-    // bg, dark T35 #525252 sits one step lighter than the body T10. Each
-    // is a defined channel, not a wash that blends in.
-    // =========================================================================
-    switch: {
-      base: {
-        '--color-background-gray': 'var(--color-border-emphasized)',
-      },
-    },
-
     progressbar: {
       base: {
         // Track uses --color-background-muted; override it to

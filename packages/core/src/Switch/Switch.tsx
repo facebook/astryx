@@ -129,6 +129,14 @@ const labelWrapperSizeStyles = stylex.create({
   },
 });
 
+// The off track is derived from the thumb's own token rather than picked
+// independently: the thumb paints --color-background-surface, so mixing the
+// track from that same surface toward the theme's text colour makes the pair
+// unable to converge in any theme. Two independently chosen neutrals can and
+// do converge — the previous --color-background-gray landed under 2:1 against
+// the thumb in the default theme and in every palette we measured.
+const offTrackColor = `color-mix(in srgb, ${colorVars['--color-background-surface']}, ${colorVars['--color-text-primary']} 55%)`;
+
 const styles = stylex.create({
   container: {
     display: 'flex',
@@ -231,7 +239,7 @@ const styles = stylex.create({
   // State-dependent colors with ancestor hover behavior
   trackOff: {
     backgroundColor: {
-      default: colorVars['--color-background-gray'],
+      default: offTrackColor,
       // Off = empty (Canvas) track; on = Highlight track, so the two states
       // stay distinguishable under forced colors.
       '@media (forced-colors: active)': 'Canvas',
@@ -242,7 +250,7 @@ const styles = stylex.create({
       // white track (white-on-white). Gating on `forced-colors: none` keeps
       // the tint out of forced colors and lets the system-color track stand.
       [stylex.when.ancestor(':hover', switchScope)]: {
-        '@media (hover: hover) and (forced-colors: none)': `color-mix(in srgb, ${colorVars['--color-background-gray']}, ${colorVars['--color-tint-hover']} 5%)`,
+        '@media (hover: hover) and (forced-colors: none)': `color-mix(in srgb, ${offTrackColor}, ${colorVars['--color-tint-hover']} 5%)`,
       },
     },
   },
@@ -267,7 +275,7 @@ const styles = stylex.create({
     },
   },
   trackDisabledOff: {
-    backgroundColor: colorVars['--color-background-gray'],
+    backgroundColor: offTrackColor,
   },
   thumb: {
     display: 'flex',
