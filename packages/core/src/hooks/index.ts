@@ -105,5 +105,6 @@ export {useContainerReveal} from './useContainerReveal';
 export type {
   UseContainerRevealOptions,
   UseContainerRevealReturn,
+  ContainerRevealOptions,
   ContentRevealOptions,
 } from './useContainerReveal';

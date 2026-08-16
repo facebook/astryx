@@ -251,3 +251,170 @@ export const ToggleEnabled: Story = {
     return <ToggleRow />;
   },
 };
+
+/**
+ * `hoverDelay` gates the reveal on dwell: sweep the pointer down the list and
+ * nothing paints in its wake, but rest on a row and its actions fade in.
+ */
+export const HoverIntentDelay: Story = {
+  render: () => {
+    function DelayedRow({label}: {label: string}) {
+      const {getContainerProps, getContentRevealProps} = useContainerReveal();
+      return (
+        <div
+          {...mergeProps(
+            getContainerProps({hoverDelay: 250}),
+            stylex.props(styles.row),
+          )}>
+          <span {...stylex.props(styles.label)}>{label}</span>
+          <span
+            {...mergeProps(
+              getContentRevealProps(),
+              stylex.props(styles.actions),
+            )}>
+            <Button
+              label={`Edit ${label}`}
+              variant="ghost"
+              isIconOnly
+              icon={<PencilIcon style={{width: 16, height: 16}} />}
+            />
+            <Button
+              label={`Delete ${label}`}
+              variant="ghost"
+              isIconOnly
+              icon={<TrashIcon style={{width: 16, height: 16}} />}
+            />
+          </span>
+        </div>
+      );
+    }
+    return (
+      <div {...stylex.props(styles.stack)}>
+        <p {...stylex.props(styles.hint)}>
+          A 250ms dwell. Sweep the cursor across the rows — none of them light
+          up. Stop on one and its actions appear. Tab moves through them with no
+          delay at all.
+        </p>
+        {Array.from({length: 6}, (_, i) => (
+          <DelayedRow key={i} label={`file-${i + 1}.txt`} />
+        ))}
+      </div>
+    );
+  },
+};
+
+/**
+ * `forceState` pins the container's trigger: 'inactive' while something else
+ * owns the pointer (a scroll, a drag, a velocity gate), 'active' to keep a row
+ * lit — e.g. while its overflow menu is open. It is state, not appearance: the
+ * inverted timestamp does the opposite of the actions, from the same flag.
+ */
+export const ForcedContainerState: Story = {
+  render: () => {
+    function ForcedRow() {
+      const [forced, setForced] = useState<'active' | 'inactive' | undefined>(
+        undefined,
+      );
+      const {getContainerProps, getContentRevealProps} = useContainerReveal();
+      const cycle = () =>
+        setForced(prev =>
+          prev === undefined
+            ? 'active'
+            : prev === 'active'
+              ? 'inactive'
+              : undefined,
+        );
+      return (
+        <div {...stylex.props(styles.stack)}>
+          <div {...stylex.props(styles.toggle)}>
+            <Button
+              label={`forceState: ${forced ?? 'unset (hover drives it)'}`}
+              variant="secondary"
+              onClick={cycle}
+            />
+          </div>
+          <div
+            {...mergeProps(
+              getContainerProps({forceState: forced}),
+              stylex.props(styles.row),
+            )}>
+            <span {...stylex.props(styles.label)}>report.pdf</span>
+            <span
+              {...mergeProps(
+                getContentRevealProps({isRevealInverted: true}),
+                stylex.props(styles.label),
+              )}>
+              edited 2h ago
+            </span>
+            <span
+              {...mergeProps(
+                getContentRevealProps(),
+                stylex.props(styles.actions),
+              )}>
+              <Button
+                label="Delete report.pdf"
+                variant="ghost"
+                isIconOnly
+                icon={<TrashIcon style={{width: 16, height: 16}} />}
+              />
+            </span>
+          </div>
+          <p {...stylex.props(styles.hint)}>
+            'active' brings the actions in and takes the timestamp out — one
+            state, two opposite appearances. While it is 'inactive', hovering
+            does nothing, but tabbing in still reveals the action, so it can
+            never be trapped out of reach of the keyboard.
+          </p>
+        </div>
+      );
+    }
+    return <ForcedRow />;
+  },
+};
+
+/**
+ * `forceVisibility` is the same idea one level down, on a single element: it
+ * says how THAT content looks regardless of the container. Here the row's
+ * actions are pinned per row while the container is left on hover.
+ */
+export const ForcedContentVisibility: Story = {
+  render: () => {
+    function PinnedRow({
+      label,
+      forceVisibility,
+    }: {
+      label: string;
+      forceVisibility?: 'shown' | 'hidden';
+    }) {
+      const {getContainerProps, getContentRevealProps} = useContainerReveal();
+      return (
+        <div {...mergeProps(getContainerProps(), stylex.props(styles.row))}>
+          <span {...stylex.props(styles.label)}>{label}</span>
+          <span
+            {...mergeProps(
+              getContentRevealProps({forceVisibility}),
+              stylex.props(styles.actions),
+            )}>
+            <Button
+              label={`Delete ${label}`}
+              variant="ghost"
+              isIconOnly
+              icon={<TrashIcon style={{width: 16, height: 16}} />}
+            />
+          </span>
+        </div>
+      );
+    }
+    return (
+      <div {...stylex.props(styles.stack)}>
+        <p {...stylex.props(styles.hint)}>
+          Row 1 follows the pointer, row 2 is pinned shown, row 3 is pinned
+          hidden — and tabbing into row 3 still brings its action back.
+        </p>
+        <PinnedRow label="follows-hover.txt" />
+        <PinnedRow label="pinned-shown.txt" forceVisibility="shown" />
+        <PinnedRow label="pinned-hidden.txt" forceVisibility="hidden" />
+      </div>
+    );
+  },
+};
