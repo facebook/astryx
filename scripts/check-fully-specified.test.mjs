@@ -20,6 +20,9 @@ import {
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
+/** Escape a literal string for embedding in a RegExp source. */
+const escapeRegExp = value => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 describe('scanSource', () => {
   it('flags an extensionless static import specifier', () => {
     expect(scanSource(`import {x} from './XDSButton';`)).toEqual([
@@ -209,6 +212,10 @@ describe('failureGuidance', () => {
       path.join(os.tmpdir(), 'fully-specified-generic-'),
     );
     try {
+      fs.writeFileSync(
+        path.join(dir, 'package.json'),
+        JSON.stringify({name: '@astryxdesign/example'}),
+      );
       expect(failureGuidance(dir)).toContain('build step');
       expect(failureGuidance(dir)).not.toContain('--icons-specifier');
       expect(failureGuidance(dir)).not.toContain(
@@ -218,24 +225,46 @@ describe('failureGuidance', () => {
       fs.rmSync(dir, {recursive: true, force: true});
     }
   });
+
+  it('falls back to neutral guidance when the manifest is unreadable', () => {
+    const dir = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'fully-specified-no-manifest-'),
+    );
+    try {
+      expect(failureGuidance(dir)).toContain('build step');
+    } finally {
+      fs.rmSync(dir, {recursive: true, force: true});
+    }
+  });
 });
 
 describe('maintained-theme build wiring', () => {
-  it('runs the fully-specified gate after every maintained-theme build', () => {
+  it('keeps the fully-specified gate wired into every maintained-theme build', () => {
     const themesRoot = path.join(ROOT, 'packages', 'themes');
+    const gate = path.join(ROOT, 'scripts', 'check-fully-specified.mjs');
     const packages = fs
       .readdirSync(themesRoot, {withFileTypes: true})
       .filter(entry => entry.isDirectory())
-      .map(entry => path.join(themesRoot, entry.name, 'package.json'))
-      .filter(file => fs.existsSync(file))
-      .map(file => JSON.parse(fs.readFileSync(file, 'utf-8')))
-      .filter(pkg => pkg.name?.startsWith('@astryxdesign/theme-'));
+      .map(entry => path.join(themesRoot, entry.name))
+      .filter(dir => fs.existsSync(path.join(dir, 'package.json')))
+      .map(dir => ({
+        dir,
+        pkg: JSON.parse(
+          fs.readFileSync(path.join(dir, 'package.json'), 'utf-8'),
+        ),
+      }))
+      .filter(({pkg}) => pkg.name?.startsWith('@astryxdesign/theme-'));
 
     expect(packages.length).toBeGreaterThan(0);
-    for (const pkg of packages) {
-      expect(pkg.scripts?.build, pkg.name).toMatch(
-        /node \.\.\/\.\.\/\.\.\/scripts\/check-fully-specified\.mjs$/,
+    for (const {dir, pkg} of packages) {
+      // Derive the specifier so a move of packages/themes fails loudly here
+      // instead of silently matching nothing. Any trailing build step or flag
+      // is fine — what matters is that the gate still runs.
+      const specifier = path.relative(dir, gate).split(path.sep).join('/');
+      const invocation = new RegExp(
+        `\\bnode\\s+${escapeRegExp(specifier)}(?:\\s|$)`,
       );
+      expect(pkg.scripts?.build ?? '', pkg.name).toMatch(invocation);
     }
   });
 });

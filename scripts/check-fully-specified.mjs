@@ -17,8 +17,10 @@
  * legitimately mention extensionless specifiers. Only runtime files are
  * scanned — the .d.ts surface resolves through TypeScript, not Node.
  *
- * Usage: node ../../scripts/check-fully-specified.mjs   (run from a package
- * root, after the package's dist has been built)
+ * Usage: node <repo-root>/scripts/check-fully-specified.mjs   (run from a
+ * package root, after the package's dist has been built; the relative depth
+ * differs per package — ../../ from packages/*, ../../../ from
+ * packages/themes/*)
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -89,7 +91,14 @@ export function findOffenders(distDir) {
   return {checked: files.length, offenders};
 }
 
-/** Return remediation guidance for the package whose dist is being checked. */
+/**
+ * Return remediation guidance for the package whose dist is being checked.
+ *
+ * The package name is consulted before the Babel plugin file: a maintained
+ * theme generates its icon import through `astryx theme build`, so the theme
+ * branch stays correct even if such a package later picks up the plugin for
+ * some other part of its build.
+ */
 export function failureGuidance(packageDir) {
   let packageName = '';
   try {
