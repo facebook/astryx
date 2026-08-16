@@ -329,6 +329,132 @@ describe('themeBuild() — the shipped theme template', () => {
   });
 });
 
+describe('themeBuild() — icon registry detection', () => {
+  /**
+   * The emitted icon import statement, or null. Reads the statement rather
+   * than the whole file: the `@generated` header quotes a usage example, so a
+   * substring search over the file would match comment text too.
+   */
+  function iconImportLine(generated) {
+    const match = generated.match(/^import .*$/m);
+    return match ? match[0] : null;
+  }
+
+  it('emits the import, icons key and re-export for a registry that arrives via an import', async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'icons.mjs'),
+      'export const liveIcons = {};\n',
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'live.mjs'),
+      `import {liveIcons} from './icons';\n` +
+        `export default {name: 'live', icons: liveIcons, tokens: {'--color-bg': '#fff'}};\n`,
+    );
+
+    const result = await themeBuild('live.mjs', {}, {cwd: tmpDir});
+
+    const generated = fs.readFileSync(path.join(tmpDir, 'live.js'), 'utf8');
+    expect(iconImportLine(generated)).toBe(
+      "import { liveIcons } from './icons';",
+    );
+    expect(generated).toContain('icons: liveIcons,');
+    expect(generated).toContain('export { liveIcons };');
+    expect(result?.data.warnings).toEqual([]);
+  });
+
+  it('does not re-emit an import that only appears inside a comment (#5058)', async () => {
+    // The reported repro: the registry was inlined into the theme source, and
+    // a doc comment kept the old import line for context. The comment's
+    // specifier was scraped and emitted as live code in the built module,
+    // pointing at a file that no longer exists.
+    fs.writeFileSync(
+      path.join(tmpDir, 'commented.mjs'),
+      `/**\n` +
+        ` * The scaffold put this in a sibling icons file, so the built module\n` +
+        ` * carried \`import { ghostIcons } from './icons'\` — which Node\n` +
+        ` * cannot resolve.\n` +
+        ` */\n` +
+        `const ghostIcons = {};\n` +
+        `export default {name: 'commented', icons: ghostIcons, tokens: {'--color-bg': '#fff'}};\n`,
+    );
+
+    const result = await themeBuild('commented.mjs', {}, {cwd: tmpDir});
+
+    expect(result?.type).toBe('theme.build');
+    const generated = fs.readFileSync(
+      path.join(tmpDir, 'commented.js'),
+      'utf8',
+    );
+    expect(generated).not.toContain("from './icons'");
+    expect(iconImportLine(generated)).toBeNull();
+    // The registry stayed inline, so the omission is called out, not silent.
+    expect(result?.data.warnings).toEqual([
+      expect.stringContaining('icons: ghostIcons'),
+    ]);
+  });
+
+  it('scrapes the live import even when a comment quotes a stale one', async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'icons.mjs'),
+      'export const realIcons = {};\n',
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'both.mjs'),
+      `// was: import { realIcons } from './old-icons';\n` +
+        `import {realIcons} from './icons';\n` +
+        `export default {name: 'both', icons: realIcons, tokens: {'--color-bg': '#fff'}};\n`,
+    );
+
+    const result = await themeBuild('both.mjs', {}, {cwd: tmpDir});
+
+    // The comment comes first in the source, so the old scan matched it first
+    // and emitted `./old-icons` — the live import must win.
+    const generated = fs.readFileSync(path.join(tmpDir, 'both.js'), 'utf8');
+    expect(iconImportLine(generated)).toBe(
+      "import { realIcons } from './icons';",
+    );
+    expect(generated).not.toContain('old-icons');
+    expect(result?.data.warnings).toEqual([]);
+  });
+
+  it('ignores a commented-out icons: field entirely', async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'nofield.mjs'),
+      `// icons: retiredIcons,\n` +
+        `export default {name: 'nofield', tokens: {'--color-bg': '#fff'}};\n`,
+    );
+
+    const result = await themeBuild('nofield.mjs', {}, {cwd: tmpDir});
+
+    const generated = fs.readFileSync(path.join(tmpDir, 'nofield.js'), 'utf8');
+    expect(iconImportLine(generated)).toBeNull();
+    expect(generated).not.toContain('icons:');
+    // No icons field means nothing was dropped — no warning either.
+    expect(result?.data.warnings).toEqual([]);
+  });
+
+  it('warns instead of silently dropping a registry declared inline (#5058)', async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'inline.mjs'),
+      `const inlineIcons = {chevron: 'stub'};\n` +
+        `export default {name: 'inline', icons: inlineIcons, tokens: {'--color-bg': '#fff'}};\n`,
+    );
+
+    const result = await themeBuild('inline.mjs', {}, {cwd: tmpDir});
+
+    // The build still succeeds — the registry cannot ride along (it may hold
+    // React elements, which do not serialize), but the theme's CSS is fine.
+    expect(result?.type).toBe('theme.build');
+    const generated = fs.readFileSync(path.join(tmpDir, 'inline.js'), 'utf8');
+    expect(iconImportLine(generated)).toBeNull();
+    expect(generated).not.toContain('inlineIcons');
+    // …and the receipt says exactly what was omitted and why.
+    expect(result?.data.warnings).toEqual([
+      expect.stringContaining('icons: inlineIcons'),
+    ]);
+  });
+});
+
 describe('themeBuild() — extends', () => {
   // These fixtures `import {defineTheme} from '@astryxdesign/core/theme'` the
   // way a real theme file does, so they have to sit somewhere that specifier
