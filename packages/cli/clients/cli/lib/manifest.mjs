@@ -72,7 +72,7 @@ export const RESPONSE_TYPES = {
     'template.copy',
   ],
   hook: ['hook.list', 'hook.detail', 'hook.detail.params'],
-  'theme build': ['theme.build', 'theme.build.check'],
+  'theme build': ['theme.build', 'theme.build.check', 'theme.build.batch'],
   'theme list': ['theme.list'],
   'theme add': ['theme.list', 'theme.add'],
   'theme template': ['theme.template'],

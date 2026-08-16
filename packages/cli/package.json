@@ -25,6 +25,9 @@
     "agent-docs"
   ],
   "type": "module",
+  "engines": {
+    "node": ">=22.13.0"
+  },
   "bin": {
     "astryx": "./clients/cli/bin/astryx.mjs",
     "cli": "./clients/cli/bin/astryx.mjs"

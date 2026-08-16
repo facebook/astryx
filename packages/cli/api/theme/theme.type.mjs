@@ -10,6 +10,7 @@
  * ------------------------------------------------------------------
  * xds --json theme build <file>             -> theme.build
  * xds --json theme build <file> --check     -> theme.build.check
+ * xds --json theme build <a> <b> …          -> theme.build.batch
  * xds --json theme list                     -> theme.list
  * xds --json theme add <slug>               -> theme.add
  * xds --json theme template                 -> theme.template

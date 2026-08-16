@@ -174,6 +174,11 @@ export const doc = {
         'The --check receipt: theme name, an upToDate flag, the stale outputs (each {path, reason: missing | outdated}), and the full list of checked paths. Writes nothing.',
     },
     {
+      value: 'theme.build.batch',
+      description:
+        'Several themes built in one invocation: `count` plus one `{file, receipt}` per theme, in argument order, where each receipt is the theme.build (or theme.build.check) envelope a single-file build returns, or null when the theme produced no CSS. A single file still returns the bare envelope.',
+    },
+    {
       value: 'theme.list',
       description:
         'Every bundled theme as a ThemeListEntry[]: each with slug, displayName, description, and a maintained flag.',
