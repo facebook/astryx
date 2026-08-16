@@ -38,6 +38,15 @@ describe('themeTargets (api/theme/targets)', () => {
     ]);
   }, 60_000);
 
+  // Half the system's keys contain "button" (chat-send-button, toggle-button,
+  // …). A component name has to mean the component, or `theme targets Button`
+  // answers a different question than `component Button` and the two views
+  // look like they disagree.
+  it('prefers an exact component name over a substring match', async () => {
+    const {data} = await themeTargets('Button');
+    expect(data.targets.map(t => t.key)).toEqual(['button']);
+  }, 60_000);
+
   // This command answers "which theme slot paints the switch thumb?" — a
   // question you can only ask by the part, not the component, until you
   // already know which component owns it.

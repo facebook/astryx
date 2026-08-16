@@ -300,7 +300,7 @@ const brandTheme = defineTheme({
         },
         {
           type: 'prose',
-          text: 'Run `astryx component <Name>` to see a component\'s theming targets, public CSS variables, and which standard CSS properties are supported.',
+          text: 'Run `astryx theme targets` for every themeable key in the system (`astryx theme targets <Name>` to scope it, `--json` to lint a theme against it), and `astryx component <Name>` for one component\'s theming targets, public CSS variables, and which standard CSS properties are supported.',
         },
         {
           type: 'list',
