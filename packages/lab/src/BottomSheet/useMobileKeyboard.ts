@@ -48,11 +48,11 @@ interface KeyboardGeometry {
 
 interface FocusScrollSnapshot {
   target: HTMLElement;
-  elements: Array<{
+  elements: {
     element: HTMLElement;
     scrollLeft: number;
     scrollTop: number;
-  }>;
+  }[];
   windowX: number;
   windowY: number;
 }
@@ -99,7 +99,7 @@ function isIOSWebKit(): boolean {
   const userAgent = window.navigator.userAgent;
   return (
     /iPad|iPhone|iPod/.test(userAgent) ||
-    (/Macintosh/.test(userAgent) && window.navigator.maxTouchPoints > 1)
+    (userAgent.includes('Macintosh') && window.navigator.maxTouchPoints > 1)
   );
 }
 
@@ -111,7 +111,9 @@ function isTextEntryControl(element: Element | null): element is HTMLElement {
     return (
       !element.disabled &&
       !element.readOnly &&
-      !NON_TEXT_INPUT_TYPES.has(element.type)
+      !NON_TEXT_INPUT_TYPES.has(
+        (element.getAttribute('type') ?? 'text').toLowerCase(),
+      )
     );
   }
   return (

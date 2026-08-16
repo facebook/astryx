@@ -17,7 +17,7 @@
  *
  * All child sheets render as panels inside one switcher-owned `<dialog>`. A
  * scrim flow calls showModal() once and keeps that native top-layer dialog open
- * across every handoff. A no-scrim flow calls show() on the same inline shell.
+ * across every handoff. A no-scrim flow calls show() on the same non-modal shell.
  * This keeps one modal boundary and one native ::backdrop without a portal.
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -191,7 +191,7 @@ export interface BottomSheetSwitcherProps extends BaseProps<HTMLDialogElement> {
 
   /**
    * Whether to open the shared dialog modally with its native ::backdrop.
-   * Disable for an inline, non-modal flow over an interactive page.
+   * Disable for a viewport-anchored, non-modal flow over an interactive page.
    * @default true
    */
   hasScrim?: boolean;

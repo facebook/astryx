@@ -183,7 +183,7 @@ function getHandle(): HTMLElement {
 
 // Drive a pointer drag on the grab handle. jsdom PointerEvents don't carry
 // clientY, so dispatch plain events with the coords the handlers read.
-function drag(handle: HTMLElement, points: Array<{y: number}>) {
+function drag(handle: HTMLElement, points: {y: number}[]) {
   const [down, ...rest] = points;
   fireEvent.pointerDown(handle, {pointerId: 1, clientY: down.y});
   for (const p of rest) {
@@ -764,7 +764,7 @@ describe('BottomSheet', () => {
       expect(body.scrollTop).toBe(248);
 
       viewport.height = 800;
-      act(() => viewport.dispatchEvent(new Event('resize')));
+      void act(() => viewport.dispatchEvent(new Event('resize')));
       expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
         '0px',
       );
@@ -881,7 +881,7 @@ describe('BottomSheet', () => {
 
       focus.mockRestore();
       input.focus();
-      act(() => viewport.dispatchEvent(new Event('resize')));
+      void act(() => viewport.dispatchEvent(new Event('resize')));
 
       expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
         '0px',
@@ -929,7 +929,7 @@ describe('BottomSheet', () => {
         fireEvent.pointerDown(input, {pointerId: 1, clientY: 200});
         body.scrollTop = 120;
         fireEvent.focus(input, {relatedTarget: null});
-        act(() => viewport.dispatchEvent(new Event('resize')));
+        void act(() => viewport.dispatchEvent(new Event('resize')));
 
         expect(body.scrollTop).toBe(120);
         expect(focus).not.toHaveBeenCalled();
@@ -1089,7 +1089,7 @@ describe('BottomSheet', () => {
       expect(body.scrollTop).toBe(248);
 
       viewport.height = 800;
-      act(() => viewport.dispatchEvent(new Event('resize')));
+      void act(() => viewport.dispatchEvent(new Event('resize')));
       expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
         '0px',
       );
@@ -1129,7 +1129,7 @@ describe('BottomSheet', () => {
       );
 
       viewport.height = 800;
-      act(() => viewport.dispatchEvent(new Event('resize')));
+      void act(() => viewport.dispatchEvent(new Event('resize')));
       expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
         '0px',
       );
@@ -1172,7 +1172,7 @@ describe('BottomSheet', () => {
       );
 
       viewport.height = 800;
-      act(() => viewport.dispatchEvent(new Event('resize')));
+      void act(() => viewport.dispatchEvent(new Event('resize')));
       expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
         '0px',
       );
@@ -1217,7 +1217,7 @@ describe('BottomSheet', () => {
       );
 
       viewport.height = 800;
-      act(() => viewport.dispatchEvent(new Event('resize')));
+      void act(() => viewport.dispatchEvent(new Event('resize')));
       expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
         '0px',
       );

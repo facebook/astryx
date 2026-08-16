@@ -3,7 +3,7 @@
 
 export const docs = {
   name: 'BottomSheetSwitcher',
-  displayName: 'BottomSheetSwitcher',
+  displayName: 'Bottom Sheet Switcher',
   group: 'BottomSheet',
   category: 'Overlay',
   keywords: ['bottom sheet', 'switcher', 'multi-step', 'flow', 'wizard'],
@@ -16,7 +16,7 @@ export const docs = {
     ],
   },
   description:
-    'Coordinates multiple BottomSheets as a mutually exclusive flow. One activeSheet ID selects the only interactive sheet; during a handoff, the new sheet enters above the inert previous sheet. If the new sheet is shorter, the previous sheet simultaneously moves down until their top edges align, then fades after both transforms complete. The switcher owns one shared native <dialog>: modal flows call showModal() once for one top-layer boundary and one ::backdrop across the whole flow, while no-scrim flows use a non-modal show() shell.',
+    'Coordinates multiple BottomSheets as a mutually exclusive flow. One activeSheet ID selects the only interactive sheet; during a handoff, the new sheet enters above the inert previous sheet. If the new sheet is shorter, the previous sheet simultaneously moves down until their top edges align, then fades after both transforms complete. The switcher owns one shared native <dialog>: modal flows call showModal() once for one top-layer boundary and one ::backdrop across the whole flow, while no-scrim flows use a non-modal show() shell. Its ref and shared DOM props target that dialog.',
   props: [
     {
       name: 'activeSheet',
@@ -27,7 +27,7 @@ export const docs = {
     },
     {
       name: 'onActiveSheetChange',
-      type: '(sheetId: string | null) => void',
+      type: '(activeSheet: string | null) => void',
       description:
         'Called with null when the active sheet dismisses. The same state setter can be used by flow controls to switch to another sheet ID.',
       required: true,
@@ -48,48 +48,23 @@ export const docs = {
   ],
   usage: {
     description:
-      'Use one activeSheet value as the source of truth for a multi-step bottom-sheet flow. Set it to a child sheetId to open or switch steps, and set it to null to close. On a handoff, the previous sheet becomes inert immediately while the new active sheet enters above it. A taller previous sheet simultaneously moves down until its top edge aligns with the shorter new sheet; it fades only after both transforms complete. Equal-height or shorter previous sheets stay stationary and fade after the entrance. The switcher keeps one shared dialog open across the transition, with one modal boundary, native backdrop, focus trap, and body scroll lock when hasScrim is true, and restores focus to the trigger that started the flow after the final exit finishes.',
+      "Coordinates a multi-step bottom-sheet flow in one shared dialog; set activeSheet to a nested BottomSheet's sheetId to open or switch steps, and to null to close.",
     bestPractices: [
       {
         guidance: true,
         description:
-          'Give every nested BottomSheet a stable, unique sheetId and model the flow as one activeSheet value.',
-      },
-      {
-        guidance: true,
-        description:
-          'Keep state local to the sheet that owns it; lift only data that another sheet needs.',
-      },
-      {
-        guidance: true,
-        description:
-          "Treat each switcher sheet's content as a new ownership scope. A BottomSheet opened from that content is standalone; wrap it in a nested BottomSheetSwitcher when it starts another multi-step flow.",
-      },
-      {
-        guidance: true,
-        description:
-          'Configure hasScrim on BottomSheetSwitcher, not its individual BottomSheet children, so the modal layer remains stable across handoffs.',
-      },
-      {
-        guidance: true,
-        description:
-          'When hasScrim is false, keep the switcher outside transformed, contained, and overflow-clipping ancestors so its non-modal dialog can remain viewport-aligned.',
-      },
-      {
-        guidance: true,
-        description:
-          'Treat activeSheet as the interaction state: a previous sheet can remain visually present and move beneath the entering sheet, but it is inert and hidden from assistive technology.',
+          'Use when each step depends on the previous one and only one step needs attention at a time.',
       },
       {
         guidance: false,
         description:
-          'Use separate isOpen booleans for sheets in the same flow; they can drift and request overlapping dialogs.',
+          "Don't split information across sheets when people need to compare it; use a full-page layout that keeps the relevant content visible together instead.",
       },
     ],
   },
   examples: [
     {
-      label: 'Two-step flow',
+      label: 'Three-step flow',
       code: `const [activeSheet, setActiveSheet] = useState(null);
 
 <>
@@ -97,11 +72,18 @@ export const docs = {
   <BottomSheetSwitcher
     activeSheet={activeSheet}
     onActiveSheetChange={setActiveSheet}>
-    <BottomSheet sheetId="details" label="Details">
+    <BottomSheet sheetId="details" label="Details" height="hug">
+      <SetupDetails />
+      <Button label="Continue" onClick={() => setActiveSheet('preferences')} />
+    </BottomSheet>
+    <BottomSheet sheetId="preferences" label="Preferences" height="hug">
+      <Preferences />
+      <Button label="Back" onClick={() => setActiveSheet('details')} />
       <Button label="Continue" onClick={() => setActiveSheet('confirm')} />
     </BottomSheet>
-    <BottomSheet sheetId="confirm" label="Confirm">
-      <Button label="Back" onClick={() => setActiveSheet('details')} />
+    <BottomSheet sheetId="confirm" label="Confirm" height="hug">
+      <Confirmation />
+      <Button label="Back" onClick={() => setActiveSheet('preferences')} />
       <Button label="Done" onClick={() => setActiveSheet(null)} />
     </BottomSheet>
   </BottomSheetSwitcher>
@@ -116,24 +98,17 @@ export const docsDense = {
     'controller with one shared native dialog for mutually exclusive multi-step BottomSheets',
   usage: {
     description:
-      'One activeSheet ID makes one nested sheet interactive in one shared dialog. Change IDs to enter a new top sheet while simultaneously aligning a taller previous sheet behind a shorter one, then fade it; null closes the flow.',
+      "Coordinates a multi-step bottom-sheet flow in one shared dialog; set activeSheet to a nested BottomSheet's sheetId to open or switch steps, and to null to close.",
     bestPractices: [
       {
         guidance: true,
-        description: 'Use stable, unique sheetId values for every child.',
-      },
-      {
-        guidance: true,
-        description: "Let the switcher own the flow's one shared scrim.",
-      },
-      {
-        guidance: true,
         description:
-          'Nested sheets start a new standalone or nested-switcher scope.',
+          'Use when each step depends on the previous one and only one step needs attention at a time.',
       },
       {
         guidance: false,
-        description: 'Coordinate a single flow with separate open booleans.',
+        description:
+          "Don't split information across sheets when people need to compare it; use a full-page layout that keeps the relevant content visible together instead.",
       },
     ],
   },

@@ -506,7 +506,7 @@ export function useSheetGestures({
     top: boolean;
     bottom: boolean;
   } | null>(null);
-  const prevTouchHandlers = useRef<{
+  const previousTouchHandlersRef = useRef<{
     start: (e: TouchEvent) => void;
     move: (e: TouchEvent) => void;
     end: (e: TouchEvent) => void;
@@ -615,8 +615,8 @@ export function useSheetGestures({
     };
 
     const prev = bodyNodeRef.current;
-    if (prev && prevTouchHandlers.current) {
-      const h = prevTouchHandlers.current;
+    if (prev && previousTouchHandlersRef.current) {
+      const h = previousTouchHandlersRef.current;
       prev.removeEventListener('touchstart', h.start);
       prev.removeEventListener('touchmove', h.move);
       prev.removeEventListener('touchend', h.end);
@@ -628,17 +628,17 @@ export function useSheetGestures({
       node.addEventListener('touchmove', onTouchMove, {passive: false});
       node.addEventListener('touchend', onTouchEnd, {passive: true});
       node.addEventListener('touchcancel', onTouchEnd, {passive: true});
-      prevTouchHandlers.current = {
+      previousTouchHandlersRef.current = {
         start: onTouchStart,
         move: onTouchMove,
         end: onTouchEnd,
       };
     } else {
-      prevTouchHandlers.current = null;
+      previousTouchHandlersRef.current = null;
     }
   }, []);
 
-  const reducedMotion = useMemo(prefersReducedMotion, [isOpen]);
+  const reducedMotion = useMemo(() => prefersReducedMotion(), [isOpen]);
 
   // While dragging, follow the finger; otherwise rest at the settled detent.
   const activeOffset = isDragging ? dragOffset : settledOffset;
