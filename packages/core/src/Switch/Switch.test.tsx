@@ -262,6 +262,22 @@ describe('Switch', () => {
     expect(screen.getByLabelText('Toggle row')).toBeInTheDocument();
   });
 
+  it('drops the label gap when isLabelHidden so the row is only as wide as the track', () => {
+    const {rerender} = render(
+      <Switch
+        label="Toggle row"
+        isLabelHidden
+        value={false}
+        onChange={() => {}}
+      />,
+    );
+    const row = screen.getByRole('switch').parentElement!.parentElement!;
+    expect(getComputedStyle(row).gap).toMatch(/^0(px)?$/);
+
+    rerender(<Switch label="Toggle row" value={false} onChange={() => {}} />);
+    expect(getComputedStyle(row).gap).not.toMatch(/^0(px)?$/);
+  });
+
   it('keeps description linked via aria-describedby when isLabelHidden', () => {
     render(
       <Switch
