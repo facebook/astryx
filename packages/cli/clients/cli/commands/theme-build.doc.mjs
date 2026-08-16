@@ -26,7 +26,7 @@ export const doc = {
   fn: 'themeBuild',
   args: [{name: 'files', param: 'file', required: true, variadic: true}],
   options: [
-    {flag: '-o, --out <path>', param: 'options.out', description: 'Output CSS file path'},
+    {flag: '-o, --out <path>', param: 'options.out', description: 'Output CSS file path (single theme only)'},
     {
       flag: '--icons-specifier <specifier>',
       param: 'options.iconsSpecifier',
@@ -35,7 +35,7 @@ export const doc = {
     },
     {
       flag: '-w, --watch',
-      description: 'Rebuild automatically when the theme file changes (Ctrl-C to stop)',
+      description: 'Rebuild automatically when a theme file changes (Ctrl-C to stop)',
     },
     {
       flag: '-c, --check',
