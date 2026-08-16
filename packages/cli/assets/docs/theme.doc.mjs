@@ -253,9 +253,14 @@ const brandTheme = defineTheme({
             ['tokens', 'Base tokens are copied first, then child tokens override on top.'],
             ['components', 'Deep-merged: child component rules override matching keys from the base.'],
             ['icons', 'Shallow-merged: child icons override matching names from the base.'],
-            ['fonts', 'Base fonts included first, then child fonts appended.'],
+            ['indicators', 'Shallow-merged: child indicators override matching names from the base.'],
+            ['onDark, onLight', "Deep-merged per surface: the base's resolved surface first, then the child's overrides."],
             ['typography, motion, radius, color', 'Child config replaces base entirely (these are scale inputs, not additive).'],
           ],
+        },
+        {
+          type: 'prose',
+          text: 'Inheritance is resolved when the theme is defined, so an extended theme is flat: `astryx theme build` emits one self-contained stylesheet holding everything the child inherited, and the base theme\'s CSS does not need to be loaded next to it. A base that is not a theme — most often an import that missed — is a build error rather than a theme that silently inherits nothing.',
         },
       ],
     },
@@ -416,6 +421,10 @@ import './themes/ocean.css';
 <Theme theme={oceanTheme}>
   <App />
 </Theme>`,
+        },
+        {
+          type: 'prose',
+          text: 'The build also warns when the theme names font families it does not load (webfonts like Fraunces) and prints the `<link>`/`@font-face` to add — the built CSS only sets font-family, so loading the font files stays the app\'s job. See `astryx docs typography` for the full recipe.',
         },
       ],
     },

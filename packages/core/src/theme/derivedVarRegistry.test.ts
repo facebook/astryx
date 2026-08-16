@@ -262,6 +262,9 @@ const VARS_WITHOUT_DERIVED_MAPPING = new Set([
   '--_avatar-group-overlap',
   '--_codeblock-gutter-width',
   '--_tab-indicator-bottom',
+  // Hit-area outset on a ::after overlay — `inset` on a pseudo-element is not
+  // a property a theme author sets on the component.
+  '--_thumbnail-hit-inset',
   // Indentation and row-spacing metrics: --tree-list-indent is the authorable
   // step, --_tree-indent the per-row distance TreeListItem computes from it.
   // --tree-list-row-gap is applied as half a padding-block on each row wrapper,

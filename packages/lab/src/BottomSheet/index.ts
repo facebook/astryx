@@ -1,5 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+'use client';
+
 /**
  * @file index.ts
  * @input BottomSheet.tsx, BottomSheetSwitcher.tsx
@@ -8,6 +10,6 @@
  */
 
 export {BottomSheet} from './BottomSheet';
-export type {BottomSheetProps} from './BottomSheet';
+export type {BottomSheetHeight, BottomSheetProps} from './BottomSheet';
 export {BottomSheetSwitcher} from './BottomSheetSwitcher';
 export type {BottomSheetSwitcherProps} from './BottomSheetSwitcher';

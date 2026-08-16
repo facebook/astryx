@@ -104,6 +104,20 @@ describe('AvatarGroupOverflow', () => {
     expect(overflow).toHaveTextContent('+5');
   });
 
+  it('applies the group size class to the overflow chip', () => {
+    render(
+      <AvatarGroup size="lg">
+        <Avatar name="Alice" />
+        <AvatarGroupOverflow count={5} />
+      </AvatarGroup>,
+    );
+
+    const overflow = screen.getByLabelText('5 more');
+    expect(overflow.className).toContain('astryx-avatar-group-overflow');
+    expect(overflow.className).toContain('lg');
+    expect(overflow).toHaveAttribute('data-size', 'lg');
+  });
+
   it('renders as button when onClick is provided', () => {
     render(
       <AvatarGroup>

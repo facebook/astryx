@@ -48,6 +48,7 @@ export {Drawer, type DrawerProps} from './Drawer';
 // BottomSheet — mobile touch sheet on a native modal <dialog>
 export {
   BottomSheet,
+  type BottomSheetHeight,
   type BottomSheetProps,
   BottomSheetSwitcher,
   type BottomSheetSwitcherProps,
