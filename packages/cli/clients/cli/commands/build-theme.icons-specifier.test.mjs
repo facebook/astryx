@@ -309,8 +309,9 @@ describe('theme build --icons-specifier (spawned processes)', () => {
 
       // Rebuilds run through a child re-invocation of `theme build`, so the
       // flag reaches them only if the watch loop forwards it. Change a token
-      // and wait for the rebuilt CSS. fs.watch delivery is best-effort under
-      // load, so re-touch until the rebuild shows up (idempotent write).
+      // and wait for the rebuilt JavaScript module. fs.watch delivery is
+      // best-effort under load, so re-touch until the rebuild shows up
+      // (idempotent write).
       const touched =
         `import {testIcons} from './icons';\n` +
         `export default {\n` +
@@ -321,10 +322,10 @@ describe('theme build --icons-specifier (spawned processes)', () => {
       fs.writeFileSync(themeFile, touched);
       const rebuilt = await waitFor(() => {
         try {
-          if (fs.readFileSync(cssFile, 'utf-8').includes('#0a0b0c'))
+          if (fs.readFileSync(builtFile, 'utf-8').includes('#0a0b0c'))
             return true;
         } catch {
-          // CSS mid-write; fall through to re-touch.
+          // JavaScript module mid-write; fall through to re-touch.
         }
         try {
           fs.writeFileSync(themeFile, touched);

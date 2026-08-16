@@ -455,4 +455,72 @@ describe('Banner', () => {
       );
     });
   });
+
+  describe('dismiss focus handoff', () => {
+    it('returns focus to where it came from instead of dropping it to body', async () => {
+      const user = userEvent.setup();
+      render(
+        <>
+          <button type="button">Before</button>
+          <Banner status="info" title="Heads up" isDismissable />
+        </>,
+      );
+      const before = screen.getByRole('button', {name: 'Before'});
+      before.focus();
+
+      await user.tab();
+      expect(screen.getByRole('button', {name: 'Dismiss'})).toHaveFocus();
+
+      await user.keyboard('{Enter}');
+
+      expect(screen.queryByRole('status')).not.toBeInTheDocument();
+      expect(before).toHaveFocus();
+      expect(document.activeElement).not.toBe(document.body);
+    });
+
+    it('leaves focus alone when it never entered the banner', async () => {
+      const user = userEvent.setup();
+      render(
+        <>
+          <button type="button">Elsewhere</button>
+          <Banner status="info" title="Heads up" isDismissable />
+        </>,
+      );
+      await user.click(screen.getByRole('button', {name: 'Dismiss'}));
+      expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('empty slots', () => {
+    it('does not show the expand affordance for children that render nothing', () => {
+      render(
+        <Banner status="info" title="Heads up">
+          {false}
+        </Banner>,
+      );
+      expect(
+        screen.queryByRole('button', {name: 'Expand'}),
+      ).not.toBeInTheDocument();
+    });
+
+    it('still shows the expand affordance for real children', () => {
+      render(
+        <Banner status="info" title="Heads up">
+          <p>Detail</p>
+        </Banner>,
+      );
+      expect(
+        screen.getByRole('button', {name: 'Expand'}),
+      ).toBeInTheDocument();
+    });
+
+    it('renders no description node for a description that renders nothing', () => {
+      const {container} = render(
+        <Banner status="info" title="Heads up" description="" />,
+      );
+      const header = container.firstElementChild!.firstElementChild!;
+      // icon wrapper + text column, and the text column holds the title alone
+      expect(header.children[1].children).toHaveLength(1);
+    });
+  });
 });
