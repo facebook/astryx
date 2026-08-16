@@ -14,9 +14,10 @@
  * xds --json theme list                     -> theme.list
  * xds --json theme add <slug>               -> theme.add
  * xds --json theme template                 -> theme.template
+ * xds --json theme targets [filter]         -> theme.targets
  * (file not found / parse error)            -> CLIError
  *
- * @position api — colocated typedefs for api/theme/{theme,build,add,list,template,_adapter}
+ * @position api — colocated typedefs for api/theme/{theme,build,add,list,template,targets,_adapter}
  */
 
 /**
@@ -76,6 +77,25 @@
  * @typedef {object} ThemeTemplateResponse
  * @property {'theme.template'} type
  * @property {{path: string, written: boolean, reason: 'exists' | null}} data
+ */
+
+/**
+ * One themeable target: the `defineTheme` `components` key, the class it
+ * renders as, the component whose doc declares it, and the props and states
+ * that are legal override keys under it.
+ * @typedef {object} ThemeTargetEntry
+ * @property {string} key
+ * @property {string} className
+ * @property {string} component
+ * @property {string[]} props
+ * @property {string[]} states
+ */
+
+/**
+ * xds --json theme targets [filter]
+ * @typedef {object} ThemeTargetsResponse
+ * @property {'theme.targets'} type
+ * @property {{filter: string | null, componentCount: number, targets: ThemeTargetEntry[]}} data
  */
 
 // Make this a module so the @typedefs above are importable as types via

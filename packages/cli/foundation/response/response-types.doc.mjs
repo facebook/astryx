@@ -199,6 +199,11 @@ export const doc = {
       description:
         'A write receipt for the annotated theme template: the path (relative to cwd), whether it was written, and the reason it was not — `exists` when a file was already there, which is a success.',
     },
+    {
+      value: 'theme.targets',
+      description:
+        'The whole themeable surface: the echoed filter, how many components are represented, and one entry per theming target — its defineTheme key, the astryx- class it paints, the component that declares it, and the props and states that are legal override keys under it.',
+    },
 
     // upgrade
     {
