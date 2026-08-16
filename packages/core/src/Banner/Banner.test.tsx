@@ -97,7 +97,9 @@ describe('Banner', () => {
 
   it('renders dismiss button when isDismissable', () => {
     render(<Banner status="info" title="Dismissable" isDismissable />);
-    expect(screen.getByRole('button', {name: 'Dismiss'})).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: 'Dismiss Dismissable'}),
+    ).toBeInTheDocument();
   });
 
   it('calls onDismiss when dismiss button is clicked', async () => {
@@ -111,7 +113,7 @@ describe('Banner', () => {
         onDismiss={onDismiss}
       />,
     );
-    await user.click(screen.getByRole('button', {name: 'Dismiss'}));
+    await user.click(screen.getByRole('button', {name: 'Dismiss Dismissable'}));
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 
@@ -126,7 +128,9 @@ describe('Banner', () => {
       />,
     );
     expect(screen.getByTestId('banner')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', {name: 'Dismiss'}));
+    await user.click(
+      screen.getByRole('button', {name: 'Dismiss Self Dismissing'}),
+    );
     expect(screen.queryByTestId('banner')).not.toBeInTheDocument();
   });
 
@@ -142,16 +146,14 @@ describe('Banner', () => {
         data-testid="banner"
       />,
     );
-    await user.click(screen.getByRole('button', {name: 'Dismiss'}));
+    await user.click(screen.getByRole('button', {name: 'Dismiss Dismissable'}));
     expect(screen.queryByTestId('banner')).not.toBeInTheDocument();
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 
   it('does not render dismiss button when isDismissable is false', () => {
     render(<Banner status="info" title="Not Dismissable" />);
-    expect(
-      screen.queryByRole('button', {name: 'Dismiss'}),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', {name: /^Dismiss/})).toBeNull();
   });
 
   it('renders endContent', () => {
@@ -343,7 +345,7 @@ describe('Banner', () => {
       b => b.getAttribute('aria-label') || b.textContent,
     );
     const expandIndex = buttonNames.indexOf('Expand');
-    const dismissIndex = buttonNames.indexOf('Dismiss');
+    const dismissIndex = buttonNames.indexOf('Dismiss Order Test');
     expect(expandIndex).toBeLessThan(dismissIndex);
   });
 
@@ -548,7 +550,9 @@ describe('Banner', () => {
       before.focus();
 
       await user.tab();
-      expect(screen.getByRole('button', {name: 'Dismiss'})).toHaveFocus();
+      expect(
+        screen.getByRole('button', {name: 'Dismiss Heads up'}),
+      ).toHaveFocus();
 
       await user.keyboard('{Enter}');
 
@@ -565,7 +569,7 @@ describe('Banner', () => {
           <Banner status="info" title="Heads up" isDismissable />
         </>,
       );
-      await user.click(screen.getByRole('button', {name: 'Dismiss'}));
+      await user.click(screen.getByRole('button', {name: 'Dismiss Heads up'}));
       expect(screen.queryByRole('status')).not.toBeInTheDocument();
     });
   });
@@ -648,6 +652,45 @@ describe('Banner', () => {
     it('leaves it free for an endContent that renders nothing', () => {
       const {textColumn} = renderBanner(false);
       expect(getComputedStyle(textColumn).flexBasis).not.toBe('8rem');
+    });
+  });
+
+  describe('dismiss control naming', () => {
+    it('names each dismiss button after its own banner when stacked', () => {
+      render(
+        <>
+          <Banner status="error" title="Attach od-1234 failed" isDismissable />
+          <Banner status="error" title="Detach od-9999 failed" isDismissable />
+        </>,
+      );
+      const names = screen
+        .getAllByRole('button')
+        .map(b => b.getAttribute('aria-label'));
+      expect(names).toEqual([
+        'Dismiss Attach od-1234 failed',
+        'Dismiss Detach od-9999 failed',
+      ]);
+    });
+
+    it('uses dismissLabel verbatim when provided', () => {
+      render(
+        <Banner
+          status="info"
+          title="Heads up"
+          isDismissable
+          dismissLabel="Close the maintenance notice"
+        />,
+      );
+      expect(
+        screen.getByRole('button', {name: 'Close the maintenance notice'}),
+      ).toBeInTheDocument();
+    });
+
+    it('falls back to the bare verb for a non-string title', () => {
+      render(
+        <Banner status="info" title={<span>Rich title</span>} isDismissable />,
+      );
+      expect(screen.getByRole('button', {name: 'Dismiss'})).toBeInTheDocument();
     });
   });
 });
