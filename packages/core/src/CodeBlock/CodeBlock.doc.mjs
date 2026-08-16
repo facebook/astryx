@@ -41,6 +41,12 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'hasStickyLineNumbers',
+      type: 'boolean',
+      description: 'Keep the line-number gutter visible while code scrolls horizontally. Requires hasLineNumbers.',
+      default: 'false',
+    },
+    {
       name: 'highlightLines',
       type: 'number[]',
       description: '1-indexed line numbers to highlight.',
@@ -161,7 +167,7 @@ export const docs = {
     ],
     anatomy: [
       {name: 'Header Bar', required: false, description: 'Shows the title, language label, and copy button. Appears when any of these props are set.'},
-      {name: 'Line Numbers', required: false, description: 'Numbered gutter along the left edge. Enable with hasLineNumbers.'},
+      {name: 'Line Numbers', required: false, description: 'Numbered gutter along the left edge. Enable with hasLineNumbers and keep it visible during horizontal scrolling with hasStickyLineNumbers.'},
       {name: 'Code Body', required: true, description: 'The syntax-highlighted code content.'},
       {name: 'Highlighted Lines', required: false, description: 'Background accent on specific lines to draw attention.'},
       {name: 'Copy Button', required: false, description: 'Copies the code string to the clipboard. Shown by default.'},

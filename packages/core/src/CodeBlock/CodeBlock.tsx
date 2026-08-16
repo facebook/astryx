@@ -4,7 +4,7 @@
 /**
  * @file CodeBlock.tsx
  * @input Uses React, StyleX, theme tokens, CSS Custom Highlight API, SyntaxTheme provider
- * @output Exports CodeBlock component and CodeBlockProps
+ * @output Exports CodeBlock component and CodeBlockProps with optional sticky line numbers
  * @position Core implementation; read-only syntax-highlighted code display
  */
 
@@ -60,12 +60,14 @@ const containerStyles = stylex.create({
     borderWidth: borderVars['--border-width'],
     borderStyle: 'solid',
     borderColor: colorVars['--color-border'],
+    '--_codeblock-sticky-background': 'var(--color-syntax-background)',
   },
   section: {
     borderRadius: 0,
     borderWidth: 0,
     borderStyle: 'none',
     borderColor: 'transparent',
+    '--_codeblock-sticky-background': colorVars['--color-background-card'],
     // Transparent background so the block blends into the surface it's
     // embedded in (a card or panel) instead of painting its own muted layer,
     // which would compound with a muted parent into a darker grey. Override
@@ -167,6 +169,41 @@ const styles = stylex.create({
     display: 'flex',
     minWidth: 'fit-content',
   },
+  codeWrapperWrapped: {
+    width: '100%',
+    minWidth: 0,
+  },
+  stickyLineNumberGutter: {
+    position: 'sticky',
+    insetInlineStart: 0,
+    zIndex: 3,
+    alignSelf: 'stretch',
+    flexShrink: 0,
+    boxSizing: 'border-box',
+    width: `calc(${spacingVars['--spacing-4']} + var(--_codeblock-gutter-width) + ${spacingVars['--spacing-3']} + ${borderVars['--border-width']})`,
+    paddingBlock: spacingVars['--spacing-3'],
+    paddingInlineStart: spacingVars['--spacing-4'],
+    paddingInlineEnd: spacingVars['--spacing-3'],
+    borderInlineEndWidth: borderVars['--border-width'],
+    borderInlineEndStyle: 'solid',
+    borderInlineEndColor: colorVars['--color-border'],
+    backgroundColor: 'var(--_codeblock-sticky-background)',
+    color: 'var(--color-syntax-punctuation)',
+    fontFamily: typographyVars['--font-family-code'],
+    textAlign: 'end',
+    userSelect: 'none',
+    pointerEvents: 'none',
+  },
+  stickyLineNumber: {
+    lineHeight: typeScaleVars['--text-code-leading'],
+  },
+  stickyLineNumberHighlighted: {
+    marginInlineStart: `calc(-1 * ${spacingVars['--spacing-4']})`,
+    marginInlineEnd: `calc(-1 * ${spacingVars['--spacing-3']})`,
+    paddingInlineStart: spacingVars['--spacing-4'],
+    paddingInlineEnd: spacingVars['--spacing-3'],
+    backgroundColor: colorVars['--color-accent-muted'],
+  },
   codeWrapperCompact: {
     marginBlockStart: `calc(-1 * ${spacingVars['--spacing-2']})`,
   },
@@ -235,6 +272,9 @@ const styles = stylex.create({
     overflowWrap: 'normal',
   },
   codeWrapped: {
+    boxSizing: 'border-box',
+    width: '100%',
+    minWidth: 0,
     whiteSpace: 'pre-wrap',
     wordBreak: 'break-all',
     overflowWrap: 'break-word',
@@ -268,7 +308,7 @@ const styles = stylex.create({
   // this is what keeps numbers aligned when isWrapped wraps a line.
   lineNumbered: {
     display: 'grid',
-    gridTemplateColumns: 'var(--_codeblock-gutter-width) 1fr',
+    gridTemplateColumns: 'var(--_codeblock-gutter-width) minmax(0, 1fr)',
     columnGap: `calc(${spacingVars['--spacing-3']} + ${borderVars['--border-width']} + ${spacingVars['--spacing-4']})`,
     '::before': {
       content: 'attr(data-line)',
@@ -341,6 +381,7 @@ const CodeChunk = React.memo(function CodeChunk({
     <>
       {lines.map((line, j) => {
         const i = startIndex + j;
+        const isHighlighted = highlightSet?.has(i + 1) ?? false;
         return (
           <div
             key={i}
@@ -348,7 +389,7 @@ const CodeChunk = React.memo(function CodeChunk({
             {...stylex.props(
               styles.line,
               lineNumbers && styles.lineNumbered,
-              (highlightSet?.has(i + 1) ?? false) && styles.lineHighlighted,
+              isHighlighted && styles.lineHighlighted,
             )}>
             {renderLineContent(line, i)}
           </div>
@@ -404,6 +445,40 @@ function renderLines(
   return chunks;
 }
 
+function StickyLineNumberGutter({
+  lines,
+  highlightSet,
+  sizeStyle,
+}: {
+  lines: string[];
+  highlightSet: Set<number> | null;
+  sizeStyle: stylex.StyleXStyles;
+}) {
+  return (
+    <div
+      aria-hidden="true"
+      data-sticky-line-number-gutter=""
+      data-sticky-line-number-divider=""
+      {...stylex.props(styles.stickyLineNumberGutter, sizeStyle)}>
+      {lines.map((_, index) => {
+        const lineNumber = index + 1;
+        return (
+          <div
+            key={lineNumber}
+            data-sticky-line-number={lineNumber}
+            {...stylex.props(
+              styles.stickyLineNumber,
+              highlightSet?.has(lineNumber) &&
+                styles.stickyLineNumberHighlighted,
+            )}>
+            {lineNumber}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Props
 // ---------------------------------------------------------------------------
@@ -415,6 +490,12 @@ export interface CodeBlockProps extends BaseProps<HTMLPreElement> {
   title?: string;
   hasLanguageLabel?: boolean;
   hasLineNumbers?: boolean;
+  /**
+   * Keep the line-number gutter visible while code scrolls horizontally.
+   * Requires `hasLineNumbers`.
+   * @default false
+   */
+  hasStickyLineNumbers?: boolean;
   highlightLines?: number[];
   hasCopyButton?: boolean;
   onCopy?: () => void;
@@ -714,6 +795,7 @@ export function CodeBlock({
   title,
   hasLanguageLabel = true,
   hasLineNumbers = false,
+  hasStickyLineNumbers = false,
   highlightLines,
   hasCopyButton = true,
   onCopy,
@@ -771,6 +853,12 @@ export function CodeBlock({
   const sizeStyle = size === 'sm' ? styles.sizeSm : styles.sizeMd;
   // Digits in the largest line number — sizes the gutter column width.
   const maxLineDigits = String(lines.length).length;
+  // Wrapped lines need their number in the same grid row so the number tracks
+  // the row's full height. Unwrapped sticky blocks instead use one real gutter
+  // column; unlike the previous zero-width overlay, that column retains a
+  // containing box for the entire horizontal scroll range.
+  const hasStickyGutter = hasLineNumbers && hasStickyLineNumbers && !isWrapped;
+  const hasInlineLineNumbers = hasLineNumbers && !hasStickyGutter;
   const languageLabel =
     hasLanguageLabel && language !== 'plaintext' ? language : null;
   const showHeader = title != null || languageLabel != null;
@@ -883,8 +971,17 @@ export function CodeBlock({
       <div
         {...stylex.props(
           styles.codeWrapper,
+          isWrapped && styles.codeWrapperWrapped,
           showHeader && !hasLineNumbers && styles.codeWrapperCompact,
+          hasLineNumbers && dynamicStyles.gutterWidth(maxLineDigits),
         )}>
+        {hasStickyGutter && (
+          <StickyLineNumberGutter
+            lines={lines}
+            highlightSet={highlightSet}
+            sizeStyle={sizeStyle}
+          />
+        )}
         {useSpans ? (
           <SpanCodeContent
             lines={lines}
@@ -892,7 +989,7 @@ export function CodeBlock({
             highlightSet={highlightSet}
             isWrapped={isWrapped}
             sizeStyle={sizeStyle}
-            hasLineNumbers={hasLineNumbers}
+            hasLineNumbers={hasInlineLineNumbers}
             maxDigits={maxLineDigits}
           />
         ) : (
@@ -902,7 +999,7 @@ export function CodeBlock({
             highlightSet={highlightSet}
             isWrapped={isWrapped}
             sizeStyle={sizeStyle}
-            hasLineNumbers={hasLineNumbers}
+            hasLineNumbers={hasInlineLineNumbers}
             maxDigits={maxLineDigits}
           />
         )}
