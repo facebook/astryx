@@ -30,7 +30,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
 import {fileURLToPath} from 'node:url';
-import {execFileSync} from 'node:child_process';
+import {execSync} from 'node:child_process';
 import {ensureCoreBuilt} from './ensure-core-built.mjs';
 import {runCli} from '../../../test-utils/run-cli.mjs';
 
@@ -90,6 +90,33 @@ describe('theme build custom-variant augmentations', () => {
     expect(dts).toContain("'accentOutline': true;");
     // …and NOT the old, non-existent XDS-prefixed interface.
     expect(dts).not.toMatch(/XDSButtonVariantMap/);
+  });
+
+  it('targets the CustomTextTypes interface in core/theme for a custom text type', async () => {
+    const themeFile = writeTheme(
+      tmpDir,
+      `export default {
+        name: 'variants-theme',
+        tokens: { '--color-bg': '#fff' },
+        components: {
+          text: { 'type:customTextType': { fontSize: '24px' } },
+        },
+      };\n`,
+    );
+
+    const result = await runCli(
+      ['theme', 'build', path.relative(tmpDir, themeFile)],
+      tmpDir,
+    );
+    expect(result.code).toBe(0);
+
+    const variantsPath = path.join(tmpDir, 'variants-theme.variants.d.ts');
+    expect(fs.existsSync(variantsPath)).toBe(true);
+    const dts = fs.readFileSync(variantsPath, 'utf-8');
+
+    expect(dts).toContain("declare module '@astryxdesign/core/theme'");
+    expect(dts).toMatch(/interface CustomTextTypes\b/);
+    expect(dts).toContain("'customTextType': true;");
   });
 
   it('skips props with no augmentation point (Button size, Heading type)', async () => {
@@ -171,7 +198,10 @@ describe('theme build custom-variant augmentations', () => {
           progressbar: { 'variant:customProgressBar': { backgroundColor: 'transparent' } },
           section: { 'variant:customSection': { backgroundColor: 'transparent' } },
           statusdot: { 'variant:customStatusDot': { backgroundColor: 'transparent' } },
-          text: { 'color:customTextColor': { color: 'currentColor' } },
+          text: {
+            'color:customTextColor': { color: 'currentColor' },
+            'type:customTextType': { fontSize: '24px' },
+          },
           token: { 'color:customTokenColor': { backgroundColor: 'transparent' } },
         },
       };
@@ -229,7 +259,7 @@ describe('theme build custom-variant augmentations', () => {
         `      <ProgressBar label="Progress" value={50} variant="customProgressBar" />\n` +
         `      <Section variant="customSection">Section</Section>\n` +
         `      <StatusDot label="Status" variant="customStatusDot" />\n` +
-        `      <Text color="customTextColor">Text</Text>\n` +
+        `      <Text color="customTextColor" type="customTextType">Text</Text>\n` +
         `      <Token label="Token" color="customTokenColor" />\n` +
         `    </>\n` +
         `  );\n` +
@@ -255,7 +285,7 @@ describe('theme build custom-variant augmentations', () => {
     );
 
     try {
-      execFileSync('pnpm', ['exec', 'tsc', '--project', 'tsconfig.json', '--noEmit'], {
+      execSync('pnpm exec tsc --project tsconfig.json --noEmit', {
         cwd: projectDir,
         stdio: 'pipe',
       });

@@ -312,18 +312,28 @@ function readComponentDeclarations(pascalName) {
   let contents = '';
   const coreRoot = resolveCoreRoot();
   if (coreRoot) {
-    const candidates = [
-      path.join(coreRoot, 'dist', pascalName, 'index.d.ts'),
-      path.join(coreRoot, 'src', pascalName, 'index.ts'),
+    const candidateSets = [
+      [
+        path.join(coreRoot, 'dist', pascalName, 'index.d.ts'),
+        path.join(coreRoot, 'dist', pascalName, 'types.d.ts'),
+      ],
+      [
+        path.join(coreRoot, 'src', pascalName, 'index.ts'),
+        path.join(coreRoot, 'src', pascalName, 'types.ts'),
+      ],
     ];
-    for (const file of candidates) {
-      try {
-        if (fs.existsSync(file)) {
-          contents = fs.readFileSync(file, 'utf-8');
-          break;
+    for (const files of candidateSets) {
+      if (fs.existsSync(files[0])) {
+        for (const file of files) {
+          try {
+            if (fs.existsSync(file)) {
+              contents += fs.readFileSync(file, 'utf-8') + '\n';
+            }
+          } catch {
+            // ignore
+          }
         }
-      } catch {
-        // ignore and try the next candidate
+        if (contents) break;
       }
     }
   }
@@ -463,6 +473,20 @@ function componentHasAugmentableInterface(pascalName, interfaceName) {
 }
 
 /**
+ * Override table for component properties whose extensible type map interface
+ * does not follow the standard `<Component><Prop>Map` naming convention or sits
+ * in a different module from the component itself.
+ *
+ * @type {Record<string, {module: string, interface: string}>}
+ */
+const AUGMENTATION_OVERRIDES = {
+  'text.type': {
+    module: 'theme',
+    interface: 'CustomTextTypes',
+  },
+};
+
+/**
  * Generate TypeScript declaration content with module augmentation for custom
  * component prop values found in the theme's `components` keys. Reads known
  * values from doc files to filter out base prop values.
@@ -530,9 +554,17 @@ async function generateVariantDeclarationsAsync(themeDef) {
       let target;
       let interfaceName;
 
-      if (component === 'text' && prop === 'type') {
-        target = { moduleName: 'theme' };
-        interfaceName = 'CustomTextTypes';
+      const override = AUGMENTATION_OVERRIDES[`${component}.${prop}`];
+      if (override) {
+        if (
+          componentHasAugmentableInterface(
+            override.module,
+            override.interface,
+          )
+        ) {
+          target = { moduleName: override.module };
+          interfaceName = override.interface;
+        }
       } else {
         target = (await resolveAugmentationTargetCandidates(component)).find(
           candidate =>
