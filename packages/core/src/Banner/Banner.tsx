@@ -205,7 +205,11 @@ const styles = stylex.create({
   header: {
     display: 'flex',
     alignItems: 'flex-start',
-    gap: spacingVars['--spacing-2'],
+    flexWrap: 'wrap',
+    columnGap: spacingVars['--spacing-2'],
+    // The end area carries a -4px block margin (see endArea), so the wrapped
+    // row reads as one step of spacing rather than two.
+    rowGap: spacingVars['--spacing-3'],
     paddingBlock: spacingVars['--spacing-3'],
     paddingInline: spacingVars['--spacing-4'],
   },
@@ -230,6 +234,15 @@ const styles = stylex.create({
     gap: 0,
     flex: 1,
     minWidth: 0,
+  },
+  // The wrap threshold, applied only when there is `endContent` to wrap. Flex
+  // breaks a line when the items no longer fit at their base size, so this
+  // basis is what moves the end area to its own row instead of letting it hold
+  // the header and squeeze the title down to one word per line. In rem so it
+  // tracks the user's font size. The dismiss and expand controls alone are
+  // narrow enough never to need it.
+  headerContentWithEndContent: {
+    flexBasis: '8rem',
   },
   title: {
     margin: 0,
@@ -260,8 +273,13 @@ const styles = stylex.create({
   endArea: {
     display: 'flex',
     alignItems: 'center',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-end',
     gap: spacingVars['--spacing-2'],
     flexShrink: 0,
+    // Bounded so a group of actions wider than the row wraps within itself
+    // rather than pushing the banner past the viewport (WCAG 1.4.10).
+    maxWidth: '100%',
     marginInlineStart: 'auto',
     marginBlock: `calc(-1 * (${spacingVars['--spacing-3']} - ${spacingVars['--spacing-2']}))`,
   },
@@ -537,7 +555,11 @@ export function Banner({
             />
           ) : null}
         </div>
-        <div {...stylex.props(styles.headerContent)}>
+        <div
+          {...stylex.props(
+            styles.headerContent,
+            isRenderable(endContent) && styles.headerContentWithEndContent,
+          )}>
           <div {...stylex.props(styles.title)}>{title}</div>
           {isRenderable(description) && (
             <div {...stylex.props(styles.description)}>{description}</div>

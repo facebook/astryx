@@ -318,3 +318,22 @@ export const EmptySlots: Story = {
     </div>
   ),
 };
+
+export const MultipleActionsNarrow: Story = {
+  name: 'Multiple actions (narrow viewport)',
+  render: () => (
+    <Banner
+      status="warning"
+      title="A compute node is required"
+      description="Attach one of the announcing compute nodes to continue this session."
+      endContent={
+        <>
+          <Button label="Attach od-1234" variant="secondary" size="sm" />
+          <Button label="Attach od-9999" variant="secondary" size="sm" />
+          <Button label="Provision new" variant="secondary" size="sm" />
+        </>
+      }
+      isDismissable
+    />
+  ),
+};
