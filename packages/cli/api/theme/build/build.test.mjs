@@ -302,7 +302,7 @@ describe('themeBuild() — the shipped theme template', () => {
   // compile as shipped — and cleanly: a template that greets its first reader
   // with warnings teaches them to ignore warnings. The claims its comments make
   // are checked separately by scripts/check-theme-template.test.mjs.
-  it('compiles as shipped, with no warnings', async () => {
+  it('compiles as shipped, with no defects to fix', async () => {
     const src = path.resolve(
       import.meta.dirname,
       '../../../assets/theme.template.ts',
@@ -311,7 +311,18 @@ describe('themeBuild() — the shipped theme template', () => {
 
     const result = await themeBuild('theme.template.ts', {}, {cwd: tmpDir});
 
-    expect(result?.data.warnings).toEqual([]);
+    // The font advisories (#5015) are the exception, and they are not a
+    // defect: the template names Inter and Geist Mono on purpose, and no
+    // theme file can load a font — which is why its own header opens with
+    // SHIP THE FONTS YOU NAME and both recipes for doing it. Every OTHER
+    // warning is something the reader would have to fix, so the guard is
+    // stated as: exactly the two fonts it names, and nothing else.
+    const warnings = result?.data.warnings ?? [];
+    expect(warnings.filter(w => !w.startsWith('Font "'))).toEqual([]);
+    expect(warnings.map(w => /^Font "([^"]+)"/.exec(w)?.[1])).toEqual([
+      'Inter',
+      'Geist Mono',
+    ]);
     expect(fs.existsSync(path.join(tmpDir, 'my-theme.css'))).toBe(true);
     // The template teaches custom variants; the augmentation it promises the
     // reader has to actually be generated.
