@@ -338,7 +338,9 @@ export const HugHeightWithLongContent: Story = {
               <Heading level={3}>Release notes</Heading>
               <Text type="supporting" color="secondary">
                 The sheet hugs its content until it reaches 92% of the viewport,
-                then the content scrolls within the sheet.
+                then the content scrolls within the sheet. Drag it down and the
+                scrolling area matches the visible sheet at the p50 stop. The
+                p14 peek remains transform-only.
               </Text>
               <Divider />
               {Array.from({length: 12}, (_, i) => (

@@ -176,6 +176,58 @@ describe('useSheetGestures', () => {
     expect(hook.result.current.settledOffset).toBe(200);
   });
 
+  it('resizes taller collapsed detents but keeps the shortest detent transform-only', () => {
+    const {hook} = setup({snapHeights: () => [60, 200]});
+    const t = makeTarget();
+
+    down(hook, 0, 0, t);
+    move(hook, 200, 400, t);
+    up(hook, 200, 800, t);
+    expect(hook.result.current.settledOffset).toBe(200);
+    expect(hook.result.current.settledLayoutOffset).toBe(200);
+
+    down(hook, 200, 1000, t);
+    move(hook, 340, 1400, t);
+    up(hook, 340, 1800, t);
+    expect(hook.result.current.settledOffset).toBe(340);
+    expect(hook.result.current.settledLayoutOffset).toBe(0);
+  });
+
+  it('excludes the offscreen block-end reserve from visible detent heights', () => {
+    const onSnap = vi.fn();
+    const {hook} = setup({
+      snapHeights: () => [200],
+      offscreenBlockEndInset: 48,
+      onSnap,
+    });
+    const t = makeTarget();
+
+    // The 400px border box has 352px visible. A 200px visible detent therefore
+    // rests at offset 152, not 200; the 48px reserve remains below the viewport.
+    down(hook, 0, 0, t);
+    move(hook, 150, 700, t);
+    up(hook, 150, 1100, t);
+
+    expect(hook.result.current.settledOffset).toBe(152);
+    expect(onSnap).toHaveBeenLastCalledWith(200);
+  });
+
+  it('uses the visible shortest detent height for the dismiss overshoot', () => {
+    const {hook, onDismiss} = setup({
+      snapHeights: () => [200],
+      offscreenBlockEndInset: 48,
+    });
+    const t = makeTarget();
+
+    // Visible full height is 352px, so the 200px stop is offset 152. Its 40%
+    // dismiss overshoot ends at 232px; the hidden reserve must not extend it.
+    down(hook, 0, 0, t);
+    move(hook, 235, 1000, t);
+    up(hook, 235, 2000, t);
+
+    expect(onDismiss).toHaveBeenCalledTimes(1);
+  });
+
   it('a downward drag from a middle detent never snaps back up past it', () => {
     // Three detents on a 600px sheet: full (offset 0), mid 360 (offset 240),
     // short 160 (offset 440). Rest at the mid detent, then drag DOWN a modest

@@ -7,11 +7,10 @@
  * @position Internal to BottomSheet; consumed by useSheetGestures, tested by
  *   snapOffsets.test.ts.
  *
- * The sheet is rendered at its full (fully-open) height and *translated down*
- * to express shorter detents — translate is GPU-composited, so this is cheaper
- * than animating layout height. A detent is therefore a translateY offset in
- * px from the fully-open position (0 = fully open, larger = more collapsed).
- * These helpers turn snap points into that offset list; they are pure so the
+ * A detent is represented as an offset in px from the fully-open position
+ * (0 = fully open, larger = more collapsed). The panel may render that offset
+ * as a translate or as a reduction in layout height. These
+ * helpers turn snap points into the shared offset list; they are pure so the
  * geometry can be unit-tested without a DOM.
  */
 
@@ -33,12 +32,12 @@ export function snapFractionsToHeights(
 
 /**
  * Given the sheet's full height (px, as rendered fully open) and a set of
- * candidate detent *visible heights* (px), return the resting translateY
- * offsets from fully-open, ascending and de-duplicated.
+ * candidate detent *visible heights* (px), return the resting offsets from
+ * fully-open, ascending and de-duplicated.
  *
  * - `0` (fully open) is always the first detent.
  * - Only heights strictly shorter than the sheet become collapsed detents; a
- *   height >= the sheet can't be shown by translating down, so it's dropped.
+ *   height >= the sheet is already covered by the fully-open stop.
  * - Offsets closer than `dedupPx` collapse to the smaller (taller) offset, so
  *   near-identical detents — e.g. a hug height ≈ a snap point — become one stop.
  */
