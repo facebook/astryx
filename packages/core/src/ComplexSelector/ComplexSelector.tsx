@@ -46,7 +46,7 @@ import {
   typographyVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
-import {mergeProps} from '../utils';
+import {isRenderable, mergeProps} from '../utils';
 import {composeEventHandlers} from '../utils/composeEventHandlers';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import type {SizeValue} from '../utils/types';
@@ -439,6 +439,11 @@ export function ComplexSelector<Value>({
 
   const triggerContent = triggerLabel ?? placeholder;
 
+  const startIconSlot = renderIconSlot(startIcon, {
+    size: 'sm',
+    color: 'secondary',
+  });
+
   const content = (
     <div id={contentId} {...stylex.props(styles.content, contentXstyle)}>
       {children(optimisticValue, commitValue, close, {
@@ -467,9 +472,12 @@ export function ComplexSelector<Value>({
             inputWrapperStyles.base,
             styles.triggerContainer,
             styles[size],
-            variant === 'input' && focusOutlineStyles.focusWithin,
+            // The ring belongs to the wrapper (the focusable `<button>` sits
+            // inside it), but it must still be a KEYBOARD ring: `:focus-within`
+            // matched a mouse click on the trigger and drew the outline for
+            // pointer users too. `focusWithin` here is `:has(:focus-visible)`.
+            focusOutlineStyles.focusWithin,
             variant === 'ghost' && styles.triggerGhost,
-            variant === 'ghost' && focusOutlineStyles.focusWithin,
             isDisabled && inputWrapperStyles.disabled,
             variant === 'ghost' && isDisabled && styles.triggerGhostDisabled,
             isDisabled && styles.disabled,
@@ -479,8 +487,7 @@ export function ComplexSelector<Value>({
           className,
           style,
         )}>
-        {startIcon &&
-          renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
+        {isRenderable(startIconSlot) && startIconSlot}
         <button
           ref={triggerRef}
           id={triggerId}
