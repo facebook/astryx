@@ -653,17 +653,18 @@ export function SideNavItem({
   // - `rowProps` — split-action path (toggle, no actions): presentational
   //   <div>; the ring belongs on each child tab stop.
   // - `focusableRowProps` — ordinary row: the row element is the control.
-  // - `actionsRowProps` — same pill as `focusableRowProps`, plus
-  //   `focusWithin` so the ring paints. The wrapper is not a tab stop, so
-  //   `:focus-visible` on it would never match.
+  // - `actionsRowProps` — same pill, but the ring is drawn for the primary
+  //   only. The wrapper is not a tab stop, so `:focus-visible` on it would
+  //   never match, and matching any descendant instead would light the whole
+  //   row around the chevron's or an action's own ring.
   const rowProps = mergeProps(itemThemeProps, stylex.props(...itemStyleArgs));
   const focusableRowProps = mergeProps(
     itemThemeProps,
     focusOutlineProps.focusVisible(...itemStyleArgs),
   );
   const actionsRowProps = mergeProps(
-    focusableRowProps,
-    focusOutlineProps.focusWithin(),
+    itemThemeProps,
+    focusOutlineProps.focusWithinFirstChild(...itemStyleArgs),
   );
 
   // Row-wrapper path: primary element + row controls as siblings.
@@ -701,7 +702,9 @@ export function SideNavItem({
           {...rest}
           {...rowPrimaryAriaProps}
           {...(hasActions
-            ? stylex.props(styles.splitAction)
+            ? // The wrapper rings for this element; suppressing here is what
+              // keeps the UA's own ring from painting inside that one.
+              focusOutlineProps.suppressed(styles.splitAction)
             : focusOutlineProps.focusVisible(styles.splitAction))}>
           {itemContent}
         </NavItemElement>

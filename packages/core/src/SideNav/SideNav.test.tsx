@@ -1688,6 +1688,23 @@ describe('SideNavItem — actions slot', () => {
     expect(row).toContainElement(screen.getByTestId('row-action'));
   });
 
+  it('adds no row wrapper for a falsy actions value', () => {
+    // `actions={canEdit ? <Menu /> : null}` is the ordinary consumer shape.
+    // A wrapper there would change markup, focus order and the ring's
+    // owner for a row that has no row controls at all.
+    const {rerender} = render(
+      <SideNavItem label="Project" href="/project" actions={null} />,
+    );
+    expect(screen.getByRole('link', {name: 'Project'})).toHaveClass(
+      'astryx-side-nav-item',
+    );
+
+    rerender(<SideNavItem label="Project" href="/project" actions={false} />);
+    expect(screen.getByRole('link', {name: 'Project'})).toHaveClass(
+      'astryx-side-nav-item',
+    );
+  });
+
   it('keeps aria wiring on the toggle when actions are present', () => {
     render(
       <SideNavItem
@@ -2223,10 +2240,18 @@ describe('SideNav audit regressions', () => {
 // =============================================================================
 // A15 — the shared focus ring
 //
-// jsdom does not derive `:focus-visible` from `.focus()` or from Tab, so the
-// painted ring cannot be read back here; the geometry is measured in a real
-// browser instead. These pin the composition — that the focusable element
-// carries the classes `focusOutlineStyles.focusVisible` compiles to.
+// jsdom does not derive `:focus-visible` from `.focus()` for an element
+// matched directly, so the ring a tab stop draws on itself cannot be read
+// back here; the geometry is measured in a real browser instead. These pin
+// the composition — that the focusable element carries the classes
+// `focusOutlineStyles.focusVisible` compiles to.
+//
+// Composition is only proof for a tab stop. A row wrapper is not one, so
+// `:focus-visible` atoms sitting on it can never match, and asserting them
+// there proves nothing: the actions-row tests below passed with the
+// wrapper's ring deleted outright. A wrapper's ring is guarded by `:has()`,
+// which jsdom *does* re-evaluate against live focus, so those rules are read
+// out of the stylesheet and matched against the DOM instead.
 // =============================================================================
 
 const sharedFocusRingClasses = stylex
@@ -2245,6 +2270,98 @@ function expectNoSharedFocusRing(el: Element) {
   for (const c of sharedFocusRingClasses) {
     expect(classes).not.toContain(c);
   }
+}
+
+/** Every style rule in the live sheet, flattened out of any grouping rule. */
+function allStyleRules(): CSSStyleRule[] {
+  const out: CSSStyleRule[] = [];
+  const walk = (rules: CSSRuleList) => {
+    for (const rule of Array.from(rules)) {
+      const nested = (rule as CSSGroupingRule).cssRules;
+      if (nested) {
+        walk(nested);
+      }
+      if ((rule as CSSStyleRule).selectorText) {
+        out.push(rule as CSSStyleRule);
+      }
+    }
+  };
+  for (const sheet of Array.from(document.styleSheets)) {
+    try {
+      walk(sheet.cssRules);
+    } catch {
+      // A sheet we cannot read cannot be one StyleX injected.
+    }
+  }
+  return out;
+}
+
+/**
+ * A rule's `outline-style`, read out of its text.
+ *
+ * Not `rule.style`: the ring's value is a `var()`, and jsdom's CSS object
+ * model drops longhands it cannot parse, so every ring rule reads back as an
+ * empty string there.
+ */
+function outlineStyleOf(rule: CSSStyleRule): string | undefined {
+  const body = /\{([^}]*)\}/.exec(rule.cssText)?.[1] ?? '';
+  return /(?:^|;)\s*outline-style:\s*([^;]+)/.exec(body)?.[1].trim();
+}
+
+/**
+ * The selectors that actually paint the shared ring on `el`, read out of the
+ * live stylesheet with StyleX's `:not(#\#)` specificity padding stripped so
+ * jsdom can evaluate them.
+ *
+ * `outline-style` is the discriminator: StyleX emits one rule per property,
+ * and no outline paints while that one resolves to `none`.
+ */
+function ringSelectorsFor(el: Element): string[] {
+  const classes = new Set(el.className.split(' '));
+  return allStyleRules()
+    .filter(rule => {
+      const painted = outlineStyleOf(rule);
+      if (!painted || painted === 'none') {
+        return false;
+      }
+      const owner = /^\.([^:\s]+)/.exec(rule.selectorText)?.[1];
+      return owner != null && classes.has(owner);
+    })
+    .map(rule => rule.selectorText.replace(/:not\(#\\?#\)/g, ''));
+}
+
+/**
+ * Whether `el`'s ring is painting for whatever holds focus right now.
+ *
+ * `:focus-visible` is substituted with `:focus` before matching. jsdom
+ * derives `:focus-visible` from a heuristic over the last interaction, so it
+ * answers differently depending on which tests ran before — the same
+ * assertion passes alone and fails in the file. `:focus` is unambiguous, and
+ * the ring's modality is pinned separately, on the selector text, by the
+ * keyboard-only test below.
+ */
+function ringIsPainting(el: Element): boolean {
+  return ringSelectorsFor(el).some(selector =>
+    el.matches(selector.replace(/:focus-visible/g, ':focus')),
+  );
+}
+
+/**
+ * Whether `el` unconditionally declares `outline-style: none`, which is what
+ * keeps the UA's own focus ring off an element whose ring an ancestor paints.
+ * Computed style cannot answer this: `none` is also the CSS initial value.
+ */
+function suppressesOwnOutline(el: Element): boolean {
+  const classes = new Set(el.className.split(' '));
+  return allStyleRules().some(rule => {
+    if (outlineStyleOf(rule) !== 'none') {
+      return false;
+    }
+    // Unconditional only — a bare class once the padding is stripped.
+    const bare = rule.selectorText.replace(/:not\(#\\?#\)/g, '');
+    const owner = /^\.([^:\s]+)$/.exec(bare)?.[1];
+    return owner != null && classes.has(owner);
+  });
 }
 
 describe('SideNav focus ring (A15)', () => {
@@ -2294,7 +2411,8 @@ describe('SideNav focus ring (A15)', () => {
     expectNoSharedFocusRing(row);
   });
 
-  it('rings the row wrapper of an actions row, not the truncated primary', () => {
+  it('rings the row wrapper of an actions row, not the truncated primary', async () => {
+    const user = userEvent.setup();
     render(
       <SideNavItem
         label="Project"
@@ -2311,14 +2429,20 @@ describe('SideNav focus ring (A15)', () => {
     const row = link.parentElement!;
     expect(row.tagName).toBe('DIV');
     expect(row).toContainElement(screen.getByTestId('row-action'));
-    // Same pill as an ordinary row: the shared ring lives on the wrapper,
-    // whose box includes the actions. Putting it on the primary would clip
-    // to the truncated split-action element (square, not full-row).
-    expectSharedFocusRing(row);
-    expectNoSharedFocusRing(link);
+
+    // Same pill as an ordinary row: the ring lives on the wrapper, whose box
+    // includes the actions. Putting it on the primary would clip to the
+    // truncated split-action element (square, not full-row).
+    expect(ringIsPainting(row)).toBe(false);
+    await user.tab();
+    expect(link).toHaveFocus();
+    expect(ringIsPainting(row)).toBe(true);
+    // And exactly one ring: nothing paints a second one on the primary.
+    expect(ringSelectorsFor(link)).toEqual([]);
   });
 
-  it('rings the wrapper of an actions row that also splits the chevron', () => {
+  it('leaves the wrapper ring to the primary, not the chevron toggle', async () => {
+    const user = userEvent.setup();
     render(
       <SideNavItem
         label="Settings"
@@ -2337,9 +2461,121 @@ describe('SideNav focus ring (A15)', () => {
     const toggle = screen.getByRole('button', {name: 'Collapse Settings'});
     const row = link.parentElement!;
     expect(row).toContainElement(screen.getByTestId('row-action'));
-    expectSharedFocusRing(row);
-    expectNoSharedFocusRing(link);
+
+    await user.tab();
+    expect(link).toHaveFocus();
+    expect(ringIsPainting(row)).toBe(true);
+
+    // The toggle owns its own ring, as it does in a split-action row with no
+    // actions. Keeping the wrapper lit too would stack a full-row outline
+    // around the chevron's own — two rings for one tab stop.
+    await user.tab();
+    expect(toggle).toHaveFocus();
     expectSharedFocusRing(toggle);
+    expect(ringIsPainting(row)).toBe(false);
+  });
+
+  it('does not ring the row wrapper when a supplied action takes focus', async () => {
+    const user = userEvent.setup();
+    render(
+      <SideNavItem
+        label="Project"
+        href="/project"
+        actions={
+          <button type="button" data-testid="row-action">
+            More
+          </button>
+        }
+      />,
+    );
+
+    const row = screen.getByRole('link', {name: 'Project'}).parentElement!;
+    await user.tab();
+    expect(ringIsPainting(row)).toBe(true);
+
+    // An action draws whatever ring its own component draws. Focus is not on
+    // the row, so the row must not light up around it.
+    await user.tab();
+    expect(screen.getByTestId('row-action')).toHaveFocus();
+    expect(ringIsPainting(row)).toBe(false);
+  });
+
+  it('rings the wrapper of a whole-row toggle carrying actions', async () => {
+    const user = userEvent.setup();
+    render(
+      <SideNavItem
+        label="Project"
+        collapsible
+        actions={
+          <button type="button" data-testid="row-action">
+            More
+          </button>
+        }>
+        <SideNavItem label="Session" href="/project/session" />
+      </SideNavItem>,
+    );
+
+    // No href and no onClick, so the primary *is* the collapse toggle and
+    // keeps the chevron inside it — a different row shape from the split.
+    const primary = screen.getByRole('button', {name: 'Project'});
+    const row = primary.parentElement!;
+
+    await user.tab();
+    expect(primary).toHaveFocus();
+    expect(ringIsPainting(row)).toBe(true);
+
+    await user.tab();
+    expect(screen.getByTestId('row-action')).toHaveFocus();
+    expect(ringIsPainting(row)).toBe(false);
+  });
+
+  it('keeps the UA focus ring off the primary the wrapper rings for', () => {
+    render(
+      <SideNavItem
+        label="Project"
+        href="/project"
+        actions={
+          <button type="button" data-testid="row-action">
+            More
+          </button>
+        }
+      />,
+    );
+
+    const link = screen.getByRole('link', {name: 'Project'});
+    // Dropping the shared ring off the primary also drops the
+    // `outline-style: none` default that came with it, and a bare <a> keeps
+    // the browser's own focus ring — which would paint inside the wrapper's.
+    expect(suppressesOwnOutline(link)).toBe(true);
+  });
+
+  it('paints the actions-row ring for keyboard focus only', () => {
+    render(
+      <SideNavItem
+        label="Project"
+        href="/project"
+        actions={
+          <button type="button" data-testid="row-action">
+            More
+          </button>
+        }
+      />,
+    );
+
+    const link = screen.getByRole('link', {name: 'Project'});
+    const row = link.parentElement!;
+    // The wrapper is not a tab stop, so its ring has to be guarded by a
+    // relational selector. `:focus-within` or `:focus` would light the row
+    // for mouse users too; only `:focus-visible` keeps it to the keyboard.
+    const selectors = ringSelectorsFor(row);
+    expect(selectors.length).toBeGreaterThan(0);
+    for (const selector of selectors) {
+      expect(selector).toContain(':focus-visible');
+    }
+
+    // The guard is scoped to the wrapper's first child. Reordering the row
+    // would hand the ring to the toggle or the actions instead.
+    expect(row.firstElementChild).toBe(link);
   });
 
   it('draws the shared ring on a heading rendered as one link', () => {
