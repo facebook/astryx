@@ -23,6 +23,10 @@ const pkg = JSON.parse(
   readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8'),
 ) as {dependencies?: Record<string, string>};
 
+// The Vite `resolve.alias` block only — the StyleX `aliases` block above it
+// carries the same keys but does not drive Vite's dev-mode resolution.
+const viteAliasBlock = mainTs.slice(mainTs.indexOf('alias: {'));
+
 const workspaceDeps = Object.keys(pkg.dependencies ?? {}).filter(name =>
   name.startsWith('@astryxdesign/'),
 );
@@ -33,10 +37,9 @@ describe('storybook main.ts workspace source aliases', () => {
   });
 
   it.each(workspaceDeps)('aliases %s to source', dep => {
-    // Each workspace dependency must appear as a bare alias key (in
-    // `resolve.alias`) so dev-mode resolution never falls back to the
-    // export map's dist/ entry point, which is missing until the package
-    // is built.
-    expect(mainTs).toContain(`'${dep}':`);
+    // Each workspace dependency must appear as a bare alias key in Vite's
+    // `resolve.alias` so dev-mode resolution never falls back to the export
+    // map's dist/ entry point, which is missing until the package is built.
+    expect(viteAliasBlock).toContain(`'${dep}':`);
   });
 });
