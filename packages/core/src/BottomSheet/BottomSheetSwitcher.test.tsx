@@ -4,7 +4,7 @@
  * @file BottomSheetSwitcher.test.tsx
  * @input Uses vitest, Testing Library, BottomSheet, BottomSheetSwitcher
  * @output Tests mutually exclusive sheet selection, dismissal, and focus handoff
- * @position Lab tests for BottomSheetSwitcher
+ * @position Core tests for BottomSheetSwitcher
  *
  * SYNC: When BottomSheetSwitcher.tsx or its BottomSheet integration changes,
  * update these tests to match the public behavior.
@@ -13,7 +13,7 @@
 import {fireEvent, render, screen} from '@testing-library/react';
 import {createRef, useState} from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
-import {useFocusTrap} from '@astryxdesign/core/hooks';
+import {useFocusTrap} from '../hooks';
 import {BottomSheet} from './BottomSheet';
 import {BottomSheetSwitcher} from './BottomSheetSwitcher';
 

@@ -1,6 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import type {Meta, StoryObj} from '@storybook/react';
+'use client';
+
 import {useState} from 'react';
 import {BottomSheet, BottomSheetSwitcher} from '@astryxdesign/core/BottomSheet';
 import {Button} from '@astryxdesign/core/Button';
@@ -12,27 +13,6 @@ import {HStack, VStack} from '@astryxdesign/core/Stack';
 import {Text} from '@astryxdesign/core/Text';
 import {RadioList, RadioListItem} from '@astryxdesign/core/RadioList';
 
-const meta: Meta<typeof BottomSheetSwitcher> = {
-  title: 'Core/BottomSheetSwitcher',
-  component: BottomSheetSwitcher,
-  tags: ['autodocs'],
-  parameters: {
-    layout: 'fullscreen',
-    docs: {
-      story: {inline: false, height: '560px'},
-    },
-  },
-  decorators: [
-    Story => (
-      <div style={{minHeight: 480, padding: 32}}>
-        <Story />
-      </div>
-    ),
-  ],
-};
-
-export default meta;
-type Story = StoryObj<typeof BottomSheetSwitcher>;
 type NotificationSheetHeight = 'hug' | 'capped';
 
 interface NotificationOverviewSheetProps {
@@ -236,16 +216,6 @@ function MultiStepSwitcherExample({
   );
 }
 
-export const HugContent: Story = {
-  name: 'Hug content',
-  render: () => <MultiStepSwitcherExample height="hug" />,
-};
-
-export const Capped: Story = {
-  render: () => <MultiStepSwitcherExample height="capped" />,
-};
-
-export const NoScrim: Story = {
-  name: 'No scrim',
-  render: () => <MultiStepSwitcherExample height="hug" hasScrim={false} />,
-};
+export default function BottomSheetSwitcherShowcase() {
+  return <MultiStepSwitcherExample height="hug" />;
+}

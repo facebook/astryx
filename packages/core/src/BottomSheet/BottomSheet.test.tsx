@@ -4,7 +4,7 @@
  * @file BottomSheet.test.tsx
  * @input Uses vitest, @testing-library/react, BottomSheet component
  * @output Unit tests for BottomSheet component behavior
- * @position Lab testing; validates BottomSheet.tsx implementation
+ * @position Core testing; validates BottomSheet.tsx implementation
  *
  * SYNC: When BottomSheet.tsx changes, update tests to match new behavior
  */
@@ -103,10 +103,13 @@ function resizeEntry(
   borderBoxHeight: number,
   contentBoxHeight = borderBoxHeight,
 ): ResizeObserverEntry {
-  return {
+  // Core typechecks its tests, so this partial stands in for the full entry
+  // the way sharedResizeObserver does: only the fields the sheet reads.
+  const entry: Partial<ResizeObserverEntry> = {
     borderBoxSize: [{blockSize: borderBoxHeight, inlineSize: 100}],
     contentRect: rect({top: 0, bottom: contentBoxHeight}),
-  } as ResizeObserverEntry;
+  };
+  return entry as ResizeObserverEntry;
 }
 
 function mockVisualViewport(height: number, offsetTop = 0) {

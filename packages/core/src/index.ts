@@ -22,6 +22,7 @@ export * from './AvatarGroup';
 export * from './Badge';
 export * from './Banner';
 export * from './Blockquote';
+export * from './BottomSheet';
 export * from './Breadcrumbs';
 export * from './Button';
 export * from './ButtonGroup';

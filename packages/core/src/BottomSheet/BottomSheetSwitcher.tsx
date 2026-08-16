@@ -6,7 +6,7 @@
  * @file BottomSheetSwitcher.tsx
  * @input Uses React context, StyleX, theme tokens, focus/scroll-lock hooks, BottomSheetSwitcherContext
  * @output Exports BottomSheetSwitcher and BottomSheetSwitcherProps
- * @position Lab switcher for mutually exclusive BottomSheet flows
+ * @position Core switcher for mutually exclusive BottomSheet flows
  *
  * The switcher turns a set of declaratively nested BottomSheets into a
  * controlled single-selection group: `activeSheet` names the one interactive
@@ -21,11 +21,12 @@
  * This keeps one modal boundary and one native ::backdrop without a portal.
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/lab/src/BottomSheet/BottomSheet.tsx
- * - /packages/lab/src/BottomSheet/BottomSheetSwitcher.doc.mjs
- * - /packages/lab/src/BottomSheet/BottomSheetSwitcher.test.tsx
- * - /packages/lab/src/BottomSheet/index.ts
+ * - /packages/core/src/BottomSheet/BottomSheet.tsx
+ * - /packages/core/src/BottomSheet/BottomSheetSwitcher.doc.mjs
+ * - /packages/core/src/BottomSheet/BottomSheetSwitcher.test.tsx
+ * - /packages/core/src/BottomSheet/index.ts
  * - /apps/storybook/stories/BottomSheetSwitcher.stories.tsx
+ * - /packages/cli/assets/templates/blocks/components/BottomSheet/BottomSheetSwitcherShowcase.tsx
  */
 
 import {
@@ -40,24 +41,20 @@ import {
   type SyntheticEvent,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {BaseProps} from '@astryxdesign/core';
-import type {DialogPurpose} from '@astryxdesign/core/Dialog';
-import {
-  colorVars,
-  durationVars,
-  easeVars,
-} from '@astryxdesign/core/theme/tokens.stylex';
+import type {BaseProps} from '../BaseProps';
+import type {DialogPurpose} from '../Dialog';
+import {colorVars, durationVars, easeVars} from '../theme/tokens.stylex';
 import {
   hasActiveFocusTrapEscape,
   isImeKeyEvent,
   useFocusTrap,
   useScrollLock,
-} from '@astryxdesign/core/hooks';
+} from '../hooks';
 import {
   composeEventHandlers,
   mergeProps,
   mergeRefs,
-} from '@astryxdesign/core/utils';
+} from '../utils';
 import {
   BottomSheetSwitcherContext,
   type BottomSheetSwitcherContextValue,
@@ -424,6 +421,7 @@ export function BottomSheetSwitcher({
   );
 
   useLayoutEffect(() => {
+    // eslint-disable-next-line @eslint-react/set-state-in-effect -- clear a retained sheet after its panel unmounts
     setTransition(current =>
       current.retainedSheet != null &&
       unmountedSheetIds.has(current.retainedSheet)
@@ -612,6 +610,7 @@ export function BottomSheetSwitcher({
     (props['aria-labelledby'] == null ? activeLabel : undefined);
 
   return (
+    // eslint-disable-next-line @eslint-react/no-context-provider -- preserve the promoted Lab implementation
     <BottomSheetSwitcherContext.Provider value={contextValue}>
       <dialog
         {...props}

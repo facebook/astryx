@@ -10,7 +10,7 @@
  */
 
 import {createContext} from 'react';
-import type {DialogPurpose} from '@astryxdesign/core/Dialog';
+import type {DialogPurpose} from '../Dialog';
 
 export type BottomSheetSwitcherPhase =
   | 'entering'

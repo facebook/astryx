@@ -7,6 +7,118 @@ export const docs = {
   group: 'BottomSheet',
   category: 'Overlay',
   keywords: ['bottom sheet', 'switcher', 'multi-step', 'flow', 'wizard'],
+  playground: {
+    overlay: true,
+    overlayControl: {
+      stateProp: 'activeSheet',
+      openValue: 'details',
+    },
+    defaults: {
+      activeSheet: null,
+      children: [
+        {
+          __element: 'BottomSheet',
+          props: {
+            sheetId: 'details',
+            label: 'Setup details',
+            height: 'hug',
+          },
+          children: {
+            __element: 'Section',
+            props: {padding: 4},
+            children: {
+              __element: 'VStack',
+              props: {gap: 2},
+              children: [
+                {
+                  __element: 'Heading',
+                  props: {level: 3},
+                  children: 'Setup details',
+                },
+                {
+                  __element: 'Text',
+                  props: {type: 'body'},
+                  children: 'Add the essential information for this setup.',
+                },
+                {
+                  __element: 'Text',
+                  props: {type: 'supporting'},
+                  children: 'You can review these details before saving.',
+                },
+              ],
+            },
+          },
+        },
+        {
+          __element: 'BottomSheet',
+          props: {
+            sheetId: 'preferences',
+            label: 'Choose preferences',
+            height: 'hug',
+          },
+          children: {
+            __element: 'Section',
+            props: {padding: 4},
+            children: {
+              __element: 'VStack',
+              props: {gap: 2},
+              children: [
+                {
+                  __element: 'Heading',
+                  props: {level: 3},
+                  children: 'Choose preferences',
+                },
+                {
+                  __element: 'Text',
+                  props: {type: 'body'},
+                  children: 'Select how this setup should behave.',
+                },
+                {
+                  __element: 'Text',
+                  props: {type: 'supporting'},
+                  children:
+                    'Notifications can be sent immediately, daily, or weekly.',
+                },
+                {
+                  __element: 'Text',
+                  props: {type: 'supporting'},
+                  children: 'You can update these preferences later.',
+                },
+              ],
+            },
+          },
+        },
+        {
+          __element: 'BottomSheet',
+          props: {
+            sheetId: 'confirm',
+            label: 'Confirm setup',
+            height: 'hug',
+          },
+          children: {
+            __element: 'Section',
+            props: {padding: 4},
+            children: {
+              __element: 'VStack',
+              props: {gap: 2},
+              children: [
+                {
+                  __element: 'Heading',
+                  props: {level: 3},
+                  children: 'Confirm setup',
+                },
+                {
+                  __element: 'Text',
+                  props: {type: 'body'},
+                  children: 'Everything is ready to save.',
+                },
+              ],
+            },
+          },
+        },
+      ],
+    },
+  },
   description:
     'Coordinates multiple BottomSheets as a mutually exclusive flow. One activeSheet ID selects the only interactive sheet; during a handoff, the new sheet enters above the inert previous sheet. If the new sheet is shorter, the previous sheet simultaneously moves down until their top edges align, then fades after both transforms complete. The switcher owns one shared native <dialog>: modal flows call showModal() once for one top-layer boundary and one ::backdrop across the whole flow, while no-scrim flows use a non-modal show() shell. Its ref and shared DOM props target that dialog.',
   props: [

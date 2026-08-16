@@ -6,7 +6,7 @@
  * @file useSheetGestures.ts
  * @input Uses React (useCallback, useEffect, useMemo, useRef, useState)
  * @output Exports useSheetGestures hook and its option/result types
- * @position Internal to BottomSheet; not exported from the lab entry point
+ * @position Internal to BottomSheet; not exported from the core entry point
  *
  * Drag + snap machinery for the bottom sheet. Tracks a pointer drag down the
  * block axis, translates the sliding surface live, and on release either
@@ -30,8 +30,7 @@
  * settle transition.
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/lab/src/BottomSheet/useSheetGestures.doc.mjs
- * - /packages/lab/src/BottomSheet/useSheetGestures.test.ts
+ * - /packages/core/src/BottomSheet/useSheetGestures.test.ts
  */
 
 import {
@@ -297,6 +296,7 @@ export function useSheetGestures({
   const recordSettledLayoutOffset = useCallback((offset: number) => {
     const normalizedOffset = Math.max(0, offset);
     settledLayoutOffsetRef.current = normalizedOffset;
+    // eslint-disable-next-line @eslint-react/set-state-in-effect -- layout offset is recorded from measurement effects
     setSettledLayoutOffset(normalizedOffset);
   }, []);
   const updateScrollPreservationInset = useCallback((nextInset: number) => {
@@ -465,15 +465,21 @@ export function useSheetGestures({
   // Reset to the tallest detent each time the sheet re-opens.
   useEffect(() => {
     if (isOpen) {
+      // eslint-disable-next-line @eslint-react/set-state-in-effect -- resets gesture state on controlled reopen
       setDragOffset(0);
+      // eslint-disable-next-line @eslint-react/set-state-in-effect -- resets gesture state on controlled reopen
       setSettledOffset(0);
+      // eslint-disable-next-line @eslint-react/set-state-in-effect -- resets gesture state on controlled reopen
       setIsDragging(false);
+      // eslint-disable-next-line @eslint-react/set-state-in-effect -- resets gesture state on controlled reopen
       setIsScrollAreaReconciling(false);
       recordSettledLayoutOffset(0);
       scrollPreservationInsetRef.current = 0;
       settlingLayoutOffsetRef.current = null;
       pendingScrollPreservationInsetRef.current = null;
+      // eslint-disable-next-line @eslint-react/set-state-in-effect -- resets gesture state on controlled reopen
       setScrollPreservationInset(0);
+      // eslint-disable-next-line @eslint-react/set-state-in-effect -- resets gesture state on controlled reopen
       setSettlingLayoutOffset(null);
     }
   }, [isOpen, recordSettledLayoutOffset]);
@@ -1060,6 +1066,7 @@ export function useSheetGestures({
     }
   }, []);
 
+  // eslint-disable-next-line @eslint-react/exhaustive-deps -- re-read the preference whenever the sheet opens
   const reducedMotion = useMemo(() => prefersReducedMotion(), [isOpen]);
 
   const reconcileScrollPreservationInset = useCallback(

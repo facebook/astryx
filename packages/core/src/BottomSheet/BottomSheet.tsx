@@ -15,12 +15,13 @@
  * motion completion.
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/lab/src/BottomSheet/BottomSheetPanel.tsx
- * - /packages/lab/src/BottomSheet/BottomSheet.doc.mjs
- * - /packages/lab/src/BottomSheet/BottomSheet.test.tsx
- * - /packages/lab/src/BottomSheet/BottomSheetSwitcher.tsx
- * - /packages/lab/src/BottomSheet/BottomSheetSwitcher.test.tsx
+ * - /packages/core/src/BottomSheet/BottomSheetPanel.tsx
+ * - /packages/core/src/BottomSheet/BottomSheet.doc.mjs
+ * - /packages/core/src/BottomSheet/BottomSheet.test.tsx
+ * - /packages/core/src/BottomSheet/BottomSheetSwitcher.tsx
+ * - /packages/core/src/BottomSheet/BottomSheetSwitcher.test.tsx
  * - /apps/storybook/stories/BottomSheet.stories.tsx
+ * - /packages/cli/assets/templates/blocks/components/BottomSheet/BottomSheetShowcase.tsx
  */
 
 import {
@@ -33,14 +34,10 @@ import {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {BaseProps} from '@astryxdesign/core';
-import type {DialogPurpose} from '@astryxdesign/core/Dialog';
-import {
-  colorVars,
-  durationVars,
-  easeVars,
-} from '@astryxdesign/core/theme/tokens.stylex';
-import {useDevWarning, useScrollLock} from '@astryxdesign/core/hooks';
+import type {BaseProps} from '../BaseProps';
+import type {DialogPurpose} from '../Dialog';
+import {colorVars, durationVars, easeVars} from '../theme/tokens.stylex';
+import {useDevWarning, useScrollLock} from '../hooks';
 import {
   BottomSheetPanel,
   type BottomSheetPanelMotion,
@@ -237,6 +234,9 @@ function StandaloneBottomSheet({
       return;
     }
 
+    // The controlled prop opens an already-mounted dialog; presentation state
+    // must latch here so a later close can keep it mounted through its exit.
+    // eslint-disable-next-line @eslint-react/set-state-in-effect -- latches controlled open state for exit animation
     setIsPresented(true);
     dialog.style.setProperty('--_sheet-scrim-opacity', '1');
     const wasOpen = dialog.open;
@@ -329,7 +329,7 @@ function StandaloneBottomSheet({
           ref={ref}
           state={panelState}
           height={height}
-          canSwipeDismiss={purpose === 'info'}
+          isSwipeDismissAllowed={purpose === 'info'}
           xstyle={xstyle}
           onDismiss={dismissOnLightInteraction}
           onScrimOpacity={handleScrimOpacity}
@@ -483,7 +483,7 @@ function SwitcherBottomSheetItem({
         ref={ref}
         state={panelState}
         height={height}
-        canSwipeDismiss={purpose === 'info'}
+        isSwipeDismissAllowed={purpose === 'info'}
         xstyle={xstyle}
         onDismiss={dismissOnSwipe}
         onScrimOpacity={handleScrimOpacity}
@@ -493,6 +493,7 @@ function SwitcherBottomSheetItem({
         {/* A switcher item consumes its parent controller. Its content starts a
             fresh ownership scope so a nested BottomSheet is standalone unless
             it establishes a nested BottomSheetSwitcher of its own. */}
+        {/* eslint-disable-next-line @eslint-react/no-context-provider -- preserve the promoted Lab implementation */}
         <BottomSheetSwitcherContext.Provider value={null}>
           {children}
         </BottomSheetSwitcherContext.Provider>
@@ -506,6 +507,7 @@ function SwitcherBottomSheetItem({
  * BottomSheetSwitcher shared dialog when given a sheetId inside that context.
  */
 export function BottomSheet(props: BottomSheetProps) {
+  // eslint-disable-next-line @eslint-react/no-use-context -- preserve the promoted Lab implementation
   const switcher = useContext(BottomSheetSwitcherContext);
   const runtimeSheetId = (props as {sheetId?: string}).sheetId;
   const hasValidSheetId =

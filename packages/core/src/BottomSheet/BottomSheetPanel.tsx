@@ -14,9 +14,9 @@
  * state, or switcher registration; those belong to the hosting controller.
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/lab/src/BottomSheet/BottomSheet.tsx
- * - /packages/lab/src/BottomSheet/BottomSheetPanel.test.tsx
- * - /packages/lab/src/BottomSheet/useSheetGestures.ts
+ * - /packages/core/src/BottomSheet/BottomSheet.tsx
+ * - /packages/core/src/BottomSheet/BottomSheetPanel.test.tsx
+ * - /packages/core/src/BottomSheet/useSheetGestures.ts
  */
 
 import {
@@ -28,7 +28,7 @@ import {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {BaseProps} from '@astryxdesign/core';
+import type {BaseProps} from '../BaseProps';
 import {
   colorVars,
   durationVars,
@@ -37,8 +37,8 @@ import {
   shadowVars,
   sizeVars,
   spacingVars,
-} from '@astryxdesign/core/theme/tokens.stylex';
-import {mergeProps, themeProps} from '@astryxdesign/core/utils';
+} from '../theme/tokens.stylex';
+import {mergeProps, themeProps} from '../utils';
 import {useMobileKeyboard} from './useMobileKeyboard';
 import {useSheetGestures} from './useSheetGestures';
 
@@ -165,7 +165,7 @@ interface BottomSheetPanelProps extends BaseProps<HTMLDivElement> {
   state: BottomSheetPanelState;
   height: BottomSheetHeight | number | string;
   children: ReactNode;
-  canSwipeDismiss?: boolean;
+  isSwipeDismissAllowed?: boolean;
   onDismiss: () => void;
   onScrimOpacity: (opacity: number) => void;
   onElementChange?: (element: HTMLDivElement | null) => void;
@@ -292,7 +292,7 @@ export function BottomSheetPanel({
   style,
   tabIndex,
   xstyle,
-  canSwipeDismiss = true,
+  isSwipeDismissAllowed = true,
   onDismiss,
   onScrimOpacity,
   onElementChange,
@@ -347,7 +347,7 @@ export function BottomSheetPanel({
     completeScrollAreaSettle,
   } = useSheetGestures({
     isOpen: isInteractive,
-    canDismiss: canSwipeDismiss,
+    canDismiss: isSwipeDismissAllowed,
     offscreenBlockEndInset: OVERSCROLL_PADDING,
     onDismiss,
     snapHeights: defaultSnapHeights,
@@ -367,6 +367,7 @@ export function BottomSheetPanel({
       bodyProps.ref(element);
       bodyElementRef.current = element;
     },
+    // eslint-disable-next-line @eslint-react/exhaustive-deps -- preserve the promoted Lab implementation
     [bodyProps.ref],
   );
   useMobileKeyboard({
@@ -525,16 +526,16 @@ export function BottomSheetPanel({
         <div {...stylex.props(styles.handlePill)} />
       </div>
       <div
-        {...stylex.props(
-          styles.body,
-          height === 'tall' && styles.tallKeyboardBody,
+        {...mergeProps(
+          stylex.props(
+            styles.body,
+            height === 'tall' && styles.tallKeyboardBody,
+          ),
+          scrollPreservationInset > 0
+            ? {style: {paddingBlockEnd: `${scrollPreservationInset}px`}}
+            : {},
         )}
         {...bodyProps}
-        style={
-          scrollPreservationInset > 0
-            ? {paddingBlockEnd: `${scrollPreservationInset}px`}
-            : undefined
-        }
         ref={setBodyElement}>
         {children}
       </div>

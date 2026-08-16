@@ -2,7 +2,7 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState} from 'react';
-import {BottomSheet} from '@astryxdesign/lab';
+import {BottomSheet} from '@astryxdesign/core/BottomSheet';
 import {Button} from '@astryxdesign/core/Button';
 import {Divider} from '@astryxdesign/core/Divider';
 import {Heading} from '@astryxdesign/core/Heading';
@@ -14,7 +14,7 @@ import {TextArea} from '@astryxdesign/core/TextArea';
 import {CheckboxInput} from '@astryxdesign/core/CheckboxInput';
 
 const meta: Meta<typeof BottomSheet> = {
-  title: 'Lab/BottomSheet',
+  title: 'Core/BottomSheet',
   component: BottomSheet,
   tags: ['autodocs'],
   parameters: {
