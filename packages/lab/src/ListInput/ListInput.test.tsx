@@ -11,7 +11,13 @@
 
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {useState} from 'react';
-import {fireEvent, render, screen, within} from '@testing-library/react';
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import {TextInput} from '@astryxdesign/core/TextInput';
 import {
   ListInput,
@@ -215,6 +221,16 @@ describe('ListInput', () => {
     expect(responsiveLabel?.closest('[data-list-input-cell]')).toContainElement(
       inputs[1],
     );
+  });
+
+  it('never renders aria-required on the group, even when isRequired is set (#4958)', () => {
+    // aria-required is not an allowed attribute on role="group" (axe
+    // aria-allowed-attr, impact critical). The requirement is already
+    // surfaced visibly through Field's Required indicator.
+    renderListInput({isRequired: true});
+
+    const group = screen.getByRole('group');
+    expect(group).not.toHaveAttribute('aria-required');
   });
 
   it('renders a compact centered EmptyState and keeps Add available', () => {
@@ -484,7 +500,7 @@ describe('ListInput', () => {
     });
   });
 
-  it('animates live add and removal reflow after the controlled change', () => {
+  it('animates live add and removal reflow after the controlled change', async () => {
     const events: string[] = [];
     const animate = mockMutationAnimations(events);
 
@@ -525,11 +541,13 @@ describe('ListInput', () => {
         easing: 'cubic-bezier(0.24, 1, 0.4, 1)',
       },
     ]);
-    expect(
-      Array.from(document.querySelectorAll('[aria-live="polite"]')).some(
-        node => node.textContent === 'Added guest 3.',
-      ),
-    ).toBe(true);
+    await waitFor(() => {
+      expect(
+        Array.from(document.querySelectorAll('[aria-live="polite"]')).some(
+          node => node.textContent === 'Added guest 3.',
+        ),
+      ).toBe(true);
+    });
 
     const removeEventStart = events.length;
     const animationCountBeforeRemove = animate.mock.calls.length;
@@ -554,14 +572,16 @@ describe('ListInput', () => {
           );
         }),
     ).toBe(true);
-    expect(
-      Array.from(document.querySelectorAll('[aria-live="polite"]')).some(
-        node => node.textContent === 'Removed guest 1.',
-      ),
-    ).toBe(true);
+    await waitFor(() => {
+      expect(
+        Array.from(document.querySelectorAll('[aria-live="polite"]')).some(
+          node => node.textContent === 'Removed guest 1.',
+        ),
+      ).toBe(true);
+    });
   });
 
-  it('uses instant add and remove changes when reduced motion is requested', () => {
+  it('uses instant add and remove changes when reduced motion is requested', async () => {
     const animate = mockMutationAnimations();
     vi.spyOn(window, 'matchMedia').mockImplementation(
       query =>
@@ -598,11 +618,13 @@ describe('ListInput', () => {
     expect(animate).not.toHaveBeenCalled();
     expect(screen.queryByDisplayValue('Ada')).not.toBeInTheDocument();
     expect(screen.getByRole('button', {name: 'Add guest'})).toHaveFocus();
-    expect(
-      Array.from(document.querySelectorAll('[aria-live="polite"]')).some(
-        node => node.textContent === 'Removed guest 1.',
-      ),
-    ).toBe(true);
+    await waitFor(() => {
+      expect(
+        Array.from(document.querySelectorAll('[aria-live="polite"]')).some(
+          node => node.textContent === 'Removed guest 1.',
+        ),
+      ).toBe(true);
+    });
 
     fireEvent.click(screen.getByRole('button', {name: 'Add guest'}));
     expect(animate).not.toHaveBeenCalled();
@@ -1033,7 +1055,7 @@ describe('ListInput', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('activates a pointer drag after horizontal threshold movement', () => {
+  it('activates a pointer drag after horizontal threshold movement', async () => {
     const onChange = vi.fn();
     renderListInput({isReorderable: true, onChange});
     const rows = document.querySelectorAll<HTMLElement>(
@@ -1071,9 +1093,13 @@ describe('ListInput', () => {
     fireEvent.pointerUp(handle, {pointerId: 9, clientX: 15, clientY: 10});
 
     expect(onChange).not.toHaveBeenCalled();
-    expect(
-      screen.getByText('guest returned to position 1.'),
-    ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(
+        Array.from(document.querySelectorAll('[aria-live="polite"]')).some(
+          node => node.textContent === 'guest returned to position 1.',
+        ),
+      ).toBe(true);
+    });
   });
 
   it('cancels a keyboard reorder with Escape', () => {

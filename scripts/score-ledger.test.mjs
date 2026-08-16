@@ -523,6 +523,47 @@ describe('recording a scorecard', () => {
     ).toThrow(/audited components only/);
   });
 
+  it('rejects evidence written as bare strings, which reds every build in the repo', () => {
+    expect(() =>
+      applyScorecard(
+        null,
+        {...card, evidence: ['33 before and 33 after screenshots']},
+        {component: 'B', pkg: 'core'},
+      ),
+    ).toThrow(/evidence must be an array of \{label, path\?, note\?\} objects/);
+  });
+
+  it('rejects an evidence item with no label, or a stray key, or a non-string value', () => {
+    for (const evidence of [
+      [{note: 'no label'}],
+      [{label: 'ok', paths: '/x'}],
+      [{label: 'ok', path: 42}],
+      [{label: 12}],
+      ['a', {label: 'ok'}],
+      'not an array',
+    ]) {
+      expect(() =>
+        applyScorecard(null, {...card, evidence}, {component: 'B', pkg: 'core'}),
+      ).toThrow(/evidence must be/);
+    }
+  });
+
+  it('accepts the declared evidence shape, with path and note optional', () => {
+    const e = applyScorecard(
+      null,
+      {
+        ...card,
+        evidence: [
+          {label: 'bare label'},
+          {label: 'with a path', path: 'packages/core/src/Badge/Badge.tsx'},
+          {label: 'with both', path: 'https://example.com/x.png', note: 'measured'},
+        ],
+      },
+      {component: 'B', pkg: 'core'},
+    );
+    expect(e.evidence).toHaveLength(3);
+  });
+
   it('requires the rubric version, the date and the mode', () => {
     for (const field of ['rubricVersion', 'lastAudited', 'mode']) {
       const partial = {...card};

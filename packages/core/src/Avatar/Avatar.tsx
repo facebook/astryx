@@ -33,6 +33,7 @@ import {mergeProps, mergeRefs} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {useTooltip} from '../Tooltip/useTooltip';
+import {useDevWarning} from '../hooks/useDevWarning';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
 import {useTranslator} from '../i18n';
@@ -112,16 +113,17 @@ const styles = stylex.create({
     position: 'relative',
     display: 'inline-flex',
     flexShrink: 0,
-    // The wrapper is not clipped (so the status dot can overflow), so it must be
-    // rounded itself: a theme can set a background on the `.astryx-avatar`
-    // wrapper, and an unrounded wrapper would show that fill as square corners
-    // behind the circular content.
+    // The wrapper carries the avatar's box as well as its radius, so a theme
+    // rule on the `.astryx-avatar` target reaches both: the size the `size`
+    // visual prop selects on is set here, and the content below fills it.
     borderRadius: radiusVars['--radius-full'],
   },
   content: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+    width: '100%',
+    height: '100%',
     borderRadius: radiusVars['--radius-full'],
     overflow: 'hidden',
     userSelect: 'none',
@@ -251,6 +253,9 @@ export interface AvatarProps extends BaseProps<HTMLDivElement> {
   /**
    * The size of the avatar. A named size (`xsm` 20px, `sm` 24px, `md` 36px,
    * `lg` 48px, `xl` 128px) or a specific pixel value.
+   *
+   * Inside an `AvatarGroup` the group's `size` wins: a group sizes its members
+   * uniformly, so this prop is ignored there.
    * @default 'md'
    */
   size?: AvatarSize;
@@ -397,7 +402,7 @@ function DefaultIcon({size}: {size: number}) {
  * ```
  * <Avatar src="/user.jpg" name="John Doe" />
  * <Avatar name="Jane Smith" size="xl" />
- * <Avatar src="/user.jpg" status={<OnlineIndicator />} />
+ * <Avatar src="/user.jpg" status={<AvatarStatusDot variant="success" label="Online" />} />
  * <Avatar name="jsmith" tooltip="Jane Smith, Staff Engineer" />
  * <Avatar name="Jane" tooltip={false} />
  * <Avatar src="/user.jpg" name="John Doe" href="/users/john" />
@@ -434,8 +439,13 @@ export function Avatar({
   const showImage = src && erroredSrc !== src;
   const showFallbackImage =
     !showImage && fallbackSrc && erroredFallbackSrc !== fallbackSrc;
-  const showInitials = !showImage && !showFallbackImage && name;
-  const showIcon = !showImage && !showFallbackImage && !name;
+  // A whitespace-only string carries no identity. Without this it produces no
+  // initials (getInitials trims to nothing) and no default icon (a space is
+  // truthy), leaving an empty plate behind a blank accessible name.
+  const meaningfulName = name?.trim() ? name : undefined;
+  const meaningfulAlt = alt?.trim() ? alt : undefined;
+  const showInitials = !showImage && !showFallbackImage && meaningfulName;
+  const showIcon = !showImage && !showFallbackImage && !meaningfulName;
 
   // A meaningful accessible name comes from `alt`/`name`, composed with the
   // status element's `label` when one is present ("Jane Doe, Online") — the
@@ -446,7 +456,7 @@ export function Avatar({
   // it as `presentation`/`aria-hidden` rather than announcing a meaningless
   // generic "Avatar" (obs-9).
   const t = useTranslator();
-  const nameLabel = alt || name;
+  const nameLabel = meaningfulAlt || meaningfulName;
   const statusLabel = getStatusLabel(status);
   const accessibleName =
     nameLabel && statusLabel
@@ -471,7 +481,7 @@ export function Avatar({
       ? undefined
       : typeof tooltip === 'string'
         ? tooltip
-        : name;
+        : meaningfulName;
   const trimmedTooltip = tooltipContent?.trim();
   const showTooltip = trimmedTooltip != null && trimmedTooltip !== '';
   // Whether the tooltip text is a consumer-authored override (a custom string)
@@ -513,20 +523,19 @@ export function Avatar({
   const LinkComponent = useLinkComponent(as);
 
   // An interactive control with no accessible name is an unacceptable control
-  // name. Warn in the same client-safe way sibling components do (Field,
-  // Timestamp, Popover) — a plain `console.warn`, never gated on `process.env`
-  // (which is not available on the client in this codebase).
-  if (isInteractive && !accessibleName) {
-    console.warn(
-      'Avatar: an interactive avatar (with `href` or `onClick`) needs a ' +
-        'meaningful accessible name. Pass `alt` or `name`.',
-    );
-  }
+  // name. `useDevWarning` is the shared guardrail: it warns once per mount
+  // rather than on every render, and compiles out of production builds.
+  useDevWarning(
+    'Avatar',
+    'an interactive avatar (with `href` or `onClick`) needs a meaningful ' +
+      'accessible name. Pass `alt` or `name`.',
+    isInteractive && !accessibleName,
+  );
 
   // The inner visuals are identical across the static and interactive variants.
   const visualContent = (
     <>
-      <div {...stylex.props(styles.content, dynamicStyles.size(numericSize))}>
+      <div {...stylex.props(styles.content)}>
         {showImage && (
           <img
             src={src}
@@ -552,7 +561,7 @@ export function Avatar({
                 dynamicStyles.fontSize(numericSize),
               ),
             )}>
-            {getInitials(name)}
+            {getInitials(meaningfulName)}
           </div>
         )}
         {showIcon && (
@@ -585,6 +594,7 @@ export function Avatar({
     themeProps('avatar', {size: resolvedSize}),
     focusOutlineProps.focusVisible(
       styles.wrapper,
+      dynamicStyles.size(numericSize),
       isInteractive && styles.interactive,
       avatarGroup && groupStyles.ring,
       avatarGroup && groupStyles.overlap,

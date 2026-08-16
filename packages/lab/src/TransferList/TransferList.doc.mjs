@@ -116,7 +116,7 @@ export const docs = {
       name: 'searchPlaceholder',
       type: 'string',
       description: 'Placeholder shown in the shared search field.',
-      default: "'Search\u2026'",
+      default: "'Search...'",
     },
     {
       name: 'isReorderable',
@@ -332,7 +332,7 @@ export const docs = {
           name: 'searchPlaceholder',
           type: 'string',
           description: 'Placeholder shown in the shared search field.',
-          default: "'Search\u2026'",
+          default: "'Search...'",
         },
         {
           name: 'isReorderable',

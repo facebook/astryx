@@ -2,12 +2,12 @@
 
 import {describe, expect, it, vi} from 'vitest';
 import {
+  buildAppShellMobilePreviewContext,
   buildInitialState,
   buildRuntimePreviewState,
   getMissingRequiredProps,
   hasInteractivePlayground,
   isOverlayPreviewClosed,
-  needsMobileContextPreview,
   pickPrimaryProps,
 } from '../components/component-detail/interactiveState';
 import type {PropDoc} from '../generated/componentRegistry';
@@ -492,14 +492,6 @@ describe('component detail preview state', () => {
     expect(isOverlayPreviewClosed(null, {isOpen: false})).toBe(false);
     expect(isOverlayPreviewClosed(undefined, {})).toBe(false);
   });
-
-  it('flags mobile context previews only when playground.mobileContext is set (#4983)', () => {
-    expect(needsMobileContextPreview({mobileContext: true})).toBe(true);
-    expect(needsMobileContextPreview({overlay: true})).toBe(false);
-    expect(needsMobileContextPreview({})).toBe(false);
-    expect(needsMobileContextPreview(null)).toBe(false);
-    expect(needsMobileContextPreview(undefined)).toBe(false);
-  });
 });
 
 // ── Simplified layout for provider/utility pages (#2733) ───────────────────
@@ -556,5 +548,37 @@ describe('hasInteractivePlayground', () => {
         playground: {defaults: {mode: 'light'}},
       }),
     ).toBe(true);
+  });
+});
+
+// ── Simulated mobile AppShell context (#4983) ───────────────────────────────
+// MobileNavToggle reads AppShell mobile context and renders null when the
+// context says the viewport is not mobile (the default outside AppShell), so
+// its Properties preview was an empty stage. `playground.appShellMobile`
+// wraps the preview in a provider built from this value.
+describe('buildAppShellMobilePreviewContext', () => {
+  it('simulates an enabled mobile AppShell so context-gated components render', () => {
+    const value = buildAppShellMobilePreviewContext(false, () => {});
+    expect(value.isMobile).toBe(true);
+    expect(value.isMobileNavEnabled).toBe(true);
+    expect(value.isMobileNavOpen).toBe(false);
+    expect(value.hasAutoToggle).toBe(true);
+  });
+
+  it('wires toggle/open/close back to the provided open-state setter', () => {
+    const onOpenChange = vi.fn();
+
+    const closed = buildAppShellMobilePreviewContext(false, onOpenChange);
+    closed.toggleMobileNav();
+    expect(onOpenChange).toHaveBeenLastCalledWith(true);
+    closed.openMobileNav();
+    expect(onOpenChange).toHaveBeenLastCalledWith(true);
+    closed.closeMobileNav();
+    expect(onOpenChange).toHaveBeenLastCalledWith(false);
+
+    const open = buildAppShellMobilePreviewContext(true, onOpenChange);
+    expect(open.isMobileNavOpen).toBe(true);
+    open.toggleMobileNav();
+    expect(onOpenChange).toHaveBeenLastCalledWith(false);
   });
 });

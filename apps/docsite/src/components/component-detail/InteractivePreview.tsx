@@ -13,10 +13,7 @@ import {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {getComponent, resolveValue} from './resolveElements';
-import {
-  AppShellMobileContext,
-  type AppShellMobileContextValue,
-} from '@astryxdesign/core/AppShell';
+import {AppShellMobileContext} from '@astryxdesign/core/AppShell';
 import {Button} from '@astryxdesign/core/Button';
 import {Card} from '@astryxdesign/core/Card';
 import {Center} from '@astryxdesign/core/Center';
@@ -26,11 +23,11 @@ import {Text} from '@astryxdesign/core/Text';
 import {Code} from 'lucide-react';
 import {ComponentPreviewTheme} from './ComponentPreviewTheme';
 import {
+  buildAppShellMobilePreviewContext,
   buildInitialState,
   buildRuntimePreviewState,
   getMissingRequiredProps,
   isOverlayPreviewClosed,
-  needsMobileContextPreview,
   pickPrimaryProps,
   type KnobProp,
 } from './interactiveState';
@@ -78,6 +75,24 @@ class PreviewErrorBoundary extends Component<
     }
     return this.props.children;
   }
+}
+
+// Simulated mobile AppShell for `playground.appShellMobile` components:
+// they render null unless AppShell mobile context reports an enabled mobile
+// viewport, which the default context value outside AppShell never does
+// (#4983). Holds the drawer open state so the toggle stays interactive.
+function AppShellMobilePreviewProvider({children}: {children: ReactNode}) {
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  const value = useMemo(
+    () =>
+      buildAppShellMobilePreviewContext(isMobileNavOpen, setIsMobileNavOpen),
+    [isMobileNavOpen],
+  );
+  return (
+    <AppShellMobileContext.Provider value={value}>
+      {children}
+    </AppShellMobileContext.Provider>
+  );
 }
 
 function toIdentifierName(name: string): string {
@@ -153,27 +168,6 @@ function formatValue(
   } catch {
     return '/* ... */';
   }
-}
-
-function MobileContextPreview({children}: {children: ReactNode}) {
-  const [isOpen, setIsOpen] = useState(false);
-  const value = useMemo<AppShellMobileContextValue>(
-    () => ({
-      isMobile: true,
-      isMobileNavOpen: isOpen,
-      toggleMobileNav: () => setIsOpen(open => !open),
-      openMobileNav: () => setIsOpen(true),
-      closeMobileNav: () => setIsOpen(false),
-      isMobileNavEnabled: true,
-      hasAutoToggle: false,
-    }),
-    [isOpen],
-  );
-  return (
-    <AppShellMobileContext.Provider value={value}>
-      {children}
-    </AppShellMobileContext.Provider>
-  );
 }
 
 function generateCode(name: string, state: Record<string, unknown>): string {
@@ -278,19 +272,14 @@ export function InteractivePreviewStage({
     }
     return resolved;
   }, [wrapper]);
-  const wrapMobileContext = needsMobileContextPreview(playground);
   const renderPreview = useCallback(
     (rendered: ReactNode): ReactNode => {
-      let node = rendered;
       if (wrapper && WrapperComponent) {
-        node = createElement(WrapperComponent, wrapperProps, node);
+        return createElement(WrapperComponent, wrapperProps, rendered);
       }
-      if (wrapMobileContext) {
-        node = createElement(MobileContextPreview, null, node);
-      }
-      return node;
+      return rendered;
     },
-    [wrapper, WrapperComponent, wrapperProps, wrapMobileContext],
+    [wrapper, WrapperComponent, wrapperProps],
   );
 
   if (missingRequiredProps.length > 0) {
@@ -392,13 +381,22 @@ export function InteractivePreviewStage({
               padding: 'var(--spacing-4)',
             }}>
             <PreviewErrorBoundary
-              resetKeys={[
-                Component,
-                runtimeState,
-                WrapperComponent,
-                wrapMobileContext,
-              ]}>
-              {renderPreview(createElement(Component, runtimeState))}
+              resetKeys={[Component, runtimeState, WrapperComponent]}>
+              {playground?.appShellMobile === true ? (
+                <AppShellMobilePreviewProvider>
+                  <VStack
+                    gap={2}
+                    style={{alignItems: 'center', textAlign: 'center'}}>
+                    {renderPreview(createElement(Component, runtimeState))}
+                    <Text type="supporting" color="secondary">
+                      Simulated mobile AppShell — in an app this renders only
+                      below the mobile breakpoint.
+                    </Text>
+                  </VStack>
+                </AppShellMobilePreviewProvider>
+              ) : (
+                renderPreview(createElement(Component, runtimeState))
+              )}
               {isOverlayPreviewClosed(playground, state) && (
                 <VStack
                   gap={2}

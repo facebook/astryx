@@ -46,7 +46,13 @@ export * from './Chat';
 export {Drawer, type DrawerProps} from './Drawer';
 
 // BottomSheet — mobile touch sheet on a native modal <dialog>
-export {BottomSheet, type BottomSheetProps} from './BottomSheet';
+export {
+  BottomSheet,
+  type BottomSheetHeight,
+  type BottomSheetProps,
+  BottomSheetSwitcher,
+  type BottomSheetSwitcherProps,
+} from './BottomSheet';
 
 // Tour — guided product-tour / NUX walkthrough (facebook/astryx#4239)
 export {

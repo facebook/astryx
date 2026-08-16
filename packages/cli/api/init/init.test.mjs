@@ -57,13 +57,30 @@ describe('init() — receipts + side effects', () => {
     expect(res.type === 'init.run' && res.data.docsWritten).toContain('AGENTS.md');
   });
 
-  it('--features theme emits guidance, writes no files, and flags theme', async () => {
+  it('--features theme writes the annotated template and reports it on the receipt', async () => {
     const res = await init({features: 'theme'}, {cwd: tmpDir});
     expect(res.type).toBe('init.run');
     if (res.type !== 'init.run') return;
     expect(res.data.theme).toBe(true);
+    expect(res.data.themeTemplate).toBe('created');
+    expect(res.data.themeTemplatePath).toBe('theme.template.ts');
     expect(res.data.docsWritten).toEqual([]);
-    expect(fs.readdirSync(tmpDir)).toEqual([]);
+    expect(fs.readdirSync(tmpDir)).toEqual(['theme.template.ts']);
+    // The consumer's copy is their file: it must not carry our repo header,
+    // which their own lint would flag.
+    const written = fs.readFileSync(path.join(tmpDir, 'theme.template.ts'), 'utf-8');
+    expect(written).not.toMatch(/Copyright \(c\) Meta Platforms/);
+    expect(written.startsWith('/**')).toBe(true);
+  });
+
+  it('--features theme reports `skipped` rather than overwriting an existing template', async () => {
+    fs.writeFileSync(path.join(tmpDir, 'theme.template.ts'), '// mine\n');
+    const res = await init({features: 'theme'}, {cwd: tmpDir});
+    expect(res.type).toBe('init.run');
+    if (res.type !== 'init.run') return;
+    expect(res.data.themeTemplate).toBe('skipped');
+    expect(res.data.themeTemplatePath).toBe(null);
+    expect(fs.readFileSync(path.join(tmpDir, 'theme.template.ts'), 'utf-8')).toBe('// mine\n');
   });
 
   it('--features template returns the workflow (or skipped) outcome, no crash', async () => {

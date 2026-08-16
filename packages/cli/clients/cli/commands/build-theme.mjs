@@ -30,6 +30,7 @@ import {logger} from '../../../api/logger.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {themeAdd} from '../../../api/theme/add/add.mjs';
+import {themeTemplate} from '../../../api/theme/template/template.mjs';
 import {themeList} from '../../../api/theme/list/list.mjs';
 import {themeBuild, importSpecifier} from '../../../api/theme/build/build.mjs';
 import {defineCommand} from '../lib/define-command.mjs';
@@ -37,9 +38,11 @@ import {doc as themeGroup} from './theme.doc.mjs';
 import {doc as themeBuildCommand} from './theme-build.doc.mjs';
 import {doc as themeListCommand} from './theme-list.doc.mjs';
 import {doc as themeAddCommand} from './theme-add.doc.mjs';
+import {doc as themeTemplateCommand} from './theme-template.doc.mjs';
 import {doc as themeBuildFn} from '../../../api/theme/themeBuild.doc.mjs';
 import {doc as themeListFn} from '../../../api/theme/themeList.doc.mjs';
 import {doc as themeAddFn} from '../../../api/theme/themeAdd.doc.mjs';
+import {doc as themeTemplateFn} from '../../../api/theme/themeTemplate.doc.mjs';
 
 /**
  * Path to this CLI's real entry (clients/cli/bin/astryx.mjs), resolved from
@@ -360,6 +363,53 @@ export function registerTheme(program) {
         text(
           `This is your copy of the ${displayName} theme — edit ${entry} to make it your own.`,
         ),
+      );
+    },
+  });
+
+  defineCommand(theme, themeTemplateCommand, {
+    fn: themeTemplateFn,
+    action: (
+      /** @type {string | undefined} */ targetPath,
+      /** @type {{overwrite?: boolean}} */ options,
+    ) => {
+      const json = program.opts().json || false;
+
+      /** @type {import('../../../api/theme/theme.type.mjs').ThemeTemplateResponse} */
+      let result;
+      try {
+        result = themeTemplate({
+          targetPath,
+          overwrite: options.overwrite,
+          cwd: process.cwd(),
+        });
+      } catch (e) {
+        const err =
+          /** @type {import('../../../api/error.mjs').AstryxError} */ (e);
+        cliError(err.message, {
+          suggestions: err.suggestions || [],
+          code: err.code,
+        });
+        return;
+      }
+
+      if (json) return jsonOut(result);
+
+      const invocation = getCliInvocation(process.cwd());
+      if (!result.data.written) {
+        emit(
+          text(`[skip] ${result.data.path} already exists — left as is.`),
+          text(`Pass --overwrite to replace it with a fresh copy.`),
+        );
+        return;
+      }
+      emit(
+        text(`[ok] Wrote ${result.data.path}`),
+        text(
+          'It documents every defineTheme field, the token families, and the component override syntax. ' +
+            'Copy what you need into your own theme file, then delete it.',
+        ),
+        code(`${invocation} theme build ${result.data.path}`),
       );
     },
   });

@@ -146,6 +146,7 @@ export function AvatarGroupOverflow({
 }: AvatarGroupOverflowProps): ReactNode {
   const t = useTranslator();
   const group = useAvatarGroup();
+  const size = group?.size ?? 'md';
   const numericSize = group?.numericSize ?? 36;
   const overlap = group?.overlap ?? 0;
 
@@ -162,7 +163,7 @@ export function AvatarGroupOverflow({
         aria-label={label}
         data-avatar-item=""
         {...mergeProps(
-          themeProps('avatar-group-overflow'),
+          themeProps('avatar-group-overflow', {size}),
           focusOutlineProps.focusVisible(
             styles.base,
             styles.button,
@@ -186,7 +187,7 @@ export function AvatarGroupOverflow({
       {...rest}
       aria-label={label}
       {...mergeProps(
-        themeProps('avatar-group-overflow'),
+        themeProps('avatar-group-overflow', {size}),
         stylex.props(
           styles.base,
           styles.overlap,

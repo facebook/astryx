@@ -943,6 +943,21 @@ const SCORECARD_FIELDS = new Set([
   'notes',
 ]);
 
+const EVIDENCE_FIELDS = new Set(['label', 'path', 'note']);
+
+/**
+ * Does one `evidence` entry match the shape the sandbox's `LedgerEntry`
+ * declares? Exported because the sandbox generator enforces the same shape on
+ * the way out of the wiki, and one definition beats two that drift.
+ */
+export function isEvidenceItem(item) {
+  if (!item || typeof item !== 'object' || Array.isArray(item)) return false;
+  if (typeof item.label !== 'string') return false;
+  return Object.entries(item).every(
+    ([k, v]) => EVIDENCE_FIELDS.has(k) && (v === undefined || v === null || typeof v === 'string'),
+  );
+}
+
 /**
  * Merge a scorecard into a ledger entry and validate it.
  * Unknown keys are rejected rather than silently stored — a typo in a field
@@ -1020,6 +1035,15 @@ export function applyScorecard(existing, scorecard, {component, pkg}) {
     throw new Error(
       `${component}: ${blockList(next).length} BLOCKs listed but blocks.count is ` +
         `${openBlockCount(next)}`,
+    );
+  }
+  // The sandbox inlines this row into a typed literal at build time, so a bad
+  // shape here is not one broken row: it reds `build-sandbox` on every open PR
+  // at once, with no commit responsible (#4924).
+  if (!Array.isArray(next.evidence) || !next.evidence.every(isEvidenceItem)) {
+    throw new Error(
+      `${component}: evidence must be an array of {label, path?, note?} objects — ` +
+        'a bare string is the shape that reds every build in the repo',
     );
   }
   return next;
