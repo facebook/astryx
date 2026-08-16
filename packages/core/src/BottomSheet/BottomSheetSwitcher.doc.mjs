@@ -8,7 +8,11 @@ export const docs = {
   category: 'Overlay',
   keywords: ['bottom sheet', 'switcher', 'multi-step', 'flow', 'wizard'],
   playground: {
-    overlay: {stateProp: 'activeSheet', openValue: 'details'},
+    overlay: true,
+    overlayControl: {
+      stateProp: 'activeSheet',
+      openValue: 'details',
+    },
     defaults: {
       activeSheet: null,
       children: [

@@ -116,14 +116,16 @@ export interface ComponentPlaygroundConfig {
    *  CommandPalette) intentionally keep contained inline previews instead:
    *  the component is visible on load and knobs stay usable, whereas a real
    *  top-layer modal makes the rest of the page inert (#3657). */
-  overlay?:
-    | boolean
-    | {
-        /** Controlled prop that determines whether the overlay is open. */
-        stateProp: string;
-        /** Value assigned to stateProp when the preview's open button is used. */
-        openValue: unknown;
-      };
+  overlay?: boolean;
+  /** Override the controlled prop and open value used by an overlay preview.
+   *  Use with `overlay: true` when the component does not use `isOpen: true`
+   *  to represent its open state. */
+  overlayControl?: {
+    /** Controlled prop that determines whether the overlay is open. */
+    stateProp: string;
+    /** Value assigned to stateProp when the preview's open button is used. */
+    openValue: unknown;
+  };
   /** The component reads AppShell mobile context and renders nothing
    *  without it (e.g. `MobileNavToggle` returns null unless the context
    *  reports an enabled mobile viewport — the default value outside

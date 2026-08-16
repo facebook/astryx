@@ -496,7 +496,8 @@ describe('component detail preview state', () => {
 
   it('supports overlays controlled by a non-boolean state prop', () => {
     const playground = {
-      overlay: {stateProp: 'activeSheet', openValue: 'details'},
+      overlay: true,
+      overlayControl: {stateProp: 'activeSheet', openValue: 'details'},
     };
 
     expect(getOverlayPreviewControl(playground)).toEqual({
@@ -507,6 +508,15 @@ describe('component detail preview state', () => {
     expect(isOverlayPreviewClosed(playground, {activeSheet: 'details'})).toBe(
       false,
     );
+  });
+
+  it('ignores overlay controls unless overlay mode is enabled', () => {
+    const playground = {
+      overlayControl: {stateProp: 'activeSheet', openValue: 'details'},
+    };
+
+    expect(getOverlayPreviewControl(playground)).toBeNull();
+    expect(isOverlayPreviewClosed(playground, {activeSheet: null})).toBe(false);
   });
 });
 

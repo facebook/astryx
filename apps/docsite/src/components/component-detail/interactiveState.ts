@@ -240,11 +240,10 @@ export function isOverlayPreviewClosed(
 export function getOverlayPreviewControl(
   playground: PlaygroundConfig | null | undefined,
 ): {stateProp: string; openValue: unknown} | null {
-  const overlay = playground?.overlay;
-  if (overlay === true) {
-    return {stateProp: 'isOpen', openValue: true};
+  if (playground?.overlay !== true) {
+    return null;
   }
-  return overlay != null && typeof overlay === 'object' ? overlay : null;
+  return playground.overlayControl ?? {stateProp: 'isOpen', openValue: true};
 }
 
 /**
