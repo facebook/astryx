@@ -395,7 +395,7 @@ const brandTheme = defineTheme({
             ],
             [
               'ocean.js',
-              'ES module exporting the theme object with `__built: true` and pre-resolved token values. Also re-exports the icon registry if the source theme declares one.',
+              'ES module exporting the theme object with `__built: true` and pre-resolved token values. Also re-exports the icon registry if the source theme declares one, via a sibling import that your build must satisfy (see below).',
             ],
             [
               'ocean.d.ts',
@@ -406,6 +406,25 @@ const brandTheme = defineTheme({
               '(Optional) Module augmentations for custom component prop values found in the theme\'s component overrides',
             ],
           ],
+        },
+        {
+          type: 'prose',
+          text: "When the theme declares an `icons:` registry, the generated JS module is not self-contained: it imports the registry from a sibling path, and `theme build` never compiles that module. This is deliberate; the build runs first in a pipeline, so at codegen time the compiled registry legitimately may not exist yet. Producing a loadable module at that path is your build's job. The shipped theme packages satisfy the contract with one extra compile step:",
+        },
+        {
+          type: 'code',
+          lang: 'bash',
+          label: 'Compiling the icon registry sidecar',
+          code: `# Emit the built theme; point its icon import at the file the next step produces
+astryx theme build ./src/themes/ocean.ts -o dist/theme.css --icons-specifier ./icons.mjs
+
+# Compile the icon registry to a real ES module next to the generated JS
+esbuild src/themes/icons.tsx --bundle --format=esm --outfile=dist/icons.mjs \\
+  --external:react --external:lucide-react --jsx=automatic`,
+        },
+        {
+          type: 'prose',
+          text: 'Skipping the compile step is silent: the build still exits 0, and bundlers keep working because they resolve `./icons` to the neighbouring `icons.tsx`, but the generated module fails to load in Node with `ERR_MODULE_NOT_FOUND`. Without `--icons-specifier` the import is emitted exactly as written in the source, which is what the default no-`--out` flow wants; pass the flag only when a separate step compiles the registry, and make its value match the filename that step emits. Mark `react` and your icon library as external so the registry stays tree-shakeable.',
         },
         {
           type: 'prose',

@@ -10,7 +10,7 @@ export const docsZh = {
     { section: 'Theme Props', title: 'Theme 属性', content: [null] },
     { section: 'Creating a Custom Theme', title: '创建自定义主题', content: [{ type: 'prose', text: '用 `theme list` + `theme add <slug>` 从内置主题开始，或用 defineTheme 从零编写。只覆盖与默认值不同的令牌。' }, null, { type: 'prose', text: '`astryx theme template` 会写入 theme.template.ts：带注释的完整参考，涵盖每个 defineTheme 字段、令牌族和覆盖语法，并标明打印各自参考的 CLI 命令。' }] },
     { section: 'defineTheme', title: 'defineTheme', content: [{ type: 'prose', text: '支持比例配置（typography、radius、motion）+ 显式令牌覆盖 + 组件覆盖。' }, null, null] },
-    { section: 'Building Themes for Production', title: '生产构建', content: [{ type: 'prose', text: 'astryx theme build 将 defineTheme 编译为静态 CSS。输出 .css + .js（__built:true）+ .d.ts。' }, null, null, null, null] },
+    { section: 'Building Themes for Production', title: '生产构建', content: [{ type: 'prose', text: 'astryx theme build 将 defineTheme 编译为静态 CSS。输出 .css + .js（__built:true）+ .d.ts。' }, null, null, null, { type: 'prose', text: '主题声明 icons 时，生成的 .js 从同级路径导入图标注册表。theme build 不会编译该模块；由你的构建步骤编译（esbuild/tsup），并用 --icons-specifier ./icons.mjs 把导入指向编译产物。' }, null, { type: 'prose', text: '跳过编译步骤时构建仍以 0 退出：打包器会把 ./icons 解析到 icons.tsx，但 Node 会报 ERR_MODULE_NOT_FOUND。' }, null, null, null] },
     { section: 'Runtime vs Built Themes', title: '运行时 vs 构建', content: [{ type: 'prose', text: '运行时：useInsertionEffect 在客户端注入样式。构建：静态 CSS 在首次渲染时就存在。SSR 应用请使用 /built + theme.css。' }, null, null, null] },
     { section: 'Light/Dark Mode', title: '亮/暗模式', content: [{ type: 'prose', text: "令牌值使用 [light, dark] 元组实现自动模式切换。Theme 上 mode='system'（默认）跟随系统偏好。" }, null, null] },
     { section: 'Nesting Themes', title: '嵌套主题', content: [{ type: 'prose', text: '将不同部分包裹在独立的 <Theme> 提供者中。' }, null] },
