@@ -46,7 +46,7 @@
     "src"
   ],
   "scripts": {
-    "build": "astryx theme build src/chocolateTheme.ts -o dist/theme.css --icons-specifier ./icons.mjs && tsup && tsc --project tsconfig.build.json && node ../../../scripts/check-fully-specified.mjs"
+    "build": "rimraf dist && astryx theme build src/chocolateTheme.ts -o dist/theme.css --icons-specifier ./icons.mjs && tsup && tsc --project tsconfig.build.json && node ../../../scripts/check-fully-specified.mjs"
   },
   "dependencies": {
     "lucide-react": "^1.18.0"
@@ -56,7 +56,8 @@
     "react": ">=19"
   },
   "devDependencies": {
-    "@astryxdesign/cli": "0.4.5"
+    "@astryxdesign/cli": "0.4.5",
+    "rimraf": "^6.0.1"
   },
   "module": "./dist/source.mjs"
 }

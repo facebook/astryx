@@ -136,6 +136,20 @@ describe('the repo itself (#3637)', () => {
     },
   );
 
+  it('cleans every maintained-theme dist with portable rimraf', () => {
+    const files = trackedPackageJsonFiles().filter(file =>
+      /^packages\/themes\/[^/]+\/package\.json$/.test(file),
+    );
+    const core = read('packages/core/package.json');
+
+    expect(files.length).toBeGreaterThan(0);
+    for (const file of files) {
+      const {name, scripts, devDependencies} = read(file);
+      expect(scripts.build, name).toMatch(/^rimraf dist && /);
+      expect(devDependencies.rimraf, name).toBe(core.devDependencies.rimraf);
+    }
+  });
+
   it('has no Windows-hostile script in any tracked package.json', () => {
     const offenders = trackedPackageJsonFiles().flatMap(file => {
       const pkg = read(file);
