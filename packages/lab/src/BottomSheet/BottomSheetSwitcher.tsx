@@ -56,7 +56,6 @@ import {
   composeEventHandlers,
   mergeProps,
   mergeRefs,
-  themeProps,
 } from '@astryxdesign/core/utils';
 import {
   BottomSheetSwitcherContext,
@@ -565,14 +564,11 @@ export function BottomSheetSwitcher({
     !hasScrim && styles.dialogNonModal,
     xstyle,
   );
-  const dialogPresentationProps = hasScrim
-    ? mergeProps(
-        themeProps('bottom-sheet-switcher-scrim'),
-        dialogStyleProps,
-        className,
-        style,
-      )
-    : mergeProps(dialogStyleProps, className, style);
+  const dialogPresentationProps = mergeProps(
+    dialogStyleProps,
+    className,
+    style,
+  );
   const ariaLabel =
     props['aria-label'] ??
     (props['aria-labelledby'] == null ? activeLabel : undefined);

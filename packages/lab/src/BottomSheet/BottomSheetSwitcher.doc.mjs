@@ -7,14 +7,6 @@ export const docs = {
   group: 'BottomSheet',
   category: 'Overlay',
   keywords: ['bottom sheet', 'switcher', 'multi-step', 'flow', 'wizard'],
-  theming: {
-    targets: [
-      {
-        className: 'astryx-bottom-sheet-switcher-scrim',
-        visualProps: [],
-      },
-    ],
-  },
   description:
     'Coordinates multiple BottomSheets as a mutually exclusive flow. One activeSheet ID selects the only interactive sheet; during a handoff, the new sheet enters above the inert previous sheet. If the new sheet is shorter, the previous sheet simultaneously moves down until their top edges align, then fades after both transforms complete. The switcher owns one shared native <dialog>: modal flows call showModal() once for one top-layer boundary and one ::backdrop across the whole flow, while no-scrim flows use a non-modal show() shell. Its ref and shared DOM props target that dialog.',
   props: [
