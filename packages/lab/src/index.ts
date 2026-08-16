@@ -45,14 +45,6 @@ export * from './Chat';
 // Drawer — experimental overlay panel
 export {Drawer, type DrawerProps} from './Drawer';
 
-// BottomSheet — compatibility re-export; import from Core for new usage.
-export {
-  BottomSheet,
-  type BottomSheetProps,
-  BottomSheetSwitcher,
-  type BottomSheetSwitcherProps,
-} from '@astryxdesign/core/BottomSheet';
-
 // Tour — guided product-tour / NUX walkthrough (facebook/astryx#4239)
 export {
   Tour,
