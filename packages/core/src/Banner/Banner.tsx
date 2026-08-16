@@ -116,6 +116,9 @@ export interface BannerProps extends BaseProps<HTMLDivElement> {
    * Action button rendered in the header area (end-aligned).
    * Typically an Button with a secondary or ghost variant.
    *
+   * When the header is too narrow to hold the actions and a readable text
+   * column, the whole end area wraps to its own row below the text.
+   *
    * @example
    * ```
    * endContent={<Button label="Retry" variant="ghost" onClick={handleRetry} />}

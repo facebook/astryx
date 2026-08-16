@@ -523,4 +523,44 @@ describe('Banner', () => {
       expect(header.children[1].children).toHaveLength(1);
     });
   });
+
+  // jsdom does no flex layout, so these read the declarations that produce the
+  // wrap. The rendered result is verified in Chromium at 320/375/480/768.
+  describe('narrow-viewport wrapping', () => {
+    const renderBanner = (endContent?: React.ReactNode) => {
+      const {container} = render(
+        <Banner
+          status="warning"
+          title="A compute node is required"
+          endContent={endContent}
+        />,
+      );
+      const header = container.firstElementChild!.firstElementChild!;
+      return {
+        header,
+        textColumn: screen.getByText('A compute node is required')
+          .parentElement!,
+      };
+    };
+
+    it('lets the header wrap so the end area can take its own row', () => {
+      const {header} = renderBanner(<button type="button">Retry</button>);
+      expect(getComputedStyle(header).flexWrap).toBe('wrap');
+    });
+
+    it('gives the text column a wrap threshold when endContent is present', () => {
+      const {textColumn} = renderBanner(<button type="button">Retry</button>);
+      expect(getComputedStyle(textColumn).flexBasis).toBe('8rem');
+    });
+
+    it('leaves the text column free to shrink when there is no endContent', () => {
+      const {textColumn} = renderBanner();
+      expect(getComputedStyle(textColumn).flexBasis).not.toBe('8rem');
+    });
+
+    it('leaves it free for an endContent that renders nothing', () => {
+      const {textColumn} = renderBanner(false);
+      expect(getComputedStyle(textColumn).flexBasis).not.toBe('8rem');
+    });
+  });
 });
