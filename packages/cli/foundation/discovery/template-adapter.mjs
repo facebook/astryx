@@ -657,15 +657,15 @@ const UBIQUITOUS = new Set([
   'HStack',
   'VStack',
   'Link',
-  'StackItem',
   'Icon',
 ]);
 
 /**
  * @param {string} pagePath
+ * @param {Set<string>|null} [knownComponents]
  * @returns {string[]}
  */
-export function extractComponents(pagePath) {
+export function extractComponents(pagePath, knownComponents = null) {
   const src = fs.readFileSync(pagePath, 'utf-8');
   // Match JSX opening tags, e.g. `<Section` or the legacy `<XDSSection`.
   // Templates author bare component names post un-prefix migration
@@ -684,13 +684,12 @@ export function extractComponents(pagePath) {
       matches
         .filter(n => !['Theme', 'ThemeProvider'].includes(n))
         .filter(n => !UBIQUITOUS.has(n))
-        .map(n =>
-          n.replace(
-            /(Item|Section|Header|Content|Footer|Panel|Heading|CollapseButton|Column|Sortable|Selection|Group|Source)$/,
-            '',
-          ),
-        )
-        .filter(Boolean),
+        // Exact names only. No suffix-fuzzying (e.g. StackItem -> Stack):
+        // a name is advertised iff `astryx component <Name>` can resolve it
+        // as-is, which includes parent-doc subcomponents like StackItem and
+        // ResizeHandle (they are indexed from the docs by
+        // listResolvableComponentNames).
+        .filter(n => knownComponents === null || knownComponents.has(n)),
     ),
   ].sort();
 }

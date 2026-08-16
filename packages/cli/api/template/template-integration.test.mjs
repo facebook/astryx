@@ -51,6 +51,88 @@ function installWidgets(consumerDir) {
   return pkgDir;
 }
 
+/** Like {@link installWidgets} but the integration also owns a component. */
+function installWidgetsWithComponents(consumerDir) {
+  const pkgDir = installWidgets(consumerDir);
+  fs.writeFileSync(
+    path.join(pkgDir, 'astryx.integration.mjs'),
+    `export default { templates: './templates', components: './components' };\n`,
+  );
+  const cDir = path.join(pkgDir, 'components');
+  fs.mkdirSync(cDir, {recursive: true});
+  fs.writeFileSync(
+    path.join(cDir, 'WidgetButton.doc.mjs'),
+    `export default { name: 'WidgetButton' };\n`,
+  );
+  fs.writeFileSync(
+    path.join(cDir, 'WidgetButton.tsx'),
+    `export function WidgetButton() { return null; }\n`,
+  );
+  return pkgDir;
+}
+
+/** Minimal fake core package so the registry's filtered path is exercised. */
+function installFakeCore(consumerDir) {
+  const coreDir = path.join(
+    consumerDir,
+    'node_modules',
+    '@astryxdesign',
+    'core',
+  );
+  const compDir = path.join(coreDir, 'src', 'FakeButton');
+  fs.mkdirSync(compDir, {recursive: true});
+  fs.writeFileSync(
+    path.join(compDir, 'FakeButton.doc.mjs'),
+    `export default { name: 'FakeButton' };\n`,
+  );
+  fs.writeFileSync(
+    path.join(compDir, 'FakeButton.tsx'),
+    `export function FakeButton() { return null; }\n`,
+  );
+  return coreDir;
+}
+
+/**
+ * Add a parent component doc with an OBJECT-ARRAY `components:` entry (the
+ * shape the old template-layer regex (`components:\s*\[([^\]]+)\]`) mangled,
+ * and the only place subcomponent names like StackItem live).
+ */
+function installParentDocSubcomponent(coreDir, parentName, subName) {
+  const parentDir = path.join(coreDir, 'src', parentName);
+  fs.mkdirSync(parentDir, {recursive: true});
+  fs.writeFileSync(
+    path.join(parentDir, `${parentName}.doc.mjs`),
+    `export const docs = { name: '${parentName}', description: '${parentName.toLowerCase()} layout', components: [{ name: '${subName}', description: 'a ${parentName.toLowerCase()} child', props: [{ name: 'align', type: 'string' }] }] };\n`,
+  );
+  fs.writeFileSync(
+    path.join(parentDir, `${parentName}.tsx`),
+    `export function ${parentName}() { return null; }\n`,
+  );
+}
+
+/**
+ * Back-compat external docs package (pkg.astryx.docs, no integration file):
+ * `astryx component <Name>` falls back to it, so its components are
+ * resolvable and must stay advertisable.
+ */
+function installExternalDocsPackage(consumerDir) {
+  const pkgDir = path.join(consumerDir, 'node_modules', '@acme', 'charts');
+  fs.mkdirSync(path.join(pkgDir, 'docs'), {recursive: true});
+  fs.writeFileSync(
+    path.join(pkgDir, 'package.json'),
+    JSON.stringify(
+      {name: '@acme/charts', version: '0.1.0', astryx: {docs: './docs'}},
+      null,
+      2,
+    ),
+  );
+  fs.writeFileSync(
+    path.join(pkgDir, 'docs', 'BarChart.doc.mjs'),
+    `export default { name: 'BarChart', description: 'a chart' };\n`,
+  );
+  return pkgDir;
+}
+
 /** Write a template doc + same-stem source under the templates root. */
 function writeTemplate(pkgDir, id, {kind, body, withSource = true}) {
   const docPath = path.join(pkgDir, 'templates', `${id}.doc.mjs`);
@@ -80,6 +162,64 @@ afterEach(() => {
 });
 
 describe('integration template discovery', () => {
+  it('keeps integration-owned components in skeleton lists (registry includes loaded integrations)', async () => {
+    installFakeCore(tmpDir);
+    const pkgDir = installWidgetsWithComponents(tmpDir);
+    writeTemplate(pkgDir, 'pricing', {kind: 'page', withSource: false});
+    fs.writeFileSync(
+      path.join(pkgDir, 'templates', 'pricing.tsx'),
+      `function LocalHelper() { return null; }\n` +
+        `export default function Pricing() { return <WidgetButton /><LocalHelper />; }\n`,
+    );
+
+    const result = await template('pricing', {skeleton: true, cwd: tmpDir});
+    // `astryx component WidgetButton` resolves via the integration, so the
+    // skeleton must keep advertising it even though it is not a core
+    // component (#4677).
+    expect(result.data.components).toContain('WidgetButton');
+    // Local helper functions still must not leak into the list.
+    expect(result.data.components).not.toContain('LocalHelper');
+  });
+
+  it('retains parent-doc subcomponents read from object-array doc entries', async () => {
+    // Regression for #4677: the old template-layer registry scraped doc files
+    // with a regex that shredded object-array `components: [...]` entries
+    // (e.g. `{name: 'StackItem'}`), so resolvable subcomponents dropped out of
+    // skeleton lists. Now they come from loadDocs, and the list is filtered
+    // against exact names only, no suffix fuzzying either, so a local helper
+    // like TimelineSection must not be rewritten to the resolvable Timeline.
+    const coreDir = installFakeCore(tmpDir);
+    installParentDocSubcomponent(coreDir, 'Stack', 'StackItem');
+    const pkgDir = installWidgets(tmpDir);
+    writeTemplate(pkgDir, 'pricing', {kind: 'page', withSource: false});
+    fs.writeFileSync(
+      path.join(pkgDir, 'templates', 'pricing.tsx'),
+      `function TimelineSection() { return null; }\n` +
+        `export default function Pricing() { return <StackItem /><TimelineSection /><FakeButton />; }\n`,
+    );
+
+    const result = await template('pricing', {skeleton: true, cwd: tmpDir});
+    expect(result.data.components).toContain('StackItem');
+    expect(result.data.components).toContain('FakeButton');
+    expect(result.data.components).not.toContain('TimelineSection');
+    expect(result.data.components).not.toContain('Timeline');
+  });
+
+  it('retains components documented by back-compat external docs packages', async () => {
+    installFakeCore(tmpDir);
+    installExternalDocsPackage(tmpDir);
+    const pkgDir = installWidgets(tmpDir);
+    writeTemplate(pkgDir, 'pricing', {kind: 'page', withSource: false});
+    fs.writeFileSync(
+      path.join(pkgDir, 'templates', 'pricing.tsx'),
+      `export default function Pricing() { return <BarChart /><FakeButton />; }\n`,
+    );
+
+    const result = await template('pricing', {skeleton: true, cwd: tmpDir});
+    expect(result.data.components).toContain('BarChart');
+    expect(result.data.components).toContain('FakeButton');
+  });
+
   it('discovers and lists an integration template with package + type', async () => {
     const pkgDir = installWidgets(tmpDir);
     writeTemplate(pkgDir, 'pricing', {kind: 'page'});

@@ -7,6 +7,9 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
+import {discoverExternalPackages, findCoreDir} from '../fs/paths.mjs';
+import {loadDocs} from './component-loader.mjs';
+
 const SKIP_DIRS = new Set(['hooks', 'utils', '__tests__', 'node_modules']);
 
 /** The owner package name for built-in (core) components. */
@@ -678,6 +681,122 @@ export function discoverOwnedComponents(coreDir, loadedIntegrations = []) {
 
   return records;
 }
+
+/**
+ * Build the exact set of component names resolvable through the component
+ * subsystem, mirroring `astryx component <Name>` resolution.
+ *
+ * This is the single source of truth the template layer filters skeleton
+ * `components` lists against. It is exact by construction (no regex over
+ * source, no fuzzy prefix matching), so every advertised name satisfies
+ * "query every proposed component before importing" (#4677):
+ *
+ * - every core component whose doc resolves (discoverComponents);
+ * - every component owned by a loaded integration whose doc resolves;
+ * - every back-compat external-package component whose doc resolves
+ *   (`astryx component` falls back to pkg.astryx.docs);
+ * - every PARENT-DOC subcomponent referenced by a component doc's
+ *   `components:` object array (resolveScope -> scopeSubComponent). Those are
+ *   read from the docs themselves, never scraped from template source, so
+ *   object-array subcomponents (`{name: 'HStack'}`) are retained while
+ *   undocumented exports stay out.
+ *
+ * @param {string} cwd directory inside the Astryx app (tree-walked to core)
+ * @param {Array<{name: string, components?: string}>} [loadedIntegrations]
+ *   integration records already loaded by the caller. Loaded here would pull
+ *   the config layer up into discovery (cycle: project -> template-adapter ->
+ *   discovery), so the caller hands them in. `template`/`skeleton`/`show`
+ *   load them exactly like `astryx component` does.
+ * @returns {Promise<Set<string>|null>} exact resolvable names; `null` when no
+ *   core package is present (callers already degrade to unfiltered output).
+ */
+export async function listResolvableComponentNames(
+  cwd = process.cwd(),
+  loadedIntegrations = [],
+) {
+  const coreDir = findCoreDir(cwd);
+  if (!coreDir) return null;
+
+  // Back-compat external packages (pkg.astryx.docs). Skip packages that are
+  // already loaded as integrations; their components are resolved above.
+  const externalPkgs = discoverExternalPackages(cwd).filter(
+    ext => !loadedIntegrations.some(i => i.name === ext.name),
+  );
+
+  // The index depends only on these inputs; memoize so repeated template
+  // commands in the same process pay the (comparatively heavy) doc-loading
+  // pass once per workspace.
+  const memoKey = [
+    coreDir,
+    loadedIntegrations.map(i => i.name).sort().join(','),
+    externalPkgs.map(e => e.name).sort().join(','),
+  ].join('|');
+  if (resolvableNamesCache.has(memoKey)) return resolvableNamesCache.get(memoKey);
+
+  const names = new Set();
+  /** @type {Set<string>} component docs to scan for parent-doc subcomponents */
+  const docPaths = new Set();
+
+  // Core + loaded-integration components with a resolvable doc.
+  for (const rec of discoverOwnedComponents(coreDir, loadedIntegrations)) {
+    if (rec.docPath) {
+      names.add(rec.name);
+      docPaths.add(rec.docPath);
+    }
+  }
+
+  for (const ext of externalPkgs) {
+    const grouped = discoverExternalComponentsGrouped(ext.docsDir);
+    for (const members of Object.values(grouped)) {
+      for (const name of members) {
+        const docPath = findExternalComponentDoc(ext.docsDir, name);
+        if (docPath) {
+          names.add(name);
+          docPaths.add(docPath);
+        }
+      }
+    }
+  }
+
+  // Parent-doc subcomponents: each `components:` entry resolves through the
+  // parent doc, so it is an exact resolvable name. Load docs through the
+  // canonical loader (same path `astryx component` uses), never regex. Only
+  // docs that author a `components:` key can contribute here, so the source
+  // is cheaply pre-filtered (the regex is a boolean gate; the OLD registry
+  // parsed subcomponent VALUES with a regex, which is what shredded
+  // object-array entries; the values here come from loadDocs).
+  const parentDocs = [];
+  for (const docPath of docPaths) {
+    try {
+      if (/\bcomponents\s*:/.test(fs.readFileSync(docPath, 'utf-8'))) {
+        parentDocs.push(docPath);
+      }
+    } catch {
+      // Unreadable doc: keep the parent's own name, skip its subcomponents.
+    }
+  }
+  const poolSize = 16;
+  for (let i = 0; i < parentDocs.length; i += poolSize) {
+    const chunkDocs = await Promise.allSettled(
+      parentDocs.slice(i, i + poolSize).map(docPath => loadDocs(docPath)),
+    );
+    for (const r of chunkDocs) {
+      if (r.status === 'rejected' || !r.value || !Array.isArray(r.value.components)) {
+        continue;
+      }
+      for (const sub of r.value.components) {
+        const subName = sub && typeof sub.name === 'string' ? sub.name : null;
+        if (subName) names.add(subName.replace(/^XDS/, ''));
+      }
+    }
+  }
+
+  resolvableNamesCache.set(memoKey, names);
+  return names;
+}
+
+/** @type {Map<string, Set<string>>} per-workspace index cache */
+const resolvableNamesCache = new Map();
 
 // ── Legacy markdown-parsing functions ────────────────────────────────
 // These are kept for backward compatibility with existing tests.
