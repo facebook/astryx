@@ -31,6 +31,12 @@ describe('parseIntegration (load boundary)', () => {
     ).not.toThrow();
   });
 
+  it('accepts an appShell path', () => {
+    expect(parseIntegration({appShell: './astryx/app-shell.mjs'})).toEqual({
+      appShell: './astryx/app-shell.mjs',
+    });
+  });
+
   it('rejects unknown keys (strict)', () => {
     expect(reason({name: '@acme/widgets'})).toContain('Unrecognized key');
   });

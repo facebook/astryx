@@ -158,6 +158,7 @@ async function validateAtPackageDir(packageDir, identity) {
     components: resolveRoot(manifest.components),
     templates: resolveRoot(manifest.templates),
     codemods: resolveRoot(manifest.codemods),
+    appShell: resolveRoot(manifest.appShell, 'appShell module'),
     issuesUrl: manifest.issuesUrl,
     __spec: identity.name,
     __packageDir: packageDir,

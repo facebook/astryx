@@ -48,6 +48,12 @@ export const doc = {
       param: 'options.overwrite',
       description: 'Overwrite existing files without prompting',
     },
+    {
+      flag: '--with-shell',
+      param: 'options.withShell',
+      description:
+        "Wrap the template in the project's app shell (an integration's, or core's AppShell)",
+    },
   ],
   examples: [
     {label: 'List templates', cli: 'astryx template --json'},

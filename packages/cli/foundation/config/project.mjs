@@ -34,6 +34,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {findPresentFiles, loadModuleWithParser} from '../fs/module-loader.mjs';
 import {parseConfig} from '../../authoring/config/parse.mjs';
+import {parseAppShell} from '../../authoring/app-shell/parse.mjs';
 import {loadIntegrations} from '../integrations/integrations.mjs';
 import {
   CORE_PACKAGE,
@@ -56,6 +57,29 @@ import {
   cacheKey,
   configContentHash,
 } from './config-cache.mjs';
+
+/**
+ * An app shell resolved for a project: the authored declaration plus who owns
+ * it and whether it is core's default (so the CLI can say which shell a user
+ * is getting, and where it came from).
+ * @typedef {import('../../authoring/app-shell/type').AstryxAppShell & {
+ *   package: string,
+ *   isDefault: boolean,
+ * }} ResolvedAppShell
+ */
+
+/**
+ * Astryx core's app shell — what every project gets until an integration
+ * declares its own. Page templates are content-only by rule, so this wraps
+ * cleanly with no props.
+ * @type {ResolvedAppShell}
+ */
+const DEFAULT_APP_SHELL = {
+  component: 'AppShell',
+  from: '@astryxdesign/core/AppShell',
+  package: CORE_PACKAGE,
+  isDefault: true,
+};
 
 /**
  * Extract a human-readable message from an unknown thrown value.
@@ -503,6 +527,62 @@ export class Project {
       );
 
       return {core, integration};
+    });
+  }
+
+  /**
+   * The ACTIVE app shell — the one `astryx template <id> --with-shell` wraps a
+   * content-only page template in. Astryx core provides the default; an
+   * integration that declares an `appShell` module replaces it.
+   *
+   * There is exactly ONE shell slot, so resolution picks a single winner: the
+   * first integration in config order that provides a valid shell. A second
+   * claimant is ignored and recorded as a conflict issue (nesting two shells
+   * would produce two viewport-claiming containers). A broken module is skipped
+   * with an issue rather than failing resolution — the same skip+warn policy as
+   * the other discovery methods. Memoized per instance.
+   *
+   * @returns {Promise<ResolvedAppShell>} always resolves; falls back to core's
+   */
+  async appShell() {
+    return this.#memo('appShell', async () => {
+      /** @type {ResolvedAppShell | null} */
+      let active = null;
+
+      for (const integration of this.#loadedIntegrations) {
+        await this.#collectIssues(integration);
+        const pkg = this.#pkgLabel(integration);
+        const hadError = this.#issues.some(
+          i => i.package === pkg && i.severity === 'error',
+        );
+        if (hadError) continue;
+        const file = integration?.appShell;
+        if (!file) continue;
+        try {
+          const shell = await loadModuleWithParser(file, parseAppShell, {
+            label: `Integration "${pkg}" app shell`,
+          });
+          if (active) {
+            this.#pushIssue(pkg, {
+              code: 'app_shell_conflict',
+              severity: 'warning',
+              message:
+                `"${active.package}" already provides the app shell, so this one is ignored. ` +
+                `A project has a single shell — remove \`appShell\` from one of the two integrations.`,
+            });
+            continue;
+          }
+          active = {...shell, package: pkg, isDefault: false};
+        } catch (err) {
+          this.#pushIssue(pkg, {
+            code: 'invalid_app_shell',
+            severity: 'error',
+            message: errorMessage(err),
+          });
+        }
+      }
+
+      return active ?? DEFAULT_APP_SHELL;
     });
   }
 

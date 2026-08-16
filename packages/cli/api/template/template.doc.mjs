@@ -75,6 +75,13 @@ export const doc = {
       default: 'false',
     },
     {
+      name: 'options.withShell',
+      type: 'boolean',
+      description:
+        "Wrap the emitted template in the project's app shell — an integration's, or core's AppShell. Page templates are content-only by default, so the host supplies the chrome.",
+      default: 'false',
+    },
+    {
       name: 'options.cwd',
       type: 'string',
       description:

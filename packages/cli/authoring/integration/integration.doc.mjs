@@ -15,7 +15,8 @@ export const doc = {
   description:
     'The astryx.integration.* manifest that sits beside an integration ' +
     "package's package.json. Points the CLI at the package's components, " +
-    'templates, and codemods, and where to file issues. Every field is optional.',
+    'templates, codemods, and an optional template transform, and where to ' +
+    'file issues. Every field is optional.',
   appliesTo: 'astryx.integration.{ts,mjs,js}',
   fields: [
     {
@@ -39,6 +40,17 @@ export const doc = {
       example: "'./codemods'",
     },
     {
+      name: 'appShell',
+      type: 'string',
+      description:
+        'Relative path to an app-shell module (resolved to absolute). Its ' +
+        'default export (an AstryxAppShell) names the shell component this ' +
+        "project's pages live in, replacing core's default AppShell when a user " +
+        'runs `astryx template <id> --with-shell`. A pure output-layer that ' +
+        'never edits the on-disk templates.',
+      example: "'./astryx/app-shell.ts'",
+    },
+    {
       name: 'issuesUrl',
       type: 'string',
       description: 'Where to file issues/feedback for this integration.',
@@ -52,6 +64,7 @@ export const doc = {
   components: './src/components',
   templates: './src/templates',
   codemods: './codemods',
+  appShell: './astryx/app-shell.ts',
   issuesUrl: 'https://github.com/acme/widgets/issues',
 };`,
     },

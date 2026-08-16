@@ -55,7 +55,7 @@ export function registerTemplate(program) {
       /**
        * @param {string | undefined} name
        * @param {string | undefined} targetPath
-       * @param {{list?: boolean, type?: string, package?: string, skeleton?: boolean, overwrite?: boolean}} options
+       * @param {{list?: boolean, type?: string, package?: string, skeleton?: boolean, overwrite?: boolean, withShell?: boolean}} options
        */
       async (name, targetPath, options) => {
       const json = program.opts().json || false;
@@ -108,6 +108,16 @@ export function registerTemplate(program) {
             targetPath,
             overwrite: options.overwrite,
             cwd: process.cwd(),
+            withShell: options.withShell,
+            // Non-fatal warnings go to stderr; never in --json mode (stdout
+            // stays a clean envelope).
+            onWarn: json ? undefined : msg => console.error(msg),
+            // One stderr line about the app shell — which one wrapped the
+            // template, or how to ask for it. Passing no callback in --json mode
+            // also tells the API not to resolve the shell at all.
+            onShell: json
+              ? undefined
+              : outcome => console.error(formatShellNotice(outcome, {name, run})),
           })
         );
       } catch (e) {
@@ -231,4 +241,81 @@ async function detectTemplateCollision(name, targetPath) {
   }
 
   return fs.existsSync(dest) ? dest : null;
+}
+
+/** Longest integration-supplied value rendered in a notice row. */
+const MAX_NOTICE_VALUE = 160;
+
+/**
+ * Flatten an integration-supplied string for single-line display. The values in
+ * a notice come from a third-party manifest, and the notice is an attribution
+ * surface — so control characters (which could rewrite the terminal) and
+ * newlines (which could forge an extra notice line, or just break the aligned
+ * block) are collapsed to spaces, and the result is capped.
+ *
+ * @param {unknown} value
+ * @returns {string | undefined} the flattened value, or undefined when empty
+ */
+function oneLine(value) {
+  if (typeof value !== 'string') return undefined;
+  const flat = value
+    // eslint-disable-next-line no-control-regex
+    .replace(/[\u0000-\u001f\u007f-\u009f]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!flat) return undefined;
+  return flat.length > MAX_NOTICE_VALUE
+    ? `${flat.slice(0, MAX_NOTICE_VALUE - 3)}...`
+    : flat;
+}
+
+/**
+ * Render the one-line stderr note about the app shell: which shell wrapped the
+ * emitted template and who provides it, or — when the template was emitted
+ * bare — how to ask for it. Plain ASCII to match the rest of the CLI. The
+ * caller writes it to stderr so it never touches the piped source on stdout,
+ * and passes no `onShell` in --json mode so it is suppressed there.
+ *
+ * Values that originate in a third-party manifest (package, description) are
+ * flattened, so a shell author can neither forge a second line nor write escape
+ * sequences to the terminal.
+ *
+ * @param {import('../../../api/template/template.type.mjs').ShellOutcome} outcome
+ * @param {{name?: string, run: string}} ctx
+ * @returns {string} the notice text
+ */
+export function formatShellNotice(outcome, {name, run}) {
+  const component = oneLine(outcome?.component) ?? 'the app shell';
+  const pkg = oneLine(outcome?.package) ?? 'an installed integration';
+  const why = oneLine(outcome?.description);
+  const shell = `${component} from ${pkg}`;
+
+  switch (outcome?.status) {
+    case 'wrapped': {
+      // Say whose shell it is: the whole point of the override is knowing you
+      // got the project's chrome rather than the stock one.
+      const origin = outcome.isDefault
+        ? 'the default app shell'
+        : "this project's app shell, replacing the default AppShell";
+      return why
+        ? `Wrapped in ${shell} — ${origin}.\n  ${why}`
+        : `Wrapped in ${shell} — ${origin}.`;
+    }
+
+    case 'available':
+      return `Content-only page. Add --with-shell to wrap it in ${shell}.`;
+
+    case 'already-shell':
+      return `${oneLine(name) ?? 'This template'} is an app shell already, so --with-shell changed nothing.`;
+
+    case 'not-applicable': {
+      const reason = oneLine(outcome.reason);
+      return reason
+        ? `--with-shell had no effect: ${reason}.`
+        : `--with-shell had no effect on this template.`;
+    }
+
+    default:
+      return `Run ${run} template --list to see the active app shell.`;
+  }
 }

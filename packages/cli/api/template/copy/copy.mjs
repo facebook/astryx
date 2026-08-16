@@ -19,15 +19,19 @@ import {
 import {AstryxError} from '../../error.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {stripTemplateAssetRefs} from '../../../foundation/discovery/template-adapter.mjs';
+import {applyTransformContext} from '../transform/apply.mjs';
 
 /**
  * Scaffold an already-resolved template to `targetPath` (relative to `cwd`) and
- * return the `template.copy` receipt.
+ * return the `template.copy` receipt. Demo asset refs are stripped, then — when
+ * the caller asked for it — the project's app shell is applied to the written
+ * source (a pure output-layer — the on-disk template is untouched); the applied
+ * package is reported via `transformedBy`.
  * @param {import('../../../foundation/discovery/template-adapter.mjs').DiscoveredTemplate} match
- * @param {{targetPath: string, cwd: string, overwrite?: boolean}} ctx
+ * @param {{targetPath: string, cwd: string, overwrite?: boolean, transformCtx?: import('../transform/apply.mjs').TemplateTransformContext}} ctx
  * @returns {import('../template.type.mjs').TemplateCopyResponse}
  */
-export function templateCopy(match, {targetPath, cwd, overwrite = false}) {
+export function templateCopy(match, {targetPath, cwd, overwrite = false, transformCtx}) {
   if (!fs.existsSync(match.filePath)) {
     throw new AstryxError(
       `No source file found for template "${match.dirName}"`,
@@ -89,9 +93,15 @@ export function templateCopy(match, {targetPath, cwd, overwrite = false}) {
   fs.mkdirSync(outputDir, {recursive: true});
 
   // Strip demo image references so the scaffolded file renders without a
-  // Meta-only network dependency.
+  // Meta-only network dependency, then apply any integration template
+  // transforms to the emitted source.
   const source = fs.readFileSync(match.filePath, 'utf-8');
-  const outputSource = stripTemplateAssetRefs(source);
+  const stripped = stripTemplateAssetRefs(source);
+  const {source: outputSource, transformedBy} = applyTransformContext(
+    stripped,
+    match.filePath,
+    transformCtx,
+  );
   fs.writeFileSync(outputFilePath, outputSource);
 
   const relOutput = path.relative(cwd, outputDir) || '.';
@@ -102,6 +112,7 @@ export function templateCopy(match, {targetPath, cwd, overwrite = false}) {
       outputDir: relOutput,
       fileName: outputFileName,
       filesCopied: 1,
+      ...(transformedBy.length > 0 ? {transformedBy} : {}),
     },
   };
 }
