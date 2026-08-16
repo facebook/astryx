@@ -11,6 +11,7 @@ import {DateInput} from '@astryxdesign/core/DateInput';
 import type {ISODateString} from '@astryxdesign/core/Calendar';
 import {Typeahead} from '@astryxdesign/core/Typeahead';
 import type {SearchableItem, SearchSource} from '@astryxdesign/core/Typeahead';
+import {Tokenizer} from '@astryxdesign/core/Tokenizer';
 import {Selector} from '@astryxdesign/core/Selector';
 import {MultiSelector} from '@astryxdesign/core/MultiSelector';
 import {Icon} from '@astryxdesign/core/Icon';
@@ -163,6 +164,31 @@ export const WithTypeahead: Story = {
   args: {
     label: 'Favorite fruit',
     description: 'Select one fruit from the list',
+  },
+};
+
+export const WithTokenizer: Story = {
+  render: args => {
+    const [value, setValue] = useState<SearchableItem[]>([fruits[0]]);
+    return (
+      <InputGroup {...args}>
+        <InputGroupText>Tags</InputGroupText>
+        <Tokenizer
+          label="Selections"
+          isLabelHidden
+          searchSource={fruitSource}
+          value={value}
+          onChange={setValue}
+          placeholder="Add fruits..."
+          maxEntries={3}
+          hasEntriesOnFocus
+        />
+      </InputGroup>
+    );
+  },
+  args: {
+    label: 'Favorite fruits',
+    description: 'Pick up to three fruits',
   },
 };
 

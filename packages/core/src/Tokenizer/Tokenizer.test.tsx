@@ -13,6 +13,8 @@ import {describe, it, expect, vi, beforeAll, afterAll, afterEach} from 'vitest';
 import {render, screen, fireEvent, act, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Tokenizer} from './Tokenizer';
+import {InputGroup} from '../InputGroup';
+import {InputGroupText} from '../InputGroup/InputGroupText';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import type {SearchSource, SearchableItem} from '../Typeahead/types';
 import {TestIcon} from '../__tests__/TestIcon';
@@ -1133,6 +1135,103 @@ describe('Tokenizer', () => {
       expect([
         ...new FormData(container.querySelector('form')!).keys(),
       ]).toEqual([]);
+    });
+  });
+
+  describe('InputGroup', () => {
+    it('uses group ARIA and skips standalone Field chrome when grouped', () => {
+      render(
+        <InputGroup
+          label="Recipients"
+          description="Who receives the digest"
+          status={{type: 'error', message: 'Pick at least one person'}}>
+          <InputGroupText>To</InputGroupText>
+          <Tokenizer
+            label="People"
+            isLabelHidden
+            searchSource={userSource}
+            value={[]}
+            onChange={() => {}}
+          />
+        </InputGroup>,
+      );
+
+      const group = screen.getByRole('group', {name: 'Recipients'});
+      const input = screen.getByRole('combobox', {name: 'Recipients People'});
+
+      // The group owns the only Field chrome — the Tokenizer must not render a
+      // second Field wrapper or a duplicate label inside the group.
+      expect(document.querySelectorAll('.astryx-field')).toHaveLength(1);
+      expect(document.querySelectorAll('.astryx-field-label')).toHaveLength(1);
+      expect(screen.getByText('People')).not.toHaveClass('astryx-field-label');
+
+      const labelledByIDs =
+        input.getAttribute('aria-labelledby')?.split(' ') ?? [];
+      expect(labelledByIDs).toHaveLength(2);
+      expect(labelledByIDs[0]).toBe(group.getAttribute('aria-labelledby'));
+      expect(document.getElementById(labelledByIDs[1])).toHaveTextContent(
+        'People',
+      );
+      expect(input).not.toHaveAttribute('aria-label');
+      expect(input).toHaveAttribute(
+        'aria-describedby',
+        group.getAttribute('aria-describedby'),
+      );
+      expect(screen.getByText('Pick at least one person')).toBeInTheDocument();
+    });
+
+    it('composes the group described-by with the disabled reason instead of clobbering it', () => {
+      render(
+        <InputGroup label="Recipients" description="Who receives the digest">
+          <InputGroupText>To</InputGroupText>
+          <Tokenizer
+            label="People"
+            isLabelHidden
+            searchSource={userSource}
+            value={[]}
+            onChange={() => {}}
+            isDisabled
+            disabledMessage="You need edit access to change recipients"
+          />
+        </InputGroup>,
+      );
+
+      const group = screen.getByRole('group', {name: 'Recipients'});
+      const input = screen.getByRole('combobox', {name: 'Recipients People'});
+      const tooltip = screen.getByRole('tooltip', {hidden: true});
+      const describedByIDs =
+        input.getAttribute('aria-describedby')?.split(' ') ?? [];
+
+      // Both the group's description and the input-local disabled reason are
+      // present — neither one replaces the other.
+      expect(describedByIDs).toContain(group.getAttribute('aria-describedby'));
+      expect(describedByIDs).toContain(tooltip.id);
+      expect(describedByIDs).toHaveLength(2);
+      expect(input).not.toBeDisabled();
+      expect(input).toHaveAttribute('aria-disabled', 'true');
+    });
+
+    it('keeps token removal working inside a group', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <InputGroup label="Recipients">
+          <InputGroupText>To</InputGroupText>
+          <Tokenizer
+            label="People"
+            isLabelHidden
+            searchSource={userSource}
+            value={[users[0]]}
+            onChange={onChange}
+          />
+        </InputGroup>,
+      );
+
+      await user.click(screen.getByRole('button', {name: /remove alice/i}));
+      expect(onChange).toHaveBeenCalledWith([], {
+        item: users[0],
+        type: 'remove',
+      });
     });
   });
 });
