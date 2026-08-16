@@ -826,10 +826,6 @@ export interface ElementDescriptor {
 export interface PlaygroundConfig {
   defaults?: Record<string, unknown>;
   overlay?: boolean;
-  overlayControl?: {
-    stateProp: string;
-    openValue: unknown;
-  };
   appShellMobile?: boolean;
   wrapper?: {
     component: string;
