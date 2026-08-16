@@ -161,6 +161,27 @@ function getTargetStates(target) {
 }
 
 /**
+ * Theme-added values for one target, each labeled with the prop that accepts
+ * it. `themeData.variants` is `{ [componentKey]: { [prop]: value[] } }`; a
+ * component with two extensible props (Banner `container` and `status`) must
+ * not leave the reader guessing which prop takes which value, so each renders
+ * as `prop:value*`, the same key a theme author writes in `defineTheme`.
+ *
+ * @param {any} themeData - Resolved theme data with variants
+ * @param {string} componentKey - Theme component key (see `targetKey`)
+ * @returns {string[]}
+ */
+function themeValueLabels(themeData, componentKey) {
+  const props = themeData?.variants?.[componentKey];
+  if (!props || typeof props !== 'object') return [];
+  return Object.entries(props).flatMap(([prop, values]) =>
+    Array.isArray(values)
+      ? values.map((/** @type {string} */ value) => `${prop}:${value}*`)
+      : [],
+  );
+}
+
+/**
  * Format the theming targets table, merging in theme variants if available.
  *
  * @param {any} docs - Component doc object
@@ -182,12 +203,11 @@ function formatTargetsTable(docs, themeData) {
     // Merge theme variants — keyed by component name derived from class
     // e.g. className 'xds-button' → component key 'button'
     const componentKey = targetKey(target);
-    const themeVariants = themeData?.variants?.[componentKey] || [];
 
-    // Build variant display: core variants plain, theme variants with * suffix
+    // Build variant display: core variants plain, theme values as prop:value*
     const variantParts = [
       ...coreVariants,
-      ...themeVariants.map((/** @type {string} */ v) => `${v}*`),
+      ...themeValueLabels(themeData, componentKey),
     ];
 
     const variantsStr = variantParts.length > 0 ? variantParts.join(', ') : '-';
@@ -293,7 +313,7 @@ export function formatFull(docs, options = {}) {
       // Note about theme variants if any are present
       if (themeData?.variants) {
         const componentKeys = docs.theming.targets.map((/** @type {any} */ t) => targetKey(t));
-        const hasThemeVariants = componentKeys.some((/** @type {any} */ k) => themeData.variants[k]?.length > 0);
+        const hasThemeVariants = componentKeys.some((/** @type {any} */ k) => themeValueLabels(themeData, k).length > 0);
         if (hasThemeVariants) {
           sections.push(`_\\* = custom variant from ${themeData.name || 'active'} theme_\n`);
         }
@@ -586,8 +606,8 @@ export function formatBrief(docs, componentName, importHint, options = {}) {
       if (t.states?.length) parts.push(`states: ${t.states.join(', ')}`);
       // Merge theme variants
       const componentKey = targetKey(t);
-      const themeVars = themeData?.variants?.[componentKey];
-      if (themeVars?.length) parts.push(`theme: ${themeVars.map((/** @type {any} */ v) => v + '*').join(', ')}`);
+      const themeVars = themeValueLabels(themeData, componentKey);
+      if (themeVars.length) parts.push(`theme: ${themeVars.join(', ')}`);
       return parts.join(' ');
     });
     output.push(`  Targets: ${targetParts.join(' | ')}`);
