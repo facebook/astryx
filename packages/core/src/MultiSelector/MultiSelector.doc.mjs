@@ -104,6 +104,12 @@ export const docs = {
           default: "'count'",
         },
         {
+          name: 'formatTriggerCount',
+          type: '(count: number) => string',
+          description:
+            'Formats the trigger text when triggerDisplay="count". Receives the selected count and returns the full trigger text.',
+        },
+        {
           name: 'maxBadges',
           type: 'number',
           description:
@@ -420,6 +426,8 @@ export const docsDense = {
         variant:
           'visual trigger style: input bordered control or ghost toolbar control',
         triggerDisplay: 'how to show selected in trigger',
+        formatTriggerCount:
+          'formats count-mode trigger text; receives selected count',
         maxBadges: 'max badges before "+N"; badges mode only',
         hasSelectAll: 'show select-all checkbox',
         selectAllLabel: 'select-all label',
