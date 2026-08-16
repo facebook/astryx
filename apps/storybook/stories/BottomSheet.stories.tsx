@@ -330,6 +330,43 @@ export const HugHeightWithLongContent: Story = {
   },
 };
 
+export const CappedHeightWithLongContent: Story = {
+  name: 'Capped height — Long content',
+  render: () => {
+    const [isOpen, setIsOpen] = useState(false);
+    return (
+      <>
+        <Button label="View saved places" onClick={() => setIsOpen(true)} />
+        <BottomSheet
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          label="Saved places"
+          height="capped">
+          <Section padding={4}>
+            <VStack gap={4}>
+              <Heading level={3}>Saved places</Heading>
+              <Text type="supporting" color="secondary">
+                The sheet opens at a capped height while the long list scrolls
+                within it.
+              </Text>
+              <Divider />
+              {Array.from({length: 12}, (_, i) => (
+                <VStack key={i} gap={1}>
+                  <Text type="label">Saved place {i + 1}</Text>
+                  <Text type="supporting" color="secondary">
+                    Notes and details about this saved place.
+                  </Text>
+                </VStack>
+              ))}
+              <Button label="Done" onClick={() => setIsOpen(false)} />
+            </VStack>
+          </Section>
+        </BottomSheet>
+      </>
+    );
+  },
+};
+
 export const MobileKeyboard: Story = {
   name: 'Mobile keyboard',
   render: () => {
