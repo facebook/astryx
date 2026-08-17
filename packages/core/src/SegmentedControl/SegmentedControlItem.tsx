@@ -56,6 +56,28 @@ export interface SegmentedControlItemProps extends BaseProps<HTMLButtonElement> 
    */
   icon?: ReactNode;
   /**
+   * How many items this segment holds, rendered after the label. Shown at every
+   * width, including when `isLabelHidden` leaves the segment icon-only.
+   *
+   * The number itself is hidden from assistive technology and folded into the
+   * segment's accessible name instead, so pair it with `countLabel` to say what
+   * it counts. Every value is rendered as given, `0` included — pass
+   * `undefined` for a segment that should show no count.
+   *
+   * @example
+   * ```
+   * <SegmentedControlItem value="inbox" label="Inbox" count={12} countLabel="unread" />
+   * ```
+   */
+  count?: number;
+  /**
+   * What `count` counts, used to build the accessible name: `label`, then the
+   * count and this noun — "Inbox, 12 unread". Without it the name is just
+   * "Inbox, 12", which leaves a screen reader user to guess. Ignored when
+   * `count` is not set.
+   */
+  countLabel?: string;
+  /**
    * Whether this individual item is disabled.
    * @default false
    */
@@ -143,6 +165,27 @@ const styles = stylex.create({
     textOverflow: 'ellipsis',
     minWidth: 0,
   },
+  count: {
+    flexShrink: 0,
+    // Tabular figures keep the counts in a strip on one vertical rhythm, so a
+    // segment doesn't reflow by a fraction of a character as its number ticks.
+    fontVariantNumeric: 'tabular-nums',
+    fontSize: typeScaleVars['--text-supporting-size'],
+    fontWeight: fontWeightVars['--font-weight-medium'],
+    color: colorVars['--color-text-secondary'],
+  },
+  countSelected: {
+    // The selected segment sets forced-color-adjust: none, which children
+    // inherit — so under forced colors the authored secondary gray would paint
+    // on the Highlight fill and vanish. Follow the label onto HighlightText.
+    color: {
+      default: colorVars['--color-text-secondary'],
+      '@media (forced-colors: active)': 'HighlightText',
+    },
+  },
+  countDisabled: {
+    color: colorVars['--color-text-disabled'],
+  },
 });
 
 const CONCENTRIC_RADIUS =
@@ -188,6 +231,8 @@ export function SegmentedControlItem({
   label,
   isLabelHidden = false,
   icon,
+  count,
+  countLabel,
   isDisabled = false,
   onClick: onClickProp,
   xstyle,
@@ -218,6 +263,36 @@ export function SegmentedControlItem({
     <span {...stylex.props(styles.icon, iconSizeStyles[size])}>{icon}</span>
   ) : null;
 
+  // The count reaches assistive technology through the segment's name, not as
+  // a bare trailing number: "Inbox 12" says nothing about what 12 is. Naming
+  // the segment explicitly also keeps the count out of the name computed from
+  // the button's contents, so it is announced once, as a quantity of something.
+  const hasCount = count != null;
+  const accessibleName = hasCount
+    ? `${label}, ${count}${countLabel == null ? '' : ` ${countLabel}`}`
+    : isLabelHidden
+      ? label
+      : undefined;
+
+  const countElement = hasCount ? (
+    <span
+      aria-hidden="true"
+      {...mergeProps(
+        themeProps('segmented-control-item-count', {
+          size,
+          selected: isSelected ? 'selected' : null,
+          disabled: isItemDisabled ? 'disabled' : null,
+        }),
+        stylex.props(
+          styles.count,
+          isSelected && styles.countSelected,
+          isItemDisabled && styles.countDisabled,
+        ),
+      )}>
+      {count}
+    </span>
+  ) : null;
+
   return (
     <button
       ref={ref}
@@ -226,7 +301,7 @@ export function SegmentedControlItem({
       role="radio"
       aria-checked={isSelected}
       aria-disabled={isItemDisabled || undefined}
-      aria-label={isLabelHidden ? label : undefined}
+      aria-label={accessibleName}
       data-value={value}
       // Disabled items (including when the whole group is disabled) are not tab
       // stops — otherwise the selected segment stays keyboard-focusable but is
@@ -257,6 +332,7 @@ export function SegmentedControlItem({
       {!isLabelHidden && (
         <span {...stylex.props(styles.labelText)}>{label}</span>
       )}
+      {countElement}
     </button>
   );
 }

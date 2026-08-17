@@ -839,3 +839,121 @@ describe('forced colors (WCAG 1.4.11)', () => {
     expect(getAllInjectedCss()).toContain('forced-color-adjust: none;');
   });
 });
+
+describe('SegmentedControlItem count', () => {
+  it('renders the count and folds it into the accessible name', () => {
+    render(
+      <SegmentedControl value="needs-me" onChange={() => {}} label="Sessions">
+        <SegmentedControlItem
+          value="needs-me"
+          label="Needs me"
+          count={12}
+          countLabel="sessions"
+        />
+        <SegmentedControlItem
+          value="running"
+          label="Running"
+          count={3}
+          countLabel="sessions"
+        />
+      </SegmentedControl>,
+    );
+
+    expect(
+      screen.getByRole('radio', {name: 'Needs me, 12 sessions'}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('radio', {name: 'Running, 3 sessions'}),
+    ).toBeInTheDocument();
+    // Hidden from the name computed off the button's contents, so the number
+    // is announced once — as a quantity of something, not a trailing digit.
+    expect(screen.getByText('12')).toHaveAttribute('aria-hidden', 'true');
+    expect(screen.getByText('12').className).toContain(
+      'segmented-control-item-count',
+    );
+  });
+
+  it('names the segment without a noun when countLabel is omitted', () => {
+    render(
+      <SegmentedControl value="all" onChange={() => {}} label="Sessions">
+        <SegmentedControlItem value="all" label="All" count={7} />
+      </SegmentedControl>,
+    );
+
+    expect(screen.getByRole('radio', {name: 'All, 7'})).toBeInTheDocument();
+  });
+
+  it('keeps the count visible and named when the label is hidden', () => {
+    render(
+      <SegmentedControl value="needs-me" onChange={() => {}} label="Sessions">
+        <SegmentedControlItem
+          value="needs-me"
+          label="Needs me"
+          count={12}
+          countLabel="sessions"
+          isLabelHidden
+          icon={<span data-testid="icon">N</span>}
+        />
+      </SegmentedControl>,
+    );
+
+    expect(
+      screen.getByRole('radio', {name: 'Needs me, 12 sessions'}),
+    ).toBeInTheDocument();
+    expect(screen.getByText('12')).toBeInTheDocument();
+    expect(screen.queryByText('Needs me')).not.toBeInTheDocument();
+  });
+
+  it('renders a zero count rather than suppressing it', () => {
+    render(
+      <SegmentedControl value="archived" onChange={() => {}} label="Sessions">
+        <SegmentedControlItem
+          value="archived"
+          label="Archived"
+          count={0}
+          countLabel="sessions"
+        />
+      </SegmentedControl>,
+    );
+
+    expect(screen.getByText('0')).toBeInTheDocument();
+    expect(
+      screen.getByRole('radio', {name: 'Archived, 0 sessions'}),
+    ).toBeInTheDocument();
+  });
+
+  it('leaves an uncounted segment named by its label alone', () => {
+    render(
+      <SegmentedControl value="grid" onChange={() => {}} label="View mode">
+        <SegmentedControlItem value="grid" label="Grid" />
+      </SegmentedControl>,
+    );
+
+    const radio = screen.getByRole('radio', {name: 'Grid'});
+    expect(radio).not.toHaveAttribute('aria-label');
+  });
+
+  it('still selects when a counted segment is clicked', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <SegmentedControl value="needs-me" onChange={onChange} label="Sessions">
+        <SegmentedControlItem
+          value="needs-me"
+          label="Needs me"
+          count={12}
+          countLabel="sessions"
+        />
+        <SegmentedControlItem
+          value="running"
+          label="Running"
+          count={3}
+          countLabel="sessions"
+        />
+      </SegmentedControl>,
+    );
+
+    await user.click(screen.getByRole('radio', {name: 'Running, 3 sessions'}));
+    expect(onChange).toHaveBeenCalledWith('running');
+  });
+});
