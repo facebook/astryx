@@ -11,6 +11,10 @@ import {
   Squares2X2Icon,
   ListBulletIcon,
   TableCellsIcon,
+  SunIcon,
+  MoonIcon,
+  ComputerDesktopIcon,
+  SwatchIcon,
 } from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof SegmentedControl> = {
@@ -226,6 +230,75 @@ export const DisabledWithMessage: Story = {
         <SegmentedControlItem value="active" label="Active" />
         <SegmentedControlItem value="completed" label="Completed" />
       </SegmentedControl>
+    );
+  },
+};
+
+export const CollapsibleLabels: Story = {
+  render: () => {
+    const [value, setValue] = useState('light');
+    const [isCollapsed, setIsCollapsed] = useState(false);
+    const items = [
+      {value: 'light', label: 'Light', icon: SunIcon},
+      {value: 'dark', label: 'Dark', icon: MoonIcon},
+      {value: 'system', label: 'System', icon: ComputerDesktopIcon},
+      {value: 'custom', label: 'Custom', icon: SwatchIcon},
+    ];
+    return (
+      <div
+        data-testid="collapse-demo"
+        style={{display: 'flex', flexDirection: 'column', gap: '24px'}}>
+        <div
+          data-testid="hug-container"
+          style={{
+            resize: 'horizontal',
+            overflow: 'auto',
+            border: '1px dashed #999',
+            padding: '12px',
+            width: '100%',
+          }}>
+          <SegmentedControl
+            value={value}
+            onChange={setValue}
+            label="Theme"
+            collapsibleLabels={{onCollapsedChange: setIsCollapsed}}>
+            {items.map(item => (
+              <SegmentedControlItem
+                key={item.value}
+                value={item.value}
+                label={item.label}
+                icon={<Icon icon={item.icon} color="inherit" />}
+              />
+            ))}
+          </SegmentedControl>
+        </div>
+        <div
+          data-testid="fill-container"
+          style={{
+            border: '1px dashed #999',
+            padding: '12px',
+            width: '100%',
+          }}>
+          <SegmentedControl
+            value={value}
+            onChange={setValue}
+            label="Theme (fill)"
+            layout="fill"
+            collapsibleLabels>
+            {items.map(item => (
+              <SegmentedControlItem
+                key={item.value}
+                value={item.value}
+                label={item.label}
+                icon={<Icon icon={item.icon} color="inherit" />}
+              />
+            ))}
+          </SegmentedControl>
+        </div>
+        <div data-testid="collapse-state" style={{fontSize: '12px', color: '#666'}}>
+          collapsed: {String(isCollapsed)}
+        </div>
+      </div>
     );
   },
 };

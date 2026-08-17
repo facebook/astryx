@@ -72,6 +72,13 @@ export const docs = {
         'Explains why the control is disabled. Applies to the whole-group disabled state (isDisabled), not per segment. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the control focusable via aria-disabled (selection stays blocked). Use this instead of wrapping a disabled SegmentedControl in Tooltip. Disabled controls swallow the hover events an external Tooltip needs.',
     },
     {
+      name: 'collapsibleLabels',
+      type: 'boolean | {isCollapsed?: boolean; onCollapsedChange?: (isCollapsed: boolean) => void}',
+      description:
+        'Collapse item labels to icons when the strip does not have room for them; the label stays the accessible name and becomes the tooltip. true measures the fit (no breakpoint); {isCollapsed} lets the caller decide instead. A fill strip measures itself, a hug strip measures its parent. Items without an icon keep their label.',
+      default: 'false',
+    },
+    {
       name: 'children',
       type: 'ReactNode',
       description: 'SegmentedControlItem children.',
@@ -104,6 +111,7 @@ export const docs = {
       {guidance: false, description: 'Use for page-level navigation; use TabList instead. TabList is a navigation component, while SegmentedControl is an input that always has exactly one selected option.'},
       {guidance: false, description: 'Use for simple on/off states; use ToggleButton instead. ToggleButton can be toggled on or off independently, while SegmentedControl enforces a single selection from a group.'},
       {guidance: false, description: 'Wrap a disabled SegmentedControl in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.'},
+      {guidance: true, description: 'Give every item an icon before using collapsibleLabels; an item with no icon keeps its label, so a mixed strip collapses unevenly.'},
     ],
   },
 };
@@ -142,6 +150,7 @@ export const docsDense = {
     label: 'aria-label for radio group (never rendered)',
     size: 'size variant',
     layout: 'hug (default) sizes to content; fill stretches equally',
+    collapsibleLabels: 'collapses labels to icons when they do not fit; name and tooltip keep the label',
     isDisabled: 'disables entire control',
     children: 'SegmentedControlItem children',
     xstyle: 'additional StyleX styles for container',
