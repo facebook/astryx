@@ -1259,7 +1259,9 @@ describe('SideNavItem — collapsed submenu hover intent', () => {
     vi.useFakeTimers();
     const trigger = renderFlyout();
 
-    fireEvent.click(trigger);
+    // `detail: 1` marks a pointer click: the hook reads a detail-0 click as
+    // Enter/Space, which always opens rather than toggling.
+    fireEvent.click(trigger, {detail: 1});
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
 
     // Clicking is a commitment: the flyout outlives the pointer.
@@ -1279,7 +1281,7 @@ describe('SideNavItem — collapsed submenu hover intent', () => {
 
     // The pointer never left, so dismissing fires a fresh mouseenter as the
     // flyout unmounts — which used to reopen what the user just closed.
-    fireEvent.click(trigger);
+    fireEvent.click(trigger, {detail: 1});
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
 
     fireEvent.mouseEnter(trigger);
@@ -1307,7 +1309,7 @@ describe('SideNavItem — collapsed submenu hover intent', () => {
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
 
     // Tapping still opens it — the touch path goes through click, untouched.
-    fireEvent.click(trigger);
+    fireEvent.click(trigger, {detail: 1});
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
   });
 
@@ -2160,5 +2162,90 @@ describe('SideNav footer icon row sizing', () => {
     // baseline, 2.42px above centre (measured in Chromium). A flex container
     // has no line box.
     expect(mirror && getComputedStyle(mirror).display).toBe('flex');
+  });
+});
+
+describe('SideNavHeading hover/click guard', () => {
+  // tabIndex={-1} matches real menu items; a bare role=menuitem div is not
+  // focusable.
+  const menuItems = (
+    <>
+      <div role="menuitem" tabIndex={-1}>
+        Alpha
+      </div>
+      <div role="menuitem" tabIndex={-1}>
+        Beta
+      </div>
+    </>
+  );
+
+  it('keeps the menu open when a hover-open is immediately clicked', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+    const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
+    render(<SideNavHeading heading="My App" menu={menuItems} />);
+    const trigger = screen.getByRole('button', {name: 'Open menu'});
+
+    await user.hover(trigger);
+    act(() => {
+      vi.advanceTimersByTime(50);
+    });
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    vi.useRealTimers();
+  });
+
+  it('closes on a click that lands well after the hover-open', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+    const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
+    render(<SideNavHeading heading="My App" menu={menuItems} />);
+    const trigger = screen.getByRole('button', {name: 'Open menu'});
+
+    await user.hover(trigger);
+    act(() => {
+      vi.advanceTimersByTime(50);
+    });
+    act(() => {
+      vi.advanceTimersByTime(1200);
+    });
+
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+    vi.useRealTimers();
+  });
+
+  it('leaves focus on the trigger for a hover-open, and moves it in on click', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+    const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
+    render(<SideNavHeading heading="My App" menu={menuItems} />);
+    const trigger = screen.getByRole('button', {name: 'Open menu'});
+
+    await user.hover(trigger);
+    act(() => {
+      vi.advanceTimersByTime(50);
+    });
+    const firstItem = screen.getAllByRole('menuitem', {hidden: true})[0];
+    expect(firstItem).not.toHaveFocus();
+
+    await user.click(trigger);
+    expect(firstItem).toHaveFocus();
+
+    vi.useRealTimers();
+  });
+
+  it('returns focus to the trigger on Escape', async () => {
+    const user = userEvent.setup();
+    render(<SideNavHeading heading="My App" menu={menuItems} />);
+    const trigger = screen.getByRole('button', {name: 'Open menu'});
+
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    await user.keyboard('{Escape}');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(trigger).toHaveFocus();
   });
 });

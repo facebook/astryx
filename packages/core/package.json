@@ -1,6 +1,6 @@
 {
   "name": "@astryxdesign/core",
-  "version": "0.4.1",
+  "version": "0.4.3",
   "displayName": "Astryx Core",
   "description": "The component library. Accessible, themeable React components with built-in spacing, dark mode, and StyleX styling.",
   "author": "Meta Open Source",
@@ -27,8 +27,6 @@
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "unpkg": "./dist/astryx.umd.js",
-  "jsdelivr": "./dist/astryx.umd.js",
   "sideEffects": [
     "**/*.stylex.ts",
     "**/*.stylex.js",
@@ -49,7 +47,6 @@
       "types": "./src/astryx.css.d.ts",
       "default": "./dist/astryx.css"
     },
-    "./astryx.umd.js": "./dist/astryx.umd.js",
     "./tailwind-theme.css": {
       "types": "./src/tailwind-theme.css.d.ts",
       "default": "./src/tailwind-theme.css"
@@ -651,11 +648,10 @@
   "scripts": {
     "prepack": "pnpm build",
     "postinstall": "node scripts/postinstall.mjs",
-    "build": "rimraf dist && pnpm build:i18n && pnpm build:esm && tsc --project tsconfig.build.json && pnpm build:css && pnpm build:umd && node ../../scripts/check-no-dev-jsx.mjs && node ../../scripts/check-fully-specified.mjs",
+    "build": "rimraf dist && pnpm build:i18n && pnpm build:esm && tsc --project tsconfig.build.json && pnpm build:css && node ../../scripts/check-no-dev-jsx.mjs && node ../../scripts/check-fully-specified.mjs",
     "build:i18n": "node scripts/build-pseudo-locale.mjs",
     "build:esm": "babel src --out-dir dist --extensions .ts,.tsx --out-file-extension .js --ignore \"**/*.test.ts,**/*.test.tsx,**/__tests__/**,**/*.perf.test.*,**/*.doc.mjs,**/*.d.ts,**/*.css,**/*.css.d.ts\" --config-file ./babel.config.json",
     "build:css": "node ../../scripts/build-css.mjs",
-    "build:umd": "node ../../scripts/build-umd.mjs",
     "dev": "babel src --watch --out-dir dist --extensions .ts,.tsx --out-file-extension .js --ignore \"**/*.test.*,**/*.doc.mjs,**/*.d.ts,**/*.css*\" --config-file ./babel.config.json",
     "test": "vitest run --root ../..",
     "test:watch": "vitest --root ../..",

@@ -10,6 +10,7 @@
  */
 
 import {createContext} from 'react';
+import type {DialogPurpose} from '@astryxdesign/core/Dialog';
 
 export type BottomSheetSwitcherPhase =
   | 'entering'
@@ -33,6 +34,10 @@ export interface BottomSheetSwitcherContextValue {
   getSheetAlignmentOffset: (sheetId: string) => number;
   registerSheetElement: (sheetId: string, element: HTMLElement | null) => void;
   registerSheetLabel: (sheetId: string, label: string | null) => void;
+  registerSheetPurpose: (
+    sheetId: string,
+    purpose: DialogPurpose | null,
+  ) => void;
   onSheetEnterStart: (sheetId: string) => void;
   onSheetTransitionComplete: (
     event: BottomSheetSwitcherTransitionEvent,

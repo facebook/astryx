@@ -342,7 +342,7 @@ export function TopNavMenu({
     role: 'none',
   });
 
-  const {triggerProps, contentProps, menuRef, setTriggerEl} =
+  const {triggerProps, contentProps, menuRef, setTriggerEl, close} =
     useMenuHover<HTMLDivElement>({
       show: popover.show,
       hide: popover.hide,
@@ -350,6 +350,9 @@ export function TopNavMenu({
       isEnabled: true,
       showDelay: delay,
       hideDelay,
+      // Trigger sits outside an auto popover; the invoker relationship exempts
+      // it from light dismiss.
+      popoverId: popover.id,
     });
 
   const setTriggerRef = mergeRefs<HTMLButtonElement>(
@@ -368,7 +371,8 @@ export function TopNavMenu({
     useListFocus<HTMLDivElement>({
       itemSelector: '[role="menuitem"]',
       hasRovingTabIndex: true,
-      onEscape: popover.hide,
+      // Not popover.hide: Escape must also restore focus to the trigger.
+      onEscape: close,
     });
 
   // First-character typeahead over the menu items (menus-11).

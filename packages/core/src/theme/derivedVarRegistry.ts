@@ -57,6 +57,10 @@ export const derivedVarRegistry: Record<string, DerivedVarEntry[]> = {
     {property: 'borderRadius', vars: ['--_dialog-radius']},
     {property: 'padding', expand: 'container'},
   ],
+  'context-menu': [
+    {property: 'borderRadius', vars: ['--_dropdown-menu-radius']},
+    {property: 'padding', vars: ['--_dropdown-menu-padding']},
+  ],
   'dropdown-menu': [
     {property: 'borderRadius', vars: ['--_dropdown-menu-radius']},
     {property: 'padding', vars: ['--_dropdown-menu-padding']},

@@ -17,8 +17,8 @@ export const doc = {
   description:
     'The theme command group. Running astryx theme with no subcommand prints the ' +
     'subcommand list; the work happens in the subcommands: compile a theme (build), ' +
-    'scaffold one into your project (add), or list the bundled themes (list).',
-  subcommands: ['build', 'add', 'list'],
+    'scaffold one into your project (add), start a custom one from the annotated template (template), or list the bundled themes (list).',
+  subcommands: ['build', 'add', 'list', 'template'],
   examples: [
     {label: 'List bundled themes', cli: 'astryx theme list'},
     {label: 'Scaffold a theme', cli: 'astryx theme add matcha'},

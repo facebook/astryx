@@ -51,6 +51,26 @@ const styles = stylex.create({
     opacity: 0,
     cursor: 'pointer',
     zIndex: 1,
+    minInlineSize: {
+      default: null,
+      '@media (pointer: coarse)': '24px',
+    },
+    minBlockSize: {
+      default: null,
+      '@media (pointer: coarse)': '24px',
+    },
+    insetBlockStart: {
+      default: null,
+      '@media (pointer: coarse)': '50%',
+    },
+    insetInlineStart: {
+      default: null,
+      '@media (pointer: coarse)': '50%',
+    },
+    transform: {
+      default: null,
+      '@media (pointer: coarse)': 'translate(-50%, -50%)',
+    },
   },
   inputDisabled: {
     cursor: 'not-allowed',

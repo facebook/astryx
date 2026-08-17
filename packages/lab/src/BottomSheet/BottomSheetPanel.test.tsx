@@ -198,9 +198,9 @@ describe('BottomSheetPanel', () => {
         </BottomSheetPanel>,
       );
 
-      act(() => vi.advanceTimersByTime(649));
+      void act(() => vi.advanceTimersByTime(649));
       expect(onMotionComplete).not.toHaveBeenCalled();
-      act(() => vi.advanceTimersByTime(1));
+      void act(() => vi.advanceTimersByTime(1));
       expect(onMotionComplete).toHaveBeenCalledWith('entering');
     } finally {
       vi.useRealTimers();

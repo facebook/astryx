@@ -371,23 +371,27 @@ export function SideNavHeading({
     hasCloseButton: false,
   });
 
-  const closeMenuCtx = useMemo(
-    () => ({closeMenu: popover.hide}),
-    [popover.hide],
-  );
+  const {
+    triggerProps,
+    contentProps,
+    menuRef,
+    setTriggerEl,
+    close: closeMenu,
+  } = useMenuHover<HTMLDivElement>({
+    show: popover.show,
+    hide: popover.hide,
+    isOpen: popover.isOpen,
+    isEnabled: !!menu,
+    showDelay: 0,
+  });
 
-  const {triggerProps, contentProps, menuRef, setTriggerEl} =
-    useMenuHover<HTMLDivElement>({
-      show: popover.show,
-      hide: popover.hide,
-      isOpen: popover.isOpen,
-      isEnabled: !!menu,
-      showDelay: 0,
-    });
+  const closeMenuCtx = useMemo(() => ({closeMenu}), [closeMenu]);
 
+  // setTriggerEl belongs on the chevron button, not this root: it is the
+  // focus-restore target and a <div> cannot take focus. triggerRef stays here
+  // because the panel anchors to the whole heading.
   const setRef = mergeRefs<HTMLDivElement>(
     rootRef,
-    setTriggerEl,
     ref,
     menu ? popover.triggerRef : undefined,
   );
@@ -402,7 +406,9 @@ export function SideNavHeading({
     const collapsedSetRef = mergeRefs<HTMLElement>(
       collapsedItemRef,
       ref,
+      // Collapsed, this button is the trigger, so it takes both roles.
       menu ? popover.triggerRef : undefined,
+      menu ? setTriggerEl : undefined,
     );
 
     let collapsedElement: ReactNode;
@@ -458,7 +464,8 @@ export function SideNavHeading({
               <button
                 type="button"
                 {...focusOutlineProps.focusVisible(styles.popoverHeading)}
-                onClick={triggerProps.onClick}>
+                // A close affordance, not the trigger: dismiss only.
+                onClick={closeMenu}>
                 {icon && <span {...stylex.props(styles.icon)}>{icon}</span>}
                 <span {...stylex.props(styles.textContainer)}>
                   {superheading && (
@@ -595,7 +602,8 @@ export function SideNavHeading({
     <button
       type="button"
       {...focusOutlineProps.focusVisible(styles.popoverHeading)}
-      onClick={triggerProps.onClick}>
+      // A close affordance, not the trigger: dismiss only.
+      onClick={closeMenu}>
       {icon && <span {...stylex.props(styles.icon)}>{icon}</span>}
       {renderTextContent(
         <Icon
@@ -651,6 +659,7 @@ export function SideNavHeading({
           {icon && <span {...stylex.props(styles.icon)}>{icon}</span>}
           {renderTextContent(
             <button
+              ref={setTriggerEl}
               type="button"
               aria-label={t('@astryx.sideNav.heading.openMenu')}
               onClick={e => {
@@ -725,6 +734,7 @@ export function SideNavHeading({
           {renderTextContent(
             showChevron ? (
               <button
+                ref={setTriggerEl}
                 type="button"
                 aria-label={t('@astryx.sideNav.heading.openMenu')}
                 onClick={e => {
