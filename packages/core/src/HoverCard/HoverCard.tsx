@@ -18,12 +18,19 @@
 import {useCallback, useRef, type ReactElement, type ReactNode} from 'react';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import * as stylex from '@stylexjs/stylex';
-import {useHoverCard, type HoverCardFocusTrigger} from './useHoverCard';
+import {
+  useHoverCard,
+  type HoverCardFocusTrigger,
+  type HoverCardTouchTrigger,
+} from './useHoverCard';
 import type {LayerAlignment, LayerPlacement} from '../Layer/useLayer';
 import type {BaseProps} from '../BaseProps';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
 
-export type {HoverCardFocusTrigger} from './useHoverCard';
+export type {
+  HoverCardFocusTrigger,
+  HoverCardTouchTrigger,
+} from './useHoverCard';
 
 const styles = stylex.create({
   wrapperContents: {
@@ -87,6 +94,22 @@ export interface HoverCardProps extends Pick<
    * @default 'auto'
    */
   focusTrigger?: HoverCardFocusTrigger;
+
+  /**
+   * How a touch tap on the trigger behaves. There is no hover on touch, so a
+   * tap has to stand in for it — and a tap is also how the trigger's own
+   * action is invoked:
+   * - `auto`: the card opens on the first tap only when the tap is not an
+   *   activation of something (a link, a button). On a link or button the card
+   *   stays closed and the tap does what it looks like it does.
+   * - `always`: the two-tap contract on any trigger — the first tap opens the
+   *   card and is consumed, the second tap activates the trigger. Costs every
+   *   touch user a tap, so it is opt-in.
+   * - `never`: taps never open the card.
+   *
+   * @default 'auto'
+   */
+  touchTrigger?: HoverCardTouchTrigger;
 
   /**
    * Whether the hover card is enabled.
@@ -174,6 +197,7 @@ export function HoverCard({
   delay = 300,
   hideDelay = 200,
   focusTrigger = 'auto',
+  touchTrigger = 'auto',
   isEnabled = true,
   label,
   onOpenChange,
@@ -206,6 +230,7 @@ export function HoverCard({
     delay,
     hideDelay,
     focusTrigger,
+    touchTrigger,
     isEnabled,
     label,
     isOpen,

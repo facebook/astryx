@@ -58,6 +58,24 @@ const styles = stylex.create({
  */
 export type HoverCardFocusTrigger = 'auto' | 'always' | 'never';
 
+/**
+ * Touch trigger behavior for hover cards
+ */
+export type HoverCardTouchTrigger = 'auto' | 'always' | 'never';
+
+/**
+ * Elements whose activation a tap belongs to. A tap that lands on one of these
+ * is the user asking for its action, so `touchTrigger: 'auto'` leaves it alone.
+ */
+const ACTIVATION_SELECTOR =
+  'a[href], button, input, select, textarea, summary, [role="button"], [role="link"], [role="menuitem"], [role="tab"], [contenteditable=""], [contenteditable="true"]';
+
+function isActivationTap(target: EventTarget | null): boolean {
+  return (
+    target instanceof Element && target.closest(ACTIVATION_SELECTOR) !== null
+  );
+}
+
 export interface HoverCardOptions {
   /**
    * Position placement relative to anchor
@@ -92,6 +110,22 @@ export interface HoverCardOptions {
    * @default 'auto'
    */
   focusTrigger?: HoverCardFocusTrigger;
+
+  /**
+   * How a touch tap on the trigger behaves. There is no hover on touch, so a
+   * tap has to stand in for it — and a tap is also how the trigger's own
+   * action is invoked:
+   * - `auto`: the card opens on the first tap only when the tap is not an
+   *   activation of something (a link, a button). On a link or button the card
+   *   stays closed and the tap does what it looks like it does.
+   * - `always`: the two-tap contract on any trigger — the first tap opens the
+   *   card and is consumed, the second tap activates the trigger. Costs every
+   *   touch user a tap, so it is opt-in.
+   * - `never`: taps never open the card.
+   *
+   * @default 'auto'
+   */
+  touchTrigger?: HoverCardTouchTrigger;
 
   /**
    * Whether the hover card is enabled.
@@ -240,6 +274,7 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
     delay = 300,
     hideDelay = 200,
     focusTrigger = 'auto',
+    touchTrigger = 'auto',
     isEnabled = true,
     label,
     isOpen,
@@ -248,11 +283,28 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
     onHide,
   } = options;
 
+  // Mirrors the layer's open state synchronously, and records whether the
+  // open card came from a tap: the second tap of the touch contract has to
+  // read both while the gesture is still in flight.
+  const isCardOpenRef = useRef(false);
+  const isTouchOpenRef = useRef(false);
+
+  const handleLayerShow = useCallback(() => {
+    isCardOpenRef.current = true;
+    onShow?.();
+  }, [onShow]);
+
+  const handleLayerHide = useCallback(() => {
+    isCardOpenRef.current = false;
+    isTouchOpenRef.current = false;
+    onHide?.();
+  }, [onHide]);
+
   const layer = useLayer({
     mode: 'context',
     lazyMount: true,
-    onShow,
-    onHide,
+    onShow: handleLayerShow,
+    onHide: handleLayerHide,
   });
 
   const popoverXstyle = styles.container;
@@ -263,6 +315,10 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
   const isHoveringContentRef = useRef(false);
   // Track when we're dismissing via Escape to prevent re-show on refocus
   const isEscapeDismissingRef = useRef(false);
+  // Pointer type of the interaction currently on the trigger. Read by the
+  // hover, focus and click handlers so a touch gesture and a mouse gesture
+  // can be told apart on the same element (a hybrid device has both).
+  const pointerTypeRef = useRef<string | null>(null);
 
   // Clear all timeouts
   const clearTimeouts = useCallback(() => {
@@ -303,6 +359,12 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
 
   // Event handlers
   const handleMouseEnter = useCallback(() => {
+    // On touch the browser synthesizes this from the tap itself, so honoring
+    // it would open the card as a side effect of activating the trigger.
+    // Touch opens go through the tap contract in handleClick instead.
+    if (pointerTypeRef.current === 'touch') {
+      return;
+    }
     scheduleShow();
   }, [scheduleShow]);
 
@@ -312,6 +374,10 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
 
   const handleFocusIn = useCallback(() => {
     if (!isEnabled) {
+      return;
+    }
+    // A tap focuses the trigger too; that focus is not a request to preview.
+    if (pointerTypeRef.current === 'touch') {
       return;
     }
     // Skip showing if we're in the middle of an Escape dismiss
@@ -341,6 +407,9 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
+      // A key press ends any pointer gesture's claim on the trigger, so a
+      // keyboard interaction after a tap is never read as touch.
+      pointerTypeRef.current = null;
       if (e.key === 'Escape') {
         // Stop propagation so parent components don't react to the same Escape
         e.stopPropagation();
@@ -352,6 +421,44 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
     [clearTimeouts, layer],
   );
 
+  const handlePointerEnter = useCallback((e: PointerEvent) => {
+    pointerTypeRef.current = e.pointerType;
+  }, []);
+
+  // The touch contract. A tap is the only gesture touch has, and the trigger
+  // may already own it, so the card only takes a tap when it is not taking an
+  // activation with it (`auto`) or when the consumer opted in (`always`).
+  const handleClick = useCallback(
+    (e: MouseEvent) => {
+      if (pointerTypeRef.current !== 'touch') {
+        return;
+      }
+      if (!isEnabled || touchTrigger === 'never' || isOpen !== undefined) {
+        return;
+      }
+
+      if (isCardOpenRef.current) {
+        // Second tap: the trigger's action runs and the card steps aside.
+        clearTimeouts();
+        layer.hide();
+        return;
+      }
+
+      if (touchTrigger === 'auto' && isActivationTap(e.target)) {
+        return;
+      }
+
+      // First tap: preview instead of activating. Capture-phase, so a consumer
+      // click handler on the trigger does not run either.
+      e.preventDefault();
+      e.stopPropagation();
+      clearTimeouts();
+      isTouchOpenRef.current = true;
+      layer.show();
+    },
+    [isEnabled, touchTrigger, isOpen, clearTimeouts, layer],
+  );
+
   // Interaction ref that handles event listeners only
   const interactionRef: RefCallback<HTMLElement> = useCallback(
     (el: HTMLElement | null) => {
@@ -359,6 +466,15 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
       if (triggerRef.current) {
         triggerRef.current.removeEventListener('mouseenter', handleMouseEnter);
         triggerRef.current.removeEventListener('mouseleave', handleMouseLeave);
+        triggerRef.current.removeEventListener(
+          'pointerenter',
+          handlePointerEnter as EventListener,
+        );
+        triggerRef.current.removeEventListener(
+          'click',
+          handleClick as EventListener,
+          true,
+        );
         triggerRef.current.removeEventListener('focusin', handleFocusIn);
         triggerRef.current.removeEventListener(
           'focusout',
@@ -371,6 +487,13 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
         // Attach hover listeners
         el.addEventListener('mouseenter', handleMouseEnter);
         el.addEventListener('mouseleave', handleMouseLeave);
+
+        // Touch: which gesture is on the trigger, and the tap contract.
+        el.addEventListener(
+          'pointerenter',
+          handlePointerEnter as EventListener,
+        );
+        el.addEventListener('click', handleClick as EventListener, true);
 
         // Attach focus listeners based on focusTrigger option
         const shouldAttachFocus =
@@ -392,6 +515,8 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
       focusTrigger,
       handleMouseEnter,
       handleMouseLeave,
+      handlePointerEnter,
+      handleClick,
       handleFocusIn,
       handleFocusOut,
       handleKeyDown,
@@ -413,6 +538,41 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
       clearTimeouts();
     };
   }, [clearTimeouts]);
+
+  // A tap-opened card cannot rely on pointer-leave to close it: touch has no
+  // leave, and the mouseleave the browser synthesizes from the next tap is not
+  // a contract. Dismiss on the first touch outside the trigger and the card.
+  useEffect(() => {
+    if (!layer.isOpen || !isTouchOpenRef.current) {
+      return;
+    }
+    const handleOutsidePointerDown = (e: PointerEvent) => {
+      if (e.pointerType === 'mouse') {
+        return;
+      }
+      const target = e.target as Node | null;
+      if (triggerRef.current?.contains(target ?? null)) {
+        return;
+      }
+      if (document.getElementById(layer.id)?.contains(target ?? null)) {
+        return;
+      }
+      clearTimeouts();
+      layer.hide();
+    };
+    document.addEventListener(
+      'pointerdown',
+      handleOutsidePointerDown as EventListener,
+      true,
+    );
+    return () => {
+      document.removeEventListener(
+        'pointerdown',
+        handleOutsidePointerDown as EventListener,
+        true,
+      );
+    };
+  }, [layer, clearTimeouts]);
 
   // Show on mount when isDefaultOpen is true
   useEffect(() => {
