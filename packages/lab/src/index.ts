@@ -45,6 +45,13 @@ export * from './Chat';
 // Drawer — experimental overlay panel
 export {Drawer, type DrawerProps} from './Drawer';
 
+// DialogHeroHeader — hero-style Dialog header (facebook/astryx#4182)
+export {
+  DialogHeroHeader,
+  type DialogHeroHeaderProps,
+  type DialogHeroHeaderMediaMode,
+} from './DialogHeroHeader';
+
 // BottomSheet — mobile touch sheet on a native modal <dialog>
 export {
   BottomSheet,
