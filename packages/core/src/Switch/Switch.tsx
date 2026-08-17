@@ -129,6 +129,15 @@ const labelWrapperSizeStyles = stylex.create({
   },
 });
 
+// Off state: the track stays a muted step off the surface so only the on state
+// is a filled, accented pill, and the thumb carries the contrast instead. Both
+// are mixed from the surface the control sits on toward the theme's own text
+// colour, so no palette can land them on top of each other — 1.4.11 asks 3:1
+// of the thumb against its track, and a track and thumb picked from separate
+// tokens converged in every theme we measured.
+const offTrackColor = `color-mix(in srgb, ${colorVars['--color-background-surface']}, ${colorVars['--color-text-primary']} 12%)`;
+const offThumbColor = `color-mix(in srgb, ${colorVars['--color-background-surface']}, ${colorVars['--color-text-primary']} 68%)`;
+
 const styles = stylex.create({
   container: {
     display: 'flex',
@@ -237,7 +246,7 @@ const styles = stylex.create({
   // State-dependent colors with ancestor hover behavior
   trackOff: {
     backgroundColor: {
-      default: colorVars['--color-background-gray'],
+      default: offTrackColor,
       // Off = empty (Canvas) track; on = Highlight track, so the two states
       // stay distinguishable under forced colors.
       '@media (forced-colors: active)': 'Canvas',
@@ -248,7 +257,7 @@ const styles = stylex.create({
       // white track (white-on-white). Gating on `forced-colors: none` keeps
       // the tint out of forced colors and lets the system-color track stand.
       [stylex.when.ancestor(':hover', switchScope)]: {
-        '@media (hover: hover) and (forced-colors: none)': `color-mix(in srgb, ${colorVars['--color-background-gray']}, ${colorVars['--color-tint-hover']} 5%)`,
+        '@media (hover: hover) and (forced-colors: none)': `color-mix(in srgb, ${offTrackColor}, ${colorVars['--color-tint-hover']} 5%)`,
       },
     },
   },
@@ -273,7 +282,7 @@ const styles = stylex.create({
     },
   },
   trackDisabledOff: {
-    backgroundColor: colorVars['--color-background-gray'],
+    backgroundColor: offTrackColor,
   },
   thumb: {
     display: 'flex',
@@ -288,14 +297,21 @@ const styles = stylex.create({
     transitionTimingFunction: easeVars['--ease-standard'],
   },
   // The thumb fill lives on the on/off styles (not the shared thumb style)
-  // because forced colors needs a per-state system color: CanvasText on the
-  // empty off track, HighlightText on the Highlight on track. Sizing stays in
+  // because each state needs its own: off is the only contrast the muted
+  // track carries, on rides an accent fill. Forced colors needs a per-state
+  // system color for the same reason — CanvasText on the empty off track,
+  // HighlightText on the Highlight on track. Sizing stays in
   // thumbOffSizeStyles/thumbOnSizeStyles; only the fill is state-dependent.
   thumbOff: {
     backgroundColor: {
-      default: colorVars['--color-background-surface'],
+      default: offThumbColor,
       '@media (forced-colors: active)': 'CanvasText',
     },
+    // The loading spinner draws in the inherited currentColor while off (see
+    // the Spinner call below): the off thumb's fill flips polarity between
+    // light and dark, and the surface it was mixed from is the one colour
+    // guaranteed to sit opposite it in both.
+    color: colorVars['--color-background-surface'],
   },
   thumbOn: {
     backgroundColor: {
@@ -613,7 +629,7 @@ export function Switch({
               isOn ? styles.thumbOn : styles.thumbOff,
             ),
           )}>
-          {isBusy && <Spinner size="sm" />}
+          {isBusy && <Spinner size="sm" shade={isOn ? 'default' : 'inherit'} />}
         </div>
       </div>
       {isBusy && <VisuallyHidden role="status">Loading</VisuallyHidden>}
