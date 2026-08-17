@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'TabList',
@@ -21,6 +21,9 @@ export const docs = {
       {className: 'astryx-tab-menu'},
       {className: 'astryx-tab-menu-dropdown'},
       {className: 'astryx-tab-menu-item'},
+    ],
+    vars: [
+      {name: '--_tab-indicator-bottom', description: 'Vertical offset of the selected-tab indicator from the tab bottom edge. A host that draws its own bottom divider (Toolbar) sets this so the indicator sits on the divider instead of above it.', default: '-1px', private: true},
     ],
   },
   description: 'Nav wrapper that provides TabListContext (value, onChange, size) to Tab and TabMenu children.',
@@ -54,12 +57,6 @@ export const docs = {
       type: 'boolean',
       description: 'Whether to show a bottom border divider under the tab list.',
       default: 'false',
-    },
-    {
-      name: 'orientation',
-      type: "'horizontal' | 'vertical'",
-      description: "Orientation of the tab strip, controlling which arrow keys move focus between tabs and the reported aria-orientation. 'horizontal': ArrowLeft/ArrowRight. 'vertical': ArrowUp/ArrowDown. Both axes' arrows are accepted regardless.",
-      default: "'horizontal'",
     },
     {
       name: 'children',
@@ -105,7 +102,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsZh = {
   usage: {
     description:
@@ -126,7 +123,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'Tab navigation w/ overflow menu support; semantic nav landmark w/ button or anchor tab items.',
   usage: {

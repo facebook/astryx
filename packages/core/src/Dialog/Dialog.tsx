@@ -13,7 +13,7 @@
  * - /packages/core/src/Dialog/Dialog.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Dialog/index.ts (exports if types change)
  * - /apps/storybook/stories/Dialog.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Dialog/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Dialog/ (showcase blocks)
  */
 
 import {
@@ -49,6 +49,8 @@ import {mergeProps, mergeRefs} from '../utils';
 import {devWarn} from '../utils/devWarning';
 import {DialogContext} from './DialogContext';
 import {themeProps} from '../utils/themeProps';
+import type {DialogVariantMap} from './index';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 
 /**
  * Calculate a directional translate offset for dialog entry animation.
@@ -70,24 +72,6 @@ function getDialogDirection(
 }
 
 /**
- * Extensible variant map for Dialog.
- *
- * Theme packages can add custom variants via TypeScript module augmentation:
- * @example
- * ```
- * declare module '@astryxdesign/core/Dialog' {
- *   interface DialogVariantMap {
- *     'drawer': true;
- *   }
- * }
- * ```
- */
-export interface DialogVariantMap {
-  standard: true;
-  fullscreen: true;
-}
-
-/**
  * Dialog variant type
  * - standard: Normal dialog with configurable width/height
  * - fullscreen: Takes up the entire viewport
@@ -104,14 +88,23 @@ export type DialogVariant = keyof DialogVariantMap;
  */
 export type DialogPurpose = 'required' | 'form' | 'info';
 
-/**
- * Position configuration for static dialog positioning
- */
-export interface DialogPosition {
-  bottom?: number | string;
-  left?: number | string;
-  right?: number | string;
+/** Block-axis offsets — always allowed, independent of inline direction. */
+interface DialogBlockPosition {
   top?: number | string;
+  bottom?: number | string;
+}
+
+/**
+ * Static position for a dialog. The inline axis is logical XOR physical — the
+ * type forbids mixing the two, so a single dialog can't be positioned both ways:
+ * - Logical `start`/`end` map to `inset-inline-*` and mirror under RTL (preferred).
+ * Block-axis `top`/`bottom` may be combined with either.
+ */
+export interface DialogPosition extends DialogBlockPosition {
+  /** Logical inline-start offset (`inset-inline-start`); mirrors under RTL. */
+  start?: number | string;
+  /** Logical inline-end offset (`inset-inline-end`); mirrors under RTL. */
+  end?: number | string;
 }
 
 const enterDirectional = stylex.keyframes({
@@ -145,14 +138,6 @@ const styles = stylex.create({
     animationDuration: durationVars['--duration-medium-max'],
     animationTimingFunction: easeVars['--ease-standard'],
     animationFillMode: 'backwards' as const,
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': '2px',
-    },
   },
   // Applied via isOpen prop — avoids :where([open]) attribute selectors
   // which have zero specificity and can lose to default styles depending
@@ -215,28 +200,50 @@ const dynamicStyles = stylex.create({
     maxHeight: typeof maxHeight === 'number' ? `${maxHeight}px` : maxHeight,
   }),
   position: (
-    top: number | string | undefined,
-    right: number | string | undefined,
-    bottom: number | string | undefined,
-    left: number | string | undefined,
+    top: string,
+    insetInlineStart: string,
+    insetInlineEnd: string,
+    bottom: string,
   ) => ({
-    // When position is set, disable auto margin and use fixed positioning
+    // Assigns pre-resolved offsets from resolveDialogPositionOffsets(). This
+    // literal has no logic — StyleX can't analyze a helper, so the values
+    // (logical start/end → inset-inline-*, physical left/right, `auto`
+    // fallbacks) are computed at the call site and passed in.
     margin: 0,
-    top: top !== undefined ? formatPosition(top) : 'auto',
-    right: right !== undefined ? formatPosition(right) : 'auto',
-    bottom: bottom !== undefined ? formatPosition(bottom) : 'auto',
-    left: left !== undefined ? formatPosition(left) : 'auto',
+    top,
+    insetInlineStart,
+    insetInlineEnd,
+    bottom,
   }),
 });
 
 /**
  * Format position value - numbers become pixels, strings pass through, undefined becomes null
  */
-function formatPosition(value: number | string | undefined): string | null {
-  if (value === undefined) {
-    return null;
-  }
+function formatPosition(value: number | string): string {
   return typeof value === 'number' ? `${value}px` : value;
+}
+
+/**
+ * Map a {@link DialogPosition} to resolved CSS offsets. Logical `start`/`end`
+ * become `inset-inline-*` (mirror under RTL); each unset offset falls back to
+ * `auto`.
+ *
+ * Not re-exported from the package; internal to Dialog. Directly unit-tested
+ * so the mapping is verified without StyleX class compilation.
+ *
+ * @see DialogPosition
+ */
+export function resolveDialogPositionOffsets(position: DialogPosition) {
+  const {top, bottom, start, end} = position;
+
+  return {
+    top: top !== undefined ? formatPosition(top) : 'auto',
+    bottom: bottom !== undefined ? formatPosition(bottom) : 'auto',
+    // Logical offsets mirror under RTL (preferred replacements).
+    insetInlineStart: start !== undefined ? formatPosition(start) : 'auto',
+    insetInlineEnd: end !== undefined ? formatPosition(end) : 'auto',
+  };
 }
 
 export interface DialogProps extends BaseProps<HTMLDialogElement> {
@@ -626,18 +633,21 @@ export function Dialog({
       {...safeProps}
       {...mergeProps(
         themeProps('dialog', {variant}),
-        stylex.props(
+        focusOutlineProps.focusVisible(
           styles.dialog,
           isOpen && styles.open,
           styles.backdrop,
           !isFullscreen && dynamicStyles.sizing(width, maxHeight),
           hasPosition &&
-            dynamicStyles.position(
-              position?.top,
-              position?.right,
-              position?.bottom,
-              position?.left,
-            ),
+            (() => {
+              const o = resolveDialogPositionOffsets(position);
+              return dynamicStyles.position(
+                o.top,
+                o.insetInlineStart,
+                o.insetInlineEnd,
+                o.bottom,
+              );
+            })(),
           isFullscreen && styles.fullscreen,
           xstyle,
         ),

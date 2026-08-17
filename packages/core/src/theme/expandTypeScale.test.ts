@@ -305,4 +305,47 @@ describe('generateTypeScaleComponents', () => {
       'var(--text-body-leading)',
     );
   });
+
+  it('generates rules for all 3 heading display types', () => {
+    const components = generateTypeScaleComponents({base: 14, ratio: 1.2});
+    for (const type of ['display-1', 'display-2', 'display-3']) {
+      expect(components.heading).toHaveProperty(`type:${type}`);
+    }
+  });
+
+  it('heading display-type rules reference the display semantic tokens', () => {
+    const components = generateTypeScaleComponents({base: 14, ratio: 1.2});
+    const display1 = components.heading['type:display-1'];
+    expect(display1.fontFamily).toBe('var(--font-family-heading)');
+    expect(display1.fontSize).toBe('var(--text-display-1-size)');
+    expect(display1.lineHeight).toBe('var(--text-display-1-leading)');
+    // fontWeight is intentionally omitted here, matching the `text` branch's
+    // type-keyed rules — see defaultWeightByTypeStyles for how weight is
+    // applied instead.
+    expect(display1.fontWeight).toBeUndefined();
+  });
+
+  it('emits heading type:display-N rules after level:N rules, so type wins at equal specificity', () => {
+    // Heading renders both a `level:N` and a `type:display-N` class on the
+    // same element simultaneously when `type` is set (see Heading.tsx).
+    // Both produce single-class-selector CSS rules of equal specificity, so
+    // CSS's own "last rule wins" tiebreak is what makes `type` take
+    // precedence over `level` -- which only holds if type rules are emitted
+    // strictly after all level rules in this object's (and therefore the
+    // generated stylesheet's) key order. This regression-tests #4829,
+    // where type-keyed heading rules didn't exist at all and level always
+    // won by default, silently discarding the `type` prop under any theme
+    // with a typography.scale.
+    const components = generateTypeScaleComponents({base: 14, ratio: 1.2});
+    const keys = Object.keys(components.heading);
+    const lastLevelIndex = Math.max(
+      ...[1, 2, 3, 4, 5, 6].map(level => keys.indexOf(`level:${level}`)),
+    );
+    const firstTypeIndex = Math.min(
+      ...['display-1', 'display-2', 'display-3'].map(type =>
+        keys.indexOf(`type:${type}`),
+      ),
+    );
+    expect(firstTypeIndex).toBeGreaterThan(lastLevelIndex);
+  });
 });

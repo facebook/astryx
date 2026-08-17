@@ -8,7 +8,7 @@ import {VStack} from '@astryxdesign/core/Layout';
 import {Text} from '@astryxdesign/core/Text';
 import {Divider} from '@astryxdesign/core/Divider';
 import type {DefinedTheme} from '@astryxdesign/core/theme';
-import type {ReferenceDoc, ReferenceSection} from '@astryxdesign/core';
+import type {ReferenceDoc, ReferenceSection} from '@astryxdesign/cli/authoring';
 import {SectionRenderer} from './SectionRenderer';
 import {
   ColorTokenTable,
@@ -137,10 +137,7 @@ export function DocPreview({
             {doc.title}
           </Text>
           {version && (
-            <Text
-              type="supporting"
-              color="secondary"
-              xstyle={styles.version}>
+            <Text type="supporting" color="secondary" xstyle={styles.version}>
               v{version}
             </Text>
           )}

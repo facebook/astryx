@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'Tokenizer',
@@ -87,6 +87,13 @@ export const docs = {
       type: "{type: 'warning' | 'error' | 'success', message?: string}",
       description:
         'Validation status object with type and message for error/warning/success states.',
+    },
+    {
+      name: 'statusVariant',
+      type: "'attached' | 'detached'",
+      description:
+        'How the status message is placed relative to the input. attached overlaps directly below the input (bordered treatment); detached floats below as a separate element with spacing.',
+      default: "'attached'",
     },
     {
       name: 'isLabelHidden',
@@ -185,7 +192,14 @@ export const docs = {
     {
       name: 'handleRef',
       type: 'React.Ref<TokenizerHandle>',
-      description: 'Imperative handle for focus() and blur() control.',
+      description:
+        'Imperative handle exposing focusInput(), focusFirstToken(), focusLastToken(), clearInput(), and selectAll().',
+    },
+    {
+      name: 'width',
+      type: 'SizeValue',
+      description:
+        'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
     },
     {
       name: 'xstyle',
@@ -196,7 +210,7 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-tokenizer', visualProps: ['size', 'status']},
+      {className: 'astryx-tokenizer', visualProps: ['size', 'status'], states: ['disabled']},
     ],
   },
   usage: {
@@ -223,7 +237,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docsZh = {
   name: 'Tokenizer',
   displayName: 'Tokenizer',
@@ -306,6 +320,13 @@ export const docsZh = {
       type: "{type: 'warning' | 'error' | 'success', message?: string}",
       description:
         '\u9a8c\u8bc1\u72b6\u6001\u5bf9\u8c61\uff0c\u5305\u542b\u7c7b\u578b\u548c\u6d88\u606f\uff0c\u7528\u4e8e\u9519\u8bef/\u8b66\u544a/\u6210\u529f\u72b6\u6001\u3002',
+    },
+    {
+      name: 'statusVariant',
+      type: "'attached' | 'detached'",
+      description:
+        '状态消息相对于输入框的放置方式。attached 直接叠加在输入框下方（带边框处理）；detached 作为独立元素浮于下方并留有间距。',
+      default: "'attached'",
     },
     {
       name: 'isLabelHidden',
@@ -403,7 +424,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-tokenizer', visualProps: ['size', 'status']},
+      {className: 'astryx-tokenizer', visualProps: ['size', 'status'], states: ['disabled']},
     ],
   },
   usage: {
@@ -430,7 +451,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'Multi-select typeahead w/ token chips for selected items. Composes BaseTypeahead for search+Token for chips.',
   usage: {
@@ -461,6 +482,7 @@ export const docsDense = {
     isDisabled: 'Disables input+all token interactions.',
     htmlName: 'HTML name attr; one hidden input per selected item id.',
     status: 'Validation status w/ type+message for error/warning/success.',
+    statusVariant: 'How status message is placed: attached overlaps below input; detached floats below w/ spacing.',
     isLabelHidden: 'Visually hides label; keeps a11y.',
     description: 'Helper text below label.',
     isRequired: 'Marks field required.',

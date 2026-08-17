@@ -68,23 +68,45 @@ function discoverChangelogs() {
 }
 
 // A bullet may span multiple lines (continuation lines are indented).
+//
+// A blank line ends the bullet only when what follows is not more of it. An
+// entry whose body has several paragraphs renders as `- head`, prose, blank
+// line, indented prose — so treating every blank line as a terminator dropped
+// each paragraph after the first, silently, on its way into the changelog.
 function splitBullets(body) {
   const lines = body.split('\n');
   const bullets = [];
   let cur = null;
-  for (const line of lines) {
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     if (/^\s*-\s+/.test(line)) {
       if (cur) bullets.push(cur);
       cur = line;
     } else if (cur && line.trim() !== '') {
       cur += '\n' + line;
     } else if (cur && line.trim() === '') {
-      bullets.push(cur);
-      cur = null;
+      if (continuesAfterBlank(lines, i)) {
+        cur += '\n';
+      } else {
+        bullets.push(cur);
+        cur = null;
+      }
     }
   }
   if (cur) bullets.push(cur);
   return bullets;
+}
+
+// Does the blank line at `i` sit inside a bullet? Only if the next non-blank
+// line is an indented continuation — an unindented line (the next bullet, a
+// `####` section, a `---` divider) closes it.
+function continuesAfterBlank(lines, i) {
+  for (let j = i + 1; j < lines.length; j++) {
+    const next = lines[j];
+    if (next.trim() === '') continue;
+    return /^ {2,}\S/.test(next);
+  }
+  return false;
 }
 
 // Reflow a bullet's continuation body into consistent line wrapping.

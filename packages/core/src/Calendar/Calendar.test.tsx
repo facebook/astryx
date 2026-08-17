@@ -9,7 +9,7 @@
  * SYNC: When Calendar.tsx changes, update tests accordingly
  */
 
-import {describe, it, expect, vi, afterEach} from 'vitest';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {act, render, screen, within, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {getButton} from '../__tests__/fastRoleQueries';
@@ -19,9 +19,13 @@ import type {CalendarHandle} from './Calendar';
 import type {ISODateString} from './Calendar';
 import {calendarStyles} from './styles';
 import {defineTheme} from '../theme/defineTheme';
-import {generateThemeCSSFlat} from '../theme/generateThemeRules';
+import {generateThemeCSS} from '../theme/generateThemeRules';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 
+function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
+  const {prose, component} = generateThemeCSS(theme);
+  return [prose, component].filter(Boolean).join('\n\n');
+}
 afterEach(() => {
   __resetLiveRegionsForTest();
 });
@@ -394,10 +398,10 @@ describe('Calendar', () => {
 
   it('caps the range highlight next to a disabled mid-range day (#2715)', () => {
     // Disable Jan 13. With Jan 10–15 selected, day 12 (immediately before the
-    // disabled day) should get a rounded end cap on its right edge, and day 14
-    // (immediately after) a rounded cap on its left edge — so the highlight
-    // reads as terminating at the disabled gap rather than running square-edged
-    // into it.
+    // disabled day) should get a rounded end cap on its inline-end edge, and
+    // day 14 (immediately after) a rounded cap on its inline-start edge — so
+    // the highlight reads as terminating at the disabled gap rather than
+    // running square-edged into it.
     const disableJan13 = (d: Date) =>
       !(d.getFullYear() === 2026 && d.getMonth() === 0 && d.getDate() === 13);
     render(
@@ -422,10 +426,11 @@ describe('Calendar', () => {
     const day14Bg = rangeBgFor(14);
 
     // Capped edges have a border radius; the un-capped edge stays square.
-    expect(getComputedStyle(day12Bg).borderTopRightRadius).not.toBe('');
-    expect(getComputedStyle(day12Bg).borderTopRightRadius).not.toBe('0px');
-    expect(getComputedStyle(day14Bg).borderTopLeftRadius).not.toBe('');
-    expect(getComputedStyle(day14Bg).borderTopLeftRadius).not.toBe('0px');
+    // Radii are logical (inline start/end), so they follow reading direction.
+    expect(getComputedStyle(day12Bg).borderStartEndRadius).not.toBe('');
+    expect(getComputedStyle(day12Bg).borderStartEndRadius).not.toBe('0px');
+    expect(getComputedStyle(day14Bg).borderStartStartRadius).not.toBe('');
+    expect(getComputedStyle(day14Bg).borderStartStartRadius).not.toBe('0px');
   });
 
   it('does not range-highlight adjacent-month spillover days in two-month view', () => {
@@ -649,6 +654,150 @@ describe('Calendar', () => {
     });
   });
 
+  // ─── Selection Semantics for AT (WCAG 4.1.2 / 1.3.1) ────────
+
+  describe('selection state in day accessible names', () => {
+    it("appends 'selected' to the selected day's button name in single mode", () => {
+      render(<Calendar value="2026-01-15" focusDate="2026-01-01" />);
+
+      // Roving focus lands on the day <button>, which cannot carry
+      // aria-selected (invalid on role="button") — the selection state must
+      // be encoded in the button's accessible name instead.
+      expect(getDayButton(15).getAttribute('aria-label')).toBe(
+        'Thursday, January 15, 2026, selected',
+      );
+      // Unselected days carry the plain date name.
+      expect(getDayButton(20).getAttribute('aria-label')).toBe(
+        'Tuesday, January 20, 2026',
+      );
+    });
+
+    it('marks range start, end, and in-range days in their accessible names', () => {
+      render(
+        <Calendar
+          mode="range"
+          value={{start: '2026-01-10', end: '2026-01-15'}}
+          focusDate="2026-01-01"
+        />,
+      );
+
+      expect(getDayButton(10).getAttribute('aria-label')).toBe(
+        'Saturday, January 10, 2026, range start',
+      );
+      expect(getDayButton(15).getAttribute('aria-label')).toBe(
+        'Thursday, January 15, 2026, range end',
+      );
+      expect(getDayButton(12).getAttribute('aria-label')).toBe(
+        'Monday, January 12, 2026, in range',
+      );
+      // Days outside the range keep the plain date name.
+      expect(getDayButton(20).getAttribute('aria-label')).toBe(
+        'Tuesday, January 20, 2026',
+      );
+    });
+
+    it('labels a one-day range as both range start and range end', () => {
+      render(
+        <Calendar
+          mode="range"
+          value={{start: '2026-01-10', end: '2026-01-10'}}
+          focusDate="2026-01-01"
+        />,
+      );
+
+      expect(getDayButton(10).getAttribute('aria-label')).toBe(
+        'Saturday, January 10, 2026, range start and range end',
+      );
+    });
+
+    it("labels the in-progress first pick as 'range start' only", async () => {
+      const user = userEvent.setup();
+      render(<Calendar mode="range" focusDate="2026-01-01" />);
+
+      await user.click(getDayButton(10));
+
+      // While the range is in progress the picked day is only the start —
+      // not a completed one-day range.
+      expect(getDayButton(10).getAttribute('aria-label')).toBe(
+        'Saturday, January 10, 2026, range start',
+      );
+    });
+  });
+
+  describe('range selection announcements', () => {
+    it('announces the start pick and prompts for an end date', async () => {
+      const user = userEvent.setup();
+      render(<Calendar mode="range" focusDate="2026-01-01" />);
+
+      await user.click(getDayButton(10));
+
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent(
+          'Start date Saturday, January 10, 2026. Select an end date.',
+        );
+      });
+    });
+
+    it('announces the completed range after the second pick', async () => {
+      const user = userEvent.setup();
+      render(<Calendar mode="range" focusDate="2026-01-01" />);
+
+      await user.click(getDayButton(10));
+      await user.click(getDayButton(15));
+
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent(
+          'Selected range: Saturday, January 10, 2026 to Thursday, January 15, 2026.',
+        );
+      });
+    });
+
+    it('announces the completed range in chronological order for a reverse pick', async () => {
+      const user = userEvent.setup();
+      render(<Calendar mode="range" focusDate="2026-01-01" />);
+
+      await user.click(getDayButton(20));
+      await user.click(getDayButton(10));
+
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent(
+          'Selected range: Saturday, January 10, 2026 to Tuesday, January 20, 2026.',
+        );
+      });
+    });
+  });
+
+  describe('aria-multiselectable', () => {
+    it('sets aria-multiselectable="true" on the grid in range mode', () => {
+      render(<Calendar mode="range" focusDate="2026-01-01" />);
+
+      expect(screen.getByRole('grid')).toHaveAttribute(
+        'aria-multiselectable',
+        'true',
+      );
+    });
+
+    it('does not set aria-multiselectable in single mode', () => {
+      render(<Calendar focusDate="2026-01-01" />);
+
+      expect(screen.getByRole('grid')).not.toHaveAttribute(
+        'aria-multiselectable',
+      );
+    });
+
+    it('sets aria-multiselectable on both grids in a two-month range view', () => {
+      render(
+        <Calendar mode="range" numberOfMonths={2} focusDate="2026-01-01" />,
+      );
+
+      const grids = screen.getAllByRole('grid');
+      expect(grids.length).toBe(2);
+      for (const grid of grids) {
+        expect(grid).toHaveAttribute('aria-multiselectable', 'true');
+      }
+    });
+  });
+
   // ─── Bug Regression Tests ───────────────────────────────────
 
   it('day buttons have data-date attribute with ISO string', () => {
@@ -844,21 +993,22 @@ describe('Calendar', () => {
   // ─── RTL (#3388) ─────────────────────────────────────────────
 
   describe('RTL month navigation', () => {
-    // jsdom does not apply compiled StyleX CSS, so the scaleX(-1) mirror
-    // itself is only observable in a browser (see the dir="rtl" Storybook
-    // story). These tests pin the structure the fix depends on: both nav
-    // chevrons render inside the navIcon wrapper that carries the
-    // ':is([dir="rtl"] *)' conditional transform.
-    it('wraps both nav chevrons in the RTL-mirroring navIcon wrapper', () => {
+    // jsdom does not apply compiled StyleX CSS, so the RTL scaleX mirror is
+    // only observable in a browser (see the dir="rtl" Storybook story). These
+    // tests pin the structure the mirror relies on: both nav chevrons render
+    // inside the navIcon wrapper (which composes the shared rtlStyles.mirror
+    // transform), and navigation semantics stay identical under dir="rtl".
+    it('wraps both nav chevrons in the navIcon wrapper', () => {
       render(<Calendar focusDate="2026-01-01" />);
 
       const {className: navIconClass} = stylex.props(calendarStyles.navIcon);
       expect(navIconClass).toBeTruthy();
+      const navIconAtoms = navIconClass!.split(' ');
 
       for (const name of ['Previous month', 'Next month']) {
         const button = getButton(name);
         const wrappers = Array.from(button.querySelectorAll('span')).filter(
-          span => span.className === navIconClass,
+          span => navIconAtoms.every(atom => span.classList.contains(atom)),
         );
         expect(wrappers.length).toBe(1);
       }
@@ -867,29 +1017,45 @@ describe('Calendar', () => {
     it('keeps navigation semantics unchanged under dir="rtl"', async () => {
       const user = userEvent.setup();
 
-      render(
+      // Scope month-label queries to the rendered tree: month navigation also
+      // announces the month name through the body-level polite live region,
+      // and whether that text has landed by assertion time depends on jsdom's
+      // 16ms rAF frame phase — an unscoped getByText intermittently finds two
+      // matches ("February 2026" in both the header and the live region).
+      const {container} = render(
         <div dir="rtl">
           <Calendar focusDate="2026-02-01" />
         </div>,
       );
 
-      expect(screen.getByText('February 2026')).toBeInTheDocument();
+      expect(within(container).getByText('February 2026')).toBeInTheDocument();
 
       // DOM order and handlers must not change in RTL: flexbox already
       // places "Previous month" at the visual right; only the glyph mirrors.
       await user.click(getButton('Previous month'));
-      expect(screen.getByText('January 2026')).toBeInTheDocument();
+      expect(within(container).getByText('January 2026')).toBeInTheDocument();
 
       await user.click(getButton('Next month'));
-      expect(screen.getByText('February 2026')).toBeInTheDocument();
+      expect(within(container).getByText('February 2026')).toBeInTheDocument();
     });
   });
 
-
   // ─── Day-cell marker theming (#4286) ─────────────────────────
   describe('day-cell marker theme state', () => {
-    // Tests use the real "today" (as the existing aria-current tests do) since
-    // Calendar derives it internally. Helpers pin the exact ISO strings.
+    // Pin "today" to a mid-month date so the ±2-day range helpers below stay
+    // within a single rendered month. With the real clock, running near a month
+    // boundary (e.g. the 1st) pushed today-2 into the previous month, so the
+    // rendered grid didn't contain today's cell and the marker assertions
+    // flaked. Fake only Date (timers stay real; these tests are synchronous).
+    beforeEach(() => {
+      vi.useFakeTimers({toFake: ['Date']});
+      vi.setSystemTime(new Date(2026, 5, 15, 12, 0, 0));
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+    // Tests use the (now-pinned) "today" since Calendar derives it internally.
+    // Helpers pin the exact ISO strings.
     function todayISO(): ISODateString {
       const n = new Date();
       return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}` as ISODateString;
@@ -986,7 +1152,7 @@ describe('Calendar', () => {
           },
         },
       });
-      const css = generateThemeCSSFlat(theme);
+      const css = generateThemeTestCSS(theme);
       expect(css).toContain('.astryx-calendar-day.today-only');
       expect(css).toContain('.astryx-calendar-day.today-in-range');
       expect(css).toContain('box-shadow: inset 0 0 0 2px var(--color-accent)');
@@ -1067,7 +1233,7 @@ describe('Calendar', () => {
           },
         },
       });
-      const css = generateThemeCSSFlat(theme);
+      const css = generateThemeTestCSS(theme);
       expect(css).toContain('.astryx-calendar-nav {');
       expect(css).toContain('color: var(--color-accent)');
       expect(css).toContain('.astryx-calendar-nav.next');

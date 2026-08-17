@@ -26,7 +26,7 @@
 
 import {describe, it, expect} from 'vitest';
 import {readdirSync, readFileSync} from 'node:fs';
-import {join} from 'node:path';
+import {join, relative} from 'node:path';
 import ts from 'typescript';
 import {stableClassName} from '../naming';
 
@@ -43,6 +43,61 @@ interface ThemeTargetSite {
   propKeys: string[];
   /** True when the 2nd arg exists but its keys can't be read statically. */
   isOpaque: boolean;
+}
+
+/**
+ * Keys of a spread whose operand is a conditional object literal:
+ * `...(cond && {a})`, `...(cond ? {a} : null)`, `...(cond || {a})`.
+ * Returns null when the operand is anything else (a bag like `...rest`, or an
+ * object with a computed key), which the caller treats as opaque.
+ */
+function conditionalSpreadKeys(expression: ts.Expression): string[] | null {
+  const unwrap = (node: ts.Expression): ts.Expression =>
+    ts.isParenthesizedExpression(node) ? unwrap(node.expression) : node;
+
+  const expr = unwrap(expression);
+  const branches: ts.Expression[] = [];
+  if (
+    ts.isBinaryExpression(expr) &&
+    (expr.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken ||
+      expr.operatorToken.kind === ts.SyntaxKind.BarBarToken)
+  ) {
+    branches.push(expr.right);
+  } else if (ts.isConditionalExpression(expr)) {
+    branches.push(expr.whenTrue, expr.whenFalse);
+  } else if (ts.isObjectLiteralExpression(expr)) {
+    branches.push(expr);
+  } else {
+    return null;
+  }
+
+  const keys: string[] = [];
+  for (const branch of branches) {
+    const object = unwrap(branch);
+    // A falsy filler arm (`null`, `undefined`) contributes no keys; anything
+    // else that is not an object literal hides its keys, so give up.
+    if (
+      object.kind === ts.SyntaxKind.NullKeyword ||
+      (ts.isIdentifier(object) && object.text === 'undefined')
+    ) {
+      continue;
+    }
+    if (!ts.isObjectLiteralExpression(object)) {
+      return null;
+    }
+    for (const prop of object.properties) {
+      const name = prop.name;
+      if (
+        name != null &&
+        (ts.isIdentifier(name) || ts.isStringLiteralLike(name))
+      ) {
+        keys.push(name.text);
+      } else {
+        return null;
+      }
+    }
+  }
+  return keys;
 }
 
 /**
@@ -88,8 +143,16 @@ function extractThemeTargets(
           if (ts.isObjectLiteralExpression(propsArg)) {
             for (const prop of propsArg.properties) {
               if (ts.isSpreadAssignment(prop)) {
-                // {...rest} — keys unknown at parse time.
-                site.isOpaque = true;
+                // A conditional spread of an object literal — `...(type &&
+                // {type})` — has statically known keys. Treating it as opaque
+                // is how `astryx-heading`'s `type` stayed undocumented: the
+                // same drift this file exists to catch (#3652, #3680).
+                const spreadKeys = conditionalSpreadKeys(prop.expression);
+                if (spreadKeys == null) {
+                  site.isOpaque = true;
+                } else {
+                  site.propKeys.push(...spreadKeys);
+                }
                 continue;
               }
               const name = prop.name;
@@ -194,8 +257,31 @@ describe('extractThemeTargets', () => {
     ]);
   });
 
+  it('reads the keys of a conditional spread', () => {
+    // Heading's real call site: `{level, color, ...(type && {type})}`.
+    const [site] = extractThemeTargets(
+      `themeProps('heading', {level, color, ...(type && {type})})`,
+    );
+    expect(site.propKeys).toEqual(['level', 'color', 'type']);
+    expect(site.isOpaque).toBe(false);
+  });
+
+  it('reads both arms of a ternary spread', () => {
+    const [site] = extractThemeTargets(
+      `themeProps('card', {...(isOpen ? {expanded} : {collapsed})})`,
+    );
+    expect(site.propKeys).toEqual(['expanded', 'collapsed']);
+    expect(site.isOpaque).toBe(false);
+  });
+
   it('marks a spread props bag opaque rather than guessing its keys', () => {
     const [site] = extractThemeTargets(`themeProps('card', {...rest})`);
+    expect(site.isOpaque).toBe(true);
+    expect(site.propKeys).toEqual([]);
+  });
+
+  it('marks a conditional spread of a non-literal opaque', () => {
+    const [site] = extractThemeTargets(`themeProps('card', {...(on && rest)})`);
     expect(site.isOpaque).toBe(true);
     expect(site.propKeys).toEqual([]);
   });
@@ -231,7 +317,37 @@ interface ComponentInfo {
   dir: string;
   sites: ThemeTargetSite[];
   /** The doc blocks that carry theming.targets, by the key they live under. */
-  docBlocks: {key: 'docs' | 'docsZh'; targets: DocTarget[]}[];
+  docBlocks: {key: 'docs' | 'docsZh'; file: string; targets: DocTarget[]}[];
+}
+
+/**
+ * Every `*.doc.mjs` under src that declares a theming target for one of
+ * `classNames`. Lets a component be checked against the doc that documents it,
+ * wherever that file lives.
+ *
+ * Reads the file as text rather than requiring it: this runs for directories
+ * that have no doc of their own, so most candidates are misses.
+ */
+function docFilesDocumenting(classNames: Set<string>): string[] {
+  const matches: string[] = [];
+  const walk = (dir: string): void => {
+    for (const entry of readdirSync(dir, {withFileTypes: true})) {
+      const p = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(p);
+      } else if (entry.name.endsWith('.doc.mjs')) {
+        const source = readFileSync(p, 'utf-8');
+        for (const className of classNames) {
+          if (source.includes(`'${className}'`)) {
+            matches.push(p);
+            break;
+          }
+        }
+      }
+    }
+  };
+  walk(SRC_DIR);
+  return matches;
 }
 
 function discoverComponents(): ComponentInfo[] {
@@ -262,27 +378,37 @@ function discoverComponents(): ComponentInfo[] {
       continue;
     }
 
-    // Match the on-disk listing rather than existsSync: on case-insensitive
-    // filesystems existsSync would match a differently-cased doc file that CI
-    // never checks. (Same guard as derivedVarRegistry.test.ts.)
-    if (!dirEntries.includes(`${dir}.doc.mjs`)) {
-      continue;
-    }
-
-    let mod: ComponentDocModule;
-    try {
-      mod = require(join(dirPath, `${dir}.doc.mjs`)) as ComponentDocModule;
-    } catch {
+    // A component's doc file usually sits beside its source, but not always:
+    // `Heading/Heading.tsx` is documented by `Text/Text.doc.mjs`. Requiring a
+    // same-directory doc silently exempted every such component — Heading
+    // among them. Fall back to whichever doc file documents the classes this
+    // directory renders.
+    //
+    // Both paths match the on-disk listing rather than existsSync: on
+    // case-insensitive filesystems existsSync would match a differently-cased
+    // doc file that CI never checks. (Same guard as derivedVarRegistry.test.ts.)
+    const docFiles = dirEntries.includes(`${dir}.doc.mjs`)
+      ? [join(dirPath, `${dir}.doc.mjs`)]
+      : docFilesDocumenting(new Set(sites.map(s => s.className)));
+    if (docFiles.length === 0) {
       continue;
     }
 
     const docBlocks: ComponentInfo['docBlocks'] = [];
-    for (const key of ['docs', 'docsZh'] as const) {
-      const targets = mod[key]?.theming?.targets;
-      // Only blocks that already document a theming surface are held to it —
-      // a doc with no theming block at all is a separate (documentation) gap.
-      if (targets != null) {
-        docBlocks.push({key, targets});
+    for (const docFile of docFiles) {
+      let mod: ComponentDocModule;
+      try {
+        mod = require(docFile) as ComponentDocModule;
+      } catch {
+        continue;
+      }
+      for (const key of ['docs', 'docsZh'] as const) {
+        const targets = mod[key]?.theming?.targets;
+        // Only blocks that already document a theming surface are held to it —
+        // a doc with no theming block at all is a separate (documentation) gap.
+        if (targets != null) {
+          docBlocks.push({key, file: relative(SRC_DIR, docFile), targets});
+        }
       }
     }
     if (docBlocks.length === 0) {
@@ -309,22 +435,22 @@ describe('theming.targets matches the themeProps() call sites', () => {
   for (const {dir, sites, docBlocks} of components) {
     const renderedClasses = [...new Set(sites.map(s => s.className))].sort();
 
-    for (const {key, targets} of docBlocks) {
+    for (const {key, file, targets} of docBlocks) {
       const documented = new Set(targets.map(t => t.className));
 
-      it(`${dir} (${key}): every rendered class is documented`, () => {
+      it(`${dir} (${file} ${key}): every rendered class is documented`, () => {
         const undocumented = renderedClasses.filter(c => !documented.has(c));
         expect(
           undocumented,
           `${dir} renders ${undocumented.length} astryx-* class(es) that ` +
-            `${dir}.doc.mjs ${key}.theming.targets does not document: ` +
+            `${file} ${key}.theming.targets does not document: ` +
             `${undocumented.join(', ')}. An undocumented class is an ` +
             `unthemeable element — theme authors and codegen read targets[] ` +
             `to learn which selectors exist. Add {className: '...'} entries.`,
         ).toEqual([]);
       });
 
-      it(`${dir} (${key}): every visual prop passed to themeProps is documented`, () => {
+      it(`${dir} (${file} ${key}): every visual prop passed to themeProps is documented`, () => {
         const missing: string[] = [];
         for (const site of sites) {
           const target = targets.find(t => t.className === site.className);
@@ -343,7 +469,7 @@ describe('theming.targets matches the themeProps() call sites', () => {
         }
         expect(
           [...new Set(missing)],
-          `${dir} passes prop keys to themeProps() that ${dir}.doc.mjs ` +
+          `${dir} passes prop keys to themeProps() that ${file} ` +
             `${key}.theming.targets does not list under visualProps/states. ` +
             `Each one is a [data-*] selector consumers cannot discover.`,
         ).toEqual([]);

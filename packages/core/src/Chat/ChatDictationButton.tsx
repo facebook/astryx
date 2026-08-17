@@ -15,7 +15,7 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Chat/index.ts (exports)
- * - /packages/cli/templates/blocks/components/ChatDictationButton/ (block examples)
+ * - /packages/cli/assets/templates/blocks/components/ChatDictationButton/ (block examples)
  */
 
 import React from 'react';
@@ -26,6 +26,8 @@ import {Button} from '../Button';
 import {Icon} from '../Icon';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
+import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 // =============================================================================
 // Types
@@ -110,13 +112,18 @@ export function ChatDictationButton({
   style,
   ...rest
 }: ChatDictationButtonProps) {
+  const t = useTranslator();
+
   if (isHiddenWhenUnsupported && !dictation.isSupported) {
     return null;
   }
 
   const {isListening, bands, volume: rawVolume} = dictation;
   const accessibleLabel =
-    label ?? (isListening ? 'Stop dictation' : 'Start dictation');
+    label ??
+    (isListening
+      ? t('@astryx.chatDictationButton.stopDictation')
+      : t('@astryx.chatDictationButton.startDictation'));
 
   // Boost each band for visibility — quiet speech (0-10%) maps to full visual range
   const boostedBands = bands.map(b => Math.min(Math.pow(b / 0.2, 0.5), 1));
@@ -134,7 +141,12 @@ export function ChatDictationButton({
   return (
     <span
       ref={ref}
-      {...mergeProps(stylex.props(styles.wrapper, xstyle), className, style)}
+      {...mergeProps(
+        themeProps('chat-dictation-button'),
+        stylex.props(styles.wrapper, xstyle),
+        className,
+        style,
+      )}
       {...rest}>
       {isListening && (
         <span

@@ -22,9 +22,10 @@
  * - /packages/core/src/Thumbnail/Thumbnail.test.tsx
  * - /packages/core/src/Thumbnail/index.ts
  * - /apps/storybook/stories/Thumbnail.stories.tsx
- * - /packages/cli/templates/blocks/components/Thumbnail/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Thumbnail/ (showcase blocks)
  */
 
+import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -39,11 +40,12 @@ import {Skeleton} from '../Skeleton';
 import {Spinner} from '../Spinner';
 import {Tooltip} from '../Tooltip/Tooltip';
 import {useDevWarning} from '../hooks/useDevWarning';
+import {useContainerReveal} from '../hooks/useContainerReveal';
 import type {BaseProps} from '../BaseProps';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {useTranslator} from '../i18n';
-import {thumbnailScope} from './thumbnail.markers.stylex';
 
 export interface ThumbnailProps extends BaseProps<HTMLDivElement> {
   /** Ref forwarded to the root element */
@@ -158,14 +160,6 @@ const styles = stylex.create({
   },
   interactive: {
     cursor: 'pointer',
-    outline: {
-      default: null,
-      ':has(:focus-visible)': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':has(:focus-visible)': '2px',
-    },
   },
   // Hover/pressed overlay — the exact same treatment as ClickableCard and
   // SelectableCard. A transparent `::after` tints on hover/press instead of
@@ -207,12 +201,13 @@ const styles = stylex.create({
   removeSlot: {
     position: 'absolute',
     top: spacingVars['--spacing-1'],
-    right: spacingVars['--spacing-1'],
+    insetInlineEnd: spacingVars['--spacing-1'],
     zIndex: 1,
     lineHeight: 0,
   },
   removeButtonOverrides: {
     '--_button-radius': `calc(${radiusVars['--radius-element']} - ${spacingVars['--spacing-1']})`,
+    position: 'relative',
     height: 20,
     minWidth: 20,
     // Fixed colors instead of luminance-adapting theme: a translucent scrim
@@ -220,6 +215,15 @@ const styles = stylex.create({
     // without sampling pixel brightness.
     backgroundColor: colorVars['--color-overlay'],
     color: colorVars['--color-on-dark'],
+    '--_thumbnail-hit-inset': {
+      default: '0px',
+      '@media (pointer: coarse)': '-2px',
+    },
+    '::after': {
+      content: '""',
+      position: 'absolute',
+      inset: 'var(--_thumbnail-hit-inset)',
+    },
   },
   disabled: {
     opacity: 0.5,
@@ -235,28 +239,6 @@ const styles = stylex.create({
     borderRadius: 'inherit',
     zIndex: 1,
     lineHeight: 0,
-  },
-  // showRemoveOn="hover": the remove button is hidden at rest and revealed
-  // when the thumbnail is hovered or when focus enters it (keyboard). Only
-  // opacity is animated — the button stays mounted and focusable so tabbing
-  // to it triggers the :focus-within reveal. Any touch-capable device (incl.
-  // hybrid laptops that also report hover) keeps the button visible so the
-  // remove path is never gated behind an unavailable hover.
-  removeOnHover: {
-    opacity: {
-      default: 0,
-      [stylex.when.ancestor(':hover', thumbnailScope)]: {
-        '@media (hover: hover)': 1,
-      },
-      [stylex.when.ancestor(':focus-within', thumbnailScope)]: 1,
-      '@media (any-pointer: coarse)': 1,
-    },
-    transitionProperty: 'opacity',
-    transitionDuration: {
-      default: durationVars['--duration-fast'],
-      '@media (prefers-reduced-motion: reduce)': '0s',
-    },
-    transitionTimingFunction: easeVars['--ease-standard'],
   },
 });
 
@@ -318,14 +300,22 @@ export function Thumbnail({
 }: ThumbnailProps) {
   const t = useTranslator();
 
+  // Track the exact src that failed (rather than a boolean) so a changed src
+  // gets a fresh load attempt instead of the stale error.
+  const [erroredSrc, setErroredSrc] = useState<string | undefined>(undefined);
+
   const hasSrc = src != null;
+  const hasError = hasSrc && erroredSrc === src;
   const showSkeleton = isLoading && !hasSrc;
-  const showImage = hasSrc && !showSkeleton;
+  const showImage = hasSrc && !showSkeleton && !hasError;
   const showUploadOverlay = isLoading && hasSrc;
-  const showPlaceholder = !isLoading && !hasSrc;
+  const showPlaceholder = (!isLoading && !hasSrc) || hasError;
   const isInteractive = onClick != null && !isDisabled && !isLoading;
   const hasRemove = onRemove != null && !isDisabled;
   const isHoverReveal = hasRemove && showRemoveOn === 'hover';
+  const {getContainerProps, getContentRevealProps} = useContainerReveal({
+    isEnabled: isHoverReveal,
+  });
   const accessibleName =
     label && alt
       ? `${label} — ${alt}`
@@ -363,6 +353,7 @@ export function Thumbnail({
           alt={alt ?? ''}
           role={isImageDecorative ? 'presentation' : undefined}
           aria-hidden={isImageDecorative || undefined}
+          onError={() => setErroredSrc(src)}
           {...stylex.props(styles.image)}
         />
       )}
@@ -377,9 +368,12 @@ export function Thumbnail({
 
   const removeButtonEl = hasRemove ? (
     <div
-      {...stylex.props(
-        styles.removeSlot,
-        isHoverReveal && styles.removeOnHover,
+      {...mergeProps(
+        stylex.props(styles.removeSlot),
+        // The remove button is absolutely positioned in the corner, so it is
+        // already out of flow — an opacity-only reveal (layout preserved)
+        // matches its overlay placement instead of the clip recipe.
+        isHoverReveal ? getContentRevealProps({isLayoutPreserved: true}) : {},
       )}>
       <Button
         icon={<Icon icon="close" size="xsm" />}
@@ -410,12 +404,14 @@ export function Thumbnail({
       )}
       {...props}>
       <div
-        {...stylex.props(
-          styles.imageContainer,
-          isHoverReveal && thumbnailScope,
-          isInteractive && styles.interactive,
-          isInteractive && styles.overlay,
-          isInteractive && styles.hoverOnPointer,
+        {...mergeProps(
+          focusOutlineProps.focusWithin(
+            styles.imageContainer,
+            isInteractive && styles.interactive,
+            isInteractive && styles.overlay,
+            isInteractive && styles.hoverOnPointer,
+          ),
+          isHoverReveal ? getContainerProps() : {},
         )}>
         {isInteractive ? (
           <button

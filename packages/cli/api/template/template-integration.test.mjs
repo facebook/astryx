@@ -17,9 +17,6 @@ import {template} from './template.mjs';
 let tmpDir;
 let originalCwd;
 
-/** Absolute path to the CLI package so integrations can import /template. */
-const CLI_PKG = path.resolve(import.meta.dirname, '..', '..');
-
 function makeConsumer() {
   const dir = fs.mkdtempSync(
     path.join(process.cwd(), '.astryx-template-it-'),
@@ -58,12 +55,10 @@ function installWidgets(consumerDir) {
 function writeTemplate(pkgDir, id, {kind, body, withSource = true}) {
   const docPath = path.join(pkgDir, 'templates', `${id}.doc.mjs`);
   fs.mkdirSync(path.dirname(docPath), {recursive: true});
-  const create = kind === 'page' ? 'createPageTemplate' : 'createBlockTemplate';
   fs.writeFileSync(
     docPath,
     body ??
-      `import {${create}} from '${CLI_PKG}/authoring/template.mjs';\n` +
-        `export default ${create}({name: '${id} name', description: '${id} desc'});\n`,
+      `export default {type: '${kind}', name: '${id} name', description: '${id} desc'};\n`,
   );
   if (withSource) {
     fs.writeFileSync(
@@ -166,8 +161,7 @@ describe('integration template discovery', () => {
     );
     fs.writeFileSync(
       path.join(pkg2, 'templates', 'hero.doc.mjs'),
-      `import {createBlockTemplate} from '${CLI_PKG}/authoring/template.mjs';\n` +
-        `export default createBlockTemplate({name: 'Hero block', description: 'b'});\n`,
+      `export default {type: 'block', name: 'Hero block', description: 'b'};\n`,
     );
     fs.writeFileSync(
       path.join(pkg2, 'templates', 'hero.tsx'),

@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'TreeList',
@@ -24,11 +24,16 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'astryx-tree-list', visualProps: ['density']},
+      {className: 'astryx-tree-list', visualProps: ['density', 'variant']},
       {className: 'astryx-tree-list-item', visualProps: ['density'], states: ['selected', 'disabled']},
       {className: 'astryx-tree-list-chevron', states: ['state']},
       {className: 'astryx-tree-list-item-label', states: ['selected']},
       {className: 'astryx-tree-list-guide'},
+    ],
+    vars: [
+      {name: '--tree-list-indent', description: 'Per-level indentation step. Each nesting level indents its rows by this distance, and the guide lines follow it so they stay aligned. Set it on the `tree-list` target to retune the metric (e.g. `var(--spacing-5)` for a wider indent).', default: 'var(--spacing-4)'},
+      {name: '--tree-list-row-gap', description: 'Vertical gap between adjacent rows. Default `2px` (var(--spacing-0-5)) gives a subtle separation; set it on the `tree-list` target to widen or close the gap. The connector guides span the gap automatically (the line stays continuous) and do not overhang the last row, so no guide-height tuning is needed.', default: 'var(--spacing-0-5)'},
+      {name: '--_tree-indent', description: 'Distance one row is indented, computed per row from --tree-list-indent and the row depth. Set --tree-list-indent to retune indentation; this is the resolved value.', default: '0px', private: true},
     ],
   },
   components: [
@@ -49,6 +54,13 @@ export const docs = {
           type: "'compact' | 'balanced' | 'spacious'",
           description: 'Spacing density for items.',
           default: "'balanced'",
+        },
+        {
+          name: 'variant',
+          type: "'lineGuides' | 'noGuides'",
+          description:
+            'Visual treatment of the hierarchy guide lines. lineGuides shows connector lines; noGuides hides them, keeping indentation. Orthogonal to density.',
+          default: "'lineGuides'",
         },
         {
           name: 'header',
@@ -72,6 +84,7 @@ export const docs = {
     bestPractices: [
       {guidance: true, description: 'Provide meaningful labels and icons for each node to make the hierarchy easy to scan.'},
       {guidance: true, description: 'Pre-expand important branches so users see key content immediately.'},
+      {guidance: true, description: 'Leaf rows reserve space for a chevron column whenever the tree has any expandable item to line up under; only a fully flat tree (no expandable items at all) renders its rows flush. Rely on this rather than nudging indentation with custom CSS.'},
       {guidance: false, description: 'Nest more than 4–5 levels deep; flatten the structure or use a different pattern.'},
       {guidance: false, description: 'Use a tree for flat, non-hierarchical data; use a List instead.'},
     ],
@@ -84,18 +97,22 @@ export const docs = {
 // See .context/decisions/dense-compression-protocol.md
 // -------------------------------------------------------
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docsZh = {
   name: 'TreeList',
   displayName: 'Tree List',
   group: 'TreeList',
   theming: {
     targets: [
-      {className: 'astryx-tree-list', visualProps: ['density']},
+      {className: 'astryx-tree-list', visualProps: ['density', 'variant']},
       {className: 'astryx-tree-list-item', visualProps: ['density'], states: ['selected', 'disabled']},
       {className: 'astryx-tree-list-chevron', states: ['state']},
       {className: 'astryx-tree-list-item-label', states: ['selected']},
       {className: 'astryx-tree-list-guide'},
+    ],
+    vars: [
+      {name: '--tree-list-indent', description: '每级缩进步长。每个嵌套层级的行按此距离缩进，引导线随之对齐。在 `tree-list` 目标上设置以调整该度量（例如用 `var(--spacing-5)` 获得更宽的缩进）。', default: 'var(--spacing-4)'},
+      {name: '--tree-list-row-gap', description: '相邻行之间的垂直间距。默认 `2px`（var(--spacing-0-5)）提供细微的分隔；在 `tree-list` 目标上设置以加宽或关闭间距。连接引导线会自动跨越该间距（线保持连续）且不会超出最后一行，因此无需调整引导线高度。', default: 'var(--spacing-0-5)'},
     ],
   },
   components: [
@@ -119,6 +136,13 @@ export const docsZh = {
           default: "'balanced'",
         },
         {
+          name: 'variant',
+          type: "'lineGuides' | 'noGuides'",
+          description:
+            '层级引导线的视觉呈现。lineGuides 显示连接线；noGuides 隐藏连接线并保留缩进。与 density 正交。',
+          default: "'lineGuides'",
+        },
+        {
           name: 'header',
           type: 'ReactNode',
           description:
@@ -139,13 +163,14 @@ export const docsZh = {
     bestPractices: [
       {guidance: true, description: 'Provide meaningful labels and icons for each node to make the hierarchy easy to scan.'},
       {guidance: true, description: 'Pre-expand important branches so users see key content immediately.'},
+      {guidance: true, description: 'Leaf rows reserve space for a chevron column whenever the tree has any expandable item to line up under; only a fully flat tree (no expandable items at all) renders its rows flush. Rely on this rather than nudging indentation with custom CSS.'},
       {guidance: false, description: 'Nest more than 4–5 levels deep; flatten the structure or use a different pattern.'},
       {guidance: false, description: 'Use a tree for flat, non-hierarchical data; use a List instead.'},
     ],
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
     'Data-driven tree list for hierarchical data w/ expand/collapse, branch lines, interactive items. Flat items array w/ recursive children, no composition, no cloneElement.',
@@ -155,6 +180,7 @@ export const docsDense = {
     bestPractices: [
       {guidance: true, description: 'Provide meaningful labels and icons for each node to make the hierarchy easy to scan.'},
       {guidance: true, description: 'Pre-expand important branches so users see key content immediately.'},
+      {guidance: true, description: 'Leaf rows reserve space for a chevron column whenever the tree has any expandable item to line up under; only a fully flat tree (no expandable items at all) renders its rows flush. Rely on this rather than nudging indentation with custom CSS.'},
       {guidance: false, description: 'Nest more than 4–5 levels deep; flatten the structure or use a different pattern.'},
       {guidance: false, description: 'Use a tree for flat, non-hierarchical data; use a List instead.'},
     ],
@@ -162,6 +188,7 @@ export const docsDense = {
   propDescriptions: {
     items: 'Recursive tree item data w/ id, label, optional children + isExpanded.',
     density: 'Spacing density for items.',
+    variant: 'Guide-line treatment: lineGuides shows connectors, noGuides hides them (indent kept). Orthogonal to density.',
     header: 'Header content, linked to tree via aria-labelledby.',
     xstyle: 'StyleX styles for layout. Must be stylex.create() value.',
   },
@@ -173,6 +200,7 @@ export const docsDense = {
       propDescriptions: {
         items: 'Recursive tree item data w/ id, label, optional children + isExpanded.',
         density: 'Spacing density for items.',
+        variant: 'Guide-line treatment: lineGuides shows connectors, noGuides hides them (indent kept). Orthogonal to density.',
         header: 'Header content, linked to tree via aria-labelledby.',
         xstyle: 'StyleX styles for layout. Must be stylex.create() value.',
       },

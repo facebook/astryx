@@ -7,6 +7,10 @@
  *
  * When columns × minColumnWidth exceeds the container, the chart
  * scrolls horizontally rather than squishing columns together.
+ *
+ * Accessibility: the svg is exposed as a named image (role="img" + aria-label,
+ * overridable via `label`) in both the scrolling and non-scrolling paths, and
+ * small graphs are mirrored in a visually hidden From/To/Value table.
  */
 
 import {
@@ -16,6 +20,7 @@ import {
   useState,
   useLayoutEffect,
 } from 'react';
+import {VisuallyHidden} from '@astryxdesign/core/VisuallyHidden';
 import {SankeyProvider} from './SankeyContext';
 import {computeLayout} from './layout';
 import type {SankeyNodeDatum, SankeyLinkDatum, SankeyColumn} from './types';
@@ -51,9 +56,24 @@ export interface SankeyChartProps {
    * When total min width exceeds the container, horizontal scrolling activates.
    */
   minColumnWidth?: number;
+  /**
+   * Accessible name for the chart, announced by screen readers. Applied to the
+   * svg (`role="img"`) and, when the chart scrolls, to the focusable scroll
+   * region. Pass a localized string to override the English default.
+   *
+   * @default 'Sankey chart'
+   */
+  label?: string;
   /** Chart contents */
   children: ReactNode;
 }
+
+/**
+ * Maximum number of links for which the visually hidden data-table fallback is
+ * rendered. Beyond this a table is more noise than signal, so larger charts
+ * are name-only.
+ */
+const MAX_TABLE_LINKS = 100;
 
 /** Resolve column count from raw column input or auto-detect from graph */
 function resolveColumnCount(
@@ -131,6 +151,7 @@ export function SankeyChart({
   nodeGap = 14,
   nodeColor,
   minColumnWidth = 160,
+  label = 'Sankey chart',
   children,
 }: SankeyChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -197,23 +218,56 @@ export function SankeyChart({
     };
   }, [layout, chartWidth, height, nodeWidth, nodeColor]);
 
+  const nodeLabelById = useMemo(
+    () => new Map(nodes.map(n => [n.id, n.label || n.id])),
+    [nodes],
+  );
+  const showDataTable = links.length > 0 && links.length <= MAX_TABLE_LINKS;
+
   return (
     <div ref={containerRef} style={{width: '100%'}}>
       {ctx && (
         <div
           role={needsScroll ? 'group' : undefined}
-          aria-label={needsScroll ? 'Sankey chart' : undefined}
+          aria-label={needsScroll ? label : undefined}
           tabIndex={needsScroll ? 0 : undefined}
           style={
             needsScroll ? {overflowX: 'auto', overflowY: 'hidden'} : undefined
           }>
           <svg
+            role="img"
+            aria-label={label}
             width={chartWidth}
             height={height}
             style={{overflow: 'visible', display: 'block'}}>
             <SankeyProvider value={ctx}>{children}</SankeyProvider>
           </svg>
         </div>
+      )}
+      {showDataTable && (
+        <VisuallyHidden as="div">
+          <table>
+            <caption>{`${label} data`}</caption>
+            <thead>
+              <tr>
+                <th scope="col">From</th>
+                <th scope="col">To</th>
+                <th scope="col">Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              {links.map((link, i) => (
+                <tr key={i}>
+                  <th scope="row">
+                    {nodeLabelById.get(link.source) ?? link.source}
+                  </th>
+                  <td>{nodeLabelById.get(link.target) ?? link.target}</td>
+                  <td>{String(link.value)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </VisuallyHidden>
       )}
     </div>
   );

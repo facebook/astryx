@@ -8,7 +8,7 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/CommandPalette/index.ts
- * - /packages/cli/templates/blocks/components/CommandPalette/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/CommandPalette/ (showcase blocks)
  */
 
 'use client';
@@ -87,6 +87,7 @@ export function CommandPaletteList({
   return (
     <div
       ref={ref}
+      {...props}
       id={ctx?.listId}
       role="listbox"
       aria-label={label}
@@ -95,8 +96,7 @@ export function CommandPaletteList({
         stylex.props(styles.list, xstyle),
         className,
         style,
-      )}
-      {...props}>
+      )}>
       {children}
     </div>
   );

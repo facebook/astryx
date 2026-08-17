@@ -1,20 +1,25 @@
 ---
-applyTo: "apps/docsite/**"
+applyTo: 'apps/docsite/**'
 ---
 
 # Docsite review instructions
 
 The docsite (`apps/docsite/`) is a Next.js + StyleX app that documents Astryx.
-Its defining constraint is **how it handles data** — review against
-[`apps/docsite/README.md`](../../apps/docsite/README.md), specifically the
-"How It Works" and "The Rule" sections.
+It ships app code, not published packages, so consumer-breaking API changes
+aren't the concern here — the data pipeline, idiomatic composition, and mobile
+behavior are.
+
+The design-system rules are not restated here — see the
+[Component Audit Rubric](https://github.com/facebook/astryx/wiki/Component-Audit-Rubric)
+for the bar (StyleX usage, tokens, accessibility, and their check ids) and
+[`copilot-instructions.md`](../copilot-instructions.md) for severity and the
+review signal.
 
 ## Step 0 — Triage first
 
-Fast triage before depth. The docsite ships app code (not published packages),
-so consumer-breaking API changes aren't the concern — **blast radius** is:
+Fast triage before depth. The question is **blast radius**:
 
-- **Shared component / util** (e.g. a `components/blog/BlogCard`, a shared layout)
+- **Shared component / util** (e.g. `components/blog/BlogCard`, a shared layout)
   → higher stakes: a change ripples across pages. Check every call site, and
   that a new prop is **optional** (additive) so existing usages don't break.
 - **Single page / one-off** → lower stakes, contained.
@@ -22,47 +27,42 @@ so consumer-breaking API changes aren't the concern — **blast radius** is:
 Then pick depth: **fast path** for a contained single-page or copy tweak (verify
 the data rule + accuracy, approve); **standard path** for a shared-component or
 layout/structural change (full data-rule + idiomatic + mobile review below).
-State it briefly, e.g. `Triage: shared BlogCard, additive optional prop → standard`.
+State it briefly, e.g. `Triage: shared BlogCard, additive optional prop →
+standard`.
 
 ## The data rule (primary review focus)
 
 **All data comes from the build-time pipeline. Never hardcode package names,
-component lists, or theme objects in page code.**
+component lists, or theme objects in page code.** The rule, the pipeline it
+comes from, and its worked examples are in
+[`apps/docsite/README.md`](../../apps/docsite/README.md) — the "How It Works"
+and "The Rule" sections. Read them; that page is the source of truth, including
+how a new theme or package gets auto-discovered by `pnpm generate` rather than
+wired into a page by hand.
 
-`scripts/generate-data.mjs` scans the monorepo and writes typed registries into
-`src/generated/` (which is gitignored). Pages import from those registries and
-render whatever the pipeline found. If a change needs data about the monorepo,
-it belongs in `generate-data.mjs` and is consumed from a registry — not inlined
-in a page.
+What that means when reading a diff — flag any of these as violations:
 
-Flag as violations:
-
-- Importing a built theme directly in a page (e.g.
+- A built theme imported directly in a page (e.g.
   `import {fooTheme} from '@astryxdesign/theme-foo/built'`). Use `themeObjects`
-  from the generated `themeRegistry` instead.
-- Hand-maintained arrays of component names. Use `componentRegistry`.
-- Package-name switches like `if (pkg === '@astryxdesign/core')`. Let the
+  from the generated `themeRegistry`.
+- A hand-maintained array of component names. Use `componentRegistry`.
+- A package-name switch like `if (pkg === '@astryxdesign/core')`. Let the
   pipeline classify packages.
-- Any hardcoded package/version/description that duplicates what
-  `packageRegistry`, `blockRegistry`, `templateRegistry`, `docsRegistry`, or
-  `showcaseRegistry` already provide.
-
-New source? The registries auto-discover it: a new theme package or a new
-`packages/<name>/` is picked up by `pnpm generate` after it's added to
-`apps/docsite/package.json` dependencies — no manual page wiring.
+- Any hardcoded package/version/description duplicating what `packageRegistry`,
+  `blockRegistry`, `templateRegistry`, `docsRegistry`, or `showcaseRegistry`
+  already provides.
 
 ## Blog content
 
-Blog posts are human-authored Markdown under `src/content/blog/posts/` with
-validated YAML frontmatter (`title`, `description`, `date`, `type`, `authors`,
-`tags`). Follow
-[`src/content/blog/README.md`](../../apps/docsite/src/content/blog/README.md);
-new authors register in `src/content/blog/authors.ts`. Drafts
-(`draft: true`) are excluded from production output.
+Blog posts are human-authored Markdown under `src/content/blog/posts/` — they
+match this file's `applyTo` but are reviewed as prose, not code. See
+[`blog.instructions.md`](./blog.instructions.md) for the review protocol and
+[`src/content/blog/README.md`](../../apps/docsite/src/content/blog/README.md)
+for the frontmatter contract.
 
 ## Idiomatic Astryx (nudge, don't block)
 
-The docsite is Astryx's own showcase — it should be built *with* Astryx, not
+The docsite is Astryx's own showcase — it should be built _with_ Astryx, not
 around it. When a change reaches for raw HTML/CSS where an Astryx primitive
 exists, **nudge** toward the idiomatic path (a suggestion, not a hard block —
 the docsite has real app-specific needs the component set won't always cover):
@@ -71,16 +71,14 @@ the docsite has real app-specific needs the component set won't always cover):
   `HStack`/`Grid`/`Center`/`Card` over `<div>`, `Text`/`Heading` over text tags,
   `Button`/`Link`, `Table`, `List`, `Icon` (never raw `<svg>` as an icon).
 - Style through props + semantic tokens (`xstyle`, `gap`, `padding`, `variant`),
-  not custom CSS or raw color/spacing values. Prefer attaching behavior via the
-  system's hooks/props over adding a wrapper element (see the packages reviewer's
-  "avoid unnecessary wrappers" guidance — it applies here too).
+  not custom CSS or raw color/spacing values.
 - If the docsite genuinely needs something the component set lacks, that's a
   signal worth surfacing: note it as a possible gap to file upstream, rather than
   quietly forking a bespoke pattern in page code.
 
 The bar is lighter than for `packages/**` — the docsite ships app code, not
 published components — so frame these as "here's the idiomatic way" nudges, and
-reserve firm flags for raw CSS/hardcoded tokens that have a clear Astryx
+reserve firm flags for raw CSS or hardcoded tokens that have a clear Astryx
 equivalent.
 
 ## Mobile-friendliness
@@ -104,7 +102,7 @@ for how it degrades on mobile, and flag the common failure modes:
   should scroll within its container, not blow out the page width. Interactive
   targets should stay comfortably tappable (~44px) at mobile sizes.
 - **Prefer CSS-first responsiveness.** The docsite leans on `useMediaQuery` /
-  `isMobile` JS in places; for *layout* that CSS can express, prefer
+  `isMobile` JS in places; for _layout_ that CSS can express, prefer
   `@container` queries, `Grid` `minChildWidth`, `flex-wrap`, and
   `clamp()`/`min()`/`max()` over JS breakpoint branching (fewer hydration/SSR
   mismatches, no layout flash). JS breakpoints are fine when the change is
@@ -119,4 +117,4 @@ asserting it works from the diff.
 
 Docsite-only or CLI-docs-only changes are a light review overall — the
 data-from-pipeline rule is the primary gate, plus the idiomatic-Astryx and
-mobile checks above. Keep code comments minimal.
+mobile checks above.
