@@ -87,7 +87,6 @@ function MobileKeyboardCommentForm({onPost}: {onPost: () => void}) {
         Move the sheet with its handle or close it with Post comment to verify
         that sheet travel and closing dismiss the keyboard.
       </Text>
-      <Button label="Close sheet" onClick={onPost} />
       <Divider />
       <TextInput
         label="Title"
