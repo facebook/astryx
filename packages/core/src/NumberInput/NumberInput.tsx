@@ -721,6 +721,11 @@ export function NumberInput({
     [isIntegerOnly, locale, max, min],
   );
 
+  const parseNumeric = useCallback(
+    (text: string) => parseNumericInput(text, {isIntegerOnly, locale}),
+    [isIntegerOnly, locale],
+  );
+
   const formattedValue = useMemo(() => {
     if (value == null) {
       return '';
@@ -878,8 +883,15 @@ export function NumberInput({
             }
           } else {
             const parsed = parseInputForCommit(pendingInput);
-            if (parsed !== null && parsed !== value) {
-              onChange(parsed);
+            if (parsed !== null) {
+              // Enter otherwise keeps the pending text, which would leave a
+              // clamped entry showing the number that was not committed.
+              if (parsed !== parseNumeric(pendingInput)) {
+                setPendingInput(null);
+              }
+              if (parsed !== value) {
+                onChange(parsed);
+              }
             }
           }
         }
@@ -892,6 +904,7 @@ export function NumberInput({
       value,
       onChange,
       parseInputForCommit,
+      parseNumeric,
       onEnter,
       onKeyDown,
       hasClear,

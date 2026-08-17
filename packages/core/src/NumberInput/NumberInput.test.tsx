@@ -653,6 +653,30 @@ describe('NumberInput', () => {
       expect(input).toHaveValue('2');
     });
 
+    it('shows the clamped value in the field after Enter', async () => {
+      const user = userEvent.setup();
+      function ControlledNumberInput() {
+        const [value, setValue] = useState<number | null>(null);
+        return (
+          <NumberInput
+            label="Rating"
+            value={value}
+            onChange={setValue}
+            min={1}
+            max={5}
+          />
+        );
+      }
+      render(<ControlledNumberInput />);
+
+      const input = screen.getByRole('spinbutton');
+      await user.click(input);
+      await user.type(input, '10{Enter}');
+
+      // Still focused: the field must not keep showing the rejected entry.
+      expect(input).toHaveValue('5');
+    });
+
     it('reverts an entry that is not a usable number', async () => {
       const user = userEvent.setup();
       const handleChange = vi.fn();
