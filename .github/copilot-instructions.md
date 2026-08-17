@@ -77,6 +77,25 @@ must carry regardless are what it is itself responsible for: the pre-push
 checks, a changeset for a consumer-visible change, and screenshots for a visual
 change.
 
+## Adding a theming target
+
+A `themeProps()` target is a public API commitment: a stable `.astryx-*` class
+an unknown external consumer writes CSS against, and one we cannot rename
+without breaking them. The checks are **T6, T7, T12, T26, T27 and T33** in the
+rubric's §2 — read them there and cite them by id; this file does not restate
+them.
+
+Two things the rubric records that matter when you review a new target:
+
+- **T6 and T7 have no lint rule** (`semi` and `manual`), and T6 is the most
+  frequent theming finding there is. Review owns both. The prototype
+  `@astryx/theming-target-*` and `@astryx/themeprops-reflection` rules automate
+  part of them but are **in neither shipped config** — a green `pnpm lint` says
+  nothing about a new target.
+- **Whether the target should exist at all** is not mechanical. Say what
+  appearance it unlocks and who asked for it, and check whether the answer is
+  really a design convergence (T27) rather than a theming surface.
+
 ## Same bar for every author
 
 **Who opened the PR does not change the review.** Apply the same checks, the

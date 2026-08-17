@@ -98,6 +98,139 @@ Style objects imported from another module are read from that module, so
 rewrite that moves the styles onto the child. Removing a node can shift layout,
 so it is never applied by `--fix`.
 
+### Theming targets — `theming-target-shape`, `theming-target-name`, `themeprops-reflection`
+
+**Status: prototype.** All three are registered on the plugin but are NOT in
+`configs.strict` / `configs.recommended`, and are not wired into
+`eslint.config.js`. Turning one on is one line in `index.js`; the counts below
+say what that would cost today.
+
+**Every check automates a numbered check in the [Component Audit
+Rubric](https://github.com/facebook/astryx/wiki/Component-Audit-Rubric)'s §2**,
+which is the source of truth for what the rule is. Nothing here is a criterion
+of its own: a check that could not name its rubric id was removed rather than
+kept as a proposal. The rubric records for each check whether an enforcer
+exists, and three of these — **T6**, **T7** and **T27** — are marked `manual` or
+`semi` with no lint rule, which is the gap this plugin closes.
+
+Shared analysis lives in `theming-target.js`: which `themeProps()` calls land on
+an element (spread, through `mergeProps`, through a local `const`, or via
+`.className`), which `stylex.props()` arguments it applies, and whether those
+declare **paint** (color, background, border, font, radius, shadow), **layout**
+(display, position, flex/grid, margin/padding, width/height, transform), or
+neither (opacity, transition, cursor). Style objects imported from another
+module are read from that module via `stylex-style-source.js`, and
+`focusOutlineProps.focusVisible(…)` reads as `stylex.props(…)` plus the ring's
+own outline paint — the helper forwards its arguments, so a focusable element
+styled through it is not an unstyled one.
+
+#### `@astryx/theming-target-shape`
+
+| Check (messageId)                 | Rubric | What it flags                                                                                                                         | On `packages/` | Proposed tier |
+| --------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------- | -------------- | ------------- |
+| `layoutOnlyTarget`                | T7     | A sub-element target on an element whose styles declare no paint property                                                             | 6              | `warn`        |
+| `wrapperTarget`                   | T7     | A target on a paint-free `div`/`span` whose only child is an Astryx component — it belongs on that component                          | 4              | `warn`        |
+| `unstyledTarget`                  | T7     | A target on an element with no styles at all and nothing wrapped                                                                      | 0              | `error`       |
+| `targetOnRenderPropFallback`      | T27    | A target on a fallback element that a `render*` callback renders in place of, so it misses all custom-rendered content                | 0              | `warn`        |
+| `inheritableOnRenderPropFallback` | T7/T27 | Inheritable typography/color on such a fallback, where hoisting it to the row target would cover both render paths                    | 0              | `warn`        |
+| `underDeclaredState`              | **T6** | The element's styles vary with a prop the target does not pass to `themeProps` — `fooStyles[prop]` with no `prop` in the sibling call | 17             | `warn`        |
+
+**`underDeclaredState` is the one worth having.** T6 is a BLOCK the rubric
+detects by grep, with no lint rule, and it records it as "historically the
+single most frequent finding" — this is the check that closes that gap. Its 17
+hits are a real pre-existing backlog, each needing a human call about which prop
+belongs on the target, so it ships at `warn`: an `error` tier would fail CI on
+`main`.
+
+**T7's root-target exemption is implemented, not optional.** A component's own
+root target is its address rather than a seam anyone chose to add, and there is
+nowhere else to put it — 55 layout primitives (Stack, Grid, Divider) have a
+layout-only root. Only sub-element targets are checked.
+
+The rule stays silent when it cannot see the whole picture: a target spread onto
+an Astryx component (the paint is inside the component), a style it cannot
+resolve, an element that sets a CSS custom property (it feeds the derived-var
+pipeline), and SVG (which paints through presentation attributes). The
+consumer's `xstyle` is not treated as unknown — it is not part of the
+component's declared surface.
+
+**Bad:**
+
+```tsx
+// styles.dropdown: boxSizing, maxHeight, overflowY, padding — nothing paints
+<div {...mergeProps(themeProps('selector-dropdown'), stylex.props(styles.dropdown))}>
+
+// the target belongs on <CheckboxInput>, not on the box holding it
+<div inert {...mergeProps(themeProps('x-option-checkbox'), stylex.props(styles.box))}>
+  <CheckboxInput label="" />
+</div>
+```
+
+**Options:** `allowTargets`, `allowFiles`, `checkRenderPropFallback`.
+
+#### `@astryx/theming-target-name`
+
+| Check (messageId)           | Rubric | What it flags                                                                                                                        | On `packages/` | Proposed tier |
+| --------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------ | -------------- | ------------- |
+| `appearanceInComponentSlot` | T27    | Target attached to a leaf Astryx component whose last segment names an appearance (`-check` on an `<Icon>`) instead of the component | 2              | `warn`        |
+| `stateSubTarget`            | T26    | A target name ending in `-disabled` / `-selected` / `-checked` / …                                                                   | 0              | `error`       |
+
+The component-slot check runs only for **leaf** components (`Icon`,
+`CheckboxInput`, `Divider`, `Button`, …; see `DEFAULT_COMPONENT_SLOTS`) and
+skips the component's own root target. Both narrowings are deliberate: T27 makes
+`{component}-option` the correct name for an option row in every list-like
+component, so holding a row primitive to a three-part shape would argue with the
+check the rule exists to serve.
+
+`stateSubTarget` reads `-state` as a state segment, but not after `empty`,
+`loading`, or `error`: `selector-empty-state` names the placeholder region
+itself — an element that exists only in that condition, so its target has
+nowhere else to live — rather than a state of a target that exists either way.
+
+**Bad → good:**
+
+```tsx
+<Icon icon="check" {...themeProps('selector-check')} />        // ❌ appearance
+<Icon icon="check" {...themeProps('selector-option-icon')} />  // ✅ names the component
+```
+
+**Options:** `allowTargets`, `allowFiles`, `componentSlots`.
+
+#### `@astryx/themeprops-reflection`
+
+`themeProps()` returns the class token **and** the `data-*` reflection of the
+visual props. These are mechanical bugs, not judgment calls: **T12** (no
+`className`/`style` beside the spread that carries the target — merge via
+`mergeProps()`) and **T26** (state rides as `themeProps` data, never
+hand-authored). `@astryx/no-classname-clobber` already covers T12 where a
+`stylex.props()` spread is present; these checks cover the `themeProps` shapes
+it does not see.
+
+| Check (messageId)        | Rubric | What it flags                                                                                                    | On `packages/` | Proposed tier |
+| ------------------------ | ------ | ---------------------------------------------------------------------------------------------------------------- | -------------- | ------------- |
+| `droppedStateReflection` | T26    | `className={themeProps('x', {size}).className}` — the `data-*` attributes never render                           | 0              | `error`       |
+| `clobberedByLaterProp`   | T12    | `{...themeProps('x')} className={className}` — the later prop overwrites the target, so it never reaches the DOM | 1              | `error`       |
+| `bypassedThemeProps`     | T26    | `stableClassName('x')` used to build a theme class by hand, so state can never ride along                        | 7              | `warn`        |
+| `classNameOnly`          | T12    | `.className` on a call with no visual props — drops nothing today, becomes the bug tomorrow                      | 4              | `warn`        |
+| `handAuthoredState`      | T26    | `data-state`/`data-selected`/… hand-written on an element that already carries a target                          | 0              | `error`       |
+
+`handAuthoredState` only looks at a short list of state attribute names: most
+`data-*` attributes in the codebase are identity or query hooks the component's
+own JS reads (`data-value`, `data-date`, `data-page`), and routing those through
+`themeProps` would change what they mean.
+
+**Options:** `allowDataAttributes`, `allowFiles`.
+
+#### What these rules do NOT check
+
+T1/T3 (tokens), T4/T5 (doc↔source sync) and T33 already have enforcers — the two
+Vitest guards and `@astryx/no-hardcoded-styles` — and are not duplicated here.
+Whether a target should exist at all is T27's and T7's human half: no AST says
+whether a consumer needs a seam, or whether the design should converge instead.
+Cross-component convergence needs a repo-wide target registry, not a per-file
+rule. **Lint checks the shape of a target; a human decides whether it should
+exist.**
+
 ### `@astryx/require-letter-spacing`
 
 Recommends adding `letterSpacing` when `fontSize` is defined (common design pattern for badges, labels).
