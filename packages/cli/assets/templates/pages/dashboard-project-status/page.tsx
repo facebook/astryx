@@ -10,9 +10,14 @@
  *
  * Widgets stack down the content column:
  *
- *   overall completion bar | milestone Gantt with a "today" marker
- *                          | blockers & risks carousel
- *                          | workstream table | scope burndown
+ *   task progress bar | milestone Gantt with a "today" marker
+ *                     | blockers & risks carousel
+ *                     | workstream table | scope burndown
+ *
+ * The task progress bar is a single-row stacked bar broken down by task
+ * status. Tasks are not equally sized, so segments are scaled by story
+ * points rather than task count — the two deliberately diverge in the
+ * fixture data (see `TASK_STATUS`).
  *
  * The release-phase control (All / Build / Beta / GA) is real: it filters
  * milestones, workstreams, and risks, each of which falls back to an empty
@@ -33,8 +38,10 @@ import {
 } from '@astryxdesign/core/Layout';
 import {Text, Heading} from '@astryxdesign/core/Text';
 import {Card} from '@astryxdesign/core/Card';
+import {Section} from '@astryxdesign/core/Section';
 import {Button} from '@astryxdesign/core/Button';
 import {Icon} from '@astryxdesign/core/Icon';
+import type {IconType} from '@astryxdesign/core/Icon';
 import {Badge} from '@astryxdesign/core/Badge';
 import {ProgressBar} from '@astryxdesign/core/ProgressBar';
 import {Avatar} from '@astryxdesign/core/Avatar';
@@ -62,6 +69,7 @@ import {
 } from 'recharts';
 import {
   CheckCircleIcon,
+  ExclamationTriangleIcon,
   ArrowDownTrayIcon,
   FlagIcon,
 } from '@heroicons/react/24/outline';
@@ -104,6 +112,16 @@ interface Risk {
   detail: string;
 }
 
+interface TaskStatusSegment {
+  key: string;
+  label: string;
+  // Number of tasks in this status, and the effort they carry. `points` — not
+  // `tasks` — drives the width of the segment.
+  tasks: number;
+  points: number;
+  color: string;
+}
+
 // ============= LABEL & TONE MAPPING =============
 
 const PHASE_LABEL: Record<ReleasePhase, string> = {
@@ -122,6 +140,16 @@ const RAG_BADGE: Record<Rag, 'green' | 'yellow' | 'red'> = {
   onTrack: 'green',
   atRisk: 'yellow',
   blocked: 'red',
+};
+
+// Leading icon for the program-status badge in the page header — the one badge
+// on the page loud enough to earn one. Mapped per state rather than hardcoded:
+// the badge is derived from the workstream fixtures, so a fixed warning glyph
+// would end up sitting inside a green "On track" pill as soon as those change.
+const RAG_ICON: Record<Rag, IconType> = {
+  onTrack: CheckCircleIcon,
+  atRisk: ExclamationTriangleIcon,
+  blocked: ExclamationTriangleIcon,
 };
 
 // Chart fills via design tokens (hex fallbacks for non-themed contexts).
@@ -156,6 +184,58 @@ const TIMELINE_TICKS = Array.from(
 const PROJECT_DAY = 58;
 
 // ============= DATA =============
+
+// Task backlog by status. Tasks are weighted by story points because they are
+// not equally sized, and the fixture leans into that: "Planned" is 14% of the
+// tasks but only 8% of the work (many small items), while "Blocked" is 3% of
+// the tasks and 7% of the work (a few large ones). Points sum to the 320 the
+// burndown starts from.
+//
+// Color encodes stage, not health: blue for finished work, green for what is
+// actively moving, yellow for what is parked with a reviewer, red for blocked,
+// and a light gray for work not started. Order runs done → live → not started,
+// so every in-flight state is grouped at the head of the bar. Green and red are
+// taken from ramp steps that differ in lightness as well as hue, so the pair
+// stays separable under red-green color vision deficiency.
+const TASK_STATUS: TaskStatusSegment[] = [
+  {
+    key: 'closed',
+    label: 'Closed',
+    tasks: 86,
+    points: 190,
+    color: 'var(--color-data-blue-4, #004CBC)',
+  },
+  {
+    key: 'inProgress',
+    label: 'In progress',
+    tasks: 24,
+    points: 58,
+    color: 'var(--color-data-shamrock-3, #24BB5E)',
+  },
+  {
+    key: 'inReview',
+    label: 'In review',
+    tasks: 12,
+    points: 24,
+    // yellow-4, not the brighter yellow-3: a pale fill this thin all but
+    // disappears against a light card, and so does its legend dot.
+    color: 'var(--color-data-yellow-4, #D69804)',
+  },
+  {
+    key: 'blocked',
+    label: 'Blocked',
+    tasks: 5,
+    points: 22,
+    color: 'var(--color-data-red-4, #D31130)',
+  },
+  {
+    key: 'planned',
+    label: 'Planned',
+    tasks: 21,
+    points: 26,
+    color: 'var(--color-data-gray-2, #CCD3DB)',
+  },
+];
 
 const MILESTONES: Milestone[] = [
   {
@@ -351,11 +431,18 @@ const BURNDOWN_TICKS = [0, 3, 6, 9, 12];
 
 // ============= DERIVED FROM DATA =============
 
-// Both aggregates describe the whole program, so they never change with the
+// These aggregates describe the whole program, so they never change with the
 // phase filter and are computed once at module scope.
 
+const TASK_POINTS_TOTAL = TASK_STATUS.reduce((sum, s) => sum + s.points, 0);
+const TASK_COUNT_TOTAL = TASK_STATUS.reduce((sum, s) => sum + s.tasks, 0);
+
+// Completion is the closed share of *effort*, so a handful of large tasks moves
+// it more than a pile of small ones.
 const OVERALL_PERCENT = Math.round(
-  WORKSTREAMS.reduce((sum, w) => sum + w.percent, 0) / WORKSTREAMS.length,
+  ((TASK_STATUS.find(s => s.key === 'closed')?.points ?? 0) /
+    TASK_POINTS_TOTAL) *
+    100,
 );
 
 // Worst status across every workstream wins.
@@ -379,6 +466,14 @@ function byPhase<T extends {phase: ReleasePhase}>(
 const pageStyles = stylex.create({
   contentBottomPad: {
     paddingBlockEnd: 'var(--spacing-10)',
+  },
+  // The header and each Section run full-bleed so their dividers reach the
+  // viewport edges; the column inside them is what gets capped, then centered
+  // so it stays under the middle of those dividers on wide screens.
+  contentColumn: {
+    width: '100%',
+    maxWidth: 1440,
+    marginInline: 'auto',
   },
   // Carousel's `padding` prop is inline-only, so the block gutter is supplied
   // here. The root has no padding of its own, so nothing overrides these.
@@ -424,6 +519,64 @@ function PhaseEmptyState({noun}: {noun: string}) {
       icon={<Icon icon={FlagIcon} size="lg" />}
       isCompact
     />
+  );
+}
+
+// ============= TASK PROGRESS (weighted stacked bar) =============
+
+const TASK_BAR_HEIGHT = 24;
+
+function TaskProgressBar() {
+  // A single-row stacked bar: one datum, one stacked series per status keyed by
+  // its label. Widths come from raw points against the point total, so they are
+  // exact — the rounded percents below are display only.
+  const row = Object.fromEntries(TASK_STATUS.map(s => [s.label, s.points]));
+
+  return (
+    <VStack gap={4}>
+      <ResponsiveContainer width="100%" height={TASK_BAR_HEIGHT}>
+        <BarChart
+          data={[row]}
+          layout="vertical"
+          margin={{top: 0, right: 0, bottom: 0, left: 0}}
+          barCategoryGap={0}>
+          <XAxis type="number" hide domain={[0, TASK_POINTS_TOTAL]} />
+          <YAxis type="category" hide />
+          {TASK_STATUS.map((s, i) => (
+            <Bar
+              key={s.key}
+              dataKey={s.label}
+              stackId="status"
+              fill={s.color}
+              isAnimationActive={false}
+              // Round only the outer ends of the bar.
+              radius={
+                i === 0
+                  ? [4, 0, 0, 4]
+                  : i === TASK_STATUS.length - 1
+                    ? [0, 4, 4, 0]
+                    : [0, 0, 0, 0]
+              }
+            />
+          ))}
+        </BarChart>
+      </ResponsiveContainer>
+      {/* The legend carries every value as text, so the chart itself stays
+          decorative — nothing here is hover-only. */}
+      <HStack gap={5} vAlign="center" wrap="wrap">
+        {TASK_STATUS.map(s => (
+          <HStack key={s.key} gap={2} vAlign="center">
+            <LegendDot color={s.color} label={s.label} />
+            <Text type="supporting" weight="semibold" hasTabularNumbers>
+              {Math.round((s.points / TASK_POINTS_TOTAL) * 100)}%
+            </Text>
+            <Text type="supporting" color="secondary" hasTabularNumbers>
+              {s.tasks} tasks
+            </Text>
+          </HStack>
+        ))}
+      </HStack>
+    </VStack>
   );
 }
 
@@ -794,14 +947,15 @@ function ProgramHeader({
 }) {
   return (
     <LayoutHeader padding={6} hasDivider>
-      <HStack gap={3} vAlign="center" hAlign="between" wrap="wrap">
-        <VStack gap={2}>
+      <HStack
+        gap={3}
+        vAlign="center"
+        hAlign="between"
+        wrap="wrap"
+        xstyle={pageStyles.contentColumn}>
+        <VStack gap={1}>
           <Heading level={1}>Aurora Launch</Heading>
           <HStack gap={2} vAlign="center">
-            <Badge
-              variant={RAG_BADGE[PROGRAM_STATUS]}
-              label={RAG_LABEL[PROGRAM_STATUS]}
-            />
             <Text type="body" color="secondary">
               Target GA ·
             </Text>
@@ -811,9 +965,14 @@ function ProgramHeader({
               type="body"
               color="secondary"
             />
+            <Badge
+              variant={RAG_BADGE[PROGRAM_STATUS]}
+              label={RAG_LABEL[PROGRAM_STATUS]}
+              icon={<Icon icon={RAG_ICON[PROGRAM_STATUS]} size="sm" />}
+            />
           </HStack>
         </VStack>
-        <HStack gap={3}>
+        <HStack gap={2}>
           <SegmentedControl
             label="Release phase"
             value={phase}
@@ -846,86 +1005,87 @@ export default function ProjectStatusPage() {
   return (
     <Layout
       height="fill"
-      contentWidth={1440}
       header={<ProgramHeader phase={phase} onPhaseChange={setPhase} />}
       content={
-        <LayoutContent padding={6} xstyle={pageStyles.contentBottomPad}>
-          <VStack gap={10}>
-            <Card padding={6}>
-              <VStack gap={4}>
-                <HStack gap={2} vAlign="center" hAlign="between">
-                  {/* Visually a card title, but a peer of the level-2 section
-                      headings below it in the document outline. */}
-                  <Heading level={3} accessibilityLevel={2}>
-                    Overall completion
-                  </Heading>
-                  <Text type="body" color="secondary">
-                    {OVERALL_PERCENT}%
-                  </Text>
-                </HStack>
-                <ProgressBar
-                  value={OVERALL_PERCENT}
-                  max={100}
-                  variant="accent"
-                  label="Overall completion"
-                  isLabelHidden
-                />
-              </VStack>
-            </Card>
-
-            <VStack gap={4}>
+        <LayoutContent padding={0} xstyle={pageStyles.contentBottomPad}>
+          <Section padding={6} dividers={['bottom']}>
+            <VStack gap={6} xstyle={pageStyles.contentColumn}>
               <SectionHeading
                 title="Milestone timeline"
                 hint={`Project days 0–${TIMELINE_DAYS} · dashed line marks today`}
               />
+              {milestones.length === 0 ? (
+                <PhaseEmptyState noun="milestones" />
+              ) : (
+                <GanttChart milestones={milestones} />
+              )}
+            </VStack>
+          </Section>
+
+          <Section padding={6} paddingBlock={10}>
+            <VStack gap={10} xstyle={pageStyles.contentColumn}>
               <Card padding={6}>
-                {milestones.length === 0 ? (
-                  <PhaseEmptyState noun="milestones" />
-                ) : (
-                  <GanttChart milestones={milestones} />
-                )}
+                <VStack gap={4}>
+                  <HStack gap={3} vAlign="center" hAlign="between" wrap="wrap">
+                    <VStack gap={1}>
+                      {/* Visually a card title, but a peer of the level-2 section
+                          headings below it in the document outline. */}
+                      <Heading level={3} accessibilityLevel={2}>
+                        Overall progress
+                      </Heading>
+                      <Text type="supporting" color="secondary">
+                        Weighted by story points · {TASK_COUNT_TOTAL} tasks ·{' '}
+                        {TASK_POINTS_TOTAL} pts
+                      </Text>
+                    </VStack>
+                    <Text type="body" color="secondary">
+                      {OVERALL_PERCENT}% complete
+                    </Text>
+                  </HStack>
+                  <TaskProgressBar />
+                </VStack>
               </Card>
-            </VStack>
 
-            <VStack gap={4}>
-              <SectionHeading
-                title="Blockers & risks"
-                hint={`${risks.length} open`}
-              />
-              <RisksPanel risks={risks} />
-            </VStack>
+              <VStack gap={4}>
+                <SectionHeading
+                  title="Blockers & risks"
+                  hint={`${risks.length} open`}
+                />
+                <RisksPanel risks={risks} />
+              </VStack>
 
-            <VStack gap={4}>
-              <SectionHeading
-                title="Workstreams"
-                hint={`${workstreams.length} of ${WORKSTREAMS.length}`}
-              />
-              <Card>
-                {workstreams.length === 0 ? (
-                  <PhaseEmptyState noun="workstreams" />
-                ) : (
-                  <Table<Workstream>
-                    data={workstreams}
-                    columns={WORKSTREAM_COLUMNS}
-                    idKey="id"
-                    density="balanced"
-                    dividers="rows"
-                    hasHover
-                  />
-                )}
-              </Card>
-            </VStack>
+              <VStack gap={4}>
+                <SectionHeading
+                  title="Workstreams"
+                  hint={`${workstreams.length} of ${WORKSTREAMS.length}`}
+                />
+                <Card>
+                  {workstreams.length === 0 ? (
+                    <PhaseEmptyState noun="workstreams" />
+                  ) : (
+                    <Table<Workstream>
+                      data={workstreams}
+                      columns={WORKSTREAM_COLUMNS}
+                      idKey="id"
+                      density="balanced"
+                      dividers="rows"
+                      hasHover
+                    />
+                  )}
+                </Card>
+              </VStack>
 
-            <VStack gap={4}>
-              <SectionHeading
-                title="Scope burndown"
-                hint={`Remaining story points · ${BURNDOWN.length} weeks`}
-              />
-              <Card padding={6}>
-                <BurndownChart />
-              </Card>
+              <VStack gap={4}>
+                <SectionHeading
+                  title="Scope burndown"
+                  hint={`Remaining story points · ${BURNDOWN.length} weeks`}
+                />
+                <Card padding={6}>
+                  <BurndownChart />
+                </Card>
+              </VStack>
             </VStack>
-          </VStack>
+          </Section>
         </LayoutContent>
       }
     />

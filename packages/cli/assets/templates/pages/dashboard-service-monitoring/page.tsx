@@ -6,15 +6,25 @@
  * Service Health Monitor — a live-ops / SRE dashboard.
  *
  * Content-only (root `Layout`); the host supplies the app shell. Frame:
- *   header (global controls) | content (KPIs + charts + drill-down) | alerts rail (end)
+ *   header (global controls) | content (KPIs + charts) | triage rail 400 (end)
+ *
+ * The rail carries both drill-downs — active alerts over a per-service
+ * breakdown — as two fixed-header sections that each own their scroll region,
+ * so neither list bleeds into the other as it scrolls.
  *
  * The time-window control (1h/1d/7d), environment, and region selectors are
- * real: they reshape the charts, KPI sparklines, and drill-down rows. The
- * alerts rail collapses into the content column below 1024px so the charts
- * and table keep full width.
+ * real: they reshape the charts, KPI sparklines, and the rail's service rows.
+ *
+ * The page is anchored to the viewport height, so the header stays put and the
+ * content column and rail scroll within it — never the window.
+ *
+ * Responsive contract:
+ *   > 1024px  content flex | rail 400 (two independently scrolling sections)
+ *   <= 1024px rail folds into the content column as two stacked cards
  */
 
-import {useMemo, useState, type CSSProperties} from 'react';
+import {useMemo, useState, type CSSProperties, type ReactNode} from 'react';
+import * as stylex from '@stylexjs/stylex';
 import {
   VStack,
   HStack,
@@ -29,6 +39,7 @@ import {Text, Heading} from '@astryxdesign/core/Text';
 import {Card} from '@astryxdesign/core/Card';
 import {IconButton} from '@astryxdesign/core/IconButton';
 import {Icon} from '@astryxdesign/core/Icon';
+import type {IconType} from '@astryxdesign/core/Icon';
 import {Divider} from '@astryxdesign/core/Divider';
 import {Badge} from '@astryxdesign/core/Badge';
 import {Token} from '@astryxdesign/core/Token';
@@ -40,8 +51,6 @@ import {
   SegmentedControlItem,
 } from '@astryxdesign/core/SegmentedControl';
 import {Switch} from '@astryxdesign/core/Switch';
-import {Table, proportional, pixel} from '@astryxdesign/core/Table';
-import type {TableColumn} from '@astryxdesign/core/Table';
 import {List, ListItem} from '@astryxdesign/core/List';
 import {Timestamp} from '@astryxdesign/core/Timestamp';
 import {EmptyState} from '@astryxdesign/core/EmptyState';
@@ -61,6 +70,7 @@ import {
   ArrowDownIcon,
   BellAlertIcon,
   CheckCircleIcon,
+  ServerStackIcon,
 } from '@heroicons/react/24/outline';
 import {StopIcon} from '@heroicons/react/24/solid';
 
@@ -132,32 +142,80 @@ function pad2(n: number): string {
 
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
+// Hash-based pseudo-noise in [0, 1). A hash rather than a seeded PRNG so any
+// sample can be drawn independently of iteration order — the series is byte
+// identical on every render, which keeps previews and snapshots stable.
+function hashNoise(i: number, seed: number): number {
+  const x = Math.sin(i * 127.1 + seed * 311.7) * 43758.5453;
+  return x - Math.floor(x);
+}
+
+// Signed jitter in [-1, 1) — the per-sample wobble every real metric carries.
+function jitter(i: number, seed: number): number {
+  return hashNoise(i, seed) * 2 - 1;
+}
+
+// Sparse heavy-tail burst in [0, 1], zero most of the time. Latency and traffic
+// don't wander smoothly; they sit near baseline and occasionally kick.
+function burstAt(i: number, seed: number, rate: number): number {
+  const gate = hashNoise(i, seed);
+  if (gate < 1 - rate) {
+    return 0;
+  }
+  // Rescale the surviving tail to [0, 1], then square it so small kicks are
+  // common and large ones are rare.
+  const t = (gate - (1 - rate)) / rate;
+  return t * t;
+}
+
 // Build a window deterministically — no clocks, no randomness — so previews
-// and snapshots stay stable. A latency spike is baked into the middle of each
-// window to correlate with the SEV2 alert in the rail.
+// and snapshots stay stable. Sampling is dense (120–168 points) so the lines
+// read as real telemetry: a diurnal baseline under constant sample-to-sample
+// jitter, punctuated by sparse bursts. A sustained latency spike is baked into
+// the middle of each window to correlate with the SEV2 alert in the rail.
 function buildWindow(kind: TimeWindow): WindowSeries {
   const config: Record<
     TimeWindow,
-    {n: number; stepMin: number; cycles: number}
+    {n: number; stepSec: number; cycles: number}
   > = {
-    '1h': {n: 30, stepMin: 2, cycles: 1.2},
-    '1d': {n: 48, stepMin: 30, cycles: 2},
-    '7d': {n: 42, stepMin: 240, cycles: 7},
+    '1h': {n: 120, stepSec: 30, cycles: 1.2},
+    '1d': {n: 144, stepSec: 600, cycles: 2},
+    '7d': {n: 168, stepSec: 3600, cycles: 7},
   };
-  const {n, stepMin, cycles} = config[kind];
+  const {n, stepSec, cycles} = config[kind];
   const points: SeriesPoint[] = [];
+
+  // A localized latency incident, scaled to the sample density of the window.
+  const spikeCenter = Math.round(n * 0.62);
+  const spikeWidth = Math.max(3, Math.round(n * 0.05));
 
   for (let i = 0; i < n; i++) {
     const phase = (i / n) * Math.PI * 2 * cycles;
     const diurnal = Math.sin(phase);
     const diurnal2 = Math.sin(phase + 1.1);
     const diurnal3 = Math.sin(phase + 2.3);
-    // A localized latency spike centered around 62% through the window.
-    const spikeCenter = Math.round(n * 0.62);
-    const dist = Math.abs(i - spikeCenter);
-    const spike = dist <= 4 ? (5 - dist) * 34 : 0;
 
-    const totalMin = i * stepMin;
+    const dist = Math.abs(i - spikeCenter);
+    const spike = dist <= spikeWidth ? (1 - dist / (spikeWidth + 1)) * 170 : 0;
+
+    // One burst shared by all three percentiles — a real slowdown hits the
+    // whole distribution, hardest at the tail — plus independent jitter so the
+    // lines never move in lockstep.
+    const burst = burstAt(i, 3.1, 0.14);
+    const p50 = 46 + 9 * diurnal + spike * 0.15 + burst * 11 + jitter(i, 1) * 4;
+    const p95 =
+      158 + 38 * diurnal + spike * 0.6 + burst * 58 + jitter(i, 2) * 15;
+    const p99 =
+      312 + 88 * diurnal + spike * 1.6 + burst * 195 + jitter(i, 3) * 38;
+
+    // Regional traffic: a shared load pulse (deploys, campaigns, and outages
+    // move all regions together) over per-region jitter.
+    const pulse = burstAt(i, 7.3, 0.18) - burstAt(i, 9.7, 0.12);
+    const useast = 9200 + 2600 * diurnal + pulse * 1500 + jitter(i, 11) * 520;
+    const uswest = 6100 + 1500 * diurnal2 + pulse * 900 + jitter(i, 13) * 380;
+    const euwest = 3900 + 1200 * diurnal3 + pulse * 620 + jitter(i, 17) * 260;
+
+    const totalMin = Math.floor((i * stepSec) / 60);
     let label: string;
     if (kind === '7d') {
       label = DAY_LABELS[Math.floor(totalMin / (60 * 24)) % 7];
@@ -170,22 +228,28 @@ function buildWindow(kind: TimeWindow): WindowSeries {
     points.push({
       t: i,
       label,
-      p50: Math.round(46 + 9 * diurnal + spike * 0.15),
-      p95: Math.round(158 + 38 * diurnal + spike * 0.6),
-      p99: Math.round(312 + 88 * diurnal + spike * 1.6),
-      useast: Math.round(9200 + 2600 * diurnal),
-      uswest: Math.round(6100 + 1500 * diurnal2),
-      euwest: Math.round(3900 + 1200 * diurnal3),
+      p50: Math.round(p50),
+      p95: Math.round(p95),
+      p99: Math.round(p99),
+      useast: Math.round(useast),
+      uswest: Math.round(uswest),
+      euwest: Math.round(euwest),
     });
   }
 
-  let ticks: number[];
+  // A fixed handful of ticks regardless of sample count — dense sampling must
+  // not crowd the axis. The 7d window pins its ticks to day boundaries so
+  // every weekday label appears exactly once.
+  const ticks: number[] = [];
   if (kind === '7d') {
-    ticks = [0, 6, 12, 18, 24, 30, 36];
-  } else if (kind === '1d') {
-    ticks = [0, 12, 24, 36, 47];
+    const perDay = Math.round((60 * 60 * 24) / stepSec);
+    for (let d = 0; d < 7; d++) {
+      ticks.push(d * perDay);
+    }
   } else {
-    ticks = [0, 10, 20, 29];
+    for (let k = 0; k < 6; k++) {
+      ticks.push(Math.round((k / 5) * (n - 1)));
+    }
   }
   const tickLabels: Record<number, string> = {};
   for (const tk of ticks) {
@@ -331,16 +395,20 @@ const KPI_BY_ENV: Record<Environment, Kpi[]> = {
   ],
 };
 
-// Sparkline shapes keyed by KPI — sliced to the active window length.
+// Sparkline shapes keyed by KPI — 120 samples each, tail-sliced to the active
+// window so every window ends "now". Sampled telemetry is noisy, so each series
+// carries per-sample jitter over a slow drift, plus sharp incident spikes that
+// attack in one sample and decay over the next two or three. Flat, smoothly
+// curving sparklines read as decoration; these read as scraped metrics.
 const SPARKLINES: Record<string, number[]> = {
   // prettier-ignore
-  health: [97, 98, 98, 99, 98, 97, 98, 99, 99, 98, 98, 99, 98, 97, 98, 99, 98, 98, 99, 99, 98, 97, 98, 99, 98, 98, 99, 98, 99, 99, 98, 97, 98, 99, 98, 98, 99, 99, 98, 98, 99, 98],
+  health: [97.6, 97.6, 97.7, 97.6, 98, 97.4, 96.5, 97.3, 97.3, 97, 97, 97.6, 96.8, 97.2, 91.7, 92.2, 95, 96.3, 96.5, 96.4, 96.8, 95.9, 96.7, 96.7, 96.4, 97.1, 97, 97, 96.1, 96.7, 96, 95.7, 96.9, 97.3, 96.1, 95.8, 96.9, 96.2, 96.6, 96.7, 97.2, 92.7, 96.5, 97.2, 96.5, 95.8, 96, 97.4, 96.8, 96.9, 96.4, 96.9, 97.3, 96.2, 97.3, 96.2, 97, 97.3, 89.5, 90.1, 91.8, 95.1, 96.4, 97.7, 97.2, 97.8, 97, 97.5, 97.1, 98, 96.8, 96.8, 97.7, 97.7, 96.8, 97.2, 93.2, 95.3, 97.2, 97.7, 97.3, 98.2, 97.6, 97.3, 97, 97.4, 96.5, 98, 96.9, 97.1, 96.5, 96.4, 97.6, 87.4, 90, 94.1, 97.1, 97.1, 97.5, 97.6, 96.9, 96.9, 96.8, 96.5, 95.8, 96.7, 96.7, 97.2, 91.7, 91.5, 92.3, 95.3, 96.9, 97.4, 96.8, 97.9, 97.5, 98.3, 97.9, 98.6],
   // prettier-ignore
-  error: [0.6, 0.7, 0.6, 0.8, 0.9, 0.8, 1.0, 1.1, 1.0, 1.2, 1.3, 1.2, 1.4, 1.5, 1.4, 1.3, 1.5, 1.6, 1.7, 1.6, 1.8, 1.9, 1.8, 1.7, 1.9, 2.0, 1.9, 1.8, 1.9, 2.0, 1.9, 1.8, 1.9, 1.8, 1.7, 1.8, 1.9, 1.8, 1.9, 1.84, 1.8, 1.9],
+  error: [0.62, 0.64, 0.98, 0.82, 0.86, 0.83, 1.02, 1.29, 1.24, 2.41, 1.57, 0.96, 0.91, 1.43, 1.36, 1.16, 1.33, 0.95, 1.18, 1.3, 1.48, 1.05, 1.41, 1.06, 1.03, 1.36, 1, 3.71, 2.85, 1.7, 1.41, 1.29, 1.35, 1.35, 1.19, 1.27, 1.2, 0.91, 0.95, 1.06, 1.26, 1.28, 1.19, 1.09, 2.21, 1.52, 0.83, 0.94, 1.17, 0.81, 1.11, 1.24, 1.18, 0.76, 1.09, 1.08, 1.22, 1.02, 1, 5.18, 4.39, 3.74, 2.23, 1, 1.3, 1.53, 1.42, 1.16, 1.18, 1.52, 1.45, 1.34, 3.13, 2.1, 1.66, 1.74, 1.69, 1.33, 1.43, 1.73, 1.73, 1.51, 1.63, 1.55, 1.56, 1.74, 2, 1.46, 5.44, 4.33, 2.3, 1.99, 1.77, 1.82, 1.98, 1.86, 1.88, 1.51, 1.42, 1.82, 1.71, 3.88, 2.22, 1.72, 1.65, 1.64, 1.42, 1.69, 1.39, 1.81, 1.66, 1.3, 1.32, 1.75, 6.22, 5.03, 2.35, 1.39, 1.25, 1.84],
   // prettier-ignore
-  latency: [300, 310, 305, 320, 340, 360, 400, 460, 520, 540, 500, 470, 440, 460, 500, 540, 560, 520, 500, 480, 500, 520, 540, 512, 500, 520, 540, 520, 500, 512, 520, 540, 520, 500, 512, 520, 500, 512, 520, 512, 500, 512],
+  latency: [322, 371, 287, 357, 313, 353, 320, 617, 421, 363, 377, 399, 350, 401, 421, 420, 430, 365, 401, 797, 635, 477, 365, 412, 380, 421, 380, 411, 393, 401, 436, 378, 376, 569, 389, 419, 417, 342, 347, 376, 385, 347, 393, 328, 328, 367, 304, 871, 812, 707, 411, 317, 316, 367, 331, 320, 354, 349, 326, 309, 323, 631, 396, 306, 295, 293, 355, 334, 324, 372, 1012, 850, 489, 355, 324, 346, 353, 406, 365, 362, 377, 348, 437, 423, 664, 437, 397, 413, 402, 427, 404, 438, 491, 479, 447, 500, 440, 903, 776, 555, 476, 506, 439, 461, 502, 496, 485, 474, 470, 503, 1198, 1080, 930, 609, 456, 507, 426, 451, 427, 512],
   // prettier-ignore
-  availability: [99.99, 99.98, 99.99, 99.98, 99.97, 99.98, 99.99, 99.98, 99.99, 99.98, 99.98, 99.99, 99.98, 99.97, 99.98, 99.99, 99.98, 99.98, 99.99, 99.99, 99.98, 99.97, 99.98, 99.99, 99.98, 99.98, 99.99, 99.98, 99.99, 99.98, 99.98, 99.99, 99.98, 99.97, 99.98, 99.99, 99.98, 99.98, 99.99, 99.98, 99.98, 99.99],
+  availability: [99.891, 99.956, 99.885, 99.964, 99.882, 99.92, 99.696, 99.897, 99.913, 99.948, 99.918, 99.942, 99.921, 99.928, 99.94, 99.902, 99.551, 99.853, 99.853, 99.891, 99.887, 99.926, 99.912, 99.911, 99.739, 99.873, 99.877, 99.85, 99.844, 99.895, 99.854, 99.851, 99.912, 99.426, 99.593, 99.821, 99.851, 99.928, 99.767, 99.852, 99.854, 99.866, 99.87, 99.929, 99.856, 99.925, 99.672, 99.882, 99.926, 99.865, 99.944, 99.941, 99.807, 99.91, 99.892, 99.922, 99.937, 99.338, 99.491, 99.743, 99.925, 99.871, 99.95, 99.909, 99.949, 99.687, 99.844, 99.911, 99.93, 99.882, 99.894, 99.536, 99.833, 99.867, 99.927, 99.88, 99.883, 99.926, 99.895, 99.653, 99.827, 99.906, 99.941, 99.893, 99.863, 99.916, 99.781, 99.885, 99.846, 99.896, 99.876, 99.485, 99.534, 99.738, 99.832, 99.241, 99.321, 99.422, 99.698, 99.828, 99.824, 99.837, 99.828, 99.61, 99.761, 99.878, 99.843, 99.845, 99.529, 99.75, 99.838, 99.83, 99.423, 99.728, 99.817, 99.827, 99.811, 99.871, 99.925, 99.98],
 };
 
 // ============= DRILL-DOWN ROWS =============
@@ -514,13 +582,12 @@ const HOST_ROWS: HostRow[] = [
   },
 ];
 
-const STATUS_BADGE: Record<
-  HealthStatus,
-  {label: string; variant: 'success' | 'warning' | 'error'}
-> = {
-  healthy: {label: 'Healthy', variant: 'success'},
-  warning: {label: 'Degraded', variant: 'warning'},
-  critical: {label: 'Down', variant: 'error'},
+// Plain-language status, used as the accessible label on each row's StatusDot —
+// the dot's color is the only visual carrier, so the text has to say it.
+const STATUS_LABEL: Record<HealthStatus, string> = {
+  healthy: 'Healthy',
+  warning: 'Degraded',
+  critical: 'Down',
 };
 
 // ============= ALERTS =============
@@ -666,6 +733,21 @@ const AXIS_TICK = {
 };
 const GRID_STROKE = 'var(--color-border, rgba(5, 54, 89, 0.1))';
 
+// The latency and traffic cards sit side by side in the same grid row, so both
+// plots share a height — otherwise the shorter card's legend floats mid-card
+// against the taller one's.
+const CHART_HEIGHT = 280;
+
+// Recharts centers each axis tick label on its tick, so the topmost y-label and
+// the outermost x-labels overhang the plot area by half their line box. These
+// margins reserve that overhang; without the top margin the tallest y-label
+// ("800 ms") is clipped by the container edge.
+const CHART_MARGIN = {top: 12, right: 16, left: 0, bottom: 4};
+
+// Wide enough for the longest tick either axis produces — "800 ms" here,
+// "13,400" on the traffic chart — at the 12px tick size.
+const Y_AXIS_WIDTH = 56;
+
 function TimeAxis({series}: {series: WindowSeries}) {
   return (
     <XAxis
@@ -709,47 +791,54 @@ function LatencyChart({
             Percentile latency across all services (ms)
           </Text>
         </VStack>
-        <ResponsiveContainer width="100%" height={280}>
-          <LineChart
-            data={data}
-            margin={{top: 5, right: 12, left: 0, bottom: 5}}>
+        <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
+          <LineChart data={data} margin={CHART_MARGIN}>
             <CartesianGrid horizontal vertical={false} stroke={GRID_STROKE} />
             <TimeAxis series={series} />
             <YAxis
               tick={AXIS_TICK}
               axisLine={false}
               tickLine={false}
-              width={40}
+              width={Y_AXIS_WIDTH}
               unit=" ms"
             />
             <Tooltip
               content={<ChartTooltip series={series} unit=" ms" />}
               cursor={{stroke: GRID_STROKE}}
             />
+            {/* `linear` + miter joins keep every sample a straight segment —
+                `monotone` would round the spikes off into a smooth curve that
+                no latency metric actually produces. */}
             <Line
-              type="monotone"
+              type="linear"
               dataKey="p50"
               name="p50"
               stroke={CHART_COLORS.p50}
-              strokeWidth={2}
+              strokeWidth={1.5}
+              strokeLinejoin="miter"
+              strokeLinecap="butt"
               dot={false}
               isAnimationActive={false}
             />
             <Line
-              type="monotone"
+              type="linear"
               dataKey="p95"
               name="p95"
               stroke={CHART_COLORS.p95}
-              strokeWidth={2}
+              strokeWidth={1.5}
+              strokeLinejoin="miter"
+              strokeLinecap="butt"
               dot={false}
               isAnimationActive={false}
             />
             <Line
-              type="monotone"
+              type="linear"
               dataKey="p99"
               name="p99"
               stroke={CHART_COLORS.p99}
-              strokeWidth={2}
+              strokeWidth={1.5}
+              strokeLinejoin="miter"
+              strokeLinecap="butt"
               dot={false}
               isAnimationActive={false}
             />
@@ -791,46 +880,52 @@ function TrafficChart({
             Requests per minute (rpm)
           </Text>
         </VStack>
-        <ResponsiveContainer width="100%" height={220}>
-          <LineChart
-            data={data}
-            margin={{top: 5, right: 12, left: 0, bottom: 5}}>
+        <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
+          <LineChart data={data} margin={CHART_MARGIN}>
             <CartesianGrid horizontal vertical={false} stroke={GRID_STROKE} />
             <TimeAxis series={series} />
             <YAxis
               tick={AXIS_TICK}
               axisLine={false}
               tickLine={false}
-              width={48}
+              width={Y_AXIS_WIDTH}
             />
             <Tooltip
               content={<ChartTooltip series={series} unit=" rpm" />}
               cursor={{stroke: GRID_STROKE}}
             />
+            {/* Sharp segments, as above — request volume is a counter, not a
+                curve. */}
             <Line
-              type="monotone"
+              type="linear"
               dataKey="useast"
               name="us-east-1"
               stroke={CHART_COLORS.useast}
-              strokeWidth={2}
+              strokeWidth={1.5}
+              strokeLinejoin="miter"
+              strokeLinecap="butt"
               dot={false}
               isAnimationActive={false}
             />
             <Line
-              type="monotone"
+              type="linear"
               dataKey="uswest"
               name="us-west-2"
               stroke={CHART_COLORS.uswest}
-              strokeWidth={2}
+              strokeWidth={1.5}
+              strokeLinejoin="miter"
+              strokeLinecap="butt"
               dot={false}
               isAnimationActive={false}
             />
             <Line
-              type="monotone"
+              type="linear"
               dataKey="euwest"
               name="eu-west-1"
               stroke={CHART_COLORS.euwest}
-              strokeWidth={2}
+              strokeWidth={1.5}
+              strokeLinejoin="miter"
+              strokeLinecap="butt"
               dot={false}
               isAnimationActive={false}
             />
@@ -854,12 +949,22 @@ function Sparkline({data, color}: {data: number[]; color: string}) {
     <ResponsiveContainer width="100%" height={40}>
       <LineChart
         data={chartData}
-        margin={{top: 4, right: 0, left: 0, bottom: 0}}>
+        margin={{top: 4, right: 0, left: 0, bottom: 2}}>
+        {/* Fit the scale to the data. Recharts' implicit axis anchors the
+            domain at 0, which flattens any metric that lives far from zero —
+            availability (99.2–100%) collapses to a quarter-pixel of travel and
+            health to ~4px, hiding every dip. Hidden axes contribute no width,
+            so the line still spans the full tile. */}
+        <YAxis hide domain={['dataMin', 'dataMax']} />
+        {/* `linear` keeps every sample a straight segment — `monotone` would
+            round the spikes off into a smooth curve that no metric produces. */}
         <Line
-          type="monotone"
+          type="linear"
           dataKey="v"
           stroke={color}
-          strokeWidth={1.5}
+          strokeWidth={1.25}
+          strokeLinejoin="miter"
+          strokeLinecap="butt"
           dot={false}
           isAnimationActive={false}
         />
@@ -870,18 +975,18 @@ function Sparkline({data, color}: {data: number[]; color: string}) {
 
 function KpiTile({kpi, spark}: {kpi: Kpi; spark: number[]}) {
   return (
-    <Card>
-      <VStack gap={3}>
-        <HStack hAlign="between" vAlign="center">
-          <Text type="label" color="secondary">
-            {kpi.label}
-          </Text>
+    <Card padding={4}>
+      <VStack gap={2}>
+        <HStack gap={2} vAlign="center">
           <StatusDot
             variant={STATUS_DOT[kpi.status]}
             label={kpi.statusLabel}
             tooltip={kpi.statusLabel}
             isPulsing={kpi.status === 'critical'}
           />
+          <Text type="label" color="secondary">
+            {kpi.label}
+          </Text>
         </HStack>
         <HStack gap={2} vAlign="center">
           <Heading level={2}>{kpi.value}</Heading>
@@ -902,97 +1007,78 @@ function KpiTile({kpi, spark}: {kpi: Kpi; spark: number[]}) {
   );
 }
 
-// ============= DRILL-DOWN TABLE =============
+// ============= RAIL SECTIONS =============
 
-const columns: TableColumn<HostRow>[] = [
-  {
-    key: 'service',
-    header: 'Service',
-    width: proportional(2),
-    renderCell: (item: HostRow) => (
-      <HStack gap={2} vAlign="center">
-        <StatusDot
-          variant={STATUS_DOT[item.status]}
-          label={STATUS_BADGE[item.status].label}
-        />
-        <Text type="body" weight="semibold">
-          {item.service}
+const railStyles = stylex.create({
+  // The rail is one flex column with no scroll of its own; each section claims
+  // an equal share and scrolls internally, so a long alert list can never push
+  // the service breakdown out of view.
+  section: {
+    flexBasis: 0,
+    flexGrow: 1,
+    minHeight: 0,
+  },
+  // Recessed band behind each section header. A translucent tint rather than a
+  // flat color so it reads the same on the card surface (folded inline) and on
+  // the panel (in the rail), in both light and dark themes.
+  header: {
+    backgroundColor: 'var(--color-background-muted)',
+  },
+});
+
+/**
+ * One labelled region of the triage rail: a fixed header band over a body.
+ *
+ * `isFilled` is the rail form — the section splits the panel height with its
+ * sibling and its body owns the scroll. Folded inline (narrow screens) the
+ * section sizes to its content instead and the page scroll carries it.
+ */
+function RailSection({
+  icon,
+  iconColor,
+  title,
+  subtitle,
+  badge,
+  isFilled = false,
+  children,
+}: {
+  icon: IconType;
+  iconColor: 'error' | 'secondary';
+  title: string;
+  subtitle: string;
+  badge: ReactNode;
+  isFilled?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <VStack gap={0} xstyle={isFilled ? railStyles.section : undefined}>
+      <VStack gap={1} padding={4} xstyle={railStyles.header}>
+        <HStack gap={2} vAlign="center">
+          <Icon icon={icon} size="sm" color={iconColor} />
+          <StackItem size="fill">
+            <Heading level={3}>{title}</Heading>
+          </StackItem>
+          {badge}
+        </HStack>
+        <Text type="supporting" color="secondary">
+          {subtitle}
         </Text>
-      </HStack>
-    ),
-  },
-  {
-    key: 'region',
-    header: 'Region',
-    width: pixel(140),
-    renderCell: (item: HostRow) => (
-      <Text type="body" color="secondary">
-        {item.region}
-      </Text>
-    ),
-  },
-  {
-    key: 'instances',
-    header: 'Hosts',
-    width: pixel(80),
-    renderCell: (item: HostRow) => <Text type="body">{item.instances}</Text>,
-  },
-  {
-    key: 'rpm',
-    header: 'Req/min',
-    width: pixel(110),
-    renderCell: (item: HostRow) => (
-      <Text type="body">{item.rpm.toLocaleString()}</Text>
-    ),
-  },
-  {
-    key: 'errorRate',
-    header: 'Error rate',
-    width: pixel(120),
-    renderCell: (item: HostRow) => {
-      const status: HealthStatus =
-        item.errorRate >= 5
-          ? 'critical'
-          : item.errorRate >= 1.5
-            ? 'warning'
-            : 'healthy';
-      return (
-        <Token
-          size="sm"
-          color={
-            status === 'critical'
-              ? 'red'
-              : status === 'warning'
-                ? 'yellow'
-                : 'green'
-          }
-          label={`${item.errorRate.toFixed(1)}%`}
-        />
-      );
-    },
-  },
-  {
-    key: 'p99',
-    header: 'p99',
-    width: pixel(100),
-    renderCell: (item: HostRow) => <Text type="body">{item.p99} ms</Text>,
-  },
-  {
-    key: 'status',
-    header: 'Status',
-    width: pixel(120),
-    renderCell: (item: HostRow) => (
-      <Badge
-        label={STATUS_BADGE[item.status].label}
-        variant={STATUS_BADGE[item.status].variant}
-      />
-    ),
-  },
-];
+      </VStack>
+      <Divider />
+      {isFilled ? (
+        <StackItem size="fill" isScrollable>
+          {children}
+        </StackItem>
+      ) : (
+        children
+      )}
+    </VStack>
+  );
+}
 
 // ============= ALERTS FEED =============
 
-function AlertsFeed() {
+function AlertsFeed({isFilled = false}: {isFilled?: boolean}) {
   const groups = ALERT_ORDER.map(state => ({
     state,
     items: ALERTS.filter(a => a.state === state),
@@ -1001,22 +1087,18 @@ function AlertsFeed() {
   const firing = ALERTS.filter(a => a.state === 'firing').length;
 
   return (
-    <VStack gap={0}>
-      <HStack gap={2} vAlign="center" padding={4}>
-        <Icon
-          icon={BellAlertIcon}
-          size="sm"
-          color={firing > 0 ? 'error' : 'secondary'}
-        />
-        <StackItem size="fill">
-          <Heading level={3}>Active alerts</Heading>
-        </StackItem>
+    <RailSection
+      icon={BellAlertIcon}
+      iconColor={firing > 0 ? 'error' : 'secondary'}
+      title="Active alerts"
+      subtitle={`${ALERTS.length} in the last 24h · newest first`}
+      badge={
         <Badge
           label={`${firing} firing`}
           variant={firing > 0 ? 'error' : 'neutral'}
         />
-      </HStack>
-      <Divider />
+      }
+      isFilled={isFilled}>
       {groups.length === 0 ? (
         <EmptyState
           title="All clear"
@@ -1060,7 +1142,439 @@ function AlertsFeed() {
           </List>
         ))
       )}
+    </RailSection>
+  );
+}
+
+// ============= SERVICE BREAKDOWN =============
+
+// Error-rate thresholds, carried by the row's Token color.
+function errorColor(rate: number): 'red' | 'yellow' | 'green' {
+  if (rate >= 5) {
+    return 'red';
+  }
+  return rate >= 1.5 ? 'yellow' : 'green';
+}
+
+// Request volume is a supporting detail in a 400px rail, so it's abbreviated
+// rather than shown in full — the traffic chart carries the exact figures.
+function formatRpm(rpm: number): string {
+  return rpm >= 1000 ? `${(rpm / 1000).toFixed(1)}k rpm` : `${rpm} rpm`;
+}
+
+const SEVERITY_RANK: Record<HealthStatus, number> = {
+  critical: 0,
+  warning: 1,
+  healthy: 2,
+};
+
+/**
+ * Per-service drill-down, as rail rows rather than the wide table it replaces.
+ *
+ * A table needs seven columns for this data and a rail has room for about two,
+ * so each service collapses to a row: status + name on the first line, the
+ * identifying detail (region, fleet size, volume) on the second, and the two
+ * numbers an on-call actually triages on — p99 and error rate — end-aligned.
+ * Rows sort worst-first, since a scrolling rail can't be scanned like a grid.
+ */
+function ServiceBreakdown({
+  rows,
+  contextLabel,
+  isFilled = false,
+}: {
+  rows: HostRow[];
+  contextLabel: string;
+  isFilled?: boolean;
+}) {
+  const sorted = useMemo(
+    () =>
+      [...rows].sort(
+        (a, b) =>
+          SEVERITY_RANK[a.status] - SEVERITY_RANK[b.status] ||
+          b.errorRate - a.errorRate,
+      ),
+    [rows],
+  );
+
+  return (
+    <RailSection
+      icon={ServerStackIcon}
+      iconColor="secondary"
+      title="Service breakdown"
+      subtitle={contextLabel}
+      badge={<Badge label={`${rows.length}`} variant="neutral" />}
+      isFilled={isFilled}>
+      {sorted.length === 0 ? (
+        <EmptyState
+          title="No services in this view"
+          description="Nothing reports in the selected environment and region. Try widening the region filter."
+          icon={<Icon icon={ServerStackIcon} size="lg" />}
+          isCompact
+        />
+      ) : (
+        <List density="compact" hasDividers>
+          {sorted.map(row => (
+            <ListItem
+              key={row.id}
+              label={row.service}
+              description={`${row.region} · ${row.instances} hosts · ${formatRpm(row.rpm)}`}
+              startContent={
+                <StatusDot
+                  variant={STATUS_DOT[row.status]}
+                  label={STATUS_LABEL[row.status]}
+                  isPulsing={row.status === 'critical'}
+                />
+              }
+              endContent={
+                <VStack gap={1} hAlign="end">
+                  <HStack gap={1} vAlign="center">
+                    <Text type="supporting" color="secondary">
+                      p99
+                    </Text>
+                    <Text type="body" weight="semibold">
+                      {row.p99} ms
+                    </Text>
+                  </HStack>
+                  <Token
+                    size="sm"
+                    color={errorColor(row.errorRate)}
+                    label={`${row.errorRate.toFixed(1)}% err`}
+                  />
+                </VStack>
+              }
+            />
+          ))}
+        </List>
+      )}
+    </RailSection>
+  );
+}
+
+// ============= UPTIME HISTORY =============
+
+// The status-page strip: one bar per day, colored by that day's worst state.
+//
+// This deliberately runs on its own time base rather than the header's 1h/1d/7d
+// control. Uptime is a reliability record measured in days — bucketed into a
+// one-hour window it would be 90 bars all saying the same thing. Environment
+// and region still apply: they decide which services report here, and how rough
+// each one's history reads.
+const UPTIME_DAYS = 90;
+
+type UptimeStatus = 'operational' | 'degraded' | 'down';
+
+// Mirrors `uptimeStyles` below. The legend needs each color as a value and the
+// bars need it as a static StyleX rule, and StyleX can't derive one from the
+// other — keep the two lists in sync by hand.
+const UPTIME_COLOR: Record<UptimeStatus, string> = {
+  operational: 'var(--color-success, #0D8626)',
+  degraded: 'var(--color-warning, #E9AF08)',
+  down: 'var(--color-error, #E3193B)',
+};
+
+const UPTIME_LABEL: Record<UptimeStatus, string> = {
+  operational: 'Operational',
+  degraded: 'Partial degradation',
+  down: 'Downtime',
+};
+
+// Percentage of the day served, per state. A degraded day still serves most
+// traffic; a down day is a partial outage, not a lost 24 hours.
+const DAY_UPTIME: Record<UptimeStatus, number> = {
+  operational: 100,
+  degraded: 98.4,
+  down: 82,
+};
+
+// How much rougher each environment's history runs than production's.
+const UPTIME_ENV_RISK: Record<Environment, number> = {
+  production: 1,
+  staging: 1.6,
+  development: 3,
+};
+
+// A service that is unhealthy right now didn't get there in a day — its 90-day
+// record should read visibly worse than a healthy peer's.
+const UPTIME_STATUS_RISK: Record<HealthStatus, number> = {
+  healthy: 1,
+  warning: 3.5,
+  critical: 7,
+};
+
+// Today's state, as the strip's last bar. Whatever the rest of the page reports
+// for a service, the right-hand end of its strip has to agree.
+const UPTIME_TODAY: Record<HealthStatus, UptimeStatus> = {
+  healthy: 'operational',
+  warning: 'degraded',
+  critical: 'down',
+};
+
+interface ServiceUptime {
+  service: string;
+  status: HealthStatus;
+  days: UptimeStatus[];
+  uptime: number;
+  degradedDays: number;
+  downDays: number;
+}
+
+// Stable per-service seed, so a service's history doesn't reshuffle as the
+// roster is filtered — checkout-api draws the same 90 days at every region.
+function seedForService(service: string): number {
+  let h = 7;
+  for (let i = 0; i < service.length; i++) {
+    h = (h * 31 + service.charCodeAt(i)) % 9973;
+  }
+  return h;
+}
+
+function buildUptime(
+  service: string,
+  environment: Environment,
+  status: HealthStatus,
+): ServiceUptime {
+  const seed = seedForService(service);
+  const risk = UPTIME_ENV_RISK[environment] * UPTIME_STATUS_RISK[status];
+
+  // Fixed quotas rather than a per-day coin flip. Over only 90 draws the
+  // variance of independent rolls swamps the risk signal — a critical service
+  // can come out with a cleaner record than a healthy one, which reads as a bug
+  // rather than as noise. Taking an exact count and placing it on the days that
+  // rank worst keeps the placement pseudo-random while making the headline
+  // number a strict function of status and environment.
+  //
+  // The ±40% wobble is per-service, so peers at the same status don't render as
+  // identical rows. It stays well inside the ~3.5x gap between status bands, so
+  // it can't reorder them. Both counts are capped: even the worst dev service
+  // keeps a mostly-green strip — a wall of red would say "this dashboard is
+  // broken", not "this service is".
+  const downWobble = 0.6 + 0.8 * hashNoise(seed, 3.7);
+  const degradedWobble = 0.6 + 0.8 * hashNoise(seed, 5.9);
+  const downCount = Math.round(
+    UPTIME_DAYS * Math.min(0.09, 0.005 * risk) * downWobble,
+  );
+  const degradedCount = Math.round(
+    UPTIME_DAYS * Math.min(0.32, 0.02 * risk) * degradedWobble,
+  );
+
+  const ranked = [...Array(UPTIME_DAYS).keys()].sort(
+    (a, b) => hashNoise(b, seed) - hashNoise(a, seed),
+  );
+  const days: UptimeStatus[] = new Array(UPTIME_DAYS).fill('operational');
+  for (let k = 0; k < downCount; k++) {
+    days[ranked[k]] = 'down';
+  }
+  for (let k = downCount; k < downCount + degradedCount; k++) {
+    days[ranked[k]] = 'degraded';
+  }
+  days[UPTIME_DAYS - 1] = UPTIME_TODAY[status];
+
+  // A per-service clean-day baseline just under 100%. Real measurement never
+  // lands on an unbroken 100.00%, and a per-day wobble alone can't do this job:
+  // averaged over ~85 days it converges to the same value for every service,
+  // leaving peers with equal quotas showing an identical percentage.
+  const cleanDay = DAY_UPTIME.operational - 0.02 - hashNoise(seed, 11.3) * 0.06;
+
+  let served = 0;
+  let degradedDays = 0;
+  let downDays = 0;
+  for (let i = 0; i < UPTIME_DAYS; i++) {
+    const day = days[i];
+    if (day === 'operational') {
+      served += cleanDay - hashNoise(i, seed + 1) * 0.02;
+    } else {
+      served += DAY_UPTIME[day];
+      if (day === 'degraded') {
+        degradedDays++;
+      } else {
+        downDays++;
+      }
+    }
+  }
+
+  return {
+    service,
+    status,
+    days,
+    uptime: served / UPTIME_DAYS,
+    degradedDays,
+    downDays,
+  };
+}
+
+// Index 0 is the oldest day, UPTIME_DAYS - 1 is today.
+function dayLabel(i: number): string {
+  const ago = UPTIME_DAYS - 1 - i;
+  if (ago === 0) {
+    return 'Today';
+  }
+  return ago === 1 ? 'Yesterday' : `${ago} days ago`;
+}
+
+const uptimeStyles = stylex.create({
+  // Bars divide the row evenly: flexBasis 0 + flexGrow 1 gives every bar the
+  // same width whatever the count. The 3px floor keeps them legible, and once
+  // the row is too narrow to honor it (below roughly 420px) the strip scrolls
+  // rather than compressing 90 bars into invisible slivers — dropping or
+  // thinning bars would quietly hide the outage days this strip exists to show.
+  strip: {
+    display: 'flex',
+    gap: '2px',
+    overflowX: 'auto',
+    overscrollBehaviorX: 'contain',
+    scrollbarWidth: 'thin',
+  },
+  // No border radius: at 3–8px wide, any rounding turns a bar into a pill and
+  // the smallest radius token (4px) would round it away entirely.
+  bar: {
+    flexBasis: 0,
+    flexGrow: 1,
+    minWidth: '3px',
+    height: '30px',
+  },
+  // Mirrors UPTIME_COLOR above.
+  operational: {backgroundColor: 'var(--color-success, #0D8626)'},
+  degraded: {backgroundColor: 'var(--color-warning, #E9AF08)'},
+  down: {backgroundColor: 'var(--color-error, #E3193B)'},
+});
+
+/**
+ * One service's 90-day strip.
+ *
+ * The bars are one image to assistive tech, not 90 unlabelled boxes: the strip
+ * carries a summary `aria-label` and the per-day detail rides on `title`, which
+ * costs nothing next to 90 mounted Tooltips per row.
+ */
+function UptimeStrip({entry}: {entry: ServiceUptime}) {
+  const summary =
+    entry.downDays === 0 && entry.degradedDays === 0
+      ? `${UPTIME_DAYS}-day uptime for ${entry.service}: no incidents.`
+      : `${UPTIME_DAYS}-day uptime for ${entry.service}: ${entry.degradedDays} degraded ${
+          entry.degradedDays === 1 ? 'day' : 'days'
+        }, ${entry.downDays} with downtime.`;
+
+  return (
+    <div {...stylex.props(uptimeStyles.strip)} role="img" aria-label={summary}>
+      {entry.days.map((day, i) => (
+        <div
+          key={i}
+          {...stylex.props(uptimeStyles.bar, uptimeStyles[day])}
+          title={`${dayLabel(i)} — ${UPTIME_LABEL[day]}`}
+        />
+      ))}
+    </div>
+  );
+}
+
+function UptimeRow({entry}: {entry: ServiceUptime}) {
+  return (
+    <VStack gap={2}>
+      <HStack gap={3} vAlign="center">
+        <StackItem size="fill">
+          <HStack gap={2} vAlign="center">
+            <StatusDot
+              variant={STATUS_DOT[entry.status]}
+              label={STATUS_LABEL[entry.status]}
+              isPulsing={entry.status === 'critical'}
+            />
+            <Text type="body" weight="semibold">
+              {entry.service}
+            </Text>
+          </HStack>
+        </StackItem>
+        <Text type="supporting" color="secondary">
+          {entry.uptime.toFixed(2)}% uptime
+        </Text>
+      </HStack>
+      <UptimeStrip entry={entry} />
+      <HStack gap={3} vAlign="center">
+        <StackItem size="fill">
+          <Text type="supporting" color="secondary">
+            {UPTIME_DAYS} days ago
+          </Text>
+        </StackItem>
+        <Text type="supporting" color="secondary">
+          Today
+        </Text>
+      </HStack>
     </VStack>
+  );
+}
+
+/**
+ * The "All services" roster — every service in view, one uptime strip each.
+ *
+ * One strip per *service*, not per deployment: the rail's breakdown already
+ * lists service × region rows, and repeating that split here would make the
+ * section a second copy of it rather than a status page. A service's strip
+ * takes the worst status across its regions.
+ */
+function AllServicesUptime({
+  rows,
+  environment,
+  contextLabel,
+}: {
+  rows: HostRow[];
+  environment: Environment;
+  contextLabel: string;
+}) {
+  const entries = useMemo(() => {
+    const worst = new Map<string, HealthStatus>();
+    for (const row of rows) {
+      const prev = worst.get(row.service);
+      if (
+        prev === undefined ||
+        SEVERITY_RANK[row.status] < SEVERITY_RANK[prev]
+      ) {
+        worst.set(row.service, row.status);
+      }
+    }
+    // Alphabetical, not worst-first: the rail already triages by severity, and
+    // a roster that reorders itself as incidents land is hard to scan or point
+    // a colleague at.
+    return [...worst.entries()]
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([service, status]) => buildUptime(service, environment, status));
+  }, [rows, environment]);
+
+  return (
+    <Card>
+      <VStack gap={5}>
+        <HStack gap={3} vAlign="center" hAlign="between" wrap="wrap">
+          <VStack gap={1}>
+            <Heading level={4}>All services</Heading>
+            <Text type="supporting" color="secondary">
+              Daily uptime over the last {UPTIME_DAYS} days · {contextLabel}
+            </Text>
+          </VStack>
+          <HStack gap={4} vAlign="center" wrap="wrap">
+            <LegendDot
+              color={UPTIME_COLOR.operational}
+              label={UPTIME_LABEL.operational}
+            />
+            <LegendDot
+              color={UPTIME_COLOR.degraded}
+              label={UPTIME_LABEL.degraded}
+            />
+            <LegendDot color={UPTIME_COLOR.down} label={UPTIME_LABEL.down} />
+          </HStack>
+        </HStack>
+        {entries.length === 0 ? (
+          <EmptyState
+            title="No services in this view"
+            description="Nothing reports in the selected environment and region. Try widening the region filter."
+            icon={<Icon icon={ServerStackIcon} size="lg" />}
+            isCompact
+          />
+        ) : (
+          <VStack gap={5}>
+            {entries.map(entry => (
+              <UptimeRow key={entry.service} entry={entry} />
+            ))}
+          </VStack>
+        )}
+      </VStack>
+    </Card>
   );
 }
 
@@ -1085,6 +1599,14 @@ const REGION_OPTIONS = [
 // stretching it to the tallest item in the header.
 const controlDividerStyle: CSSProperties = {height: '24px'};
 
+// Fill the window. Layout height="fill" is height:100%, which only resolves
+// against a definite height — and the host's <html>/<body> don't set one, so
+// the layout anchors a definite viewport height itself. The rail depends on
+// this: its two sections split the panel height and scroll internally, which
+// needs a definite height to divide. No background; the host owns the page
+// surface.
+const pageStyle: CSSProperties = {height: '100dvh'};
+
 // ============= MAIN =============
 
 export default function ServiceHealthMonitorPage() {
@@ -1100,11 +1622,14 @@ export default function ServiceHealthMonitorPage() {
   const latencyFactor = ENV_LATENCY_FACTOR[environment];
   const kpis = KPI_BY_ENV[environment];
 
+  // Every window stays densely sampled — a sparkline thinned to ~30 points
+  // stretches its jitter into a smooth wobble and its spikes into soft
+  // triangles. Shorter windows just bucket finer, as a real backend would.
   const sparkLen =
     timeWindow === '1h'
-      ? 12
+      ? 60
       : timeWindow === '1d'
-        ? 24
+        ? 90
         : SPARKLINES.health.length;
 
   const rows = useMemo(
@@ -1117,13 +1642,18 @@ export default function ServiceHealthMonitorPage() {
     [environment, region],
   );
 
+  // The breakdown lost its table header when it moved into the rail, so the
+  // active filters have to be restated in the section subtitle instead.
+  const breakdownContext = `${ENV_OPTIONS.find(e => e.value === environment)?.label} · ${REGION_OPTIONS.find(r => r.value === region)?.label}`;
+
   return (
     <Layout
       height="fill"
+      style={pageStyle}
       header={
         <LayoutHeader padding={6} hasDivider>
           <HStack gap={3} vAlign="center" hAlign="between" wrap="wrap">
-            <VStack gap={1} vAlign="center">
+            <VStack gap={0} vAlign="center">
               <Heading level={1}>Service Health Monitor</Heading>
               <HStack gap={2} vAlign="center">
                 <StatusDot
@@ -1147,7 +1677,7 @@ export default function ServiceHealthMonitorPage() {
                 </Text>
               </HStack>
             </VStack>
-            <HStack gap={3} vAlign="center">
+            <HStack gap={2} vAlign="center">
               <SegmentedControl
                 label="Time window"
                 value={timeWindow}
@@ -1180,66 +1710,75 @@ export default function ServiceHealthMonitorPage() {
       content={
         <LayoutContent padding={6}>
           <VStack gap={10}>
-            {/* Traffic-light KPI tiles */}
-            <Grid columns={{minWidth: 240, repeat: 'fit'}} gap={4}>
-              {kpis.map(kpi => (
-                <KpiTile
-                  key={kpi.key}
-                  kpi={kpi}
-                  spark={SPARKLINES[kpi.key].slice(0, sparkLen)}
-                />
-              ))}
-            </Grid>
-
-            {/* Time-series charts */}
-            <Grid columns={{minWidth: 320, repeat: 'fit'}} gap={4}>
-              <LatencyChart series={series} latencyFactor={latencyFactor} />
-              <TrafficChart series={series} factor={factor} />
-            </Grid>
-
-            {/* On narrow screens the rail collapses in here. */}
-            {isNarrow && (
-              <Card padding={0}>
-                <AlertsFeed />
-              </Card>
-            )}
-
-            {/* Drill-down table with inline status coloring */}
             <VStack gap={6}>
-              <HStack hAlign="between" vAlign="center" wrap="wrap">
-                <Heading level={2}>Service breakdown</Heading>
-                <Text type="supporting" color="secondary">
-                  {rows.length} {rows.length === 1 ? 'service' : 'services'} ·{' '}
-                  {ENV_OPTIONS.find(e => e.value === environment)?.label} ·{' '}
-                  {REGION_OPTIONS.find(r => r.value === region)?.label}
-                </Text>
-              </HStack>
-              {rows.length === 0 ? (
-                <EmptyState
-                  title="No services in this view"
-                  description="No services report in the selected environment and region. Try widening the region filter."
-                  icon={<Icon icon={BellAlertIcon} size="lg" />}
-                />
-              ) : (
-                <Card>
-                  <Table<HostRow>
-                    data={rows}
-                    columns={columns}
-                    idKey="id"
-                    density="balanced"
-                    dividers="rows"
-                    hasHover
+              {/* Traffic-light KPI tiles */}
+              <Grid columns={{minWidth: 240, repeat: 'fit'}} gap={3}>
+                {kpis.map(kpi => (
+                  <KpiTile
+                    key={kpi.key}
+                    kpi={kpi}
+                    spark={SPARKLINES[kpi.key].slice(-sparkLen)}
+                  />
+                ))}
+              </Grid>
+
+              {/* Time-series charts */}
+              <Grid columns={{minWidth: 320, repeat: 'fit'}} gap={3}>
+                <LatencyChart series={series} latencyFactor={latencyFactor} />
+                <TrafficChart series={series} factor={factor} />
+              </Grid>
+            </VStack>
+
+            <Divider />
+
+            {/* Status-page roster: one 90-day uptime strip per service. */}
+            <AllServicesUptime
+              rows={rows}
+              environment={environment}
+              contextLabel={breakdownContext}
+            />
+
+            {/* Below 1024px the rail folds in here as two stacked cards. The
+                  cards carry the section boundary the panel gets from its strong
+                  divider, so the two feeds stay just as separate. */}
+            {isNarrow && (
+              <VStack gap={4}>
+                <Card padding={0}>
+                  <AlertsFeed />
+                </Card>
+                <Card padding={0}>
+                  <ServiceBreakdown
+                    rows={rows}
+                    contextLabel={breakdownContext}
                   />
                 </Card>
-              )}
-            </VStack>
+              </VStack>
+            )}
           </VStack>
         </LayoutContent>
       }
       end={
         isNarrow ? undefined : (
-          <LayoutPanel width={360} padding={0} hasDivider label="Active alerts">
-            <AlertsFeed />
+          <LayoutPanel
+            width={400}
+            padding={0}
+            hasDivider
+            role="complementary"
+            label="Alerts and service breakdown"
+            // The panel itself must not scroll: each section owns its own
+            // scroll region so the two never slide past each other.
+            isScrollable={false}>
+            <VStack gap={0} height="100%">
+              <AlertsFeed isFilled />
+              {/* Strong rather than subtle — this separates two regions, not
+                  two rows within one. */}
+              <Divider variant="strong" />
+              <ServiceBreakdown
+                rows={rows}
+                contextLabel={breakdownContext}
+                isFilled
+              />
+            </VStack>
           </LayoutPanel>
         )
       }

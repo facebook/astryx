@@ -6,23 +6,22 @@
  * Data Dashboard — a generic user-analytics dashboard.
  *
  * Content-only (root `Layout`); the host supplies the app shell. Modeled after
- * dense metric-monitoring dashboards: a filter bar, tabbed sections, and grids
- * of small metric cards — each with a sparkline and multi-period deltas
- * (d/d, w/w, m/m, y/y) with red/green direction coloring.
+ * dense metric-monitoring dashboards: a filter bar and grids of small metric
+ * cards — each with a sparkline and multi-period deltas (d/d, w/w, m/m, y/y)
+ * with red/green direction coloring.
  *
- *   filter bar | tabs: Overview | Demographics | Engagement | Geography
+ *   filter bar | key metrics | devices trend | demographics | acquisition
  *
  * Every metric is generic and self-contained (no real users, no proprietary
  * data). All figures are deterministic (fixed fixtures, no clocks/random) so
  * previews stay stable.
  */
 
-import {useMemo, useState, type CSSProperties} from 'react';
+import {useState, type CSSProperties} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   VStack,
   HStack,
-  StackItem,
   Layout,
   LayoutContent,
   LayoutHeader,
@@ -37,7 +36,6 @@ import {Divider} from '@astryxdesign/core/Divider';
 import {Badge} from '@astryxdesign/core/Badge';
 import {ProgressBar} from '@astryxdesign/core/ProgressBar';
 import {Selector} from '@astryxdesign/core/Selector';
-import {TabList, Tab} from '@astryxdesign/core/TabList';
 import {Table, proportional, pixel} from '@astryxdesign/core/Table';
 import type {TableColumn} from '@astryxdesign/core/Table';
 import {
@@ -59,8 +57,6 @@ import {
   ArrowDownTrayIcon,
   UsersIcon,
   CursorArrowRaysIcon,
-  ClockIcon,
-  ArrowPathRoundedSquareIcon,
 } from '@heroicons/react/24/outline';
 import {StopIcon} from '@heroicons/react/24/solid';
 
@@ -68,12 +64,21 @@ import {StopIcon} from '@heroicons/react/24/solid';
 
 type Segment = 'all' | 'new' | 'returning';
 type DateRange = '7d' | '30d' | '90d';
+type DeviceFilter = 'all' | 'mobile' | 'desktop' | 'tablet';
 
+// Period-over-period change, in percent: day, week, month, and year.
 interface Deltas {
   dd: number;
   ww: number;
   mm: number;
   yy: number;
+}
+
+// One point of a sparkline, pre-shaped for recharts so the fixtures do the
+// work once at module load instead of on every render of every card.
+interface SparkPoint {
+  i: number;
+  v: number;
 }
 
 interface Metric {
@@ -83,7 +88,7 @@ interface Metric {
   // Whether a rising value is good (engagement) or bad (bounce rate).
   higherIsBetter: boolean;
   deltas: Deltas;
-  spark: number[];
+  spark: SparkPoint[];
 }
 
 // ============= COLORS (design tokens w/ hex fallbacks) =============
@@ -94,7 +99,6 @@ const COLORS = {
   orange: 'var(--color-data-categorical-orange, #EB6E00)',
   purple: 'var(--color-data-categorical-purple, #6B1EFD)',
   teal: 'var(--color-data-categorical-teal, #008E80)',
-  pink: 'var(--color-data-categorical-pink, #C7268B)',
   neutral: 'var(--color-data-neutral, #8494A3)',
 };
 const GRID_STROKE = 'var(--color-border, rgba(5, 54, 89, 0.1))';
@@ -105,7 +109,9 @@ const AXIS_TICK = {
 
 // ============= DETERMINISTIC SERIES =============
 
-const SPARK_POINTS = 64;
+// A full quarter. The sparklines and the active-users trend both span this
+// window, so the card-level and chart-level views of the data agree.
+const TREND_DAYS = 90;
 
 // Hash-based noise in [0, 1) — deterministic, so previews never shift.
 // Shared by the metric sparklines and the active-users trend below.
@@ -116,17 +122,17 @@ function noise(i: number, seed: number): number {
 
 // Build a stable but spiky sparkline series: a trend line, a weekly rhythm, a
 // mean-reverting drift, per-point jitter, and the occasional outlier burst.
-function spark(seed: number, trend: number): number[] {
-  const out: number[] = [];
+function spark(seed: number, trend: number): SparkPoint[] {
+  const out: SparkPoint[] = [];
   let drift = 0;
-  for (let i = 0; i < SPARK_POINTS; i++) {
-    const base = 50 + (trend * i * 24) / SPARK_POINTS;
+  for (let i = 0; i < TREND_DAYS; i++) {
+    const base = 50 + (trend * i * 24) / TREND_DAYS;
     const weekly = Math.sin((i * Math.PI * 2) / 7 + seed) * 2.5;
     drift = drift * 0.72 + (noise(i, seed) - 0.5) * 7;
     const jitter = (noise(i, seed + 17) - 0.5) * 8;
     const burst =
       noise(i, seed + 91) > 0.9 ? (noise(i, seed + 43) - 0.4) * 20 : 0;
-    out.push(Math.round(base + weekly + drift + jitter + burst));
+    out.push({i, v: Math.round(base + weekly + drift + jitter + burst)});
   }
   return out;
 }
@@ -207,7 +213,6 @@ const OVERVIEW_METRICS: Metric[] = [
     spark: spark(9, 0.8),
   },
   {
-    // Matches the Day 30 point on RETENTION_CURVE so the two views agree.
     key: 'retention-30',
     label: '30-day retention',
     value: '27.4%',
@@ -233,11 +238,9 @@ const OVERVIEW_METRICS: Metric[] = [
   },
 ];
 
-// Active-users trend: a full quarter of desktop/mobile/tablet split. Weekends
-// swing traffic from desktop to mobile, and each day carries its own jitter
-// plus the occasional traffic spike, so the series reads like real telemetry.
-const TREND_DAYS = 90;
-
+// Active-users trend: the desktop/mobile/tablet split across TREND_DAYS.
+// Weekends swing traffic from desktop to mobile, and each day carries its own
+// jitter plus the occasional spike, so the series reads like real telemetry.
 const ACTIVE_TREND = (() => {
   const out: {
     t: number;
@@ -275,17 +278,22 @@ const ACTIVE_TREND = (() => {
   return out;
 })();
 
-const ACTIVE_TICKS = [0, 29, 59, TREND_DAYS - 1];
+// Four evenly spaced labels (roughly month boundaries), derived so the axis
+// stays readable if TREND_DAYS changes.
+const ACTIVE_TICK_COUNT = 4;
+const ACTIVE_TICKS = Array.from({length: ACTIVE_TICK_COUNT}, (_, i) =>
+  Math.round((i * (TREND_DAYS - 1)) / (ACTIVE_TICK_COUNT - 1)),
+);
 
 // ============= DEMOGRAPHICS =============
 
-interface Segment2 {
+interface BreakdownSegment {
   label: string;
   value: number;
   color: string;
 }
 
-const AGE_DATA: Segment2[] = [
+const AGE_DATA: BreakdownSegment[] = [
   {label: '18–24', value: 26, color: COLORS.blue},
   {label: '25–34', value: 34, color: COLORS.teal},
   {label: '35–44', value: 21, color: COLORS.green},
@@ -293,13 +301,13 @@ const AGE_DATA: Segment2[] = [
   {label: '55+', value: 7, color: COLORS.neutral},
 ];
 
-const GENDER_DATA: Segment2[] = [
+const GENDER_DATA: BreakdownSegment[] = [
   {label: 'Female', value: 48, color: COLORS.purple},
   {label: 'Male', value: 46, color: COLORS.blue},
   {label: 'Other / undisclosed', value: 6, color: COLORS.neutral},
 ];
 
-const DEVICE_DATA: Segment2[] = [
+const DEVICE_DATA: BreakdownSegment[] = [
   {label: 'Mobile', value: 58, color: COLORS.blue},
   {label: 'Desktop', value: 34, color: COLORS.teal},
   {label: 'Tablet', value: 8, color: COLORS.orange},
@@ -324,81 +332,6 @@ const ACQUISITION: AcqRow[] = [
 
 const ACQ_MAX = Math.max(...ACQUISITION.map(a => a.users));
 
-// ============= ENGAGEMENT =============
-
-interface FeatureRow extends Record<string, unknown> {
-  id: string;
-  feature: string;
-  adoption: number;
-  users: number;
-  delta: number;
-}
-
-const FEATURES: FeatureRow[] = [
-  {id: 'f1', feature: 'Search', adoption: 82, users: 1049600, delta: 2.1},
-  {id: 'f2', feature: 'Notifications', adoption: 74, users: 947200, delta: 1.4},
-  {id: 'f3', feature: 'Saved items', adoption: 61, users: 780800, delta: 5.6},
-  {id: 'f4', feature: 'Sharing', adoption: 48, users: 614400, delta: 3.2},
-  {id: 'f5', feature: 'Comments', adoption: 39, users: 499200, delta: -1.1},
-  {id: 'f6', feature: 'Dark mode', adoption: 57, users: 729600, delta: 7.8},
-  {id: 'f7', feature: 'Collaboration', adoption: 24, users: 307200, delta: 9.3},
-  {id: 'f8', feature: 'Integrations', adoption: 18, users: 230400, delta: 4.5},
-];
-
-// Retention curve: % of a cohort still active by day since signup.
-const RETENTION_CURVE = [
-  {t: 0, label: 'Day 0', pct: 100},
-  {t: 1, label: 'Day 1', pct: 64},
-  {t: 2, label: 'Day 3', pct: 48},
-  {t: 3, label: 'Day 7', pct: 39},
-  {t: 4, label: 'Day 14', pct: 32},
-  {t: 5, label: 'Day 30', pct: 27},
-  {t: 6, label: 'Day 60', pct: 23},
-  {t: 7, label: 'Day 90', pct: 21},
-];
-
-interface PageRow extends Record<string, unknown> {
-  id: string;
-  page: string;
-  views: number;
-  avgTime: string;
-  exitRate: number;
-}
-
-const TOP_PAGES: PageRow[] = [
-  {id: 'p1', page: '/home', views: 842000, avgTime: '2m 14s', exitRate: 22},
-  {id: 'p2', page: '/explore', views: 615000, avgTime: '3m 48s', exitRate: 18},
-  {id: 'p3', page: '/library', views: 483000, avgTime: '4m 12s', exitRate: 27},
-  {id: 'p4', page: '/settings', views: 312000, avgTime: '1m 36s', exitRate: 41},
-  {id: 'p5', page: '/profile', views: 287000, avgTime: '2m 02s', exitRate: 33},
-  {id: 'p6', page: '/pricing', views: 194000, avgTime: '1m 58s', exitRate: 38},
-];
-
-const PAGE_MAX = Math.max(...TOP_PAGES.map(p => p.views));
-
-// ============= GEOGRAPHY =============
-
-interface GeoRow extends Record<string, unknown> {
-  id: string;
-  country: string;
-  users: number;
-  share: number;
-  delta: number;
-}
-
-const GEO: GeoRow[] = [
-  {id: 'g1', country: 'United States', users: 384000, share: 30, delta: 3.1},
-  {id: 'g2', country: 'India', users: 218000, share: 17, delta: 12.4},
-  {id: 'g3', country: 'Brazil', users: 141000, share: 11, delta: 6.8},
-  {id: 'g4', country: 'United Kingdom', users: 102000, share: 8, delta: 1.2},
-  {id: 'g5', country: 'Germany', users: 89000, share: 7, delta: -0.6},
-  {id: 'g6', country: 'Indonesia', users: 76000, share: 6, delta: 9.1},
-  {id: 'g7', country: 'Canada', users: 64000, share: 5, delta: 2.3},
-  {id: 'g8', country: 'France', users: 58000, share: 4, delta: -1.4},
-];
-
-const GEO_MAX = Math.max(...GEO.map(g => g.users));
-
 // ============= FILTER OPTIONS =============
 
 const RANGE_OPTIONS = [
@@ -418,8 +351,6 @@ const DEVICE_OPTIONS = [
   {value: 'tablet', label: 'Tablet'},
 ];
 
-const TABS = ['Overview', 'Demographics', 'Engagement', 'Geography'];
-
 // ============= SHARED PIECES =============
 
 // Icon's `color` prop only takes semantic names, but the legend swatch must
@@ -437,27 +368,23 @@ function LegendDot({color, label}: {color: string; label: string}) {
   );
 }
 
-function nf(n: number): string {
-  return n.toLocaleString();
+// Locale is pinned: this is a client component, and letting the server and the
+// browser pick different default locales produces a hydration mismatch (and
+// breaks the deterministic previews this template promises).
+function formatNumber(n: number): string {
+  return n.toLocaleString('en-US');
 }
 
 // ============= METRIC MINI-CARD (with sparkline + 4 deltas) =============
 
-function DeltaValue({
-  label,
-  value,
-  higherIsBetter,
-}: {
-  label: string;
-  value: number;
-  higherIsBetter: boolean;
-}) {
+// Direction is carried by the arrow next to the metric value; the delta
+// figures themselves stay neutral so a card with four of them doesn't turn
+// into a wall of red and green.
+function DeltaValue({label, value}: {label: string; value: number}) {
   const flat = value === 0;
-  const favorable = higherIsBetter ? value >= 0 : value <= 0;
-  const variant = flat ? 'neutral' : favorable ? 'green' : 'red';
   const sign = value > 0 ? '+' : '';
   return (
-    <Text type="body" weight="bold" color="primary">
+    <Text type="body" weight="bold" color="primary" hasTabularNumbers>
       {flat ? '—' : `${sign}${value.toFixed(1)}%`}{' '}
       <Text type="inherit" weight="normal" color="secondary">
         {label}
@@ -466,28 +393,32 @@ function DeltaValue({
   );
 }
 
-function MiniSparkline({data, color}: {data: number[]; color: string}) {
-  const chartData = data.map((v, i) => ({i, v}));
+// The sparkline restates the trend the value and arrow already convey, so it
+// is decorative: hidden from assistive tech rather than announced as an
+// unlabelled chart.
+function MiniSparkline({data, color}: {data: SparkPoint[]; color: string}) {
   return (
-    <ResponsiveContainer width="100%" height={48}>
-      <LineChart
-        data={chartData}
-        margin={{top: 4, right: 0, left: 0, bottom: 0}}>
-        <Line
-          type="linear"
-          dataKey="v"
-          stroke={color}
-          strokeWidth={1.25}
-          strokeLinecap="butt"
-          strokeLinejoin="miter"
-          dot={false}
-          isAnimationActive={false}
-        />
-      </LineChart>
-    </ResponsiveContainer>
+    <div aria-hidden="true">
+      <ResponsiveContainer width="100%" height={48}>
+        <LineChart data={data} margin={{top: 4, right: 0, left: 0, bottom: 0}}>
+          <Line
+            type="linear"
+            dataKey="v"
+            stroke={color}
+            strokeWidth={1.25}
+            strokeLinecap="butt"
+            strokeLinejoin="miter"
+            dot={false}
+            isAnimationActive={false}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
   );
 }
 
+// Deltas sit in a 2x2 grid rather than a wrapping row so the four figures line
+// up across every card regardless of how wide the number renders.
 function MetricCard({metric}: {metric: Metric}) {
   const trendUp = metric.deltas.ww >= 0;
   const favorable = metric.higherIsBetter ? trendUp : !trendUp;
@@ -500,7 +431,12 @@ function MetricCard({metric}: {metric: Metric}) {
             {metric.label}
           </Text>
           <HStack gap={2} vAlign="center">
-            <Heading level={1}>{metric.value}</Heading>
+            {/* Sized as the card's hero number, but demoted in the document
+                outline: these sit under the section's h2, not beside the
+                page's h1. */}
+            <Heading level={1} accessibilityLevel={3}>
+              {metric.value}
+            </Heading>
             <Icon
               icon={trendUp ? ArrowUpIcon : ArrowDownIcon}
               size="sm"
@@ -509,18 +445,12 @@ function MetricCard({metric}: {metric: Metric}) {
           </HStack>
         </VStack>
         <MiniSparkline data={metric.spark} color={sparkColor} />
-        <HStack gap={4}>
-          <DeltaValue
-            label="w/w"
-            value={metric.deltas.ww}
-            higherIsBetter={metric.higherIsBetter}
-          />
-          <DeltaValue
-            label="m/m"
-            value={metric.deltas.mm}
-            higherIsBetter={metric.higherIsBetter}
-          />
-        </HStack>
+        <Grid columns={2} gap={2}>
+          <DeltaValue label="d/d" value={metric.deltas.dd} />
+          <DeltaValue label="w/w" value={metric.deltas.ww} />
+          <DeltaValue label="m/m" value={metric.deltas.mm} />
+          <DeltaValue label="y/y" value={metric.deltas.yy} />
+        </Grid>
       </VStack>
     </Card>
   );
@@ -573,7 +503,7 @@ function ActiveTrendTooltip({
           <LegendDot
             key={entry.name}
             color={entry.color}
-            label={`${entry.name}: ${nf(entry.value)}K`}
+            label={`${entry.name}: ${formatNumber(entry.value)}K`}
           />
         ))}
       </VStack>
@@ -666,13 +596,23 @@ function ActiveUsersTrend() {
 
 // ============= BREAKDOWN (horizontal stacked bar) =============
 
-function BreakdownCard({title, data}: {title: string; data: Segment2[]}) {
+function BreakdownCard({
+  title,
+  data,
+}: {
+  title: string;
+  data: BreakdownSegment[];
+}) {
   const total = data.reduce((s, d) => s + d.value, 0);
   const chartData = [Object.fromEntries(data.map(d => [d.label, d.value]))];
   return (
     <Card>
       <VStack gap={4}>
-        <Heading level={4}>{title}</Heading>
+        {/* Card-title sizing, but h3 in the outline — these sit under the
+            "Audience demographics" h2, so level 4 would skip a rank. */}
+        <Heading level={4} accessibilityLevel={3}>
+          {title}
+        </Heading>
         <ResponsiveContainer width="100%" height={24}>
           <BarChart
             data={chartData}
@@ -703,7 +643,7 @@ function BreakdownCard({title, data}: {title: string; data: Segment2[]}) {
           {data.map(d => (
             <HStack key={d.label} hAlign="between" vAlign="center">
               <LegendDot color={d.color} label={d.label} />
-              <Text type="supporting" weight="semibold">
+              <Text type="supporting" weight="semibold" hasTabularNumbers>
                 {d.value}%
               </Text>
             </HStack>
@@ -749,8 +689,8 @@ const acquisitionColumns: TableColumn<AcqRow>[] = [
           label={`${item.channel} users`}
           isLabelHidden
         />
-        <Text type="supporting" color="secondary">
-          {nf(item.users)}
+        <Text type="supporting" color="secondary" hasTabularNumbers>
+          {formatNumber(item.users)}
         </Text>
       </VStack>
     ),
@@ -759,7 +699,11 @@ const acquisitionColumns: TableColumn<AcqRow>[] = [
     key: 'share',
     header: 'Share',
     width: pixel(90),
-    renderCell: (item: AcqRow) => <Text type="body">{item.share}%</Text>,
+    renderCell: (item: AcqRow) => (
+      <Text type="body" hasTabularNumbers>
+        {item.share}%
+      </Text>
+    ),
   },
   {
     key: 'delta',
@@ -768,222 +712,6 @@ const acquisitionColumns: TableColumn<AcqRow>[] = [
     renderCell: (item: AcqRow) => <DeltaBadge value={item.delta} />,
   },
 ];
-
-const featureColumns: TableColumn<FeatureRow>[] = [
-  {
-    key: 'feature',
-    header: 'Feature',
-    width: pixel(160),
-    renderCell: (item: FeatureRow) => (
-      <Text type="body" weight="semibold">
-        {item.feature}
-      </Text>
-    ),
-  },
-  {
-    key: 'adoption',
-    header: 'Adoption',
-    width: proportional(1),
-    renderCell: (item: FeatureRow) => (
-      <VStack gap={1}>
-        <ProgressBar
-          value={item.adoption}
-          max={100}
-          variant={
-            item.adoption >= 60
-              ? 'success'
-              : item.adoption >= 35
-                ? 'accent'
-                : 'warning'
-          }
-          label={`${item.feature} adoption`}
-          isLabelHidden
-        />
-        <Text type="supporting" color="secondary">
-          {item.adoption}% · {nf(item.users)} users
-        </Text>
-      </VStack>
-    ),
-  },
-  {
-    key: 'delta',
-    header: 'w/w',
-    width: pixel(100),
-    renderCell: (item: FeatureRow) => <DeltaBadge value={item.delta} />,
-  },
-];
-
-const pageColumns: TableColumn<PageRow>[] = [
-  {
-    key: 'page',
-    header: 'Page',
-    width: pixel(140),
-    renderCell: (item: PageRow) => (
-      <Text type="body" weight="semibold">
-        {item.page}
-      </Text>
-    ),
-  },
-  {
-    key: 'views',
-    header: 'Views',
-    width: proportional(1),
-    renderCell: (item: PageRow) => (
-      <VStack gap={1}>
-        <ProgressBar
-          value={item.views}
-          max={PAGE_MAX}
-          label={`${item.page} views`}
-          isLabelHidden
-        />
-        <Text type="supporting" color="secondary">
-          {nf(item.views)}
-        </Text>
-      </VStack>
-    ),
-  },
-  {
-    key: 'avgTime',
-    header: 'Avg. time',
-    width: pixel(110),
-    renderCell: (item: PageRow) => <Text type="body">{item.avgTime}</Text>,
-  },
-  {
-    key: 'exitRate',
-    header: 'Exit rate',
-    width: pixel(100),
-    renderCell: (item: PageRow) => <Text type="body">{item.exitRate}%</Text>,
-  },
-];
-
-const geoColumns: TableColumn<GeoRow>[] = [
-  {
-    key: 'country',
-    header: 'Country',
-    width: pixel(180),
-    renderCell: (item: GeoRow) => (
-      <Text type="body" weight="semibold">
-        {item.country}
-      </Text>
-    ),
-  },
-  {
-    key: 'users',
-    header: 'Users',
-    width: proportional(1),
-    renderCell: (item: GeoRow) => (
-      <VStack gap={1}>
-        <ProgressBar
-          value={item.users}
-          max={GEO_MAX}
-          label={`${item.country} users`}
-          isLabelHidden
-        />
-        <Text type="supporting" color="secondary">
-          {nf(item.users)}
-        </Text>
-      </VStack>
-    ),
-  },
-  {
-    key: 'share',
-    header: 'Share',
-    width: pixel(90),
-    renderCell: (item: GeoRow) => <Text type="body">{item.share}%</Text>,
-  },
-  {
-    key: 'delta',
-    header: 'w/w',
-    width: pixel(100),
-    renderCell: (item: GeoRow) => <DeltaBadge value={item.delta} />,
-  },
-];
-
-// ============= RETENTION CURVE =============
-
-interface RetentionTooltipEntry {
-  value: number;
-  color: string;
-}
-
-function RetentionTooltip({
-  active,
-  payload,
-  label,
-}: {
-  active?: boolean;
-  payload?: RetentionTooltipEntry[];
-  label?: number;
-}) {
-  if (!active || !payload?.length) {
-    return null;
-  }
-  const d =
-    typeof label === 'number' ? (RETENTION_CURVE[label]?.label ?? '') : '';
-  return (
-    <Card padding={3}>
-      <VStack gap={1}>
-        <Text type="supporting" color="secondary">
-          {d}
-        </Text>
-        <LegendDot
-          color={payload[0].color}
-          label={`Retention: ${payload[0].value}%`}
-        />
-      </VStack>
-    </Card>
-  );
-}
-
-function RetentionChart() {
-  return (
-    <ResponsiveContainer width="100%" height={240}>
-      <AreaChart
-        data={RETENTION_CURVE}
-        margin={{top: 5, right: 12, left: 0, bottom: 5}}>
-        <defs>
-          <linearGradient id="ret-grad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor={COLORS.purple} stopOpacity={0.3} />
-            <stop offset="95%" stopColor={COLORS.purple} stopOpacity={0.04} />
-          </linearGradient>
-        </defs>
-        <CartesianGrid horizontal vertical={false} stroke={GRID_STROKE} />
-        <XAxis
-          dataKey="t"
-          type="number"
-          domain={[0, RETENTION_CURVE.length - 1]}
-          ticks={[0, 1, 2, 3, 4, 5, 6, 7]}
-          tickFormatter={(v: number) => RETENTION_CURVE[v]?.label ?? ''}
-          tick={AXIS_TICK}
-          axisLine={false}
-          tickLine={false}
-        />
-        <YAxis
-          tick={AXIS_TICK}
-          axisLine={false}
-          tickLine={false}
-          width={40}
-          unit="%"
-          domain={[0, 100]}
-        />
-        <Tooltip
-          content={<RetentionTooltip />}
-          cursor={{stroke: GRID_STROKE}}
-        />
-        <Area
-          type="monotone"
-          dataKey="pct"
-          name="Retention"
-          stroke={COLORS.purple}
-          strokeWidth={2}
-          fill="url(#ret-grad)"
-          dot={false}
-          isAnimationActive={false}
-        />
-      </AreaChart>
-    </ResponsiveContainer>
-  );
-}
 
 // ============= SECTION HEADING =============
 
@@ -1028,21 +756,27 @@ function SectionHeading({
 
 // ============= MAIN =============
 
+// The filters are presentational: the fixtures are a fixed snapshot, so the
+// controls annotate the view rather than re-slicing the data. Swapping the
+// fixtures for a query is the seam a consumer replaces.
+function labelFor(
+  options: readonly {value: string; label: string}[],
+  value: string,
+): string {
+  return options.find(o => o.value === value)?.label ?? '';
+}
+
 export default function DataDashboardPage() {
-  const [activeTab, setActiveTab] = useState('Overview');
   // Matches TREND_DAYS — the fixtures render a full quarter.
   const [range, setRange] = useState<DateRange>('90d');
   const [segment, setSegment] = useState<Segment>('all');
-  const [device, setDevice] = useState('all');
+  const [device, setDevice] = useState<DeviceFilter>('all');
 
-  const rangeLabel = RANGE_OPTIONS.find(o => o.value === range)?.label ?? '';
-  const segmentLabel =
-    SEGMENT_OPTIONS.find(o => o.value === segment)?.label ?? '';
-
-  const summary = useMemo(
-    () => `${segmentLabel} · ${rangeLabel}`,
-    [segmentLabel, rangeLabel],
-  );
+  const summary = [
+    labelFor(SEGMENT_OPTIONS, segment),
+    labelFor(DEVICE_OPTIONS, device),
+    labelFor(RANGE_OPTIONS, range),
+  ].join(' · ');
 
   return (
     <Layout
@@ -1050,16 +784,14 @@ export default function DataDashboardPage() {
       contentWidth={1440}
       header={
         <LayoutHeader hasDivider>
-          <VStack gap={3}>
-            <HStack gap={3} vAlign="center" wrap="wrap">
-              <StackItem size="fill">
-                <VStack gap={0}>
-                  <Heading level={1}>Data Dashboard</Heading>
-                  <Text type="supporting" color="secondary">
-                    User analytics overview · {summary}
-                  </Text>
-                </VStack>
-              </StackItem>
+          <HStack gap={3} vAlign="center" hAlign="between" wrap="wrap">
+            <VStack gap={0}>
+              <Heading level={1}>Data Dashboard</Heading>
+              <Text type="supporting" color="secondary">
+                User analytics overview · {summary}
+              </Text>
+            </VStack>
+            <HStack gap={1}>
               <Selector
                 label="Date range"
                 isLabelHidden
@@ -1079,144 +811,74 @@ export default function DataDashboardPage() {
                 isLabelHidden
                 options={DEVICE_OPTIONS}
                 value={device}
-                onChange={setDevice}
+                onChange={value => setDevice(value as DeviceFilter)}
               />
               <Button
                 label="Export"
                 variant="secondary"
-                size="sm"
                 icon={<Icon icon={ArrowDownTrayIcon} size="sm" />}
               />
             </HStack>
-            <TabList value={activeTab} onChange={setActiveTab} layout="hug">
-              {TABS.map(tab => (
-                <Tab key={tab} value={tab} label={tab} />
-              ))}
-            </TabList>
-          </VStack>
+          </HStack>
         </LayoutHeader>
       }
       content={
         <LayoutContent padding={6}>
-          {activeTab === 'Overview' && (
-            <VStack gap={10}>
-              <VStack gap={6}>
-                <SectionHeading
-                  title="Key Metrics"
-                  hint={summary}
-                  icon={UsersIcon}
-                />
-                <Grid
-                  columns={{minWidth: 240, repeat: 'fit'}}
-                  gap={4}
-                  xstyle={metricsGridStyles.grid}>
-                  {OVERVIEW_METRICS.map(metric => (
-                    <MetricCard key={metric.key} metric={metric} />
-                  ))}
-                </Grid>
-              </VStack>
-              <VStack gap={6}>
-                <SectionHeading
-                  title="Devices"
-                  hint="Daily active users (thousands)"
-                  icon={CursorArrowRaysIcon}
-                />
-                <Card padding={6}>
-                  <VStack gap={6}>
-                    <Text type="label">Daily active users by device type</Text>
-                    <ActiveUsersTrend />
-                  </VStack>
-                </Card>
-              </VStack>
-              <Divider />
-              <VStack gap={6}>
-                <SectionHeading
-                  title="Audience demographics"
-                  hint={summary}
-                  icon={UsersIcon}
-                />
-                <Grid columns={{minWidth: 320, repeat: 'fit'}} gap={4}>
-                  <BreakdownCard title="Age" data={AGE_DATA} />
-                  <BreakdownCard title="Gender" data={GENDER_DATA} />
-                  <BreakdownCard title="Device" data={DEVICE_DATA} />
-                </Grid>
-              </VStack>
-              <VStack gap={6}>
-                <SectionHeading
-                  title="Acquisition channels"
-                  hint="How users find the product"
-                />
-                <Card>
-                  <Table<AcqRow>
-                    data={ACQUISITION}
-                    columns={acquisitionColumns}
-                    idKey="id"
-                    density="balanced"
-                    dividers="rows"
-                    hasHover
-                  />
-                </Card>
-              </VStack>
-            </VStack>
-          )}
-
-          {activeTab === 'Engagement' && (
+          <VStack gap={10}>
             <VStack gap={6}>
               <SectionHeading
-                title="Feature engagement"
-                hint="Adoption by feature"
-                icon={ArrowPathRoundedSquareIcon}
-              />
-              <Card>
-                <Table<FeatureRow>
-                  data={FEATURES}
-                  columns={featureColumns}
-                  idKey="id"
-                  density="balanced"
-                  dividers="rows"
-                  hasHover
-                />
-              </Card>
-              <Divider />
-              <Grid columns={{minWidth: 380, repeat: 'fit'}} gap={6}>
-                <VStack gap={4}>
-                  <SectionHeading
-                    title="Retention"
-                    hint="Cohort still active by day"
-                    icon={ClockIcon}
-                  />
-                  <Card>
-                    <RetentionChart />
-                  </Card>
-                </VStack>
-                <VStack gap={4}>
-                  <SectionHeading title="Top pages" hint="By views" />
-                  <Card>
-                    <Table<PageRow>
-                      data={TOP_PAGES}
-                      columns={pageColumns}
-                      idKey="id"
-                      density="balanced"
-                      dividers="rows"
-                      hasHover
-                    />
-                  </Card>
-                </VStack>
-              </Grid>
-            </VStack>
-          )}
-
-          {activeTab === 'Geography' && (
-            <VStack gap={6}>
-              <SectionHeading
-                title="Users by country"
-                hint={summary}
+                title="Key metrics"
+                hint="Change vs. prior day, week, month, and year"
                 icon={UsersIcon}
               />
+              <Grid
+                columns={{minWidth: 240, repeat: 'fit'}}
+                gap={3}
+                xstyle={metricsGridStyles.grid}>
+                {OVERVIEW_METRICS.map(metric => (
+                  <MetricCard key={metric.key} metric={metric} />
+                ))}
+              </Grid>
+            </VStack>
+
+            <VStack gap={6}>
+              <SectionHeading
+                title="Devices"
+                hint="Daily active users (thousands)"
+                icon={CursorArrowRaysIcon}
+              />
+              <Card padding={6}>
+                <VStack gap={6}>
+                  <Text type="label">Daily active users by device type</Text>
+                  <ActiveUsersTrend />
+                </VStack>
+              </Card>
+            </VStack>
+
+            <Divider />
+
+            <VStack gap={6}>
+              <SectionHeading
+                title="Audience demographics"
+                hint="Share of active users"
+                icon={UsersIcon}
+              />
+              <Grid columns={{minWidth: 320, repeat: 'fit'}} gap={4}>
+                <BreakdownCard title="Age" data={AGE_DATA} />
+                <BreakdownCard title="Gender" data={GENDER_DATA} />
+                <BreakdownCard title="Device" data={DEVICE_DATA} />
+              </Grid>
+            </VStack>
+
+            <VStack gap={6}>
+              <SectionHeading
+                title="Acquisition channels"
+                hint="How users find the product"
+              />
               <Card>
-                <Table<GeoRow>
-                  data={GEO}
-                  columns={geoColumns}
+                <Table<AcqRow>
+                  data={ACQUISITION}
+                  columns={acquisitionColumns}
                   idKey="id"
                   density="balanced"
                   dividers="rows"
@@ -1224,7 +886,7 @@ export default function DataDashboardPage() {
                 />
               </Card>
             </VStack>
-          )}
+          </VStack>
         </LayoutContent>
       }
     />

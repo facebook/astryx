@@ -18,10 +18,10 @@
  */
 
 import {useMemo, useState, type CSSProperties} from 'react';
+import * as stylex from '@stylexjs/stylex';
 import {
   VStack,
   HStack,
-  StackItem,
   Layout,
   LayoutContent,
   LayoutHeader,
@@ -38,7 +38,7 @@ import {
   SegmentedControl,
   SegmentedControlItem,
 } from '@astryxdesign/core/SegmentedControl';
-import {Table, proportional, pixel} from '@astryxdesign/core/Table';
+import {Table, pixel} from '@astryxdesign/core/Table';
 import type {TableColumn} from '@astryxdesign/core/Table';
 import {
   BarChart,
@@ -96,6 +96,30 @@ const FUNNEL_COLORS = [
   COLORS.purple,
 ];
 
+// ============= STYLES =============
+
+const styles = stylex.create({
+  // Rules between the drop-off steps. Each step draws its own leading rule,
+  // pulled half a gap to the left so it sits centred in the column gap. The
+  // step that starts a row draws its rule outside the grid's content box,
+  // where `overflowX: clip` hides it — so the separators stay correct as the
+  // grid reflows from four columns down to one.
+  //
+  // The `--spacing-3` below must match the step Grid's `gap={3}`, otherwise
+  // the rules sit off-centre. StyleX needs a literal here, so the two can't
+  // share a constant — keep them in sync by hand.
+  stepGrid: {
+    overflowX: 'clip',
+  },
+  step: {
+    borderInlineStartWidth: '1px',
+    borderInlineStartStyle: 'solid',
+    borderInlineStartColor: 'var(--color-border, rgba(5, 54, 89, 0.1))',
+    marginInlineStart: 'calc(var(--spacing-3, 12px) / -2)',
+    paddingInlineStart: 'calc(var(--spacing-3, 12px) / 2)',
+  },
+});
+
 // ============= FUNNEL DATA =============
 
 // Window multipliers applied to the base (30d) stage counts.
@@ -143,21 +167,59 @@ interface TrendPoint {
   subscribe: number;
 }
 
-// 12 weeks of stage-conversion rates (%). Signup->activate->subscribe.
+// Weekly stage-conversion rates (%). Signup->activate->subscribe.
+//
+// Shaped as a plausible growth story rather than a smooth ramp, so the chart
+// reads like real telemetry: a W7 pricing test lifts paid conversion, a W9-W10
+// onboarding regression sinks activation until a fix ships, a W15 acquisition
+// campaign spikes signups with low-intent traffic (activation dips as signup
+// peaks, and the two series cross), W18 is an outage week that knocks all three
+// down together, and W19+ recovers to a net-upward trend.
 const TREND: TrendPoint[] = [
   {t: 0, label: 'W1', signup: 30.1, activate: 52.4, subscribe: 38.2},
-  {t: 1, label: 'W2', signup: 30.8, activate: 52.9, subscribe: 38.9},
-  {t: 2, label: 'W3', signup: 31.2, activate: 53.6, subscribe: 39.4},
-  {t: 3, label: 'W4', signup: 30.6, activate: 54.1, subscribe: 39.1},
-  {t: 4, label: 'W5', signup: 31.9, activate: 54.8, subscribe: 40.2},
-  {t: 5, label: 'W6', signup: 32.4, activate: 55.2, subscribe: 40.8},
-  {t: 6, label: 'W7', signup: 32.1, activate: 54.6, subscribe: 40.1},
-  {t: 7, label: 'W8', signup: 32.8, activate: 55.9, subscribe: 41.3},
-  {t: 8, label: 'W9', signup: 33.4, activate: 56.4, subscribe: 41.9},
-  {t: 9, label: 'W10', signup: 33.1, activate: 56.1, subscribe: 41.6},
-  {t: 10, label: 'W11', signup: 33.9, activate: 57.2, subscribe: 42.4},
-  {t: 11, label: 'W12', signup: 34.2, activate: 57.8, subscribe: 43.1},
+  {t: 1, label: 'W2', signup: 31.4, activate: 54.1, subscribe: 36.9},
+  {t: 2, label: 'W3', signup: 29.2, activate: 51.2, subscribe: 39.8},
+  {t: 3, label: 'W4', signup: 32.6, activate: 55.8, subscribe: 37.1},
+  {t: 4, label: 'W5', signup: 28.4, activate: 53.6, subscribe: 40.4},
+  {t: 5, label: 'W6', signup: 31.8, activate: 56.2, subscribe: 38.3},
+  {t: 6, label: 'W7', signup: 33.5, activate: 54.3, subscribe: 44.6},
+  {t: 7, label: 'W8', signup: 30.2, activate: 57.1, subscribe: 42.1},
+  {t: 8, label: 'W9', signup: 34.1, activate: 48.9, subscribe: 37.4},
+  {t: 9, label: 'W10', signup: 29.6, activate: 46.2, subscribe: 35.2},
+  {t: 10, label: 'W11', signup: 32.9, activate: 50.4, subscribe: 38.9},
+  {t: 11, label: 'W12', signup: 35.4, activate: 55.6, subscribe: 41.3},
+  {t: 12, label: 'W13', signup: 31.1, activate: 57.3, subscribe: 39.2},
+  {t: 13, label: 'W14', signup: 33.8, activate: 54.8, subscribe: 42.8},
+  {t: 14, label: 'W15', signup: 41.2, activate: 49.6, subscribe: 40.1},
+  {t: 15, label: 'W16', signup: 38.6, activate: 47.8, subscribe: 36.4},
+  {t: 16, label: 'W17', signup: 30.4, activate: 53.2, subscribe: 39.7},
+  {t: 17, label: 'W18', signup: 26.8, activate: 44.1, subscribe: 34.2},
+  {t: 18, label: 'W19', signup: 31.9, activate: 51.7, subscribe: 38.1},
+  {t: 19, label: 'W20', signup: 34.7, activate: 56.4, subscribe: 41.9},
+  {t: 20, label: 'W21', signup: 32.2, activate: 58.2, subscribe: 44.2},
+  {t: 21, label: 'W22', signup: 36.1, activate: 55.1, subscribe: 40.6},
+  {t: 22, label: 'W23', signup: 33.4, activate: 59.4, subscribe: 43.8},
+  {t: 23, label: 'W24', signup: 37.2, activate: 56.8, subscribe: 46.1},
+  {t: 24, label: 'W25', signup: 34.9, activate: 60.1, subscribe: 42.7},
+  {t: 25, label: 'W26', signup: 38.4, activate: 58.6, subscribe: 45.3},
 ];
+
+// One row per plotted series, so the chart lines and the legend below it can't
+// drift apart — both are rendered from this list.
+const TREND_SERIES = [
+  {key: 'signup', name: 'Visit → signup', color: COLORS.blue},
+  {key: 'activate', name: 'Signup → activation', color: COLORS.green},
+  {key: 'subscribe', name: 'Activation → paid', color: COLORS.orange},
+] as const;
+
+// Label every fifth week. Derived from TREND so the axis stays in-domain when
+// the fixture grows or shrinks.
+const TREND_TICK_STEP = 5;
+const TREND_TICKS = Array.from(
+  {length: Math.ceil(TREND.length / TREND_TICK_STEP)},
+  (_, i) => i * TREND_TICK_STEP,
+);
+const formatTrendTick = (v: number) => TREND[v]?.label ?? '';
 
 // ============= COHORT RETENTION =============
 
@@ -374,22 +436,24 @@ function nf(n: number): string {
 function KpiTile({kpi}: {kpi: Kpi}) {
   const favorable = kpi.higherIsBetter ? kpi.delta >= 0 : kpi.delta <= 0;
   return (
-    <Card>
-      <VStack gap={2}>
+    <Card padding={4}>
+      <VStack gap={1}>
         <Text type="label" color="secondary">
           {kpi.label}
         </Text>
-        <Heading level={2}>{kpi.value}</Heading>
-        <HStack gap={1} vAlign="center">
-          <Icon
-            icon={kpi.delta >= 0 ? ArrowUpIcon : ArrowDownIcon}
-            size="xsm"
-            color={favorable ? 'success' : 'error'}
-          />
-          <Text type="supporting" color="secondary">
-            {kpi.delta >= 0 ? '+' : ''}
-            {kpi.delta.toFixed(1)} pts vs. prior
-          </Text>
+        <HStack gap={3}>
+          <Heading level={1}>{kpi.value}</Heading>
+          <HStack gap={1} vAlign="center">
+            <Icon
+              icon={kpi.delta >= 0 ? ArrowUpIcon : ArrowDownIcon}
+              size="xsm"
+              color={favorable ? 'success' : 'error'}
+            />
+            <Text type="supporting" color="secondary">
+              {kpi.delta >= 0 ? '+' : ''}
+              {kpi.delta.toFixed(1)} pts vs. prior
+            </Text>
+          </HStack>
         </HStack>
       </VStack>
     </Card>
@@ -441,7 +505,7 @@ function FunnelTooltip({
   );
 }
 
-function ConversionFunnel({segment}: {segment: Segment; window: FunnelWindow}) {
+function ConversionFunnel({segment}: {segment: Segment}) {
   const bars = useMemo<FunnelBar[]>(() => {
     const top = FUNNEL_STAGES[0].users[segment];
     return FUNNEL_STAGES.map((stage, i) => {
@@ -512,32 +576,33 @@ function FunnelSteps({segment}: {segment: Segment}) {
   }, [segment]);
 
   return (
-    <Grid columns={{minWidth: 200, repeat: 'fit'}} gap={4}>
+    <Grid
+      columns={{minWidth: 200, repeat: 'fit'}}
+      gap={3}
+      xstyle={styles.stepGrid}>
       {steps.map(step => {
         const leaky = step.drop >= 55;
         return (
-          <Card key={step.key}>
-            <VStack gap={2}>
-              <Text type="supporting" color="secondary">
-                {step.label}
-              </Text>
-              <HStack gap={2} vAlign="center">
-                <Heading level={3}>{step.conv.toFixed(1)}%</Heading>
-                <Token
-                  size="sm"
-                  color={leaky ? 'red' : 'green'}
-                  icon={
-                    <Icon
-                      icon={ArrowTrendingDownIcon}
-                      size="xsm"
-                      color="inherit"
-                    />
-                  }
-                  label={`-${step.drop.toFixed(0)}%`}
-                />
-              </HStack>
-            </VStack>
-          </Card>
+          <VStack key={step.key} gap={1} xstyle={styles.step}>
+            <Text type="label" color="secondary">
+              {step.label}
+            </Text>
+            <HStack gap={2} vAlign="center">
+              <Heading level={2}>{step.conv.toFixed(1)}%</Heading>
+              <Token
+                size="sm"
+                color={leaky ? 'red' : 'green'}
+                icon={
+                  <Icon
+                    icon={ArrowTrendingDownIcon}
+                    size="xsm"
+                    color="inherit"
+                  />
+                }
+                label={`-${step.drop.toFixed(0)}%`}
+              />
+            </HStack>
+          </VStack>
         );
       })}
     </Grid>
@@ -595,8 +660,8 @@ function ConversionTrend() {
             dataKey="t"
             type="number"
             domain={[0, TREND.length - 1]}
-            ticks={[0, 3, 7, 11]}
-            tickFormatter={(v: number) => TREND[v]?.label ?? ''}
+            ticks={TREND_TICKS}
+            tickFormatter={formatTrendTick}
             tick={AXIS_TICK}
             axisLine={false}
             tickLine={false}
@@ -609,39 +674,29 @@ function ConversionTrend() {
             unit="%"
           />
           <Tooltip content={<TrendTooltip />} cursor={{stroke: GRID_STROKE}} />
-          <Line
-            type="monotone"
-            dataKey="signup"
-            name="Visit → signup"
-            stroke={COLORS.blue}
-            strokeWidth={2}
-            dot={false}
-            isAnimationActive={false}
-          />
-          <Line
-            type="monotone"
-            dataKey="activate"
-            name="Signup → activation"
-            stroke={COLORS.green}
-            strokeWidth={2}
-            dot={false}
-            isAnimationActive={false}
-          />
-          <Line
-            type="monotone"
-            dataKey="subscribe"
-            name="Activation → paid"
-            stroke={COLORS.orange}
-            strokeWidth={2}
-            dot={false}
-            isAnimationActive={false}
-          />
+          {TREND_SERIES.map(series => (
+            <Line
+              key={series.key}
+              type="linear"
+              dataKey={series.key}
+              name={series.name}
+              stroke={series.color}
+              strokeWidth={1.5}
+              strokeLinejoin="miter"
+              dot={false}
+              isAnimationActive={false}
+            />
+          ))}
         </LineChart>
       </ResponsiveContainer>
       <HStack gap={5} vAlign="center" wrap="wrap">
-        <LegendDot color={COLORS.blue} label="Visit → signup" />
-        <LegendDot color={COLORS.green} label="Signup → activation" />
-        <LegendDot color={COLORS.orange} label="Activation → paid" />
+        {TREND_SERIES.map(series => (
+          <LegendDot
+            key={series.key}
+            color={series.color}
+            label={series.name}
+          />
+        ))}
       </HStack>
     </VStack>
   );
@@ -714,14 +769,14 @@ const cohortRows: CohortRow[] = COHORTS.map((c, i) => ({
 
 function SectionHeading({title, hint}: {title: string; hint?: string}) {
   return (
-    <HStack hAlign="between" vAlign="center" gap={3}>
-      <Heading level={3}>{title}</Heading>
+    <VStack>
+      <Heading level={2}>{title}</Heading>
       {hint ? (
         <Text type="supporting" color="secondary">
           {hint}
         </Text>
       ) : null}
-    </HStack>
+    </VStack>
   );
 }
 
@@ -746,91 +801,89 @@ export default function FunnelCohortAnalyticsPage() {
   return (
     <Layout
       height="fill"
+      padding={4}
       contentWidth={1440}
       header={
         <LayoutHeader hasDivider>
-          <HStack gap={3} vAlign="center" wrap="wrap">
-            <StackItem size="fill">
-              <VStack gap={0}>
-                <Heading level={1}>Funnel & cohort analytics</Heading>
-                <Text type="supporting" color="secondary">
-                  {nf(topOfFunnel)} visitors · {overallConversion}% end-to-end
-                  conversion
-                </Text>
-              </VStack>
-            </StackItem>
-            <SegmentedControl
-              label="Funnel window"
-              value={funnelWindow}
-              onChange={value => setFunnelWindow(value as FunnelWindow)}
-              size="sm">
-              <SegmentedControlItem label="7d" value="7d" />
-              <SegmentedControlItem label="30d" value="30d" />
-              <SegmentedControlItem label="90d" value="90d" />
-            </SegmentedControl>
-            <Selector
-              label="Segment"
-              isLabelHidden
-              options={SEGMENT_OPTIONS}
-              value={segment}
-              onChange={value => setSegment(value as Segment)}
-            />
-            <Button
-              label="Export"
-              variant="secondary"
-              size="sm"
-              icon={<Icon icon={ArrowDownTrayIcon} size="sm" />}
-            />
+          <HStack gap={3} vAlign="center" hAlign="between" wrap="wrap">
+            <VStack gap={0}>
+              <Heading level={1}>Funnel & cohort analytics</Heading>
+              <Text type="supporting" color="secondary">
+                {nf(topOfFunnel)} visitors · {overallConversion}% end-to-end
+                conversion
+              </Text>
+            </VStack>
+            <HStack gap={2}>
+              <SegmentedControl
+                label="Funnel window"
+                value={funnelWindow}
+                onChange={value => setFunnelWindow(value as FunnelWindow)}>
+                <SegmentedControlItem label="7d" value="7d" />
+                <SegmentedControlItem label="30d" value="30d" />
+                <SegmentedControlItem label="90d" value="90d" />
+              </SegmentedControl>
+              <Selector
+                label="Segment"
+                isLabelHidden
+                options={SEGMENT_OPTIONS}
+                value={segment}
+                onChange={value => setSegment(value as Segment)}
+              />
+              <Button
+                label="Export"
+                variant="secondary"
+                icon={<Icon icon={ArrowDownTrayIcon} size="sm" />}
+              />
+            </HStack>
           </HStack>
         </LayoutHeader>
       }
       content={
-        <LayoutContent padding={6}>
-          <VStack gap={6}>
-            {/* KPI row */}
-            <Grid columns={{minWidth: 240, repeat: 'fit'}} gap={4}>
-              {kpis.map(kpi => (
-                <KpiTile key={kpi.key} kpi={kpi} />
-              ))}
-            </Grid>
-
-            <Divider />
-
-            {/* Conversion funnel */}
+        <LayoutContent>
+          <VStack gap={10}>
             <VStack gap={4}>
-              <SectionHeading
-                title="Conversion funnel"
-                hint={`${SEGMENT_OPTIONS.find(o => o.value === segment)?.label} · ${funnelWindow}`}
-              />
-              <Card>
-                <ConversionFunnel segment={segment} window={funnelWindow} />
+              {/* KPI row */}
+              <Grid columns={{minWidth: 240, repeat: 'fit'}} gap={3}>
+                {kpis.map(kpi => (
+                  <KpiTile key={kpi.key} kpi={kpi} />
+                ))}
+              </Grid>
+
+              {/* Conversion funnel */}
+              <Card padding={6}>
+                <VStack gap={6}>
+                  <SectionHeading
+                    title="Conversion funnel"
+                    hint={`${SEGMENT_OPTIONS.find(o => o.value === segment)?.label} · ${funnelWindow}`}
+                  />
+                  <ConversionFunnel segment={segment} />
+                  <Divider />
+                  <FunnelSteps segment={segment} />
+                </VStack>
               </Card>
-              <FunnelSteps segment={segment} />
-            </VStack>
 
-            <Divider />
-
-            {/* Conversion over time */}
-            <VStack gap={4}>
-              <SectionHeading
-                title="Conversion over time"
-                hint="Stage conversion rates · trailing 12 weeks"
-              />
-              <Card>
-                <ConversionTrend />
+              {/* Conversion over time */}
+              <Card padding={6}>
+                <VStack gap={6}>
+                  <SectionHeading
+                    title="Conversion over time"
+                    hint={`Stage conversion rates · trailing ${TREND.length} weeks`}
+                  />
+                  <ConversionTrend />
+                </VStack>
               </Card>
             </VStack>
 
             <Divider />
 
             {/* Cohort retention grid */}
-            <VStack gap={4}>
+            <VStack gap={6}>
               <SectionHeading
                 title="Weekly retention cohorts"
                 hint="Signup week × weeks since signup"
               />
-              <Card>
-                <VStack gap={3}>
+              <Card padding={6}>
+                <VStack gap={8}>
                   <Table<CohortRow>
                     data={cohortRows}
                     columns={cohortColumns}

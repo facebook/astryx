@@ -39,8 +39,12 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import {ArrowDownTrayIcon} from '@heroicons/react/24/outline';
-import {StopIcon} from '@heroicons/react/24/solid';
-import {TriangleIcon} from 'lucide-react';
+import {
+  ArrowUpIcon,
+  ArrowDownIcon,
+  ArrowRightIcon,
+  StopIcon,
+} from '@heroicons/react/24/solid';
 
 // ============= TYPES =============
 
@@ -388,32 +392,24 @@ function LegendDot({color, label}: {color: string; label: string}) {
   );
 }
 
-// lucide's Triangle points up, so down and flat are the same glyph rotated —
-// one marker, three directions, no second import to keep visually in sync.
-const deltaStyles = stylex.create({
-  down: {transform: 'rotate(180deg)'},
-  flat: {transform: 'rotate(90deg)'},
-});
+// Up / down for movement, right for flat — the solid arrow set keeps the delta
+// marker as visually weighty as the value it sits next to.
+const DELTA_ICON = {
+  up: ArrowUpIcon,
+  down: ArrowDownIcon,
+  flat: ArrowRightIcon,
+};
 
 function DeltaIndicator({deltaPct, rag}: {deltaPct: number; rag: Rag}) {
   const sign = deltaPct > 0 ? '+' : '';
-  const direction =
-    deltaPct === 0 ? deltaStyles.flat : deltaPct < 0 ? deltaStyles.down : null;
+  const direction = deltaPct === 0 ? 'flat' : deltaPct < 0 ? 'down' : 'up';
   return (
     <HStack gap={2} vAlign="center">
       <Text type="body" color="secondary">
         {sign}
         {deltaPct.toFixed(1)}%
       </Text>
-      {/* Triangle ships as an outline; filling it gives the solid delta
-          marker that scorecards conventionally use. */}
-      <Icon
-        icon={TriangleIcon}
-        size="xsm"
-        color={RAG_ICON[rag]}
-        fill="currentColor"
-        xstyle={direction}
-      />
+      <Icon icon={DELTA_ICON[direction]} size="xsm" color={RAG_ICON[rag]} />
     </HStack>
   );
 }
