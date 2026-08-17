@@ -69,7 +69,8 @@ overrides:
   '@changesets/parse>js-yaml': ^4.3.1
   fast-uri: ^3.1.5
   ip-address: ^10.3.1
-  brace-expansion: ^2.1.2
+  brace-expansion: ^2.1.4
+  nanoid: ^3.3.18
   # next pulls sharp as an optional dependency for image optimization and still
   # resolves 0.34.5, which inherits the libvips advisories CVE-2026-33327,
   # CVE-2026-33328, CVE-2026-35590 and CVE-2026-35591. They are patched in

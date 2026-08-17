@@ -248,19 +248,37 @@ export interface DefineThemeInput {
    */
   radius?: RadiusScaleConfig;
   /**
-   * Color scale configuration. Generates color token overrides from a
-   * single accent color using the HCT perceptual color model.
+   * Color scale configuration. Generates color token overrides from an
+   * accent seed using the HCT perceptual color model.
    *
    * Only generates tokens derivable from the accent — status colors,
    * categorical hues, and fixed tokens (on-dark/on-light) use defaults.
-   * Explicit `tokens` entries always take precedence.
+   *
+   * `accent` accepts a single hex (same seed for both color schemes) or a
+   * `[light, dark]` tuple, matching `TokenValue`. With a tuple, the light
+   * scheme's full palette derives from the light seed and the dark
+   * scheme's from the dark seed.
    *
    * `accent` is optional — omit it for a neutral-only theme, which keeps
    * the default accent tokens and only themes the neutrals.
    *
+   * Precedence vs `tokens`: explicit `tokens` entries win over generated
+   * values, token by token. Because `--color-accent-muted`,
+   * `--color-text-accent` and `--color-icon-accent` are generated as
+   * `var(--color-accent)` references, a `tokens['--color-accent']`
+   * override re-points them at runtime. `--color-on-accent` does NOT
+   * follow: it is baked from the `color.accent` seed (a contrast
+   * computation CSS cannot express), so overriding the accent through
+   * `tokens` without also overriding `--color-on-accent` leaves the two
+   * out of sync. To re-seat the whole palette per scheme, prefer a tuple
+   * `color.accent` over the `tokens['--color-accent']` workaround.
+   *
    * @example
-   * ```tsx
+   * ```
    * color: { accent: '#0064E0', neutralStyle: 'cool', contrast: 'standard' }
+   *
+   * // Per-scheme accents — light palette from the first seed, dark from the second
+   * color: { accent: ['#0064E0', '#48CAE4'] }
    *
    * // Neutral-only — accent tokens stay at their defaults
    * color: { neutralStyle: 'warm' }
