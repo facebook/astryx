@@ -592,11 +592,15 @@ export function Dialog({
       return;
     }
     if (!dialog.open) {
+      // Nothing to animate out — the dialog was closed by something other than
+      // this effect (a native form submit, say). Retire the exit style, or it
+      // would keep a closed dialog displayed.
       setIsExiting(false);
       return;
     }
 
     const finishClose = () => {
+      // eslint-disable-next-line @eslint-react/set-state-in-effect -- the exit is over; this render is what retires the exit style
       setIsExiting(false);
       dialog.close();
       triggerElementRef.current?.focus();
