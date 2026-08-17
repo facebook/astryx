@@ -644,8 +644,9 @@ describe('Stepper', () => {
           {onTrackSteps}
         </Stepper>,
       );
-      await user.tab();
-      await user.tab();
+      screen
+        .getByRole('button', {name: 'Go to step 2: Shipping, completed'})
+        .focus();
       await user.keyboard('{Enter}');
       expect(handleClick).toHaveBeenCalledWith(1);
     });
