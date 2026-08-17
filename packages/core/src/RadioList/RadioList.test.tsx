@@ -116,6 +116,22 @@ describe('RadioList', () => {
     expect(handleChange).toHaveBeenCalledWith('b');
   });
 
+  it('calls onChange when clicking the description', async () => {
+    const user = userEvent.setup();
+    const handleChange = vi.fn();
+    render(
+      <RadioList label="Preference" value="a" onChange={handleChange}>
+        <RadioListItem label="Option A" value="a" description="First option" />
+        <RadioListItem label="Option B" value="b" description="Second option" />
+      </RadioList>,
+    );
+
+    // The whole row delegates surface clicks to the radio, so the description
+    // is a live target — not dead space as it was before.
+    await user.click(screen.getByText('Second option'));
+    expect(handleChange).toHaveBeenCalledWith('b');
+  });
+
   it('disables all radios when group isDisabled is true', () => {
     render(
       <RadioList label="Preference" value="" onChange={() => {}} isDisabled>
@@ -137,7 +153,13 @@ describe('RadioList', () => {
       </RadioList>,
     );
 
-    await user.click(screen.getByLabelText('Option A'));
+    // userEvent honors `pointer-events: none`, so clicking the disabled row's
+    // delegate surface is genuinely blocked (it refuses and throws) rather than
+    // merely ignored by the handler — the guarantee this PR's delegation relies
+    // on.
+    await expect(user.click(screen.getByLabelText('Option A'))).rejects.toThrow(
+      /pointer-events/i,
+    );
     expect(handleChange).not.toHaveBeenCalled();
   });
 
@@ -162,7 +184,13 @@ describe('RadioList', () => {
       </RadioList>,
     );
 
-    await user.click(screen.getByLabelText('Option A'));
+    // userEvent honors `pointer-events: none`, so clicking the disabled row's
+    // delegate surface is genuinely blocked (it refuses and throws) rather than
+    // merely ignored by the handler — the guarantee this PR's delegation relies
+    // on.
+    await expect(user.click(screen.getByLabelText('Option A'))).rejects.toThrow(
+      /pointer-events/i,
+    );
     expect(handleChange).not.toHaveBeenCalled();
   });
 

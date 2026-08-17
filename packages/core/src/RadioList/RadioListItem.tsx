@@ -4,7 +4,7 @@
 
 /**
  * @file RadioListItem.tsx
- * @input Uses React use, useId, RadioListContext
+ * @input Uses React use, useId, useRef, RadioListContext, Item
  * @output Exports RadioListItem component, RadioListItemProps
  * @position Core implementation; consumed by index.ts, tested by RadioList.test.tsx
  *
@@ -21,9 +21,9 @@
 import React, {use, useId, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
-import {colorVars, spacingVars} from '../theme/tokens.stylex';
+import {spacingVars} from '../theme/tokens.stylex';
 import {RadioListContext} from './RadioList';
-import {mergeProps} from '../utils';
+import {mergeProps, isRenderable} from '../utils';
 import {indicatorScope} from '../Indicator/indicator.markers.stylex';
 import {useIndicatorFocusRing} from '../hooks/useIndicatorFocusRing';
 import {useIndicator} from '../Indicator';
@@ -78,10 +78,6 @@ const styles = stylex.create({
   // Holds only the indicator, so the focus ring has one unambiguous target.
   indicatorSlot: {
     display: 'contents',
-  },
-  labelDisabled: {
-    color: colorVars['--color-text-disabled'],
-    cursor: 'not-allowed',
   },
 });
 
@@ -185,16 +181,28 @@ export function RadioListItem({
   const indicatorRef = useRef<HTMLSpanElement>(null);
   const {focusProps} = useIndicatorFocusRing(indicatorRef, isDisabled);
 
+  // The radio is the row's single keyboard control and action. The row is an
+  // enlarged click/tap target that delegates surface clicks — the description
+  // and the empty hover area, not just the control and its label — to the
+  // input via Item's `interactiveRef` (useClickableContainer). This matches
+  // CheckboxListItem so the whole row is clickable, and keeps one tab stop per
+  // option (WCAG 4.1.2). The radio carries its accessible name via `aria-label`
+  // since the visible label is now a plain (non-`<label>`) text node — a real
+  // `<label htmlFor>` would double-fire under delegation.
+  const radioRef = useRef<HTMLInputElement>(null);
+
   const radioCircle = (
     <div
       {...stylex.props(styles.radioWrapper, wrapperSizeStyles[size])}
       {...focusProps}>
       <input
+        ref={radioRef}
         id={id}
         type="radio"
         name={context.name}
         value={value}
         checked={isChecked}
+        aria-label={label}
         disabled={isDisabled && !keepsFocusableForMessage}
         aria-disabled={keepsFocusableForMessage ? 'true' : undefined}
         // A focusable-disabled radio is not natively disabled, so detach it
@@ -225,15 +233,14 @@ export function RadioListItem({
     </div>
   );
 
-  const mediaContent =
-    startContent != null ? (
-      <>
-        {radioCircle}
-        {startContent}
-      </>
-    ) : (
-      radioCircle
-    );
+  const mediaContent = isRenderable(startContent) ? (
+    <>
+      {radioCircle}
+      {startContent}
+    </>
+  ) : (
+    radioCircle
+  );
 
   return (
     <div
@@ -253,15 +260,14 @@ export function RadioListItem({
       {...rest}>
       <Item
         startContent={mediaContent}
-        label={
-          <label
-            htmlFor={id}
-            {...stylex.props(isDisabled && styles.labelDisabled)}>
-            {label}
-          </label>
-        }
+        // Delegate row-surface clicks (label text, description, and the empty
+        // hover area) to the radio input. The input stays the option's sole
+        // focusable control, so the row adds no second tab stop.
+        interactiveRef={radioRef}
+        isDisabled={isDisabled}
+        label={<span>{label}</span>}
         description={
-          description != null ? (
+          isRenderable(description) ? (
             <span id={descriptionID}>{description}</span>
           ) : undefined
         }
