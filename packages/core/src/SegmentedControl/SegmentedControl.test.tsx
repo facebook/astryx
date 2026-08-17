@@ -9,8 +9,9 @@
  * SYNC: When SegmentedControl components change, update tests to match new behavior
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {describe, it, expect, vi, beforeEach, beforeAll, afterAll} from 'vitest';
+import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
+import type {ComponentProps} from 'react';
 import userEvent from '@testing-library/user-event';
 import {SegmentedControl} from './SegmentedControl';
 import {SegmentedControlItem} from './SegmentedControlItem';
@@ -837,5 +838,233 @@ describe('forced colors (WCAG 1.4.11)', () => {
     // HighlightText text on a white surface. forced-color-adjust: none makes
     // both render as authored.
     expect(getAllInjectedCss()).toContain('forced-color-adjust: none;');
+  });
+});
+
+// The collapse is a measurement, and jsdom has no layout: these tests install a
+// ResizeObserver stub and a scrollWidth/clientWidth pair driven by the rendered
+// content, so the real fit math runs. `scrollWidth` reports the labelled width
+// only while a label is actually rendered — that is what makes the
+// remembered-natural-width path (grow back, and stay collapsed when the room is
+// still short) testable rather than trivially true.
+describe('collapsibleLabels', () => {
+  const LABELLED_WIDTH = 400;
+  const ICON_ONLY_WIDTH = 160;
+
+  const originalResizeObserver = (
+    globalThis as unknown as {ResizeObserver?: unknown}
+  ).ResizeObserver;
+  const originalScrollWidth = Object.getOwnPropertyDescriptor(
+    HTMLElement.prototype,
+    'scrollWidth',
+  );
+  const originalClientWidth = Object.getOwnPropertyDescriptor(
+    HTMLElement.prototype,
+    'clientWidth',
+  );
+
+  let notify: ((entries: {target: Element}[]) => void) | null = null;
+
+  class StubResizeObserver {
+    constructor(callback: (entries: {target: Element}[]) => void) {
+      notify = callback;
+    }
+    observe(): void {}
+    unobserve(): void {}
+    disconnect(): void {}
+  }
+
+  const TestIcon = () => <span data-testid="icon" />;
+
+  function resize(element: Element, width: number) {
+    element.setAttribute('data-w', String(width));
+    act(() => {
+      notify?.([{target: element}]);
+    });
+  }
+
+  beforeAll(() => {
+    (globalThis as unknown as {ResizeObserver: unknown}).ResizeObserver =
+      StubResizeObserver;
+    Object.defineProperty(HTMLElement.prototype, 'scrollWidth', {
+      configurable: true,
+      get(this: HTMLElement): number {
+        if (this.getAttribute('role') !== 'radiogroup') {
+          return 0;
+        }
+        return this.textContent?.trim()
+          ? LABELLED_WIDTH
+          : ICON_ONLY_WIDTH;
+      },
+    });
+    Object.defineProperty(HTMLElement.prototype, 'clientWidth', {
+      configurable: true,
+      get(this: HTMLElement): number {
+        return Number(this.getAttribute('data-w') ?? 0);
+      },
+    });
+  });
+
+  afterAll(() => {
+    (globalThis as unknown as {ResizeObserver?: unknown}).ResizeObserver =
+      originalResizeObserver;
+    if (originalScrollWidth) {
+      Object.defineProperty(
+        HTMLElement.prototype,
+        'scrollWidth',
+        originalScrollWidth,
+      );
+    }
+    if (originalClientWidth) {
+      Object.defineProperty(
+        HTMLElement.prototype,
+        'clientWidth',
+        originalClientWidth,
+      );
+    }
+  });
+
+  function renderStrip(
+    props: Partial<ComponentProps<typeof SegmentedControl>> = {},
+    parentWidth = 200,
+  ) {
+    const result = render(
+      <div data-testid="parent" data-w={String(parentWidth)}>
+        <SegmentedControl
+          value="light"
+          onChange={() => {}}
+          label="Theme"
+          collapsibleLabels
+          {...props}>
+          <SegmentedControlItem
+            value="light"
+            label="Light"
+            icon={<TestIcon />}
+          />
+          <SegmentedControlItem value="dark" label="Dark" icon={<TestIcon />} />
+        </SegmentedControl>
+      </div>,
+    );
+    return {...result, parent: screen.getByTestId('parent')};
+  }
+
+  /** The text a sighted reader sees on a segment (the tooltip layer renders the
+   * same string elsewhere in the tree, so a document-wide text query would find
+   * a label that is not on screen). */
+  function segmentText(name: string): string {
+    return screen.getByRole('radio', {name}).textContent ?? '';
+  }
+
+  it('collapses to icons when the labelled strip needs more room than it has', () => {
+    renderStrip();
+
+    expect(segmentText('Light')).toBe('');
+    expect(segmentText('Dark')).toBe('');
+    expect(screen.getAllByTestId('icon')).toHaveLength(2);
+  });
+
+  it('keeps every accessible name through the collapse', () => {
+    renderStrip();
+
+    expect(screen.getByRole('radio', {name: 'Light'})).toBeInTheDocument();
+    expect(screen.getByRole('radio', {name: 'Dark'})).toBeInTheDocument();
+    expect(screen.getByRole('radiogroup', {name: 'Theme'})).toBeInTheDocument();
+  });
+
+  it('leaves the labels up when they fit', () => {
+    renderStrip({}, 600);
+
+    expect(screen.getByText('Light')).toBeInTheDocument();
+    expect(screen.getByRole('radio', {name: 'Light'})).not.toHaveAttribute(
+      'aria-label',
+    );
+  });
+
+  it('grows back when the room returns, and stays collapsed while it has not', () => {
+    const {parent} = renderStrip();
+    expect(segmentText('Light')).toBe('');
+
+    // Still short of the 400px the labels need — the strip must not read its
+    // own collapsed width as the width it needs.
+    resize(parent, 300);
+    expect(segmentText('Light')).toBe('');
+
+    resize(parent, 600);
+    expect(segmentText('Light')).toBe('Light');
+  });
+
+  it('reports the decision through onCollapsedChange', () => {
+    const onCollapsedChange = vi.fn();
+    renderStrip({collapsibleLabels: {onCollapsedChange}});
+
+    expect(onCollapsedChange).toHaveBeenCalledWith(true);
+  });
+
+  it('renders what a controlled caller asks for, measurement or not', () => {
+    renderStrip({collapsibleLabels: {isCollapsed: false}}, 100);
+
+    expect(screen.getByText('Light')).toBeInTheDocument();
+  });
+
+  it('gives a collapsed item its label as a tooltip', () => {
+    renderStrip();
+
+    expect(screen.getByRole('radio', {name: 'Light'})).toHaveAttribute(
+      'aria-describedby',
+    );
+  });
+
+  it('leaves a caller-hidden label alone — no tooltip, same as before', () => {
+    render(
+      <SegmentedControl value="light" onChange={() => {}} label="Theme">
+        <SegmentedControlItem
+          value="light"
+          label="Light"
+          icon={<TestIcon />}
+          isLabelHidden
+        />
+      </SegmentedControl>,
+    );
+
+    const radio = screen.getByRole('radio', {name: 'Light'});
+    expect(radio).not.toHaveAttribute('aria-describedby');
+  });
+
+  it('keeps the label on an item that has no icon — an empty segment is not a state', () => {
+    render(
+      <div data-testid="parent" data-w="200">
+        <SegmentedControl
+          value="light"
+          onChange={() => {}}
+          label="Theme"
+          collapsibleLabels>
+          <SegmentedControlItem
+            value="light"
+            label="Light"
+            icon={<TestIcon />}
+          />
+          <SegmentedControlItem value="custom" label="Custom" />
+        </SegmentedControl>
+      </div>,
+    );
+
+    expect(screen.getByText('Custom')).toBeInTheDocument();
+    expect(screen.getByRole('radio', {name: 'Custom'})).toBeInTheDocument();
+  });
+
+  it('does nothing at all when the prop is absent', () => {
+    render(
+      <div data-testid="parent" data-w="100">
+        <SegmentedControl value="light" onChange={() => {}} label="Theme">
+          <SegmentedControlItem
+            value="light"
+            label="Light"
+            icon={<TestIcon />}
+          />
+        </SegmentedControl>
+      </div>,
+    );
+
+    expect(screen.getByText('Light')).toBeInTheDocument();
   });
 });
