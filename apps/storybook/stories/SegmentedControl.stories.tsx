@@ -236,6 +236,7 @@ export const DisabledWithMessage: Story = {
 export const WithCounts: Story = {
   args: {
     size: 'md',
+    isDisabled: false,
   },
   render: args => {
     const [value, setValue] = useState('needs-me');
@@ -244,7 +245,8 @@ export const WithCounts: Story = {
         value={value}
         onChange={setValue}
         label="Sessions"
-        size={args.size}>
+        size={args.size}
+        isDisabled={args.isDisabled}>
         <SegmentedControlItem
           value="needs-me"
           label="Needs me"
