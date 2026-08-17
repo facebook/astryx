@@ -1852,23 +1852,33 @@ describe('BottomSheet', () => {
       const body = getBody();
       const title = screen.getByRole('textbox', {name: 'Title'});
       const comment = screen.getByRole('textbox', {name: 'Comment'});
+      const scrolls: number[] = [];
+      Object.defineProperty(body, 'scrollBy', {
+        configurable: true,
+        value: (options: ScrollToOptions) => {
+          scrolls.push(options.top ?? 0);
+        },
+      });
       vi.spyOn(body, 'getBoundingClientRect').mockReturnValue(
         rect({top: 100, bottom: 800}),
       );
       vi.spyOn(title, 'getBoundingClientRect').mockReturnValue(
         rect({top: 150, bottom: 190}),
       );
+      // Below the body's visible area, so the head start would move it if it
+      // ran at all — with no keyboard, only the reveal path may.
       vi.spyOn(comment, 'getBoundingClientRect').mockReturnValue(
-        rect({top: 660, bottom: 700}),
+        rect({top: 860, bottom: 900}),
       );
 
       title.focus();
+      scrolls.length = 0;
       comment.focus();
 
-      // With no keyboard measured there is no reveal to beat, and a hardware
-      // keyboard or desktop Tab must not shift a control that is already
-      // visible.
-      expect(body.scrollTop).toBe(0);
+      // The focusout head start exists to beat a keyboard reveal. With no
+      // keyboard there is no reveal to beat, so the transition stays on the
+      // existing focusin path: one scroll, not two, and not one taken early.
+      expect(scrolls).toEqual([100]);
     });
 
     it('does not mistake a panned visual viewport for a dismissed keyboard', () => {
@@ -1908,6 +1918,36 @@ describe('BottomSheet', () => {
       expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
         '80px',
       );
+    });
+
+    it('re-arms after a pointerup the page swallowed', () => {
+      mockIOSWebKit();
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={() => {}}
+          label="Add a comment"
+          height="tall">
+          <input aria-label="Comment" />
+        </BottomSheet>,
+      );
+      const input = screen.getByRole('textbox', {name: 'Comment'});
+      // The pointerup listener is on document in the bubble phase, so a
+      // consumer can stop it and strand the armed tap.
+      const swallow = (event: Event) => event.stopPropagation();
+      input.addEventListener('pointerup', swallow);
+
+      fireTouchPointer(input, 'pointerdown', {x: 20, y: 200});
+      fireTouchPointer(input, 'pointerup', {x: 20, y: 200});
+      input.removeEventListener('pointerup', swallow);
+
+      // A stranded arming must not lock out later taps. The next contact is a
+      // fresh pointer — a real one always is — and has to be protected.
+      const focus = vi.spyOn(input, 'focus');
+      fireTouchPointer(input, 'pointerdown', {x: 20, y: 200, pointerId: 7});
+      fireTouchPointer(input, 'pointerup', {x: 20, y: 200, pointerId: 7});
+
+      expect(focus).toHaveBeenCalledWith({preventScroll: true});
     });
 
     it('keeps a tap protected when a second contact lands mid-gesture', () => {

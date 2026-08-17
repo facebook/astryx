@@ -320,14 +320,12 @@ export function useMobileKeyboard({
     // still owns caret placement. Holding the original pointerdown event lets
     // consumer preventDefault calls remain authoritative after capture.
     const rememberPointerFocusScroll = (event: PointerEvent) => {
-      // A second contact — a resting thumb, a palm, a finger anywhere else on
-      // the page — must not disarm the one already mid-tap on a field. Without
-      // this, that tap's pointerup finds nothing pending, falls through to the
-      // browser's own focus, and the reveal pans the page.
-      if (
-        pendingTouchFocus != null &&
-        event.pointerId !== pendingTouchFocus.pointerId
-      ) {
+      // Only the primary contact can arm below, but a secondary one — a
+      // resting thumb, a palm, a second finger anywhere on the page — would
+      // still fall through and null out the arming of the finger already
+      // mid-tap on a field. Its pointerup would then find nothing pending and
+      // hand the focus back to the browser, whose reveal pans the page.
+      if (event.isPrimary === false) {
         return;
       }
       const control = findTextEntryControl(event.target, body);
@@ -405,20 +403,17 @@ export function useMobileKeyboard({
         pendingFocusScroll = null;
         return;
       }
-      // Snapshots restore what a scroll container scrolled, and that is not
-      // what a browser-driven transition costs us here. When WebKit reveals a
-      // destination sitting behind the keyboard it pans the visual viewport,
-      // and nothing can put that back: offsetTop is read-only, the dialog is
-      // fixed, and the page beneath it is scroll-locked. So reach the
-      // destination first and leave the reveal with nothing to do. It has to
-      // be instant to win that race, and it only runs while a keyboard is
-      // actually measured, so unobstructed desktop and hardware-keyboard focus
-      // keeps behaving exactly as before.
+      // A snapshot restores what a scroll container scrolled, which is not what
+      // this transition costs: WebKit reveals a destination behind the keyboard
+      // by panning the visual viewport, and offsetTop is read-only. So reach the
+      // destination first — instantly, to win the race — and leave the reveal
+      // nothing to do. Gated on a measured keyboard to keep unobstructed focus
+      // on the existing reveal path alone.
       if (hasKeyboardLayoutRef.current) {
         scrollControlIntoSafeArea(control, false);
       }
-      // Snapshot after that scroll, never before: the restore below is meant to
-      // undo the browser's reveal, not our own head start.
+      // Snapshot after that scroll: the restore below undoes the browser's
+      // reveal, not our own head start.
       pendingFocusScroll = captureFocusScroll(control);
     };
     const restoreFocusScroll = (event: FocusEvent) => {
