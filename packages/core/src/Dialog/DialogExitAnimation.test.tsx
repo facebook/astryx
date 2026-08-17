@@ -21,17 +21,13 @@ import {Dialog, parseExitDurationMs} from './Dialog';
 
 const EXIT_MS = 250;
 
+// jsdom resolves no StyleX CSS, so the exit animation's own duration — what
+// the component reads to time the close — has to be stood in for.
 function mockExitDuration(value: string) {
   const real = window.getComputedStyle.bind(window);
   vi.spyOn(window, 'getComputedStyle').mockImplementation((el, pseudo) => {
     const style = real(el, pseudo);
-    return {
-      ...style,
-      getPropertyValue: (prop: string) =>
-        prop === '--dialog-exit-duration'
-          ? value
-          : style.getPropertyValue(prop),
-    };
+    return {...style, animationDuration: value};
   });
 }
 
@@ -39,7 +35,7 @@ function mockReducedMotion(reduce: boolean) {
   const real = window.matchMedia.bind(window);
   vi.spyOn(window, 'matchMedia').mockImplementation(query =>
     query.includes('prefers-reduced-motion')
-      ? ({...real(query), matches: reduce})
+      ? {...real(query), matches: reduce}
       : real(query),
   );
 }
@@ -75,6 +71,7 @@ describe('parseExitDurationMs', () => {
     ['0.31s', 310],
     [' 250ms ', 250],
     ['0ms', 0],
+    ['0.31s, 0.31s', 310],
   ])('reads %s', (input, expected) => {
     expect(parseExitDurationMs(input)).toBe(expected);
   });
