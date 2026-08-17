@@ -26,6 +26,7 @@ import {
   buildAppShellMobilePreviewContext,
   buildInitialState,
   buildRuntimePreviewState,
+  getOverlayPreviewControl,
   getMissingRequiredProps,
   isOverlayPreviewClosed,
   pickPrimaryProps,
@@ -261,6 +262,7 @@ export function InteractivePreviewStage({
   // Sub-components that need a parent context provider declare it via
   // `playground.wrapper`; wrap the previewed component in that parent.
   const wrapper = playground?.wrapper ?? null;
+  const overlayControl = getOverlayPreviewControl(playground);
   const WrapperComponent = wrapper ? getComponent(wrapper.component) : null;
   const wrapperProps = useMemo(() => {
     const resolved = wrapper?.props
@@ -410,14 +412,22 @@ export function InteractivePreviewStage({
                     Opens as a full-screen overlay — nothing renders while it is
                     closed.
                   </Text>
-                  {onPropChange != null && canControlOpenState && (
-                    <Button
-                      label="Open preview"
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => onPropChange('isOpen', true)}
-                    />
-                  )}
+                  {onPropChange != null &&
+                    overlayControl != null &&
+                    (overlayControl.stateProp !== 'isOpen' ||
+                      canControlOpenState) && (
+                      <Button
+                        label="Open preview"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() =>
+                          onPropChange(
+                            overlayControl.stateProp,
+                            overlayControl.openValue,
+                          )
+                        }
+                      />
+                    )}
                 </VStack>
               )}
             </PreviewErrorBoundary>

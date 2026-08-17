@@ -26,8 +26,8 @@
     "canaryOnly": true,
     "_comment": "Published ONLY to the @canary dist-tag (see .github/workflows/release.yml). Never released as a stable `latest` release. `private: true` is intentional and must stay — it is npm\"s hard guarantee against an accidental stable publish."
   },
+  "type": "module",
   "main": "./dist/index.js",
-  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "sideEffects": false,
   "files": [
@@ -49,9 +49,9 @@
   "scripts": {
     "prepack": "pnpm build",
     "build": "rimraf dist && pnpm build:esm && tsc --project tsconfig.build.json && pnpm build:css && node ../../scripts/check-no-dev-jsx.mjs && node ../../scripts/check-fully-specified.mjs",
-    "build:esm": "babel src --out-dir dist --extensions \".ts,.tsx\" --out-file-extension \".js\" --ignore \"**/*.test.ts,**/*.test.tsx,**/__tests__/**,**/*.perf.test.*,**/*.doc.mjs,**/*.d.ts,**/*.css,**/*.css.d.ts\" --config-file ./babel.config.js",
+    "build:esm": "babel src --out-dir dist --extensions \".ts,.tsx\" --out-file-extension \".js\" --ignore \"**/*.test.ts,**/*.test.tsx,**/__tests__/**,**/*.perf.test.*,**/*.doc.mjs,**/*.d.ts,**/*.css,**/*.css.d.ts\" --config-file ./babel.config.json",
     "build:css": "node ../../scripts/build-css.mjs --package richtext",
-    "dev": "babel src --watch --out-dir dist --extensions \".ts,.tsx\" --out-file-extension \".js\" --ignore \"**/*.test.*,**/*.doc.mjs,**/*.d.ts,**/*.css*\" --config-file ./babel.config.js",
+    "dev": "babel src --watch --out-dir dist --extensions \".ts,.tsx\" --out-file-extension \".js\" --ignore \"**/*.test.*,**/*.doc.mjs,**/*.d.ts,**/*.css*\" --config-file ./babel.config.json",
     "test": "vitest run --root ../..",
     "test:watch": "vitest --root ../..",
     "lint": "eslint src",
@@ -60,7 +60,7 @@
   },
   "peerDependencies": {
     "@stylexjs/stylex": ">=0.10.0",
-    "@astryxdesign/core": "0.4.1",
+    "@astryxdesign/core": "0.5.0",
     "react": ">=19.0.0",
     "react-dom": ">=19.0.0",
     "lexical": "^0.46.0",

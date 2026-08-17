@@ -105,12 +105,13 @@ export const myTheme = defineTheme({
   // ───────────────────────────────────────────────────────────────────────
 
   /**
-   * Generates the neutral ramp and the accent tokens from one seed colour
+   * Generates the neutral ramp and the accent tokens from a seed colour
    * using the HCT perceptual model: surfaces, text, icons, borders, muted
    * fills, hover and pressed overlays — light and dark both.
    *
-   *   accent        seed hex; omit to keep the default accent and re-tone only
-   *                 the neutrals
+   *   accent        seed hex, or a [light, dark] pair to seed each scheme's
+   *                 palette from its own colour; omit to keep the default
+   *                 accent and re-tone only the neutrals
    *   neutralStyle  'warm' | 'cool' | 'neutral' — the temperature of the greys
    *   contrast      'standard' | 'high' — 'high' widens the text/surface tone
    *                 gap, for dense data UI or bright and clinical screens

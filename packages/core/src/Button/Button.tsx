@@ -42,7 +42,8 @@ import {VisuallyHidden} from '../VisuallyHidden';
 import {EDGE_COMP_ATTR} from '../Layout/edgeCompensation.stylex';
 import {useSize} from '../SizeContext/SizeContext';
 import {useButtonGroup} from '../ButtonGroup/ButtonGroupContext';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
+import {useMergedRefs} from '../hooks/useMergedRefs';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
 import {themeProps} from '../utils/themeProps';
@@ -82,7 +83,10 @@ const styles = stylex.create({
     lineHeight: typeScaleVars['--text-label-leading'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     whiteSpace: 'nowrap',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     transitionProperty:
       'background-image, background-color, color, opacity, transform',
     transitionDuration: {
@@ -98,7 +102,7 @@ const styles = stylex.create({
     },
   },
   disabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
     opacity: 0.5,
     backgroundImage: 'none',
     transform: {
@@ -107,11 +111,11 @@ const styles = stylex.create({
     },
   },
   ariaDisabled: {
+    // The variants' hover treatment already steps aside for
+    // `[aria-disabled]`; `:active` still matches a press on an aria-disabled
+    // button, so that one is suppressed here.
     backgroundImage: {
       default: 'none',
-      ':hover': {
-        '@media (hover: hover)': 'none',
-      },
       ':active': 'none',
     },
   },
@@ -198,7 +202,7 @@ const variants = stylex.create({
     color: colorVars['--color-on-accent'],
     backgroundImage: {
       default: null,
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
       },
       ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
@@ -209,7 +213,7 @@ const variants = stylex.create({
     color: colorVars['--color-text-primary'],
     backgroundImage: {
       default: null,
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
       },
       ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
@@ -220,7 +224,7 @@ const variants = stylex.create({
     color: colorVars['--color-text-primary'],
     backgroundImage: {
       default: null,
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
       },
       ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
@@ -235,7 +239,7 @@ const variants = stylex.create({
     outlineColor: {default: null, ':focus-visible': colorVars['--color-error']},
     backgroundImage: {
       default: null,
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
       },
       ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
@@ -685,7 +689,13 @@ export function Button({
   );
 
   const sharedMergedProps = mergeProps(
-    themeProps('button', {variant, size}),
+    // Inside a group the group owns the surface's elevation, so the button
+    // reflects the tier it actually paints rather than the prop it was handed.
+    themeProps('button', {
+      variant,
+      size,
+      elevation: buttonGroup ? 'none' : elevation,
+    }),
     sharedStylexProps,
     className,
     style,
@@ -754,9 +764,9 @@ export function Button({
       : null;
 
   // Merge the consumer ref with the tooltip hook's trigger ref so both point at
-  // the same element. mergeRefs tolerates undefined, so this is a no-op for the
-  // tooltip side when no tooltip is set.
-  const mergedButtonRef = mergeRefs(
+  // the same element. useMergedRefs tolerates undefined, so this is a no-op for
+  // the tooltip side when no tooltip is set.
+  const mergedButtonRef = useMergedRefs(
     ref,
     tooltip != null ? tooltipHook.ref : undefined,
   );

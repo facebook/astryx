@@ -2,7 +2,7 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState} from 'react';
-import {BottomSheet} from '@astryxdesign/lab';
+import {BottomSheet} from '@astryxdesign/core/BottomSheet';
 import {Button} from '@astryxdesign/core/Button';
 import {Divider} from '@astryxdesign/core/Divider';
 import {Heading} from '@astryxdesign/core/Heading';
@@ -14,7 +14,7 @@ import {TextArea} from '@astryxdesign/core/TextArea';
 import {CheckboxInput} from '@astryxdesign/core/CheckboxInput';
 
 const meta: Meta<typeof BottomSheet> = {
-  title: 'Lab/BottomSheet',
+  title: 'Core/BottomSheet',
   component: BottomSheet,
   tags: ['autodocs'],
   parameters: {
@@ -78,8 +78,15 @@ function MobileKeyboardCommentForm({onPost}: {onPost: () => void}) {
     <VStack gap={4}>
       <Heading level={3}>Add a comment</Heading>
       <Text type="supporting" color="secondary">
-        Focus fields throughout this long form to verify that the mobile
-        keyboard leaves each control visible and the sheet itself stays put.
+        Keep the Tall sheet fully expanded, then focus fields near the
+        beginning, middle, and end. The outer sheet remains stationary while its
+        body scrolls each control above the mobile keyboard. Drag it down to the
+        half-height stop and the accommodation stops — only a fully expanded
+        Tall sheet provides it — then drag back up and it resumes.
+      </Text>
+      <Text type="supporting" color="secondary">
+        Move the sheet with its handle or close it with Post comment to verify
+        that sheet travel and closing dismiss the keyboard.
       </Text>
       <Divider />
       <TextInput
@@ -144,24 +151,6 @@ function MobileKeyboardCommentForm({onPost}: {onPost: () => void}) {
   );
 }
 
-function ShortMobileKeyboardForm({onSave}: {onSave: () => void}) {
-  const [title, setTitle] = useState('');
-  const [note, setNote] = useState('');
-
-  return (
-    <VStack gap={4}>
-      <Heading level={3}>Quick note</Heading>
-      <Text type="supporting" color="secondary">
-        This short sheet keeps its height and lifts only when the mobile
-        keyboard would otherwise cover the focused field.
-      </Text>
-      <TextInput label="Title" value={title} onChange={setTitle} />
-      <TextArea label="Note" rows={2} value={note} onChange={setNote} />
-      <Button label="Save note" onClick={onSave} />
-    </VStack>
-  );
-}
-
 export const Showcase: Story = {
   render: () => {
     const [isOpen, setIsOpen] = useState(false);
@@ -187,6 +176,35 @@ export const Showcase: Story = {
   },
 };
 
+export const FormPurpose: Story = {
+  name: 'Form purpose',
+  render: () => {
+    const [isOpen, setIsOpen] = useState(false);
+    return (
+      <>
+        <Button label="Edit profile" onClick={() => setIsOpen(true)} />
+        <BottomSheet
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          purpose="form"
+          label="Edit profile"
+          height="hug">
+          <Section padding={4}>
+            <VStack gap={4}>
+              <Heading level={3}>Edit profile</Heading>
+              <Text type="supporting" color="secondary">
+                Swiping down or clicking the scrim keeps this form open. Escape
+                and the explicit actions can still close it.
+              </Text>
+              <Button label="Save changes" onClick={() => setIsOpen(false)} />
+            </VStack>
+          </Section>
+        </BottomSheet>
+      </>
+    );
+  },
+};
+
 export const TallSheet: Story = {
   render: () => {
     const [isOpen, setIsOpen] = useState(false);
@@ -201,8 +219,9 @@ export const TallSheet: Story = {
           <Section padding={4}>
             <VStack gap={3}>
               <Text type="supporting" color="secondary">
-                Drag the handle to resize between snap points; flick down to
-                dismiss or up to expand. Escape also dismisses.
+                A Tall sheet fills most of the viewport and scrolls its content.
+                It has no snap points, so a drag springs back; flick down to
+                dismiss. Escape also dismisses.
               </Text>
               <Divider />
               {Array.from({length: 12}, (_, i) => (
@@ -210,6 +229,80 @@ export const TallSheet: Story = {
                   <Text type="label">Place {i + 1}</Text>
                   <Text type="supporting" color="secondary">
                     {(0.2 + i * 0.3).toFixed(1)} mi away
+                  </Text>
+                </VStack>
+              ))}
+            </VStack>
+          </Section>
+        </BottomSheet>
+      </>
+    );
+  },
+};
+
+export const SnapPoints: Story = {
+  render: () => {
+    const [isOpen, setIsOpen] = useState(false);
+    return (
+      <>
+        <Button label="Open nearby places" onClick={() => setIsOpen(true)} />
+        <BottomSheet
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          label="Nearby places"
+          height="tall"
+          snapPoints={[0.5]}>
+          <Section padding={4}>
+            <VStack gap={3}>
+              <Text type="supporting" color="secondary">
+                One extra stop, at half the viewport. Drag the handle down to
+                collapse the sheet, then back up — the list keeps its scroll
+                position. Flick down to dismiss.
+              </Text>
+              <Divider />
+              {Array.from({length: 12}, (_, i) => (
+                <VStack key={i} gap={1}>
+                  <Text type="label">Place {i + 1}</Text>
+                  <Text type="supporting" color="secondary">
+                    {(0.2 + i * 0.3).toFixed(1)} mi away
+                  </Text>
+                </VStack>
+              ))}
+            </VStack>
+          </Section>
+        </BottomSheet>
+      </>
+    );
+  },
+};
+
+export const SnapPointsWithPeek: Story = {
+  render: () => {
+    const [isOpen, setIsOpen] = useState(false);
+    return (
+      <>
+        <Button label="Open route" onClick={() => setIsOpen(true)} />
+        <BottomSheet
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          label="Route"
+          height="tall"
+          snapPoints={['96px', '50%']}>
+          <Section padding={4}>
+            <VStack gap={3}>
+              <Heading level={3}>To Ferry Building</Heading>
+              <Text type="supporting" color="secondary">
+                Three stops: full, half the viewport, and a 96px peek. The half
+                stop is a working surface — content laid out, scrim full. The
+                peek is a glance: the sheet slides away rather than reflowing
+                into a sliver, and the scrim thins.
+              </Text>
+              <Divider />
+              {Array.from({length: 10}, (_, i) => (
+                <VStack key={i} gap={1}>
+                  <Text type="label">Step {i + 1}</Text>
+                  <Text type="supporting" color="secondary">
+                    Continue for {(0.1 + i * 0.4).toFixed(1)} mi
                   </Text>
                 </VStack>
               ))}
@@ -320,7 +413,10 @@ export const HugHeightWithLongContent: Story = {
               <Heading level={3}>Release notes</Heading>
               <Text type="supporting" color="secondary">
                 The sheet hugs its content until it reaches 92% of the viewport,
-                then the content scrolls within the sheet.
+                then the content scrolls within the sheet. Drag it to a snap
+                point and the scrolling area resizes to the height you can
+                actually see — except at the shortest peek, which slides below
+                the viewport at full height rather than reflowing to a sliver.
               </Text>
               <Divider />
               {Array.from({length: 12}, (_, i) => (
@@ -341,20 +437,36 @@ export const HugHeightWithLongContent: Story = {
   },
 };
 
-export const ShortMobileKeyboard: Story = {
-  name: 'Short sheet with mobile keyboard',
+export const CappedHeightWithLongContent: Story = {
+  name: 'Capped height — Long content',
   render: () => {
     const [isOpen, setIsOpen] = useState(false);
     return (
       <>
-        <Button label="Add a quick note" onClick={() => setIsOpen(true)} />
+        <Button label="View saved places" onClick={() => setIsOpen(true)} />
         <BottomSheet
           isOpen={isOpen}
           onOpenChange={setIsOpen}
-          label="Quick note"
-          height="hug">
+          label="Saved places"
+          height="capped">
           <Section padding={4}>
-            <ShortMobileKeyboardForm onSave={() => setIsOpen(false)} />
+            <VStack gap={4}>
+              <Heading level={3}>Saved places</Heading>
+              <Text type="supporting" color="secondary">
+                The sheet opens at a capped height while the long list scrolls
+                within it.
+              </Text>
+              <Divider />
+              {Array.from({length: 12}, (_, i) => (
+                <VStack key={i} gap={1}>
+                  <Text type="label">Saved place {i + 1}</Text>
+                  <Text type="supporting" color="secondary">
+                    Notes and details about this saved place.
+                  </Text>
+                </VStack>
+              ))}
+              <Button label="Done" onClick={() => setIsOpen(false)} />
+            </VStack>
           </Section>
         </BottomSheet>
       </>
@@ -363,7 +475,7 @@ export const ShortMobileKeyboard: Story = {
 };
 
 export const MobileKeyboard: Story = {
-  name: 'Support mobile keyboard',
+  name: 'Mobile keyboard',
   render: () => {
     const [isOpen, setIsOpen] = useState(false);
     return (
@@ -373,7 +485,8 @@ export const MobileKeyboard: Story = {
           isOpen={isOpen}
           onOpenChange={setIsOpen}
           label="Add a comment"
-          height="tall">
+          height="tall"
+          snapPoints={[0.5]}>
           <Section padding={4}>
             <MobileKeyboardCommentForm onPost={() => setIsOpen(false)} />
           </Section>

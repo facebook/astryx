@@ -150,6 +150,28 @@ export const docs = {
       description:
         'Async click handler. Shows loading state while the returned promise is pending.',
     },
+    {
+      name: 'href',
+      type: 'string',
+      description:
+        'When provided, renders the button as a link element (<a> or custom link component).',
+    },
+    {
+      name: 'as',
+      type: 'ComponentType',
+      description:
+        'Custom link component to use when href is provided (e.g. Next.js Link).',
+    },
+    {
+      name: 'target',
+      type: 'string',
+      description: 'HTML target attribute when rendered as a link (e.g. "_blank").',
+    },
+    {
+      name: 'rel',
+      type: 'string',
+      description: 'HTML rel attribute when rendered as a link (e.g. "noopener noreferrer").',
+    },
   ],
   playground: {
     defaults: {
@@ -159,7 +181,7 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'astryx-button', visualProps: ['size', 'variant']},
+      {className: 'astryx-button', visualProps: ['size', 'variant', 'elevation']},
     ],
     vars: [
       {name: '--_button-radius', description: 'Border radius', default: 'var(--radius-element)', private: true},
@@ -240,6 +262,7 @@ export const docsZh = {
         visualProps: [
           'size',
           'variant',
+          'elevation',
         ],
       },
     ],

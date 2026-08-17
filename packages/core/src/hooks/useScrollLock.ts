@@ -13,9 +13,11 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/hooks/index.ts
+ * - /packages/core/src/hooks/scrollbarGutter.ts
  */
 
 import {useEffect} from 'react';
+import {holdScrollbarGutter, type ScrollbarGutterHold} from './scrollbarGutter';
 
 interface ScrollLockSnapshot {
   scrollX: number;
@@ -25,6 +27,7 @@ interface ScrollLockSnapshot {
   top: string;
   left: string;
   right: string;
+  gutter: ScrollbarGutterHold;
 }
 
 let lockCount = 0;
@@ -37,6 +40,10 @@ let originalBodyState: ScrollLockSnapshot | null = null;
  * which is necessary for iOS Safari where `overscroll-behavior: contain`
  * does not prevent body scroll behind modals. Restores scroll position
  * on unlock.
+ *
+ * Pinning also hides the document's scrollbar, so the gutter that scrollbar
+ * occupied is held open for the duration of the lock — without it the page
+ * reflows sideways by ~15px the moment an overlay opens.
  *
  * @example
  * ```
@@ -55,6 +62,9 @@ export function useScrollLock(isLocked: boolean): void {
       const scrollX = window.scrollX;
       const scrollY = window.scrollY;
 
+      // Taken before the pinning styles below hide the scrollbar.
+      const gutter = holdScrollbarGutter(body);
+
       originalBodyState = {
         scrollX,
         scrollY,
@@ -63,6 +73,7 @@ export function useScrollLock(isLocked: boolean): void {
         top: body.style.top,
         left: body.style.left,
         right: body.style.right,
+        gutter,
       };
 
       body.style.overflow = 'hidden';
@@ -70,6 +81,8 @@ export function useScrollLock(isLocked: boolean): void {
       body.style.top = `-${scrollY}px`;
       body.style.left = '0';
       body.style.right = '0';
+
+      gutter.settle();
     }
 
     lockCount += 1;
@@ -89,6 +102,7 @@ export function useScrollLock(isLocked: boolean): void {
       body.style.top = state.top;
       body.style.left = state.left;
       body.style.right = state.right;
+      state.gutter.release();
       window.scrollTo(state.scrollX, state.scrollY);
     };
   }, [isLocked]);

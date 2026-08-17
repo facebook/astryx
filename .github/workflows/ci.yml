@@ -9,17 +9,16 @@ name: CI
 
 on:
   pull_request:
-    branches: ["main"]
+    branches: ['main']
   merge_group:
 
 permissions: {}
 
 concurrency:
-  group: "ci-${{ github.event.merge_group.head_sha || github.head_ref }}"
+  group: 'ci-${{ github.event.merge_group.head_sha || github.head_ref }}'
   cancel-in-progress: true
 
 jobs:
-
   # Detect docsite-only changes — lets docsite PRs skip heavy jobs
   check-scope:
     if: github.event_name == 'pull_request'
@@ -70,8 +69,14 @@ jobs:
       - name: Generate and test docsite data
         run: pnpm -F @astryxdesign/docsite generate && pnpm -F @astryxdesign/docsite test
 
-  # Lightweight check — does the PR touch any core components?
-  # Gates pr-a11y to avoid unnecessary work
+  # Lightweight check — does the PR touch any published components?
+  # Gates pr-a11y and pr-rtl to avoid unnecessary work.
+  #
+  # Keep the roots and the exclude list in sync with analyze-pr.js: this job
+  # only decides *whether* the downstream audits run, while analyze-pr.js
+  # decides *which* components they audit. When the two disagree the audits
+  # silently no-op — lab components were invisible to both audits until this
+  # job learned about packages/lab/src.
   check-components:
     needs: [check-scope]
     if: github.event_name == 'pull_request' && needs.check-scope.outputs.docsite_only != 'true'
@@ -80,6 +85,9 @@ jobs:
       contents: read
     outputs:
       has_components: ${{ steps.check.outputs.has_components }}
+      # Stable visual scope is separate from component scope: Core and the
+      # non-private shipped themes participate; canaryOnly packages do not.
+      has_stable_visual: ${{ steps.check.outputs.has_stable_visual }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -98,11 +106,21 @@ jobs:
         run: |
           if ! git merge-base HEAD origin/${{ github.base_ref }} >/dev/null 2>&1; then
             echo "::warning::No merge base between HEAD and origin/${{ github.base_ref }} (clone too shallow) — assuming components changed so pr-a11y still runs"
-            echo "has_components=true" >> $GITHUB_OUTPUT
+            echo "has_components=true" >> "$GITHUB_OUTPUT"
+            # Fail closed for the stable lane too: without a merge base we do
+            # not know whether a stable package changed.
+            echo "has_stable_visual=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- packages/core/src/ | grep -v -E '(hooks|theme|utils|__tests__)/' | head -1)
-          echo "has_components=$( [ -n "$CHANGED" ] && echo true || echo false )" >> $GITHUB_OUTPUT
+          FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+          CHANGED=$(printf '%s\n' "$FILES" | grep -E '^packages/(core|lab)/src/' | grep -v -E '(hooks|theme|utils|i18n|__tests__)/' | head -1 || true)
+          echo "has_components=$( [ -n "$CHANGED" ] && echo true || echo false )" >> "$GITHUB_OUTPUT"
+
+          # One classifier owns the release-channel rule. It reads each
+          # package's `astryx.canaryOnly` metadata rather than hard-coding
+          # today's Lab/charts/richtext/vega list.
+          printf '%s\n' "$FILES" \
+            | node .github/scripts/visual-scope.mjs --github-output "$GITHUB_OUTPUT"
 
   # Run tests (parallel with build)
   test:
@@ -136,6 +154,12 @@ jobs:
       - name: Check token docs are in sync
         if: needs.check-scope.outputs.docsite_only != 'true'
         run: node scripts/generate-token-docs.mjs --check
+
+      # Fails when the lab readiness manifest claims a check the source tree
+      # contradicts — the report is derived, never hand-maintained.
+      - name: Check lab readiness manifest is current
+        if: needs.check-scope.outputs.docsite_only != 'true'
+        run: pnpm lab:readiness:check
 
       - run: pnpm test
         if: needs.check-scope.outputs.docsite_only != 'true'
@@ -244,6 +268,27 @@ jobs:
           path: apps/storybook/dist/
           retention-days: 30
 
+      # pr-visual reads each theme's built source to learn which targets that
+      # theme styles — a theme's component map is what defineTheme returns, not
+      # a literal in its source. This job has already built them; shipping the
+      # artifact keeps that job on a download instead of a second full build.
+      #
+      # core's dist ships with them because importing a built theme executes
+      # `import {defineTheme} from '@astryxdesign/core/theme'`, which pnpm
+      # resolves through the workspace link into packages/core/dist.
+      #
+      # Two paths, so the artifact is rooted at their common ancestor
+      # (packages/) — the download below unpacks it there.
+      - name: Upload built themes and core
+        if: needs.check-scope.outputs.docsite_only != 'true' && github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v7
+        with:
+          name: dists-${{ steps.urls.outputs.short_hash }}
+          path: |
+            packages/themes/*/dist/
+            packages/core/dist/
+          retention-days: 1
+
       - name: Analyze components
         if: needs.check-scope.outputs.docsite_only != 'true' && github.event_name == 'pull_request'
         run: |
@@ -306,7 +351,7 @@ jobs:
       - name: Build core package
         run: pnpm build
 
-      - name: Compute sandbox preview path
+      - name: Compute sandbox preview paths
         id: urls
         run: |
           PR_NUMBER="${{ github.event.pull_request.number }}"
@@ -314,8 +359,11 @@ jobs:
           SHORT_HASH="${COMMIT_HASH:0:7}"
           REPO_NAME="${{ github.event.repository.name }}"
 
-          echo "short_hash=${SHORT_HASH}" >> $GITHUB_OUTPUT
-          echo "sandbox_base_path=/${REPO_NAME}/pr/${PR_NUMBER}/sandbox" >> $GITHUB_OUTPUT
+          {
+            echo "short_hash=${SHORT_HASH}"
+            echo "sandbox_base_path=/${REPO_NAME}/pr/${PR_NUMBER}/sandbox"
+            echo "template_assets_base_path=/${REPO_NAME}/sandbox/template-assets"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Cache Next.js build
         uses: actions/cache@v6
@@ -346,7 +394,11 @@ jobs:
           # Built without the /<repo> prefix, the sandbox's root-absolute asset URLs
           # drop that segment and 404 — breaking all styles/JS on the preview.
           SANDBOX_BASE_PATH: ${{ steps.urls.outputs.sandbox_base_path }}
+          SANDBOX_TEMPLATE_ASSETS_BASE_PATH: ${{ steps.urls.outputs.template_assets_base_path }}
           NODE_OPTIONS: '--max-old-space-size=8192'
+
+      - name: Remove shared assets from preview artifact
+        run: rm -rf apps/sandbox/out/template-assets
 
       - name: Upload Sandbox artifact
         uses: actions/upload-artifact@v7
@@ -442,6 +494,194 @@ jobs:
           name: a11y-report
           path: a11y-report.json
           retention-days: 1
+
+      # A modal <dialog> hidden before close() blocks the whole page in Safari
+      # 26.1 and leaves no trace (#4290). The ordering is produced by a CSS
+      # transition, which jsdom does not run — so the unit suite cannot see it
+      # and this Chromium probe is the guard. Runs after the upload above so an
+      # a11y failure still publishes its report.
+      - name: Run modal close visibility guard
+        run: node .github/scripts/modal-close-visibility.js --storybook-dir apps/storybook/dist
+
+      # A public component var can be documented, read, and emitted into the
+      # theme CSS and still be unreachable — an inline write or an unlayered
+      # declaration outranks `@layer astryx-theme` (#4530). jsdom resolves no
+      # cascade, so the unit suites assert on the generated CSS text, which
+      # proves emission and not effect. Chromium is where the promise is
+      # checkable. The source-side wiring half lives in
+      # packages/cli/foundation/discovery/theming-targets.test.mjs.
+      - name: Run theme var reachability guard
+        run: node .github/scripts/theme-var-reachability.js --storybook-dir apps/storybook/dist
+
+  # The layer order Astryx promises is Astryx < theme < product, and which
+  # declaration paints is a cascade fact no jsdom test can settle: the build has
+  # been wrong in both directions inside one week — unsplit, so StyleX outranked
+  # every theme, then wrapped instead of split, so an app's own styles lost to
+  # one. vite.build.test.ts reads the built stylesheet; this renders it.
+  #
+  # Its own job on purpose. pr-a11y, where the sibling Chromium guards live,
+  # runs only when packages/core or packages/lab changed, and what this guards
+  # is packages/build — so hosting it there would skip it on exactly the PRs
+  # that can break it. Gated like `test` instead: everything but docsite-only.
+  theme-layers:
+    needs: [check-scope]
+    if: needs.check-scope.outputs.docsite_only != 'true'
+    runs-on: 2-core-ubuntu-arm
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: ./.github/actions/setup
+
+      - name: Install Playwright
+        run: npx playwright install chromium
+
+      # The guard imports the plugin's build artifact, the same one a consumer
+      # installs.
+      - name: Build the Vite plugin
+        run: pnpm -F @astryxdesign/build build
+
+      - name: Run theme layer cascade guard
+        run: node .github/scripts/theme-layer-cascade.js
+
+  # Stable-package visual regression. Core components get every story in
+  # every shipped theme that styles them; a changed shipped theme gets its
+  # relevant matrix. Packages marked `astryx.canaryOnly` (Lab, charts,
+  # richtext, vega) do not compare pixels and do not own a baseline.
+  #
+  # Deeper than the daily gate where it looks: the release gate shoots ONE
+  # representative story per component, this shoots EVERY story of the touched
+  # component in EVERY theme that styles it.
+  #
+  # SKIPS ITSELF WHEN A PR IS TOO BROAD (--max-shots). A token or shared-hook
+  # change puts hundreds of diffs in front of a reviewer who cannot judge them
+  # one by one, and a per-PR check is the wrong instrument for that change —
+  # the daily gate reviews it against the whole baseline instead. The skip
+  # states its reason in the PR comment rather than vanishing.
+  #
+  # SOFT / NON-BLOCKING (continue-on-error) while the suite earns trust: the
+  # verdict surfaces in the job summary and the PR comment, and the release
+  # gate is the blocking one. To promote: drop continue-on-error.
+  pr-visual:
+    name: Stable visual regression
+    needs: [build-storybook, check-components]
+    if: github.event_name == 'pull_request' && needs.check-components.outputs.has_stable_visual == 'true'
+    runs-on: 2-core-ubuntu-arm
+    continue-on-error: true
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup
+        with:
+          install: 'false'
+
+      - name: Download analysis artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: pr-analysis
+
+      - name: Download Storybook artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: storybook-${{ needs.build-storybook.outputs.short_hash }}
+          path: apps/storybook/dist
+
+      # Non-fatal: if this artifact is ever missing, renamed, or produced under
+      # a different key, the gate builds the themes itself. A crash here would
+      # be before the gate ever runs, which is how an artifact-wiring change
+      # reddened every open component PR twice in one day.
+      - name: Download built themes and core
+        continue-on-error: true
+        uses: actions/download-artifact@v8
+        with:
+          name: dists-${{ needs.build-storybook.outputs.short_hash }}
+          path: packages
+
+      - name: Install Playwright
+        run: pnpm install --frozen-lockfile && npx playwright install chromium
+
+      # The downloaded theme builds import Core's consumer-facing dist files.
+      # Rebuild only Core here so those imports resolve without repeating the
+      # full workspace build that produced the theme artifact.
+      - name: Build Core dependency for theme inspection
+        run: pnpm -F @astryxdesign/core build
+
+      - name: Fetch visual baseline from gh-pages
+        run: |
+          set -eu
+          rm -rf /tmp/gh-pages
+          git clone --depth=1 --filter=blob:none --sparse --single-branch --branch gh-pages \
+            "https://github.com/${GITHUB_REPOSITORY}.git" /tmp/gh-pages
+          git -C /tmp/gh-pages sparse-checkout set visual-gate/baseline
+          mkdir -p .visual-baseline
+          if [ -d /tmp/gh-pages/visual-gate/baseline ]; then
+            cp -r /tmp/gh-pages/visual-gate/baseline/. .visual-baseline/
+          fi
+
+      - name: Run the visual gate for the touched components
+        id: visual
+        env:
+          ASTRYX_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          ASTRYX_PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -eu
+          # Component names are not globally unique, so filter by the package
+          # recorded in componentStats — never infer stability from a name.
+          COMPONENTS=$(jq -r '. as $root | [(.newComponents + .modifiedComponents)[] | select($root.componentStats[.].package == "@astryxdesign/core")] | unique | join(",")' analysis.json)
+          THEMES=$(jq -r '(.changedStableThemes // []) | join(",")' analysis.json)
+
+          if [ -n "$COMPONENTS" ] && [ -n "$THEMES" ]; then
+            TIERS="component,theme-matrix"
+            SCOPE_ARGS=(--components "$COMPONENTS" --themes "$THEMES")
+          elif [ -n "$COMPONENTS" ]; then
+            TIERS="component"
+            SCOPE_ARGS=(--components "$COMPONENTS" --no-scout)
+          elif [ -n "$THEMES" ]; then
+            TIERS="theme-matrix"
+            SCOPE_ARGS=(--themes "$THEMES")
+          else
+            # Shared Core theming/tokens/hooks are stable but broad. Let the
+            # gate plan the full stable surface and decline visibly at the shot
+            # budget; the daily stable gate owns the exhaustive comparison.
+            TIERS="surface,theme-matrix,probe"
+            SCOPE_ARGS=()
+          fi
+
+          echo "Stable Core components: ${COMPONENTS:-none}"
+          echo "Stable themes: ${THEMES:-none}"
+          set +e
+          node .github/scripts/visual-gate/gate.mjs check \
+            --storybook-dir apps/storybook/dist \
+            --baseline .visual-baseline \
+            --out .visual-run \
+            --tiers "$TIERS" \
+            "${SCOPE_ARGS[@]}" \
+            --max-shots 240 \
+            --summary-output visual-summary.md
+          code=$?
+          [ -f visual-summary.md ] && cat visual-summary.md >> "$GITHUB_STEP_SUMMARY"
+          # Exit 2 is "changed", which is a question for the reviewer, not a
+          # broken job. Only a crash (1) is a failure.
+          [ "$code" -eq 1 ] && exit 1
+          exit 0
+
+      - name: Upload visual verdict and report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: visual-pr-report
+          path: |
+            .visual-run/verdict.json
+            .visual-run/manifest.json
+            .visual-run/shots/
+            .visual-run/report/
+          retention-days: 7
+          if-no-files-found: ignore
 
   # RTL semantic audit. Sibling to pr-a11y: same build-storybook artifact, same
   # analysis.json scoping, so a PR only pays for the components it touched.

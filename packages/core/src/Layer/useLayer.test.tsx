@@ -12,11 +12,20 @@
 import {describe, it, expect, vi, afterEach} from 'vitest';
 import {render, act, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {useLayer, getPositionTryFallbacks} from './useLayer';
+import * as stylex from '@stylexjs/stylex';
+import {
+  useKeepLayerOpenProps,
+  useLayer,
+  useLayerInternal,
+  getPositionTryFallbacks,
+} from './useLayer';
+import {typeScaleVars} from '../theme/tokens.stylex';
 import type {
   LayerPlacement,
   LayerAlignment,
   ContextRenderProps,
+  ContextLayerReturn,
+  FixedLayerReturn,
 } from './useLayer';
 
 function mockCSSStyleDeclaration(
@@ -500,20 +509,6 @@ describe('useLayer', () => {
   });
 
   describe('when the Popover API is supported', () => {
-    it('declares body type instead of inheriting the host context', () => {
-      const {container} = render(
-        <div style={{fontSize: '30px', lineHeight: '3'}}>
-          <LayerHarness onReady={() => {}} />
-        </div>,
-      );
-
-      const layer = container.querySelector('[popover]') as HTMLElement;
-      expect(layer).toHaveStyle({
-        fontSize: 'var(--text-body-size)',
-        lineHeight: 'var(--text-body-leading)',
-      });
-    });
-
     it('calls showPopover/hidePopover on show/hide', () => {
       const showSpy = vi.fn();
       const hideSpy = vi.fn();
@@ -613,6 +608,66 @@ async function openAndGetStyle(ui: React.ReactElement): Promise<string> {
   const popover = container.querySelector('[popover]');
   return popover?.getAttribute('style') ?? '';
 }
+
+describe('typography baseline', () => {
+  const overrideStyles = stylex.create({
+    supporting: {fontSize: typeScaleVars['--text-supporting-size']},
+  });
+
+  function TypographyHarness({
+    ambientFontSize,
+    xstyle,
+  }: {
+    ambientFontSize: string;
+    xstyle?: ContextRenderProps['xstyle'];
+  }) {
+    const layer = useLayer({mode: 'context'});
+    return (
+      <div style={{fontSize: ambientFontSize, lineHeight: '3'}}>
+        <button type="button" ref={layer.ref} onClick={layer.show}>
+          trigger
+        </button>
+        {layer.render(<span>content</span>, {xstyle})}
+      </div>
+    );
+  }
+
+  async function openAndGetType(ui: React.ReactElement) {
+    const user = userEvent.setup();
+    const {container, getByRole} = render(ui);
+    await user.click(getByRole('button', {name: 'trigger'}));
+    const el = container.querySelector('[popover]') as HTMLElement;
+    const computed = window.getComputedStyle(el);
+    return {fontSize: computed.fontSize, lineHeight: computed.lineHeight};
+  }
+
+  // jsdom resolves no var() indirection, so the token reference is what the
+  // assertion can see — the point is that a declaration exists at all, since
+  // an absent one is exactly what let the ambient size through.
+  it.each(['13px', '20px'])(
+    'takes the body role rather than the surrounding %s',
+    async ambientFontSize => {
+      expect(
+        await openAndGetType(
+          <TypographyHarness ambientFontSize={ambientFontSize} />,
+        ),
+      ).toEqual({
+        fontSize: 'var(--text-body-size)',
+        lineHeight: 'var(--text-body-leading)',
+      });
+    },
+  );
+
+  it('still lets a consumer xstyle set its own size', async () => {
+    const {fontSize} = await openAndGetType(
+      <TypographyHarness
+        ambientFontSize="13px"
+        xstyle={overrideStyles.supporting}
+      />,
+    );
+    expect(fontSize).toBe('var(--text-supporting-size)');
+  });
+});
 
 describe('useLayer context positioning', () => {
   // The mapping uses the self-* logical keyword family, so the emitted
@@ -871,5 +926,259 @@ describe('useLayer context positioning', () => {
       container.querySelector('[popover]')?.getAttribute('style') ?? '';
     expect(style).not.toContain('position-area');
     expect(style).not.toContain('position-anchor');
+  });
+});
+
+describe('useLayer public return types', () => {
+  it('keeps dismissal helpers internal', () => {
+    const contextHasKeepOpenProps: 'keepOpenProps' extends keyof ContextLayerReturn
+      ? true
+      : false = false;
+    const fixedHasKeepOpenProps: 'keepOpenProps' extends keyof FixedLayerReturn
+      ? true
+      : false = false;
+    const contextHasGuard: 'wasJustDismissed' extends keyof ContextLayerReturn
+      ? true
+      : false = false;
+    const fixedHasGuard: 'wasJustDismissed' extends keyof FixedLayerReturn
+      ? true
+      : false = false;
+
+    expect(contextHasKeepOpenProps).toBe(false);
+    expect(fixedHasKeepOpenProps).toBe(false);
+    expect(contextHasGuard).toBe(false);
+    expect(fixedHasGuard).toBe(false);
+  });
+});
+
+describe('internal keep-open props (controls on the trigger, #5004)', () => {
+  function ClearableTriggerHarness() {
+    const layer = useLayer({mode: 'context'});
+    const keepOpenProps = useKeepLayerOpenProps(layer.id, layer.isOpen);
+    return (
+      <>
+        <button type="button" ref={layer.ref} onClick={layer.show}>
+          Trigger
+        </button>
+        <button type="button" {...keepOpenProps}>
+          Clear
+        </button>
+        {layer.render(<span>Layer content</span>, {placement: 'below'})}
+      </>
+    );
+  }
+
+  it('names the control an invoker for the duration of the press', async () => {
+    const user = userEvent.setup();
+    const {container, getByRole} = render(<ClearableTriggerHarness />);
+    const clear = getByRole('button', {name: 'Clear'});
+
+    await user.click(getByRole('button', {name: 'Trigger'}));
+    const popover = container.querySelector('[popover]') as HTMLElement;
+
+    await user.pointer({keys: '[MouseLeft>]', target: clear});
+    expect(clear.getAttribute('popovertarget')).toBe(popover.id);
+
+    await user.pointer({keys: '[/MouseLeft]', target: clear});
+    expect(clear).not.toHaveAttribute('popovertarget');
+  });
+
+  it('takes the invoker off when the press ends in pointercancel', async () => {
+    const user = userEvent.setup();
+    const {container, getByRole} = render(<ClearableTriggerHarness />);
+    const clear = getByRole('button', {name: 'Clear'});
+
+    await user.click(getByRole('button', {name: 'Trigger'}));
+    const popover = container.querySelector('[popover]') as HTMLElement;
+
+    await user.pointer({keys: '[MouseLeft>]', target: clear});
+    expect(clear.getAttribute('popovertarget')).toBe(popover.id);
+
+    // A touch the browser claims — for a scroll, for the platform's long-press
+    // menu — ends here, and no pointerup ever arrives.
+    await act(async () => {
+      document.dispatchEvent(new Event('pointercancel'));
+      await new Promise(resolve => {
+        window.setTimeout(resolve, 0);
+      });
+    });
+
+    expect(clear).not.toHaveAttribute('popovertarget');
+  });
+
+  it('leaves the control alone while the layer is closed', async () => {
+    const user = userEvent.setup();
+    const {getByRole} = render(<ClearableTriggerHarness />);
+    const clear = getByRole('button', {name: 'Clear'});
+
+    await user.click(clear);
+
+    expect(clear).not.toHaveAttribute('popovertarget');
+  });
+
+  it("cancels the invoker's own toggle so the press cannot close the layer", async () => {
+    const user = userEvent.setup();
+    const {container, getByRole} = render(<ClearableTriggerHarness />);
+    await user.click(getByRole('button', {name: 'Trigger'}));
+    const popover = container.querySelector('[popover]') as HTMLElement;
+    const clear = getByRole('button', {name: 'Clear'});
+
+    const click = new MouseEvent('click', {bubbles: true, cancelable: true});
+    await act(async () => {
+      clear.setAttribute('popovertarget', popover.id);
+      clear.dispatchEvent(click);
+    });
+
+    expect(click.defaultPrevented).toBe(true);
+    expect(clear).not.toHaveAttribute('popovertarget');
+  });
+});
+
+describe('wasJustDismissed (light dismiss vs. the trigger click, #5004)', () => {
+  function GuardedTriggerHarness() {
+    const layer = useLayerInternal({mode: 'context'});
+    return (
+      <>
+        <button
+          type="button"
+          ref={layer.ref}
+          onClick={() => {
+            if (layer.wasJustDismissed()) {
+              return;
+            }
+            if (layer.isOpen) {
+              layer.hide();
+            } else {
+              layer.show();
+            }
+          }}>
+          Trigger
+        </button>
+        <span data-testid="state">{layer.isOpen ? 'open' : 'closed'}</span>
+        {layer.render(<span>Layer content</span>, {placement: 'below'})}
+      </>
+    );
+  }
+
+  /**
+   * The browser closing the layer itself: it hides the element and queues a
+   * `toggle` event, which is what reaches React — before the click, on the
+   * engines that lose the race.
+   */
+  function lightDismiss(container: HTMLElement) {
+    const popover = container.querySelector('[popover]') as HTMLElement;
+    act(() => {
+      popover.dispatchEvent(
+        Object.assign(new Event('toggle'), {
+          oldState: 'open',
+          newState: 'closed',
+        }),
+      );
+    });
+  }
+
+  it('absorbs the trigger click that follows a light dismiss', async () => {
+    const user = userEvent.setup();
+    const {container, getByRole, getByTestId} = render(
+      <GuardedTriggerHarness />,
+    );
+    const trigger = getByRole('button', {name: 'Trigger'});
+
+    await user.click(trigger);
+    expect(getByTestId('state')).toHaveTextContent('open');
+
+    // The next press reaches the browser dismissal before its click.
+    fireEvent.pointerDown(trigger);
+    lightDismiss(container);
+    fireEvent.click(trigger);
+
+    expect(getByTestId('state')).toHaveTextContent('closed');
+  });
+
+  it('acts on a deliberate second press', async () => {
+    const user = userEvent.setup();
+    const {container, getByRole, getByTestId} = render(
+      <GuardedTriggerHarness />,
+    );
+    const trigger = getByRole('button', {name: 'Trigger'});
+
+    await user.click(trigger);
+    fireEvent.pointerDown(trigger);
+    lightDismiss(container);
+    fireEvent.click(trigger);
+    // A press of its own — a new gesture, however soon it lands.
+    await user.click(trigger);
+
+    expect(getByTestId('state')).toHaveTextContent('open');
+  });
+
+  it('leaves a programmatic hide unguarded', async () => {
+    const user = userEvent.setup();
+    const {getByRole, getByTestId} = render(<GuardedTriggerHarness />);
+    const trigger = getByRole('button', {name: 'Trigger'});
+
+    // Three presses with no browser-initiated close between them.
+    await user.click(trigger);
+    await user.click(trigger);
+    await user.click(trigger);
+
+    expect(getByTestId('state')).toHaveTextContent('open');
+  });
+
+  it('acts on a synthesized click after a stopped click-first dismissal', async () => {
+    const user = userEvent.setup();
+    const {container, getByRole, getByTestId} = render(
+      <GuardedTriggerHarness />,
+    );
+    const trigger = getByRole('button', {name: 'Trigger'});
+
+    await user.click(trigger);
+    fireEvent.pointerDown(document.body);
+    document.body.addEventListener('click', event => event.stopPropagation(), {
+      once: true,
+    });
+    fireEvent.click(document.body);
+    lightDismiss(container);
+    expect(getByTestId('state')).toHaveTextContent('closed');
+
+    // Chromium delivers the dismissing click before the queued toggle. A later
+    // bare click is a new activation even though it has no pointerdown.
+    act(() => {
+      trigger.click();
+    });
+
+    expect(getByTestId('state')).toHaveTextContent('open');
+  });
+
+  /** A trigger that calls show()/hide() directly, checking nothing. */
+  function PlainTriggerHarness() {
+    const layer = useLayerInternal({mode: 'context'});
+    return (
+      <>
+        <button
+          type="button"
+          ref={layer.ref}
+          onClick={() => (layer.isOpen ? layer.hide() : layer.show())}>
+          Trigger
+        </button>
+        <span data-testid="state">{layer.isOpen ? 'open' : 'closed'}</span>
+        {layer.render(<span>Layer content</span>, {placement: 'below'})}
+      </>
+    );
+  }
+
+  it('absorbs the click for a trigger that never calls wasJustDismissed', async () => {
+    const user = userEvent.setup();
+    const {container, getByRole, getByTestId} = render(<PlainTriggerHarness />);
+    const trigger = getByRole('button', {name: 'Trigger'});
+
+    await user.click(trigger);
+    expect(getByTestId('state')).toHaveTextContent('open');
+
+    fireEvent.pointerDown(trigger);
+    lightDismiss(container);
+    fireEvent.click(trigger);
+
+    expect(getByTestId('state')).toHaveTextContent('closed');
   });
 });

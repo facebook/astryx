@@ -54,9 +54,34 @@ export const docs = {
       default: '4',
     },
     {
+      name: 'paddingInline',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+      description: 'Inline (horizontal) padding override. Overrides only the inline-axis padding while preserving block padding from `padding` or the container theme default. Accepts the spacing scale (0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10).',
+    },
+    {
+      name: 'paddingInlineStart',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+      description: 'Inline-start padding override (left in LTR, right in RTL). Overrides paddingInline and padding on that edge only.',
+    },
+    {
+      name: 'paddingInlineEnd',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+      description: 'Inline-end padding override (right in LTR, left in RTL). Overrides paddingInline and padding on that edge only.',
+    },
+    {
       name: 'paddingBlock',
       type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
       description: 'Block (vertical) padding override. Overrides only the block-axis padding while preserving inline padding from `padding` or the container theme default. Accepts the spacing scale (0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10).',
+    },
+    {
+      name: 'paddingBlockStart',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+      description: 'Block-start (top) padding, using the spacing scale. Overrides paddingBlock and padding on that edge only.',
+    },
+    {
+      name: 'paddingBlockEnd',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+      description: 'Block-end (bottom) padding, using the spacing scale. Overrides paddingBlock and padding on that edge only.',
     },
     {
       name: 'xstyle',
@@ -136,9 +161,34 @@ export const docsZh = {
       default: '4',
     },
     {
+      name: 'paddingInline',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+      description: '行内（水平）方向内边距覆盖。仅覆盖行内轴内边距，同时保留来自 padding 或容器主题默认值的块内边距。使用间距比例（0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10）。',
+    },
+    {
+      name: 'paddingInlineStart',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+      description: '行内起始内边距覆盖（LTR 中为左侧，RTL 中为右侧）。仅在该边上覆盖 paddingInline 和 padding。',
+    },
+    {
+      name: 'paddingInlineEnd',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+      description: '行内结束内边距覆盖（LTR 中为右侧，RTL 中为左侧）。仅在该边上覆盖 paddingInline 和 padding。',
+    },
+    {
       name: 'paddingBlock',
       type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
       description: '块（垂直）方向内边距覆盖。仅覆盖块轴内边距，同时保留来自 padding 或容器主题默认值的行内内边距。使用间距比例（0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10）。',
+    },
+    {
+      name: 'paddingBlockStart',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+      description: '块起始（顶部）内边距，使用间距刻度。仅在该边上覆盖 paddingBlock 和 padding。',
+    },
+    {
+      name: 'paddingBlockEnd',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+      description: '块结束（底部）内边距，使用间距刻度。仅在该边上覆盖 paddingBlock 和 padding。',
     },
     {
       name: 'xstyle',
@@ -192,7 +242,12 @@ export const docsDense = {
     children: 'Content rendered inside section.',
     dividers: 'Which sides of section have divider borders.',
     padding: 'Internal padding via spacing scale; 0 for edge-to-edge content.',
+    paddingInline: 'Inline-axis padding override; preserves block padding from padding/theme.',
+    paddingInlineStart: 'Inline-start (left in LTR) padding override; wins over paddingInline/padding on that edge.',
+    paddingInlineEnd: 'Inline-end (right in LTR) padding override; wins over paddingInline/padding on that edge.',
     paddingBlock: 'Block-axis padding override; preserves inline padding from padding/theme.',
+    paddingBlockStart: 'Block-start (top) padding override; wins over paddingBlock/padding on that edge.',
+    paddingBlockEnd: 'Block-end (bottom) padding override; wins over paddingBlock/padding on that edge.',
     xstyle: 'StyleX styles for layout customization; must be stylex.create() value.',
   },
 };

@@ -22,11 +22,12 @@ import {type ReactNode, type ReactElement, Children} from 'react';
 import type {BaseProps} from '../BaseProps';
 import type {SpacingStep} from '../utils/types';
 import * as stylex from '@stylexjs/stylex';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
 import {useOverflow} from '../hooks/useOverflow';
 import {spacingVars} from '../theme/tokens.stylex';
 import {themeProps} from '../utils/themeProps';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 const styles = stylex.create({
   container: {
     display: 'flex',
@@ -280,7 +281,7 @@ export function OverflowList({
 
       {/* Visible container */}
       <div
-        ref={mergeRefs(ref, containerRef)}
+        ref={useMergedRefs(ref, containerRef)}
         {...mergeProps(
           themeProps('overflow-list'),
           stylex.props(

@@ -186,16 +186,11 @@ function buildTableStylePlugin<
 >(): TablePlugin<T> {
   return {
     transformTable(props: TableRenderProps): TableRenderProps {
-      const existingClass = props.htmlProps.className ?? '';
-      const tableClass = themeProps('table').className;
+      // The `astryx-table` class itself comes from BaseTable, which renders
+      // the <table> element and now names it `table` (with `base-table` as its
+      // legacy name). Adding it here too would put the token on twice.
       return {
         ...props,
-        htmlProps: {
-          ...props.htmlProps,
-          className: existingClass
-            ? `${existingClass} ${tableClass}`
-            : tableClass,
-        },
         xstyle: [...props.xstyle, tableStyles.base],
       };
     },

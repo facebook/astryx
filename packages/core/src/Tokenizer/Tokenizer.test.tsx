@@ -16,6 +16,16 @@ import {Tokenizer} from './Tokenizer';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import type {SearchSource, SearchableItem} from '../Typeahead/types';
 import {TestIcon} from '../__tests__/TestIcon';
+import {InternationalizationProvider} from '../i18n';
+
+// Test-supplied announcement strings: the assertions below depend on no
+// catalog, and no hardcoded English in the component can satisfy them.
+const TOKEN_MESSAGES = {
+  fr: {
+    '@astryx.tokenizer.tokenAdded': 'Ajouté : {label}',
+    '@astryx.tokenizer.tokenRemoved': 'Retiré : {label}',
+  },
+};
 
 function politeRegion(): HTMLElement | null {
   return document.querySelector('[data-astryx-live-region="polite"]');
@@ -83,6 +93,37 @@ const userSource: SearchSource = {
     users.filter(u => u.label.toLowerCase().includes(query.toLowerCase())),
   bootstrap: () => users.slice(0, 3),
 };
+
+describe('Tokenizer minQueryLength', () => {
+  it('forwards the threshold to the typeahead engine', async () => {
+    const search = vi.fn((query: string) =>
+      users.filter(u => u.label.toLowerCase().includes(query.toLowerCase())),
+    );
+    render(
+      <Tokenizer
+        label="People"
+        searchSource={{search, bootstrap: () => []}}
+        value={[]}
+        onChange={() => {}}
+        minQueryLength={3}
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    fireEvent.change(input, {target: {value: 'Al'}});
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(search).not.toHaveBeenCalled();
+    expect(input).toHaveAttribute('aria-expanded', 'false');
+
+    fireEvent.change(input, {target: {value: 'Ali'}});
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+  });
+});
 
 describe('Tokenizer', () => {
   it('forwards ref to the root field element', () => {
@@ -596,6 +637,136 @@ describe('Tokenizer', () => {
       bootstrap: () => [],
     };
 
+    it('still offers Create below minQueryLength, and does not search', async () => {
+      // The threshold exists to avoid a fetch too broad to be worth making.
+      // Creating costs no fetch, so a field that can create `QA` should not
+      // stop being able to just because a search for `QA` would match too
+      // much. Reported on #5385.
+      const search = vi.fn(() => []);
+      const onChange = vi.fn();
+      render(
+        <Tokenizer
+          label="Tags"
+          searchSource={{search, bootstrap: () => []}}
+          value={[]}
+          onChange={onChange}
+          hasCreate
+          minQueryLength={3}
+          debounceMs={0}
+        />,
+      );
+
+      const input = screen.getByRole('combobox');
+      await act(async () => {
+        fireEvent.change(input, {target: {value: 'QA'}});
+      });
+      await act(async () => {
+        await new Promise(r => setTimeout(r, 50));
+      });
+
+      // Offered...
+      expect(screen.queryByText('Create "QA"')).toBeInTheDocument();
+      // ...without the source ever being asked.
+      expect(search).not.toHaveBeenCalled();
+      // ...and it commits.
+      fireEvent.click(screen.getByText('Create "QA"'));
+      expect(onChange).toHaveBeenCalledWith(
+        [expect.objectContaining({id: 'QA', label: 'QA'})],
+        expect.objectContaining({type: 'create'}),
+      );
+    });
+
+    it('offers no menu below the threshold without hasCreate', async () => {
+      // The negative control for the case above: with nothing to derive from
+      // the text, a below-threshold query still opens nothing, and never
+      // reports "no results" for a query that was not searched.
+      const search = vi.fn(() => []);
+      render(
+        <Tokenizer
+          label="Tags"
+          searchSource={{search, bootstrap: () => []}}
+          value={[]}
+          onChange={() => {}}
+          minQueryLength={3}
+          debounceMs={0}
+        />,
+      );
+
+      const input = screen.getByRole('combobox');
+      await act(async () => {
+        fireEvent.change(input, {target: {value: 'QA'}});
+      });
+      await act(async () => {
+        await new Promise(r => setTimeout(r, 50));
+      });
+
+      expect(search).not.toHaveBeenCalled();
+      expect(input).toHaveAttribute('aria-expanded', 'false');
+      expect(screen.queryByText('No results found')).not.toBeInTheDocument();
+    });
+
+    it('does not offer Create below the threshold for a token already held', async () => {
+      render(
+        <Tokenizer
+          label="Tags"
+          searchSource={{search: () => [], bootstrap: () => []}}
+          value={[{id: 'QA', label: 'QA'}]}
+          onChange={() => {}}
+          hasCreate
+          minQueryLength={3}
+          debounceMs={0}
+        />,
+      );
+
+      const input = screen.getByRole('combobox');
+      await act(async () => {
+        fireEvent.change(input, {target: {value: 'QA'}});
+      });
+      await act(async () => {
+        await new Promise(r => setTimeout(r, 50));
+      });
+
+      expect(screen.queryByText('Create "QA"')).not.toBeInTheDocument();
+    });
+
+    it('offers Create on top of a full menu, not in place of a result', async () => {
+      // The Create entry is appended after the results are cut to
+      // `maxMenuItems`, so a full menu shows one more option rather than
+      // dropping its last result to make room. Deliberate: creating is a
+      // different capability from searching, and the cap exists to bound how
+      // many *results* a menu shows.
+      const many = Array.from({length: 20}, (_, i) => ({
+        id: `qa-${i}`,
+        label: `QA ${i}`,
+      }));
+      render(
+        <Tokenizer
+          label="Tags"
+          searchSource={{search: () => many, bootstrap: () => []}}
+          value={[]}
+          onChange={() => {}}
+          hasCreate
+          maxMenuItems={3}
+          debounceMs={0}
+        />,
+      );
+
+      const input = screen.getByRole('combobox');
+      await act(async () => {
+        fireEvent.change(input, {target: {value: 'QA'}});
+      });
+      await act(async () => {
+        await new Promise(r => setTimeout(r, 50));
+      });
+
+      // Queried off the document rather than by role: the popover renders
+      // into a layer that jsdom keeps out of the accessibility tree, which is
+      // why the tests around this one reach for text too.
+      const options = document.querySelectorAll('[role="option"]');
+      expect(options).toHaveLength(4);
+      expect(options[3]).toHaveTextContent('Create "QA"');
+    });
+
     it('shows a "Create" option when typing with hasCreate', async () => {
       render(
         <Tokenizer
@@ -980,12 +1151,14 @@ describe('Tokenizer', () => {
     it('announces removal politely on Backspace with an empty input', async () => {
       const onChange = vi.fn();
       render(
-        <Tokenizer
-          label="Members"
-          searchSource={userSource}
-          value={[users[0], users[1]]}
-          onChange={onChange}
-        />,
+        <InternationalizationProvider locale="fr" overrides={TOKEN_MESSAGES}>
+          <Tokenizer
+            label="Members"
+            searchSource={userSource}
+            value={[users[0], users[1]]}
+            onChange={onChange}
+          />
+        </InternationalizationProvider>,
       );
       const input = screen.getByRole('combobox');
       fireEvent.keyDown(input, {key: 'Backspace'});
@@ -994,35 +1167,39 @@ describe('Tokenizer', () => {
         type: 'remove',
       });
       await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent('Removed Bob');
+        expect(politeRegion()?.textContent).toBe('Retiré : Bob');
       });
     });
 
     it("announces removal politely when clicking a token's remove button", async () => {
       render(
-        <Tokenizer
-          label="Members"
-          searchSource={userSource}
-          value={[users[0], users[1]]}
-          onChange={() => {}}
-        />,
+        <InternationalizationProvider locale="fr" overrides={TOKEN_MESSAGES}>
+          <Tokenizer
+            label="Members"
+            searchSource={userSource}
+            value={[users[0], users[1]]}
+            onChange={() => {}}
+          />
+        </InternationalizationProvider>,
       );
       fireEvent.click(screen.getByRole('button', {name: 'Remove Alice'}));
       await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent('Removed Alice');
+        expect(politeRegion()?.textContent).toBe('Retiré : Alice');
       });
     });
 
     it('announces addition politely when selecting a search result', async () => {
       render(
-        <Tokenizer
-          label="Members"
-          searchSource={userSource}
-          value={[]}
-          onChange={() => {}}
-          hasEntriesOnFocus
-          debounceMs={0}
-        />,
+        <InternationalizationProvider locale="fr" overrides={TOKEN_MESSAGES}>
+          <Tokenizer
+            label="Members"
+            searchSource={userSource}
+            value={[]}
+            onChange={() => {}}
+            hasEntriesOnFocus
+            debounceMs={0}
+          />
+        </InternationalizationProvider>,
       );
       const input = screen.getByRole('combobox');
       fireEvent.focus(input);
@@ -1031,7 +1208,7 @@ describe('Tokenizer', () => {
       });
       fireEvent.click(screen.getByText('Alice'));
       await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent('Added Alice');
+        expect(politeRegion()?.textContent).toBe('Ajouté : Alice');
       });
     });
 
@@ -1041,14 +1218,16 @@ describe('Tokenizer', () => {
         bootstrap: () => [],
       };
       render(
-        <Tokenizer
-          label="Tags"
-          searchSource={emptySource}
-          value={[]}
-          onChange={() => {}}
-          hasCreate
-          debounceMs={0}
-        />,
+        <InternationalizationProvider locale="fr" overrides={TOKEN_MESSAGES}>
+          <Tokenizer
+            label="Tags"
+            searchSource={emptySource}
+            value={[]}
+            onChange={() => {}}
+            hasCreate
+            debounceMs={0}
+          />
+        </InternationalizationProvider>,
       );
       const input = screen.getByRole('combobox');
       await act(async () => {
@@ -1059,7 +1238,7 @@ describe('Tokenizer', () => {
       });
       fireEvent.click(screen.getByText('Create "new-tag"'));
       await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent('Added new-tag');
+        expect(politeRegion()?.textContent).toBe('Ajouté : new-tag');
       });
     });
 

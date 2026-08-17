@@ -577,24 +577,27 @@ function AuditDetails({
 // =============================================================================
 
 type AuditFilter = 'audited' | 'tbd';
-type PackageFilter = 'core' | 'lab';
 
 const AUDIT_FILTER_OPTIONS = [
   {value: 'audited', label: 'Audited'},
   {value: 'tbd', label: 'TBD'},
 ];
-const PACKAGE_FILTER_OPTIONS = [
-  {value: 'core', label: 'Core'},
-  {value: 'lab', label: 'Lab'},
-];
+
+// Derived from the roster, not hardcoded, so a package promoted out of lab
+// (richtext was) gets a filter option the day it lands rather than showing
+// rows that no filter can isolate.
+const PACKAGE_FILTER_OPTIONS = [...new Set(roster.map(item => item.package))]
+  .sort()
+  .map(pkg => ({
+    value: pkg,
+    label: pkg.charAt(0).toUpperCase() + pkg.slice(1),
+  }));
 
 export default function ComponentScoresPage() {
   const [ledger, setLedger] = useState<Ledger | null>(snapshot);
   const [query, setQuery] = useState('');
   const [auditFilter, setAuditFilter] = useState<AuditFilter | null>(null);
-  const [packageFilter, setPackageFilter] = useState<PackageFilter | null>(
-    null,
-  );
+  const [packageFilter, setPackageFilter] = useState<string | null>(null);
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
   const [isAuditPanelOpen, setIsAuditPanelOpen] = useState(false);
   const drawerRef = useRef<HTMLDialogElement>(null);
@@ -923,9 +926,7 @@ export default function ComponentScoresPage() {
                     options={PACKAGE_FILTER_OPTIONS}
                     value={packageFilter}
                     onChange={value =>
-                      setPackageFilter(
-                        value ? (value.toLowerCase() as PackageFilter) : null,
-                      )
+                      setPackageFilter(value ? value.toLowerCase() : null)
                     }
                     hasClear
                     variant="ghost"
@@ -1035,7 +1036,7 @@ export default function ComponentScoresPage() {
         ref={drawerRef}
         id={AUDIT_PANEL_ID}
         isOpen={isAuditPanelOpen && selectedRow?.entry != null}
-        onClose={() => setIsAuditPanelOpen(false)}
+        onOpenChange={setIsAuditPanelOpen}
         label={
           selectedRow
             ? selectedRow.component +
@@ -1046,7 +1047,7 @@ export default function ComponentScoresPage() {
         }
         hasScrim={false}
         hasCloseButton
-        size={560}>
+        width={560}>
         {selectedRow ? (
           <AuditDetails
             row={selectedRow}

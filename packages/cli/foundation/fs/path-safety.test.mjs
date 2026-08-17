@@ -91,6 +91,13 @@ describe('sanitizeName', () => {
     expect(() => sanitizeName('.')).toThrow(PathSafetyError);
   });
 
+  it('rejects dotfile names (.env, .htaccess) that could create hidden files', () => {
+    expect(() => sanitizeName('.env')).toThrow(PathSafetyError);
+    expect(() => sanitizeName('.htaccess')).toThrow(PathSafetyError);
+    expect(() => sanitizeName('.bashrc')).toThrow(PathSafetyError);
+    expect(() => sanitizeName('.gitignore')).toThrow(PathSafetyError);
+  });
+
   it('rejects NUL bytes', () => {
     expect(() => sanitizeName('foo\0bar')).toThrow(PathSafetyError);
   });

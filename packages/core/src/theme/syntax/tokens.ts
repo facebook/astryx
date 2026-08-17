@@ -44,8 +44,11 @@ export const syntaxTokenDefaults = {
   '--color-syntax-attribute': 'var(--color-text-teal)',
   // property -> cyan text (object properties)
   '--color-syntax-property': 'var(--color-text-cyan)',
-  // punctuation -> disabled text (brackets, semicolons)
-  '--color-syntax-punctuation': 'var(--color-text-disabled)',
+  // punctuation -> secondary text (brackets, semicolons). Not disabled text:
+  // disabled grey is calibrated to fail AA on purpose (WCAG exempts inactive
+  // controls), and punctuation in a code sample is normal, always-active
+  // text — see #5386.
+  '--color-syntax-punctuation': 'var(--color-text-secondary)',
   // background -> muted surface
   '--color-syntax-background': 'var(--color-background-muted)',
 } as const;

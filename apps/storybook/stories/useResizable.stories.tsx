@@ -36,7 +36,7 @@ function HookDemo({children}: {children: React.ReactNode}) {
 }
 
 const meta: Meta<typeof HookDemo> = {
-  title: 'Core/useResizable',
+  title: 'Core/Hooks/useResizable',
   component: HookDemo,
   tags: ['autodocs'],
   parameters: {
@@ -290,10 +290,7 @@ export const MixedContainers: Story = {
                 xstyle={s.muted}>
                 Explorer
               </LayoutPanel>
-              <ResizeHandle
-                direction="horizontal"
-                resizable={sidebar.props}
-              />
+              <ResizeHandle direction="horizontal" resizable={sidebar.props} />
             </>
           }
           content={
@@ -313,10 +310,7 @@ export const MixedContainers: Story = {
                   }}>
                   Editor
                 </div>
-                <ResizeHandle
-                  direction="vertical"
-                  resizable={editor.props}
-                />
+                <ResizeHandle direction="vertical" resizable={editor.props} />
                 <div
                   {...stylex.props(s.card)}
                   style={{

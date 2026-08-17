@@ -4,7 +4,7 @@
 
 /**
  * @file useTableRowStatus.tsx
- * @input React, StyleX, Icon, Table types
+ * @input React, StyleX, Icon, i18n, VisuallyHidden, Table types
  * @output Exports useTableRowStatus hook + config type
  * @position Row-status plugin; consumed by Table via plugins prop
  *
@@ -16,6 +16,8 @@ import {useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Icon, type IconColor, type IconName} from '../../../Icon';
 import {Tooltip} from '../../../Tooltip';
+import {useTranslator} from '../../../i18n';
+import {VisuallyHidden} from '../../../VisuallyHidden';
 import type {TableColumn, TablePlugin} from '../../types';
 
 /**
@@ -142,6 +144,7 @@ const styles = stylex.create({
 export function useTableRowStatus<T extends Record<string, unknown>>(
   config: UseTableRowStatusConfig<T>,
 ): TablePlugin<T> {
+  const t = useTranslator();
   const {getStatus} = config;
 
   return useMemo(
@@ -149,7 +152,13 @@ export function useTableRowStatus<T extends Record<string, unknown>>(
       transformColumns(columns) {
         const statusColumn: TableColumn<T> = {
           key: '__rowStatus',
-          header: '',
+          // The gutter stays visually blank, but the th needs a discernible
+          // name for assistive technology (axe: empty-table-header).
+          header: (
+            <VisuallyHidden>
+              {t('@astryx.table.rowStatus.columnHeader')}
+            </VisuallyHidden>
+          ),
           width: STATUS_COLUMN_WIDTH,
           resizable: false,
           renderCell: (item: T) => {
@@ -184,6 +193,6 @@ export function useTableRowStatus<T extends Record<string, unknown>>(
         return [statusColumn, ...columns];
       },
     }),
-    [getStatus],
+    [getStatus, t],
   );
 }

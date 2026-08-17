@@ -15,6 +15,7 @@ import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Banner} from './Banner';
 import {registerIcons, resetIcons} from '../Icon';
+import {InternationalizationProvider} from '../i18n';
 
 describe('Banner', () => {
   afterEach(() => {
@@ -97,7 +98,9 @@ describe('Banner', () => {
 
   it('renders dismiss button when isDismissable', () => {
     render(<Banner status="info" title="Dismissable" isDismissable />);
-    expect(screen.getByRole('button', {name: 'Dismiss'})).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: 'Dismiss Dismissable'}),
+    ).toBeInTheDocument();
   });
 
   it('calls onDismiss when dismiss button is clicked', async () => {
@@ -111,7 +114,7 @@ describe('Banner', () => {
         onDismiss={onDismiss}
       />,
     );
-    await user.click(screen.getByRole('button', {name: 'Dismiss'}));
+    await user.click(screen.getByRole('button', {name: 'Dismiss Dismissable'}));
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 
@@ -126,7 +129,9 @@ describe('Banner', () => {
       />,
     );
     expect(screen.getByTestId('banner')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', {name: 'Dismiss'}));
+    await user.click(
+      screen.getByRole('button', {name: 'Dismiss Self Dismissing'}),
+    );
     expect(screen.queryByTestId('banner')).not.toBeInTheDocument();
   });
 
@@ -142,16 +147,14 @@ describe('Banner', () => {
         data-testid="banner"
       />,
     );
-    await user.click(screen.getByRole('button', {name: 'Dismiss'}));
+    await user.click(screen.getByRole('button', {name: 'Dismiss Dismissable'}));
     expect(screen.queryByTestId('banner')).not.toBeInTheDocument();
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 
   it('does not render dismiss button when isDismissable is false', () => {
     render(<Banner status="info" title="Not Dismissable" />);
-    expect(
-      screen.queryByRole('button', {name: 'Dismiss'}),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', {name: /^Dismiss/})).toBeNull();
   });
 
   it('renders endContent', () => {
@@ -184,33 +187,86 @@ describe('Banner', () => {
   });
 
   // =========================================================================
-  // Collapsible content area
+  // Content area — collapsible by default, `collapsible={false}` opts out
   // =========================================================================
 
-  it('hides children by default (collapsed)', () => {
+  it('hides children behind a toggle by default', () => {
     render(
       <Banner status="info" title="Collapsible">
         <div data-testid="child-content">Extra content</div>
       </Banner>,
     );
+    // The historical default, unchanged: chevron present, content collapsed.
     expect(screen.queryByTestId('child-content')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Expand'})).toBeInTheDocument();
   });
 
-  it('shows children when defaultIsExpanded is true', () => {
+  it('treats an explicit collapsible={true} as the default', () => {
     render(
-      <Banner status="info" title="Expanded" defaultIsExpanded>
+      <Banner status="info" title="Explicit" collapsible>
+        <div data-testid="child-content">Extra content</div>
+      </Banner>,
+    );
+    expect(screen.queryByTestId('child-content')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Expand'})).toBeInTheDocument();
+  });
+
+  it('shows children with no toggle for collapsible={false}', () => {
+    render(
+      <Banner status="info" title="Opted out" collapsible={false}>
         <div data-testid="child-content">Extra content</div>
       </Banner>,
     );
     expect(screen.getByTestId('child-content')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: 'Expand'}),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: 'Collapse'}),
+    ).not.toBeInTheDocument();
   });
 
-  it('shows expand button when children are provided', () => {
+  it('leaves non-collapsible content out of the disclosure wiring', () => {
     render(
-      <Banner status="info" title="With Toggle">
-        <div>Content</div>
+      <Banner
+        status="info"
+        title="Plain content"
+        isDismissable
+        collapsible={false}>
+        <div data-testid="child-content">Extra content</div>
       </Banner>,
     );
+    // No toggle exists, so nothing should carry disclosure state, and the
+    // region needs no id for a button to point at.
+    const dismiss = screen.getByRole('button', {
+      name: 'Dismiss Plain content',
+    });
+    expect(dismiss).not.toHaveAttribute('aria-expanded');
+    expect(dismiss).not.toHaveAttribute('aria-controls');
+    expect(
+      screen.getByTestId('child-content').parentElement,
+    ).not.toHaveAttribute('id');
+  });
+
+  it('starts open for collapsible={{defaultIsOpen: true}}', () => {
+    render(
+      <Banner status="info" title="Open" collapsible={{defaultIsOpen: true}}>
+        <div data-testid="child-content">Content</div>
+      </Banner>,
+    );
+    expect(screen.getByTestId('child-content')).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Collapse'})).toBeInTheDocument();
+  });
+
+  it('treats a null collapsible as the default', () => {
+    render(
+      // @ts-expect-error null is outside the prop's type, but JS callers and a
+      // value widened to `| null` still reach this.
+      <Banner status="info" title="Nullish" collapsible={null}>
+        <div data-testid="child-content">Content</div>
+      </Banner>,
+    );
+    expect(screen.queryByTestId('child-content')).not.toBeInTheDocument();
     expect(screen.getByRole('button', {name: 'Expand'})).toBeInTheDocument();
   });
 
@@ -247,13 +303,38 @@ describe('Banner', () => {
     expect(screen.getByRole('button', {name: 'Expand'})).toBeInTheDocument();
   });
 
-  it('shows collapse button when defaultIsExpanded', () => {
+  it('reports open-state changes through onOpenChange', async () => {
+    const user = userEvent.setup();
+    const onOpenChange = vi.fn();
     render(
-      <Banner status="info" title="Expanded" defaultIsExpanded>
-        <div>Content</div>
+      <Banner status="info" title="Notify" collapsible={{onOpenChange}}>
+        <div data-testid="child-content">Extra content</div>
       </Banner>,
     );
-    expect(screen.getByRole('button', {name: 'Collapse'})).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: 'Expand'}));
+    expect(onOpenChange).toHaveBeenCalledWith(true);
+    await user.click(screen.getByRole('button', {name: 'Collapse'}));
+    expect(onOpenChange).toHaveBeenLastCalledWith(false);
+  });
+
+  it('defers to the consumer when collapsible is controlled', async () => {
+    const user = userEvent.setup();
+    const onOpenChange = vi.fn();
+    render(
+      <Banner
+        status="info"
+        title="Controlled"
+        collapsible={{isOpen: false, onOpenChange}}>
+        <div data-testid="child-content">Extra content</div>
+      </Banner>,
+    );
+
+    // A controlled banner must not move on its own: the click reports, the
+    // content stays hidden until the consumer re-renders with isOpen.
+    await user.click(screen.getByRole('button', {name: 'Expand'}));
+    expect(onOpenChange).toHaveBeenCalledWith(true);
+    expect(screen.queryByTestId('child-content')).not.toBeInTheDocument();
   });
 
   it('renders expand button to the left of dismiss button', () => {
@@ -267,13 +348,16 @@ describe('Banner', () => {
       b => b.getAttribute('aria-label') || b.textContent,
     );
     const expandIndex = buttonNames.indexOf('Expand');
-    const dismissIndex = buttonNames.indexOf('Dismiss');
+    const dismissIndex = buttonNames.indexOf('Dismiss Order Test');
     expect(expandIndex).toBeLessThan(dismissIndex);
   });
 
   it('links the expand toggle to its content region via aria-controls', () => {
     render(
-      <Banner status="info" title="Controls Test" defaultIsExpanded>
+      <Banner
+        status="info"
+        title="Controls Test"
+        collapsible={{defaultIsOpen: true}}>
         <div data-testid="region-content">Region content</div>
       </Banner>,
     );
@@ -453,6 +537,182 @@ describe('Banner', () => {
       expect(def.firstElementChild!.className).toBe(
         none.firstElementChild!.className,
       );
+    });
+  });
+
+  describe('dismiss focus handoff', () => {
+    it('returns focus to where it came from instead of dropping it to body', async () => {
+      const user = userEvent.setup();
+      render(
+        <>
+          <button type="button">Before</button>
+          <Banner status="info" title="Heads up" isDismissable />
+        </>,
+      );
+      const before = screen.getByRole('button', {name: 'Before'});
+      before.focus();
+
+      await user.tab();
+      expect(
+        screen.getByRole('button', {name: 'Dismiss Heads up'}),
+      ).toHaveFocus();
+
+      await user.keyboard('{Enter}');
+
+      expect(screen.queryByRole('status')).not.toBeInTheDocument();
+      expect(before).toHaveFocus();
+      expect(document.activeElement).not.toBe(document.body);
+    });
+
+    it('leaves focus alone when it never entered the banner', async () => {
+      const user = userEvent.setup();
+      render(
+        <>
+          <button type="button">Elsewhere</button>
+          <Banner status="info" title="Heads up" isDismissable />
+        </>,
+      );
+      await user.click(screen.getByRole('button', {name: 'Dismiss Heads up'}));
+      expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('empty slots', () => {
+    it('does not show the expand affordance for children that render nothing', () => {
+      render(
+        <Banner status="info" title="Heads up">
+          {false}
+        </Banner>,
+      );
+      expect(
+        screen.queryByRole('button', {name: 'Expand'}),
+      ).not.toBeInTheDocument();
+    });
+
+    it('still shows the expand affordance for real children', () => {
+      render(
+        <Banner status="info" title="Heads up">
+          <p>Detail</p>
+        </Banner>,
+      );
+      expect(screen.getByRole('button', {name: 'Expand'})).toBeInTheDocument();
+    });
+
+    it('renders no content area for children that render nothing', () => {
+      const {container} = render(
+        <Banner status="info" title="Heads up" collapsible={false}>
+          {false}
+        </Banner>,
+      );
+      // Header only — an empty slot must not draw the card-background area.
+      expect(container.firstElementChild?.children).toHaveLength(1);
+    });
+
+    it('renders no description node for a description that renders nothing', () => {
+      const {container} = render(
+        <Banner status="info" title="Heads up" description="" />,
+      );
+      const header = container.firstElementChild!.firstElementChild!;
+      // icon wrapper + text column, and the text column holds the title alone
+      expect(header.children[1].children).toHaveLength(1);
+    });
+  });
+
+  // jsdom does no flex layout, so these read the declarations that produce the
+  // wrap. The rendered result is verified in Chromium at 320/375/480/768.
+  describe('narrow-viewport wrapping', () => {
+    const renderBanner = (endContent?: React.ReactNode) => {
+      const {container} = render(
+        <Banner
+          status="warning"
+          title="A compute node is required"
+          endContent={endContent}
+        />,
+      );
+      const header = container.firstElementChild!.firstElementChild!;
+      return {
+        header,
+        textColumn: screen.getByText('A compute node is required')
+          .parentElement!,
+      };
+    };
+
+    it('lets the header wrap so the end area can take its own row', () => {
+      const {header} = renderBanner(<button type="button">Retry</button>);
+      expect(getComputedStyle(header).flexWrap).toBe('wrap');
+    });
+
+    it('gives the text column a wrap threshold when endContent is present', () => {
+      const {textColumn} = renderBanner(<button type="button">Retry</button>);
+      expect(getComputedStyle(textColumn).flexBasis).toBe('8rem');
+    });
+
+    it('leaves the text column free to shrink when there is no endContent', () => {
+      const {textColumn} = renderBanner();
+      expect(getComputedStyle(textColumn).flexBasis).not.toBe('8rem');
+    });
+
+    it('leaves it free for an endContent that renders nothing', () => {
+      const {textColumn} = renderBanner(false);
+      expect(getComputedStyle(textColumn).flexBasis).not.toBe('8rem');
+    });
+  });
+
+  describe('dismiss control naming', () => {
+    it('names stacked string-title banners distinctly', () => {
+      render(
+        <>
+          <Banner status="error" title="Upload invoice failed" isDismissable />
+          <Banner status="error" title="Delete report failed" isDismissable />
+        </>,
+      );
+      const buttons = screen.getAllByRole('button');
+      expect(buttons.map(button => button.getAttribute('aria-label'))).toEqual([
+        'Dismiss Upload invoice failed',
+        'Dismiss Delete report failed',
+      ]);
+      for (const button of buttons) {
+        expect(button).toHaveAccessibleDescription('Dismiss');
+      }
+    });
+
+    it('keeps the bare name and tooltip for a rich title', () => {
+      render(
+        <Banner status="info" title={<span>Rich title</span>} isDismissable />,
+      );
+      const button = screen.getByRole('button', {name: 'Dismiss'});
+      expect(button).toHaveAccessibleDescription('Dismiss');
+    });
+
+    it('uses a translated dismissLabel for a rich title and its tooltip', () => {
+      render(
+        <Banner
+          status="info"
+          title={<span>Wartungshinweis</span>}
+          isDismissable
+          dismissLabel="Wartungshinweis schließen"
+        />,
+      );
+      const button = screen.getByRole('button', {
+        name: 'Wartungshinweis schließen',
+      });
+      expect(button).toHaveAccessibleDescription('Wartungshinweis schließen');
+    });
+
+    it('keeps a translated verb when the titled message falls back to English', () => {
+      render(
+        <InternationalizationProvider
+          locale="de-DE"
+          overrides={{
+            'de-DE': {'@astryx.banner.dismiss': 'Schließen'},
+          }}>
+          <Banner status="info" title="Wartungshinweis" isDismissable />
+        </InternationalizationProvider>,
+      );
+      const button = screen.getByRole('button', {
+        name: 'Schließen Wartungshinweis',
+      });
+      expect(button).toHaveAccessibleDescription('Schließen');
     });
   });
 });

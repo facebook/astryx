@@ -13,7 +13,10 @@ export default function DateInputShowcase() {
   const [date, setDate] = useState<DateString | undefined>(undefined);
 
   return (
-    <Stack direction="vertical" width="100%" style={{maxWidth: 400}}>
+    <Stack
+      direction="vertical"
+      width="100%"
+      style={{minWidth: 240, maxWidth: 400}}>
       <DateInput
         label="Start date"
         placeholder="Select a date"

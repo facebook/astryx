@@ -4,7 +4,7 @@
 
 /**
  * @file RadioListItem.tsx
- * @input Uses React use, useId, RadioListContext
+ * @input Uses React use, useId, useRef, RadioListContext, Item
  * @output Exports RadioListItem component, RadioListItemProps
  * @position Core implementation; consumed by index.ts, tested by RadioList.test.tsx
  *
@@ -20,10 +20,10 @@
 
 import React, {use, useId, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
+import type {StyleXStyles} from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
-import {colorVars, spacingVars} from '../theme/tokens.stylex';
 import {RadioListContext} from './RadioList';
-import {mergeProps} from '../utils';
+import {mergeProps, isRenderable} from '../utils';
 import {indicatorScope} from '../Indicator/indicator.markers.stylex';
 import {useIndicatorFocusRing} from '../hooks/useIndicatorFocusRing';
 import {useIndicator} from '../Indicator';
@@ -31,11 +31,6 @@ import {Item} from '../Item';
 import {themeProps} from '../utils/themeProps';
 
 const styles = stylex.create({
-  container: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: spacingVars['--spacing-2'],
-  },
   radioWrapper: {
     position: 'relative',
     display: 'flex',
@@ -49,7 +44,10 @@ const styles = stylex.create({
     margin: 0,
     padding: 0,
     opacity: 0,
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     zIndex: 1,
     minInlineSize: {
       default: null,
@@ -73,15 +71,11 @@ const styles = stylex.create({
     },
   },
   inputDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   // Holds only the indicator, so the focus ring has one unambiguous target.
   indicatorSlot: {
     display: 'contents',
-  },
-  labelDisabled: {
-    color: colorVars['--color-text-disabled'],
-    cursor: 'not-allowed',
   },
 });
 
@@ -96,13 +90,23 @@ const wrapperSizeStyles = stylex.create({
   },
 });
 
-const embeddedStyles = stylex.create({
+const rowStyles = stylex.create({
+  // The row's default appearance is a bare surface: no density padding, no
+  // radius, and no full-row background — only the indicator tints on hover
+  // (via `indicatorScope`). Item paints padding/radius/hover as an interactive
+  // row, so this neutralizes them at the component level. A theme's
+  // `radio-list-item` overrides still win: they land in `@layer astryx-theme`,
+  // above the component's base StyleX layer, so themes opt back into row
+  // padding/radius/hover/selected styling. `minWidth: 0` preserves label
+  // truncation now that the Item is the row's flex child.
   root: {
     paddingBlock: 0,
     paddingInline: 0,
     borderRadius: 0,
-    flex: 1,
     minWidth: 0,
+    // Suppress Item's interactive hover/press background so the resting and
+    // hovered row look identical by default (a theme can restyle either).
+    backgroundColor: 'transparent',
   },
 });
 
@@ -159,6 +163,7 @@ export function RadioListItem({
   xstyle,
   className,
   style,
+  onClick,
   ...rest
 }: RadioListItemProps) {
   const context = use(RadioListContext);
@@ -185,16 +190,28 @@ export function RadioListItem({
   const indicatorRef = useRef<HTMLSpanElement>(null);
   const {focusProps} = useIndicatorFocusRing(indicatorRef, isDisabled);
 
+  // The radio is the row's single keyboard control and action. The row is an
+  // enlarged click/tap target that delegates surface clicks — the description
+  // and the empty hover area, not just the control and its label — to the
+  // input via Item's `interactiveRef` (useClickableContainer). This matches
+  // CheckboxListItem so the whole row is clickable, and keeps one tab stop per
+  // option (WCAG 4.1.2). The radio carries its accessible name via `aria-label`
+  // since the visible label is now a plain (non-`<label>`) text node — a real
+  // `<label htmlFor>` would double-fire under delegation.
+  const radioRef = useRef<HTMLInputElement>(null);
+
   const radioCircle = (
     <div
       {...stylex.props(styles.radioWrapper, wrapperSizeStyles[size])}
       {...focusProps}>
       <input
+        ref={radioRef}
         id={id}
         type="radio"
         name={context.name}
         value={value}
         checked={isChecked}
+        aria-label={label}
         disabled={isDisabled && !keepsFocusableForMessage}
         aria-disabled={keepsFocusableForMessage ? 'true' : undefined}
         // A focusable-disabled radio is not natively disabled, so detach it
@@ -208,6 +225,10 @@ export function RadioListItem({
           }
           context.onChange(value);
         }}
+        // A consumer onClick rides on the radio input itself, so it fires for
+        // both direct control clicks and row-surface clicks the row delegates
+        // to the input — the same routing CheckboxListItem uses.
+        onClick={onClick}
         aria-describedby={description ? descriptionID : undefined}
         {...stylex.props(
           styles.input,
@@ -225,50 +246,64 @@ export function RadioListItem({
     </div>
   );
 
-  const mediaContent =
-    startContent != null ? (
-      <>
-        {radioCircle}
-        {startContent}
-      </>
-    ) : (
-      radioCircle
-    );
+  const mediaContent = isRenderable(startContent) ? (
+    <>
+      {radioCircle}
+      {startContent}
+    </>
+  ) : (
+    radioCircle
+  );
 
   return (
-    <div
+    <Item
       ref={ref}
-      {...mergeProps(
-        themeProps('radio-list-item'),
-        stylex.props(
-          styles.container,
+      startContent={mediaContent}
+      // Delegate row-surface clicks (label text, description, and the empty
+      // hover area) to the radio input. The input stays the option's sole
+      // focusable control, so the row adds no second tab stop.
+      interactiveRef={radioRef}
+      isDisabled={isDisabled}
+      label={<span>{label}</span>}
+      description={
+        isRenderable(description) ? (
+          <span id={descriptionID}>{description}</span>
+        ) : undefined
+      }
+      endContent={endContent}
+      xstyle={
+        [
           // Hover reaches the radio visual through this ancestor marker rather
-          // than props, so hovering the row tints the control.
+          // than props, so hovering the row tints the control. The marker rides
+          // the painting row element (Item), the same element that carries the
+          // theme target, so a theme's hover styling stays in step with the tint.
           !isDisabled && indicatorScope,
+          // Restore the bare default look: zero Item's padding/radius and its
+          // interactive hover/press background. Applied after Item's own base
+          // styles so it wins within the base layer; a `radio-list-item` theme
+          // still overrides it from the higher `astryx-theme` layer.
+          rowStyles.root,
           xstyle,
-        ),
-        className,
-        style,
+        ] as StyleXStyles
+      }
+      {...mergeProps(
+        // One target for every row, carrying its size and runtime state so a
+        // theme can express "selected option at large" or restyle disabled
+        // rows without reaching for structural selectors. It lands on the
+        // element Item paints — the row surface — so a theme styling
+        // `radio-list-item`'s background/padding/borderRadius (and its
+        // `:hover`) actually takes effect from the `astryx-theme` layer, even
+        // though the component zeroes those by default. Converges with how
+        // ListItem lands `list-item` on the same element as `astryx-item`.
+        themeProps('radio-list-item', {
+          size,
+          selected: isChecked ? 'selected' : null,
+          disabled: isDisabled ? 'disabled' : null,
+        }),
+        {className, style},
       )}
-      {...rest}>
-      <Item
-        startContent={mediaContent}
-        label={
-          <label
-            htmlFor={id}
-            {...stylex.props(isDisabled && styles.labelDisabled)}>
-            {label}
-          </label>
-        }
-        description={
-          description != null ? (
-            <span id={descriptionID}>{description}</span>
-          ) : undefined
-        }
-        endContent={endContent}
-        xstyle={embeddedStyles.root}
-      />
-    </div>
+      {...rest}
+    />
   );
 }
 

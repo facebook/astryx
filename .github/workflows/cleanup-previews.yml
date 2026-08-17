@@ -77,6 +77,11 @@ jobs:
           #   /sandbox/      — stable (managed by deploy.yml, never cleaned)
           #   /pr/<number>/  — PR previews (cleaned when PR closes)
           #   /reports/      — vibe test reports (never cleaned)
+          #   /visual-gate/  — visual baseline + gate reports (never cleaned
+          #                    here; release-gate.yml prunes its own old runs,
+          #                    and the baseline under visual-gate/baseline/ is
+          #                    the reference the gate compares against — losing
+          #                    it silently disarms visual regression testing)
           #   /assets/       — landing page CSS (never cleaned)
           #   /index.html    — landing page (never cleaned)
           #   /latest        — deploy hash pointer (never cleaned)
@@ -146,6 +151,27 @@ jobs:
               fi
             done
             echo ""
+          fi
+
+          # ----- Drop template-assets from previews -----
+          # Every preview uses the one shared /sandbox/template-assets copy.
+          # Sweep duplicate copies left by earlier deploys.
+          if [ -d "pr" ]; then
+            TA_PURGED=0
+            for ta in pr/*/sandbox/template-assets; do
+              [ -d "$ta" ] || continue
+              echo "  DELETE ${ta} (duplicate preview copy)"
+              if [ "$DRY_RUN" != "true" ]; then
+                git rm -rf --quiet "$ta"
+              fi
+              DELETED_PATHS+=("$ta")
+              TA_PURGED=$((TA_PURGED + 1))
+              DELETED=$((DELETED + 1))
+            done
+            if [ "$TA_PURGED" -gt 0 ]; then
+              echo "Purged template-assets from ${TA_PURGED} preview(s)"
+              echo ""
+            fi
           fi
 
           # ----- Clean stale root-level files -----

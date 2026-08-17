@@ -65,14 +65,17 @@ export const navItemStyles = stylex.create({
     backgroundColor: 'transparent',
     color: colorVars['--color-text-primary'],
     textDecoration: 'none',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     fontFamily: 'inherit',
     fontSize: typeScaleVars['--text-label-size'],
     fontWeight: fontWeightVars['--font-weight-normal'],
     lineHeight: typeScaleVars['--text-label-leading'],
     textAlign: 'start',
     boxSizing: 'border-box',
-    ':hover': {
+    ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
       '@media (hover: hover)': {
         backgroundColor: colorVars['--color-overlay-hover'],
       },
@@ -98,7 +101,7 @@ export const navItemStyles = stylex.create({
       '@media (forced-colors: active)': 'HighlightText',
     },
     fontWeight: fontWeightVars['--font-weight-medium'],
-    ':hover': {
+    ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
       '@media (hover: hover)': {
         backgroundColor: {
           default: colorVars['--color-neutral'],
@@ -120,7 +123,7 @@ export const navItemStyles = stylex.create({
   /** Disabled state — muted color, no interaction */
   disabled: {
     color: colorVars['--color-text-disabled'],
-    cursor: 'not-allowed',
+    cursor: 'default',
     pointerEvents: 'none' as const,
   },
 
