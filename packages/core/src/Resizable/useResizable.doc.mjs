@@ -54,7 +54,7 @@ export const docs = {
     {
       name: 'onCollapseChange',
       type: '(isCollapsed: boolean) => void',
-      description: 'Called when the collapse state changes, via drag or programmatically.',
+      description: 'Called once per collapse state change, via drag or programmatically.',
     },
   ],
   returns: [
@@ -115,7 +115,7 @@ export const docsDense = {
     autoSaveId: 'key for localStorage persistence of size + collapse state across sessions.',
     defaultIsCollapsed: 'initial collapse state (uncontrolled); persisted entry wins.',
     isCollapsed: 'controlled collapse state; collapse()/expand()/drag report instead of mutating.',
-    onCollapseChange: 'called when collapse state changes.',
+    onCollapseChange: 'called once per collapse state change.',
   },
   returnDescriptions: {
     size: 'current size in px.',
