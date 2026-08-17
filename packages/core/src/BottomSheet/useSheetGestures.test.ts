@@ -549,7 +549,7 @@ describe('useSheetGestures', () => {
       expect(hook.result.current.isDragging).toBe(true);
     });
 
-    it('promotes a bottom pull-up (touch) into a sheet drag', () => {
+    it('promotes a bottom pull-up (touch) into a sheet drag that travels', () => {
       const {hook} = setup({snapHeights: () => [200]});
       // scrolled to the bottom: scrollTop + clientHeight === scrollHeight
       const el = makeScroller({
@@ -559,11 +559,67 @@ describe('useSheetGestures', () => {
       });
       act(() => hook.result.current.sheetRef(el));
       act(() => hook.result.current.bodyProps.ref(el));
+      // Settle at the lower detent first, so expanding has somewhere to go.
+      down(hook, 0, 0, el);
+      move(hook, 180, 700, el);
+      up(hook, 180, 1100, el);
+      expect(hook.result.current.settledOffset).toBe(200);
+
       act(() => {
         touch(el, 'touchstart', 300);
         touch(el, 'touchmove', 250); // pull up
       });
       expect(hook.result.current.isDragging).toBe(true);
+      // The handoff is only worth taking if the sheet follows the finger:
+      // 50px of pull expands 50px toward the tallest detent.
+      expect(hook.result.current.dragOffset).toBe(150);
+    });
+
+    it('leaves a bottom pull-up with the scroller at the tallest detent', () => {
+      // Regression: the sheet is already fully expanded, so an upward pull has
+      // nowhere to expand to. Promoting it produced a rubber-band the release
+      // threw straight back, and stole the gesture from the scroller.
+      const {hook} = setup({snapHeights: () => [200]});
+      const el = makeScroller({
+        scrollTop: 600,
+        clientHeight: 200,
+        scrollHeight: 800,
+      });
+      act(() => hook.result.current.sheetRef(el));
+      act(() => hook.result.current.bodyProps.ref(el));
+      expect(hook.result.current.settledOffset).toBe(0);
+
+      act(() => {
+        touch(el, 'touchstart', 300);
+        touch(el, 'touchmove', 250); // pull up
+      });
+      expect(hook.result.current.isDragging).toBe(false);
+      expect(hook.result.current.dragOffset).toBe(0);
+    });
+
+    it('does not preventDefault a bottom pull-up at the tallest detent', () => {
+      // The captured gesture was the worse half of the bug: once promoted,
+      // every later touchmove was preventDefault()ed, so reversing downward to
+      // scroll back collapsed the sheet instead of scrolling.
+      const {hook} = setup({snapHeights: () => [200]});
+      const el = makeScroller({
+        scrollTop: 600,
+        clientHeight: 200,
+        scrollHeight: 800,
+      });
+      act(() => hook.result.current.sheetRef(el));
+      act(() => hook.result.current.bodyProps.ref(el));
+
+      let pullUp: Event | undefined;
+      let reverseDown: Event | undefined;
+      act(() => {
+        touch(el, 'touchstart', 300);
+        pullUp = touch(el, 'touchmove', 250);
+        reverseDown = touch(el, 'touchmove', 400);
+      });
+      expect(pullUp?.defaultPrevented).toBe(false);
+      expect(reverseDown?.defaultPrevented).toBe(false);
+      expect(hook.result.current.isDragging).toBe(false);
     });
 
     it('finishes the active drag when another ended touch is listed first', () => {

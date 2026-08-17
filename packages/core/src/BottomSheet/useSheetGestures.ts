@@ -968,7 +968,15 @@ export function useSheetGestures({
         return;
       }
       const top = atTop(scroller);
-      const bottom = atBottom(scroller);
+      // The bottom edge hands off so the sheet can EXPAND, so it is only a
+      // handoff when a taller detent exists. Already at the tallest, an
+      // upward pull has nowhere to travel: promoting it would trade the
+      // user's scroll for a rubber-band the release throws straight back, and
+      // — because promotion preventDefault()s the rest of the gesture — would
+      // strand the scroller for as long as the finger stays down, so reversing
+      // downward to scroll back would collapse the sheet instead. Leave the
+      // gesture with the content.
+      const bottom = atBottom(scroller) && activeOffsetRef.current > 0;
       if (!top && !bottom) {
         touchDragRef.current = null;
         return;
