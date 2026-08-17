@@ -5,13 +5,15 @@
  * @astryxdesign/core source tree plus throwaway fixtures. Pins the
  * category grouping, the missing-src guarding (which differs from
  * component-discovery), and the Levenshtein fuzzy-fallback in findHookDoc.
+ * Also gates the index against the hooks barrel: every hook the built barrel
+ * exports must be discoverable, so adding a hook without a doc fails here.
  */
 
 import {describe, it, expect, afterAll} from 'vitest';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import {fileURLToPath} from 'node:url';
+import {fileURLToPath, pathToFileURL} from 'node:url';
 import {discoverHooks, findHookDoc, getAllHookNames} from './hook-discovery.mjs';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
@@ -96,21 +98,35 @@ describe('findHookDoc fuzzy Levenshtein fallback (pinned current behavior)', () 
   }, SLOW);
 });
 
+/**
+ * The set of hooks a barrel actually exports, read from the module itself
+ * rather than from its text. Importing is what makes this a derivation: it sees
+ * `export * from` re-exports, aliases and any other form the language allows,
+ * and type-only exports have already been erased. A regex over the source can
+ * only see the spellings someone thought to write a pattern for.
+ * @param {string} entry absolute path to a built ESM barrel
+ */
+async function exportedHookNames(entry) {
+  const mod = await import(pathToFileURL(entry).href);
+  return new Set(Object.keys(mod).filter(name => /^use[A-Z]/.test(name)));
+}
+
 describe('core hooks barrel coverage (real core)', () => {
   // Discovery is filesystem-driven: a hook is only reachable from `astryx hook`
   // and `astryx search` if it ships a .doc.mjs. Nothing about adding a hook
-  // forces one, so the index silently goes stale — six exported hooks,
+  // forces one, so the index silently goes stale — seven exported hooks,
   // useAnnounce among them, were invisible until this check existed.
-  it('every hook exported from the barrel has a doc and is discoverable', () => {
-    const barrel = fs.readFileSync(path.join(CORE, 'src', 'hooks', 'index.ts'), 'utf-8');
-    const exported = new Set();
-    for (const match of barrel.matchAll(/export\s+(type\s+)?\{([^}]*)\}/g)) {
-      if (match[1]) continue; // type-only re-export
-      for (const specifier of match[2].split(',')) {
-        const name = specifier.trim().split(/\s+as\s+/).pop()?.trim();
-        if (name && /^use[A-Z]/.test(name)) exported.add(name);
-      }
-    }
+  //
+  // Only the standalone hooks in src/hooks/ are in scope. Hooks that belong to
+  // a component's API (useDialog, useToast, ...) are documented in that
+  // component's directory and deliberately never enter this barrel, so their
+  // absence from it is not a defect.
+  it('every hook exported from the barrel has a doc and is discoverable', async () => {
+    // The built barrel, not src/hooks/index.ts: this suite runs in the `node`
+    // project, which has no StyleX babel transform, so importing core's TS
+    // source throws on the first stylex.defineVars it reaches. dist is present
+    // because the project's globalSetup builds core before any worker forks.
+    const exported = await exportedHookNames(path.join(CORE, 'dist', 'hooks', 'index.js'));
     expect(exported.size).toBeGreaterThan(10);
 
     const discovered = new Set(getAllHookNames(CORE));
@@ -124,4 +140,18 @@ describe('core hooks barrel coverage (real core)', () => {
     }
     expect(missing).toEqual([]);
   }, SLOW);
+
+  it('sees hooks re-exported with `export *`, which a regex over `export {…}` misses', async () => {
+    const dir = mkTmp('as-hd-star-');
+    fs.writeFileSync(path.join(dir, 'useStarred.mjs'), 'export function useStarred() {}\n');
+    fs.writeFileSync(path.join(dir, 'useNamed.mjs'), 'export function useNamed() {}\n');
+    fs.writeFileSync(
+      path.join(dir, 'index.mjs'),
+      "export * from './useStarred.mjs';\nexport {useNamed} from './useNamed.mjs';\n",
+    );
+
+    expect(await exportedHookNames(path.join(dir, 'index.mjs'))).toEqual(
+      new Set(['useStarred', 'useNamed']),
+    );
+  });
 });
