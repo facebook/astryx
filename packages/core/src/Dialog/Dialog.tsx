@@ -158,11 +158,6 @@ const styles = stylex.create({
     animationDuration: durationVars['--duration-medium-max'],
     animationTimingFunction: easeVars['--ease-standard'],
     animationFillMode: 'backwards' as const,
-    // Read back by resolveExitDelay() to time dialog.close() to the end of the
-    // slide-out. Declared here (not only in `exiting`) so the value is
-    // readable from the still-open dialog, and as a token so a theme that
-    // retimes its motion scale retimes the close with it.
-    '--dialog-exit-duration': durationVars['--duration-medium-min'],
   },
   // Applied via isOpen prop — avoids :where([open]) attribute selectors
   // which have zero specificity and can lose to default styles depending
@@ -187,7 +182,10 @@ const styles = stylex.create({
       default: exitDirectional,
       '@media (prefers-reduced-motion: reduce)': 'none',
     },
-    animationDuration: 'var(--dialog-exit-duration)',
+    // Read back by resolveExitDelay() to time dialog.close() to the end of the
+    // slide-out — a theme that retimes its motion scale retimes the close with
+    // it.
+    animationDuration: durationVars['--duration-medium-min'],
     // `both`: hold the entrance's end state until the first frame runs, and
     // the faded-out state after it, so neither edge flashes at full opacity.
     animationFillMode: 'both' as const,
@@ -196,7 +194,7 @@ const styles = stylex.create({
         default: exitBackdrop,
         '@media (prefers-reduced-motion: reduce)': 'none',
       },
-      animationDuration: 'var(--dialog-exit-duration)',
+      animationDuration: durationVars['--duration-medium-min'],
       animationTimingFunction: easeVars['--ease-standard'],
       animationFillMode: 'both' as const,
     },
@@ -280,16 +278,16 @@ function formatPosition(value: number | string): string {
 const MAX_EXIT_DELAY_MS = 400;
 
 /**
- * `--dialog-exit-duration` in ms; null when it can't be read as a duration.
+ * A CSS `<time>` in ms; null when the value isn't one.
  *
- * Custom properties are not normalised on read, so this comes back as authored
- * (`"310ms"`), and a theme is free to author seconds instead. Outside a real
- * browser the declaration doesn't exist and the value is the empty string.
+ * Browsers serialise computed times in seconds — an authored `310ms` reads
+ * back as `"0.31s"` — and a list gives one entry per animation. Outside a real
+ * browser there is no StyleX-authored CSS at all and the value is empty.
  *
  * @internal Exported for unit tests.
  */
 export function parseExitDurationMs(value: string): number | null {
-  const trimmed = value.trim();
+  const trimmed = value.split(',')[0]?.trim() ?? '';
   const ms = Number.parseFloat(trimmed);
   if (!Number.isFinite(ms)) {
     return null;
@@ -300,9 +298,13 @@ export function parseExitDurationMs(value: string): number | null {
 /**
  * How long to hold the open `<dialog>` so the exit animation can play.
  *
+ * Read off the dialog once the `exiting` style is on it, so the hold is
+ * whatever that animation actually runs for — including a theme that retimes
+ * the motion scale underneath it.
+ *
  * Zero — close in the same tick, exactly as the dialog behaved before there
  * was an exit animation — whenever there is no animation to wait for: reduced
- * motion, a theme that zeroes the duration, or a context where the property
+ * motion, a theme that zeroes the duration, or a context where the duration
  * can't be read at all (jsdom, an unresolved `var()`). Degrading to the old
  * instant close is always safe here; unlike MobileNav's `display` hold, an
  * early close only costs the animation, it can't strand the page inert.
@@ -312,7 +314,7 @@ function resolveExitDelay(dialog: HTMLDialogElement): number {
     return 0;
   }
   const duration = parseExitDurationMs(
-    window.getComputedStyle(dialog).getPropertyValue('--dialog-exit-duration'),
+    window.getComputedStyle(dialog).animationDuration,
   );
   if (duration === null || duration <= 0) {
     return 0;
@@ -524,7 +526,6 @@ export function Dialog({
     setWasOpen(isOpen);
     setIsExiting(wasOpen);
   }
-  const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Derive dismissal behavior from purpose
   const allowEscape = purpose !== 'required';
@@ -538,11 +539,6 @@ export function Dialog({
     const dialog = dialogRef.current;
     if (!dialog) {
       return;
-    }
-
-    if (closeTimeoutRef.current) {
-      clearTimeout(closeTimeoutRef.current);
-      closeTimeoutRef.current = null;
     }
 
     if (isOpen) {
@@ -572,40 +568,50 @@ export function Dialog({
           autofocusTarget.focus();
         }
       }
-    } else {
-      if (dialog.open) {
-        // Hold the open dialog for the length of the exit animation, then
-        // close. Focus is restored after close() because an open modal makes
-        // the rest of the document inert — focusing the trigger any earlier
-        // silently fails.
-        const delay = resolveExitDelay(dialog);
-        const finishClose = () => {
-          closeTimeoutRef.current = null;
-          setIsExiting(false);
-          dialog.close();
-          triggerElementRef.current?.focus();
-          triggerElementRef.current = null;
-        };
+    } else if (!dialog.open) {
+      // Never opened, or already closed by the exit effect below.
+      triggerElementRef.current?.focus();
+      triggerElementRef.current = null;
+    }
+  }, [isOpen, isInline]);
 
-        if (delay <= 0) {
-          finishClose();
-          return;
-        }
-
-        closeTimeoutRef.current = setTimeout(finishClose, delay);
-      } else {
-        triggerElementRef.current?.focus();
-        triggerElementRef.current = null;
-      }
+  // Hold the open dialog while it animates out, then close. The hold is read
+  // from the dialog only once `exiting` is on it — that is what makes it the
+  // exit's duration and not the entrance's — so this is its own effect rather
+  // than a branch of the one above.
+  //
+  // Focus goes back to the trigger after close(), never before: an open modal
+  // makes the rest of the document inert, so focusing the trigger any earlier
+  // silently fails.
+  useEffect(() => {
+    if (isInline || !isExiting) {
+      return;
+    }
+    const dialog = dialogRef.current;
+    if (!dialog) {
+      return;
+    }
+    if (!dialog.open) {
+      setIsExiting(false);
+      return;
     }
 
-    return () => {
-      if (closeTimeoutRef.current) {
-        clearTimeout(closeTimeoutRef.current);
-        closeTimeoutRef.current = null;
-      }
+    const finishClose = () => {
+      setIsExiting(false);
+      dialog.close();
+      triggerElementRef.current?.focus();
+      triggerElementRef.current = null;
     };
-  }, [isOpen, isInline]);
+
+    const delay = resolveExitDelay(dialog);
+    if (delay <= 0) {
+      finishClose();
+      return;
+    }
+
+    const timeout = setTimeout(finishClose, delay);
+    return () => clearTimeout(timeout);
+  }, [isExiting, isInline]);
 
   // Close the dialog if it unmounts mid-exit: the pending close() is cancelled
   // with the effect above, and leaving the element `open` would skip
