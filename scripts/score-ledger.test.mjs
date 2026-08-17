@@ -517,6 +517,38 @@ describe('recording a scorecard', () => {
     ).toThrow(/BLOCKs listed but blocks.count is 1/);
   });
 
+  it('rejects blocks written as a bare array, which silently zeroes the BLOCK count', () => {
+    expect(() =>
+      applyScorecard(
+        null,
+        {...card, blocks: [{id: 'A5', summary: 'x'}, {id: 'A6', summary: 'y'}]},
+        {component: 'B', pkg: 'core'},
+      ),
+    ).toThrow(/blocks must be \{count, open: \[\.\.\.\]\}/);
+  });
+
+  it('does not let a bare-array blocks slip the open-BLOCK grade cap', () => {
+    // The reason this shape is worth an error rather than a repair: an A-range
+    // score with open BLOCKs is capped at C, and a bare array reads as zero
+    // open BLOCKs, so the row would record A.
+    expect(gradeFor(91, 3)).toBe('C');
+    expect(() =>
+      applyScorecard(
+        null,
+        {...card, score: 91, blocks: [{id: 'A5', summary: 'x'}]},
+        {component: 'B', pkg: 'core'},
+      ),
+    ).toThrow(/blocks must be/);
+  });
+
+  it('rejects a blocks object missing count or open', () => {
+    for (const blocks of [{open: []}, {count: 0}, {count: '0', open: []}, null, 'none']) {
+      expect(() =>
+        applyScorecard(null, {...card, blocks}, {component: 'B', pkg: 'core'}),
+      ).toThrow(/blocks must be/);
+    }
+  });
+
   it('refuses to store an unaudited row — an unaudited component simply has none', () => {
     expect(() =>
       applyScorecard(null, {...card, status: 'unaudited'}, {component: 'B', pkg: 'core'}),

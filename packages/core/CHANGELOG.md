@@ -1,5 +1,50 @@
 # @xds/core
 
+# 0.4.3
+
+#### New Features
+
+- New string utilities: `characterCount`, `firstCharacter`, and `truncateCharacters` — replacements for `.length`, `.charAt(0)`, and slice-based truncation that measure and cut user-visible strings by whole characters, so an emoji, flag, or accented letter counts as one and never gets split. Built on `Intl.Segmenter` with a code-point fallback.
+- ComplexSelector: support ghost toolbar triggers, leading icons, popup alignment, and an imperative `handleRef` (open/close/toggle/isOpen) for programmatic control.
+- `useContainerReveal`: two ways to control the reveal without reaching into the hook's private custom properties. `getContainerProps({hoverDelay})` gates the reveal on pointer dwell — the hover-intent idea Tooltip and HoverCard already have as `delay` — so a cursor sweeping down a list no longer lights up every row it grazes, and `getContainerProps({forceState})` pins the container's trigger state when something else owns the interaction (a scroll, a drag, an open row menu). Per element, `getContentRevealProps({forceVisibility})` pins how one child looks regardless of its container. Still CSS-only: no hover state in React, no re-render. Keyboard and touch are untouched — focus always reveals, `forceState: 'inactive'` and `forceVisibility: 'hidden'` both yield to `:focus-within`.
+
+#### Fixes
+
+- Banner: a dismissed banner no longer drops focus, a custom status no longer loses its ARIA role, and the info banner paints again under the neutral theme.
+  Dismissing unmounted the focused dismiss button, so focus landed on `<body>` and a keyboard user lost their place in the page. Banner now records where focus entered from and returns it there, the same handoff `ToastViewport` makes for a dismissed toast. Measured in Chromium: `document.activeElement` was `BODY`, and is now the control the user tabbed in from.
+
+  `BannerStatusMap` is documented as augmentable, but all four status lookups were closed `Record<BannerStatus, ...>` maps. Adding the augmentation the docs show produced four TypeScript errors inside `Banner.tsx` itself, which a consumer cannot fix, and at runtime an unknown status resolved to `undefined` for its icon, its background and its ARIA role, so the banner stopped being a live region at all. The lookups are partial now: an unrecognized status renders with no status fill, no default glyph and `role="status"`.
+
+  A theme could not reach the banner's radius. `--_banner-radius` was declared in the doc file and in `derivedVarRegistry.ts`, but no rule read it, so a theme's `borderRadius` on the `banner` target expanded into a variable nothing consumed. The four card-silhouette radii read it now, falling back to `--radius-container`.
+
+  Under `@astryxdesign/theme-neutral` the info banner had no background at all, light or dark: the override set `background-color` directly and forced `--color-accent-muted` to `transparent`, and a plain CSS property written by a theme lands in `@layer astryx-theme`, which StyleX's `@layer priority4` outranks. Info now goes through `--color-accent-muted` like the other three statuses and like the stone theme already did.
+
+  Also in this change: `children={false}` (the ordinary `{cond && <ul/>}` idiom) no longer produces an expand toggle that opens an empty box, and `description=""` no longer leaves an empty 20px row, both via `isRenderable`; a long unbroken word in the title or description no longer forces the page into horizontal scrolling at a 320px viewport, measured at `document.scrollWidth` 529px before; and the content area's bottom border uses logical `border-block-end` alongside its inline siblings.
+- Count and cut text the way people read it: the TextArea character counter (and its over-limit state and screen-reader announcements) counts user-perceived characters — an emoji is 1, not 2; PowerSearch token truncation no longer cuts an emoji or accented letter in half; Table's auto-generated headers capitalize astral-plane letters correctly; Avatar's initials now use the shared character utilities.
+- ComplexSelector: honor the `sm`, `md`, and `lg` element-height tokens exactly.
+- TreeList's `variant` axis is themeable, and a new guard keeps every extensible axis honest. `TreeListVariantMap` invites theme packages to add variants — its own JSDoc shows the module augmentation — but `themeProps('tree-list', {density})` never passed `variant`, so a custom variant type-checked, rendered, and produced no selector to style. It is passed now, and documented in the target's `visualProps` so `astryx theme build` stops calling it an unknown prop.
+  `packages/core/src/theme/extensibleAxes.test.ts` is the third theming-drift guard, beside the ones covering `targets` and `vars`/`derived`. Those two check what a component renders against what it documents; neither looked at the open prop unions, which is why this went unnoticed. For every `*Map` that types a component prop, it now asserts the three places that have to agree: the interface is declared in the index a consumer augments (a re-export is invisible to both module augmentation and the CLI), the prop is reflected through `themeProps`, and it is documented as a visual prop. It reads the TypeScript AST rather than the type checker, and holds the map's OWNER accountable — a component forwarding `actionVariant` or `statusVariant` to the component that owns the map is not separately responsible for it.
+
+  Registry maps that widen a set of NAMES rather than a visual prop (`IndicatorMap`, `IndicatorFamilyMap`) are out of scope by construction, not by allowlist: the guard only considers maps whose alias types a prop on a `*Props` interface.
+- Security: reject `javascript:`, `vbscript:` and `data:text/html` URLs in the Markdown parser, so untrusted markdown can no longer produce an executable link href or image src; and fix `escapeRegExp` in `ChatTokenizedText`, whose character class closed early and left `]` and `\` unescaped, so token values containing them were injected raw into a `RegExp`
+- `extends` now reaches the CSS. A theme that extended another built a stylesheet holding only the declarations it stated itself: the base's tokens, component overrides and surface rules were all absent, and because each theme is `@scope`d to its own `data-astryx-theme` value, loading the base's stylesheet alongside could not fill the gap either. Every consumer of an inheritance chain silently got stock geometry, elevation and type with a new palette painted over it (#5067). Nothing warned; the loss only showed up by diffing two generated stylesheets token by token.
+  The cause was `theme build` shadowing its own inputs. It writes `<name>.js` next to `<name>.ts`, and the loader resolved a plain `./<name>` specifier to that generated artifact before the source — so the second build of a family read the artifact, which carries no `components` and exports `<name>Theme` rather than whatever the source exports. A named import that missed became `extends: undefined`, and `defineTheme` treated an absent base as no base at all. The loader now resolves source extensions first, which is also the resolution the author's TypeScript sees, so the CSS a build emits matches the theme that type-checked.
+
+  Three things behind it are fixed too, so the failure cannot come back by another route. `defineTheme` **throws** when `extends` is present but is not a theme, naming the likely cause, instead of inheriting nothing — the one behavior change here, and it turns a silent stylesheet into a build error. A theme's `onDark`/`onLight` surfaces and its `__inputTokens` are now inherited like its tokens and components were, so a child no longer reverts its base's inverted-surface customizations to the defaults or loses its `[light, dark]` tuples. And a built theme module now carries the resolved `components` and surfaces alongside its tokens, so extending one — the `./built` subpath every shipped theme exposes — is no longer lossy. `theme build` also stopped hand-picking fields when it re-resolves a plain object theme file, which dropped `extends`, `color` and `syntax` on the way in.
+
+  An extended theme is flat: everything it inherits is resolved into its own output, and its stylesheet stands alone. Measured on a 14-theme family (one base, 13 palettes extending it): each palette went from 25 custom properties and no component rules to the base's full 175 and 70, with its own colours still winning.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @AKnassa
+- @cixzhang
+- @ernestt
+- @Sunil56224972
+
+---
+
 # 0.4.2
 
 #### New Features

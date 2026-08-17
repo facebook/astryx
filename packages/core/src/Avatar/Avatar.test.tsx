@@ -91,9 +91,14 @@ describe('Avatar', () => {
     expect(screen.getByTestId('avatar')).toHaveTextContent('😀A');
   });
 
-  it('preserves a complete grapheme when generating initials', () => {
+  it('preserves a complete character when generating initials', () => {
     render(<Avatar name="🇬🇧 Ada" data-testid="avatar" />);
     expect(screen.getByTestId('avatar')).toHaveTextContent('🇬🇧A');
+  });
+
+  it('keeps a ZWJ family emoji intact when generating initials', () => {
+    render(<Avatar name="👨‍👩‍👧‍👦 Ada" data-testid="avatar" />);
+    expect(screen.getByTestId('avatar')).toHaveTextContent('👨‍👩‍👧‍👦A');
   });
 
   it('retries a new src after a previous src failed to load', () => {

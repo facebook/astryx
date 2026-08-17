@@ -1114,6 +1114,8 @@ export async function themeBuild(
   // Validate component overrides
   const warnings = await validateComponentOverrides(themeDef);
   const warningMessages = [];
+  /** Advisories about a correct theme — see the `notices` note on the receipt. */
+  const noticeMessages = [];
   for (const w of warnings) {
     warningMessages.push(w);
     logger.warn(`  ⚠ ${w}`);
@@ -1412,11 +1414,18 @@ Or with a <link> tag:
   // Fonts the theme names but nothing loads (#5015). Resolved tokens and
   // component overrides carry the final font-family values on both load
   // paths, so this sees jiti-resolved and legacy themes alike.
+  //
+  // A NOTICE, not a warning: naming a font a theme file cannot load is how
+  // the API is meant to be used — Astryx sets `--font-family-*` and loading
+  // is the app's job, which no theme can do for it. So this fires on any
+  // theme with a webfont, including a perfect one, and as a warning it made
+  // every such build read as defective (it also put the shipped template
+  // permanently in violation of its own "compiles with no warnings" guard).
   const unloadedFonts = collectUnloadedFonts(resolvedTheme);
   for (const family of unloadedFonts) {
     const msg = `Font "${family}" is named by this theme but not loaded — add a <link> or @font-face in your app (recipe: astryx docs typography)`;
-    warningMessages.push(msg);
-    logger.warn(`  ⚠ ${msg}`);
+    noticeMessages.push(msg);
+    logger.log(`  note: ${msg}`);
   }
   if (unloadedFonts.length > 0) {
     logger.log(formatFontLoadingHelp(themeDef.name, unloadedFonts));
@@ -1438,6 +1447,7 @@ Or with a <link> tag:
           : {}),
       },
       warnings: warningMessages,
+      notices: noticeMessages,
     },
   };
 }

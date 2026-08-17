@@ -158,6 +158,41 @@ describe('PowerSearch', () => {
     expect(screen.getByRole('combobox')).toHaveFocus();
   });
 
+  describe('token value truncation (#4759)', () => {
+    it('truncates token values by characters, not code units', () => {
+      const truncConfig: PowerSearchConfig = {
+        name: 'trunc',
+        fields: [
+          {
+            key: 'status',
+            label: 'Status',
+            operators: [{key: 'is', label: 'is', value: {type: 'string'}}],
+          },
+        ],
+      };
+      // 14 emoji = 28 code units but 14 user-perceived characters.
+      // adjustedMaxLength = max(15 - 'Status'.length - 'is'.length, 10) = 10,
+      // so the value truncates only past 13 characters, cutting at 10.
+      render(
+        <PowerSearch
+          config={truncConfig}
+          filters={[
+            {
+              field: 'status',
+              operator: 'is',
+              value: {type: 'string', value: '\u{1F600}'.repeat(14)},
+            },
+          ]}
+          onChange={() => {}}
+          maxTokenLength={15}
+        />,
+      );
+      expect(
+        screen.getByText('\u{1F600}'.repeat(10) + '...'),
+      ).toBeInTheDocument();
+    });
+  });
+
   describe('startIcon', () => {
     it('does not render a start icon when omitted', () => {
       render(<PowerSearch config={config} filters={[]} onChange={() => {}} />);
@@ -425,11 +460,15 @@ describe('PowerSearch', () => {
   });
 });
 
-
 describe('PowerSearch statusVariant forwarding', () => {
   it('defaults to attached (status renders with data-variant="attached")', () => {
     const {container} = render(
-      <PowerSearch config={config} filters={[]} onChange={() => {}} status={{type: 'error', message: 'Required'}} />,
+      <PowerSearch
+        config={config}
+        filters={[]}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Required'}}
+      />,
     );
     expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
       'data-variant',
@@ -439,7 +478,13 @@ describe('PowerSearch statusVariant forwarding', () => {
 
   it('forwards statusVariant="detached" to the underlying Field status', () => {
     const {container} = render(
-      <PowerSearch config={config} filters={[]} onChange={() => {}} status={{type: 'error', message: 'Required'}} statusVariant="detached" />,
+      <PowerSearch
+        config={config}
+        filters={[]}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Required'}}
+        statusVariant="detached"
+      />,
     );
     expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
       'data-variant',

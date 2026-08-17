@@ -31,6 +31,7 @@ import {AvatarSizeContext} from './AvatarSizeContext';
 import {useAvatarGroup} from '../AvatarGroup/AvatarGroupContext';
 import {mergeProps, mergeRefs} from '../utils';
 import {themeProps} from '../utils/themeProps';
+import {firstCharacter} from '../utils/characters';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {useTooltip} from '../Tooltip/useTooltip';
 import {useDevWarning} from '../hooks/useDevWarning';
@@ -318,25 +319,6 @@ export interface AvatarProps extends BaseProps<HTMLDivElement> {
 }
 
 /**
- * Reuse a single segmenter when the runtime supports Intl.Segmenter.
- */
-const graphemeSegmenter =
-  typeof Intl.Segmenter === 'function'
-    ? new Intl.Segmenter(undefined, {granularity: 'grapheme'})
-    : null;
-
-/**
- * Return the first user-perceived character, with a code-point fallback.
- */
-function firstGrapheme(word: string): string {
-  if (graphemeSegmenter) {
-    return [...graphemeSegmenter.segment(word)][0]?.segment ?? '';
-  }
-
-  return [...word][0] ?? '';
-}
-
-/**
  * Generates initials from a name string.
  * Takes the first letter of the first two words.
  * @example
@@ -351,10 +333,10 @@ function getInitials(name: string): string {
     return '';
   }
   if (words.length === 1) {
-    return firstGrapheme(words[0]).toUpperCase();
+    return firstCharacter(words[0]).toUpperCase();
   }
   return (
-    firstGrapheme(words[0]) + firstGrapheme(words[words.length - 1])
+    firstCharacter(words[0]) + firstCharacter(words[words.length - 1])
   ).toUpperCase();
 }
 
