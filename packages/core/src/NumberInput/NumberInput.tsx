@@ -351,10 +351,12 @@ interface NumberInputPropsBase extends Omit<
   autoComplete?: string;
   /**
    * The minimum value allowed.
+   * A smaller entry commits at this value on blur or Enter.
    */
   min?: number | null;
   /**
    * The maximum value allowed.
+   * A larger entry commits at this value on blur or Enter.
    */
   max?: number | null;
   /**
@@ -429,15 +431,12 @@ export type NumberInputProps =
   NumberInputPropsNonClearable | NumberInputPropsClearable;
 
 /**
- * Read the typed or pasted text as a number, then apply the field's
- * constraints.
- * Returns null if the input is not a valid number or fails validation.
+ * Read the typed or pasted text as a number, applying the shape rules (finite,
+ * and integral when `isIntegerOnly`) but not the min/max range.
  */
-function parseNumberInput(
+function parseNumericInput(
   input: string,
   options: {
-    min?: number | null;
-    max?: number | null;
     isIntegerOnly?: boolean;
     locale?: Locale;
   },
@@ -452,8 +451,28 @@ function parseNumberInput(
     return null;
   }
 
-  // Check integer constraint
   if (options.isIntegerOnly && !Number.isInteger(num)) {
+    return null;
+  }
+
+  return num;
+}
+
+/**
+ * Parse and validate a string input as a number.
+ * Returns null if the input is not a valid number or fails validation.
+ */
+function parseNumberInput(
+  input: string,
+  options: {
+    min?: number | null;
+    max?: number | null;
+    isIntegerOnly?: boolean;
+    locale?: Locale;
+  },
+): number | null {
+  const num = parseNumericInput(input, options);
+  if (num === null) {
     return null;
   }
 
@@ -465,6 +484,38 @@ function parseNumberInput(
   // Check max constraint
   if (options.max != null && num > options.max) {
     return null;
+  }
+
+  return num;
+}
+
+/**
+ * Parse a string input for commit (blur/Enter), clamping an out-of-range
+ * number to the nearest bound.
+ *
+ * Rejecting an out-of-range entry outright leaves the last in-range prefix
+ * committed, so typing 100 into a [1, 2] field lands on 1; the nearest bound
+ * is what the entry actually asked for.
+ */
+function parseNumberInputForCommit(
+  input: string,
+  options: {
+    min?: number | null;
+    max?: number | null;
+    isIntegerOnly?: boolean;
+    locale?: Locale;
+  },
+): number | null {
+  const num = parseNumericInput(input, options);
+  if (num === null) {
+    return null;
+  }
+
+  if (options.min != null && num < options.min) {
+    return options.min;
+  }
+  if (options.max != null && num > options.max) {
+    return options.max;
   }
 
   return num;
@@ -664,6 +715,12 @@ export function NumberInput({
     [isIntegerOnly, locale, max, min],
   );
 
+  const parseInputForCommit = useCallback(
+    (text: string) =>
+      parseNumberInputForCommit(text, {min, max, isIntegerOnly, locale}),
+    [isIntegerOnly, locale, max, min],
+  );
+
   const formattedValue = useMemo(() => {
     if (value == null) {
       return '';
@@ -732,7 +789,7 @@ export function NumberInput({
             onChange(null);
           }
         } else {
-          const parsed = parseInput(pendingInput);
+          const parsed = parseInputForCommit(pendingInput);
           if (parsed !== null && parsed !== value) {
             onChange(parsed);
           }
@@ -744,7 +801,7 @@ export function NumberInput({
       setIsFocused(false);
       onBlur?.(e);
     },
-    [pendingInput, value, onChange, parseInput, onBlur, hasClear],
+    [pendingInput, value, onChange, parseInputForCommit, onBlur, hasClear],
   );
 
   const valueForStepping = useMemo(() => {
@@ -820,7 +877,7 @@ export function NumberInput({
               onChange(null);
             }
           } else {
-            const parsed = parseInput(pendingInput);
+            const parsed = parseInputForCommit(pendingInput);
             if (parsed !== null && parsed !== value) {
               onChange(parsed);
             }
@@ -834,7 +891,7 @@ export function NumberInput({
       pendingInput,
       value,
       onChange,
-      parseInput,
+      parseInputForCommit,
       onEnter,
       onKeyDown,
       hasClear,

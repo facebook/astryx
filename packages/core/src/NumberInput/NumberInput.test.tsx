@@ -10,6 +10,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
+import {useState} from 'react';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {TestIcon} from '../__tests__/TestIcon';
@@ -537,6 +538,142 @@ describe('NumberInput', () => {
       await user.keyboard('{Enter}');
 
       expect(handleEnter).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('range clamping on commit', () => {
+    it('commits an over-max entry at max on blur', async () => {
+      const user = userEvent.setup();
+      const handleChange = vi.fn();
+      render(
+        <NumberInput
+          label="Page"
+          value={null}
+          onChange={handleChange}
+          min={1}
+          max={2}
+          isIntegerOnly
+        />,
+      );
+
+      const input = screen.getByRole('spinbutton');
+      await user.click(input);
+      await user.type(input, '100');
+      handleChange.mockClear();
+      await user.tab();
+
+      expect(handleChange).toHaveBeenCalledWith(2);
+    });
+
+    it('commits an over-max entry at max on Enter', async () => {
+      const user = userEvent.setup();
+      const handleChange = vi.fn();
+      render(
+        <NumberInput
+          label="Rating"
+          value={null}
+          onChange={handleChange}
+          max={5}
+        />,
+      );
+
+      const input = screen.getByRole('spinbutton');
+      await user.click(input);
+      await user.type(input, '10');
+      handleChange.mockClear();
+      await user.keyboard('{Enter}');
+
+      expect(handleChange).toHaveBeenCalledWith(5);
+    });
+
+    it('commits a below-min entry at min', async () => {
+      const user = userEvent.setup();
+      const handleChange = vi.fn();
+      render(
+        <NumberInput
+          label="Age"
+          value={null}
+          onChange={handleChange}
+          min={0}
+        />,
+      );
+
+      const input = screen.getByRole('spinbutton');
+      await user.click(input);
+      await user.type(input, '-5');
+      await user.tab();
+
+      expect(handleChange).toHaveBeenCalledWith(0);
+    });
+
+    it('does not clamp while typing', async () => {
+      const user = userEvent.setup();
+      const handleChange = vi.fn();
+      render(
+        <NumberInput
+          label="Rating"
+          value={null}
+          onChange={handleChange}
+          max={5}
+        />,
+      );
+
+      const input = screen.getByRole('spinbutton');
+      await user.click(input);
+      await user.type(input, '10');
+
+      // The entry stays exactly as typed until it is committed.
+      expect(input).toHaveValue('10');
+      expect(handleChange).not.toHaveBeenCalledWith(5);
+    });
+
+    it('displays the clamped value after commit', async () => {
+      const user = userEvent.setup();
+      function ControlledNumberInput() {
+        const [value, setValue] = useState<number>(1);
+        return (
+          <NumberInput
+            label="Page"
+            value={value}
+            onChange={setValue}
+            min={1}
+            max={2}
+            isIntegerOnly
+          />
+        );
+      }
+      render(<ControlledNumberInput />);
+
+      const input = screen.getByRole('spinbutton');
+      await user.click(input);
+      await user.clear(input);
+      await user.type(input, '100');
+      await user.tab();
+
+      expect(input).toHaveValue('2');
+    });
+
+    it('reverts an entry that is not a usable number', async () => {
+      const user = userEvent.setup();
+      const handleChange = vi.fn();
+      render(
+        <NumberInput
+          label="Count"
+          value={null}
+          onChange={handleChange}
+          max={10}
+          isIntegerOnly
+        />,
+      );
+
+      const input = screen.getByRole('spinbutton');
+      await user.click(input);
+      await user.type(input, '12.5');
+      handleChange.mockClear();
+      await user.tab();
+
+      expect(handleChange).not.toHaveBeenCalled();
+      expect(input).toHaveValue('');
     });
   });
 
