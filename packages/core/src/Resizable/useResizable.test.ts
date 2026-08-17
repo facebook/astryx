@@ -307,3 +307,71 @@ describe('useResizable controlled collapse', () => {
     expect(readStored()).toEqual({size: 260, isCollapsed: true});
   });
 });
+
+// The fix under test is @AKnassa's, from #5118.
+describe('useResizable live collapse state', () => {
+  // ResizeHandle registers its pointermove listener once at pointer down, so
+  // a whole gesture runs against the props object captured there. These tests
+  // hold that snapshot instead of re-reading result.current between moves —
+  // re-reading hands the callbacks a fresh render and hides the bug.
+  it('reports one collapse for a drag that stays below the threshold', () => {
+    const onCollapseChange = vi.fn();
+    const {result} = renderHook(() =>
+      useResizable({...BASE_CONFIG, collapsible: true, onCollapseChange}),
+    );
+
+    act(() => result.current.props._onResizeStart());
+    const gesture = result.current.props;
+    for (const delta of [-240, -245, -250, -255, -260]) {
+      act(() => gesture._onResizeMove(delta));
+    }
+
+    expect(onCollapseChange).toHaveBeenCalledExactlyOnceWith(true);
+    expect(result.current.isCollapsed).toBe(true);
+  });
+
+  it('re-expands mid-gesture when the drag crosses back above the threshold', () => {
+    const onCollapseChange = vi.fn();
+    const {result} = renderHook(() =>
+      useResizable({...BASE_CONFIG, collapsible: true, onCollapseChange}),
+    );
+
+    act(() => result.current.props._onResizeStart());
+    const gesture = result.current.props;
+    act(() => gesture._onResizeMove(-240));
+    act(() => gesture._onResizeMove(-20));
+
+    expect(onCollapseChange.mock.calls).toEqual([[true], [false]]);
+    expect(result.current.isCollapsed).toBe(false);
+    expect(result.current.size).toBe(240);
+  });
+
+  it('notifies when resize() lifts the panel out of collapse', () => {
+    const onCollapseChange = vi.fn();
+    const {result} = renderHook(() =>
+      useResizable({...BASE_CONFIG, collapsible: true, onCollapseChange}),
+    );
+
+    act(() => result.current.collapse());
+    onCollapseChange.mockClear();
+    act(() => result.current.resize(300));
+
+    expect(onCollapseChange).toHaveBeenCalledExactlyOnceWith(false);
+    expect(result.current.isCollapsed).toBe(false);
+    expect(result.current.size).toBe(300);
+  });
+
+  it('reports one collapse when collapse() runs twice in a tick', () => {
+    const onCollapseChange = vi.fn();
+    const {result} = renderHook(() =>
+      useResizable({...BASE_CONFIG, collapsible: true, onCollapseChange}),
+    );
+
+    act(() => {
+      result.current.collapse();
+      result.current.collapse();
+    });
+
+    expect(onCollapseChange).toHaveBeenCalledExactlyOnceWith(true);
+  });
+});

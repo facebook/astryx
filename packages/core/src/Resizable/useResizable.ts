@@ -281,11 +281,22 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
     (isControlled ? controlledIsCollapsed : uncontrolledIsCollapsed);
   const dragStartSizeRef = useRef(size);
 
+  // Mirrors isCollapsed so the callbacks below read the live value instead of
+  // the one their last render captured. Two cases reach them from a stale
+  // closure: two imperative calls in one tick, and a drag — ResizeHandle
+  // registers its pointermove listener once at pointer down, so a whole
+  // gesture runs against one props snapshot.
+  const isCollapsedRef = useRef(isCollapsed);
+  useEffect(() => {
+    isCollapsedRef.current = isCollapsed;
+  });
+
   // Controlled callers own the state; collapse() and a drag past the
   // threshold report through onCollapseChange and change nothing here.
   const setCollapsed = useCallback(
     (value: boolean) => {
       if (!isControlled) {
+        isCollapsedRef.current = value;
         setUncontrolledIsCollapsed(value);
       }
     },
@@ -299,7 +310,9 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
   }, [size, isCollapsed, autoSaveId]);
 
   const collapse = useCallback(() => {
-    if (!collapsible) {
+    // The already-collapsed guard keeps a repeated call from re-notifying a
+    // transition that already happened.
+    if (!collapsible || isCollapsedRef.current) {
       return;
     }
     setCollapsed(true);
@@ -308,37 +321,46 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
   }, [collapsible, setCollapsed, onCollapseChange, onSizeChange]);
 
   const expand = useCallback(() => {
+    const wasCollapsed = isCollapsedRef.current;
     setCollapsed(false);
-    onCollapseChange?.(false);
+    if (wasCollapsed) {
+      onCollapseChange?.(false);
+    }
     onSizeChange?.(size);
   }, [setCollapsed, size, onCollapseChange, onSizeChange]);
 
   const resize = useCallback(
     (newSize: number) => {
       const clamped = clampSize(newSize, minSizePx, maxSizePx, snaps);
+      const wasCollapsed = isCollapsedRef.current;
       setSize(clamped);
       setCollapsed(false);
+      // Resizing out of the collapsed state is an implicit expand — notify
+      // like the drag path does when it crosses back over the threshold.
+      if (wasCollapsed) {
+        onCollapseChange?.(false);
+      }
       onSizeChange?.(clamped);
     },
-    [minSizePx, maxSizePx, snaps, setCollapsed, onSizeChange],
+    [minSizePx, maxSizePx, snaps, setCollapsed, onCollapseChange, onSizeChange],
   );
 
   const onResizeStart = useCallback(() => {
-    dragStartSizeRef.current = isCollapsed ? 0 : size;
-  }, [size, isCollapsed]);
+    dragStartSizeRef.current = isCollapsedRef.current ? 0 : size;
+  }, [size]);
 
   const onResizeMove = useCallback(
     (delta: number) => {
       const raw = dragStartSizeRef.current + delta;
       if (collapsible && raw < collapsedSize) {
-        if (!isCollapsed) {
+        if (!isCollapsedRef.current) {
           setCollapsed(true);
           onCollapseChange?.(true);
+          onSizeChange?.(0);
         }
-        onSizeChange?.(0);
         return;
       }
-      if (isCollapsed && raw >= collapsedSize) {
+      if (isCollapsedRef.current && raw >= collapsedSize) {
         setCollapsed(false);
         onCollapseChange?.(false);
       }
@@ -349,7 +371,6 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
     [
       collapsible,
       collapsedSize,
-      isCollapsed,
       setCollapsed,
       minSizePx,
       maxSizePx,
