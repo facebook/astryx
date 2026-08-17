@@ -1773,6 +1773,85 @@ describe('BottomSheet', () => {
       );
     });
 
+    it('puts back a document scroll the browser makes to reveal a field', () => {
+      mockVisualViewport(377);
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={() => {}}
+          label="Add a comment"
+          height="tall">
+          <input aria-label="Comment" />
+        </BottomSheet>,
+      );
+      const body = getBody();
+      const input = screen.getByRole('textbox', {name: 'Comment'});
+      vi.spyOn(body, 'getBoundingClientRect').mockReturnValue(
+        rect({top: 57, bottom: 714}),
+      );
+      vi.spyOn(input, 'getBoundingClientRect').mockImplementation(() =>
+        rect({top: 600 - body.scrollTop, bottom: 640 - body.scrollTop}),
+      );
+      input.focus();
+      const scrollTo = vi.mocked(window.scrollTo);
+      scrollTo.mockClear();
+      const scrolledBy = body.scrollTop;
+
+      // The page numbers an iPhone 17 produces when the browser reveals a
+      // focused field in a scroll-locked, fixed sheet: it scrolls the DOCUMENT,
+      // and the sheet — fixed — travels with it.
+      Object.defineProperty(window, 'scrollY', {
+        configurable: true,
+        value: 337,
+      });
+      fireEvent.scroll(window);
+
+      expect(scrollTo).toHaveBeenCalledWith(0, 0);
+      // …and the control is still inside the safe area afterwards: the sheet's
+      // own scroller holds it there, so putting the document back does not
+      // hide what the browser was trying to reveal.
+      expect(input.getBoundingClientRect().bottom).toBeLessThanOrEqual(
+        377 - 48,
+      );
+      expect(body.scrollTop).toBe(scrolledBy);
+      Object.defineProperty(window, 'scrollY', {configurable: true, value: 0});
+    });
+
+    it('leaves the document alone when no keyboard is measured', () => {
+      mockVisualViewport(800);
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={() => {}}
+          label="Add a comment"
+          height="tall">
+          <input aria-label="Comment" />
+        </BottomSheet>,
+      );
+      const body = getBody();
+      const input = screen.getByRole('textbox', {name: 'Comment'});
+      vi.spyOn(body, 'getBoundingClientRect').mockReturnValue(
+        rect({top: 57, bottom: 700}),
+      );
+      vi.spyOn(input, 'getBoundingClientRect').mockReturnValue(
+        rect({top: 600, bottom: 640}),
+      );
+      input.focus();
+      const scrollTo = vi.mocked(window.scrollTo);
+      scrollTo.mockClear();
+
+      // An ordinary page scroll with no keyboard up is the user's, not the
+      // browser's, and a non-modal sheet leaves the page scrollable.
+      Object.defineProperty(window, 'scrollY', {
+        configurable: true,
+        value: 120,
+      });
+      fireEvent.scroll(window);
+
+      expect(scrollTo).not.toHaveBeenCalled();
+      Object.defineProperty(window, 'scrollY', {configurable: true, value: 0});
+    });
+
     it('reaches a browser-driven destination before its native reveal can pan', () => {
       mockIOSWebKit();
       mockVisualViewport(500);

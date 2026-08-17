@@ -221,6 +221,7 @@ export function useMobileKeyboard({
     }
 
     let keyboardGeometry: KeyboardGeometry | null = null;
+    let documentScrollAtKeyboard: {x: number; y: number} | null = null;
     let pendingFocusScroll: FocusScrollSnapshot | null = null;
     let pendingPointerFocusScroll: FocusScrollSnapshot | null = null;
     let pendingTouchFocus: PendingTouchFocus | null = null;
@@ -229,6 +230,7 @@ export function useMobileKeyboard({
     const clearKeyboardLayout = () => {
       body.style.setProperty(MOBILE_KEYBOARD_INSET_VAR, '0px');
       keyboardGeometry = null;
+      documentScrollAtKeyboard = null;
       hasKeyboardLayoutRef.current = false;
       retainKeyboardLayoutRef.current = false;
     };
@@ -463,6 +465,13 @@ export function useMobileKeyboard({
               bodyBottom: measuredBodyRect.bottom,
             }
           : null;
+      // Where the document sits with the keyboard up and nothing yet shifted:
+      // the position handleDocumentScroll returns to. Captured on the
+      // transition only — a reveal that runs after the browser has already
+      // scrolled would otherwise record the shifted position as correct.
+      if (overlap > 0 && !hasKeyboardLayoutRef.current) {
+        documentScrollAtKeyboard = {x: window.scrollX, y: window.scrollY};
+      }
       hasKeyboardLayoutRef.current = overlap > 0;
 
       const inset =
@@ -478,6 +487,36 @@ export function useMobileKeyboard({
     const scheduleReveal = () => {
       cancelAnimationFrame(animationFrame);
       animationFrame = requestAnimationFrame(revealFocusedControl);
+    };
+
+    // useScrollLock pins the body, which stops the user scrolling the page but
+    // not the browser: to reveal a focused control the browser scrolls the
+    // DOCUMENT, and every fixed-position element travels with it — the sheet,
+    // its scrim, the page behind. That is the whole-page shift, and because it
+    // is a real document scroll it can simply be put back, on the event that
+    // reports it, before the frame is painted. Then bring the control into
+    // view with the sheet's own scroller, which moves nothing outside the
+    // sheet. This catches every route in — tap, keyboard Next, programmatic
+    // focus, and the reveal the browser performs when the app is resumed with
+    // a field still focused — because it corrects the outcome rather than
+    // racing the cause.
+    const handleDocumentScroll = () => {
+      const expected = documentScrollAtKeyboard;
+      if (
+        expected == null ||
+        (window.scrollX === expected.x && window.scrollY === expected.y)
+      ) {
+        return;
+      }
+      window.scrollTo(expected.x, expected.y);
+      const activeElement = document.activeElement;
+      if (
+        activeElement instanceof HTMLElement &&
+        body.contains(activeElement) &&
+        isTextEntryControl(activeElement)
+      ) {
+        scrollControlIntoSafeArea(activeElement, false);
+      }
     };
 
     const resizeObserver =
@@ -569,6 +608,7 @@ export function useMobileKeyboard({
     sheet?.addEventListener('transitionend', handleSheetTransitionEnd);
     viewport?.addEventListener('resize', scheduleReveal);
     viewport?.addEventListener('scroll', scheduleReveal);
+    window.addEventListener('scroll', handleDocumentScroll);
     window.addEventListener('resize', scheduleReveal);
     mutationObserver?.observe(body, {
       attributes: true,
@@ -604,6 +644,7 @@ export function useMobileKeyboard({
       sheet?.removeEventListener('transitionend', handleSheetTransitionEnd);
       viewport?.removeEventListener('resize', scheduleReveal);
       viewport?.removeEventListener('scroll', scheduleReveal);
+      window.removeEventListener('scroll', handleDocumentScroll);
       window.removeEventListener('resize', scheduleReveal);
       resizeObserver?.disconnect();
       mutationObserver?.disconnect();
