@@ -23,7 +23,10 @@
  * xds --json theme build <file>
  * @typedef {object} ThemeBuildResponse
  * @property {'theme.build'} type
- * @property {{name: string, tokenCount: number, componentCount: number, sizeKB: number, outputs: {css: string, js: string, dts: string, variantsDts?: string}, warnings: string[]}} data
+ * `warnings` are defects the theme author should fix. `notices` are advisories
+ * about a correct theme — most of them cannot be fixed in a theme file at all,
+ * so folding them into `warnings` makes a clean build look dirty.
+ * @property {{name: string, tokenCount: number, componentCount: number, sizeKB: number, outputs: {css: string, js: string, dts: string, variantsDts?: string}, warnings: string[], notices: string[]}} data
  */
 
 /**

@@ -959,6 +959,17 @@ export function isEvidenceItem(item) {
 }
 
 /**
+ * Does `blocks` match the declared `{count, open}` shape? A bare array reads
+ * as zero open BLOCKs to `openBlockCount` and `blockList`, so it does not
+ * merely break the sandbox build: it skips the open-BLOCK grade cap and blinds
+ * the ratchet to every BLOCK in it.
+ */
+export function isBlocksShape(blocks) {
+  if (!blocks || typeof blocks !== 'object' || Array.isArray(blocks)) return false;
+  return typeof blocks.count === 'number' && Array.isArray(blocks.open);
+}
+
+/**
  * Merge a scorecard into a ledger entry and validate it.
  * Unknown keys are rejected rather than silently stored — a typo in a field
  * name would otherwise produce a row that reads fine and measures nothing.
@@ -988,6 +999,18 @@ export function applyScorecard(existing, scorecard, {component, pkg}) {
     ...scorecard,
   };
   if (!next.package) throw new Error(`${component}: no package — pass --package`);
+  // Checked before the grade, because a bare array (the shape a scorecard
+  // naturally takes if you think of blocks as a list) reads as zero open
+  // BLOCKs to `openBlockCount`. Left unchecked it does three things at once:
+  // the open-BLOCK grade cap never applies, the ratchet sees no BLOCKs to
+  // compare, and the sandbox inlines a literal tsc rejects, which reds
+  // `build-sandbox` on every open pull request (#5033).
+  if (!isBlocksShape(next.blocks)) {
+    throw new Error(
+      `${component}: blocks must be {count, open: [...]} — a bare array reads as ` +
+        'zero open BLOCKs, which skips the grade cap and blinds the ratchet',
+    );
+  }
   if (next.status !== 'audited') {
     throw new Error(
       `${component}: the ledger holds audited components only — an unaudited component ` +
