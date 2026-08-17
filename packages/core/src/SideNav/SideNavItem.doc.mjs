@@ -76,7 +76,7 @@ export const docs = {
       name: 'actions',
       type: 'ReactNode',
       description:
-        'Row-level secondary controls (icon buttons, menus) rendered as siblings of the primary element at the trailing edge of the row — after the expand/collapse toggle, before any nested children in DOM and focus order. Each control owns its accessible name and behavior. Hidden while the SideNav rail is collapsed. Use endContent for passive content (badges, counts); use actions for anything interactive.',
+        'Row-level secondary controls (icon buttons, menus) rendered as siblings of the primary element at the trailing edge of the row — after the expand/collapse toggle, before any nested children in DOM and focus order. Each control owns its accessible name and behavior. Controls inherit the row control size through SizeContext, so an unsized icon button matches the built-in expand/collapse toggle; an explicit size still wins. Hidden while the SideNav rail is collapsed. Use endContent for passive content (badges, counts); use actions for anything interactive.',
       slotElements: [
         {
           __element: 'Button',
@@ -170,7 +170,7 @@ export const docsZh = {
       name: 'actions',
       type: 'ReactNode',
       description:
-        '行级次要控件（图标按钮、菜单），作为主元素的同级节点渲染在行尾——位于展开/折叠切换按钮之后、任何嵌套子项之前（DOM 与焦点顺序一致）。每个控件自行负责其无障碍名称与行为。侧边栏折叠为图标栏时隐藏。被动内容（徽章、计数）请使用 endContent；交互内容请使用 actions。',
+        '行级次要控件（图标按钮、菜单），作为主元素的同级节点渲染在行尾——位于展开/折叠切换按钮之后、任何嵌套子项之前（DOM 与焦点顺序一致）。每个控件自行负责其无障碍名称与行为。控件通过 SizeContext 继承行内控件尺寸，因此未指定尺寸的图标按钮会与内置的展开/折叠切换按钮保持同一尺寸；显式指定的 size 优先。侧边栏折叠为图标栏时隐藏。被动内容（徽章、计数）请使用 endContent；交互内容请使用 actions。',
     },
     {
       name: 'children',
@@ -209,7 +209,7 @@ export const docsDense = {
     endContent:
       'Passive right-side content only (badges, counts). Interactive controls go in actions.',
     actions:
-      'Row-level secondary controls (icon buttons, menus) rendered as siblings of the primary element, after the expand/collapse toggle and before nested children in DOM/focus order. Hidden when rail collapsed. Passive content goes in endContent; interactive content goes here.',
+      'Row-level secondary controls (icon buttons, menus) rendered as siblings of the primary element, after the expand/collapse toggle and before nested children in DOM/focus order. Inherit the row control size via SizeContext (explicit size wins). Hidden when rail collapsed. Passive content goes in endContent; interactive content goes here.',
     children: 'Sub-items for nesting.',
     collapsible: 'Enables collapse for items w/ children. true=uncontrolled, object=controlled mode.',
     size: "Row size variant: 'sm' | 'md' | 'lg'.",

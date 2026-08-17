@@ -437,7 +437,6 @@ export const RowActions: Story = {
           collapsible
           actions={
             <MoreMenu
-              size="sm"
               label="Project Alpha actions"
               items={[
                 {label: 'New session', onClick: () => {}},
@@ -456,7 +455,6 @@ export const RowActions: Story = {
           collapsible={{defaultIsCollapsed: true}}
           actions={
             <MoreMenu
-              size="sm"
               label="Project Beta actions"
               items={[
                 {label: 'New session', onClick: () => {}},
@@ -476,7 +474,6 @@ export const RowActions: Story = {
               label="New note"
               icon={<Icon icon={PlusIcon} size="sm" color="secondary" />}
               variant="ghost"
-              size="sm"
               isIconOnly
             />
           }

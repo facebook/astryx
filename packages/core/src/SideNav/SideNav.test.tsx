@@ -2297,15 +2297,37 @@ function allStyleRules(): CSSStyleRule[] {
 }
 
 /**
- * A rule's `outline-style`, read out of its text.
+ * A rule's declared value for `prop`, read out of its text.
  *
- * Not `rule.style`: the ring's value is a `var()`, and jsdom's CSS object
- * model drops longhands it cannot parse, so every ring rule reads back as an
- * empty string there.
+ * Not `rule.style`: these values are `var()`s, and jsdom's CSS object model
+ * drops longhands it cannot parse, so they read back as an empty string there.
  */
-function outlineStyleOf(rule: CSSStyleRule): string | undefined {
+function declaredValue(rule: CSSStyleRule, prop: string): string | undefined {
   const body = /\{([^}]*)\}/.exec(rule.cssText)?.[1] ?? '';
-  return /(?:^|;)\s*outline-style:\s*([^;]+)/.exec(body)?.[1].trim();
+  return new RegExp(`(?:^|;)\\s*${prop}:\\s*([^;]+)`).exec(body)?.[1].trim();
+}
+
+/** A rule's `outline-style` — the discriminator for a painting focus ring. */
+function outlineStyleOf(rule: CSSStyleRule): string | undefined {
+  return declaredValue(rule, 'outline-style');
+}
+
+/**
+ * What the live sheet unconditionally declares for `prop` on `el`, gathered
+ * from every bare-class rule the element carries. StyleX emits one atomic
+ * class per property, so a well-formed element yields exactly one value —
+ * comparing those values compares real CSS without pinning a generated hash.
+ */
+function declaredOn(el: Element, prop: string): string[] {
+  const classes = new Set(el.className.split(' '));
+  return allStyleRules()
+    .filter(rule => {
+      const bare = rule.selectorText.replace(/:not\(#\\?#\)/g, '');
+      const owner = /^\.([^:\s]+)$/.exec(bare)?.[1];
+      return owner != null && classes.has(owner);
+    })
+    .map(rule => declaredValue(rule, prop))
+    .filter(value => value != null);
 }
 
 /**
@@ -2770,6 +2792,76 @@ describe('SideNav footer icon row sizing', () => {
     // baseline, 2.42px above centre (measured in Chromium). A flex container
     // has no line box.
     expect(mirror && getComputedStyle(mirror).display).toBe('flex');
+  });
+});
+
+describe('SideNav row control sizing', () => {
+  /**
+   * The height an icon-only `Button` of this size declares — the box every
+   * control sharing a nav row is measured against.
+   */
+  function iconButtonHeight(size: 'sm' | 'md' | 'lg'): string[] {
+    const {unmount} = render(
+      <Button
+        label="sized reference"
+        size={size}
+        isIconOnly
+        icon={<span />}
+        data-testid="sized-ref"
+      />,
+    );
+    const height = declaredOn(screen.getByTestId('sized-ref'), 'height');
+    unmount();
+    // Guard against a vacuous pass: nothing below means anything if the
+    // reference itself declares no height.
+    expect(height).toHaveLength(1);
+    return height;
+  }
+
+  function collapsibleRow(actions: ReactNode) {
+    return (
+      <SideNavItem
+        label="Project"
+        href="/project"
+        collapsible
+        actions={actions}>
+        <SideNavItem label="Session" href="/project/session" />
+      </SideNavItem>
+    );
+  }
+
+  const iconAction = (props?: {size?: 'sm' | 'md' | 'lg'}) => (
+    <Button
+      label="Project actions"
+      isIconOnly
+      icon={<span />}
+      data-testid="row-action"
+      {...props}
+    />
+  );
+
+  it('sizes the expand toggle like the icon buttons it sits beside', () => {
+    const sm = iconButtonHeight('sm');
+    render(collapsibleRow(iconAction()));
+    const toggle = screen.getByRole('button', {name: /collapse project/i});
+    expect(declaredOn(toggle, 'height')).toEqual(sm);
+    // Square, so its hover pill reads as the same box as the action's.
+    expect(declaredOn(toggle, 'width')).toEqual(sm);
+  });
+
+  it('cascades that size to an action the consumer did not size', () => {
+    const sm = iconButtonHeight('sm');
+    // Without the cascade an unsized Button falls back to `md`; if the two
+    // compiled to one height the assertion below could not fail.
+    expect(sm).not.toEqual(iconButtonHeight('md'));
+    render(collapsibleRow(iconAction()));
+    expect(declaredOn(screen.getByTestId('row-action'), 'height')).toEqual(sm);
+  });
+
+  it('lets an explicit size on an action win over the cascade', () => {
+    const lg = iconButtonHeight('lg');
+    render(collapsibleRow(iconAction({size: 'lg'})));
+    expect(declaredOn(screen.getByTestId('row-action'), 'height')).toEqual(lg);
   });
 });
 

@@ -51,6 +51,7 @@ import {mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {Tooltip} from '../Tooltip';
 import {navItemStyles, type NavItemSize} from '../NavItem/navItemStyles.stylex';
+import {SizeProvider} from '../SizeContext/SizeContext';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {
   useSideNavCollapse,
@@ -146,7 +147,13 @@ const styles = stylex.create({
     transform: 'rotate(180deg)',
   },
   // Standalone toggle button for the chevron when collapsible + href.
+  // Boxed like a `size="sm"` icon Button so it and whatever sits in
+  // `actions` paint one size of hover pill; without a box of its own it
+  // shrank to the 24px chevron beside a 28px menu button.
+  // SYNC: matches ROW_CONTROL_SIZE below.
   expandToggle: {
+    width: sizeVars['--size-element-sm'],
+    height: sizeVars['--size-element-sm'],
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -221,6 +228,16 @@ const styles = stylex.create({
     lineHeight: typeScaleVars['--text-supporting-leading'],
   },
 });
+
+/**
+ * Cascaded to the `actions` slot through `SizeContext` so a consumer's row
+ * controls come out the same height as the built-in expand/collapse toggle,
+ * the way `SideNav` already cascades one size to its footer icons. An
+ * explicit `size` on a supplied control still wins.
+ *
+ * SYNC: `styles.expandToggle` carries the matching box.
+ */
+const ROW_CONTROL_SIZE = 'sm';
 
 // Non-collapsed state for popover children — ensures nested items render expanded
 const EXPANDED_COLLAPSE_STATE = {
@@ -336,6 +353,10 @@ export interface SideNavItemProps extends BaseProps<HTMLElement> {
    * order. Content is passthrough: each control owns its accessible name,
    * keyboard behavior, and disabled state. Hidden while the SideNav rail is
    * collapsed.
+   *
+   * Controls inherit the row's control size through `SizeContext`, so an
+   * unsized icon button comes out the same box as the built-in
+   * expand/collapse toggle. An explicit `size` still wins.
    */
   actions?: ReactNode;
   /**
@@ -396,7 +417,7 @@ export interface SideNavItemProps extends BaseProps<HTMLElement> {
  *   label="Projects"
  *   href="/projects"
  *   collapsible
- *   actions={<MoreMenu size="sm" label="Project actions" items={items} />}>
+ *   actions={<MoreMenu label="Project actions" items={items} />}>
  *   <SideNavItem label="Alpha" href="/projects/alpha" />
  * </SideNavItem>
  * ```
@@ -731,7 +752,11 @@ export function SideNavItem({
             />
           </button>
         )}
-        {hasActions && <span {...stylex.props(styles.actions)}>{actions}</span>}
+        {hasActions && (
+          <span {...stylex.props(styles.actions)}>
+            <SizeProvider value={ROW_CONTROL_SIZE}>{actions}</SizeProvider>
+          </span>
+        )}
       </div>
     );
   } else {
