@@ -44,6 +44,7 @@ import {
   type CSSProperties,
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
+  type RefObject,
   type UIEvent as ReactUIEvent,
 } from 'react';
 import {useMediaQuery} from '../hooks';
@@ -212,6 +213,13 @@ export interface UseSheetGesturesResult {
    * scrolling); normal scrolling passes through untouched.
    */
   bodyProps: SheetBodyProps;
+  /**
+   * The body element `bodyProps.ref` is attached to. The hook tracks the node
+   * anyway (it owns the non-passive touch listeners on it), so a host that
+   * also needs the element reads it here rather than wrapping `bodyProps.ref`
+   * in a second callback ref.
+   */
+  bodyElementRef: RefObject<HTMLElement | null>;
   /** Current live drag translate in px (0 = fully expanded, larger = collapsed). */
   dragOffset: number;
   /** Translate of the resting detent in px (0 = tallest detent). */
@@ -1169,6 +1177,7 @@ export function useSheetGestures({
     contentProps,
     handleProps,
     bodyProps,
+    bodyElementRef: bodyNodeRef,
     dragOffset,
     settledOffset,
     isDragging,

@@ -32,7 +32,7 @@ const NON_TEXT_INPUT_TYPES = new Set([
 ]);
 
 interface UseMobileKeyboardOptions {
-  bodyRef: RefObject<HTMLDivElement | null>;
+  bodyRef: RefObject<HTMLElement | null>;
   bottomClearance: number;
   isEnabled: boolean;
   isFullyExpanded: boolean;
