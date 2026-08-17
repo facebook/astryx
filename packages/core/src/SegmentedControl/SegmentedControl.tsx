@@ -12,6 +12,7 @@
  * - /packages/core/src/SegmentedControl/SegmentedControl.doc.mjs
  * - /packages/core/src/SegmentedControl/index.ts
  * - /packages/core/src/SegmentedControl/SegmentedControl.test.tsx
+ * - /packages/core/src/SegmentedControl/useLabelCollapse.ts
  * - /packages/cli/assets/templates/blocks/components/SegmentedControl/ (showcase blocks)
  */
 
@@ -19,6 +20,7 @@ import React, {useMemo, useCallback, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars, radiusVars} from '../theme/tokens.stylex';
 import {SegmentedControlContext} from './SegmentedControlContext';
+import {useLabelCollapse} from './useLabelCollapse';
 import {useListFocus} from '../hooks/useListFocus';
 import {useKeyboardHint} from '../hooks/useKeyboardHint';
 import {useTooltip} from '../Tooltip';
@@ -78,9 +80,36 @@ export interface SegmentedControlProps extends Omit<
    */
   disabledMessage?: string;
   /**
+   * Collapse every item's label to its icon when the strip does not have the
+   * room for the labels. The label stays the item's accessible name and becomes
+   * its tooltip, so nothing is lost but the pixels. Off by default.
+   *
+   * - `true` — the strip measures itself: labels are up while they fit and
+   *   collapse when they do not. There is no breakpoint; the trigger is the
+   *   width the labelled strip actually needs versus the width it has.
+   * - `{isCollapsed}` — the caller decides and the strip never measures.
+   * - `{onCollapsedChange}` — observe the measured decision.
+   *
+   * A `'fill'` strip measures its own box; a `'hug'` strip measures its parent,
+   * so give it a parent with a width of its own rather than a shrink-to-fit one.
+   * An item with no icon keeps its label — an empty segment is not a state worth
+   * rendering.
+   */
+  collapsibleLabels?: boolean | SegmentedControlCollapsibleLabelsConfig;
+  /**
    * SegmentedControlItem children.
    */
   children: ReactNode;
+}
+
+export interface SegmentedControlCollapsibleLabelsConfig {
+  /**
+   * Controlled collapse state. When set, the strip renders what it is told and
+   * never measures.
+   */
+  isCollapsed?: boolean;
+  /** Fired when the measured collapse state changes. */
+  onCollapsedChange?: (isCollapsed: boolean) => void;
 }
 
 // =============================================================================
@@ -149,6 +178,7 @@ export function SegmentedControl({
   layout = 'hug',
   isDisabled = false,
   disabledMessage,
+  collapsibleLabels = false,
   children,
   xstyle,
   className,
@@ -159,6 +189,16 @@ export function SegmentedControl({
   ...rest
 }: SegmentedControlProps) {
   const size = useSize(sizeProp, 'md');
+
+  const collapsibleLabelsConfig =
+    typeof collapsibleLabels === 'object' ? collapsibleLabels : {};
+  const {isCollapsed: areLabelsCollapsed, ref: labelCollapseRef} =
+    useLabelCollapse({
+      isEnabled: !!collapsibleLabels,
+      isCollapsed: collapsibleLabelsConfig.isCollapsed,
+      onCollapsedChange: collapsibleLabelsConfig.onCollapsedChange,
+      layout,
+    });
 
   // Disabled-reason tooltip. Applies to the whole-group disabled state. Disabled
   // controls swallow pointer events, so the tooltip listeners attach to the
@@ -252,14 +292,28 @@ export function SegmentedControl({
       layout,
       isDisabled,
       hasDisabledMessage: showsDisabledMessage,
+      areLabelsCollapsed,
     }),
-    [value, onChange, size, layout, isDisabled, showsDisabledMessage],
+    [
+      value,
+      onChange,
+      size,
+      layout,
+      isDisabled,
+      showsDisabledMessage,
+      areLabelsCollapsed,
+    ],
   );
 
   return (
     <SegmentedControlContext value={contextValue}>
       <div
-        ref={useMergedRefs(ref, listRef, disabledMessageTooltip.ref)}
+        ref={useMergedRefs(
+          ref,
+          listRef,
+          disabledMessageTooltip.ref,
+          labelCollapseRef,
+        )}
         {...rest}
         role="radiogroup"
         aria-label={label}
