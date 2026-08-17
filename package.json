@@ -24,6 +24,7 @@
     "a11y:audit": "node .github/scripts/accessibility-audit.js --baseline .github/a11y-baseline.json --fail-on-new",
     "a11y:baseline": "node .github/scripts/accessibility-audit.js --baseline .github/a11y-baseline.json --update-baseline",
     "rtl:audit": "node apps/storybook/rtl-audit/rtl-audit.mjs",
+    "guard:modal-close": "node .github/scripts/modal-close-visibility.js",
     "storybook": "pnpm -F @astryxdesign/storybook dev",
     "storybook:build": "pnpm -F @astryxdesign/storybook build",
     "docsite": "pnpm -F @astryxdesign/docsite dev",
