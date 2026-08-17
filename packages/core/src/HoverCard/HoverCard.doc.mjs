@@ -74,6 +74,12 @@ export const docs = {
           default: "'auto'",
         },
         {
+          name: 'touchTrigger',
+          type: "'auto' | 'always' | 'never'",
+          description: "How a tap behaves on touch, where there is no hover. auto opens the card only when the tap is not activating something (a link, a button); always is the two-tap contract on any trigger — first tap previews, second tap activates; never leaves taps alone.",
+          default: "'auto'",
+        },
+        {
           name: 'isEnabled',
           type: 'boolean',
           description: 'Enables or disables the hover and focus triggers.',
@@ -189,6 +195,12 @@ export const docsZh = {
           default: "'auto'",
         },
         {
+          name: 'touchTrigger',
+          type: "'auto' | 'always' | 'never'",
+          description: '触摸设备上点按的行为（触摸没有悬停）。auto：仅当点按不会激活链接或按钮时才打开卡片；always：任何触发元素都采用两次点按约定——第一次预览，第二次激活；never：点按永不打开卡片。',
+          default: "'auto'",
+        },
+        {
           name: 'isEnabled',
           type: 'boolean',
           description: '启用或禁用悬停和聚焦触发器。',
@@ -263,6 +275,7 @@ export const docsDense = {
         delay: 'Show delay in ms.',
         hideDelay: 'Hide delay in ms.',
         focusTrigger: 'Controls when focus events trigger hover card.',
+        touchTrigger: 'Tap behavior on touch. auto = only when the tap activates nothing; always = tap 1 previews, tap 2 activates; never = taps ignored.',
         isEnabled: 'Enable/disable hover + focus triggers.',
         label: 'Accessible name for the popup. With label: named role="dialog"; without: role="group".',
         onOpenChange: 'Callback when visibility changes; true=shown, false=hidden.',

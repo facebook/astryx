@@ -804,4 +804,153 @@ describe('HoverCard', () => {
       container.remove();
     });
   });
+  describe('touch', () => {
+    // The browser synthesizes pointerenter/mouseenter/focus from a tap, so a
+    // tap is replayed here as that whole sequence, not as a bare click.
+    function tap(el: HTMLElement) {
+      const enter = new MouseEvent('pointerenter', {bubbles: false});
+      Object.defineProperty(enter, 'pointerType', {value: 'touch'});
+      el.dispatchEvent(enter);
+      fireEvent.mouseEnter(el);
+      fireEvent.focusIn(el);
+      return fireEvent.click(el);
+    }
+
+    it('a tap on a link trigger navigates and leaves the card closed', async () => {
+      const onClick = vi.fn();
+      render(
+        <HoverCard content={<span>Card content</span>} delay={0}>
+          <a href="#profile" onClick={onClick}>
+            Jane
+          </a>
+        </HoverCard>,
+      );
+
+      const notPrevented = tap(screen.getByRole('link'));
+
+      expect(notPrevented).toBe(true);
+      expect(onClick).toHaveBeenCalledTimes(1);
+      await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 400));
+      });
+      expect(HTMLElement.prototype.showPopover).not.toHaveBeenCalled();
+    });
+
+    it('a tap on a trigger with no action of its own opens the card', async () => {
+      render(<HoverCard content={<span>Card content</span>}>Jane</HoverCard>);
+
+      tap(screen.getByText('Jane'));
+
+      await waitFor(() => {
+        expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
+      });
+    });
+
+    it('touchTrigger="always" previews on the first tap and activates on the second', async () => {
+      const onClick = vi.fn();
+      render(
+        <HoverCard
+          content={<span>Card content</span>}
+          delay={0}
+          touchTrigger="always">
+          <a href="#profile" onClick={onClick}>
+            Jane
+          </a>
+        </HoverCard>,
+      );
+      const link = screen.getByRole('link');
+
+      expect(tap(link)).toBe(false);
+      expect(onClick).not.toHaveBeenCalled();
+      await waitFor(() => {
+        expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
+      });
+
+      expect(tap(link)).toBe(true);
+      expect(onClick).toHaveBeenCalledTimes(1);
+      await waitFor(() => {
+        expect(HTMLElement.prototype.hidePopover).toHaveBeenCalled();
+      });
+    });
+
+    it('touchTrigger="never" keeps the card closed on any tap', async () => {
+      render(
+        <HoverCard
+          content={<span>Card content</span>}
+          delay={0}
+          touchTrigger="never">
+          Jane
+        </HoverCard>,
+      );
+
+      expect(tap(screen.getByText('Jane'))).toBe(true);
+
+      await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 400));
+      });
+      expect(HTMLElement.prototype.showPopover).not.toHaveBeenCalled();
+    });
+
+    it('an outside touch dismisses a tapped-open card', async () => {
+      render(
+        <>
+          <HoverCard content={<span>Card content</span>}>Jane</HoverCard>
+          <button type="button">Elsewhere</button>
+        </>,
+      );
+
+      tap(screen.getByText('Jane'));
+      await waitFor(() => {
+        expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
+      });
+
+      const outside = new MouseEvent('pointerdown', {bubbles: true});
+      Object.defineProperty(outside, 'pointerType', {value: 'touch'});
+      await act(async () => {
+        screen.getByRole('button', {name: 'Elsewhere'}).dispatchEvent(outside);
+      });
+
+      expect(HTMLElement.prototype.hidePopover).toHaveBeenCalled();
+    });
+
+    it('keyboard focus after a tap still opens the card', async () => {
+      render(
+        <HoverCard content={<span>Card content</span>} delay={0}>
+          <a href="#profile">Jane</a>
+        </HoverCard>,
+      );
+      const link = screen.getByRole('link');
+
+      tap(link);
+      fireEvent.keyDown(link, {key: 'Tab'});
+      fireEvent.focusIn(link);
+
+      await waitFor(() => {
+        expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
+      });
+    });
+
+    it('a mouse click is not a tap: hover still opens and the click is not swallowed', async () => {
+      const onClick = vi.fn();
+      render(
+        <HoverCard content={<span>Card content</span>} delay={0}>
+          <a href="#profile" onClick={onClick}>
+            Jane
+          </a>
+        </HoverCard>,
+      );
+      const link = screen.getByRole('link');
+
+      const enter = new MouseEvent('pointerenter', {bubbles: false});
+      Object.defineProperty(enter, 'pointerType', {value: 'mouse'});
+      link.dispatchEvent(enter);
+      fireEvent.mouseEnter(link);
+
+      await waitFor(() => {
+        expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
+      });
+      expect(fireEvent.click(link)).toBe(true);
+      expect(onClick).toHaveBeenCalledTimes(1);
+    });
+  });
 });

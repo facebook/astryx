@@ -91,9 +91,7 @@ export const CustomDelay: Story = {
     delay: 500,
     hideDelay: 300,
     content: <ProfileCard />,
-    children: (
-      <Button label="Slow hover (500ms)">Slow hover (500ms)</Button>
-    ),
+    children: <Button label="Slow hover (500ms)">Slow hover (500ms)</Button>,
   },
 };
 
@@ -166,6 +164,34 @@ export const InteractiveContent: Story = {
           Hover for interactive content
         </Button>
       </HoverCard>
+    </div>
+  ),
+};
+
+export const TouchTapContract: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'On touch there is no hover, and a tap on a link is already the link\'s activation. `touchTrigger="always"` opts a link trigger into the two-tap contract: the first tap previews the card, the second follows the link. The default (`auto`) leaves a link\'s tap alone and opens on a tap only for triggers that activate nothing.',
+      },
+    },
+  },
+  render: () => (
+    <div style={{padding: 100}}>
+      <p>
+        Two-tap preview:{' '}
+        <HoverCard content={<ProfileCard />} touchTrigger="always">
+          <a href="#jane-doe">Jane Doe</a>
+        </HoverCard>
+      </p>
+      <p>
+        Default:{' '}
+        <HoverCard content={<ProfileCard />}>
+          <a href="#jane-doe">Jane Doe</a>
+        </HoverCard>{' '}
+        — the tap follows the link, and the card is desktop-only.
+      </p>
     </div>
   ),
 };
