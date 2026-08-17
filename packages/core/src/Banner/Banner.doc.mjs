@@ -17,11 +17,13 @@ export const docs = {
       {guidance: true, description: 'Keep titles short and scannable: "Payment failed" not "There was a problem processing your most recent payment."'},
       {guidance: false, description: 'Use Banner for short-lived messages that disappear on their own; use Toast instead.'},
       {guidance: false, description: 'Stack multiple banners with the same status; combine related messages into one banner.'},
+      {guidance: true, description: 'Error and warning banners render as role="alert"; info and success render as role="status". Mount an alert banner in response to an event rather than on first paint, so assistive tech has a change to report.'},
+      {guidance: false, description: 'Rely on the status color or icon alone to carry meaning; say which status it is in the title text, because the icon is decorative to a screen reader.'},
     ],
     anatomy: [
       {name: 'Icon', required: true, description: 'Automatically set based on the status (info, warning, error, success).'},
-      {name: 'Title', required: false, description: 'The main message. Required if no description is provided.'},
-      {name: 'Description', required: false, description: 'Additional detail below the title. Required if no title is provided.'},
+      {name: 'Title', required: true, description: 'The main message. Always required.'},
+      {name: 'Description', required: false, description: 'Additional detail below the title.'},
       {name: 'Action button', required: false, description: 'A button for the user to act on the message, like "Review" or "Retry".'},
       {name: 'Dismiss button', required: false, description: 'Lets the user close the banner. Enabled by setting isDismissable.'},
       {name: 'Collapsible content', required: false, description: 'Extra detail that expands below the banner header, like a list of errors.'},
@@ -123,7 +125,7 @@ export const docs = {
       {className: 'astryx-banner-content', visualProps: ['container', 'status']},
     ],
     vars: [
-      {name: '--_banner-radius', description: 'Border radius (card container only)', default: 'var(--radius-container)', private: true},
+      {name: '--_banner-radius', description: 'Border radius of the card container (header, content area and the elevated root silhouette)', default: 'var(--radius-container)', private: true},
     ],
     derived: [
       {property: 'borderRadius', vars: ['--_banner-radius']},
@@ -148,8 +150,8 @@ export const docsZh = {
     ],
     anatomy: [
       {name: 'Icon', required: true, description: 'Automatically set based on the status (info, warning, error, success).'},
-      {name: 'Title', required: false, description: 'The main message. Required if no description is provided.'},
-      {name: 'Description', required: false, description: 'Additional detail below the title. Required if no title is provided.'},
+      {name: 'Title', required: true, description: 'The main message. Always required.'},
+      {name: 'Description', required: false, description: 'Additional detail below the title.'},
       {name: 'Action button', required: false, description: 'A button for the user to act on the message, like "Review" or "Retry".'},
       {name: 'Dismiss button', required: false, description: 'Lets the user close the banner. Enabled by setting isDismissable.'},
       {name: 'Collapsible content', required: false, description: 'Extra detail that expands below the banner header, like a list of errors.'},
@@ -198,7 +200,7 @@ export const docsZh = {
       },
     ],
     vars: [
-      {name: '--_banner-radius', description: 'Border radius (card container only)', default: 'var(--radius-container)', private: true},
+      {name: '--_banner-radius', description: 'Border radius of the card container (header, content area and the elevated root silhouette)', default: 'var(--radius-container)', private: true},
     ],
     derived: [
       {property: 'borderRadius', vars: ['--_banner-radius']},
@@ -222,7 +224,7 @@ export const docsDense = {
     ],
     anatomy: [
       {name: 'Icon', required: true, description: 'Set automatically from status.'},
-      {name: 'Title', required: false, description: 'Main message text.'},
+      {name: 'Title', required: true, description: 'Main message text.'},
       {name: 'Description', required: false, description: 'Detail below title.'},
       {name: 'Action button', required: false, description: 'CTA like Review or Retry.'},
       {name: 'Dismiss button', required: false, description: 'Close button via isDismissable.'},

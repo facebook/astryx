@@ -241,6 +241,14 @@ export const docs = {
       },
     ],
   },
+  theming: {
+    targets: [
+      {
+        className: 'astryx-list-input',
+        visualProps: ['state', 'reorderable'],
+      },
+    ],
+  },
   examples: [
     {
       label: 'Controlled guest list',

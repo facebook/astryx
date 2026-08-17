@@ -75,13 +75,16 @@ describe('theme build font-loading warning', () => {
     expect(result.stdout).toContain('@font-face');
     expect(result.stdout).toContain('font-display: swap');
     expect(result.stdout).toContain('astryx docs typography');
-    // The one-line summaries follow the CLI's stream contract: warnings on
-    // stderr, like the override-validation warnings in the same build.
-    expect(result.stderr).toContain('Font "Space Grotesk"');
-    expect(result.stderr).toContain('Font "JetBrains Mono"');
+    // The one-line summaries follow the CLI's stream contract. These are
+    // NOTICES about a correct theme, not warnings, so they go to stdout with
+    // the rest of the build's progress — stderr stays for the defects an
+    // author has to fix.
+    expect(result.stdout).toContain('note: Font "Space Grotesk"');
+    expect(result.stdout).toContain('note: Font "JetBrains Mono"');
+    expect(result.stderr).not.toContain('Font "');
   });
 
-  it('keeps --json stdout one valid envelope: warnings inside, snippet suppressed', async () => {
+  it('keeps --json stdout one valid envelope: notices inside, snippet suppressed', async () => {
     const project = path.join(tmpDir, 'project');
     const themeFile = writeTheme(
       project,
@@ -100,7 +103,7 @@ describe('theme build font-loading warning', () => {
     // contract, not just substring presence.
     const envelope = JSON.parse(result.stdout);
     expect(envelope.type).toBe('theme.build');
-    expect(envelope.data.warnings).toEqual(
+    expect(envelope.data.notices).toEqual(
       expect.arrayContaining([expect.stringContaining('Font "Space Grotesk"')]),
     );
     expect(result.stdout).not.toContain('fonts.googleapis.com');

@@ -15,14 +15,33 @@
  * declared rather than inferred. Absent the flag, output is byte-for-byte what
  * it was before, which keeps the default no-`--out` flow — where the neighbour
  * is an uncompiled `icons.tsx` that only a bundler can resolve — working.
+ *
+ * The spawned-process block at the bottom pins what only real processes can
+ * prove: the emitted module actually loads under Node ESM, and the watch
+ * loop's child re-invocations carry the flag to every rebuild.
  */
 
 import {describe, it, expect, beforeAll, beforeEach, afterEach} from 'vitest';
+import {spawn, spawnSync} from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
+import {fileURLToPath, pathToFileURL} from 'node:url';
 import {ensureCoreBuilt} from './ensure-core-built.mjs';
 import {runCli} from '../../../test-utils/run-cli.mjs';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const CLI_BIN = path.resolve(__dirname, '../bin/astryx.mjs');
+
+/** Poll until `predicate()` is true or the timeout elapses. */
+async function waitFor(predicate, {timeout = 20000, interval = 100} = {}) {
+  const start = Date.now();
+  for (;;) {
+    if (predicate()) return true;
+    if (Date.now() - start > timeout) return false;
+    await new Promise(r => setTimeout(r, interval));
+  }
+}
 
 /**
  * The emitted icon import, or null. Reads the statement rather than the whole
@@ -142,13 +161,7 @@ describe('theme build --icons-specifier', () => {
     const relativeTheme = path.relative(project, themeFile);
 
     const built = await runCli(
-      [
-        'theme',
-        'build',
-        relativeTheme,
-        '--icons-specifier',
-        './icons.mjs',
-      ],
+      ['theme', 'build', relativeTheme, '--icons-specifier', './icons.mjs'],
       project,
     );
     expect(built.code).toBe(0);
@@ -222,4 +235,116 @@ describe('theme build --icons-specifier', () => {
     expect(iconImportLine(generated)).toBeNull();
     expect(generated).not.toContain('icons:');
   });
+});
+
+describe('theme build --icons-specifier (spawned processes)', () => {
+  it('emits a module Node can actually load', async () => {
+    const project = path.join(tmpDir, 'project');
+    const themeFile = writeThemeWithIcons(project, 'loadable');
+
+    const result = await runCli(
+      [
+        'theme',
+        'build',
+        path.relative(project, themeFile),
+        '--icons-specifier',
+        './icons.mjs',
+      ],
+      project,
+    );
+    expect(result.code).toBe(0);
+
+    // The text assertions above prove the emitted line; only a real Node
+    // process proves the module resolves and evaluates. That distinction is
+    // the regression #4620 shipped: every byte existed, none of them loaded.
+    const builtUrl = pathToFileURL(path.join(project, 'loadable.js'));
+    const probe = spawnSync(
+      process.execPath,
+      [
+        '--input-type=module',
+        '-e',
+        `const m = await import(${JSON.stringify(builtUrl.href)});` +
+          `if (m.loadableTheme?.name !== 'loadable') throw new Error('bad theme export');` +
+          `if (typeof m.testIcons !== 'object') throw new Error('bad registry export');`,
+      ],
+      {encoding: 'utf8'},
+    );
+    expect(probe.stderr).toBe('');
+    expect(probe.status).toBe(0);
+  });
+
+  it('watch mode forwards the flag to every rebuild', async () => {
+    const project = path.join(tmpDir, 'project');
+    const themeFile = writeThemeWithIcons(project, 'watched');
+    const cssFile = path.join(project, 'out', 'theme.css');
+    const builtFile = path.join(project, 'out', 'watched.js');
+    const declaredImport = 'import { testIcons } from "./icons.mjs";';
+
+    const child = spawn(
+      process.execPath,
+      [
+        CLI_BIN,
+        'theme',
+        'build',
+        path.relative(project, themeFile),
+        '--out',
+        'out/theme.css',
+        '--icons-specifier',
+        './icons.mjs',
+        '--watch',
+      ],
+      {cwd: project, env: {...process.env, FORCE_COLOR: '0'}},
+    );
+    let output = '';
+    child.stdout.on('data', d => (output += d.toString()));
+    child.stderr.on('data', d => (output += d.toString()));
+
+    try {
+      // Initial build: the declared specifier reaches the module.
+      expect(await waitFor(() => fs.existsSync(cssFile))).toBe(true);
+      expect(await waitFor(() => /Watching/i.test(output))).toBe(true);
+      expect(iconImportLine(fs.readFileSync(builtFile, 'utf8'))).toBe(
+        declaredImport,
+      );
+
+      // Rebuilds run through a child re-invocation of `theme build`, so the
+      // flag reaches them only if the watch loop forwards it. Change a token
+      // and wait for the rebuilt JavaScript module. fs.watch delivery is
+      // best-effort under load, so re-touch until the rebuild shows up
+      // (idempotent write).
+      const touched =
+        `import {testIcons} from './icons';\n` +
+        `export default {\n` +
+        `  name: "watched",\n` +
+        `  icons: testIcons,\n` +
+        `  tokens: {'--color-bg': '#0a0b0c'},\n` +
+        `};\n`;
+      fs.writeFileSync(themeFile, touched);
+      const rebuilt = await waitFor(() => {
+        try {
+          if (fs.readFileSync(builtFile, 'utf-8').includes('#0a0b0c'))
+            return true;
+        } catch {
+          // JavaScript module mid-write; fall through to re-touch.
+        }
+        try {
+          fs.writeFileSync(themeFile, touched);
+        } catch {
+          // Retried on the next poll.
+        }
+        return false;
+      });
+      expect(rebuilt).toBe(true);
+
+      // The regenerated module still carries the declared specifier — the
+      // forwarding is what this test pins. A watch loop that dropped the flag
+      // would regenerate with the scraped './icons' here and ship the #4620
+      // bytes on every save.
+      expect(iconImportLine(fs.readFileSync(builtFile, 'utf8'))).toBe(
+        declaredImport,
+      );
+    } finally {
+      child.kill('SIGINT');
+    }
+  }, 60_000);
 });

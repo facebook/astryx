@@ -332,7 +332,7 @@ export function TreeList({
       ref={ref}
       data-testid={testId}
       {...mergeProps(
-        themeProps('tree-list', {density}),
+        themeProps('tree-list', {density, variant}),
         stylex.props(styles.root, xstyle),
         className,
         style,

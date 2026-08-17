@@ -162,7 +162,7 @@ function App() {
       content: [
         {
           type: 'prose',
-          text: 'defineTheme creates a theme from token overrides and optional scale configs. Scale configs generate tokens from parameters. Explicit token overrides always take precedence over scale-generated values.',
+          text: 'defineTheme creates a theme from token overrides and optional scale configs. Scale configs generate tokens from parameters. Explicit token overrides always take precedence over scale-generated values, token by token. One caveat for the accent: overriding --color-accent in tokens re-points the reference tokens (--color-accent-muted, --color-text-accent, --color-icon-accent) but NOT --color-on-accent, which stays baked from the color.accent seed. To give each scheme its own accent with a consistent derived palette, pass a [light, dark] tuple to color.accent instead of overriding the token.',
         },
         {
           type: 'code',
@@ -172,7 +172,8 @@ function App() {
 
 const myTheme = defineTheme({
   name: 'my-theme',
-  color: { accent: '#7B61FF', neutralStyle: 'cool' },
+  // accent: single hex, or [light, dark] tuple to seed each scheme separately
+  color: { accent: ['#7B61FF', '#9B85FF'], neutralStyle: 'cool' },
   typography: {
     scale: { base: 14, ratio: 1.2 },
     body: { family: 'Inter', fallbacks: '-apple-system, sans-serif' },
@@ -181,7 +182,7 @@ const myTheme = defineTheme({
   motion: { fast: 175, medium: 410, ratio: 0.75 },
   tokens: {
     // Explicit overrides take precedence over scale-generated values
-    '--color-accent': ['#7B61FF', '#9B85FF'],
+    '--color-background-body': ['#FFFFFF', '#0A0A0A'],
   },
   components: {
     button: { 'variant:primary': { color: 'white' } },
@@ -195,7 +196,7 @@ const myTheme = defineTheme({
             [
               'color',
               '--color-accent, --color-background-*, --color-text-*, --color-border, etc.',
-              'accent? (hex; omit for neutral-only), neutralStyle? (warm|cool|neutral), contrast? (standard|high)',
+              'accent? (hex or [light, dark] tuple; omit for neutral-only), neutralStyle? (warm|cool|neutral), contrast? (standard|high)',
             ],
             [
               'typography.scale',
