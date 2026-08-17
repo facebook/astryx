@@ -32,6 +32,7 @@ import {
   buildStats,
   commitMessage,
   compareEntry,
+  flatPackageComponents,
   gradeFor,
   isComponentDirectory,
   issueBody,
@@ -321,7 +322,7 @@ describe('the canonical component predicate', () => {
     expect(isComponentDirectory(coreSrc, 'NotAThing')).toBe(false);
   });
 
-  it('lists both packages, sorted, with no infrastructure', () => {
+  it('lists all covered packages, sorted, with no infrastructure', () => {
     const all = listComponents(REPO_ROOT);
     const names = all.map(c => c.component);
     expect(names).toContain('Button');
@@ -329,7 +330,38 @@ describe('the canonical component predicate', () => {
     expect(names).not.toContain('hooks');
     expect(names).not.toContain('NavItem');
     expect([...names].sort((a, b) => a.localeCompare(b))).toEqual(names);
-    expect(new Set(all.map(c => c.package))).toEqual(new Set(['core', 'lab']));
+    expect(new Set(all.map(c => c.package))).toEqual(
+      new Set(['core', 'lab', 'richtext']),
+    );
+  });
+
+  it('covers flat packages by their .doc.mjs, not a per-component dir', () => {
+    // richtext was promoted out of lab into its own package with a flat src
+    // (`RichTextEditor.tsx` at the root, no directory per component). It must
+    // still land in the roster or a score recorded for it has no row.
+    const all = listComponents(REPO_ROOT);
+    const richtext = all.filter(c => c.package === 'richtext');
+    expect(richtext).toEqual([{component: 'RichTextEditor', package: 'richtext'}]);
+  });
+});
+
+describe('the flat-package component predicate', () => {
+  const richtextSrc = path.join(REPO_ROOT, 'packages/richtext/src');
+
+  it('keeps the documented component', () => {
+    expect(flatPackageComponents(richtextSrc)).toContain('RichTextEditor');
+  });
+
+  it('drops undocumented sub-parts and helpers that still render', () => {
+    // These render but carry no `.doc.mjs`, so they are not audited rows.
+    const names = flatPackageComponents(richtextSrc);
+    expect(names).not.toContain('RichTextView');
+    expect(names).not.toContain('RichTextEditorToolbar');
+    expect(names).not.toContain('RichTextEditorAutoLinkPlugin');
+  });
+
+  it('returns nothing for a src dir that does not exist', () => {
+    expect(flatPackageComponents(path.join(REPO_ROOT, 'packages/nope/src'))).toEqual([]);
   });
 });
 
