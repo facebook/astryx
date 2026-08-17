@@ -308,10 +308,12 @@ interface NumberInputPropsBase extends Omit<
   autoComplete?: string;
   /**
    * The minimum value allowed.
+   * A smaller entry commits at this value on blur or Enter.
    */
   min?: number | null;
   /**
    * The maximum value allowed.
+   * A larger entry commits at this value on blur or Enter.
    */
   max?: number | null;
   /**
@@ -386,16 +388,12 @@ export type NumberInputProps =
   NumberInputPropsNonClearable | NumberInputPropsClearable;
 
 /**
- * Parse and validate a string input as a number.
- * Returns null if the input is not a valid number or fails validation.
+ * Parse a string input as a number, applying the shape rules (finite, and
+ * integral when `isIntegerOnly`) but not the min/max range.
  */
-function parseNumberInput(
+function parseNumericInput(
   input: string,
-  options: {
-    min?: number | null;
-    max?: number | null;
-    isIntegerOnly?: boolean;
-  },
+  isIntegerOnly: boolean | undefined,
 ): number | null {
   const trimmed = input.trim();
   if (trimmed === '' || trimmed === '-') {
@@ -407,8 +405,27 @@ function parseNumberInput(
     return null;
   }
 
-  // Check integer constraint
-  if (options.isIntegerOnly && !Number.isInteger(num)) {
+  if (isIntegerOnly && !Number.isInteger(num)) {
+    return null;
+  }
+
+  return num;
+}
+
+/**
+ * Parse and validate a string input as a number.
+ * Returns null if the input is not a valid number or fails validation.
+ */
+function parseNumberInput(
+  input: string,
+  options: {
+    min?: number | null;
+    max?: number | null;
+    isIntegerOnly?: boolean;
+  },
+): number | null {
+  const num = parseNumericInput(input, options.isIntegerOnly);
+  if (num === null) {
     return null;
   }
 
@@ -420,6 +437,37 @@ function parseNumberInput(
   // Check max constraint
   if (options.max != null && num > options.max) {
     return null;
+  }
+
+  return num;
+}
+
+/**
+ * Parse a string input for commit (blur/Enter), clamping an out-of-range
+ * number to the nearest bound.
+ *
+ * Rejecting an out-of-range entry outright leaves the last in-range prefix
+ * committed, so typing 100 into a [1, 2] field lands on 1; the nearest bound
+ * is what the entry actually asked for.
+ */
+function parseNumberInputForCommit(
+  input: string,
+  options: {
+    min?: number | null;
+    max?: number | null;
+    isIntegerOnly?: boolean;
+  },
+): number | null {
+  const num = parseNumericInput(input, options.isIntegerOnly);
+  if (num === null) {
+    return null;
+  }
+
+  if (options.min != null && num < options.min) {
+    return options.min;
+  }
+  if (options.max != null && num > options.max) {
+    return options.max;
   }
 
   return num;
@@ -680,7 +728,7 @@ export function NumberInput({
             onChange(null);
           }
         } else {
-          const parsed = parseNumberInput(pendingInput, {
+          const parsed = parseNumberInputForCommit(pendingInput, {
             min,
             max,
             isIntegerOnly,
@@ -766,7 +814,7 @@ export function NumberInput({
               onChange(null);
             }
           } else {
-            const parsed = parseNumberInput(pendingInput, {
+            const parsed = parseNumberInputForCommit(pendingInput, {
               min,
               max,
               isIntegerOnly,
