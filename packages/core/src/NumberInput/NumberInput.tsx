@@ -819,8 +819,15 @@ export function NumberInput({
               max,
               isIntegerOnly,
             });
-            if (parsed !== null && parsed !== value) {
-              onChange(parsed);
+            if (parsed !== null) {
+              // Enter otherwise keeps the pending text, which would leave a
+              // clamped entry showing the number that was not committed.
+              if (parsed !== parseNumericInput(pendingInput, isIntegerOnly)) {
+                setPendingInput(null);
+              }
+              if (parsed !== value) {
+                onChange(parsed);
+              }
             }
           }
         }
