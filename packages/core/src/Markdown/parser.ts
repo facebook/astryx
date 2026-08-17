@@ -107,6 +107,7 @@ export type ParseOptions = {
 type ResolvedOptions = {
   readonly sourceIds: ReadonlySet<string> | undefined;
   readonly autolink: 'gfm' | undefined;
+  readonly trackPosition?: boolean;
   /**
    * Link reference definitions (`[label]: url`) collected from the whole
    * document, keyed by normalized label. Internal only — populated by the
