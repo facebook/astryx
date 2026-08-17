@@ -770,7 +770,7 @@ describe('Markdown renderBlock', () => {
     const stripIds = (html: string) => html.replace(/_r_[0-9a-z]+_/g, '_id_');
     const plain = render(<Markdown>{DOC}</Markdown>);
     const wrapped = render(
-      <Markdown renderBlock={async (_block, children) => children}>{DOC}</Markdown>,
+      <Markdown renderBlock={(_block, children) => children}>{DOC}</Markdown>,
     );
     expect(stripIds(wrapped.container.innerHTML)).toBe(
       stripIds(plain.container.innerHTML),
@@ -781,7 +781,7 @@ describe('Markdown renderBlock', () => {
     const seen: string[] = [];
     render(
       <Markdown
-        renderBlock={async (block, children) => {
+        renderBlock={(block, children) => {
           seen.push(
             `${block.type}:${block.position.startLine}-${block.position.endLine}@${block.depth}`,
           );
@@ -822,7 +822,7 @@ describe('Markdown renderBlock', () => {
 
     render(
       <Markdown
-        renderBlock={async (block, children) =>
+        renderBlock={(block, children) =>
           // Mark the innermost changed block only: a changed bullet marks the
           // bullet, not the whole list.
           isChanged(block) ? (
@@ -836,7 +836,7 @@ describe('Markdown renderBlock', () => {
     );
 
     const marked = Array.from(
-      document.querySelectorAll('[data-changed]'),
+      document.querySelectorAll<HTMLElement>('[data-changed]'),
     );
     // Document order: the list wrapper, then the changed bullet inside it,
     // then the code block. The unchanged bullet carries no mark of its own.
@@ -859,7 +859,7 @@ describe('Markdown renderBlock', () => {
         components={{
           heading: ({children}) => <h2 data-custom-heading>{children}</h2>,
         }}
-        renderBlock={async (block, children) =>
+        renderBlock={(block, children) =>
           block.type === 'heading' ? (
             <section data-wrapped>{children}</section>
           ) : (

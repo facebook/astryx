@@ -445,3 +445,126 @@ export const InlinePlugins: Story = {
     );
   },
 };
+
+const SPEC_BEFORE = [
+  '# Session file viewer',
+  '',
+  'Renders a file an agent wrote during the session.',
+  '',
+  '## Supported types',
+  '',
+  '- Plain text',
+  '- Source code, syntax highlighted',
+  '- Images',
+  '',
+  '## Open questions',
+  '',
+  '> How do we show a file that changed twice in one session?',
+  '',
+  '```ts',
+  'type FileView = {path: string; body: string};',
+  '```',
+].join('\n');
+
+const SPEC_AFTER = [
+  '# Session file viewer',
+  '',
+  'Renders a file an agent wrote during the session.',
+  '',
+  '## Supported types',
+  '',
+  '- Plain text',
+  '- Source code, syntax highlighted',
+  '- **Markdown**, rendered as prose (`.md`)',
+  '- Images',
+  '',
+  '## Open questions',
+  '',
+  '> How do we show a file that changed twice in one session?',
+  '> Mark the second change only, or both?',
+  '',
+  '```ts',
+  'type FileView = {path: string; body: string; language?: string};',
+  '```',
+].join('\n');
+
+/** Line numbers (1-based) in `after` that are new or rewritten. */
+function changedLines(before: string, after: string): Set<number> {
+  const a = before.split('\n');
+  const b = after.split('\n');
+  // Longest common subsequence over lines — the same shape a real diff uses.
+  const lcs: number[][] = Array.from({length: a.length + 1}, () =>
+    new Array<number>(b.length + 1).fill(0),
+  );
+  for (let i = a.length - 1; i >= 0; i--) {
+    for (let j = b.length - 1; j >= 0; j--) {
+      lcs[i][j] =
+        a[i] === b[j]
+          ? lcs[i + 1][j + 1] + 1
+          : Math.max(lcs[i + 1][j], lcs[i][j + 1]);
+    }
+  }
+  const changed = new Set<number>();
+  let i = 0;
+  let j = 0;
+  while (i < a.length && j < b.length) {
+    if (a[i] === b[j]) {
+      i++;
+      j++;
+    } else if (lcs[i + 1][j] >= lcs[i][j + 1]) {
+      i++;
+    } else {
+      changed.add(j + 1);
+      j++;
+    }
+  }
+  while (j < b.length) {
+    changed.add(++j);
+  }
+  return changed;
+}
+
+export const DiffIndicators: Story = {
+  name: 'Diff Indicators',
+  render: () => {
+    const changed = changedLines(SPEC_BEFORE, SPEC_AFTER);
+
+    return (
+      <div style={{maxWidth: 680, display: 'grid', gap: 16}}>
+        <Text variant="body-secondary">
+          The same document, rendered as prose, with the lines a diff reports as
+          added or rewritten marked in place.
+        </Text>
+        <Markdown
+          renderBlock={(block, children) => {
+            const isChanged = Array.from(
+              {length: block.position.endLine - block.position.startLine + 1},
+              (_unused, offset) => block.position.startLine + offset,
+            ).some(line => changed.has(line));
+            // A container's range covers its children, so tinting it would
+            // paint bullets that did not change; let the children carry it.
+            if (
+              !isChanged ||
+              block.type === 'list' ||
+              block.type === 'blockquote'
+            ) {
+              return children;
+            }
+            return (
+              <div
+                data-changed={block.type}
+                style={{
+                  background: 'var(--color-success-muted)',
+                  borderInlineStart: '2px solid var(--color-success)',
+                  paddingInlineStart: 8,
+                }}>
+                {children}
+              </div>
+            );
+          }}>
+          {SPEC_AFTER}
+        </Markdown>
+      </div>
+    );
+  },
+};

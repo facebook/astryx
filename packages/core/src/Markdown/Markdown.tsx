@@ -61,6 +61,7 @@ import type {
   BlockNode,
   InlineNode,
   IncrementalState,
+  ListItemNode,
   MarkdownSourcePosition,
 } from './parser';
 import {themeProps} from '../utils/themeProps';
@@ -146,11 +147,15 @@ export interface MarkdownBlock {
 /**
  * Wraps one rendered block. Return `children` to leave it alone, or wrap it
  * to attach a decoration keyed off the block's source lines.
+ *
+ * Nodes here are the synchronous subset of `ReactNode`: React 19 types admit
+ * a Promise, which would make every `=> children` implementation a function
+ * "returning a promise" and get it auto-fixed to `async` by lint.
  */
 export type MarkdownBlockRenderer = (
   block: MarkdownBlock,
-  children: React.ReactNode,
-) => React.ReactNode;
+  children: SyncReactNode,
+) => SyncReactNode;
 
 export interface MarkdownProps extends BaseProps<HTMLElement> {
   ref?: React.Ref<HTMLDivElement> | React.Ref<HTMLSpanElement>;
