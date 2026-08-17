@@ -38,7 +38,7 @@
 
 import type {IconRegistry} from '../Icon/globalIconRegistry';
 import type {IndicatorRegistry} from '../Indicator/types';
-import type {TypographyConfig, FontWeight} from './types';
+import type {TypographyConfig, FontWeight, CustomTokenName} from './types';
 import {
   resolveOnMedia,
   type OnMediaOverrides,
@@ -96,6 +96,16 @@ export type CoreTokenName =
 
 /** All valid Astryx token names — core + domain tokens */
 export type TokenName = CoreTokenName | DomainTokenName;
+
+/**
+ * Token names a theme may set: Astryx's own, plus any the app declared through
+ * the `CustomTokens` augmentation point.
+ *
+ * Deliberately separate from `TokenName`, which stays exhaustive over the
+ * tokens Astryx actually ships — `tokenVars` is keyed by it and has no entry
+ * for a name only the app knows about.
+ */
+export type ThemeTokenName = TokenName | CustomTokenName;
 
 /**
  * Token value — either a single string or a [light, dark] tuple.
@@ -287,8 +297,10 @@ export interface DefineThemeInput {
   color?: ColorScaleConfig;
   /** Token overrides — flat map of CSS custom property names to values.
    *  Values can be a string or [light, dark] tuple.
-   *  Only include tokens you want to override; defaults fill the rest. */
-  tokens?: Partial<Record<TokenName, TokenValue>>;
+   *  Only include tokens you want to override; defaults fill the rest.
+   *  To set a token Astryx does not ship, declare it on the `CustomTokens`
+   *  interface (see its docs) rather than reaching for a cast. */
+  tokens?: Partial<Record<ThemeTokenName, TokenValue>>;
   /**
    * Component style overrides — keyed by component name (lowercase).
    * Each entry maps style keys to CSS property overrides, scoped under
