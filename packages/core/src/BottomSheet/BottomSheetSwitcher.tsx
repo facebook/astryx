@@ -50,11 +50,7 @@ import {
   useFocusTrap,
   useScrollLock,
 } from '../hooks';
-import {
-  composeEventHandlers,
-  mergeProps,
-  mergeRefs,
-} from '../utils';
+import {composeEventHandlers, mergeProps, mergeRefs} from '../utils';
 import {
   BottomSheetSwitcherContext,
   type BottomSheetSwitcherContextValue,
@@ -610,8 +606,7 @@ export function BottomSheetSwitcher({
     (props['aria-labelledby'] == null ? activeLabel : undefined);
 
   return (
-    // eslint-disable-next-line @eslint-react/no-context-provider -- preserve the promoted Lab implementation
-    <BottomSheetSwitcherContext.Provider value={contextValue}>
+    <BottomSheetSwitcherContext value={contextValue}>
       <dialog
         {...props}
         {...dialogPresentationProps}
@@ -626,7 +621,7 @@ export function BottomSheetSwitcher({
           : undefined)}>
         {children}
       </dialog>
-    </BottomSheetSwitcherContext.Provider>
+    </BottomSheetSwitcherContext>
   );
 }
 

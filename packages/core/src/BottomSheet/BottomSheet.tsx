@@ -25,8 +25,8 @@
  */
 
 import {
+  use,
   useCallback,
-  useContext,
   useEffect,
   useLayoutEffect,
   useRef,
@@ -493,10 +493,9 @@ function SwitcherBottomSheetItem({
         {/* A switcher item consumes its parent controller. Its content starts a
             fresh ownership scope so a nested BottomSheet is standalone unless
             it establishes a nested BottomSheetSwitcher of its own. */}
-        {/* eslint-disable-next-line @eslint-react/no-context-provider -- preserve the promoted Lab implementation */}
-        <BottomSheetSwitcherContext.Provider value={null}>
+        <BottomSheetSwitcherContext value={null}>
           {children}
-        </BottomSheetSwitcherContext.Provider>
+        </BottomSheetSwitcherContext>
       </BottomSheetPanel>
     </div>
   );
@@ -507,8 +506,7 @@ function SwitcherBottomSheetItem({
  * BottomSheetSwitcher shared dialog when given a sheetId inside that context.
  */
 export function BottomSheet(props: BottomSheetProps) {
-  // eslint-disable-next-line @eslint-react/no-use-context -- preserve the promoted Lab implementation
-  const switcher = useContext(BottomSheetSwitcherContext);
+  const switcher = use(BottomSheetSwitcherContext);
   const runtimeSheetId = (props as {sheetId?: string}).sheetId;
   const hasValidSheetId =
     typeof runtimeSheetId === 'string' && runtimeSheetId.length > 0;

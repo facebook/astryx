@@ -4,7 +4,8 @@
 
 /**
  * @file useSheetGestures.ts
- * @input Uses React (useCallback, useEffect, useMemo, useRef, useState)
+ * @input Uses React (useCallback, useEffect, useMemo, useRef, useState) and
+ *   the core useMediaQuery hook
  * @output Exports useSheetGestures hook and its option/result types
  * @position Internal to BottomSheet; not exported from the core entry point
  *
@@ -45,6 +46,7 @@ import {
   type PointerEvent as ReactPointerEvent,
   type UIEvent as ReactUIEvent,
 } from 'react';
+import {useMediaQuery} from '../hooks';
 import {
   computeDetentOffsets,
   isPeekOffset,
@@ -1066,8 +1068,10 @@ export function useSheetGestures({
     }
   }, []);
 
-  // eslint-disable-next-line @eslint-react/exhaustive-deps -- re-read the preference whenever the sheet opens
-  const reducedMotion = useMemo(() => prefersReducedMotion(), [isOpen]);
+  // Subscribed, not memoized: the preference can change while a sheet is open,
+  // and this branch decides whether the settle runs as a transition at all.
+  // The imperative gesture paths read prefersReducedMotion() directly.
+  const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
 
   const reconcileScrollPreservationInset = useCallback(
     (body: HTMLElement) => {

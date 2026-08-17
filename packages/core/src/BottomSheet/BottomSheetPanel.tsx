@@ -362,13 +362,16 @@ export function BottomSheetPanel({
     },
     [onElementChange, sheetRef],
   );
+  // The ref callback alone is the dependency: bodyProps is rebuilt whenever
+  // any gesture value changes, and rebuilding this callback would detach and
+  // reattach the body element on renders where the ref itself never moved.
+  const attachBodyRef = bodyProps.ref;
   const setBodyElement = useCallback(
     (element: HTMLDivElement | null) => {
-      bodyProps.ref(element);
+      attachBodyRef(element);
       bodyElementRef.current = element;
     },
-    // eslint-disable-next-line @eslint-react/exhaustive-deps -- preserve the promoted Lab implementation
-    [bodyProps.ref],
+    [attachBodyRef],
   );
   useMobileKeyboard({
     bodyRef: bodyElementRef,
