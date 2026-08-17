@@ -943,6 +943,32 @@ const SCORECARD_FIELDS = new Set([
   'notes',
 ]);
 
+const EVIDENCE_FIELDS = new Set(['label', 'path', 'note']);
+
+/**
+ * Does one `evidence` entry match the shape the sandbox's `LedgerEntry`
+ * declares? Exported because the sandbox generator enforces the same shape on
+ * the way out of the wiki, and one definition beats two that drift.
+ */
+export function isEvidenceItem(item) {
+  if (!item || typeof item !== 'object' || Array.isArray(item)) return false;
+  if (typeof item.label !== 'string') return false;
+  return Object.entries(item).every(
+    ([k, v]) => EVIDENCE_FIELDS.has(k) && (v === undefined || v === null || typeof v === 'string'),
+  );
+}
+
+/**
+ * Does `blocks` match the declared `{count, open}` shape? A bare array reads
+ * as zero open BLOCKs to `openBlockCount` and `blockList`, so it does not
+ * merely break the sandbox build: it skips the open-BLOCK grade cap and blinds
+ * the ratchet to every BLOCK in it.
+ */
+export function isBlocksShape(blocks) {
+  if (!blocks || typeof blocks !== 'object' || Array.isArray(blocks)) return false;
+  return typeof blocks.count === 'number' && Array.isArray(blocks.open);
+}
+
 /**
  * Merge a scorecard into a ledger entry and validate it.
  * Unknown keys are rejected rather than silently stored — a typo in a field
@@ -973,6 +999,18 @@ export function applyScorecard(existing, scorecard, {component, pkg}) {
     ...scorecard,
   };
   if (!next.package) throw new Error(`${component}: no package — pass --package`);
+  // Checked before the grade, because a bare array (the shape a scorecard
+  // naturally takes if you think of blocks as a list) reads as zero open
+  // BLOCKs to `openBlockCount`. Left unchecked it does three things at once:
+  // the open-BLOCK grade cap never applies, the ratchet sees no BLOCKs to
+  // compare, and the sandbox inlines a literal tsc rejects, which reds
+  // `build-sandbox` on every open pull request (#5033).
+  if (!isBlocksShape(next.blocks)) {
+    throw new Error(
+      `${component}: blocks must be {count, open: [...]} — a bare array reads as ` +
+        'zero open BLOCKs, which skips the grade cap and blinds the ratchet',
+    );
+  }
   if (next.status !== 'audited') {
     throw new Error(
       `${component}: the ledger holds audited components only — an unaudited component ` +
@@ -1020,6 +1058,15 @@ export function applyScorecard(existing, scorecard, {component, pkg}) {
     throw new Error(
       `${component}: ${blockList(next).length} BLOCKs listed but blocks.count is ` +
         `${openBlockCount(next)}`,
+    );
+  }
+  // The sandbox inlines this row into a typed literal at build time, so a bad
+  // shape here is not one broken row: it reds `build-sandbox` on every open PR
+  // at once, with no commit responsible (#4924).
+  if (!Array.isArray(next.evidence) || !next.evidence.every(isEvidenceItem)) {
+    throw new Error(
+      `${component}: evidence must be an array of {label, path?, note?} objects — ` +
+        'a bare string is the shape that reds every build in the repo',
     );
   }
   return next;

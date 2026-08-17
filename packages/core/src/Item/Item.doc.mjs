@@ -19,6 +19,10 @@ export const docs = {
     targets: [
       {className: 'astryx-item', visualProps: ['density', 'align']},
     ],
+    vars: [
+      {name: '--_item-label-color', description: 'Color of the label line. Unset by default (the label uses the primary text token); a parent sets it to recolor the label it renders, as the destructive dropdown/context menu item does.', default: 'var(--color-text-primary)', private: true},
+      {name: '--_item-description-color', description: 'Companion to --_item-label-color for the secondary description line.', default: 'var(--color-text-secondary)', private: true},
+    ],
   },
   components: [
     {

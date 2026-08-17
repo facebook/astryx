@@ -335,23 +335,27 @@ export function TopNavHeading({
     hasCloseButton: false,
   });
 
-  const closeMenuCtx = useMemo(
-    () => ({closeMenu: popover.hide}),
-    [popover.hide],
-  );
+  const {
+    triggerProps,
+    contentProps,
+    menuRef,
+    setTriggerEl,
+    close: closeMenu,
+  } = useMenuHover<HTMLDivElement>({
+    show: popover.show,
+    hide: popover.hide,
+    isOpen: popover.isOpen,
+    isEnabled: !!menu,
+    showDelay: 0,
+  });
 
-  const {triggerProps, contentProps, menuRef, setTriggerEl} =
-    useMenuHover<HTMLDivElement>({
-      show: popover.show,
-      hide: popover.hide,
-      isOpen: popover.isOpen,
-      isEnabled: !!menu,
-      showDelay: 0,
-    });
+  const closeMenuCtx = useMemo(() => ({closeMenu}), [closeMenu]);
 
+  // setTriggerEl belongs on the chevron button, not this root: it is the
+  // focus-restore target and a <div> cannot take focus. triggerRef stays here
+  // because the panel anchors to the whole heading.
   const setRef = mergeRefs<HTMLElement>(
     rootRef,
-    setTriggerEl,
     ref,
     menu ? popover.triggerRef : undefined,
   );
@@ -426,7 +430,8 @@ export function TopNavHeading({
     <button
       type="button"
       {...stylex.props(styles.popoverHeading)}
-      onClick={triggerProps.onClick}>
+      // A close affordance, not the trigger: dismiss only.
+      onClick={closeMenu}>
       {logo && <span {...stylex.props(styles.logo)}>{logo}</span>}
       {renderTextContent(
         <Icon
@@ -505,6 +510,7 @@ export function TopNavHeading({
             // Stays a <button>: this box is the popover trigger, so it carries
             // the accessible name and handlers — only the glyph moves to Icon.
             <button
+              ref={setTriggerEl}
               type="button"
               aria-label={t('@astryx.topNav.heading.openMenu')}
               onClick={e => {
@@ -582,6 +588,7 @@ export function TopNavHeading({
               // carries the accessible name and handlers — only the glyph
               // moves to Icon.
               <button
+                ref={setTriggerEl}
                 type="button"
                 aria-label={t('@astryx.topNav.heading.openMenu')}
                 onClick={e => {

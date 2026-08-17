@@ -71,11 +71,22 @@ describe('astryx init --features', () => {
     expect(exists('AGENTS.md')).toBe(true);
   });
 
-  it('--features theme writes no files and points at the theme workflow', async () => {
+  it('--features theme writes the annotated theme template', async () => {
     const {status, stdout} = await runCli(['init', '--features', 'theme'], {cwd: tmpDir});
     expect(status).toBe(0);
-    expect(fs.readdirSync(tmpDir)).toEqual([]);
+    expect(exists('theme.template.ts')).toBe(true);
+    expect(read('theme.template.ts')).toMatch(/defineTheme/);
+    expect(read('theme.template.ts')).not.toMatch(/Copyright \(c\) Meta Platforms/);
     expect(stdout).toMatch(/theme/i);
+  });
+
+  it('--features theme never clobbers an existing theme.template.ts', async () => {
+    // Someone's edited copy outranks ours; re-running init must be safe.
+    fs.writeFileSync(path.join(tmpDir, 'theme.template.ts'), '// mine\n');
+    const {status, stdout} = await runCli(['init', '--features', 'theme'], {cwd: tmpDir});
+    expect(status).toBe(0);
+    expect(read('theme.template.ts')).toBe('// mine\n');
+    expect(stdout).toMatch(/already exists/);
   });
 
   it('rejects an unknown feature with exit 1 and a helpful message', async () => {

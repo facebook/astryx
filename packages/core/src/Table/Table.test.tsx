@@ -95,6 +95,12 @@ describe('columnUtils', () => {
     it('handles single character', () => {
       expect(capitalize('a')).toBe('A');
     });
+
+    it('uppercases an astral-plane letter without splitting it (#4759)', () => {
+      // Deseret 𐐨 (U+10428) uppercases to 𐐀 (U+10400); charAt(0) would grab
+      // half the surrogate pair and leave the string unchanged.
+      expect(capitalize('\u{10428}pple')).toBe('\u{10400}pple');
+    });
   });
 
   describe('generateColumns', () => {
@@ -493,6 +499,37 @@ describe('BaseTable', () => {
         <BaseTable data={users} columns={columns} className="custom-table" />,
       );
       expect(screen.getByRole('table').className).toContain('custom-table');
+    });
+  });
+
+  describe('TableRow styling props', () => {
+    it('applies className and style to the row inside a Table', () => {
+      render(
+        <Table>
+          <tbody>
+            <TableRow className="custom-row" style={{opacity: 0.9}}>
+              <TableCell>Cell</TableCell>
+            </TableRow>
+          </tbody>
+        </Table>,
+      );
+      const row = screen.getByRole('row');
+      expect(row.className).toContain('custom-row');
+      expect(row.className).toContain('astryx-table-row');
+      expect(row.style.opacity).toBe('0.9');
+    });
+
+    it('applies className to a standalone row (no table context)', () => {
+      render(
+        <table>
+          <tbody>
+            <TableRow className="custom-row">
+              <td>Cell</td>
+            </TableRow>
+          </tbody>
+        </table>,
+      );
+      expect(screen.getByRole('row').className).toContain('custom-row');
     });
   });
 

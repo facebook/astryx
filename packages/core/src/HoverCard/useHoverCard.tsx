@@ -43,11 +43,7 @@ const styles = stylex.create({
     borderRadius: 'var(--_hovercard-radius)',
     boxShadow: shadowVars['--shadow-med'],
   },
-  // Position-based margin styles
-  // Content wrapper for padding and mouse events.
-  // `display: block` keeps the wrapper a block box even though it renders as a
-  // `span` (the layer uses inline-safe phrasing markup so it is valid inside a
-  // paragraph and produces identical server/client markup).
+  // Content wrapper for padding and interaction events.
   content: {
     display: 'block',
     paddingBlockStart: spacingVars['--spacing-3'],
@@ -254,6 +250,7 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
 
   const layer = useLayer({
     mode: 'context',
+    lazyMount: true,
     onShow,
     onHide,
   });
@@ -459,7 +456,7 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
         // Consumer surface style props land on the layer container — the
         // themed surface (bg/radius/shadow) where the theme class lives — so
         // customizing the card targets the same element as the theme. The inner
-        // span keeps `styles.content` for padding.
+        // div keeps `styles.content` for padding.
         xstyle: [
           popoverXstyle,
           layerAnimations[renderPlacement],
@@ -469,13 +466,13 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
           ? `${themeClassName} ${props.className}`
           : themeClassName,
         style: props?.style,
-        // Render the layer as inline-safe phrasing markup so HoverCard stays
-        // valid (and hydration-stable) inside inline contexts like a `<p>`.
-        as: 'span' as const,
+        // useLayer mounts only after it has verified or corrected the parent,
+        // so rich HoverCard content can use block-safe markup.
+        as: 'div' as const,
       };
 
       return layer.render(
-        <span
+        <div
           {...stylex.props(styles.content)}
           onMouseEnter={() => {
             isHoveringContentRef.current = true;
@@ -517,7 +514,7 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
             scheduleHide();
           }}>
           {children}
-        </span>,
+        </div>,
         renderProps,
       );
     },

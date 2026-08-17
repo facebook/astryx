@@ -36,6 +36,7 @@ import {Link} from '../Link';
 import {Icon} from '../Icon';
 import {Tooltip} from '../Tooltip';
 import {navItemStyles} from '../NavItem/navItemStyles.stylex';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {useSideNavCollapse} from './SideNavCollapseContext';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
@@ -370,23 +371,27 @@ export function SideNavHeading({
     hasCloseButton: false,
   });
 
-  const closeMenuCtx = useMemo(
-    () => ({closeMenu: popover.hide}),
-    [popover.hide],
-  );
+  const {
+    triggerProps,
+    contentProps,
+    menuRef,
+    setTriggerEl,
+    close: closeMenu,
+  } = useMenuHover<HTMLDivElement>({
+    show: popover.show,
+    hide: popover.hide,
+    isOpen: popover.isOpen,
+    isEnabled: !!menu,
+    showDelay: 0,
+  });
 
-  const {triggerProps, contentProps, menuRef, setTriggerEl} =
-    useMenuHover<HTMLDivElement>({
-      show: popover.show,
-      hide: popover.hide,
-      isOpen: popover.isOpen,
-      isEnabled: !!menu,
-      showDelay: 0,
-    });
+  const closeMenuCtx = useMemo(() => ({closeMenu}), [closeMenu]);
 
+  // setTriggerEl belongs on the chevron button, not this root: it is the
+  // focus-restore target and a <div> cannot take focus. triggerRef stays here
+  // because the panel anchors to the whole heading.
   const setRef = mergeRefs<HTMLDivElement>(
     rootRef,
-    setTriggerEl,
     ref,
     menu ? popover.triggerRef : undefined,
   );
@@ -401,7 +406,9 @@ export function SideNavHeading({
     const collapsedSetRef = mergeRefs<HTMLElement>(
       collapsedItemRef,
       ref,
+      // Collapsed, this button is the trigger, so it takes both roles.
       menu ? popover.triggerRef : undefined,
+      menu ? setTriggerEl : undefined,
     );
 
     let collapsedElement: ReactNode;
@@ -415,7 +422,11 @@ export function SideNavHeading({
           data-testid={testId}
           {...mergeProps(
             themeProps('side-nav-heading'),
-            stylex.props(navItemStyles.item, styles.rootCollapsed, xstyle),
+            focusOutlineProps.focusVisible(
+              navItemStyles.item,
+              styles.rootCollapsed,
+              xstyle,
+            ),
             className,
             style,
           )}>
@@ -434,7 +445,7 @@ export function SideNavHeading({
             {...triggerProps}
             {...mergeProps(
               themeProps('side-nav-heading'),
-              stylex.props(
+              focusOutlineProps.focusVisible(
                 navItemStyles.item,
                 styles.rootCollapsed,
                 styles.menuTrigger,
@@ -452,8 +463,9 @@ export function SideNavHeading({
               {...contentProps}>
               <button
                 type="button"
-                {...stylex.props(styles.popoverHeading)}
-                onClick={triggerProps.onClick}>
+                {...focusOutlineProps.focusVisible(styles.popoverHeading)}
+                // A close affordance, not the trigger: dismiss only.
+                onClick={closeMenu}>
                 {icon && <span {...stylex.props(styles.icon)}>{icon}</span>}
                 <span {...stylex.props(styles.textContainer)}>
                   {superheading && (
@@ -549,7 +561,10 @@ export function SideNavHeading({
         {hasAnyHref && headingHref && menu ? (
           <LinkComponent
             href={headingHref}
-            {...stylex.props(styles.heading, styles.headingLink)}>
+            {...focusOutlineProps.focusVisible(
+              styles.heading,
+              styles.headingLink,
+            )}>
             {heading}
           </LinkComponent>
         ) : (
@@ -586,8 +601,9 @@ export function SideNavHeading({
   const popoverHeadingContent = (
     <button
       type="button"
-      {...stylex.props(styles.popoverHeading)}
-      onClick={triggerProps.onClick}>
+      {...focusOutlineProps.focusVisible(styles.popoverHeading)}
+      // A close affordance, not the trigger: dismiss only.
+      onClick={closeMenu}>
       {icon && <span {...stylex.props(styles.icon)}>{icon}</span>}
       {renderTextContent(
         <Icon
@@ -609,7 +625,11 @@ export function SideNavHeading({
         data-testid={testId}
         {...mergeProps(
           themeProps('side-nav-heading'),
-          stylex.props(styles.root, styles.menuTrigger, xstyle),
+          focusOutlineProps.focusVisible(
+            styles.root,
+            styles.menuTrigger,
+            xstyle,
+          ),
           className,
           style,
         )}
@@ -639,6 +659,7 @@ export function SideNavHeading({
           {icon && <span {...stylex.props(styles.icon)}>{icon}</span>}
           {renderTextContent(
             <button
+              ref={setTriggerEl}
               type="button"
               aria-label={t('@astryx.sideNav.heading.openMenu')}
               onClick={e => {
@@ -646,7 +667,10 @@ export function SideNavHeading({
                 triggerProps.onClick();
               }}
               {...popover.triggerProps}
-              {...stylex.props(styles.chevron, styles.interactive)}>
+              {...focusOutlineProps.focusVisible(
+                styles.chevron,
+                styles.interactive,
+              )}>
               <Icon
                 icon="chevronDown"
                 size="sm"
@@ -701,7 +725,7 @@ export function SideNavHeading({
               <LinkComponent
                 href={headingHref}
                 aria-label={heading}
-                {...stylex.props(styles.icon)}>
+                {...focusOutlineProps.focusVisible(styles.icon)}>
                 {icon}
               </LinkComponent>
             ) : (
@@ -710,6 +734,7 @@ export function SideNavHeading({
           {renderTextContent(
             showChevron ? (
               <button
+                ref={setTriggerEl}
                 type="button"
                 aria-label={t('@astryx.sideNav.heading.openMenu')}
                 onClick={e => {
@@ -717,7 +742,10 @@ export function SideNavHeading({
                   triggerProps.onClick();
                 }}
                 {...popover.triggerProps}
-                {...stylex.props(styles.chevron, styles.interactive)}>
+                {...focusOutlineProps.focusVisible(
+                  styles.chevron,
+                  styles.interactive,
+                )}>
                 <Icon
                   icon="chevronDown"
                   size="sm"
@@ -770,7 +798,7 @@ export function SideNavHeading({
             <LinkComponent
               href={headingHref}
               aria-label={heading}
-              {...stylex.props(styles.icon)}>
+              {...focusOutlineProps.focusVisible(styles.icon)}>
               {icon}
             </LinkComponent>
           ) : (

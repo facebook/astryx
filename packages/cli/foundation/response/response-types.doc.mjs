@@ -150,6 +150,12 @@ export const doc = {
         'A scaffold receipt: template id, output directory, written file name, and file count.',
     },
 
+    {
+      value: 'template.cdn',
+      description:
+        'A write receipt for the no-build-step CDN starter page: the path (relative to cwd), the Astryx version every CDN URL was pinned to, whether it was written, and the reason it was not — `exists` when a file was already there, which is a success.',
+    },
+
     // hook
     {
       value: 'hook.list',
@@ -182,6 +188,11 @@ export const doc = {
       value: 'theme.add',
       description:
         'A scaffold receipt: resolved slug, displayName, maintained flag, outputDir (relative to cwd), the theme entry file, its exportName, and the files written.',
+    },
+    {
+      value: 'theme.template',
+      description:
+        'A write receipt for the annotated theme template: the path (relative to cwd), whether it was written, and the reason it was not — `exists` when a file was already there, which is a success.',
     },
 
     // upgrade

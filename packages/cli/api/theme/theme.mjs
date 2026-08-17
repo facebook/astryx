@@ -10,5 +10,6 @@
 
 export {themeBuild, importSpecifier} from './build/build.mjs';
 export {themeAdd} from './add/add.mjs';
+export {themeTemplate} from './template/template.mjs';
 export {themeList} from './list/list.mjs';
 export {listThemes} from './_adapter.mjs';

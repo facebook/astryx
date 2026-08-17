@@ -4,11 +4,16 @@
 
 /**
  * @file SideNavItem.tsx
- * @input Uses React, ReactNode, StyleX, Icon, IconType
+ * @input Uses React, ReactNode, StyleX, Icon, IconType, useMenuHover
  * @output Exports SideNavItem component and SideNavItemProps
  * @position Core implementation; used inside SideNav children
  *
  * Navigation item with icon, selected state, and nesting.
+ *
+ * Collapsed items with children open their submenu flyout through
+ * `useMenuHover`, the shared hover-intent hook (same one `SideNavHeading` and
+ * `TopNavMenu` use). Hover is a progressive enhancement over the popover's
+ * click behavior and is inert on coarse pointers.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/SideNav/SideNav.doc.mjs
@@ -35,17 +40,18 @@ import {
   typeScaleVars,
   durationVars,
   easeVars,
-  borderVars,
   radiusVars,
 } from '../theme/tokens.stylex';
 import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
 import {usePopover} from '../Popover/usePopover';
+import {useMenuHover} from '../hooks/useMenuHover';
 import {mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {Tooltip} from '../Tooltip';
 import {navItemStyles, type NavItemSize} from '../NavItem/navItemStyles.stylex';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {
   useSideNavCollapse,
   SideNavCollapseContext,
@@ -91,7 +97,10 @@ const styles = stylex.create({
     display: 'grid',
     gridTemplateRows: '1fr',
     transitionProperty: 'grid-template-rows',
-    transitionDuration: durationVars['--duration-medium'],
+    transitionDuration: {
+      default: durationVars['--duration-medium'],
+      '@media (prefers-reduced-motion: reduce)': '0s',
+    },
     transitionTimingFunction: easeVars['--ease-standard'],
   },
   childrenCollapsed: {
@@ -114,7 +123,10 @@ const styles = stylex.create({
     // target, not the glyph size, so keep the glyph on the inherited size.
     fontSize: 'inherit',
     transitionProperty: 'transform',
-    transitionDuration: durationVars['--duration-fast'],
+    transitionDuration: {
+      default: durationVars['--duration-fast'],
+      '@media (prefers-reduced-motion: reduce)': '0s',
+    },
     transitionTimingFunction: easeVars['--ease-standard'],
     flexShrink: 0,
   },
@@ -146,10 +158,14 @@ const styles = stylex.create({
   },
   // Primary action element inside the split-action row (link or button).
   // Flex:1 so it fills remaining space, giving a wide click target.
+  // `alignSelf: stretch` makes it fill the row's height too — without it the
+  // element collapses to its line box (20px), under the 24px WCAG 2.5.8
+  // target-size floor even though the row it sits in is 32px tall.
   // Resets both link and button appearance so it blends into the row.
   splitAction: {
     display: 'flex',
     alignItems: 'center',
+    alignSelf: 'stretch',
     gap: spacingVars['--spacing-2'],
     flex: 1,
     minWidth: 0,
@@ -167,15 +183,22 @@ const styles = stylex.create({
     textAlign: 'start',
     cursor: 'pointer',
   },
-  // Popover surface for collapsed items with children
+  // No border and no background: `usePopover` paints the panel this renders
+  // into. Drawing a second surface here put square corners inside its rounded
+  // ones. The radius matches so a theme retargeting `--radius-container`
+  // keeps the two in step.
   popoverSurface: {
-    borderWidth: borderVars['--border-width'],
-    borderStyle: 'solid',
-    borderColor: colorVars['--color-border'],
+    borderRadius: radiusVars['--radius-container'],
     paddingBlock: spacingVars['--spacing-1'],
     paddingInline: spacingVars['--spacing-1'],
-    marginInlineStart: spacingVars['--spacing-1'],
     minWidth: 180,
+  },
+  // The gap from the rail belongs on the positioned layer, where
+  // `DropdownMenu` keeps it. On the content div it insets the content instead,
+  // leaving the panel flush against the rail.
+  popoverGap: {
+    marginInlineStart: spacingVars['--spacing-1'],
+    marginInlineEnd: spacingVars['--spacing-1'],
   },
   popoverHeader: {
     paddingInline: spacingVars['--spacing-2'],
@@ -361,8 +384,7 @@ export function SideNavItem({
   'data-testid': testId,
   ref,
   xstyle,
-  className,
-  style,
+  ...rest
 }: SideNavItemProps) {
   const t = useTranslator();
   const {isCollapsed} = useSideNavCollapse();
@@ -378,7 +400,7 @@ export function SideNavItem({
     hasLightDismiss: true,
     hasAutoFocus: true,
     hasCloseButton: false,
-    dialogLabel: `${label} submenu`,
+    dialogLabel: t('@astryx.sideNavItem.submenuLabel', {label}),
   });
 
   // Collapse state for items with children
@@ -436,42 +458,22 @@ export function SideNavItem({
     toggleItemCollapse();
   };
 
-  // Hover handlers for collapsed popover (mirrors TopNavMenu pattern)
-  const showTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const clearPopoverTimeouts = useCallback(() => {
-    if (showTimeoutRef.current) {
-      clearTimeout(showTimeoutRef.current);
-      showTimeoutRef.current = null;
-    }
-    if (hideTimeoutRef.current) {
-      clearTimeout(hideTimeoutRef.current);
-      hideTimeoutRef.current = null;
-    }
-  }, []);
-
-  const schedulePopoverShow = useCallback(() => {
-    clearPopoverTimeouts();
-    showTimeoutRef.current = setTimeout(() => {
-      popover.show({skipAutoFocus: true});
-    }, 150);
-  }, [clearPopoverTimeouts, popover]);
-
-  const schedulePopoverHide = useCallback(() => {
-    clearPopoverTimeouts();
-    hideTimeoutRef.current = setTimeout(() => {
-      popover.hide();
-    }, 200);
-  }, [clearPopoverTimeouts, popover]);
-
-  const handlePopoverMouseEnter = useCallback(() => {
-    schedulePopoverShow();
-  }, [schedulePopoverShow]);
-
-  const handlePopoverMouseLeave = useCallback(() => {
-    schedulePopoverHide();
-  }, [schedulePopoverHide]);
+  // Pointer half only. The hook's `onKeyDown`/`menuRef` drive a `useListFocus`
+  // over `[role="menuitem"]`, and this flyout is a focus-trapped dialog of
+  // links — wiring them would swallow arrow keys rather than navigate with
+  // them. Keyboard stays with `usePopover`'s trap, as in DropdownMenuSubMenu.
+  const {triggerProps: hoverTriggerProps, contentProps: hoverContentProps} =
+    useMenuHover({
+      show: popover.show,
+      hide: popover.hide,
+      isOpen: popover.isOpen,
+      isEnabled: isCollapsed && hasChildren,
+      // Standard popover toggling: the flyout opens beside the rail, not over
+      // the icon, so the click after a hover-open is a deliberate dismissal
+      // rather than the #3121 confirmation the nav menus need.
+      clickGuardMs: 0,
+      ownsFocus: false,
+    });
 
   // In collapsed mode: hide items without icons
   if (isCollapsed && !icon) {
@@ -486,16 +488,21 @@ export function SideNavItem({
       displayIcon &&
       renderIconSlot(displayIcon, {
         size: 'sm',
-        color: isSelected ? 'primary' : isDisabled ? 'disabled' : 'secondary',
+        // `inherit` so a selected row's icon follows the row to HighlightText
+        // under forced colors. Identical to `primary` otherwise: both token
+        // families are emitted from one expression.
+        color: isSelected ? 'inherit' : isDisabled ? 'disabled' : 'secondary',
       });
 
-    // Shared collapsed item styles — used by trigger, link, and button
+    // Shared collapsed item styles — used by trigger, link, and button.
+    // All three render a focusable element, so each draws the shared ring.
     const collapsedItemStyles = mergeProps(
       themeProps('side-nav-item', {
         size,
         selected: isSelected ? 'selected' : null,
+        disabled: isDisabled ? 'disabled' : null,
       }),
-      stylex.props(
+      focusOutlineProps.focusVisible(
         navItemStyles.item,
         navItemStyles[size],
         styles.itemCollapsed,
@@ -509,14 +516,12 @@ export function SideNavItem({
     // Items with children: popover trigger + popover
     if (hasChildren) {
       return (
-        <div
-          {...mergeProps(stylex.props(styles.root, xstyle), className, style)}>
+        <div {...stylex.props(styles.root, xstyle)}>
           <button
             ref={mergeRefs(ref, popover.triggerRef)}
             type="button"
-            onClick={popover.toggle}
-            onMouseEnter={handlePopoverMouseEnter}
-            onMouseLeave={handlePopoverMouseLeave}
+            {...rest}
+            {...hoverTriggerProps}
             aria-label={label}
             data-testid={testId}
             {...popover.triggerProps}
@@ -526,15 +531,15 @@ export function SideNavItem({
           {popover.render(
             <div
               {...stylex.props(styles.popoverSurface)}
-              onMouseEnter={handlePopoverMouseEnter}
-              onMouseLeave={handlePopoverMouseLeave}
+              onMouseEnter={hoverContentProps.onMouseEnter}
+              onMouseLeave={hoverContentProps.onMouseLeave}
               onClick={() => popover.hide()}>
               <div {...stylex.props(styles.popoverHeader)}>{label}</div>
               <SideNavCollapseContext value={EXPANDED_COLLAPSE_STATE}>
                 {children}
               </SideNavCollapseContext>
             </div>,
-            {placement: 'end', alignment: 'start'},
+            {placement: 'end', alignment: 'start', xstyle: styles.popoverGap},
           )}
         </div>
       );
@@ -555,6 +560,7 @@ export function SideNavItem({
         as={as}
         isDisabled={isDisabled}
         onClick={handleClick}
+        {...rest}
         {...collapsedAriaProps}
         {...collapsedItemStyles}>
         {collapsedIcon}
@@ -562,9 +568,7 @@ export function SideNavItem({
     );
 
     return (
-      <div
-        ref={itemRef}
-        {...mergeProps(stylex.props(styles.root, xstyle), className, style)}>
+      <div ref={itemRef} {...stylex.props(styles.root, xstyle)}>
         {collapsedElement}
         <Tooltip content={label} placement="end" anchorRef={itemRef} />
       </div>
@@ -576,7 +580,8 @@ export function SideNavItem({
       {displayIcon &&
         renderIconSlot(displayIcon, {
           size: 'sm',
-          color: isSelected ? 'primary' : isDisabled ? 'disabled' : 'secondary',
+          // `inherit` — see the collapsed path above.
+          color: isSelected ? 'inherit' : isDisabled ? 'disabled' : 'secondary',
         })}
       {!isCollapsed && <span {...stylex.props(styles.label)}>{label}</span>}
       {!isCollapsed && endContent && (
@@ -596,45 +601,47 @@ export function SideNavItem({
     </>
   );
 
-  const navItemStyleProps = mergeProps(
-    themeProps('side-nav-item', {
-      size,
-      selected: isSelected ? 'selected' : null,
-    }),
-    stylex.props(
-      navItemStyles.item,
-      navItemStyles[size],
-      isSelected && navItemStyles.selected,
-      isDisabled && navItemStyles.disabled,
-    ),
+  const itemThemeProps = themeProps('side-nav-item', {
+    size,
+    selected: isSelected ? 'selected' : null,
+    disabled: isDisabled ? 'disabled' : null,
+  });
+
+  const itemStyleArgs = [
+    navItemStyles.item,
+    navItemStyles[size],
+    isSelected && navItemStyles.selected,
+    isDisabled && navItemStyles.disabled,
+  ] as const;
+
+  // Two shapes of the same row appearance:
+  // - `rowProps` for the split-action path, where the row is a plain <div>
+  //   container and its children take focus (so the ring belongs on them);
+  // - `focusableRowProps` for every other path, where the row element is
+  //   itself the focusable control.
+  const rowProps = mergeProps(itemThemeProps, stylex.props(...itemStyleArgs));
+  const focusableRowProps = mergeProps(
+    itemThemeProps,
+    focusOutlineProps.focusVisible(...itemStyleArgs),
   );
 
-  // ── Split-action path: <div> row with <a> + <button> as siblings ──
-  //
-  // When both collapsible and href are set, we can't nest a <button>
-  // inside an <a>. Instead we use a <div> as the flex row container,
-  // an <a display:contents> for the link (with ::before covering the row),
-  // and a <button> sibling lifted above the overlay via z-index.
-
-  // ── Split-action path: primary element + toggle button as siblings ──
-  //
-  // When collapsible and a primary action (href or onClick) are both set,
-  // we render a <div> row with the primary element and chevron toggle as
-  // siblings. This avoids nesting interactive elements (<button> inside <a>).
-
+  // Split-action path: collapsible plus a primary action renders the primary
+  // element and the chevron toggle as siblings in a <div> row, since a
+  // <button> cannot nest inside an <a>.
   let itemElement;
 
   if (hasIndependentToggle) {
     itemElement = (
-      <div data-testid={testId} {...navItemStyleProps}>
+      <div data-testid={testId} {...rowProps}>
         <NavItemElement
           ref={ref}
           href={href}
           as={as}
           isDisabled={isDisabled}
           onClick={handleClick}
+          {...rest}
           aria-current={isSelected ? ('page' as const) : undefined}
-          {...stylex.props(styles.splitAction)}>
+          {...focusOutlineProps.focusVisible(styles.splitAction)}>
           {itemContent}
         </NavItemElement>
         <button
@@ -647,7 +654,7 @@ export function SideNavItem({
           }
           aria-expanded={!isItemCollapsed}
           aria-controls={`${id}-children`}
-          {...stylex.props(styles.expandToggle)}>
+          {...focusOutlineProps.focusVisible(styles.expandToggle)}>
           <Icon
             icon="chevronDown"
             size="lg"
@@ -676,17 +683,16 @@ export function SideNavItem({
         as={as}
         isDisabled={isDisabled}
         onClick={handleClick}
+        {...rest}
         {...ariaProps}
-        {...navItemStyleProps}>
+        {...focusableRowProps}>
         {itemContent}
       </NavItemElement>
     );
   }
 
   const item = (
-    <div
-      ref={itemRef}
-      {...mergeProps(stylex.props(styles.root, xstyle), className, style)}>
+    <div ref={itemRef} {...stylex.props(styles.root, xstyle)}>
       {itemElement}
       {hasChildren && !isCollapsed && (
         <div

@@ -25,7 +25,7 @@ export const DETENT_DEDUP_PX = 48;
 
 /** Resolve snap points given as viewport fractions (0, 1] to px heights. */
 export function snapFractionsToHeights(
-  fractions: readonly number[],
+  fractions: ReadonlyArray<number>,
   viewportPx: number,
 ): number[] {
   return fractions.filter(f => f > 0 && f <= 1).map(f => f * viewportPx);
@@ -44,7 +44,7 @@ export function snapFractionsToHeights(
  */
 export function computeDetentOffsets(
   sheetHeight: number,
-  detentHeights: readonly number[],
+  detentHeights: ReadonlyArray<number>,
   dedupPx: number = DETENT_DEDUP_PX,
 ): number[] {
   const collapsed = detentHeights
@@ -65,7 +65,7 @@ export function computeDetentOffsets(
 /** Nearest value in `offsets` to `value` (offsets must be non-empty). */
 export function nearestOffset(
   value: number,
-  offsets: readonly number[],
+  offsets: ReadonlyArray<number>,
 ): number {
   return offsets.reduce(
     (best, o) => (Math.abs(o - value) < Math.abs(best - value) ? o : best),
@@ -92,7 +92,7 @@ export const MIN_PEEK_SCRIM_OPACITY = 0.3;
  */
 export function scrimOpacityForOffset(
   offset: number,
-  offsets: readonly number[],
+  offsets: ReadonlyArray<number>,
   dismissOffset: number,
 ): number {
   const shortest = offsets[offsets.length - 1];
@@ -119,7 +119,7 @@ export function scrimOpacityForOffset(
  */
 export function resolveSettleOffset(
   value: number,
-  offsets: readonly number[],
+  offsets: ReadonlyArray<number>,
   dir: number,
   baseOffset: number,
 ): number {
