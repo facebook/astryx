@@ -32,7 +32,7 @@ export const docs = {
     {
       name: 'isLabelHidden',
       type: 'boolean',
-      description: 'Whether the label is visually hidden. When true, only the icon is displayed and label is used as aria-label.',
+      description: 'Whether the label is visually hidden. When true, only the icon is displayed and label is used as aria-label. The group-level collapsibleLabels prop does the same thing responsively, and adds a tooltip.',
       default: 'false',
     },
     {
