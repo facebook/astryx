@@ -78,9 +78,16 @@ function MobileKeyboardCommentForm({onPost}: {onPost: () => void}) {
     <VStack gap={4}>
       <Heading level={3}>Add a comment</Heading>
       <Text type="supporting" color="secondary">
-        Focus fields throughout this long form to verify that the mobile
-        keyboard leaves each control visible and the sheet itself stays put.
+        Keep the Tall sheet fully expanded, then focus fields near the
+        beginning, middle, and end. The outer sheet remains stationary while its
+        body scrolls each control above the mobile keyboard. Keyboard
+        accommodation is not provided at shorter snap points.
       </Text>
+      <Text type="supporting" color="secondary">
+        Move the sheet with its handle or close it with Post comment to verify
+        that sheet travel and closing dismiss the keyboard.
+      </Text>
+      <Button label="Close sheet" onClick={onPost} />
       <Divider />
       <TextInput
         label="Title"
@@ -144,24 +151,6 @@ function MobileKeyboardCommentForm({onPost}: {onPost: () => void}) {
   );
 }
 
-function ShortMobileKeyboardForm({onSave}: {onSave: () => void}) {
-  const [title, setTitle] = useState('');
-  const [note, setNote] = useState('');
-
-  return (
-    <VStack gap={4}>
-      <Heading level={3}>Quick note</Heading>
-      <Text type="supporting" color="secondary">
-        This short sheet keeps its height and lifts only when the mobile
-        keyboard would otherwise cover the focused field.
-      </Text>
-      <TextInput label="Title" value={title} onChange={setTitle} />
-      <TextArea label="Note" rows={2} value={note} onChange={setNote} />
-      <Button label="Save note" onClick={onSave} />
-    </VStack>
-  );
-}
-
 export const Showcase: Story = {
   render: () => {
     const [isOpen, setIsOpen] = useState(false);
@@ -179,6 +168,35 @@ export const Showcase: Story = {
                 <CheckboxInput label="Free shipping" value={false} />
               </VStack>
               <Button label="Apply" onClick={() => setIsOpen(false)} />
+            </VStack>
+          </Section>
+        </BottomSheet>
+      </>
+    );
+  },
+};
+
+export const FormPurpose: Story = {
+  name: 'Form purpose',
+  render: () => {
+    const [isOpen, setIsOpen] = useState(false);
+    return (
+      <>
+        <Button label="Edit profile" onClick={() => setIsOpen(true)} />
+        <BottomSheet
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          purpose="form"
+          label="Edit profile"
+          height="hug">
+          <Section padding={4}>
+            <VStack gap={4}>
+              <Heading level={3}>Edit profile</Heading>
+              <Text type="supporting" color="secondary">
+                Swiping down or clicking the scrim keeps this form open. Escape
+                and the explicit actions can still close it.
+              </Text>
+              <Button label="Save changes" onClick={() => setIsOpen(false)} />
             </VStack>
           </Section>
         </BottomSheet>
@@ -341,20 +359,36 @@ export const HugHeightWithLongContent: Story = {
   },
 };
 
-export const ShortMobileKeyboard: Story = {
-  name: 'Short sheet with mobile keyboard',
+export const CappedHeightWithLongContent: Story = {
+  name: 'Capped height — Long content',
   render: () => {
     const [isOpen, setIsOpen] = useState(false);
     return (
       <>
-        <Button label="Add a quick note" onClick={() => setIsOpen(true)} />
+        <Button label="View saved places" onClick={() => setIsOpen(true)} />
         <BottomSheet
           isOpen={isOpen}
           onOpenChange={setIsOpen}
-          label="Quick note"
-          height="hug">
+          label="Saved places"
+          height="capped">
           <Section padding={4}>
-            <ShortMobileKeyboardForm onSave={() => setIsOpen(false)} />
+            <VStack gap={4}>
+              <Heading level={3}>Saved places</Heading>
+              <Text type="supporting" color="secondary">
+                The sheet opens at a capped height while the long list scrolls
+                within it.
+              </Text>
+              <Divider />
+              {Array.from({length: 12}, (_, i) => (
+                <VStack key={i} gap={1}>
+                  <Text type="label">Saved place {i + 1}</Text>
+                  <Text type="supporting" color="secondary">
+                    Notes and details about this saved place.
+                  </Text>
+                </VStack>
+              ))}
+              <Button label="Done" onClick={() => setIsOpen(false)} />
+            </VStack>
           </Section>
         </BottomSheet>
       </>
@@ -363,7 +397,7 @@ export const ShortMobileKeyboard: Story = {
 };
 
 export const MobileKeyboard: Story = {
-  name: 'Support mobile keyboard',
+  name: 'Mobile keyboard',
   render: () => {
     const [isOpen, setIsOpen] = useState(false);
     return (

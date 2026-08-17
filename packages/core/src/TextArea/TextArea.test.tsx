@@ -504,6 +504,33 @@ describe('TextArea', () => {
       expect(screen.getByRole('textbox')).not.toHaveAttribute('maxlength');
     });
 
+    it('counts user-perceived characters, not code units (#4759)', () => {
+      // Two surrogate-pair emoji: 4 code units, but 2 user-perceived characters.
+      render(
+        <TextArea
+          label="Description"
+          value={'\u{1F600}\u{1F600}'}
+          onChange={() => {}}
+          maxLength={5}
+        />,
+      );
+      expect(screen.getByText('2/5')).toBeInTheDocument();
+    });
+
+    it('measures the over-limit state in characters (#4759)', () => {
+      // Three ZWJ family emoji: 33 code units, 3 user-perceived characters.
+      const family = '\u{1F468}‍\u{1F469}‍\u{1F467}‍\u{1F466}';
+      render(
+        <TextArea
+          label="Description"
+          value={family.repeat(3)}
+          onChange={() => {}}
+          maxLength={2}
+        />,
+      );
+      expect(screen.getByText('3/2')).toBeInTheDocument();
+    });
+
     it('counter updates as user types (controlled)', async () => {
       const user = userEvent.setup();
       function Wrapper() {
@@ -568,6 +595,51 @@ describe('TextArea', () => {
           '1 character over the limit',
         );
       });
+    });
+
+    it('announces zone transitions using character counts (#4759)', async () => {
+      function Wrapper() {
+        const [val, setVal] = useState('x'.repeat(7));
+        return (
+          <TextArea
+            label="Description"
+            value={val}
+            onChange={setVal}
+            maxLength={10}
+          />
+        );
+      }
+      render(<Wrapper />);
+      // Appending two emoji makes 9 characters (11 code units): near the limit
+      // with 1 remaining. Code-unit counting would call this over the limit
+      // and announce assertively instead.
+      fireEvent.change(screen.getByRole('textbox'), {
+        target: {value: 'x'.repeat(7) + '\u{1F600}\u{1F600}'},
+      });
+      const politeRegion = () =>
+        document.querySelector('[data-astryx-live-region="polite"]');
+      const assertiveRegion = () =>
+        document.querySelector('[data-astryx-live-region="assertive"]');
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('1 character remaining');
+      });
+      expect(assertiveRegion()).not.toHaveTextContent('over the limit');
+    });
+
+    it('does not flag over-limit while characters fit, even when code units exceed (#4759)', () => {
+      // Three emoji: 6 code units but 3 user-perceived characters — within a
+      // maxLength of 4, so no error state anywhere.
+      render(
+        <TextArea
+          label="Description"
+          value={'\u{1F600}'.repeat(3)}
+          onChange={() => {}}
+          maxLength={4}
+        />,
+      );
+      const counter = screen.getByText('3/4');
+      expect(counter.querySelector('svg')).toBeNull();
+      expect(screen.getByRole('textbox')).not.toHaveAttribute('aria-invalid');
     });
 
     it('shows a non-color over-limit indicator icon when exceeded', () => {

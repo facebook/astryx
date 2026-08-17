@@ -150,6 +150,12 @@ export const doc = {
         'A scaffold receipt: template id, output directory, written file name, and file count.',
     },
 
+    {
+      value: 'template.cdn',
+      description:
+        'A write receipt for the no-build-step CDN starter page: the path (relative to cwd), the Astryx version every CDN URL was pinned to, whether it was written, and the reason it was not — `exists` when a file was already there, which is a success.',
+    },
+
     // hook
     {
       value: 'hook.list',
@@ -172,6 +178,11 @@ export const doc = {
       value: 'theme.build.check',
       description:
         'The --check receipt: theme name, an upToDate flag, the stale outputs (each {path, reason: missing | outdated}), and the full list of checked paths. Writes nothing.',
+    },
+    {
+      value: 'theme.build.batch',
+      description:
+        'Several themes built in one invocation: `count` plus one {file, receipt} per theme in argument order, where receipt is that theme\'s theme.build (or theme.build.check) envelope, or null when it produced no CSS.',
     },
     {
       value: 'theme.list',

@@ -204,13 +204,7 @@ function ModeSwitchFlow() {
 }
 
 function getSharedDialog(): HTMLDialogElement {
-  const dialog = document.querySelector<HTMLDialogElement>(
-    '.astryx-bottom-sheet-switcher-scrim',
-  );
-  if (!dialog) {
-    throw new Error('shared switcher dialog not found');
-  }
-  return dialog;
+  return screen.getByRole<HTMLDialogElement>('dialog');
 }
 
 function finishSheetTransition(
@@ -271,9 +265,6 @@ describe('BottomSheetSwitcher', () => {
     expect(getSheetLayer('confirm-sheet')).toHaveAttribute('hidden');
     expect(getSheetLayer('confirm-sheet')).toHaveStyle({display: 'none'});
     expect(document.querySelectorAll('dialog[open]')).toHaveLength(1);
-    expect(
-      document.querySelectorAll('.astryx-bottom-sheet-switcher-scrim'),
-    ).toHaveLength(1);
     expect(HTMLDialogElement.prototype.showModal).toHaveBeenCalledTimes(1);
     expect(HTMLDialogElement.prototype.show).not.toHaveBeenCalled();
     expect(getSharedDialog()).toHaveAttribute('aria-modal', 'true');
@@ -493,6 +484,8 @@ describe('BottomSheetSwitcher', () => {
       pointerId: 1,
       clientY: 100,
       timeStamp: 0,
+      button: 0,
+      isPrimary: true,
     });
     fireEvent.pointerMove(handle, {
       pointerId: 1,
@@ -536,18 +529,19 @@ describe('BottomSheetSwitcher', () => {
   it('dismisses the flow from the one shared scrim', () => {
     render(<Flow />);
     fireEvent.click(screen.getByRole('button', {name: 'Start flow'}));
+    const sharedDialog = getSharedDialog();
 
-    fireEvent.click(getSharedDialog());
+    fireEvent.click(sharedDialog);
 
     const outgoingSheet = getSheetLayer('details-sheet');
     expect(outgoingSheet).not.toHaveAttribute('hidden');
     expect(outgoingSheet).toHaveAttribute('inert');
-    expect(getSharedDialog()).toHaveStyle({'--_sheet-scrim-opacity': '0'});
+    expect(sharedDialog).toHaveStyle({'--_sheet-scrim-opacity': '0'});
     expect(document.body.style.position).toBe('fixed');
 
     finishSheetTransition(outgoingSheet, 'transform');
 
-    expect(getSharedDialog()).not.toHaveAttribute('open');
+    expect(sharedDialog).not.toHaveAttribute('open');
     expect(document.body.style.position).not.toBe('fixed');
   });
 
@@ -556,13 +550,13 @@ describe('BottomSheetSwitcher', () => {
     fireEvent.click(
       screen.getByRole('button', {name: 'Start conditional flow'}),
     );
+    const sharedDialog = screen.getByRole('dialog', {
+      name: 'Conditional details',
+    });
 
-    fireEvent.keyDown(
-      screen.getByRole('dialog', {name: 'Conditional details'}),
-      {key: 'Escape'},
-    );
+    fireEvent.keyDown(sharedDialog, {key: 'Escape'});
 
-    expect(getSharedDialog()).not.toHaveAttribute('open');
+    expect(sharedDialog).not.toHaveAttribute('open');
     expect(document.body.style.position).not.toBe('fixed');
   });
 
@@ -624,10 +618,7 @@ describe('BottomSheetSwitcher', () => {
       </BottomSheetSwitcher>,
     );
 
-    expect(
-      document.querySelector('.astryx-bottom-sheet-switcher-scrim'),
-    ).not.toBeInTheDocument();
-    const dialog = screen.getByRole('dialog', {name: 'Details'});
+    const dialog = getSharedDialog();
     expect(dialog).not.toHaveAttribute('aria-modal');
     expect(dialog).toHaveAttribute('open');
     expect(HTMLDialogElement.prototype.show).toHaveBeenCalledTimes(1);
@@ -655,6 +646,116 @@ describe('BottomSheetSwitcher', () => {
     });
 
     expect(onActiveSheetChange).toHaveBeenCalledWith(null);
+  });
+
+  it('honors purpose=form for a switcher-managed sheet', () => {
+    const onActiveSheetChange = vi.fn();
+    render(
+      <BottomSheetSwitcher
+        activeSheet="details"
+        onActiveSheetChange={onActiveSheetChange}>
+        <BottomSheet sheetId="details" label="Edit details" purpose="form">
+          Content
+        </BottomSheet>
+      </BottomSheetSwitcher>,
+    );
+    const dialog = getSharedDialog();
+    const panel = getSheetPanel(dialog);
+    const handle = panel.firstElementChild;
+    if (!(handle instanceof HTMLElement)) {
+      throw new Error('sheet handle not found');
+    }
+
+    fireEvent.click(dialog);
+    fireEvent.pointerDown(handle, {
+      pointerId: 1,
+      clientY: 0,
+      button: 0,
+      isPrimary: true,
+    });
+    fireEvent.pointerMove(handle, {pointerId: 1, clientY: 120});
+    fireEvent.pointerUp(handle, {pointerId: 1, clientY: 120});
+
+    expect(onActiveSheetChange).not.toHaveBeenCalled();
+    expect(dialog).toHaveStyle({'--_sheet-scrim-opacity': '1'});
+
+    fireEvent.keyDown(dialog, {key: 'Escape'});
+    fireEvent(dialog, new Event('cancel', {cancelable: true}));
+
+    expect(onActiveSheetChange).toHaveBeenCalledTimes(2);
+    expect(onActiveSheetChange).toHaveBeenNthCalledWith(1, null);
+    expect(onActiveSheetChange).toHaveBeenNthCalledWith(2, null);
+  });
+
+  it('honors purpose=required for a switcher-managed sheet', () => {
+    const onActiveSheetChange = vi.fn();
+    render(
+      <BottomSheetSwitcher
+        activeSheet="details"
+        onActiveSheetChange={onActiveSheetChange}>
+        <BottomSheet
+          sheetId="details"
+          label="Required details"
+          purpose="required">
+          Content
+        </BottomSheet>
+      </BottomSheetSwitcher>,
+    );
+    const dialog = screen.getByRole('alertdialog');
+    const panel = getSheetPanel(dialog);
+    const handle = panel.firstElementChild;
+    if (!(handle instanceof HTMLElement)) {
+      throw new Error('sheet handle not found');
+    }
+
+    fireEvent.click(dialog);
+    fireEvent.keyDown(dialog, {key: 'Escape'});
+    fireEvent(dialog, new Event('cancel', {cancelable: true}));
+    fireEvent.pointerDown(handle, {
+      pointerId: 1,
+      clientY: 0,
+      button: 0,
+      isPrimary: true,
+    });
+    fireEvent.pointerMove(handle, {pointerId: 1, clientY: 120});
+    fireEvent.pointerUp(handle, {pointerId: 1, clientY: 120});
+
+    expect(onActiveSheetChange).not.toHaveBeenCalled();
+    expect(dialog).toHaveStyle({'--_sheet-scrim-opacity': '1'});
+  });
+
+  it('restores the active sheet when a context menu interrupts its drag', () => {
+    const onActiveSheetChange = vi.fn();
+    render(
+      <BottomSheetSwitcher
+        activeSheet="details"
+        onActiveSheetChange={onActiveSheetChange}>
+        <BottomSheet sheetId="details" label="Details">
+          Content
+        </BottomSheet>
+      </BottomSheetSwitcher>,
+    );
+    const dialog = getSharedDialog();
+    const panel = getSheetPanel(dialog);
+    const handle = panel.firstElementChild;
+    if (!(handle instanceof HTMLElement)) {
+      throw new Error('sheet handle not found');
+    }
+
+    fireEvent.pointerDown(handle, {
+      pointerId: 1,
+      clientY: 0,
+      button: 0,
+      isPrimary: true,
+    });
+    fireEvent.pointerMove(handle, {pointerId: 1, clientY: 300});
+    expect(panel.style.transform).toBe('translateY(300px)');
+
+    expect(fireEvent.contextMenu(handle)).toBe(false);
+
+    expect(panel.style.transform).toBe('');
+    expect(dialog).toHaveStyle({'--_sheet-scrim-opacity': '1'});
+    expect(onActiveSheetChange).not.toHaveBeenCalled();
   });
 
   it('ignores Escape while an IME composition is active', () => {

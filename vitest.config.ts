@@ -142,6 +142,9 @@ export default defineConfig({
             'internal/**/*.test.{ts,tsx,mjs}',
             'scripts/**/*.test.{ts,tsx,mjs}',
             '.github/scripts/**/*.test.{ts,tsx,mjs}',
+            // Storybook config invariants (no DOM needed) — e.g. the
+            // workspace source-alias guard in .storybook/main.test.ts.
+            'apps/storybook/.storybook/**/*.test.{ts,tsx,mjs}',
           ],
           exclude: [
             ...configDefaults.exclude,

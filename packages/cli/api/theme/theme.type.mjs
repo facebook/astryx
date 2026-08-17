@@ -10,6 +10,7 @@
  * ------------------------------------------------------------------
  * xds --json theme build <file>             -> theme.build
  * xds --json theme build <file> --check     -> theme.build.check
+ * xds --json theme build <a> <b> …          -> theme.build.batch
  * xds --json theme list                     -> theme.list
  * xds --json theme add <slug>               -> theme.add
  * xds --json theme template                 -> theme.template
@@ -22,7 +23,10 @@
  * xds --json theme build <file>
  * @typedef {object} ThemeBuildResponse
  * @property {'theme.build'} type
- * @property {{name: string, tokenCount: number, componentCount: number, sizeKB: number, outputs: {css: string, js: string, dts: string, variantsDts?: string}, warnings: string[]}} data
+ * `warnings` are defects the theme author should fix. `notices` are advisories
+ * about a correct theme — most of them cannot be fixed in a theme file at all,
+ * so folding them into `warnings` makes a clean build look dirty.
+ * @property {{name: string, tokenCount: number, componentCount: number, sizeKB: number, outputs: {css: string, js: string, dts: string, variantsDts?: string}, warnings: string[], notices: string[]}} data
  */
 
 /**
@@ -30,6 +34,16 @@
  * @typedef {object} ThemeBuildCheckResponse
  * @property {'theme.build.check'} type
  * @property {{name: string, upToDate: boolean, stale: Array<{path: string, reason: 'missing' | 'outdated'}>, checked: string[]}} data
+ */
+
+/**
+ * xds --json theme build <a> <b> … — several themes in one invocation. Each
+ * result carries the file as it was passed and the receipt a single-file build
+ * would have returned (null when that theme produced no CSS). One file still
+ * returns the bare theme.build / theme.build.check envelope.
+ * @typedef {object} ThemeBuildBatchResponse
+ * @property {'theme.build.batch'} type
+ * @property {{count: number, results: Array<{file: string, receipt: ThemeBuildResponse | ThemeBuildCheckResponse | null}>}} data
  */
 
 /**

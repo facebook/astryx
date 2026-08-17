@@ -477,6 +477,20 @@ summary but don't block. Repro locally with `pnpm rtl:audit -- --filter Avatar`
 (the `--` matters: `pnpm -F` is itself `--filter`). See
 `apps/storybook/rtl-audit/README.md`.
 
+### Modal close visibility guard
+
+The same `pr-a11y` job runs one more Chromium probe
+(`.github/scripts/modal-close-visibility.js`, or `pnpm guard:modal-close`
+against a built Storybook). It opens each modal `<dialog>` surface in the
+list at the top of that script, closes it, and fails if the dialog's computed
+`display` was `none` at the moment `close()` ran.
+
+A dialog hidden while still `:modal` swallows every click on the page, and a
+browser is not obliged to release that when `close()` finally runs — Safari
+26.1 did not (#4290). The ordering comes from a CSS transition, so jsdom
+cannot see it and the unit suites pass either way. Add a target here when a
+component closes a `<dialog>` on a delay.
+
 ## Versioning & Releases
 
 We use [Changesets](https://github.com/changesets/changesets) for versioning, with a thin Astryx layer on top so changelogs stay categorized, contributor-attributed, and aligned with our pre-1.0 conventions.

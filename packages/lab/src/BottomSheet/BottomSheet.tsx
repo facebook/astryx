@@ -34,6 +34,7 @@ import {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '@astryxdesign/core';
+import type {DialogPurpose} from '@astryxdesign/core/Dialog';
 import {
   colorVars,
   durationVars,
@@ -102,7 +103,6 @@ const styles = stylex.create({
     display: 'flex',
     justifyContent: 'center',
     pointerEvents: 'none',
-    transform: 'translateY(calc(0px - var(--_sheet-keyboard-lift, 0px)))',
   },
   positionerHidden: {
     display: 'none',
@@ -122,8 +122,17 @@ interface BottomSheetSharedProps extends BaseProps<HTMLDivElement> {
   /** Sheet content, rendered below the grab handle in a scrollable area. */
   children: ReactNode;
 
-  /** Height budget or custom CSS length. @default 'capped' */
+  /** Height budget or custom CSS length. Only fully expanded Tall is keyboard-aware. @default 'capped' */
   height?: BottomSheetHeight | number | string;
+
+  /**
+   * Configures implicit dismissal behavior, matching Dialog.
+   * - required: Blocks swipe, scrim click, and Escape
+   * - form: Blocks swipe and scrim click, allows Escape
+   * - info: Allows swipe, scrim click, and Escape
+   * @default 'info'
+   */
+  purpose?: DialogPurpose;
 }
 
 interface StandaloneBottomSheetProps extends BottomSheetSharedProps {
@@ -184,11 +193,11 @@ function StandaloneBottomSheet({
   children,
   height = 'capped',
   hasScrim = true,
+  purpose = 'info',
   xstyle,
   ...props
 }: StandaloneBottomSheetProps) {
   const dialogRef = useRef<HTMLDialogElement | null>(null);
-  const positionerRef = useRef<HTMLDivElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
   const [isPresented, setIsPresented] = useState(isOpen);
@@ -199,7 +208,16 @@ function StandaloneBottomSheet({
       ? {kind: 'exiting'}
       : {kind: 'hidden'};
 
-  const close = useCallback(() => onOpenChange(false), [onOpenChange]);
+  const dismissOnEscape = useCallback(() => {
+    if (purpose !== 'required') {
+      onOpenChange(false);
+    }
+  }, [onOpenChange, purpose]);
+  const dismissOnLightInteraction = useCallback(() => {
+    if (purpose === 'info') {
+      onOpenChange(false);
+    }
+  }, [onOpenChange, purpose]);
   const handlePanelElementChange = useCallback(
     (element: HTMLDivElement | null) => {
       panelRef.current = element;
@@ -266,26 +284,26 @@ function StandaloneBottomSheet({
   const handleCancel = useCallback(
     (event: React.SyntheticEvent<HTMLDialogElement>) => {
       event.preventDefault();
-      close();
+      dismissOnEscape();
     },
-    [close],
+    [dismissOnEscape],
   );
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLDialogElement>) => {
       if (event.key === 'Escape') {
         event.preventDefault();
-        close();
+        dismissOnEscape();
       }
     },
-    [close],
+    [dismissOnEscape],
   );
   const handleClick = useCallback(
     (event: React.MouseEvent<HTMLDialogElement>) => {
       if (hasScrim && event.target === event.currentTarget) {
-        close();
+        dismissOnLightInteraction();
       }
     },
-    [close, hasScrim],
+    [dismissOnLightInteraction, hasScrim],
   );
 
   return (
@@ -300,20 +318,21 @@ function StandaloneBottomSheet({
       aria-label={label}
       aria-hidden={!isOpen && isPresented ? 'true' : undefined}
       aria-modal={hasScrim && isOpen ? 'true' : undefined}
+      role={purpose === 'required' ? 'alertdialog' : undefined}
       inert={!isOpen && isPresented ? true : undefined}
       onCancel={handleCancel}
       onClick={handleClick}
       onKeyDown={handleKeyDown}>
-      <div ref={positionerRef} {...stylex.props(styles.positioner)}>
+      <div {...stylex.props(styles.positioner)}>
         <BottomSheetPanel
           {...props}
           ref={ref}
           state={panelState}
           height={height}
+          canSwipeDismiss={purpose === 'info'}
           xstyle={xstyle}
-          onDismiss={close}
+          onDismiss={dismissOnLightInteraction}
           onScrimOpacity={handleScrimOpacity}
-          positionerRef={positionerRef}
           onElementChange={handlePanelElementChange}
           onMotionComplete={handleMotionComplete}>
           {children}
@@ -334,6 +353,7 @@ function SwitcherBottomSheetItem({
   label,
   children,
   height = 'capped',
+  purpose = 'info',
   xstyle,
   ...props
 }: SwitcherBottomSheetItemProps) {
@@ -345,6 +365,7 @@ function SwitcherBottomSheetItem({
     getSheetAlignmentOffset,
     registerSheetElement,
     registerSheetLabel,
+    registerSheetPurpose,
     onSheetEnterStart,
     onSheetTransitionComplete,
     onSheetScrimOpacityChange,
@@ -363,7 +384,6 @@ function SwitcherBottomSheetItem({
     phase === 'exiting';
   const isPresented = phase !== 'hidden';
   const isTopSheet = phase === 'active' || phase === 'entering';
-  const positionerRef = useRef<HTMLDivElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const previousPhaseRef = useRef(phase);
   const previousPhase = previousPhaseRef.current;
@@ -373,11 +393,11 @@ function SwitcherBottomSheetItem({
     previousPhaseRef.current = phase;
   }, [phase]);
 
-  const close = useCallback(() => {
-    if (hasValidSheetId && activeSheet === sheetId) {
+  const dismissOnSwipe = useCallback(() => {
+    if (purpose === 'info' && hasValidSheetId && activeSheet === sheetId) {
       onActiveSheetChange(null);
     }
-  }, [activeSheet, hasValidSheetId, onActiveSheetChange, sheetId]);
+  }, [activeSheet, hasValidSheetId, onActiveSheetChange, purpose, sheetId]);
   const handlePanelElementChange = useCallback(
     (element: HTMLDivElement | null) => {
       panelRef.current = element;
@@ -420,6 +440,14 @@ function SwitcherBottomSheetItem({
     return () => registerSheetLabel(sheetId, null);
   }, [hasValidSheetId, label, registerSheetLabel, sheetId]);
 
+  useLayoutEffect(() => {
+    if (!hasValidSheetId) {
+      return;
+    }
+    registerSheetPurpose(sheetId, purpose);
+    return () => registerSheetPurpose(sheetId, null);
+  }, [hasValidSheetId, purpose, registerSheetPurpose, sheetId]);
+
   useEffect(() => {
     if (isInteractive) {
       const wasInteractive =
@@ -442,7 +470,6 @@ function SwitcherBottomSheetItem({
 
   return (
     <div
-      ref={positionerRef}
       {...stylex.props(
         styles.positioner,
         !isPresented && styles.positionerHidden,
@@ -456,10 +483,10 @@ function SwitcherBottomSheetItem({
         ref={ref}
         state={panelState}
         height={height}
+        canSwipeDismiss={purpose === 'info'}
         xstyle={xstyle}
-        onDismiss={close}
+        onDismiss={dismissOnSwipe}
         onScrimOpacity={handleScrimOpacity}
-        positionerRef={positionerRef}
         onElementChange={handlePanelElementChange}
         onMotionStart={handleMotionStart}
         onMotionComplete={handleMotionComplete}>
