@@ -1,7 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect} from 'vitest';
-import {parseMarkdown, parseInline} from './parser';
+import {
+  parseMarkdown,
+  parseInline,
+  parseMarkdownIncremental,
+  createIncrementalState,
+} from './parser';
 import type {InlineNode} from './parser';
 
 describe('parseInline', () => {
@@ -1207,5 +1212,144 @@ describe('link reference definitions', () => {
     const {links, blocks} = paragraphLinks('an array like [1, 2, 3] here');
     expect(links).toEqual([]);
     expect(blocks[0].type).toBe('paragraph');
+  });
+});
+
+describe('source positions (trackPosition)', () => {
+  const DOC = [
+    '[home]: https://example.com', // 1 — stripped from the parsed text
+    '',
+    '# Release notes', // 3
+    '',
+    'An intro paragraph that', // 5
+    'wraps onto a second line.', // 6
+    '',
+    '- first bullet', // 8
+    '- second bullet', // 9
+    '  with a continuation', // 10
+    '',
+    '> a quoted line', // 12
+    '> and another', // 13
+    '',
+    '```js', // 15
+    'const x = 1;', // 16
+    '', // 17 — blank line inside the fence
+    '# not a heading', // 18
+    '```', // 19
+    '',
+    '| a | b |', // 21
+    '| --- | --- |', // 22
+    '| 1 | 2 |', // 23
+    '',
+    '---', // 25
+    '',
+    'Read the [home] page.', // 27
+  ].join('\n');
+
+  const at = (position: {startLine: number; endLine: number} | undefined) => {
+    if (position == null) {
+      throw new Error('expected a position');
+    }
+    return DOC.split('\n')
+      .slice(position.startLine - 1, position.endLine)
+      .join('\n');
+  };
+
+  it('omits position unless asked', () => {
+    const blocks = parseMarkdown(DOC);
+    expect(blocks.every(block => block.position === undefined)).toBe(true);
+  });
+
+  it('maps every top-level block to its source lines', () => {
+    const blocks = parseMarkdown(DOC, {trackPosition: true});
+    expect(blocks.map(block => [block.type, block.position])).toEqual([
+      ['heading', {startLine: 3, endLine: 3}],
+      ['paragraph', {startLine: 5, endLine: 6}],
+      ['list', {startLine: 8, endLine: 10}],
+      ['blockquote', {startLine: 12, endLine: 13}],
+      ['codeblock', {startLine: 15, endLine: 19}],
+      ['table', {startLine: 21, endLine: 23}],
+      ['hr', {startLine: 25, endLine: 25}],
+      ['paragraph', {startLine: 27, endLine: 27}],
+    ]);
+  });
+
+  it('points at the text the reader sees, not an off-by-one neighbour', () => {
+    const blocks = parseMarkdown(DOC, {trackPosition: true});
+    expect(at(blocks[0].position)).toBe('# Release notes');
+    expect(at(blocks[4].position)).toBe(
+      '```js\nconst x = 1;\n\n# not a heading\n```',
+    );
+    expect(at(blocks[6].position)).toBe('---');
+    expect(at(blocks[7].position)).toBe('Read the [home] page.');
+  });
+
+  it('gives nested blocks their line in the original document', () => {
+    const blocks = parseMarkdown(DOC, {trackPosition: true});
+    const list = blocks[2];
+    const quote = blocks[3];
+    if (list.type !== 'list' || quote.type !== 'blockquote') {
+      throw new Error('unexpected block types');
+    }
+    expect(list.items.map(item => item.children[0].position)).toEqual([
+      {startLine: 8, endLine: 8},
+      {startLine: 9, endLine: 10},
+    ]);
+    expect(quote.children[0].position).toEqual({startLine: 12, endLine: 13});
+  });
+
+  it('keeps deeply nested content aligned', () => {
+    const doc = [
+      '- outer', // 1
+      '  - inner one', // 2
+      '  - inner two', // 3
+      '',
+      '> - quoted bullet', // 5
+      '>', // 6
+      '>   ```', // 7
+      '>   code', // 8
+      '>   ```', // 9
+    ].join('\n');
+    const blocks = parseMarkdown(doc, {trackPosition: true});
+    const outer = blocks[0];
+    if (outer.type !== 'list') {
+      throw new Error('expected a list');
+    }
+    const nested = outer.items[0].children[1];
+    expect(nested.type).toBe('list');
+    expect(nested.position).toEqual({startLine: 2, endLine: 3});
+
+    const quote = blocks[1];
+    if (quote.type !== 'blockquote') {
+      throw new Error('expected a blockquote');
+    }
+    const quotedList = quote.children[0];
+    if (quotedList.type !== 'list') {
+      throw new Error('expected a list inside the quote');
+    }
+    expect(quotedList.position).toEqual({startLine: 5, endLine: 5});
+    expect(quotedList.items[0].children[0].position).toEqual({
+      startLine: 5,
+      endLine: 5,
+    });
+    expect(quote.position).toEqual({startLine: 5, endLine: 9});
+    expect(quote.children[1].position).toEqual({startLine: 7, endLine: 9});
+  });
+
+  it('counts stripped link definitions as source lines', () => {
+    // The definition line produces no block but still occupies line 1, so
+    // everything after it must not slide up by one.
+    const blocks = parseMarkdown(DOC, {trackPosition: true});
+    expect(blocks[0].position?.startLine).toBe(3);
+  });
+
+  it('is stable under streaming (incremental) parsing', () => {
+    const state = createIncrementalState();
+    const streamed = parseMarkdownIncremental(DOC, state, {
+      trackPosition: true,
+    });
+    expect(streamed.map(block => block.position)).toEqual(
+      parseMarkdown(DOC, {trackPosition: true}).map(block => block.position),
+    );
   });
 });

@@ -24,7 +24,20 @@ export type InlineNode =
   | {type: 'citation'; sourceId: string}
   | {type: 'break'};
 
-export type BlockNode =
+/**
+ * Where a block came from in the source markdown: a 1-based, inclusive range
+ * of source lines. Only the line range is exposed — not byte offsets, and not
+ * the parser's internal indices — because a source range is what line-oriented
+ * consumers (diffs, blame, review comments) speak in.
+ */
+export type MarkdownSourcePosition = {
+  /** 1-based line number of the block's first source line. */
+  startLine: number;
+  /** 1-based line number of the block's last source line, inclusive. */
+  endLine: number;
+};
+
+type BlockNodeKind =
   | {type: 'heading'; level: 1 | 2 | 3 | 4 | 5 | 6; children: InlineNode[]}
   | {type: 'paragraph'; children: InlineNode[]}
   | {type: 'codeblock'; language: string; content: string}
@@ -46,6 +59,11 @@ export type BlockNode =
     }
   | {type: 'hr'}
   | {type: 'image'; src: string; alt: string};
+
+export type BlockNode = BlockNodeKind & {
+  /** Source line range. Present only when parsing with `trackPosition`. */
+  position?: MarkdownSourcePosition;
+};
 
 export type ListItemNode = {checked?: boolean; children: BlockNode[]};
 export type TableCellNode = {children: InlineNode[]};
@@ -78,6 +96,12 @@ export type ParseOptions = {
    * suffix is not rejected (Astryx accepts any plausible TLD shape).
    */
   autolink?: 'gfm';
+  /**
+   * Record a `position` (source line range) on every block node. Off by
+   * default: it costs an allocation per block and adds a field that
+   * structural comparisons of the AST would otherwise not see.
+   */
+  trackPosition?: boolean;
 };
 
 type ResolvedOptions = {
@@ -109,7 +133,44 @@ function resolveOptions(
     return {sourceIds: arg as ReadonlySet<string>, autolink: undefined};
   }
   const opts = arg as ParseOptions;
-  return {sourceIds: opts.sourceIds, autolink: opts.autolink};
+  return {
+    sourceIds: opts.sourceIds,
+    autolink: opts.autolink,
+    trackPosition: opts.trackPosition,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Source positions
+// ---------------------------------------------------------------------------
+
+/**
+ * Source line number (1-based) for each line of the text being parsed, or
+ * null when position tracking is off. Recursive parses (blockquote bodies,
+ * list-item bodies) re-slice this so a nested block reports the line it
+ * occupies in the ORIGINAL document, not in the de-indented fragment the
+ * recursion actually parses.
+ */
+type LineNumbers = ReadonlyArray<number> | null;
+
+function makePosition(
+  lineNumbers: LineNumbers,
+  startIndex: number,
+  endIndex: number,
+): MarkdownSourcePosition | undefined {
+  if (lineNumbers == null || startIndex >= lineNumbers.length) {
+    return undefined;
+  }
+  const last = Math.min(Math.max(endIndex, startIndex), lineNumbers.length - 1);
+  return {startLine: lineNumbers[startIndex], endLine: lineNumbers[last]};
+}
+
+/** Attach a position to a freshly-built block, or return it untouched. */
+function positioned(
+  node: BlockNodeKind,
+  position: MarkdownSourcePosition | undefined,
+): BlockNode {
+  return position == null ? node : {...node, position};
 }
 
 // ---------------------------------------------------------------------------
@@ -174,6 +235,8 @@ function matchLinkDefinition(
 function extractLinkDefinitions(input: string): {
   defs: ReadonlyMap<string, string>;
   cleaned: string;
+  /** Per source line: whether it survived into `cleaned`. */
+  keep: ReadonlyArray<boolean>;
 } {
   const lines = input.split('\n');
   const defs = new Map<string, string>();
@@ -233,10 +296,10 @@ function extractLinkDefinitions(input: string): {
   }
 
   if (defs.size === 0) {
-    return {defs, cleaned: input};
+    return {defs, cleaned: input, keep};
   }
   const cleaned = lines.filter((_, index) => keep[index]).join('\n');
-  return {defs, cleaned};
+  return {defs, cleaned, keep};
 }
 
 /** Order-independent signature of a link-definition set, for cache checks. */
@@ -1115,6 +1178,7 @@ function parseTable(
   lines: string[],
   lineIndex: number,
   opts: ResolvedOptions,
+  lineNumbers: LineNumbers,
 ): {node: BlockNode; nextIndex: number} {
   const headers: TableCellNode[] = splitTableRow(lines[lineIndex]).map(
     cell => ({children: parseInlineEntry(cell, opts)}),
@@ -1148,7 +1212,10 @@ function parseTable(
     rowIndex++;
   }
   return {
-    node: {type: 'table', headers, alignments, rows},
+    node: positioned(
+      {type: 'table', headers, alignments, rows},
+      makePosition(lineNumbers, lineIndex, rowIndex - 1),
+    ),
     nextIndex: rowIndex,
   };
 }
@@ -1158,6 +1225,7 @@ function parseList(
   startIndex: number,
   ordered: boolean,
   opts: ResolvedOptions,
+  lineNumbers: LineNumbers,
 ): {node: BlockNode; nextIndex: number} {
   const items: ListItemNode[] = [];
   const baseIndent = getIndent(lines[startIndex]);
@@ -1177,7 +1245,9 @@ function parseList(
 
   let loose = false;
   let index = startIndex;
+  let lastContentIndex = startIndex;
   while (index < lines.length && itemPattern.test(lines[index])) {
+    const itemStart = index;
     const content = ordered
       ? lines[index].replace(new RegExp(`^ *\\d+${escDelim} `), '')
       : lines[index].replace(/^ *[-*+] /, '');
@@ -1213,7 +1283,18 @@ function parseList(
       itemText += '\n' + deindented.join('\n');
     }
 
-    items.push({checked, children: parseMarkdownImpl(itemText, opts)});
+    items.push({
+      checked,
+      // The item body is line-for-line the item's own source lines (the
+      // marker line, then its de-indented continuations), so the recursion
+      // gets that exact slice of source line numbers.
+      children: parseMarkdownImpl(
+        itemText,
+        opts,
+        lineNumbers ? lineNumbers.slice(itemStart, index) : null,
+      ),
+    });
+    lastContentIndex = index - 1;
 
     // CommonMark loose list: blank line(s) between items of the same style
     // and indent still form one list. Skip the blanks and continue if the
@@ -1232,14 +1313,17 @@ function parseList(
     }
   }
   return {
-    node: {
-      type: 'list',
-      ordered,
-      start,
-      delimiter: ordered ? (delim as '.' | ')') : undefined,
-      loose: loose || undefined,
-      items,
-    },
+    node: positioned(
+      {
+        type: 'list',
+        ordered,
+        start,
+        delimiter: ordered ? (delim as '.' | ')') : undefined,
+        loose: loose || undefined,
+        items,
+      },
+      makePosition(lineNumbers, startIndex, lastContentIndex),
+    ),
     nextIndex: index,
   };
 }
@@ -1266,6 +1350,12 @@ export function parseMarkdown(
 function parseMarkdownImpl(
   input: string,
   baseOpts: ResolvedOptions,
+  /**
+   * Source line numbers for `input`'s lines, when the caller is a recursive
+   * parse of a document fragment. Null/omitted at the document root, where
+   * line N of `input` simply is line N of the source.
+   */
+  lineMap?: LineNumbers,
 ): BlockNode[] {
   // Collect this input's link reference definitions and strip their lines,
   // then merge them with any definitions inherited from an enclosing parse
@@ -1274,7 +1364,7 @@ function parseMarkdownImpl(
   // definitions win on conflict, matching CommonMark's first-definition-wins
   // in document order; locally-nested definitions still resolve within this
   // parse.
-  const {defs, cleaned} = extractLinkDefinitions(input);
+  const {defs, cleaned, keep} = extractLinkDefinitions(input);
   const inherited = baseOpts.linkDefs;
   let linkDefs: ReadonlyMap<string, string> | undefined;
   if (defs.size === 0) {
@@ -1287,6 +1377,17 @@ function parseMarkdownImpl(
   const opts: ResolvedOptions =
     linkDefs != null ? {...baseOpts, linkDefs} : baseOpts;
   const lines = cleaned.split('\n');
+  // Source line number per line of `cleaned` — stripped link definitions shift
+  // everything after them, so this is built from `keep` rather than assumed.
+  let lineNumbers: number[] | null = null;
+  if (opts.trackPosition) {
+    lineNumbers = [];
+    for (let i = 0; i < keep.length; i++) {
+      if (keep[i]) {
+        lineNumbers.push(lineMap ? lineMap[i] : i + 1);
+      }
+    }
+  }
   const blocks: BlockNode[] = [];
   let index = 0;
 
@@ -1303,31 +1404,44 @@ function parseMarkdownImpl(
       const fence = fenceMatch[1];
       const language = fenceMatch[2] || 'plaintext';
       const codeLines: string[] = [];
+      const fenceStart = index;
       index++;
       while (index < lines.length && !lines[index].startsWith(fence)) {
         codeLines.push(lines[index]);
         index++;
       }
       index++; // skip closing fence
-      blocks.push({type: 'codeblock', language, content: codeLines.join('\n')});
+      blocks.push(
+        positioned(
+          {type: 'codeblock', language, content: codeLines.join('\n')},
+          makePosition(lineNumbers, fenceStart, index - 1),
+        ),
+      );
       continue;
     }
 
     // --- Heading ---
     const headingMatch = line.match(/^(#{1,6}) +(.*)/);
     if (headingMatch) {
-      blocks.push({
-        type: 'heading',
-        level: headingMatch[1].length as 1 | 2 | 3 | 4 | 5 | 6,
-        children: parseInlineEntry(headingMatch[2], opts),
-      });
+      blocks.push(
+        positioned(
+          {
+            type: 'heading',
+            level: headingMatch[1].length as 1 | 2 | 3 | 4 | 5 | 6,
+            children: parseInlineEntry(headingMatch[2], opts),
+          },
+          makePosition(lineNumbers, index, index),
+        ),
+      );
       index++;
       continue;
     }
 
     // --- HR (must precede list check to handle `- - -`, `* * *`, `_ _ _`) ---
     if (isHorizontalRule(line)) {
-      blocks.push({type: 'hr'});
+      blocks.push(
+        positioned({type: 'hr'}, makePosition(lineNumbers, index, index)),
+      );
       index++;
       continue;
     }
@@ -1335,7 +1449,12 @@ function parseMarkdownImpl(
     // --- Standalone image ---
     const imageMatch = line.match(/^!\[([^\]]*)\]\(([^)]+)\)/);
     if (imageMatch && line.trim() === imageMatch[0]) {
-      blocks.push({type: 'image', alt: imageMatch[1], src: imageMatch[2]});
+      blocks.push(
+        positioned(
+          {type: 'image', alt: imageMatch[1], src: imageMatch[2]},
+          makePosition(lineNumbers, index, index),
+        ),
+      );
       index++;
       continue;
     }
@@ -1346,7 +1465,7 @@ function parseMarkdownImpl(
       line.includes('|') &&
       isTableSeparator(lines[index + 1])
     ) {
-      const tableResult = parseTable(lines, index, opts);
+      const tableResult = parseTable(lines, index, opts, lineNumbers);
       blocks.push(tableResult.node);
       index = tableResult.nextIndex;
       continue;
@@ -1354,6 +1473,7 @@ function parseMarkdownImpl(
 
     // --- Blockquote ---
     if (line.startsWith('> ') || line === '>') {
+      const quoteStart = index;
       const quoteLines: string[] = [];
       while (
         index < lines.length &&
@@ -1362,16 +1482,25 @@ function parseMarkdownImpl(
         quoteLines.push(lines[index].replace(/^> ?/, ''));
         index++;
       }
-      blocks.push({
-        type: 'blockquote',
-        children: parseMarkdownImpl(quoteLines.join('\n'), opts),
-      });
+      blocks.push(
+        positioned(
+          {
+            type: 'blockquote',
+            children: parseMarkdownImpl(
+              quoteLines.join('\n'),
+              opts,
+              lineNumbers ? lineNumbers.slice(quoteStart, index) : null,
+            ),
+          },
+          makePosition(lineNumbers, quoteStart, index - 1),
+        ),
+      );
       continue;
     }
 
     // --- Unordered list ---
     if (/^ {0,9}[-*+] /.test(line)) {
-      const listResult = parseList(lines, index, false, opts);
+      const listResult = parseList(lines, index, false, opts, lineNumbers);
       blocks.push(listResult.node);
       index = listResult.nextIndex;
       continue;
@@ -1379,13 +1508,14 @@ function parseMarkdownImpl(
 
     // --- Ordered list ---
     if (/^ {0,9}\d+[.)] /.test(line)) {
-      const listResult = parseList(lines, index, true, opts);
+      const listResult = parseList(lines, index, true, opts, lineNumbers);
       blocks.push(listResult.node);
       index = listResult.nextIndex;
       continue;
     }
 
     // --- Paragraph ---
+    const paraStart = index;
     const paraLines: string[] = [line];
     index++;
     while (
@@ -1396,10 +1526,15 @@ function parseMarkdownImpl(
       paraLines.push(lines[index]);
       index++;
     }
-    blocks.push({
-      type: 'paragraph',
-      children: parseInlineEntry(paraLines.join('\n'), opts),
-    });
+    blocks.push(
+      positioned(
+        {
+          type: 'paragraph',
+          children: parseInlineEntry(paraLines.join('\n'), opts),
+        },
+        makePosition(lineNumbers, paraStart, index - 1),
+      ),
+    );
   }
   return blocks;
 }
@@ -1757,6 +1892,19 @@ export function parseMarkdownIncremental(
     state.settledUpTo = 0;
     state.linkDefsKey = undefined;
     return [];
+  }
+
+  // Position tracking and incremental reuse do not mix: the cache is keyed on
+  // text slices, and a slice's blocks carry line numbers relative to the slice.
+  // Streaming a document while also reporting source lines is rare enough
+  // (positions serve static views — diffs, blame) that a full re-parse is the
+  // honest trade rather than a second, cache-aware line-offset path.
+  if (opts.trackPosition) {
+    state.prevInput = input;
+    state.settledText = '';
+    state.settledBlocks = [];
+    state.settledUpTo = 0;
+    return parseMarkdownImpl(input, opts);
   }
 
   // Link reference definitions are document-global and usually stream in
