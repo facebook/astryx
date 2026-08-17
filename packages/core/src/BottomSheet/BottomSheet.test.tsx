@@ -121,6 +121,14 @@ function mockVisualViewport(height: number, offsetTop = 0) {
   return viewport;
 }
 
+// The layout viewport — `100dvh`, `window.innerHeight` — which is what the
+// sheet's height budget and its detents are measured against. Deliberately
+// separate from the visual viewport above: the mobile keyboard shrinks that
+// one and leaves this one alone, and the sheet has to tell them apart.
+function mockWindowHeight(height: number) {
+  vi.stubGlobal('innerHeight', height);
+}
+
 function mockIOSWebKit() {
   const navigatorMock = Object.create(window.navigator);
   Object.defineProperties(navigatorMock, {
@@ -618,6 +626,7 @@ describe('BottomSheet', () => {
     it('keeps the full layout height at the peek detent', () => {
       const observers = mockResizeObserverInstances();
       mockVisualViewport(800);
+      mockWindowHeight(800);
       render(
         <BottomSheet
           isOpen
@@ -668,6 +677,7 @@ describe('BottomSheet', () => {
     it('swaps height for transform without a transition when released on a detent', () => {
       const observers = mockResizeObserverInstances();
       mockVisualViewport(800);
+      mockWindowHeight(800);
       render(
         <BottomSheet
           isOpen
@@ -720,6 +730,7 @@ describe('BottomSheet', () => {
     it('uses transforms while dragging and resizes to the visible snapped height', () => {
       const observers = mockResizeObserverInstances();
       mockVisualViewport(800);
+      mockWindowHeight(800);
       render(
         <BottomSheet
           isOpen
@@ -796,6 +807,7 @@ describe('BottomSheet', () => {
     it('reconciles the snapped height immediately when transitions are disabled', () => {
       const observers = mockResizeObserverInstances();
       mockVisualViewport(800);
+      mockWindowHeight(800);
       render(
         <BottomSheet
           isOpen
@@ -828,6 +840,7 @@ describe('BottomSheet', () => {
     it('restores the maximum height before an upward drag and reconciles at snap', () => {
       const observers = mockResizeObserverInstances();
       mockVisualViewport(800);
+      mockWindowHeight(800);
       render(
         <BottomSheet
           isOpen
@@ -892,6 +905,7 @@ describe('BottomSheet', () => {
     it('keeps the settled height stable while dismissing', () => {
       const observers = mockResizeObserverInstances();
       mockVisualViewport(800);
+      mockWindowHeight(800);
       render(<ExitHarness />);
       const sheet = getSheet();
       const sheetObserver = observers.find(instance =>
@@ -927,6 +941,117 @@ describe('BottomSheet', () => {
         );
       });
       expect(sheet.style.height).toBe('448px');
+    });
+
+    it('re-resolves the settled detent when the window resizes', () => {
+      const observers = mockResizeObserverInstances();
+      mockVisualViewport(800);
+      mockWindowHeight(800);
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={() => {}}
+          label="Release notes"
+          height="tall">
+          Content
+        </BottomSheet>,
+      );
+      const sheet = getSheet();
+      const sheetObserver = observers.find(instance =>
+        instance.observed.has(sheet),
+      );
+      act(() => {
+        sheetObserver?.callback(
+          [resizeEntry(784, 736)],
+          sheetObserver as unknown as ResizeObserver,
+        );
+      });
+
+      // Settle on the half-height detent: 784 - 48 - 400 = 336px of travel.
+      fireTimedPointer(getHandle(), 'pointerdown', {time: 0, y: 0});
+      fireTimedPointer(getHandle(), 'pointermove', {time: 1000, y: 336});
+      fireTimedPointer(getHandle(), 'pointerup', {time: 2000, y: 336});
+      const reconciliationFrames: FrameRequestCallback[] = [];
+      vi.mocked(requestAnimationFrame).mockImplementation(callback => {
+        reconciliationFrames.push(callback);
+        return reconciliationFrames.length;
+      });
+      fireEvent.transitionEnd(sheet, {propertyName: 'transform'});
+      act(() => reconciliationFrames.splice(0).forEach(frame => frame(0)));
+      // 448px of layout height shows 400px of sheet: half the 800px window.
+      expect(sheet.style.height).toBe('448px');
+
+      // Shrink the window. The sheet's budget is `92dvh`, so its border box
+      // follows: 0.92 * 600 + the 48px reserve = 600px.
+      vi.spyOn(sheet, 'getBoundingClientRect').mockImplementation(() =>
+        rect({
+          top: 0,
+          bottom: sheet.style.height
+            ? Number.parseFloat(sheet.style.height)
+            : 600,
+        }),
+      );
+      mockWindowHeight(600);
+      act(() => {
+        window.dispatchEvent(new Event('resize'));
+      });
+
+      // Still the half-height detent, re-resolved against the new window:
+      // 348px of layout height shows 300px, half of 600. Before this, the
+      // sheet kept its 448px and showed 400px — three quarters of the window.
+      expect(sheet.style.height).toBe('348px');
+      expect(sheet.style.transform).toBe('');
+      // Re-anchoring is not a gesture, so it does not animate.
+      expect(sheet.style.transition).toBe('none');
+      act(() => reconciliationFrames.splice(0).forEach(frame => frame(0)));
+      expect(sheet.style.transition).toBe('');
+    });
+
+    it('keeps its detents when the keyboard shrinks the visual viewport', () => {
+      const observers = mockResizeObserverInstances();
+      const viewport = mockVisualViewport(800);
+      mockWindowHeight(800);
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={() => {}}
+          label="Release notes"
+          height="tall">
+          Content
+        </BottomSheet>,
+      );
+      const sheet = getSheet();
+      const sheetObserver = observers.find(instance =>
+        instance.observed.has(sheet),
+      );
+      act(() => {
+        sheetObserver?.callback(
+          [resizeEntry(784, 736)],
+          sheetObserver as unknown as ResizeObserver,
+        );
+      });
+
+      fireTimedPointer(getHandle(), 'pointerdown', {time: 0, y: 0});
+      fireTimedPointer(getHandle(), 'pointermove', {time: 1000, y: 336});
+      fireTimedPointer(getHandle(), 'pointerup', {time: 2000, y: 336});
+      fireEvent.transitionEnd(sheet, {propertyName: 'transform'});
+      expect(sheet.style.height).toBe('448px');
+
+      // The keyboard opens: the visual viewport shrinks, the layout viewport
+      // the sheet is measured in does not.
+      act(() => {
+        viewport.height = 500;
+        viewport.dispatchEvent(new Event('resize'));
+      });
+      expect(sheet.style.height).toBe('448px');
+
+      // The next drag still snaps to the window's detents, not to fractions
+      // of the space the keyboard left over.
+      fireTimedPointer(getHandle(), 'pointerdown', {time: 3000, y: 0});
+      fireTimedPointer(getHandle(), 'pointermove', {time: 4000, y: 288});
+      fireTimedPointer(getHandle(), 'pointerup', {time: 5000, y: 288});
+      // The peek of an 800px window: 736 - 112 = 624px of travel.
+      expect(sheet.style.transform).toBe('translateY(624px)');
     });
   });
 
@@ -1105,6 +1230,7 @@ describe('BottomSheet', () => {
 
     it('does not alter ordinary desktop focus when the viewport is unobstructed', () => {
       mockVisualViewport(800);
+      mockWindowHeight(800);
       const onFocus = vi.fn();
       render(
         <BottomSheet
@@ -1218,6 +1344,7 @@ describe('BottomSheet', () => {
 
     it('does not add clearance or scroll when the viewport is unobstructed', () => {
       mockVisualViewport(800);
+      mockWindowHeight(800);
       render(
         <BottomSheet
           isOpen
@@ -1248,6 +1375,7 @@ describe('BottomSheet', () => {
       mockIOSWebKit();
       const observers = mockResizeObserverInstances();
       const viewport = mockVisualViewport(800);
+      mockWindowHeight(800);
       render(
         <BottomSheet
           isOpen

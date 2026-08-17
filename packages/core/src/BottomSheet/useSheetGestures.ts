@@ -21,6 +21,12 @@
  * render whose visible geometry is identical. The peek detent keeps the full
  * height and slides below the viewport instead of reflowing to a sliver.
  *
+ * Those are pixels, and the detents behind them are viewport fractions, so a
+ * sheet at rest re-resolves its detent on `resize` / `orientationchange` and
+ * re-anchors to the new geometry without animating. The detent it returns to
+ * is tracked by index: the pixels stop meaning the same thing when the
+ * viewport changes, the stop the user chose does not.
+ *
  * Kept private to BottomSheet: a dismiss edge + detents on a bottom-anchored
  * surface are inherently sheet concepts. It is not a general primitive and is
  * intentionally not exported.
@@ -122,6 +128,20 @@ function renderedBlockEndPadding(element: HTMLElement): number {
   return Number.isFinite(value) ? value : 0;
 }
 
+// How much further the body could scroll on its own, ignoring the padding the
+// hook adds to preserve scroll position across a height change.
+function naturalEndGapFor(body: HTMLElement | null): number {
+  if (!body) {
+    return 0;
+  }
+  const renderedInset = renderedBlockEndPadding(body);
+  const naturalMaxScrollTop = Math.max(
+    0,
+    body.scrollHeight - body.clientHeight - renderedInset,
+  );
+  return naturalMaxScrollTop - body.scrollTop;
+}
+
 function visibleHeightForOffset(
   sheetHeight: number,
   offset: number,
@@ -149,11 +169,11 @@ export interface UseSheetGesturesOptions {
   onDismiss: () => void;
   /**
    * Resolver for candidate visible detent heights in px below the fully open
-   * visible height. Called lazily at the start of each drag so the values stay
-   * current (e.g. after rotation or virtual-keyboard opening) without a
-   * persistent resize listener. The fully open height is always the tallest
-   * detent. Omit for a single-height sheet (a drag then only dismisses or
-   * springs back).
+   * visible height. Called at the start of each drag, and again whenever the
+   * viewport changes while the sheet rests, so the detents track the window
+   * (rotation, a resized desktop window, collapsing browser chrome). The fully
+   * open height is always the tallest detent. Omit for a single-height sheet
+   * (a drag then only dismisses or springs back).
    */
   snapHeights?: () => number[];
   /** Notified when the settled visible detent height (px) changes. */
@@ -284,6 +304,11 @@ export function useSheetGestures({
   // peek (see isPeekOffset), which keep the full height and use a transform.
   const [settledLayoutOffset, setSettledLayoutOffset] = useState(0);
   const settledLayoutOffsetRef = useRef(0);
+  // WHICH detent the sheet rests on, as an index into the resolved list. The
+  // offsets themselves are pixels derived from the viewport, so they stop
+  // meaning the same thing the moment the viewport changes; the index survives
+  // that and lets a resize re-resolve the same stop against the new geometry.
+  const settledDetentIndexRef = useRef(0);
   const [settlingLayoutOffset, setSettlingLayoutOffset] = useState<
     number | null
   >(null);
@@ -474,6 +499,7 @@ export function useSheetGestures({
       // eslint-disable-next-line @eslint-react/set-state-in-effect -- resets gesture state on controlled reopen
       setIsScrollAreaReconciling(false);
       recordSettledLayoutOffset(0);
+      settledDetentIndexRef.current = 0;
       scrollPreservationInsetRef.current = 0;
       settlingLayoutOffsetRef.current = null;
       pendingScrollPreservationInsetRef.current = null;
@@ -509,6 +535,118 @@ export function useSheetGestures({
       snapHeightsRef.current?.() ?? [],
     );
   }, []);
+
+  // The height the sheet WOULD have fully open, right now. While it rests at a
+  // resizing detent the element carries a pixel height computed for whatever
+  // the viewport was then, so measuring it directly just reads that stale
+  // number back. Drop the inline height for the measurement and put it back in
+  // the same synchronous block — the browser cannot paint in between, so this
+  // is invisible — and the natural CSS budget is what gets measured.
+  const measureFullyOpenHeight = useCallback((): number => {
+    const element = sheetElRef.current;
+    if (!element) {
+      return sheetHeightRef.current;
+    }
+    const inlineHeight = element.style.height;
+    if (inlineHeight === '') {
+      return element.getBoundingClientRect().height;
+    }
+    element.style.height = '';
+    const height = element.getBoundingClientRect().height;
+    element.style.height = inlineHeight;
+    return height;
+  }, []);
+
+  // Detents are viewport fractions, but a settled sheet holds them as pixels:
+  // an offset to translate by, and a layout height to render. Both are read
+  // once, at gesture time. Without this, a viewport change leaves the sheet
+  // frozen at the old pixel geometry — a "half height" sheet showing 75% of a
+  // shorter window, a peek detent whose slide-down is taller than the whole
+  // window (so the sheet leaves the screen while its dialog stays modal), and
+  // a stale fully-open height for the next drag to overshoot past.
+  //
+  // Re-resolve the SAME detent — by index, the one thing that survives the
+  // units changing — against the new geometry, and re-anchor without
+  // animating: the viewport moved, not the user's finger, so there is no
+  // gesture to continue and nothing to ease.
+  useEffect(() => {
+    if (!isOpen || typeof window === 'undefined') {
+      return;
+    }
+    const handleViewportChange = () => {
+      // A live drag re-measures on its own, and a settle in flight owns the
+      // layout until it lands.
+      if (
+        dragStateRef.current != null ||
+        settlingLayoutOffsetRef.current != null
+      ) {
+        return;
+      }
+      const height = measureFullyOpenHeight();
+      if (height <= 0) {
+        return;
+      }
+      const offsets = detentOffsets(height);
+      const index = Math.min(settledDetentIndexRef.current, offsets.length - 1);
+      const target = offsets[index];
+      const targetLayoutOffset = isPeekOffset(target, offsets) ? 0 : target;
+      const baseLayoutOffset = settledLayoutOffsetRef.current;
+      if (
+        height === sheetHeightRef.current &&
+        Math.abs(target - activeOffsetRef.current) <= 0.5 &&
+        Math.abs(targetLayoutOffset - baseLayoutOffset) <= 0.5
+      ) {
+        return;
+      }
+
+      sheetHeightRef.current = height;
+      setSheetHeight(height);
+      settledDetentIndexRef.current = index;
+      prepareScrollAreaSettle(
+        baseLayoutOffset,
+        target,
+        targetLayoutOffset,
+        target,
+        baseLayoutOffset,
+        naturalEndGapFor(bodyNodeRef.current),
+        false,
+      );
+      recordSettledLayoutOffset(targetLayoutOffset);
+      setSettledOffset(target);
+      onSnapRef.current?.(
+        visibleHeightForOffset(
+          height,
+          target,
+          offscreenBlockEndInsetRef.current,
+        ),
+      );
+      const maxOffset = offsets[offsets.length - 1];
+      const shortestDetentHeight = visibleHeightForOffset(
+        height,
+        maxOffset,
+        offscreenBlockEndInsetRef.current,
+      );
+      onScrimOpacityRef.current?.(
+        scrimOpacityForOffset(
+          target,
+          offsets,
+          maxOffset + shortestDetentHeight * DISMISS_OVERSHOOT_RATIO,
+        ),
+      );
+    };
+    window.addEventListener('resize', handleViewportChange);
+    window.addEventListener('orientationchange', handleViewportChange);
+    return () => {
+      window.removeEventListener('resize', handleViewportChange);
+      window.removeEventListener('orientationchange', handleViewportChange);
+    };
+  }, [
+    detentOffsets,
+    isOpen,
+    measureFullyOpenHeight,
+    prepareScrollAreaSettle,
+    recordSettledLayoutOffset,
+  ]);
 
   const cancelDrag = useCallback(
     (target?: HTMLElement) => {
@@ -605,6 +743,7 @@ export function useSheetGestures({
           true,
         );
         recordSettledLayoutOffset(targetLayoutOffset);
+        settledDetentIndexRef.current = Math.max(0, offsets.indexOf(target));
         setSettledOffset(target);
         onSnapRef.current?.(
           visibleHeightForOffset(
@@ -653,6 +792,7 @@ export function useSheetGestures({
           true,
         );
         recordSettledLayoutOffset(0);
+        settledDetentIndexRef.current = 0;
         setDragOffset(0);
         setSettledOffset(0);
         onSnapRef.current?.(
@@ -695,12 +835,7 @@ export function useSheetGestures({
       // pointer-down position (not the promotion point), so the first frame's
       // delta reflects the full pull distance.
       const start = startCoord ?? event.clientY;
-      const body = bodyNodeRef.current;
-      const renderedInset = body ? renderedBlockEndPadding(body) : 0;
-      const naturalMaxScrollTop = body
-        ? Math.max(0, body.scrollHeight - body.clientHeight - renderedInset)
-        : 0;
-      const naturalEndGap = body ? naturalMaxScrollTop - body.scrollTop : 0;
+      const naturalEndGap = naturalEndGapFor(bodyNodeRef.current);
       const baseLayoutOffset = settledLayoutOffsetRef.current;
       dragStateRef.current = {
         pointerId: event.pointerId,

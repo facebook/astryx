@@ -61,8 +61,13 @@ function defaultSnapHeights(): number[] {
   if (typeof window === 'undefined') {
     return [];
   }
-  const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
-  return SNAP_FRACTIONS.map(fraction => fraction * viewportHeight);
+  // Measure the same viewport the height budgets are written against. Those
+  // are `dvh`, which the virtual keyboard does not shrink, so reading
+  // `visualViewport` here made the two disagree by exactly the keyboard's
+  // height: every detent moved while the sheet it was measuring did not. A
+  // keyboard is `useMobileKeyboard`'s business — it holds the sheet still and
+  // scrolls the body — and it does not redefine the sheet's detents.
+  return SNAP_FRACTIONS.map(fraction => fraction * window.innerHeight);
 }
 
 const styles = stylex.create({
