@@ -15,6 +15,7 @@ import userEvent from '@testing-library/user-event';
 import {getButton, queryButton} from '../__tests__/fastRoleQueries';
 import {DateTimeInput} from './DateTimeInput';
 import type {ISODateTimeString} from './DateTimeInput';
+import {Icon} from '../Icon';
 import {defineTheme} from '../theme/defineTheme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
 import {InternationalizationProvider} from '../i18n';
@@ -1062,6 +1063,100 @@ describe('DateTimeInput', () => {
       expect(css).toContain('.astryx-date-time-input-time-segment {');
       expect(css).toContain('block-size: var(--size-element-lg)');
       expect(css).toContain('padding-inline: var(--spacing-4)');
+    });
+
+    it('renders the toggle-icon target on the calendar glyph with open/closed state', async () => {
+      const {container} = render(
+        <DateTimeInput label="Meeting" onChange={() => {}} />,
+      );
+      // The stable target lands on the icon element itself (not the button),
+      // so a theme can restyle just this glyph — mirroring
+      // `date-input-toggle-icon`.
+      const icon = container.querySelector(
+        '.astryx-date-time-input-toggle-icon',
+      );
+      expect(icon).not.toBeNull();
+      expect(icon).toHaveClass('astryx-icon');
+      expect(icon).toHaveAttribute('data-state', 'collapsed');
+
+      fireEvent.click(getButton('Open calendar'));
+      await waitFor(() => {
+        expect(
+          container.querySelector('.astryx-date-time-input-toggle-icon'),
+        ).toHaveAttribute('data-state', 'expanded');
+      });
+    });
+
+    it('renders the clock-icon target on the leading time glyph', () => {
+      const {container} = render(
+        <DateTimeInput label="Meeting" onChange={() => {}} />,
+      );
+      const icon = container.querySelector(
+        '.astryx-date-time-input-clock-icon',
+      );
+      expect(icon).not.toBeNull();
+      expect(icon).toHaveClass('astryx-icon');
+    });
+
+    it('leaves both leading glyphs byte-identical to a plain secondary/sm icon by default', () => {
+      // The targets are purely additive: the stable target class and its
+      // reflected state add nothing to the render until a theme targets them.
+      // Guard that by diffing each glyph's StyleX classes against a standalone
+      // secondary/sm icon, excluding only the additive target/state classes.
+      const {container} = render(
+        <DateTimeInput label="Meeting" onChange={() => {}} />,
+      );
+      const calendarIcon = container.querySelector(
+        '.astryx-date-time-input-toggle-icon',
+      ) as HTMLElement;
+      const clockIcon = container.querySelector(
+        '.astryx-date-time-input-clock-icon',
+      ) as HTMLElement;
+
+      const {container: refContainer} = render(
+        <Icon icon="calendar" size="sm" color="secondary" />,
+      );
+      const refIcon = refContainer.querySelector('.astryx-icon') as HTMLElement;
+
+      const themeTargetClasses = new Set([
+        'astryx-date-time-input-toggle-icon',
+        'astryx-date-time-input-clock-icon',
+        'collapsed',
+        'expanded',
+      ]);
+      const styleClasses = (el: HTMLElement) =>
+        el.className
+          .split(' ')
+          .filter(c => !themeTargetClasses.has(c))
+          .sort();
+
+      expect(styleClasses(calendarIcon)).toEqual(styleClasses(refIcon));
+      expect(styleClasses(clockIcon)).toEqual(styleClasses(refIcon));
+    });
+
+    it('exposes the icon targets so a theme reaches their size and per-state color', () => {
+      // jsdom cannot resolve the @layer cascade, so the generated CSS is what
+      // proves a same-element theme rule can reach these glyphs and win over
+      // the icon's own base size/color.
+      const theme = defineTheme({
+        name: 'date-time-input-icon-targets-test',
+        components: {
+          'date-time-input-toggle-icon': {
+            base: {width: '14px', height: '14px', fontSize: '14px'},
+            'state:expanded': {color: 'var(--color-icon-primary)'},
+          },
+          'date-time-input-clock-icon': {
+            base: {width: '14px', height: '14px', fontSize: '14px'},
+          },
+        },
+      });
+      const css = generateThemeTestCSS(theme);
+
+      expect(css).toContain('.astryx-date-time-input-toggle-icon {');
+      expect(css).toContain('.astryx-date-time-input-toggle-icon.expanded');
+      expect(css).toContain('.astryx-date-time-input-clock-icon {');
+      expect(css).toContain('width: 14px');
+      expect(css).toContain('color: var(--color-icon-primary)');
     });
   });
 });
