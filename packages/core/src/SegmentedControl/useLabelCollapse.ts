@@ -62,6 +62,16 @@ export function useLabelCollapse({
   const [element, setElement] = useState<HTMLDivElement | null>(null);
   const [measuredCollapsed, setMeasuredCollapsed] = useState(false);
 
+  // Turning the feature off (or handing over to a controlled caller) drops the
+  // measured verdict, so re-enabling starts from labels-up and measures again
+  // rather than trusting a reading taken at some other size.
+  const [wasMeasuring, setWasMeasuring] = useState(isEnabled && !isControlled);
+  const isMeasuring = isEnabled && !isControlled;
+  if (wasMeasuring !== isMeasuring) {
+    setWasMeasuring(isMeasuring);
+    setMeasuredCollapsed(false);
+  }
+
   const isCollapsed = isControlled
     ? controlledCollapsed
     : isEnabled && measuredCollapsed;
@@ -110,8 +120,7 @@ export function useLabelCollapse({
   }, [element, layout]);
 
   useIsomorphicLayoutEffect(() => {
-    if (!isEnabled || isControlled) {
-      setMeasuredCollapsed(false);
+    if (!isMeasuring) {
       naturalWidthRef.current = null;
       return;
     }
@@ -129,7 +138,7 @@ export function useLabelCollapse({
         unobserveResize(parent);
       }
     };
-  }, [isEnabled, isControlled, element, measure]);
+  }, [isMeasuring, element, measure]);
 
   return {ref: setElement, isCollapsed};
 }
