@@ -144,6 +144,140 @@ describe('Dialog', () => {
     });
   });
 
+  describe('nested-modal dismissal', () => {
+    function NestedModals({
+      isInnerOpen,
+      onOuterChange,
+      onInnerChange,
+    }: {
+      isInnerOpen: boolean;
+      onOuterChange: (isOpen: boolean) => void;
+      onInnerChange: (isOpen: boolean) => void;
+    }) {
+      return (
+        <Dialog
+          isOpen={true}
+          onOpenChange={onOuterChange}
+          purpose="info"
+          aria-label="Outer">
+          Outer content
+          <Dialog
+            isOpen={isInnerOpen}
+            onOpenChange={onInnerChange}
+            purpose="info"
+            aria-label="Inner">
+            Inner content
+          </Dialog>
+        </Dialog>
+      );
+    }
+
+    const getDialog = (label: string) =>
+      screen
+        .getAllByRole('dialog', {hidden: true})
+        .find(d => d.getAttribute('aria-label') === label)!;
+
+    const pressEscape = (target: Element) => {
+      target.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'Escape',
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
+    };
+
+    it('closes only the inner modal, not the outer, on Escape', () => {
+      const onOuterChange = vi.fn();
+      const onInnerChange = vi.fn();
+
+      render(
+        <NestedModals
+          isInnerOpen={true}
+          onOuterChange={onOuterChange}
+          onInnerChange={onInnerChange}
+        />,
+      );
+
+      const outer = getDialog('Outer');
+      const inner = getDialog('Inner');
+      expect(outer.contains(inner)).toBe(true);
+
+      pressEscape(inner);
+
+      expect(onInnerChange).toHaveBeenCalledTimes(1);
+      expect(onInnerChange).toHaveBeenCalledWith(false);
+      expect(onOuterChange).not.toHaveBeenCalled();
+    });
+
+    it('closes the outer modal on the next Escape once the inner one is gone', () => {
+      const onOuterChange = vi.fn();
+      const onInnerChange = vi.fn();
+
+      const {rerender} = render(
+        <NestedModals
+          isInnerOpen={true}
+          onOuterChange={onOuterChange}
+          onInnerChange={onInnerChange}
+        />,
+      );
+      rerender(
+        <NestedModals
+          isInnerOpen={false}
+          onOuterChange={onOuterChange}
+          onInnerChange={onInnerChange}
+        />,
+      );
+
+      pressEscape(getDialog('Outer'));
+
+      expect(onOuterChange).toHaveBeenCalledTimes(1);
+      expect(onOuterChange).toHaveBeenCalledWith(false);
+      expect(onInnerChange).not.toHaveBeenCalled();
+    });
+
+    it('closes the top-most modal on a browser-initiated cancel', () => {
+      const onOuterChange = vi.fn();
+      const onInnerChange = vi.fn();
+
+      render(
+        <NestedModals
+          isInnerOpen={true}
+          onOuterChange={onOuterChange}
+          onInnerChange={onInnerChange}
+        />,
+      );
+
+      const cancelEvent = new Event('cancel', {cancelable: true});
+      getDialog('Inner').dispatchEvent(cancelEvent);
+
+      expect(cancelEvent.defaultPrevented).toBe(true);
+      expect(onInnerChange).toHaveBeenCalledTimes(1);
+      expect(onInnerChange).toHaveBeenCalledWith(false);
+      expect(onOuterChange).not.toHaveBeenCalled();
+    });
+
+    it('leaves a modal that is not top-most open on a browser-initiated cancel', () => {
+      const onOuterChange = vi.fn();
+      const onInnerChange = vi.fn();
+
+      render(
+        <NestedModals
+          isInnerOpen={true}
+          onOuterChange={onOuterChange}
+          onInnerChange={onInnerChange}
+        />,
+      );
+
+      const cancelEvent = new Event('cancel', {cancelable: true});
+      getDialog('Outer').dispatchEvent(cancelEvent);
+
+      expect(cancelEvent.defaultPrevented).toBe(true);
+      expect(onOuterChange).not.toHaveBeenCalled();
+      expect(onInnerChange).not.toHaveBeenCalled();
+    });
+  });
+
   describe('variant: standard', () => {
     it('renders with default variant', () => {
       render(

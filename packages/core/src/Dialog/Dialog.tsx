@@ -483,7 +483,7 @@ export function Dialog({
   //
   // Inline mode opts out — it renders dialog content in normal flow, with
   // nothing layered over anything.
-  useLayerDismissal({
+  const {isTopmost} = useLayerDismissal({
     isActive: isOpen,
     isEnabled: !isInline,
     escapeBehavior: allowEscape ? 'close' : 'block',
@@ -526,12 +526,22 @@ export function Dialog({
     }
   };
 
-  // The native `cancel` event is the browser's own close-watcher firing. The
-  // layer stack already handled (and preventDefault'd) any Escape it owns, so
-  // reaching here means a dismissal the stack did not route — always cancel it
-  // and let the stack stay the single decision point.
+  // The native `cancel` event is the browser's own close-watcher firing: an
+  // Android back gesture, or an Escape the stack stood down on. Escape presses
+  // the stack owns never arrive here — it preventDefault()s those, which
+  // suppresses the close watcher.
+  //
+  // Always preventDefault so the browser cannot close a controlled <dialog>
+  // behind React's back, then answer the press with the stack's own ordering:
+  // only the top-most layer dismisses, and a `required` dialog swallows it.
   const handleCancel = (event: React.SyntheticEvent<HTMLDialogElement>) => {
     event.preventDefault();
+    if (!isTopmost()) {
+      return;
+    }
+    if (allowEscape) {
+      onOpenChange(false);
+    }
   };
 
   // Shared inner content wrapper
