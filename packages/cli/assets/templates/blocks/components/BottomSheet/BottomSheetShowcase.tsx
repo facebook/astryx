@@ -13,6 +13,9 @@ import {VStack} from '@astryxdesign/core/Stack';
 
 export default function BottomSheetShowcase() {
   const [isOpen, setIsOpen] = useState(false);
+  const [inStock, setInStock] = useState(false);
+  const [onSale, setOnSale] = useState(false);
+  const [freeShipping, setFreeShipping] = useState(false);
 
   return (
     <>
@@ -23,9 +26,21 @@ export default function BottomSheetShowcase() {
             <Heading level={3}>Filters</Heading>
             <Divider />
             <VStack gap={2}>
-              <CheckboxInput label="In stock" value={false} />
-              <CheckboxInput label="On sale" value={false} />
-              <CheckboxInput label="Free shipping" value={false} />
+              <CheckboxInput
+                label="In stock"
+                value={inStock}
+                onChange={setInStock}
+              />
+              <CheckboxInput
+                label="On sale"
+                value={onSale}
+                onChange={setOnSale}
+              />
+              <CheckboxInput
+                label="Free shipping"
+                value={freeShipping}
+                onChange={setFreeShipping}
+              />
             </VStack>
             <Button label="Apply" onClick={() => setIsOpen(false)} />
           </VStack>
