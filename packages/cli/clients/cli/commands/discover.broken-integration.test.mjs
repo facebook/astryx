@@ -1,7 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx discover` against an integration whose manifest fails to load.
+ * @file `astryx discover` and `astryx search` against an integration whose
+ * manifest fails to load.
  *
  * A manifest authored against a removed API throws on import, contributes
  * nothing, and used to leave discover reporting "No integrations configured."
@@ -14,7 +15,13 @@ import {describe, it, expect, beforeEach, afterEach} from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
+import {fileURLToPath} from 'node:url';
 import {runCli} from '../../../test-utils/run-cli.mjs';
+
+const CORE_DIR = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '../../../../core',
+);
 
 let tmpDir;
 let project;
@@ -78,4 +85,28 @@ describe('astryx discover with a manifest that fails to load', () => {
     expect(JSON.parse(stdout).meta).toEqual({configured: true});
     expect(stderr).not.toContain('integration issue');
   });
+});
+
+describe('astryx search with a manifest that fails to load', () => {
+  // search needs a resolvable @astryxdesign/core; without one it errors out
+  // before it can list anything, which is not the case under test.
+  beforeEach(() => {
+    const scope = path.join(project, 'node_modules', '@astryxdesign');
+    fs.mkdirSync(scope, {recursive: true});
+    fs.symlinkSync(CORE_DIR, path.join(scope, 'core'), 'dir');
+  });
+
+  it('warns on stderr, and suppresses the nudge under --json', async () => {
+    const {status, stderr} = await runCli(['search', 'button'], {cwd: project});
+
+    expect(status).toBe(0);
+    expect(stderr).toContain(
+      'Warning: @test/broken has 1 integration issue(s). ' +
+        'Run: astryx validate-integration @test/broken',
+    );
+
+    const asJson = await runCli(['search', 'button', '--json'], {cwd: project});
+    expect(asJson.status).toBe(0);
+    expect(asJson.stderr).not.toContain('integration issue');
+  }, 30_000);
 });
