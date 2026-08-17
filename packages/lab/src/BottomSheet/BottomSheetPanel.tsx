@@ -122,9 +122,11 @@ const styles = stylex.create({
   body: {
     flexGrow: 1,
     minHeight: 0,
+    boxSizing: 'border-box',
     overflowY: 'auto',
     overscrollBehavior: 'none',
     touchAction: 'pan-y',
+    paddingBlockEnd: 0,
   },
   tallKeyboardBody: {
     scrollPaddingBlockEnd: MOBILE_KEYBOARD_BOTTOM_CLEARANCE,
@@ -338,9 +340,15 @@ export function BottomSheetPanel({
     dragOffset,
     settledOffset,
     isDragging,
+    sheetHeight,
+    scrollPreservationInset,
+    settlingLayoutOffset,
+    settledLayoutOffset,
+    completeScrollAreaSettle,
   } = useSheetGestures({
     isOpen: isInteractive,
     canDismiss: canSwipeDismiss,
+    offscreenBlockEndInset: OVERSCROLL_PADDING,
     onDismiss,
     snapHeights: defaultSnapHeights,
     onScrimOpacity,
@@ -400,6 +408,20 @@ export function BottomSheetPanel({
       },
     );
   }, [motion]);
+  // The snap is transform-only; the layout height reconciles when it lands.
+  // waitForTransition — the same helper the motion states use — resolves that
+  // even when no `transitionend` is coming: inline or computed
+  // `transition: none`, a zero duration, and a timer backstop otherwise.
+  useLayoutEffect(() => {
+    if (settlingLayoutOffset == null) {
+      return;
+    }
+    return waitForTransition(
+      elementRef.current,
+      'transform',
+      completeScrollAreaSettle,
+    );
+  }, [completeScrollAreaSettle, settlingLayoutOffset]);
   useEffect(() => {
     if (motion == null) {
       return;
@@ -426,13 +448,48 @@ export function BottomSheetPanel({
     : typeof height === 'number'
       ? `${height}px`
       : height;
+  const hasMeasuredSheet = sheetHeight > 0;
+  let gestureTransform = contentProps.style.transform;
+  let resizedHeight: string | undefined;
+  if (hasMeasuredSheet) {
+    // The sheet's travel is split across two properties: `layoutOffset` is the
+    // part the scrolling area gives up as layout height, and the remainder is
+    // a compositor transform. Live gestures and snaps only ever move the
+    // transform — the layout height changes at rest, in one reconciling render
+    // whose visible geometry is identical (see useSheetGestures).
+    //   - dragging above the base restores the full height below the viewport
+    //   - a peek settles with layout 0, so it slides rather than reflowing
+    const layoutOffset = isDragging
+      ? dragOffset < settledOffset
+        ? 0
+        : settledLayoutOffset
+      : (settlingLayoutOffset ?? settledLayoutOffset);
+    const activeOffset = isDragging ? dragOffset : settledOffset;
+    const translation = activeOffset - layoutOffset;
+
+    // At layout 0 the sheet is its natural height, so leave that to CSS —
+    // `hug` sheets must stay fit-content. While the sheet is in motion it is
+    // pinned in px instead: content reflowing mid-gesture would move the
+    // surface out from under the finger, or under the snap.
+    const isTraveling = isDragging || settlingLayoutOffset != null;
+    resizedHeight =
+      layoutOffset > 0 || isTraveling
+        ? `${Math.max(0, sheetHeight - Math.max(0, layoutOffset))}px`
+        : undefined;
+    gestureTransform =
+      translation !== 0 ? `translateY(${translation}px)` : undefined;
+  }
   const retainedTransform =
     alignmentOffset > 0
-      ? [contentProps.style.transform, `translateY(${alignmentOffset}px)`]
+      ? [gestureTransform, `translateY(${alignmentOffset}px)`]
           .filter(Boolean)
           .join(' ')
-      : contentProps.style.transform;
-
+      : gestureTransform;
+  const gestureStyle = {
+    ...contentProps.style,
+    transform: gestureTransform,
+    height: resizedHeight,
+  };
   return (
     <div
       {...props}
@@ -452,10 +509,12 @@ export function BottomSheetPanel({
         {
           ['--_sheet-budget' as string]: budget,
           ...(isInteractive
-            ? contentProps.style
+            ? gestureStyle
             : isRetained
-              ? {transform: retainedTransform}
-              : {}),
+              ? {transform: retainedTransform, height: resizedHeight}
+              : isClosing
+                ? {height: resizedHeight}
+                : {}),
           ...style,
         },
       )}>
@@ -471,6 +530,11 @@ export function BottomSheetPanel({
           height === 'tall' && styles.tallKeyboardBody,
         )}
         {...bodyProps}
+        style={
+          scrollPreservationInset > 0
+            ? {paddingBlockEnd: `${scrollPreservationInset}px`}
+            : undefined
+        }
         ref={setBodyElement}>
         {children}
       </div>

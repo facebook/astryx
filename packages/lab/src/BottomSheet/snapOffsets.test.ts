@@ -16,6 +16,7 @@ import {
   nearestOffset,
   resolveSettleOffset,
   scrimOpacityForOffset,
+  isPeekOffset,
   DETENT_DEDUP_PX,
 } from './snapOffsets';
 
@@ -96,6 +97,40 @@ describe('resolveSettleOffset', () => {
 
   it('with no direction, picks the plain nearest', () => {
     expect(resolveSettleOffset(180, offsets, 0, 200)).toBe(200);
+  });
+});
+
+describe('isPeekOffset', () => {
+  const offsets = [0, 100, 200]; // full, mid, peek
+
+  it('is true only for the shortest detent', () => {
+    expect(isPeekOffset(200, offsets)).toBe(true);
+    expect(isPeekOffset(100, offsets)).toBe(false);
+    expect(isPeekOffset(0, offsets)).toBe(false);
+  });
+
+  it('tolerates sub-pixel rounding around the peek', () => {
+    expect(isPeekOffset(200.4, offsets)).toBe(true);
+    expect(isPeekOffset(199.6, offsets)).toBe(true);
+    expect(isPeekOffset(196, offsets)).toBe(false);
+  });
+
+  it('has no peek when the sheet has no collapsed stop', () => {
+    expect(isPeekOffset(200, [0])).toBe(false);
+    expect(isPeekOffset(0, [0])).toBe(false);
+  });
+
+  it('treats the only collapsed stop as the peek', () => {
+    expect(isPeekOffset(200, [0, 200])).toBe(true);
+  });
+
+  it('agrees with the detent scrimOpacityForOffset treats as the peek', () => {
+    const dismissOffset = 280;
+    const peek = offsets[offsets.length - 1];
+    expect(isPeekOffset(peek, offsets)).toBe(true);
+    expect(scrimOpacityForOffset(peek, offsets, dismissOffset)).toBeCloseTo(
+      0.3,
+    );
   });
 });
 

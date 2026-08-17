@@ -7,11 +7,10 @@
  * @position Internal to BottomSheet; consumed by useSheetGestures, tested by
  *   snapOffsets.test.ts.
  *
- * The sheet is rendered at its full (fully-open) height and *translated down*
- * to express shorter detents — translate is GPU-composited, so this is cheaper
- * than animating layout height. A detent is therefore a translateY offset in
- * px from the fully-open position (0 = fully open, larger = more collapsed).
- * These helpers turn snap points into that offset list; they are pure so the
+ * A detent is represented as an offset in px from the fully-open position
+ * (0 = fully open, larger = more collapsed). The panel may render that offset
+ * as a translate or as a reduction in layout height. These
+ * helpers turn snap points into the shared offset list; they are pure so the
  * geometry can be unit-tested without a DOM.
  */
 
@@ -33,12 +32,12 @@ export function snapFractionsToHeights(
 
 /**
  * Given the sheet's full height (px, as rendered fully open) and a set of
- * candidate detent *visible heights* (px), return the resting translateY
- * offsets from fully-open, ascending and de-duplicated.
+ * candidate detent *visible heights* (px), return the resting offsets from
+ * fully-open, ascending and de-duplicated.
  *
  * - `0` (fully open) is always the first detent.
  * - Only heights strictly shorter than the sheet become collapsed detents; a
- *   height >= the sheet can't be shown by translating down, so it's dropped.
+ *   height >= the sheet is already covered by the fully-open stop.
  * - Offsets closer than `dedupPx` collapse to the smaller (taller) offset, so
  *   near-identical detents — e.g. a hug height ≈ a snap point — become one stop.
  */
@@ -80,6 +79,27 @@ export function nearestOffset(
  * genuinely interactive, undimmed peek, use a non-modal sheet, `hasScrim=false`.)
  */
 export const MIN_PEEK_SCRIM_OPACITY = 0.3;
+
+/**
+ * Whether `offset` is the peek detent: the shortest stop, where the sheet is a
+ * glance rather than a working surface. A sheet with no collapsed stop at all
+ * has no peek — the same rule `scrimOpacityForOffset` thins the scrim by.
+ *
+ * The peek is the one detent the sheet does NOT express as layout height: at a
+ * sliver of viewport there is nothing useful to lay out, and reflowing the
+ * content into it (then back out on the way up) is churn the user sees. It
+ * keeps the full layout height and slides below the viewport instead.
+ */
+export function isPeekOffset(
+  offset: number,
+  offsets: ReadonlyArray<number>,
+  tolerancePx: number = 0.5,
+): boolean {
+  if (offsets.length < 2) {
+    return false;
+  }
+  return Math.abs(offset - offsets[offsets.length - 1]) <= tolerancePx;
+}
 
 /**
  * Scrim opacity (1 = fully visible) for a drag/settle `offset`.

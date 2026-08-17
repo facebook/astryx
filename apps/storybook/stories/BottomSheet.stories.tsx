@@ -338,7 +338,10 @@ export const HugHeightWithLongContent: Story = {
               <Heading level={3}>Release notes</Heading>
               <Text type="supporting" color="secondary">
                 The sheet hugs its content until it reaches 92% of the viewport,
-                then the content scrolls within the sheet.
+                then the content scrolls within the sheet. Drag it to a snap
+                point and the scrolling area resizes to the height you can
+                actually see — except at the shortest peek, which slides below
+                the viewport at full height rather than reflowing to a sliver.
               </Text>
               <Divider />
               {Array.from({length: 12}, (_, i) => (

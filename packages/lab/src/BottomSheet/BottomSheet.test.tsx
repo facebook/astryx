@@ -99,6 +99,16 @@ function rect({top, bottom}: {top: number; bottom: number}): DOMRect {
   };
 }
 
+function resizeEntry(
+  borderBoxHeight: number,
+  contentBoxHeight = borderBoxHeight,
+): ResizeObserverEntry {
+  return {
+    borderBoxSize: [{blockSize: borderBoxHeight, inlineSize: 100}],
+    contentRect: rect({top: 0, bottom: contentBoxHeight}),
+  } as ResizeObserverEntry;
+}
+
 function mockVisualViewport(height: number, offsetTop = 0) {
   const viewport = Object.assign(new EventTarget(), {
     height,
@@ -601,6 +611,320 @@ describe('BottomSheet', () => {
         unmount();
       }
     });
+
+    it('keeps the full layout height at the peek detent', () => {
+      const observers = mockResizeObserverInstances();
+      mockVisualViewport(800);
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={() => {}}
+          label="Release notes"
+          height="tall">
+          Content
+        </BottomSheet>,
+      );
+      const sheet = getSheet();
+      const sheetObserver = observers.find(instance =>
+        instance.observed.has(sheet),
+      );
+      act(() => {
+        sheetObserver?.callback(
+          [resizeEntry(784, 736)],
+          sheetObserver as unknown as ResizeObserver,
+        );
+      });
+
+      // Settle on the shortest 112px peek: offset 736 - 112 = 624.
+      fireTimedPointer(getHandle(), 'pointerdown', {time: 0, y: 0});
+      fireTimedPointer(getHandle(), 'pointermove', {time: 1000, y: 600});
+      fireTimedPointer(getHandle(), 'pointerup', {time: 2000, y: 600});
+      fireEvent.transitionEnd(sheet, {propertyName: 'transform'});
+
+      // A glance state does not reflow the content into a sliver: the sheet
+      // keeps its full layout height and slides below the viewport instead.
+      expect(sheet.style.height).toBe('');
+      expect(sheet.style.transform).toBe('translateY(624px)');
+      expect(getBody().style.paddingBlockEnd).toBe('');
+
+      // Dragging back up off the peek stays transform-only for the same
+      // reason — there is no shortened layout to restore first.
+      fireTimedPointer(getHandle(), 'pointerdown', {time: 3000, y: 600});
+      fireTimedPointer(getHandle(), 'pointermove', {time: 4000, y: 400});
+      expect(sheet.style.transform).toBe('translateY(424px)');
+      expect(sheet.style.height).toBe('784px');
+      expect(getBody().style.paddingBlockEnd).toBe('');
+
+      // Releasing at the taller p50 detent resizes the scrolling area.
+      fireTimedPointer(getHandle(), 'pointerup', {time: 5000, y: 400});
+      fireEvent.transitionEnd(sheet, {propertyName: 'transform'});
+      expect(sheet.style.height).toBe('448px');
+      expect(sheet.style.transform).toBe('');
+    });
+
+    it('swaps height for transform without a transition when released on a detent', () => {
+      const observers = mockResizeObserverInstances();
+      mockVisualViewport(800);
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={() => {}}
+          label="Release notes"
+          height="tall">
+          Content
+        </BottomSheet>,
+      );
+      const sheet = getSheet();
+      const sheetObserver = observers.find(instance =>
+        instance.observed.has(sheet),
+      );
+      act(() => {
+        sheetObserver?.callback(
+          [resizeEntry(784, 736)],
+          sheetObserver as unknown as ResizeObserver,
+        );
+      });
+
+      // magnetize() lands a slow drag exactly on the p50 detent (offset 336),
+      // so the release has no travel left to animate and reconciles at once.
+      fireTimedPointer(getHandle(), 'pointerdown', {time: 0, y: 0});
+      fireTimedPointer(getHandle(), 'pointermove', {time: 1000, y: 336});
+      expect(sheet.style.transform).toBe('translateY(336px)');
+      expect(sheet.style.height).toBe('784px');
+
+      // Hold the reconciliation frame so the intermediate render is visible
+      // to the assertions below.
+      const reconciliationFrames: FrameRequestCallback[] = [];
+      vi.mocked(requestAnimationFrame).mockImplementation(callback => {
+        reconciliationFrames.push(callback);
+        return reconciliationFrames.length;
+      });
+      fireTimedPointer(getHandle(), 'pointerup', {time: 2000, y: 336});
+
+      // Height and transform swap roles in this one render. That is only
+      // invisible with transitions off; live, the composited transform would
+      // animate the whole 336px swap while the height jumped, and the sheet
+      // would lurch away from the detent before coming back to it.
+      expect(sheet.style.height).toBe('448px');
+      expect(sheet.style.transform).toBe('');
+      expect(sheet.style.transition).toBe('none');
+
+      // Transitions come back for the next gesture.
+      act(() => reconciliationFrames.splice(0).forEach(frame => frame(0)));
+      expect(sheet.style.transition).toBe('');
+    });
+
+    it('uses transforms while dragging and resizes to the visible snapped height', () => {
+      const observers = mockResizeObserverInstances();
+      mockVisualViewport(800);
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={() => {}}
+          label="Release notes"
+          height="tall">
+          Content
+        </BottomSheet>,
+      );
+      const sheet = getSheet();
+      const sheetObserver = observers.find(instance =>
+        instance.observed.has(sheet),
+      );
+      act(() => {
+        sheetObserver?.callback(
+          // A Tall sheet has 736px visible height in this 800px viewport plus
+          // the 48px border-box reserve held below the viewport.
+          [resizeEntry(784, 736)],
+          sheetObserver as unknown as ResizeObserver,
+        );
+      });
+
+      fireTimedPointer(getHandle(), 'pointerdown', {time: 0, y: 0});
+      fireTimedPointer(getHandle(), 'pointermove', {time: 1000, y: 240});
+
+      expect(sheet.style.transform).toBe('translateY(240px)');
+      expect(sheet.style.height).toBe('784px');
+      expect(sheet.style.transition).toBe('none');
+
+      fireTimedPointer(getHandle(), 'pointerup', {time: 2000, y: 240});
+      // Release remains transform-only until the snap finishes.
+      // p50 is a visible 400px sheet: 784 - 48 - 400 = 336px offset.
+      expect(sheet.style.transform).toBe('translateY(336px)');
+      expect(sheet.style.height).toBe('784px');
+      expect(sheet.style.transition).toBe('');
+      const reconciliationFrames: FrameRequestCallback[] = [];
+      vi.mocked(requestAnimationFrame).mockImplementation(callback => {
+        reconciliationFrames.push(callback);
+        return reconciliationFrames.length;
+      });
+      fireEvent.transitionEnd(sheet, {propertyName: 'transform'});
+      expect(sheet.style.transform).toBe('');
+      expect(sheet.style.height).toBe('448px');
+      // The transform reset is transition-free so it cannot produce a second
+      // fly-in animation after the snap has already reached its destination.
+      expect(sheet.style.transition).toBe('none');
+      expect(reconciliationFrames.length).toBeGreaterThan(0);
+      act(() => reconciliationFrames.splice(0).forEach(frame => frame(0)));
+      expect(sheet.style.transition).toBe('');
+
+      // Ignore ResizeObserver frames from the height reconciliation. The
+      // next drag must still use the original 784px border-box height.
+      act(() => {
+        sheetObserver?.callback(
+          [resizeEntry(500, 452)],
+          sheetObserver as unknown as ResizeObserver,
+        );
+      });
+      fireTimedPointer(getHandle(), 'pointerdown', {time: 3000, y: 240});
+      fireTimedPointer(getHandle(), 'pointermove', {time: 4000, y: 140});
+      expect(sheet.style.transform).toBe('translateY(236px)');
+      expect(sheet.style.height).toBe('784px');
+      expect(getBody().style.paddingBlockEnd).toBe('336px');
+
+      // Reversing below the settled point restores the settled height and
+      // translates only the distance traveled from that detent. The temporary
+      // scroll-preservation inset leaves with the temporary expanded layout.
+      fireTimedPointer(getHandle(), 'pointermove', {time: 5000, y: 340});
+      expect(sheet.style.transform).toBe('translateY(100px)');
+      expect(sheet.style.height).toBe('448px');
+      expect(getBody().style.paddingBlockEnd).toBe('');
+    });
+
+    it('reconciles the snapped height immediately when transitions are disabled', () => {
+      const observers = mockResizeObserverInstances();
+      mockVisualViewport(800);
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={() => {}}
+          label="Release notes"
+          height="tall"
+          style={{transition: 'none'}}>
+          Content
+        </BottomSheet>,
+      );
+      const sheet = getSheet();
+      const sheetObserver = observers.find(instance =>
+        instance.observed.has(sheet),
+      );
+      act(() => {
+        sheetObserver?.callback(
+          [resizeEntry(784, 736)],
+          sheetObserver as unknown as ResizeObserver,
+        );
+      });
+
+      fireTimedPointer(getHandle(), 'pointerdown', {time: 0, y: 0});
+      fireTimedPointer(getHandle(), 'pointermove', {time: 1000, y: 240});
+      fireTimedPointer(getHandle(), 'pointerup', {time: 2000, y: 240});
+
+      expect(sheet.style.transform).toBe('');
+      expect(sheet.style.height).toBe('448px');
+    });
+
+    it('restores the maximum height before an upward drag and reconciles at snap', () => {
+      const observers = mockResizeObserverInstances();
+      mockVisualViewport(800);
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={() => {}}
+          label="Release notes"
+          height="tall">
+          Content
+        </BottomSheet>,
+      );
+      const sheet = getSheet();
+      const sheetObserver = observers.find(instance =>
+        instance.observed.has(sheet),
+      );
+      act(() => {
+        sheetObserver?.callback(
+          [resizeEntry(784, 736)],
+          sheetObserver as unknown as ResizeObserver,
+        );
+      });
+
+      // Start at the middle 400px detent.
+      fireTimedPointer(getHandle(), 'pointerdown', {time: 0, y: 0});
+      fireTimedPointer(getHandle(), 'pointermove', {time: 1000, y: 240});
+      fireTimedPointer(getHandle(), 'pointerup', {time: 2000, y: 240});
+      fireEvent.transitionEnd(sheet, {propertyName: 'transform'});
+      expect(sheet.style.height).toBe('448px');
+
+      // The upward gesture renders the full 784px surface below the viewport
+      // and translates it to preserve the visible top edge.
+      fireTimedPointer(getHandle(), 'pointerdown', {time: 3000, y: 240});
+      fireTimedPointer(getHandle(), 'pointermove', {time: 4000, y: 0});
+      expect(sheet.style.transform).toBe('translateY(96px)');
+      expect(sheet.style.height).toBe('784px');
+      expect(getBody().style.paddingBlockEnd).toBe('336px');
+
+      // Release first animates only the transform, keeping the source layout
+      // and scroll range fixed for the entire snap.
+      fireTimedPointer(getHandle(), 'pointerup', {time: 5000, y: 0});
+      expect(sheet.style.transform).toBe('');
+      expect(sheet.style.height).toBe('784px');
+      expect(getBody().style.paddingBlockEnd).toBe('336px');
+
+      // At transition end, height and preservation spacing reconcile in one
+      // render with the same visible geometry.
+      fireEvent.transitionEnd(sheet, {propertyName: 'transform'});
+      expect(sheet.style.transform).toBe('');
+      expect(sheet.style.height).toBe('');
+      expect(getBody().style.paddingBlockEnd).toBe('336px');
+
+      // Once ordinary scrolling brings the content back within its natural
+      // range, the retained end padding is no longer needed and is discarded.
+      const body = getBody();
+      Object.defineProperties(body, {
+        clientHeight: {configurable: true, value: 600},
+        scrollHeight: {configurable: true, value: 1000},
+        scrollTop: {configurable: true, value: 64, writable: true},
+      });
+      fireEvent.scroll(body);
+      expect(body.style.paddingBlockEnd).toBe('');
+    });
+
+    it('keeps the settled height stable while dismissing', () => {
+      const observers = mockResizeObserverInstances();
+      mockVisualViewport(800);
+      render(<ExitHarness />);
+      const sheet = getSheet();
+      const sheetObserver = observers.find(instance =>
+        instance.observed.has(sheet),
+      );
+      act(() => {
+        sheetObserver?.callback(
+          [resizeEntry(784, 736)],
+          sheetObserver as unknown as ResizeObserver,
+        );
+      });
+
+      // First settle at the middle detent.
+      fireTimedPointer(getHandle(), 'pointerdown', {time: 0, y: 0});
+      fireTimedPointer(getHandle(), 'pointermove', {time: 1000, y: 240});
+      fireTimedPointer(getHandle(), 'pointerup', {time: 2000, y: 240});
+      fireEvent.transitionEnd(sheet, {propertyName: 'transform'});
+      expect(sheet.style.height).toBe('448px');
+
+      // A later dismiss stays transform-only and preserves that settled
+      // scroll-area height throughout the exit.
+      fireTimedPointer(getHandle(), 'pointerdown', {time: 3000, y: 240});
+      fireTimedPointer(getHandle(), 'pointermove', {time: 4000, y: 1000});
+      expect(sheet.style.transform).toBe('translateY(760px)');
+      expect(sheet.style.height).toBe('448px');
+      fireTimedPointer(getHandle(), 'pointerup', {time: 5000, y: 1000});
+      expect(sheet.style.height).toBe('448px');
+
+      act(() => {
+        sheetObserver?.callback(
+          [resizeEntry(200, 152)],
+          sheetObserver as unknown as ResizeObserver,
+        );
+      });
+      expect(sheet.style.height).toBe('448px');
+    });
   });
 
   describe('mobile keyboard', () => {
@@ -939,7 +1263,7 @@ describe('BottomSheet', () => {
       expect(sheetObserver).toBeDefined();
       act(() => {
         sheetObserver?.callback(
-          [{contentRect: rect({top: 0, bottom: 800})} as ResizeObserverEntry],
+          [resizeEntry(784)],
           sheetObserver as unknown as ResizeObserver,
         );
       });
@@ -947,7 +1271,11 @@ describe('BottomSheet', () => {
       fireTimedPointer(getHandle(), 'pointerdown', {time: 0, y: 0});
       fireTimedPointer(getHandle(), 'pointermove', {time: 1000, y: 240});
       fireTimedPointer(getHandle(), 'pointerup', {time: 2000, y: 240});
-      expect(sheet.style.transform).toBe('translateY(400px)');
+      fireEvent.transitionEnd(sheet, {propertyName: 'transform'});
+      // Settled at the p50 detent: 400px of visible sheet plus the 48px
+      // border-box reserve held below the viewport.
+      expect(sheet.style.transform).toBe('');
+      expect(sheet.style.height).toBe('448px');
 
       vi.spyOn(body, 'getBoundingClientRect').mockReturnValue(
         rect({top: 500, bottom: 1200}),
@@ -969,7 +1297,9 @@ describe('BottomSheet', () => {
         '0px',
       );
       expect(body.scrollTop).toBe(0);
-      expect(sheet.style.transform).toBe('translateY(400px)');
+      // The keyboard moved nothing: the sheet still rests at that detent.
+      expect(sheet.style.transform).toBe('');
+      expect(sheet.style.height).toBe('448px');
     });
 
     it.each([

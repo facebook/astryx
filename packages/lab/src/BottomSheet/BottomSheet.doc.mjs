@@ -170,6 +170,17 @@ export const docs = {
 </BottomSheet>`,
     },
     {
+      label: 'Long scrolling content',
+      code: `const [isOpen, setIsOpen] = useState(false);
+<BottomSheet
+  isOpen={isOpen}
+  onOpenChange={setIsOpen}
+  label="Release notes"
+  height="hug">
+  <ReleaseNotes />
+</BottomSheet>`,
+    },
+    {
       label: 'Multi-step flow (one sheet at a time)',
       code: `const [activeSheet, setActiveSheet] = useState(null);
 <>
@@ -225,7 +236,7 @@ export const docs = {
 /** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
-    'mobile touch sheet rising from the bottom edge (native <dialog>): grab handle, drag-to-resize snap points, Dialog-aligned dismissal purpose (info/form/required), fully-expanded Tall visual-viewport mobile-keyboard handling, named height scale, modal (default) or non-modal (hasScrim={false}) presentation',
+    'mobile touch sheet rising from the bottom edge (native <dialog>): grab handle, transform-based drag-to-resize snap points, scrolling area resizes to the snapped visible height on release (the peek detent keeps the full height and slides instead), Dialog-aligned dismissal purpose (info/form/required), purpose-gated swipe-to-dismiss, fully-expanded Tall visual-viewport mobile-keyboard handling, named height scale, modal (default) or non-modal (hasScrim={false}) presentation',
   usage: {
     description:
       'Mobile touch surface for filters, actions, forms, and detail views that should rise from the bottom of the viewport; use BottomSheetSwitcher for multi-step flows.',

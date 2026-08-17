@@ -176,6 +176,74 @@ describe('useSheetGestures', () => {
     expect(hook.result.current.settledOffset).toBe(200);
   });
 
+  it('excludes the offscreen block-end reserve from visible detent heights', () => {
+    const onSnap = vi.fn();
+    const {hook} = setup({
+      snapHeights: () => [200],
+      offscreenBlockEndInset: 48,
+      onSnap,
+    });
+    const t = makeTarget();
+
+    // The 400px border box has 352px visible. A 200px visible detent therefore
+    // rests at offset 152, not 200; the 48px reserve remains below the viewport.
+    down(hook, 0, 0, t);
+    move(hook, 150, 700, t);
+    up(hook, 150, 1100, t);
+
+    expect(hook.result.current.settledOffset).toBe(152);
+    expect(onSnap).toHaveBeenLastCalledWith(200);
+  });
+
+  it('keeps the full layout height at the peek detent', () => {
+    // Three detents on the 400px sheet: full (0), mid 240 (offset 160), and
+    // the 80px peek (offset 320).
+    const {hook} = setup({snapHeights: () => [80, 240]});
+    const t = makeTarget();
+
+    // Settle at the mid detent: the scrolling area takes that travel as
+    // layout height.
+    down(hook, 0, 0, t);
+    move(hook, 150, 700, t);
+    up(hook, 150, 1100, t);
+    expect(hook.result.current.settledOffset).toBe(160);
+    expect(hook.result.current.settledLayoutOffset).toBe(160);
+
+    // Settle at the peek: a glance state keeps the sheet's full layout height
+    // and slides it below the viewport, so no layout travel is reported.
+    down(hook, 150, 2000, t);
+    move(hook, 310, 2700, t);
+    up(hook, 310, 3100, t);
+    expect(hook.result.current.settledOffset).toBe(320);
+    expect(hook.result.current.settledLayoutOffset).toBe(0);
+  });
+
+  it('treats the only collapsed stop as a peek, like the scrim does', () => {
+    const {hook} = setup({snapHeights: () => [200]});
+    const t = makeTarget();
+    down(hook, 0, 0, t);
+    move(hook, 180, 700, t);
+    up(hook, 180, 1100, t);
+    expect(hook.result.current.settledOffset).toBe(200);
+    expect(hook.result.current.settledLayoutOffset).toBe(0);
+  });
+
+  it('uses the visible shortest detent height for the dismiss overshoot', () => {
+    const {hook, onDismiss} = setup({
+      snapHeights: () => [200],
+      offscreenBlockEndInset: 48,
+    });
+    const t = makeTarget();
+
+    // Visible full height is 352px, so the 200px stop is offset 152. Its 40%
+    // dismiss overshoot ends at 232px; the hidden reserve must not extend it.
+    down(hook, 0, 0, t);
+    move(hook, 235, 1000, t);
+    up(hook, 235, 2000, t);
+
+    expect(onDismiss).toHaveBeenCalledTimes(1);
+  });
+
   it('a downward drag from a middle detent never snaps back up past it', () => {
     // Three detents on a 600px sheet: full (offset 0), mid 360 (offset 240),
     // short 160 (offset 440). Rest at the mid detent, then drag DOWN a modest
