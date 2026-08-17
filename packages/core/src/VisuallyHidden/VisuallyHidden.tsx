@@ -27,7 +27,7 @@ import * as stylex from '@stylexjs/stylex';
  */
 export interface VisuallyHiddenProps extends Omit<
   BaseProps<HTMLElement>,
-  'xstyle' | 'className' | 'style'
+  'className' | 'style'
 > {
   /** Ref forwarded to the rendered element. */
   ref?: React.Ref<HTMLElement>;

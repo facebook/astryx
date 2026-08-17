@@ -133,8 +133,6 @@ export function TypeaheadItem<T extends SearchableItem>({
   description,
   isDisabled = false,
   xstyle,
-  className,
-  style,
 }: TypeaheadItemProps<T>) {
   // If item has a pre-rendered element, use it
   if (item.element) {
@@ -147,8 +145,6 @@ export function TypeaheadItem<T extends SearchableItem>({
       {...mergeProps(
         themeProps('typeahead-item'),
         stylex.props(styles.container, isDisabled && styles.disabled, xstyle),
-        className,
-        style,
       )}>
       {icon}
       <div {...stylex.props(styles.content)}>

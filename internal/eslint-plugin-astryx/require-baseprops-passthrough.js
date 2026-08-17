@@ -34,7 +34,7 @@
  *     which re-accepts `xstyle` through its own BaseProps.
  *
  * Opt out by omitting the prop from the props type (e.g.
- * `Omit<BaseProps, 'xstyle' | 'className' | 'style'>`, as VisuallyHidden does),
+ * `Omit<BaseProps, 'className' | 'style'>`, as VisuallyHidden does),
  * or by marking an intentionally-unused binding with a leading underscore
  * (e.g. `className: _className`).
  *

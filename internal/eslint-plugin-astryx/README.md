@@ -114,7 +114,7 @@ escape hatches, but the implementation can silently drop them:
 - **Not forwarded** — a styling prop the type promises is never destructured and never reaches
   the root element.
 
-Forwarding paths differ by what each prop *is*:
+Forwarding paths differ by what each prop _is_:
 
 - `className` and `style` are real DOM attributes, so they survive a `{...rest}` spread onto
   the root element (native or composed) — that counts as forwarding them.
@@ -126,8 +126,11 @@ Fix by threading each prop into the root `mergeProps(...)` / `stylex.props(...)`
 forwarding to a composed component.
 
 Scoped to public components (those with a `.displayName`). Opt out by omitting the prop from
-the type, e.g. `Omit<BaseProps, 'xstyle' | 'className' | 'style'>` (as `VisuallyHidden` does),
+the type, e.g. `Omit<BaseProps, 'className' | 'style'>` (as `VisuallyHidden` does),
 or mark an intentionally-unused binding with a leading underscore (`className: _className`).
+
+Currently `warn` in both tiers: core still has outstanding violations, and the rule flips to
+`error` in strict once they are fixed.
 
 ## Usage
 

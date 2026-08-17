@@ -329,9 +329,6 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   debounceMs = 150,
   size = 'md',
   ref,
-  xstyle,
-  className,
-  style,
 }: BaseTypeaheadProps<T>) {
   const t = useTranslator();
   const placeholder =
@@ -795,15 +792,10 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         autoFocus={hasAutoFocus}
         data-autofocus={hasAutoFocus || undefined}
         autoComplete="off"
-        {...mergeProps(
-          stylex.props(
-            styles.input,
-            isDisabled && styles.inputDisabled,
-            inputXStyle,
-            xstyle,
-          ),
-          className,
-          style,
+        {...stylex.props(
+          styles.input,
+          isDisabled && styles.inputDisabled,
+          inputXStyle,
         )}
       />
       {isLoading && (
