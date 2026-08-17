@@ -5,6 +5,7 @@ import {
   buildAppShellMobilePreviewContext,
   buildInitialState,
   buildRuntimePreviewState,
+  getOverlayPreviewControl,
   getMissingRequiredProps,
   hasInteractivePlayground,
   isOverlayPreviewClosed,
@@ -491,6 +492,31 @@ describe('component detail preview state', () => {
     expect(isOverlayPreviewClosed({}, {isOpen: false})).toBe(false);
     expect(isOverlayPreviewClosed(null, {isOpen: false})).toBe(false);
     expect(isOverlayPreviewClosed(undefined, {})).toBe(false);
+  });
+
+  it('supports overlays controlled by a non-boolean state prop', () => {
+    const playground = {
+      overlay: true,
+      overlayControl: {stateProp: 'activeSheet', openValue: 'details'},
+    };
+
+    expect(getOverlayPreviewControl(playground)).toEqual({
+      stateProp: 'activeSheet',
+      openValue: 'details',
+    });
+    expect(isOverlayPreviewClosed(playground, {activeSheet: null})).toBe(true);
+    expect(isOverlayPreviewClosed(playground, {activeSheet: 'details'})).toBe(
+      false,
+    );
+  });
+
+  it('ignores overlay controls unless overlay mode is enabled', () => {
+    const playground = {
+      overlayControl: {stateProp: 'activeSheet', openValue: 'details'},
+    };
+
+    expect(getOverlayPreviewControl(playground)).toBeNull();
+    expect(isOverlayPreviewClosed(playground, {activeSheet: null})).toBe(false);
   });
 });
 

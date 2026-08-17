@@ -99,8 +99,11 @@ export interface UseLayerDismissalReturn {
  * Join the shared layer dismissal stack for as long as this layer is active.
  *
  * The layer does NOT attach a key listener — the stack owns one listener and
- * routes each Escape press to the top-most layer, so a single press dismisses
- * exactly one layer whatever mix of modals, popovers, menus and tips is open.
+ * routes each Escape press to the top-most REGISTERED layer, so one press
+ * dismisses exactly one of them. Dialog (and what is built on it), focus-
+ * trapped layers (Popover, menus, Bottom Sheet), Tooltip and HoverCard
+ * register today; Lightbox, MobileNav and InfoTip do not, so a press over one
+ * of those can still dismiss a registered layer underneath.
  *
  * Wrap the layer's own content in `LayerDepthProvider` so anything opened from
  * inside it registers as nested.

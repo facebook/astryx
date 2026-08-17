@@ -14,9 +14,9 @@
  * state, or switcher registration; those belong to the hosting controller.
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/lab/src/BottomSheet/BottomSheet.tsx
- * - /packages/lab/src/BottomSheet/BottomSheetPanel.test.tsx
- * - /packages/lab/src/BottomSheet/useSheetGestures.ts
+ * - /packages/core/src/BottomSheet/BottomSheet.tsx
+ * - /packages/core/src/BottomSheet/BottomSheetPanel.test.tsx
+ * - /packages/core/src/BottomSheet/useSheetGestures.ts
  */
 
 import {
@@ -28,7 +28,7 @@ import {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {BaseProps} from '@astryxdesign/core';
+import type {BaseProps} from '../BaseProps';
 import {
   colorVars,
   durationVars,
@@ -37,8 +37,8 @@ import {
   shadowVars,
   sizeVars,
   spacingVars,
-} from '@astryxdesign/core/theme/tokens.stylex';
-import {mergeProps, themeProps} from '@astryxdesign/core/utils';
+} from '../theme/tokens.stylex';
+import {mergeProps, themeProps} from '../utils';
 import {useMobileKeyboard} from './useMobileKeyboard';
 import {useSheetGestures} from './useSheetGestures';
 
@@ -61,8 +61,13 @@ function defaultSnapHeights(): number[] {
   if (typeof window === 'undefined') {
     return [];
   }
-  const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
-  return SNAP_FRACTIONS.map(fraction => fraction * viewportHeight);
+  // Measure the same viewport the height budgets are written against. Those
+  // are `dvh`, which the virtual keyboard does not shrink, so reading
+  // `visualViewport` here made the two disagree by exactly the keyboard's
+  // height: every detent moved while the sheet it was measuring did not. A
+  // keyboard is `useMobileKeyboard`'s business — it holds the sheet still and
+  // scrolls the body — and it does not redefine the sheet's detents.
+  return SNAP_FRACTIONS.map(fraction => fraction * window.innerHeight);
 }
 
 const styles = stylex.create({
@@ -165,7 +170,7 @@ interface BottomSheetPanelProps extends BaseProps<HTMLDivElement> {
   state: BottomSheetPanelState;
   height: BottomSheetHeight | number | string;
   children: ReactNode;
-  canSwipeDismiss?: boolean;
+  isSwipeDismissAllowed?: boolean;
   onDismiss: () => void;
   onScrimOpacity: (opacity: number) => void;
   onElementChange?: (element: HTMLDivElement | null) => void;
@@ -292,7 +297,7 @@ export function BottomSheetPanel({
   style,
   tabIndex,
   xstyle,
-  canSwipeDismiss = true,
+  isSwipeDismissAllowed = true,
   onDismiss,
   onScrimOpacity,
   onElementChange,
@@ -301,7 +306,6 @@ export function BottomSheetPanel({
   ...props
 }: BottomSheetPanelProps) {
   const elementRef = useRef<HTMLDivElement | null>(null);
-  const bodyElementRef = useRef<HTMLDivElement | null>(null);
   const previousStateRef = useRef(state);
   const reactivatedEntranceRef = useRef(false);
   const onMotionStartRef = useRef(onMotionStart);
@@ -336,6 +340,7 @@ export function BottomSheetPanel({
     contentProps,
     handleProps,
     bodyProps,
+    bodyElementRef,
     sheetRef,
     dragOffset,
     settledOffset,
@@ -347,7 +352,7 @@ export function BottomSheetPanel({
     completeScrollAreaSettle,
   } = useSheetGestures({
     isOpen: isInteractive,
-    canDismiss: canSwipeDismiss,
+    canDismiss: isSwipeDismissAllowed,
     offscreenBlockEndInset: OVERSCROLL_PADDING,
     onDismiss,
     snapHeights: defaultSnapHeights,
@@ -361,13 +366,6 @@ export function BottomSheetPanel({
       onElementChange?.(element);
     },
     [onElementChange, sheetRef],
-  );
-  const setBodyElement = useCallback(
-    (element: HTMLDivElement | null) => {
-      bodyProps.ref(element);
-      bodyElementRef.current = element;
-    },
-    [bodyProps.ref],
   );
   useMobileKeyboard({
     bodyRef: bodyElementRef,
@@ -525,17 +523,16 @@ export function BottomSheetPanel({
         <div {...stylex.props(styles.handlePill)} />
       </div>
       <div
-        {...stylex.props(
-          styles.body,
-          height === 'tall' && styles.tallKeyboardBody,
-        )}
-        {...bodyProps}
-        style={
+        {...mergeProps(
+          stylex.props(
+            styles.body,
+            height === 'tall' && styles.tallKeyboardBody,
+          ),
           scrollPreservationInset > 0
-            ? {paddingBlockEnd: `${scrollPreservationInset}px`}
-            : undefined
-        }
-        ref={setBodyElement}>
+            ? {style: {paddingBlockEnd: `${scrollPreservationInset}px`}}
+            : {},
+        )}
+        {...bodyProps}>
         {children}
       </div>
     </div>

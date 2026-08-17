@@ -378,9 +378,13 @@ export function Lightbox({
       return;
     }
     const item = mediaArray[Math.min(index, mediaArray.length - 1)];
-    const position = `${index + 1} of ${mediaArray.length}`;
-    announce(item?.alt ? `${item.alt}, ${position}` : `Image ${position}`);
-  }, [index, isOpen, announce, mediaArray]);
+    const position = {index: index + 1, total: mediaArray.length};
+    announce(
+      item?.alt
+        ? t('@astryx.lightbox.mediaPosition', {alt: item.alt, ...position})
+        : t('@astryx.lightbox.imagePosition', position),
+    );
+  }, [index, isOpen, announce, mediaArray, t]);
 
   // Open/close dialog
   useIsomorphicLayoutEffect(() => {

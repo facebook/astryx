@@ -69,6 +69,7 @@ import {
   formatISOTime,
   isTimeInRange,
   adjustTime,
+  isImeKeyEvent,
   mergeProps,
   mergeRefs,
   isFocusDetached,
@@ -742,6 +743,13 @@ export function DateTimeInput({
 
   const handleDateKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
+      // Guard the composing keydown (fires before compositionend): an IME uses
+      // Enter to commit the candidate and Escape to cancel it, so without this
+      // a CJK user committing a syllable with Enter would commit the pending
+      // date instead. See utils/ime.ts.
+      if (isImeKeyEvent(e.nativeEvent)) {
+        return;
+      }
       if (e.key === 'Escape' && popover.isOpen) {
         e.preventDefault();
         popover.hide();
@@ -835,6 +843,13 @@ export function DateTimeInput({
 
   const handleTimeKeyDown = useCallback(
     (e: KeyboardEvent<HTMLInputElement>) => {
+      // ArrowUp/ArrowDown step the time and preventDefault; an IME candidate
+      // window uses those same arrows to navigate candidates, so guard the
+      // composing keydown (fires before compositionend) to avoid stealing them
+      // mid-composition. See utils/ime.ts.
+      if (isImeKeyEvent(e.nativeEvent)) {
+        return;
+      }
       if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
         e.preventDefault();
 
@@ -960,7 +975,20 @@ export function DateTimeInput({
               styles.iconButton,
               isEffectivelyDisabled && styles.iconButtonDisabled,
             )}>
-            <Icon icon="calendar" size="sm" color="secondary" />
+            <Icon
+              icon="calendar"
+              size="sm"
+              color="secondary"
+              // Stable theme target on the calendar toggle glyph, so a theme
+              // can restyle just this icon (color, size, hover) — and each
+              // open/closed state — via `defineTheme`, mirroring
+              // `date-input-toggle-icon`. Same-element rules in
+              // @layer astryx-theme win over the icon's own base color/size,
+              // which a segment-level target could not reach.
+              {...themeProps('date-time-input-toggle-icon', {
+                state: popover.isOpen ? 'expanded' : 'collapsed',
+              })}
+            />
           </button>
           <input
             ref={mergeRefs(ref, dateInputRef)}
@@ -1039,7 +1067,16 @@ export function DateTimeInput({
             ),
           )}>
           <div {...stylex.props(styles.icon)}>
-            <Icon icon="clock" size="sm" color="secondary" />
+            <Icon
+              icon="clock"
+              size="sm"
+              color="secondary"
+              // Stable theme target on the leading clock glyph, so a theme can
+              // restyle just this icon (color, size) via `defineTheme`. The
+              // time segment has no toggle button — the clock is a static
+              // leading affordance — so this carries no interactive state.
+              {...themeProps('date-time-input-clock-icon')}
+            />
           </div>
           <input
             ref={timeInputRef}

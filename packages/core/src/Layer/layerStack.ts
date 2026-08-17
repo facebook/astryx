@@ -4,7 +4,7 @@
 
 /**
  * @file layerStack.ts
- * @input Uses the isImeKeyEvent predicate
+ * @input Uses the isImeKeyEvent predicate from utils/ime
  * @output Exports the shared layer dismissal stack: registration, top-most
  *   ordering, and the single document-level Escape listener
  * @position Internal to the Layer system; consumed by useLayerDismissal, which
@@ -52,7 +52,7 @@
  * code path. One code path, one ordering, everywhere.
  */
 
-import {isImeKeyEvent} from '../hooks/isImeKeyEvent';
+import {isImeKeyEvent} from '../utils/ime';
 
 /**
  * What a layer does with an Escape press that reaches it.

@@ -20,7 +20,7 @@ import {HStack, VStack} from '../Stack';
 import {Icon} from '../Icon';
 import {TreeList, type TreeListItemData} from '../TreeList';
 import {useTranslator} from '../i18n';
-import {isImeKeyEvent} from '../hooks/useFocusTrap';
+import {isImeKeyEvent} from '../utils/ime';
 import {spacingVars, typeScaleVars} from '../theme/tokens.stylex';
 import {PowerSearchValueEditor} from './PowerSearchValueEditor';
 import {resolveOperatorLabel} from './resolveOperatorLabel';

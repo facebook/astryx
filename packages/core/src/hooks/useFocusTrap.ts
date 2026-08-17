@@ -19,11 +19,8 @@
 import {useCallback, useEffect, useRef} from 'react';
 
 import {FOCUSABLE_SELECTOR} from './focusableSelector';
-import {isImeKeyEvent} from './isImeKeyEvent';
 import {hasOpenLayer} from '../Layer/layerStack';
 import {useLayerDismissal} from '../Layer/useLayerDismissal';
-
-export {isImeKeyEvent};
 
 /**
  * Whether any layer is currently registered on the shared dismissal stack.

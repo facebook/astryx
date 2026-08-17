@@ -55,6 +55,7 @@ import {
   formatDisplayTime24h,
   formatISOTime,
   adjustTime,
+  isImeKeyEvent,
   isTimeInRange,
   mergeProps,
   mergeRefs,
@@ -530,6 +531,13 @@ export function TimeInput({
   // Handle keyboard navigation on input
   const handleInputKeyDown = useCallback(
     (e: KeyboardEvent<HTMLInputElement>) => {
+      // ArrowUp/ArrowDown step the time and preventDefault; an IME candidate
+      // window uses those same arrows to navigate candidates, so guard the
+      // composing keydown (fires before compositionend) to avoid stealing them
+      // mid-composition. See utils/ime.ts.
+      if (isImeKeyEvent(e.nativeEvent)) {
+        return;
+      }
       // Arrow-key adjustment mutates the value; block it while showing a
       // disabled reason (the input keeps focusability via aria-disabled).
       if (isDisabled) {

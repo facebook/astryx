@@ -1340,6 +1340,24 @@ describe('NumberInput stepping', () => {
     expect(onChange).toHaveBeenLastCalledWith(4);
   });
 
+  it('does not step or commit on a composing keydown (IME)', () => {
+    const onChange = vi.fn();
+    render(<NumberInput label="Amount" value={5} onChange={onChange} />);
+    const input = screen.getByRole('spinbutton');
+
+    // The field is type="text", so an IME composes into it. Enter commits the
+    // candidate and the arrows walk the candidate window; neither should reach
+    // the stepping or commit paths. Both signals a browser may report.
+    fireEvent.keyDown(input, {key: 'ArrowUp', isComposing: true});
+    fireEvent.keyDown(input, {key: 'ArrowDown', keyCode: 229});
+    fireEvent.keyDown(input, {key: 'Enter', isComposing: true});
+    expect(onChange).not.toHaveBeenCalled();
+
+    // A real, non-composing ArrowUp still steps.
+    fireEvent.keyDown(input, {key: 'ArrowUp'});
+    expect(onChange).toHaveBeenLastCalledWith(6);
+  });
+
   it('lets onKeyDown cancel keyboard stepping', () => {
     const onChange = vi.fn();
     const onKeyDown = vi.fn((event: React.KeyboardEvent<HTMLInputElement>) =>

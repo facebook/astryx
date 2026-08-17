@@ -549,7 +549,7 @@ describe('useSheetGestures', () => {
       expect(hook.result.current.isDragging).toBe(true);
     });
 
-    it('promotes a bottom pull-up (touch) into a sheet drag', () => {
+    it('promotes a bottom pull-up (touch) into a sheet drag that travels', () => {
       const {hook} = setup({snapHeights: () => [200]});
       // scrolled to the bottom: scrollTop + clientHeight === scrollHeight
       const el = makeScroller({
@@ -559,11 +559,67 @@ describe('useSheetGestures', () => {
       });
       act(() => hook.result.current.sheetRef(el));
       act(() => hook.result.current.bodyProps.ref(el));
+      // Settle at the lower detent first, so expanding has somewhere to go.
+      down(hook, 0, 0, el);
+      move(hook, 180, 700, el);
+      up(hook, 180, 1100, el);
+      expect(hook.result.current.settledOffset).toBe(200);
+
       act(() => {
         touch(el, 'touchstart', 300);
         touch(el, 'touchmove', 250); // pull up
       });
       expect(hook.result.current.isDragging).toBe(true);
+      // The handoff is only worth taking if the sheet follows the finger:
+      // 50px of pull expands 50px toward the tallest detent.
+      expect(hook.result.current.dragOffset).toBe(150);
+    });
+
+    it('leaves a bottom pull-up with the scroller at the tallest detent', () => {
+      // Regression: the sheet is already fully expanded, so an upward pull has
+      // nowhere to expand to. Promoting it produced a rubber-band the release
+      // threw straight back, and stole the gesture from the scroller.
+      const {hook} = setup({snapHeights: () => [200]});
+      const el = makeScroller({
+        scrollTop: 600,
+        clientHeight: 200,
+        scrollHeight: 800,
+      });
+      act(() => hook.result.current.sheetRef(el));
+      act(() => hook.result.current.bodyProps.ref(el));
+      expect(hook.result.current.settledOffset).toBe(0);
+
+      act(() => {
+        touch(el, 'touchstart', 300);
+        touch(el, 'touchmove', 250); // pull up
+      });
+      expect(hook.result.current.isDragging).toBe(false);
+      expect(hook.result.current.dragOffset).toBe(0);
+    });
+
+    it('does not preventDefault a bottom pull-up at the tallest detent', () => {
+      // The captured gesture was the worse half of the bug: once promoted,
+      // every later touchmove was preventDefault()ed, so reversing downward to
+      // scroll back collapsed the sheet instead of scrolling.
+      const {hook} = setup({snapHeights: () => [200]});
+      const el = makeScroller({
+        scrollTop: 600,
+        clientHeight: 200,
+        scrollHeight: 800,
+      });
+      act(() => hook.result.current.sheetRef(el));
+      act(() => hook.result.current.bodyProps.ref(el));
+
+      let pullUp: Event | undefined;
+      let reverseDown: Event | undefined;
+      act(() => {
+        touch(el, 'touchstart', 300);
+        pullUp = touch(el, 'touchmove', 250);
+        reverseDown = touch(el, 'touchmove', 400);
+      });
+      expect(pullUp?.defaultPrevented).toBe(false);
+      expect(reverseDown?.defaultPrevented).toBe(false);
+      expect(hook.result.current.isDragging).toBe(false);
     });
 
     it('finishes the active drag when another ended touch is listed first', () => {
@@ -610,6 +666,168 @@ describe('useSheetGestures', () => {
         touch(el, 'touchmove', 250);
       });
       expect(hook.result.current.isDragging).toBe(false);
+    });
+  });
+
+  describe('viewport resize', () => {
+    // The panel pins the sheet's height in px at a resizing detent; everywhere
+    // else the height comes from CSS (`92dvh`), which follows the viewport.
+    // Model both, so a measurement taken while pinned reads the pin back —
+    // that is the trap the hook has to work around.
+    const SNAP_FRACTIONS = [0.14, 0.5, 0.92];
+    const RESERVED_BELOW_FLOOR = 48;
+
+    function viewportHarness(initialViewport: number) {
+      let viewport = initialViewport;
+      const el = document.createElement('div');
+      el.setPointerCapture = vi.fn();
+      el.releasePointerCapture = vi.fn();
+      el.getBoundingClientRect = () =>
+        ({
+          height: el.style.height
+            ? Number.parseFloat(el.style.height)
+            : 0.92 * viewport + RESERVED_BELOW_FLOOR,
+        }) as DOMRect;
+
+      const onSnap = vi.fn();
+      const {hook} = setup({
+        offscreenBlockEndInset: RESERVED_BELOW_FLOOR,
+        snapHeights: () => SNAP_FRACTIONS.map(f => f * viewport),
+        onSnap,
+      });
+      act(() => hook.result.current.sheetRef(el));
+
+      // What BottomSheetPanel renders at rest.
+      const paint = () => {
+        const {sheetHeight, settledLayoutOffset} = hook.result.current;
+        el.style.height =
+          settledLayoutOffset > 0
+            ? `${sheetHeight - settledLayoutOffset}px`
+            : '';
+      };
+      const dragTo = (offset: number) => {
+        // Anchor anywhere; what matters is the delta from where it rests, so
+        // this drags in whichever direction the target detent lies.
+        const anchor = 1000;
+        const delta = offset - hook.result.current.settledOffset;
+        act(() =>
+          hook.result.current.handleProps.onPointerDown(
+            pointerEvent(anchor, 0, el),
+          ),
+        );
+        // Slow: well under the flick threshold, so the release settles.
+        act(() =>
+          hook.result.current.handleProps.onPointerMove(
+            pointerEvent(anchor + delta, 2000, el),
+          ),
+        );
+        act(() =>
+          hook.result.current.handleProps.onPointerUp(
+            pointerEvent(anchor + delta, 2400, el),
+          ),
+        );
+        // The panel resolves the settle when the transform transition ends.
+        act(() => hook.result.current.completeScrollAreaSettle());
+        paint();
+      };
+      const resizeTo = (next: number) => {
+        viewport = next;
+        act(() => {
+          window.dispatchEvent(new Event('resize'));
+        });
+        paint();
+      };
+      // What the user sees: the border box, less the part reserved below the
+      // viewport floor and the part translated past it.
+      const visibleHeight = () =>
+        hook.result.current.sheetHeight -
+        RESERVED_BELOW_FLOOR -
+        hook.result.current.settledOffset;
+
+      return {hook, el, onSnap, dragTo, resizeTo, visibleHeight};
+    }
+
+    it('re-resolves the settled detent against the new viewport', () => {
+      // 900px viewport: detents at 0 / 378 / 702, so the half-height stop
+      // shows 450px of sheet.
+      const {hook, dragTo, resizeTo, visibleHeight, onSnap} =
+        viewportHarness(900);
+      dragTo(378);
+      expect(hook.result.current.settledOffset).toBe(378);
+      expect(visibleHeight()).toBe(450);
+
+      resizeTo(600);
+
+      // Still the half-height stop, now half of 600 — not the 450px (75% of
+      // the window) it was frozen at before.
+      expect(visibleHeight()).toBe(300);
+      expect(hook.result.current.settledOffset).toBe(252);
+      expect(onSnap).toHaveBeenLastCalledWith(300);
+    });
+
+    it('keeps the peek detent on screen when the viewport shrinks', () => {
+      const {hook, dragTo, resizeTo, visibleHeight} = viewportHarness(900);
+      dragTo(702);
+      expect(hook.result.current.settledOffset).toBe(702);
+      // The peek keeps its full height and slides, so its offset is the whole
+      // of its travel — and 702px of travel does not fit in a 600px window.
+      expect(hook.result.current.settledLayoutOffset).toBe(0);
+
+      resizeTo(600);
+
+      expect(hook.result.current.settledOffset).toBe(468);
+      expect(hook.result.current.settledOffset).toBeLessThan(
+        hook.result.current.sheetHeight,
+      );
+      expect(visibleHeight()).toBe(84);
+    });
+
+    it('refreshes the fully open height the next drag measures against', () => {
+      const {hook, dragTo, resizeTo} = viewportHarness(900);
+      dragTo(378);
+      expect(hook.result.current.sheetHeight).toBe(876);
+
+      resizeTo(600);
+
+      // Measured through the pinned height the panel had written for the old
+      // viewport, so this is the natural budget and not the stale pin.
+      expect(hook.result.current.sheetHeight).toBe(600);
+
+      // Dragging back up lands on fully open rather than overshooting past it
+      // toward where fully open used to be.
+      dragTo(0);
+      expect(hook.result.current.settledOffset).toBe(0);
+      expect(hook.result.current.settledLayoutOffset).toBe(0);
+    });
+
+    it('leaves a drag in progress alone', () => {
+      const {hook, el} = viewportHarness(900);
+      act(() =>
+        hook.result.current.handleProps.onPointerDown(pointerEvent(0, 0, el)),
+      );
+      act(() =>
+        hook.result.current.handleProps.onPointerMove(
+          pointerEvent(200, 2000, el),
+        ),
+      );
+
+      act(() => {
+        window.dispatchEvent(new Event('resize'));
+      });
+
+      expect(hook.result.current.isDragging).toBe(true);
+      expect(hook.result.current.sheetHeight).toBe(876);
+      expect(hook.result.current.settledOffset).toBe(0);
+    });
+
+    it('stops re-resolving once the sheet closes', () => {
+      const {hook, dragTo, resizeTo} = viewportHarness(900);
+      dragTo(378);
+      act(() => hook.rerender({isOpen: false, onDismiss: vi.fn()}));
+
+      resizeTo(600);
+
+      expect(hook.result.current.sheetHeight).toBe(876);
     });
   });
 });

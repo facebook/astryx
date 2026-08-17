@@ -119,6 +119,11 @@
       "types": "./dist/Blockquote/index.d.ts",
       "default": "./dist/Blockquote/index.js"
     },
+    "./BottomSheet": {
+      "source": "./src/BottomSheet/index.ts",
+      "types": "./dist/BottomSheet/index.d.ts",
+      "default": "./dist/BottomSheet/index.js"
+    },
     "./Breadcrumbs": {
       "source": "./src/Breadcrumbs/index.ts",
       "types": "./dist/Breadcrumbs/index.d.ts",

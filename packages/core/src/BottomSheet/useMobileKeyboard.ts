@@ -6,7 +6,7 @@
  * @file useMobileKeyboard.ts
  * @input Uses React effects and refs supplied by BottomSheet
  * @output Exports internal useMobileKeyboard hook
- * @position Internal to BottomSheet; not exported from the lab entry point
+ * @position Internal to BottomSheet; not exported from the core entry point
  *
  * Gives a fully expanded, explicitly Tall sheet a keyboard-aware internal
  * scroll range while leaving the sheet itself stationary. Shorter detents and
@@ -32,7 +32,7 @@ const NON_TEXT_INPUT_TYPES = new Set([
 ]);
 
 interface UseMobileKeyboardOptions {
-  bodyRef: RefObject<HTMLDivElement | null>;
+  bodyRef: RefObject<HTMLElement | null>;
   bottomClearance: number;
   isEnabled: boolean;
   isFullyExpanded: boolean;

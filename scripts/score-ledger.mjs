@@ -79,7 +79,7 @@ Options
   --components <a,b,c>      --check: components to check.
   --analysis <file>         --check: analysis.json from .github/scripts/analyze-pr.js.
   --limit <n>               --queue: how many rows (default 5).
-  --package <core|lab>      --record: package, if the predicate cannot resolve it.
+  --package <name>          --record: package, if the predicate cannot resolve it.
   --from <file|->           --record: scorecard JSON ('-' reads stdin).
   --allow-regression <why>  --record: permit a score drop or a new BLOCK.
   --push                    --record/--file-issues: clone the wiki, apply, commit
@@ -192,14 +192,40 @@ export const NON_COMPONENT_DIRS = Object.freeze(
 /** A file that renders: PascalCase `.tsx`, not a test, story, doc or perf file. */
 const RENDERING_FILE = /^[A-Z][A-Za-z0-9]*\.tsx$/;
 
-/** Packages the ledger covers, with the src dir the predicate sweeps. */
+/** A documented component in a flat package: PascalCase `<Name>.doc.mjs`. */
+const FLAT_DOC_FILE = /^([A-Z][A-Za-z0-9]*)\.doc\.mjs$/;
+
+/**
+ * Packages the ledger covers, with the src dir the predicate sweeps and how
+ * that src is laid out.
+ *
+ *   - `nested` (core, lab): one directory per component, `<Name>/<Name>.tsx`.
+ *     The directory is the unit; `isComponentDirectory` filters out the
+ *     styles-only and context-only ones.
+ *   - `flat` (richtext, promoted out of lab so it can be canaried on its own):
+ *     `<Name>.tsx` files at the src root alongside internal helpers, so there
+ *     is no directory to key on and the `.doc.mjs` is the component boundary.
+ *
+ * A component graduating from lab into its own package (richtext did) must be
+ * registered here or it silently drops out of the ledger's denominator — the
+ * roster reads only these packages, and a score recorded for it in the wiki
+ * has no row to attach to.
+ */
 export const LEDGER_PACKAGES = Object.freeze([
-  {name: 'core', src: 'packages/core/src'},
-  {name: 'lab', src: 'packages/lab/src'},
+  {name: 'core', src: 'packages/core/src', layout: 'nested'},
+  {name: 'lab', src: 'packages/lab/src', layout: 'nested'},
+  {name: 'richtext', src: 'packages/richtext/src', layout: 'flat'},
 ]);
+
+/** The covered package names, for human-facing CLI messages. */
+const LEDGER_PACKAGE_NAMES = LEDGER_PACKAGES.map(p => p.name);
 
 /**
  * Is `dirName`, directly under `srcDir`, a component directory?
+ *
+ * This is the predicate for the `nested` packages (core, lab), where one
+ * directory holds one component. Flat packages (richtext) have no such
+ * directory — see `flatPackageComponents`.
  *
  * A component directory:
  *   1. is not one of the infrastructure directories (hooks/theme/utils/i18n/__tests__);
@@ -232,6 +258,38 @@ export function isComponentDirectory(srcDir, dirName) {
 }
 
 /**
+ * The component names in a flat package src (richtext), where `<Name>.tsx`
+ * files sit at the root alongside internal helpers rather than in a directory
+ * each. A `.doc.mjs` is the boundary here: the root also holds sub-parts and
+ * plugins (`RichTextEditorToolbar.tsx`, `RichTextEditorAutoLinkPlugin.tsx`)
+ * that render but are not audited as components on their own, and the doc file
+ * is what distinguishes the public component from them — the same unit the
+ * docsite and the wiki ledger already record.
+ *
+ * @param {string} srcDir absolute path to `packages/<pkg>/src`
+ * @returns {string[]} component names, e.g. `['RichTextEditor']`
+ */
+export function flatPackageComponents(srcDir) {
+  let entries;
+  try {
+    entries = fs.readdirSync(srcDir, {withFileTypes: true});
+  } catch {
+    return [];
+  }
+  const names = [];
+  for (const entry of entries) {
+    if (!entry.isFile()) continue;
+    const match = FLAT_DOC_FILE.exec(entry.name);
+    if (!match) continue;
+    // A doc without the component it documents is a dangling file, not a row.
+    if (fs.existsSync(path.join(srcDir, `${match[1]}.tsx`))) {
+      names.push(match[1]);
+    }
+  }
+  return names;
+}
+
+/**
  * Every component in the covered packages, sorted by name. This is the ledger's
  * denominator: it is read from the packages, never from a checked-in list.
  * @param {string} [repoRoot]
@@ -241,6 +299,12 @@ export function listComponents(repoRoot = ROOT) {
   const out = [];
   for (const pkg of LEDGER_PACKAGES) {
     const srcDir = path.join(repoRoot, pkg.src);
+    if (pkg.layout === 'flat') {
+      for (const component of flatPackageComponents(srcDir)) {
+        out.push({component, package: pkg.name});
+      }
+      continue;
+    }
     let entries;
     try {
       entries = fs.readdirSync(srcDir, {withFileTypes: true});
@@ -1122,7 +1186,7 @@ async function cmdCheck(args) {
   const components = componentsFromArgs(args);
   if (components.length === 0) {
     console.log(
-      'score-ledger: this change touches no component in packages/{core,lab}/src — nothing to check.',
+      `score-ledger: this change touches no component in packages/{${LEDGER_PACKAGE_NAMES.join(',')}}/src — nothing to check.`,
     );
     return 0;
   }
@@ -1283,8 +1347,11 @@ async function cmdStats(args) {
       `  Components:    ${stats.total}  (${stats.audited} audited, ${stats.unaudited} unaudited — ${stats.percentAudited}%)`,
     );
     console.log(
-      `                 core ${stats.byPackage.core.audited}/${stats.byPackage.core.total} · ` +
-        `lab ${stats.byPackage.lab.audited}/${stats.byPackage.lab.total}`,
+      '                 ' +
+        LEDGER_PACKAGE_NAMES.map(
+          name =>
+            `${name} ${stats.byPackage[name].audited}/${stats.byPackage[name].total}`,
+        ).join(' · '),
     );
     console.log(`  Grades:        A ${g.A} · B ${g.B} · C ${g.C} · D ${g.D} · F ${g.F}`);
     console.log(`  Mean score:    ${fmtScore(stats.meanScore)} (audited only)`);
@@ -1359,14 +1426,14 @@ async function cmdRecord(args) {
   const live = matches[0];
   if (!live) {
     console.log(
-      `score-ledger: warning — ${component} is not a component directory in ` +
-        'packages/{core,lab}/src under the canonical predicate. Recording anyway.',
+      `score-ledger: warning — ${component} is not a component in ` +
+        `packages/{${LEDGER_PACKAGE_NAMES.join(',')}}/src under the canonical predicate. Recording anyway.`,
     );
   }
   const pkg = flagValue(args.package) || (live && live.package) || null;
   if (!pkg) {
     console.error(
-      `score-ledger --record: cannot resolve a package for ${component} — pass --package <core|lab>.`,
+      `score-ledger --record: cannot resolve a package for ${component} — pass --package <${LEDGER_PACKAGE_NAMES.join('|')}>.`,
     );
     return 1;
   }
