@@ -41,7 +41,8 @@ const styles = stylex.create({
   // Consumers that need a raw positioned layer should use useLayer instead.
   surface: {
     backgroundColor: colorVars['--color-background-popover'],
-    borderRadius: radiusVars['--radius-container'],
+    '--_popover-radius': radiusVars['--radius-container'],
+    borderRadius: 'var(--_popover-radius)',
     boxShadow: shadowVars['--shadow-low'],
   },
   // Focus trap container
@@ -110,6 +111,16 @@ export interface UsePopoverOptions {
    * `:popover-open`), pass `xstyle` via the `render()` call's props instead.
    */
   xstyle?: StyleXStyles;
+
+  /**
+   * Additional class name applied to the painted popover surface.
+   */
+  className?: string;
+
+  /**
+   * Inline styles applied to the painted popover surface.
+   */
+  style?: React.CSSProperties;
 
   /**
    * Whether clicking outside should dismiss the popover.
@@ -328,6 +339,8 @@ export function usePopover(options: UsePopoverOptions = {}): UsePopoverReturn {
     onShow,
     onHide,
     xstyle,
+    className,
+    style,
     hasLightDismiss = true,
     hasEscapeDismiss = true,
     hasAutoFocus = true,
@@ -450,6 +463,8 @@ export function usePopover(options: UsePopoverOptions = {}): UsePopoverReturn {
                 hasSurface && styles.surface,
                 xstyle,
               ),
+              className,
+              style,
             )}>
             {children}
             {hasCloseButton && (
@@ -475,6 +490,8 @@ export function usePopover(options: UsePopoverOptions = {}): UsePopoverReturn {
       hasCloseButton,
       hasSurface,
       surfaceTarget,
+      className,
+      style,
       closeButtonLabel,
       contentRef,
       dialogLabel,

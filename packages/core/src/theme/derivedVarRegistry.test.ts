@@ -464,3 +464,51 @@ describe('getDerivedVars', () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// Read check: a registered var nothing reads is a dead theming knob
+// ---------------------------------------------------------------------------
+
+/**
+ * Every source file under packages/core/src, concatenated once.
+ *
+ * `--_popover-radius` shipped documented and registered while `usePopover`
+ * hardcoded its radius, so `popover: {borderRadius}` set a var no element ever
+ * read. Sync between source, docs and registry cannot catch that: the three
+ * agreed with each other, and none of them required a reader.
+ */
+function readAllSource(dir: string): string {
+  let out = '';
+  for (const entry of readdirSync(dir, {withFileTypes: true})) {
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      out += readAllSource(path);
+    } else if (
+      (entry.name.endsWith('.ts') || entry.name.endsWith('.tsx')) &&
+      !entry.name.includes('.test.') &&
+      !entry.name.endsWith('.d.ts')
+    ) {
+      out += readFileSync(path, 'utf-8');
+    }
+  }
+  return out;
+}
+
+describe('registered derived vars are read by component styles', () => {
+  const source = readAllSource(SRC_DIR);
+
+  for (const [component, entries] of Object.entries(derivedVarRegistry)) {
+    for (const varName of entries.flatMap(e => e.vars ?? [])) {
+      it(`${component}: ${varName} is read via var()`, () => {
+        expect(
+          source.includes(`var(${varName})`) ||
+            source.includes(`var(${varName},`),
+          `${varName} is registered as the derived var for a CSS property on ` +
+            `\`${component}\`, but no component reads it. A theme setting that ` +
+            `property would write a var nothing consumes. Read it in the ` +
+            `element's StyleX styles, or drop the derived entry.`,
+        ).toBe(true);
+      });
+    }
+  }
+});
