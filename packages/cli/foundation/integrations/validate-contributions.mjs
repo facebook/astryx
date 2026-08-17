@@ -149,6 +149,13 @@ export async function validateLoadedIntegration(loaded) {
   /** @type {Issue[]} */
   const issues = [];
   if (!loaded || typeof loaded !== 'object') return issues;
+  // A manifest that threw on import (or failed the schema) carries a load-error
+  // marker and no contribution roots, so every check below would find nothing
+  // and report a clean integration — which is how a stale manifest used to go
+  // silently invisible. The load error IS the issue.
+  if (loaded.__loadError) {
+    return [issueError('integration_error', loaded.__loadError)];
+  }
   checkRoots(
     {
       components: loaded.components,

@@ -80,6 +80,24 @@ describe('useTheme', () => {
     });
     // --spacing-1 is not overridden — should be the default '4px'
     expect(result.current.token('--spacing-1')).toBe('4px');
+    expect(result.current.token('--border-width')).toBe('1px');
+  });
+
+  it('resolves --border-width override when defined in theme', () => {
+    const arcadeTheme = defineTheme({
+      name: 'arcade',
+      tokens: {
+        '--border-width': '2px',
+      },
+    });
+    const {result} = renderHook(() => useTheme(), {
+      wrapper: ({children}) => (
+        <Theme theme={arcadeTheme} mode="light">
+          {children}
+        </Theme>
+      ),
+    });
+    expect(result.current.token('--border-width')).toBe('2px');
   });
 
   it('resolves default light-dark() string tokens for the mode', () => {

@@ -19,18 +19,24 @@ import {
 const SHEET_HEIGHT = 400;
 
 // A fake pointer event object good enough for the handlers, which only read
-// pointerId, clientY, timeStamp, and currentTarget's capture + measure APIs.
+// pointerId, clientY, timeStamp, preventDefault, and currentTarget's capture +
+// measure APIs.
 function pointerEvent(
   clientY: number,
   timeStamp: number,
   target: HTMLElement,
   pointerId = 1,
+  button = 0,
+  isPrimary = true,
 ) {
   return {
     pointerId,
+    button,
+    isPrimary,
     clientY,
     timeStamp,
     currentTarget: target,
+    preventDefault: vi.fn(),
   } as unknown as React.PointerEvent;
 }
 
@@ -66,7 +72,7 @@ function setup(options: Partial<UseSheetGesturesOptions> = {}) {
         isOpen: true,
         onDismiss,
         ...options,
-      } as UseSheetGesturesOptions,
+      },
     },
   );
   return {hook, onDismiss};
@@ -104,6 +110,26 @@ describe('useSheetGestures', () => {
     move(hook, 60, 20, t);
     up(hook, 60, 22, t);
     expect(onDismiss).toHaveBeenCalledTimes(1);
+  });
+
+  it('settles instead of dismissing on a downward flick when canDismiss is false', () => {
+    const onSnap = vi.fn();
+    const onScrimOpacity = vi.fn();
+    const {hook, onDismiss} = setup({
+      canDismiss: false,
+      snapHeights: () => [200],
+      onSnap,
+      onScrimOpacity,
+    });
+    const t = makeTarget();
+    down(hook, 0, 0, t);
+    move(hook, 60, 20, t);
+    up(hook, 60, 22, t);
+
+    expect(onDismiss).not.toHaveBeenCalled();
+    expect(hook.result.current.settledOffset).toBe(200);
+    expect(onSnap).toHaveBeenLastCalledWith(200);
+    expect(onScrimOpacity).toHaveBeenLastCalledWith(0.3);
   });
 
   it('expands to the tallest detent on a fast upward flick', () => {
@@ -150,6 +176,74 @@ describe('useSheetGestures', () => {
     expect(hook.result.current.settledOffset).toBe(200);
   });
 
+  it('excludes the offscreen block-end reserve from visible detent heights', () => {
+    const onSnap = vi.fn();
+    const {hook} = setup({
+      snapHeights: () => [200],
+      offscreenBlockEndInset: 48,
+      onSnap,
+    });
+    const t = makeTarget();
+
+    // The 400px border box has 352px visible. A 200px visible detent therefore
+    // rests at offset 152, not 200; the 48px reserve remains below the viewport.
+    down(hook, 0, 0, t);
+    move(hook, 150, 700, t);
+    up(hook, 150, 1100, t);
+
+    expect(hook.result.current.settledOffset).toBe(152);
+    expect(onSnap).toHaveBeenLastCalledWith(200);
+  });
+
+  it('keeps the full layout height at the peek detent', () => {
+    // Three detents on the 400px sheet: full (0), mid 240 (offset 160), and
+    // the 80px peek (offset 320).
+    const {hook} = setup({snapHeights: () => [80, 240]});
+    const t = makeTarget();
+
+    // Settle at the mid detent: the scrolling area takes that travel as
+    // layout height.
+    down(hook, 0, 0, t);
+    move(hook, 150, 700, t);
+    up(hook, 150, 1100, t);
+    expect(hook.result.current.settledOffset).toBe(160);
+    expect(hook.result.current.settledLayoutOffset).toBe(160);
+
+    // Settle at the peek: a glance state keeps the sheet's full layout height
+    // and slides it below the viewport, so no layout travel is reported.
+    down(hook, 150, 2000, t);
+    move(hook, 310, 2700, t);
+    up(hook, 310, 3100, t);
+    expect(hook.result.current.settledOffset).toBe(320);
+    expect(hook.result.current.settledLayoutOffset).toBe(0);
+  });
+
+  it('treats the only collapsed stop as a peek, like the scrim does', () => {
+    const {hook} = setup({snapHeights: () => [200]});
+    const t = makeTarget();
+    down(hook, 0, 0, t);
+    move(hook, 180, 700, t);
+    up(hook, 180, 1100, t);
+    expect(hook.result.current.settledOffset).toBe(200);
+    expect(hook.result.current.settledLayoutOffset).toBe(0);
+  });
+
+  it('uses the visible shortest detent height for the dismiss overshoot', () => {
+    const {hook, onDismiss} = setup({
+      snapHeights: () => [200],
+      offscreenBlockEndInset: 48,
+    });
+    const t = makeTarget();
+
+    // Visible full height is 352px, so the 200px stop is offset 152. Its 40%
+    // dismiss overshoot ends at 232px; the hidden reserve must not extend it.
+    down(hook, 0, 0, t);
+    move(hook, 235, 1000, t);
+    up(hook, 235, 2000, t);
+
+    expect(onDismiss).toHaveBeenCalledTimes(1);
+  });
+
   it('a downward drag from a middle detent never snaps back up past it', () => {
     // Three detents on a 600px sheet: full (offset 0), mid 360 (offset 240),
     // short 160 (offset 440). Rest at the mid detent, then drag DOWN a modest
@@ -188,6 +282,24 @@ describe('useSheetGestures', () => {
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 
+  it('rebounds to the shortest detent when canDismiss is false', () => {
+    const onScrimOpacity = vi.fn();
+    const {hook, onDismiss} = setup({
+      canDismiss: false,
+      snapHeights: () => [200],
+      onScrimOpacity,
+    });
+    const t = makeTarget();
+    down(hook, 0, 0, t);
+    move(hook, 160, 400, t);
+    move(hook, 330, 900, t);
+    up(hook, 330, 1400, t);
+
+    expect(onDismiss).not.toHaveBeenCalled();
+    expect(hook.result.current.settledOffset).toBe(200);
+    expect(onScrimOpacity).toHaveBeenLastCalledWith(0.3);
+  });
+
   it('fades the scrim from full toward the peek floor as it collapses onto the peek detent', () => {
     const onScrimOpacity = vi.fn();
     // Sheet 400, detents at 200 and 300 -> offsets [0, 100, 200]. The fade
@@ -199,7 +311,7 @@ describe('useSheetGestures', () => {
     move(hook, 60, 200, t); // offset 60, above the mid detent -> full
     move(hook, 150, 600, t); // offset 150, halfway -> between 1 and 0.3 (~0.65)
     move(hook, 220, 1000, t); // offset 220, past the peek -> peek floor
-    const values = onScrimOpacity.mock.calls.map(c => c[0]);
+    const values = onScrimOpacity.mock.calls.map(c => Number(c[0]));
     expect(values[0]).toBe(1);
     expect(values[1]).toBeGreaterThan(0.55);
     expect(values[1]).toBeLessThan(0.75);
@@ -218,7 +330,7 @@ describe('useSheetGestures', () => {
     expect(hook.result.current.settledOffset).toBe(200);
     // Last reported opacity (on settle) is the peek floor, not fully hidden —
     // the sheet is still modal, so the backdrop keeps a minimum dim.
-    const values = onScrimOpacity.mock.calls.map(c => c[0]);
+    const values = onScrimOpacity.mock.calls.map(c => Number(c[0]));
     expect(values[values.length - 1]).toBeCloseTo(0.3);
   });
 
@@ -246,6 +358,62 @@ describe('useSheetGestures', () => {
     expect(hook.result.current.contentProps.style.transform).toBe(
       'translateY(50px)',
     );
+  });
+
+  it('returns to the settled detent when a context menu interrupts a drag', () => {
+    const onScrimOpacity = vi.fn();
+    const {hook, onDismiss} = setup({
+      snapHeights: () => [200, 300],
+      onScrimOpacity,
+    });
+    const target = makeTarget();
+    down(hook, 0, 0, target);
+    move(hook, 300, 1000, target);
+
+    const preventDefault = vi.fn();
+    act(() =>
+      hook.result.current.handleProps.onContextMenu({
+        currentTarget: target,
+        preventDefault,
+      } as unknown as React.MouseEvent),
+    );
+
+    expect(preventDefault).toHaveBeenCalledTimes(1);
+    expect(hook.result.current.isDragging).toBe(false);
+    expect(hook.result.current.contentProps.style.transform).toBeUndefined();
+    expect(onScrimOpacity).toHaveBeenLastCalledWith(1);
+    expect(onDismiss).not.toHaveBeenCalled();
+  });
+
+  it('returns to the settled detent when pointer capture is lost', () => {
+    const {hook, onDismiss} = setup({snapHeights: () => [200]});
+    const target = makeTarget();
+    down(hook, 0, 0, target);
+    move(hook, 300, 1000, target);
+
+    act(() =>
+      hook.result.current.handleProps.onLostPointerCapture(
+        pointerEvent(300, 1000, target),
+      ),
+    );
+
+    expect(hook.result.current.isDragging).toBe(false);
+    expect(hook.result.current.contentProps.style.transform).toBeUndefined();
+    expect(onDismiss).not.toHaveBeenCalled();
+  });
+
+  it('does not start a drag from a secondary pointer button', () => {
+    const {hook} = setup();
+    const target = makeTarget();
+    act(() => hook.result.current.sheetRef(target));
+
+    act(() =>
+      hook.result.current.handleProps.onPointerDown(
+        pointerEvent(0, 0, target, 1, 2),
+      ),
+    );
+
+    expect(hook.result.current.isDragging).toBe(false);
   });
 
   it('rubber-bands an upward drag past the fully-open position', () => {
@@ -354,6 +522,12 @@ describe('useSheetGestures', () => {
       Object.defineProperty(ev, 'changedTouches', {
         value: [{identifier: id, clientY: y}],
       });
+      Object.defineProperty(ev, 'touches', {
+        value:
+          type === 'touchend' || type === 'touchcancel'
+            ? []
+            : [{identifier: id, clientY: y}],
+      });
       Object.defineProperty(ev, 'currentTarget', {value: el});
       el.dispatchEvent(ev);
       return ev;
@@ -390,6 +564,36 @@ describe('useSheetGestures', () => {
         touch(el, 'touchmove', 250); // pull up
       });
       expect(hook.result.current.isDragging).toBe(true);
+    });
+
+    it('finishes the active drag when another ended touch is listed first', () => {
+      const {hook} = setup({snapHeights: () => [200]});
+      const el = makeScroller({
+        scrollTop: 0,
+        clientHeight: 200,
+        scrollHeight: 800,
+      });
+      act(() => hook.result.current.sheetRef(el));
+      act(() => hook.result.current.bodyProps.ref(el));
+      act(() => {
+        touch(el, 'touchstart', 0, 2);
+        touch(el, 'touchmove', 300, 2);
+
+        const end = new Event('touchend', {
+          bubbles: true,
+          cancelable: true,
+        });
+        Object.defineProperty(end, 'changedTouches', {
+          value: [
+            {identifier: 1, clientY: 100},
+            {identifier: 2, clientY: 300},
+          ],
+        });
+        Object.defineProperty(end, 'touches', {value: []});
+        el.dispatchEvent(end);
+      });
+
+      expect(hook.result.current.isDragging).toBe(false);
     });
 
     it('leaves native scrolling alone in the middle of the content', () => {

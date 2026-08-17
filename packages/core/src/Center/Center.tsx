@@ -1,7 +1,5 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-'use client';
-
 /**
  * @file Center.tsx
  * @input Uses React, StyleX for centering styles, Layout padding.stylex for spacing-scale padding

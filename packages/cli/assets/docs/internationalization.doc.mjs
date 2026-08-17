@@ -359,7 +359,7 @@ function SaveButton() {
         {
           type: 'heading',
           level: 4,
-          text: '2. Directional icons — mirror with CSS, not a name-swap',
+          text: '2. Directional icons: mirror with CSS, not a name-swap',
         },
         {
           type: 'prose',
@@ -384,7 +384,7 @@ function NextButton() {
         {
           type: 'heading',
           level: 4,
-          text: '3. Behavioral logic — read the DOM lazily, on the event',
+          text: '3. Behavioral logic: read the DOM lazily, on the event',
         },
         {
           type: 'prose',
@@ -393,7 +393,7 @@ function NextButton() {
         {
           type: 'heading',
           level: 4,
-          text: '4. useDirection() context — the last resort',
+          text: '4. useDirection() context: the last resort',
         },
         {
           type: 'prose',

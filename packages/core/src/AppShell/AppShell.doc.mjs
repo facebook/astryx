@@ -203,8 +203,11 @@ export const docsDense = {
     bestPractices: [
       {guidance: true, description: 'Choose the right height: use "fill" for dashboards with internal scrolling and "auto" for pages that grow with content.'},
       {guidance: true, description: 'Set `contentPadding` based on content type: 4 for forms and settings, 0 for tables and dashboards.'},
+      {guidance: true, description: 'Give every nav slot an accessible name: TopNav and SideNav are separate navigation landmarks, so pass `label` to each.'},
+      {guidance: true, description: 'Start the page heading inside `children`: AppShell owns the skip link, banner, and main landmarks but renders no heading, so the first content heading is the page h1.'},
       {guidance: false, description: "Nest one AppShell inside another; it's the outermost layout frame."},
       {guidance: false, description: 'Use for sub-page layouts; use Layout for content areas within AppShell.'},
+      {guidance: false, description: 'Add your own skip link or <main>; AppShell renders both, and a second main landmark makes the first ambiguous.'},
     ],
   },
   propDescriptions: {

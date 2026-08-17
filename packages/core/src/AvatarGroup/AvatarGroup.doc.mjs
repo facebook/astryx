@@ -25,7 +25,7 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-avatar-group', visualProps: ['size']},
-      {className: 'astryx-avatar-group-overflow'},
+      {className: 'astryx-avatar-group-overflow', visualProps: ['size']},
     ],
   },
   description: 'Stacked avatar display with overlapping layout and optional overflow indicator. Children are Avatar elements.',

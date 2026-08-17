@@ -443,6 +443,14 @@ jobs:
           path: a11y-report.json
           retention-days: 1
 
+      # A modal <dialog> hidden before close() blocks the whole page in Safari
+      # 26.1 and leaves no trace (#4290). The ordering is produced by a CSS
+      # transition, which jsdom does not run — so the unit suite cannot see it
+      # and this Chromium probe is the guard. Runs after the upload above so an
+      # a11y failure still publishes its report.
+      - name: Run modal close visibility guard
+        run: node .github/scripts/modal-close-visibility.js --storybook-dir apps/storybook/dist
+
   # RTL semantic audit. Sibling to pr-a11y: same build-storybook artifact, same
   # analysis.json scoping, so a PR only pays for the components it touched.
   # Unscoped this swept ~1400 stories and took ~26 min. The full sweep that

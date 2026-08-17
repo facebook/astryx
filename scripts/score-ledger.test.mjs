@@ -517,10 +517,83 @@ describe('recording a scorecard', () => {
     ).toThrow(/BLOCKs listed but blocks.count is 1/);
   });
 
+  it('rejects blocks written as a bare array, which silently zeroes the BLOCK count', () => {
+    expect(() =>
+      applyScorecard(
+        null,
+        {...card, blocks: [{id: 'A5', summary: 'x'}, {id: 'A6', summary: 'y'}]},
+        {component: 'B', pkg: 'core'},
+      ),
+    ).toThrow(/blocks must be \{count, open: \[\.\.\.\]\}/);
+  });
+
+  it('does not let a bare-array blocks slip the open-BLOCK grade cap', () => {
+    // The reason this shape is worth an error rather than a repair: an A-range
+    // score with open BLOCKs is capped at C, and a bare array reads as zero
+    // open BLOCKs, so the row would record A.
+    expect(gradeFor(91, 3)).toBe('C');
+    expect(() =>
+      applyScorecard(
+        null,
+        {...card, score: 91, blocks: [{id: 'A5', summary: 'x'}]},
+        {component: 'B', pkg: 'core'},
+      ),
+    ).toThrow(/blocks must be/);
+  });
+
+  it('rejects a blocks object missing count or open', () => {
+    for (const blocks of [{open: []}, {count: 0}, {count: '0', open: []}, null, 'none']) {
+      expect(() =>
+        applyScorecard(null, {...card, blocks}, {component: 'B', pkg: 'core'}),
+      ).toThrow(/blocks must be/);
+    }
+  });
+
   it('refuses to store an unaudited row — an unaudited component simply has none', () => {
     expect(() =>
       applyScorecard(null, {...card, status: 'unaudited'}, {component: 'B', pkg: 'core'}),
     ).toThrow(/audited components only/);
+  });
+
+  it('rejects evidence written as bare strings, which reds every build in the repo', () => {
+    expect(() =>
+      applyScorecard(
+        null,
+        {...card, evidence: ['33 before and 33 after screenshots']},
+        {component: 'B', pkg: 'core'},
+      ),
+    ).toThrow(/evidence must be an array of \{label, path\?, note\?\} objects/);
+  });
+
+  it('rejects an evidence item with no label, or a stray key, or a non-string value', () => {
+    for (const evidence of [
+      [{note: 'no label'}],
+      [{label: 'ok', paths: '/x'}],
+      [{label: 'ok', path: 42}],
+      [{label: 12}],
+      ['a', {label: 'ok'}],
+      'not an array',
+    ]) {
+      expect(() =>
+        applyScorecard(null, {...card, evidence}, {component: 'B', pkg: 'core'}),
+      ).toThrow(/evidence must be/);
+    }
+  });
+
+  it('accepts the declared evidence shape, with path and note optional', () => {
+    const e = applyScorecard(
+      null,
+      {
+        ...card,
+        evidence: [
+          {label: 'bare label'},
+          {label: 'with a path', path: 'packages/core/src/Badge/Badge.tsx'},
+          {label: 'with both', path: 'https://example.com/x.png', note: 'measured'},
+        ],
+      },
+      {component: 'B', pkg: 'core'},
+    );
+    expect(e.evidence).toHaveLength(3);
   });
 
   it('requires the rubric version, the date and the mode', () => {
