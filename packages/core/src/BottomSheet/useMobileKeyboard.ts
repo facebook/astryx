@@ -12,6 +12,12 @@
  * scroll range while leaving the sheet itself stationary. Shorter detents and
  * other heights opt out entirely. Starting Tall-sheet travel or closing the
  * sheet blurs the field and dismisses the keyboard.
+ *
+ * Every route into a field also has to reach it without the browser revealing
+ * it for us: on iOS that reveal pans the visual viewport, which shifts the
+ * whole page out from under a stationary sheet. A tap is pre-empted by focusing
+ * with preventScroll; a transition the browser drives itself cannot be, so the
+ * destination is scrolled into the safe area before focus lands instead.
  */
 
 import {useEffect, useRef, type RefObject} from 'react';
@@ -93,6 +99,16 @@ function getVisualViewportBounds(): {top: number; bottom: number} {
     top,
     bottom: top + (viewport?.height ?? window.innerHeight),
   };
+}
+
+// The keyboard is gone once the visual viewport is as tall as the layout
+// viewport again. Height is the only pan-invariant signal for that: while iOS
+// holds the viewport panned up to reveal a field, the viewport's *bottom*
+// already sits at the layout viewport bottom with the keyboard still on
+// screen, so reading the bottom mistakes a pan for a dismissal.
+function isVisualViewportRecovered(): boolean {
+  const height = window.visualViewport?.height ?? window.innerHeight;
+  return height >= window.innerHeight - 0.5;
 }
 
 function isIOSWebKit(): boolean {
@@ -248,13 +264,41 @@ export function useMobileKeyboard({
       });
     };
 
+    // Scroll `control` into the part of the body the keyboard leaves visible.
+    // Reads live geometry every time, so it serves both the reveal after focus
+    // lands and the head start taken before a transition the browser drives.
+    const scrollControlIntoSafeArea = (
+      control: HTMLElement,
+      smoothly: boolean,
+    ) => {
+      const measuredBodyRect = body.getBoundingClientRect();
+      const measuredControlRect = control.getBoundingClientRect();
+      const viewport = getVisualViewportBounds();
+      const overlap = Math.max(0, measuredBodyRect.bottom - viewport.bottom);
+      const clearance = overlap > 0 ? bottomClearance : 0;
+      const safeTop = Math.max(measuredBodyRect.top, viewport.top);
+      const safeBottom = Math.min(
+        measuredBodyRect.bottom,
+        viewport.bottom - clearance,
+      );
+      if (safeBottom <= safeTop) {
+        return;
+      }
+
+      if (measuredControlRect.bottom > safeBottom) {
+        scrollBodyBy(measuredControlRect.bottom - safeBottom, smoothly);
+      } else if (measuredControlRect.top < safeTop) {
+        scrollBodyBy(measuredControlRect.top - safeTop, smoothly);
+      }
+    };
+
     const applyKeyboardGeometry = (geometry: KeyboardGeometry) => {
       const viewport = getVisualViewportBounds();
       // A collapsed detent can extend the body below the layout viewport even
       // after the keyboard closes, so body overlap alone cannot identify
-      // recovery. Once the visual viewport reaches the layout viewport bottom,
-      // release the retained keyboard layout unconditionally.
-      if (viewport.bottom >= window.innerHeight - 0.5) {
+      // recovery. Once the visual viewport is full height again, release the
+      // retained keyboard layout unconditionally.
+      if (isVisualViewportRecovered()) {
         clearKeyboardLayout();
         return;
       }
@@ -276,6 +320,16 @@ export function useMobileKeyboard({
     // still owns caret placement. Holding the original pointerdown event lets
     // consumer preventDefault calls remain authoritative after capture.
     const rememberPointerFocusScroll = (event: PointerEvent) => {
+      // A second contact — a resting thumb, a palm, a finger anywhere else on
+      // the page — must not disarm the one already mid-tap on a field. Without
+      // this, that tap's pointerup finds nothing pending, falls through to the
+      // browser's own focus, and the reveal pans the page.
+      if (
+        pendingTouchFocus != null &&
+        event.pointerId !== pendingTouchFocus.pointerId
+      ) {
+        return;
+      }
       const control = findTextEntryControl(event.target, body);
       pendingPointerFocusScroll =
         isFullyExpandedRef.current &&
@@ -351,6 +405,20 @@ export function useMobileKeyboard({
         pendingFocusScroll = null;
         return;
       }
+      // Snapshots restore what a scroll container scrolled, and that is not
+      // what a browser-driven transition costs us here. When WebKit reveals a
+      // destination sitting behind the keyboard it pans the visual viewport,
+      // and nothing can put that back: offsetTop is read-only, the dialog is
+      // fixed, and the page beneath it is scroll-locked. So reach the
+      // destination first and leave the reveal with nothing to do. It has to
+      // be instant to win that race, and it only runs while a keyboard is
+      // actually measured, so unobstructed desktop and hardware-keyboard focus
+      // keeps behaving exactly as before.
+      if (hasKeyboardLayoutRef.current) {
+        scrollControlIntoSafeArea(control, false);
+      }
+      // Snapshot after that scroll, never before: the restore below is meant to
+      // undo the browser's reveal, not our own head start.
       pendingFocusScroll = captureFocusScroll(control);
     };
     const restoreFocusScroll = (event: FocusEvent) => {
@@ -387,7 +455,6 @@ export function useMobileKeyboard({
       retainKeyboardLayoutRef.current = false;
 
       const measuredBodyRect = body.getBoundingClientRect();
-      const measuredFocusedRect = activeElement.getBoundingClientRect();
       const viewport = getVisualViewportBounds();
       const overlap = Math.max(0, measuredBodyRect.bottom - viewport.bottom);
       // The extra clearance leaves room for mobile suggestion UI, but only
@@ -409,20 +476,7 @@ export function useMobileKeyboard({
           : 0;
       body.style.setProperty(MOBILE_KEYBOARD_INSET_VAR, `${inset}px`);
 
-      const safeTop = Math.max(measuredBodyRect.top, viewport.top);
-      const safeBottom = Math.min(
-        measuredBodyRect.bottom,
-        viewport.bottom - clearance,
-      );
-      if (safeBottom <= safeTop) {
-        return;
-      }
-
-      if (measuredFocusedRect.bottom > safeBottom) {
-        scrollBodyBy(measuredFocusedRect.bottom - safeBottom, overlap > 0);
-      } else if (measuredFocusedRect.top < safeTop) {
-        scrollBodyBy(measuredFocusedRect.top - safeTop, overlap > 0);
-      }
+      scrollControlIntoSafeArea(activeElement, overlap > 0);
     };
 
     let animationFrame = 0;

@@ -222,14 +222,19 @@ function drag(handle: HTMLElement, points: {y: number}[]) {
 function fireTouchPointer(
   target: Element,
   type: 'pointerdown' | 'pointermove' | 'pointerup',
-  {x, y}: {x: number; y: number},
+  {
+    x,
+    y,
+    pointerId = 1,
+    isPrimary = true,
+  }: {x: number; y: number; pointerId?: number; isPrimary?: boolean},
 ) {
   const event = new Event(type, {bubbles: true, cancelable: true});
   Object.defineProperties(event, {
     clientX: {value: x},
     clientY: {value: y},
-    isPrimary: {value: true},
-    pointerId: {value: 1},
+    isPrimary: {value: isPrimary},
+    pointerId: {value: pointerId},
     pointerType: {value: 'touch'},
   });
   return fireEvent(target, event);
@@ -1766,6 +1771,172 @@ describe('BottomSheet', () => {
       expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
         '0px',
       );
+    });
+
+    it('reaches a browser-driven destination before its native reveal can pan', () => {
+      mockIOSWebKit();
+      mockVisualViewport(500);
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={() => {}}
+          label="Add a comment"
+          height="tall">
+          <input aria-label="Title" />
+          <input aria-label="Comment" />
+        </BottomSheet>,
+      );
+      const body = getBody();
+      const title = screen.getByRole('textbox', {name: 'Title'});
+      const comment = screen.getByRole('textbox', {name: 'Comment'});
+      const scrolls: {
+        top: number;
+        behavior?: ScrollBehavior;
+        focusLanded: boolean;
+      }[] = [];
+      Object.defineProperty(body, 'scrollBy', {
+        configurable: true,
+        value: (options: ScrollToOptions) => {
+          body.scrollTop += options.top ?? 0;
+          scrolls.push({
+            top: options.top ?? 0,
+            behavior: options.behavior,
+            focusLanded: document.activeElement === comment,
+          });
+        },
+      });
+      vi.spyOn(body, 'getBoundingClientRect').mockReturnValue(
+        rect({top: 100, bottom: 800}),
+      );
+      vi.spyOn(title, 'getBoundingClientRect').mockImplementation(() =>
+        rect({top: 150 - body.scrollTop, bottom: 190 - body.scrollTop}),
+      );
+      vi.spyOn(comment, 'getBoundingClientRect').mockImplementation(() =>
+        rect({top: 660 - body.scrollTop, bottom: 700 - body.scrollTop}),
+      );
+
+      // The first field opens the keyboard and is already inside the safe
+      // area, so nothing has to move for it.
+      title.focus();
+      expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
+        '348px',
+      );
+      expect(scrolls).toEqual([]);
+
+      // A keyboard accessory "Next", a Tab, or a programmatic focus gives
+      // nowhere to pass preventScroll: WebKit reveals the destination itself
+      // once focus lands, and pans the visual viewport to do it. The
+      // destination has to be in the safe area before that, which means
+      // scrolling instantly and while focus is still in flight.
+      comment.focus();
+
+      expect(scrolls).toEqual([
+        {top: 248, behavior: 'auto', focusLanded: false},
+      ]);
+      expect(body.scrollTop).toBe(248);
+    });
+
+    it('does not scroll a browser-driven transition when the viewport is unobstructed', () => {
+      mockIOSWebKit();
+      mockVisualViewport(800);
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={() => {}}
+          label="Add a comment"
+          height="tall">
+          <input aria-label="Title" />
+          <input aria-label="Comment" />
+        </BottomSheet>,
+      );
+      const body = getBody();
+      const title = screen.getByRole('textbox', {name: 'Title'});
+      const comment = screen.getByRole('textbox', {name: 'Comment'});
+      vi.spyOn(body, 'getBoundingClientRect').mockReturnValue(
+        rect({top: 100, bottom: 800}),
+      );
+      vi.spyOn(title, 'getBoundingClientRect').mockReturnValue(
+        rect({top: 150, bottom: 190}),
+      );
+      vi.spyOn(comment, 'getBoundingClientRect').mockReturnValue(
+        rect({top: 660, bottom: 700}),
+      );
+
+      title.focus();
+      comment.focus();
+
+      // With no keyboard measured there is no reveal to beat, and a hardware
+      // keyboard or desktop Tab must not shift a control that is already
+      // visible.
+      expect(body.scrollTop).toBe(0);
+    });
+
+    it('does not mistake a panned visual viewport for a dismissed keyboard', () => {
+      const viewport = mockVisualViewport(500);
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={() => {}}
+          label="Add a comment"
+          height="tall">
+          <input aria-label="Comment" />
+        </BottomSheet>,
+      );
+      const body = getBody();
+      const input = screen.getByRole('textbox', {name: 'Comment'});
+      vi.spyOn(body, 'getBoundingClientRect').mockReturnValue(
+        rect({top: 100, bottom: 800}),
+      );
+      vi.spyOn(input, 'getBoundingClientRect').mockImplementation(() =>
+        rect({top: 660 - body.scrollTop, bottom: 700 - body.scrollTop}),
+      );
+      input.focus();
+      expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
+        '348px',
+      );
+
+      // iOS pans the viewport up to reveal a field: the same 500px of visible
+      // page, now offset so its bottom edge coincides with the layout viewport
+      // bottom — while the keyboard is still on screen. Read the bottom and
+      // that looks exactly like recovery, which would drop the scroll range
+      // out from under the field. The height is what stays honest: the body's
+      // 800px bottom still sits 32px below the visible region, so 48px of
+      // clearance leaves an 80px inset.
+      viewport.offsetTop = window.innerHeight - 500;
+      input.blur();
+
+      expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
+        '80px',
+      );
+    });
+
+    it('keeps a tap protected when a second contact lands mid-gesture', () => {
+      mockIOSWebKit();
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={() => {}}
+          label="Add a comment"
+          height="tall">
+          <input aria-label="Comment" />
+        </BottomSheet>,
+      );
+      const input = screen.getByRole('textbox', {name: 'Comment'});
+      const focus = vi.spyOn(input, 'focus');
+
+      fireTouchPointer(input, 'pointerdown', {x: 20, y: 200});
+      // A thumb resting on the page, a palm, a second finger anywhere: not the
+      // contact that is tapping the field, and it must not disarm that tap.
+      fireTouchPointer(document.body, 'pointerdown', {
+        x: 300,
+        y: 700,
+        pointerId: 2,
+        isPrimary: false,
+      });
+      fireTouchPointer(input, 'pointerup', {x: 20, y: 200});
+
+      expect(focus).toHaveBeenCalledWith({preventScroll: true});
+      expect(document.activeElement).toBe(input);
     });
   });
 
