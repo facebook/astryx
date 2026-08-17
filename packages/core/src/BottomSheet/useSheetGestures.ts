@@ -28,6 +28,16 @@
  * is tracked by index: the pixels stop meaning the same thing when the
  * viewport changes, the stop the user chose does not.
  *
+ * On touch, the scrolling body hands the gesture to the sheet at a scroll
+ * edge. Two shapes, because the browser only offers one of them a choice: a
+ * finger that lands on an edge and pulls away from it promotes by cancelling
+ * the first, still-cancelable touchmove; a finger that scrolls INTO the end of
+ * the content mid-gesture cannot, since the browser has committed the gesture
+ * to scrolling and every remaining event is non-cancelable. The second shape
+ * needs no cancelling — the scroller is clamped at its end, so there is
+ * nothing left to scroll — and instead anchors at the point where the content
+ * ran out and drives the sheet from the travel beyond it.
+ *
  * Kept private to BottomSheet: a dismiss edge + detents on a bottom-anchored
  * surface are inherently sheet concepts. It is not a general primitive and is
  * intentionally not exported.
@@ -79,6 +89,11 @@ const OVERSCROLL_RESISTANCE = 0.35;
 // bottom padding the lift reveals). Kept as a local const rather than a shared
 // import so it can be used inside stylex.create there.
 const OVERSCROLL_MAX = 48;
+// Travel past the point where a scrolling gesture ran out of content before it
+// hands the sheet the rest of the pull. Small enough to feel continuous with
+// the scroll, large enough that a swipe merely coming to rest on the last pixel
+// doesn't start a drag on jitter.
+const CONTENT_END_HANDOFF_SLOP = 4;
 
 // Short haptic tick on detent settle where supported. iOS Safari doesn't
 // expose navigator.vibrate, so this is a no-op there; skipped under
@@ -1062,11 +1077,24 @@ export function useSheetGestures({
   // Non-passive touchmove is the reliable scroll<->drag handoff on touch:
   // preventDefault() at a scroll edge stops the native scroll and drives the
   // sheet drag through the pointer math (Touch adapted to the fields it reads).
+  //
+  // Every touch on the body is tracked, not only the ones that begin at an
+  // edge: a gesture that starts mid-content and scrolls to the end has to hand
+  // off too, and by then it is far too late to arm from `touchstart`.
   const touchDragRef = useRef<{
     id: number;
     startY: number;
     top: boolean;
     bottom: boolean;
+    // Where the finger was when the scroller ran out of content, or null while
+    // it can still scroll. A mid-gesture handoff drives the sheet from travel
+    // BEYOND this point, so the part of the swipe that legitimately scrolled
+    // doesn't move the sheet as well.
+    contentEndY: number | null;
+    // Whether the drag in flight was promoted from `contentEndY` rather than
+    // armed at `touchstart`. That drag never cancelled the native scroll, so
+    // it has to yield again if the finger comes back down.
+    promotedAtContentEnd: boolean;
   } | null>(null);
   const previousTouchHandlersRef = useRef<{
     start: (e: TouchEvent) => void;
@@ -1105,9 +1133,11 @@ export function useSheetGestures({
     const onTouchStart = (event: TouchEvent) => {
       const scroller = event.currentTarget as HTMLElement;
       const touch = event.changedTouches[0];
-      // Arm only at a scroll edge; from mid-content this is an ordinary scroll.
+      // Record where the gesture began and whether it began at a scroll edge.
       // At the top, a pull DOWN hands off (collapse); at the bottom, a pull UP
-      // hands off (expand). Record the edge so the move handler matches it.
+      // hands off (expand). A gesture that starts mid-content is an ordinary
+      // scroll, but it is tracked all the same: the scroller can run out of
+      // content while the finger is still down (see onTouchMove).
       if (!touch) {
         touchDragRef.current = null;
         return;
@@ -1122,31 +1152,48 @@ export function useSheetGestures({
       // downward to scroll back would collapse the sheet instead. Leave the
       // gesture with the content.
       const bottom = atBottom(scroller) && activeOffsetRef.current > 0;
-      if (!top && !bottom) {
-        touchDragRef.current = null;
-        return;
-      }
       touchDragRef.current = {
         id: touch.identifier,
         startY: touch.clientY,
         top,
         bottom,
+        contentEndY: null,
+        promotedAtContentEnd: false,
       };
     };
 
     const onTouchMove = (event: TouchEvent) => {
       const scroller = event.currentTarget as HTMLElement;
+      const armed = touchDragRef.current;
       if (dragStateRef.current) {
         const t = [...event.changedTouches].find(
           x => x.identifier === dragStateRef.current?.pointerId,
         );
-        if (t) {
-          event.preventDefault();
-          pointerMoveRef.current(asPointer(t, scroller));
+        if (!t) {
+          return;
         }
+        if (armed?.promotedAtContentEnd && armed.contentEndY != null) {
+          if (t.clientY >= armed.contentEndY) {
+            // Back at the point where the content ran out. This drag never
+            // cancelled the native scroll — it couldn't, the events were no
+            // longer cancelable — so the scroller is about to move again. Hand
+            // the gesture back rather than driving the sheet and the content
+            // at once; a later pull past the end promotes again.
+            armed.contentEndY = null;
+            armed.promotedAtContentEnd = false;
+            cancelDragRef.current(scroller);
+            return;
+          }
+          // Deliberately NOT preventDefault()ed: the scroller is clamped at
+          // its end, so there is no scrolling left to cancel, and claiming the
+          // gesture would strand the content for as long as the finger is down.
+          pointerMoveRef.current(asPointer(t, scroller));
+          return;
+        }
+        event.preventDefault();
+        pointerMoveRef.current(asPointer(t, scroller));
         return;
       }
-      const armed = touchDragRef.current;
       if (!armed) {
         return;
       }
@@ -1170,9 +1217,36 @@ export function useSheetGestures({
           armed.startY,
         );
         pointerMoveRef.current(asPointer(t, scroller));
-      } else if ((armed.top && delta < 0) || (armed.bottom && delta > 0)) {
-        // Scrolling away from the armed edge; hand back to native scroll.
-        touchDragRef.current = null;
+        return;
+      }
+      if ((armed.top && delta < 0) || (armed.bottom && delta > 0)) {
+        // Scrolling away from the armed edge; hand back to native scroll. The
+        // touch stays tracked: this is the swipe that may reach the far edge.
+        armed.top = false;
+        armed.bottom = false;
+      }
+      // Reaching the end of the content mid-gesture. Arming at `touchstart`
+      // cannot see this, and re-arming for a preventDefault() promotion would
+      // be useless anyway: once the browser has committed the gesture to
+      // scrolling, every remaining touchmove is non-cancelable. Nothing needs
+      // cancelling either — the scroller is clamped at its maximum, so further
+      // upward travel scrolls nothing. Anchor at the point where the content
+      // ran out and give the sheet everything past it, so the pull continues
+      // into the sheet with no jump and no lost scrolling.
+      if (activeOffsetRef.current > 0 && atBottom(scroller)) {
+        if (armed.contentEndY == null) {
+          armed.contentEndY = t.clientY;
+        } else if (armed.contentEndY - t.clientY >= CONTENT_END_HANDOFF_SLOP) {
+          armed.promotedAtContentEnd = true;
+          beginDragRef.current(
+            asPointer(t, scroller),
+            measureHeightRef.current(),
+            armed.contentEndY,
+          );
+          pointerMoveRef.current(asPointer(t, scroller));
+        }
+      } else {
+        armed.contentEndY = null;
       }
     };
 
