@@ -72,6 +72,37 @@ export const RangeWithValue: Story = {
   },
 };
 
+export const RangeWithMaxSpan: Story = {
+  render: () => {
+    const [value, setValue] = useState<DateRange | undefined>(undefined);
+    return (
+      <Calendar
+        mode="range"
+        value={value}
+        onChange={range => setValue(range)}
+        focusDate="2026-01-01"
+        maxRangeSpan={7}
+      />
+    );
+  },
+};
+
+export const RangeWithSpanBounds: Story = {
+  render: () => {
+    const [value, setValue] = useState<DateRange | undefined>(undefined);
+    return (
+      <Calendar
+        mode="range"
+        value={value}
+        onChange={range => setValue(range)}
+        focusDate="2026-01-01"
+        minRangeSpan={2}
+        maxRangeSpan={14}
+      />
+    );
+  },
+};
+
 export const TwoMonths: Story = {
   render: () => {
     const [value, setValue] = useState<ISODateString | undefined>(undefined);

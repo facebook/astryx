@@ -89,6 +89,18 @@ export function plainDateAddDays(pd: PlainDate, n: number): PlainDate {
 }
 
 /**
+ * Whole calendar days from `a` to `b`, ignoring time of day. Positive when
+ * `b` is after `a`, negative when before. Uses UTC midnight so DST shifts
+ * never add or drop a day.
+ */
+export function plainDateDiffDays(a: PlainDate, b: PlainDate): number {
+  const msPerDay = 24 * 60 * 60 * 1000;
+  const aUTC = Date.UTC(a.year, a.month - 1, a.day);
+  const bUTC = Date.UTC(b.year, b.month - 1, b.day);
+  return Math.round((bUTC - aUTC) / msPerDay);
+}
+
+/**
  * The wall-clock fields an instant reads as in a given zone.
  *
  * A fixed `'en-US'` locale with `hourCycle: 'h23'` keeps the parts numeric and
