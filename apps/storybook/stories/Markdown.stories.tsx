@@ -531,7 +531,7 @@ export const DiffIndicators: Story = {
 
     return (
       <div style={{maxWidth: 680, display: 'grid', gap: 16}}>
-        <Text variant="body-secondary">
+        <Text type="supporting">
           The same document, rendered as prose, with the lines a diff reports as
           added or rewritten marked in place.
         </Text>
