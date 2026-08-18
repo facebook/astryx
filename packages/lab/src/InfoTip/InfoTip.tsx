@@ -115,7 +115,14 @@ export function InfoTip({
     (event: React.KeyboardEvent<HTMLButtonElement>) => {
       if (event.key === 'Escape' && isOpenRef.current) {
         // Only swallow Escape when it actually dismissed the tooltip, so an
-        // enclosing dialog still closes on the next press.
+        // enclosing dialog still closes on the next press. preventDefault is
+        // required too, not just stopPropagation: a native <dialog> ancestor
+        // (e.g. Dialog) closes via its own top-layer close-watcher, which
+        // reacts to the physical keydown's default action independently of
+        // React's synthetic event bubbling — without it, dismissing the
+        // tooltip and closing the dialog underneath both happened on the
+        // same press.
+        event.preventDefault();
         event.stopPropagation();
         setIsDismissed(true);
       }

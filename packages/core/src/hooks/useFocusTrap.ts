@@ -96,6 +96,33 @@ export function hasActiveFocusTrapEscape(): boolean {
 }
 
 /**
+ * Registers a presence on the shared Escape stack while `isActive`, without
+ * pulling in the rest of `useFocusTrap`'s JS focus-trap/Tab-wrapping
+ * machinery. For overlays that already trap focus and dismiss on Escape
+ * natively (e.g. a `<dialog>` opened with `showModal()`, which gets a native
+ * top-layer `cancel` event for free), this is enough to make
+ * `hasActiveFocusTrapEscape()` — and so an outer Dialog's own Escape
+ * handling — correctly defer to them instead of closing itself first.
+ *
+ * This does not call `onEscape` itself; the overlay's own native Escape
+ * handling stays in charge of its own dismissal. Registering only makes the
+ * overlay visible to *other* layers coordinating through this same stack.
+ */
+export function useEscapeStackEntry(
+  isActive: boolean,
+  getContainer: () => HTMLElement | null,
+): void {
+  useEffect(() => {
+    if (!isActive) {
+      return;
+    }
+    const handler = () => {};
+    pushEscapeHandler({handler, getContainer});
+    return () => removeEscapeHandler(handler);
+  }, [isActive, getContainer]);
+}
+
+/**
  * Whether an element is currently perceivable/focusable — excludes ones hidden
  * via `display:none`/`visibility:hidden` or inside an `inert`/`hidden` subtree,
  * which the browser skips for Tab, and ones inside an `aria-hidden="true"`

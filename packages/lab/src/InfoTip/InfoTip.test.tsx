@@ -134,6 +134,28 @@ describe('InfoTip', () => {
     });
   });
 
+  it('prevents default on the Escape that dismisses it, so an ancestor dialog does not also close on the same press', async () => {
+    render(<InfoTip content="Helpful context" />);
+    const trigger = screen.getByRole('button', {name: 'More information'});
+    const layer = screen.getByRole('tooltip', {hidden: true});
+
+    focusTrigger(trigger);
+    await waitFor(() => {
+      expect(popoverOpenState.get(layer)).toBe(true);
+    });
+
+    const event = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      bubbles: true,
+      cancelable: true,
+    });
+    act(() => {
+      trigger.dispatchEvent(event);
+    });
+
+    expect(event.defaultPrevented).toBe(true);
+  });
+
   it('re-opens after Escape once the trigger is left and re-hovered', async () => {
     render(<InfoTip content="Helpful context" />);
     const trigger = screen.getByRole('button', {name: 'More information'});

@@ -9,10 +9,15 @@
  * SYNC: When useFocusTrap.ts changes, update tests to match new behavior
  */
 
+import {useEffect, useRef} from 'react';
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render, screen, fireEvent, cleanup} from '@testing-library/react';
 import {FOCUSABLE_SELECTOR} from './focusableSelector';
-import {useFocusTrap} from './useFocusTrap';
+import {
+  hasActiveFocusTrapEscape,
+  useEscapeStackEntry,
+  useFocusTrap,
+} from './useFocusTrap';
 
 function Trap({children}: {children: React.ReactNode}) {
   const {containerRef, focusFirst} = useFocusTrap<HTMLDivElement>({
@@ -328,6 +333,74 @@ describe('useFocusTrap Escape coordination', () => {
     );
     fireEvent.keyDown(document, {key: 'Escape'});
     expect(onEscape).not.toHaveBeenCalled();
+  });
+});
+
+describe('useEscapeStackEntry', () => {
+  function StackEntry({isActive}: {isActive: boolean}) {
+    const containerRef = useRef<HTMLDivElement>(null);
+    useEscapeStackEntry(isActive, () => containerRef.current);
+    return <div ref={containerRef} data-testid="entry" />;
+  }
+
+  it('registers a presence while active, seen via hasActiveFocusTrapEscape', () => {
+    expect(hasActiveFocusTrapEscape()).toBe(false);
+    render(<StackEntry isActive />);
+    expect(hasActiveFocusTrapEscape()).toBe(true);
+    cleanup();
+    expect(hasActiveFocusTrapEscape()).toBe(false);
+  });
+
+  it('does not register while inactive', () => {
+    render(<StackEntry isActive={false} />);
+    expect(hasActiveFocusTrapEscape()).toBe(false);
+    cleanup();
+  });
+
+  it('removes its entry when isActive flips to false without unmounting', () => {
+    const {rerender} = render(<StackEntry isActive />);
+    expect(hasActiveFocusTrapEscape()).toBe(true);
+    rerender(<StackEntry isActive={false} />);
+    expect(hasActiveFocusTrapEscape()).toBe(false);
+    cleanup();
+  });
+
+  it('makes an unrelated Dialog-style consumer defer while it is active, matching Lightbox/MobileNav over a native Dialog (#5168)', () => {
+    const dialogEscape = vi.fn();
+    // Simulates Dialog's own Escape handling, which only consults
+    // hasActiveFocusTrapEscape() as a boolean gate rather than joining the
+    // stack itself (see Dialog.tsx).
+    function DialogLike() {
+      useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+          if (event.key === 'Escape' && !hasActiveFocusTrapEscape()) {
+            dialogEscape();
+          }
+        };
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+      }, []);
+      return null;
+    }
+
+    const {rerender} = render(
+      <>
+        <DialogLike />
+        <StackEntry isActive />
+      </>,
+    );
+    fireEvent.keyDown(document, {key: 'Escape'});
+    expect(dialogEscape).not.toHaveBeenCalled();
+
+    // Once the overlay on top closes, Dialog is free to respond again.
+    rerender(
+      <>
+        <DialogLike />
+        <StackEntry isActive={false} />
+      </>,
+    );
+    fireEvent.keyDown(document, {key: 'Escape'});
+    expect(dialogEscape).toHaveBeenCalledTimes(1);
   });
 });
 
