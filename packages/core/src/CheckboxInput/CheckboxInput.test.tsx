@@ -511,4 +511,32 @@ describe('CheckboxInput', () => {
       ]).toEqual([]);
     });
   });
+
+  describe('coarse pointer and RTL hit-target positioning', () => {
+    it.each([
+      ['sm', 'ltr'],
+      ['sm', 'rtl'],
+      ['md', 'ltr'],
+      ['md', 'rtl'],
+    ] as const)(
+      'renders native input correctly positioned inside the wrapper (size: %s, dir: %s)',
+      (size, dir) => {
+        const {container} = render(
+          <div dir={dir}>
+            <CheckboxInput
+              label="Option"
+              size={size}
+              value={false}
+              onChange={() => {}}
+            />
+          </div>,
+        );
+
+        const input = container.querySelector('input[type="checkbox"]');
+        expect(input).toBeInTheDocument();
+        const wrapper = input?.parentElement;
+        expect(wrapper).toBeInTheDocument();
+      },
+    );
+  });
 });

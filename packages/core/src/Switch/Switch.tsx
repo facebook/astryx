@@ -83,6 +83,8 @@ const styles = stylex.create({
   },
   input: {
     position: 'absolute',
+    top: 0,
+    insetInlineStart: 0,
     margin: 0,
     padding: 0,
     opacity: 0,
@@ -90,6 +92,22 @@ const styles = stylex.create({
     zIndex: 1,
     width: SWITCH_WIDTH,
     height: SWITCH_HEIGHT,
+  },
+  inputCoarse: {
+    '@media (pointer: coarse)': {
+      top: '50%',
+      insetInlineStart: '50%',
+      transform: 'translate(-50%, -50%)',
+      minInlineSize: 24,
+      minBlockSize: 24,
+    },
+  },
+  inputCoarseRtl: {
+    ':is([dir="rtl"] *)': {
+      '@media (pointer: coarse)': {
+        transform: 'translate(50%, -50%)',
+      },
+    },
   },
   inputDisabled: {
     cursor: 'not-allowed',
@@ -447,6 +465,8 @@ export function Switch({
         aria-busy={isBusy || undefined}
         {...stylex.props(
           styles.input,
+          styles.inputCoarse,
+          styles.inputCoarseRtl,
           isDisabled && styles.inputDisabled,
           isBusy && styles.inputBusy,
         )}

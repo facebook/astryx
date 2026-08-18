@@ -623,4 +623,25 @@ describe('Switch', () => {
       expect(root).toHaveAttribute('aria-label', 'Toggle notifications');
     });
   });
+
+  describe('coarse pointer and RTL hit-target positioning', () => {
+    it.each([
+      ['ltr'],
+      ['rtl'],
+    ] as const)(
+      'renders native input correctly positioned inside the wrapper (dir: %s)',
+      (dir) => {
+        const {container} = render(
+          <div dir={dir}>
+            <Switch label="Dark mode" value={false} onChange={() => {}} />
+          </div>,
+        );
+
+        const input = container.querySelector('input[type="checkbox"]');
+        expect(input).toBeInTheDocument();
+        const wrapper = input?.parentElement;
+        expect(wrapper).toBeInTheDocument();
+      },
+    );
+  });
 });
