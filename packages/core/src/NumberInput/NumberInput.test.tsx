@@ -726,38 +726,63 @@ describe('NumberInput', () => {
   });
 
   describe('rejects non-numeric characters (type="text" guard)', () => {
-    it('ignores alphabetic input', () => {
+    it('never inserts the character, so the caret does not move', async () => {
+      // The case that motivates cancelling at `beforeinput` rather than
+      // reverting afterwards: with the caret mid-value, a rejected character
+      // must not consume the caret position. Native `type="number"` yields
+      // "1923" here; reverting from onChange yields "1239".
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(<NumberInput label="Count" value={123} onChange={onChange} />);
+      const input = screen.getByRole<HTMLInputElement>('spinbutton');
+
+      await user.click(input);
+      input.setSelectionRange(1, 1);
+      await user.keyboard('a9');
+
+      expect(input).toHaveValue('1923');
+      expect(onChange).toHaveBeenLastCalledWith(1923);
+    });
+
+    it('ignores alphabetic input', async () => {
+      const user = userEvent.setup();
       const onChange = vi.fn();
       render(<NumberInput label="Count" value={null} onChange={onChange} />);
       const input = screen.getByRole('spinbutton');
 
-      fireEvent.change(input, {target: {value: 'abc'}});
+      await user.click(input);
+      await user.keyboard('abc');
 
       // The letters never become the field's value, and no change fires.
       expect(input).toHaveValue('');
       expect(onChange).not.toHaveBeenCalled();
     });
 
-    it('ignores stray symbols mixed with digits', () => {
+    it('ignores stray symbols mixed with digits', async () => {
+      const user = userEvent.setup();
       const onChange = vi.fn();
       render(<NumberInput label="Count" value={null} onChange={onChange} />);
       const input = screen.getByRole('spinbutton');
 
-      fireEvent.change(input, {target: {value: '12a'}});
-      expect(input).toHaveValue('');
+      await user.click(input);
+      await user.keyboard('12a');
+      expect(input).toHaveValue('12');
 
-      fireEvent.change(input, {target: {value: '1$2'}});
-      expect(input).toHaveValue('');
+      await user.clear(input);
+      await user.keyboard('1$2');
+      expect(input).toHaveValue('12');
     });
 
-    it('accepts a well-formed number', () => {
+    it('accepts a well-formed number', async () => {
+      const user = userEvent.setup();
       const onChange = vi.fn();
       render(<NumberInput label="Count" value={null} onChange={onChange} />);
       const input = screen.getByRole('spinbutton');
 
-      fireEvent.change(input, {target: {value: '42'}});
+      await user.click(input);
+      await user.keyboard('42');
       expect(input).toHaveValue('42');
-      expect(onChange).toHaveBeenCalledWith(42);
+      expect(onChange).toHaveBeenLastCalledWith(42);
     });
 
     it('accepts valid in-progress states (-, 1., .5, 1e)', () => {
@@ -788,6 +813,56 @@ describe('NumberInput', () => {
       fireEvent.change(input, {target: {value: '3.5'}});
       expect(input).toHaveValue('3.5');
       expect(input).toHaveAttribute('aria-invalid', 'true');
+    });
+
+    it('keeps malformed numeric text pending and flags it, rather than eating it', async () => {
+      // Native types "--1" into the field and reports validity.badInput; this
+      // is the equivalent — visible text, no commit, and an invalid state a
+      // screen reader can hear. Silently dropping it is what this avoids.
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(<NumberInput label="Count" value={null} onChange={onChange} />);
+      const input = screen.getByRole('spinbutton');
+
+      await user.click(input);
+      await user.keyboard('--1');
+
+      expect(input).toHaveValue('--1');
+      expect(input).toHaveAttribute('aria-invalid', 'true');
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    describe('normalizes rather than discards, as the native control does', () => {
+      it.each([
+        ['a value pasted with trailing whitespace', '42 ', '42', 42],
+        ['a grouped number from a spreadsheet', '1,234', '1234', 1234],
+        ['full-width digits from a CJK IME', '１２３', '123', 123],
+        ['a value padded on both sides', ' 7 ', '7', 7],
+      ])('accepts %s', async (_label, pasted, shown, committed) => {
+        const user = userEvent.setup();
+        const onChange = vi.fn();
+        render(<NumberInput label="Count" value={null} onChange={onChange} />);
+        const input = screen.getByRole('spinbutton');
+
+        await user.click(input);
+        await user.paste(pasted);
+
+        expect(input).toHaveValue(shown);
+        expect(onChange).toHaveBeenLastCalledWith(committed);
+      });
+
+      it('still refuses a paste that is not numeric at all', async () => {
+        const user = userEvent.setup();
+        const onChange = vi.fn();
+        render(<NumberInput label="Count" value={null} onChange={onChange} />);
+        const input = screen.getByRole('spinbutton');
+
+        await user.click(input);
+        await user.paste('abc');
+
+        expect(input).toHaveValue('');
+        expect(onChange).not.toHaveBeenCalled();
+      });
     });
   });
 

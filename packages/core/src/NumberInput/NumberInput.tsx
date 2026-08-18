@@ -389,23 +389,55 @@ export type NumberInputProps =
  * Parse and validate a string input as a number.
  * Returns null if the input is not a valid number or fails validation.
  */
+/** `'０'.charCodeAt(0) - '0'.charCodeAt(0)` — the full-width digit offset. */
+const FULL_WIDTH_DIGIT_OFFSET = 0xff10 - 0x30;
+
 /**
- * Whether a raw string could still become a valid number as the user types.
+ * Fold the characters a number can be *written* with onto the ASCII ones this
+ * field parses, mirroring what the native `type="number"` control accepts:
+ * full-width digits and signs (produced by CJK IMEs and pasted from East Asian
+ * documents), and the whitespace and thousands separators that ride along with
+ * a value copied out of a spreadsheet.
  *
- * This is a *syntactic* gate, deliberately looser than {@link parseNumberInput}:
- * it accepts in-progress states that aren't yet parseable on their own — an
- * empty string, a lone `-`, a trailing decimal point (`1.`), a leading decimal
- * (`.5`), and scientific-notation prefixes (`1e`, `1e-`). It rejects anything
- * that can never resolve to a number, e.g. letters or stray symbols.
- *
- * Constraint checks (min/max/integer-only) are intentionally NOT applied here:
- * a value that merely violates a constraint is still a *number* and is kept as
- * pending input so the field can surface it as invalid. Only non-numeric text
- * is blocked — restoring the guarantee the native `type="number"` input gave
- * before this control moved to `type="text"` for formatted display.
+ * Locale note: like the native control, this treats `,` as a *grouping*
+ * separator and drops it, because {@link parseNumberInput} reads ASCII decimals
+ * only — `1,234` is 1234, not 1.234. Locale-aware decimal separators would mean
+ * parsing through `Intl.NumberFormat`, which is a larger change than this one.
  */
-function isPartialNumber(input: string): boolean {
-  return /^[-+]?(\d*\.?\d*)(e[-+]?\d*)?$/i.test(input);
+function normalizeNumericText(text: string): string {
+  return (
+    text
+      .replace(/[\uFF10-\uFF19]/g, digit =>
+        String.fromCharCode(digit.charCodeAt(0) - FULL_WIDTH_DIGIT_OFFSET),
+      )
+      // Full-width and ideographic forms of the signs and the decimal point.
+      .replace(/[\uFF0E\u3002]/g, '.')
+      .replace(/[\uFF0D\u2212]/g, '-')
+      .replace(/\uFF0B/g, '+')
+      // Whitespace (incl. the NBSP spreadsheets emit) and grouping separators.
+      .replace(/[\s\u00A0]/g, '')
+      .replace(/,/g, '')
+  );
+}
+
+/**
+ * Whether every character in a string belongs to a number.
+ *
+ * Deliberately a *character-set* gate rather than a grammar: it accepts states
+ * that are in-progress (`-`, `1.`, `.5`, `1e-`) and states that are malformed
+ * but still numeric text (`--1`, `1.2.3`). Malformed input is not blocked here
+ * because the field already has a path for it — {@link parseNumberInput}
+ * returns null, the value stays as pending input, and the control renders
+ * `aria-invalid` with an "Invalid number" alert. That is the same split the
+ * native control makes: it refuses the keystroke for a letter, but lets you
+ * type `--1` and reports it through `validity.badInput`.
+ *
+ * Constraint checks (min/max/integer-only) are likewise not applied: a value
+ * that merely violates a constraint is still a number, and stays pending so it
+ * can be surfaced as invalid.
+ */
+function isNumericDraft(text: string): boolean {
+  return /^[0-9.eE+-]*$/.test(text);
 }
 
 function parseNumberInput(
@@ -667,15 +699,13 @@ export function NumberInput({
       if (isDisabled || isReadOnly) {
         return;
       }
-      const newValue = e.target.value;
+      const newValue = normalizeNumericText(e.target.value);
 
-      // Reject characters that can never form a number (letters, stray
-      // symbols). `type="text"` — adopted for formatted display — no longer
-      // does this for us the way `type="number"` did, so the field would
-      // otherwise visibly accept "abc". Values that are numeric but violate a
-      // constraint (min/max/integer-only) are NOT blocked here: they stay as
-      // pending input and surface as invalid, preserving that behavior.
-      if (!isPartialNumber(newValue)) {
+      // Non-numeric text is refused at `beforeinput`, before the browser edits
+      // the field (see beforeInputListenerRef). This is the fallback for the
+      // paths that never raise a cancelable `beforeinput` — a programmatic
+      // `value` assignment in a test, or an engine without the event.
+      if (!isNumericDraft(newValue)) {
         return;
       }
 
@@ -867,9 +897,76 @@ export function NumberInput({
     [isDisabled, isReadOnly, isWheelEnabled, stepValue],
   );
 
+  // Refuse a non-numeric edit at `beforeinput`, the way the native
+  // `type="number"` control does. This has to run *before* the browser applies
+  // the edit: rejecting afterwards (from `onChange`) means the character has
+  // already been inserted and the caret has already moved past it, so putting
+  // the value back leaves the caret at the end and the next digit lands in the
+  // wrong place. Cancelling the event instead means the edit never happens —
+  // the field, the caret and the undo stack are untouched.
+  //
+  // React's `onBeforeInput` is a synthetic approximation that does not fire for
+  // every native `beforeinput`, so this attaches the real event.
+  const beforeInputListenerRef = useCallback(
+    (input: HTMLInputElement | null) => {
+      if (input == null) {
+        return;
+      }
+
+      const handleBeforeInput = (event: InputEvent) => {
+        if (isDisabled || isReadOnly) {
+          return;
+        }
+        // An IME writes through `insertCompositionText`, which is not
+        // cancelable — the composition is still incomplete, and half a CJK
+        // syllable is not meant to parse. The committed text arrives as a
+        // normal insert afterwards and is checked then. See utils/ime.ts.
+        if (event.isComposing || event.inputType.endsWith('CompositionText')) {
+          return;
+        }
+        // Deletions, history and line breaks can only remove characters or
+        // submit; neither can introduce a non-numeric one.
+        if (!event.inputType.startsWith('insert')) {
+          return;
+        }
+        if (
+          event.inputType === 'insertLineBreak' ||
+          event.inputType === 'insertParagraph'
+        ) {
+          return;
+        }
+
+        // `data` carries typed text; a paste or drag-drop carries it on
+        // `dataTransfer` instead.
+        const inserted =
+          event.data ?? event.dataTransfer?.getData('text/plain') ?? null;
+        if (inserted == null) {
+          return;
+        }
+
+        const start = input.selectionStart ?? input.value.length;
+        const end = input.selectionEnd ?? start;
+        const next = normalizeNumericText(
+          input.value.slice(0, start) + inserted + input.value.slice(end),
+        );
+
+        // Reject an edit that would put a non-numeric character in the field,
+        // and one that normalizes away to nothing (a lone separator or space),
+        // which would otherwise flash into the field and vanish on re-render.
+        if (!isNumericDraft(next) || normalizeNumericText(inserted) === '') {
+          event.preventDefault();
+        }
+      };
+
+      input.addEventListener('beforeinput', handleBeforeInput);
+      return () => input.removeEventListener('beforeinput', handleBeforeInput);
+    },
+    [isDisabled, isReadOnly],
+  );
+
   const mergedInputRef = useMemo(
-    () => mergeRefs(ref, inputRef, wheelListenerRef),
-    [ref, wheelListenerRef],
+    () => mergeRefs(ref, inputRef, wheelListenerRef, beforeInputListenerRef),
+    [ref, wheelListenerRef, beforeInputListenerRef],
   );
 
   const canIncrement = getNextValue(1) !== valueForStepping;
