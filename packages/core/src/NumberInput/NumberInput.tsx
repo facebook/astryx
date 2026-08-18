@@ -385,10 +385,6 @@ type NumberInputPropsClearable = NumberInputPropsBase & {
 export type NumberInputProps =
   NumberInputPropsNonClearable | NumberInputPropsClearable;
 
-/**
- * Parse and validate a string input as a number.
- * Returns null if the input is not a valid number or fails validation.
- */
 /** `'０'.charCodeAt(0) - '0'.charCodeAt(0)` — the full-width digit offset. */
 const FULL_WIDTH_DIGIT_OFFSET = 0xff10 - 0x30;
 
@@ -440,6 +436,10 @@ function isNumericDraft(text: string): boolean {
   return /^[0-9.eE+-]*$/.test(text);
 }
 
+/**
+ * Parse and validate a string input as a number.
+ * Returns null if the input is not a valid number or fails validation.
+ */
 function parseNumberInput(
   input: string,
   options: {
