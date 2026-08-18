@@ -24,6 +24,14 @@
     "reason": "Timestamp renders locale-formatted text and a direction-neutral hover card; it has no directional icons, contextual decorations, side-specific layout, order, scroll, drag, or directional keyboard behavior."
   },
   {
+    "component": "core/CheckboxInput",
+    "reason": "CheckboxInput is a single control primitive. Its visual chrome and label use logical block/inline layout and non-directional indicators. Touch target centering under coarse pointers is direction-symmetric via physical left: 50% + translateX(-50%) and covered by unit regression tests."
+  },
+  {
+    "component": "core/Switch",
+    "reason": "Switch is a single control primitive. Its track and thumb travel use directional flip styles (:is([dir=\"rtl\"] *) translateX(-12px)), and its touch target centering under coarse pointers is direction-symmetric via physical left: 50% + translateX(-50%), covered by unit regression tests."
+  },
+  {
     "component": "lab/CircularProgress",
     "reason": "No direction-sensitive visual, layout, or behavior. The track and fill are concentric SVG circles sharing one center; size, stroke, dash, and clockwise rotation are intentionally identical in LTR and RTL. The optional label is vertically stacked and centered, with no inline positioning or directional glyph."
   }

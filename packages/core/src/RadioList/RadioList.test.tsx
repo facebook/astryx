@@ -15,6 +15,29 @@ import userEvent from '@testing-library/user-event';
 import {RadioList} from './RadioList';
 import {RadioListItem} from './RadioListItem';
 import {getForcedColorsRules} from '../__tests__/forcedColors';
+interface InjectedRule {
+  selector: string;
+  text: string;
+  media: string | null;
+}
+
+function injectedRules(): InjectedRule[] {
+  const walk = (rules: CSSRuleList, condition: string | null): InjectedRule[] =>
+    [...rules].flatMap((rule): InjectedRule[] => {
+      const {selectorText} = rule as CSSStyleRule;
+      if (typeof selectorText === 'string') {
+        return [{selector: selectorText, text: rule.cssText, media: condition}];
+      }
+      const nested = (rule as CSSGroupingRule).cssRules;
+      if (nested == null) {
+        return [];
+      }
+      const own = (rule as CSSMediaRule).media?.mediaText;
+      return walk(nested, own != null && own !== '' ? own : condition);
+    });
+
+  return [...document.styleSheets].flatMap(sheet => walk(sheet.cssRules, null));
+}
 
 // Mock showPopover/hidePopover (not implemented in jsdom) so the tooltip layer
 // reflects its open state via a `popover-open` attribute the tests can assert.
@@ -948,6 +971,55 @@ describe('RadioList', () => {
         /background-color:\s*var\(--color-accent-muted\)/,
       );
     });
+  });
+
+  describe('coarse pointer and RTL hit-target positioning', () => {
+    it.each([
+      ['sm', 'ltr'],
+      ['sm', 'rtl'],
+      ['md', 'ltr'],
+      ['md', 'rtl'],
+    ] as const)(
+      'verifies hit at visible control center hits native input under coarse pointer (size: %s, dir: %s)',
+      (size, dir) => {
+        const {container} = render(
+          <div dir={dir}>
+            <RadioList size={size} label="Choice" value="a" onChange={() => {}}>
+              <RadioListItem label="Option A" value="a" />
+            </RadioList>
+          </div>,
+        );
+
+        const input = container.querySelector(
+          'input[type="radio"]',
+        ) as HTMLInputElement;
+        expect(input).toBeInTheDocument();
+        const wrapper = input.parentElement as HTMLElement;
+        expect(wrapper).toBeInTheDocument();
+
+        const classes = new Set(input.className.split(' ').filter(Boolean));
+        const css = injectedRules();
+        const rulesForInput = css.filter(({selector}) =>
+          [...classes].some(c => selector.includes(`.${c}`)),
+        );
+
+        expect(rulesForInput.length).toBeGreaterThan(0);
+
+        // Verify physical left: 50% centering is injected, NOT logical inset-inline-start
+        const hasPhysicalLeft = rulesForInput.some(({text}) =>
+          /left\s*:\s*50%/i.test(text),
+        );
+        const hasLogicalStart = rulesForInput.some(({text}) =>
+          /inset-inline-start\s*:\s*50%/i.test(text),
+        );
+
+        expect(hasPhysicalLeft).toBe(true);
+        expect(hasLogicalStart).toBe(false);
+
+        expect(input.className).toContain('centerInline');
+        expect(input.className).not.toContain('inputCoarseRtl');
+      },
+    );
   });
 });
 
