@@ -22,6 +22,7 @@ import {defineTheme} from '../theme/defineTheme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {InternationalizationProvider} from '../i18n/InternationalizationProvider';
+import {standaloneShortWeekdayNamesByLocale} from './standaloneShortWeekdayNames.generated';
 
 function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
   const {prose, component} = generateThemeCSS(theme);
@@ -122,6 +123,10 @@ describe('Calendar', () => {
   });
 
   it('uses the provider locale for stand-alone short day names', () => {
+    const localizedNames = standaloneShortWeekdayNamesByLocale.es;
+    const englishNames = standaloneShortWeekdayNamesByLocale.en;
+    expect(localizedNames).not.toEqual(englishNames);
+
     const {rerender} = render(
       <InternationalizationProvider locale="es-ES">
         <Calendar />
@@ -130,7 +135,7 @@ describe('Calendar', () => {
 
     expect(
       screen.getAllByRole('columnheader').map(header => header.textContent),
-    ).toEqual(['DO', 'LU', 'MA', 'MI', 'JU', 'VI', 'SA']);
+    ).toEqual(localizedNames);
 
     rerender(
       <InternationalizationProvider locale="en">
@@ -139,10 +144,12 @@ describe('Calendar', () => {
     );
     expect(
       screen.getAllByRole('columnheader').map(header => header.textContent),
-    ).toEqual(['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']);
+    ).toEqual(englishNames);
   });
 
   it('rotates localized day names by numeric weekday index', () => {
+    const localizedNames = standaloneShortWeekdayNamesByLocale.es;
+
     render(
       <InternationalizationProvider locale="es-ES">
         <Calendar weekStartsOn={1} />
@@ -151,7 +158,7 @@ describe('Calendar', () => {
 
     expect(
       screen.getAllByRole('columnheader').map(header => header.textContent),
-    ).toEqual(['LU', 'MA', 'MI', 'JU', 'VI', 'SA', 'DO']);
+    ).toEqual([...localizedNames.slice(1), localizedNames[0]]);
   });
 
   it('displays correct number of day cells', () => {

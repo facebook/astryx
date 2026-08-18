@@ -8,8 +8,8 @@ import {describe, expect, it} from 'vitest';
 import {
   getGeneratedLocales,
   getGeneratedLocaleSources,
-  getShippedLocales,
   renderGeneratedFile,
+  resolveCldrSourceLocale,
 } from './generate-cldr-weekdays.mjs';
 import {standaloneShortWeekdayNamesByLocale} from '../packages/core/src/Calendar/standaloneShortWeekdayNames.generated';
 
@@ -43,25 +43,33 @@ describe('generate-cldr-weekdays', () => {
     expect(first).toBe(fs.readFileSync(OUTPUT_FILE, 'utf8'));
   });
 
-  it('derives only needed exact and base-language locale entries', () => {
-    const locales = getGeneratedLocales();
-
-    expect(locales.length).toBeLessThanOrEqual(getShippedLocales().length * 2);
-    expect(locales).toContain('en');
-    expect(locales).toContain('es');
-    expect(locales).toContain('ar-SA');
-    expect(locales).toContain('zh-TW');
-    expect(locales).not.toContain('es-ES');
-    expect(getGeneratedLocaleSources()['zh-TW']).toBe('zh-Hant');
+  it('resolves exact, base-language, and script-parent CLDR sources', () => {
+    expect(resolveCldrSourceLocale('en', new Set(['en']))).toBe('en');
+    expect(resolveCldrSourceLocale('es-MX', new Set(['es']))).toBe('es');
+    expect(resolveCldrSourceLocale('zh-TW', new Set(['zh', 'zh-Hant']))).toBe(
+      'zh-Hant',
+    );
   });
 
-  it('copies regional, base-language, and script-parent values from raw CLDR', () => {
-    expect(standaloneShortWeekdayNamesByLocale.es).toEqual(readRawCldr('es'));
-    expect(standaloneShortWeekdayNamesByLocale['ar-SA']).toEqual(
-      readRawCldr('ar-SA'),
-    );
-    expect(standaloneShortWeekdayNamesByLocale['zh-TW']).toEqual(
-      readRawCldr('zh-Hant'),
-    );
+  it('matches every generated locale to its pinned raw CLDR source', () => {
+    const generatedLocales = getGeneratedLocales();
+    const sources = getGeneratedLocaleSources();
+    const checkedInLocales = Object.keys(standaloneShortWeekdayNamesByLocale);
+
+    expect(checkedInLocales.toSorted()).toEqual(generatedLocales.toSorted());
+
+    for (const locale of generatedLocales) {
+      const source = sources[locale];
+      const weekdays = standaloneShortWeekdayNamesByLocale[locale];
+
+      expect(source).toBeDefined();
+      expect(weekdays).toEqual(readRawCldr(source));
+      expect(weekdays).toHaveLength(7);
+      for (const weekday of weekdays) {
+        expect(typeof weekday).toBe('string');
+        expect(weekday.length).toBeGreaterThan(0);
+      }
+      expect(new Set(weekdays).size).toBe(7);
+    }
   });
 });
