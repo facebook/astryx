@@ -4,7 +4,7 @@
 
 /**
  * @file useCalendarDays.ts
- * @input Uses React useMemo, PlainDate utilities
+ * @input Uses React context via use(), useMemo, PlainDate utilities, generated CLDR weekday data
  * @output Exports useCalendarDays hook for generating calendar day grids
  * @position Calendar-specific hook; used by Calendar
  *
@@ -12,7 +12,7 @@
  * - /packages/core/src/Calendar/hooks/index.ts
  */
 
-import {useMemo} from 'react';
+import {use, useMemo} from 'react';
 import type {DayOfWeek, ISODateString} from '../../utils/dateTypes';
 import {
   type PlainDate,
@@ -21,6 +21,8 @@ import {
   plainDateDayOfWeek,
   plainDateAddDays,
 } from '../../utils/plainDate';
+import {InternationalizationContext} from '../../i18n/InternationalizationContext';
+import {getStandaloneShortWeekdayNames} from '../getStandaloneShortWeekdayNames';
 
 /**
  * Represents a single day in the calendar grid.
@@ -84,6 +86,7 @@ export function useCalendarDays(
   options: UseCalendarDaysOptions,
 ): UseCalendarDaysReturn {
   const {year, month, weekStartsOn = 0, hasVariableRowCount = false} = options;
+  const {locale} = use(InternationalizationContext);
 
   // Calculate grid structure
   const gridInfo = useMemo(() => {
@@ -108,15 +111,15 @@ export function useCalendarDays(
     };
   }, [year, month, weekStartsOn, hasVariableRowCount]);
 
-  // Generate day names
+  // Generated strings avoid Date anchors, so weekday headers cannot shift with
+  // the runtime timezone. Keep numeric indices as the rotation source of truth.
   const dayNames = useMemo(() => {
-    const names = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-    const rotated: string[] = [];
-    for (let i = 0; i < 7; i++) {
-      rotated.push(names[(i + weekStartsOn) % 7]);
-    }
-    return rotated;
-  }, [weekStartsOn]);
+    const names = getStandaloneShortWeekdayNames(locale);
+    return Array.from(
+      {length: 7},
+      (_, index) => names[(index + weekStartsOn) % 7],
+    );
+  }, [locale, weekStartsOn]);
 
   // Generate days array
   const days = useMemo(() => {

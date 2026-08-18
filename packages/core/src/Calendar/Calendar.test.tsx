@@ -21,6 +21,7 @@ import {calendarStyles} from './styles';
 import {defineTheme} from '../theme/defineTheme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
+import {InternationalizationProvider} from '../i18n/InternationalizationProvider';
 
 function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
   const {prose, component} = generateThemeCSS(theme);
@@ -118,6 +119,39 @@ describe('Calendar', () => {
     expect(screen.getByText('Th')).toBeInTheDocument();
     expect(screen.getByText('Fr')).toBeInTheDocument();
     expect(screen.getByText('Sa')).toBeInTheDocument();
+  });
+
+  it('uses the provider locale for stand-alone short day names', () => {
+    const {rerender} = render(
+      <InternationalizationProvider locale="es-ES">
+        <Calendar />
+      </InternationalizationProvider>,
+    );
+
+    expect(
+      screen.getAllByRole('columnheader').map(header => header.textContent),
+    ).toEqual(['DO', 'LU', 'MA', 'MI', 'JU', 'VI', 'SA']);
+
+    rerender(
+      <InternationalizationProvider locale="en">
+        <Calendar />
+      </InternationalizationProvider>,
+    );
+    expect(
+      screen.getAllByRole('columnheader').map(header => header.textContent),
+    ).toEqual(['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']);
+  });
+
+  it('rotates localized day names by numeric weekday index', () => {
+    render(
+      <InternationalizationProvider locale="es-ES">
+        <Calendar weekStartsOn={1} />
+      </InternationalizationProvider>,
+    );
+
+    expect(
+      screen.getAllByRole('columnheader').map(header => header.textContent),
+    ).toEqual(['LU', 'MA', 'MI', 'JU', 'VI', 'SA', 'DO']);
   });
 
   it('displays correct number of day cells', () => {
