@@ -402,7 +402,9 @@ describe('useTableTreeState — isItemExpandable', () => {
 describe('useTableTreeState — sortSiblings', () => {
   it('sorts within sibling groups, never across levels', () => {
     const byNameDesc = (siblings: FileRow[]) =>
-      [...siblings].sort((a, b) => b.name.localeCompare(a.name));
+      [...siblings].sort((a, b) =>
+        b.name > a.name ? 1 : b.name < a.name ? -1 : 0,
+      );
 
     const {result} = renderHook(() =>
       useTableTreeState({
@@ -580,7 +582,7 @@ describe('useTableTreeState — hostile data', () => {
 
   it('never mutates the consumer data when sortSiblings sorts in place', () => {
     const inPlaceSorter = (siblings: FileRow[]) =>
-      siblings.sort((a, b) => b.name.localeCompare(a.name));
+      siblings.sort((a, b) => (b.name > a.name ? 1 : b.name < a.name ? -1 : 0));
 
     const childOrderBefore = fileTree[0].children!.map(c => c.id);
     renderHook(() =>

@@ -18,6 +18,158 @@ This plugin implements a two-tier linting strategy:
 
 ## Rules
 
+### `@astryx/no-raw-intl-locale`
+
+`InternationalizationProvider` is the sole user-facing locale source. This
+rule forbids two independent things, anywhere in the lint scope:
+
+1. **Raw `Intl` access** — constructing a locale-sensitive `Intl` formatter,
+   calling `toLocaleString`/`toLocaleDateString`/`toLocaleTimeString`/
+   `toLocaleUpperCase`/`toLocaleLowerCase`/`localeCompare` **directly**, or
+   referencing the global `Intl` object at all outside an approved file —
+   regardless of whether a call has a locale argument, and regardless of
+   whether that argument is a literal, a variable, or `navigator.language`.
+   An explicit locale expression does **not** satisfy this rule by itself;
+   only going through the approved locale-aware boundary does. Beyond the
+   direct-call shape, the rule also flags aliasing (`const DTF =
+Intl.DateTimeFormat`), destructuring (`const {DateTimeFormat} = Intl`),
+   and indexing with a computed key (`Intl[key]`) — each of these constructs
+   a formatter without ever appearing as the call the direct-call check
+   watches for, so the reference itself is what gets reported.
+2. **`navigator.language`/`navigator.languages` as a locale source** — in
+   _any_ position, not only as an argument to an `Intl`/locale-method call.
+   `recognition.lang = lang ?? navigator.language` is flagged even though no
+   `Intl` API is involved.
+
+Shipped component code should read the locale through the public
+provider-aware utilities instead — `useLocale()`/`useCollator()` (exported
+from `@astryxdesign/core/i18n`) — or an existing formatting helper such as
+`plainDateFormat`/`formatInstant`/`formatFilterValue`, so the value always
+traces back to the provider.
+
+**Raw `Intl` construction and reference is confined to a short, explicit
+allowlist of files** (`APPROVED_INFRA_FILES` in the rule source) — the pure,
+SSR-safe helpers that every provider-aware caller ultimately threads a locale
+through, plus a few of their colocated tests:
+
+- `packages/core/src/utils/plainDate.ts`, `.../utils/dateParser.ts` — date
+  formatting/parsing core
+- `packages/core/src/Timestamp/formatInstant.ts`,
+  `.../Timestamp/tooltipEntries.ts` — Timestamp's shared instant formatter and
+  its (non-display) time-zone validity probe
+- `packages/core/src/PowerSearch/formatFilterValue.ts` — filter-value
+  formatting
+- `packages/core/src/i18n/useCollator.ts` — the one place allowed to
+  construct an `Intl.Collator`
+- `packages/charts/src/formatters.ts` — charts is a separate package that
+  cannot consume React context directly, so its formatters require an
+  explicit locale at their own public boundary instead
+- `packages/charts/src/formatters.test.ts`,
+  `packages/core/src/Calendar/Calendar.test.tsx`,
+  `packages/core/src/Timestamp/tooltipEntries.test.ts`,
+  `packages/core/src/PowerSearch/formatFilterValue.test.ts`,
+  `packages/core/src/Timestamp/Timestamp.test.tsx` — colocated tests of the
+  files above (or, for `Timestamp.test.tsx`, of a component whose entire
+  purpose is locale-aware rendering) that build their expected value with an
+  independently-constructed `Intl` formatter rather than the helper under
+  test, so the assertion isn't partly circular. This is not a general
+  "tests are exempt" carve-out: every other test in the lint scope — including
+  most of these same files' other tests — still follows the rule.
+
+This list is the **only** exception mechanism, and it is closed: there is no
+rule option or `eslint.config.js` override that widens it, so adding a file
+means editing the rule (and `no-raw-intl-locale.test.mjs`) in review, not a
+config change a later diff can quietly broaden. Aliasing and destructuring
+Intl members is also fine _inside_ one of these files — the trust boundary
+covers the whole file, not just the direct-call shape. `navigator.language`/
+`navigator.languages`, however, is rejected unconditionally, infra or not —
+the provider is the only sanctioned source of a real locale, so
+infrastructure code must still receive one from a caller.
+
+`Intl.Locale` is never flagged, in any form — a bare reference, an alias, a
+call — it inspects a tag rather than formatting display output. `Intl.Segmenter`
+is exempt everywhere (infra or not) for exactly two shapes: a direct call
+with grapheme segmentation (including its standards-defined default
+granularity — grapheme boundaries do not vary meaningfully by locale, which
+is also why `packages/core/src/utils/characters.ts` and
+`packages/core/src/hooks/useStreamingText.ts` call it with none), and the
+`typeof Intl.Segmenter === 'function'` feature-detection idiom those same two
+files pair it with (which constructs nothing). Word, sentence, and otherwise
+unknown segmentation options are genuinely locale-sensitive and follow the
+same policy as every other formatter — and, like every other formatter,
+_aliasing_ `Intl.Segmenter` instead of calling it directly is **not** exempt
+outside an approved file: the exemption is a call shape, not a reference, so
+`const Seg = Intl.Segmenter; new Seg(undefined, {granularity: 'grapheme'})`
+is still flagged even though the eventual call is grapheme-only.
+
+**Known limitations (syntax-only, by design):**
+
+- The rule does not trace an alias back to its origin: `const lang =
+navigator.language; new Intl.DateTimeFormat(lang)` flags the
+  `navigator.language` read but not the later `Intl` call as
+  navigator-sourced (it still gets the generic raw-Intl message, since it's
+  outside an approved file).
+- The locale-sensitive prototype methods are matched on **method name
+  alone**, with no knowledge of the receiver's type. A custom class that
+  happens to define its own same-named method for unrelated,
+  non-locale-sensitive behavior would still be flagged — a false positive
+  a syntax-only rule cannot rule out. This has not surfaced in the current
+  codebase.
+- A **computed method name held in a variable** — `date[computedMethodName]()`
+  — cannot be resolved to `'toLocaleString'` (or any other name) without
+  value-flow analysis, so it is **not** caught. `Intl[key]` closes the
+  equivalent gap only for the `Intl` object itself (a single, nameable
+  global reference); it cannot generalize to an arbitrary method name on an
+  arbitrary receiver.
+
+A locally shadowed `Intl` or `navigator` (a parameter, an import, a local
+factory) is not the platform global and is not flagged as one — a shadowed
+`Intl` skips every Intl-specific check entirely (including its own aliasing),
+and a shadowed `navigator` is not treated as the browser global (so
+`navigator.language` through it is not flagged as `navigatorLocale` — a call
+built on a shadowed-Intl-but-real-navigator combination still gets
+`navigatorLocale` for the real navigator read, independent of the Intl
+shadow). There is no autofix: choosing the right locale source is an API
+decision.
+
+The repository enables the rule as an error for shipped source and tests in
+`core`, `charts`, `richtext`, and `vega`. It intentionally does not cover
+`lab`, applications, scripts, or stories. Lab must meet this requirement when
+a component graduates to a shipped package.
+
+**Bad:**
+
+```ts
+new Intl.DateTimeFormat().format(date);
+new Intl.DateTimeFormat(locale).format(date); // an explicit locale alone isn't enough
+new Intl.DateTimeFormat(navigator.language).format(date);
+value.toLocaleString(locale);
+left.localeCompare(right, locale);
+const DTF = Intl.DateTimeFormat; // aliasing bypasses the direct-call check too
+const {DateTimeFormat} = Intl; // ...and so does destructuring
+```
+
+**Good:**
+
+```tsx
+// Component code: read the provider locale through the public hook.
+import {useLocale, useCollator} from '@astryxdesign/core/i18n';
+
+function Example() {
+  const locale = useLocale();
+  return <span>{plainDateFormat(date, DATE_FORMAT_LONG, locale)}</span>;
+}
+
+// String comparison: useCollator(), not a raw Intl.Collator/localeCompare.
+function useSortedNames(names: string[]) {
+  const collator = useCollator({numeric: true});
+  return useMemo(
+    () => [...names].sort((a, b) => collator.compare(a, b)),
+    [names, collator],
+  );
+}
+```
+
 ### `@astryx/no-hardcoded-styles`
 
 Detects hardcoded CSS values in `stylex.create()` that should use Astryx tokens:

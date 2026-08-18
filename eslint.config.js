@@ -202,6 +202,24 @@ export default defineConfig(
       '@astryx/copyright-header': 'error',
     },
   },
+  // Locale-sensitive formatting in shipped packages must go through the
+  // provider-aware locale utilities, never raw Intl — see the rule's own doc
+  // comment and internal/eslint-plugin-astryx/README.md for the approved
+  // infrastructure boundary. Lab adopts this gate when a component graduates.
+  {
+    files: [
+      "packages/core/src/**/*.{ts,tsx}",
+      "packages/charts/src/**/*.{ts,tsx}",
+      "packages/richtext/src/**/*.{ts,tsx}",
+      "packages/vega/src/**/*.{ts,tsx}",
+    ],
+    plugins: {
+      '@astryx': astryxEslintPlugin,
+    },
+    rules: {
+      '@astryx/no-raw-intl-locale': 'error',
+    },
+  },
   // Astryx design token enforcement - applies to core package (excluding theme files)
   {
     files: ["packages/core/src/**/*.{ts,tsx}"],
