@@ -14,6 +14,10 @@ import {
   extractKeyRefs,
   validateSourceCatalog,
   compareLocale,
+  parseIcuMessage,
+  compareMessageContracts,
+  pluralRulesFor,
+  analyzeIcuMessage,
 } from './check-i18n-catalog.mjs';
 
 const keys = source => extractKeyRefs(source, 'Test.tsx').refs.map(r => r.key);
@@ -189,5 +193,230 @@ describe('compareLocale', () => {
       missing: ['@astryx.a.two'],
       extra: ['@astryx.a.stale'],
     });
+  });
+});
+
+const contractProblems = (source, translation) =>
+  compareMessageContracts(
+    parseIcuMessage(source),
+    parseIcuMessage(translation),
+  );
+
+describe('ICU message contracts', () => {
+  it('allows arguments to be reordered without comparing literal text', () => {
+    expect(
+      contractProblems(
+        'Hello {first} {last}, balance {balance, number}',
+        'Solde {balance, number} — {last}, {first}',
+      ),
+    ).toEqual([]);
+  });
+
+  it('allows locale-specific cardinal and ordinal categories', () => {
+    expect(
+      contractProblems(
+        '{count, plural, one {{owner} has one item} other {{owner} has # items}} ' +
+          '{rank, selectordinal, one {#st} other {#th}}',
+        '{rank, selectordinal, few {#e} many {#e} other {#e}} — ' +
+          '{count, plural, one {{owner} a un élément} few {{owner} a # éléments} many {{owner} a # éléments} other {{owner} a # éléments}}',
+      ),
+    ).toEqual([]);
+  });
+
+  it.each([
+    ['source', 'Hello {name'],
+    ['translation', '{count, plural, one {Un}}'],
+  ])('reports malformed %s ICU deterministically', (catalog, message) => {
+    const {syntaxError} = analyzeIcuMessage(message);
+    expect(`${catalog}: ${syntaxError}`).toMatch(
+      new RegExp(
+        `^${catalog}: malformed ICU message at line 1, column \\d+: [A-Z_]+$`,
+      ),
+    );
+  });
+
+  it('reports missing and extra arguments', () => {
+    expect(contractProblems('Hello {name}', 'Hello {account}')).toEqual([
+      'missing argument(s): name',
+      'extra argument(s): account',
+    ]);
+  });
+
+  it('reports an incompatible argument kind', () => {
+    expect(
+      contractProblems('Total: {value, number}', 'Date: {value, date}'),
+    ).toEqual([
+      'argument "value" has incompatible kind: expected number; found date',
+    ]);
+  });
+
+  it('preserves nested select, plural, and rich-text structure', () => {
+    const source =
+      '{count, plural, one {<strong>{owner}</strong> has one item} ' +
+      'other {<strong>{owner}</strong> has # items for {audience, select, public {everyone} other {{viewer}}}}}';
+    const reorderedTranslation =
+      '{count, plural, few {{audience, select, public {tous} other {{viewer}}}: <strong>{owner}</strong> a # éléments} ' +
+      'other {{audience, select, public {tous} other {{viewer}}}: <strong>{owner}</strong> a # éléments}}';
+    expect(contractProblems(source, reorderedTranslation)).toEqual([]);
+
+    const movedOutOfTag =
+      '{count, plural, one {{owner} <strong>a un élément</strong>} ' +
+      'other {{owner} <strong>a # éléments</strong> pour {audience, select, public {tous} other {{viewer}}}}}';
+    expect(contractProblems(source, movedOutOfTag)).toContain(
+      'argument "owner" has incompatible structure: expected argument inside plural "count" > tag <strong>; found argument inside plural "count"',
+    );
+  });
+
+  it('keeps pound placeholders in the nested contract', () => {
+    expect(
+      contractProblems(
+        '{count, plural, one {One} other {# items}}',
+        '{count, plural, one {Un} other {éléments}}',
+      ),
+    ).toEqual(['missing pound placeholder(s): #']);
+  });
+
+  it('distinguishes cardinal plurals from selectordinal', () => {
+    expect(
+      contractProblems(
+        '{count, plural, one {One} other {Items}}',
+        '{count, selectordinal, one {First} other {Later}}',
+      ),
+    ).toEqual([
+      'argument "count" has incompatible kind: expected plural; found selectordinal',
+    ]);
+  });
+
+  it('keeps exact plural selectors in the contract', () => {
+    expect(
+      contractProblems(
+        '{count, plural, =0 {None} other {# items}}',
+        '{count, plural, =1 {Un} other {# éléments}}',
+      ),
+    ).toEqual([
+      'argument "count" has incompatible structure: expected plural (offset=0; exact=[=0]) at message root; found plural (offset=0; exact=[=1]) at message root',
+    ]);
+  });
+
+  it('keeps select option names in the contract', () => {
+    expect(
+      contractProblems(
+        '{tone, select, formal {Welcome} other {Hi}}',
+        '{tone, select, casual {Salut} other {Bonjour}}',
+      ),
+    ).toEqual([
+      'argument "tone" has incompatible structure: expected select (options=[formal, other]) at message root; found select (options=[casual, other]) at message root',
+    ]);
+  });
+});
+
+describe('ICU plural categories', () => {
+  const rulesFor = locale => {
+    const rules = pluralRulesFor(locale);
+    expect(rules.status).toBe('supported');
+    return rules;
+  };
+
+  const messageWith = (syntax, selector) =>
+    `{count, ${syntax}, ${selector} {named} other {fallback}}`;
+
+  it('accepts every cardinal category reported by Intl.PluralRules', () => {
+    const rules = rulesFor('en');
+    const options = [...rules.cardinal]
+      .map(category => `${category} {${category}}`)
+      .join(' ');
+    const result = analyzeIcuMessage(`{count, plural, ${options}}`, {
+      pluralRules: rules,
+      isSource: true,
+    });
+    expect(result.pluralErrors).toEqual([]);
+  });
+
+  it('distinguishes cardinal categories from ordinal categories', () => {
+    const rules = rulesFor('en');
+    const ordinalOnly = [...rules.ordinal].find(
+      category => !rules.cardinal.has(category),
+    );
+    expect(ordinalOnly).toBeDefined();
+
+    const cardinal = analyzeIcuMessage(messageWith('plural', ordinalOnly), {
+      pluralRules: rules,
+      isSource: true,
+    });
+    const ordinal = analyzeIcuMessage(
+      messageWith('selectordinal', ordinalOnly),
+      {pluralRules: rules, isSource: true},
+    );
+    expect(cardinal.pluralErrors).toHaveLength(1);
+    expect(cardinal.pluralErrors[0]).toContain(
+      `unreachable cardinal category "${ordinalOnly}"`,
+    );
+    expect(ordinal.pluralErrors).toEqual([]);
+  });
+
+  it('descends into plurals nested under other ICU nodes', () => {
+    const rules = rulesFor('en');
+    const message =
+      '{choice, select, nested {' +
+      messageWith('plural', 'unreachable') +
+      '} other {fallback}}';
+    const result = analyzeIcuMessage(message, {
+      pluralRules: rules,
+      isSource: true,
+    });
+    expect(result.pluralErrors).toHaveLength(1);
+    expect(result.pluralErrors[0]).toContain('"unreachable"');
+  });
+
+  it('exempts exact selectors', () => {
+    const result = analyzeIcuMessage(
+      '{count, plural, =99 {exact} other {fallback}}',
+      {pluralRules: rulesFor('en'), isSource: true},
+    );
+    expect(result.pluralErrors).toEqual([]);
+  });
+
+  it('does not treat a select option named many as a plural category', () => {
+    const result = analyzeIcuMessage(
+      '{choice, select, many {several} other {fallback}}',
+      {pluralRules: rulesFor('en'), isSource: true},
+    );
+    expect(result.pluralErrors).toEqual([]);
+  });
+
+  it('makes source findings fatal and translation findings notes', () => {
+    const message = messageWith('plural', 'unreachable');
+    const pluralRules = rulesFor('en');
+    const source = analyzeIcuMessage(message, {
+      pluralRules,
+      isSource: true,
+    });
+    const translation = analyzeIcuMessage(message, {pluralRules});
+
+    expect(source.pluralErrors).toHaveLength(1);
+    expect(source.pluralNotes).toEqual([]);
+    expect(translation.pluralErrors).toEqual([]);
+    expect(translation.pluralNotes).toHaveLength(1);
+  });
+
+  it('distinguishes unsupported and malformed locales', () => {
+    expect(pluralRulesFor('xx-YY')).toMatchObject({status: 'unsupported'});
+    expect(pluralRulesFor('not_a_locale')).toMatchObject({status: 'malformed'});
+  });
+
+  it('does not let an unsupported locale mask syntax or contract errors', () => {
+    const pluralRules = pluralRulesFor('xx-YY');
+    expect(pluralRules.status).toBe('unsupported');
+
+    const syntax = analyzeIcuMessage('Hello {name', {pluralRules});
+    expect(syntax.syntaxError).toMatch(/^malformed ICU message/);
+
+    const contract = analyzeIcuMessage('{value, date}', {
+      sourceAst: parseIcuMessage('{value, number}'),
+      pluralRules,
+    });
+    expect(contract.contractProblems).toEqual([
+      'argument "value" has incompatible kind: expected number; found date',
+    ]);
   });
 });
