@@ -1,0 +1,95 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+/**
+ * @file useCollator.test.tsx
+ * @input packages/core/src/i18n/useCollator.ts, InternationalizationProvider
+ * @output Unit tests for the internal provider-aware Intl.Collator hook
+ * @position Colocated tests; targets the default (no-provider) fallback,
+ *   locale-driven comparison order, option threading, and memoization.
+ */
+
+import type {ReactNode} from 'react';
+import {describe, expect, test} from 'vitest';
+import {render, renderHook} from '@testing-library/react';
+import {useCollator} from '../useCollator';
+import {InternationalizationProvider} from '../InternationalizationProvider';
+
+function wrapperFor(locale: string) {
+  return ({children}: {children: ReactNode}) => (
+    <InternationalizationProvider locale={locale}>
+      {children}
+    </InternationalizationProvider>
+  );
+}
+
+describe('useCollator', () => {
+  test('compares using the en fallback when rendered without a provider', () => {
+    const {result} = renderHook(() => useCollator());
+    expect(result.current.compare('a', 'b')).toBeLessThan(0);
+  });
+
+  test('orders "ä" before "z" under Swedish, and after "z" under German', () => {
+    const {result: sv} = renderHook(() => useCollator(), {
+      wrapper: wrapperFor('sv-SE'),
+    });
+    expect(['z', 'ä'].sort((a, b) => sv.current.compare(a, b))).toEqual([
+      'z',
+      'ä',
+    ]);
+
+    const {result: de} = renderHook(() => useCollator(), {
+      wrapper: wrapperFor('de-DE'),
+    });
+    expect(['z', 'ä'].sort((a, b) => de.current.compare(a, b))).toEqual([
+      'ä',
+      'z',
+    ]);
+  });
+
+  test('threads options through to the underlying Intl.Collator (numeric)', () => {
+    const {result} = renderHook(() => useCollator({numeric: true}));
+    expect(
+      ['item2', 'item10'].sort((a, b) => result.current.compare(a, b)),
+    ).toEqual(['item2', 'item10']);
+  });
+
+  test('without numeric, orders "item10" before "item2" lexicographically', () => {
+    const {result} = renderHook(() => useCollator());
+    expect(
+      ['item2', 'item10'].sort((a, b) => result.current.compare(a, b)),
+    ).toEqual(['item10', 'item2']);
+  });
+
+  test('memoizes the collator across re-renders with the same locale and options', () => {
+    const {result, rerender} = renderHook(() => useCollator({numeric: true}), {
+      wrapper: wrapperFor('en'),
+    });
+    const first = result.current;
+    rerender();
+    expect(result.current).toBe(first);
+  });
+
+  test('re-renders with a new collator when the provider locale changes', () => {
+    let latestCollator: Intl.Collator | undefined;
+    function Probe() {
+      latestCollator = useCollator();
+      const order = ['z', 'ä'].sort((a, b) => latestCollator!.compare(a, b));
+      return <span data-testid="order">{order.join(',')}</span>;
+    }
+    const {getByTestId, rerender} = render(
+      <InternationalizationProvider locale="sv-SE">
+        <Probe />
+      </InternationalizationProvider>,
+    );
+    expect(getByTestId('order').textContent).toBe('z,ä');
+    const svCollator = latestCollator;
+
+    rerender(
+      <InternationalizationProvider locale="de-DE">
+        <Probe />
+      </InternationalizationProvider>,
+    );
+    expect(getByTestId('order').textContent).toBe('ä,z');
+    expect(latestCollator).not.toBe(svCollator);
+  });
+});
