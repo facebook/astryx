@@ -610,6 +610,14 @@ function MonthGrid({
     weekStartsOn,
     hasVariableRowCount,
   });
+  const dayNameHeaders = useMemo(
+    () =>
+      dayNames.map((name, offset) => ({
+        dayOfWeek: ((weekStartsOn + offset) % 7) as DayOfWeek,
+        name,
+      })),
+    [dayNames, weekStartsOn],
+  );
 
   const {isDateDisabled} = useCalendarConstraints({
     min,
@@ -833,9 +841,9 @@ function MonthGrid({
               )}
             />
           )}
-          {dayNames.map((name, index) => (
+          {dayNameHeaders.map(({dayOfWeek, name}) => (
             <div
-              key={(weekStartsOn + index) % 7}
+              key={dayOfWeek}
               role="columnheader"
               {...stylex.props(monthGridStyles.dayName)}>
               {name}
