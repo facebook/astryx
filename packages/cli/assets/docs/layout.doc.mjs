@@ -7,9 +7,32 @@ export const docs = {
   title: 'Layout',
   category: 'guide',
   description:
-    'Build an app layout outside-in: frame the regions, structure the content, tune the spacing, then ship. Grouped into four phases, each closing with a Do and Don\'t table.',
+    'Build an app layout outside-in: frame the regions, structure the content, tune the spacing, then ship. Four phases, each closing with a Do and Don\'t table.',
 
   sections: [
+    {
+      title: 'Overview',
+      content: [
+        {
+          type: 'prose',
+          text: 'Build a layout outside-in. Settle the shell and its region budgets before any content exists, then work inward. Content-first layouts drift into a padded column of cards, because every section ends up inventing its own container.',
+        },
+        {
+          type: 'list',
+          style: 'ordered',
+          items: [
+            'Frame: pick the shell, budget each region in px, and choose navigation',
+            'Structure: rank the content in each region, then pick the weakest container that groups it',
+            'Space: hold one content line per region, then tune gaps and density',
+            'Ship: declare the responsive contract and run the checklist',
+          ],
+        },
+        {
+          type: 'prose',
+          text: 'Every sub-section reads the same way: the rule, how to apply it, one example, then the test that tells you it worked. Skip to the phase you are in.',
+        },
+      ],
+    },
     {
       title: 'Frame',
       content: [
@@ -22,24 +45,22 @@ export const docs = {
           type: 'list',
           style: 'ordered',
           items: [
-            'Pick the frame: AppShell (nav apps), Layout + LayoutPanel + LayoutContent (multi-pane tools like explorers and consoles), or a plain content column (documents, forms)',
-            'Budget each region in px: side nav 240–280, icon rail 64–72, inspector 340–420, filter rail 220–260',
+            'Pick the frame: AppShell (nav apps), Layout with LayoutPanel in a start or end slot (multi-pane tools), or a plain content column (documents, forms)',
+            'Budget each region in px: SideNav 240–280, icon rail 64–72, inspector 340–420, filter rail 220–260',
             'Keep raw px for these structural widths only; interior spacing uses the scale (see Space)',
-            'Set each region container policy (rows vs card grid) and the responsive contract before writing content',
+            'Set each region container policy (rows or card grid) and the responsive contract before writing content',
           ],
         },
         {
           type: 'code',
           lang: 'tsx',
           label: 'A three-region tool frame',
-          code: `// Frame: nav 256 | content flex | inspector 380 (resizable)
-<AppShell sideNav={<SideNav>{/* nav items */}</SideNav>} contentPadding={0}>
-  <Layout>
-    <LayoutContent>{/* dense list or table, edge-to-edge */}</LayoutContent>
-    <LayoutPanel width={380} resizable={{minSizePx: 320, maxSizePx: 480}} hasDivider>
-      {/* inspector for the selected row */}
-    </LayoutPanel>
-  </Layout>
+          code: `// nav 256 | content flex | inspector 380
+<AppShell sideNav={<SideNav>{/* nav items */}</SideNav>}>
+  <Layout
+    content={<LayoutContent>{/* dense list or table */}</LayoutContent>}
+    end={<LayoutPanel width={380} hasDivider>{/* inspector */}</LayoutPanel>}
+  />
 </AppShell>`,
         },
         {
@@ -53,35 +74,29 @@ export const docs = {
           text: 'Match the frame and container policy to your app type; container choice tracks the archetype, not preference.',
         },
         {
-          type: 'table',
-          headers: ['Archetype', 'Frame', 'Container policy'],
-          rows: [
-            [
-              'Tracker / work tool (issues, tickets, CRM)',
-              'AppShell + SideNav; inspector LayoutPanel on select',
-              'Rows only. Grouped edge-to-edge lists, zero cards',
-            ],
-            [
-              'Console / observability (metrics, logs, deploys)',
-              'AppShell + SideNav or TopNav + TabList',
-              'Card grid for dashboard widgets; Table for everything else',
-            ],
-            [
-              'Messaging / feed',
-              'Column frame: rail + sidebar + stream + panel',
-              'Rows and bubbles. No cards in the stream',
-            ],
-            [
-              'Media library / gallery',
-              'AppShell + TopNav; grid content',
-              'Card grid (ClickableCard); dense metadata rows in detail',
-            ],
-            [
-              'Settings / forms',
-              'AppShell + SideNav or settings template',
-              'Sections with FormLayout; Card only for dangerous or billing actions',
-            ],
+          type: 'list',
+          style: 'unordered',
+          items: [
+            'Tracker (issues, tickets, CRM): AppShell with SideNav, inspector on select. Rows only, zero cards',
+            'Console (metrics, logs, deploys): AppShell with SideNav, or TopNav plus TabList. Card grid for widgets, Table elsewhere',
+            'Messaging or feed: column frame of rail, nav, stream, panel. Rows and bubbles, never cards in the stream',
+            'Media library: AppShell with TopNav over grid content. Card grid via ClickableCard, dense metadata rows in detail',
+            'Settings or forms: AppShell with SideNav, or the settings template. Sections with FormLayout; Card only for destructive or billing actions',
           ],
+        },
+        {
+          type: 'code',
+          lang: 'tsx',
+          label: 'Same records, two container policies',
+          code: `// Tracker: records are rows, edge-to-edge, no Card.
+<Section padding={0}>
+  <List hasDividers>{/* ListItem per record */}</List>
+</Section>
+
+// Console: only self-contained widgets get a Card.
+<Grid columns={{minWidth: 280}} gap={4}>
+  {widgets.map(w => <Card key={w.id}>{w.chart}</Card>)}
+</Grid>`,
         },
         {
           type: 'prose',
@@ -94,29 +109,30 @@ export const docs = {
           text: 'When the frame leaves navigation open, decide from countable signals: destination count, grouping, hierarchy depth.',
         },
         {
-          type: 'table',
-          headers: ['Nav', 'Choose when', 'Avoid when'],
-          rows: [
-            [
-              'Side / left nav (default)',
-              'More than ~5 destinations, they need grouping, nav is customizable, items carry secondary actions, or nav should collapse',
-              'The primary nav is really filters or controls, or it must hold wide elements like breadcrumbs',
-            ],
-            [
-              'Top nav',
-              '5 or fewer destinations, context must stay always-visible, page is control- or filter-heavy with shallow nav',
-              'Ownership of the top slots is unclear, or the hierarchy is deep or still growing',
-            ],
-            [
-              'Top + left',
-              'A genuine suite: top carries ecosystem-wide concerns (context switcher, global search), left carries product nav',
-              'The ecosystem layer is thin, so a second bar just wastes space',
-            ],
+          type: 'list',
+          style: 'unordered',
+          items: [
+            'SideNav, the default: more than ~5 destinations, grouping needed, customizable nav, items with secondary actions, or nav that collapses',
+            'TopNav: 5 or fewer destinations, context that must stay visible, or a control- and filter-heavy page with shallow nav',
+            'Both: a genuine suite, where TopNav carries ecosystem-wide concerns (context switcher, global search) and SideNav carries product nav',
           ],
         },
         {
+          type: 'code',
+          lang: 'tsx',
+          label: 'Navigation passed to AppShell',
+          code: `// Default: product nav on the side.
+<AppShell sideNav={<SideNav>{/* items */}</SideNav>} />
+
+// Shallow and control-heavy: 5 or fewer destinations on top.
+<AppShell topNav={<TopNav>{/* items */}</TopNav>} />
+
+// Suite: ecosystem concerns on top, product nav on the side.
+<AppShell topNav={<TopNav />} sideNav={<SideNav />} />`,
+        },
+        {
           type: 'prose',
-          text: 'Verify: left nav unless you have 5 or fewer destinations and no grouping; top + left only above a real ecosystem layer.',
+          text: 'Verify: SideNav unless you have 5 or fewer destinations and no grouping; two bars only above a real ecosystem layer.',
         },
 
         {type: 'heading', level: 3, text: "Do & Don't"},
@@ -134,7 +150,9 @@ export const docs = {
           style: 'dont',
           items: [
             'Build content-first and wrap each section in a Card, producing a padded scroll column',
-            'Add a top + left nav when the ecosystem layer is thin',
+            'SideNav when the nav is really filters or controls, or must hold wide elements like breadcrumbs',
+            'TopNav when top-slot ownership is unclear, or the hierarchy is deep or still growing',
+            'Both bars when the ecosystem layer is thin, so the second only wastes space',
             'Deviate from the template navigation pairing without a stated reason',
           ],
         },
@@ -154,8 +172,19 @@ export const docs = {
           items: [
             'Lead: Heading (level reflects page depth), or Text weight="semibold" color="primary"',
             'Support: Text color="secondary"',
-            'Tertiary and metadata: Text type="supporting-text" or color="disabled"; StatusDot or Token over prose',
+            'Tertiary and metadata: Text type="supporting" or color="disabled"; StatusDot or Token over prose',
           ],
+        },
+        {
+          type: 'code',
+          lang: 'tsx',
+          label: 'One row, three ranks',
+          code: `<HStack gap={2}>
+  <Text weight="semibold">Payments API</Text>
+  <StatusDot variant="success" label="Healthy" />
+  <Text color="secondary">v2.14</Text>
+  <Text type="supporting">edited 3h ago</Text>
+</HStack>`,
         },
         {
           type: 'prose',
@@ -165,17 +194,28 @@ export const docs = {
         {type: 'heading', level: 3, text: 'Choose a container'},
         {
           type: 'prose',
-          text: 'Reach for the weakest container that reads as a group and escalate only when it fails: spacing, Divider, Section, Card.',
+          text: 'Reach for the weakest container that reads as a group, and escalate only when it fails. This list runs weakest to strongest.',
         },
         {
-          type: 'table',
-          headers: ['Tool', 'Use for', 'Strength'],
-          rows: [
-            ['spacing / gap', 'Related items inside one group. The default rhythm.', 'weakest'],
-            ['Divider', 'Peers in a dense list or toolbar, or fencing a header from a scrollable body.', 'low'],
-            ['Section', 'The default page-structure unit: related content under a heading. No border; hierarchy from spacing.', 'medium'],
-            ['Card', 'A self-contained widget (KPI tile, chart, gallery entry), or a hard boundary around critical content. Not a list-item wrapper.', 'strongest'],
+          type: 'list',
+          style: 'ordered',
+          items: [
+            'spacing and gap: related items inside one group. The default rhythm',
+            'Divider: peers in a dense list or toolbar, or fencing a header from a scrollable body',
+            'Section: the default page-structure unit, related content under a heading. No border; hierarchy comes from spacing',
+            'Card: a self-contained widget (KPI tile, chart, gallery entry), or a hard boundary around critical content. Never a list-item wrapper',
           ],
+        },
+        {
+          type: 'code',
+          lang: 'tsx',
+          label: 'Section as the default unit',
+          code: `// Records are rows in one Section, not one Card each.
+<Section padding={0}>
+  <List header={<Heading level={3}>Members</Heading>} hasDividers>
+    {/* ListItem per member */}
+  </List>
+</Section>`,
         },
         {
           type: 'prose',
@@ -185,24 +225,34 @@ export const docs = {
         {type: 'heading', level: 3, text: 'Panels and inspectors'},
         {
           type: 'prose',
-          text: 'Master-detail: selecting a row opens a fixed-width inspector instead of navigating away. Use LayoutPanel in the end slot with an explicit width budget, plus resizable for user control.',
+          text: 'Master-detail: selecting a row opens a fixed-width inspector instead of navigating away.',
+        },
+        {
+          type: 'list',
+          style: 'unordered',
+          items: [
+            'LayoutPanel in the end slot of Layout, with a width budget of 340–420px',
+            'hasDivider to fence it from the content region; isScrollable so long detail scrolls on its own',
+            'For user-adjustable width, drive it with useResizable() and place a ResizeHandle next to the panel',
+            'Render an EmptyState when nothing is selected, so the region never collapses',
+          ],
         },
         {
           type: 'code',
           lang: 'tsx',
-          label: 'Inspector that overlays at narrow widths',
-          code: `<LayoutPanel
-  width={380}
-  hasDivider
-  isScrollable
-  label="Details"
-  resizable={{minSizePx: 320, maxSizePx: 480, autoSaveId: 'inspector'}}>
-  {selected ? <DetailFields item={selected} /> : <EmptyState title="Nothing selected" />}
-</LayoutPanel>`,
+          label: 'Inspector in the end slot',
+          code: `<Layout
+  content={<LayoutContent>{/* rows */}</LayoutContent>}
+  end={
+    <LayoutPanel width={380} hasDivider isScrollable label="Details">
+      {/* detail fields, or EmptyState when nothing is selected */}
+    </LayoutPanel>
+  }
+/>`,
         },
         {
           type: 'prose',
-          text: 'Verify: below ~1024px the panel overlays the content region instead of compressing it.',
+          text: 'Verify: at narrow widths the inspector gives up its width instead of squeezing the content region (see the responsive contract in Ship).',
         },
 
         {type: 'heading', level: 3, text: "Do & Don't"},
@@ -213,7 +263,7 @@ export const docs = {
             'Give each region one lead; rank with weight and color; one primary action per region',
             'Default to Section; use the weakest container that reads as a group',
             'Render collections as rows (Table or List), edge-to-edge with dividers',
-            'Open a fixed-width inspector on select; overlay it below ~1024px',
+            'Open a fixed-width inspector on select, and let it yield width at narrow sizes',
           ],
         },
         {
@@ -250,8 +300,10 @@ export const docs = {
           lang: 'tsx',
           label: 'One content line, two inset owners',
           code: `// Target content line = 16px.
-<Section padding={4}><Heading>Members</Heading></Section>  {/* 0 inset */}
-<Section padding={0}><List>{/* items */}</List></Section>  {/* ~8px inset */}`,
+// Heading has 0 inset, so the Section takes the full padding.
+<Section padding={4}><Heading level={3}>Members</Heading></Section>
+// List has ~8px built in, so the Section gives up its padding.
+<Section padding={0}><List>{/* items */}</List></Section>`,
         },
         {
           type: 'prose',
@@ -273,6 +325,18 @@ export const docs = {
           ],
         },
         {
+          type: 'code',
+          lang: 'tsx',
+          label: 'Tight inside, generous between',
+          code: `<VStack gap={6}>
+  <VStack gap={1}>
+    <Text weight="semibold">Retention</Text>
+    <Text color="secondary">How long logs are kept</Text>
+  </VStack>
+  <VStack gap={1}>{/* next field */}</VStack>
+</VStack>`,
+        },
+        {
           type: 'prose',
           text: 'Verify: with every border removed, you can still name the groups from spacing alone. If you cannot, the intervals are too uniform.',
         },
@@ -290,6 +354,15 @@ export const docs = {
             'density="balanced": most Table and List surfaces',
             'density="spacious": low-frequency or high-stakes rows (settings, a short selection list)',
           ],
+        },
+        {
+          type: 'code',
+          lang: 'tsx',
+          label: 'Density paired with control size',
+          code: `<Table data={rows} columns={columns} density="compact" hasHover />
+
+// Every control inside a compact row is size="sm".
+<Button label="Retry" size="sm" variant="ghost" />`,
         },
         {
           type: 'prose',
@@ -329,13 +402,29 @@ export const docs = {
           text: 'Declare breakpoint behavior as a contract in a comment at the frame root, and pair every line with the prop or hook that enforces it.',
         },
         {
+          type: 'list',
+          style: 'unordered',
+          items: [
+            'Above 768px: SideNav holds its budget, content flexes, the inspector holds 380',
+            'At 768px: navigation collapses to MobileNav, via the AppShell mobileNav breakpoint ("md" = 768, "lg" = 1024)',
+            'At 1024px: the inspector stops competing for width. Swap it for a Dialog or BottomSheet, driven by useMediaQuery',
+          ],
+        },
+        {
           type: 'code',
           lang: 'tsx',
-          label: 'Contract comment at the frame root',
-          code: `// Responsive contract:
-//   > 1024px  nav 256 | content | inspector 380
-//   <= 1024px inspector overlays content   (LayoutPanel overlay mode)
-//   <= 768px  nav collapses to MobileNav    (AppShell mobileNav prop)`,
+          label: 'Contract wired to props',
+          code: `//   >768   SideNav 256 | content | inspector 380
+//   <=768  nav collapses to MobileNav   (mobileNav breakpoint)
+//   <=1024 inspector moves to a Dialog  (useMediaQuery)
+const isNarrow = useMediaQuery('(max-width: 1024px)');
+
+<AppShell sideNav={<SideNav />} mobileNav={{breakpoint: 'md'}}>
+  <Layout
+    content={<LayoutContent>{/* rows */}</LayoutContent>}
+    end={isNarrow ? undefined : <LayoutPanel width={380} hasDivider />}
+  />
+</AppShell>`,
         },
         {
           type: 'prose',
