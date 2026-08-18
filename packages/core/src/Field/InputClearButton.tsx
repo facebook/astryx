@@ -25,17 +25,27 @@ const styles = stylex.create({
   button: {
     height: '20px',
     flexShrink: 0,
-    // Expand the tap target to >=24px ONLY on touch (WCAG 2.5.8 is a touch
-    // requirement). On a fine pointer the 20px glyph is precise enough, and an
-    // unconditional overlay could overlap neighboring controls in dense
-    // layouts. The inset is 0 by default (hit area == visual glyph) and grows
-    // to -4px (=> 28x28) under a coarse pointer. Driven through a custom
-    // property because StyleX only allows plain values inside a pseudo-element;
-    // the conditional lives on this top-level property instead. Private (--_)
-    // because it is an internal implementation detail, not a themeable target.
+    // Containing block for the ::after hit overlay below. Button sets its own
+    // `position: relative`, so the overlay would resolve correctly without
+    // this — but that is another component's internal, and if it ever changes
+    // the overlay silently reattaches to some ancestor and the hit area lands
+    // in the wrong place. Declaring it here keeps the containing block
+    // colocated with the thing that depends on it. No-op at runtime.
+    position: 'relative',
+    // Expand the tap target to 24px ONLY on touch (WCAG 2.5.8 AA is a touch
+    // requirement, and its floor is 24x24). On a fine pointer the 20px glyph
+    // is precise enough, and an unconditional overlay could overlap
+    // neighboring controls in dense layouts. The inset is 0 by default (hit
+    // area == visual glyph) and grows to -2px (=> 24x24) under a coarse
+    // pointer — no further, because at -4px the overlay reaches into the 8px
+    // adornment gap and, on the inline-start side, over the input's own caret
+    // area. Driven through a custom property because StyleX only allows plain
+    // values inside a pseudo-element; the conditional lives on this top-level
+    // property instead. Private (--_) because it is an internal implementation
+    // detail, not a themeable target.
     '--_clear-hit-inset': {
       default: '0px',
-      '@media (pointer: coarse)': '-4px',
+      '@media (pointer: coarse)': '-2px',
     },
     '::after': {
       content: '""',
