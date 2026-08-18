@@ -22,6 +22,7 @@
 import IntlMessageFormat from 'intl-messageformat';
 import type {Catalog, Locale, MessagesByLocale, Overrides} from './types';
 import enSource from '../../locales/en.json' with {type: 'json'};
+import {warnOnce, __resetDevWarnings} from '../utils/devWarning';
 
 const EN_CATALOG = enSource as Catalog;
 
@@ -72,23 +73,6 @@ export function resolveLocaleChain(locale: Locale): Locale[] {
   return chain;
 }
 
-/**
- * Missing-key warn-once tracking. Fires ONLY when a key is missing from
- * every source including the shipped `en` catalog — that's a real bug
- * (typo, stale catalog, deleted key). Fallback to `en` from a non-en
- * locale is expected and silent, matching the FormatJS / i18next default
- * of not spamming the console when a translation simply hasn't been
- * written yet.
- */
-const warnedMissing = new Set<string>();
-
-function warnOnce(bucket: Set<string>, key: string, message: string): void {
-  if (!bucket.has(key)) {
-    bucket.add(key);
-    console.warn(message);
-  }
-}
-
 function lookup(
   key: string,
   locale: Locale,
@@ -135,10 +119,14 @@ export function resolve(
   const result = lookup(key, locale, messages, overrides);
 
   if (result === null) {
+    // Fires ONLY when a key is missing from every source including the
+    // shipped `en` catalog — a real bug (typo, stale catalog, deleted key).
+    // Fallback to `en` from a non-en locale is expected and stays silent,
+    // matching the FormatJS / i18next default.
     warnOnce(
-      warnedMissing,
-      `${locale}::${key}`,
-      `[astryx-i18n] missing key: ${key} (locale: ${locale})`,
+      `astryx-i18n:${locale}::${key}`,
+      'astryx-i18n',
+      `missing key: ${key} (locale: ${locale})`,
     );
     return key;
   }
@@ -161,5 +149,5 @@ export function resolve(
  */
 export function __resetForTests(): void {
   formatterCache.clear();
-  warnedMissing.clear();
+  __resetDevWarnings();
 }

@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').HookDoc} */
+/** @type {import('@astryxdesign/cli/authoring').HookDoc} */
 export const docs = {
   name: 'useTooltip',
   displayName: 'useTooltip',
@@ -40,7 +40,7 @@ export const docs = {
   category: 'interaction',
 };
 
-/** @type {import('../docs-types').HookTranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').HookTranslationDoc} */
 export const docsDense = {
   description: 'Headless hover/focus tooltip hook. Builds on useLayer w/ hover intent, keyboard focus handling, aria-describedby. Use for custom triggers without wrapper component.',
   paramDescriptions: {

@@ -27,21 +27,42 @@ import {
   type TokenUsage,
 } from './purity-eval.js';
 
-const DOC_RETRIEVAL_CMDS = new Set(['component', 'build', 'search', 'template', 'docs', 'swizzle']);
+const DOC_RETRIEVAL_CMDS = new Set([
+  'component',
+  'build',
+  'search',
+  'template',
+  'docs',
+  'swizzle',
+]);
 
 function sandboxBase(out?: string): string {
-  return out || process.env.ASTRYX_PURITY_OUT || path.join(os.tmpdir(), 'astryx-purity');
+  return (
+    out ||
+    process.env.ASTRYX_PURITY_OUT ||
+    path.join(os.tmpdir(), 'astryx-purity')
+  );
 }
 
 /** Wilson score interval for a binomial proportion (95% by default). */
-function wilson(successes: number, n: number, z = 1.96): {p: number; lo: number; hi: number} {
-  if (n === 0) {return {p: 0, lo: 0, hi: 0};}
+function wilson(
+  successes: number,
+  n: number,
+  z = 1.96,
+): {p: number; lo: number; hi: number} {
+  if (n === 0) {
+    return {p: 0, lo: 0, hi: 0};
+  }
   const phat = successes / n;
   const z2 = z * z;
   const denom = 1 + z2 / n;
   const center = phat + z2 / (2 * n);
   const margin = z * Math.sqrt((phat * (1 - phat) + z2 / (4 * n)) / n);
-  return {p: phat, lo: Math.max(0, (center - margin) / denom), hi: Math.min(1, (center + margin) / denom)};
+  return {
+    p: phat,
+    lo: Math.max(0, (center - margin) / denom),
+    hi: Math.min(1, (center + margin) / denom),
+  };
 }
 
 interface Rate {
@@ -56,7 +77,8 @@ function rate<T>(items: T[], pick: (x: T) => boolean): Rate {
   const {p, lo, hi} = wilson(s, items.length);
   return {count: s, n: items.length, pct: p, lo, hi};
 }
-const fmtRate = (r: Rate) => `${(r.pct * 100).toFixed(0)}% [${(r.lo * 100).toFixed(0)}-${(r.hi * 100).toFixed(0)}] (${r.count}/${r.n})`;
+const fmtRate = (r: Rate) =>
+  `${(r.pct * 100).toFixed(0)}% [${(r.lo * 100).toFixed(0)}-${(r.hi * 100).toFixed(0)}] (${r.count}/${r.n})`;
 
 interface RunResult {
   taskId: string;
@@ -77,7 +99,9 @@ interface RunResult {
 
 function readSnapshots(runDir: string): string[] {
   const snapDir = path.join(runDir, 'snapshots');
-  if (!fs.existsSync(snapDir)) {return [];}
+  if (!fs.existsSync(snapDir)) {
+    return [];
+  }
   return fs
     .readdirSync(snapDir)
     .filter(f => f.endsWith('.tsx'))
@@ -87,16 +111,25 @@ function readSnapshots(runDir: string): string[] {
 
 function readTranscriptText(runDir: string, cap = 200_000): string {
   const p = path.join(runDir, 'transcript.jsonl');
-  if (!fs.existsSync(p)) {return '';}
+  if (!fs.existsSync(p)) {
+    return '';
+  }
   let text = '';
   for (const line of fs.readFileSync(p, 'utf-8').split('\n')) {
-    if (!line.trim()) {continue;}
+    if (!line.trim()) {
+      continue;
+    }
     try {
-      const ev = JSON.parse(line) as {message?: {content?: unknown}; text?: unknown};
+      const ev = JSON.parse(line) as {
+        message?: {content?: unknown};
+        text?: unknown;
+      };
       const content = ev?.message?.content;
       if (Array.isArray(content)) {
         for (const block of content as Array<{type?: string; text?: string}>) {
-          if (block?.type === 'text' && typeof block.text === 'string') {text += block.text + '\n';}
+          if (block?.type === 'text' && typeof block.text === 'string') {
+            text += block.text + '\n';
+          }
         }
       } else if (typeof ev?.text === 'string') {
         text += ev.text + '\n';
@@ -104,7 +137,9 @@ function readTranscriptText(runDir: string, cap = 200_000): string {
     } catch {
       /* skip malformed line */
     }
-    if (text.length > cap) {break;}
+    if (text.length > cap) {
+      break;
+    }
   }
   return text;
 }
@@ -113,8 +148,13 @@ function subcommand(argv: string[]): string | null {
   return argv.find(a => !a.startsWith('-')) ?? null;
 }
 
-function readInvocationLog(logPath: string): {commands: string[]; subs: string[]} {
-  if (!fs.existsSync(logPath)) {return {commands: [], subs: []};}
+function readInvocationLog(logPath: string): {
+  commands: string[];
+  subs: string[];
+} {
+  if (!fs.existsSync(logPath)) {
+    return {commands: [], subs: []};
+  }
   const entries = fs
     .readFileSync(logPath, 'utf-8')
     .trim()
@@ -130,7 +170,9 @@ function readInvocationLog(logPath: string): {commands: string[]; subs: string[]
     .filter((e): e is {argv: string[]} => e !== null);
   return {
     commands: entries.map(e => e.argv.join(' ')),
-    subs: entries.map(e => subcommand(e.argv)).filter((s): s is string => s !== null),
+    subs: entries
+      .map(e => subcommand(e.argv))
+      .filter((s): s is string => s !== null),
   };
 }
 
@@ -147,9 +189,15 @@ interface TaskRecord {
 function evaluateRun(task: TaskRecord): RunResult {
   const versions = readSnapshots(task.runDir);
   // Fallback: if no snapshots were captured but a final file exists, classify that.
-  if (versions.length === 0 && task.outputFile && fs.existsSync(task.outputFile)) {
+  if (
+    versions.length === 0 &&
+    task.outputFile &&
+    fs.existsSync(task.outputFile)
+  ) {
     const finalContent = fs.readFileSync(task.outputFile, 'utf-8');
-    if (finalContent.trim()) {versions.push(finalContent);}
+    if (finalContent.trim()) {
+      versions.push(finalContent);
+    }
   }
   const transcriptText = readTranscriptText(task.runDir);
   const cls = classifyTimeline(versions, {transcriptText});
@@ -184,7 +232,10 @@ function evaluateRun(task: TaskRecord): RunResult {
     }
   }
   if (usage && estCostUSD == null) {
-    estCostUSD = estimateCostUSD(usage, model === 'unknown' ? 'default' : model);
+    estCostUSD = estimateCostUSD(
+      usage,
+      model === 'unknown' ? 'default' : model,
+    );
   }
 
   return {
@@ -207,7 +258,9 @@ function evaluateRun(task: TaskRecord): RunResult {
 
 function conditionRuns(condDir: string): RunResult[] {
   const tasksDir = path.join(condDir, 'tasks');
-  if (!fs.existsSync(tasksDir)) {return [];}
+  if (!fs.existsSync(tasksDir)) {
+    return [];
+  }
   return fs
     .readdirSync(tasksDir)
     .filter(f => f.endsWith('.json'))
@@ -237,7 +290,9 @@ function costOf(runs: RunResult[]): CostBlock {
   let estCostUSD = 0;
   let n = 0;
   for (const r of runs) {
-    if (!r.usage) {continue;}
+    if (!r.usage) {
+      continue;
+    }
     usage = addUsage(usage, r.usage);
     estCostUSD += r.estCostUSD ?? 0;
     n++;
@@ -256,9 +311,13 @@ function costOf(runs: RunResult[]): CostBlock {
 
 function costByPrompt(runs: RunResult[]): Record<string, CostBlock> {
   const groups: Record<string, RunResult[]> = {};
-  for (const r of runs) {(groups[r.basePromptId] ??= []).push(r);}
+  for (const r of runs) {
+    (groups[r.basePromptId] ??= []).push(r);
+  }
   const out: Record<string, CostBlock> = {};
-  for (const [pid, rs] of Object.entries(groups)) {out[pid] = costOf(rs);}
+  for (const [pid, rs] of Object.entries(groups)) {
+    out[pid] = costOf(rs);
+  }
   return out;
 }
 
@@ -270,13 +329,17 @@ function main() {
   };
   const expId = get('--experiment');
   if (!expId) {
-    console.error('Usage: purity-aggregate.ts --experiment <id> [--out <base>]');
+    console.error(
+      'Usage: purity-aggregate.ts --experiment <id> [--out <base>]',
+    );
     process.exit(1);
   }
   const expDir = path.join(sandboxBase(get('--out')), expId);
   const configPath = path.join(expDir, 'purity-config.json');
   if (!fs.existsSync(configPath)) {
-    console.error(`No config at ${configPath}. Run setup-purity.mjs (and run-purity.ts) first.`);
+    console.error(
+      `No config at ${configPath}. Run setup-purity.mjs (and run-purity.ts) first.`,
+    );
     process.exit(1);
   }
   const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
@@ -302,7 +365,9 @@ function main() {
   };
 
   console.log(`\nPrompt Purity — experiment ${expId}`);
-  console.log(`Funnel over runs that produced output. Rates carry a Wilson 95% CI.\n`);
+  console.log(
+    `Funnel over runs that produced output. Rates carry a Wilson 95% CI.\n`,
+  );
   console.log(
     `${'condition'.padEnd(14)} ${'completed'.padEnd(16)} ${'neverVeered'.padEnd(20)} ${'caught|veered'.padEnd(20)} ${'veeredUncaught'.padEnd(20)} ${'ranCLI'.padEnd(16)} purity`,
   );
@@ -362,9 +427,13 @@ function main() {
   // ── Comparison vs control ──────────────────────────────────────────
   const base = perCondition[control];
   if (base) {
-    console.log(`\nvs control (${control}) — lower veeredUncaught + higher purity is better:\n`);
+    console.log(
+      `\nvs control (${control}) — lower veeredUncaught + higher purity is better:\n`,
+    );
     for (const cond of config.conditions as string[]) {
-      if (cond === control) {continue;}
+      if (cond === control) {
+        continue;
+      }
       const c = perCondition[cond];
       const vuDelta = (c.veeredUncaught.pct - base.veeredUncaught.pct) * 100;
       const purDelta = c.finalPurityMean - base.finalPurityMean;
@@ -379,7 +448,9 @@ function main() {
   const totals = emptyUsage();
   let totalCost = 0;
   let totalRuns = 0;
-  console.log(`\nCost — exact token counts; $ is an ESTIMATE (per-model table, cache-read priced low):\n`);
+  console.log(
+    `\nCost — exact token counts; $ is an ESTIMATE (per-model table, cache-read priced low):\n`,
+  );
   console.log(
     `${'condition'.padEnd(14)} ${'runs'.padEnd(5)} ${'input'.padEnd(12)} ${'output'.padEnd(12)} ${'cacheRead'.padEnd(14)} ${'cacheWrite'.padEnd(13)} ${'avgOut'.padEnd(8)} est$`,
   );
@@ -400,7 +471,9 @@ function main() {
   console.log(
     `${'TOTAL'.padEnd(14)} ${String(totalRuns).padEnd(5)} ${fmtNum(totals.inputTokens).padEnd(12)} ${fmtNum(totals.outputTokens).padEnd(12)} ${fmtNum(totals.cacheReadTokens).padEnd(14)} ${fmtNum(totals.cacheWriteTokens).padEnd(13)} ${''.padEnd(8)} $${totalCost.toFixed(2)}`,
   );
-  console.log(`\n($ is an estimate — on a Cursor plan real billing may be request-based; token counts above are exact.)`);
+  console.log(
+    `\n($ is an estimate — on a Cursor plan real billing may be request-based; token counts above are exact.)`,
+  );
 
   summary.cost = {
     total: {
@@ -417,7 +490,9 @@ function main() {
   const outPath = path.join(expDir, 'purity-summary.json');
   fs.writeFileSync(outPath, JSON.stringify(summary, null, 2));
   console.log(`\nSummary: ${outPath}`);
-  console.log(`Read: a variant wins when its veeredUncaught CI clears control's and purity is higher, across K>=5 reps.\n`);
+  console.log(
+    `Read: a variant wins when its veeredUncaught CI clears control's and purity is higher, across K>=5 reps.\n`,
+  );
 }
 
 main();

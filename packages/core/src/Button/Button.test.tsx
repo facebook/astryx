@@ -14,6 +14,7 @@ import {render, screen, fireEvent, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Button} from './Button';
 import {Badge} from '../Badge/Badge';
+import {InternationalizationProvider} from '../i18n';
 
 describe('Button', () => {
   it('renders label as visible text', () => {
@@ -444,5 +445,69 @@ describe('Button', () => {
 
     rerender(<Button label="Submit" isLoading />);
     expect(liveRegion).toHaveTextContent('Loading');
+  });
+
+  it('localizes the loading announcement through the i18n catalog', () => {
+    render(
+      <InternationalizationProvider
+        locale="fr"
+        overrides={{fr: {'@astryx.button.loading': 'Chargement'}}}>
+        <Button label="Submit" isLoading />
+      </InternationalizationProvider>,
+    );
+    const button = screen.getByRole('button');
+    // The Spinner also has role="status", so grab the live region explicitly.
+    const regions = button.querySelectorAll('[role="status"]');
+    const liveRegion = regions[regions.length - 1];
+    expect(liveRegion).toHaveTextContent('Chargement');
+  });
+
+  describe('elevation', () => {
+    it('renders a distinct class for each elevation level', () => {
+      const classFor = (elevation: 'none' | 'low' | 'med' | 'high') => {
+        const {container} = render(
+          <Button label="Save" elevation={elevation} />,
+        );
+        return container.querySelector('button')!.className;
+      };
+      const classes = new Set([
+        classFor('none'),
+        classFor('low'),
+        classFor('med'),
+        classFor('high'),
+      ]);
+      expect(classes.size).toBe(4);
+    });
+
+    it('defaults to flat (elevation none)', () => {
+      const {container: def} = render(<Button label="Save" />);
+      const {container: none} = render(
+        <Button label="Save" elevation="none" />,
+      );
+      expect(def.querySelector('button')!.className).toBe(
+        none.querySelector('button')!.className,
+      );
+    });
+  });
+
+  it('exposes aria-busy on the link-rendered button while loading', () => {
+    // Non-interruptible loading disables the button, which falls back to
+    // <button> rendering — so an anchor only shows loading when interruptible.
+    render(
+      <Button
+        label="Docs"
+        href="https://example.com"
+        isLoading
+        isInterruptible
+      />,
+    );
+    const link = screen.getByRole('link');
+    expect(link).toHaveAttribute('aria-busy', 'true');
+  });
+
+  it('does not set aria-busy on the link-rendered button when not loading', () => {
+    render(<Button label="Docs" href="https://example.com" />);
+    const link = screen.getByRole('link');
+    expect(link).not.toHaveAttribute('aria-busy');
   });
 });

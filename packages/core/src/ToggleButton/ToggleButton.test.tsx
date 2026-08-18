@@ -14,6 +14,10 @@ import userEvent from '@testing-library/user-event';
 import {useState, type MouseEvent} from 'react';
 import {ToggleButton} from './ToggleButton';
 import {ToggleButtonGroup} from './ToggleButtonGroup';
+import {
+  getAllInjectedCss,
+  getForcedColorsRules,
+} from '../__tests__/forcedColors';
 
 // =============================================================================
 // ToggleButton — Standalone
@@ -515,5 +519,25 @@ describe('ToggleButtonGroup (multiple)', () => {
       'aria-pressed',
       'false',
     );
+  });
+});
+
+// jsdom cannot emulate forced-colors rendering, so these assert that the
+// compiled output includes the forced-colors rules; visual behavior needs
+// manual verification under Windows High Contrast.
+describe('forced colors (WCAG 1.4.11)', () => {
+  it('compiles forced-colors overrides so the pressed state survives Windows High Contrast', () => {
+    render(<ToggleButton label="Bold" isPressed onPressedChange={() => {}} />);
+    const css = getForcedColorsRules();
+    // The painted pressed overlay is stripped; Highlight/HighlightText marks
+    // the pressed toggle (critical for icon-only toggles, which otherwise
+    // lose all pressed indication).
+    expect(css).toContain('background-color: highlight;');
+    expect(css).toContain('color: highlighttext;');
+    // ToggleButton renders a <button>; without opting out of UA remapping it
+    // keeps the native ButtonFace surface and ignores the Highlight fill,
+    // leaving HighlightText text on a white surface. forced-color-adjust: none
+    // makes both render as authored.
+    expect(getAllInjectedCss()).toContain('forced-color-adjust: none;');
   });
 });

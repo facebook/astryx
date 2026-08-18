@@ -4,7 +4,7 @@
 
 /**
  * @file FileInput.tsx
- * @input Uses React, useId, Field, Icon, Spinner
+ * @input Uses React, useId, Field, Icon, Spinner, VisuallyHidden
  * @output Exports FileInput component, FileInputProps, FileInputStatus
  * @position Core implementation; consumed by index.ts, tested by FileInput.test.tsx
  *
@@ -13,7 +13,7 @@
  * - /packages/core/src/FileInput/FileInput.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/FileInput/index.ts (exports if types change)
  * - /apps/storybook/stories/FileInput.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/FileInput/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/FileInput/ (showcase blocks)
  */
 
 import {
@@ -40,11 +40,14 @@ import {
   Field,
   InputClearButton,
   type InputStatus,
-  type InputStatusType,
+  type FieldStatusVariant,
 } from '../Field';
-import {Icon, type IconName} from '../Icon';
+import {Icon} from '../Icon';
 import {Spinner} from '../Spinner';
+import {VisuallyHidden} from '../VisuallyHidden';
 import {useAnnounce} from '../hooks/useAnnounce';
+import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
+import {useClickableContainer} from '../hooks/useClickableContainer';
 import {useTooltip} from '../Tooltip';
 
 export type {
@@ -56,6 +59,7 @@ import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
+import type {TranslatorFn} from '../i18n';
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) {
@@ -73,12 +77,13 @@ function validateFiles(
   maxSize: number | undefined,
   maxFiles: number | undefined,
   isMultiple: boolean,
+  t: TranslatorFn,
 ): {valid: File[]; errors: string[]} {
   const errors: string[] = [];
   let valid = files;
 
   if (accept) {
-    const acceptedTypes = accept.split(',').map(t => t.trim().toLowerCase());
+    const acceptedTypes = accept.split(',').map(s => s.trim().toLowerCase());
     valid = valid.filter(file => {
       const matches = acceptedTypes.some(type => {
         if (type.startsWith('.')) {
@@ -90,7 +95,9 @@ function validateFiles(
         return file.type.toLowerCase() === type;
       });
       if (!matches) {
-        errors.push(`"${file.name}" is not an accepted file type`);
+        errors.push(
+          t('@astryx.fileInput.errorInvalidType', {fileName: file.name}),
+        );
       }
       return matches;
     });
@@ -99,7 +106,12 @@ function validateFiles(
   if (maxSize != null) {
     valid = valid.filter(file => {
       if (file.size > maxSize) {
-        errors.push(`"${file.name}" exceeds ${formatFileSize(maxSize)} limit`);
+        errors.push(
+          t('@astryx.fileInput.errorMaxSize', {
+            fileName: file.name,
+            maxSize: formatFileSize(maxSize),
+          }),
+        );
         return false;
       }
       return true;
@@ -107,7 +119,7 @@ function validateFiles(
   }
 
   if (isMultiple && maxFiles != null && valid.length > maxFiles) {
-    errors.push(`Maximum ${maxFiles} files allowed`);
+    errors.push(t('@astryx.fileInput.errorMaxFiles', {maxFiles}));
     valid = valid.slice(0, maxFiles);
   }
 
@@ -246,17 +258,6 @@ const styles = stylex.create({
     flex: 1,
     minWidth: 0,
   },
-  liveRegion: {
-    position: 'absolute',
-    width: 1,
-    height: 1,
-    padding: 0,
-    margin: -1,
-    overflow: 'hidden',
-    clip: 'rect(0, 0, 0, 0)',
-    whiteSpace: 'nowrap',
-    borderWidth: 0,
-  },
 });
 
 const statusBorderStyles = stylex.create({
@@ -359,6 +360,14 @@ export interface FileInputProps extends Omit<
    */
   status?: InputStatus;
   /**
+   * How the status message is placed relative to the input.
+   * - 'attached': message overlaps directly below the input (bordered treatment)
+   * - 'detached': message floats below as a separate element with spacing
+   * - 'tooltip': no message box; the status icon becomes a focusable info-tip button that reveals the message on hover, keyboard focus, or tap
+   * @default 'attached'
+   */
+  statusVariant?: FieldStatusVariant;
+  /**
    * Description text displayed below the label.
    */
   description?: string;
@@ -414,6 +423,7 @@ export function FileInput({
   isRequired = false,
   isLoading = false,
   status: statusProp,
+  statusVariant = 'attached',
   description,
   placeholder,
   mode = 'input',
@@ -430,22 +440,24 @@ export function FileInput({
   const id = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
-  const liveRegionID = useId();
+  const requiredID = useId();
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
   // Announce successful file selection to screen readers via a persistent
-  // live region (forms-17). The component's own role="status" region only
-  // carries validation errors, so a successful attach was previously silent.
+  // live region (forms-17). Validation errors are announced (assertively) by
+  // the FieldStatus that the derived error status mounts, so only the
+  // successful attach needs an explicit announcement here.
   const announce = useAnnounce();
 
   // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
-  // tooltip listeners attach to the role="button" trigger (which already
-  // exists) and the trigger stays perceivable via aria-disabled instead of the
-  // native disabled attribute. Opening the picker is blocked by the isDisabled
-  // guards in handleClick / handleKeyDown / handleFiles.
+  // tooltip listeners attach to the visible container (which stays hoverable)
+  // and the trigger stays perceivable via aria-disabled instead of the native
+  // disabled attribute. Opening the picker is blocked by the isDisabled guards
+  // in the handlers.
   const showsDisabledMessage = isDisabled && !!disabledMessage;
   const disabledMessageTooltip = useTooltip({
     placement: 'above',
@@ -459,31 +471,35 @@ export function FileInput({
       ? {type: 'error' as const, message: validationError}
       : undefined);
 
-  const statusIconMap: Record<InputStatusType, IconName> = {
-    warning: 'warning',
-    error: 'error',
-    success: 'success',
-  };
+  const {statusIcon, describedBy: statusTooltipDescribedBy} =
+    useInputStatusIcon({
+      status,
+      statusVariant,
+    });
 
-  const statusIconColorMap: Record<
-    InputStatusType,
-    'warning' | 'error' | 'success'
-  > = {
-    warning: 'warning',
-    error: 'error',
-    success: 'success',
-  };
+  // Required state. The trigger is a real button, but AT does not reliably
+  // announce aria-required, so the trigger instead points its aria-describedby
+  // at a visually hidden "Required" span — mirroring the Field label's visible
+  // indicator (where isOptional takes precedence) and the pattern Slider uses
+  // for its thumbs.
+  const conveysRequired = isRequired && !isOptional;
 
   const ariaDescribedBy =
     [
       description ? descriptionID : null,
-      status?.message ? statusMessageID : null,
+      statusVariant !== 'tooltip' && status?.message ? statusMessageID : null,
+      // The tooltip variant renders no message box; describe the input by the
+      // tooltip's content instead so the status is still announced.
+      statusTooltipDescribedBy,
+      conveysRequired ? requiredID : null,
       showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
     ]
       .filter(Boolean)
       .join(' ') || undefined;
 
-  const defaultPlaceholder = isMultiple ? 'Choose files' : 'Choose file';
+  const defaultPlaceholder = isMultiple
+    ? t('@astryx.fileInput.placeholderMultiple')
+    : t('@astryx.fileInput.placeholder');
   const displayPlaceholder = placeholder ?? defaultPlaceholder;
 
   const handleFiles = useCallback(
@@ -498,6 +514,7 @@ export function FileInput({
         maxSize,
         maxFiles,
         isMultiple,
+        t,
       );
 
       if (errors.length > 0) {
@@ -515,13 +532,14 @@ export function FileInput({
       onChange(result);
 
       // Announce the successful selection politely. Validation errors are
-      // handled by the role="status" region below, so only announce the
-      // attach here (do not double-announce errors).
+      // announced assertively by the FieldStatus that the derived error
+      // status mounts, so only announce the attach here (do not
+      // double-announce errors).
       if (errors.length === 0) {
         announce(
           valid.length === 1
-            ? `1 file selected: ${valid[0].name}`
-            : `${valid.length} files selected`,
+            ? t('@astryx.fileInput.fileSelected', {fileName: valid[0].name})
+            : t('@astryx.fileInput.filesSelected', {count: valid.length}),
         );
       }
 
@@ -541,6 +559,7 @@ export function FileInput({
       changeAction,
       startTransition,
       announce,
+      t,
     ],
   );
 
@@ -574,6 +593,9 @@ export function FileInput({
     }
   }, [isDisabled]);
 
+  // Explicit keyboard activation so Enter/Space open the picker even where a
+  // synthetic keydown does not raise a native click. The isDisabled guard
+  // blocks activation while focusable-disabled.
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if ((e.key === 'Enter' || e.key === ' ') && !isDisabled) {
@@ -583,6 +605,16 @@ export function FileInput({
     },
     [isDisabled],
   );
+
+  // Make the surface clickable without giving it an interactive role. Clicks on
+  // the nested clear/status controls are ignored by the hook, so those buttons
+  // are plain siblings — no nested-interactive violation.
+  const {onClick: onContainerClick, onMouseUp: onContainerMouseUp} =
+    useClickableContainer({
+      containerRef,
+      onClick: handleClick,
+      disabled: isDisabled,
+    });
 
   const handleDragEnter = useCallback(
     (e: DragEvent) => {
@@ -660,7 +692,7 @@ export function FileInput({
       <>
         <Icon icon="arrowUp" size="md" color="secondary" />
         <span {...stylex.props(styles.placeholderText)}>
-          {isDragOver ? 'Drop files here' : displayPlaceholder}
+          {isDragOver ? t('@astryx.fileInput.dropHint') : displayPlaceholder}
         </span>
       </>
     );
@@ -687,13 +719,7 @@ export function FileInput({
           )}>
           {fileNames ?? displayPlaceholder}
         </span>
-        {status && (
-          <Icon
-            icon={statusIconMap[status.type]}
-            size="md"
-            color={statusIconColorMap[status.type]}
-          />
-        )}
+        {statusIcon}
       </>
     );
   };
@@ -728,31 +754,21 @@ export function FileInput({
             }
           : undefined
       }
+      statusVariant={statusVariant}
       labelTooltip={labelTooltip}
       width={width}>
       <div
         ref={el => {
-          // Anchor + hover/focus listeners for the disabled-message tooltip.
-          // Handlers are gated internally by isEnabled, and anchor names
-          // compose, so attaching unconditionally is safe.
+          containerRef.current = el;
+          // Anchor + hover/focus listeners for the disabled-message tooltip on
+          // the visible container (the focusable trigger is visually hidden, so
+          // anchoring there would place the tooltip at a 1px box). focusin
+          // bubbles from the trigger button, so the tooltip still opens on
+          // keyboard focus. Handlers are gated internally by isEnabled.
           disabledMessageTooltip.ref(el);
         }}
-        role="button"
-        // With a disabledMessage the trigger keeps focusability via
-        // aria-disabled so the reason is focus-discoverable; opening the picker
-        // is still blocked by the isDisabled guards in the handlers.
-        tabIndex={isDisabled && !showsDisabledMessage ? -1 : 0}
-        aria-disabled={showsDisabledMessage ? 'true' : undefined}
-        onClick={handleClick}
-        onKeyDown={handleKeyDown}
-        aria-label={label}
-        aria-busy={isLoading || undefined}
-        // These describe the operable control, so they belong on the focusable
-        // role="button" wrapper — not the hidden tabIndex={-1} file input the
-        // user never focuses (forms-6).
-        aria-describedby={ariaDescribedBy}
-        aria-required={isRequired ? 'true' : undefined}
-        aria-invalid={status?.type === 'error' ? 'true' : undefined}
+        onClick={!isDisabled ? onContainerClick : undefined}
+        onMouseUp={!isDisabled ? onContainerMouseUp : undefined}
         {...dragDropProps}
         {...mergeProps(
           themeProps('file-input', {mode, status: status?.type ?? null}),
@@ -768,6 +784,40 @@ export function FileInput({
           className,
           style,
         )}>
+        {/* Visually hidden real button carrying the accessible role, name, and
+            ARIA. Kept as a sibling of the clear/status controls inside a
+            non-interactive container, so no interactive element nests inside
+            another (WCAG 4.1.2). The visible focus feedback is the container's
+            :focus-within border; the surface click is handled by the container
+            (VisuallyHidden disables the button's own pointer events), and
+            keyboard activation still fires here. */}
+        <VisuallyHidden>
+          <button
+            type="button"
+            // With a disabledMessage the trigger keeps focusability via
+            // aria-disabled so the reason is focus-discoverable; opening the
+            // picker is still blocked by the isDisabled guards in the handlers.
+            // Otherwise the native disabled attribute removes it from the tab
+            // order.
+            disabled={isDisabled && !showsDisabledMessage}
+            tabIndex={isDisabled && !showsDisabledMessage ? -1 : 0}
+            aria-disabled={showsDisabledMessage ? 'true' : undefined}
+            onClick={handleClick}
+            onKeyDown={handleKeyDown}
+            // aria-label suppresses child content from the accessible name, so
+            // compose the selected filenames into it — otherwise a
+            // screen-reader user refocusing the control hears only the field
+            // label and cannot tell what (if anything) is attached.
+            aria-label={
+              hasFiles && fileNames
+                ? t('@astryx.fileInput.triggerWithFiles', {label, fileNames})
+                : label
+            }
+            aria-busy={isLoading || undefined}
+            aria-describedby={ariaDescribedBy}
+            aria-invalid={status?.type === 'error' ? 'true' : undefined}
+          />
+        </VisuallyHidden>
         <input
           {...rest}
           ref={mergeRefs(ref, inputRef)}
@@ -778,23 +828,24 @@ export function FileInput({
           disabled={isDisabled}
           onChange={handleInputChange}
           // The visually-hidden native input is never focused (tabIndex={-1});
-          // its describedby/required/invalid live on the role="button" wrapper.
+          // its describedby/required/invalid live on the trigger button.
           aria-hidden="true"
           tabIndex={-1}
           {...stylex.props(styles.hiddenInput)}
         />
         {isDropzone ? renderDropzoneContent() : renderCompactContent()}
         {hasFiles && !isDisabled && !isLoading && (
-          <InputClearButton label={t('@astryx.fileInput.clearLabel', {label})} onClick={handleClear} />
+          <InputClearButton
+            label={t('@astryx.fileInput.clearLabel', {label})}
+            onClick={handleClear}
+          />
         )}
       </div>
-      <div
-        id={liveRegionID}
-        role="status"
-        aria-live="polite"
-        {...stylex.props(styles.liveRegion)}>
-        {validationError}
-      </div>
+      {conveysRequired && (
+        <VisuallyHidden id={requiredID}>
+          {t('@astryx.fileInput.required')}
+        </VisuallyHidden>
+      )}
       {showsDisabledMessage &&
         disabledMessageTooltip.renderTooltip(disabledMessage)}
     </Field>

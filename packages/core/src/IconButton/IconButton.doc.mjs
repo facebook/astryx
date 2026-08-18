@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'IconButton',
@@ -35,6 +35,13 @@ export const docs = {
       type: "\'sm\' | \'md\' | \'lg\'",
       description: 'Size variant.',
       default: "\'md\'",
+    },
+    {
+      name: 'elevation',
+      type: "'none' | 'low' | 'med' | 'high'",
+      description:
+        'Resting shadow depth. The most common FAB shape is an icon-only button, so raise it with `low`/`med`/`high` for a floating action button. `none` is the default flat button.',
+      default: "'none'",
     },
     {
       name: 'isLoading',
@@ -77,7 +84,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'Button showing only an icon, no visible text. Use in toolbars, table rows, compact UI where space is tight + icon universally understood.',
   usage: {
@@ -95,6 +102,7 @@ export const docsDense = {
     icon: 'icon element rendered inside button',
     variant: 'visual style variant',
     size: 'size variant',
+    elevation: 'resting shadow depth: none|low|med|high; raise for a floating action button (FAB)',
     isLoading: 'shows loading spinner + disables interaction',
     isDisabled: 'disables button',
     tooltip: 'tooltip text shown on hover',

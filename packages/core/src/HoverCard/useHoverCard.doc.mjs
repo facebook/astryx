@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').HookDoc} */
+/** @type {import('@astryxdesign/cli/authoring').HookDoc} */
 export const docs = {
   name: 'useHoverCard',
   displayName: 'useHoverCard',
@@ -13,6 +13,7 @@ export const docs = {
     {name: 'hideDelay', type: 'number', description: 'Delay before hiding after mouse or focus leaves, in milliseconds.', default: '200'},
     {name: 'focusTrigger', type: "'auto' | 'always' | 'never'", description: 'When focus should open the hover card. auto only attaches focus listeners to naturally focusable elements.', default: "'auto'"},
     {name: 'isEnabled', type: 'boolean', description: 'Whether hover and focus triggers are enabled.', default: 'true'},
+    {name: 'label', type: 'string', description: 'Accessible name for the hover card popup. When provided, the popup is exposed as a named role="dialog"; when omitted, it falls back to role="group" (a group may validly be unnamed).'},
     {name: 'isOpen', type: 'boolean', description: 'Controlled open state. true force-shows, false force-hides, undefined lets hover/focus manage visibility.'},
     {name: 'isDefaultOpen', type: 'boolean', description: 'Whether the hover card should be shown on mount.', default: 'false'},
     {name: 'onShow', type: '() => void', description: 'Callback fired when the hover card becomes visible.'},
@@ -42,7 +43,7 @@ export const docs = {
   category: 'interaction',
 };
 
-/** @type {import('../docs-types').HookTranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').HookTranslationDoc} */
 export const docsDense = {
   description: 'Headless hover-triggered floating cards. Builds on useLayer w/ hover/focus intent, delays, safe hover behavior, aria-describedby. Use for rich previews when trigger/content rendering needs full control.',
   paramDescriptions: {
@@ -52,6 +53,7 @@ export const docsDense = {
     hideDelay: 'hide delay after mouse/focus leave in ms.',
     focusTrigger: 'when focus opens hover card; auto = naturally focusable elements only.',
     isEnabled: 'whether hover/focus triggers are enabled.',
+    label: 'accessible name for popup. with label: named role="dialog"; without: role="group".',
     isOpen: 'controlled open state: true force-show, false force-hide, undefined unmanaged.',
     isDefaultOpen: 'show on mount.',
     onShow: 'fires when hover card becomes visible.',

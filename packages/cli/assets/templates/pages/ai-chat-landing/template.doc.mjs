@@ -1,0 +1,11 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+/** @type {import('@astryxdesign/cli/authoring').TemplateDoc} */
+export const doc = {
+  type: 'page',
+  name: 'AI Chat Landing',
+  displayName: 'AI Chat Landing',
+  description: 'AI assistant landing page with chat composer, greeting, and category toggles',
+  isReady: true,
+  category: 'AI Chat - Landing',
+};

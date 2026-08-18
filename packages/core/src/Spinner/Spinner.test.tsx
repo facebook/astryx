@@ -64,12 +64,16 @@ describe('Spinner', () => {
     );
   });
 
-  it('uses string label as aria-label automatically', () => {
+  it('names the status element from the visible string label', () => {
     render(<Spinner label="Fetching data" data-testid="spinner" />);
-    expect(screen.getByRole('status')).toHaveAttribute(
-      'aria-label',
-      'Fetching data',
-    );
+    expect(screen.getByRole('status')).toHaveAccessibleName('Fetching data');
+  });
+
+  it('does not duplicate a visible string label as aria-label', () => {
+    render(<Spinner label="Fetching data" data-testid="spinner" />);
+    const status = screen.getByRole('status');
+    expect(status).not.toHaveAttribute('aria-label');
+    expect(status).toHaveAttribute('aria-labelledby');
   });
 
   it('uses explicit aria-label over string label', () => {
@@ -103,9 +107,7 @@ describe('Spinner', () => {
   });
 
   it('defaults aria-label to "Loading" for ReactNode label without explicit aria-label', () => {
-    render(
-      <Spinner label={<span>Rich content</span>} data-testid="spinner" />,
-    );
+    render(<Spinner label={<span>Rich content</span>} data-testid="spinner" />);
     expect(screen.getByRole('status')).toHaveAttribute('aria-label', 'Loading');
   });
 

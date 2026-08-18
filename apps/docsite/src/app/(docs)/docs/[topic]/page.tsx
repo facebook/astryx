@@ -14,11 +14,19 @@ import type {Metadata} from 'next';
 import {notFound} from 'next/navigation';
 import {docTopics} from '../../../../generated/docsRegistry';
 import {packages} from '../../../../generated/packageRegistry';
+import {components} from '../../../../generated/componentRegistry';
 import {ReferenceDocView} from '../../../../components/docs/ReferenceDocView';
 import {TokensDocView} from '../../../../components/docs/TokensDocView';
 import {PackageStubPage} from '../../../../components/docs/PackageStubPage';
 import {type InstallStep} from '../../../../components/docs/PackageActions';
+import {linkifyDocSections} from '../../../../components/docs/docsLinkify';
 import {pageMetadata} from '../../../../lib/pageMetadata';
+
+// Every documented component and hook name, for the prose auto-linker. Same
+// list the changelog passes to linkifyComponents.
+const componentNames = Object.values(components)
+  .flat()
+  .map(c => c.name);
 
 const TOKEN_TOPICS = new Set([
   'tokens',
@@ -42,7 +50,7 @@ function getInstallSteps(pkgName: string): InstallStep[] {
   if (pkgName.endsWith('/cli')) {
     return [
       {label: 'Install the CLI', code: `npm install -D ${pkgName}`},
-      {label: 'Run a command', code: `npx astryx component --list`},
+      {label: 'Run a command', code: `npx @astryxdesign/cli component --list`},
     ];
   }
   return [
@@ -116,19 +124,20 @@ export default async function DocPage({
   if (topic) {
     const isTokenTopic =
       topic.category === 'foundations' && TOKEN_TOPICS.has(topic.topic);
+    const sections = linkifyDocSections(topic.sections, componentNames);
 
     return isTokenTopic ? (
       <TokensDocView
         title={topic.title}
         description={topic.description}
-        sections={topic.sections}
+        sections={sections}
         topic={topic.topic}
       />
     ) : (
       <ReferenceDocView
         title={topic.title}
         description={topic.description}
-        sections={topic.sections}
+        sections={sections}
       />
     );
   }
