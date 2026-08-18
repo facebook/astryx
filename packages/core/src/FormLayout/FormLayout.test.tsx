@@ -16,6 +16,8 @@ import {FormLayout} from './FormLayout';
 import {FormLayoutContext} from './FormLayoutContext';
 import type {FormLayoutDirection} from './FormLayoutContext';
 import {Field} from '../Field';
+import {TextInput} from '../TextInput';
+import {CheckboxInput} from '../CheckboxInput';
 
 // Helper component to read context
 function DirectionReader() {
@@ -258,6 +260,78 @@ describe('FormLayout', () => {
     );
     expect(screen.getByText(/Required/)).toBeInTheDocument();
     expect(screen.getByText(/Optional/)).toBeInTheDocument();
+  });
+
+  // ─── defaultOptionality aria-required resolution ─────────────────────────
+  //
+  // The indicator is suppressed for the unmarked majority, so the matching
+  // `aria-required` must still be exposed — otherwise a sighted user reads a
+  // field as required (form default, no indicator) while a screen reader hears
+  // "not required". Native `required` stays bound to the explicit prop so a
+  // layout default never switches on browser validation.
+
+  it('required default: an unmarked input still exposes aria-required', () => {
+    render(
+      <FormLayout defaultOptionality="required">
+        <TextInput label="Name" value="" onChange={() => {}} />
+      </FormLayout>,
+    );
+    expect(screen.getByLabelText('Name')).toHaveAttribute(
+      'aria-required',
+      'true',
+    );
+  });
+
+  it('required default: an isOptional input is not aria-required', () => {
+    render(
+      <FormLayout defaultOptionality="required">
+        <TextInput label="Nickname" value="" onChange={() => {}} isOptional />
+      </FormLayout>,
+    );
+    expect(screen.getByRole('textbox')).not.toHaveAttribute('aria-required');
+  });
+
+  it('optional default: an unmarked input is not aria-required', () => {
+    render(
+      <FormLayout defaultOptionality="optional">
+        <TextInput label="Bio" value="" onChange={() => {}} />
+      </FormLayout>,
+    );
+    expect(screen.getByLabelText('Bio')).not.toHaveAttribute('aria-required');
+  });
+
+  it('no layout: an unmarked input is not aria-required (backwards compatible)', () => {
+    render(<TextInput label="Solo" value="" onChange={() => {}} />);
+    expect(screen.getByLabelText('Solo')).not.toHaveAttribute('aria-required');
+  });
+
+  it('required default resolves aria-required without native required', () => {
+    render(
+      <FormLayout defaultOptionality="required">
+        <CheckboxInput label="Terms" value={false} onChange={() => {}} />
+      </FormLayout>,
+    );
+    const checkbox = screen.getByRole('checkbox', {name: 'Terms'});
+    // Announced as required (form default)…
+    expect(checkbox).toHaveAttribute('aria-required', 'true');
+    // …but the native `required` attribute is not switched on by the layout.
+    expect(checkbox).not.toHaveAttribute('required');
+  });
+
+  it('explicit isRequired still drives native required under a layout', () => {
+    render(
+      <FormLayout defaultOptionality="required">
+        <CheckboxInput
+          label="Consent"
+          value={false}
+          onChange={() => {}}
+          isRequired
+        />
+      </FormLayout>,
+    );
+    const checkbox = screen.getByRole('checkbox', {name: 'Consent'});
+    expect(checkbox).toHaveAttribute('aria-required', 'true');
+    expect(checkbox).toHaveAttribute('required');
   });
 
   // ─── Snapshot tests ─────────────────────────────────────────────────────

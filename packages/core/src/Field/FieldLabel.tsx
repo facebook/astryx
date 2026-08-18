@@ -194,8 +194,9 @@ export function FieldLabel({
 
   // A form-level `defaultOptionality` means "only the exception is marked": a
   // field that merely restates the form's default shows no indicator, and only
-  // a deviation from it does. This is presentation only — it never touches the
-  // control's `aria-required`, which each input drives from its own props.
+  // a deviation from it does. This is the *visible indicator* only; the
+  // matching `aria-required` is resolved on each control (see
+  // useResolvedRequired) so the unmarked majority is still announced.
   //
   //   defaultOptionality  isRequired            isOptional
   //   'optional'          → required indicator  → (matches default, hidden)

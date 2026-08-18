@@ -92,14 +92,16 @@ export interface FormLayoutProps extends BaseProps<HTMLDivElement> {
 
   /**
    * Which state the form treats as its default, so only the *exception*
-   * carries a visible optional/required indicator. Presentation only — it
-   * never changes a control's `aria-required`; the input's own `isRequired`
-   * still drives semantics.
+   * carries a visible optional/required indicator. It also resolves each
+   * field's `aria-required` so the unmarked majority is still announced
+   * correctly — but only `aria-required`, never the native `required`
+   * attribute, so a layout default can't switch on browser validation.
    *
    * - `'optional'` — fields read as optional; only a field with `isRequired`
    *   shows an indicator (the "required" one).
    * - `'required'` — fields read as required; only a field with `isOptional`
-   *   shows an indicator (the "optional" one).
+   *   shows an indicator (the "optional" one). Fields without `isOptional`
+   *   expose `aria-required` even though they show no indicator.
    * - unset — today's behavior: `isRequired` and `isOptional` each show their
    *   own indicator independently.
    *
