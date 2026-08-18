@@ -19,7 +19,7 @@
  * - `::backdrop` pseudo-element
  * - Body scroll lock
  * - Focus trapping
- * - Escape key handling via `cancel` event
+ * - Escape key handling, claimed at the dialog element
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/MobileNav/index.ts (exports if types change)
@@ -51,6 +51,8 @@ import {mergeProps, mergeRefs, composeEventHandlers} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
+import {hasActiveFocusTrapEscape} from '../hooks/useFocusTrap';
+import {isImeKeyEvent} from '../utils/ime';
 
 // =============================================================================
 // Styles
@@ -481,10 +483,43 @@ export function MobileNav({
     };
   }, []);
 
-  // Handle native cancel event (Escape key) — prevent default and route through onOpenChange
+  // Escape key. Claimed at the dialog element rather than left to the browser's
+  // close request: a nav opened from inside another modal is a DOM descendant
+  // of it, so an unclaimed press bubbles on to the host's own element-level
+  // listener, which closes the host and consumes the default — the close
+  // request that would have dismissed this nav never arrives, leaving the wrong
+  // layer on screen (#5168). A focus-trapped layer (a menu or popover opened
+  // from a nav row) sitting on top of us still wins the press.
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!isOpen || !dialog) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') {
+        return;
+      }
+      if (isImeKeyEvent(event) || hasActiveFocusTrapEscape()) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      onOpenChange(false);
+    };
+
+    dialog.addEventListener('keydown', handleKeyDown);
+    return () => dialog.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onOpenChange]);
+
+  // Fallback for a close request the keydown listener above never saw, e.g. a
+  // press that landed outside this dialog's subtree.
   const handleCancel = useCallback(
     (event: React.SyntheticEvent<HTMLDialogElement>) => {
       event.preventDefault();
+      if (hasActiveFocusTrapEscape()) {
+        return;
+      }
       onOpenChange(false);
     },
     [onOpenChange],

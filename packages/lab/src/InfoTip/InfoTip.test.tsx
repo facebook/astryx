@@ -13,6 +13,7 @@ import {describe, it, expect, vi, beforeAll, afterAll} from 'vitest';
 import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {InfoTip} from './InfoTip';
+import {Dialog} from '@astryxdesign/core/Dialog';
 
 // Store original matches to restore later
 const originalMatches = HTMLElement.prototype.matches;
@@ -165,5 +166,100 @@ describe('InfoTip', () => {
   it('renders ReactNode tooltip content', () => {
     render(<InfoTip content={<span data-testid="rich-content">Rich</span>} />);
     expect(screen.getByTestId('rich-content')).toBeInTheDocument();
+  });
+});
+
+/**
+ * Regression coverage for #5168 — an InfoTip inside a Dialog dismissed both
+ * layers on one Escape. The trigger stopped propagation from a React handler,
+ * which React dispatches at the root container — long after the press has
+ * already bubbled through the Dialog's own element-level listener. The Dialog
+ * closed alongside the tip.
+ */
+describe('InfoTip inside a Dialog', () => {
+  beforeAll(() => {
+    // jsdom has no modal dialog; Dialog only needs open/close to be observable.
+    HTMLDialogElement.prototype.showModal = vi.fn(function (
+      this: HTMLDialogElement,
+    ) {
+      this.setAttribute('open', '');
+    });
+    HTMLDialogElement.prototype.close = vi.fn(function (
+      this: HTMLDialogElement,
+    ) {
+      this.removeAttribute('open');
+    });
+  });
+
+  async function renderNested() {
+    const onDialogOpenChange = vi.fn();
+    render(
+      <Dialog isOpen onOpenChange={onDialogOpenChange} aria-label="Host dialog">
+        <InfoTip content="Helpful context" />
+      </Dialog>,
+    );
+    const trigger = screen.getByRole('button', {name: 'More information'});
+    const layer = screen.getByRole('tooltip', {hidden: true});
+
+    focusTrigger(trigger);
+    await waitFor(() => {
+      expect(popoverOpenState.get(layer)).toBe(true);
+    });
+
+    return {trigger, layer, onDialogOpenChange};
+  }
+
+  it('dismisses the tooltip and leaves the Dialog open', async () => {
+    const {trigger, layer, onDialogOpenChange} = await renderNested();
+
+    fireEvent.keyDown(trigger, {key: 'Escape'});
+
+    await waitFor(() => {
+      expect(popoverOpenState.get(layer)).toBe(false);
+    });
+    expect(onDialogOpenChange).not.toHaveBeenCalled();
+  });
+
+  it('consumes the press before it reaches the dialog element', async () => {
+    const {trigger} = await renderNested();
+    const hostDialog = document.querySelector('dialog')!;
+    const reachedDialog = vi.fn();
+    hostDialog.addEventListener('keydown', reachedDialog);
+
+    const event = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      bubbles: true,
+      cancelable: true,
+    });
+    trigger.dispatchEvent(event);
+
+    hostDialog.removeEventListener('keydown', reachedDialog);
+    // Stopping propagation from a React handler is too late: React dispatches
+    // at the root container, above the dialog element whose own listener has
+    // already run. The press has to be claimed natively at the trigger.
+    expect(reachedDialog).not.toHaveBeenCalled();
+    // An un-consumed Escape also becomes a browser close request, which fires
+    // `cancel` on the dialog behind the tip.
+    expect(event.defaultPrevented).toBe(true);
+  });
+
+  it('leaves Escape alone when no tooltip is showing', async () => {
+    const onDialogOpenChange = vi.fn();
+    render(
+      <Dialog isOpen onOpenChange={onDialogOpenChange} aria-label="Host dialog">
+        <InfoTip content="Helpful context" />
+      </Dialog>,
+    );
+    const trigger = screen.getByRole('button', {name: 'More information'});
+
+    const event = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      bubbles: true,
+      cancelable: true,
+    });
+    trigger.dispatchEvent(event);
+
+    // Nothing was dismissed, so the press belongs to the Dialog.
+    expect(onDialogOpenChange).toHaveBeenCalledWith(false);
   });
 });

@@ -3,6 +3,8 @@
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import {Lightbox} from './Lightbox';
+import {Dialog} from '../Dialog';
+import {useFocusTrap} from '../hooks/useFocusTrap';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {InternationalizationProvider} from '../i18n';
 
@@ -674,5 +676,149 @@ describe('Lightbox', () => {
       fireEvent.click(screen.getByRole('img', {hidden: true}));
       expect(onOpenChange).not.toHaveBeenCalled();
     });
+  });
+});
+
+/**
+ * Regression coverage for #5168 — a Lightbox opened from inside a Dialog used
+ * to hand its Escape press to the Dialog: the press bubbled from the Lightbox
+ * `<dialog>` up to the Dialog's element-level keydown listener, which called
+ * `preventDefault()` (killing the browser close request that would have
+ * dismissed the Lightbox) and closed itself. The Dialog vanished and the
+ * Lightbox stayed on screen.
+ */
+describe('Lightbox layered over a Dialog', () => {
+  function renderNested() {
+    const onLightboxOpenChange = vi.fn();
+    const onDialogOpenChange = vi.fn();
+    render(
+      <Dialog isOpen onOpenChange={onDialogOpenChange} aria-label="Host dialog">
+        <Lightbox
+          isOpen
+          onOpenChange={onLightboxOpenChange}
+          media={{src: '/photo.jpg', alt: 'Photo'}}
+        />
+      </Dialog>,
+    );
+
+    // Document order puts the wrapping Dialog first; assert the nesting the
+    // regression depends on rather than trusting the order.
+    const dialogs = Array.from(document.querySelectorAll('dialog'));
+    expect(dialogs).toHaveLength(2);
+    const [hostDialog, lightbox] = dialogs;
+    expect(hostDialog.contains(lightbox)).toBe(true);
+
+    return {hostDialog, lightbox, onLightboxOpenChange, onDialogOpenChange};
+  }
+
+  function pressEscape(target: Element): KeyboardEvent {
+    const event = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      bubbles: true,
+      cancelable: true,
+    });
+    target.dispatchEvent(event);
+    return event;
+  }
+
+  it('closes the Lightbox and leaves the Dialog open', () => {
+    const {lightbox, onLightboxOpenChange, onDialogOpenChange} = renderNested();
+
+    pressEscape(lightbox);
+
+    expect(onLightboxOpenChange).toHaveBeenCalledWith(false);
+    expect(onDialogOpenChange).not.toHaveBeenCalled();
+  });
+
+  it('consumes the press instead of letting it travel to the layers above', () => {
+    const {lightbox} = renderNested();
+    const reachedDocument = vi.fn();
+    document.addEventListener('keydown', reachedDocument);
+
+    // Two ways a single press reaches a second layer: it keeps bubbling to
+    // document-level listeners, or the browser turns the un-consumed default
+    // into a close request and fires `cancel` on the top-most open dialog.
+    // Claiming the press at the Lightbox element shuts both down.
+    const event = pressEscape(lightbox);
+
+    document.removeEventListener('keydown', reachedDocument);
+    expect(reachedDocument).not.toHaveBeenCalled();
+    expect(event.defaultPrevented).toBe(true);
+  });
+
+  it('closes on Escape when it is the only layer', () => {
+    const onOpenChange = vi.fn();
+    render(
+      <Lightbox
+        isOpen
+        onOpenChange={onOpenChange}
+        media={{src: '/photo.jpg', alt: 'Photo'}}
+      />,
+    );
+    const lightbox = document.querySelector('dialog')!;
+
+    pressEscape(lightbox);
+
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it('defers to a focus-trapped layer opened on top of it', () => {
+    const onOpenChange = vi.fn();
+    const onEscape = vi.fn();
+
+    function TrappedLayer() {
+      const {containerRef} = useFocusTrap<HTMLDivElement>({
+        isActive: true,
+        onEscape,
+      });
+      return <div ref={containerRef} data-testid="trapped" />;
+    }
+
+    render(
+      <>
+        <Lightbox
+          isOpen
+          onOpenChange={onOpenChange}
+          media={{src: '/photo.jpg', alt: 'Photo'}}
+        />
+        <TrappedLayer />
+      </>,
+    );
+    const lightbox = document.querySelector('dialog')!;
+
+    pressEscape(lightbox);
+
+    expect(onOpenChange).not.toHaveBeenCalled();
+    expect(onEscape).toHaveBeenCalled();
+  });
+
+  it('ignores a close request raised while a focus-trapped layer is open', () => {
+    const onOpenChange = vi.fn();
+
+    function TrappedLayer() {
+      const {containerRef} = useFocusTrap<HTMLDivElement>({
+        isActive: true,
+        onEscape: () => {},
+      });
+      return <div ref={containerRef} data-testid="trapped" />;
+    }
+
+    render(
+      <>
+        <Lightbox
+          isOpen
+          onOpenChange={onOpenChange}
+          media={{src: '/photo.jpg', alt: 'Photo'}}
+        />
+        <TrappedLayer />
+      </>,
+    );
+    const lightbox = document.querySelector('dialog')!;
+
+    // The trapped layer let the press through to the browser, which aims its
+    // close request at the top-most open dialog — this one. It is not ours.
+    lightbox.dispatchEvent(new Event('cancel', {cancelable: true}));
+
+    expect(onOpenChange).not.toHaveBeenCalled();
   });
 });

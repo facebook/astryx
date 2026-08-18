@@ -14,7 +14,7 @@
  * - /packages/lab/src/InfoTip/index.ts (exports if types change)
  */
 
-import {useCallback, useRef, useState, type ReactNode} from 'react';
+import {useCallback, useEffect, useRef, useState, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 
 import {Icon, type IconSize} from '@astryxdesign/core/Icon';
@@ -111,17 +111,34 @@ export function InfoTip({
     isOpenRef.current = isOpen;
   }, []);
 
-  const handleKeyDown = useCallback(
-    (event: React.KeyboardEvent<HTMLButtonElement>) => {
-      if (event.key === 'Escape' && isOpenRef.current) {
-        // Only swallow Escape when it actually dismissed the tooltip, so an
-        // enclosing dialog still closes on the next press.
-        event.stopPropagation();
-        setIsDismissed(true);
+  // Escape dismissal is claimed with a native listener on the trigger, not a
+  // React `onKeyDown`. React dispatches synthetic events at the root container,
+  // by which point an enclosing dialog's own element-level listener has already
+  // run and closed it, and the browser has already taken the un-consumed press
+  // as a close request for the layer behind — so one press dismissed both the
+  // tip and the dialog hosting it (#5168). Only presses that actually dismiss a
+  // showing tooltip are claimed; otherwise the press belongs to the layer
+  // behind, and is left alone.
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const trigger = triggerRef.current;
+    if (!trigger) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || !isOpenRef.current) {
+        return;
       }
-    },
-    [],
-  );
+      event.preventDefault();
+      event.stopPropagation();
+      setIsDismissed(true);
+    };
+
+    trigger.addEventListener('keydown', handleKeyDown);
+    return () => trigger.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const handleReset = useCallback(() => {
     setIsDismissed(false);
@@ -133,9 +150,9 @@ export function InfoTip({
       isOpen={isDismissed ? false : undefined}
       onOpenChange={handleOpenChange}>
       <button
+        ref={triggerRef}
         type="button"
         aria-label={label}
-        onKeyDown={handleKeyDown}
         onBlur={handleReset}
         onMouseLeave={handleReset}
         {...stylex.props(focusOutlineStyles.focusVisible, styles.trigger)}>

@@ -4,7 +4,8 @@
 
 /**
  * @file Lightbox.tsx
- * @input Uses React, native dialog, StyleX, IconButton, theme tokens
+ * @input Uses React, native dialog, StyleX, IconButton, theme tokens,
+ *   hasActiveFocusTrapEscape
  * @output Exports Lightbox component, LightboxProps, LightboxMedia
  * @position Core implementation; consumed by index.ts
  *
@@ -31,12 +32,14 @@ import {Icon} from '../Icon';
 import {IconButton} from '../IconButton';
 import {useAnnounce} from '../hooks/useAnnounce';
 import {useScrollLock} from '../hooks/useScrollLock';
+import {hasActiveFocusTrapEscape} from '../hooks/useFocusTrap';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {mergeProps, mergeRefs, rtlStyles} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {useTranslator} from '../i18n';
+import {isImeKeyEvent} from '../utils/ime';
 
 /**
  * Media type for lightbox items.
@@ -408,10 +411,43 @@ export function Lightbox({
     onOpenChange(false);
   }, [onOpenChange]);
 
-  // Escape key
+  // Escape key. Claimed at the dialog element rather than left to the browser's
+  // close request: a Lightbox opened from inside another modal is a DOM
+  // descendant of it, so an unclaimed press bubbles on to the host's own
+  // element-level listener, which closes the host and consumes the default —
+  // the close request that would have dismissed this Lightbox never arrives,
+  // leaving the wrong layer on screen (#5168). A focus-trapped layer (popover,
+  // menu) sitting on top of us still wins the press.
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!isOpen || !dialog) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') {
+        return;
+      }
+      if (isImeKeyEvent(event) || hasActiveFocusTrapEscape()) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      handleClose();
+    };
+
+    dialog.addEventListener('keydown', handleKeyDown);
+    return () => dialog.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, handleClose]);
+
+  // Fallback for a close request the keydown listener above never saw, e.g. a
+  // press that landed outside this dialog's subtree.
   const handleCancel = useCallback(
     (e: React.SyntheticEvent) => {
       e.preventDefault();
+      if (hasActiveFocusTrapEscape()) {
+        return;
+      }
       handleClose();
     },
     [handleClose],
