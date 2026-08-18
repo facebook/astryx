@@ -833,9 +833,9 @@ function MonthGrid({
               )}
             />
           )}
-          {dayNames.map(name => (
+          {dayNames.map((name, index) => (
             <div
-              key={name}
+              key={(weekStartsOn + index) % 7}
               role="columnheader"
               {...stylex.props(monthGridStyles.dayName)}>
               {name}
