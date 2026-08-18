@@ -153,6 +153,15 @@ export interface FieldLabelProps extends BaseProps<HTMLLabelElement> {
    * ID for the description element (for aria-describedby on the input).
    */
   descriptionID?: string;
+  /**
+   * How the label sits relative to its control, reflected as `data-layout` on
+   * the label so themes can style the two placements differently. `stacked`
+   * (the default) is a label above a field; `beside` is a label sharing a row
+   * with its control, as in CheckboxInput and Switch, where a theme may want to
+   * drop the stacked bottom margin so the text stays vertically centered.
+   * @default 'stacked'
+   */
+  layout?: 'stacked' | 'beside';
 }
 
 /**
@@ -185,6 +194,7 @@ export function FieldLabel({
   style,
   xstyle,
   ref,
+  layout = 'stacked',
   ...rest
 }: FieldLabelProps) {
   const t = useTranslator();
@@ -263,7 +273,7 @@ export function FieldLabel({
         htmlFor={isGroupLabel ? undefined : inputID}
         {...rest}
         {...mergeProps(
-          themeProps('field-label'),
+          themeProps('field-label', {layout}),
           stylex.props(
             styles.label,
             isDisabled && styles.labelDisabled,

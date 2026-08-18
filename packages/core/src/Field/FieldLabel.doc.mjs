@@ -55,6 +55,12 @@ export const docs = {
       type: 'string',
       description: 'Tooltip text for info icon at end of label.',
     },
+    {
+      name: 'layout',
+      type: "'stacked' | 'beside'",
+      description:
+        "How the label sits relative to its control, reflected as `data-layout`. `stacked` (default) is a label above a field; `beside` is a label sharing a row with its control (CheckboxInput, Switch).",
+    },
   ],
 };
 

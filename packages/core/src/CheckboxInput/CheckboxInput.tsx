@@ -477,6 +477,7 @@ export function CheckboxInput({
             labelIcon={labelIcon}
             description={description}
             descriptionID={descriptionID}
+            layout="beside"
           />
         </div>
       </div>

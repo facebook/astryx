@@ -28,7 +28,7 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-field', visualProps: ['layout']},
-      {className: 'astryx-field-label'},
+      {className: 'astryx-field-label', visualProps: ['layout']},
       {className: 'astryx-field-status', visualProps: ['type', 'variant']},
       {
         className: 'astryx-input-status-icon',

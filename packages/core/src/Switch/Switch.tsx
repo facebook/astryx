@@ -633,6 +633,7 @@ export function Switch({
         labelTooltip={labelTooltip}
         description={description}
         descriptionID={descriptionID}
+        layout="beside"
       />
     </div>
   );

@@ -197,4 +197,20 @@ describe('FieldLabel', () => {
       expect(description.closest('label')).toBeNull();
     });
   });
+
+  describe('layout', () => {
+    it('defaults to a stacked layout', () => {
+      render(<FieldLabel label="Email" inputID="email-input" />);
+      const label = screen.getByText('Email').closest('label');
+      expect(label).toHaveAttribute('data-layout', 'stacked');
+    });
+
+    it('reflects layout="beside" as data-layout for themes to target', () => {
+      render(
+        <FieldLabel label="Notify me" inputID="notify-input" layout="beside" />,
+      );
+      const label = screen.getByText('Notify me').closest('label');
+      expect(label).toHaveAttribute('data-layout', 'beside');
+    });
+  });
 });
