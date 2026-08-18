@@ -348,7 +348,6 @@ export function useMobileKeyboard({
         isActiveRef.current &&
         isFullyExpandedRef.current &&
         event.pointerType === 'touch' &&
-        event.isPrimary !== false &&
         control &&
         control !== document.activeElement
           ? {
