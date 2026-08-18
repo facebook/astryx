@@ -212,6 +212,7 @@ const DIR_TO_REGISTRY_KEY: Record<string, string> = {
   DropdownMenu: 'dropdown-menu',
   Field: 'field',
   HoverCard: 'hovercard',
+  NumberInput: 'number-input',
   Popover: 'popover',
   ProgressBar: 'progressbar-mark',
   Section: 'section',

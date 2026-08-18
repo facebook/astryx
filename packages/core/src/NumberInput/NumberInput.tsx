@@ -31,7 +31,6 @@ import {
   colorVars,
   sizeVars,
   spacingVars,
-  radiusVars,
   typographyVars,
   typeScaleVars,
   borderVars,
@@ -58,6 +57,15 @@ import {useInputGroup} from '../InputGroup/InputGroupContext';
 const styles = stylex.create({
   wrapper: {
     zIndex: 1,
+    // Expose the wrapper's own padding as private vars (defaults match the
+    // shared field base) so the stepper column can cancel it exactly. A theme
+    // that changes `number-input` padding flows into these vars via the
+    // derived-var registry, and the steppers track it instead of assuming the
+    // default — the same pattern TextArea uses for its overlaid affordances.
+    '--_number-input-padding-block': spacingVars['--spacing-1'],
+    '--_number-input-padding-inline': spacingVars['--spacing-2'],
+    paddingBlock: 'var(--_number-input-padding-block)',
+    paddingInline: 'var(--_number-input-padding-inline)',
   },
   wrapperWithNumberSteppers: {
     paddingInlineEnd: 0,
@@ -101,13 +109,13 @@ const styles = stylex.create({
     flexDirection: 'column',
     flexShrink: 0,
     width: spacingVars['--spacing-4'],
-    marginBlock: `calc(-1 * ${spacingVars['--spacing-1']})`,
+    marginBlock: 'calc(-1 * var(--_number-input-padding-block))',
     borderInlineStartWidth: borderVars['--border-width'],
     borderInlineStartStyle: 'solid',
     borderInlineStartColor: colorVars['--color-border-emphasized'],
     overflow: 'hidden',
-    borderStartEndRadius: radiusVars['--radius-element'],
-    borderEndEndRadius: radiusVars['--radius-element'],
+    borderStartEndRadius: 'var(--_field-radius)',
+    borderEndEndRadius: 'var(--_field-radius)',
   },
   numberStepperButton: {
     boxSizing: 'border-box',

@@ -219,6 +219,34 @@ export const docs = {
         states: ['disabled', 'readonly'],
       },
     ],
+    vars: [
+      {
+        name: '--_number-input-padding-block',
+        description:
+          "Block padding of the input wrapper. The number-stepper column cancels it with a negative margin so it spans the field's full height; carrying it as a var keeps the steppers flush when a theme changes the padding.",
+        default: 'var(--spacing-1)',
+        private: true,
+      },
+      {
+        name: '--_number-input-padding-inline',
+        description:
+          'Inline padding of the input wrapper. Carried as a var so a themed padding tracks consistently; the stepper column still runs flush to the inline-end edge (its side keeps a zero end padding).',
+        default: 'var(--spacing-2)',
+        private: true,
+      },
+    ],
+    derived: [
+      {
+        property: 'paddingBlock',
+        vars: ['--_number-input-padding-block'],
+        replaces: true,
+      },
+      {
+        property: 'paddingInline',
+        vars: ['--_number-input-padding-inline'],
+        replaces: true,
+      },
+    ],
   },
   usage: {
     description:
@@ -473,6 +501,34 @@ export const docsZh = {
         className: 'astryx-number-input',
         visualProps: ['size', 'status'],
         states: ['disabled', 'readonly'],
+      },
+    ],
+    vars: [
+      {
+        name: '--_number-input-padding-block',
+        description:
+          '输入框容器的块级内边距。数字步进器列通过负外边距抵消它，从而占满字段的完整高度；以变量承载它可在主题更改内边距时保持步进器齐平。',
+        default: 'var(--spacing-1)',
+        private: true,
+      },
+      {
+        name: '--_number-input-padding-inline',
+        description:
+          '输入框容器的行内内边距。以变量承载以便主题化内边距时保持一致；步进器列仍紧贴行内末端边缘（其末端内边距保持为零）。',
+        default: 'var(--spacing-2)',
+        private: true,
+      },
+    ],
+    derived: [
+      {
+        property: 'paddingBlock',
+        vars: ['--_number-input-padding-block'],
+        replaces: true,
+      },
+      {
+        property: 'paddingInline',
+        vars: ['--_number-input-padding-inline'],
+        replaces: true,
       },
     ],
   },

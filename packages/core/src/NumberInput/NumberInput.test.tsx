@@ -15,6 +15,8 @@ import userEvent from '@testing-library/user-event';
 import {TestIcon} from '../__tests__/TestIcon';
 import {InputGroup} from '../InputGroup';
 import {NumberInput} from './NumberInput';
+import {defineTheme} from '../theme/defineTheme';
+import {generateThemeCSS} from '../theme/generateThemeRules';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 
 // FieldStatus announces status messages through the persistent useAnnounce
@@ -1743,5 +1745,64 @@ describe('NumberInput readonly theme state', () => {
     );
     const root = container.querySelector('.astryx-number-input');
     expect(root).not.toHaveAttribute('data-readonly');
+  });
+});
+
+describe('NumberInput stepper padding coupling', () => {
+  function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
+    const {prose, component} = generateThemeCSS(theme);
+    return [prose, component].filter(Boolean).join('\n\n');
+  }
+
+  it('carries the wrapper padding as vars the stepper column can cancel', () => {
+    const {container} = render(
+      <NumberInput
+        label="Quantity"
+        value={5}
+        onChange={() => {}}
+        hasNumberSteppers
+      />,
+    );
+    const root = container.querySelector('.astryx-number-input') as HTMLElement;
+    // The wrapper exposes its own padding through private vars, and applies
+    // them, so a theme override flows to one place the steppers also read.
+    expect(root).toHaveStyle({
+      paddingBlock: 'var(--_number-input-padding-block)',
+      paddingInline: 'var(--_number-input-padding-inline)',
+    });
+
+    // The stepper column cancels the wrapper's block padding by reading the
+    // same var — not a hardcoded token — so it stays flush when the padding
+    // is themed. The column is the direct parent of the stepper buttons.
+    const steppers = container.querySelector(
+      'button[aria-label="Increment Quantity"]',
+    )?.parentElement as HTMLElement;
+    expect(steppers).toHaveStyle({
+      marginBlock: 'calc(-1 * var(--_number-input-padding-block))',
+    });
+  });
+
+  it('routes a themed number-input padding into the private vars (not raw padding)', () => {
+    // jsdom cannot resolve the @layer cascade, so the generated CSS is the
+    // proof: a theme's padding lands on the vars the steppers read, so the
+    // column tracks it instead of a raw padding that would leave a gap.
+    const theme = defineTheme({
+      name: 'number-input-padding-track-test',
+      components: {
+        'number-input': {
+          base: {
+            paddingBlock: 'var(--spacing-2)',
+            paddingInline: 'var(--spacing-3)',
+          },
+        },
+      },
+    });
+    const css = generateThemeTestCSS(theme);
+    expect(css).toContain('--_number-input-padding-block: var(--spacing-2)');
+    expect(css).toContain('--_number-input-padding-inline: var(--spacing-3)');
+    // `replaces` drops the raw longhands so they never double-apply on the
+    // wrapper alongside the var — only the var declarations are emitted.
+    expect(css).not.toMatch(/^\s*padding-block:/m);
+    expect(css).not.toMatch(/^\s*padding-inline:/m);
   });
 });
