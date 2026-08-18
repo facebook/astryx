@@ -27,6 +27,11 @@ export const docs = {
         states: ['disabled'],
       },
       {className: 'astryx-selector-option'},
+      {
+        className: 'astryx-selector-option-row',
+        visualProps: ['size'],
+        states: ['selected', 'disabled'],
+      },
       {className: 'astryx-selector-search'},
       {className: 'astryx-selector-section-heading'},
       {className: 'astryx-selector-empty-state'},

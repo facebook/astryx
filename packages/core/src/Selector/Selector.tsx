@@ -1164,12 +1164,27 @@ export function Selector<T extends SelectorOptionType>(
           aria-disabled={item.disabled}
           onClick={() => onItemSelect(item)}
           onMouseEnter={() => onItemMouseEnter(item, flatIndex)}
-          {...stylex.props(
-            styles.item,
-            itemSizeStyles[size],
-            isHighlighted && styles.itemHighlighted,
-            isSelected && styles.itemSelected,
-            item.disabled && styles.itemDisabled,
+          {...mergeProps(
+            // Stable theme target on the option row itself, mirroring
+            // `multi-selector-option`: it carries the row's size and runtime
+            // state so a theme can express "selected option at large" or
+            // restyle a given row density without structural selectors. The
+            // row's padding is split across a base and a per-size override (the
+            // default `md` trims the block axis), so `size` is what a theme
+            // needs to reach it. Named `-option-row` because `selector-option`
+            // is the public SelectorOption content primitive, not this row.
+            themeProps('selector-option-row', {
+              size,
+              selected: isSelected ? 'selected' : null,
+              disabled: item.disabled ? 'disabled' : null,
+            }),
+            stylex.props(
+              styles.item,
+              itemSizeStyles[size],
+              isHighlighted && styles.itemHighlighted,
+              isSelected && styles.itemSelected,
+              item.disabled && styles.itemDisabled,
+            ),
           )}>
           {content}
         </div>

@@ -2993,3 +2993,121 @@ describe('Selector popup theme target', () => {
     },
   );
 });
+
+describe('Selector option-row theme target', () => {
+  const ROW_OPTIONS = ['Apple', 'Banana', 'Orange'];
+
+  it('renders astryx-selector-option-row, with its size, on every dropdown row', async () => {
+    const user = userEvent.setup();
+    render(
+      <Selector
+        label="Fruit"
+        options={ROW_OPTIONS}
+        value=""
+        onChange={() => {}}
+        size="lg"
+      />,
+    );
+    await user.click(screen.getByRole('combobox'));
+    const options = screen.getAllByRole('option', h);
+    expect(options).toHaveLength(3);
+    for (const option of options) {
+      expect(option).toHaveClass('astryx-selector-option-row');
+      expect(option).toHaveClass('lg');
+      expect(option).toHaveAttribute('data-size', 'lg');
+    }
+  });
+
+  it('reflects the selected state on the row target', async () => {
+    const user = userEvent.setup();
+    render(
+      <Selector
+        label="Fruit"
+        options={ROW_OPTIONS}
+        value="Banana"
+        onChange={() => {}}
+      />,
+    );
+    await user.click(screen.getByRole('combobox'));
+    const selected = screen.getByRole('option', {name: 'Banana', ...h});
+    expect(selected).toHaveClass('astryx-selector-option-row');
+    expect(selected).toHaveAttribute('data-selected', 'selected');
+  });
+
+  it('leaves the state attributes off an unselected, enabled row', async () => {
+    const user = userEvent.setup();
+    render(
+      <Selector
+        label="Fruit"
+        options={ROW_OPTIONS}
+        value="Banana"
+        onChange={() => {}}
+      />,
+    );
+    await user.click(screen.getByRole('combobox'));
+    const plain = screen.getByRole('option', {name: 'Apple', ...h});
+    expect(plain).toHaveClass('astryx-selector-option-row');
+    // themeProps emits the data-* only when the state is truthy, so a theme's
+    // `.selected` / `.disabled` rules never touch a plain row.
+    expect(plain).not.toHaveAttribute('data-selected');
+    expect(plain).not.toHaveAttribute('data-disabled');
+  });
+
+  it('reflects the disabled state on the row target', async () => {
+    const user = userEvent.setup();
+    render(
+      <Selector
+        label="Fruit"
+        options={[{value: 'Apple', disabled: true}, 'Banana']}
+        value=""
+        onChange={() => {}}
+      />,
+    );
+    await user.click(screen.getByRole('combobox'));
+    const disabled = screen.getByRole('option', {name: 'Apple', ...h});
+    expect(disabled).toHaveClass('astryx-selector-option-row');
+    expect(disabled).toHaveAttribute('data-disabled', 'disabled');
+  });
+
+  it('keeps the row target when renderOption replaces the content', async () => {
+    const user = userEvent.setup();
+    render(
+      <Selector
+        label="Fruit"
+        options={ROW_OPTIONS}
+        value=""
+        onChange={() => {}}
+        renderOption={option => (
+          <span data-testid="custom-row">{option.label ?? option.value}</span>
+        )}
+      />,
+    );
+    await user.click(screen.getByRole('combobox'));
+    const option = screen.getAllByRole('option', h)[0];
+    // The row owns the padding/density, so custom content is inset the same as
+    // the default row — one row override reaches both.
+    expect(option).toHaveClass('astryx-selector-option-row');
+    expect(within(option).getByTestId('custom-row')).toHaveTextContent('Apple');
+  });
+
+  it('exposes the row target, its states and its size to defineTheme', () => {
+    // jsdom cannot resolve the @layer cascade, so the generated CSS is what
+    // proves a theme can reach the row (padding, state, per-size density).
+    const theme = defineTheme({
+      name: 'selector-option-row-target-test',
+      components: {
+        'selector-option-row': {
+          base: {padding: 'var(--spacing-2)', borderRadius: '8px'},
+          selected: {backgroundColor: 'var(--color-background-muted)'},
+          disabled: {opacity: '0.5'},
+          'size:md': {padding: 'var(--spacing-2)'},
+        },
+      },
+    });
+    const css = generateThemeTestCSS(theme);
+    expect(css).toContain('.astryx-selector-option-row {');
+    expect(css).toContain('.astryx-selector-option-row.selected');
+    expect(css).toContain('.astryx-selector-option-row.disabled');
+    expect(css).toContain('.astryx-selector-option-row.md');
+  });
+});
