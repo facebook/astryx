@@ -44,6 +44,7 @@ interface UseMobileKeyboardOptions {
   bottomClearance: number;
   isEnabled: boolean;
   isFullyExpanded: boolean;
+  isPageScrollLocked: boolean;
   isSheetTraveling: boolean;
   isOpen: boolean;
   isPresented: boolean;
@@ -54,16 +55,13 @@ interface KeyboardGeometry {
   bodyBottom: number;
 }
 
-function getUnobstructedBounds(): {top: number; bottom: number} {
-  return {
-    top: 0,
-    bottom: window.visualViewport?.height ?? window.innerHeight,
-  };
+function getObstructionTop(): number {
+  return window.visualViewport?.height ?? window.innerHeight;
 }
 
 // The keyboard is gone once the visible band reaches the layout viewport bottom.
 function isVisualViewportRecovered(): boolean {
-  return getUnobstructedBounds().bottom >= window.innerHeight - 0.5;
+  return getObstructionTop() >= window.innerHeight - 0.5;
 }
 
 function isIOSWebKit(): boolean {
@@ -118,6 +116,7 @@ export function useMobileKeyboard({
   bottomClearance,
   isEnabled,
   isFullyExpanded,
+  isPageScrollLocked,
   isSheetTraveling,
   isOpen,
   isPresented,
@@ -125,10 +124,10 @@ export function useMobileKeyboard({
 }: UseMobileKeyboardOptions): void {
   const hasKeyboardLayoutRef = useRef(false);
   const retainKeyboardLayoutRef = useRef(false);
-  const isActiveRef = useRef(isOpen);
   const isFullyExpandedRef = useRef(isFullyExpanded);
-  isActiveRef.current = isOpen;
+  const isOpenRef = useRef(isOpen);
   isFullyExpandedRef.current = isFullyExpanded;
+  isOpenRef.current = isOpen;
 
   useEffect(() => {
     if (!isEnabled || !isSheetTraveling) {
@@ -204,22 +203,21 @@ export function useMobileKeyboard({
       });
     };
 
-    // Scroll `control` into the part of the body the keyboard leaves visible.
-    // Reads live geometry every time, so it serves both the reveal after focus
-    // lands and the head start taken before a transition the browser drives.
+    // Scroll `control` into the part of the body the keyboard leaves visible,
+    // reading live geometry each time.
     const scrollControlIntoSafeArea = (
       control: HTMLElement,
       smoothly: boolean,
     ) => {
       const measuredBodyRect = body.getBoundingClientRect();
       const measuredControlRect = control.getBoundingClientRect();
-      const viewport = getUnobstructedBounds();
-      const overlap = Math.max(0, measuredBodyRect.bottom - viewport.bottom);
+      const obstructionTop = getObstructionTop();
+      const overlap = Math.max(0, measuredBodyRect.bottom - obstructionTop);
       const clearance = overlap > 0 ? bottomClearance : 0;
-      const safeTop = Math.max(measuredBodyRect.top, viewport.top);
+      const safeTop = measuredBodyRect.top;
       const safeBottom = Math.min(
         measuredBodyRect.bottom,
-        viewport.bottom - clearance,
+        obstructionTop - clearance,
       );
       if (safeBottom <= safeTop) {
         return;
@@ -233,7 +231,7 @@ export function useMobileKeyboard({
     };
 
     const applyKeyboardGeometry = (geometry: KeyboardGeometry) => {
-      const viewport = getUnobstructedBounds();
+      const obstructionTop = getObstructionTop();
       // A collapsed detent can extend the body below the layout viewport even
       // after the keyboard closes, so body overlap alone cannot identify
       // recovery. Once the visual viewport is full height again, release the
@@ -242,7 +240,7 @@ export function useMobileKeyboard({
         clearKeyboardLayout();
         return;
       }
-      const overlap = Math.max(0, geometry.bodyBottom - viewport.bottom);
+      const overlap = Math.max(0, geometry.bodyBottom - obstructionTop);
       if (overlap === 0) {
         clearKeyboardLayout();
         return;
@@ -250,7 +248,7 @@ export function useMobileKeyboard({
 
       const inset = Math.max(
         0,
-        geometry.bodyBottom - (viewport.bottom - bottomClearance),
+        geometry.bodyBottom - (obstructionTop - bottomClearance),
       );
       body.style.setProperty(MOBILE_KEYBOARD_INSET_VAR, `${inset}px`);
     };
@@ -260,15 +258,10 @@ export function useMobileKeyboard({
     // `blur` is dispatched in the capture phase ahead of the browser's own
     // focus step, and it names the destination in `relatedTarget`. Focusing it
     // here with preventScroll settles the transition: the browser's step finds
-    // the element already active, so it dispatches nothing further and there is
-    // no reveal to race. Then bring the control into view with the sheet's own
-    // scroller, which never moves anything outside the sheet.
-    let isClaimingFocus = false;
+    // the element already active, so it dispatches nothing further and has
+    // nothing to reveal.
     const claimFocusTransition = (event: FocusEvent) => {
-      // Delivering the focus below makes the browser run its own transition,
-      // whose blur re-enters here naming the same destination. Claiming that
-      // one too would deliver the focus a second time.
-      if (!isFullyExpandedRef.current || isClaimingFocus) {
+      if (!isFullyExpandedRef.current) {
         return;
       }
       const destination = findTextEntryControl(event.relatedTarget, body);
@@ -278,12 +271,7 @@ export function useMobileKeyboard({
           // focusin, and the viewport resize that follows the keyboard raises
           // another — both already schedule the reveal below, which knows the
           // safe area and scrolls only the sheet's own body.
-          isClaimingFocus = true;
-          try {
-            destination.focus({preventScroll: true});
-          } finally {
-            isClaimingFocus = false;
-          }
+          destination.focus({preventScroll: true});
         }
         return;
       }
@@ -293,8 +281,12 @@ export function useMobileKeyboard({
       // still a transition this handler sees. Left on the body, the field is
       // already `document.activeElement` on the next tap, no blur fires, and
       // the browser reveals it its own way.
+      //
+      // Only while the sheet is open: closing blurs the field too, and there
+      // is no next tap to keep claimable — the host restores focus to whatever
+      // opened the sheet.
       const origin = findTextEntryControl(event.target, body);
-      if (origin && !event.relatedTarget) {
+      if (isOpenRef.current && origin && !event.relatedTarget) {
         sheet?.focus({preventScroll: true});
       }
     };
@@ -318,8 +310,8 @@ export function useMobileKeyboard({
       retainKeyboardLayoutRef.current = false;
 
       const measuredBodyRect = body.getBoundingClientRect();
-      const viewport = getUnobstructedBounds();
-      const overlap = Math.max(0, measuredBodyRect.bottom - viewport.bottom);
+      const obstructionTop = getObstructionTop();
+      const overlap = Math.max(0, measuredBodyRect.bottom - obstructionTop);
       // The extra clearance leaves room for mobile suggestion UI, but only
       // while the visual viewport actually overlaps the sheet. With no
       // obstruction, ordinary desktop and hardware-keyboard focus must not
@@ -335,14 +327,14 @@ export function useMobileKeyboard({
       // the position handleDocumentScroll returns to. Captured on the
       // transition only — a reveal that runs after the browser has already
       // scrolled would otherwise record the shifted position as correct.
-      if (overlap > 0 && !hasKeyboardLayoutRef.current) {
+      if (isPageScrollLocked && overlap > 0 && !hasKeyboardLayoutRef.current) {
         documentScrollAtKeyboard = {x: window.scrollX, y: window.scrollY};
       }
       hasKeyboardLayoutRef.current = overlap > 0;
 
       const inset =
         overlap > 0
-          ? Math.max(0, measuredBodyRect.bottom - (viewport.bottom - clearance))
+          ? Math.max(0, measuredBodyRect.bottom - (obstructionTop - clearance))
           : 0;
       body.style.setProperty(MOBILE_KEYBOARD_INSET_VAR, `${inset}px`);
 
@@ -355,17 +347,14 @@ export function useMobileKeyboard({
       animationFrame = requestAnimationFrame(revealFocusedControl);
     };
 
-    // useScrollLock pins the body, which stops the user scrolling the page but
-    // not the browser: to reveal a focused control the browser scrolls the
-    // DOCUMENT, and every fixed-position element travels with it — the sheet,
-    // its scrim, the page behind. That is the whole-page shift, and because it
-    // is a real document scroll it can simply be put back, on the event that
-    // reports it, before the frame is painted. Then bring the control into
-    // view with the sheet's own scroller, which moves nothing outside the
-    // sheet. This catches every route in — tap, keyboard Next, programmatic
-    // focus, and the reveal the browser performs when the app is resumed with
-    // a field still focused — because it corrects the outcome rather than
-    // racing the cause.
+    // Resuming the app re-reveals the focused field with no focus event to
+    // claim, so the reveal above never runs and the document scrolls — taking
+    // the fixed sheet with it. Put that scroll back on the event that reports
+    // it and re-reveal inside the sheet.
+    //
+    // Only while the page is locked, which is the only state in which a
+    // document scroll cannot be the user's own: behind a non-modal sheet the
+    // page stays scrollable, and reverting there would fight them.
     const handleDocumentScroll = () => {
       const expected = documentScrollAtKeyboard;
       if (
@@ -457,20 +446,11 @@ export function useMobileKeyboard({
     };
 
     const viewport = window.visualViewport;
-    let containmentStyle: HTMLStyleElement | null = null;
     if (ownsFocusTransitions) {
-      // Capture phase, and `blur` rather than `focusout`: both are dispatched
-      // before the browser's own focus step, which is the only window in which
-      // the transition can still be claimed.
+      // `blur` does not bubble, so the capture phase is the only place to hear
+      // every one of them — and it runs before the browser's own focus step,
+      // which is the only window in which the transition can still be claimed.
       document.addEventListener('blur', claimFocusTransition, true);
-
-      // A scroll that reaches the end of any nested scroller chains to the
-      // document, which moves the fixed sheet with it. Current iOS latches
-      // this at touchstart, too late for a listener to add — so it ships as a
-      // stylesheet, in its own layer so a consumer's own rules still win.
-      containmentStyle = document.createElement('style');
-      containmentStyle.textContent = '@layer {*{overscroll-behavior:contain}}';
-      document.head.prepend(containmentStyle);
     }
     body.addEventListener('focusin', handleFocusIn);
     body.addEventListener('focusout', handleFocusOut);
@@ -494,7 +474,6 @@ export function useMobileKeyboard({
       cancelAnimationFrame(animationFrame);
       if (ownsFocusTransitions) {
         document.removeEventListener('blur', claimFocusTransition, true);
-        containmentStyle?.remove();
       }
       body.removeEventListener('focusin', handleFocusIn);
       body.removeEventListener('focusout', handleFocusOut);
@@ -509,5 +488,12 @@ export function useMobileKeyboard({
       hasKeyboardLayoutRef.current = false;
       retainKeyboardLayoutRef.current = false;
     };
-  }, [bodyRef, bottomClearance, isEnabled, isPresented, sheetRef]);
+  }, [
+    bodyRef,
+    bottomClearance,
+    isEnabled,
+    isPageScrollLocked,
+    isPresented,
+    sheetRef,
+  ]);
 }

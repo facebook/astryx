@@ -222,19 +222,14 @@ function drag(handle: HTMLElement, points: {y: number}[]) {
 function fireTouchPointer(
   target: Element,
   type: 'pointerdown' | 'pointermove' | 'pointerup',
-  {
-    x,
-    y,
-    pointerId = 1,
-    isPrimary = true,
-  }: {x: number; y: number; pointerId?: number; isPrimary?: boolean},
+  {x, y}: {x: number; y: number},
 ) {
   const event = new Event(type, {bubbles: true, cancelable: true});
   Object.defineProperties(event, {
     clientX: {value: x},
     clientY: {value: y},
-    isPrimary: {value: isPrimary},
-    pointerId: {value: pointerId},
+    isPrimary: {value: true},
+    pointerId: {value: 1},
     pointerType: {value: 'touch'},
   });
   return fireEvent(target, event);
@@ -1086,31 +1081,29 @@ describe('BottomSheet', () => {
       expect(focus).toHaveBeenCalledWith({preventScroll: true});
     });
 
-    it('does not re-deliver a transition it has already claimed', () => {
+    it('does not park focus on a sheet that is closing', () => {
       mockIOSWebKit();
-      render(
+      const content = (isOpen: boolean) => (
         <BottomSheet
-          isOpen
+          isOpen={isOpen}
           onOpenChange={() => {}}
           label="Add a comment"
           height="tall">
-          <input aria-label="Title" />
           <input aria-label="Comment" />
-        </BottomSheet>,
+        </BottomSheet>
       );
-      const title = screen.getByRole('textbox', {name: 'Title'});
-      const comment = screen.getByRole('textbox', {name: 'Comment'});
-      title.focus();
-      const focus = vi.spyOn(comment, 'focus');
+      const {rerender} = render(content(true));
+      const sheet = getSheet();
+      const input = screen.getByRole('textbox', {name: 'Comment'});
+      input.focus();
+      const sheetFocus = vi.spyOn(sheet, 'focus');
 
-      // Delivering the focus makes the browser run its own transition, whose
-      // blur re-enters the handler naming the same destination. Exactly one
-      // delivery must come out of that — a consumer's onFocus is one event, and
-      // measured on iOS the counts match an unclaimed transition exactly.
-      fireEvent.blur(title, {relatedTarget: comment});
+      // Closing blurs the field as well, and that blur names no destination —
+      // the same shape as Done. There is no next tap to keep claimable here,
+      // and the host is about to hand focus back to whatever opened the sheet.
+      void act(() => rerender(content(false)));
 
-      expect(focus).toHaveBeenCalledTimes(1);
-      expect(document.activeElement).toBe(comment);
+      expect(sheetFocus).not.toHaveBeenCalled();
     });
 
     it('parks focus on the sheet when the keyboard Done button takes it', () => {
@@ -1136,37 +1129,6 @@ describe('BottomSheet', () => {
       fireEvent.blur(input, {relatedTarget: null});
 
       expect(sheetFocus).toHaveBeenCalledWith({preventScroll: true});
-    });
-
-    it('contains overscroll while the sheet owns focus transitions', () => {
-      mockIOSWebKit();
-      const {unmount} = render(
-        <BottomSheet
-          isOpen
-          onOpenChange={() => {}}
-          label="Add a comment"
-          height="tall">
-          <input aria-label="Comment" />
-        </BottomSheet>,
-      );
-
-      // A scroll that runs out of room in any nested scroller chains to the
-      // document and takes the fixed sheet with it. Current iOS latches this
-      // at touchstart, too late for a listener, so it ships as a stylesheet.
-      const style = [...document.head.querySelectorAll('style')].find(node =>
-        node.textContent?.includes('overscroll-behavior'),
-      );
-      expect(style?.textContent).toBe(
-        '@layer {*{overscroll-behavior:contain}}',
-      );
-
-      unmount();
-
-      expect(
-        [...document.head.querySelectorAll('style')].some(node =>
-          node.textContent?.includes('overscroll-behavior'),
-        ),
-      ).toBe(false);
     });
 
     it('does not alter ordinary desktop focus when the viewport is unobstructed', () => {
@@ -1900,6 +1862,43 @@ describe('BottomSheet', () => {
       // the sheet's own scroller, with the page left alone.
       expect(scrolls).toEqual([100]);
       expect(scrollTo).not.toHaveBeenCalled();
+    });
+
+    it('leaves the page alone behind a non-modal sheet', () => {
+      const layoutBottom = window.innerHeight;
+      mockVisualViewport(500);
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={() => {}}
+          label="Add a comment"
+          height="tall"
+          hasScrim={false}>
+          <input aria-label="Comment" />
+        </BottomSheet>,
+      );
+      const body = getBody();
+      const input = screen.getByRole('textbox', {name: 'Comment'});
+      vi.spyOn(body, 'getBoundingClientRect').mockReturnValue(
+        rect({top: 100, bottom: layoutBottom}),
+      );
+      vi.spyOn(input, 'getBoundingClientRect').mockImplementation(() =>
+        rect({top: 600 - body.scrollTop, bottom: 640 - body.scrollTop}),
+      );
+      input.focus();
+      const scrollTo = vi.mocked(window.scrollTo);
+      scrollTo.mockClear();
+
+      // Without a scrim the page behind stays scrollable, so a document scroll
+      // is the user's. Putting it back would fight them.
+      Object.defineProperty(window, 'scrollY', {
+        configurable: true,
+        value: 200,
+      });
+      fireEvent.scroll(window);
+
+      expect(scrollTo).not.toHaveBeenCalled();
+      Object.defineProperty(window, 'scrollY', {configurable: true, value: 0});
     });
 
     it('holds the keyboard scroll range through a pan, on the blur path', () => {

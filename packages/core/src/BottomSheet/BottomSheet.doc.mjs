@@ -99,7 +99,7 @@ export const docs = {
       name: 'height',
       type: "'hug' | 'capped' | 'tall' | number | string",
       description:
-        "How tall the sheet is. Named budgets: 'hug' fits its content up to 92% of the viewport, 'capped' is a scrolling mid-height panel (~62%), and 'tall' is a pinned near-full panel (~92%) for content that streams in. Or pass a number (px) / CSS length for a custom budget. The user can drag between snap points regardless. On shorter viewports the sheet fills the available height. Only a fully expanded 'tall' sheet provides mobile-keyboard accommodation; shorter Tall detents, Hug, Capped, numeric, and CSS-length heights do not move, do not add keyboard scroll space, and leave the browser's own focus reveal in place — on iOS that reveal can pan the page.",
+        "How tall the sheet is. Named budgets: 'hug' fits its content up to 92% of the viewport, 'capped' is a scrolling mid-height panel (~62%), and 'tall' is a pinned near-full panel (~92%) for content that streams in. Or pass a number (px) / CSS length for a custom budget. The user can drag between snap points regardless. On shorter viewports the sheet fills the available height. Only a fully expanded 'tall' sheet provides mobile-keyboard accommodation; shorter Tall detents, Hug, Capped, numeric, and CSS-length heights do not move, do not add keyboard scroll space, and leave the browser's own focus reveal in place — on iOS that reveal can shift the whole page.",
       default: "'capped'",
     },
     {

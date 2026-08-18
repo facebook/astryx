@@ -16,6 +16,7 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/BottomSheet/BottomSheet.tsx
  * - /packages/core/src/BottomSheet/BottomSheetPanel.test.tsx
+ * - /packages/core/src/BottomSheet/useMobileKeyboard.ts
  * - /packages/core/src/BottomSheet/useSheetGestures.ts
  */
 
@@ -171,6 +172,8 @@ interface BottomSheetPanelProps extends BaseProps<HTMLDivElement> {
   height: BottomSheetHeight | number | string;
   children: ReactNode;
   isSwipeDismissAllowed?: boolean;
+  /** Whether the host has locked page scrolling (a modal, scrim-backed sheet). */
+  isPageScrollLocked?: boolean;
   onDismiss: () => void;
   onScrimOpacity: (opacity: number) => void;
   onElementChange?: (element: HTMLDivElement | null) => void;
@@ -298,6 +301,7 @@ export function BottomSheetPanel({
   tabIndex,
   xstyle,
   isSwipeDismissAllowed = true,
+  isPageScrollLocked = false,
   onDismiss,
   onScrimOpacity,
   onElementChange,
@@ -372,6 +376,7 @@ export function BottomSheetPanel({
     bottomClearance: MOBILE_KEYBOARD_BOTTOM_CLEARANCE,
     isEnabled: height === 'tall',
     isFullyExpanded: settledOffset === 0,
+    isPageScrollLocked,
     isSheetTraveling: isDragging && dragOffset !== settledOffset,
     isOpen: isInteractive,
     isPresented,

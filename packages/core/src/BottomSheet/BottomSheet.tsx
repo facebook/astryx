@@ -330,6 +330,7 @@ function StandaloneBottomSheet({
           state={panelState}
           height={height}
           isSwipeDismissAllowed={purpose === 'info'}
+          isPageScrollLocked={shouldPresent && hasScrim}
           xstyle={xstyle}
           onDismiss={dismissOnLightInteraction}
           onScrimOpacity={handleScrimOpacity}
@@ -484,6 +485,7 @@ function SwitcherBottomSheetItem({
         state={panelState}
         height={height}
         isSwipeDismissAllowed={purpose === 'info'}
+        isPageScrollLocked={hasScrim}
         xstyle={xstyle}
         onDismiss={dismissOnSwipe}
         onScrimOpacity={handleScrimOpacity}
