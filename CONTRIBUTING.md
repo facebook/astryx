@@ -755,6 +755,9 @@ into your language, visit <https://crowdin.com/project/astryx>. New locales are
 picked up automatically after a maintainer reviews the auto-generated
 translations PR.
 
+Calendar day names use generated CLDR-derived data because browsers do not
+expose the compact stand-alone-short width.
+
 ## Contributor License Agreement ("CLA")
 
 In order to accept your pull request, we need you to submit a CLA. You only need
