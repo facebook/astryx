@@ -92,23 +92,27 @@ function captureFocusScroll(target: HTMLElement): FocusScrollSnapshot {
   };
 }
 
-function getVisualViewportBounds(): {top: number; bottom: number} {
-  const viewport = window.visualViewport;
-  const top = viewport?.offsetTop ?? 0;
+// Where the keyboard starts, in client coordinates. The keyboard covers the
+// bottom of the LAYOUT viewport, so its top edge sits at `visualViewport.height`
+// — and stays there when the browser pans the page to reveal a field, because a
+// pan slides the window over the page without moving the keyboard.
+//
+// Reading `offsetTop + height` instead makes the obstruction appear to shrink as
+// the pan grows. A fully expanded Tall sheet — the only shape this hook runs in
+// — is pinned to the layout viewport bottom, so at full pan the obstruction
+// reads as zero: the sheet concludes the keyboard is gone, drops the scroll
+// range it added, and disarms the defenses that would have caught the next pan.
+// One pan then latches the sheet into the unprotected behavior for good.
+function getUnobstructedBounds(): {top: number; bottom: number} {
   return {
-    top,
-    bottom: top + (viewport?.height ?? window.innerHeight),
+    top: 0,
+    bottom: window.visualViewport?.height ?? window.innerHeight,
   };
 }
 
-// The keyboard is gone once the visual viewport is as tall as the layout
-// viewport again. Height is the only pan-invariant signal for that: while iOS
-// holds the viewport panned up to reveal a field, the viewport's *bottom*
-// already sits at the layout viewport bottom with the keyboard still on
-// screen, so reading the bottom mistakes a pan for a dismissal.
+// The keyboard is gone once the visible band reaches the layout viewport bottom.
 function isVisualViewportRecovered(): boolean {
-  const height = window.visualViewport?.height ?? window.innerHeight;
-  return height >= window.innerHeight - 0.5;
+  return getUnobstructedBounds().bottom >= window.innerHeight - 0.5;
 }
 
 function isIOSWebKit(): boolean {
@@ -262,7 +266,10 @@ export function useMobileKeyboard({
         window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       body.scrollBy({
         top: distance,
-        behavior: smoothly && !reduceMotion ? 'smooth' : 'auto',
+        // Not 'auto': that defers to the element's computed `scroll-behavior`,
+        // so a consumer's `scroll-behavior: smooth` would animate a scroll this
+        // hook needs to land in the same frame.
+        behavior: smoothly && !reduceMotion ? 'smooth' : 'instant',
       });
     };
 
@@ -275,7 +282,7 @@ export function useMobileKeyboard({
     ) => {
       const measuredBodyRect = body.getBoundingClientRect();
       const measuredControlRect = control.getBoundingClientRect();
-      const viewport = getVisualViewportBounds();
+      const viewport = getUnobstructedBounds();
       const overlap = Math.max(0, measuredBodyRect.bottom - viewport.bottom);
       const clearance = overlap > 0 ? bottomClearance : 0;
       const safeTop = Math.max(measuredBodyRect.top, viewport.top);
@@ -295,7 +302,7 @@ export function useMobileKeyboard({
     };
 
     const applyKeyboardGeometry = (geometry: KeyboardGeometry) => {
-      const viewport = getVisualViewportBounds();
+      const viewport = getUnobstructedBounds();
       // A collapsed detent can extend the body below the layout viewport even
       // after the keyboard closes, so body overlap alone cannot identify
       // recovery. Once the visual viewport is full height again, release the
@@ -377,11 +384,17 @@ export function useMobileKeyboard({
     };
     const preventTouchFocusScroll = (event: PointerEvent) => {
       const pending = pendingTouchFocus;
+      // A lift by some other contact — the resting thumb, the palm — is not
+      // this tap ending. Leave the arming alone: consuming it here is the same
+      // disarm the pointerdown guard above prevents, at the other end of the
+      // gesture.
+      if (pending != null && pending.pointerId !== event.pointerId) {
+        return;
+      }
       pendingTouchFocus = null;
       if (
         !pending ||
         !isFullyExpandedRef.current ||
-        pending.pointerId !== event.pointerId ||
         pending.pointerDown.defaultPrevented ||
         event.defaultPrevented ||
         findTextEntryControl(event.target, body) !== pending.control ||
@@ -407,11 +420,16 @@ export function useMobileKeyboard({
       }
       // A snapshot restores what a scroll container scrolled, which is not what
       // this transition costs: WebKit reveals a destination behind the keyboard
-      // by panning the visual viewport, and offsetTop is read-only. So reach the
-      // destination first — instantly, to win the race — and leave the reveal
-      // nothing to do. Gated on a measured keyboard to keep unobstructed focus
-      // on the existing reveal path alone.
-      if (hasKeyboardLayoutRef.current) {
+      // by scrolling the page under a fixed sheet. Reach the destination first —
+      // in the same frame, so the reveal finds nothing left to do.
+      //
+      // The tap path is excluded: preventTouchFocusScroll has already focused
+      // with preventScroll there, so a head start would only replace that
+      // path's gentle post-focus glide with a snap.
+      if (
+        hasKeyboardLayoutRef.current &&
+        pendingPointerFocusScroll?.target !== control
+      ) {
         scrollControlIntoSafeArea(control, false);
       }
       // Snapshot after that scroll: the restore below undoes the browser's
@@ -452,7 +470,7 @@ export function useMobileKeyboard({
       retainKeyboardLayoutRef.current = false;
 
       const measuredBodyRect = body.getBoundingClientRect();
-      const viewport = getVisualViewportBounds();
+      const viewport = getUnobstructedBounds();
       const overlap = Math.max(0, measuredBodyRect.bottom - viewport.bottom);
       // The extra clearance leaves room for mobile suggestion UI, but only
       // while the visual viewport actually overlaps the sheet. With no

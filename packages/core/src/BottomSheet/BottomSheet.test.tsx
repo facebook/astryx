@@ -1910,7 +1910,7 @@ describe('BottomSheet', () => {
       comment.focus();
 
       expect(scrolls).toEqual([
-        {top: 248, behavior: 'auto', focusLanded: false},
+        {top: 248, behavior: 'instant', focusLanded: false},
       ]);
       expect(body.scrollTop).toBe(248);
     });
@@ -1960,7 +1960,13 @@ describe('BottomSheet', () => {
       expect(scrolls).toEqual([100]);
     });
 
-    it('does not mistake a panned visual viewport for a dismissed keyboard', () => {
+    it('holds the keyboard scroll range through a pan, on the blur path', () => {
+      // A fully expanded Tall sheet — the only shape this hook runs in — is
+      // pinned to the layout viewport bottom, so the body's bottom IS
+      // innerHeight. Giving it a cushion below that would hide every bug in
+      // this file: the cushion, not the measurement, would keep the overlap
+      // positive under a pan.
+      const layoutBottom = window.innerHeight;
       const viewport = mockVisualViewport(500);
       render(
         <BottomSheet
@@ -1974,29 +1980,89 @@ describe('BottomSheet', () => {
       const body = getBody();
       const input = screen.getByRole('textbox', {name: 'Comment'});
       vi.spyOn(body, 'getBoundingClientRect').mockReturnValue(
-        rect({top: 100, bottom: 800}),
+        rect({top: 100, bottom: layoutBottom}),
       );
       vi.spyOn(input, 'getBoundingClientRect').mockImplementation(() =>
         rect({top: 660 - body.scrollTop, bottom: 700 - body.scrollTop}),
       );
       input.focus();
-      expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
-        '348px',
-      );
+      const inset = body.style.getPropertyValue('--_sheet-keyboard-inset');
+      expect(inset).toBe(`${layoutBottom - (500 - 48)}px`);
 
-      // iOS pans the viewport up to reveal a field: the same 500px of visible
-      // page, now offset so its bottom edge coincides with the layout viewport
-      // bottom — while the keyboard is still on screen. Read the bottom and
-      // that looks exactly like recovery, which would drop the scroll range
-      // out from under the field. The height is what stays honest: the body's
-      // 800px bottom still sits 32px below the visible region, so 48px of
-      // clearance leaves an 80px inset.
+      // The browser pans the page up to reveal a field: the same 500px of
+      // visible page, now offset so its bottom edge coincides with the layout
+      // viewport bottom — with the keyboard still on screen. Read the bottom
+      // and that is indistinguishable from the keyboard closing.
       viewport.offsetTop = window.innerHeight - 500;
       input.blur();
 
+      // The keyboard did not change size, so neither does the scroll range.
       expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
-        '80px',
+        inset,
       );
+    });
+
+    it('keeps defending a pinned sheet after the browser has panned it once', () => {
+      // The regression that made the device symptom permanent: one pan read as
+      // "no keyboard" cleared the inset AND cleared hasKeyboardLayout, which
+      // disarms the head start below — so every subsequent reveal panned, and
+      // the sheet never recovered.
+      const layoutBottom = window.innerHeight;
+      mockIOSWebKit();
+      const viewport = mockVisualViewport(500);
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={() => {}}
+          label="Add a comment"
+          height="tall">
+          <input aria-label="Title" />
+          <input aria-label="Comment" />
+        </BottomSheet>,
+      );
+      const body = getBody();
+      const title = screen.getByRole('textbox', {name: 'Title'});
+      const comment = screen.getByRole('textbox', {name: 'Comment'});
+      const scrolls: {top: number; focusLanded: boolean}[] = [];
+      Object.defineProperty(body, 'scrollBy', {
+        configurable: true,
+        value: (options: ScrollToOptions) => {
+          body.scrollTop += options.top ?? 0;
+          scrolls.push({
+            top: options.top ?? 0,
+            focusLanded: document.activeElement === comment,
+          });
+        },
+      });
+      vi.spyOn(body, 'getBoundingClientRect').mockReturnValue(
+        rect({top: 100, bottom: layoutBottom}),
+      );
+      vi.spyOn(title, 'getBoundingClientRect').mockReturnValue(
+        rect({top: 150, bottom: 190}),
+      );
+      vi.spyOn(comment, 'getBoundingClientRect').mockImplementation(() =>
+        rect({top: 700 - body.scrollTop, bottom: 740 - body.scrollTop}),
+      );
+
+      title.focus();
+      const inset = body.style.getPropertyValue('--_sheet-keyboard-inset');
+      expect(inset).toBe(`${layoutBottom - (500 - 48)}px`);
+
+      viewport.offsetTop = layoutBottom - 500;
+      void act(() => viewport.dispatchEvent(new Event('resize')));
+      expect(body.style.getPropertyValue('--_sheet-keyboard-inset')).toBe(
+        inset,
+      );
+
+      // And the next browser-driven focus still gets its head start: taken
+      // before focus lands, and far enough to clear the keyboard.
+      scrolls.length = 0;
+      comment.focus();
+
+      expect(scrolls[0]).toEqual({
+        top: 740 - (500 - 48),
+        focusLanded: false,
+      });
     });
 
     it('re-arms after a pointerup the page swallowed', () => {
@@ -2029,6 +2095,56 @@ describe('BottomSheet', () => {
       expect(focus).toHaveBeenCalledWith({preventScroll: true});
     });
 
+    it('leaves a tap on its own gentle reveal, with no head start', () => {
+      const layoutBottom = window.innerHeight;
+      mockIOSWebKit();
+      mockVisualViewport(500);
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={() => {}}
+          label="Add a comment"
+          height="tall">
+          <input aria-label="Title" />
+          <input aria-label="Comment" />
+        </BottomSheet>,
+      );
+      const body = getBody();
+      const title = screen.getByRole('textbox', {name: 'Title'});
+      const comment = screen.getByRole('textbox', {name: 'Comment'});
+      const scrolls: {behavior?: ScrollBehavior; focusLanded: boolean}[] = [];
+      Object.defineProperty(body, 'scrollBy', {
+        configurable: true,
+        value: (options: ScrollToOptions) => {
+          body.scrollTop += options.top ?? 0;
+          scrolls.push({
+            behavior: options.behavior,
+            focusLanded: document.activeElement === comment,
+          });
+        },
+      });
+      vi.spyOn(body, 'getBoundingClientRect').mockReturnValue(
+        rect({top: 100, bottom: layoutBottom}),
+      );
+      vi.spyOn(title, 'getBoundingClientRect').mockReturnValue(
+        rect({top: 150, bottom: 190}),
+      );
+      vi.spyOn(comment, 'getBoundingClientRect').mockImplementation(() =>
+        rect({top: 700 - body.scrollTop, bottom: 740 - body.scrollTop}),
+      );
+      title.focus();
+      scrolls.length = 0;
+
+      fireTouchPointer(comment, 'pointerdown', {x: 20, y: 700});
+      fireTouchPointer(comment, 'pointerup', {x: 20, y: 700});
+
+      // A tap is already covered — it focused with preventScroll, so there is
+      // no native reveal to beat. It should keep the reveal it has always had:
+      // after focus, and animated. Taking the head start here would turn every
+      // tap between fields into a snap.
+      expect(scrolls).toEqual([{behavior: 'smooth', focusLanded: true}]);
+    });
+
     it('keeps a tap protected when a second contact lands mid-gesture', () => {
       mockIOSWebKit();
       render(
@@ -2047,6 +2163,41 @@ describe('BottomSheet', () => {
       // A thumb resting on the page, a palm, a second finger anywhere: not the
       // contact that is tapping the field, and it must not disarm that tap.
       fireTouchPointer(document.body, 'pointerdown', {
+        x: 300,
+        y: 700,
+        pointerId: 2,
+        isPrimary: false,
+      });
+      fireTouchPointer(input, 'pointerup', {x: 20, y: 200});
+
+      expect(focus).toHaveBeenCalledWith({preventScroll: true});
+      expect(document.activeElement).toBe(input);
+    });
+
+    it('keeps a tap protected when a second contact lifts first', () => {
+      mockIOSWebKit();
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={() => {}}
+          label="Add a comment"
+          height="tall">
+          <input aria-label="Comment" />
+        </BottomSheet>,
+      );
+      const input = screen.getByRole('textbox', {name: 'Comment'});
+      const focus = vi.spyOn(input, 'focus');
+
+      fireTouchPointer(input, 'pointerdown', {x: 20, y: 200});
+      fireTouchPointer(document.body, 'pointerdown', {
+        x: 300,
+        y: 700,
+        pointerId: 2,
+        isPrimary: false,
+      });
+      // The other end of the same gesture: the resting thumb lifts before the
+      // finger on the field does. That pointerup is not this tap ending.
+      fireTouchPointer(document.body, 'pointerup', {
         x: 300,
         y: 700,
         pointerId: 2,
