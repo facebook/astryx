@@ -10,22 +10,22 @@ export const docs = {
     'Build an app layout outside-in: frame the regions, structure the content, tune the spacing, then ship. Grouped into four phases, each closing with a Do and Don\'t table.',
 
   sections: [
-    // ===== FRAME =====
     {
-      title: 'Frame: Pick the shell',
+      title: 'Frame',
       content: [
+        {type: 'heading', level: 3, text: 'Pick the shell'},
         {
           type: 'prose',
-          text: 'Phase 1 of four: Frame. Start every layout from the frame, not the content. Pick the shell, name its regions, give each an explicit width budget, then fill them. Content-first layout (writing sections and wrapping each in a Card) produces a padded scroll column that reads as a prototype, not a product.',
+          text: 'Pick the shell and budget its regions in px before any content exists.',
         },
         {
           type: 'list',
           style: 'ordered',
           items: [
-            'Pick the frame: AppShell (top and/or side nav apps), Layout + LayoutPanel + LayoutContent (multi-pane tools like explorers and consoles), or a plain content column (documents, marketing, forms)',
-            'Budget regions in px before filling them: side nav 240–280, icon rail 64–72, detail/inspector panel 340–420, filter/facet rail 220–260',
-            'Keep raw px for these structural widths only; everything inside a region uses the spacing scale (see Space)',
-            'Set the container policy per region (rows vs card grid) and the responsive contract before writing content',
+            'Pick the frame: AppShell (nav apps), Layout + LayoutPanel + LayoutContent (multi-pane tools like explorers and consoles), or a plain content column (documents, forms)',
+            'Budget each region in px: side nav 240–280, icon rail 64–72, inspector 340–420, filter rail 220–260',
+            'Keep raw px for these structural widths only; interior spacing uses the scale (see Space)',
+            'Set each region container policy (rows vs card grid) and the responsive contract before writing content',
           ],
         },
         {
@@ -42,14 +42,15 @@ export const docs = {
   </Layout>
 </AppShell>`,
         },
-      ],
-    },
-    {
-      title: 'Frame: Match the archetype',
-      content: [
         {
           type: 'prose',
-          text: 'Match the frame and container policy to the kind of app you are building. These pairings come from product-scale apps built with the design system; container choice tracks the archetype, not preference. Treat each row as a pointer to the template you inherit from, not a spec to reimplement.',
+          text: 'Verify: every region has a px budget and a container policy written down before any content exists.',
+        },
+
+        {type: 'heading', level: 3, text: 'Match the archetype'},
+        {
+          type: 'prose',
+          text: 'Match the frame and container policy to your app type; container choice tracks the archetype, not preference.',
         },
         {
           type: 'table',
@@ -84,16 +85,13 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'Start from the matching template (`npx astryx template --list`), study its structure with `--skeleton`, and inherit its navigation pairing before customizing.',
+          text: 'Verify: start from the matching template (`npx astryx template --list`, read `--skeleton`) and inherit its navigation pairing.',
         },
-      ],
-    },
-    {
-      title: 'Frame: Choose navigation',
-      content: [
+
+        {type: 'heading', level: 3, text: 'Choose navigation'},
         {
           type: 'prose',
-          text: 'When the frame leaves navigation open, decide from countable signals (how many destinations, whether they need grouping, how deep the hierarchy), not from preference. Inherit the template pairing first; this section is for when you genuinely have to choose.',
+          text: 'When the frame leaves navigation open, decide from countable signals: destination count, grouping, hierarchy depth.',
         },
         {
           type: 'table',
@@ -118,13 +116,10 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'Default to a left nav; switch to top only with 5 or fewer destinations and no grouping; add top + left only when a real ecosystem layer sits above the product.',
+          text: 'Verify: left nav unless you have 5 or fewer destinations and no grouping; top + left only above a real ecosystem layer.',
         },
-      ],
-    },
-    {
-      title: "Frame: Do & Don't",
-      content: [
+
+        {type: 'heading', level: 3, text: "Do & Don't"},
         {
           type: 'list',
           style: 'do',
@@ -145,13 +140,13 @@ export const docs = {
         },
       ],
     },
-    // ===== STRUCTURE =====
     {
-      title: 'Structure: Set hierarchy',
+      title: 'Structure',
       content: [
+        {type: 'heading', level: 3, text: 'Set hierarchy'},
         {
           type: 'prose',
-          text: 'Phase 2 of four: Structure. Give every region one clear lead. Name what leads, what supports, and what is tertiary, then make the ranks look different; equal weight everywhere reads as a template. Express rank with type and color, and drop weight before you drop size.',
+          text: 'Give every region one lead, then separate lead, support, and tertiary with type and color; drop weight before size.',
         },
         {
           type: 'list',
@@ -164,43 +159,33 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'Squint test: blurred, you should still read the lead, then the support, then the groups, in that order. If everything reads at once, raise the contrast between ranks through weight, color, and spacing, not borders.',
+          text: 'Squint test: blurred, you read lead, then support, then groups, in that order. If everything reads at once, raise contrast with weight and color, not borders.',
         },
-      ],
-    },
-    {
-      title: 'Structure: Choose a container',
-      content: [
+
+        {type: 'heading', level: 3, text: 'Choose a container'},
         {
           type: 'prose',
-          text: 'Grouping has a strength ladder: spacing, divider, Section, Card. Reach for the weakest tool that reads as a group and escalate only when it fails. Defaulting to a Card is the single biggest cause of the generic-prototype look.',
+          text: 'Reach for the weakest container that reads as a group and escalate only when it fails: spacing, Divider, Section, Card.',
         },
         {
           type: 'table',
           headers: ['Tool', 'Use for', 'Strength'],
           rows: [
-            ['spacing / gap', 'Separating related items inside one group. The default rhythm.', 'weakest'],
-            ['Divider', 'Separating peers in a dense list or toolbar, or fencing a header from a scrollable body.', 'low'],
+            ['spacing / gap', 'Related items inside one group. The default rhythm.', 'weakest'],
+            ['Divider', 'Peers in a dense list or toolbar, or fencing a header from a scrollable body.', 'low'],
             ['Section', 'The default page-structure unit: related content under a heading. No border; hierarchy from spacing.', 'medium'],
-            ['Card', 'A self-contained widget (KPI tile, chart, gallery entry), or a hard boundary around critical content.', 'strongest'],
+            ['Card', 'A self-contained widget (KPI tile, chart, gallery entry), or a hard boundary around critical content. Not a list-item wrapper.', 'strongest'],
           ],
         },
         {
           type: 'prose',
-          text: 'Card is a widget container, not a list-item wrapper. Dense data (anything the user scans, filters, or selects) belongs in rows: Table for columnar data, List for single-line records, edge-to-edge with dividers and 32–40px rows. Ceiling: one level of bordered container, no cards inside cards.',
+          text: 'Decision test: a collection of records renders as rows (Table for columnar, List for single-line, edge-to-edge with dividers, 32–40px); a self-contained widget or hard boundary is a Card; everything else is a Section.',
         },
+
+        {type: 'heading', level: 3, text: 'Panels and inspectors'},
         {
           type: 'prose',
-          text: 'Decision test: a collection of records renders as rows; a self-contained widget or content that needs a hard boundary is a Card; everything else, which is most things, is a Section.',
-        },
-      ],
-    },
-    {
-      title: 'Structure: Panels and inspectors',
-      content: [
-        {
-          type: 'prose',
-          text: 'Master-detail is the backbone of tool UIs: selecting a row opens a fixed-width inspector rather than navigating away. Use LayoutPanel in the end slot with an explicit width budget, add resizable for user control, and let the panel overlay the content below ~1024px instead of compressing it.',
+          text: 'Master-detail: selecting a row opens a fixed-width inspector instead of navigating away. Use LayoutPanel in the end slot with an explicit width budget, plus resizable for user control.',
         },
         {
           type: 'code',
@@ -215,11 +200,12 @@ export const docs = {
   {selected ? <DetailFields item={selected} /> : <EmptyState title="Nothing selected" />}
 </LayoutPanel>`,
         },
-      ],
-    },
-    {
-      title: "Structure: Do & Don't",
-      content: [
+        {
+          type: 'prose',
+          text: 'Verify: below ~1024px the panel overlays the content region instead of compressing it.',
+        },
+
+        {type: 'heading', level: 3, text: "Do & Don't"},
         {
           type: 'list',
           style: 'do',
@@ -242,65 +228,75 @@ export const docs = {
         },
       ],
     },
-    // ===== SPACE =====
     {
-      title: 'Space: Align to one line',
+      title: 'Space',
       content: [
+        {type: 'heading', level: 3, text: 'Align to one line'},
         {
           type: 'prose',
-          text: 'Phase 3 of four: Space. The container owns structural space: the padding around a region and the gap between its children. Children zero their own margins and inherit the container rhythm, so spacing never drifts child to child. Interior spacing is always a token (Section padding defaults to 4 = 16px).',
+          text: 'The container owns padding and child gaps; children zero their margins, and interior spacing is always a token. Pick one content line per region and hold it constant, not the padding: `container_inset = content_line - component_intrinsic_inset`.',
         },
         {
-          type: 'prose',
-          text: 'Pick one content line per region: the left edge every heading, label, and row aligns to (16px is a good default). Hold the content line constant, not the padding, with container_inset = content_line minus the component built-in inset. Plain text has zero inset and takes the full padding; List, Tab, Menu, and nav items reserve ~8px and Table cells ~12–16px, so set those to Section padding={0} and let the component own the inset. The label lands on the line while the hover background bleeds to the edge.',
+          type: 'list',
+          style: 'unordered',
+          items: [
+            'Text and Heading: 0 inset, so the container takes the full padding (Section padding={4} = a 16px line)',
+            'List, Tab, Menu, nav items: ~8px built in, so Section padding={0} and the component owns the inset',
+            'Table cells: 12–16px built in, so Section padding={0} and the cell owns the inset',
+          ],
         },
         {
           type: 'code',
           lang: 'tsx',
-          label: 'One content line: absorb a component built-in inset',
-          code: `// Target content line = 16px. Heading has 0 inset; the list item has ~8px.
-<Section padding={4}>            {/* 16px: heading label sits at 16 */}
-  <Heading>Members</Heading>
-</Section>
-<Section padding={0}>            {/* 0: the List owns the inset */}
-  <List>{/* item label sits at 16, hover background bleeds to the edge */}</List>
-</Section>`,
+          label: 'One content line, two inset owners',
+          code: `// Target content line = 16px.
+<Section padding={4}><Heading>Members</Heading></Section>  {/* 0 inset */}
+<Section padding={0}><List>{/* items */}</List></Section>  {/* ~8px inset */}`,
         },
         {
           type: 'prose',
-          text: 'Squint and draw one vertical line down the left of the region: every label should touch it, and only hover or selected backgrounds should cross it. If a list is indented past its own heading, you double-padded; keep one owner of the inset, never both.',
+          text: 'Verify: draw one vertical line down the left of the region. Every label touches it; only hover and selected backgrounds cross it.',
         },
-      ],
-    },
-    {
-      title: 'Space: Set the rhythm',
-      content: [
+
+        {type: 'heading', level: 3, text: 'Set the rhythm'},
         {
           type: 'prose',
-          text: 'Spacing groups through contrast, not one repeated value. Tight space binds related items; generous space separates groups. If every gap is the same step, proximity does no work. Keep intra-group gaps small and inter-group gaps a step or two larger (gap={1}–{2} within an item, {4}–{6} between sections); the jump is what reads.',
+          text: 'Grouping comes from contrast between tight and generous gaps, not one repeated value. If every gap is the same step, proximity does no work.',
         },
         {
-          type: 'prose',
-          text: 'Use the in-between steps. The scale is 4px-based (gap={3} = 12px, {5} = 20px) so you can tune a cadence an 8px-only scale cannot hit; do not round everything to {2} or {4}. Verify: with every border removed, you can still name the groups from spacing alone. If you cannot, the intervals are too uniform.',
-        },
-      ],
-    },
-    {
-      title: 'Space: Match density and size',
-      content: [
-        {
-          type: 'prose',
-          text: 'Match density to how a region is used: density="compact" for high-volume regions the user scans fast (logs, monitors, large datasets), density="balanced" for most Table and List surfaces, density="spacious" for low-frequency or high-stakes rows (settings, a short selection list). Set it deliberately rather than accepting the default.',
+          type: 'list',
+          style: 'unordered',
+          items: [
+            'Tight binds: gap={1}–{2} inside an item or field',
+            'Generous separates: gap={4}–{6} between sections',
+            'Use the in-between 4px steps to tune cadence: gap={3} = 12px, gap={5} = 20px. Do not round everything to {2} or {4}',
+          ],
         },
         {
           type: 'prose',
-          text: 'One size per row, one size per container. Every interactive element in a row shares the same size (sm, md, or lg): a sm Button next to an md Selector next to an md TextInput reads as broken even when each is fine on its own, because the heights do not share a baseline. Pick the row size once, and pair it with density (compact with sm, spacious with md or lg).',
+          text: 'Verify: with every border removed, you can still name the groups from spacing alone. If you cannot, the intervals are too uniform.',
         },
-      ],
-    },
-    {
-      title: "Space: Do & Don't",
-      content: [
+
+        {type: 'heading', level: 3, text: 'Match density and size'},
+        {
+          type: 'prose',
+          text: 'Match density to how often a region is used, and give every control in a row the same size so heights share a baseline.',
+        },
+        {
+          type: 'list',
+          style: 'unordered',
+          items: [
+            'density="compact": high-volume regions scanned fast (logs, monitors, large datasets)',
+            'density="balanced": most Table and List surfaces',
+            'density="spacious": low-frequency or high-stakes rows (settings, a short selection list)',
+          ],
+        },
+        {
+          type: 'prose',
+          text: 'Verify: every interactive element in a row shares one size (sm, md, or lg), paired with the density: compact with sm, spacious with md or lg.',
+        },
+
+        {type: 'heading', level: 3, text: "Do & Don't"},
         {
           type: 'list',
           style: 'do',
@@ -324,13 +320,13 @@ export const docs = {
         },
       ],
     },
-    // ===== SHIP =====
     {
-      title: 'Ship: Responsive contract',
+      title: 'Ship',
       content: [
+        {type: 'heading', level: 3, text: 'Responsive contract'},
         {
           type: 'prose',
-          text: 'Phase 4 of four: Ship. Declare breakpoint behavior as a contract before building, and keep it in a comment at the frame root. Pair every line with the mechanism that enforces it (a prop or hook) so the comment cannot drift from the behavior. A typical contract: full frame above 1024px; inspectors overlay the content at 1024px and below; the side nav collapses to MobileNav at 768px and below.',
+          text: 'Declare breakpoint behavior as a contract in a comment at the frame root, and pair every line with the prop or hook that enforces it.',
         },
         {
           type: 'code',
@@ -341,11 +337,12 @@ export const docs = {
 //   <= 1024px inspector overlays content   (LayoutPanel overlay mode)
 //   <= 768px  nav collapses to MobileNav    (AppShell mobileNav prop)`,
         },
-      ],
-    },
-    {
-      title: 'Ship: Before you ship',
-      content: [
+        {
+          type: 'prose',
+          text: 'Verify: every contract line names a mechanism, so the comment cannot drift from the behavior.',
+        },
+
+        {type: 'heading', level: 3, text: 'Before you ship'},
         {
           type: 'list',
           style: 'do',
