@@ -82,6 +82,19 @@ const DISMISS_OVERSHOOT_RATIO = 0.4;
 // Within this many px of a detent, the live drag is magnetically eased toward
 // it so it "clicks" into place instead of hovering just off the mark.
 const MAGNET_RANGE = 40;
+// The touch path drives the sheet through the same machinery the pointer path
+// uses, by handing it a pointer-shaped object built from a `Touch`. On iOS
+// Safari that object is indistinguishable from the real thing: WebKit raises
+// PointerEvents for a finger under the SAME numeric id it puts in
+// `Touch.identifier`, so such a drag is keyed to a live pointer and the
+// handlers that guard a mouse drag fire against it. Mark the synthetic object
+// so they can tell the two apart.
+type SyntheticTouchPointer = ReactPointerEvent & {syntheticTouch?: true};
+
+function isSyntheticTouch(event: ReactPointerEvent): boolean {
+  return (event as SyntheticTouchPointer).syntheticTouch === true;
+}
+
 // Rubber-band factor for dragging up past fully-open, capped at OVERSCROLL_MAX
 // (the sheet reserves that much bottom padding for the lift to reveal).
 const OVERSCROLL_RESISTANCE = 0.35;
@@ -434,6 +447,10 @@ export function useSheetGestures({
 
   // Live drag bookkeeping (refs so pointermove doesn't churn renders).
   const dragStateRef = useRef<{
+    // Whether the touch path drives this drag. Such a drag holds no pointer
+    // capture and takes its events from `touchmove`, so every real-pointer
+    // handler has to leave it alone.
+    syntheticTouch: boolean;
     pointerId: number;
     startCoord: number;
     lastCoord: number;
@@ -855,7 +872,16 @@ export function useSheetGestures({
   const beginDrag = useCallback(
     (event: ReactPointerEvent, sheetHeight: number, startCoord?: number) => {
       const target = event.currentTarget as HTMLElement;
-      target.setPointerCapture?.(event.pointerId);
+      const syntheticTouch = isSyntheticTouch(event);
+      // Never capture for a touch drag. The id came from `Touch.identifier`,
+      // which on iOS names a live pointer: the capture succeeds, WebKit takes
+      // it straight back for its own gesture handling, and the
+      // `lostpointercapture` a millisecond later cancels the drag that just
+      // started. Touch drags need no capture — the listener is on the
+      // scroller itself.
+      if (!syntheticTouch) {
+        target.setPointerCapture?.(event.pointerId);
+      }
       // `startCoord` lets a body-overscroll drag anchor at the original
       // pointer-down position (not the promotion point), so the first frame's
       // delta reflects the full pull distance.
@@ -863,6 +889,7 @@ export function useSheetGestures({
       const naturalEndGap = naturalEndGapFor(bodyNodeRef.current);
       const baseLayoutOffset = settledLayoutOffsetRef.current;
       dragStateRef.current = {
+        syntheticTouch,
         pointerId: event.pointerId,
         startCoord: start,
         lastCoord: event.clientY,
@@ -917,6 +944,12 @@ export function useSheetGestures({
 
   const handleLostPointerCapture = useCallback(
     (event: ReactPointerEvent) => {
+      // A touch drag never took capture, so this is WebKit reclaiming its own
+      // pointer for the finger doing the dragging — not the drag losing its
+      // grip.
+      if (dragStateRef.current?.syntheticTouch) {
+        return;
+      }
       if (dragStateRef.current?.pointerId === event.pointerId) {
         cancelDrag();
       }
@@ -928,6 +961,11 @@ export function useSheetGestures({
     (event: ReactPointerEvent) => {
       const state = dragStateRef.current;
       if (!state || state.pointerId !== event.pointerId) {
+        return;
+      }
+      // Same finger, real pointer event: the touch path already drove this
+      // move. Let it own the drag rather than driving it twice.
+      if (state.syntheticTouch && !isSyntheticTouch(event)) {
         return;
       }
       const delta = event.clientY - state.startCoord;
@@ -991,12 +1029,20 @@ export function useSheetGestures({
       if (!state || state.pointerId !== event.pointerId) {
         return;
       }
+      // `pointercancel` fires for the finger the moment WebKit claims the
+      // gesture; ending a touch drag on it settles the sheet mid-pull. The
+      // touchend handler is what finishes a touch drag.
+      if (state.syntheticTouch && !isSyntheticTouch(event)) {
+        return;
+      }
       const target = event.currentTarget as HTMLElement;
       const delta = event.clientY - state.startCoord;
       const offset = Math.max(0, state.baseOffset + delta);
       const dir = delta === 0 ? 0 : delta > 0 ? 1 : -1;
       dragStateRef.current = null;
-      target.releasePointerCapture?.(event.pointerId);
+      if (!state.syntheticTouch) {
+        target.releasePointerCapture?.(event.pointerId);
+      }
       setIsDragging(false);
       settleFromDrag(
         offset,
@@ -1067,6 +1113,11 @@ export function useSheetGestures({
   const handleBodyEnd = useCallback(
     (event: ReactPointerEvent) => {
       armedBodyRef.current = null;
+      // The pointerup/pointercancel for a finger already driving a touch drag
+      // arrives here carrying that drag's own id; touchend ends those.
+      if (dragStateRef.current?.syntheticTouch) {
+        return;
+      }
       if (dragStateRef.current) {
         endDrag(event);
       }
@@ -1118,6 +1169,7 @@ export function useSheetGestures({
   const bodyRef = useCallback((node: HTMLElement | null) => {
     const asPointer = (touch: Touch, target: HTMLElement) =>
       ({
+        syntheticTouch: true,
         pointerId: touch.identifier,
         clientY: touch.clientY,
         timeStamp: Date.now(),

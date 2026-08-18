@@ -726,6 +726,51 @@ describe('useSheetGestures', () => {
       return el;
     }
 
+    // iOS Safari raises PointerEvents for a finger under the SAME numeric id
+    // it puts in `Touch.identifier`, so a drag the touch path starts is keyed
+    // to a live pointer. WebKit takes that pointer's capture straight back,
+    // and the `lostpointercapture` that follows used to cancel the drag one
+    // event after it began — leaving the sheet inert for the rest of the pull
+    // while the handle still worked. Every browser that keeps the two id
+    // spaces apart hides this, which is why it only showed up on device.
+    it('survives a lostpointercapture for the finger driving it', () => {
+      const {hook} = setup({snapHeights: () => [200]});
+      const el = midDetentScroller(hook, 600); // parked at the content end
+      act(() => {
+        touch(el, 'touchstart', 500, 7);
+        touch(el, 'touchmove', 450, 7); // promotes at the armed bottom edge
+      });
+      expect(hook.result.current.isDragging).toBe(true);
+      act(() => {
+        hook.result.current.bodyProps.onLostPointerCapture(
+          pointerEvent(450, 0, el, 7), // same id as the touch: iOS does this
+        );
+      });
+      expect(hook.result.current.isDragging).toBe(true);
+      act(() => {
+        touch(el, 'touchmove', 400, 7);
+      });
+      // 100px of pull past the touchstart, from the 200px detent.
+      expect(hook.result.current.dragOffset).toBe(100);
+    });
+
+    // `pointercancel` for that same finger arrives the moment WebKit claims
+    // the gesture. Ending the drag on it settles the sheet mid-pull.
+    it('does not end the touch drag on a pointercancel for that finger', () => {
+      const {hook} = setup({snapHeights: () => [200]});
+      const el = midDetentScroller(hook, 600);
+      act(() => {
+        touch(el, 'touchstart', 500, 7);
+        touch(el, 'touchmove', 450, 7);
+      });
+      act(() => {
+        hook.result.current.bodyProps.onPointerCancel(
+          pointerEvent(450, 0, el, 7),
+        );
+      });
+      expect(hook.result.current.isDragging).toBe(true);
+    });
+
     it('hands off when the content runs out under a moving finger', () => {
       const {hook} = setup({snapHeights: () => [200]});
       const el = midDetentScroller(hook, 300); // finger lands mid-content
