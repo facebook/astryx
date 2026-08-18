@@ -219,22 +219,6 @@ function drag(handle: HTMLElement, points: {y: number}[]) {
   fireEvent.pointerUp(handle, {pointerId: 1, clientY: last.y});
 }
 
-function fireTouchPointer(
-  target: Element,
-  type: 'pointerdown' | 'pointermove' | 'pointerup',
-  {x, y}: {x: number; y: number},
-) {
-  const event = new Event(type, {bubbles: true, cancelable: true});
-  Object.defineProperties(event, {
-    clientX: {value: x},
-    clientY: {value: y},
-    isPrimary: {value: true},
-    pointerId: {value: 1},
-    pointerType: {value: 'touch'},
-  });
-  return fireEvent(target, event);
-}
-
 function fireTimedPointer(
   target: Element,
   type: 'pointerdown' | 'pointermove' | 'pointerup',
@@ -1106,6 +1090,31 @@ describe('BottomSheet', () => {
       expect(sheetFocus).not.toHaveBeenCalled();
     });
 
+    it('autofocuses a field without letting the browser reveal it', () => {
+      mockIOSWebKit();
+      const focus = vi.spyOn(HTMLInputElement.prototype, 'focus');
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={() => {}}
+          label="Add a comment"
+          height="tall">
+          <input aria-label="Comment" data-autofocus />
+        </BottomSheet>,
+      );
+      // A prototype spy outlives this test unless it is put back by hand.
+      const calls = [...focus.mock.calls];
+      focus.mockRestore();
+      const input = screen.getByRole('textbox', {name: 'Comment'});
+
+      // Opening focuses the field itself, so there is no transition to claim —
+      // nothing was focused to blur. The presenting call has to refuse the
+      // reveal on its own, or the browser scrolls the page to show a field the
+      // sheet was about to show anyway.
+      expect(document.activeElement).toBe(input);
+      expect(calls).toContainEqual([{preventScroll: true}]);
+    });
+
     it('parks focus on the sheet when the keyboard Done button takes it', () => {
       mockIOSWebKit();
       render(
@@ -1319,8 +1328,9 @@ describe('BottomSheet', () => {
       );
       viewport.height = 500;
       const focus = vi.spyOn(input, 'focus');
-      fireTouchPointer(input, 'pointerdown', {x: 20, y: 700});
-      fireTouchPointer(input, 'pointerup', {x: 20, y: 700});
+      // A transition the browser would drive: at a shorter detent the hook
+      // must not claim it, so nothing focuses the field but the caller.
+      fireEvent.blur(sheet, {relatedTarget: input});
       expect(focus).not.toHaveBeenCalled();
 
       focus.mockRestore();
@@ -1370,8 +1380,8 @@ describe('BottomSheet', () => {
         body.scrollTop = 20;
 
         fireEvent.touchStart(input);
-        fireTouchPointer(input, 'pointerdown', {x: 20, y: 200});
-        fireTouchPointer(input, 'pointerup', {x: 20, y: 200});
+        // These heights opt out, so a browser-driven transition is left alone.
+        fireEvent.blur(sheet, {relatedTarget: input});
         fireEvent.pointerDown(input, {pointerId: 1, clientY: 200});
         body.scrollTop = 120;
         fireEvent.focus(input, {relatedTarget: null});

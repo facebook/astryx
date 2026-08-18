@@ -169,6 +169,10 @@ function panelStateForSwitcherPhase(
   }
 }
 
+// preventScroll on both: presenting a sheet must not scroll the page to reveal
+// what it just focused. For an autofocused field that reveal is the mobile
+// keyboard's, and it moves the document under a fixed sheet; useMobileKeyboard
+// brings the field into view within the sheet instead.
 function focusPanel(panel: HTMLElement | null, isModal: boolean): void {
   const activeElement = document.activeElement;
   if (activeElement != null && panel?.contains(activeElement)) {
@@ -176,9 +180,9 @@ function focusPanel(panel: HTMLElement | null, isModal: boolean): void {
   }
   const autofocus = panel?.querySelector<HTMLElement>('[data-autofocus]');
   if (autofocus != null) {
-    autofocus.focus();
+    autofocus.focus({preventScroll: true});
   } else if (isModal) {
-    panel?.focus();
+    panel?.focus({preventScroll: true});
   }
 }
 
