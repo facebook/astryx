@@ -82,6 +82,13 @@ const styles = stylex.create({
     background: 'none',
     color: 'inherit',
     cursor: 'pointer',
+    // Own the interactivity so the tooltip opens on hover even when the field
+    // renders this affordance inside a non-interactive trailing slot. TextArea
+    // positions its end slot as an absolute overlay with `pointer-events: none`
+    // (right for the decorative spinner/icon it was built for), which otherwise
+    // swallows this button's hover — keyboard focus still worked, pointer did
+    // not.
+    pointerEvents: 'auto',
     borderRadius: radiusVars['--radius-full'],
     // Not the shared offset: this button sits inside the field, and measured at
     // the standard 3px its ring crosses the field border.

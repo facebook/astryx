@@ -583,6 +583,75 @@ describe('Stepper', () => {
     });
   });
 
+  describe('fragment-grouped steps', () => {
+    const onTrackSteps = (
+      <>
+        <Step step={0} label="Cart" />
+        <Step step={1} label="Shipping" />
+        <Step step={2} label="Payment" />
+      </>
+    );
+
+    it('renders on-track steps identically whether they are flat or grouped in a fragment', () => {
+      const flat = render(
+        <Stepper activeStep={1} indicatorPosition="on-track">
+          <Step step={0} label="Cart" />
+          <Step step={1} label="Shipping" />
+          <Step step={2} label="Payment" />
+        </Stepper>,
+      );
+      const flatHtml = flat.container.innerHTML;
+      flat.unmount();
+
+      const grouped = render(
+        <Stepper activeStep={1} indicatorPosition="on-track">
+          {onTrackSteps}
+        </Stepper>,
+      );
+      expect(grouped.container.innerHTML).toBe(flatHtml);
+    });
+
+    // The connector's end segments are hidden by CSS keyed to the step's own
+    // <li> position, which jsdom can't evaluate — assert the wiring instead:
+    // every step carries the same hide-if-first/hide-if-last classes, so no
+    // step is singled out by counting children.
+    it('gives every grouped step the same structural connector classes', () => {
+      render(
+        <Stepper activeStep={1} indicatorPosition="on-track">
+          {onTrackSteps}
+        </Stepper>,
+      );
+      const items = screen.getAllByRole('listitem');
+      expect(items).toHaveLength(3);
+      for (const item of items) {
+        expect(
+          item.querySelector('[class*="otSegHiddenIfFirst"]'),
+        ).toBeInTheDocument();
+        expect(
+          item.querySelector('[class*="otSegHiddenIfLast"]'),
+        ).toBeInTheDocument();
+      }
+    });
+
+    it('keeps every grouped step keyboard-activatable', async () => {
+      const user = userEvent.setup();
+      const handleClick = vi.fn();
+      render(
+        <Stepper
+          activeStep={2}
+          indicatorPosition="on-track"
+          onStepClick={handleClick}>
+          {onTrackSteps}
+        </Stepper>,
+      );
+      screen
+        .getByRole('button', {name: 'Go to step 2: Shipping, completed'})
+        .focus();
+      await user.keyboard('{Enter}');
+      expect(handleClick).toHaveBeenCalledWith(1);
+    });
+  });
+
   describe('hasCollapsibleLabels', () => {
     // The collapse is a container query, so jsdom can't evaluate the media
     // condition — assert the opt-in wiring instead: the collapsible class is

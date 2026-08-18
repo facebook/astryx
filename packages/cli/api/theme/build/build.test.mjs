@@ -299,11 +299,10 @@ describe('themeBuild() — component override validation', () => {
 describe('themeBuild() — the shipped theme template', () => {
   // `assets/theme.template.ts` is what `astryx theme template` puts in a
   // consumer's project. It is the one theme file we hand out, so it has to
-  // compile as shipped — and cleanly apart from the font warnings it earns on
-  // purpose: a template that greets its first reader with warnings teaches them
-  // to ignore warnings. The claims its comments make are checked separately by
-  // scripts/check-theme-template.test.mjs.
-  it('compiles as shipped, warning only about the fonts it deliberately names', async () => {
+  // compile as shipped — and cleanly: a template that greets its first reader
+  // with warnings teaches them to ignore warnings. The claims its comments make
+  // are checked separately by scripts/check-theme-template.test.mjs.
+  it('compiles as shipped, with no warnings', async () => {
     const src = path.resolve(
       import.meta.dirname,
       '../../../assets/theme.template.ts',
@@ -312,14 +311,12 @@ describe('themeBuild() — the shipped theme template', () => {
 
     const result = await themeBuild('theme.template.ts', {}, {cwd: tmpDir});
 
-    // The template names Inter and Geist Mono to teach "SHIP THE FONTS YOU
-    // NAME", and loads neither — so the unloaded-font warning firing here is
-    // the lesson landing, not a defect. Any OTHER warning still fails.
-    const unexpected = (result?.data.warnings ?? []).filter(
-      w => !/^Font "(Inter|Geist Mono)" is named by this theme but not loaded/.test(w),
-    );
-    expect(unexpected).toEqual([]);
-    expect(result?.data.warnings).toHaveLength(2);
+    expect(result?.data.warnings).toEqual([]);
+    // It DOES name Inter and Geist Mono without loading them, to teach "SHIP
+    // THE FONTS YOU NAME" — advisories about a correct file, which is why they
+    // are notices. Asserted here so moving them out of `warnings` cannot
+    // quietly become dropping them.
+    expect(result?.data.notices).toHaveLength(2);
     expect(fs.existsSync(path.join(tmpDir, 'my-theme.css'))).toBe(true);
     // The template teaches custom variants; the augmentation it promises the
     // reader has to actually be generated.

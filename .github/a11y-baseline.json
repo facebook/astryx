@@ -19,11 +19,6 @@
       "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
     },
     {
-      "key": "Banner::Collapsible Content (Expanded)::color-contrast",
-      "impact": "serious",
-      "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"
-    },
-    {
       "key": "Card::Callout::color-contrast",
       "impact": "serious",
       "helpUrl": "https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=playwright"

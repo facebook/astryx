@@ -71,7 +71,7 @@ import {
   getSelectableOptions,
 } from '../Selector/utils';
 import {useMultiCombobox} from './hooks';
-import {getInputARIA, mergeProps} from '../utils';
+import {getInputARIA, isImeKeyEvent, mergeProps} from '../utils';
 import {useAnnounce} from '../hooks/useAnnounce';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
@@ -792,14 +792,19 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       const selectableSet = new Set(selectableItems.map(item => item.value));
       const selectedCount = nextValue.filter(v => selectableSet.has(v)).length;
       if (selectedCount === 0) {
-        announce('Selection cleared');
+        announce(t('@astryx.multiSelector.selectionCleared'));
       } else if (total > 0 && selectedCount === total) {
-        announce('All selected');
+        announce(t('@astryx.multiSelector.allSelected'));
       } else {
-        announce(`${selectedCount} of ${total} selected`);
+        announce(
+          t('@astryx.multiSelector.selectionCount', {
+            count: selectedCount,
+            total,
+          }),
+        );
       }
     },
-    [announce, selectableItems],
+    [announce, selectableItems, t],
   );
 
   // Filter items by search query
@@ -903,11 +908,11 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       const count = filterOptionsByQuery(selectableItems, nextQuery).length;
       announce(
         count === 0
-          ? 'No results found'
-          : `${count} result${count === 1 ? '' : 's'}`,
+          ? t('@astryx.multiSelector.emptySearchResults')
+          : t('@astryx.multiSelector.resultCount', {count}),
       );
     },
-    [announce, selectableItems],
+    [announce, selectableItems, t],
   );
 
   // Handle toggle
@@ -1182,6 +1187,15 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           }
         }}
         onKeyDown={e => {
+          // An in-progress IME composition uses these same keys (Enter to
+          // commit the candidate, Escape/Arrows to navigate the candidate
+          // window); the composing keydown fires before compositionend, so
+          // without this guard a Korean/Japanese/Chinese user committing a
+          // syllable with Enter would instead toggle the highlighted option.
+          // See utils/ime.ts.
+          if (isImeKeyEvent(e.nativeEvent)) {
+            return;
+          }
           // Arrow keys navigate options; Enter toggles; Escape closes.
           // Space and Home/End are left to the input (type a space / move
           // the caret) per the APG editable combobox; PageUp/PageDown are

@@ -204,6 +204,8 @@ export const docs = {
         className: 'astryx-date-time-input-time-segment',
         visualProps: ['size', 'status'],
       },
+      {className: 'astryx-date-time-input-toggle-icon', states: ['state']},
+      {className: 'astryx-date-time-input-clock-icon'},
     ],
   },
   usage: {
@@ -508,6 +510,8 @@ export const docsZh = {
         className: 'astryx-date-time-input-time-segment',
         visualProps: ['size', 'status'],
       },
+      {className: 'astryx-date-time-input-toggle-icon', states: ['state']},
+      {className: 'astryx-date-time-input-clock-icon'},
     ],
   },
 };

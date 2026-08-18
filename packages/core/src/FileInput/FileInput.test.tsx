@@ -20,6 +20,12 @@ import {
 import userEvent from '@testing-library/user-event';
 import {FileInput} from './FileInput';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
+import {InternationalizationProvider} from '../i18n';
+
+// The `=1` branch names the file; the `other` branch must not. Both come from
+// this test, so neither can pass against a hardcoded English string.
+const FILE_SELECTED = 'Un fichier choisi : {fileName}';
+const FILES_SELECTED = '{count, number} fichiers choisis';
 
 afterEach(() => {
   __resetLiveRegionsForTest();
@@ -324,23 +330,36 @@ describe('FileInput', () => {
 
   describe('announcements', () => {
     it('announces a single file selection politely', async () => {
-      render(<FileInput label="Upload" value={null} onChange={() => {}} />);
+      render(
+        <InternationalizationProvider
+          locale="fr"
+          overrides={{fr: {'@astryx.fileInput.fileSelected': FILE_SELECTED}}}>
+          <FileInput label="Upload" value={null} onChange={() => {}} />
+        </InternationalizationProvider>,
+      );
       fireEvent.change(fileInputEl(), {
         target: {files: [createFile('report.pdf', 100)]},
       });
       await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent('1 file selected: report.pdf');
+        // The single-file key, carrying the file name.
+        expect(politeRegion()?.textContent).toBe(
+          'Un fichier choisi : report.pdf',
+        );
       });
     });
 
     it('announces a multi-file count politely', async () => {
       render(
-        <FileInput
-          label="Upload"
-          value={null}
-          onChange={() => {}}
-          isMultiple
-        />,
+        <InternationalizationProvider
+          locale="fr"
+          overrides={{fr: {'@astryx.fileInput.filesSelected': FILES_SELECTED}}}>
+          <FileInput
+            label="Upload"
+            value={null}
+            onChange={() => {}}
+            isMultiple
+          />
+        </InternationalizationProvider>,
       );
       const files = [
         createFile('a.txt', 100),
@@ -349,7 +368,32 @@ describe('FileInput', () => {
       ];
       fireEvent.change(fileInputEl(), {target: {files}});
       await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent('3 files selected');
+        // The multi-file key: a count, and no file name.
+        expect(politeRegion()?.textContent).toBe('3 fichiers choisis');
+      });
+      expect(politeRegion()?.textContent).not.toContain('a.txt');
+    });
+
+    it('speaks the selection from a provider catalog', async () => {
+      render(
+        <InternationalizationProvider
+          locale="fr"
+          messages={{
+            fr: {
+              '@astryx.fileInput.fileSelected': {defaultMessage: FILE_SELECTED},
+            },
+          }}>
+          <FileInput label="Upload" value={null} onChange={() => {}} />
+        </InternationalizationProvider>,
+      );
+      fireEvent.change(fileInputEl(), {
+        target: {files: [createFile('report.pdf', 100)]},
+      });
+      await waitFor(() => {
+        // Same key through the catalog path rather than `overrides`.
+        expect(politeRegion()?.textContent).toBe(
+          'Un fichier choisi : report.pdf',
+        );
       });
     });
 

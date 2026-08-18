@@ -169,7 +169,7 @@ export type {
   InputStatus as NumberInputStatus,
   InputStatusType as NumberInputStatusType,
 } from '../Field';
-import {mergeProps, mergeRefs} from '../utils';
+import {isImeKeyEvent, mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
@@ -776,6 +776,14 @@ export function NumberInput({
   // Handle keyboard events
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLInputElement>) => {
+      // The field is type="text" for formatted display, so an IME can compose
+      // into it: Enter commits the candidate and the arrows walk the candidate
+      // window. The composing keydown fires before compositionend, so without
+      // this guard those keystrokes would commit or step the value instead.
+      // See utils/ime.ts.
+      if (isImeKeyEvent(e.nativeEvent)) {
+        return;
+      }
       const hasModifier = e.altKey || e.ctrlKey || e.metaKey || e.shiftKey;
       if (!hasModifier && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
         onKeyDown?.(e);

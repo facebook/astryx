@@ -2,7 +2,7 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState} from 'react';
-import {BottomSheet} from '@astryxdesign/lab';
+import {BottomSheet} from '@astryxdesign/core/BottomSheet';
 import {Button} from '@astryxdesign/core/Button';
 import {Divider} from '@astryxdesign/core/Divider';
 import {Heading} from '@astryxdesign/core/Heading';
@@ -14,7 +14,7 @@ import {TextArea} from '@astryxdesign/core/TextArea';
 import {CheckboxInput} from '@astryxdesign/core/CheckboxInput';
 
 const meta: Meta<typeof BottomSheet> = {
-  title: 'Lab/BottomSheet',
+  title: 'Core/BottomSheet',
   component: BottomSheet,
   tags: ['autodocs'],
   parameters: {
@@ -87,7 +87,6 @@ function MobileKeyboardCommentForm({onPost}: {onPost: () => void}) {
         Move the sheet with its handle or close it with Post comment to verify
         that sheet travel and closing dismiss the keyboard.
       </Text>
-      <Button label="Close sheet" onClick={onPost} />
       <Divider />
       <TextInput
         label="Title"
@@ -338,7 +337,10 @@ export const HugHeightWithLongContent: Story = {
               <Heading level={3}>Release notes</Heading>
               <Text type="supporting" color="secondary">
                 The sheet hugs its content until it reaches 92% of the viewport,
-                then the content scrolls within the sheet.
+                then the content scrolls within the sheet. Drag it to a snap
+                point and the scrolling area resizes to the height you can
+                actually see — except at the shortest peek, which slides below
+                the viewport at full height rather than reflowing to a sliver.
               </Text>
               <Divider />
               {Array.from({length: 12}, (_, i) => (

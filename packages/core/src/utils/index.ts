@@ -70,6 +70,8 @@ export type {ISOTimeString, ParsedTime} from './timeParser';
 export {parseStyleKey} from './parseStyleKey';
 export {getKey, type Key, type KeyFallback} from './getKey';
 
+export {characterCount, firstCharacter, truncateCharacters} from './characters';
+
 export {mergeProps} from './mergeProps';
 export {mergeRefs} from './mergeRefs';
 export {isFocusDetached} from './focusReturn';
@@ -105,3 +107,5 @@ export {rtlStyles} from './rtlStyles';
 // The shared focus ring, exported for @astryxdesign/lab — same reason
 // rtlStyles is: a style that must be identical across packages, not copied.
 export {focusOutlineStyles, focusOutlineProps} from './focusOutline.stylex';
+
+export {isImeKeyEvent} from './ime';

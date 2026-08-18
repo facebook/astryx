@@ -19,6 +19,7 @@
 import {useCallback, useEffect, useRef} from 'react';
 
 import {FOCUSABLE_SELECTOR} from './focusableSelector';
+import {isImeKeyEvent} from '../utils/ime';
 
 /**
  * Module-level stack of active focus-trap Escape handlers.
@@ -92,20 +93,6 @@ function isTopEscapeHandler(handler: () => void): boolean {
  */
 export function hasActiveFocusTrapEscape(): boolean {
   return escapeStack.length > 0;
-}
-
-/**
- * Whether an Escape keydown should be ignored because it is cancelling an
- * in-progress IME composition. CJK/IME users press Escape to cancel
- * composition; that must not close the surrounding overlay. `keyCode === 229`
- * covers browsers that fire keydown before `isComposing` is set. Exported so
- * other overlays (Dialog, Drawer, CommandPalette) share one definition.
- */
-export function isImeKeyEvent(event: {
-  isComposing?: boolean;
-  keyCode?: number;
-}): boolean {
-  return event.isComposing === true || event.keyCode === 229;
 }
 
 /**
