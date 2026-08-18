@@ -1,7 +1,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import type {ReactNode} from 'react';
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {renderHook, act} from '@testing-library/react';
+import {InternationalizationProvider} from '../i18n';
 import {useSpeechRecognition} from './useSpeechRecognition';
 import {useChatDictation} from './useChatDictation';
 
@@ -50,8 +52,7 @@ let originalSR: unknown;
 
 beforeEach(() => {
   lastInstance = null;
-  originalSR = (window as unknown as Record<string, unknown>)
-    .SpeechRecognition;
+  originalSR = (window as unknown as Record<string, unknown>).SpeechRecognition;
   (window as unknown as Record<string, unknown>).SpeechRecognition =
     MockSRConstructor;
 });
@@ -83,6 +84,28 @@ describe('useSpeechRecognition', () => {
   it('reports isSupported as true when SpeechRecognition is available', () => {
     const {result} = renderHook(() => useSpeechRecognition());
     expect(result.current.isSupported).toBe(true);
+  });
+
+  it('uses the provider locale by default and preserves an explicit override', () => {
+    const wrapper = ({children}: {children: ReactNode}) => (
+      <InternationalizationProvider locale="fr-FR">
+        {children}
+      </InternationalizationProvider>
+    );
+    const provider = renderHook(() => useSpeechRecognition(), {wrapper});
+
+    act(() => {
+      provider.result.current.start();
+    });
+    expect(lastInstance?.lang).toBe('fr-FR');
+
+    const explicit = renderHook(() => useSpeechRecognition({lang: 'ja-JP'}), {
+      wrapper,
+    });
+    act(() => {
+      explicit.result.current.start();
+    });
+    expect(lastInstance?.lang).toBe('ja-JP');
   });
 
   it('starts and sets isListening', () => {
@@ -145,9 +168,7 @@ describe('useSpeechRecognition', () => {
     const onStart = vi.fn();
     const onEnd = vi.fn();
 
-    const {result} = renderHook(() =>
-      useSpeechRecognition({onStart, onEnd}),
-    );
+    const {result} = renderHook(() => useSpeechRecognition({onStart, onEnd}));
 
     act(() => {
       result.current.start();
@@ -194,9 +215,7 @@ describe('useSpeechRecognition', () => {
   it('handles interim results and updates interimTranscript', () => {
     const onTranscript = vi.fn();
 
-    const {result} = renderHook(() =>
-      useSpeechRecognition({onTranscript}),
-    );
+    const {result} = renderHook(() => useSpeechRecognition({onTranscript}));
 
     act(() => {
       result.current.start();
@@ -294,9 +313,7 @@ describe('useChatDictation', () => {
     const onStart = vi.fn();
     const onEnd = vi.fn();
 
-    const {result} = renderHook(() =>
-      useChatDictation({onStart, onEnd}),
-    );
+    const {result} = renderHook(() => useChatDictation({onStart, onEnd}));
 
     act(() => {
       result.current.start();
@@ -312,9 +329,7 @@ describe('useChatDictation', () => {
   it('handles final transcript via onResult', () => {
     const onResult = vi.fn();
 
-    const {result} = renderHook(() =>
-      useChatDictation({onResult}),
-    );
+    const {result} = renderHook(() => useChatDictation({onResult}));
 
     act(() => {
       result.current.start();
