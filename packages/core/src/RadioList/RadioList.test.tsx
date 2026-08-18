@@ -675,6 +675,50 @@ describe('RadioList', () => {
       expect(item).toHaveAttribute('aria-label', 'First option');
     });
   });
+
+  describe('radio-list-item theme target', () => {
+    it('renders astryx-radio-list-item, with its size, on every row', () => {
+      render(
+        <RadioList label="Preference" value="" onChange={() => {}} size="sm">
+          <RadioListItem label="Option A" value="a" data-testid="row-a" />
+          <RadioListItem label="Option B" value="b" data-testid="row-b" />
+        </RadioList>,
+      );
+      for (const testid of ['row-a', 'row-b']) {
+        const row = screen.getByTestId(testid);
+        expect(row).toHaveClass('astryx-radio-list-item');
+        expect(row).toHaveClass('sm');
+        expect(row).toHaveAttribute('data-size', 'sm');
+      }
+    });
+
+    it('carries the selected and disabled states a theme keys on', () => {
+      render(
+        <RadioList label="Preference" value="a" onChange={() => {}}>
+          <RadioListItem label="Option A" value="a" data-testid="selected" />
+          <RadioListItem label="Option B" value="b" data-testid="plain" />
+          <RadioListItem
+            label="Option C"
+            value="c"
+            isDisabled
+            data-testid="disabled"
+          />
+        </RadioList>,
+      );
+      const selected = screen.getByTestId('selected');
+      const plain = screen.getByTestId('plain');
+      const disabled = screen.getByTestId('disabled');
+
+      expect(selected).toHaveClass('selected');
+      expect(selected).toHaveAttribute('data-selected', 'selected');
+      expect(plain).not.toHaveClass('selected');
+      expect(plain).not.toHaveAttribute('data-selected');
+
+      expect(disabled).toHaveClass('disabled');
+      expect(disabled).toHaveAttribute('data-disabled', 'disabled');
+      expect(plain).not.toHaveAttribute('data-disabled');
+    });
+  });
 });
 
 // jsdom cannot emulate forced-colors rendering, so this asserts that the

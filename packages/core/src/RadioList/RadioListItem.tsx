@@ -246,7 +246,14 @@ export function RadioListItem({
     <div
       ref={ref}
       {...mergeProps(
-        themeProps('radio-list-item'),
+        // One target for every row, carrying its size and runtime state so a
+        // theme can express "selected option at large" or restyle disabled
+        // rows without reaching for structural selectors.
+        themeProps('radio-list-item', {
+          size,
+          selected: isChecked ? 'selected' : null,
+          disabled: isDisabled ? 'disabled' : null,
+        }),
         stylex.props(
           styles.container,
           // Hover reaches the radio visual through this ancestor marker rather
