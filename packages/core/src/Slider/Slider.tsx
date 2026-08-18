@@ -189,6 +189,15 @@ const styles = stylex.create({
   trackContainerVertical: {
     width: THUMB_SIZE,
     height: 160,
+    // Inline-axis counterpart of trackContainerHorizontal's minBlockSize
+    // above: the same WCAG 2.5.8 AA 24px floor, applied to whichever axis is
+    // the narrow one for this orientation. The rail, filled track, and thumb
+    // all center on the inline axis, so only the invisible tappable area
+    // grows.
+    minInlineSize: {
+      default: null,
+      '@media (pointer: coarse)': '24px',
+    },
     flexDirection: 'column',
     justifyContent: 'center',
     cursor: 'pointer',
