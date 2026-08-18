@@ -14,16 +14,18 @@
  * sheet blurs the field and dismisses the keyboard.
  *
  * Every route into a field also has to reach it without the browser revealing
- * it for us: on iOS that reveal pans the visual viewport, which shifts the
- * whole page out from under a stationary sheet. A tap is pre-empted by focusing
- * with preventScroll; a transition the browser drives itself cannot be, so the
- * destination is scrolled into the safe area before focus lands instead.
+ * it for us. On iOS that reveal scrolls the DOCUMENT, and a fixed sheet travels
+ * with it, so the whole page lurches. The reveal is attached to the focus
+ * operation, which is where it can be refused: take the focus transition over
+ * on the capture-phase blur, deliver it with preventScroll, and bring the
+ * control into view with the sheet's own scroller afterwards. Every route in —
+ * a tap, the keyboard's Next, Tab, a programmatic focus() — passes through that
+ * one transition.
  */
 
 import {useEffect, useRef, type RefObject} from 'react';
 
 const MOBILE_KEYBOARD_INSET_VAR = '--_sheet-keyboard-inset';
-const TOUCH_FOCUS_MOVE_THRESHOLD = 10;
 const NON_TEXT_INPUT_TYPES = new Set([
   'button',
   'checkbox',
@@ -52,57 +54,6 @@ interface KeyboardGeometry {
   bodyBottom: number;
 }
 
-interface FocusScrollSnapshot {
-  target: HTMLElement;
-  elements: {
-    element: HTMLElement;
-    scrollLeft: number;
-    scrollTop: number;
-  }[];
-  windowX: number;
-  windowY: number;
-}
-
-interface PendingTouchFocus {
-  clientX: number;
-  clientY: number;
-  control: HTMLElement;
-  pointerDown: PointerEvent;
-  pointerId: number;
-}
-
-function captureFocusScroll(target: HTMLElement): FocusScrollSnapshot {
-  const elements: FocusScrollSnapshot['elements'] = [];
-  for (
-    let element = target.parentElement;
-    element;
-    element = element.parentElement
-  ) {
-    elements.push({
-      element,
-      scrollLeft: element.scrollLeft,
-      scrollTop: element.scrollTop,
-    });
-  }
-  return {
-    target,
-    elements,
-    windowX: window.scrollX,
-    windowY: window.scrollY,
-  };
-}
-
-// Where the keyboard starts, in client coordinates. The keyboard covers the
-// bottom of the LAYOUT viewport, so its top edge sits at `visualViewport.height`
-// — and stays there when the browser pans the page to reveal a field, because a
-// pan slides the window over the page without moving the keyboard.
-//
-// Reading `offsetTop + height` instead makes the obstruction appear to shrink as
-// the pan grows. A fully expanded Tall sheet — the only shape this hook runs in
-// — is pinned to the layout viewport bottom, so at full pan the obstruction
-// reads as zero: the sheet concludes the keyboard is gone, drops the scroll
-// range it added, and disarms the defenses that would have caught the next pan.
-// One pan then latches the sheet into the unprotected behavior for good.
 function getUnobstructedBounds(): {top: number; bottom: number} {
   return {
     top: 0,
@@ -226,10 +177,7 @@ export function useMobileKeyboard({
 
     let keyboardGeometry: KeyboardGeometry | null = null;
     let documentScrollAtKeyboard: {x: number; y: number} | null = null;
-    let pendingFocusScroll: FocusScrollSnapshot | null = null;
-    let pendingPointerFocusScroll: FocusScrollSnapshot | null = null;
-    let pendingTouchFocus: PendingTouchFocus | null = null;
-    const preventFocusScroll = isIOSWebKit();
+    const ownsFocusTransitions = isIOSWebKit();
 
     const clearKeyboardLayout = () => {
       body.style.setProperty(MOBILE_KEYBOARD_INSET_VAR, '0px');
@@ -237,23 +185,6 @@ export function useMobileKeyboard({
       documentScrollAtKeyboard = null;
       hasKeyboardLayoutRef.current = false;
       retainKeyboardLayoutRef.current = false;
-    };
-
-    const restoreScrollSnapshot = (snapshot: FocusScrollSnapshot) => {
-      for (const {element, scrollLeft, scrollTop} of snapshot.elements) {
-        if (element.scrollLeft !== scrollLeft) {
-          element.scrollLeft = scrollLeft;
-        }
-        if (element.scrollTop !== scrollTop) {
-          element.scrollTop = scrollTop;
-        }
-      }
-      if (
-        window.scrollX !== snapshot.windowX ||
-        window.scrollY !== snapshot.windowY
-      ) {
-        window.scrollTo(snapshot.windowX, snapshot.windowY);
-      }
     };
 
     const scrollBodyBy = (distance: number, smoothly: boolean) => {
@@ -324,129 +255,47 @@ export function useMobileKeyboard({
       body.style.setProperty(MOBILE_KEYBOARD_INSET_VAR, `${inset}px`);
     };
 
-    // Wait until pointerup confirms a touch was a tap, then focus before the
-    // native click so preventScroll suppresses page panning while the click
-    // still owns caret placement. Holding the original pointerdown event lets
-    // consumer preventDefault calls remain authoritative after capture.
-    const rememberPointerFocusScroll = (event: PointerEvent) => {
-      // Only the primary contact can arm below, but a secondary one — a
-      // resting thumb, a palm, a second finger anywhere on the page — would
-      // still fall through and null out the arming of the finger already
-      // mid-tap on a field. Its pointerup would then find nothing pending and
-      // hand the focus back to the browser, whose reveal pans the page.
-      if (event.isPrimary === false) {
+    // Take the focus transition over before the browser performs it.
+    //
+    // `blur` is dispatched in the capture phase ahead of the browser's own
+    // focus step, and it names the destination in `relatedTarget`. Focusing it
+    // here with preventScroll settles the transition: the browser's step finds
+    // the element already active, so it dispatches nothing further and there is
+    // no reveal to race. Then bring the control into view with the sheet's own
+    // scroller, which never moves anything outside the sheet.
+    let isClaimingFocus = false;
+    const claimFocusTransition = (event: FocusEvent) => {
+      // Delivering the focus below makes the browser run its own transition,
+      // whose blur re-enters here naming the same destination. Claiming that
+      // one too would deliver the focus a second time.
+      if (!isFullyExpandedRef.current || isClaimingFocus) {
         return;
       }
-      const control = findTextEntryControl(event.target, body);
-      pendingPointerFocusScroll =
-        isFullyExpandedRef.current &&
-        control &&
-        control !== document.activeElement
-          ? captureFocusScroll(control)
-          : null;
-      pendingTouchFocus =
-        isActiveRef.current &&
-        isFullyExpandedRef.current &&
-        event.pointerType === 'touch' &&
-        control &&
-        control !== document.activeElement
-          ? {
-              clientX: event.clientX,
-              clientY: event.clientY,
-              control,
-              pointerDown: event,
-              pointerId: event.pointerId,
-            }
-          : null;
-    };
-    const clearPendingTouchFocus = () => {
-      if (pendingPointerFocusScroll?.target === pendingTouchFocus?.control) {
-        pendingPointerFocusScroll = null;
-      }
-      pendingTouchFocus = null;
-    };
-    const handlePointerMove = (event: PointerEvent) => {
-      if (
-        pendingTouchFocus?.pointerId === event.pointerId &&
-        Math.hypot(
-          event.clientX - pendingTouchFocus.clientX,
-          event.clientY - pendingTouchFocus.clientY,
-        ) > TOUCH_FOCUS_MOVE_THRESHOLD
-      ) {
-        clearPendingTouchFocus();
-      }
-    };
-    const handlePointerCancel = (event: PointerEvent) => {
-      if (pendingTouchFocus?.pointerId === event.pointerId) {
-        clearPendingTouchFocus();
-      }
-    };
-    const preventTouchFocusScroll = (event: PointerEvent) => {
-      const pending = pendingTouchFocus;
-      // A lift by some other contact — the resting thumb, the palm — is not
-      // this tap ending. Leave the arming alone: consuming it here is the same
-      // disarm the pointerdown guard above prevents, at the other end of the
-      // gesture.
-      if (pending != null && pending.pointerId !== event.pointerId) {
-        return;
-      }
-      pendingTouchFocus = null;
-      if (
-        !pending ||
-        !isFullyExpandedRef.current ||
-        pending.pointerDown.defaultPrevented ||
-        event.defaultPrevented ||
-        findTextEntryControl(event.target, body) !== pending.control ||
-        document.activeElement === pending.control
-      ) {
-        if (pendingPointerFocusScroll?.target === pending?.control) {
-          pendingPointerFocusScroll = null;
+      const destination = findTextEntryControl(event.relatedTarget, body);
+      if (destination) {
+        if (destination !== document.activeElement) {
+          // Revealing the field is not this handler's job: focusing it raises
+          // focusin, and the viewport resize that follows the keyboard raises
+          // another — both already schedule the reveal below, which knows the
+          // safe area and scrolls only the sheet's own body.
+          isClaimingFocus = true;
+          try {
+            destination.focus({preventScroll: true});
+          } finally {
+            isClaimingFocus = false;
+          }
         }
         return;
       }
 
-      pending.control.focus({preventScroll: true});
-    };
-
-    // Keyboard and programmatic focus transitions cannot supply preventScroll.
-    // Restore their pre-focus scroll positions without re-entering the focus
-    // lifecycle, so consumer focus and blur callbacks remain single events.
-    const rememberFocusScroll = (event: FocusEvent) => {
-      const control = findTextEntryControl(event.relatedTarget, body);
-      if (!isFullyExpandedRef.current || !control) {
-        pendingFocusScroll = null;
-        return;
-      }
-      // A snapshot restores what a scroll container scrolled, which is not what
-      // this transition costs: WebKit reveals a destination behind the keyboard
-      // by scrolling the page under a fixed sheet. Reach the destination first —
-      // in the same frame, so the reveal finds nothing left to do.
-      //
-      // The tap path is excluded: preventTouchFocusScroll has already focused
-      // with preventScroll there, so a head start would only replace that
-      // path's gentle post-focus glide with a snap.
-      if (
-        hasKeyboardLayoutRef.current &&
-        pendingPointerFocusScroll?.target !== control
-      ) {
-        scrollControlIntoSafeArea(control, false);
-      }
-      // Snapshot after that scroll: the restore below undoes the browser's
-      // reveal, not our own head start.
-      pendingFocusScroll = captureFocusScroll(control);
-    };
-    const restoreFocusScroll = (event: FocusEvent) => {
-      const control = findTextEntryControl(event.target, body);
-      const snapshot =
-        pendingFocusScroll?.target === control
-          ? pendingFocusScroll
-          : pendingPointerFocusScroll?.target === control
-            ? pendingPointerFocusScroll
-            : null;
-      pendingFocusScroll = null;
-      pendingPointerFocusScroll = null;
-      if (snapshot?.target === control) {
-        restoreScrollSnapshot(snapshot);
+      // Focus left for nothing — the keyboard's Done button parks it on the
+      // body. Park it on the sheet instead, so re-tapping the same field is
+      // still a transition this handler sees. Left on the body, the field is
+      // already `document.activeElement` on the next tap, no blur fires, and
+      // the browser reveals it its own way.
+      const origin = findTextEntryControl(event.target, body);
+      if (origin && !event.relatedTarget) {
+        sheet?.focus({preventScroll: true});
       }
     };
 
@@ -608,17 +457,20 @@ export function useMobileKeyboard({
     };
 
     const viewport = window.visualViewport;
-    if (preventFocusScroll) {
-      document.addEventListener(
-        'pointerdown',
-        rememberPointerFocusScroll,
-        true,
-      );
-      document.addEventListener('pointermove', handlePointerMove, true);
-      document.addEventListener('pointercancel', handlePointerCancel, true);
-      document.addEventListener('pointerup', preventTouchFocusScroll);
-      document.addEventListener('focusout', rememberFocusScroll);
-      body.addEventListener('focus', restoreFocusScroll, true);
+    let containmentStyle: HTMLStyleElement | null = null;
+    if (ownsFocusTransitions) {
+      // Capture phase, and `blur` rather than `focusout`: both are dispatched
+      // before the browser's own focus step, which is the only window in which
+      // the transition can still be claimed.
+      document.addEventListener('blur', claimFocusTransition, true);
+
+      // A scroll that reaches the end of any nested scroller chains to the
+      // document, which moves the fixed sheet with it. Current iOS latches
+      // this at touchstart, too late for a listener to add — so it ships as a
+      // stylesheet, in its own layer so a consumer's own rules still win.
+      containmentStyle = document.createElement('style');
+      containmentStyle.textContent = '@layer {*{overscroll-behavior:contain}}';
+      document.head.prepend(containmentStyle);
     }
     body.addEventListener('focusin', handleFocusIn);
     body.addEventListener('focusout', handleFocusOut);
@@ -640,21 +492,9 @@ export function useMobileKeyboard({
 
     return () => {
       cancelAnimationFrame(animationFrame);
-      if (preventFocusScroll) {
-        document.removeEventListener(
-          'pointerdown',
-          rememberPointerFocusScroll,
-          true,
-        );
-        document.removeEventListener('pointermove', handlePointerMove, true);
-        document.removeEventListener(
-          'pointercancel',
-          handlePointerCancel,
-          true,
-        );
-        document.removeEventListener('pointerup', preventTouchFocusScroll);
-        document.removeEventListener('focusout', rememberFocusScroll);
-        body.removeEventListener('focus', restoreFocusScroll, true);
+      if (ownsFocusTransitions) {
+        document.removeEventListener('blur', claimFocusTransition, true);
+        containmentStyle?.remove();
       }
       body.removeEventListener('focusin', handleFocusIn);
       body.removeEventListener('focusout', handleFocusOut);

@@ -1061,133 +1061,16 @@ describe('BottomSheet', () => {
   });
 
   describe('mobile keyboard', () => {
-    it('prevents native touch focus panning without moving focus early or duplicating events', () => {
+    it('claims a transition between fields and delivers it with preventScroll', () => {
       mockIOSWebKit();
-      const onFocus = vi.fn();
-      const onBlur = vi.fn();
       render(
         <BottomSheet
           isOpen
           onOpenChange={() => {}}
           label="Add a comment"
           height="tall">
-          <input
-            aria-label="Comment"
-            onPointerDown={event => event.stopPropagation()}
-            onFocus={onFocus}
-            onBlur={onBlur}
-          />
-        </BottomSheet>,
-      );
-      const sheet = getSheet();
-      const input = screen.getByRole('textbox', {name: 'Comment'});
-      const focus = vi.spyOn(input, 'focus');
-      sheet.focus();
-
-      // Pointerdown may still become a scroll gesture, so it must not move
-      // focus or open the keyboard early.
-      fireTouchPointer(input, 'pointerdown', {x: 20, y: 200});
-      expect(focus).not.toHaveBeenCalled();
-      expect(onFocus).not.toHaveBeenCalled();
-      expect(document.activeElement).toBe(sheet);
-
-      // Pointerup confirms a tap and prevents focus panning. The subsequent
-      // native click remains responsible for caret placement.
-      fireTouchPointer(input, 'pointerup', {x: 20, y: 200});
-      expect(focus).toHaveBeenCalledTimes(1);
-      expect(focus).toHaveBeenCalledWith({preventScroll: true});
-      expect(document.activeElement).toBe(input);
-      expect(onFocus).toHaveBeenCalledTimes(1);
-      expect(onBlur).not.toHaveBeenCalled();
-
-      // The native click still runs for caret placement and must not produce a
-      // second focus transition.
-      fireEvent.click(input);
-      expect(onFocus).toHaveBeenCalledTimes(1);
-      expect(onBlur).not.toHaveBeenCalled();
-    });
-
-    it('does not focus when a touch becomes a scroll gesture', () => {
-      mockIOSWebKit();
-      const onPreviousBlur = vi.fn();
-      render(
-        <BottomSheet
-          isOpen
-          onOpenChange={() => {}}
-          label="Add a comment"
-          height="tall">
-          <button type="button" onBlur={onPreviousBlur}>
-            Previous action
-          </button>
+          <input aria-label="Title" />
           <input aria-label="Comment" />
-        </BottomSheet>,
-      );
-      const body = getBody();
-      const previous = screen.getByRole('button', {name: 'Previous action'});
-      const input = screen.getByRole('textbox', {name: 'Comment'});
-      const focus = vi.spyOn(input, 'focus');
-      body.scrollTop = 20;
-      previous.focus();
-
-      fireTouchPointer(input, 'pointerdown', {x: 20, y: 200});
-      fireTouchPointer(input, 'pointermove', {x: 20, y: 240});
-      fireTouchPointer(input, 'pointerup', {x: 20, y: 240});
-
-      expect(focus).not.toHaveBeenCalled();
-      expect(document.activeElement).toBe(previous);
-      expect(onPreviousBlur).not.toHaveBeenCalled();
-    });
-
-    it('does not focus when pointer activation is canceled', () => {
-      mockIOSWebKit();
-      const onFocus = vi.fn();
-      const onPreviousBlur = vi.fn();
-      render(
-        <BottomSheet
-          isOpen
-          onOpenChange={() => {}}
-          label="Add a comment"
-          height="tall">
-          <button type="button" onBlur={onPreviousBlur}>
-            Previous action
-          </button>
-          <input
-            aria-label="Comment"
-            onPointerDown={event => event.preventDefault()}
-            onFocus={onFocus}
-          />
-        </BottomSheet>,
-      );
-      const previous = screen.getByRole('button', {name: 'Previous action'});
-      const input = screen.getByRole('textbox', {name: 'Comment'});
-      const focus = vi.spyOn(input, 'focus');
-      previous.focus();
-
-      const pointerDownAllowed = fireTouchPointer(input, 'pointerdown', {
-        x: 20,
-        y: 200,
-      });
-      fireTouchPointer(input, 'pointerup', {x: 20, y: 200});
-
-      expect(pointerDownAllowed).toBe(false);
-      expect(focus).not.toHaveBeenCalled();
-      expect(document.activeElement).toBe(previous);
-      expect(onFocus).not.toHaveBeenCalled();
-      expect(onPreviousBlur).not.toHaveBeenCalled();
-    });
-
-    it('prevents input-to-input focus panning without duplicating focus or blur events', () => {
-      mockIOSWebKit();
-      const onTitleBlur = vi.fn();
-      const onCommentFocus = vi.fn();
-      render(
-        <BottomSheet
-          isOpen
-          onOpenChange={() => {}}
-          label="Add a comment"
-          height="tall">
-          <input aria-label="Title" onBlur={onTitleBlur} />
-          <input aria-label="Comment" onFocus={onCommentFocus} />
         </BottomSheet>,
       );
       const title = screen.getByRole('textbox', {name: 'Title'});
@@ -1195,42 +1078,95 @@ describe('BottomSheet', () => {
       title.focus();
       const focus = vi.spyOn(comment, 'focus');
 
-      fireTouchPointer(comment, 'pointerdown', {x: 20, y: 200});
-      fireTouchPointer(comment, 'pointerup', {x: 20, y: 200});
+      // The keyboard's Next, Tab, and a programmatic focus() all arrive as this
+      // one transition, named by relatedTarget on the outgoing blur.
+      fireEvent.blur(title, {relatedTarget: comment});
 
+      // Delivered by us, with the browser's reveal refused.
       expect(focus).toHaveBeenCalledWith({preventScroll: true});
-      expect(document.activeElement).toBe(comment);
-      expect(onTitleBlur).toHaveBeenCalledTimes(1);
-      expect(onCommentFocus).toHaveBeenCalledTimes(1);
-
-      fireEvent.click(comment);
-      expect(onTitleBlur).toHaveBeenCalledTimes(1);
-      expect(onCommentFocus).toHaveBeenCalledTimes(1);
     });
 
-    it('does not duplicate callbacks during programmatic input-to-input focus', () => {
+    it('does not re-deliver a transition it has already claimed', () => {
       mockIOSWebKit();
-      const onTitleBlur = vi.fn();
-      const onCommentFocus = vi.fn();
       render(
         <BottomSheet
           isOpen
           onOpenChange={() => {}}
           label="Add a comment"
           height="tall">
-          <input aria-label="Title" onBlur={onTitleBlur} />
-          <input aria-label="Comment" onFocus={onCommentFocus} />
+          <input aria-label="Title" />
+          <input aria-label="Comment" />
         </BottomSheet>,
       );
       const title = screen.getByRole('textbox', {name: 'Title'});
       const comment = screen.getByRole('textbox', {name: 'Comment'});
-
       title.focus();
-      comment.focus();
+      const focus = vi.spyOn(comment, 'focus');
 
+      // Delivering the focus makes the browser run its own transition, whose
+      // blur re-enters the handler naming the same destination. Exactly one
+      // delivery must come out of that — a consumer's onFocus is one event, and
+      // measured on iOS the counts match an unclaimed transition exactly.
+      fireEvent.blur(title, {relatedTarget: comment});
+
+      expect(focus).toHaveBeenCalledTimes(1);
       expect(document.activeElement).toBe(comment);
-      expect(onTitleBlur).toHaveBeenCalledTimes(1);
-      expect(onCommentFocus).toHaveBeenCalledTimes(1);
+    });
+
+    it('parks focus on the sheet when the keyboard Done button takes it', () => {
+      mockIOSWebKit();
+      render(
+        <BottomSheet
+          isOpen
+          onOpenChange={() => {}}
+          label="Add a comment"
+          height="tall">
+          <input aria-label="Comment" />
+        </BottomSheet>,
+      );
+      const sheet = getSheet();
+      const input = screen.getByRole('textbox', {name: 'Comment'});
+      input.focus();
+      const sheetFocus = vi.spyOn(sheet, 'focus');
+
+      // Done dismisses the keyboard and drops focus on the body. Left there,
+      // the field is still document.activeElement on the next tap, so no
+      // transition fires and the browser reveals it its own way. Parking focus
+      // on the sheet keeps the next tap a transition this hook can claim.
+      fireEvent.blur(input, {relatedTarget: null});
+
+      expect(sheetFocus).toHaveBeenCalledWith({preventScroll: true});
+    });
+
+    it('contains overscroll while the sheet owns focus transitions', () => {
+      mockIOSWebKit();
+      const {unmount} = render(
+        <BottomSheet
+          isOpen
+          onOpenChange={() => {}}
+          label="Add a comment"
+          height="tall">
+          <input aria-label="Comment" />
+        </BottomSheet>,
+      );
+
+      // A scroll that runs out of room in any nested scroller chains to the
+      // document and takes the fixed sheet with it. Current iOS latches this
+      // at touchstart, too late for a listener, so it ships as a stylesheet.
+      const style = [...document.head.querySelectorAll('style')].find(node =>
+        node.textContent?.includes('overscroll-behavior'),
+      );
+      expect(style?.textContent).toBe(
+        '@layer {*{overscroll-behavior:contain}}',
+      );
+
+      unmount();
+
+      expect(
+        [...document.head.querySelectorAll('style')].some(node =>
+          node.textContent?.includes('overscroll-behavior'),
+        ),
+      ).toBe(false);
     });
 
     it('does not alter ordinary desktop focus when the viewport is unobstructed', () => {
@@ -1852,7 +1788,7 @@ describe('BottomSheet', () => {
       Object.defineProperty(window, 'scrollY', {configurable: true, value: 0});
     });
 
-    it('reaches a browser-driven destination before its native reveal can pan', () => {
+    it('delivers a browser-driven transition itself, then reveals the field', () => {
       mockIOSWebKit();
       mockVisualViewport(500);
       render(
@@ -1902,15 +1838,15 @@ describe('BottomSheet', () => {
       );
       expect(scrolls).toEqual([]);
 
-      // A keyboard accessory "Next", a Tab, or a programmatic focus gives
-      // nowhere to pass preventScroll: WebKit reveals the destination itself
-      // once focus lands, and pans the visual viewport to do it. The
-      // destination has to be in the safe area before that, which means
-      // scrolling instantly and while focus is still in flight.
-      comment.focus();
+      // A keyboard accessory "Next" or a Tab arrives as a blur naming the
+      // destination. We deliver that focus with preventScroll — refusing the
+      // browser's reveal — and then reveal the field ourselves, inside the
+      // sheet.
+      fireEvent.blur(title, {relatedTarget: comment});
 
+      expect(document.activeElement).toBe(comment);
       expect(scrolls).toEqual([
-        {top: 248, behavior: 'instant', focusLanded: false},
+        {top: 248, behavior: 'smooth', focusLanded: true},
       ]);
       expect(body.scrollTop).toBe(248);
     });
@@ -1934,7 +1870,11 @@ describe('BottomSheet', () => {
       const scrolls: number[] = [];
       Object.defineProperty(body, 'scrollBy', {
         configurable: true,
+        // Apply the scroll, as the real scroller would: a reveal that has
+        // already happened must read as no distance left to travel, otherwise
+        // every later reveal looks like a fresh one.
         value: (options: ScrollToOptions) => {
+          body.scrollTop += options.top ?? 0;
           scrolls.push(options.top ?? 0);
         },
       });
@@ -1944,20 +1884,22 @@ describe('BottomSheet', () => {
       vi.spyOn(title, 'getBoundingClientRect').mockReturnValue(
         rect({top: 150, bottom: 190}),
       );
-      // Below the body's visible area, so the head start would move it if it
-      // ran at all — with no keyboard, only the reveal path may.
-      vi.spyOn(comment, 'getBoundingClientRect').mockReturnValue(
-        rect({top: 860, bottom: 900}),
+      // Below the body's visible area, so a reveal has somewhere to travel.
+      vi.spyOn(comment, 'getBoundingClientRect').mockImplementation(() =>
+        rect({top: 860 - body.scrollTop, bottom: 900 - body.scrollTop}),
       );
 
       title.focus();
       scrolls.length = 0;
-      comment.focus();
+      const scrollTo = vi.mocked(window.scrollTo);
+      scrollTo.mockClear();
+      fireEvent.blur(title, {relatedTarget: comment});
 
-      // The focusout head start exists to beat a keyboard reveal. With no
-      // keyboard there is no reveal to beat, so the transition stays on the
-      // existing focusin path: one scroll, not two, and not one taken early.
+      // With no keyboard there is no clearance to leave and nothing to race,
+      // but the control still has to end up visible — brought there once, by
+      // the sheet's own scroller, with the page left alone.
       expect(scrolls).toEqual([100]);
+      expect(scrollTo).not.toHaveBeenCalled();
     });
 
     it('holds the keyboard scroll range through a pan, on the blur path', () => {
@@ -2054,159 +1996,16 @@ describe('BottomSheet', () => {
         inset,
       );
 
-      // And the next browser-driven focus still gets its head start: taken
-      // before focus lands, and far enough to clear the keyboard.
+      // And the next browser-driven transition is still claimed and revealed,
+      // by a distance measured against the unshifted keyboard boundary.
       scrolls.length = 0;
-      comment.focus();
+      fireEvent.blur(title, {relatedTarget: comment});
 
+      expect(document.activeElement).toBe(comment);
       expect(scrolls[0]).toEqual({
         top: 740 - (500 - 48),
-        focusLanded: false,
+        focusLanded: true,
       });
-    });
-
-    it('re-arms after a pointerup the page swallowed', () => {
-      mockIOSWebKit();
-      render(
-        <BottomSheet
-          isOpen
-          onOpenChange={() => {}}
-          label="Add a comment"
-          height="tall">
-          <input aria-label="Comment" />
-        </BottomSheet>,
-      );
-      const input = screen.getByRole('textbox', {name: 'Comment'});
-      // The pointerup listener is on document in the bubble phase, so a
-      // consumer can stop it and strand the armed tap.
-      const swallow = (event: Event) => event.stopPropagation();
-      input.addEventListener('pointerup', swallow);
-
-      fireTouchPointer(input, 'pointerdown', {x: 20, y: 200});
-      fireTouchPointer(input, 'pointerup', {x: 20, y: 200});
-      input.removeEventListener('pointerup', swallow);
-
-      // A stranded arming must not lock out later taps. The next contact is a
-      // fresh pointer — a real one always is — and has to be protected.
-      const focus = vi.spyOn(input, 'focus');
-      fireTouchPointer(input, 'pointerdown', {x: 20, y: 200, pointerId: 7});
-      fireTouchPointer(input, 'pointerup', {x: 20, y: 200, pointerId: 7});
-
-      expect(focus).toHaveBeenCalledWith({preventScroll: true});
-    });
-
-    it('leaves a tap on its own gentle reveal, with no head start', () => {
-      const layoutBottom = window.innerHeight;
-      mockIOSWebKit();
-      mockVisualViewport(500);
-      render(
-        <BottomSheet
-          isOpen
-          onOpenChange={() => {}}
-          label="Add a comment"
-          height="tall">
-          <input aria-label="Title" />
-          <input aria-label="Comment" />
-        </BottomSheet>,
-      );
-      const body = getBody();
-      const title = screen.getByRole('textbox', {name: 'Title'});
-      const comment = screen.getByRole('textbox', {name: 'Comment'});
-      const scrolls: {behavior?: ScrollBehavior; focusLanded: boolean}[] = [];
-      Object.defineProperty(body, 'scrollBy', {
-        configurable: true,
-        value: (options: ScrollToOptions) => {
-          body.scrollTop += options.top ?? 0;
-          scrolls.push({
-            behavior: options.behavior,
-            focusLanded: document.activeElement === comment,
-          });
-        },
-      });
-      vi.spyOn(body, 'getBoundingClientRect').mockReturnValue(
-        rect({top: 100, bottom: layoutBottom}),
-      );
-      vi.spyOn(title, 'getBoundingClientRect').mockReturnValue(
-        rect({top: 150, bottom: 190}),
-      );
-      vi.spyOn(comment, 'getBoundingClientRect').mockImplementation(() =>
-        rect({top: 700 - body.scrollTop, bottom: 740 - body.scrollTop}),
-      );
-      title.focus();
-      scrolls.length = 0;
-
-      fireTouchPointer(comment, 'pointerdown', {x: 20, y: 700});
-      fireTouchPointer(comment, 'pointerup', {x: 20, y: 700});
-
-      // A tap is already covered — it focused with preventScroll, so there is
-      // no native reveal to beat. It should keep the reveal it has always had:
-      // after focus, and animated. Taking the head start here would turn every
-      // tap between fields into a snap.
-      expect(scrolls).toEqual([{behavior: 'smooth', focusLanded: true}]);
-    });
-
-    it('keeps a tap protected when a second contact lands mid-gesture', () => {
-      mockIOSWebKit();
-      render(
-        <BottomSheet
-          isOpen
-          onOpenChange={() => {}}
-          label="Add a comment"
-          height="tall">
-          <input aria-label="Comment" />
-        </BottomSheet>,
-      );
-      const input = screen.getByRole('textbox', {name: 'Comment'});
-      const focus = vi.spyOn(input, 'focus');
-
-      fireTouchPointer(input, 'pointerdown', {x: 20, y: 200});
-      // A thumb resting on the page, a palm, a second finger anywhere: not the
-      // contact that is tapping the field, and it must not disarm that tap.
-      fireTouchPointer(document.body, 'pointerdown', {
-        x: 300,
-        y: 700,
-        pointerId: 2,
-        isPrimary: false,
-      });
-      fireTouchPointer(input, 'pointerup', {x: 20, y: 200});
-
-      expect(focus).toHaveBeenCalledWith({preventScroll: true});
-      expect(document.activeElement).toBe(input);
-    });
-
-    it('keeps a tap protected when a second contact lifts first', () => {
-      mockIOSWebKit();
-      render(
-        <BottomSheet
-          isOpen
-          onOpenChange={() => {}}
-          label="Add a comment"
-          height="tall">
-          <input aria-label="Comment" />
-        </BottomSheet>,
-      );
-      const input = screen.getByRole('textbox', {name: 'Comment'});
-      const focus = vi.spyOn(input, 'focus');
-
-      fireTouchPointer(input, 'pointerdown', {x: 20, y: 200});
-      fireTouchPointer(document.body, 'pointerdown', {
-        x: 300,
-        y: 700,
-        pointerId: 2,
-        isPrimary: false,
-      });
-      // The other end of the same gesture: the resting thumb lifts before the
-      // finger on the field does. That pointerup is not this tap ending.
-      fireTouchPointer(document.body, 'pointerup', {
-        x: 300,
-        y: 700,
-        pointerId: 2,
-        isPrimary: false,
-      });
-      fireTouchPointer(input, 'pointerup', {x: 20, y: 200});
-
-      expect(focus).toHaveBeenCalledWith({preventScroll: true});
-      expect(document.activeElement).toBe(input);
     });
   });
 
