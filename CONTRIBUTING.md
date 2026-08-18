@@ -755,8 +755,8 @@ into your language, visit <https://crowdin.com/project/astryx>. New locales are
 picked up automatically after a maintainer reviews the auto-generated
 translations PR.
 
-Calendar day names use generated CLDR-derived data because browsers do not
-expose the compact stand-alone-short width.
+Calendar’s compact weekday labels, such as `Su` and `Mo`, are generated from
+Unicode CLDR data because browsers do not provide that format.
 
 ## Contributor License Agreement ("CLA")
 
