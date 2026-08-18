@@ -182,16 +182,18 @@ describe('InputClearButton', () => {
       );
 
     // Fine pointer: hit area == the 20px visual glyph, no expansion.
-    expect(decl(/--_clear-hit-inset\s*:\s*0px/)).toBe(true);
+    expect(decl(/--_input-clear-hit-inset\s*:\s*0px/)).toBe(true);
     // Coarse pointer: 20px + 2px on each side = 24x24, the AA floor.
-    expect(decl(/--_clear-hit-inset\s*:\s*-2px/, 'pointer: coarse')).toBe(true);
-    // ...and nothing wider than that, which would reach into the adornment
-    // gap and the input's caret area.
-    expect(decl(/--_clear-hit-inset\s*:\s*-[3-9]px/)).toBe(false);
-    // The overlay itself is what carries the expansion.
-    expect(decl(/::after\s*\{[^}]*inset\s*:\s*var\(--_clear-hit-inset\)/)).toBe(
+    expect(decl(/--_input-clear-hit-inset\s*:\s*-2px/, 'pointer: coarse')).toBe(
       true,
     );
+    // ...and nothing wider than that, which would reach into the adornment
+    // gap and the input's caret area.
+    expect(decl(/--_input-clear-hit-inset\s*:\s*-[3-9]px/)).toBe(false);
+    // The overlay itself is what carries the expansion.
+    expect(
+      decl(/::after\s*\{[^}]*inset\s*:\s*var\(--_input-clear-hit-inset\)/),
+    ).toBe(true);
   });
 
   it('declares its own containing block for the hit overlay', () => {

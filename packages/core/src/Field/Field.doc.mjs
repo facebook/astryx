@@ -39,6 +39,7 @@ export const docs = {
     ],
     vars: [
       {name: '--_field-radius', description: 'Border radius of input fields', default: 'var(--radius-element)', private: true},
+      {name: '--_input-clear-hit-inset', description: 'Outset of the clear (\u2715) button\u2019s invisible hit area, applied to a ::after overlay. 0 on a fine pointer; negative on a coarse one, which grows the 20px button to the 24px touch target without changing what is drawn.', default: '0px', private: true},
     ],
     derived: [
       {property: 'borderRadius', vars: ['--_field-radius']},

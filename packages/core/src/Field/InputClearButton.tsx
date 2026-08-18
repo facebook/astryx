@@ -43,14 +43,14 @@ const styles = stylex.create({
     // values inside a pseudo-element; the conditional lives on this top-level
     // property instead. Private (--_) because it is an internal implementation
     // detail, not a themeable target.
-    '--_clear-hit-inset': {
+    '--_input-clear-hit-inset': {
       default: '0px',
       '@media (pointer: coarse)': '-2px',
     },
     '::after': {
       content: '""',
       position: 'absolute',
-      inset: 'var(--_clear-hit-inset)',
+      inset: 'var(--_input-clear-hit-inset)',
     },
   },
 });
