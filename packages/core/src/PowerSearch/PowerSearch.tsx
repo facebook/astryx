@@ -80,8 +80,8 @@ import {useMergedRefs} from '../hooks/useMergedRefs';
 // =============================================================================
 
 // Ranked suggestions shown for a non-empty query. The field list itself is
-// never capped -- see the maxMenuItems prop.
-const DEFAULT_MAX_MENU_ITEMS = 10;
+// never capped -- see the maxSearchResults prop.
+const DEFAULT_MAX_SEARCH_RESULTS = 10;
 
 // The source caps typed results itself, so the dropdown must not cap again --
 // its own default of 10 would truncate the field list while browsing.
@@ -417,10 +417,11 @@ export interface PowerSearchProps extends Omit<
   /** Max suggestions in string and entity value typeaheads. @default 10 */
   maxOperatorMenuItems?: number;
   /**
-   * Max fields suggested while typing. Browsing the field list (empty query)
-   * always shows every field. @default 10
+   * Max ranked results shown for a non-empty query. This does not affect the
+   * value editor shown after selecting a field. Browsing the field list with
+   * an empty query always shows every field. @default 10
    */
-  maxMenuItems?: number;
+  maxSearchResults?: number;
   /** Label for the save button in edit popover. @default 'Apply' */
   popoverSaveButtonLabel?: string;
   /** Timezone ID for date formatting. */
@@ -562,7 +563,7 @@ export function PowerSearch({
   statusVariant = 'attached',
   maxTokenLength = 40,
   maxOperatorMenuItems,
-  maxMenuItems = DEFAULT_MAX_MENU_ITEMS,
+  maxSearchResults = DEFAULT_MAX_SEARCH_RESULTS,
   popoverSaveButtonLabel: popoverSaveButtonLabelFromProps,
   timezoneID,
   tokenOverflowBehavior,
@@ -579,7 +580,7 @@ export function PowerSearch({
 }: PowerSearchProps) {
   const size = useSize(sizeProp, 'md');
   const config = useInternalConfig(configProp);
-  const searchSource = usePowerSearchSource(config, maxMenuItems);
+  const searchSource = usePowerSearchSource(config, maxSearchResults);
   const t = useTranslator();
   const locale = useLocale();
   const label = labelFromProps ?? t('@astryx.powersearch.label');
