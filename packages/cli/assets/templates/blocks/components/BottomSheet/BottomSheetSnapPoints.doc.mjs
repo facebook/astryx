@@ -17,6 +17,7 @@ export const doc = {
     'Heading',
     'Icon',
     'Item',
+    'Section',
     'Stack',
     'Text',
   ],

@@ -12,6 +12,7 @@ import {Divider} from '@astryxdesign/core/Divider';
 import {Heading} from '@astryxdesign/core/Heading';
 import {Icon} from '@astryxdesign/core/Icon';
 import {Item} from '@astryxdesign/core/Item';
+import {Section} from '@astryxdesign/core/Section';
 import {HStack, VStack} from '@astryxdesign/core/Stack';
 import {Text} from '@astryxdesign/core/Text';
 import {
@@ -122,33 +123,35 @@ export default function BottomSheetSnapPoints() {
         label="Directions to the Ferry Building"
         height="tall"
         snapPoints={SNAP_POINTS}>
-        <VStack gap={4} padding={4}>
-          <VStack gap={1}>
-            <Heading level={3}>Ferry Building</Heading>
-            <HStack gap={2}>
-              <Text type="label">18 min</Text>
-              <Text type="supporting">3.7 mi · arrive 9:41 AM</Text>
-            </HStack>
+        <Section padding={4}>
+          <VStack gap={4}>
+            <VStack gap={1}>
+              <Heading level={3}>Ferry Building</Heading>
+              <HStack gap={2}>
+                <Text type="label">18 min</Text>
+                <Text type="supporting">3.7 mi · arrive 9:41 AM</Text>
+              </HStack>
+            </VStack>
+            <Divider />
+            <VStack gap={0}>
+              {steps.map(step => (
+                <Item
+                  key={step.label}
+                  startContent={<Icon icon={step.icon} size="sm" />}
+                  label={step.label}
+                  description={step.detail}
+                  endContent={<Text type="supporting">{step.distance}</Text>}
+                />
+              ))}
+            </VStack>
+            <Divider />
+            <Button
+              label="Start"
+              onClick={() => setIsOpen(false)}
+              variant="primary"
+            />
           </VStack>
-          <Divider />
-          <VStack gap={0}>
-            {steps.map(step => (
-              <Item
-                key={step.label}
-                startContent={<Icon icon={step.icon} size="sm" />}
-                label={step.label}
-                description={step.detail}
-                endContent={<Text type="supporting">{step.distance}</Text>}
-              />
-            ))}
-          </VStack>
-          <Divider />
-          <Button
-            label="Start"
-            onClick={() => setIsOpen(false)}
-            variant="primary"
-          />
-        </VStack>
+        </Section>
       </BottomSheet>
     </>
   );

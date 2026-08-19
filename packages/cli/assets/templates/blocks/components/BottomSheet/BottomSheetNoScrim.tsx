@@ -33,14 +33,16 @@ export default function BottomSheetNoScrim() {
         label="Place details"
         height="hug"
         hasScrim={false}>
-        <VStack gap={4} style={{padding: 'var(--spacing-4)'}}>
-          <Heading level={3}>Central Park</Heading>
-          <Divider />
-          <Text type="body">
-            The page remains visible and interactive behind this sheet.
-          </Text>
-          <Button label="Close details" onClick={() => setIsOpen(false)} />
-        </VStack>
+        <Section padding={4}>
+          <VStack gap={4}>
+            <Heading level={3}>Central Park</Heading>
+            <Divider />
+            <Text type="body">
+              The page remains visible and interactive behind this sheet.
+            </Text>
+            <Button label="Close details" onClick={() => setIsOpen(false)} />
+          </VStack>
+        </Section>
       </BottomSheet>
     </Section>
   );

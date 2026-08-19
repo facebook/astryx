@@ -7,6 +7,7 @@ import {BottomSheet} from '@astryxdesign/core/BottomSheet';
 import {Button} from '@astryxdesign/core/Button';
 import {Divider} from '@astryxdesign/core/Divider';
 import {Heading} from '@astryxdesign/core/Heading';
+import {Section} from '@astryxdesign/core/Section';
 import {VStack} from '@astryxdesign/core/Stack';
 import {Text} from '@astryxdesign/core/Text';
 import {TextArea} from '@astryxdesign/core/TextArea';
@@ -51,48 +52,50 @@ export default function BottomSheetMobileKeyboard() {
             event.preventDefault();
             setIsOpen(false);
           }}>
-          <VStack gap={4} style={{padding: 'var(--spacing-4)'}}>
-            <Heading level={3}>Edit profile</Heading>
-            <Divider />
-            <Text type="supporting" color="secondary">
-              Focus fields throughout the form to see them remain visible above
-              the mobile keyboard.
-            </Text>
-            <TextInput
-              label="Name"
-              value={values.name}
-              onChange={update('name')}
-            />
-            <TextInput
-              label="Email"
-              type="email"
-              value={values.email}
-              onChange={update('email')}
-            />
-            <TextInput
-              label="Company"
-              value={values.company}
-              onChange={update('company')}
-            />
-            <TextInput
-              label="Role"
-              value={values.role}
-              onChange={update('role')}
-            />
-            <TextArea
-              label="Bio"
-              rows={5}
-              value={values.bio}
-              onChange={update('bio')}
-            />
-            <TextArea
-              label="Notes"
-              rows={5}
-              value={values.notes}
-              onChange={update('notes')}
-            />
-            <Button label="Save profile" type="submit" />
-          </VStack>
+          <Section padding={4}>
+            <VStack gap={4}>
+              <Heading level={3}>Edit profile</Heading>
+              <Divider />
+              <Text type="supporting" color="secondary">
+                Focus fields throughout the form to see them remain visible
+                above the mobile keyboard.
+              </Text>
+              <TextInput
+                label="Name"
+                value={values.name}
+                onChange={update('name')}
+              />
+              <TextInput
+                label="Email"
+                type="email"
+                value={values.email}
+                onChange={update('email')}
+              />
+              <TextInput
+                label="Company"
+                value={values.company}
+                onChange={update('company')}
+              />
+              <TextInput
+                label="Role"
+                value={values.role}
+                onChange={update('role')}
+              />
+              <TextArea
+                label="Bio"
+                rows={5}
+                value={values.bio}
+                onChange={update('bio')}
+              />
+              <TextArea
+                label="Notes"
+                rows={5}
+                value={values.notes}
+                onChange={update('notes')}
+              />
+              <Button label="Save profile" type="submit" />
+            </VStack>
+          </Section>
         </form>
       </BottomSheet>
     </>

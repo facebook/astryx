@@ -15,6 +15,7 @@ export const doc = {
     'Button',
     'Divider',
     'Heading',
+    'Section',
     'Stack',
     'Text',
   ],
