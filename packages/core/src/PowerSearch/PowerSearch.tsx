@@ -551,6 +551,7 @@ export function PowerSearch({
   onBlur,
   status,
   statusVariant = 'attached',
+  menuWidth,
   maxTokenLength = 40,
   maxSearchResults = DEFAULT_MAX_SEARCH_RESULTS,
   popoverSaveButtonLabel: popoverSaveButtonLabelFromProps,
@@ -1047,6 +1048,7 @@ export function PowerSearch({
           renderToken={renderToken}
           renderItem={renderItem}
           maxMenuItems={MAX_BROWSE_MENU_ITEMS}
+          menuWidth={menuWidth}
           placeholder={filters.length === 0 ? placeholder : ''}
           hasAutoFocus={hasAutoFocus}
           hasClear={hasClear && !isReadOnly}
