@@ -7,7 +7,7 @@ export const doc = {
   name: 'Selector — Option descriptions',
   displayName: 'Selector — Option descriptions',
   description:
-    'Options carry a description, so the dropdown draws a two-line row. The closed trigger stays one line at the size token; valueLayout="stacked" gives the description its own line at a taller fixed height on the same 4px rhythm, and an InputGroup pins it back to one line.',
+    'Options carry a description, so the dropdown draws a two-line row. The closed trigger is sized by padding, so it is the size token for a one-line value and exactly one line taller for a two-line one — both on the 4px rhythm. An InputGroup pins the row, so the value folds back onto one line there.',
   isReady: true,
   aspectRatio: 16 / 9,
   componentsUsed: ['Selector', 'SelectorOption', 'InputGroup', 'Button', 'Stack'],

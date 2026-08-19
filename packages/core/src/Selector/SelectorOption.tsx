@@ -44,8 +44,12 @@ export interface SelectorOptionProps {
   /**
    * How the label and description sit together. `stacked` puts the
    * description on its own line below the label; `inline` keeps both on one
-   * line so the row fits a fixed-height control such as the closed trigger or
-   * a control inside an InputGroup.
+   * line, with the description ellipsizing first.
+   *
+   * In a Selector trigger this is the caller's choice and the trigger sizes
+   * itself to it — one line at the size token, two lines exactly one text line
+   * taller. Inside an `InputGroup` the row height is pinned by the group, so
+   * `inline` is forced.
    *
    * @default 'stacked'
    */

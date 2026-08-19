@@ -42,11 +42,10 @@ export default function SelectorOptionDescriptions() {
       <Selector
         style={{width: 320}}
         label="Visibility"
-        description="valueLayout stacked: the description gets its own line, at a fixed 4px-grid height."
+        description="A stacked SelectorOption: the description gets its own line, and the trigger grows by exactly one line."
         options={VISIBILITY}
         value={full}
         onChange={setFull}
-        valueLayout="stacked"
         renderValue={option => (
           <SelectorOption
             icon={option.icon}

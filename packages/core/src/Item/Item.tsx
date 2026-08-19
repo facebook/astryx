@@ -277,7 +277,10 @@ const styles = stylex.create({
   // fixed-height host such as a Selector trigger inside an InputGroup.
   inlineContent: {
     flexDirection: 'row',
-    alignItems: 'baseline',
+    // Centered, not baseline-aligned: two different font sizes on a shared
+    // baseline make a line box taller than either line, which would push a
+    // fixed-height host (a Selector trigger) a pixel off its size token.
+    alignItems: 'center',
     columnGap: spacingVars['--spacing-1'],
   },
   inlineLabel: {

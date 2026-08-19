@@ -166,14 +166,7 @@ export const docs = {
       name: 'renderValue',
       type: '(option: SelectorOptionData) => ReactNode',
       description:
-        "Custom render function for the selected option inside the closed trigger. The trigger is a fixed height off the size token in either valueLayout, so it stays aligned with the buttons and inputs beside it; content that does not fit is clipped, not grown. A SelectorOption follows the trigger's layout and ellipsizes; hand-composed content is the caller's to fit.",
-    },
-    {
-      name: 'valueLayout',
-      type: "'inline' | 'stacked'",
-      description:
-        "Whether the closed trigger draws the selection on one line or two. inline keeps the trigger at its size token (28/32/36), level with the buttons and inputs beside it. stacked gives the description its own line at 48/52/56 — still a fixed height, still on the 4px rhythm — for a vertically stacked form. Ignored inside an InputGroup, which pins the row height. Only affects a SelectorOption.",
-      default: "'inline'",
+        "Custom render function for the selected option inside the closed trigger. The trigger is sized by padding, so it is the size token for a one-line value (28/32/36) and exactly one text line taller for a two-line one (48/52/56) — always on the 4px rhythm, always aligned with the buttons and inputs beside it. Inside an InputGroup, which pins the row height, a SelectorOption folds onto one line and ellipsizes.",
     },
     {
       name: 'indicatorPosition',

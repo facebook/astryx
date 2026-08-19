@@ -3121,10 +3121,11 @@ describe('Selector option descriptions and trigger value', () => {
     expect(within(trigger).getByTestId('lock-glyph')).toBeInTheDocument();
   });
 
-  it('draws the trigger value inline by default, and stacked on request', () => {
-    // Both layouts are fixed heights off the size token, so the choice is the
-    // caller's and never inferred from renderValue being passed. Asserted
-    // through Item's inline class, resolved from a reference render.
+  it("follows the caller's SelectorOption layout, but folds inline in a group", () => {
+    // The trigger has no layout prop: the SelectorOption the caller renders
+    // decides, and the trigger's padding sizes it to whatever that draws. The
+    // one exception is an InputGroup, which pins the row height, so a stacked
+    // value would spill through the trigger's own border.
     const renderValue = (option: SelectorOptionData) => (
       <SelectorOption
         icon={option.icon}
@@ -3150,33 +3151,18 @@ describe('Selector option descriptions and trigger value', () => {
     inlineRef.unmount();
     expect(inlineOnly.length).toBeGreaterThan(0);
 
-    const byDefault = render(
+    const standalone = render(
       <Selector
         label="Visibility"
         options={VISIBILITY}
         value="private"
         onChange={() => {}}
-        renderValue={renderValue}
-      />,
-    );
-    expect(inlineOnly.every(c => triggerClasses().has(c))).toBe(true);
-    byDefault.unmount();
-
-    const onRequest = render(
-      <Selector
-        label="Visibility"
-        options={VISIBILITY}
-        value="private"
-        onChange={() => {}}
-        valueLayout="stacked"
         renderValue={renderValue}
       />,
     );
     expect(inlineOnly.some(c => triggerClasses().has(c))).toBe(false);
-    onRequest.unmount();
+    standalone.unmount();
 
-    // The group pins the row height, so a stacked value would spill through
-    // the trigger's own border. The request is refused, not honoured.
     render(
       <InputGroup label="Space settings">
         <Selector
@@ -3184,7 +3170,6 @@ describe('Selector option descriptions and trigger value', () => {
           options={VISIBILITY}
           value="private"
           onChange={() => {}}
-          valueLayout="stacked"
           renderValue={renderValue}
         />
       </InputGroup>,

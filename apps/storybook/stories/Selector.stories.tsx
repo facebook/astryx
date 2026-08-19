@@ -440,12 +440,11 @@ export const OptionDescriptions: Story = {
           data-testid="condensed"
         />
         <Selector
-          label="Visibility (renderValue, stacked)"
+          label="Visibility (renderValue)"
           options={visibility}
           value={full}
           onChange={setFull}
           data-testid="full"
-          valueLayout="stacked"
           renderValue={option => (
             <SelectorOption
               icon={option.icon}
