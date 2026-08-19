@@ -12,13 +12,12 @@ export default function StepperShowcase() {
       <Stepper
         activeStep={active}
         orientation="horizontal"
-        indicatorPosition="on-track"
         onStepClick={setActive}>
-        <Step step={0} label="Cart" indicator="number" />
-        <Step step={1} label="Shipping" indicator="number" />
-        <Step step={2} label="Payment" indicator="number" />
-        <Step step={3} label="Review" indicator="number" />
-        <Step step={4} label="Confirm" indicator="number" />
+        <Step step={0} label="Cart" />
+        <Step step={1} label="Shipping" />
+        <Step step={2} label="Payment" />
+        <Step step={3} label="Review" />
+        <Step step={4} label="Confirm" />
       </Stepper>
     </div>
   );

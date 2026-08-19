@@ -63,7 +63,7 @@ export const docs = {
         name: 'Indicator',
         required: false,
         description:
-          'A numbered badge, a check, or any custom icon. Controlled via the indicator and icon props.',
+          'A numbered badge, a check, or any custom icon. Controlled via the indicator prop.',
       },
       {
         name: 'Label',

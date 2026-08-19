@@ -14,6 +14,7 @@
  * - /packages/core/src/Stepper/index.ts
  * - /apps/storybook/stories/Stepper.stories.tsx
  * - /packages/cli/assets/templates/blocks/components/Stepper/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Step/ (showcase blocks)
  */
 
 import {useEffect, type ReactNode} from 'react';
@@ -25,6 +26,7 @@ import {
   radiusVars,
   fontWeightVars,
   typeScaleVars,
+  textSizeVars,
   durationVars,
   easeVars,
 } from '../theme/tokens.stylex';
@@ -179,8 +181,13 @@ function CurrentIcon() {
 // --- Styles ---
 
 const BAR_WIDTH = spacingVars['--spacing-1'];
-const ICON_SIZE = spacingVars['--spacing-4'];
-const NUMBER_SIZE = spacingVars['--spacing-5'];
+// Every indicator — check, ring, custom icon, number badge — occupies the same
+// box, so the `auto` mode swapping a number for a check as a step completes
+// never nudges the label or the track.
+const INDICATOR_SIZE = spacingVars['--spacing-4'];
+// Indicator (16px) + the label-row gap (8px). The indent that lines a
+// description or a content slot up with the label above it.
+const INDICATOR_GUTTER = spacingVars['--spacing-6'];
 
 const styles = stylex.create({
   // ===================== VERTICAL LAYOUT =====================
@@ -217,8 +224,18 @@ const styles = stylex.create({
   horizontalStep: {
     display: 'flex',
     flexDirection: 'column',
-    alignItems: 'flex-start',
+    // Stretch, not flex-start: a flex-start child is sized to fit-content,
+    // which is floored at its own min-content and would spill the label past
+    // the step's slice of the track and into the next step. Stretched, the
+    // label row is exactly as wide as the step and the label wraps inside it.
+    alignItems: 'stretch',
     flex: 1,
+    // `flex: 1` alone does not make the steps equal: a flex item's default
+    // `min-width: auto` floors it at its own min-content width, so a step
+    // labelled "Integrations" claims a wider slice of the track than one
+    // labelled "Team". Zeroing the floor lets the even distribution actually
+    // apply, which is what keeps every progress segment the same width.
+    minWidth: 0,
     // density padding applied via density styles below
   },
 
@@ -248,8 +265,8 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    width: ICON_SIZE,
-    height: ICON_SIZE,
+    width: INDICATOR_SIZE,
+    height: INDICATOR_SIZE,
     flexShrink: 0,
   },
   iconCompleted: {
@@ -279,19 +296,20 @@ const styles = stylex.create({
     color: colorVars['--color-error'],
   },
 
-  // Number badge
+  // Number badge — same box as every other indicator (see INDICATOR_SIZE).
   numberBadge: {
     display: 'grid',
     placeItems: 'center',
-    width: NUMBER_SIZE,
-    height: NUMBER_SIZE,
+    width: INDICATOR_SIZE,
+    height: INDICATOR_SIZE,
     borderRadius: radiusVars['--radius-full'],
-    // Smallest semantic type token — keeps the compact numeric badge legible
-    // (>=12px) and themeable rather than a raw literal. The digit is centered
+    // The digit has to read at the same optical weight as the check glyph it
+    // alternates with inside a 16px circle, which the supporting size (12px)
+    // overfills — it leaves no room for a two-digit step. This is the scale
+    // step below it, still a token so themes rescale it. The digit is centered
     // by the grid (placeItems), so no explicit line-height is needed — this
     // matches how Avatar/AvatarGroup center a single glyph in a circle.
-    fontSize: typeScaleVars['--text-supporting-size'],
-    paddingBlockEnd: '1px',
+    fontSize: textSizeVars['--font-size-xs'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
     flexShrink: 0,
     textAlign: 'center',
@@ -337,6 +355,12 @@ const styles = stylex.create({
     lineHeight: typeScaleVars['--text-body-leading'],
     fontWeight: fontWeightVars['--font-weight-normal'],
     color: colorVars['--color-text-primary'],
+    // Horizontal steps divide the track evenly, so a label can end up with
+    // less room than it wants. Let it shrink past its longest word and break
+    // that word rather than overlap the neighbouring step. Inert wherever
+    // there is room, which is every vertical stepper.
+    minWidth: 0,
+    overflowWrap: 'break-word',
   },
   labelInProgress: {
     fontWeight: fontWeightVars['--font-weight-semibold'],
@@ -374,12 +398,7 @@ const styles = stylex.create({
     paddingInlineStart: spacingVars['--spacing-0'],
   },
   descriptionRowWithIndicator: {
-    // Align with label: icon (16px) + gap (8px) = 24px
-    paddingInlineStart: spacingVars['--spacing-6'],
-  },
-  descriptionRowWithNumber: {
-    // Align with label: number badge (20px) + gap (8px) = 28px
-    paddingInlineStart: spacingVars['--spacing-7'],
+    paddingInlineStart: INDICATOR_GUTTER,
   },
   description: {
     fontSize: typeScaleVars['--text-supporting-size'],
@@ -396,10 +415,7 @@ const styles = stylex.create({
     paddingBlockStart: spacingVars['--spacing-2'],
   },
   stepContentWithIndicator: {
-    paddingInlineStart: spacingVars['--spacing-6'],
-  },
-  stepContentWithNumber: {
-    paddingInlineStart: spacingVars['--spacing-7'],
+    paddingInlineStart: INDICATOR_GUTTER,
   },
 
   // Density
@@ -510,7 +526,7 @@ const styles = stylex.create({
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    width: NUMBER_SIZE,
+    width: INDICATOR_SIZE,
     flexShrink: 0,
     alignSelf: 'stretch',
   },
@@ -583,7 +599,11 @@ const styles = stylex.create({
   otLabelWrapH: {
     display: 'flex',
     flexDirection: 'column',
-    alignItems: 'center',
+    // Stretch rather than center for the same reason as horizontalStep: a
+    // centered child is fit-content sized and would spill past its node.
+    // The label still reads centered under the node — otLabelRowCenter
+    // centers it inside the full-width row.
+    alignItems: 'stretch',
     gap: spacingVars['--spacing-0-5'],
     textAlign: 'center',
   },
@@ -603,7 +623,7 @@ const styles = stylex.create({
   },
 
   otContentV: {
-    paddingInlineStart: spacingVars['--spacing-7'],
+    paddingInlineStart: INDICATOR_GUTTER,
     paddingBlockStart: spacingVars['--spacing-2'],
   },
   otContentH: {
@@ -911,12 +931,6 @@ export function Step({
       : t('@astryx.step.goToStep', {stepNumber: step + 1, label});
 
   const hasIndicator = indicator !== 'none';
-  const isNumber =
-    hasIndicator &&
-    customIcon == null &&
-    statusGlyph == null &&
-    (indicator === 'number' ||
-      (indicator === 'auto' && progress === 'not-started'));
 
   const labelColorStyle = isDisabled
     ? styles.labelDisabled
@@ -955,9 +969,7 @@ export function Step({
     <div
       {...stylex.props(
         hasIndicator
-          ? isNumber
-            ? styles.descriptionRowWithNumber
-            : styles.descriptionRowWithIndicator
+          ? styles.descriptionRowWithIndicator
           : styles.descriptionRow,
       )}>
       <span {...stylex.props(styles.description)}>{description}</span>
@@ -968,10 +980,7 @@ export function Step({
     <div
       {...stylex.props(
         styles.stepContent,
-        hasIndicator &&
-          (isNumber
-            ? styles.stepContentWithNumber
-            : styles.stepContentWithIndicator),
+        hasIndicator && styles.stepContentWithIndicator,
       )}>
       {children}
     </div>
