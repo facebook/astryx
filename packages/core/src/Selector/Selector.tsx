@@ -148,9 +148,10 @@ const styles = stylex.create({
     whiteSpace: 'nowrap',
     textAlign: 'start',
   },
-  // Wrapper for `renderValue` output. Clips rather than grows: the trigger
-  // holds its size token, so content taller than the row is contained instead
-  // of spilling through the border.
+  // Wrapper for `renderValue` output. Takes the free width and clips
+  // horizontally so a long value ellipsizes rather than widening the trigger;
+  // vertically the content sizes the control, which the size styles below
+  // handle.
   triggerValue: {
     flexGrow: 1,
     minWidth: 0,
@@ -563,10 +564,11 @@ interface SelectorPropsBase<
    * Custom render function for the selected option inside the closed trigger.
    * Only called when something is selected; the placeholder is unaffected.
    *
-   * The trigger keeps the fixed height its `size` token promises, so it still
-   * lines up with the Buttons and inputs beside it. Content that does not fit
-   * is clipped, not grown: a `SelectorOption` renders its inline row here and
-   * ellipsizes, and hand-composed content is the caller's to keep to one line.
+   * Passing this does not change the trigger's height — what it draws does. A
+   * one-line value measures exactly the `size` token, so the control still
+   * lines up with the Buttons and inputs beside it; each further line of
+   * content adds one text line. Inside an `InputGroup` the group pins the row,
+   * so the value is folded onto one line and ellipsizes.
    *
    * @example
    * ```
@@ -1349,11 +1351,6 @@ export function Selector<T extends SelectorOptionType>(
   // What the closed trigger shows for the current selection: the option's icon
   // and label. `startIcon` wins over the option's own icon so a caller who
   // pins a field icon does not get two.
-  //
-  // Either layout is a FIXED height off the size token, so the trigger lines
-  // up with the Buttons and inputs beside it and the `size` prop keeps
-  // working. Content that does not fit ellipsizes, the way it does in any
-  // other fixed-height control.
   const valueContent =
     selectedItem && renderValue ? (
       <SelectorRowLayoutContext value={rowLayout}>

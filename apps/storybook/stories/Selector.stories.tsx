@@ -428,6 +428,7 @@ export const OptionDescriptions: Story = {
       },
     ];
     const [condensed, setCondensed] = useState<string | undefined>('private');
+    const [oneLine, setOneLine] = useState<string | undefined>('private');
     const [full, setFull] = useState<string | undefined>('private');
     const [grouped, setGrouped] = useState<string | undefined>('private');
     return (
@@ -438,6 +439,19 @@ export const OptionDescriptions: Story = {
           value={condensed}
           onChange={setCondensed}
           data-testid="condensed"
+        />
+        <Selector
+          label="Visibility (renderValue, one line)"
+          options={visibility}
+          value={oneLine}
+          onChange={setOneLine}
+          data-testid="one-line"
+          renderValue={option => (
+            <SelectorOption
+              icon={option.icon}
+              label={option.label ?? option.value}
+            />
+          )}
         />
         <Selector
           label="Visibility (renderValue)"

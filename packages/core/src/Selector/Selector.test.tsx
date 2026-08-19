@@ -3121,6 +3121,61 @@ describe('Selector option descriptions and trigger value', () => {
     expect(within(trigger).getByTestId('lock-glyph')).toBeInTheDocument();
   });
 
+  it('sizes the trigger from what renderValue draws, not from it being passed', () => {
+    // The regression this guards: keying the height off `renderValue != null`
+    // handed a one-line custom value a taller control than the same value in
+    // the default trigger, so `size` quietly stopped meaning its token. The
+    // trigger carries one set of sizing classes for every case — a one-line
+    // value measures the token, and only a second line of content adds a
+    // second line of height.
+    const triggerSizing = () =>
+      new Set(
+        (screen.getByRole('combobox').parentElement?.className ?? '')
+          .split(' ')
+          .filter(Boolean),
+      );
+
+    const plain = render(
+      <Selector
+        label="Visibility"
+        options={VISIBILITY}
+        value="private"
+        onChange={() => {}}
+      />,
+    );
+    const defaultSizing = triggerSizing();
+    plain.unmount();
+
+    const oneLine = render(
+      <Selector
+        label="Visibility"
+        options={VISIBILITY}
+        value="private"
+        onChange={() => {}}
+        renderValue={option => <span>{option.label}</span>}
+      />,
+    );
+    expect(triggerSizing()).toEqual(defaultSizing);
+    oneLine.unmount();
+
+    render(
+      <Selector
+        label="Visibility"
+        options={VISIBILITY}
+        value="private"
+        onChange={() => {}}
+        renderValue={option => (
+          <SelectorOption
+            icon={option.icon}
+            label={option.label ?? option.value}
+            description={option.description}
+          />
+        )}
+      />,
+    );
+    expect(triggerSizing()).toEqual(defaultSizing);
+  });
+
   it("follows the caller's SelectorOption layout, but folds inline in a group", () => {
     // The trigger has no layout prop: the SelectorOption the caller renders
     // decides, and the trigger's padding sizes it to whatever that draws. The
