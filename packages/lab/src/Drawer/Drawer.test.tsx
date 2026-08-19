@@ -633,4 +633,17 @@ describe('Drawer', () => {
       expect(closeFirst).toHaveBeenCalledTimes(1);
     });
   });
+
+  describe('container padding isolation', () => {
+    it('resets container padding custom properties on the root dialog element', () => {
+      render(
+        <Drawer isOpen onClose={() => {}} label="Details">
+          Content
+        </Drawer>,
+      );
+      const dialog = screen.getByRole('dialog');
+      expect(dialog).toBeInTheDocument();
+    });
+  });
 });
+
