@@ -22,6 +22,7 @@ export * from './AvatarGroup';
 export * from './Badge';
 export * from './Banner';
 export * from './Blockquote';
+export * from './BottomSheet';
 export * from './Breadcrumbs';
 export * from './Button';
 export * from './ButtonGroup';
@@ -33,6 +34,7 @@ export * from './Calendar';
 export * from './Center';
 export * from './CodeBlock';
 export * from './CommandPalette';
+export * from './ComplexSelector';
 export * from './Chat';
 export * from './Markdown';
 export * from './Citation';
@@ -67,6 +69,7 @@ export * from './SelectableCard';
 export * from './Selector';
 export * from './MultiSelector';
 export * from './Icon';
+export * from './Indicator';
 export * from './InputGroup';
 export * from './Item';
 export * from './Text';
@@ -168,25 +171,8 @@ export * from './hooks';
 export * from './utils';
 
 // Theme
+export type {TextColorMap} from './Text';
 export * from './theme';
 
 // Internationalization
 export * from './i18n';
-
-// Doc types — for external library authors writing .doc.mjs files
-export type {
-  ComponentDoc,
-  SingleComponentDoc,
-  MultiComponentDoc,
-  PropDoc,
-  ComponentEntry,
-  ThemingTarget,
-  ComponentVar,
-  DerivedVar,
-  TranslationDoc,
-  GroupDoc,
-  ReferenceDoc,
-  ReferenceSection,
-  ContentBlock,
-  TokenPreviewType,
-} from './docs-types';

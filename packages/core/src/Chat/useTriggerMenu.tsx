@@ -110,10 +110,6 @@ const styles = stylex.create({
   popoverSurface: {
     minWidth: '180px',
   },
-  popoverGap: {
-    marginBlockStart: spacingVars['--spacing-1'],
-    marginBlockEnd: spacingVars['--spacing-1'],
-  },
   item: {
     boxSizing: 'border-box',
     display: 'flex',
@@ -125,7 +121,7 @@ const styles = stylex.create({
     outline: 'none',
     backgroundColor: 'transparent',
     border: 'none',
-    textAlign: 'left' as const,
+    textAlign: 'start' as const,
     fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-body-size'],
     lineHeight: typeScaleVars['--text-body-leading'],
@@ -699,7 +695,9 @@ export function useTriggerMenu(
       <div
         id={listboxId}
         role="listbox"
-        aria-label={trigger?.menuLabel ?? t('@astryx.chatTriggerMenu.suggestions')}
+        aria-label={
+          trigger?.menuLabel ?? t('@astryx.chatTriggerMenu.suggestions')
+        }
         {...mergeProps(
           themeProps('trigger-menu'),
           stylex.props(styles.dropdown),
@@ -709,7 +707,8 @@ export function useTriggerMenu(
       {
         placement: 'above',
         alignment: 'start',
-        xstyle: [styles.popoverSurface, styles.popoverGap],
+        offset: spacingVars['--spacing-1'],
+        xstyle: styles.popoverSurface,
       },
     );
   }, [popover, listboxId, state, selectItem, getItemId, t]);

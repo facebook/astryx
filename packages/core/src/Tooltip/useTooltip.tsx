@@ -15,7 +15,6 @@
 import {
   useCallback,
   useEffect,
-  useMemo,
   useRef,
   type ReactNode,
   type RefCallback,
@@ -29,6 +28,7 @@ import {
 } from '../Layer/useLayer';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import {themeProps} from '../utils/themeProps';
+import {isImeKeyEvent} from '../utils/ime';
 import {
   colorVars,
   radiusVars,
@@ -57,18 +57,6 @@ const styles = stylex.create({
     lineHeight: typeScaleVars['--text-body-leading'],
   },
   // Position-based margin styles
-  marginBlock: {
-    marginBlockStart: spacingVars['--spacing-1'],
-    marginBlockEnd: spacingVars['--spacing-1'],
-    marginInlineStart: 0,
-    marginInlineEnd: 0,
-  },
-  marginInline: {
-    marginBlockStart: 0,
-    marginBlockEnd: 0,
-    marginInlineStart: spacingVars['--spacing-1'],
-    marginInlineEnd: spacingVars['--spacing-1'],
-  },
   // Content wrapper for padding
   content: {
     paddingBlockStart: spacingVars['--spacing-1'],
@@ -261,22 +249,13 @@ export function useTooltip(options: TooltipOptions = {}): TooltipReturn {
     onHide,
   } = options;
 
-  // Select margin style based on placement axis
-  const marginStyle =
-    placement === 'above' || placement === 'below'
-      ? styles.marginBlock
-      : styles.marginInline;
-
   const layer = useLayer({
     mode: 'context',
     onShow,
     onHide,
   });
 
-  const popoverXstyle = useMemo(
-    () => [styles.container, marginStyle],
-    [marginStyle],
-  );
+  const popoverXstyle = styles.container;
 
   const showTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -366,6 +345,19 @@ export function useTooltip(options: TooltipOptions = {}): TooltipReturn {
     scheduleHide();
   }, [scheduleHide]);
 
+  // Pressing the trigger hides its own tooltip: once the control is activated
+  // the hint has served its purpose, and a tooltip lingering over a
+  // just-pressed control reads as stale. Fires on pointerdown so it feels
+  // immediate. Uncontrolled tooltips only — a controlled tooltip's visibility
+  // is owned by the consumer. `layer.hide()` self-guards when already closed.
+  const handlePointerDown = useCallback(() => {
+    if (isOpen !== undefined) {
+      return;
+    }
+    clearTimeouts();
+    layer.hide();
+  }, [isOpen, clearTimeouts, layer]);
+
   // Interaction ref that handles event listeners only
   const interactionRef: RefCallback<HTMLElement> = useCallback(
     (el: HTMLElement | null) => {
@@ -375,12 +367,18 @@ export function useTooltip(options: TooltipOptions = {}): TooltipReturn {
         triggerRef.current.removeEventListener('mouseleave', handleMouseLeave);
         triggerRef.current.removeEventListener('focusin', handleFocusIn);
         triggerRef.current.removeEventListener('focusout', handleFocusOut);
+        triggerRef.current.removeEventListener(
+          'pointerdown',
+          handlePointerDown,
+        );
       }
 
       if (el) {
         // Attach hover listeners
         el.addEventListener('mouseenter', handleMouseEnter);
         el.addEventListener('mouseleave', handleMouseLeave);
+        // Press-to-dismiss: activating the trigger hides its own tooltip.
+        el.addEventListener('pointerdown', handlePointerDown);
 
         // Attach focus listeners based on focusTrigger option
         const shouldAttachFocus =
@@ -401,6 +399,7 @@ export function useTooltip(options: TooltipOptions = {}): TooltipReturn {
       handleMouseLeave,
       handleFocusIn,
       handleFocusOut,
+      handlePointerDown,
     ],
   );
 
@@ -456,7 +455,9 @@ export function useTooltip(options: TooltipOptions = {}): TooltipReturn {
       if (e.key !== 'Escape') {
         return;
       }
-      if (e.isComposing || e.keyCode === 229) {
+      if (isImeKeyEvent(e)) {
+        // Ignore Escape that is committing/cancelling an IME composition;
+        // see utils/ime.ts for why.
         return;
       }
       clearTimeouts();
@@ -478,6 +479,7 @@ export function useTooltip(options: TooltipOptions = {}): TooltipReturn {
       const renderProps = {
         placement: renderPlacement,
         alignment: props?.alignment ?? alignment,
+        offset: spacingVars['--spacing-1'],
         role: 'tooltip',
         xstyle: [popoverXstyle, layerAnimations[renderPlacement]],
         className: themeProps('tooltip').className,

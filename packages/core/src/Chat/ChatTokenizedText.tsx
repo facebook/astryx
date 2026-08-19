@@ -14,7 +14,7 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Chat/index.ts
- * - /packages/cli/templates/blocks/components/ChatTokenizedText/ (block examples)
+ * - /packages/cli/assets/templates/blocks/components/ChatTokenizedText/ (block examples)
  */
 
 import React, {type ReactNode} from 'react';
@@ -74,7 +74,7 @@ function isCustomToken(
 }
 
 function escapeRegExp(str: string): string {
-  return str.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&');
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 // =============================================================================

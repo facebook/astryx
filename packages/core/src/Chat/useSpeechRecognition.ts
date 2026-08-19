@@ -242,7 +242,7 @@ async function createVolumeAnalyser(
 
 let _sharedAudioCtx: AudioContext | null = null;
 
-export function getDefaultAudioContext(): AudioContext {
+function getDefaultAudioContext(): AudioContext {
   if (!_sharedAudioCtx || _sharedAudioCtx.state === 'closed') {
     _sharedAudioCtx = new AudioContext();
   }

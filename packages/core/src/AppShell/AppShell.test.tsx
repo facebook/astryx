@@ -19,10 +19,13 @@ import {
   afterEach,
 } from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import {AppShell} from './AppShell';
+import {InternationalizationProvider} from '../i18n';
 import {MobileNav} from '../MobileNav';
 import {SideNav, SideNavItem, SideNavSection} from '../SideNav';
 import {TopNav, TopNavHeading, TopNavItem} from '../TopNav';
+import {useAppShellMobile} from './AppShellMobileContext';
 
 // jsdom doesn't implement showModal/close on <dialog>, so we mock them
 beforeAll(() => {
@@ -203,6 +206,60 @@ describe('AppShell', () => {
     );
     const main = screen.getByRole('main');
     expect(main).toHaveAttribute('id', 'astryx-app-shell-main');
+  });
+
+  it('moves focus to the main content when the skip link is activated', () => {
+    render(
+      <AppShell>
+        <div>Content</div>
+      </AppShell>,
+    );
+    const skipLink = screen.getByTestId('skip-to-content');
+    const main = screen.getByRole('main');
+    // The target must be programmatically focusable for focus to move
+    expect(main).toHaveAttribute('tabindex', '-1');
+    fireEvent.click(skipLink);
+    expect(document.activeElement).toBe(main);
+  });
+
+  it('skip link text comes from the i18n catalog', () => {
+    render(
+      <InternationalizationProvider
+        locale="en"
+        overrides={{en: {'@astryx.appShell.skipToContent': 'Jump to main'}}}>
+        <AppShell>
+          <div>Content</div>
+        </AppShell>
+      </InternationalizationProvider>,
+    );
+    expect(screen.getByTestId('skip-to-content').textContent).toBe(
+      'Jump to main',
+    );
+  });
+
+  // ===========================================================================
+  // Banner landmark
+  // ===========================================================================
+
+  it('exposes the header region as a banner landmark', () => {
+    render(
+      <AppShell topNav={<div>Top Nav</div>}>
+        <div>Content</div>
+      </AppShell>,
+    );
+    const banner = screen.getByRole('banner');
+    expect(banner).toBeInTheDocument();
+    // banner must be top-level — not nested inside another landmark
+    expect(screen.getByRole('main')).not.toContainElement(banner);
+  });
+
+  it('does not render a banner landmark without header content', () => {
+    render(
+      <AppShell>
+        <div>Content</div>
+      </AppShell>,
+    );
+    expect(screen.queryByRole('banner')).not.toBeInTheDocument();
   });
 
   // ===========================================================================
@@ -722,5 +779,142 @@ describe('AppShell', () => {
     );
     expect(ref).toHaveBeenCalled();
     expect(ref.mock.calls[0][0]).toBe(screen.getByTestId('shell'));
+  });
+  // ===========================================================================
+  // Keyboard operation
+  //
+  // The focus TRAP and focus RESTORE contracts of the drawer are native
+  // <dialog> behaviour and cannot be asserted here: jsdom has no dialog
+  // implementation, so this file shims showModal()/close() with an `open`
+  // attribute. Those two were verified in Chromium instead. What is asserted
+  // here is everything the shim can still prove: the keyboard path to each
+  // control, and the ARIA wiring between the toggle and the drawer.
+  // ===========================================================================
+
+  it('reaches the skip link with Tab and moves focus to main with Enter', async () => {
+    const user = userEvent.setup();
+    render(
+      <AppShell topNav={<TopNav label="Main navigation" />}>
+        <div>Content</div>
+      </AppShell>,
+    );
+
+    await user.tab();
+    const skipLink = screen.getByTestId('skip-to-content');
+    expect(skipLink).toHaveFocus();
+
+    await user.keyboard('{Enter}');
+    expect(screen.getByRole('main')).toHaveFocus();
+  });
+
+  it('opens the mobile drawer from the keyboard and points the toggle at it', async () => {
+    mockMql = createMockMatchMedia(true);
+    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue(mockMql));
+    const user = userEvent.setup();
+
+    render(
+      <AppShell sideNav={<TestSideNav />}>
+        <div>Content</div>
+      </AppShell>,
+    );
+
+    const toggle = screen.getByRole('button', {name: 'Open navigation'});
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+
+    toggle.focus();
+    await user.keyboard('{Enter}');
+
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    const drawer = screen.getByRole('dialog', {hidden: true});
+    // aria-controls has to name the drawer that actually opened, or a screen
+    // reader cannot follow the toggle to it.
+    expect(toggle.getAttribute('aria-controls')).toBe(drawer.id);
+    expect(drawer.id).toBeTruthy();
+  });
+
+  // ===========================================================================
+  // Banner landmark on the mobile top bar
+  // ===========================================================================
+
+  it('exposes the mobile top bar as a banner landmark in a sidenav-only layout', () => {
+    mockMql = createMockMatchMedia(true);
+    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue(mockMql));
+
+    render(
+      <AppShell sideNav={<TestSideNav />}>
+        <div>Content</div>
+      </AppShell>,
+    );
+
+    // Same landmark structure as the topNav layout: one banner region holding
+    // the top bar, whichever nav slots the page happens to fill.
+    expect(screen.getByRole('banner')).toBeInTheDocument();
+  });
+
+  it('renders exactly one banner landmark when a banner slot joins the mobile top bar', () => {
+    mockMql = createMockMatchMedia(true);
+    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue(mockMql));
+
+    render(
+      <AppShell banner={<div>Announcement</div>} sideNav={<TestSideNav />}>
+        <div>Content</div>
+      </AppShell>,
+    );
+
+    expect(screen.getAllByRole('banner')).toHaveLength(1);
+  });
+
+  // ===========================================================================
+  // useAppShellMobile
+  // ===========================================================================
+
+  function MobileProbe() {
+    const {isMobile, isMobileNavOpen, isMobileNavEnabled, mobileNavId} =
+      useAppShellMobile();
+    return (
+      <span data-testid="probe">
+        {JSON.stringify({
+          isMobile,
+          isMobileNavOpen,
+          isMobileNavEnabled,
+          hasId: mobileNavId != null,
+        })}
+      </span>
+    );
+  }
+
+  it('useAppShellMobile is inert outside an AppShell', () => {
+    render(<MobileProbe />);
+    expect(JSON.parse(screen.getByTestId('probe').textContent)).toEqual({
+      isMobile: false,
+      isMobileNavOpen: false,
+      isMobileNavEnabled: false,
+      hasId: false,
+    });
+  });
+
+  it('useAppShellMobile reports the shell mobile state and drawer id', async () => {
+    mockMql = createMockMatchMedia(true);
+    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue(mockMql));
+    const user = userEvent.setup();
+
+    render(
+      <AppShell sideNav={<TestSideNav />}>
+        <MobileProbe />
+      </AppShell>,
+    );
+
+    expect(JSON.parse(screen.getByTestId('probe').textContent)).toEqual({
+      isMobile: true,
+      isMobileNavOpen: false,
+      isMobileNavEnabled: true,
+      hasId: true,
+    });
+
+    await user.click(screen.getByRole('button', {name: 'Open navigation'}));
+
+    expect(
+      JSON.parse(screen.getByTestId('probe').textContent).isMobileNavOpen,
+    ).toBe(true);
   });
 });

@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'Text',
@@ -15,7 +15,7 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'astryx-heading', visualProps: ['level', 'color']},
+      {className: 'astryx-heading', visualProps: ['level', 'color', 'type']},
       {className: 'astryx-text', visualProps: ['type', 'size', 'color']},
     ],
   },
@@ -41,7 +41,7 @@ export const docs = {
     {
       name: 'color',
       type: "'primary' | 'secondary' | 'disabled' | 'placeholder' | 'accent' | 'inherit'",
-      description: "Text color. Defaults to 'secondary' for the 'supporting' type, 'primary' for all others.",
+      description: "Text color. Defaults to 'secondary' for the 'supporting' type, 'primary' for all others. Themes may add custom colors.",
     },
     {
       name: 'weight',
@@ -137,7 +137,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsZh = {
   usage: {
     description:
@@ -156,7 +156,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'semantic body text + headings w/ theme-driven type scale, truncation, tabular numbers',
   usage: {

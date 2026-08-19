@@ -93,7 +93,7 @@ function lazyShowcase(category: string, dirName: string) {
     () =>
       import(
         /* webpackChunkName: "showcase-[request]" */
-        `../../../../packages/cli/templates/blocks/${category}/${dirName}`
+        `../../../../packages/cli/assets/templates/blocks/${category}/${dirName}`
       ),
   );
 }

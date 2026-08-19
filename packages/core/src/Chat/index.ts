@@ -81,7 +81,11 @@ export type {
   TokenPortal,
 } from './useChatComposerTokens';
 export type {ChatMessageSender, ChatDensity} from './ChatContext';
-export {useChatLayoutContext} from './ChatContext';
+export {useChatLayoutContext, useChatComposerContext} from './ChatContext';
+export type {
+  ChatComposerContextValue,
+  ChatComposerInputControl,
+} from './ChatContext';
 
 export {ChatToolCalls} from './ChatToolCalls';
 export type {

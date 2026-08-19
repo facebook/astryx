@@ -13,7 +13,7 @@
  * - /packages/core/src/Link/Link.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Link/index.ts (exports if types change)
  * - /apps/storybook/stories/Link.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Link/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Link/ (showcase blocks)
  */
 
 import type {ReactNode} from 'react';
@@ -44,6 +44,7 @@ import {mergeProps} from '../utils';
 import {computeTargetAndRel} from './computeTargetAndRel';
 import {useInteractiveRole} from '../hooks/useInteractiveRole';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {useTranslator} from '../i18n';
 
 /**
@@ -68,14 +69,6 @@ const styles = stylex.create({
     transitionProperty: 'color, text-decoration',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': '2px',
-    },
   },
   /**
    * Reset styles for rendering as a <button> when href is undefined.
@@ -368,7 +361,7 @@ export function Link({
         disabled={isDisabled}
         {...mergeProps(
           themeProps('link', {color}),
-          stylex.props(
+          focusOutlineProps.focusVisible(
             styles.base,
             styles.buttonReset,
             linkColorStyles[color],
@@ -400,7 +393,7 @@ export function Link({
         tabIndex={-1}
         {...mergeProps(
           themeProps('link', {color}),
-          stylex.props(
+          focusOutlineProps.focusVisible(
             styles.base,
             linkColorStyles[color],
             hasUnderline && styles.hasUnderline,
@@ -428,7 +421,7 @@ export function Link({
         tabIndex={isDisabled ? -1 : undefined}
         {...mergeProps(
           themeProps('link', {color}),
-          stylex.props(
+          focusOutlineProps.focusVisible(
             styles.base,
             linkColorStyles[color],
             hasUnderline && styles.hasUnderline,

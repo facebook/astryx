@@ -42,12 +42,16 @@ export {
   plainDateSetEndOfWeekExclusive,
   plainDateGetWeekNumber,
   plainDateFormat,
+  formatSharedDate,
   DATE_FORMAT_WITH_WEEKDAY,
+  DATE_FORMAT_SHORT_WITH_WEEKDAY,
   DATE_FORMAT_LONG,
   DATE_FORMAT_MONTH_YEAR,
   DATE_FORMAT_SHORT,
   DATE_FORMAT_SHORT_WITH_YEAR,
+  SHARED_DATE_FORMAT_OPTIONS,
 } from './plainDate';
+export type {SharedDateFormat} from './plainDate';
 
 export {
   parseISOTime,
@@ -66,8 +70,11 @@ export type {ISOTimeString, ParsedTime} from './timeParser';
 export {parseStyleKey} from './parseStyleKey';
 export {getKey, type Key, type KeyFallback} from './getKey';
 
+export {characterCount, firstCharacter, truncateCharacters} from './characters';
+
 export {mergeProps} from './mergeProps';
 export {mergeRefs} from './mergeRefs';
+export {isFocusDetached} from './focusReturn';
 export {composeEventHandlers} from './composeEventHandlers';
 export {themeProps, themeDataAttributes} from './themeProps';
 export type {
@@ -92,3 +99,13 @@ export {
   toGLFloats,
 } from './color';
 export type {RGBA} from './color';
+
+export {devWarn, devError, warnOnce, formatDevMessage} from './devWarning';
+
+export {rtlStyles} from './rtlStyles';
+
+// The shared focus ring, exported for @astryxdesign/lab — same reason
+// rtlStyles is: a style that must be identical across packages, not copied.
+export {focusOutlineStyles, focusOutlineProps} from './focusOutline.stylex';
+
+export {isImeKeyEvent} from './ime';

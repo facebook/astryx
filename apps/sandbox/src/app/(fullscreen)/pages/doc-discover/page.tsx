@@ -192,7 +192,6 @@ export default function DocDiscoverPage() {
   return (
     <div style={{minHeight: '100vh', backgroundColor: '#ffffff'}}>
       <DocTopNav />
-
       <div style={{maxWidth: 1280, margin: '0 auto', padding: '0 32px'}}>
         {/* Compact header: text left, search right */}
         <div
@@ -313,7 +312,7 @@ export default function DocDiscoverPage() {
                       {/* Footer: author + installs */}
                       <HStack gap={2} vAlign="center" hAlign="between">
                         <HStack gap={2} vAlign="center">
-                          <Avatar name={item.author} size="xsmall" />
+                          <Avatar name={item.author} size="sm" />
                           <Text type="supporting" color="secondary">
                             {item.author}
                           </Text>

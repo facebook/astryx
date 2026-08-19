@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "build:theme": "astryx theme build src/themes/astryxTheme.ts --out src/themes/astryx.css",
-    "generate": "pnpm build:theme && node scripts/generate-data.mjs && node scripts/generate-scope.mjs && node scripts/generate-playground-types.mjs && node scripts/copy-vendor.mjs",
+    "generate": "node scripts/check-workspace-build.mjs && pnpm build:theme && node scripts/generate-data.mjs && node scripts/generate-scope.mjs && node scripts/generate-playground-types.mjs && node scripts/copy-vendor.mjs",
     "dev": "pnpm generate && next dev --webpack",
     "build": "pnpm generate && next build --webpack",
     "start": "next start",
@@ -18,7 +18,7 @@
     "@monaco-editor/react": "^4.8.0-rc.3",
     "@stylexjs/stylex": "^0.19.0",
     "@vercel/analytics": "^2.0.1",
-    "@vercel/speed-insights": "^1.2.0",
+    "@vercel/speed-insights": "^2.0.0",
     "@astryxdesign/charts": "*",
     "@astryxdesign/cli": "*",
     "@astryxdesign/core": "*",

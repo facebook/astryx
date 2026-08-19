@@ -14,6 +14,10 @@ import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {SegmentedControl} from './SegmentedControl';
 import {SegmentedControlItem} from './SegmentedControlItem';
+import {
+  getAllInjectedCss,
+  getForcedColorsRules,
+} from '../__tests__/forcedColors';
 
 // Mock showPopover/hidePopover (not implemented in jsdom) so the tooltip layer
 // reflects its open state via a `popover-open` attribute the tests can assert.
@@ -778,5 +782,29 @@ describe('SegmentedControl container handler forwarding', () => {
     await user.keyboard('{ArrowRight}');
 
     expect(onChange).not.toHaveBeenCalled();
+  });
+});
+
+// jsdom cannot emulate forced-colors rendering, so these assert that the
+// compiled output includes the forced-colors rules; visual behavior needs
+// manual verification under Windows High Contrast.
+describe('forced colors (WCAG 1.4.11)', () => {
+  it('compiles forced-colors overrides so the selected segment survives Windows High Contrast', () => {
+    render(
+      <SegmentedControl value="grid" onChange={() => {}} label="View mode">
+        <SegmentedControlItem value="grid" label="Grid" />
+        <SegmentedControlItem value="list" label="List" />
+      </SegmentedControl>,
+    );
+    const css = getForcedColorsRules();
+    // The painted surface fill and shadow are stripped; Highlight/
+    // HighlightText marks the selected segment.
+    expect(css).toContain('background-color: highlight;');
+    expect(css).toContain('color: highlighttext;');
+    // The segment is a <button>; without opting out of UA remapping it keeps
+    // the native ButtonFace surface and ignores the Highlight fill, leaving
+    // HighlightText text on a white surface. forced-color-adjust: none makes
+    // both render as authored.
+    expect(getAllInjectedCss()).toContain('forced-color-adjust: none;');
   });
 });

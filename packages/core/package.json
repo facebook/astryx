@@ -1,6 +1,6 @@
 {
   "name": "@astryxdesign/core",
-  "version": "0.1.6",
+  "version": "0.4.4",
   "displayName": "Astryx Core",
   "description": "The component library. Accessible, themeable React components with built-in spacing, dark mode, and StyleX styling.",
   "author": "Meta Open Source",
@@ -27,8 +27,6 @@
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "unpkg": "./dist/astryx.umd.js",
-  "jsdelivr": "./dist/astryx.umd.js",
   "sideEffects": [
     "**/*.stylex.ts",
     "**/*.stylex.js",
@@ -49,25 +47,19 @@
       "types": "./src/astryx.css.d.ts",
       "default": "./dist/astryx.css"
     },
-    "./astryx.umd.js": "./dist/astryx.umd.js",
     "./tailwind-theme.css": {
       "types": "./src/tailwind-theme.css.d.ts",
       "default": "./src/tailwind-theme.css"
+    },
+    "./BaseProps": {
+      "source": "./src/BaseProps.ts",
+      "types": "./dist/BaseProps.d.ts",
+      "default": "./dist/BaseProps.js"
     },
     "./naming": {
       "source": "./src/naming.ts",
       "types": "./dist/naming.d.ts",
       "default": "./dist/naming.js"
-    },
-    "./config": {
-      "source": "./src/config.ts",
-      "types": "./dist/config.d.ts",
-      "default": "./dist/config.js"
-    },
-    "./authoring": {
-      "source": "./src/authoring/index.ts",
-      "types": "./dist/authoring/index.d.ts",
-      "default": "./dist/authoring/index.js"
     },
     "./theme/tokens": {
       "source": "./src/theme/tokens.ts",
@@ -126,6 +118,11 @@
       "source": "./src/Blockquote/index.ts",
       "types": "./dist/Blockquote/index.d.ts",
       "default": "./dist/Blockquote/index.js"
+    },
+    "./BottomSheet": {
+      "source": "./src/BottomSheet/index.ts",
+      "types": "./dist/BottomSheet/index.d.ts",
+      "default": "./dist/BottomSheet/index.js"
     },
     "./Breadcrumbs": {
       "source": "./src/Breadcrumbs/index.ts",
@@ -206,6 +203,11 @@
       "source": "./src/CommandPalette/index.ts",
       "types": "./dist/CommandPalette/index.d.ts",
       "default": "./dist/CommandPalette/index.js"
+    },
+    "./ComplexSelector": {
+      "source": "./src/ComplexSelector/index.ts",
+      "types": "./dist/ComplexSelector/index.d.ts",
+      "default": "./dist/ComplexSelector/index.js"
     },
     "./ContextMenu": {
       "source": "./src/ContextMenu/index.ts",
@@ -296,6 +298,11 @@
       "source": "./src/IconButton/index.ts",
       "types": "./dist/IconButton/index.d.ts",
       "default": "./dist/IconButton/index.js"
+    },
+    "./Indicator": {
+      "source": "./src/Indicator/index.ts",
+      "types": "./dist/Indicator/index.d.ts",
+      "default": "./dist/Indicator/index.js"
     },
     "./InputGroup": {
       "source": "./src/InputGroup/index.ts",
@@ -636,6 +643,7 @@
   "files": [
     "dist",
     "src",
+    "scripts/postinstall.mjs",
     "locales",
     "docs.mjs",
     "groups.doc.mjs",
@@ -644,11 +652,11 @@
   ],
   "scripts": {
     "prepack": "pnpm build",
-    "build": "rimraf dist && pnpm build:i18n && pnpm build:esm && tsc --project tsconfig.build.json && pnpm build:css && pnpm build:umd && node ../../scripts/check-no-dev-jsx.mjs",
+    "postinstall": "node scripts/postinstall.mjs",
+    "build": "rimraf dist && pnpm build:i18n && pnpm build:esm && tsc --project tsconfig.build.json && pnpm build:css && node ../../scripts/check-no-dev-jsx.mjs && node ../../scripts/check-fully-specified.mjs",
     "build:i18n": "node scripts/build-pseudo-locale.mjs",
     "build:esm": "babel src --out-dir dist --extensions .ts,.tsx --out-file-extension .js --ignore \"**/*.test.ts,**/*.test.tsx,**/__tests__/**,**/*.perf.test.*,**/*.doc.mjs,**/*.d.ts,**/*.css,**/*.css.d.ts\" --config-file ./babel.config.json",
     "build:css": "node ../../scripts/build-css.mjs",
-    "build:umd": "node ../../scripts/build-umd.mjs",
     "dev": "babel src --watch --out-dir dist --extensions .ts,.tsx --out-file-extension .js --ignore \"**/*.test.*,**/*.doc.mjs,**/*.d.ts,**/*.css*\" --config-file ./babel.config.json",
     "test": "vitest run --root ../..",
     "test:watch": "vitest --root ../..",
@@ -662,7 +670,8 @@
     "react-dom": ">=19.0.0"
   },
   "devDependencies": {
-    "@babel/cli": "^7.29.7",
+    "@astryxdesign/cli": "workspace:*",
+    "@babel/cli": "^8.0.4",
     "@babel/core": "^7.29.7",
     "@babel/preset-react": "^8.0.1",
     "@babel/preset-typescript": "^7.29.7",

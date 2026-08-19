@@ -18,17 +18,32 @@ import {createContext, use} from 'react';
 export type StepperOrientation = 'horizontal' | 'vertical';
 export type StepperDensity = 'compact' | 'balanced' | 'spacious';
 
+/**
+ * Controls where each step's indicator sits relative to the connector track.
+ * - 'separated': indicator lives in the label row, distinct from the progress
+ *   bar (Astryx's original layout).
+ * - 'on-track': indicator is slotted *into* the connector line as a node on the
+ *   track, with the label beside (vertical) or below (horizontal). Aligns with
+ *   the on-track stepper design.
+ */
+export type StepperIndicatorPosition = 'separated' | 'on-track';
+
 export interface StepperContextValue {
   activeStep: number;
   orientation: StepperOrientation;
   isNonLinear: boolean;
   onStepClick: ((index: number) => void) | null;
   density: StepperDensity;
+  indicatorPosition: StepperIndicatorPosition;
+  /**
+   * Horizontal only. When true, non-current step labels collapse via a
+   * container query once the stepper is too narrow to fit them all, so the
+   * track can shrink. The current step keeps its label.
+   */
+  hasCollapsibleLabels: boolean;
 }
 
-export const StepperContext = createContext<StepperContextValue | null>(
-  null,
-);
+export const StepperContext = createContext<StepperContextValue | null>(null);
 StepperContext.displayName = 'StepperContext';
 
 export function useStepperContext(): StepperContextValue {

@@ -3,18 +3,55 @@
 /**
  * @file ToastViewport.test.tsx
  * @input Uses vitest, @testing-library/react, ToastViewport + useToast
- * @output Unit tests for toast keyboard reach and focus management
- * @position Testing; validates ToastViewport.tsx + Toast.tsx focus behavior
+ * @output Unit tests for toast keyboard reach, focus management, and
+ *   screen-reader announcements
+ * @position Testing; validates ToastViewport.tsx + Toast.tsx focus behavior and
+ *   the announce-at-dispatch flow through the singleton live regions
  *
- * SYNC: When ToastViewport.tsx or Toast.tsx focus handling changes, update these tests
+ * SYNC: When ToastViewport.tsx / Toast.tsx focus handling or the toast
+ *   announcement flow changes, update these tests
  */
 
-import {describe, it, expect, vi, beforeAll} from 'vitest';
-import {render, screen, fireEvent, act} from '@testing-library/react';
+import {describe, it, expect, vi, beforeAll, afterEach} from 'vitest';
+import {
+  render,
+  screen,
+  fireEvent,
+  act,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import React from 'react';
+import {type AnnounceFn, __resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {ToastViewport} from './ToastViewport';
 import {useToast} from './useToast';
 import type {ToastOptions} from './types';
+
+// Spy on the announcement sink so tests can prove a toast is announced exactly
+// once. The mock wraps the real useAnnounce, so the singleton live regions are
+// still populated (the region-content assertions below depend on it) while
+// every call is also recorded on announceSpy.
+const {announceSpy} = vi.hoisted(() => ({announceSpy: vi.fn()}));
+vi.mock('../hooks/useAnnounce', async importActual => {
+  const actual = await importActual<{
+    useAnnounce: () => AnnounceFn;
+    __resetLiveRegionsForTest: () => void;
+  }>();
+  const {useCallback} = await import('react');
+  return {
+    ...actual,
+    useAnnounce: (): AnnounceFn => {
+      const realAnnounce = actual.useAnnounce();
+      return useCallback<AnnounceFn>(
+        (message, politeness) => {
+          announceSpy(message, politeness);
+          realAnnounce(message, politeness);
+        },
+        [realAnnounce],
+      );
+    },
+  };
+});
 
 // Popover API is not implemented in jsdom.
 beforeAll(() => {
@@ -22,6 +59,13 @@ beforeAll(() => {
     HTMLElement.prototype.showPopover = vi.fn();
     HTMLElement.prototype.hidePopover = vi.fn();
   }
+});
+
+// Toast text is mirrored into the singleton live regions, which outlive each
+// render — reset them so text from one test never leaks into the next.
+afterEach(() => {
+  __resetLiveRegionsForTest();
+  announceSpy.mockClear();
 });
 
 // Module-level constant default props (avoids unstable-default-props lint).
@@ -169,7 +213,10 @@ describe('Toast blur timer pause', () => {
       act(() => {
         fireEvent.click(screen.getByText('Trigger Auto'));
       });
-      expect(screen.getByText('Auto toast')).toBeInTheDocument();
+      // Scope to the viewport: the toast text is also mirrored into the
+      // singleton live region, which lives outside the notifications region.
+      const viewport = screen.getByRole('region', {name: 'Notifications'});
+      expect(within(viewport).getByText('Auto toast')).toBeInTheDocument();
 
       // Window loses focus — timer should pause.
       act(() => {
@@ -179,7 +226,7 @@ describe('Toast blur timer pause', () => {
         vi.advanceTimersByTime(5000);
       });
       // Still present because the timer was paused while blurred.
-      expect(screen.getByText('Auto toast')).toBeInTheDocument();
+      expect(within(viewport).getByText('Auto toast')).toBeInTheDocument();
 
       // Window regains focus — timer resumes and the toast dismisses.
       act(() => {
@@ -196,7 +243,9 @@ describe('Toast blur timer pause', () => {
           completeExit(toastId);
         });
       }
-      expect(screen.queryByText('Auto toast')).not.toBeInTheDocument();
+      expect(
+        within(viewport).queryByText('Auto toast'),
+      ).not.toBeInTheDocument();
     } finally {
       vi.useRealTimers();
     }
@@ -210,6 +259,167 @@ describe('ToastViewport region ARIA', () => {
     // aria-modal is only valid on role="dialog"/"alertdialog"; a region must
     // not declare it (axe: aria-allowed-attr).
     expect(region).not.toHaveAttribute('aria-modal');
+  });
+});
+
+describe('toast announcements via singleton live regions', () => {
+  function politeRegion(): HTMLElement | null {
+    return document.querySelector('[data-astryx-live-region="polite"]');
+  }
+  function assertiveRegion(): HTMLElement | null {
+    return document.querySelector('[data-astryx-live-region="assertive"]');
+  }
+
+  const RICH_INFO: ToastOptions = {
+    body: (
+      <>
+        <strong>Update ready</strong>
+        <div>Restart to apply</div>
+      </>
+    ),
+  };
+  const ERROR_TOAST: ToastOptions = {body: 'Upload failed', type: 'error'};
+  const SAVING_V1: ToastOptions = {uniqueID: 'save', body: 'Saving changes'};
+  const SAVING_V2: ToastOptions = {uniqueID: 'save', body: 'Changes saved'};
+  const IGNORE_KEPT: ToastOptions = {
+    uniqueID: 'dup',
+    collisionBehavior: 'ignore',
+    body: 'Kept',
+  };
+  const IGNORE_DROPPED: ToastOptions = {
+    uniqueID: 'dup',
+    collisionBehavior: 'ignore',
+    body: 'Dropped',
+  };
+
+  it('announces an info toast politely with its flattened text content', async () => {
+    renderViewport(<ShowToastButton options={RICH_INFO} triggerLabel="Show" />);
+    act(() => {
+      fireEvent.click(screen.getByText('Show'));
+    });
+    // Announced synchronously at dispatch, exactly once.
+    expect(announceSpy).toHaveBeenCalledTimes(1);
+    expect(announceSpy).toHaveBeenCalledWith(
+      'Update ready Restart to apply',
+      'polite',
+    );
+    // The flattened text reaches the polite singleton region (the sink).
+    await waitFor(() => {
+      expect(politeRegion()).toHaveTextContent('Update ready Restart to apply');
+    });
+    // Status toasts never touch the assertive region.
+    expect(assertiveRegion()).toHaveTextContent('');
+  });
+
+  it('announces an error toast assertively', async () => {
+    renderViewport(
+      <ShowToastButton options={ERROR_TOAST} triggerLabel="Show" />,
+    );
+    act(() => {
+      fireEvent.click(screen.getByText('Show'));
+    });
+    expect(announceSpy).toHaveBeenCalledTimes(1);
+    expect(announceSpy).toHaveBeenCalledWith('Upload failed', 'assertive');
+    await waitFor(() => {
+      expect(assertiveRegion()).toHaveTextContent('Upload failed');
+    });
+    expect(politeRegion()).toHaveTextContent('');
+  });
+
+  it('announces exactly once at dispatch, even under StrictMode', () => {
+    render(
+      <React.StrictMode>
+        <ToastViewport isTopLayer={false}>
+          <ShowToastButton options={INFO_A} triggerLabel="Show" />
+        </ToastViewport>
+      </React.StrictMode>,
+    );
+    act(() => {
+      fireEvent.click(screen.getByText('Show'));
+    });
+    // The announcement lives in the imperative dispatch path (addToast), not a
+    // render effect, so StrictMode's double render and double-invoked state
+    // updater cannot announce the same toast twice.
+    expect(announceSpy).toHaveBeenCalledTimes(1);
+    expect(announceSpy).toHaveBeenCalledWith('Toast A', 'polite');
+  });
+
+  it('re-announces a uniqueID toast when its content is overwritten', async () => {
+    renderViewport(
+      <>
+        <ShowToastButton options={SAVING_V1} triggerLabel="Show v1" />
+        <ShowToastButton options={SAVING_V2} triggerLabel="Show v2" />
+      </>,
+    );
+    act(() => {
+      fireEvent.click(screen.getByText('Show v1'));
+    });
+    expect(announceSpy).toHaveBeenCalledTimes(1);
+    expect(announceSpy).toHaveBeenLastCalledWith('Saving changes', 'polite');
+    // Overwriting via uniqueID replaces the toast in place — the new content is
+    // a fresh dispatch and must be announced again.
+    act(() => {
+      fireEvent.click(screen.getByText('Show v2'));
+    });
+    expect(announceSpy).toHaveBeenCalledTimes(2);
+    expect(announceSpy).toHaveBeenLastCalledWith('Changes saved', 'polite');
+    await waitFor(() => {
+      expect(politeRegion()).toHaveTextContent('Changes saved');
+    });
+    // Still a single toast on screen — overwritten in place, not stacked.
+    const viewport = screen.getByRole('region', {name: 'Notifications'});
+    expect(
+      within(viewport).queryAllByText(/Saving changes|Changes saved/),
+    ).toHaveLength(1);
+  });
+
+  it('does not re-announce an unchanged toast when an unrelated render occurs', () => {
+    renderViewport(
+      <>
+        <ShowToastButton options={INFO_A} triggerLabel="Show A" />
+        <ShowToastButton options={ERROR_TOAST} triggerLabel="Show B" />
+      </>,
+    );
+    act(() => {
+      fireEvent.click(screen.getByText('Show A'));
+    });
+    expect(announceSpy).toHaveBeenCalledTimes(1);
+    // A second toast arriving re-renders the viewport with a new toast list.
+    // Toast A is not re-dispatched, so it must not be announced again — only
+    // the newly dispatched toast produces a call.
+    act(() => {
+      fireEvent.click(screen.getByText('Show B'));
+    });
+    expect(announceSpy).toHaveBeenCalledTimes(2);
+    expect(announceSpy).toHaveBeenNthCalledWith(1, 'Toast A', 'polite');
+    expect(announceSpy).toHaveBeenNthCalledWith(
+      2,
+      'Upload failed',
+      'assertive',
+    );
+  });
+
+  it('does not announce a toast whose uniqueID collision is ignored', () => {
+    renderViewport(
+      <>
+        <ShowToastButton options={IGNORE_KEPT} triggerLabel="Show 1" />
+        <ShowToastButton options={IGNORE_DROPPED} triggerLabel="Show 2" />
+      </>,
+    );
+    act(() => {
+      fireEvent.click(screen.getByText('Show 1'));
+    });
+    expect(announceSpy).toHaveBeenCalledTimes(1);
+    expect(announceSpy).toHaveBeenLastCalledWith('Kept', 'polite');
+    // The colliding toast is suppressed (collisionBehavior: 'ignore'), so it is
+    // neither shown nor announced.
+    act(() => {
+      fireEvent.click(screen.getByText('Show 2'));
+    });
+    expect(announceSpy).toHaveBeenCalledTimes(1);
+    const viewport = screen.getByRole('region', {name: 'Notifications'});
+    expect(within(viewport).getByText('Kept')).toBeInTheDocument();
+    expect(within(viewport).queryByText('Dropped')).not.toBeInTheDocument();
   });
 });
 

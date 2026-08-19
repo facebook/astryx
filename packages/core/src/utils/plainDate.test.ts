@@ -13,6 +13,7 @@ import {
   plainDateDayOfWeek,
   plainDateAddMonths,
   plainDateAddDays,
+  plainDateDiffDays,
   plainDateToInstant,
   plainDateFromInstant,
   plainDateIsBefore,
@@ -26,6 +27,7 @@ import {
   plainDateSetEndOfWeekExclusive,
   plainDateGetWeekNumber,
   plainDateFormat,
+  formatSharedDate,
   DATE_FORMAT_WITH_WEEKDAY,
 } from './plainDate';
 import type {ISODateString} from './dateTypes';
@@ -234,19 +236,37 @@ describe('plainDateAddMonths', () => {
     });
   });
 
-  it('overflows day into next month when target month is shorter', () => {
+  it('clamps to the last day when the target month is shorter', () => {
+    // Jan 31 + 1 month lands in February (clamped), not overflowed into
+    // March — matching Temporal.PlainDate.add and date-fns addMonths.
     expect(plainDateAddMonths({year: 2026, month: 1, day: 31}, 1)).toEqual({
       year: 2026,
-      month: 3,
-      day: 3,
+      month: 2,
+      day: 28,
     });
   });
 
-  it('overflows Jan 31 + 1 month in leap year', () => {
+  it('clamps to Feb 29 in a leap year', () => {
     expect(plainDateAddMonths({year: 2024, month: 1, day: 31}, 1)).toEqual({
       year: 2024,
-      month: 3,
-      day: 2,
+      month: 2,
+      day: 29,
+    });
+  });
+
+  it('clamps when subtracting into a shorter month', () => {
+    expect(plainDateAddMonths({year: 2026, month: 3, day: 31}, -1)).toEqual({
+      year: 2026,
+      month: 2,
+      day: 28,
+    });
+  });
+
+  it('clamps a 31st onto a 30-day month', () => {
+    expect(plainDateAddMonths({year: 2026, month: 5, day: 31}, 1)).toEqual({
+      year: 2026,
+      month: 6,
+      day: 30,
     });
   });
 });
@@ -290,6 +310,55 @@ describe('plainDateAddDays', () => {
       month: 1,
       day: 31,
     });
+  });
+});
+
+describe('plainDateDiffDays', () => {
+  it('counts whole days forward', () => {
+    expect(
+      plainDateDiffDays(
+        {year: 2026, month: 1, day: 10},
+        {year: 2026, month: 1, day: 17},
+      ),
+    ).toBe(7);
+  });
+
+  it('is negative when the second date is earlier', () => {
+    expect(
+      plainDateDiffDays(
+        {year: 2026, month: 1, day: 10},
+        {year: 2026, month: 1, day: 3},
+      ),
+    ).toBe(-7);
+  });
+
+  it('is zero for the same day', () => {
+    expect(
+      plainDateDiffDays(
+        {year: 2026, month: 6, day: 15},
+        {year: 2026, month: 6, day: 15},
+      ),
+    ).toBe(0);
+  });
+
+  it('counts across month and year boundaries', () => {
+    expect(
+      plainDateDiffDays(
+        {year: 2025, month: 12, day: 30},
+        {year: 2026, month: 1, day: 2},
+      ),
+    ).toBe(3);
+  });
+
+  it('ignores DST — every calendar day counts once across a spring-forward', () => {
+    // US DST 2026 begins Mar 8. The gap Mar 7 → Mar 9 is two calendar days
+    // even though one of them is 23 hours long.
+    expect(
+      plainDateDiffDays(
+        {year: 2026, month: 3, day: 7},
+        {year: 2026, month: 3, day: 9},
+      ),
+    ).toBe(2);
   });
 });
 
@@ -519,5 +588,26 @@ describe('plainDateFormat', () => {
     );
     expect(result).toContain('2026');
     expect(result).toContain('25');
+  });
+});
+
+describe('formatSharedDate', () => {
+  const pd: PlainDate = {year: 2026, month: 1, day: 25};
+
+  it('formats the short-month "date" shape', () => {
+    expect(formatSharedDate(pd, 'date')).toBe('Jan 25, 2026');
+  });
+
+  it('formats the long-month "date_long" shape', () => {
+    expect(formatSharedDate(pd, 'date_long')).toBe('January 25, 2026');
+  });
+
+  it('formats the weekday "date_weekday" shape', () => {
+    // 2026-01-25 is a Sunday.
+    expect(formatSharedDate(pd, 'date_weekday')).toBe('Sun, Jan 25, 2026');
+  });
+
+  it('formats the ISO "system_date" shape', () => {
+    expect(formatSharedDate(pd, 'system_date')).toBe('2026-01-25');
   });
 });

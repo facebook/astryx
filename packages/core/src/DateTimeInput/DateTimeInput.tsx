@@ -4,7 +4,7 @@
 
 /**
  * @file DateTimeInput.tsx
- * @input Uses React, Field, Calendar, usePopover, time parsing utilities
+ * @input Uses React, Field, Calendar, usePopover, useAnnounce, time parsing utilities
  * @output Exports DateTimeInput component, DateTimeInputProps
  * @position Core implementation; consumed by index.ts, tested by DateTimeInput.test.tsx
  *
@@ -13,7 +13,7 @@
  * - /packages/core/src/DateTimeInput/DateTimeInput.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/DateTimeInput/index.ts (exports if types change)
  * - /apps/storybook/stories/DateTimeInput.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/DateTimeInput/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/DateTimeInput/ (showcase blocks)
  */
 
 import {
@@ -27,7 +27,6 @@ import {
   type KeyboardEvent,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {IconName} from '../Icon';
 import {
   colorVars,
   sizeVars,
@@ -39,8 +38,8 @@ import {
 } from '../theme/tokens.stylex';
 import {
   Field,
+  InputClearButton,
   type InputStatus,
-  type InputStatusType,
   inputWrapperStyles,
   inputStatusBorderStyles,
   inputStatusHoverShadowStyles,
@@ -49,11 +48,18 @@ import {
 import {Icon} from '../Icon';
 import {VisuallyHidden} from '../VisuallyHidden';
 import {Spinner} from '../Spinner';
-import {Calendar, type ISODateString, type CalendarHandle} from '../Calendar';
+import {
+  Calendar,
+  type ISODateString,
+  type CalendarHandle,
+  type DayOfWeek,
+  type DayOfWeekName,
+} from '../Calendar';
 import {useCalendarConstraints} from '../Calendar/hooks';
 import {usePopover} from '../Popover';
 import {useTooltip} from '../Tooltip';
 import {useInputContainer} from '../hooks/useInputContainer';
+import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
 import {
   type ISOTimeString,
   parseDateInput,
@@ -63,8 +69,10 @@ import {
   formatISOTime,
   isTimeInRange,
   adjustTime,
+  isImeKeyEvent,
   mergeProps,
   mergeRefs,
+  isFocusDetached,
 } from '../utils';
 import {
   plainDateFromISO,
@@ -75,8 +83,11 @@ import {
 
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
+import {useAnnounce} from '../hooks/useAnnounce';
+import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {useSize} from '../SizeContext/SizeContext';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {useTranslator} from '../i18n';
 
 export type ISODateTimeString = string & {
@@ -111,11 +122,6 @@ const styles = stylex.create({
     backgroundColor: 'transparent',
     cursor: 'pointer',
     borderRadius: radiusVars['--radius-element'],
-    outline: {
-      default: 'none',
-      ':focus-visible': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: 1,
   },
   iconButtonDisabled: {
     cursor: 'not-allowed',
@@ -349,6 +355,14 @@ export interface DateTimeInputProps extends Omit<
    * @default 1
    */
   numberOfMonths?: 1 | 2;
+
+  /**
+   * First day of week in the calendar. Accepts a number
+   * (0 = Sunday … 6 = Saturday) or a three-letter day name ('sun'–'sat',
+   * case-insensitive).
+   * @default 0
+   */
+  weekStartsOn?: DayOfWeek | DayOfWeekName;
 }
 
 function splitDateTime(dt: ISODateTimeString | undefined): {
@@ -426,6 +440,7 @@ export function DateTimeInput({
   status,
   labelTooltip,
   numberOfMonths = 1,
+  weekStartsOn,
   width,
   xstyle,
   className,
@@ -434,6 +449,11 @@ export function DateTimeInput({
   ...rest
 }: DateTimeInputProps) {
   const t = useTranslator();
+  const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
+  // Speaks arrow-key stepping results through the persistent live regions:
+  // stepping programmatically rewrites a plain textbox's value, which screen
+  // readers do not announce on their own (WCAG 4.1.2).
+  const announce = useAnnounce();
   const placeholder =
     placeholderFromProps ?? t('@astryx.dateTimeInput.placeholder');
   const timePlaceholder =
@@ -470,25 +490,21 @@ export function DateTimeInput({
     isEnabled: showsDisabledMessage,
   });
 
-  const statusIconMap: Record<InputStatusType, IconName> = {
-    warning: 'warning',
-    error: 'error',
-    success: 'success',
-  };
-
-  const statusIconColorMap: Record<
-    InputStatusType,
-    'warning' | 'error' | 'success'
-  > = {
-    warning: 'warning',
-    error: 'error',
-    success: 'success',
-  };
+  // DateTimeInput fixes its status presentation to the detached message box,
+  // so the shared helper suppresses the on-field icon (the message box carries
+  // its own leading glyph). Routed through the helper for consistency with the
+  // rest of the bordered input family.
+  const {statusIcon, describedBy: statusTooltipDescribedBy} =
+    useInputStatusIcon({
+      status,
+      statusVariant: 'detached',
+    });
 
   const ariaDescribedBy =
     [
       description ? descriptionID : null,
       status?.message ? statusMessageID : null,
+      statusTooltipDescribedBy,
       showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
     ]
       .filter(Boolean)
@@ -581,10 +597,12 @@ export function DateTimeInput({
 
   const resolvedTimePlaceholder = useMemo(() => {
     if (isTimeFocused && !timeDisplayValue) {
-      return hourFormat === '12h' ? 'e.g., 2:30 PM' : 'e.g., 14:30';
+      return hourFormat === '12h'
+        ? t('@astryx.dateTimeInput.timeHint12h')
+        : t('@astryx.dateTimeInput.timeHint24h');
     }
     return timePlaceholder;
-  }, [isTimeFocused, timeDisplayValue, hourFormat, timePlaceholder]);
+  }, [isTimeFocused, timeDisplayValue, hourFormat, timePlaceholder, t]);
 
   // --- Unified change handler ---
   const fireChange = useCallback(
@@ -607,7 +625,18 @@ export function DateTimeInput({
   const popover = usePopover({
     dialogLabel: t('@astryx.dateTimeInput.dialogLabel'),
     closeButtonLabel: t('@astryx.dateInput.closeCalendar'),
-    onHide: () => dateInputRef.current?.focus(),
+    // Return focus to the date input when the calendar closes — but only when
+    // the dismiss left focus detached (Escape, or a click on non-focusable
+    // empty space), which the focus trap can't restore on its own. A native
+    // popover="auto" light-dismiss fires synchronously with the pointer event
+    // that moved focus, so if the user clicked another control — the time
+    // input, the clear button, another field, anywhere — focus has already
+    // landed there; reclaiming it would fight their click.
+    onHide: () => {
+      if (isFocusDetached()) {
+        dateInputRef.current?.focus();
+      }
+    },
   });
 
   const handleCalendarToggle = useCallback(() => {
@@ -716,15 +745,32 @@ export function DateTimeInput({
 
   const handleDateKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
+      // Guard the composing keydown (fires before compositionend): an IME uses
+      // Enter to commit the candidate and Escape to cancel it, so without this
+      // a CJK user committing a syllable with Enter would commit the pending
+      // date instead. See utils/ime.ts.
+      if (isImeKeyEvent(e.nativeEvent)) {
+        return;
+      }
       if (e.key === 'Escape' && popover.isOpen) {
         e.preventDefault();
         popover.hide();
+      } else if (
+        (e.key === 'ArrowDown' || (e.altKey && e.key === 'ArrowDown')) &&
+        !popover.isOpen
+      ) {
+        // APG combobox: ArrowDown (and Alt+ArrowDown) opens the calendar
+        // popover from the keyboard, keeping focus in the input (forms-13).
+        e.preventDefault();
+        if (!isEffectivelyDisabled) {
+          popover.show({skipAutoFocus: true});
+        }
       } else if (e.key === 'Enter') {
         e.preventDefault();
         commitDatePendingInput();
       }
     },
-    [popover, commitDatePendingInput],
+    [popover, commitDatePendingInput, isEffectivelyDisabled],
   );
 
   // --- Time handlers ---
@@ -799,6 +845,13 @@ export function DateTimeInput({
 
   const handleTimeKeyDown = useCallback(
     (e: KeyboardEvent<HTMLInputElement>) => {
+      // ArrowUp/ArrowDown step the time and preventDefault; an IME candidate
+      // window uses those same arrows to navigate candidates, so guard the
+      // composing keydown (fires before compositionend) to avoid stealing them
+      // mid-composition. See utils/ime.ts.
+      if (isImeKeyEvent(e.nativeEvent)) {
+        return;
+      }
       if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
         e.preventDefault();
 
@@ -822,11 +875,23 @@ export function DateTimeInput({
           const combined = combineDateTime(valueParts.date, newTime);
           if (combined) {
             fireChange(combined);
+            // Screen readers do not announce the programmatic value rewrite,
+            // so speak the new time explicitly (WCAG 4.1.2).
+            announce(formatDisplayTime(newTime, hasSeconds));
           }
         }
       }
     },
-    [valueParts, hasSeconds, timeIncrement, timeMin, timeMax, fireChange],
+    [
+      valueParts,
+      hasSeconds,
+      timeIncrement,
+      timeMin,
+      timeMax,
+      fireChange,
+      announce,
+      formatDisplayTime,
+    ],
   );
 
   // --- Clear ---
@@ -872,6 +937,7 @@ export function DateTimeInput({
           themeProps('date-time-input', {
             size,
             status: status?.type ?? null,
+            disabled: isDisabled ? 'disabled' : null,
           }),
           stylex.props(styles.row, xstyle),
           className,
@@ -880,14 +946,22 @@ export function DateTimeInput({
         {/* Date input */}
         <div
           ref={popover.triggerRef}
-          {...stylex.props(
-            inputWrapperStyles.base,
-            sizeStyles[size],
-            styles.dateWrapper,
-            isEffectivelyDisabled && inputWrapperStyles.disabled,
-            status && inputStatusBorderStyles[status.type],
-            status && inputStatusHoverShadowStyles[status.type],
-            status && inputStatusFocusWithinStyles[status.type],
+          {...mergeProps(
+            themeProps('date-time-input-date-segment', {
+              size,
+              status: status?.type ?? null,
+            }),
+            stylex.props(
+              inputWrapperStyles.base,
+              sizeStyles[size],
+              styles.dateWrapper,
+              isEffectivelyDisabled && inputWrapperStyles.disabled,
+              status && inputStatusBorderStyles[status.type],
+              status &&
+                !isEffectivelyDisabled &&
+                inputStatusHoverShadowStyles[status.type],
+              status && inputStatusFocusWithinStyles[status.type],
+            ),
           )}>
           <button
             type="button"
@@ -899,10 +973,24 @@ export function DateTimeInput({
                 : t('@astryx.dateInput.openCalendar')
             }
             {...stylex.props(
+              focusOutlineStyles.focusVisible,
               styles.iconButton,
               isEffectivelyDisabled && styles.iconButtonDisabled,
             )}>
-            <Icon icon="calendar" size="sm" color="secondary" />
+            <Icon
+              icon="calendar"
+              size="sm"
+              color="secondary"
+              // Stable theme target on the calendar toggle glyph, so a theme
+              // can restyle just this icon (color, size, hover) — and each
+              // open/closed state — via `defineTheme`, mirroring
+              // `date-input-toggle-icon`. Same-element rules in
+              // @layer astryx-theme win over the icon's own base color/size,
+              // which a segment-level target could not reach.
+              {...themeProps('date-time-input-toggle-icon', {
+                state: popover.isOpen ? 'expanded' : 'collapsed',
+              })}
+            />
           </button>
           <input
             ref={mergeRefs(ref, dateInputRef)}
@@ -923,7 +1011,7 @@ export function DateTimeInput({
             aria-disabled={showsDisabledMessage ? 'true' : undefined}
             readOnly={showsDisabledMessage || undefined}
             aria-describedby={ariaDescribedBy}
-            aria-required={isRequired === true ? 'true' : undefined}
+            aria-required={isEffectivelyRequired ? 'true' : undefined}
             aria-invalid={
               status?.type === 'error' || !isDateInputValid ? 'true' : undefined
             }
@@ -946,25 +1034,16 @@ export function DateTimeInput({
             rejected (WCAG 3.3.1).
           */}
           <VisuallyHidden as="div" role="alert" aria-live="assertive">
-            {!isDateInputValid ? 'Invalid date' : ''}
+            {!isDateInputValid ? t('@astryx.dateInput.invalidDate') : ''}
           </VisuallyHidden>
           {hasClear && value !== undefined && !isEffectivelyDisabled && (
-            <button
-              type="button"
+            <InputClearButton
+              label={t('@astryx.dateInput.clear', {label})}
               onClick={handleClear}
-              aria-label={t('@astryx.dateInput.clear', {label})}
-              {...stylex.props(styles.iconButton)}>
-              <Icon icon="close" size="sm" color="secondary" />
-            </button>
-          )}
-          {isBusy && <Spinner size="sm" />}
-          {status && (
-            <Icon
-              icon={statusIconMap[status.type]}
-              size="md"
-              color={statusIconColorMap[status.type]}
             />
           )}
+          {isBusy && <Spinner size="sm" />}
+          {statusIcon}
         </div>
 
         {/* Time input */}
@@ -972,17 +1051,34 @@ export function DateTimeInput({
           ref={timeContainerRef}
           onClick={handleTimeWrapperClick}
           onMouseUp={handleTimeWrapperMouseUp}
-          {...stylex.props(
-            inputWrapperStyles.base,
-            sizeStyles[size],
-            styles.timeWrapper,
-            isEffectivelyDisabled && inputWrapperStyles.disabled,
-            status && inputStatusBorderStyles[status.type],
-            status && inputStatusHoverShadowStyles[status.type],
-            status && inputStatusFocusWithinStyles[status.type],
+          {...mergeProps(
+            themeProps('date-time-input-time-segment', {
+              size,
+              status: status?.type ?? null,
+            }),
+            stylex.props(
+              inputWrapperStyles.base,
+              sizeStyles[size],
+              styles.timeWrapper,
+              isEffectivelyDisabled && inputWrapperStyles.disabled,
+              status && inputStatusBorderStyles[status.type],
+              status &&
+                !isEffectivelyDisabled &&
+                inputStatusHoverShadowStyles[status.type],
+              status && inputStatusFocusWithinStyles[status.type],
+            ),
           )}>
           <div {...stylex.props(styles.icon)}>
-            <Icon icon="clock" size="sm" color="secondary" />
+            <Icon
+              icon="clock"
+              size="sm"
+              color="secondary"
+              // Stable theme target on the leading clock glyph, so a theme can
+              // restyle just this icon (color, size) via `defineTheme`. The
+              // time segment has no toggle button — the clock is a static
+              // leading affordance — so this carries no interactive state.
+              {...themeProps('date-time-input-clock-icon')}
+            />
           </div>
           <input
             ref={timeInputRef}
@@ -1000,9 +1096,11 @@ export function DateTimeInput({
             disabled={isEffectivelyDisabled && !showsDisabledMessage}
             aria-disabled={showsDisabledMessage ? 'true' : undefined}
             readOnly={showsDisabledMessage || undefined}
-            aria-label={timeLabel ?? t('@astryx.dateTimeInput.timeSuffix', {label})}
+            aria-label={
+              timeLabel ?? t('@astryx.dateTimeInput.timeSuffix', {label})
+            }
             aria-describedby={ariaDescribedBy}
-            aria-required={isRequired === true ? 'true' : undefined}
+            aria-required={isEffectivelyRequired ? 'true' : undefined}
             aria-invalid={
               status?.type === 'error' || !isTimeInputValid ? 'true' : undefined
             }
@@ -1018,7 +1116,7 @@ export function DateTimeInput({
             technology (WCAG 3.3.1).
           */}
           <VisuallyHidden as="div" role="alert" aria-live="assertive">
-            {!isTimeInputValid ? 'Invalid time' : ''}
+            {!isTimeInputValid ? t('@astryx.timeInput.invalidTime') : ''}
           </VisuallyHidden>
         </div>
       </div>
@@ -1033,6 +1131,7 @@ export function DateTimeInput({
           max={calendarMax}
           dateConstraints={dateConstraints}
           numberOfMonths={numberOfMonths}
+          weekStartsOn={weekStartsOn}
         />,
         {placement: 'below', alignment: 'start'},
       )}
