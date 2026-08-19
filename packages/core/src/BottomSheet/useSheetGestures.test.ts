@@ -669,6 +669,232 @@ describe('useSheetGestures', () => {
     });
   });
 
+  describe('body touch handoff mid-gesture', () => {
+    // The reported bug: the finger lands mid-content, swipes up, REACHES the
+    // end of the content, and keeps pulling in the same continuous gesture.
+    // Arming decided at touchstart can never see that, and by the time the
+    // scroller is at its end the browser owns the gesture — every remaining
+    // touchmove is non-cancelable, so preventDefault() is not available to
+    // promote with. These cases pin the anchored, cancel-free handoff instead.
+    function makeScroller(opts: {
+      scrollTop: number;
+      clientHeight: number;
+      scrollHeight: number;
+    }) {
+      const sheet = makeTarget();
+      const el = document.createElement('div');
+      Object.defineProperty(el, 'scrollTop', {
+        value: opts.scrollTop,
+        writable: true,
+      });
+      Object.defineProperty(el, 'clientHeight', {value: opts.clientHeight});
+      Object.defineProperty(el, 'scrollHeight', {value: opts.scrollHeight});
+      el.getBoundingClientRect = () => ({height: SHEET_HEIGHT}) as DOMRect;
+      sheet.appendChild(el);
+      document.body.appendChild(sheet);
+      return el;
+    }
+    function touch(el: HTMLElement, type: string, y: number, id = 1) {
+      const ev = new Event(type, {bubbles: true, cancelable: true});
+      Object.defineProperty(ev, 'changedTouches', {
+        value: [{identifier: id, clientY: y}],
+      });
+      Object.defineProperty(ev, 'touches', {
+        value:
+          type === 'touchend' || type === 'touchcancel'
+            ? []
+            : [{identifier: id, clientY: y}],
+      });
+      Object.defineProperty(ev, 'currentTarget', {value: el});
+      el.dispatchEvent(ev);
+      return ev;
+    }
+    // A scroller with 600px of scrollable content, resting one detent down so
+    // an upward pull has somewhere to expand to.
+    function midDetentScroller(hook: Hook, scrollTop: number) {
+      const el = makeScroller({
+        scrollTop,
+        clientHeight: 200,
+        scrollHeight: 800,
+      });
+      act(() => hook.result.current.sheetRef(el));
+      act(() => hook.result.current.bodyProps.ref(el));
+      down(hook, 0, 0, el);
+      move(hook, 180, 700, el);
+      up(hook, 180, 1100, el);
+      expect(hook.result.current.settledOffset).toBe(200);
+      return el;
+    }
+
+    // iOS Safari raises PointerEvents for a finger under the SAME numeric id
+    // it puts in `Touch.identifier`, so a drag the touch path starts is keyed
+    // to a live pointer. WebKit takes that pointer's capture straight back,
+    // and the `lostpointercapture` that follows used to cancel the drag one
+    // event after it began — leaving the sheet inert for the rest of the pull
+    // while the handle still worked. Every browser that keeps the two id
+    // spaces apart hides this, which is why it only showed up on device.
+    it('survives a lostpointercapture for the finger driving it', () => {
+      const {hook} = setup({snapHeights: () => [200]});
+      const el = midDetentScroller(hook, 600); // parked at the content end
+      act(() => {
+        touch(el, 'touchstart', 500, 7);
+        touch(el, 'touchmove', 450, 7); // promotes at the armed bottom edge
+      });
+      expect(hook.result.current.isDragging).toBe(true);
+      act(() => {
+        hook.result.current.bodyProps.onLostPointerCapture(
+          pointerEvent(450, 0, el, 7), // same id as the touch: iOS does this
+        );
+      });
+      expect(hook.result.current.isDragging).toBe(true);
+      act(() => {
+        touch(el, 'touchmove', 400, 7);
+      });
+      // 100px of pull past the touchstart, from the 200px detent.
+      expect(hook.result.current.dragOffset).toBe(100);
+    });
+
+    // `pointercancel` for that same finger arrives the moment WebKit claims
+    // the gesture. Ending the drag on it settles the sheet mid-pull.
+    it('does not end the touch drag on a pointercancel for that finger', () => {
+      const {hook} = setup({snapHeights: () => [200]});
+      const el = midDetentScroller(hook, 600);
+      act(() => {
+        touch(el, 'touchstart', 500, 7);
+        touch(el, 'touchmove', 450, 7);
+      });
+      act(() => {
+        hook.result.current.bodyProps.onPointerCancel(
+          pointerEvent(450, 0, el, 7),
+        );
+      });
+      expect(hook.result.current.isDragging).toBe(true);
+    });
+
+    it('hands off when the content runs out under a moving finger', () => {
+      const {hook} = setup({snapHeights: () => [200]});
+      const el = midDetentScroller(hook, 300); // finger lands mid-content
+      act(() => {
+        touch(el, 'touchstart', 500);
+        el.scrollTop = 450; // the swipe scrolls the content...
+        touch(el, 'touchmove', 350);
+        el.scrollTop = 600; // ...until it runs out at the bottom
+        touch(el, 'touchmove', 200); // the content ended here
+        touch(el, 'touchmove', 150); // 50px BEYOND the end
+      });
+      expect(hook.result.current.isDragging).toBe(true);
+      // Anchored where the content ran out, so only the 50px past it moves the
+      // sheet. Anchoring at touchstart would have thrown it 350px instead.
+      expect(hook.result.current.dragOffset).toBe(150);
+    });
+
+    it('does not preventDefault the mid-gesture handoff', () => {
+      // By this point in the gesture the events are non-cancelable anyway, and
+      // there is nothing to cancel: the scroller is clamped at its end.
+      // Claiming the gesture would only strand the content under the finger.
+      const {hook} = setup({snapHeights: () => [200]});
+      const el = midDetentScroller(hook, 300);
+      let atEnd: Event | undefined;
+      let past: Event | undefined;
+      let further: Event | undefined;
+      act(() => {
+        touch(el, 'touchstart', 500);
+        el.scrollTop = 600;
+        atEnd = touch(el, 'touchmove', 200);
+        past = touch(el, 'touchmove', 150);
+        further = touch(el, 'touchmove', 100);
+      });
+      expect(hook.result.current.isDragging).toBe(true);
+      expect(atEnd?.defaultPrevented).toBe(false);
+      expect(past?.defaultPrevented).toBe(false);
+      expect(further?.defaultPrevented).toBe(false);
+    });
+
+    it('gives the gesture back when the finger returns to the content end', () => {
+      const {hook} = setup({snapHeights: () => [200]});
+      const el = midDetentScroller(hook, 300);
+      act(() => {
+        touch(el, 'touchstart', 500);
+        el.scrollTop = 600;
+        touch(el, 'touchmove', 200); // the content ended here
+        touch(el, 'touchmove', 150);
+      });
+      expect(hook.result.current.dragOffset).toBe(150);
+
+      act(() => {
+        touch(el, 'touchmove', 210); // back below the anchor
+      });
+      // The native scroll was never cancelled, so it resumes from here. Two
+      // things moving at once is the failure mode; the sheet yields.
+      expect(hook.result.current.isDragging).toBe(false);
+      expect(hook.result.current.settledOffset).toBe(200);
+
+      act(() => {
+        el.scrollTop = 600; // scrolled back to the end
+        touch(el, 'touchmove', 190); // and pulls past it again
+        touch(el, 'touchmove', 140);
+      });
+      expect(hook.result.current.isDragging).toBe(true);
+      expect(hook.result.current.dragOffset).toBe(150);
+    });
+
+    it('does not hand off on reaching the end without travelling past it', () => {
+      // Landing on the last pixel is not a pull, and the momentum tail after
+      // the finger lifts fires no touchmove at all, so it can never promote.
+      const {hook} = setup({snapHeights: () => [200]});
+      const el = midDetentScroller(hook, 300);
+      act(() => {
+        touch(el, 'touchstart', 500);
+        el.scrollTop = 600;
+        touch(el, 'touchmove', 200);
+        touch(el, 'touchmove', 199); // jitter, not a pull
+        touch(el, 'touchend', 199);
+        el.scrollTop = 600; // momentum carries on with no finger down
+      });
+      expect(hook.result.current.isDragging).toBe(false);
+      expect(hook.result.current.settledOffset).toBe(200);
+    });
+
+    it('leaves the mid-gesture pull to the content at the tallest detent', () => {
+      // Same #5161 rule as the touchstart-armed edge: with no taller detent
+      // there is nothing to expand into, so the scroller keeps the gesture.
+      const {hook} = setup({snapHeights: () => [200]});
+      const el = makeScroller({
+        scrollTop: 300,
+        clientHeight: 200,
+        scrollHeight: 800,
+      });
+      act(() => hook.result.current.sheetRef(el));
+      act(() => hook.result.current.bodyProps.ref(el));
+      expect(hook.result.current.settledOffset).toBe(0);
+
+      let past: Event | undefined;
+      act(() => {
+        touch(el, 'touchstart', 500);
+        el.scrollTop = 600;
+        touch(el, 'touchmove', 200);
+        past = touch(el, 'touchmove', 100);
+      });
+      expect(hook.result.current.isDragging).toBe(false);
+      expect(hook.result.current.dragOffset).toBe(0);
+      expect(past?.defaultPrevented).toBe(false);
+    });
+
+    it('does not hand off while the content can still scroll', () => {
+      const {hook} = setup({snapHeights: () => [200]});
+      const el = midDetentScroller(hook, 0);
+      act(() => {
+        touch(el, 'touchstart', 500);
+        el.scrollTop = 200;
+        touch(el, 'touchmove', 300);
+        el.scrollTop = 400;
+        touch(el, 'touchmove', 100); // 400px of pull, all of it scrolling
+      });
+      expect(hook.result.current.isDragging).toBe(false);
+      expect(hook.result.current.settledOffset).toBe(200);
+    });
+  });
+
   describe('viewport resize', () => {
     // The panel pins the sheet's height in px at a resizing detent; everywhere
     // else the height comes from CSS (`92dvh`), which follows the viewport.

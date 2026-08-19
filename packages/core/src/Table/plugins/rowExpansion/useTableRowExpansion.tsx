@@ -23,6 +23,7 @@ import {spacingVars, colorVars, radiusVars} from '../../../theme/tokens.stylex';
 import {Icon} from '../../../Icon';
 import {resolveContextActions} from '../../tableContextMenu';
 import {useTranslator} from '../../../i18n';
+import {rtlStyles} from '../../../utils';
 import type {
   TablePlugin,
   TableColumn,
@@ -92,8 +93,20 @@ const expansionStyles = stylex.create({
       color: colorVars['--color-icon-primary'],
     },
   },
+  // The RTL mirror is folded into each state's transform rather than living
+  // on a parent span, matching TreeListItem's chevron (both are `transform`,
+  // so on one element the later value would win).
   chevronExpanded: {
-    transform: 'rotate(90deg)',
+    transform: {
+      default: 'rotate(90deg)',
+      ':is([dir="rtl"] *)': 'scaleX(-1) rotate(90deg)',
+    },
+  },
+  chevronCollapsed: {
+    transform: {
+      default: 'rotate(0deg)',
+      ':is([dir="rtl"] *)': 'scaleX(-1) rotate(0deg)',
+    },
   },
   expandedRow: {
     backgroundColor: colorVars['--color-background-muted'],
@@ -121,7 +134,9 @@ function ExpansionChevron({
       type="button"
       {...stylex.props(
         expansionStyles.chevronButton,
-        isExpanded && expansionStyles.chevronExpanded,
+        isExpanded
+          ? expansionStyles.chevronExpanded
+          : expansionStyles.chevronCollapsed,
       )}
       onClick={e => {
         e.stopPropagation();
@@ -249,6 +264,9 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
                   icon={isExpanded ? 'chevronDown' : 'chevronRight'}
                   size="xsm"
                   aria-hidden
+                  // chevronDown needs no mirroring; chevronRight (collapsed,
+                  // pointing toward the reveal direction) does.
+                  xstyle={!isExpanded && rtlStyles.mirror}
                 />
               ),
               onSelect: () => onToggle(key),

@@ -34,6 +34,12 @@ export const docs = {
         'Tooltip text shown on hover to explain the status meaning.',
     },
     {
+      name: 'icon',
+      type: 'ReactNode',
+      description:
+        'Optional icon rendered centered inside the dot, painted in currentColor (the variant\'s ink). Gives the status a non-color mark, so use a different icon per status. Booleans and empty strings are ignored, so `cond && <Icon />` is safe. Same contract as AvatarStatusDot.',
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
@@ -85,6 +91,12 @@ export const docsZh = {
       default: 'false',
     },
     {
+      name: 'icon',
+      type: 'ReactNode',
+      description:
+        '可选图标，居中渲染于圆点内，以 currentColor（变体的前景色）着色。为状态提供非颜色标记，请为每个状态使用不同图标。布尔值和空字符串会被忽略，因此 `cond && <Icon />` 是安全的。与 AvatarStatusDot 的契约一致。',
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
@@ -132,6 +144,7 @@ export const docsDense = {
     label: 'Accessible label via aria-label.',
     isPulsing: 'Pulse animation; respects prefers-reduced-motion: reduce.',
     tooltip: 'Tooltip text on hover to explain status meaning.',
+    icon: 'Optional ReactNode rendered centered in the dot (currentColor ink); a non-color mark for the status, use a different icon per status. Booleans/empty strings ignored (safe for cond && <Icon/>). Same contract as AvatarStatusDot.',
     xstyle: 'StyleX layout styles; must be stylex.create() value.',
   },
 };

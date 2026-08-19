@@ -114,4 +114,29 @@ describe('InputClearButton', () => {
     expect(css).toContain('.astryx-input-clear-icon:hover {');
     expect(css).toContain('color: var(--color-icon-primary)');
   });
+
+  it('renders the astryx-input-clear-button target on the button wrapper', () => {
+    render(<InputClearButton label="Clear" onClick={() => {}} />);
+    const button = screen.getByRole('button', {name: 'Clear'});
+    expect(button).toHaveClass('astryx-input-clear-button');
+  });
+
+  it('exposes input-clear-button so a theme controls the button size and hover', () => {
+    const theme = defineTheme({
+      name: 'input-clear-button-test',
+      components: {
+        'input-clear-button': {
+          base: {
+            height: '28px',
+            ':hover': {backgroundImage: 'none'},
+          },
+        },
+      },
+    });
+    const css = generateThemeTestCSS(theme);
+    expect(css).toContain('.astryx-input-clear-button {');
+    expect(css).toContain('height: 28px');
+    expect(css).toContain('.astryx-input-clear-button:hover {');
+    expect(css).toContain('background-image: none');
+  });
 });
