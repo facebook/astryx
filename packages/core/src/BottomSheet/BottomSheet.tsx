@@ -49,8 +49,8 @@ import {
   type BottomSheetSwitcherPhase,
 } from './BottomSheetSwitcherContext';
 
-export type {BottomSheetHeight} from './BottomSheetPanel';
-import type {BottomSheetHeight} from './BottomSheetPanel';
+export type {BottomSheetHeight, BottomSheetSnapPoint} from './BottomSheetPanel';
+import type {BottomSheetHeight, BottomSheetSnapPoint} from './BottomSheetPanel';
 
 const styles = stylex.create({
   dialog: {
@@ -123,6 +123,16 @@ interface BottomSheetSharedProps extends BaseProps<HTMLDivElement> {
   height?: BottomSheetHeight | number | string;
 
   /**
+   * Extra heights the sheet can rest at when dragged; its own height is always
+   * the tallest stop, and omitting this gives a sheet that only opens and
+   * closes. Each stop is the sheet's visible height: a number is a viewport
+   * fraction (`0.5` is half the screen), `'50%'` the same in CSS, `'320px'` an
+   * absolute length. A stop of a quarter of the sheet or less is a peek — it
+   * slides away instead of reflowing, and thins the scrim.
+   */
+  snapPoints?: ReadonlyArray<BottomSheetSnapPoint>;
+
+  /**
    * Configures implicit dismissal behavior, matching Dialog.
    * - required: Blocks swipe, scrim click, and Escape
    * - form: Blocks swipe and scrim click, allows Escape
@@ -193,6 +203,7 @@ function StandaloneBottomSheet({
   label,
   children,
   height = 'capped',
+  snapPoints,
   hasScrim = true,
   purpose = 'info',
   xstyle,
@@ -333,6 +344,7 @@ function StandaloneBottomSheet({
           ref={ref}
           state={panelState}
           height={height}
+          snapPoints={snapPoints}
           isSwipeDismissAllowed={purpose === 'info'}
           isPageScrollLocked={shouldPresent && hasScrim}
           xstyle={xstyle}
@@ -358,6 +370,7 @@ function SwitcherBottomSheetItem({
   label,
   children,
   height = 'capped',
+  snapPoints,
   purpose = 'info',
   xstyle,
   ...props
@@ -488,6 +501,7 @@ function SwitcherBottomSheetItem({
         ref={ref}
         state={panelState}
         height={height}
+        snapPoints={snapPoints}
         isSwipeDismissAllowed={purpose === 'info'}
         isPageScrollLocked={hasScrim}
         xstyle={xstyle}

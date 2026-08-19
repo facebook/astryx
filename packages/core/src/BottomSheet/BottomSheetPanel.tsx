@@ -16,6 +16,7 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/BottomSheet/BottomSheet.tsx
  * - /packages/core/src/BottomSheet/BottomSheetPanel.test.tsx
+ * - /packages/core/src/BottomSheet/snapOffsets.ts
  * - /packages/core/src/BottomSheet/useMobileKeyboard.ts
  * - /packages/core/src/BottomSheet/useSheetGestures.ts
  */
@@ -25,11 +26,13 @@ import {
   useEffect,
   useImperativeHandle,
   useLayoutEffect,
+  useMemo,
   useRef,
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
+import {useDevWarning} from '../hooks';
 import {
   colorVars,
   durationVars,
@@ -40,10 +43,13 @@ import {
   spacingVars,
 } from '../theme/tokens.stylex';
 import {mergeProps, themeProps} from '../utils';
+import {
+  isValidSnapPoint,
+  resolveSnapPoints,
+  type BottomSheetSnapPoint,
+} from './snapOffsets';
 import {useMobileKeyboard} from './useMobileKeyboard';
 import {useSheetGestures} from './useSheetGestures';
-
-const SNAP_FRACTIONS = [0.14, 0.5, 0.92];
 
 const HEIGHT_BUDGETS = {
   hug: '92dvh',
@@ -52,23 +58,39 @@ const HEIGHT_BUDGETS = {
 } as const;
 
 export type BottomSheetHeight = keyof typeof HEIGHT_BUDGETS;
+export type {BottomSheetSnapPoint};
 
 // SYNC: must match OVERSCROLL_MAX in useSheetGestures.ts.
 const OVERSCROLL_PADDING = 48;
 const MOBILE_KEYBOARD_BOTTOM_CLEARANCE = 48;
 const TRANSITION_BACKSTOP_BUFFER_MS = 50;
 
-function defaultSnapHeights(): number[] {
-  if (typeof window === 'undefined') {
-    return [];
+// Measure the same viewport the height budgets are written against. Those are
+// `dvh`, which the virtual keyboard does not shrink, so reading
+// `visualViewport` here would make the two disagree by exactly the keyboard's
+// height: every detent would move while the sheet it measures did not. A
+// keyboard is `useMobileKeyboard`'s business — it holds the sheet still and
+// scrolls the body — and it does not redefine the sheet's detents.
+function layoutViewportHeight(): number {
+  return typeof window === 'undefined' ? 0 : window.innerHeight;
+}
+
+/**
+ * A stable identity for a set of snap points. Type-tagged, so the fraction
+ * `0.5` and the (invalid) string `'0.5'` cannot collide on one key.
+ *
+ * Recomputed every render — the panel re-renders on every frame of a drag — so
+ * it stays a single pass over a handful of values, and everything derived from
+ * the points hangs off it instead of being rebuilt per frame.
+ */
+function snapPointsKeyFor(
+  points: ReadonlyArray<BottomSheetSnapPoint> | undefined,
+): string {
+  let key = '';
+  for (const point of points ?? []) {
+    key += `${typeof point}:${point}|`;
   }
-  // Measure the same viewport the height budgets are written against. Those
-  // are `dvh`, which the virtual keyboard does not shrink, so reading
-  // `visualViewport` here made the two disagree by exactly the keyboard's
-  // height: every detent moved while the sheet it was measuring did not. A
-  // keyboard is `useMobileKeyboard`'s business — it holds the sheet still and
-  // scrolls the body — and it does not redefine the sheet's detents.
-  return SNAP_FRACTIONS.map(fraction => fraction * window.innerHeight);
+  return key;
 }
 
 const styles = stylex.create({
@@ -171,6 +193,7 @@ interface BottomSheetPanelProps extends BaseProps<HTMLDivElement> {
   state: BottomSheetPanelState;
   height: BottomSheetHeight | number | string;
   children: ReactNode;
+  snapPoints?: ReadonlyArray<BottomSheetSnapPoint>;
   isSwipeDismissAllowed?: boolean;
   /** Whether the host has locked page scrolling (a modal, scrim-backed sheet). */
   isPageScrollLocked?: boolean;
@@ -296,6 +319,7 @@ export function BottomSheetPanel({
   state,
   height,
   children,
+  snapPoints,
   className,
   style,
   tabIndex,
@@ -340,6 +364,36 @@ export function BottomSheetPanel({
   const isFading = isRetained && state.motion === 'fading';
   const alignmentOffset = isRetained ? state.alignmentOffset : 0;
 
+  // Everything derived from the snap points keys off their identity, not the
+  // array's: the resolver's identity is the hook's signal that the stops
+  // changed, so it must not churn on a re-render the drag caused. The memo
+  // reads the points through a ref, so the resolver resolves them at call time
+  // — against whatever the viewport is then, not what it was at memo time.
+  const snapPointsKey = snapPointsKeyFor(snapPoints);
+  const snapPointsRef = useRef(snapPoints);
+  snapPointsRef.current = snapPoints;
+  const {snapHeights, ignoredSnapPointsMessage} = useMemo(() => {
+    if (snapPointsKey === '') {
+      return {snapHeights: undefined, ignoredSnapPointsMessage: ''};
+    }
+    const ignored = (snapPointsRef.current ?? []).filter(
+      point => !isValidSnapPoint(point),
+    );
+    return {
+      snapHeights: () =>
+        resolveSnapPoints(snapPointsRef.current ?? [], layoutViewportHeight()),
+      ignoredSnapPointsMessage:
+        ignored.length === 0
+          ? ''
+          : `snapPoints ignored ${JSON.stringify(ignored)}. A snap point is a viewport fraction above 0 and up to 1 (0.5 is half the screen), a px length ('320px'), or a percentage ('50%').`,
+    };
+  }, [snapPointsKey]);
+  useDevWarning(
+    'BottomSheet',
+    ignoredSnapPointsMessage,
+    ignoredSnapPointsMessage !== '',
+  );
+
   const {
     contentProps,
     handleProps,
@@ -359,7 +413,7 @@ export function BottomSheetPanel({
     canDismiss: isSwipeDismissAllowed,
     offscreenBlockEndInset: OVERSCROLL_PADDING,
     onDismiss,
-    snapHeights: defaultSnapHeights,
+    snapHeights,
     onScrimOpacity,
   });
 

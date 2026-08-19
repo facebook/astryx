@@ -19,14 +19,16 @@
  * the part the scrolling area gives up as layout height, and the remainder is
  * a transform. Gestures and snaps only ever move the transform, so they stay
  * on the compositor; layout height changes at rest, in one transition-free
- * render whose visible geometry is identical. The peek detent keeps the full
- * height and slides below the viewport instead of reflowing to a sliver.
+ * render whose visible geometry is identical. A peek detent — a stop that is
+ * only a sliver of the sheet — keeps the full height and slides below the
+ * viewport instead of reflowing to that sliver.
  *
- * Those are pixels, and the detents behind them are viewport fractions, so a
- * sheet at rest re-resolves its detent on `resize` / `orientationchange` and
- * re-anchors to the new geometry without animating. The detent it returns to
- * is tracked by index: the pixels stop meaning the same thing when the
- * viewport changes, the stop the user chose does not.
+ * Those are pixels, and the stops behind them are relative to the viewport, so
+ * a sheet at rest re-resolves its detent on `resize` / `orientationchange`,
+ * and whenever the host swaps the snap points, and re-anchors to the new
+ * geometry without animating. The detent it returns to is tracked by index:
+ * the pixels stop meaning the same thing when the viewport changes, the stop
+ * the user chose does not.
  *
  * On touch, the scrolling body hands the gesture to the sheet at a scroll
  * edge. Two shapes, because the browser only offers one of them a choice: a
@@ -66,10 +68,19 @@ import {
 import {useMediaQuery} from '../hooks';
 import {
   computeDetentOffsets,
-  isPeekOffset,
+  peekOffsetFor,
   resolveSettleOffset,
   scrimOpacityForOffset,
 } from './snapOffsets';
+
+/**
+ * The stops a sheet of a given height rests at: offsets from fully-open in px,
+ * ascending, plus which of them (if any) is the peek.
+ */
+interface SheetDetents {
+  offsets: number[];
+  peekOffset: number | null;
+}
 
 // A flick (fast throw) dismisses (down) or expands (up) regardless of where
 // it ends. Requires both a speed and a distance floor so a small nudge
@@ -205,6 +216,9 @@ export interface UseSheetGesturesOptions {
    * (rotation, a resized desktop window, collapsing browser chrome). The fully
    * open height is always the tallest detent. Omit for a single-height sheet
    * (a drag then only dismisses or springs back).
+   *
+   * Keep the identity stable: a new function is read as new stops, and
+   * re-anchors a resting sheet to them.
    */
   snapHeights?: () => number[];
   /** Notified when the settled visible detent height (px) changes. */
@@ -292,7 +306,7 @@ export interface UseSheetGesturesResult {
   /**
    * How much of `settledOffset` is expressed as layout height rather than as a
    * transform. Equals `settledOffset` at the resizing detents; 0 at fully open
-   * and at the peek, which keep the sheet's full height (see isPeekOffset).
+   * and at the peek, which keep the sheet's full height (see peekOffsetFor).
    */
   settledLayoutOffset: number;
 }
@@ -339,7 +353,7 @@ export function useSheetGestures({
   const [scrollPreservationInset, setScrollPreservationInset] = useState(0);
   // How much of the settled travel is expressed as layout height. Equal to
   // settledOffset for the resizing detents, and 0 at fully open and at the
-  // peek (see isPeekOffset), which keep the full height and use a transform.
+  // peek (see peekOffsetFor), which keep the full height and use a transform.
   const [settledLayoutOffset, setSettledLayoutOffset] = useState(0);
   const settledLayoutOffsetRef = useRef(0);
   // WHICH detent the sheet rests on, as an index into the resolved list. The
@@ -432,17 +446,22 @@ export function useSheetGestures({
   const isOpenRef = useRef(isOpen);
   isOpenRef.current = isOpen;
 
+  // The resolver is refreshed during render, not with the callbacks below: the
+  // layout effect that re-anchors on a change to it runs BEFORE passive
+  // effects, so a resolver parked in one would still be the previous set of
+  // stops by the time the re-anchor read it.
+  const snapHeightsRef = useRef(snapHeights);
+  snapHeightsRef.current = snapHeights;
+
   const onDismissRef = useRef(onDismiss);
   const canDismissRef = useRef(canDismiss);
   const onSnapRef = useRef(onSnap);
   const onScrimOpacityRef = useRef(onScrimOpacity);
-  const snapHeightsRef = useRef(snapHeights);
   useEffect(() => {
     onDismissRef.current = onDismiss;
     canDismissRef.current = canDismiss;
     onSnapRef.current = onSnap;
     onScrimOpacityRef.current = onScrimOpacity;
-    snapHeightsRef.current = snapHeights;
   });
 
   // Live drag bookkeeping (refs so pointermove doesn't churn renders).
@@ -562,20 +581,22 @@ export function useSheetGestures({
     return sheetElRef.current?.getBoundingClientRect().height ?? 0;
   }, []);
 
-  // Detent translate offsets (px) from the tallest detent, ascending. Exclude
-  // the border-box portion reserved below the viewport before comparing the
-  // candidate visible heights; otherwise every snap point lands that many px
-  // too low. Snap heights are resolved lazily so they track the viewport.
-  const detentOffsets = useCallback((height: number): number[] => {
+  // Detent translate offsets (px) from the tallest detent, ascending, plus the
+  // peek among them. Exclude the border-box portion reserved below the
+  // viewport before comparing the candidate visible heights; otherwise every
+  // snap point lands that many px too low. Snap heights are resolved lazily so
+  // they track the viewport.
+  const resolveDetents = useCallback((height: number): SheetDetents => {
     const visibleSheetHeight = visibleHeightForOffset(
       height,
       0,
       offscreenBlockEndInsetRef.current,
     );
-    return computeDetentOffsets(
+    const offsets = computeDetentOffsets(
       visibleSheetHeight,
       snapHeightsRef.current?.() ?? [],
     );
+    return {offsets, peekOffset: peekOffsetFor(offsets, visibleSheetHeight)};
   }, []);
 
   // The height the sheet WOULD have fully open, right now. While it rests at a
@@ -609,86 +630,104 @@ export function useSheetGestures({
   //
   // Re-resolve the SAME detent — by index, the one thing that survives the
   // units changing — against the new geometry, and re-anchor without
-  // animating: the viewport moved, not the user's finger, so there is no
+  // animating: the geometry moved, not the user's finger, so there is no
   // gesture to continue and nothing to ease.
+  const reanchorToSettledDetent = useCallback(() => {
+    // A closed sheet re-anchors on its way back open; a live drag re-measures
+    // on its own, and a settle in flight owns the layout until it lands.
+    if (
+      !isOpenRef.current ||
+      dragStateRef.current != null ||
+      settlingLayoutOffsetRef.current != null
+    ) {
+      return;
+    }
+    const height = measureFullyOpenHeight();
+    if (height <= 0) {
+      return;
+    }
+    const {offsets, peekOffset} = resolveDetents(height);
+    const index = Math.min(settledDetentIndexRef.current, offsets.length - 1);
+    const target = offsets[index];
+    const targetLayoutOffset = target === peekOffset ? 0 : target;
+    const baseLayoutOffset = settledLayoutOffsetRef.current;
+    if (
+      height === sheetHeightRef.current &&
+      Math.abs(target - activeOffsetRef.current) <= 0.5 &&
+      Math.abs(targetLayoutOffset - baseLayoutOffset) <= 0.5
+    ) {
+      return;
+    }
+
+    sheetHeightRef.current = height;
+    // Re-anchoring is a measurement: the geometry it reads is only knowable
+    // after layout, so the state it corrects can only be set from an effect
+    // (or, on the resize path, from the listener). Both writes below are
+    // guarded by the equality check above, so a re-anchor that finds nothing
+    // to change sets nothing.
+    // eslint-disable-next-line @eslint-react/set-state-in-effect -- corrects settled geometry from a measurement
+    setSheetHeight(height);
+    settledDetentIndexRef.current = index;
+    prepareScrollAreaSettle(
+      baseLayoutOffset,
+      target,
+      targetLayoutOffset,
+      target,
+      baseLayoutOffset,
+      naturalEndGapFor(bodyNodeRef.current),
+      false,
+    );
+    recordSettledLayoutOffset(targetLayoutOffset);
+    // eslint-disable-next-line @eslint-react/set-state-in-effect -- corrects settled geometry from a measurement
+    setSettledOffset(target);
+    onSnapRef.current?.(
+      visibleHeightForOffset(height, target, offscreenBlockEndInsetRef.current),
+    );
+    const maxOffset = offsets[offsets.length - 1];
+    const shortestDetentHeight = visibleHeightForOffset(
+      height,
+      maxOffset,
+      offscreenBlockEndInsetRef.current,
+    );
+    onScrimOpacityRef.current?.(
+      scrimOpacityForOffset(
+        target,
+        offsets,
+        maxOffset + shortestDetentHeight * DISMISS_OVERSHOOT_RATIO,
+        peekOffset,
+      ),
+    );
+  }, [
+    measureFullyOpenHeight,
+    prepareScrollAreaSettle,
+    recordSettledLayoutOffset,
+    resolveDetents,
+  ]);
+
   useEffect(() => {
     if (!isOpen || typeof window === 'undefined') {
       return;
     }
-    const handleViewportChange = () => {
-      // A live drag re-measures on its own, and a settle in flight owns the
-      // layout until it lands.
-      if (
-        dragStateRef.current != null ||
-        settlingLayoutOffsetRef.current != null
-      ) {
-        return;
-      }
-      const height = measureFullyOpenHeight();
-      if (height <= 0) {
-        return;
-      }
-      const offsets = detentOffsets(height);
-      const index = Math.min(settledDetentIndexRef.current, offsets.length - 1);
-      const target = offsets[index];
-      const targetLayoutOffset = isPeekOffset(target, offsets) ? 0 : target;
-      const baseLayoutOffset = settledLayoutOffsetRef.current;
-      if (
-        height === sheetHeightRef.current &&
-        Math.abs(target - activeOffsetRef.current) <= 0.5 &&
-        Math.abs(targetLayoutOffset - baseLayoutOffset) <= 0.5
-      ) {
-        return;
-      }
-
-      sheetHeightRef.current = height;
-      setSheetHeight(height);
-      settledDetentIndexRef.current = index;
-      prepareScrollAreaSettle(
-        baseLayoutOffset,
-        target,
-        targetLayoutOffset,
-        target,
-        baseLayoutOffset,
-        naturalEndGapFor(bodyNodeRef.current),
-        false,
-      );
-      recordSettledLayoutOffset(targetLayoutOffset);
-      setSettledOffset(target);
-      onSnapRef.current?.(
-        visibleHeightForOffset(
-          height,
-          target,
-          offscreenBlockEndInsetRef.current,
-        ),
-      );
-      const maxOffset = offsets[offsets.length - 1];
-      const shortestDetentHeight = visibleHeightForOffset(
-        height,
-        maxOffset,
-        offscreenBlockEndInsetRef.current,
-      );
-      onScrimOpacityRef.current?.(
-        scrimOpacityForOffset(
-          target,
-          offsets,
-          maxOffset + shortestDetentHeight * DISMISS_OVERSHOOT_RATIO,
-        ),
-      );
-    };
-    window.addEventListener('resize', handleViewportChange);
-    window.addEventListener('orientationchange', handleViewportChange);
+    window.addEventListener('resize', reanchorToSettledDetent);
+    window.addEventListener('orientationchange', reanchorToSettledDetent);
     return () => {
-      window.removeEventListener('resize', handleViewportChange);
-      window.removeEventListener('orientationchange', handleViewportChange);
+      window.removeEventListener('resize', reanchorToSettledDetent);
+      window.removeEventListener('orientationchange', reanchorToSettledDetent);
     };
-  }, [
-    detentOffsets,
-    isOpen,
-    measureFullyOpenHeight,
-    prepareScrollAreaSettle,
-    recordSettledLayoutOffset,
-  ]);
+  }, [isOpen, reanchorToSettledDetent]);
+
+  // The other input to the same geometry: the snap points themselves. A host
+  // that swaps them while the sheet rests has moved the stops out from under
+  // it, exactly as a rotation does, so re-anchor the same way. Skipped on the
+  // first run — the sheet is already anchored to the detents it opened with.
+  const hasAnchoredSnapHeightsRef = useRef(false);
+  useLayoutEffect(() => {
+    if (!hasAnchoredSnapHeightsRef.current) {
+      hasAnchoredSnapHeightsRef.current = true;
+      return;
+    }
+    reanchorToSettledDetent();
+  }, [reanchorToSettledDetent, snapHeights]);
 
   const cancelDrag = useCallback(
     (target?: HTMLElement) => {
@@ -718,7 +757,7 @@ export function useSheetGestures({
       // An interrupted drag returns to its previous resting detent. Restore
       // the matching scrim opacity as well so the modal shell cannot remain
       // dimmed with its sheet translated out of view.
-      const offsets = detentOffsets(state.height);
+      const {offsets, peekOffset} = resolveDetents(state.height);
       const maxOffset = offsets[offsets.length - 1];
       const shortestDetentHeight = visibleHeightForOffset(
         state.height,
@@ -728,10 +767,15 @@ export function useSheetGestures({
       const dismissOffset =
         maxOffset + shortestDetentHeight * DISMISS_OVERSHOOT_RATIO;
       onScrimOpacityRef.current?.(
-        scrimOpacityForOffset(state.baseOffset, offsets, dismissOffset),
+        scrimOpacityForOffset(
+          state.baseOffset,
+          offsets,
+          dismissOffset,
+          peekOffset,
+        ),
       );
     },
-    [detentOffsets, prepareScrollAreaSettle],
+    [prepareScrollAreaSettle, resolveDetents],
   );
 
   useEffect(() => {
@@ -762,7 +806,7 @@ export function useSheetGestures({
       layoutOffset: number,
       naturalEndGap: number,
     ) => {
-      const offsets = detentOffsets(height);
+      const {offsets, peekOffset} = resolveDetents(height);
       const maxOffset = offsets[offsets.length - 1];
       const shortestDetentHeight = visibleHeightForOffset(
         height,
@@ -774,7 +818,7 @@ export function useSheetGestures({
       const settleAt = (target: number) => {
         // A peek keeps the full layout height and slides below the viewport;
         // every taller detent resizes the scrolling area to what it shows.
-        const targetLayoutOffset = isPeekOffset(target, offsets) ? 0 : target;
+        const targetLayoutOffset = target === peekOffset ? 0 : target;
         prepareScrollAreaSettle(
           baseLayoutOffset,
           target,
@@ -797,7 +841,7 @@ export function useSheetGestures({
         const dismissOffset =
           maxOffset + shortestDetentHeight * DISMISS_OVERSHOOT_RATIO;
         onScrimOpacityRef.current?.(
-          scrimOpacityForOffset(target, offsets, dismissOffset),
+          scrimOpacityForOffset(target, offsets, dismissOffset, peekOffset),
         );
         if (target !== baseOffset) {
           hapticTick();
@@ -866,7 +910,7 @@ export function useSheetGestures({
       const target = resolveSettleOffset(offset, offsets, dir, baseOffset);
       settleAt(target);
     },
-    [detentOffsets, prepareScrollAreaSettle, recordSettledLayoutOffset],
+    [prepareScrollAreaSettle, recordSettledLayoutOffset, resolveDetents],
   );
 
   const beginDrag = useCallback(
@@ -975,7 +1019,7 @@ export function useSheetGestures({
         state.lastCoord = event.clientY;
         state.lastTime = event.timeStamp;
       }
-      const offsets = detentOffsets(state.height);
+      const {offsets, peekOffset} = resolveDetents(state.height);
 
       const raw = state.baseOffset + delta;
       const maxDetentOffset = offsets[offsets.length - 1];
@@ -1017,10 +1061,10 @@ export function useSheetGestures({
       const dismissOffset =
         floorOffset + shortestDetentHeight * DISMISS_OVERSHOOT_RATIO;
       onScrimOpacityRef.current?.(
-        scrimOpacityForOffset(next, offsets, dismissOffset),
+        scrimOpacityForOffset(next, offsets, dismissOffset, peekOffset),
       );
     },
-    [detentOffsets, updateScrollPreservationInset],
+    [resolveDetents, updateScrollPreservationInset],
   );
 
   const endDrag = useCallback(

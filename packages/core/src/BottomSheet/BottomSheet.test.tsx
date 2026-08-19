@@ -15,6 +15,12 @@ import {createRef, useState} from 'react';
 import {BottomSheet} from './BottomSheet';
 import {BottomSheetSwitcher} from './BottomSheetSwitcher';
 
+// A sheet has no stops unless its host asks for them, so the tests that
+// exercise detents pass their own. These three — a 14% peek, a half-height
+// stop, and a 92% stop the Tall budget already covers — are the geometry the
+// height assertions below are written against.
+const SNAP_POINTS: ReadonlyArray<number> = [0.14, 0.5, 0.92];
+
 // jsdom doesn't implement <dialog> open/close or pointer capture; stub them.
 beforeEach(() => {
   HTMLDialogElement.prototype.showModal = vi.fn(function (
@@ -178,13 +184,20 @@ function finishSheetExit() {
   fireEvent.transitionEnd(getSheet(), {propertyName: 'transform'});
 }
 
-function ExitHarness({hasScrim}: {hasScrim?: boolean}) {
+function ExitHarness({
+  hasScrim,
+  snapPoints,
+}: {
+  hasScrim?: boolean;
+  snapPoints?: ReadonlyArray<number>;
+}) {
   const [isOpen, setIsOpen] = useState(true);
   return (
     <BottomSheet
       isOpen={isOpen}
       onOpenChange={setIsOpen}
       label="Filters"
+      snapPoints={snapPoints}
       hasScrim={hasScrim}>
       <button type="button" onClick={() => setIsOpen(false)}>
         Close sheet
@@ -616,6 +629,7 @@ describe('BottomSheet', () => {
           isOpen
           onOpenChange={() => {}}
           label="Release notes"
+          snapPoints={SNAP_POINTS}
           height="tall">
           Content
         </BottomSheet>,
@@ -667,6 +681,7 @@ describe('BottomSheet', () => {
           isOpen
           onOpenChange={() => {}}
           label="Release notes"
+          snapPoints={SNAP_POINTS}
           height="tall">
           Content
         </BottomSheet>,
@@ -720,6 +735,7 @@ describe('BottomSheet', () => {
           isOpen
           onOpenChange={() => {}}
           label="Release notes"
+          snapPoints={SNAP_POINTS}
           height="tall">
           Content
         </BottomSheet>,
@@ -797,6 +813,7 @@ describe('BottomSheet', () => {
           isOpen
           onOpenChange={() => {}}
           label="Release notes"
+          snapPoints={SNAP_POINTS}
           height="tall"
           style={{transition: 'none'}}>
           Content
@@ -830,6 +847,7 @@ describe('BottomSheet', () => {
           isOpen
           onOpenChange={() => {}}
           label="Release notes"
+          snapPoints={SNAP_POINTS}
           height="tall">
           Content
         </BottomSheet>,
@@ -890,7 +908,7 @@ describe('BottomSheet', () => {
       const observers = mockResizeObserverInstances();
       mockVisualViewport(800);
       mockWindowHeight(800);
-      render(<ExitHarness />);
+      render(<ExitHarness snapPoints={SNAP_POINTS} />);
       const sheet = getSheet();
       const sheetObserver = observers.find(instance =>
         instance.observed.has(sheet),
@@ -936,6 +954,7 @@ describe('BottomSheet', () => {
           isOpen
           onOpenChange={() => {}}
           label="Release notes"
+          snapPoints={SNAP_POINTS}
           height="tall">
           Content
         </BottomSheet>,
@@ -1000,6 +1019,7 @@ describe('BottomSheet', () => {
           isOpen
           onOpenChange={() => {}}
           label="Release notes"
+          snapPoints={SNAP_POINTS}
           height="tall">
           Content
         </BottomSheet>,
@@ -1036,6 +1056,136 @@ describe('BottomSheet', () => {
       fireTimedPointer(getHandle(), 'pointerup', {time: 5000, y: 288});
       // The peek of an 800px window: 736 - 112 = 624px of travel.
       expect(sheet.style.transform).toBe('translateY(624px)');
+    });
+  });
+
+  describe('snapPoints', () => {
+    // A Tall sheet in an 800px window: a 784px border box, 48px of which is
+    // the reserve below the fold, so 736px of it is visible.
+    function renderTallSheet(
+      snapPoints?: ReadonlyArray<number | string>,
+      onOpenChange: (isOpen: boolean) => void = () => {},
+    ) {
+      const observers = mockResizeObserverInstances();
+      mockVisualViewport(800);
+      mockWindowHeight(800);
+      const view = render(
+        <BottomSheet
+          isOpen
+          onOpenChange={onOpenChange}
+          label="Release notes"
+          snapPoints={snapPoints}
+          height="tall">
+          Content
+        </BottomSheet>,
+      );
+      const sheet = getSheet();
+      const sheetObserver = observers.find(instance =>
+        instance.observed.has(sheet),
+      );
+      act(() => {
+        sheetObserver?.callback(
+          [resizeEntry(784, 736)],
+          sheetObserver as unknown as ResizeObserver,
+        );
+      });
+      return {sheet, view};
+    }
+
+    function dragHandleTo(y: number) {
+      fireTimedPointer(getHandle(), 'pointerdown', {time: 0, y: 0});
+      fireTimedPointer(getHandle(), 'pointermove', {time: 1000, y});
+      fireTimedPointer(getHandle(), 'pointerup', {time: 2000, y});
+      fireEvent.transitionEnd(getSheet(), {propertyName: 'transform'});
+    }
+
+    it('has no stops of its own, so a released drag springs back', () => {
+      const onOpenChange = vi.fn();
+      const {sheet} = renderTallSheet(undefined, onOpenChange);
+
+      // 200px down is well short of the dismiss threshold, and there is no
+      // stop to catch it, so the sheet returns to fully open.
+      dragHandleTo(200);
+
+      expect(sheet.style.transform).toBe('');
+      expect(sheet.style.height).toBe('');
+      expect(onOpenChange).not.toHaveBeenCalled();
+    });
+
+    it('rests at a stop given as a fraction of the viewport', () => {
+      const {sheet} = renderTallSheet([0.5]);
+
+      // Half of the 800px window is 400px of visible sheet: 736 - 400 = 336px
+      // of travel, taken as layout height once the snap lands.
+      dragHandleTo(336);
+
+      expect(sheet.style.height).toBe('448px');
+      expect(sheet.style.transform).toBe('');
+    });
+
+    it('reads a percentage as the same stop as the fraction', () => {
+      const {sheet} = renderTallSheet(['50%']);
+      dragHandleTo(336);
+      expect(sheet.style.height).toBe('448px');
+    });
+
+    it('rests at a stop given as an absolute px length', () => {
+      const {sheet} = renderTallSheet(['320px']);
+
+      // A 320px stop sits 736 - 320 = 416px down, whatever the window does.
+      dragHandleTo(416);
+
+      expect(sheet.style.height).toBe('368px');
+      expect(sheet.style.transform).toBe('');
+    });
+
+    it('re-anchors to the same stop when the points change under a resting sheet', () => {
+      const {sheet, view} = renderTallSheet([0.5]);
+      dragHandleTo(336);
+      expect(sheet.style.height).toBe('448px');
+
+      // Without an inline height the sheet renders its natural 92dvh budget.
+      vi.spyOn(sheet, 'getBoundingClientRect').mockImplementation(() =>
+        rect({
+          top: 0,
+          bottom: sheet.style.height
+            ? Number.parseFloat(sheet.style.height)
+            : 784,
+        }),
+      );
+
+      // The host moves its one stop from half the window to a quarter of it.
+      // The sheet is resting on that stop, so it follows — no gesture, and
+      // nothing to animate.
+      view.rerender(
+        <BottomSheet
+          isOpen
+          onOpenChange={() => {}}
+          label="Release notes"
+          snapPoints={[0.25]}
+          height="tall">
+          Content
+        </BottomSheet>,
+      );
+
+      // 200px of visible sheet is 736 - 200 = 536px of travel.
+      expect(sheet.style.height).toBe('248px');
+      expect(sheet.style.transform).toBe('');
+    });
+
+    it('ignores a stop it cannot resolve, and warns which one', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      // 200 is the px mistake: a bare number is a fraction, never a length.
+      const {sheet} = renderTallSheet([0.5, 200]);
+
+      expect(
+        warn.mock.calls.some(args => String(args[0]).includes('200')),
+      ).toBe(true);
+
+      // The stop it could read still works.
+      dragHandleTo(336);
+      expect(sheet.style.height).toBe('448px');
+      warn.mockRestore();
     });
   });
 
@@ -1293,6 +1443,7 @@ describe('BottomSheet', () => {
           isOpen
           onOpenChange={() => {}}
           label="Add a comment"
+          snapPoints={SNAP_POINTS}
           height="tall">
           <input aria-label="Comment" />
         </BottomSheet>,
