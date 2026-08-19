@@ -11,7 +11,8 @@
  *   TextInput, NumberInput, TimeInput, DateInput, DateTimeInput,
  *   DateRangeInput, Selector, MultiSelector, Typeahead, Tokenizer, FileInput —
  *   routes it through here, so the glyph is themed in one place via the
- *   `astryx-input-clear-icon` target.
+ *   `astryx-input-clear-icon` target and the button wrapper is themed via the
+ *   `astryx-input-clear-button` target.
  */
 
 import type {ReactNode} from 'react';
@@ -48,11 +49,13 @@ export function InputClearButton({
   iconClassName,
 }: InputClearButtonProps): ReactNode {
   const {className: iconTargetClassName} = themeProps('input-clear-icon');
+  const {className: buttonTargetClassName} = themeProps('input-clear-button');
   return (
     <Button
       variant="ghost"
       size="sm"
       label={label}
+      className={buttonTargetClassName}
       icon={
         <Icon
           icon="close"
