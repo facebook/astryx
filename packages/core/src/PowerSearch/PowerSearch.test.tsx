@@ -11,7 +11,14 @@
 
 import {useState} from 'react';
 import {describe, it, expect, vi, beforeAll, afterAll, afterEach} from 'vitest';
-import {render, screen, act, fireEvent, waitFor} from '@testing-library/react';
+import {
+  render,
+  screen,
+  act,
+  fireEvent,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {PowerSearch} from './PowerSearch';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
@@ -568,5 +575,86 @@ describe('field menu sizing', () => {
   it('does not apply maxSearchResults while browsing', async () => {
     await openMenu({maxSearchResults: 3});
     expect(optionCount()).toBe(FIELD_COUNT);
+  });
+});
+
+describe('field menu grouping', () => {
+  const groupedConfig: PowerSearchConfig = {
+    name: 'GroupedSearch',
+    fields: [
+      field('team_a', 'Field Team A', 'Team'),
+      field('plain_a', 'Field Plain A'),
+      field('time_a', 'Field Time A', 'Time'),
+      field('team_b', 'Field Team B', 'Team'),
+      field('plain_b', 'Field Plain B'),
+      field('time_b', 'Field Time B', 'Time'),
+    ],
+  };
+
+  function field(key: string, label: string, group?: string) {
+    return {
+      key,
+      label,
+      group,
+      operators: [{key: 'is', label: 'is', value: {type: 'string'} as const}],
+    };
+  }
+
+  async function openMenu() {
+    const user = userEvent.setup();
+    render(
+      <PowerSearch config={groupedConfig} filters={[]} onChange={() => {}} />,
+    );
+    await user.click(screen.getByRole('combobox'));
+    await waitFor(() => {
+      expect(screen.getByRole('listbox', {hidden: true})).toBeInTheDocument();
+    });
+    return user;
+  }
+
+  it('renders ungrouped fields first and named sections after them', async () => {
+    await openMenu();
+    const listbox = screen.getByRole('listbox', {hidden: true});
+    expect(
+      within(listbox)
+        .getAllByRole('option', {hidden: true})
+        .map(option => option.textContent),
+    ).toEqual([
+      'Field Plain A',
+      'Field Plain B',
+      'Field Team A',
+      'Field Team B',
+      'Field Time A',
+      'Field Time B',
+    ]);
+    expect(
+      within(listbox)
+        .getAllByRole('group', {hidden: true})
+        .map(group => group.getAttribute('aria-label')),
+    ).toEqual(['Team', 'Time']);
+  });
+
+  it('keeps keyboard navigation flat across section boundaries', async () => {
+    const user = await openMenu();
+    const input = screen.getByRole('combobox');
+    await user.keyboard('{ArrowDown}{ArrowDown}');
+    const activeId = input.getAttribute('aria-activedescendant');
+    expect(activeId).not.toBeNull();
+    expect(document.getElementById(activeId!)?.textContent).toBe(
+      'Field Team A',
+    );
+  });
+
+  it('keeps ranked results flat while typing', async () => {
+    const user = await openMenu();
+    await user.type(screen.getByRole('combobox'), 'field');
+    await waitFor(() => {
+      expect(
+        within(screen.getByRole('listbox', {hidden: true})).queryAllByRole(
+          'group',
+          {hidden: true},
+        ),
+      ).toHaveLength(0);
+    });
   });
 });
