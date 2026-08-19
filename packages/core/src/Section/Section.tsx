@@ -22,6 +22,8 @@ import type {SpacingToken} from '../Layout/container.stylex';
 import {
   paddingStyles,
   paddingBlockStyles,
+  paddingBlockStartStyles,
+  paddingBlockEndStyles,
   containerPaddingInlineVarStyles,
   containerPaddingBlockStartVarStyles,
   containerPaddingBlockEndVarStyles,
@@ -182,6 +184,20 @@ export interface SectionProps extends BaseProps<HTMLElement> {
    * Accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.
    */
   paddingBlock?: SpacingStep;
+  /**
+   * Block-start (top) padding override. Takes precedence over `paddingBlock`
+   * and `padding` on that edge only; the block-end edge and both inline edges
+   * are left alone.
+   * Accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.
+   */
+  paddingBlockStart?: SpacingStep;
+  /**
+   * Block-end (bottom) padding override. Takes precedence over `paddingBlock`
+   * and `padding` on that edge only; the block-start edge and both inline
+   * edges are left alone.
+   * Accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.
+   */
+  paddingBlockEnd?: SpacingStep;
 }
 
 /**
@@ -212,6 +228,8 @@ export function Section({
   dividers,
   padding,
   paddingBlock,
+  paddingBlockStart,
+  paddingBlockEnd,
   xstyle,
   className,
   style,
@@ -280,6 +298,17 @@ export function Section({
               containerPaddingBlockStartVarStyles[paddingBlock],
             paddingBlock != null &&
               containerPaddingBlockEndVarStyles[paddingBlock],
+            // Per-edge overrides come last so they win over `paddingBlock`
+            // and `padding` on their own edge. The matching container var is
+            // updated alongside so bleed children (Table, Divider, nested
+            // Section) compensate against the padding actually applied.
+            paddingBlockStart != null &&
+              paddingBlockStartStyles[paddingBlockStart],
+            paddingBlockStart != null &&
+              containerPaddingBlockStartVarStyles[paddingBlockStart],
+            paddingBlockEnd != null && paddingBlockEndStyles[paddingBlockEnd],
+            paddingBlockEnd != null &&
+              containerPaddingBlockEndVarStyles[paddingBlockEnd],
             variantStyles[variant],
             dividers?.includes('top') && dividerStyles.top,
             dividers?.includes('bottom') && dividerStyles.bottom,

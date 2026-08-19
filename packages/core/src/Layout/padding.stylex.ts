@@ -326,6 +326,44 @@ export const paddingBlockStyles = stylex.create({
 });
 
 /**
+ * Block-start-only padding override styles.
+ * Use when a component needs to override the block-start (top) edge
+ * independently of block-end — e.g. a section that sits under a sticky
+ * header and needs less padding above than below.
+ */
+export const paddingBlockStartStyles = stylex.create({
+  0: {paddingBlockStart: spacingVars['--spacing-0']},
+  0.5: {paddingBlockStart: spacingVars['--spacing-0-5']},
+  1: {paddingBlockStart: spacingVars['--spacing-1']},
+  1.5: {paddingBlockStart: spacingVars['--spacing-1-5']},
+  2: {paddingBlockStart: spacingVars['--spacing-2']},
+  3: {paddingBlockStart: spacingVars['--spacing-3']},
+  4: {paddingBlockStart: spacingVars['--spacing-4']},
+  5: {paddingBlockStart: spacingVars['--spacing-5']},
+  6: {paddingBlockStart: spacingVars['--spacing-6']},
+  8: {paddingBlockStart: spacingVars['--spacing-8']},
+  10: {paddingBlockStart: spacingVars['--spacing-10']},
+});
+
+/**
+ * Block-end-only padding override styles.
+ * The block-end counterpart of paddingBlockStartStyles.
+ */
+export const paddingBlockEndStyles = stylex.create({
+  0: {paddingBlockEnd: spacingVars['--spacing-0']},
+  0.5: {paddingBlockEnd: spacingVars['--spacing-0-5']},
+  1: {paddingBlockEnd: spacingVars['--spacing-1']},
+  1.5: {paddingBlockEnd: spacingVars['--spacing-1-5']},
+  2: {paddingBlockEnd: spacingVars['--spacing-2']},
+  3: {paddingBlockEnd: spacingVars['--spacing-3']},
+  4: {paddingBlockEnd: spacingVars['--spacing-4']},
+  5: {paddingBlockEnd: spacingVars['--spacing-5']},
+  6: {paddingBlockEnd: spacingVars['--spacing-6']},
+  8: {paddingBlockEnd: spacingVars['--spacing-8']},
+  10: {paddingBlockEnd: spacingVars['--spacing-10']},
+});
+
+/**
  * Propagation styles for --astryx-section-padding.
  * When a parent section sets explicit padding, this propagates the value
  * through the CSS custom property cascade so nested sections that use

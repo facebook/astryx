@@ -19,7 +19,8 @@ import * as stylex from '@stylexjs/stylex';
 import type {SizeValue, SpacingStep} from '../utils/types';
 import {
   paddingInlineStyles,
-  paddingBlockStyles,
+  paddingBlockStartStyles,
+  paddingBlockEndStyles,
 } from '../Layout/padding.stylex';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
@@ -113,6 +114,18 @@ export interface CenterProps extends BaseProps<HTMLDivElement> {
   paddingBlock?: SpacingStep;
 
   /**
+   * Block-start (top) padding, using the spacing scale.
+   * Overrides `paddingBlock` and `padding` on that edge only.
+   */
+  paddingBlockStart?: SpacingStep;
+
+  /**
+   * Block-end (bottom) padding, using the spacing scale.
+   * Overrides `paddingBlock` and `padding` on that edge only.
+   */
+  paddingBlockEnd?: SpacingStep;
+
+  /**
    * Whether to make the container inline-flex (useful for text/icons).
    * @default false
    */
@@ -146,6 +159,8 @@ export function Center({
   padding,
   paddingInline,
   paddingBlock,
+  paddingBlockStart,
+  paddingBlockEnd,
   isInline = false,
   children,
   xstyle,
@@ -154,10 +169,13 @@ export function Center({
   ref,
   ...props
 }: CenterProps) {
-  // Resolve padding to per-axis values: `padding` sets both axes; `paddingInline`
-  // / `paddingBlock` take precedence on their own axis when provided.
+  // Resolve padding to per-edge values: `padding` sets every edge;
+  // `paddingInline` / `paddingBlock` take precedence on their own axis, and
+  // `paddingBlockStart` / `paddingBlockEnd` take precedence on their own edge.
   const resolvedPaddingInline = paddingInline ?? padding;
-  const resolvedPaddingBlock = paddingBlock ?? padding;
+  const resolvedPaddingBlockStart =
+    paddingBlockStart ?? paddingBlock ?? padding;
+  const resolvedPaddingBlockEnd = paddingBlockEnd ?? paddingBlock ?? padding;
 
   const stylexProps = mergeProps(
     themeProps('center', {axis}),
@@ -173,7 +191,10 @@ export function Center({
       ),
       resolvedPaddingInline != null &&
         paddingInlineStyles[resolvedPaddingInline],
-      resolvedPaddingBlock != null && paddingBlockStyles[resolvedPaddingBlock],
+      resolvedPaddingBlockStart != null &&
+        paddingBlockStartStyles[resolvedPaddingBlockStart],
+      resolvedPaddingBlockEnd != null &&
+        paddingBlockEndStyles[resolvedPaddingBlockEnd],
       xstyle,
     ),
     className,

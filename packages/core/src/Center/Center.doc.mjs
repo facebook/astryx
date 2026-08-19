@@ -55,6 +55,18 @@ export const docs = {
         'Block (vertical) padding, using the spacing scale. Overrides padding on the block axis when both are set.',
     },
     {
+      name: 'paddingBlockStart',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+      description:
+        'Block-start (top) padding, using the spacing scale. Overrides paddingBlock and padding on that edge only.',
+    },
+    {
+      name: 'paddingBlockEnd',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+      description:
+        'Block-end (bottom) padding, using the spacing scale. Overrides paddingBlock and padding on that edge only.',
+    },
+    {
       name: 'isInline',
       type: 'boolean',
       description: 'Use inline-flex (useful for text/icons).',
@@ -129,6 +141,16 @@ export const docsZh = {
       type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
       description: '块（垂直）内边距，使用间距刻度。两者同时设置时在块轴上覆盖 padding。',
     },
+    {
+      name: 'paddingBlockStart',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+      description: '块起始（顶部）内边距，使用间距刻度。仅在该边上覆盖 paddingBlock 和 padding。',
+    },
+    {
+      name: 'paddingBlockEnd',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+      description: '块结束（底部）内边距，使用间距刻度。仅在该边上覆盖 paddingBlock 和 padding。',
+    },
     {name: 'isInline', type: 'boolean', description: '使用 inline-flex（适用于文本/图标）。', default: 'false'},
     {name: 'children', type: 'ReactNode', description: '要居中的内容。'},
     {
@@ -172,6 +194,8 @@ export const docsDense = {
       'inner padding on all sides (spacing step: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10)',
     paddingInline: 'inline (horizontal) padding; overrides padding on that axis',
     paddingBlock: 'block (vertical) padding; overrides padding on that axis',
+    paddingBlockStart: 'block-start (top) padding; overrides paddingBlock/padding on that edge',
+    paddingBlockEnd: 'block-end (bottom) padding; overrides paddingBlock/padding on that edge',
     isInline: 'use inline-flex for text/icons',
     children: 'content to center',
     xstyle: 'StyleX styles for layout (margins, positioning, sizing); must be stylex.create() value',

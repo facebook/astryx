@@ -149,6 +149,18 @@ const meta: Meta<typeof Stack> = {
       options: [0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10],
       description: 'Block (vertical) padding; overrides padding on that axis',
     },
+    paddingBlockStart: {
+      control: 'select',
+      options: [0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10],
+      description:
+        'Block-start (top) padding; overrides paddingBlock/padding on that edge',
+    },
+    paddingBlockEnd: {
+      control: 'select',
+      options: [0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10],
+      description:
+        'Block-end (bottom) padding; overrides paddingBlock/padding on that edge',
+    },
     isScrollable: {
       control: 'boolean',
       description: 'Enables scrollable overflow (overflow: auto)',
@@ -692,6 +704,21 @@ export const PaddingPerAxis: Story = {
     gap: 2,
     paddingInline: 6,
     paddingBlock: 2,
+  },
+  render: args => (
+    <Stack {...args} xstyle={styles.container}>
+      <Box>Item 1</Box>
+      <Box>Item 2</Box>
+      <Box>Item 3</Box>
+    </Stack>
+  ),
+};
+
+export const PaddingPerBlockEdge: Story = {
+  args: {
+    gap: 2,
+    padding: 6,
+    paddingBlockStart: 1,
   },
   render: args => (
     <Stack {...args} xstyle={styles.container}>

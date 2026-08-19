@@ -189,8 +189,8 @@ export const PageLayout: Story = {
             <VStack gap={2}>
               <h3 {...stylex.props(styles.text)}>Main Content</h3>
               <p {...stylex.props(styles.text, styles.textSecondary)}>
-                This demonstrates how Layout can be used to create page
-                layouts with header, sidebar, and content areas.
+                This demonstrates how Layout can be used to create page layouts
+                with header, sidebar, and content areas.
               </p>
             </VStack>
           </LayoutContent>
@@ -261,6 +261,58 @@ export const NestedPaddingInheritance: Story = {
               compensation and content inset use 8px.
             </p>
           </Section>
+        </Section>
+      </div>
+    </div>
+  ),
+};
+
+export const AsymmetricBlockPadding: Story = {
+  render: () => (
+    <div {...stylex.props(styles.storyWrapper)}>
+      <div>
+        <h4 {...stylex.props(styles.heading)}>padding=6 (all edges 24px)</h4>
+        <Section variant="muted" width={350} padding={6}>
+          <p {...stylex.props(styles.text)}>
+            The baseline: every edge takes the same spacing step.
+          </p>
+        </Section>
+      </div>
+      <div>
+        <h4 {...stylex.props(styles.heading)}>
+          padding=6 + paddingBlockStart=2 (tight above)
+        </h4>
+        <Section variant="muted" width={350} padding={6} paddingBlockStart={2}>
+          <p {...stylex.props(styles.text)}>
+            Only the top edge moves to 8px. Both inline edges and the bottom
+            edge stay at 24px — the shape you want under a sticky header.
+          </p>
+        </Section>
+      </div>
+      <div>
+        <h4 {...stylex.props(styles.heading)}>
+          padding=6 + paddingBlockEnd=0 (flush bottom)
+        </h4>
+        <Section variant="muted" width={350} padding={6} paddingBlockEnd={0}>
+          <p {...stylex.props(styles.text)}>
+            The bottom edge goes to 0 so content can sit flush against a
+            following section, with the inline inset preserved.
+          </p>
+        </Section>
+      </div>
+      <div>
+        <h4 {...stylex.props(styles.heading)}>
+          paddingBlock=6 + paddingBlockEnd=1 (edge beats axis)
+        </h4>
+        <Section
+          variant="muted"
+          width={350}
+          paddingBlock={6}
+          paddingBlockEnd={1}>
+          <p {...stylex.props(styles.text)}>
+            paddingBlockEnd wins over paddingBlock on its own edge: 24px top,
+            4px bottom, inline padding from the theme default.
+          </p>
         </Section>
       </div>
     </div>

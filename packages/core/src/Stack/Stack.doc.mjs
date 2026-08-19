@@ -53,6 +53,18 @@ export const docs = {
             'Block (vertical) padding. Overrides padding on the block axis when both are set.',
         },
         {
+          name: 'paddingBlockStart',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+          description:
+            'Block-start (top) padding, using the spacing scale. Overrides paddingBlock and padding on that edge only.',
+        },
+        {
+          name: 'paddingBlockEnd',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+          description:
+            'Block-end (bottom) padding, using the spacing scale. Overrides paddingBlock and padding on that edge only.',
+        },
+        {
           name: 'isScrollable',
           type: 'boolean',
           description:
@@ -157,6 +169,18 @@ export const docs = {
             'Block (vertical) padding, using the spacing scale. Overrides padding on the block axis when both are set.',
         },
         {
+          name: 'paddingBlockStart',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+          description:
+            'Block-start (top) padding, using the spacing scale. Overrides paddingBlock and padding on that edge only.',
+        },
+        {
+          name: 'paddingBlockEnd',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+          description:
+            'Block-end (bottom) padding, using the spacing scale. Overrides paddingBlock and padding on that edge only.',
+        },
+        {
           name: 'isScrollable',
           type: 'boolean',
           description:
@@ -258,6 +282,18 @@ export const docs = {
           type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
           description:
             'Block (vertical) padding, using the spacing scale. Overrides padding on the block axis when both are set.',
+        },
+        {
+          name: 'paddingBlockStart',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+          description:
+            'Block-start (top) padding, using the spacing scale. Overrides paddingBlock and padding on that edge only.',
+        },
+        {
+          name: 'paddingBlockEnd',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+          description:
+            'Block-end (bottom) padding, using the spacing scale. Overrides paddingBlock and padding on that edge only.',
         },
         {
           name: 'isScrollable',

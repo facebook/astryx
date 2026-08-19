@@ -59,6 +59,16 @@ export const docs = {
       description: 'Block (vertical) padding override. Overrides only the block-axis padding while preserving inline padding from `padding` or the container theme default. Accepts the spacing scale (0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10).',
     },
     {
+      name: 'paddingBlockStart',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+      description: 'Block-start (top) padding, using the spacing scale. Overrides paddingBlock and padding on that edge only.',
+    },
+    {
+      name: 'paddingBlockEnd',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+      description: 'Block-end (bottom) padding, using the spacing scale. Overrides paddingBlock and padding on that edge only.',
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object.',
@@ -141,6 +151,16 @@ export const docsZh = {
       description: '块（垂直）方向内边距覆盖。仅覆盖块轴内边距，同时保留来自 padding 或容器主题默认值的行内内边距。使用间距比例（0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10）。',
     },
     {
+      name: 'paddingBlockStart',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+      description: '块起始（顶部）内边距，使用间距刻度。仅在该边上覆盖 paddingBlock 和 padding。',
+    },
+    {
+      name: 'paddingBlockEnd',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+      description: '块结束（底部）内边距，使用间距刻度。仅在该边上覆盖 paddingBlock 和 padding。',
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description: '用于布局自定义的 StyleX 样式（外边距、定位、尺寸）。必须是 stylex.create() 的值，不能是内联样式对象。',
@@ -193,6 +213,8 @@ export const docsDense = {
     dividers: 'Which sides of section have divider borders.',
     padding: 'Internal padding via spacing scale; 0 for edge-to-edge content.',
     paddingBlock: 'Block-axis padding override; preserves inline padding from padding/theme.',
+    paddingBlockStart: 'Block-start (top) padding override; wins over paddingBlock/padding on that edge.',
+    paddingBlockEnd: 'Block-end (bottom) padding override; wins over paddingBlock/padding on that edge.',
     xstyle: 'StyleX styles for layout customization; must be stylex.create() value.',
   },
 };

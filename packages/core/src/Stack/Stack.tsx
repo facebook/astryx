@@ -26,7 +26,8 @@ import {
 import type {SizeValue} from '../utils/types';
 import {
   paddingInlineStyles,
-  paddingBlockStyles,
+  paddingBlockStartStyles,
+  paddingBlockEndStyles,
 } from '../Layout/padding.stylex';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
@@ -147,6 +148,18 @@ export interface StackProps extends BaseProps<HTMLElement> {
   paddingBlock?: SpacingStep;
 
   /**
+   * Block-start (top) padding, using the spacing scale.
+   * Overrides `paddingBlock` and `padding` on that edge only.
+   */
+  paddingBlockStart?: SpacingStep;
+
+  /**
+   * Block-end (bottom) padding, using the spacing scale.
+   * Overrides `paddingBlock` and `padding` on that edge only.
+   */
+  paddingBlockEnd?: SpacingStep;
+
+  /**
    * Enables scrollable overflow (`overflow: auto`) for the stack.
    *
    * Matches the `isScrollable` prop on `LayoutContent` and `LayoutPanel`.
@@ -212,6 +225,8 @@ export function Stack({
   padding,
   paddingInline,
   paddingBlock,
+  paddingBlockStart,
+  paddingBlockEnd,
   isScrollable,
   width,
   height,
@@ -242,10 +257,13 @@ export function Stack({
       ? (resolvedVAlign as StackCrossAlignment | undefined)
       : (resolvedHAlign as StackCrossAlignment | undefined);
 
-  // Resolve padding to per-axis values: `padding` sets both axes; `paddingInline`
-  // / `paddingBlock` take precedence on their own axis when provided.
+  // Resolve padding to per-edge values: `padding` sets every edge;
+  // `paddingInline` / `paddingBlock` take precedence on their own axis, and
+  // `paddingBlockStart` / `paddingBlockEnd` take precedence on their own edge.
   const resolvedPaddingInline = paddingInline ?? padding;
-  const resolvedPaddingBlock = paddingBlock ?? padding;
+  const resolvedPaddingBlockStart =
+    paddingBlockStart ?? paddingBlock ?? padding;
+  const resolvedPaddingBlockEnd = paddingBlockEnd ?? paddingBlock ?? padding;
 
   const stylexProps = stylex.props(
     ...stack({
@@ -256,7 +274,10 @@ export function Stack({
       wrap,
     }),
     resolvedPaddingInline != null && paddingInlineStyles[resolvedPaddingInline],
-    resolvedPaddingBlock != null && paddingBlockStyles[resolvedPaddingBlock],
+    resolvedPaddingBlockStart != null &&
+      paddingBlockStartStyles[resolvedPaddingBlockStart],
+    resolvedPaddingBlockEnd != null &&
+      paddingBlockEndStyles[resolvedPaddingBlockEnd],
     isScrollable && overflowStyles.scrollable,
     xstyle,
   );
