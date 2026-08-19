@@ -16,16 +16,22 @@ export function mergeRefs<T>(...refs: (Ref<T> | undefined)[]): RefCallback<T> {
     for (const ref of refs) {
       if (typeof ref === 'function') {
         const cleanup = ref(value);
-        if (typeof cleanup === 'function') {
-          cleanups.push(cleanup);
-        }
+        cleanups.push(
+          typeof cleanup === 'function' ? cleanup : () => ref(null),
+        );
       } else if (ref != null) {
-        (ref as {current: T | null}).current = value;
+        const mutableRef = ref as {current: T | null};
+        mutableRef.current = value;
+        cleanups.push(() => {
+          mutableRef.current = null;
+        });
       }
     }
-    if (cleanups.length > 0) {
+    if (value != null && cleanups.length > 0) {
       return () => {
-        for (const cleanup of cleanups) {cleanup();}
+        for (const cleanup of cleanups) {
+          cleanup();
+        }
       };
     }
   };

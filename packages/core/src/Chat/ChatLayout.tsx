@@ -12,6 +12,13 @@
  * Provides the scroll container ref and content ref, renders the
  * scroll-to-bottom button, frosted glass dock, and message area.
  *
+ * Layout contract: the root is a flex column. The message area flexes
+ * (grow 1, shrink 0) to fill the space the dock doesn't need; the sticky
+ * dock keeps its natural height in flow. Short content therefore fills
+ * exactly 100% with no overflow, and long content grows past the root so
+ * self-scroll mode scrolls (#2573). In external-scrollRef mode the dock
+ * is position: fixed (out of flow) and the message area fills the root.
+ *
  * Density (compact/balanced/spacious) is controlled via a prop with
  * 'balanced' as the default. No JS measurement or ResizeObserver needed.
  * The container-type on root enables container queries in child components.
@@ -19,7 +26,7 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Chat/index.ts (exports)
  * - /apps/storybook/stories/ChatLayout.stories.tsx
- * - /packages/cli/templates/blocks/components/ChatLayout/ (block examples)
+ * - /packages/cli/assets/templates/blocks/components/ChatLayout/ (block examples)
  */
 
 import {type ReactNode, useMemo, useRef} from 'react';
@@ -100,6 +107,13 @@ const styles = stylex.create({
     containerType: 'inline-size',
     minHeight: 0,
     flex: 1,
+    // Flex column so the sticky dock's natural height is part of the 100%:
+    // messageArea flexes to fill the leftover space instead of forcing
+    // minHeight: 100% on its own. Without this, the in-flow sticky dock
+    // adds its full height on top of the 100% message area and the root
+    // always overflows by exactly the dock height (#2573).
+    display: 'flex',
+    flexDirection: 'column',
   },
   rootScrollable: {
     overflowY: 'auto',
@@ -116,7 +130,11 @@ const styles = stylex.create({
     display: 'flex',
     flexDirection: 'column',
     marginInline: 'auto',
-    minHeight: '100%',
+    // Fill the space the dock doesn't need (grow), but never shrink below
+    // content height — long content must overflow the root so it scrolls.
+    flexGrow: 1,
+    flexShrink: 0,
+    flexBasis: 'auto',
     paddingBlockEnd: spacingVars['--spacing-6'],
     width: '100%',
     maxWidth: '100%',
@@ -134,11 +152,14 @@ const styles = stylex.create({
   // --- Dock container ---
   dockContainer: {
     bottom: 0,
-    left: 0,
-    right: 0,
+    insetInlineStart: 0,
+    insetInlineEnd: 0,
     zIndex: 0,
     isolation: 'isolate',
     pointerEvents: 'none',
+    // Keep the sticky dock at its natural height as a flex item.
+    // (Inert in fixed mode — position: fixed takes it out of flex layout.)
+    flexShrink: 0,
   },
   dockContainerFixed: {
     position: 'fixed',
@@ -150,8 +171,8 @@ const styles = stylex.create({
   blurLayer: {
     position: 'absolute',
     bottom: 0,
-    left: 0,
-    right: 0,
+    insetInlineStart: 0,
+    insetInlineEnd: 0,
     pointerEvents: 'none',
     backdropFilter: 'blur(12px)',
     WebkitBackdropFilter: 'blur(12px)',

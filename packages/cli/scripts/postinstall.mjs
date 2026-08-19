@@ -24,11 +24,11 @@ const HERE = fileURLToPath(import.meta.url);
  * Pure decision: should the postinstall print the setup nudge? Split out so the
  * matrix is unit-testable without an actual npm install.
  *
- * @param {object} opts
- * @param {string} opts.scriptPath - Absolute path of this script (location tells
+ * @param {object} [opts]
+ * @param {string} [opts.scriptPath] - Absolute path of this script (location tells
  *   us dependency vs monorepo vs npx-cache).
  * @param {string} [opts.npmCommand] - process.env.npm_command ('install', 'exec', …).
- * @param {boolean} opts.isSetUp - Whether the project already ran init.
+ * @param {boolean} [opts.isSetUp] - Whether the project already ran init.
  * @returns {boolean}
  */
 export function shouldNudge({scriptPath, npmCommand, isSetUp} = {}) {
@@ -41,7 +41,7 @@ export function shouldNudge({scriptPath, npmCommand, isSetUp} = {}) {
 /** @param {string} root @returns {Promise<boolean>} */
 async function projectIsSetUp(root) {
   try {
-    const {isAstryxInitialized} = await import('../src/commands/agent-docs.mjs');
+    const {isAstryxInitialized} = await import('../foundation/agent-docs/agent-docs.mjs');
     return isAstryxInitialized(root);
   } catch {
     return false; // best-effort — if the check can't load, fall through and nudge

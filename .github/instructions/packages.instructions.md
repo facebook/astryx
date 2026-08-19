@@ -4,14 +4,35 @@ applyTo: 'packages/**'
 
 # Package review instructions
 
-These paths ship as published `@astryxdesign/*` packages, so review them
-against Astryx's API guidance and component review protocol.
+These paths ship as published `@astryxdesign/*` packages, so review them against
+Astryx's API guidance and component review protocol.
+
+**Read first, and don't restate here:**
+
+- [Component Audit Rubric](https://github.com/facebook/astryx/wiki/Component-Audit-Rubric)
+  — the bar: every rule as a numbered check with its severity and exceptions,
+  the bar per change type, and the trigger table mapping what a diff touches to
+  the checks it earns. Cite check ids in findings.
+- [`copilot-instructions.md`](../copilot-instructions.md) — severity, the review
+  signal line, summary-vs-inline, the labels, same bar for every author.
+- [CONTRIBUTING → Code Style](../../CONTRIBUTING.md#code-style) — what this repo
+  enforces mechanically: TS strict, ref-as-prop, `'use client'`, JSDoc
+  `@example` fences.
+
+What follows is what is specific to **published package code** and lives
+nowhere else.
 
 ## Step 0 — Triage first: categorize, assess risk, pick a path
 
 Before reviewing in depth, do a fast triage. It decides _how hard_ to look and
 in what order, so effort lands where the risk is — and so the risk checks
 (especially breaking changes) happen **up front**, not as an afterthought.
+
+This is the triage the rubric points at; it is stated here and only here. The
+**bar** each change type has to clear is in
+[the rubric's bar per change type](https://github.com/facebook/astryx/wiki/Component-Audit-Rubric#reviewing-a-change),
+and the **specific checks** a diff earns come from the rubric's trigger table.
+Triage sets depth; those two set content.
 
 **1. Categorize the PR** (by what it changes, not just the title prefix):
 
@@ -30,11 +51,13 @@ in what order, so effort lands where the risk is — and so the risk checks
   consumers may depend on. (The tell for an _accidental_ breaking change:
   unrelated tests/examples/call sites had to be edited — see the silent-breaking
   rule in Judgment.) A real breaking change must be **intentional and signalled
-  with a `[breaking]` changeset category** (pre-1.0 stays a `patch` bump — never
-  ask for `minor`/`major`; the category is the signal), and for a
-  removed/renamed/changed public API, a **codemod** under `astryx upgrade`.
+  with a `[breaking]` changeset category**, and for a removed/renamed/changed
+  public API in a **published** package, a **codemod** under `astryx upgrade`.
   Flag a breaking change with no `[breaking]` changeset (and no codemod where one
-  is warranted) as blocking.
+  is warranted) as blocking. **`lab` is exempt**: it is private and never
+  published, so it has no consumers to migrate and is allowed to break freely —
+  never ask for a codemod for a lab-only change, and promoting a component out of
+  lab into core is additive from the published side.
 - **What's the blast radius?** A core primitive many components build on, or a
   shared type/context, is higher-stakes than a leaf component or a docsite tweak.
 
@@ -45,91 +68,66 @@ in what order, so effort lands where the risk is — and so the risk checks
   the referenced API exist / does the fix match the described bug), confirm the
   test/changeset, and approve. Don't manufacture findings on a clean small PR.
   **A standalone test PR is not automatically fast-path** — it still has to clear
-  the test-quality bar under "Calibrate to the PR type" (a test existing and
-  passing is necessary, not sufficient).
+  the test-quality bar under "Calibrate to the PR type".
 - **Standard path** — a normal bug fix or a contained prop/behavior change. Run
-  the full Mechanical checklist + convergence + Judgment below.
+  the checks the diff triggers, plus Judgment below.
 - **Deep path** — new API surface, a breaking change, a plugin/hook that extends
-  a host, or a high-blast-radius core change. Do the full review **and** route
-  the API-design decision to a human (see "When to flag for engineering / human
-  judgment"); note it should be spec'd + vibe-tested. Do not verdict the API
-  yourself.
+  a host, or a high-blast-radius core change. Run every automatable check **and**
+  route the API-design decision to a human (see "When to flag for engineering /
+  human judgment"); note it should be spec'd + vibe-tested. Do not verdict the
+  API yourself.
 
 > **Hard stop — new props / API changes from a contributor need human judgment.**
-> If a PR adds a **new prop** or otherwise changes API surface (a new
-> component, variant, exported hook/type, or a changed/removed signature) and the
-> author is in the **contributor bucket** (see Review buckets in the root
-> instructions — not in `.github/ENGOWNERS` or `.github/DESIGNOWNERS`), the AI
-> reviewer must **not**
-> approve or merge it — even if it's clean, additive, and passing CI. Flag it as
-> **⚠️ Needs human/maintainer judgment on the API surface** and leave the
-> approve/merge decision to a human. "Additive and non-breaking" is _not_
-> sufficient to auto-approve API surface — whether the API _should exist_ and
-> take this shape is a human call. Behavior-only fixes, tests, docs, and chores
-> from contributors can still take the fast/standard path.
+> If a PR adds a **new prop** or otherwise changes API surface (a new component,
+> variant, exported hook/type, or a changed/removed signature) and the author is
+> in the **contributor bucket** (not in `.github/ENGOWNERS` or
+> `.github/DESIGNOWNERS`), the AI reviewer must **not** approve or merge it —
+> even if it's clean, additive, and passing CI. Flag it as **⚠️ Needs
+> human/maintainer judgment on the API surface** and leave the approve/merge
+> decision to a human. "Additive and non-breaking" is _not_ sufficient to
+> auto-approve API surface — whether the API _should exist_ and take this shape
+> is a human call. Behavior-only fixes, tests, docs, and chores from
+> contributors can still take the fast/standard path.
 
-State the category, the risk (breaking? blast radius?), and the chosen path at
-the top of the review, e.g. `Triage: bug fix · non-breaking · low blast radius →
-fast path`. This makes the depth of review legible and ensures the
-breaking-change question is answered on every PR.
+State the category, the risk, the path, and the checks you ran at the top of the
+review, e.g. `Triage: bug fix · non-breaking · low blast radius → fast path ·
+checks: §1 A4/A5, §7 C1`.
 
-## Review Signal — high-risk triggers for this scope
+## What counts as high-risk in this scope
 
-The shared **Review buckets** and **Review Signal** model lives in the root
-`copilot-instructions.md` — apply it. This section defines what counts as
-**high-risk** _within `packages/**`_, which is what drives the signal:
-
-A change in this scope is **high-risk** when it involves any of:
+The shared review-signal model lives in `copilot-instructions.md`. Within
+`packages/**`, a change is **high-risk** when it involves any of:
 
 - **Public API change** — a new/changed/removed export, prop, variant, hook,
-  type, or signature; a changed default; changed DOM/class/ARIA output (see Step
-  0 breaking-change scan and "Adding a new prop").
+  type, or signature; a changed default; changed DOM/class/ARIA output.
 - **New component or module** — a net-new component directory, especially added
   directly to `core` (skipped `lab`) — see Lifecycle & promotion.
-- **New package** — a net-new `@astryxdesign/*` package — see Lifecycle &
-  promotion. Always human-judgment.
+- **New package** — a net-new `@astryxdesign/*` package. Always human-judgment.
 - **Suspected regression** — an unintended behavior/logic change or a silent
   breaking change to a shared type/context (see Judgment).
 
-Anything else in this scope is **low-risk** for signal purposes. The one
-explicitly low-risk _area_ inside `packages/**` is **`packages/themes/**`**
-(theme values); a theme-only change does not trip the high-risk gate — though
-still apply the design blast-radius check in Judgment (a token change can
-regress everywhere it composites).
-
-The high-risk determination is also computed deterministically by
-`.github/workflows/review-signal.yml`, which applies the **`needs:code-review`**
-label and disables auto-merge on high-risk PRs. If the PR carries that label,
-lead with 🔴 and focus on the high-risk surface (see the label note in the root
-instructions). Frame the review by bucket — the bucket sets _tone_, the area
-sets the _gate_:
-
-- **Contributor** → your review is the _initial pass_ that tells a code owner
-  where to focus. For a new prop / API change / new component / new package, add
-  the explicit **⚠️ Needs human/maintainer judgment on the API surface** note —
-  additive and passing CI is _not_ sufficient to imply approval.
-- **Design owner** → same checks, framed for a designer: name what crosses into
-  engineering territory and needs an engineer's eye.
-- **Eng team** → assistant framing: surface the same findings as input to the
-  author's own judgment.
+Anything else in this scope is low-risk for signal purposes. The one explicitly
+low-risk _area_ inside `packages/**` is **`packages/themes/**`** (theme values);
+a theme-only change does not trip the high-risk gate — though still apply the
+design blast-radius check in Judgment, since a token change can regress
+everywhere it composites.
 
 ## Calibrate to the PR type
 
-Once triaged, weight the review by what the PR is trying to do:
+Once triaged, weight the review by what the PR is trying to do. The evidence
+each type owes is in
+[the rubric's bar per change type](https://github.com/facebook/astryx/wiki/Component-Audit-Rubric#reviewing-a-change);
+these are the package-specific reading notes on top of it.
 
-- **Bug fixes** — require **evidence in the description**. A fix should
-  demonstrate the bug first (a failing test, a reproduction, or another
-  detection method), apply the fix, then demonstrate success (the test now
-  passes). Flag a bug-fix PR that changes behavior with no failing-test-then-
-  passing evidence and ask for it — a fix without a regression test can silently
-  break again.
+- **Bug fixes** — the red→green evidence belongs **in the PR description**. Flag
+  a bug-fix PR that changes behavior without it and ask; a fix with no
+  regression test can silently break again.
 - **Tests** — a test PR must earn its merge by testing the **contract, not the
   implementation**. A passing test that exists is necessary but _not_ sufficient
-  to approve; judge it against the bar below and, if it's implementation-coupled
-  or padding, request changes (kindly) naming the specific assertions to cut or
-  refocus. The one-line test: _does this protect a promise a consumer relies on,
-  or does it just mirror the code?_ If it would break on a harmless refactor yet
-  survive a real bug, it's slop.
+  to approve. The one-line test: _does this protect a promise a consumer relies
+  on, or does it just mirror the code?_ If it would break on a harmless refactor
+  yet survive a real bug, it's slop — request changes (kindly), naming the
+  specific assertions to cut or refocus.
   - **✅ Worth testing** — the public behavioral contract (state transitions,
     controlled/uncontrolled, callbacks fire with the right args, documented edge
     cases: empty / boundary / overflow); each meaningful branch of a pure
@@ -143,37 +141,34 @@ Once triaged, weight the review by what the PR is trying to do:
     with no logic between); trivial padding ("renders without crashing" as the
     _only_ assertion, or `it.each` explosions with no distinct risk per case);
     and computed style/token/pixel assertions (that's brittle design territory).
-- **Docs** — validate against reality. Check that the documentation is actually
-  correct (matches the code/API/behavior on this branch). When a claim is a
-  matter of best practice or judgment rather than fact, **call it out for a
-  maintainer** rather than asserting it's right or wrong.
+- **Docs** — validate against reality: does the documentation match the
+  code/API/behavior **on this branch**? When a claim is a matter of best practice
+  or judgment rather than fact, call it out for a maintainer rather than
+  asserting it's right or wrong.
 - **New features / new components** — whether this is the _right way to expose
   the functionality_ is a human judgment call. **Do not render a verdict on the
-  API design here.** You may still run the mechanical, convention, and
-  convergence checks below, but explicitly **flag that maintainers should review
-  the API surface carefully** (and that new surface should be spec'd and
-  vibe-tested) rather than approving the design yourself.
+  API design.** Run the mechanical, convention, and convergence checks, then
+  explicitly flag that maintainers should review the API surface (and that new
+  surface should be spec'd and vibe-tested).
 
 ## When to flag for engineering / human judgment
 
 Many Astryx contributions come from designers building with an AI assistant.
 The assistant is good at composition and convention, but some changes cross into
 territory where **engineering review and human judgment are required** — and the
-review should **say so explicitly** rather than quietly approving. If you (the
-reviewer) find yourself uncertain, that uncertainty is itself the signal: name
-it, don't paper over it.
+review should **say so explicitly** rather than quietly approving. If you find
+yourself uncertain, that uncertainty is itself the signal: name it.
 
 Add an explicit **"⚠️ Needs engineering / human judgment"** note when the change
 involves any of:
 
 - **New public API surface or an API-shape decision** — a new component, a new
-  prop/variant, or changing an existing prop's contract. (The _right_ shape is a
-  human call — see New features above.)
+  prop/variant, or changing an existing prop's contract.
 - **New runtime complexity** — effects, refs, observers
   (`MutationObserver`/`ResizeObserver`/`IntersectionObserver`), imperative DOM
   work, event listeners, timers, async coordination, or anything touching a hot
-  path (see the complexity/perf smell in Judgment). Designers should not land
-  this class of change without an engineer confirming it's the right mechanism.
+  path. Designers should not land this class of change without an engineer
+  confirming it's the right mechanism.
 - **Accessibility semantics** — ARIA roles/states, focus management, keyboard
   interaction, live regions/announcements. Getting these subtly wrong is worse
   than omitting them.
@@ -194,64 +189,47 @@ _why_ (e.g. "the `ResizeObserver` in `X.tsx` is a runtime-complexity + perf
 decision — an engineer should confirm a container query wouldn't do"), so the
 designer knows exactly what to hand off.
 
-## API guidance (the review protocol)
+## API guidance
 
-The authoritative rules live in the Contributing wiki — apply them and cite the
-specific rule when something conflicts:
+The rules themselves are on the wiki — apply them and cite the specific rule
+when something conflicts:
 
 - **[API Conventions](https://github.com/facebook/astryx/wiki/API-Conventions)** —
   naming (`<Namespace><Variant><Type><Postfixes>`, unprefixed: `Button`, not
-  `AstryxButton`), prop patterns, and composition rules. Key principles to
-  enforce:
-  - **Guidance over enforcement** — components provide capability, not design
-    guardrails; if a consumer passes a prop value, render it.
-  - **Prop independence** — one prop must not suppress another prop's output;
-    variants affect styling, never whether sibling props appear (narrow physical
-    exceptions like `isTruncated`/`maxLines`).
-  - **Orthogonal axes** — each prop controls one dimension of variation; if you
-    can't name the axis without describing a use case, it's a design recipe, not
-    a primitive.
-  - **Composition vs config** — utility primitives may expose granular knobs;
-    high-level compositions (`AppShell`, `Table`, `CommandPalette`) customize
-    through composition (slots, children, render props), not prop explosion.
-  - **Match existing siblings** — mirror the API shape of comparable components;
-    don't invent a new convention when one already exists.
+  `AstryxButton`), the prop-surface contract, and the principles a review leans
+  on most: guidance over enforcement, prop independence, orthogonal axes,
+  composition over config for high-level components, and matching existing
+  siblings.
 - **[Component Specification Protocol](https://github.com/facebook/astryx/wiki/Component-Specification-Protocol)** —
-  the process new components must follow.
+  the evidence-backed 9-phase process new components must follow.
 - **[API Arbitration](https://github.com/facebook/astryx/wiki/API-Arbitration)** —
-  how API design questions get resolved.
+  where naming and shape disputes get resolved instead of in the PR.
 
 ### Adding a new prop — converge, don't diverge
 
-When a diff **adds a new prop** (or a new variant/enum value) to a component,
-don't evaluate it in isolation. First check whether other components already
-express the same capability, and push to converge on the existing shape:
+When a diff **adds a new prop** (or a new variant/enum value), don't evaluate it
+in isolation. Check whether other components already express the same
+capability, and push to converge:
 
-- **Search for prior art.** Look for existing components with a prop of similar
-  _purpose_ or _behavior_ — the same axis of variation, even under a different
-  name (e.g. `size` vs `scale`, `isLoading` vs `busy`, `tone` vs `variant` vs
-  `color`, `density` vs `compact`). Comparable components should already be
-  siblings in the same family; check those first, then the wider system.
-- **Prefer the established name and value shape.** If the capability exists
-  elsewhere, reuse that prop name, type, default, and value vocabulary. Flag a
-  new prop that reinvents an existing one under a different name or a different
-  value shape (booleans following `is`/`has`; validation via
-  `status={type, message?}`), and suggest converging on the existing convention.
-- **Flag near-duplicates that should unify.** If the new prop and an existing
-  one are ~80% the same intent, call that out — the right outcome is often one
-  shared prop across both components, not two subtly-different ones. Divergent
-  sibling APIs are exactly the drift these conventions exist to prevent.
-- **When no prior art exists,** the prop is genuinely new API surface — hold it
-  to the API Conventions principles above (orthogonal axis, prop independence,
-  guidance-over-enforcement) and note that new API should be spec'd and
-  vibe-tested rather than settled in the PR (route naming disputes to
-  [API Arbitration](https://github.com/facebook/astryx/wiki/API-Arbitration)).
+- **Search for prior art.** Look for an existing prop with the same _axis of
+  variation_ under a different name (`size` vs `scale`, `isLoading` vs `busy`,
+  `tone` vs `variant` vs `color`, `density` vs `compact`). Check sibling
+  components in the same family first, then the wider system.
+- **Prefer the established name and value shape** — reuse the existing prop
+  name, type, default, and vocabulary. Flag a new prop that reinvents an
+  existing one under a different name or value shape.
+- **Flag near-duplicates that should unify.** If the new prop and an existing one
+  are ~80% the same intent, the right outcome is often one shared prop across
+  both, not two subtly-different ones.
+- **When no prior art exists,** it is genuinely new API surface — hold it to the
+  API Conventions principles, and note that it should be spec'd and vibe-tested
+  rather than settled in the PR.
 
 ### Plugins & hooks that extend a host component
 
-Some components expose a plugin/hook surface (e.g. `Table` with
-`useTable*` plugins). These extend a host, so review them for consistency _with
-that host_, not in isolation — recurring issues seen in real review:
+Some components expose a plugin/hook surface (e.g. `Table` with `useTable*`
+plugins). These extend a host, so review them for consistency _with that host_,
+not in isolation — recurring issues seen in real review:
 
 - **Mirror the host's API shape, in and out.** A plugin should accept and return
   the same shapes the host already uses. If `Table` accepts `idKey` (a key that
@@ -259,20 +237,17 @@ that host_, not in isolation — recurring issues seen in real review:
   should accept the same rather than forcing a bespoke callback — and should
   **name its outputs to match the host's props** so they compose directly.
   Prefer `const {idKey} = usePlugin(); <Table idKey={idKey} />` over exporting
-  `getRowKey` that the caller has to remember maps to `idKey`. Flag renamed
-  or reshaped equivalents.
+  `getRowKey` that the caller has to remember maps to `idKey`. Flag renamed or
+  reshaped equivalents.
 - **Semantic values first, arbitrary as the escape hatch.** When a plugin/prop
   takes a visual value (color, status, tone), the first-class API is the
   system's **semantic tokens** (`color: 'accent'` / `'success'`), not raw values.
-  Allowing arbitrary values is fine as an escape hatch, but the _default_ shape
-  should be system semantics — flag an API where the raw/arbitrary form is the
-  primary one.
+  Arbitrary values are fine as an escape hatch, but flag an API where the
+  raw/arbitrary form is the primary one.
 - **Decide host-level vs plugin-level deliberately** — especially for
   accessibility. If an option affects host semantics (e.g. a row `startFrom`
   index that changes `aria-rowindex`), it likely belongs on the **host** so the
-  semantics are correct even when nothing visible renders. Flag a11y-affecting
-  config buried in a plugin when the host is the right owner (and note
-  interactions like pagination).
+  semantics are correct even when nothing visible renders.
 
 ### Hook stability & reuse of existing data
 
@@ -281,67 +256,35 @@ For hooks (plugins or otherwise), watch two things that bit real Table PRs:
 - **Dependency-set stability.** A hook whose memoized output depends on a
   frequently-changing value (e.g. the whole `data` array) will re-compute and
   hand consumers a new reference on every update, destabilizing everything
-  downstream. Flag dependency sets that make the return value churn; prefer
-  stable keys/refs.
+  downstream. Flag dependency sets that make the return value churn.
 - **Don't re-derive what's already available.** If the host or the DOM already
   exposes a value, read it instead of recomputing. Real case: a row-index plugin
   looped over `data` to compute indices the table row already carried as
-  `aria-rowindex` — the loop (and the extra API surface) was avoidable. Flag
-  redundant full-collection loops and per-item rescans when an existing
-  value/source would do (ties into the complexity/perf smell in Judgment).
+  `aria-rowindex` — the loop (and the extra API surface) was avoidable.
 
 ## Design review
 
-Some package changes are also _design_ changes. When a diff affects how a
-component **looks or behaves visually**, review it against
-**[Design Conventions](https://github.com/facebook/astryx/wiki/Design-Conventions)** —
-the design-side sibling of API Conventions — in addition to the checks below.
+Some package changes are also _design_ changes. The design rules are
+**[Design Conventions](https://github.com/facebook/astryx/wiki/Design-Conventions)**
+— spacing and the 4px grid, concentric radius, vertical rhythm, elevation,
+typography, color and contrast, motion, and the approved state
+representations. Apply that page; don't re-derive it here.
 
-**When to apply (detect a design review is needed).** Treat a change as
-design-affecting when it touches any of: `.stylex.ts` files or `stylex.*`
-styling; token usage (color, spacing, radius, shadow, typography, motion,
-elevation/z-index); a new component, variant, or `size`/`density` prop; visual
-state handling (rest/hover/focus/active/disabled/loading, selected, or
-`status`); layout/structure, borders, or overlays/popovers. Pure logic, types,
-tests, or docs with no visual effect do **not** need a design pass — say so and
-move on.
+**When it applies.** Treat a change as design-affecting when it touches any of:
+`.stylex.ts` files or `stylex.*` styling; token usage (color, spacing, radius,
+shadow, typography, motion, elevation/z-index); a new component, variant, or
+`size`/`density` prop; visual state handling (rest/hover/focus/active/disabled/
+loading, selected, or `status`); layout/structure, borders, or overlays/popovers.
+Pure logic, types, tests, or docs with no visual effect do **not** need a design
+pass — say so and move on.
 
-When it does apply, evaluate against the Design Conventions foundations and
-flag the concrete "smells" that page names:
-
-- **Tokens, not raw values** — every visual value references a token; a raw
-  color/space/radius/shadow in core is fixed by using the right token, never by
-  swapping one raw value for another.
-- **Spacing (relationship hierarchy)** — 4px grid; gaps step up with grouping
-  (`label→input < fields < groups < sections`); flag monotonous spacing,
-  inverted nesting (child gap wider than parent), off-grid values, nested cards.
-- **Concentric radius** — `r_inner ≈ r_outer − gap`; radius from a role token;
-  flag non-concentric nesting, thick accent borders / side-tab stripes on
-  rounded corners.
-- **Vertical rhythm (size/density)** — fixed-height (`size`) and variable-height
-  (`density`) controls tuned together to share a baseline; ~44px hit area
-  without inflating the visual; flag off-scale heights (not 28/32/36) and
-  cramped padding.
-- **Elevation** — shadow tier matches stacking order (base < dropdown < sticky <
-  overlay/modal < toast < tooltip); popovers escape `overflow:hidden`; flag
-  arbitrary z-index and hairline-border-plus-diffuse-shadow or colored glows.
-- **Typography** — role tokens; hierarchy ≥1.25 size ratio; body ≥12px; leading
-  ≥1.3; flag flat hierarchy, all-caps/justified/gradient body, lines >~75ch.
-- **Color** — every fg/bg pair passes WCAG AA in light _and_ dark; interaction
-  tints are alpha overlays (not opaque); status pairs color with an icon (never
-  color alone); one clear primary action; no pure `#000`/`#fff`.
-- **Motion** — duration matches the change's weight; only `transform`/`opacity`
-  animate (never layout props); `--ease-standard`, no bounce/elastic; honor
-  `prefers-reduced-motion`.
-- **State representation** — reuse an existing approved representation for a
-  state before inventing a new one; every relevant state (rest/hover/focus/
-  active/disabled/loading/status/selected) is designed.
-
-Run the objectively-checkable items (tokens, grid, concentric radius, contrast,
-z-index, motion properties) as pass/fail; treat proportions, density, and
-composition as judgment. This mirrors Hardening Layer 3 — where a review
-resolves a genuinely new design question, note that it should be recorded back
-into the Design Conventions page rather than decided ad hoc in the PR.
+**How to run it.** Score the objectively-checkable items (tokens, grid,
+concentric radius, contrast, z-index, motion properties) as pass/fail; treat
+proportions, density, and composition as judgment, and judge those from
+**rendered screenshots**, not from reading CSS. This mirrors Hardening Layer 3 —
+where a review resolves a genuinely new design question, note that it should be
+recorded back into the Design Conventions page rather than decided ad hoc in the
+PR.
 
 ## Lifecycle & promotion
 
@@ -360,126 +303,72 @@ high-attention (post a note rather than hard-blocking — this is advisory).
 **lab → core after hardening**.
 
 **Flag a diff that adds a brand-new component directory under
-`packages/core/src/<Name>/` with no prior presence in `packages/lab/src/`.**
-That's a component skipping the staging step. (A lab→core _promotion_ — a delete
-under `packages/lab/src/**` paired with the add in core — is the healthy path
-and is fine; the concern is the _net-new_ component that was never in lab.)
-
-When you see a net-new core component, ask the author to confirm either that it
-went through lab, or that it genuinely meets the core bar that lab explicitly
-does _not_ guarantee:
-
-- Full keyboard + a11y (ARIA contracts, focus, `:hover` guarded by
-  `@media (hover: hover)`)
-- Theming story + `themeProps`, semantic tokens throughout, status states
-  (error/warning/success) where it's an input
-- Spec compliance with an approved spec issue, and **vibe-tested** API
-- Complete surface (see Mechanical checklist below)
+`packages/core/src/<Name>/` with no prior presence in `packages/lab/src/`.** A
+lab→core _promotion_ — a delete under `packages/lab/src/**` paired with the add
+in core — is the healthy path; the concern is the _net-new_ component that was
+never in lab. Ask the author to confirm it went through lab, or that it meets
+the core bar lab does not guarantee (full keyboard + a11y, a theming story with
+`themeProps`, spec compliance, a complete surface).
 
 **Require a linked spec issue.** A new component's PR description must link to a
 tracking issue that clearly ran the
-[Component Specification Protocol](https://github.com/facebook/astryx/wiki/Component-Specification-Protocol)
-(the evidence-backed 9-phase process: research, use-case enumeration, drafted
-API with rationale, surface-area audit, spec review, API arbitration). Flag a
-new-component PR whose description has **no linked spec issue**, or links an
-issue that is just a feature request / "add X" with none of the protocol's
-evidence — and ask for the spec before the API is reviewed on its merits. The
-spec is the contract; a new component without one isn't ready.
+[Component Specification Protocol](https://github.com/facebook/astryx/wiki/Component-Specification-Protocol).
+Flag a new-component PR with **no linked spec issue**, or one linking a bare
+"add X" feature request with none of the protocol's evidence, and ask for the
+spec before the API is reviewed on its merits. The spec is the contract.
 
 Small additions and deliberately spec-approved direct-to-core work do happen —
-this isn't an automatic rejection — but a new core component that skipped lab
-should be called out so a human confirms it was intentional and hardened.
+this isn't an automatic rejection — but call it out so a human confirms it was
+intentional.
 
 ### New package (net-new `@astryxdesign/*`)
 
-A brand-new package is a bigger commitment than a new component — it adds a
-published surface the project maintains and versions indefinitely. **Flag a diff
-that adds a new top-level `packages/<name>/` directory** (a new `package.json`
-with an `@astryxdesign/*` name, new `exports`, its own build/release wiring).
-This is always a high-risk trigger — route it to human/maintainer judgment
-regardless of author, and confirm:
+A brand-new package is a bigger commitment than a new component — a published
+surface the project maintains and versions indefinitely. **Flag a diff that adds
+a new top-level `packages/<name>/` directory.** Always route to human/maintainer
+judgment regardless of author, and confirm:
 
 - **The package should exist as its own package** (vs. living in an existing
-  one) — a deliberate, maintainer-level decision, not an incidental add.
+  one) — a deliberate, maintainer-level decision.
 - **Publish posture is intentional** — `private: true` + `astryx.canaryOnly` for
-  staging vs. a stable public package; the `"exports"` are generated
-  (`scripts/sync-exports.js`), not hand-written; versioning joins the `fixed`
+  staging vs. a stable public package; `"exports"` generated by
+  `scripts/sync-exports.js`, not hand-written; versioning joins the `fixed`
   group.
 - **A tracking/spec issue is linked** establishing the need and scope.
 
-Never approve a net-new package on convention-cleanliness alone; whether it
-_should exist_ is a human call.
+Never approve a net-new package on convention-cleanliness alone.
 
 ### New template added already-visible (not `hidden`)
 
 CLI templates/blocks are authored **hidden** and revealed only after they clear
-the template design bar. The CLI reads `hidden: true` and
-`hiddenComponents: ['Name', ...]` from a template's `.doc.mjs`; hidden entries
-are skipped from `--list`.
-
-**Flag a diff that adds a _new_ template/block whose `.doc.mjs` is not
-`hidden: true`** (i.e. it's publicly listed from the moment it lands). A new
-template appearing already-visible skipped the hidden-staging step and may not
-be hardened yet. Ask the author to confirm it meets the template design bar
-(component/token purity, layout, realistic mock data, and the design-judge
-visual axes; target grade B or above — see
-[Contributing Templates](https://github.com/facebook/astryx/wiki/Contributing-Templates)
-and the Design review section above), or to add `hidden: true` until it does.
+the template design bar — see
+[`templates.instructions.md`](./templates.instructions.md) for the full rule.
+Flag a diff that adds a _new_ template/block whose `.doc.mjs` is not
+`hidden: true`.
 
 ## Mechanical checklist
 
+The design-system rules (StyleX-only, semantic tokens, no style-only wrappers,
+the shared a11y primitives, `useLinkComponent()`) are numbered checks on the
+[Component Audit Rubric](https://github.com/facebook/astryx/wiki/Component-Audit-Rubric);
+what this repo enforces mechanically is in
+[CONTRIBUTING → Code Style](../../CONTRIBUTING.md#code-style). What is specific
+to a published package:
+
 - **Full component surface.** A component under `packages/*/src/<Name>/` should
-  ship `<Name>.tsx`, a colocated `<Name>.test.tsx`, `<Name>.doc.mjs`, a
-  Storybook story, and an `index.ts` export. Flag missing pieces.
-- **`forwardRef` + `displayName`**, `export interface <Name>Props`, and exported
-  types alongside the component.
+  ship `<Name>.tsx`, a colocated `<Name>.test.tsx`, `<Name>.doc.mjs`, and an
+  `index.ts` export, plus a Storybook story at
+  `apps/storybook/stories/<Name>.stories.tsx` (stories are not colocated —
+  `apps/storybook/.storybook/main.ts` only discovers
+  `../stories/**/*.stories.@(js|jsx|mjs|ts|tsx)`). Flag missing pieces.
+- **`export interface <Name>Props`** extending `BaseProps`, with types exported
+  alongside the component.
 - **Never hand-edit the `"exports"` field in a package `package.json`.** It is
   auto-generated from `src/` by `scripts/sync-exports.js` and committed on
   `main`. Editing it by hand is a review-reject.
-- **StyleX only** — no raw CSS, no JS workarounds for CSS StyleX supports;
-  verify against `internal/stylex-capabilities/CAPABILITIES.md`. Guard `:hover`
-  with `@media (hover: hover)`. Use component-scoped `stylex.defineMarker()` for
-  form controls — never `stylex.defaultMarker()`.
-- **Semantic tokens only** — no hardcoded color/spacing/radius/shadow;
-  theme-agnostic output.
-- **Avoid unnecessary wrapper elements — prefer props and hooks.** Astryx favors
-  attaching behavior/style to existing elements over adding a new wrapper node.
-  Flag an added wrapper when a lighter path exists:
-  - _Styling:_ components extend `BaseProps` (they take `xstyle`), so apply style
-    directly — `<Divider xstyle={hasOutline && styles.titleDivider} />` — instead
-    of wrapping the component in a styled `<div>`.
-  - _Behavior:_ reach for the behavior **hook** or **prop** the system already
-    exposes rather than a wrapper component. E.g. a tooltip is available via the
-    `tooltip` prop / `useTooltip` hook, and there are hooks for many behaviors
-    (`useHoverCard`, `useClickableContainer`, `useCollapsible`, `useFocusTrap`,
-    `useEntryAnimation`, `useInteractiveRole`, …). Prefer composing the hook onto
-    the real element over introducing a wrapper that exists only to host the
-    behavior. A wrapper adds a DOM node, can break layout/flex/grid parent-child
-    relationships, and often complicates focus/ARIA — call it out when a hook or
-    prop would avoid it.
-- **Navigation** uses `useLinkComponent()`, never a hardcoded `<a>`.
-- **Reuse the existing accessibility primitives — don't hand-roll.** Astryx
-  ships shared a11y building blocks; new accessibility work should compose them
-  rather than reinvent the behavior inline. Flag hand-rolled equivalents and
-  point at the primitive:
-  - Screen-reader-only content → the **`VisuallyHidden`** component, not a custom
-    `sr-only`/clip-rect style or an off-screen `<span>`.
-  - Live-region announcements → **`useAnnounce`**, not an ad-hoc `aria-live` node
-    wired up by hand.
-  - Roving focus / arrow-key navigation → **`useListFocus`**, **`useGridFocus`**,
-    or **`useTreeFocus`**; typeahead → **`useTypeahead`**; a keyboard-shortcut
-    hint → **`useKeyboardHint`**; focus trapping → **`useFocusTrap`**; interactive
-    role/state wiring → **`useInteractiveRole`**.
-    These already implement the WAI-ARIA APG patterns and are tested, so reusing
-    them keeps behavior consistent across the system. A genuinely new a11y pattern
-    with no existing primitive is fine — but call it out for careful review (see
-    "When to flag for engineering / human judgment") rather than landing a bespoke
-    implementation quietly.
 - **Docs in sync** — JSDoc file headers, `SYNC:` reminders, and `.doc.mjs`.
   `@example` fences in JSDoc must be plain ` ``` ` (never language-tagged), or
   Storybook autodocs won't render them.
-- **Changeset** present for consumer-visible changes, with `[category]` +
-  `@handle`, patch-only pre-1.0.
 
 ## Judgment
 
@@ -503,10 +392,8 @@ checks, flag it.
     content is noisy, and reserving `assertive` for genuinely urgent messages.
 - **`useEffect` is a smell.** Treat a new/changed Effect as something to justify,
   not accept by default. Most UI logic doesn't need one — look for whether it
-  belongs in an **event handler / callback** (logic that responds to a user
-  action), a **ref** (imperative work that shouldn't trigger re-render), or
-  plain **derivation during render / `useMemo`** (values computed from props or
-  state). Use React's own guidance as the bar:
+  belongs in an **event handler / callback**, a **ref**, or plain **derivation
+  during render / `useMemo`**. Use React's own guidance as the bar:
   [You Might Not Need an Effect](https://react.dev/learn/you-might-not-need-an-effect)
   and [Synchronizing with Effects](https://react.dev/learn/synchronizing-with-effects).
   Genuine Effects synchronize with an _external_ system (subscriptions, the DOM,
@@ -516,20 +403,16 @@ checks, flag it.
   `MutationObserver` / `ResizeObserver` / `IntersectionObserver`, imperative DOM
   measurement, event listeners, or a `useEffect` sync loop introduced to achieve
   something CSS (or a token/prop) already does. Watch for observers or
-  measurement in hot paths (per-row, per-keystroke, per-frame, large lists) that
-  risk performance regressions, and for reintroducing work the platform handles
-  natively (`:hover`/`@media (hover: hover)`, `@container`, `:nth-child`,
-  `@starting-style`, `position-try`, `stylex.when.*`). Ask: could this be a CSS
-  key, a container query, or a prop instead of JS observing the DOM? Prefer the
-  simpler mechanism; call out the complexity and the regression risk when the
-  heavy approach isn't justified.
+  measurement in hot paths (per-row, per-keystroke, per-frame, large lists), and
+  for reintroducing work the platform handles natively
+  (`:hover`/`@media (hover: hover)`, `@container`, `:nth-child`,
+  `@starting-style`, `position-try`, `stylex.when.*`).
 - **Silent breaking changes to shared types/context.** Adding a **required**
   field to a shared type, context value, or component API is a breaking change
   for every existing consumer — even when the PR's own feature doesn't need them
   to change. The **tell**: unrelated tests, examples, or call sites had to be
-  updated just to satisfy the new field. When you see that, flag it and ask
-  whether the field should be **optional** (applied internally with a default)
-  instead — and whether the breaking change is worth it. (Real case: a new
+  updated just to satisfy the new field. Flag it and ask whether the field should
+  be **optional** (applied internally with a default) instead. (Real case: a new
   required `aria-controls` id on a mobile-nav context forced edits to surfaces
   that didn't otherwise need it.)
 - **Unintended behavior/logic change.** Compare what the diff _actually changes_
@@ -540,28 +423,21 @@ checks, flag it.
   change is _inside_ the area the author was working on, so it's easy to miss.
   Watch especially for:
   - **Design/token changes — judge by presentation impact, not the token type.**
-    When a change touches a token, theme value, or style, reason about **how it
-    renders and where that could break**, not just that a value changed. Ask:
-    does this alter contrast, legibility, or emphasis? Does it change how a value
-    _composites_ over other surfaces or in a different theme/mode (a change that
-    looks fine on the one screen the author checked but regresses elsewhere)?
-    Does it shift layout, spacing rhythm, or elevation order? Does it hold in
-    both light and dark, and against every surface the token appears on? The
-    canonical trap: a color that reads fine in isolation but was relied on to
-    layer over other content, so the change silently degrades every place it
-    composites. (One real instance: a theme edit that made a color opaque when
-    other UI depended on it being translucent — fine where the author looked,
-    broken where they didn't.) The principle is general: a design value rarely
-    lives in one place, so weigh the change across everywhere it presents.
+    Reason about **how it renders and where that could break**: does it alter
+    contrast, legibility, or emphasis? Does it change how a value _composites_
+    over other surfaces or in a different theme/mode? Does it shift layout,
+    spacing rhythm, or elevation order? Does it hold in both light and dark, and
+    against every surface the token appears on? The canonical trap: a color that
+    reads fine in isolation but was relied on to layer over other content, so the
+    change silently degrades every place it composites. (One real instance: a
+    theme edit that made a color opaque when other UI depended on it being
+    translucent — fine where the author looked, broken where they didn't.)
   - **Changed defaults / conditionals** — a default prop value, a comparison
     (`>=` vs `>`), an early-return, or a guard that changed as a byproduct.
   - **Generated-output drift** — a regenerated theme CSS / registry / token file
     whose diff contains changes beyond the intended one.
-    When you spot this, don't assume malice or intent — surface it as a question:
-    "this also changes X (was `a`, now `b`) — does that hold everywhere it's used?"
-    Naming it lets the author confirm or revert. The author being unaware, and
-    having checked only the surface they were working on, is exactly why the
-    reviewer checks the blast radius of a design change.
+    Surface these as a question — "this also changes X (was `a`, now `b`) — does
+    that hold everywhere it's used?" — so the author can confirm or revert.
 - **Other smells.** State expressed by unmounting focusable elements (toggle
   visibility so focus/a11y survive), unnecessary `useState` (prefer derived
   values or refs, especially from interaction handlers), and excessive comments.

@@ -11,7 +11,7 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/PowerSearch/index.ts
- * - /packages/cli/templates/blocks/components/PowerSearch/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/PowerSearch/ (showcase blocks)
  */
 
 import React, {
@@ -37,7 +37,7 @@ import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import {Icon} from '../Icon';
 import type {IconType} from '../Icon';
 import type {IconName} from '../Icon/globalIconRegistry';
-import type {InputStatus} from '../Field';
+import type {InputStatus, FieldStatusVariant} from '../Field';
 import {usePopover} from '../Popover/usePopover';
 import {useAnnounce} from '../hooks/useAnnounce';
 import {
@@ -54,6 +54,7 @@ import {formatFilterValue} from './formatFilterValue';
 import {PowerSearchEditPopover} from './PowerSearchEditPopover';
 import {resolveOperatorLabel} from './resolveOperatorLabel';
 import {themeProps} from '../utils/themeProps';
+import {truncateCharacters} from '../utils/characters';
 import {useTranslator} from '../i18n';
 import type {
   PowerSearchConfig,
@@ -104,7 +105,6 @@ const popoverLayerStyles = stylex.create({
   layer: {
     width: 'anchor-size(width)',
     minWidth: 400,
-    marginTop: spacingVars['--spacing-1'],
   },
 });
 
@@ -118,7 +118,9 @@ const resultCountStyles = stylex.create({
 });
 
 function truncateString(value: string, limit: number): string {
-  return value.length > limit + 3 ? value.slice(0, limit) + '...' : value;
+  // Same semantics as before — strings within limit + 3 pass through, longer
+  // ones cut to limit + '...' — but counted in characters, not code units.
+  return truncateCharacters(value, limit + 3, '...');
 }
 
 function getEnumLabel(values: ReadonlyArray<EnumItem>, value: string): string {
@@ -383,6 +385,13 @@ export interface PowerSearchProps extends Omit<
   onBlur?: (e: React.FocusEvent) => void;
   /** Validation status. */
   status?: InputStatus;
+  /**
+   * How the status message is placed relative to the input.
+   * - 'attached': message overlaps directly below the input (bordered treatment)
+   * - 'detached': message floats below as a separate element with spacing
+   * @default 'attached'
+   */
+  statusVariant?: FieldStatusVariant;
   /** Max width for dropdown menu. */
   menuWidth?: number;
   /** Max display length for filter token values. @default 40 */
@@ -527,6 +536,7 @@ export function PowerSearch({
   onFocus,
   onBlur,
   status,
+  statusVariant = 'attached',
   maxTokenLength = 40,
   popoverSaveButtonLabel: popoverSaveButtonLabelFromProps,
   timezoneID,
@@ -1033,6 +1043,7 @@ export function PowerSearch({
           hasEntriesOnFocus
           debounceMs={0}
           status={status}
+          statusVariant={statusVariant}
           onFocus={onFocus}
           onBlur={onBlur}
           xstyle={xstyle}
@@ -1044,6 +1055,7 @@ export function PowerSearch({
       {popover.render(popoverContent, {
         placement: 'below',
         alignment: 'start',
+        offset: spacingVars['--spacing-1'],
         xstyle: [popoverLayerStyles.layer, layerAnimations.below],
       })}
     </>

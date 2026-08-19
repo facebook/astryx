@@ -12,7 +12,7 @@
  * SYNC: When modified, update:
  * - /packages/core/src/Tokenizer/index.ts
  * - /apps/storybook/stories/Tokenizer.stories.tsx
- * - /packages/cli/templates/blocks/components/Tokenizer/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Tokenizer/ (showcase blocks)
  */
 
 import React, {
@@ -37,6 +37,7 @@ import {
   inputStatusBorderStyles,
   inputStatusHoverShadowStyles,
   inputStatusFocusWithinStyles,
+  type FieldStatusVariant,
 } from '../Field';
 import {Token} from '../Token';
 import {renderIconSlot, type IconType} from '../Icon';
@@ -111,6 +112,13 @@ export interface TokenizerProps<T extends SearchableItem> extends Omit<
   isOptional?: boolean;
   /** Validation status. */
   status?: InputStatus;
+  /**
+   * How the status message is placed relative to the input.
+   * - 'attached': message overlaps directly below the input (bordered treatment)
+   * - 'detached': message floats below as a separate element with spacing
+   * @default 'attached'
+   */
+  statusVariant?: FieldStatusVariant;
   /**
    * Icon to display at the start of the input.
    * Accepts a ReactNode (e.g. `<Icon icon={SearchIcon} />`) or an SVG icon component directly.
@@ -370,6 +378,7 @@ export function Tokenizer<T extends SearchableItem>({
   isRequired = false,
   isOptional = false,
   status,
+  statusVariant = 'attached',
   startIcon,
   labelTooltip,
   searchSource,
@@ -591,7 +600,7 @@ export function Tokenizer<T extends SearchableItem>({
         const realItem = base as T;
         const newItems = [...value, realItem];
         onChange(newItems, {item: realItem, type: 'create'});
-        announce(`Added ${createdValue}`);
+        announce(t('@astryx.tokenizer.tokenAdded', {label: createdValue}));
         return;
       }
 
@@ -600,9 +609,9 @@ export function Tokenizer<T extends SearchableItem>({
       }
       const newItems = [...value, item];
       onChange(newItems, {item, type: 'add'});
-      announce(`Added ${item.label}`);
+      announce(t('@astryx.tokenizer.tokenAdded', {label: item.label}));
     },
-    [value, onChange, isAtMax, selectedIds, hasCreate, announce],
+    [value, onChange, isAtMax, selectedIds, hasCreate, announce, t],
   );
 
   // Handle removing an item. Single removal path: both Backspace on an empty
@@ -612,10 +621,10 @@ export function Tokenizer<T extends SearchableItem>({
     (item: T) => {
       const newItems = value.filter(v => v.id !== item.id);
       onChange(newItems, {item, type: 'remove'});
-      announce(`Removed ${item.label}`);
+      announce(t('@astryx.tokenizer.tokenRemoved', {label: item.label}));
       inputRef.current?.focus();
     },
-    [value, onChange, announce],
+    [value, onChange, announce, t],
   );
 
   // Handle clearing all items
@@ -721,7 +730,11 @@ export function Tokenizer<T extends SearchableItem>({
       onBlurCapture={handleBlurCapture}
       data-testid={testId}
       {...mergeProps(
-        themeProps('tokenizer', {size, status: status?.type}),
+        themeProps('tokenizer', {
+          size,
+          status: status?.type,
+          disabled: isDisabled ? 'disabled' : null,
+        }),
         stylex.props(
           inputWrapperStyles.base,
           styles.wrapper,
@@ -730,7 +743,7 @@ export function Tokenizer<T extends SearchableItem>({
           isTruncated && styles.truncatedWrapper,
           isDisabled && inputWrapperStyles.disabled,
           status && inputStatusBorderStyles[status.type],
-          status && inputStatusHoverShadowStyles[status.type],
+          status && !isDisabled && inputStatusHoverShadowStyles[status.type],
           status && inputStatusFocusWithinStyles[status.type],
         ),
       )}>
@@ -819,7 +832,11 @@ export function Tokenizer<T extends SearchableItem>({
           ref={placeholderRef}
           onClick={handleWrapperClick}
           {...mergeProps(
-            themeProps('tokenizer', {size, status: status?.type}),
+            themeProps('tokenizer', {
+              size,
+              status: status?.type,
+              disabled: isDisabled ? 'disabled' : null,
+            }),
             stylex.props(
               inputWrapperStyles.base,
               styles.wrapper,
@@ -828,7 +845,9 @@ export function Tokenizer<T extends SearchableItem>({
               isTruncated && styles.truncatedWrapper,
               isDisabled && inputWrapperStyles.disabled,
               status && inputStatusBorderStyles[status.type],
-              status && inputStatusHoverShadowStyles[status.type],
+              status &&
+                !isDisabled &&
+                inputStatusHoverShadowStyles[status.type],
               status && inputStatusFocusWithinStyles[status.type],
             ),
           )}>
@@ -891,6 +910,7 @@ export function Tokenizer<T extends SearchableItem>({
             }
           : undefined
       }
+      statusVariant={statusVariant}
       labelTooltip={labelTooltip}
       width={width}
       xstyle={xstyle}

@@ -20,7 +20,7 @@
  * SYNC: When modified, update:
  * - /packages/core/src/Chat/index.ts
  * - /apps/storybook/stories/ChatComposer.stories.tsx
- * - /packages/cli/templates/blocks/components/ChatComposerInput/ (block examples)
+ * - /packages/cli/assets/templates/blocks/components/ChatComposerInput/ (block examples)
  */
 
 import {
@@ -43,7 +43,7 @@ import {
   typeScaleVars,
   typographyVars,
 } from '../theme/tokens.stylex';
-import {mergeProps} from '../utils';
+import {mergeProps, isImeKeyEvent} from '../utils';
 import {useTriggerMenu} from './useTriggerMenu';
 import {useChatComposerTokens, isCustomToken} from './useChatComposerTokens';
 import {
@@ -243,8 +243,8 @@ const styles = stylex.create({
   placeholder: {
     position: 'absolute',
     top: 0,
-    left: 0,
-    right: 0,
+    insetInlineStart: 0,
+    insetInlineEnd: 0,
     pointerEvents: 'none',
     color: colorVars['--color-text-secondary'],
     fontSize: {
@@ -388,6 +388,20 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
   };
   selfRef.current = handle;
   useImperativeHandle(handleRef, () => handle);
+
+  // Register a focus control with the composer shell so body-click-to-focus
+  // works without the shell sniffing the input's DOM shape. Cleared on
+  // unmount so the shell falls back cleanly if the input goes away.
+  const inputControlRef = composerCtx?.inputControlRef;
+  useEffect(() => {
+    if (!inputControlRef) {
+      return;
+    }
+    inputControlRef.current = {focus: () => editableRef.current?.focus()};
+    return () => {
+      inputControlRef.current = null;
+    };
+  }, [inputControlRef]);
 
   useEffect(() => {
     if (controlledValue === undefined || !editableRef.current) {
@@ -550,9 +564,8 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
 
       if (e.key === 'Enter' && !e.shiftKey) {
         // Never submit mid-composition — an IME uses Enter to commit a
-        // candidate (e.g. Japanese/Chinese/Korean input), and browsers may
-        // also surface the legacy keyCode 229 for composing keystrokes.
-        if (e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229) {
+        // candidate. See utils/ime.ts for the full rationale.
+        if (isImeKeyEvent(e.nativeEvent)) {
           return;
         }
 

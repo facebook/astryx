@@ -107,6 +107,47 @@ describe('Popover', () => {
     expect(dialog).toHaveAttribute('aria-label', 'Greeting');
   });
 
+  it('can render a neutral wrapper when content owns its role', () => {
+    render(
+      <Popover
+        role="none"
+        content={
+          <div role="menu" aria-label="Actions">
+            Menu content
+          </div>
+        }
+        label="Actions">
+        <button type="button">Open</button>
+      </Popover>,
+    );
+
+    const trigger = screen.getByRole('button', {name: 'Open'});
+    expect(trigger).toHaveAttribute('aria-haspopup', 'true');
+    expect(
+      screen.queryByRole('dialog', {hidden: true}),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('menu', {hidden: true})).toHaveAttribute(
+      'aria-label',
+      'Actions',
+    );
+  });
+
+  it('can render a non-modal dialog wrapper', () => {
+    render(
+      <Popover
+        role="dialog"
+        isModal={false}
+        content={<span>Hello</span>}
+        label="Greeting">
+        <button type="button">Open</button>
+      </Popover>,
+    );
+
+    const dialog = screen.getByRole('dialog', {hidden: true});
+    expect(dialog).toBeInTheDocument();
+    expect(dialog).not.toHaveAttribute('aria-modal');
+  });
+
   it('calls onOpenChange when opened', () => {
     const onOpenChange = vi.fn();
     render(

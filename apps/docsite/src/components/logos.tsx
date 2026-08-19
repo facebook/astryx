@@ -167,3 +167,15 @@ export function MetaOpenSourceLogo(props: SvgProps) {
     </svg>
   );
 }
+
+export function FigmaLogo(props: SvgProps) {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      fill="currentColor"
+      xmlns="http://www.w3.org/2000/svg"
+      {...props}>
+      <path d="M5.667 16A2.669 2.669 0 0 0 8.333 13.333V10.667H5.667a2.667 2.667 0 0 0 0 5.333M3 8a2.667 2.667 0 0 1 2.667-2.667h2.666v5.334H5.667A2.667 2.667 0 0 1 3 8m0-5.333A2.667 2.667 0 0 0 5.667 5.333h2.666V0H5.667A2.667 2.667 0 0 0 3 2.667m5.333 0A2.667 2.667 0 0 0 11 5.333 2.667 2.667 0 0 0 11 0a2.667 2.667 0 0 0-2.667 2.667m0 5.333a2.667 2.667 0 1 0 5.334 0 2.667 2.667 0 0 0-5.334 0" />
+    </svg>
+  );
+}

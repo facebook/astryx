@@ -23,6 +23,7 @@ import {useState, useCallback, useRef} from 'react';
 import {useIsomorphicLayoutEffect} from './useIsomorphicLayoutEffect';
 import {observeResize, unobserveResize} from '../utils/sharedResizeObserver';
 import {computeOverflow} from './computeOverflow';
+import {useDevWarning} from './useDevWarning';
 
 export interface UseOverflowOptions {
   /**
@@ -119,17 +120,13 @@ export function useOverflow(
     behavior = 'observeSelf',
   } = options;
 
-  if (
-    process.env.NODE_ENV !== 'production' &&
-    maxVisibleItems != null &&
-    maxVisibleItems < minVisibleItems
-  ) {
-    console.warn(
-      `useOverflow: maxVisibleItems (${maxVisibleItems}) is less than ` +
-        `minVisibleItems (${minVisibleItems}); the floor wins and ` +
-        `minVisibleItems items will be shown.`,
-    );
-  }
+  useDevWarning(
+    'useOverflow',
+    `maxVisibleItems (${maxVisibleItems}) is less than ` +
+      `minVisibleItems (${minVisibleItems}); the floor wins and ` +
+      `minVisibleItems items will be shown.`,
+    maxVisibleItems != null && maxVisibleItems < minVisibleItems,
+  );
 
   const observeParent = behavior === 'observeParent';
 

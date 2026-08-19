@@ -13,7 +13,7 @@
  * - /packages/core/src/TimeInput/TimeInput.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/TimeInput/index.ts (exports if types change)
  * - /apps/storybook/stories/TimeInput.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/TimeInput/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/TimeInput/ (showcase blocks)
  */
 
 import {
@@ -29,23 +29,21 @@ import {
   type FocusEvent,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {IconName} from '../Icon';
 import {
   colorVars,
   sizeVars,
-  radiusVars,
   typographyVars,
   typeScaleVars,
-  borderVars,
 } from '../theme/tokens.stylex';
 import {
   Field,
+  InputClearButton,
   type InputStatus,
-  type InputStatusType,
   inputWrapperStyles,
   inputStatusBorderStyles,
   inputStatusHoverShadowStyles,
   inputStatusFocusWithinStyles,
+  type FieldStatusVariant,
 } from '../Field';
 import {Icon} from '../Icon';
 import {Spinner} from '../Spinner';
@@ -57,6 +55,7 @@ import {
   formatDisplayTime24h,
   formatISOTime,
   adjustTime,
+  isImeKeyEvent,
   isTimeInRange,
   mergeProps,
   mergeRefs,
@@ -67,6 +66,8 @@ import type {SizeValue} from '../utils/types';
 import {useSize} from '../SizeContext/SizeContext';
 import {useAnnounce} from '../hooks/useAnnounce';
 import {useInputContainer} from '../hooks/useInputContainer';
+import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
+import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {useTooltip} from '../Tooltip';
@@ -105,23 +106,6 @@ const styles = stylex.create({
   },
   inputInvalid: {
     color: colorVars['--color-text-secondary'],
-  },
-  clearButton: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 0,
-    margin: 0,
-    borderWidth: 0,
-    borderStyle: 'none',
-    backgroundColor: 'transparent',
-    cursor: 'pointer',
-    borderRadius: radiusVars['--radius-element'],
-    outline: {
-      default: 'none',
-      ':focus-visible': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: 1,
   },
 });
 
@@ -298,6 +282,14 @@ export interface TimeInputProps extends Omit<
    * If message is provided, displays below the input.
    */
   status?: InputStatus;
+  /**
+   * How the status message is placed relative to the input.
+   * - 'attached': message overlaps directly below the input (bordered treatment)
+   * - 'detached': message floats below as a separate element with spacing
+   * - 'tooltip': no message box; the status icon becomes a focusable info-tip button that reveals the message on hover, keyboard focus, or tap
+   * @default 'attached'
+   */
+  statusVariant?: FieldStatusVariant;
 
   /**
    * Width of the field. Numbers are treated as pixels, strings are used as-is
@@ -347,6 +339,7 @@ export function TimeInput({
   placeholder: placeholderFromProps,
   size: sizeProp,
   status,
+  statusVariant = 'attached',
   labelTooltip,
   width,
   xstyle,
@@ -355,6 +348,7 @@ export function TimeInput({
   ref,
 }: TimeInputProps) {
   const t = useTranslator();
+  const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const placeholder =
     placeholderFromProps ?? t('@astryx.timeInput.placeholder');
   const size = useSize(sizeProp, 'md');
@@ -400,26 +394,21 @@ export function TimeInput({
   });
 
   // Status icon mapping
-  const statusIconMap: Record<InputStatusType, IconName> = {
-    warning: 'warning',
-    error: 'error',
-    success: 'success',
-  };
-
-  const statusIconColorMap: Record<
-    InputStatusType,
-    'warning' | 'error' | 'success'
-  > = {
-    warning: 'warning',
-    error: 'error',
-    success: 'success',
-  };
+  const {statusIcon, describedBy: statusTooltipDescribedBy} =
+    useInputStatusIcon({
+      status,
+      statusVariant,
+      isInGroup: !!inputGroup,
+    });
 
   const {ariaLabelledBy, ariaDescribedBy} = getInputARIA(
     inputLabelID,
     [
       description ? descriptionID : null,
-      status?.message ? statusMessageID : null,
+      statusVariant !== 'tooltip' && status?.message ? statusMessageID : null,
+      // The tooltip variant renders no message box; describe the input by the
+      // tooltip's content instead so the status is still announced.
+      statusTooltipDescribedBy,
       showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
     ],
     inputGroup,
@@ -544,6 +533,13 @@ export function TimeInput({
   // Handle keyboard navigation on input
   const handleInputKeyDown = useCallback(
     (e: KeyboardEvent<HTMLInputElement>) => {
+      // ArrowUp/ArrowDown step the time and preventDefault; an IME candidate
+      // window uses those same arrows to navigate candidates, so guard the
+      // composing keydown (fires before compositionend) to avoid stealing them
+      // mid-composition. See utils/ime.ts.
+      if (isImeKeyEvent(e.nativeEvent)) {
+        return;
+      }
       // Arrow-key adjustment mutates the value; block it while showing a
       // disabled reason (the input keeps focusability via aria-disabled).
       if (isDisabled) {
@@ -572,10 +568,25 @@ export function TimeInput({
         // Check if within range
         if (isTimeInRange(newTime, min, max)) {
           fireChange(newTime);
+          // Stepping programmatically rewrites a plain textbox's value, and
+          // screen readers do not announce programmatic textbox changes — the
+          // new value must be spoken explicitly or stepping is silent
+          // (WCAG 4.1.2).
+          announce(formatDisplayTime(newTime, hasSeconds));
         }
       }
     },
-    [value, hasSeconds, increment, min, max, fireChange, isDisabled],
+    [
+      value,
+      hasSeconds,
+      increment,
+      min,
+      max,
+      fireChange,
+      isDisabled,
+      announce,
+      formatDisplayTime,
+    ],
   );
 
   // Handle clear button click
@@ -604,13 +615,17 @@ export function TimeInput({
       onClick={handleWrapperClick}
       onMouseUp={handleWrapperMouseUp}
       {...mergeProps(
-        themeProps('time-input', {size, status: status?.type ?? null}),
+        themeProps('time-input', {
+          size,
+          status: status?.type ?? null,
+          disabled: isDisabled ? 'disabled' : null,
+        }),
         stylex.props(
           inputWrapperStyles.base,
           sizeStyles[size],
           isDisabled && inputWrapperStyles.disabled,
           status && inputStatusBorderStyles[status.type],
-          status && inputStatusHoverShadowStyles[status.type],
+          status && !isDisabled && inputStatusHoverShadowStyles[status.type],
           status && inputStatusFocusWithinStyles[status.type],
           inputGroup && groupStyles.inGroup,
           xstyle,
@@ -651,7 +666,7 @@ export function TimeInput({
         autoFocus={hasAutoFocus}
         data-autofocus={hasAutoFocus || undefined}
         aria-describedby={ariaDescribedBy}
-        aria-required={isRequired === true ? 'true' : undefined}
+        aria-required={isEffectivelyRequired ? 'true' : undefined}
         aria-invalid={
           status?.type === 'error' || !isInputValid ? 'true' : undefined
         }
@@ -669,25 +684,16 @@ export function TimeInput({
           user would get no feedback that their entry was rejected (WCAG 3.3.1).
         */}
       <VisuallyHidden as="div" role="alert" aria-live="assertive">
-        {!isInputValid ? 'Invalid time' : ''}
+        {!isInputValid ? t('@astryx.timeInput.invalidTime') : ''}
       </VisuallyHidden>
       {isBusy && <Spinner size="sm" />}
       {hasClear && value && !isDisabled && (
-        <button
-          type="button"
+        <InputClearButton
+          label={t('@astryx.timeInput.clearLabel', {label})}
           onClick={handleClear}
-          aria-label={t('@astryx.timeInput.clearLabel', {label})}
-          {...stylex.props(styles.clearButton)}>
-          <Icon icon="close" size="sm" color="secondary" />
-        </button>
-      )}
-      {status && !inputGroup && (
-        <Icon
-          icon={statusIconMap[status.type]}
-          size="md"
-          color={statusIconColorMap[status.type]}
         />
       )}
+      {statusIcon}
     </div>
   );
 
@@ -720,6 +726,7 @@ export function TimeInput({
             }
           : undefined
       }
+      statusVariant={statusVariant}
       labelTooltip={labelTooltip}
       width={width}>
       {inputWrapper}

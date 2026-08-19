@@ -42,6 +42,7 @@ import {
   GitHubLogo,
   DiscordLogo,
   FacebookLogo,
+  FigmaLogo,
   InstagramLogo,
   ThreadsLogo,
   XLogo,
@@ -663,6 +664,29 @@ const RESOURCE_CATEGORIES: ReadonlyArray<ResourceCategory> = [
         description: 'How we settle design disagreements using vibe testing.',
         href: `${WIKI_BASE}/API-Arbitration`,
         icon: FileText,
+      },
+    ],
+  },
+  {
+    label: 'Design',
+    items: [
+      {
+        title: 'Astryx Library',
+        description: 'Official Figma library, by Meta (@meta).',
+        href: 'https://www.figma.com/community/file/1659998707120781098',
+        icon: FigmaLogo,
+      },
+      {
+        title: 'Astryx for Figma',
+        description: 'Community-built by AItoPeople (@aitopeople).',
+        href: 'https://www.figma.com/community/file/1655939158795671259/astryx-for-figma',
+        icon: FigmaLogo,
+      },
+      {
+        title: 'Astryx Design System for Figma v0.1',
+        description: 'Community-built by Adrian Stefan (@stefdrian).',
+        href: 'https://www.figma.com/community/file/1661363854016665156/astryx-design-system-for-figma-v0-1',
+        icon: FigmaLogo,
       },
     ],
   },

@@ -72,11 +72,12 @@ export interface UseTableSelectionConfig<T extends Record<string, unknown>> {
    * Derive a human-readable identity for a row, used in the row checkbox's
    * hidden label as `Select ${getRowLabel(item)}`. Without it, every row
    * checkbox announces an undifferentiated "Select row" to screen readers.
+   * With `getRowLabel: item => item.name`, checkbox accessible names become
+   * "Select Alice", "Select Bob", and so on.
    *
    * @example
    * ```
    * getRowLabel: item => item.name
-   * // Checkbox accessible names: "Select Alice", "Select Bob", ...
    * ```
    */
   getRowLabel?: (item: T) => string;
@@ -370,6 +371,9 @@ export function useTableSelection<T extends Record<string, unknown>>(
               store.getConfig().getIsItemSelected(item),
             );
           });
+          return () => {
+            unsub();
+          };
         };
 
         return {

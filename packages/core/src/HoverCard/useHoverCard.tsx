@@ -15,7 +15,6 @@
 import {
   useCallback,
   useEffect,
-  useMemo,
   useRef,
   type ReactNode,
   type RefCallback,
@@ -34,7 +33,6 @@ import {
   radiusVars,
   spacingVars,
 } from '../theme/tokens.stylex';
-import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 
 const styles = stylex.create({
@@ -45,23 +43,7 @@ const styles = stylex.create({
     borderRadius: 'var(--_hovercard-radius)',
     boxShadow: shadowVars['--shadow-med'],
   },
-  // Position-based margin styles
-  marginBlock: {
-    marginBlockStart: spacingVars['--spacing-1'],
-    marginBlockEnd: spacingVars['--spacing-1'],
-    marginInlineStart: 0,
-    marginInlineEnd: 0,
-  },
-  marginInline: {
-    marginBlockStart: 0,
-    marginBlockEnd: 0,
-    marginInlineStart: spacingVars['--spacing-1'],
-    marginInlineEnd: spacingVars['--spacing-1'],
-  },
-  // Content wrapper for padding and mouse events.
-  // `display: block` keeps the wrapper a block box even though it renders as a
-  // `span` (the layer uses inline-safe phrasing markup so it is valid inside a
-  // paragraph and produces identical server/client markup).
+  // Content wrapper for padding and interaction events.
   content: {
     display: 'block',
     paddingBlockStart: spacingVars['--spacing-3'],
@@ -266,22 +248,14 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
     onHide,
   } = options;
 
-  // Select margin style based on placement axis
-  const marginStyle =
-    placement === 'above' || placement === 'below'
-      ? styles.marginBlock
-      : styles.marginInline;
-
   const layer = useLayer({
     mode: 'context',
+    lazyMount: true,
     onShow,
     onHide,
   });
 
-  const popoverXstyle = useMemo(
-    () => [styles.container, marginStyle],
-    [marginStyle],
-  );
+  const popoverXstyle = styles.container;
 
   const showTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -469,23 +443,37 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
       props?: Omit<ContextRenderProps, 'positioning'>,
     ): ReactNode => {
       const renderPlacement = props?.placement ?? placement;
+      const themeClassName = themeProps('hovercard').className;
       const renderProps = {
         placement: renderPlacement,
         alignment: props?.alignment ?? alignment,
+        offset: spacingVars['--spacing-1'],
         // A named dialog when a label is provided; otherwise a group. A group
         // may validly be unnamed, an unnamed dialog may not — and hover cards
         // are non-modal, so group is honest semantics without a name.
         role: label ? 'dialog' : 'group',
         'aria-label': label || undefined,
-        xstyle: [popoverXstyle, layerAnimations[renderPlacement]],
-        // Render the layer as inline-safe phrasing markup so HoverCard stays
-        // valid (and hydration-stable) inside inline contexts like a `<p>`.
-        as: 'span' as const,
+        // Consumer surface style props land on the layer container — the
+        // themed surface (bg/radius/shadow) where the theme class lives — so
+        // customizing the card targets the same element as the theme. The inner
+        // div keeps `styles.content` for padding.
+        xstyle: [
+          popoverXstyle,
+          layerAnimations[renderPlacement],
+          props?.xstyle,
+        ],
+        className: props?.className
+          ? `${themeClassName} ${props.className}`
+          : themeClassName,
+        style: props?.style,
+        // useLayer mounts only after it has verified or corrected the parent,
+        // so rich HoverCard content can use block-safe markup.
+        as: 'div' as const,
       };
 
       return layer.render(
-        <span
-          {...mergeProps(themeProps('hovercard'), stylex.props(styles.content))}
+        <div
+          {...stylex.props(styles.content)}
           onMouseEnter={() => {
             isHoveringContentRef.current = true;
             clearTimeouts();
@@ -526,7 +514,7 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
             scheduleHide();
           }}>
           {children}
-        </span>,
+        </div>,
         renderProps,
       );
     },

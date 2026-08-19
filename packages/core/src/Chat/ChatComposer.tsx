@@ -20,7 +20,7 @@
  * SYNC: When modified, update:
  * - /packages/core/src/Chat/Chat.doc.mjs
  * - /apps/storybook/stories/ChatComposer.stories.tsx
- * - /packages/cli/templates/blocks/components/ChatComposer/ (block examples)
+ * - /packages/cli/assets/templates/blocks/components/ChatComposer/ (block examples)
  */
 
 import React, {
@@ -48,6 +48,7 @@ import {mergeProps} from '../utils';
 import {Icon} from '../Icon';
 import {ChatComposerInput} from './ChatComposerInput';
 import {ChatComposerContext} from './ChatContext';
+import type {ChatComposerInputControl} from './ChatContext';
 import {ChatSendButton} from './ChatSendButton';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
@@ -229,16 +230,16 @@ const styles = stylex.create({
     paddingBlockEnd:
       'calc(var(--_chat-composer-padding) + var(--_chat-composer-radius))',
     marginBlockEnd: 'calc(-1 * var(--_chat-composer-radius))',
-    borderTopLeftRadius: 'var(--_chat-composer-radius)',
-    borderTopRightRadius: 'var(--_chat-composer-radius)',
+    borderStartStartRadius: 'var(--_chat-composer-radius)',
+    borderStartEndRadius: 'var(--_chat-composer-radius)',
   },
   statusBottom: {
     paddingBlockStart:
       'calc(var(--_chat-composer-padding) + var(--_chat-composer-radius))',
     paddingBlockEnd: 'var(--_chat-composer-padding)',
     marginBlockStart: 'calc(-1 * var(--_chat-composer-radius))',
-    borderBottomLeftRadius: 'var(--_chat-composer-radius)',
-    borderBottomRightRadius: 'var(--_chat-composer-radius)',
+    borderEndStartRadius: 'var(--_chat-composer-radius)',
+    borderEndEndRadius: 'var(--_chat-composer-radius)',
   },
   statusError: {
     backgroundColor: colorVars['--color-error-muted'],
@@ -373,6 +374,11 @@ export function ChatComposer(props: ChatComposerProps) {
 
   const bodyRef = useRef<HTMLDivElement>(null);
 
+  // Input slot registers its focus (and future) control here so the shell can
+  // drive it without knowing its DOM shape. Stable ref — safe in the memoized
+  // context value.
+  const inputControlRef = useRef<ChatComposerInputControl | null>(null);
+
   const handleBodyClick = useCallback((e: MouseEvent<HTMLDivElement>) => {
     // Focus the input when clicking empty space in the body.
     // Skip if the click target is a button, link, or interactive element.
@@ -382,6 +388,14 @@ export function ChatComposer(props: ChatComposerProps) {
         'button, a, [role="button"], [contenteditable="true"], [data-astryx-token]',
       )
     ) {
+      return;
+    }
+    // Prefer the input's registered control (works for any input shape,
+    // including editors whose focusable node isn't a bare
+    // contenteditable/textarea). Fall back to a DOM query so uninstrumented
+    // custom inputs still get click-to-focus.
+    if (inputControlRef.current) {
+      inputControlRef.current.focus();
       return;
     }
     const editable = bodyRef.current?.querySelector<HTMLElement>(
@@ -418,6 +432,7 @@ export function ChatComposer(props: ChatComposerProps) {
       isStopShown,
       canSend,
       onStop,
+      inputControlRef,
     }),
     [
       currentValue,

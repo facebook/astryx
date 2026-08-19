@@ -13,6 +13,7 @@ export {DateInput} from './DateInput';
 export type {
   DateInputProps,
   DateInputSize,
+  DateInputFormat,
   DateInputStatus,
   DateInputStatusType,
 } from './DateInput';

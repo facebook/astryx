@@ -54,6 +54,50 @@ const styles = stylex.create({
 });
 ```
 
+### `@astryx/no-style-only-wrapper`
+
+Flags a `<div>`/`<span>` that exists only to style a single Astryx component.
+Every component extends `BaseProps`, so it takes `xstyle` — the wrapper adds a
+DOM node that takes the component out of its parent's flex/grid child
+relationship (this is what knocked the pagination carets off-center in #4752).
+
+**Bad:**
+
+```tsx
+<span {...stylex.props(rtlStyles.mirror)}>
+  <Icon icon="chevronsLeft" /> {/* ❌ wrapper exists only to carry a style */}
+</span>
+```
+
+**Good:**
+
+```tsx
+<Icon icon="chevronsLeft" xstyle={rtlStyles.mirror} /> {/* ✅ */}
+```
+
+The rule only fires when dropping the wrapper preserves behavior, so it stays
+quiet on wrappers that do real work:
+
+| Wrapper                                                               | Reported? |
+| --------------------------------------------------------------------- | --------- |
+| Only style attributes (`stylex.props`, `className`)                   | ✅ yes    |
+| `role`, `aria-*`, `data-*`, `ref`, a handler, `{...rest}`             | ❌ no     |
+| More than one child, or a non-Astryx / host child                     | ❌ no     |
+| Styles include `display`, flex/grid container props, `gap`, `padding` | ❌ no     |
+| Child renders no root element (`Tooltip`, providers)                  | ❌ no     |
+
+Style objects imported from another module are read from that module, so
+`import {rtlStyles} from '../utils'` is classified as accurately as a local
+`stylex.create()` (see `stylex-style-source.js`).
+
+**Options:** `wrapperElements`, `componentSources`, `allowComponents`,
+`allowFiles`.
+
+**Suggestion (not auto-fix):** for the unambiguous shape — a lone
+`{...stylex.props(…)}` over a child with no `xstyle` — the rule offers a
+rewrite that moves the styles onto the child. Removing a node can shift layout,
+so it is never applied by `--fix`.
+
 ### `@astryx/require-letter-spacing`
 
 Recommends adding `letterSpacing` when `fontSize` is defined (common design pattern for badges, labels).
@@ -183,3 +227,165 @@ export function Badge({label}) {
 - If the component legitimately needs client behavior, remove it from the presentational list
 
 See: https://github.com/facebook/astryx/issues/493
+
+### `@astryx/no-nullish-jsx-guard`
+
+Flags a bare nullish check (`!= null`, `!== null`, `!== undefined`) used as a JSX render guard for a value that is then rendered as a child. `!= null` only rejects `null`/`undefined`, but React also renders nothing for `false`, `true`, and `''` — all of which pass a `!= null` guard and leak an empty wrapper element into the DOM. Use `isRenderable(value)` from `@astryxdesign/core/utils` instead (it also excludes boolean and empty-string values; `0` stays renderable).
+
+**Scope (deliberately conservative):** only flags when both (1) the guard renders JSX and (2) the guarded value is rendered as a JSX _child_ of that branch. A value used only as a prop (`{user != null && <Profile user={user} />}`) is **not** flagged, since it is a data object, not a rendered slot.
+
+**Bad:**
+
+```tsx
+{
+  sideNav != null && <aside>{sideNav}</aside>;
+}
+{
+  label != null ? <span>{label}</span> : null;
+}
+```
+
+**Good:**
+
+```tsx
+import {isRenderable} from '@astryxdesign/core/utils';
+
+{
+  isRenderable(sideNav) && <aside>{sideNav}</aside>;
+}
+{
+  isRenderable(label) ? <span>{label}</span> : null;
+}
+```
+
+Ships as a **warning in both tiers** while core migrates its existing call sites; promote to `error` in strict mode once migrated. Provides an ESLint suggestion that rewrites the comparison to `isRenderable(value)` (add the import manually).
+
+See: https://github.com/facebook/astryx/issues/2538
+
+### `@astryx/focus-outline-keyboard-only`
+
+Flags a focus outline written against `:focus` or `:focus-within` inside `stylex.create()`. A focus outline is a **keyboard** affordance; both of those selectors also match a plain mouse click, so the ring gets shown to pointer users too — most easily missed on the paths where focus is restored programmatically (an overlay that returns focus to its trigger after a click-to-dismiss puts the ring back up with no keyboard involved).
+
+Use `:focus-visible`, or `:has(:focus-visible)` when the ring is drawn on a wrapper around the focusable element. A text input still matches `:focus-visible` when clicked, so nothing is lost.
+
+**Bad:**
+
+```ts
+const styles = stylex.create({
+  base: {
+    outline: {
+      default: 'none',
+      ':focus': `2px solid ${colorVars['--color-accent']}`,
+    },
+  },
+  wrapper: {
+    ':focus-within': {outline: `2px solid ${colorVars['--color-accent']}`},
+  },
+});```
+
+**Good:**
+
+```ts
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
+
+// Preferred — the shared ring: .focusVisible on the focusable element,
+// .focusWithin (`:has(:focus-visible)`) on a wrapper around it.
+stylex.props(focusOutlineStyles.focusVisible);
+```
+
+**Scope:** `outline` and its longhands only, and only where the ring is drawn — suppressing one on a broader selector (`outline: {':focus': 'none'}`) is legitimate and is not flagged. A field's `:focus-within` border and inset box-shadow (`Field/inputStyles.stylex.ts`) are a different treatment — "you are typing here" — and are deliberately not policed by this rule.
+
+Ships as an **error in both tiers**: core is clean, and this keeps it that way.
+
+### `@astryx/focus-outline-shared`
+
+Flags a focus ring written out inside `stylex.create()` instead of taken from the shared utility. There is one ring in the system and it is themeable through the `--focus-outline-*` tokens; a component that spells out its own gets those values by accident and drifts the moment either side moves — which is what happened before this rule existed (offsets wandered between 1px, 2px and 3px, and one ring was a border-width thick).
+
+**Bad:**
+
+```ts
+const styles = stylex.create({
+  base: {
+    outline: {
+      default: 'none',
+      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
+    },
+  },
+});
+```
+
+**Good:**
+
+```ts
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
+
+stylex.props(focusOutlineStyles.focusVisible, styles.base);
+```
+
+**Scope:** only what the ring LOOKS like — the `outline` shorthand, `outlineWidth`, `outlineStyle` — under a literal `:focus-visible` condition. Not flagged: `outlineOffset` (where the ring sits is a local constraint — inset into a tight grid, or held clear of a field border — and such a component still follows the theme's width, style and color), `outlineColor` (re-coloring per variant is the documented override), and a computed condition key such as `stylex.when.ancestor(':has(:focus-visible)', scope)`, which a shared style cannot express because a scope marker cannot be shared between components.
+
+Ships as an **error in both tiers**: core and lab are clean, and this keeps them that way.
+
+### `@astryx/no-unguarded-ime-keydown`
+
+Flags an `onKeyDown` handler on an **editable surface** that branches on a
+"command" key (Enter/Escape/arrows/Page/Home/End, or a legacy `keyCode`/`which`)
+**without an IME composition guard**.
+
+For CJK (Korean/Japanese/Chinese) input, the browser fires `keydown` with
+`isComposing === true` (or the legacy `keyCode === 229`) **before**
+`compositionend` writes the pending syllable. A handler that reads
+`e.key === 'Enter'` (or `'Escape'`, an arrow…) to accept a suggestion, select an
+option, submit, or close then misfires on the keystroke that was only meant to
+**commit the composition**. Early-return on `isImeKeyEvent(e.nativeEvent)` (from
+`@astryxdesign/core/utils/ime` — it returns
+`event.isComposing === true || event.keyCode === 229`) before handling command
+keys.
+
+**Scope (deliberately conservative — a noisy rule gets disabled):** only flags
+when all of (1) the element is an editable surface — a `<textarea>`, an
+`<input>` whose `type` can host text composition (not checkbox/number/date/…), a
+`contentEditable` element, `role="textbox"`/`"searchbox"`/`"combobox"`, or a
+known Astryx text-input component (`TextInput`, `Typeahead`, `BaseTypeahead`,
+…) — and **not** a `<button>`/`<a>`/`role="button"` (IME can't compose on a
+button, even one with `role="combobox"`); (2) its handler (inline, or a same-file
+identifier resolving to a function/`useCallback`) branches on a command key; and
+(3) a source-text scan of the handler finds **no** `isImeKeyEvent(`,
+`.isComposing`, or `229`.
+
+**Bad:**
+
+```tsx
+<TextInput
+  onKeyDown={e => {
+    if (e.key === 'Enter') onSelect(); // ❌ fires on a composing Enter
+  }}
+/>
+```
+
+**Good:**
+
+```tsx
+import {isImeKeyEvent} from '@astryxdesign/core/utils/ime';
+
+<TextInput
+  onKeyDown={e => {
+    if (isImeKeyEvent(e.nativeEvent)) return; // ✅ let the IME commit first
+    if (e.key === 'Enter') onSelect();
+  }}
+/>;
+```
+
+Ships as an **error in both tiers**: the editable surfaces that violated it —
+Selector, MultiSelector, DateInput, TimeInput, DateTimeInput, and Typeahead's
+edit-mode Escape — are fixed in the commit below this one, so core is clean and
+this keeps it that way.
+
+**Known limitations (intentional false-negatives):** guard/command-key detection
+is a lenient text scan (any `isImeKeyEvent(`/`.isComposing`/`229` anywhere in the
+handler counts as guarded; a `e.key === ENTER_KEY` variable comparison is not
+detected). Handler indirection is resolved only one hop within the same file — an
+imported handler is treated as unknown and not flagged. A `role`/`type`/
+`contentEditable` spread via `{...props}` is not seen.
+
+See: https://github.com/facebook/astryx/issues/4892

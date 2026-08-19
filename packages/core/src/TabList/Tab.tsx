@@ -13,7 +13,7 @@
  * - /packages/core/src/TabList/TabList.doc.mjs
  * - /packages/core/src/TabList/index.ts
  * - /packages/core/src/TabList/TabList.test.tsx
- * - /packages/cli/templates/blocks/components/TabList/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/TabList/ (showcase blocks)
  */
 
 import React, {useCallback, type ReactNode} from 'react';
@@ -37,6 +37,7 @@ import type {LinkComponentType} from '../Link/types';
 import {mergeProps} from '../utils';
 import {EDGE_COMP_ATTR} from '../Layout/edgeCompensation.stylex';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 
 export interface TabProps extends BaseProps<HTMLButtonElement> {
   /**
@@ -106,14 +107,6 @@ const styles = stylex.create({
     transitionProperty: 'color',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': '2px',
-    },
   },
   hoverBg: {
     position: 'absolute',
@@ -143,8 +136,8 @@ const styles = stylex.create({
     // with a bottom divider — that ancestor sets `--_tab-indicator-bottom`
     // to drop the indicator onto the rail beneath the reserved gap.
     bottom: 'var(--_tab-indicator-bottom, -1px)',
-    left: spacingVars['--spacing-3'],
-    right: spacingVars['--spacing-3'],
+    insetInlineStart: spacingVars['--spacing-3'],
+    insetInlineEnd: spacingVars['--spacing-3'],
     height: '2px',
     borderRadius: radiusVars['--radius-full'],
     pointerEvents: 'none',
@@ -274,7 +267,7 @@ export function Tab({
       themeProps('tab', {
         selected: isSelected ? 'selected' : null,
       }),
-      stylex.props(
+      focusOutlineProps.focusVisible(
         styles.base,
         sizeStyles[size],
         isSelected && styles.selected,

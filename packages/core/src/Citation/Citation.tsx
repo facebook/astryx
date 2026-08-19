@@ -10,10 +10,14 @@
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Citation/index.ts (exports if types change)
- * - /packages/cli/templates/blocks/components/Citation/ (showcase blocks)
+ * - /packages/core/src/Citation/Citation.doc.mjs (props table, features)
+ * - /packages/core/src/Citation/Citation.test.tsx (tests for new/changed behavior)
+ * - /apps/storybook/stories/Citation.stories.tsx (storybook stories)
+ * - /packages/cli/assets/templates/blocks/components/Citation/ (showcase blocks)
  */
 
 import type React from 'react';
+import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -29,11 +33,29 @@ import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
+import {renderIconSlot} from '../Icon';
 
 export interface CitationSource {
   title?: string;
   url?: string;
-  icon?: string;
+  /**
+   * Image URL for a favicon or source logo, rendered as `<img src>` inside the
+   * icon circle. This is the idiomatic field for image sources (mirrors
+   * `Avatar`/`Thumbnail` `src`). When both `src` and a non-string `icon` are
+   * provided, `icon` wins.
+   */
+  src?: string;
+  /**
+   * Source icon shown before the label text (label variant only). Accepts:
+   * - a React node / Astryx `<Icon>` / SVG element — rendered as-is, or
+   * - a string image URL — rendered as `<img src>` for backward compatibility
+   *   with callers that passed a favicon URL here.
+   *
+   * Note: unlike icon slots elsewhere in the system, a bare string is treated
+   * as an image URL (not a semantic icon name) to preserve the original
+   * favicon behavior. Pass an Astryx `<Icon>` (or other node) for a real icon.
+   */
+  icon?: ReactNode;
 }
 
 export interface CitationProps extends BaseProps<HTMLElement> {
@@ -162,7 +184,18 @@ export function Citation({
   const t = useTranslator();
   const title = source.title ?? String(number);
   const href = source.url;
-  const icon = source.icon;
+
+  // Resolve the source icon. A non-string `icon` node renders as-is (an Astryx
+  // <Icon>, SVG, avatar, etc.). Otherwise fall back to an image URL: `src`, or
+  // a legacy string passed to `icon` (back-compat — favicon URLs still render
+  // as <img>). The icon is decorative; the accessible name comes solely from
+  // the element's aria-label, so nothing is double-announced.
+  const iconNode =
+    source.icon != null && typeof source.icon !== 'string' ? source.icon : null;
+  const imageSrc =
+    source.src ?? (typeof source.icon === 'string' ? source.icon : undefined);
+  const hasIcon = iconNode != null || imageSrc != null;
+
   const Tag = href ? 'a' : 'span';
   // `doc-noteref` is a reference role — only appropriate on the interactive
   // link form. On a plain (unlinked) span it is not a permitted role
@@ -218,7 +251,7 @@ export function Citation({
         themeProps('citation', {variant}),
         stylex.props(
           styles.label,
-          icon != null && styles.labelWithIcon,
+          hasIcon && styles.labelWithIcon,
           href != null && styles.labelHover,
           href != null && styles.labelInteractive,
           xstyle,
@@ -226,14 +259,13 @@ export function Citation({
         className,
         style,
       )}>
-      {icon && (
-        <span {...stylex.props(styles.iconWrap)}>
-          <img
-            src={icon}
-            alt=""
-            aria-hidden="true"
-            {...stylex.props(styles.icon)}
-          />
+      {hasIcon && (
+        <span aria-hidden="true" {...stylex.props(styles.iconWrap)}>
+          {iconNode != null ? (
+            renderIconSlot(iconNode, {size: 'sm'})
+          ) : (
+            <img src={imageSrc} alt="" {...stylex.props(styles.icon)} />
+          )}
         </span>
       )}
       <span {...stylex.props(styles.labelText)}>{title}</span>

@@ -300,6 +300,139 @@ describe('FieldStatus', () => {
     });
   });
 
+  // The detached message must convey status by more than color/position:
+  // a leading status glyph precedes the message text (WCAG 1.4.1). The glyph
+  // is decorative for AT (aria-hidden) because the message text already names
+  // the status in words and it is announced via the live region.
+  describe('detached leading status icon (use-of-color a11y)', () => {
+    it('renders a leading status icon before the message for the detached variant', () => {
+      render(
+        <FieldStatus
+          type="error"
+          message="Something went wrong"
+          variant="detached"
+          data-testid="fs"
+        />,
+      );
+      const el = screen.getByTestId('fs');
+      const icon = el.querySelector('[aria-hidden="true"]');
+      const text = screen.getByText('Something went wrong');
+      expect(icon).toBeInTheDocument();
+      // Icon comes before the message text in document order.
+      expect(
+        icon!.compareDocumentPosition(text) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    });
+
+    it('marks the status icon aria-hidden (visual redundancy, not a second announcement)', () => {
+      render(
+        <FieldStatus
+          type="warning"
+          message="Heads up"
+          variant="detached"
+          data-testid="fs"
+        />,
+      );
+      const icon = screen
+        .getByTestId('fs')
+        .querySelector('[aria-hidden="true"]');
+      expect(icon).toBeInTheDocument();
+      expect(icon).toHaveAttribute('aria-hidden', 'true');
+    });
+
+    it('renders a status icon for each status type in the detached variant', () => {
+      for (const type of ['error', 'warning', 'success'] as const) {
+        const {unmount} = render(
+          <FieldStatus
+            type={type}
+            message="msg"
+            variant="detached"
+            data-testid="fs"
+          />,
+        );
+        expect(
+          screen.getByTestId('fs').querySelector('[aria-hidden="true"]'),
+        ).toBeInTheDocument();
+        unmount();
+      }
+    });
+
+    it('does not render a leading status icon for the attached variant', () => {
+      render(
+        <FieldStatus
+          type="error"
+          message="msg"
+          variant="attached"
+          data-testid="fs"
+        />,
+      );
+      expect(
+        screen.getByTestId('fs').querySelector('[aria-hidden="true"]'),
+      ).toBeNull();
+    });
+  });
+
+  describe('field-status-icon theme target', () => {
+    // The stable theme target lands on the detached message box's leading glyph
+    // itself, so a theme can restyle (e.g. resize) just this icon via
+    // `defineTheme`. It reflects the status type as a data attribute so themes
+    // can target per status, mirroring the parent astryx-field-status.
+    const getStatusIcon = (root: HTMLElement): HTMLElement => {
+      const icon = root.querySelector('.astryx-field-status-icon');
+      if (icon == null) {
+        throw new Error('status icon not found');
+      }
+      return icon as HTMLElement;
+    };
+
+    it('renders the target on the detached leading icon', () => {
+      render(
+        <FieldStatus
+          type="error"
+          message="msg"
+          variant="detached"
+          data-testid="fs"
+        />,
+      );
+      const icon = getStatusIcon(screen.getByTestId('fs'));
+      expect(icon).toHaveClass('astryx-field-status-icon');
+      expect(icon).toHaveClass('astryx-icon');
+      expect(icon).toHaveAttribute('data-type', 'error');
+    });
+
+    it('reflects the status type per status', () => {
+      for (const type of ['error', 'warning', 'success'] as const) {
+        const {unmount} = render(
+          <FieldStatus
+            type={type}
+            message="msg"
+            variant="detached"
+            data-testid="fs"
+          />,
+        );
+        expect(getStatusIcon(screen.getByTestId('fs'))).toHaveAttribute(
+          'data-type',
+          type,
+        );
+        unmount();
+      }
+    });
+
+    it('does not render the target for the attached variant', () => {
+      render(
+        <FieldStatus
+          type="error"
+          message="msg"
+          variant="attached"
+          data-testid="fs"
+        />,
+      );
+      expect(
+        screen.getByTestId('fs').querySelector('.astryx-field-status-icon'),
+      ).toBeNull();
+    });
+  });
+
   describe('edge cases', () => {
     it('renders an empty message without crashing', () => {
       render(<FieldStatus type="error" message="" data-testid="fs" />);

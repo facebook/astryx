@@ -92,6 +92,12 @@ const config: StorybookConfig = {
               '@astryxdesign/charts': [
                 path.join(rootDir, 'packages/charts/src'),
               ],
+              '@astryxdesign/richtext/*': [
+                path.join(rootDir, 'packages/richtext/src/*'),
+              ],
+              '@astryxdesign/richtext': [
+                path.join(rootDir, 'packages/richtext/src'),
+              ],
               '@astryxdesign/theme-neutral/*': [
                 path.join(rootDir, 'packages/themes/neutral/src/*'),
               ],
@@ -120,6 +126,10 @@ const config: StorybookConfig = {
           '@astryxdesign/core': path.resolve(rootDir, 'packages/core/src'),
           '@astryxdesign/lab': path.resolve(rootDir, 'packages/lab/src'),
           '@astryxdesign/charts': path.resolve(rootDir, 'packages/charts/src'),
+          '@astryxdesign/richtext': path.resolve(
+            rootDir,
+            'packages/richtext/src',
+          ),
           '@astryxdesign/theme-neutral': path.resolve(
             rootDir,
             'packages/themes/neutral/src/source.ts',
