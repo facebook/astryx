@@ -627,7 +627,9 @@ describe('OverflowList', () => {
           gap={0}
           data-w="1000"
           data-testid="ov"
-          onOverflowChange={o => spy(o)}>
+          onOverflowChange={o => {
+            spy(o);
+          }}>
           {items}
         </OverflowList>,
       );
@@ -636,7 +638,9 @@ describe('OverflowList', () => {
           gap={0}
           data-w="1000"
           data-testid="ov"
-          onOverflowChange={o => spy(o)}>
+          onOverflowChange={o => {
+            spy(o);
+          }}>
           {items}
         </OverflowList>,
       );
