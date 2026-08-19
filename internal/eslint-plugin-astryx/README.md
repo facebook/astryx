@@ -47,44 +47,43 @@ from `@astryxdesign/core/i18n`) — or an existing formatting helper such as
 `plainDateFormat`/`formatInstant`/`formatFilterValue`, so the value always
 traces back to the provider.
 
-**Raw `Intl` construction and reference is confined to a short, explicit
-allowlist of files** (`APPROVED_INFRA_FILES` in the rule source) — the pure,
-SSR-safe helpers that every provider-aware caller ultimately threads a locale
-through, plus a few of their colocated tests:
+**Raw `Intl` is controlled by two closed file lists in the rule source:**
+
+- `APPROVED_IMPLEMENTATION_FILES` contains the pure formatter/parser
+  implementations. Direct Intl calls there still require a syntactically
+  explicit locale; `Intl.NumberFormat(undefined)`, an omitted locale, and
+  locale methods without their locale argument are errors. Aliasing or
+  destructuring Intl is also rejected. The only temporary ambient exceptions
+  are the existing calls inside the named `plainDateFormat` and
+  `isLocaleDayFirst` functions, pending #5120.
+- `APPROVED_TEST_ORACLE_FILES` contains named tests that deliberately construct
+  independent Intl expectations so assertions are not circular.
+
+Approved implementations:
 
 - `packages/core/src/utils/plainDate.ts`, `.../utils/dateParser.ts` — date
   formatting/parsing core
 - `packages/core/src/Timestamp/formatInstant.ts`,
-  `.../Timestamp/tooltipEntries.ts` — Timestamp's shared instant formatter and
-  its (non-display) time-zone validity probe
-- `packages/core/src/PowerSearch/formatFilterValue.ts` — filter-value
-  formatting
-- `packages/core/src/i18n/useCollator.ts` — the one place allowed to
-  construct an `Intl.Collator`
-- `packages/charts/src/formatters.ts` — charts is a separate package that
-  cannot consume React context directly, so its formatters require an
-  explicit locale at their own public boundary instead
-- `packages/charts/src/formatters.test.ts`,
-  `packages/core/src/Calendar/Calendar.test.tsx`,
-  `packages/core/src/Timestamp/tooltipEntries.test.ts`,
-  `packages/core/src/PowerSearch/formatFilterValue.test.ts`,
-  `packages/core/src/Timestamp/Timestamp.test.tsx` — colocated tests of the
-  files above (or, for `Timestamp.test.tsx`, of a component whose entire
-  purpose is locale-aware rendering) that build their expected value with an
-  independently-constructed `Intl` formatter rather than the helper under
-  test, so the assertion isn't partly circular. This is not a general
-  "tests are exempt" carve-out: every other test in the lint scope — including
-  most of these same files' other tests — still follows the rule.
+  `.../Timestamp/tooltipEntries.ts` — Timestamp formatting and its
+  non-display time-zone validity probe
+- `packages/core/src/PowerSearch/formatFilterValue.ts`
+- `packages/core/src/i18n/useCollator.ts`
+- `packages/charts/src/formatters.ts`
 
-This list is the **only** exception mechanism, and it is closed: there is no
-rule option or `eslint.config.js` override that widens it, so adding a file
-means editing the rule (and `no-raw-intl-locale.test.mjs`) in review, not a
-config change a later diff can quietly broaden. Aliasing and destructuring
-Intl members is also fine _inside_ one of these files — the trust boundary
-covers the whole file, not just the direct-call shape. `navigator.language`/
-`navigator.languages`, however, is rejected unconditionally, infra or not —
-the provider is the only sanctioned source of a real locale, so
-infrastructure code must still receive one from a caller.
+Named test oracles:
+
+- `packages/charts/src/formatters.test.ts`
+- `packages/core/src/Calendar/Calendar.test.tsx`
+- `packages/core/src/NumberInput/NumberInput.test.tsx`
+- `packages/core/src/Table/plugins/tree/useTableTreeState.test.tsx`
+- `packages/core/src/Timestamp/tooltipEntries.test.ts`
+- `packages/core/src/PowerSearch/formatFilterValue.test.ts`
+- `packages/core/src/Timestamp/Timestamp.test.tsx`
+
+These lists are the **only** exception mechanism. There is no rule option or
+`eslint.config.js` override that widens them. A new entry requires a rule-source
+change and a focused rule test. `navigator.language`/`navigator.languages`
+remains rejected unconditionally, implementation or test oracle.
 
 `Intl.Locale` is never flagged, in any form — a bare reference, an alias, a
 call — it inspects a tag rather than formatting display output. `Intl.Segmenter`

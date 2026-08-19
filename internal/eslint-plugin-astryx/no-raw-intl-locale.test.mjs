@@ -21,6 +21,9 @@ const tester = new RuleTester({
 
 const rawIntlLocale = {messageId: 'rawIntlLocale'};
 const rawIntlReference = {messageId: 'rawIntlReference'};
+const ambientIntlInImplementation = {
+  messageId: 'ambientIntlInImplementation',
+};
 const navigatorLocale = {messageId: 'navigatorLocale'};
 
 // A file outside the approved infrastructure allowlist — the common case for
@@ -28,6 +31,7 @@ const navigatorLocale = {messageId: 'navigatorLocale'};
 // doesn't specifically test the infra boundary.
 const COMPONENT_FILE = 'packages/core/src/Calendar/Calendar.tsx';
 const INFRA_FILE = 'packages/core/src/utils/plainDate.ts';
+const DATE_PARSER_INFRA_FILE = 'packages/core/src/utils/dateParser.ts';
 const COLLATOR_INFRA_FILE = 'packages/core/src/i18n/useCollator.ts';
 const CHARTS_INFRA_FILE = 'packages/charts/src/formatters.ts';
 const TIMESTAMP_TEST_ORACLE_FILE = 'packages/core/src/Timestamp/Timestamp.test.tsx';
@@ -94,15 +98,24 @@ tester.run('no-raw-intl-locale', rule, {
     {code: `x.Intl.DateTimeFormat();`, filename: COMPONENT_FILE},
     {code: `const obj = {Intl: 5};`, filename: COMPONENT_FILE},
 
-    // -- Approved infrastructure files may construct raw Intl with any
-    //    non-navigator locale argument: a variable, a literal, or none. --
+    // -- Approved implementation files may call Intl directly, but still
+    //    require a syntactically explicit non-navigator locale. --
     {
       code: `new Intl.DateTimeFormat(locale, {dateStyle: 'long'});`,
       filename: INFRA_FILE,
     },
     {code: `new Intl.NumberFormat(locale).format(123);`, filename: INFRA_FILE},
     {code: `new Intl.DateTimeFormat('en-US', {timeZone});`, filename: INFRA_FILE},
-    {code: `new Intl.DateTimeFormat();`, filename: INFRA_FILE},
+    // -- The only ambient implementation calls are the two named legacy
+    //    helpers pending #5120. A second call in either file is invalid. --
+    {
+      code: `function plainDateFormat() { return new Intl.DateTimeFormat(undefined, options); }`,
+      filename: INFRA_FILE,
+    },
+    {
+      code: `function isLocaleDayFirst() { return new Intl.DateTimeFormat(); }`,
+      filename: DATE_PARSER_INFRA_FILE,
+    },
     {code: `value.toLocaleString(locale);`, filename: INFRA_FILE},
     {code: `left.localeCompare(right, locale);`, filename: INFRA_FILE},
     {
@@ -113,16 +126,14 @@ tester.run('no-raw-intl-locale', rule, {
       code: `new Intl.Collator(locale, options);`,
       filename: COLLATOR_INFRA_FILE,
     },
-    // Approved infra files may also alias/destructure Intl members freely —
-    // the file-level trust boundary covers the whole file, not just the
-    // direct-call shape.
+    // -- Named test-oracle files retain meaningful explicit-locale fixtures. --
     {
-      code: `const DTF = Intl.DateTimeFormat; new DTF(locale);`,
-      filename: INFRA_FILE,
+      code: `number.toLocaleString('en-US');`,
+      filename: 'packages/core/src/NumberInput/NumberInput.test.tsx',
     },
     {
-      code: `const {DateTimeFormat} = Intl; new DateTimeFormat(locale);`,
-      filename: INFRA_FILE,
+      code: `left.localeCompare(right, 'en-US');`,
+      filename: 'packages/core/src/Table/plugins/tree/useTableTreeState.test.tsx',
     },
 
     // -- A named test-oracle file may also construct raw Intl with a
@@ -151,6 +162,34 @@ tester.run('no-raw-intl-locale', rule, {
   ],
 
   invalid: [
+    // -- Approved implementation files still reject ambient locale calls and
+    //    indirect Intl references. --
+    {
+      code: `new Intl.NumberFormat(undefined).format(value);`,
+      filename: CHARTS_INFRA_FILE,
+      errors: [ambientIntlInImplementation],
+    },
+    {
+      code: `value.toLocaleString();`,
+      filename: CHARTS_INFRA_FILE,
+      errors: [ambientIntlInImplementation],
+    },
+    {
+      code: `function anotherFormatter() { return new Intl.DateTimeFormat(undefined, options); }`,
+      filename: INFRA_FILE,
+      errors: [ambientIntlInImplementation],
+    },
+    {
+      code: `const DTF = Intl.DateTimeFormat; new DTF(locale);`,
+      filename: INFRA_FILE,
+      errors: [rawIntlReference],
+    },
+    {
+      code: `const {DateTimeFormat} = Intl; new DateTimeFormat(locale);`,
+      filename: INFRA_FILE,
+      errors: [rawIntlReference],
+    },
+
     // -- The core policy change: an explicit locale no longer satisfies the
     //    rule outside the approved infrastructure files. --
     {

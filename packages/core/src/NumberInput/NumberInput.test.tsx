@@ -19,15 +19,6 @@ import {defineTheme} from '../theme/defineTheme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 
-// Test-fixture currency formatter for `formatValue`, standing in for an
-// arbitrary consumer-supplied callback (the prop is free-form application
-// code, not an Astryx formatting surface). A plain thousands-separator insert
-// is enough for these fixed fixture values and keeps the fixture from needing
-// any locale at all.
-function withThousands(value: number): string {
-  return `$${String(value).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
-}
-
 // FieldStatus announces status messages through the persistent useAnnounce
 // singletons; remove them between tests so role/aria-live queries in this
 // file never match a leftover region.
@@ -268,7 +259,7 @@ describe('NumberInput', () => {
           label="Revenue"
           value={1234}
           onChange={() => {}}
-          formatValue={withThousands}
+          formatValue={number => `$${number.toLocaleString('en-US')}`}
         />,
       );
       const input = screen.getByRole('spinbutton');
@@ -283,7 +274,7 @@ describe('NumberInput', () => {
           label="Revenue"
           value={1234}
           onChange={() => {}}
-          formatValue={withThousands}
+          formatValue={number => `$${number.toLocaleString('en-US')}`}
         />,
       );
       const input = screen.getByRole('spinbutton');
@@ -818,7 +809,7 @@ describe('NumberInput', () => {
             htmlName="revenue"
             value={1234}
             onChange={() => {}}
-            formatValue={withThousands}
+            formatValue={number => `$${number.toLocaleString('en-US')}`}
           />
         </form>,
       );

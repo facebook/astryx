@@ -19,14 +19,11 @@
  * hardcoded literal, `navigator.language`, or an arbitrary variable are all
  * still raw Intl access from the policy's point of view.
  *
- * Raw `Intl` construction is confined to a short, explicit list of files
- * (`APPROVED_INFRA_FILES` below): the pure, SSR-safe implementation helpers
- * that every provider-aware caller ultimately goes through, plus a few of
- * their colocated tests that deliberately build an independent Intl oracle
- * rather than reuse the helper under test. That list is the only exception
- * mechanism: there is no config option to widen it from `eslint.config.js`,
- * so opting a new file out means editing this rule (and its tests) in
- * review, not a one-line config change.
+ * Raw `Intl` is confined to two short, explicit lists below. Approved
+ * implementations may call Intl directly but still require an explicit locale;
+ * named test-oracle files may construct independent expected values. The only
+ * ambient implementation exceptions are the two named legacy helper bodies
+ * pending #5120. No ESLint option can widen these boundaries.
  *
  * `navigator.language`/`navigator.languages` are rejected everywhere,
  * including inside an approved infrastructure file — the provider is the
@@ -93,62 +90,48 @@ const LOCALE_FIRST_METHODS = new Set([
 ]);
 
 /**
- * The only files allowed to construct a raw `Intl` formatter, reference the
- * global `Intl` object outside the direct-call shape, or call a
- * locale-sensitive prototype method with any locale argument (a variable, a
- * literal, or none at all): the implementation of an approved locale-aware
- * utility, or a colocated test that deliberately builds an independent Intl
- * oracle for one (see the trailing group below) — never a component that
- * could just call the provider-aware utilities instead.
+ * Approved implementation files may construct direct Intl formatters and call
+ * locale-sensitive methods only with a syntactically explicit locale. Named
+ * test-oracle files may construct independent expected values so tests do not
+ * reuse the production helper under test. Aliasing/destructuring Intl remains
+ * forbidden in implementations; only test-oracle files trust arbitrary raw
+ * Intl references.
  *
- * `navigator.language`/`navigator.languages` are NOT covered by this list —
- * that ban applies unconditionally, infra or not (see the file doc comment).
- *
- * Matched against the end of the file path, so both repo-root-relative and
- * absolute paths resolve the same way. Add a file here only when it is one of
- * those two things, and add a rule test (`no-raw-intl-locale.test.mjs`)
- * proving both that it is now permitted and that everything else still is
- * not.
+ * `navigator.language`/`navigator.languages` are never covered by either list.
+ * Paths match against the end of the filename for absolute/relative parity;
+ * every added file requires a rule-source change and focused rule test.
  */
-const APPROVED_INFRA_FILES = [
-  // Date formatting/parsing core: plainDateFormat, formatSharedDate,
-  // isLocaleDayFirst's day-order probe, and the fixed-locale wall-clock
-  // decomposition `getTimeZoneParts` uses for machine (non-display) output.
+const APPROVED_IMPLEMENTATION_FILES = [
+  // Date formatting/parsing core. The two pre-existing ambient call sites are
+  // separately constrained by LEGACY_AMBIENT_CALLS below until #5120 lands.
   'packages/core/src/utils/plainDate.ts',
   'packages/core/src/utils/dateParser.ts',
   // Timestamp's shared instant formatter and its tooltip zone resolution
-  // (the latter's `Intl.DateTimeFormat('en-US', ...)` only probes whether a
-  // time zone identifier is valid — it formats nothing for display).
+  // (the latter's fixed en-US locale only probes identifier validity).
   'packages/core/src/Timestamp/formatInstant.ts',
   'packages/core/src/Timestamp/tooltipEntries.ts',
-  // PowerSearch's filter-value formatting (numbers, absolute dates).
   'packages/core/src/PowerSearch/formatFilterValue.ts',
-  // The provider-aware Intl.Collator hook — the one place allowed to
-  // construct one, so every other locale-aware string comparison goes
-  // through useCollator() instead of a raw Intl.Collator/localeCompare call.
   'packages/core/src/i18n/useCollator.ts',
-  // Charts is a separate package that cannot consume React context directly;
-  // its tick/value formatters require an explicit locale at their public
-  // boundary instead (see packages/charts/src/formatters.ts's own doc
-  // comment).
   'packages/charts/src/formatters.ts',
+];
 
-  // Colocated tests that verify one of the locale-sensitive units above (or a
-  // component whose entire purpose is locale-aware rendering) by building an
-  // Intl-based expected value independently of the code under test. Reusing
-  // the production helper to build that expected value would make the
-  // assertion partly circular, so these deliberately construct their own
-  // formatter/parts the same way a hand-written oracle would. Not a general
-  // "tests are exempt" carve-out — every other test file in the lint scope
-  // (including most of these same files' *other* tests) still follows the
-  // rule, and a new entry here needs the same review + rule test as an
-  // implementation file.
+const APPROVED_TEST_ORACLE_FILES = [
   'packages/charts/src/formatters.test.ts',
   'packages/core/src/Calendar/Calendar.test.tsx',
+  'packages/core/src/NumberInput/NumberInput.test.tsx',
+  'packages/core/src/Table/plugins/tree/useTableTreeState.test.tsx',
   'packages/core/src/Timestamp/tooltipEntries.test.ts',
   'packages/core/src/PowerSearch/formatFilterValue.test.ts',
   'packages/core/src/Timestamp/Timestamp.test.tsx',
 ];
+
+// Temporary compatibility exceptions for the two public helpers whose locale
+// parameters are still pending in #5120. Scope by file + enclosing function,
+// not by file, so a second ambient formatter in either module is rejected.
+const LEGACY_AMBIENT_CALLS = new Map([
+  ['packages/core/src/utils/plainDate.ts', new Set(['plainDateFormat'])],
+  ['packages/core/src/utils/dateParser.ts', new Set(['isLocaleDayFirst'])],
+]);
 
 function unwrap(node) {
   let current = node;
@@ -282,9 +265,30 @@ function normalizeFilename(filename) {
   return filename.replace(/\\/g, '/');
 }
 
-function isApprovedInfraFile(filename) {
+function isListedFile(filename, approvedFiles) {
   const normalized = normalizeFilename(filename);
-  return APPROVED_INFRA_FILES.some(approved => normalized.endsWith(approved));
+  return approvedFiles.some(approved => normalized.endsWith(approved));
+}
+
+function enclosingFunctionName(node) {
+  let current = node.parent;
+  while (current != null) {
+    if (current.type === 'FunctionDeclaration') {
+      return current.id?.name ?? null;
+    }
+    current = current.parent;
+  }
+  return null;
+}
+
+function isLegacyAmbientCall(filename, node) {
+  const normalized = normalizeFilename(filename);
+  for (const [approved, functionNames] of LEGACY_AMBIENT_CALLS) {
+    if (normalized.endsWith(approved)) {
+      return functionNames.has(enclosingFunctionName(node));
+    }
+  }
+  return false;
 }
 
 /**
@@ -371,6 +375,11 @@ const rule = {
         'otherwise checks. Call the formatter directly inside an approved ' +
         'file, or use a public provider-aware locale utility ' +
         '(useLocale()/useCollator() from @astryxdesign/core/i18n) instead.',
+      ambientIntlInImplementation:
+        'Approved Intl implementation files must still pass an explicit locale. ' +
+        'A missing, undefined, or void locale would reintroduce host-dependent ' +
+        'behavior; only the two named legacy helper call sites are temporarily ' +
+        'exempt until #5120 lands.',
       navigatorLocale:
         'Do not source a locale from navigator.language/navigator.languages, ' +
         'in any position — not only as an argument to Intl or a locale ' +
@@ -384,7 +393,11 @@ const rule = {
   create(context) {
     const sourceCode = context.sourceCode ?? context.getSourceCode();
     const filename = context.filename ?? context.getFilename();
-    const infraFile = isApprovedInfraFile(filename);
+    const implementationFile = isListedFile(
+      filename,
+      APPROVED_IMPLEMENTATION_FILES,
+    );
+    const testOracleFile = isListedFile(filename, APPROVED_TEST_ORACLE_FILES);
 
     function report(node, messageId) {
       context.report({node, messageId});
@@ -425,10 +438,18 @@ const rule = {
       // must not be silently allowed just because its name is unknown.
       const localeArg = node.arguments[0];
       if (isNavigatorLocale(sourceCode, localeArg)) {
-        // Reported once, by the standalone navigator.language/languages
-        // check below (it fires for every occurrence of that member
-        // expression, this call's argument included) — not duplicated here.
-      } else if (!infraFile) {
+        // Reported once by the standalone navigator visitor below.
+      } else if (testOracleFile) {
+        // Named tests may build independent Intl oracles, including the host
+        // default where that is the behavior under test.
+      } else if (implementationFile) {
+        if (
+          isUndefinedExpression(localeArg) &&
+          !isLegacyAmbientCall(filename, node)
+        ) {
+          report(node, 'ambientIntlInImplementation');
+        }
+      } else {
         report(node, 'rawIntlLocale');
       }
       return true;
@@ -451,9 +472,14 @@ const rule = {
       }
 
       if (isNavigatorLocale(sourceCode, localeArg)) {
-        // See checkIntlFormatter — the standalone navigator check reports
-        // this occurrence; avoid a second diagnostic for the same node.
-      } else if (!infraFile) {
+        // Reported once by the standalone navigator visitor below.
+      } else if (testOracleFile) {
+        // Named tests may use locale methods as independent oracles.
+      } else if (implementationFile) {
+        if (isUndefinedExpression(localeArg)) {
+          report(node, 'ambientIntlInImplementation');
+        }
+      } else {
         report(node, 'rawIntlLocale');
       }
     }
@@ -528,7 +554,7 @@ const rule = {
           }
         }
 
-        if (infraFile) {
+        if (testOracleFile) {
           return;
         }
         report(node, 'rawIntlReference');
