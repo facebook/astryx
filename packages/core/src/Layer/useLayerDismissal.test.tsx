@@ -12,7 +12,7 @@
 
 import {render, fireEvent} from '@testing-library/react';
 import {describe, expect, it, vi, afterEach} from 'vitest';
-import {useRef} from 'react';
+import {StrictMode, useRef} from 'react';
 
 import {LayerDepthProvider} from './LayerDepthContext';
 import {useLayerDismissal} from './useLayerDismissal';
@@ -169,6 +169,92 @@ describe('useLayerDismissal', () => {
       pressEscape();
       expect(required).not.toHaveBeenCalled();
       expect(host).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('registration order', () => {
+    /** Two unrelated same-depth layers; the older one's behavior is a prop. */
+    function Siblings({
+      olderBehavior,
+      onOlderDismiss,
+      onNewerDismiss,
+    }: {
+      olderBehavior: LayerEscapeBehavior;
+      onOlderDismiss: () => void;
+      onNewerDismiss: () => void;
+    }) {
+      return (
+        <>
+          <Layer onDismiss={onOlderDismiss} behavior={olderBehavior} />
+          <Layer onDismiss={onNewerDismiss} />
+        </>
+      );
+    }
+
+    it('keeps a layer below the ones that opened after it when its escapeBehavior changes', () => {
+      // A Dialog whose `purpose` flips from required to info while it is open
+      // re-registers with the stack. Re-registration must not reorder it above
+      // a layer opened on top of it.
+      const older = vi.fn();
+      const newer = vi.fn();
+      const {rerender} = render(
+        <Siblings
+          olderBehavior="block"
+          onOlderDismiss={older}
+          onNewerDismiss={newer}
+        />,
+      );
+      rerender(
+        <Siblings
+          olderBehavior="close"
+          onOlderDismiss={older}
+          onNewerDismiss={newer}
+        />,
+      );
+
+      pressEscape();
+      expect(newer).toHaveBeenCalledTimes(1);
+      expect(older).not.toHaveBeenCalled();
+    });
+
+    it('does not let a re-registered layer swallow a press meant for the layer above it', () => {
+      // The same flip the other way: info to required. A `block` layer that
+      // jumped the queue would consume the press and nothing would close.
+      const older = vi.fn();
+      const newer = vi.fn();
+      const {rerender} = render(
+        <Siblings
+          olderBehavior="close"
+          onOlderDismiss={older}
+          onNewerDismiss={newer}
+        />,
+      );
+      rerender(
+        <Siblings
+          olderBehavior="block"
+          onOlderDismiss={older}
+          onNewerDismiss={newer}
+        />,
+      );
+
+      pressEscape();
+      expect(newer).toHaveBeenCalledTimes(1);
+      expect(older).not.toHaveBeenCalled();
+    });
+
+    it('keeps ordering under StrictMode, which mounts every effect twice', () => {
+      const first = vi.fn();
+      const second = vi.fn();
+      render(
+        <StrictMode>
+          <Layer onDismiss={first} />
+          <Layer onDismiss={second} />
+        </StrictMode>,
+      );
+
+      pressEscape();
+      expect(second).toHaveBeenCalledTimes(1);
+      expect(first).not.toHaveBeenCalled();
     });
   });
 
