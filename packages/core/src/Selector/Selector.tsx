@@ -101,7 +101,13 @@ const styles = stylex.create({
       default: typeScaleVars['--text-label-size'],
       '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-label-size']})`,
     },
-    lineHeight: typeScaleVars['--text-label-leading'],
+    // A FIXED line box, not the ratio: the trigger's padding is derived from
+    // one line being `--spacing-5` tall, and a ratio makes the line box track
+    // the font — which the coarse-pointer bump above (and any theme that
+    // changes `--font-size-base`) then moves, taking the control off its size
+    // token. The glyphs still grow for touch; only the box they sit in is
+    // pinned. Item's own rows set their line heights and are unaffected.
+    lineHeight: spacingVars['--spacing-5'],
     color: colorVars['--color-text-primary'],
     cursor: 'pointer',
   },
@@ -343,6 +349,10 @@ const styles = stylex.create({
 // 4, so every trigger lands on the 4px rhythm and lines up with the Buttons
 // and inputs beside it. No prop picks the height — the content does, and it
 // can only land on the grid.
+//
+// `--spacing-5` is one line here because `triggerContainer` pins its
+// line-height to exactly that; the two must stay in step, which is why both
+// read the same token rather than one hardcoding 20px.
 const linePad = (token: string) =>
   `calc((${token} - ${spacingVars['--spacing-5']} - 2 * ${borderVars['--border-width']}) / 2)`;
 
